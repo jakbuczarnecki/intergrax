@@ -1,0 +1,1 @@
+uv pip sync .\requirements-from-conda.txt

@@ -1,0 +1,182 @@
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+import logging
+from typing import List, Dict, Tuple
+
+from intergrax.llm.conversational_memory import ChatMessage
+
+logger = logging.getLogger("intergrax.windowed_answerer")
+
+
+class IntergraxWindowedAnswerer:
+    """
+    Windowed (map→reduce) layer on top of the base Answerer.
+    """
+    def __init__(self, answerer, retriever, *, verbose: bool = False):
+        self.answerer = answerer
+        self.retriever = retriever
+        self.verbose = verbose
+        self.log = logger.getChild("window")
+        if self.verbose:
+            self.log.setLevel(logging.INFO)
+
+    def _build_context_local(
+        self,
+        hits: List[Dict],
+        max_chars: int,
+        per_chunk_cap: int = 4000
+    ) -> Tuple[str, List[Dict]]:
+        def sanitize(s: str) -> str:
+            return "".join(ch for ch in s if ch.isprintable() or ch in "\n\t ").strip()
+
+        parts, used, total = [], [], 0
+        for h in hits:
+            txt = sanitize(h.get("text") or h.get("content") or "")
+            if not txt:
+                continue
+            if per_chunk_cap and len(txt) > per_chunk_cap:
+                txt = txt[:per_chunk_cap]
+            need = len(txt)
+            if total + need > max_chars:
+                remain = max(max_chars - total, 0)
+                if remain == 0:
+                    break
+                txt = txt[:remain]
+                need = len(txt)
+            parts.append(txt)
+            used.append(h)
+            total += need
+            if total >= max_chars:
+                break
+        return "\n\n---\n\n".join(parts), used
+
+    def _build_messages_for_context(self, question: str, context_text: str):
+        """
+        Build messages with memory-awareness, without duplicating the system prompt.
+        If the answerer has `_build_messages_memory_aware` and a memory store, use it.
+        Otherwise, fall back to `_build_messages`.
+        """
+        use_memory = getattr(self.answerer, "memory", None) is not None
+        mem_aware = hasattr(self.answerer, "_build_messages_memory_aware")
+
+        if use_memory and mem_aware:
+            # Memory-aware variant — inject context as a separate system message
+            return self.answerer._build_messages_memory_aware(context_text=context_text)
+        else:
+            # No-memory variant — standard message construction
+            return self.answerer._build_messages(
+                question=question,
+                context_text=context_text,
+                user_instruction=None
+            )
+
+    def ask_windowed(
+        self,
+        question: str,
+        *,
+        top_k_total: int = 60,
+        window_size: int = 12,
+        summarize_each: bool = False
+    ):
+        self.log.info("[Windowed] Asking: '%s' (top_k_total=%d, window=%d)", question, top_k_total, window_size)
+
+        # If we have memory, record the user's question ONCE (to keep history consistent).
+        if getattr(self.answerer, "memory", None) is not None:
+            self.answerer.memory.add_message("user", question)
+
+        # 1) Broad retrieval
+        raw_hits = self.retriever.retrieve(question, top_k=top_k_total)
+        self.log.info("[Windowed] Retrieved %d candidates", len(raw_hits))
+
+        if not raw_hits:
+            msg = "No sufficiently relevant context was found to answer."
+            # If we have memory, append an informational assistant reply.
+            if getattr(self.answerer, "memory", None) is not None:
+                self.answerer.memory.add_message("assistant", msg)
+            return {
+                "answer": msg,
+                "sources": [],
+                "summary": None,
+                "stats": {"windows": 0, "top_k_total": top_k_total, "window_size": window_size},
+            }
+
+        # 2) Windows
+        windows = [raw_hits[i:i + window_size] for i in range(0, len(raw_hits), window_size)]
+        self.log.info("[Windowed] Processing %d windows", len(windows))
+
+        partial_answers, collected_sources = [], []
+
+        for wi, w in enumerate(windows, 1):
+            ctx_text, used_hits = self._build_context_local(
+                w,
+                max_chars=self.answerer.cfg.max_context_chars
+            )
+            self.log.info("[Windowed] Window %d/%d: %d hits", wi, len(windows), len(used_hits))
+
+            # 2a) Build MESSAGES (memory-aware if available)
+            msgs = self._build_messages_for_context(question=question, context_text=ctx_text)
+
+            # 2b) LLM → partial answer for this window
+            ans = self.answerer.llm.generate_messages(
+                msgs,
+                temperature=self.answerer.cfg.temperature,
+                max_tokens=self.answerer.cfg.max_answer_tokens,
+            )
+
+            # 2c) (Optional) summarize per-window partial
+            if summarize_each:
+                sum_msgs = [
+                    ChatMessage(role="system", content="You summarize answers without adding facts."),
+                    ChatMessage(role="user", content=self.answerer.cfg.summary_prompt_template.format(answer=ans)),
+                ]
+                ans = self.answerer.llm.generate_messages(sum_msgs, temperature=0.0, max_tokens=512)
+
+            partial_answers.append(ans)
+
+            # 2d) Collect sources
+            collected_sources.extend(
+                self.answerer._make_citations([self.answerer._normalize_hit(h) for h in used_hits])
+            )
+
+        # 3) Reduce — synthesize final answer from partials
+        synthesis_ctx = "\n\n---\n\n".join(partial_answers)
+        msgs_reduce = self._build_messages_for_context(question=question, context_text=synthesis_ctx)
+        final_answer = self.answerer.llm.generate_messages(
+            msgs_reduce,
+            temperature=self.answerer.cfg.temperature,
+            max_tokens=self.answerer.cfg.max_answer_tokens,
+        )
+
+        final_summary = None
+        if summarize_each:
+            sum_msgs = [
+                ChatMessage(role="system", content="You summarize answers without adding facts."),
+                ChatMessage(role="user", content=self.answerer.cfg.summary_prompt_template.format(answer=final_answer)),
+            ]
+            final_summary = self.answerer.llm.generate_messages(sum_msgs, temperature=0.0, max_tokens=512)
+
+        # 4) Deduplicate sources
+        seen, dedup_sources = set(), []
+        for s in collected_sources:
+            key = (s.source, s.page, getattr(s, "score", None), getattr(s, "preview", "")[:64])
+            if key in seen:
+                continue
+            seen.add(key)
+            dedup_sources.append(s)
+
+        # 5) If we have memory, append the final answer (and optional summary)
+        if getattr(self.answerer, "memory", None) is not None:
+            content_to_save = final_answer
+            if final_summary:
+                content_to_save += "\n\n" + final_summary
+            self.answerer.memory.add_message("assistant", content_to_save)
+
+        self.log.info("[Windowed] Done (%d windows)", len(windows))
+        return {
+            "answer": final_answer,
+            "sources": dedup_sources,
+            "summary": final_summary,
+            "stats": {"windows": len(windows), "top_k_total": top_k_total, "window_size": window_size},
+        }

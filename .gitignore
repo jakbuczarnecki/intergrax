@@ -1,0 +1,18 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.env
+
+# Virtual environments
+.venv
+
+# Project
+notebooks/video
+notebooks/images
+notebooks/chroma_db
+documents/
+API/Chat/rag_app.db
