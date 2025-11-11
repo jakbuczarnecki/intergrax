@@ -1,4 +1,4 @@
-# [01] Web Research & Online Information Retrieval Component
+# Web Research & Online Information Retrieval Component
 
 **Status:** Planned  
 **Owner:** Artur Czarnecki  
