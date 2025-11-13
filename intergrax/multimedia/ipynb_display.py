@@ -2,6 +2,8 @@
 # Integrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+from __future__ import annotations
+
 from pathlib import Path
 import mimetypes
 import os
@@ -55,7 +57,7 @@ def display_image(path: str):
             display(Image(filename=path))
             return
         except Exception as e:
-            print(f"[WARN] Nie udało się wyświetlić klatki: {e}")
+            print(f"[WARN] Cannot display frame: {e}")
     
     elif _is_image_ext(path) and os.path.exists(path):
         try:
@@ -68,7 +70,6 @@ def display_image(path: str):
 _SERVE_DIR = Path("_served"); _SERVE_DIR.mkdir(exist_ok=True)
 
 def _serve_path(p: str | Path) -> str:
-    """Zwraca URL do lokalnego pliku tak, by <video> mógł go odczytać w notatniku."""
     p = Path(p).resolve()
     try:
         rel = p.relative_to(Path.cwd().resolve())
@@ -77,7 +78,7 @@ def _serve_path(p: str | Path) -> str:
         dst = _SERVE_DIR / f"{uuid.uuid4().hex}_{p.name}"
         shutil.copy2(p, dst)
         rel = dst.relative_to(Path.cwd())
-    # VS Code/Jupyter serwują katalog roboczy jako /files/
+
     return f"files/{rel.as_posix()}"
 
 def display_video_jump(*, path: str | Path, start_s: float,
@@ -87,17 +88,13 @@ def display_video_jump(*, path: str | Path, start_s: float,
                        label: str | None = None,
                        max_height_px: int = 480,
                        playback_rate: float = 1.0) -> None:
-    """
-    Ładuje CAŁY plik wideo i ustawia kursor na start_s (bez wycinania klipu).
-    """
+
     src_url = _serve_path(path)
     poster_attr = f'poster="{_serve_path(poster)}"' if poster else ""
     autoplay_attr = "autoplay muted" if autoplay else ("muted" if muted else "")
     vid_id = f"vid_{uuid.uuid4().hex}"
     lbl = f"<div style='font:12px monospace;margin:6px 0'>{label or ''}</div>" if label else ""
 
-    # Po loadedmetadata ustawiamy currentTime i (opcjonalnie) autoodtwarzamy.
-    # Powtórne ustawienie currentTime, jeśli metadata nie weszły jeszcze.
     js = f"""
     <script>
     (function() {{

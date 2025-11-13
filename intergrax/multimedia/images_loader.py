@@ -2,6 +2,7 @@
 # Integrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+from __future__ import annotations
 import ollama
 from IPython.display import Image, display
 

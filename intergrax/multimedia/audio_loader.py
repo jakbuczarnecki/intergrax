@@ -2,6 +2,8 @@
 # Integrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+from __future__ import annotations
+
 from pathlib import Path
 from yt_dlp import YoutubeDL
 import whisper

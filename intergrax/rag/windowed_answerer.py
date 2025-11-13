@@ -2,6 +2,9 @@
 # Integrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+from __future__ import annotations
+
+
 import logging
 from typing import List, Dict, Tuple
 
