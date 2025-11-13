@@ -1,4 +1,4 @@
-# [05] Business Profile Intelligence System for the intergrax Platform
+# Business Profile Intelligence System for the intergrax Platform
 
 **Status:** Planned  
 **Owner:** Artur Czarnecki  

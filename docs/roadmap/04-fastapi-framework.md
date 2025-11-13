@@ -1,4 +1,4 @@
-# [03] FastAPI-Based Framework for Thematic AI Applications
+# FastAPI-Based Framework for Thematic AI Applications
 
 **Status:** Planned  
 **Owner:** Artur Czarnecki  

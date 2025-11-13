@@ -99,7 +99,7 @@ def extract_frames_and_metadata(
             total_ms = (int(h) * 3600 + int(m) * 60 + int(s)) * 1000 + int(ms.ljust(3, '0')[:3])
             return total_ms
         except Exception:
-            raise ValueError(f"Nieprawidłowy format czasu: {time_str}")
+            raise ValueError(f"Invalid time format: {time_str}")
         
     def maintain_aspect_ratio_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
         
@@ -199,7 +199,7 @@ def extract_frames_from_video(
 
     cap = cv2.VideoCapture(path_to_video)
     if not cap.isOpened():
-        raise RuntimeError(f"Nie można otworzyć wideo: {path_to_video}")
+        raise RuntimeError(f"Cannot open video: {path_to_video}")
 
     fps = cap.get(cv2.CAP_PROP_FPS) or 0.0
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)

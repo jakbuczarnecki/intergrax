@@ -1,4 +1,4 @@
-# [06] Multi-Agent Supervisor Flow for Business Workstreams
+# Multi-Agent Supervisor Flow for Business Workstreams
 
 **Status:** Planned  
 **Owner:** Artur Czarnecki  

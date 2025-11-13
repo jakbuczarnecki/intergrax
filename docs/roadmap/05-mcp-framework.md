@@ -1,4 +1,4 @@
-# [04] MCP Framework for Agent Tooling and Interoperability
+# MCP Framework for Agent Tooling and Interoperability
 
 **Status:** Planned  
 **Owner:** Artur Czarnecki  

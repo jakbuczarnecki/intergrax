@@ -11,8 +11,8 @@ wheels/
 .venv
 
 # Project
-notebooks/video
-notebooks/images
-notebooks/chroma_db
+notebooks/rag/video
+notebooks/rag/images
+notebooks/rag/chroma_db
 documents/
-API/Chat/rag_app.db
+api/chat/rag_app.db

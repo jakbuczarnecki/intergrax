@@ -10,6 +10,7 @@ import os
 import io
 import base64
 import requests
+from __future__ import annotations
 
 from intergrax.multimedia.video_loader import (
     transcribe_to_vtt,

@@ -1,4 +1,4 @@
-# [02] Large-File Conversational RAG Integration
+# Large-File Conversational RAG Integration
 
 **Status:** Planned  
 **Owner:** Artur Czarnecki  
