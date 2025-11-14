@@ -89,7 +89,7 @@ The long-term goal is to provide:
 ## Repository Structure
 intergrax/
 ├── rag/ # Retrieval and summarization components
-├── llm/ # LLM adapters and reasoning utilities
+├── llm_adapters/ # LLM adapters and reasoning utilities
 ├── supervisor/ # Multi-agent orchestration and planning
 ├── tools/ # Tool registry and MCP integrations
 ├── api/ # FastAPI backend and routers
