@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Protocol, Iterable, Literal, Type
 
 from intergrax.llm.conversational_memory import IntergraxConversationalMemory, ChatMessage
-from intergrax.llm.llm_adapters import LLMAdapter
+from intergrax.llm_adapters import LLMAdapter
 
 # Pydantic optionally (no hard runtime dependency)
 try:
