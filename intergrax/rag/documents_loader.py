@@ -22,7 +22,7 @@ from intergrax.multimedia.audio_loader import (
 )
 
 # LLM adaptery frameworka (model + provider w adapterze)
-from intergrax.llm.llm_adapters import (
+from intergrax.llm_adapters import (
     LLMAdapter,
     LangChainOllamaAdapter,
 )

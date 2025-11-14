@@ -5,118 +5,165 @@
 from __future__ import annotations
 from typing import TypedDict, Optional, List, Dict, Any, Annotated
 
-import asyncio  # <- add this import
-
 try:
     from langgraph.graph.message import add_messages
 except ImportError:
     def add_messages(x: Any) -> Any:
         return x
 
-from intergrax.websearch.schemas.query_spec import QuerySpec
-from intergrax.websearch.pipeline.default_pipeline import build_default_pipeline
-from intergrax.websearch.schemas.web_document import WebDocument
+from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
 
 class WebSearchState(TypedDict, total=False):
+    """
+    Minimal state contract for web search nodes.
+
+    Fields:
+      messages        : conversation history (LangGraph-compatible)
+      user_question   : last user question (fallback for query)
+      websearch_query : explicit query string for web search (optional)
+      websearch_docs  : serialized web documents (ready for LLM consumption)
+    """
     messages: Annotated[list, add_messages]
     user_question: Optional[str]
     websearch_query: Optional[str]
     websearch_docs: Optional[List[Dict[str, Any]]]
 
 
-_PIPELINE = None
+class WebSearchNode:
+    """
+    LangGraph-compatible web search node wrapper.
+
+    This class encapsulates:
+      - configuration of WebSearchExecutor (providers, defaults),
+      - sync and async node methods operating on WebSearchState.
+
+    The node does not implement search logic itself. It delegates
+    to the provided WebSearchExecutor instance.
+    """
+
+    def __init__(
+        self,
+        executor: Optional[WebSearchExecutor] = None,
+        enable_google_cse: bool = True,
+        enable_bing_web: bool = True,
+        default_top_k: int = 8,
+        default_locale: str = "pl-PL",
+        default_region: str = "pl-PL",
+        default_language: str = "pl",
+        default_safe_search: bool = True,
+        max_text_chars: int = 4000,
+    ) -> None:
+        """
+        Parameters:
+          executor           : externally configured WebSearchExecutor. If None, one is created.
+          enable_google_cse  : used only when executor is None.
+          enable_bing_web    : used only when executor is None.
+          default_top_k      : used only when executor is None.
+          default_locale     : used only when executor is None.
+          default_region     : used only when executor is None.
+          default_language   : used only when executor is None.
+          default_safe_search: used only when executor is None.
+          max_text_chars     : used only when executor is None.
+        """
+        if executor is not None:
+            self.executor = executor
+        else:
+            self.executor = WebSearchExecutor(
+                enable_google_cse=enable_google_cse,
+                enable_bing_web=enable_bing_web,
+                default_top_k=default_top_k,
+                default_locale=default_locale,
+                default_region=default_region,
+                default_language=default_language,
+                default_safe_search=default_safe_search,
+                max_text_chars=max_text_chars,
+            )
+
+    def _extract_query(self, state: WebSearchState) -> str:
+        """
+        Extracts the search query from the node state.
+        Preference order:
+          1) websearch_query
+          2) user_question
+        """
+        return (state.get("websearch_query") or state.get("user_question") or "").strip()
+
+    def run(self, state: WebSearchState) -> WebSearchState:
+        """
+        Synchronous node method - suitable for non-async environments.
+
+        In environments with a running event loop (e.g. Jupyter),
+        prefer using 'run_async' directly.
+        """
+        query = self._extract_query(state)
+        if not query:
+            state["websearch_docs"] = []
+            return state
+
+        docs = self.executor.search_sync(
+            query=query,
+            top_k=None,       # use executor defaults
+            top_n_fetch=None, # use top_k
+            serialize=True,
+        )
+
+        state["websearch_docs"] = docs
+        return state
+
+    async def run_async(self, state: WebSearchState) -> WebSearchState:
+        """
+        Async node method - safe to use in environments with an existing
+        event loop (Jupyter, async web frameworks, LangGraph runtimes).
+        """
+        query = self._extract_query(state)
+        if not query:
+            state["websearch_docs"] = []
+            return state
+
+        docs = await self.executor.search_async(
+            query=query,
+            top_k=None,       # use executor defaults
+            top_n_fetch=None, # use top_k
+            serialize=True,
+        )
+
+        state["websearch_docs"] = docs
+        return state
 
 
-def _get_pipeline():
-    global _PIPELINE
-    if _PIPELINE is None:
-        _PIPELINE = build_default_pipeline()
-    return _PIPELINE
+# Default, module-level node instance for convenience and backward compatibility
+_DEFAULT_NODE: Optional[WebSearchNode] = None
 
 
-def _serialize_web_document(doc: WebDocument, max_text_chars: int = 4000) -> Dict[str, Any]:
-    page = doc.page
-    hit = doc.hit
+def _get_default_node() -> WebSearchNode:
+    """
+    Lazily constructs a default WebSearchNode instance.
 
-    full_text = page.text or ""
-    if max_text_chars and len(full_text) > max_text_chars:
-        text = full_text[:max_text_chars]
-    else:
-        text = full_text
-
-    return {
-        "provider": hit.provider,
-        "rank": hit.rank,
-        "source_rank": doc.source_rank,
-        "quality_score": doc.quality_score,
-        "title": page.title or hit.title,
-        "url": hit.url,
-        "snippet": hit.snippet,
-        "description": page.description,
-        "lang": page.lang,
-        "domain": hit.domain(),
-        "published_at": hit.published_at.isoformat() if hit.published_at else None,
-        "fetched_at": page.fetched_at.isoformat(),
-        "text": text,
-    }
+    This keeps the previous simple functional API available while
+    allowing full customization via the WebSearchNode class.
+    """
+    global _DEFAULT_NODE
+    if _DEFAULT_NODE is None:
+        _DEFAULT_NODE = WebSearchNode()
+    return _DEFAULT_NODE
 
 
 def websearch_node(state: WebSearchState) -> WebSearchState:
     """
-    Synchronous node – suitable for non-async environments.
+    Functional, synchronous wrapper around the default WebSearchNode.
 
-    In environments with a running event loop (e.g. Jupyter),
-    prefer using 'websearch_node_async' directly.
+    Suitable for simple integrations where custom configuration is not required.
     """
-    query = (state.get("websearch_query") or state.get("user_question") or "").strip()
-    if not query:
-        state["websearch_docs"] = []
-        return state
-
-    spec = QuerySpec(
-        query=query,
-        top_k=8,
-        locale="pl-PL",
-        region="pl-PL",
-        language="pl",
-        safe_search=True,
-    )
-
-    pipeline = _get_pipeline()
-    docs = pipeline.run_sync(spec, top_n_fetch=8)
-
-    state["websearch_docs"] = [
-        _serialize_web_document(d) for d in docs
-    ]
-    return state
+    node = _get_default_node()
+    return node.run(state)
 
 
 async def websearch_node_async(state: WebSearchState) -> WebSearchState:
     """
-    Async version of the websearch node.
+    Functional, async wrapper around the default WebSearchNode.
 
-    This version is safe to use in environments where an event loop is
-    already running (e.g. Jupyter notebooks, async web frameworks, LangGraph).
+    Suitable for LangGraph graphs and async environments.
     """
-    query = (state.get("websearch_query") or state.get("user_question") or "").strip()
-    if not query:
-        state["websearch_docs"] = []
-        return state
-
-    spec = QuerySpec(
-        query=query,
-        top_k=8,
-        locale="pl-PL",
-        region="pl-PL",
-        language="pl",
-        safe_search=True,
-    )
-
-    pipeline = _get_pipeline()
-    docs = await pipeline.run(spec, top_n_fetch=8)
-
-    state["websearch_docs"] = [
-        _serialize_web_document(d) for d in docs
-    ]
-    return state
+    node = _get_default_node()
+    return await node.run_async(state)

@@ -13,7 +13,7 @@ from intergrax.rag.rag_answerer import (
     IntergraxAnswererConfig,
     ChatMessage,
 )
-from intergrax.llm.llm_adapters import LLMAdapterRegistry
+from intergrax.llm_adapters import LLMAdapterRegistry
 from intergrax.rag.rag_retriever import IntergraxRagRetriever
 from intergrax.rag.vectorstore_manager import IntergraxVectorstoreManager, VSConfig
 from intergrax.rag.documents_loader import IntergraxDocumentsLoader
