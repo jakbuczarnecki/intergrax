@@ -10,6 +10,7 @@ from intergrax.websearch.providers.base import WebSearchProvider
 from intergrax.websearch.providers.google_cse_provider import GoogleCSEProvider
 from intergrax.websearch.providers.bing_provider import BingWebProvider
 from intergrax.websearch.pipeline.search_and_read import SearchAndReadPipeline
+from intergrax.websearch.cache import InMemoryQueryCache, QueryCacheKey
 
 
 class WebSearchExecutor:
@@ -35,11 +36,12 @@ class WebSearchExecutor:
         http_rate_per_sec: float = 2.0,
         http_capacity: int = 5,
         default_top_k: int = 8,
-        default_locale: str = "pl-PL",
-        default_region: str = "pl-PL",
-        default_language: str = "pl",
+        default_locale="en-US",
+        default_region="en-US",
+        default_language="en",
         default_safe_search: bool = True,
         max_text_chars: int = 4000,
+        query_cache: Optional[InMemoryQueryCache] = None,
     ) -> None:
         """
         Parameters:
@@ -54,6 +56,7 @@ class WebSearchExecutor:
           default_language : default language for QuerySpec.
           default_safe_search: default safe search flag.
           max_text_chars   : max length of extracted text per document in serialized output.
+          query_cache      : optional in-memory query-level cache for serialized results.
         """
         self.default_top_k = default_top_k
         self.default_locale = default_locale
@@ -61,6 +64,7 @@ class WebSearchExecutor:
         self.default_language = default_language
         self.default_safe_search = default_safe_search
         self.max_text_chars = max_text_chars
+        self._query_cache = query_cache
 
         if providers is None:
             providers = self._build_default_providers(
@@ -79,6 +83,7 @@ class WebSearchExecutor:
             http_rate_per_sec=http_rate_per_sec,
             http_capacity=http_capacity,
         )
+        self._provider_signature = self._build_provider_signature(providers)
 
     @staticmethod
     def _build_default_providers(
@@ -102,6 +107,17 @@ class WebSearchExecutor:
                 pass
 
         return providers
+
+    @staticmethod
+    def _build_provider_signature(providers: List[WebSearchProvider]) -> str:
+        """
+        Builds a simple, deterministic signature of the provider configuration.
+
+        Used as part of the cache key so that changing providers (e.g. enabling/disabling
+        Bing or Google CSE) naturally invalidates previous cached entries.
+        """
+        names = sorted(p.__class__.__name__ for p in providers)
+        return "+".join(names)
 
     def _serialize_web_document(self, doc: WebDocument) -> Dict[str, Any]:
         """
@@ -170,6 +186,9 @@ class WebSearchExecutor:
         Returns:
           - list of serialized dicts if serialize=True,
           - list of WebDocument objects if serialize=False.
+
+        When a query cache is configured and active:
+          - attempts to return cached serialized results when available and valid.
         """
         spec = self.build_query_spec(
             query=query,
@@ -180,14 +199,37 @@ class WebSearchExecutor:
             safe_search=safe_search,
         )
 
+        final_top_n = top_n_fetch if top_n_fetch is not None else spec.top_k
+
+        cache_key: Optional[QueryCacheKey] = None
+        if serialize and self._query_cache is not None:
+            cache_key = QueryCacheKey(
+                query=spec.query,
+                top_k=final_top_n,
+                locale=spec.locale or "",
+                region=spec.region or "",
+                language=spec.language or "",
+                safe_search=spec.safe_search,
+                provider_signature=self._provider_signature,
+            )
+            cached = self._query_cache.get(cache_key)
+            if cached is not None:
+                return cached
+
         docs = await self.pipeline.run(
             spec,
-            top_n_fetch=top_n_fetch if top_n_fetch is not None else spec.top_k,
+            top_n_fetch=final_top_n,
         )
 
-        if serialize:
-            return [self._serialize_web_document(d) for d in docs]
-        return docs
+        if not serialize:
+            return docs
+
+        serialized_docs = [self._serialize_web_document(d) for d in docs]
+
+        if cache_key is not None and self._query_cache is not None:
+            self._query_cache.set(cache_key, serialized_docs)
+
+        return serialized_docs
 
     def search_sync(
         self,

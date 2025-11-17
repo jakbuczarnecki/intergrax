@@ -50,13 +50,13 @@ Supported file formats: `PDF`, `DOCX`, `TXT`, `HTML`, `JSON`, `CSV`, and optiona
 
 | Phase | Description | Status |
 |-------|--------------|--------|
-| 1 | **Architecture design** – define layer structure, dependencies, data flow between RAG, memory, and chat. | ☐ |
-| 2 | **File ingestion** – implement async ingestion and text extraction for multiple file types. | ☐ |
-| 3 | **Vector indexing** – implement multi-index management and metadata linking to sessions. | ☐ |
-| 4 | **Retrieval layer** – enable multi-file search, scoring, and context composition. | ☐ |
-| 5 | **Summarization layer** – create adaptive summarization for large contexts. | ☐ |
-| 6 | **Citation & traceability** – implement inline citation and source tracking. | ☐ |
-| 7 | **Stress testing & evaluation** – benchmark retrieval latency, token efficiency, and accuracy. | ☐ |
+| 1 | **Architecture design** – define layer structure, dependencies, data flow between RAG, memory, and chat.
+| 2 | **File ingestion** – implement async ingestion and text extraction for multiple file types.
+| 3 | **Vector indexing** – implement multi-index management and metadata linking to sessions.
+| 4 | **Retrieval layer** – enable multi-file search, scoring, and context composition.
+| 5 | **Summarization layer** – create adaptive summarization for large contexts.
+| 6 | **Citation & traceability** – implement inline citation and source tracking.
+| 7 | **Stress testing & evaluation** – benchmark retrieval latency, token efficiency, and accuracy.
 
 ---
 

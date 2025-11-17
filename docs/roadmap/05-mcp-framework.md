@@ -48,13 +48,13 @@ This component will position intergrax as an open, extensible framework capable 
 
 | Phase | Description | Status |
 |-------|--------------|--------|
-| 1 | Define architecture and interface contracts between MCP and FastAPI layers. | ☐ |
-| 2 | Implement base classes (`intergraxMcpTool`, `intergraxMcpRegistry`) and schema validation. | ☐ |
-| 3 | Create MCP server and client modules with asynchronous message handling. | ☐ |
-| 4 | Add tool discovery and runtime registration capabilities. | ☐ |
-| 5 | Integrate with FastAPI for API-to-MCP bridging. | ☐ |
-| 6 | Implement security, access control, and event logging. | ☐ |
-| 7 | Conduct interoperability testing with external MCP-compatible clients. | ☐ |
+| 1 | Define architecture and interface contracts between MCP and FastAPI layers.
+| 2 | Implement base classes (`intergraxMcpTool`, `intergraxMcpRegistry`) and schema validation.
+| 3 | Create MCP server and client modules with asynchronous message handling.
+| 4 | Add tool discovery and runtime registration capabilities.
+| 5 | Integrate with FastAPI for API-to-MCP bridging.
+| 6 | Implement security, access control, and event logging.
+| 7 | Conduct interoperability testing with external MCP-compatible clients.
 
 ---
 

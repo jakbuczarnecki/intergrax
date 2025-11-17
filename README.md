@@ -101,6 +101,16 @@ Each submodule is documented in the `/docs/roadmap/` directory.
 
 ---
 
+## Usage Examples and Notebooks
+Examples demonstrating how to use core components (RAG, supervisor workflows, web search, adapters, and agents) are provided as runnable notebooks.
+These can be found in:
+**/notebooks/**
+Each notebook corresponds to a specific capability or automation pattern and serves as a practical reference for building LangGraph workflows, integrating tools, composing agents, and testing retrieval or reasoning components.
+
+---
+
+## Repository Structure
+
 ## Status and Development
 Intergrax is under **active development** as part of the intergrax ecosystem.  
 The current focus is on:

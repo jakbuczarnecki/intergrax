@@ -47,13 +47,13 @@ Primary capabilities:
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | Define API surface and DI contracts (interfaces for RAG, Tools, Supervisor). | ☐ |
-| 2 | Implement `ApiAppFactory` and base middlewares (CORS, auth, logging). | ☐ |
-| 3 | Add `ChatRouter` with streaming (SSE/WebSocket) and tool-call plumbing. | ☐ |
-| 4 | Add `FilesRouter` for uploads, ingestion pipeline, and progress tracking. | ☐ |
-| 5 | Add `RagRouter` and `AgentsRouter` for retrieval tests and workflow runs. | ☐ |
-| 6 | Integrate `TasksBackend` for background embedding/summarization jobs. | ☐ |
-| 7 | Hardening: rate limits, pagination, error model, OpenAPI docs, tests. | ☐ |
+| 1 | Define API surface and DI contracts (interfaces for RAG, Tools, Supervisor).
+| 2 | Implement `ApiAppFactory` and base middlewares (CORS, auth, logging).
+| 3 | Add `ChatRouter` with streaming (SSE/WebSocket) and tool-call plumbing.
+| 4 | Add `FilesRouter` for uploads, ingestion pipeline, and progress tracking.
+| 5 | Add `RagRouter` and `AgentsRouter` for retrieval tests and workflow runs.
+| 6 | Integrate `TasksBackend` for background embedding/summarization jobs.
+| 7 | Hardening: rate limits, pagination, error model, OpenAPI docs, tests.
 
 ---
 

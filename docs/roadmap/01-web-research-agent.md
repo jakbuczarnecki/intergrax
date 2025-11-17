@@ -56,13 +56,13 @@ Supported search backends (initial phase):
 
 | Phase | Description | Status |
 |-------|--------------|--------|
-| 1 | Define architecture & provider abstraction layer. | ☐ |
-| 2 | Implement `intergraxWebSearcher` with provider configuration (API keys, endpoints). | ☐ |
-| 3 | Implement `intergraxWebParser` for basic HTML-to-text conversion and metadata extraction. | ☐ |
-| 4 | Build `intergraxWebTool` for agent access via MCP. | ☐ |
-| 5 | Add summarization and RAG integration pipeline. | ☐ |
-| 6 | Implement caching and deduplication mechanisms. | ☐ |
-| 7 | Evaluate accuracy, latency, and security compliance. | ☐ |
+| 1 | Define architecture & provider abstraction layer.
+| 2 | Implement `intergraxWebSearcher` with provider configuration (API keys, endpoints).
+| 3 | Implement `intergraxWebParser` for basic HTML-to-text conversion and metadata extraction.
+| 4 | Build `intergraxWebTool` for agent access via MCP.
+| 5 | Add summarization and RAG integration pipeline.
+| 6 | Implement caching and deduplication mechanisms.
+| 7 | Evaluate accuracy, latency, and security compliance.
 
 ---
 

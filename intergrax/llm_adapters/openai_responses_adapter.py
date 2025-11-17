@@ -83,7 +83,7 @@ class OpenAIChatResponsesAdapter:
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: float = 0.2,
+        temperature: float = None,
         max_tokens: Optional[int] = None,
     ) -> str:
         """
@@ -95,7 +95,7 @@ class OpenAIChatResponsesAdapter:
         payload: Dict[str, Any] = dict(
             model=self.model,
             input=input_items,
-            temperature=temperature,
+            # temperature=temperature, - not applicable in openai responses
         )
 
         if max_tokens is not None:
@@ -108,7 +108,7 @@ class OpenAIChatResponsesAdapter:
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: float = 0.2,
+        temperature: float = None,
         max_tokens: Optional[int] = None,
     ) -> Iterable[str]:
         """
@@ -122,7 +122,7 @@ class OpenAIChatResponsesAdapter:
         payload: Dict[str, Any] = dict(
             model=self.model,
             input=input_items,
-            temperature=temperature,
+            # temperature=temperature, - not applicable in openai responses
             stream=True,
         )
 
@@ -152,7 +152,7 @@ class OpenAIChatResponsesAdapter:
         messages: Sequence[ChatMessage],
         tools_schema,
         *,
-        temperature: float = 0.2,
+        temperature: float = None,
         max_tokens: Optional[int] = None,
         tool_choice=None,
     ) -> Dict[str, Any]:
@@ -172,7 +172,7 @@ class OpenAIChatResponsesAdapter:
         payload: Dict[str, Any] = dict(
             model=self.model,
             input=input_items,
-            temperature=temperature,
+            # temperature=temperature, - not applicable in openai responses
             tools=tools_schema,
         )
 
@@ -230,7 +230,7 @@ class OpenAIChatResponsesAdapter:
         messages: Sequence[ChatMessage],
         output_model: type,
         *,
-        temperature: float = 0.2,
+        temperature: float = None,
         max_tokens: Optional[int] = None,
     ):
         """
@@ -256,7 +256,7 @@ class OpenAIChatResponsesAdapter:
         payload: Dict[str, Any] = dict(
             model=self.model,
             input=input_items,
-            temperature=temperature,
+            # temperature=temperature, - not applicable in openai responses
             response_format={
                 "type": "json_schema",
                 "json_schema": {
