@@ -50,14 +50,14 @@ Optional: Redis cache for fast-access metadata
 
 ## Implementation Plan
 Phase	Description	Status
-1	Define the Memory Schema — entities (UserProfile, OrgProfile, MemoryEvent, Summary, EmbeddingRef).	☐
-2	Implement Profile Manager — CRUD operations, behavioral preference learning, serialization.	☐
-3	Build Memory Store — persistence layer (SQLite/JSON) with vector retrieval support (Chroma/Qdrant).	☐
-4	Implement Context Retriever — hybrid recall (symbolic + vector) for reasoning sessions.	☐
-5	Add Consolidation Layer — summarization, decay, deduplication, and prioritization rules.	☐
-6	Integrate with Supervisor — inject relevant context into reasoning and planning.	☐
-7	Implement Privacy Controls — per-user/org isolation, encryption, and access control.	☐
-8	Extend to OrgGraph — create interlinked representation of relationships and entities.	☐
+1	Define the Memory Schema — entities (UserProfile, OrgProfile, MemoryEvent, Summary, EmbeddingRef).
+2	Implement Profile Manager — CRUD operations, behavioral preference learning, serialization.
+3	Build Memory Store — persistence layer (SQLite/JSON) with vector retrieval support (Chroma/Qdrant).
+4	Implement Context Retriever — hybrid recall (symbolic + vector) for reasoning sessions.
+5	Add Consolidation Layer — summarization, decay, deduplication, and prioritization rules.
+6	Integrate with Supervisor — inject relevant context into reasoning and planning.
+7	Implement Privacy Controls — per-user/org isolation, encryption, and access control.
+8	Extend to OrgGraph — create interlinked representation of relationships and entities.
 Data Model (Draft)
 {
   "user_profile": {

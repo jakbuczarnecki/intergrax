@@ -78,14 +78,14 @@ The Supervisor must:
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | Define the **Plan Schema** (steps, dependencies, inputs/outputs, conditions, roles). | ☐ |
-| 2 | Implement **Planner**: prompt-guided decomposition with role assignment and step typing. | ☐ |
-| 3 | Implement **Graph Executor**: choose native intergrax executor or LangGraph; support retries, timeouts, and branching. | ☐ |
-| 4 | Implement **Artifact Store** and typed payloads; ensure versioning and citations. | ☐ |
-| 5 | Integrate **Agents** (PM, HR, Accounting, CFO, Director) with RAG/Web tools via MCP. | ☐ |
-| 6 | Add **Governance**: approvals, permissions, redaction, and audit logs. | ☐ |
-| 7 | Build **Evaluation Harness**: golden tasks, assertions, and regression tests. | ☐ |
-| 8 | Provide **FastAPI endpoints** to submit tasks, stream step events, and fetch artifacts. | ☐ |
+| 1 | Define the **Plan Schema** (steps, dependencies, inputs/outputs, conditions, roles).
+| 2 | Implement **Planner**: prompt-guided decomposition with role assignment and step typing.
+| 3 | Implement **Graph Executor**: choose native intergrax executor or LangGraph; support retries, timeouts, and branching.
+| 4 | Implement **Artifact Store** and typed payloads; ensure versioning and citations.
+| 5 | Integrate **Agents** (PM, HR, Accounting, CFO, Director) with RAG/Web tools via MCP.
+| 6 | Add **Governance**: approvals, permissions, redaction, and audit logs.
+| 7 | Build **Evaluation Harness**: golden tasks, assertions, and regression tests.
+| 8 | Provide **FastAPI endpoints** to submit tasks, stream step events, and fetch artifacts.
 
 ---
 

@@ -60,14 +60,14 @@ Supported providers (initial phase):
 
 | Phase | Description | Status |
 |-------|------------|--------|
-| 1 | Define module architecture and audio abstraction layer. | ☐ |
-| 2 | Implement STT provider abstraction with first provider. | ☐ |
-| 3 | Implement TTS provider abstraction and first output channel. | ☐ |
-| 4 | Build `intergraxVoiceAgent` for push-to-talk conversational workflows. | ☐ |
-| 5 | Add realtime streaming (WebRTC/WebSockets). | ☐ |
-| 6 | Expose functionality as an MCP agent tool (`intergraxVoiceTool`). | ☐ |
-| 7 | Integrate with RAG and memory for multi-turn voice conversations. | ☐ |
-| 8 | Benchmark performance, latency, UX behaviour (barge-in, silence detection). | ☐ |
+| 1 | Define module architecture and audio abstraction layer.
+| 2 | Implement STT provider abstraction with first provider.
+| 3 | Implement TTS provider abstraction and first output channel.
+| 4 | Build `intergraxVoiceAgent` for push-to-talk conversational workflows.
+| 5 | Add realtime streaming (WebRTC/WebSockets).
+| 6 | Expose functionality as an MCP agent tool (`intergraxVoiceTool`).
+| 7 | Integrate with RAG and memory for multi-turn voice conversations.
+| 8 | Benchmark performance, latency, UX behaviour (barge-in, silence detection).
 
 ---
 

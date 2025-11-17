@@ -49,14 +49,14 @@ The system will combine static registry data, live online sources, and intellige
 
 | Phase | Description | Status |
 |-------|--------------|--------|
-| 1 | Define the company profile schema (categories, metrics, scoring fields). | ☐ |
-| 2 | Implement core data connectors (CEIDG, KRS, GUS APIs). | ☐ |
-| 3 | Implement social media and web connectors (LinkedIn, Google Places, Facebook). | ☐ |
-| 4 | Develop specialized data-processing agents (ReviewAgent, StrategyAgent). | ☐ |
-| 5 | Create `ProfileSynthesizer` for data unification and validation. | ☐ |
-| 6 | Integrate RAG for contextual enrichment and historical summaries. | ☐ |
-| 7 | Implement `ScoringEngine` and export pipeline to intergrax Platform. | ☐ |
-| 8 | Evaluation, calibration, and benchmarking. | ☐ |
+| 1 | Define the company profile schema (categories, metrics, scoring fields).
+| 2 | Implement core data connectors (CEIDG, KRS, GUS APIs).
+| 3 | Implement social media and web connectors (LinkedIn, Google Places, Facebook).
+| 4 | Develop specialized data-processing agents (ReviewAgent, StrategyAgent).
+| 5 | Create `ProfileSynthesizer` for data unification and validation.
+| 6 | Integrate RAG for contextual enrichment and historical summaries.
+| 7 | Implement `ScoringEngine` and export pipeline to intergrax Platform.
+| 8 | Evaluation, calibration, and benchmarking.
 
 ---
 
