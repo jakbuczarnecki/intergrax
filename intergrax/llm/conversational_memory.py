@@ -62,6 +62,24 @@ class ChatMessage:
         return f"<ChatMessage role={self.role} {extras_str}>"
 
 
+def append_chat_messages(
+        existing: Optional[List[ChatMessage]],
+        new: List[ChatMessage]
+) -> List[ChatMessage]:
+    """
+    Custom reducer for LangGraph state.
+
+    LangGraph calls this function when merging state updates:
+      - `existing`: the current list of messages in the state (may be None)
+      - `new`: the list of messages provided by a node update
+
+    We simply append the new messages to the existing ones.
+    """
+    if existing is None:
+        return list(new)
+    return [*existing, *new]
+
+
 # ============================================================
 # IntergraxConversationalMemory – expanded with get_for_model()
 # ============================================================
