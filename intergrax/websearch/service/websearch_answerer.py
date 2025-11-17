@@ -28,7 +28,7 @@ class WebSearchAnswerer:
         executor: WebSearchExecutor,
         adapter: LLMAdapter,
         context_builder: Optional[WebSearchContextBuilder] = None,
-        answer_language: str = "pl",
+        answer_language: str = "en",
         system_prompt_override: Optional[str] = None,
     ) -> None:
         """
