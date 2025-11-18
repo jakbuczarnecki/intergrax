@@ -2,6 +2,8 @@
 # Integrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+from __future__ import annotations
+
 import hashlib
 import json
 import docx
@@ -10,7 +12,7 @@ import os
 import io
 import base64
 import requests
-from __future__ import annotations
+
 
 from intergrax.multimedia.video_loader import (
     transcribe_to_vtt,
