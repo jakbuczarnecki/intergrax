@@ -5,23 +5,31 @@
 import random
 from intergrax.supervisor.supervisor_components import ComponentContext, ComponentResult, PipelineState, component
 
+
 @component(
-    name="Raport końcowy",
-    description="Tworzy pełne podsumowanie procesu ze wszystkich artefaktów.",
-    use_when="Uruchamiane zawsze na końcu (blok finally).",
-    examples=["Przygotowanie finalnego raportu zadania."],
+    name="Final Report",
+    description="Generates a complete summary of the entire execution pipeline using all collected artifacts.",
+    use_when="Executed always at the final stage (finally block).",
+    examples=["Generate a complete final report of the task."],
     available=True
 )
 def final_summary(state: PipelineState, ctx: ComponentContext) -> ComponentResult:
-    arts = state.get("artifacts", {})
+    artifacts = state.get("artifacts", {})
+
     summary = {
-        "status_pipeline": "terminated" if state.get("terminated") else "completed",
+        "pipeline_status": "terminated" if state.get("terminated") else "completed",
         "terminated_by": state.get("terminated_by"),
-        "terminate_reason": state.get("terminate_reason"),
-        "pm_decision": arts.get("pm_decision"),
-        "pm_notes": arts.get("pm_notes"),
-        "ux_report": arts.get("ux_report"),
-        "financial_report": arts.get("financial_report"),
-        "citations": arts.get("citations"),
+        "termination_reason": state.get("terminate_reason"),
+        "project_manager_decision": artifacts.get("pm_decision"),
+        "project_manager_notes": artifacts.get("pm_notes"),
+        "ux_report": artifacts.get("ux_report"),
+        "financial_report": artifacts.get("financial_report"),
+        "citations": artifacts.get("citations"),
     }
-    return ComponentResult(ok=True, produces={"final_report": summary}, output=summary, logs=["FinalSummary: gotowe."])
+
+    return ComponentResult(
+        ok=True,
+        produces={"final_report": summary},
+        output=summary,
+        logs=["FinalSummary: completed."]
+    )
