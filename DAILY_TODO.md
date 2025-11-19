@@ -16,7 +16,7 @@ Status legend:
 
 
 ## 2025-11-19
-[ ] Implement `WebPageScraper` for structured HTML extraction in `websearch.fetcher`:
+[+] Implement `WebPageScraper` for structured HTML extraction in `websearch.fetcher`:
     - fetch raw HTML
     - extract readable content (readability-lxml style)
     - collect metadata (title, description, og:*, canonical, lang)
