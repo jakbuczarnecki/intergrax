@@ -14,7 +14,7 @@ from intergrax.websearch.schemas.web_document import WebDocument
 from intergrax.websearch.providers.base import WebSearchProvider
 
 from intergrax.websearch.fetcher.http_fetcher import fetch_page
-from intergrax.websearch.fetcher.extractor import extract_basic
+from intergrax.websearch.fetcher.extractor import extract_basic, extract_advanced
 
 from intergrax.websearch.utils.rate_limit import TokenBucket
 from intergrax.websearch.utils.dedupe import simple_dedupe_key
@@ -99,6 +99,8 @@ class SearchAndReadPipeline:
             return None
 
         page = extract_basic(page)
+        page = extract_advanced(page)
+
         if not page.has_content():
             return None
 
