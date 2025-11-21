@@ -14,5 +14,7 @@ wheels/
 notebooks/rag/video
 notebooks/rag/images
 notebooks/rag/chroma_db
+notebooks/drop_in_knowledge_mode/chroma_db
+notebooks/drop_in_knowledge_mode/data
 documents/
 api/chat/rag_app.db
