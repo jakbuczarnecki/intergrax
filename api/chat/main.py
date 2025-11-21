@@ -16,10 +16,6 @@ logging.basicConfig(filename="app.log", level=logging.INFO)
 app = FastAPI()
 
 def _history_pairs_from_db(session_id: str):
-    """
-    Zamienia listę {"role": "...", "content": "..."} z db_utils.get_chat_history
-    na listę par (user_text, assistant_text) w kolejności chronologicznej.
-    """
     raw = get_chat_history(session_id)  # [{'role':'human','content':...}, {'role':'ai','content':...}, ...]
     pairs = []
     buf_user = None
@@ -39,21 +35,18 @@ def chat(query_input: QueryInput):
     model_name = query_input.model.value
     logging.info(f"Session ID: {session_id}, User Query: {query_input.question}, Model: {model_name}")
 
-    # 1) Answerer (+ historia z DB)
     answerer = get_answerer(model_name)
     pairs = _history_pairs_from_db(session_id)
     set_history(answerer, pairs)
 
-    # 2) Zapytanie do RAG
     res = answerer.run(
         query_input.question,
-        where=None,          # tu możesz wstrzyknąć filtry (np. tenant_id)
+        where=None,
         stream=False,
         summarize=False,
     )
     answer = res["answer"]
 
-    # 3) Log do DB
     insert_application_logs(session_id, query_input.question, answer, model_name)
     logging.info(f"Session ID: {session_id}, AI Response: {answer}")
 
@@ -70,14 +63,11 @@ def upload_and_index_document(file: UploadFile = File(...)):
 
     temp_file_path = f"temp_{uuid.uuid4().hex}_{file.filename}"
     try:
-        # zapis pliku na dysk
         with open(temp_file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # zapis rekordu w DB (używamy NAZWY pliku, nie file.file)
         file_id = insert_document_record(file.filename)
 
-        # indeksacja do Chroma przez nasz pipeline (dopisuje metadata['file_id'])
         success = index_document_to_chroma(temp_file_path, file_id)
 
         if success:

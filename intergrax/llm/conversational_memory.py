@@ -11,9 +11,25 @@ import threading
 import uuid
 from dataclasses import dataclass, asdict, field
 from datetime import datetime
-from typing import Literal, List, Optional, Sequence
+from typing import Any, Dict, Literal, List, Optional, Sequence
 
-Role = Literal["system", "user", "assistant", "tool"]
+
+MessageRole = Literal["system", "user", "assistant", "tool"]
+
+
+@dataclass
+class AttachmentRef:
+    """
+    Lightweight reference to an attachment associated with a message or session.
+
+    The actual binary content is stored elsewhere (filesystem, object storage,
+    database BLOB, etc.). Here we only keep stable identifiers and metadata.
+    """
+
+    id: str
+    type: str  # e.g. "pdf", "docx", "image", "audio", "video", "code", "json"
+    uri: str   # e.g. "file://...", "s3://...", "db://attachments/<id>"
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 # ============================================================
@@ -27,12 +43,14 @@ class ChatMessage:
       - tool_call_id  → for single tool calls (from field 'id'),
       - tool_calls    → list of calls (for assistant.tool_calls).
     """
-    role: Role
+    role: MessageRole
     content: str
     created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
     tool_call_id: Optional[str] = None
     name: Optional[str] = None
-    tool_calls: Optional[List[dict]] = None  # new field
+    tool_calls: Optional[List[dict]] = None
+    attachments: List[AttachmentRef] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """
@@ -105,7 +123,7 @@ class IntergraxConversationalMemory:
 
     # --------- Basic in-memory operations ---------
 
-    def add_message(self, role: Role, content: str) -> None:
+    def add_message(self, role: MessageRole, content: str) -> None:
         with self._lock:
             self._messages.append(ChatMessage(role=role, content=str(content)))
             if self._max_messages is not None and len(self._messages) > self._max_messages:
@@ -305,7 +323,7 @@ class IntergraxConversationalMemory:
             else:
                 self._messages.extend(msgs)
 
-    def append_message_to_sqlite(self, db_path: str, role: Role, content: str) -> None:
+    def append_message_to_sqlite(self, db_path: str, role: MessageRole, content: str) -> None:
         """
         Convenience version: append a SINGLE message directly to SQLite (without losing RAM).
         """

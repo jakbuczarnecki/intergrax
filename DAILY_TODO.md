@@ -24,18 +24,7 @@ Status legend:
 
 
 ## 2025-11-20
-[ ] Implement the `UnifiedConversationEngine` — a single entrypoint class responsible for routing user messages through memory, attachments, RAG, web search, and tool execution.
-
-Responsibilities:
-    - ingest message (text or attachment)
-    - embed + index files and conversational context
-    - retrieve context (RAG + memory + web search if enabled)
-    - select and call tools when relevant (OpenAI tools-compatible)
-    - handle streaming responses
-    - persist messages and memory to storage layer (SQLite for now)
-
-Target location:
-    intergrax/chat/unified_engine.py
+[*] Implement the `UnifiedConversationEngine` — a single entrypoint class responsible for routing user messages through memory, attachments, RAG, web search, and tool execution.
 
 
 ---
