@@ -140,5 +140,5 @@ Commercial licensing and partnership opportunities are available upon request.
 
 **Maintainer:** Artur Czarnecki  
 **Repository:** [Intergrax](https://github.com/jakbuczarnecki/intergrax-ai)  
-**Contact:** _(add preferred contact or website)_
+**Contact:** jakbu.czarnecki.83@gmail.com
 
