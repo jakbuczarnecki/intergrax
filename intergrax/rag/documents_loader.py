@@ -164,6 +164,10 @@ class IntergraxDocumentsLoader:
 
         default_map: Dict[str, Callable[[str], object]] = {
             ".txt":  lambda p: TextLoader(p, autodetect_encoding=True),  # autodetect
+            
+            ".md":       lambda p: TextLoader(p, autodetect_encoding=True),
+            ".markdown": lambda p: TextLoader(p, autodetect_encoding=True),
+
             ".docx": lambda p: Docx2txtLoader(p),            
             ".htm":  lambda p: UnstructuredHTMLLoader(p),
             ".html": lambda p: UnstructuredHTMLLoader(p),

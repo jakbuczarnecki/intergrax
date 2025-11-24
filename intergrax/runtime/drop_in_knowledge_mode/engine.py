@@ -27,7 +27,7 @@ import asyncio
 import uuid
 from dataclasses import asdict
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
 from intergrax.runtime.drop_in_knowledge_mode.response_schema import (
@@ -42,7 +42,15 @@ from intergrax.runtime.drop_in_knowledge_mode.session_store import (
     SessionMessage,
     ChatSession,
 )
-from intergrax.llm.conversational_memory import ChatMessage
+from intergrax.llm.conversational_memory import ChatMessage, MessageRole
+from intergrax.runtime.drop_in_knowledge_mode.ingestion import (
+    AttachmentIngestionService,
+    IngestionResult,
+)
+from intergrax.runtime.drop_in_knowledge_mode.attachments import (
+    FileSystemAttachmentResolver,
+)
+
 
 
 class DropInKnowledgeRuntime:
@@ -59,7 +67,7 @@ class DropInKnowledgeRuntime:
       - Append the user message to the session.
       - Build a list of ChatMessage objects representing the conversation
         history (limited by RuntimeConfig).
-      - Call the configured LLM adapter (TODO).
+      - Call the configured LLM adapter.
       - Produce a RuntimeAnswer with the final answer text and metadata.
 
     In later stages this engine will:
@@ -73,9 +81,15 @@ class DropInKnowledgeRuntime:
         self,
         config: RuntimeConfig,
         session_store: SessionStore,
+        ingestion_service: Optional[AttachmentIngestionService] = None,
     ) -> None:
         self._config = config
         self._session_store = session_store
+        self._ingestion_service = ingestion_service or AttachmentIngestionService(
+            resolver=FileSystemAttachmentResolver(),
+            embedding_manager=config.embedding_manager,
+            vectorstore_manager=config.vectorstore_manager,
+        )
 
 
     async def ask(self, request: RuntimeRequest) -> RuntimeAnswer:
@@ -102,6 +116,17 @@ class DropInKnowledgeRuntime:
                 tenant_id=request.tenant_id or self._config.tenant_id,
                 workspace_id=request.workspace_id or self._config.workspace_id,
                 metadata=request.metadata,
+            )
+
+        # 1a. If there are attachments in the request, ingest them into RAG
+        ingestion_results: List[IngestionResult] = []
+        if request.attachments:
+            ingestion_results = await self._ingestion_service.ingest_attachments_for_session(
+                attachments=request.attachments,
+                session_id=session.id,
+                user_id=request.user_id,
+                tenant_id=session.tenant_id,
+                workspace_id=session.workspace_id,
             )
 
         # 2. Append user message
@@ -139,19 +164,41 @@ class DropInKnowledgeRuntime:
         )
         await self._session_store.append_message(session.id, assistant_session_msg)
 
+        debug_trace: Dict[str, Any] = {
+            "history_length": len(history),
+            "session_id": session.id,
+            "user_id": session.user_id,
+            "config": {
+                "llm_label": self._config.llm_label,
+                "embedding_label": self._config.embedding_label,
+                "vectorstore_label": self._config.vectorstore_label,
+            },
+        }
+
+        if ingestion_results:
+            debug_trace["ingestion"] = [
+                {
+                    "attachment_id": r.attachment_id,
+                    "attachment_type": r.attachment_type,
+                    "num_chunks": r.num_chunks,
+                    "vector_ids_count": len(r.vector_ids),
+                    "metadata": r.metadata,
+                }
+                for r in ingestion_results
+            ]
+
         # 6. Build and return RuntimeAnswer
         route_info = RouteInfo(
-            used_rag=False,
+            used_rag=bool(ingestion_results) and self._config.enable_rag,
             used_websearch=False,
             used_tools=False,
             used_long_term_memory=False,
             used_user_profile=self._config.enable_user_profile_memory,
-            strategy="simple_placeholder",
+            strategy="llm_only_with_ingestion" if ingestion_results else "llm_only",
             extra={},
         )
 
         stats = RuntimeStats(
-            # Token information will be filled once LLM integration is in place.
             total_tokens=None,
             input_tokens=None,
             output_tokens=None,
@@ -169,17 +216,9 @@ class DropInKnowledgeRuntime:
             tool_calls=[],
             stats=stats,
             raw_model_output=None,
-            debug_trace={
-                "history_length": len(history),
-                "session_id": session.id,
-                "user_id": session.user_id,
-                "config": {
-                    "llm_label": self._config.llm_label,
-                    "embedding_label": self._config.embedding_label,
-                    "vectorstore_label": self._config.vectorstore_label,
-                },
-            },
+            debug_trace=debug_trace,
         )
+    
 
     def ask_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
         """
@@ -201,19 +240,18 @@ class DropInKnowledgeRuntime:
         """
         Construct a SessionMessage from a RuntimeRequest.
 
-        For now, attachments from `request.attachments` are not transformed
-        into AttachmentRef objects yet. This will be handled in a dedicated
-        ingestion pipeline in a later step.
+        Attachments from `request.attachments` are stored directly in the
+        `attachments` field, so that the session fully represents what
+        the user has provided (text + files).
         """
         return SessionMessage(
             id=str(uuid.uuid4()),
             role="user",  # MessageRole; kept as a literal for compatibility
             content=request.message,
             created_at=datetime.now(timezone.utc),
-            attachments=[],
+            attachments=list(request.attachments),
             metadata={
                 "runtime_request_metadata": request.metadata,
-                "attachment_placeholders": list(request.attachments),
             },
         )
 

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+from intergrax.llm.conversational_memory import AttachmentRef
 
 
 @dataclass
@@ -101,6 +102,8 @@ class RuntimeRequest:
     user_id: str
     session_id: str
     message: str
+
+    attachments: List[AttachmentRef] = field(default_factory=list),
 
     # Optional tenant/workspace scoping
     tenant_id: Optional[str] = None
