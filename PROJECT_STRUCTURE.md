@@ -66,6 +66,15 @@ This document was generated automatically by the Intergrax Project Structure Doc
 - `intergrax\rag\re_ranker.py`
 - `intergrax\rag\vectorstore_manager.py`
 - `intergrax\rag\windowed_answerer.py`
+- `intergrax\runtime\__init__.py`
+- `intergrax\runtime\drop_in_knowledge_mode\__init__.py`
+- `intergrax\runtime\drop_in_knowledge_mode\attachments.py`
+- `intergrax\runtime\drop_in_knowledge_mode\config.py`
+- `intergrax\runtime\drop_in_knowledge_mode\context_builder.py`
+- `intergrax\runtime\drop_in_knowledge_mode\engine.py`
+- `intergrax\runtime\drop_in_knowledge_mode\ingestion.py`
+- `intergrax\runtime\drop_in_knowledge_mode\response_schema.py`
+- `intergrax\runtime\drop_in_knowledge_mode\session_store.py`
 - `intergrax\supervisor\__init__.py`
 - `intergrax\supervisor\supervisor.py`
 - `intergrax\supervisor\supervisor_components.py`
@@ -105,10 +114,19 @@ This document was generated automatically by the Intergrax Project Structure Doc
 - `intergrax\websearch\utils\rate_limit.py`
 - `main.py`
 - `mcp\__init__.py`
+- `notebooks\drop_in_knowledge_mode\01_basic_memory_demo.ipynb`
+- `notebooks\drop_in_knowledge_mode\02_attachments_ingestion_demo.ipynb`
+- `notebooks\drop_in_knowledge_mode\03_rag_context_builder_demo.ipynb`
+- `notebooks\langgraph\hybrid_multi_source_rag_langgraph.ipynb`
+- `notebooks\langgraph\simple_llm_langgraph.ipynb`
+- `notebooks\langgraph\simple_web_research_langgraph.ipynb`
 - `notebooks\openai\rag_openai_presentation.ipynb`
+- `notebooks\rag\chat_agent_presentation.ipynb`
+- `notebooks\rag\output_structure_presentation.ipynb`
 - `notebooks\rag\rag_custom_presentation.ipynb`
 - `notebooks\rag\rag_multimodal_presentation.ipynb`
 - `notebooks\rag\rag_video_audio_presentation.ipynb`
+- `notebooks\rag\tool_agent_presentation.ipynb`
 - `notebooks\supervisor\supervisor_test.ipynb`
 - `notebooks\websearch\websearch_presentation.ipynb`
 
@@ -116,1353 +134,1612 @@ This document was generated automatically by the Intergrax Project Structure Doc
 
 ### `api\__init__.py`
 
-DESCRIPTION: The `__init__.py` file serves as the entry point for the Intergrax API, responsible for initializing and exposing its functionality to other modules.
+DESCRIPTION: This is the entry point for the API, responsible for initializing and setting up the application's routes and services.
 
-DOMAIN: API initialization
+DOMAIN: API configuration
 
 KEY RESPONSIBILITIES:
-* Imports necessary components from the Intergrax framework
-* Initializes and sets up the API's main configuration and context
-* Exposes key API endpoints and services for use by other parts of the application
+- Initializes the API application instance
+- Sets up routing and URL handling mechanisms
+- Configures service registration and injection
 
 ### `api\chat\__init__.py`
 
-Description: This is the entry point for the chat API module, responsible for initializing and configuring the chat functionality.
+**api/chat/__init__.py**
 
-Domain: API/Chat Initialization
+Description: This module initializes and sets up the chat API, including importing necessary components and registering them with the framework.
+
+Domain: Chat API Initialization
 
 Key Responsibilities:
-* Initializes the chat API module
-* Sets up necessary configurations and dependencies
-* Exposes APIs for interacting with the chat service 
-
-Note: The file appears to be a standard __init__.py file in a Python package, indicating it's part of the project's structure rather than experimental or auxiliary.
+- Imports required modules and sub-packages for the chat API
+- Registers the chat API components with the Intergrax framework
 
 ### `api\chat\main.py`
 
-**Description:** This module provides the main entry point for the Integrax chat API, handling user queries and document management.
+**Description:** This module is responsible for handling chat-related functionality within the Integrax framework. It defines a FastAPI application with endpoints for initiating conversations, uploading and indexing documents, listing existing documents, and deleting documents.
 
-**Domain:** LLM adapters / RAG logic
+**Domain:** Chat API
 
 **Key Responsibilities:**
+- Provides a RESTful API for user-machine interactions through the `/chat` endpoint.
+- Allows users to upload and index documents into Chroma using the `/upload-doc` endpoint.
+- Offers functionality to list all uploaded documents via the `/list-docs` endpoint.
+- Enables document deletion through the `/delete-doc` endpoint.
 
-* Handles incoming user queries through the `/chat` endpoint
-	+ Retrieves history from database
-	+ Passes query to answerer (LLM)
-	+ Logs result in database
-* Manages document upload, indexing, and deletion
-	+ Handles file upload and validation
-	+ Indexes documents into Chroma using custom pipeline
-	+ Deletes documents from Chroma and database
-
-**Note:** This module appears to be part of the main API logic, with clear responsibilities for handling user queries and managing documents.
+This module appears to be a core component of the Integrax framework, providing essential functionality for user interaction.
 
 ### `api\chat\tools\__init__.py`
 
-Description: This module initializes the tools package within the API chat module, providing a entry point for tool-related functionality.
+Description: This module initializes and sets up the tools namespace within the chat API, providing a foundation for various utility functions to be imported and used.
 
-Domain: Utility Modules
+Domain: LLM Adapters/Tools Utilities
 
 Key Responsibilities:
-* Initializes the tools package and its submodules
-* Provides a registry for registering new tools
-* Sets up tool-related configuration and dependencies
+• Initializes the tools namespace
+• Sets up the tooling infrastructure for the chat API 
+• Imports necessary utility modules
 
 ### `api\chat\tools\chroma_utils.py`
 
-**Description:** This module provides utility functions for interacting with Chroma, a vector store used in the Integrax framework for RAG (Retrieval-Augmented Generation) logic.
+**Description:** This module provides tools for interacting with the Chroma database, allowing for document indexing, deletion, and management.
 
-**Domain:** RAG Logic
+**Domain:** RAG (Recurrent Attention Graph) logic
 
 **Key Responsibilities:**
-- Loads and splits documents from a given file path.
-- Indexes a document to Chroma using a provided file path and ID.
-- Deletes a document from Chroma by its file ID.
-
-**Notes:** The functions in this module appear to be part of the main framework codebase, suggesting they are not experimental or auxiliary.
+- Load and split documents from a file path
+- Index a document to the Chroma vector store
+- Delete a document by its ID from the Chroma database
 
 ### `api\chat\tools\db_utils.py`
 
-**Description:** This module provides utilities for interacting with a SQLite database, specifically for managing chat sessions and documents. It includes functions for creating the database schema, migrating data from legacy formats, and inserting/retrieving messages and document records.
+**Description:** This module provides a set of utilities for interacting with the Integrax framework's database, including schema creation and migration, message insertion and retrieval, and document management.
 
-**Domain:** Data Ingestion & Storage
+**Domain:** Database Utilities (RAG logic & Data Ingestion)
 
 **Key Responsibilities:**
 
-* Creating and populating the SQLite database schema
-* Migrating data from legacy application logs to the new message format
-* Inserting and retrieving messages (with support for multiple roles and models)
-* Inserting and retrieving document records, with optional metadata
-* Providing backward-compatible entry points for legacy code
-* Maintaining database connection management and transactional integrity
+* Schema creation and migration using SQLite
+* Message insertion and retrieval for user, assistant, system, and tool roles
+* Document insertion and deletion with metadata storage
+* Backward-compatibility entry points for application logs (now redundant)
+* Public API for messages and documents
 
 ### `api\chat\tools\pydantic_models.py`
 
-**Description:** This module provides data models for API requests and responses using the Pydantic library.
+**Description:** This module defines data models using Pydantic for serializing and deserializing API request and response objects in the chat application.
 
-**Domain:** API/Chat Tools
+**Domain:** LLM adapters
 
 **Key Responsibilities:**
-- Defines model classes for querying input, response, document information, and deleting files
-- Utilizes Pydantic's BaseModel and Field features for robust data modeling and validation
+
+* Defines enums for model names (e.g., LLAMA 3.1, GPT-OSS 20B)
+* Creates Pydantic models for:
+	+ Query input data (question, session ID, model selection)
+	+ Query response data (answer, session ID, used model)
+	+ Document metadata (ID, filename, upload timestamp)
+	+ Delete file request data (file ID)
 
 ### `api\chat\tools\rag_pipeline.py`
 
-**Description:** This file contains utility functions for the RAG pipeline in the Integrax framework, including lazy-loading singletons and retrieval of vectorstore and embedding managers.
+**Description:** This module provides utilities and singletons for the RAG (Retriever-Augmented Generator) pipeline in the Integrax framework, including vector store management, embedding manager, retriever, reranker, and answerer instances.
 
-**Domain:** RAG logic
+**Domain:** RAG logic / Pipeline tools
 
 **Key Responsibilities:**
 
-* Lazy-load singleton instances of IntergraxVectorstoreManager and IntergraxEmbeddingManager
-* Retrieve instances of these managers using lazy-loading functions (_get_vectorstore(), _get_embedder())
-* Define default user and system prompts for the RAG pipeline
-* Define utility functions for building LLM adapters and retrieving vectorstore/embedding managers
-
-**Notes:** The file appears to be a utility module, providing essential functions for the RAG pipeline in the Integrax framework. It does not seem experimental or auxiliary.
+* Provides singleton instances of vector store, embedder, retriever, reranker, and answerer
+* Offers methods for getting these instances (_get_vectorstore, _get_embedder, _get_retriever, _get_reranker)
+* Defines the default user prompt and system prompt templates for interacting with the RAG pipeline
+* Allows building LLM adapters using the `_build_llm_adapter` function
 
 ### `applications\chat_streamlit\api_utils.py`
 
-**Description:** This module provides Streamlit application utility functions for interacting with the Intergrax framework's API, including making HTTP requests to manage documents and chats.
+**Description:** This module provides utility functions for interacting with the API endpoints of the Integrax framework, including sending requests, uploading and managing documents.
 
-**Domain:** Chat Application API Utilities
+**Domain:** Data Ingestion / File Management
 
 **Key Responsibilities:**
-* Making POST requests to send chat messages to the API
-* Handling API responses and errors
-* Uploading files to the API
-* Listing available documents in the API
-* Deleting documents from the API
+
+* Provides a function to get an API endpoint URL based on a given name
+* Functionality to send POST requests to the chat endpoint with JSON data
+* Function to upload files using HTTP POST request
+* Function to list uploaded documents by sending a GET request to the list-docs endpoint
+* Function to delete documents by sending a POST request to the delete-doc endpoint
 
 ### `applications\chat_streamlit\chat_interface.py`
 
-Description: This module provides a Streamlit-based interface for interacting with the chatbot, including displaying messages and generating responses.
+**Description:** This module provides a Streamlit interface for interacting with the chat functionality, allowing users to input queries and receive responses.
 
-Domain: Chat Interface
+**Domain:** RAG logic (Chat Interface)
 
-Key Responsibilities:
-- Displays user and assistant messages in a chat interface
-- Handles user input through a text input field
-- Sends API requests to generate responses
-- Updates session state with received response data
+**Key Responsibilities:**
+* Initializes and displays a chat interface using Streamlit
+* Handles user input via `st.chat_input` and appends it to the message list
+* Sends API requests for responses using `get_api_response`
+* Updates the session state with response data, including session ID and generated answer
+* Displays error messages when API requests fail
 
 ### `applications\chat_streamlit\sidebar.py`
 
-**Description:** This module provides a Streamlit-based user interface for interacting with the Integrax framework, including model selection, document upload, listing uploaded documents, and deletion of selected documents.
+**Description:** This module provides a Streamlit sidebar for interacting with the Intergrax framework's API, including model selection, document upload, listing, and deletion.
 
-**Domain:** Chat Interface
+**Domain:** Chat Interface Utilities
 
 **Key Responsibilities:**
-
-* Provides a Streamlit sidebar for model selection
-* Enables document upload via file uploader and upload button
-* Displays list of uploaded documents and allows refreshing the list
-* Allows deleting selected documents from the uploaded documents list
+- Provides a model selection dropdown in the Streamlit sidebar.
+- Allows users to upload documents via the sidebar file uploader.
+- Lists uploaded documents with their IDs and timestamps.
+- Enables deleting selected documents from the list.
 
 ### `applications\chat_streamlit\streamlit_app.py`
 
-**Description:** This file implements the Streamlit application for the Intergrax RAG Chatbot, providing a user interface with a sidebar and chat interface.
+**Description:** This module implements the user interface for a chatbot application using Streamlit, integrating a sidebar and chat interface.
 
-**Domain:** Frontend/Chat Interface
+**Domain:** RAG logic (chatbot)
 
 **Key Responsibilities:**
-- Initializes the Streamlit session state
-- Displays the sidebar using the `display_sidebar` function from `sidebar.py`
-- Displays the chat interface using the `display_chat_interface` function from `chat_interface.py`
-- Sets up default values for session state variables if not already initialized
+* Initializes the Streamlit app with title "intergrax RAG Chatbot"
+* Sets default state values for messages and session ID
+* Displays the sidebar and chat interface
+
+Note: The code appears to be part of a larger framework, possibly still under development or not fully documented.
 
 ### `applications\company_profile\__init__.py`
 
-Description: This module initializes and configures the company profile application.
-Domain: Application Configuration
+DESCRIPTION: This module initializes and configures the company profile application, setting up its components and dependencies.
 
-Key Responsibilities:
-• Initializes the company profile application context
-• Configures application-wide settings
-• Establishes database connections for company data storage
+DOMAIN: Application Initialization
+
+KEY RESPONSIBILITIES:
+* Initializes the CompanyProfile application instance
+* Configures application-wide settings and constants
+* Registers necessary modules and services for the application
+* Sets up dependency injection for the application's components
 
 ### `applications\figma_integration\__init__.py`
 
-Description: This module serves as the entry point for the Figma integration, facilitating interactions between Intergrax and Figma.
+**Description:** This module serves as the entry point and interface for the Figma integration with the Intergrax framework.
 
-Domain: Integration modules
+**Domain:** Integration Utilities
 
-Key Responsibilities:
-- Initializes the Figma integration module
-- Provides access to Figma APIs
-- Manages authentication with Figma services
+**Key Responsibilities:**
+* Initializes the Figma integration
+* Exposes methods for interacting with Figma APIs
+* Sets up connections between Figma and other Intergrax components
 
 ### `applications\ux_audit_agent\__init__.py`
 
-Description: This module initializes the UX Audit Agent application, defining its entry point and setting up necessary dependencies.
+DESCRIPTION: The __init__.py file is a special Python file that serves as the entry point for the ux_audit_agent application.
 
-Domain: Application Initialization / Agents
+DOMAIN: Agents
 
-Key Responsibilities:
-* Initializes the UX Audit Agent application
-* Sets up required dependencies for the agent's functionality
-* Defines the main entry point for the application
+KEY RESPONSIBILITIES:
+• Initializes the audit agent application.
+• Defines the main entry points and interfaces for the application.
+• Possibly contains metadata or configuration for the agent.
 
 ### `applications\ux_audit_agent\components\__init__.py`
 
-Description: This module serves as the entry point for the UX audit agent's components, responsible for initializing and registering necessary modules.
+DESCRIPTION: This module initializes the UX audit agent components, handling setup and configuration for various tasks.
 
-Domain: Agents
+DOMAIN: Agents
 
-Key Responsibilities:
-• Initializes component modules
-• Registers components with the agent framework
+KEY RESPONSIBILITIES:
+• Initializes component modules within the UX audit agent.
+• Provides a central entry point for component registration.
+• Handles configuration and setup for downstream tasks.
 
 ### `applications\ux_audit_agent\components\compliance_checker.py`
 
-**Description:** This module implements a compliance checker component for the Integrax framework, responsible for verifying if changes are in line with privacy policies and regulations.
+**Description:** This module provides a policy and privacy compliance checker, which evaluates proposed changes against the privacy policy and regulations.
 
-**Domain:** RAG (Risk-Assessment-Governance) logic
+**Domain:** RAG logic (Regulatory Audit and Governance)
 
 **Key Responsibilities:**
-
-* Verifies compliance of changes with privacy policies and regulations
-* Returns findings on policy violations and requires DPO review
-* Can be used to assess the conformity of UX changes with policies and regulations (mock implementation)
-* Produces a ComponentResult object containing compliance findings, logs, and meta information
-
-**Note:** This file appears to be a part of the Integrax framework's core functionality.
+- Evaluates proposed UX changes for compliance with privacy policy and regulations.
+- Simulates compliance result with an 80% chance of being compliant.
+- Generates findings on policy violations, requires DPO review, and notes for non-compliant scenarios.
+- Stops execution if non-compliant, requiring corrections or DPO review.
 
 ### `applications\ux_audit_agent\components\cost_estimator.py`
 
-**Description:** This module provides a cost estimation component for the UX audit process, utilizing mock data to calculate an estimated cost based on identified issues.
+**Description:** This module defines a cost estimation agent that provides a mock calculation for the estimated cost of UX-related changes based on an audit report. The agent is registered as a component in the Integrax framework.
 
 **Domain:** RAG logic
 
 **Key Responsibilities:**
-
-* Provides a cost estimation function using mock data
-* Utilizes random import (although not used in this specific code snippet)
-* Registers the cost estimator component with the supervisor using the `@component` decorator
-* Returns a ComponentResult object containing the estimated cost, currency, and calculation method
+- Provides a mock pricing model to estimate the cost of UX updates.
+- Retrieves the audit report from the pipeline state and extracts issues.
+- Calculates the estimated cost based on the number of issues found.
+- Returns a ComponentResult with the estimated cost, currency, and method used.
 
 ### `applications\ux_audit_agent\components\final_summary.py`
 
-**applications\ux_audit_agent\components\final_summary.py**
+**Description:** This module defines a component for generating a final report of the execution pipeline, including collected artifacts.
 
-Description: This module defines a final summary component for the Integrax framework, responsible for generating a comprehensive report at the end of a process.
+**Domain:** RAG (Results, Analysis, and Governance) logic
 
-Domain: RAG logic (Report, Action, Gap)
-
-Key Responsibilities:
-- Generates a final report by collecting all relevant artifacts.
-- Provides a structured summary including pipeline status, termination reason, and related reports.
-- Returns a ComponentResult with the generated summary as output.
+**Key Responsibilities:**
+- Generates a complete summary of the entire execution pipeline using all collected artifacts.
+- Produces a "final_report" with relevant details such as pipeline status, terminated reason, project manager decision, and citations.
 
 ### `applications\ux_audit_agent\components\financial_audit.py`
 
-**Description:** This module defines a component for generating financial reports and VAT calculations as part of the Integrax framework's audit agent.
+**Description:** This module provides a component for generating mock financial reports and VAT calculations, which can be used in testing environments. The component is designed to simulate realistic financial data and computations.
 
-**Domain:** Financial Audit Agent
+**Domain:** Financial Agent
 
 **Key Responsibilities:**
-- Defines a 'Finansowy Agent' component with example usage and test data.
-- Generates a mock financial report with calculated values (netto, VAT, brutto) and budget data.
-- Exposes this data through the `ComponentResult` object.
+
+* Generates mock financial reports with test data
+* Calculates VAT amounts based on predefined rates
+* Provides example use cases for testing financial computations and budget constraints
+* Returns a ComponentResult object containing the generated report and logs
 
 ### `applications\ux_audit_agent\components\general_knowledge.py`
 
-Description: This module provides a component for handling general knowledge questions about the Intergrax system and its architecture.
+**Description:** This module provides a general knowledge component for the Intergrax system, answering questions about its modules, architecture, and documentation.
+**Domain:** LLM adapters
+**Key Responsibilities:**
+- Provides answers to general questions about the Intergrax system's structure, features, or configuration.
+- Uses predefined examples of such questions as input.
+- Returns mock knowledge responses, including citations and logs.
 
-Domain: RAG logic
-
-Key Responsibilities:
-- Provides an answer to general knowledge questions about the Intergrax system.
-- Returns citations in the form of fake documentation pages.
+Note: The file appears to be part of a larger, proprietary framework (Intergrax), with clear licensing restrictions.
 
 ### `applications\ux_audit_agent\components\project_manager.py`
 
-Here is the documentation for the provided file:
+**Description:** This module implements a project manager component for UX audit pipelines in the Integrax framework. It simulates a PM's decision based on random mock scenarios.
 
-**Description:** This module implements a project management component that randomly accepts or rejects UX reports based on certain conditions.
-
-**Domain:** RAG logic (Risk, Action, and Governance)
+**Domain:** LLM adapters/RAG logic (UX Audit)
 
 **Key Responsibilities:**
 
-* Randomly accept or reject UX reports
-* Generate notes for accepted or rejected decisions
-* Produce a decision and corresponding notes as output
-* Log the decision and reason for rejection if applicable
+* Provides a Project Manager component to simulate approval or rejection of UX reports
+* Generates mock decisions with accompanying notes and logs
+* Allows for pipeline execution to be stopped if the project manager rejects the proposal
 
 ### `applications\ux_audit_agent\components\ux_audit.py`
 
-Description: This module provides a UX audit component for the Integrax framework, which analyzes user interface designs and generates a sample report with recommendations.
+**Description:** This module provides a UX audit component for the Integrax framework, which analyzes Figma mockups and generates sample reports with recommendations.
+
+**Domain:** LLM adapters
+
+**Key Responsibilities:**
+
+* Provides a UX audit component that can be used in pipeline analysis
+* Performs UX audit based on Figma mockups
+* Generates sample report with recommendations
+* Returns a `ComponentResult` object with the generated report and other metadata
+
+### `applications\ux_audit_agent\UXAuditTest.ipynb`
+
+**Description:** This Jupyter Notebook file, `UXAuditTest.ipynb`, contains a step-by-step process for performing a UX audit on FIGMA mockups. The notebook outlines the tasks involved in conducting the audit, verifying changes comply with company policy, preparing a summary report for Project Manager, evaluating financial impact of changes, and finally, project continuation.
+
+**Domain:** RAG (Risk, Assessment, Governance) logic
+
+**Key Responsibilities:**
+- Perform UX audit on FIGMA mockups
+- Verify changes comply with company policy using Policy & Privacy Compliance Checker tool
+- Prepare summary report for Project Manager using Final Report component
+- Evaluate financial impact of changes using Cost Estimation Agent
+- Project Manager decision and project continuation
+- Final report preparation and synthesis
+
+**Note:** This file appears to be part of the Integrax framework's RAG logic, providing a structured process for UX audit and related tasks.
+
+### `generate_project_overview.py`
+
+**Description:** This module generates a Markdown file containing an overview of the Intergrax project structure. It recursively scans the project directory, collects relevant files, and uses Large Language Models (LLM) to generate summaries for each file.
+
+**Domain:** Project Structure Documentation Generator
+
+**Key Responsibilities:**
+
+* Recursively scan the project directory to collect source files
+* Filter excluded directories and files based on configurable settings
+* Use LLM adapters to generate summaries for each file
+* Generate a Markdown file containing a structured overview of the project layout
+* Provide a blueprint for architectural decision-making and context for LLM agents
+
+### `intergrax\__init__.py`
+
+DESCRIPTION:
+This is the top-level initialization module for the Intergrax framework, responsible for setting up the overall structure and importing necessary components.
+
+DOMAIN: Framework Initialization
+
+KEY RESPONSIBILITIES:
+• Initializes the Intergrax framework by defining its namespace and package structure.
+• Imports other essential modules and sub-packages required for the framework's functionality.
+• Sets up any initial configuration or logging mechanisms.
+
+### `intergrax\chains\__init__.py`
+
+Description: The `__init__.py` file serves as the entry point for the Intergrax chains module, defining its namespace and imports.
+
+Domain: Chain management
+
+Key Responsibilities:
+- Defines the top-level interface for working with chains in Intergrax.
+- Imports and exposes chain-related functionality to other parts of the framework.
+
+### `intergrax\chains\langchain_qa_chain.py`
+
+Description: This module provides a flexible QA chain builder for LangChain-based applications, enabling the integration of various components such as RAG retrievers, re-rankers, prompt builders, and LLM models.
 
 Domain: LLM adapters / RAG logic
 
 Key Responsibilities:
-- Performs UX analysis on Figma mocks or prototypes.
-- Generates a sample report with summary, problems, recommendations, and estimated cost.
-- Includes example use cases and descriptions for the audit component.
-
-### `applications\ux_audit_agent\UXAuditTest.ipynb`
-
-**Description:** This Jupyter Notebook file, UXAuditTest.ipynb, appears to be a test script for the Integrax framework's UX Audit Agent. It contains various steps and logic for auditing user experiences.
-
-**Domain:** RAG logic (Retrieval-Aggregation-Generation)
-
-**Key Responsibilities:**
-
-* Executing UX audit tasks using specialized tools and components
-* Verifying changes in a list of modifications
-* Preparing reports
-* Estimating costs of changes
-* Synthesizing results
-
-Note: This file seems to be part of the Integrax framework's development or testing process, as it includes experimental warnings and notes about missing inputs. The content suggests that this is an auxiliary or test script rather than a production-ready module.
-
-### `generate_project_overview.py`
-
-**Description:** This module generates a Markdown file summarizing the project structure of the Intergrax framework.
-
-**Domain:** Configuration and Documentation Generation
-
-**Key Responsibilities:**
-
-- Recursively scans the project directory for relevant files (Python, Jupyter Notebooks, configurable).
-- Collects metadata and content from each file.
-- Sends file content + metadata to an LLM adapter (LangChainOllamaAdapter) for summarization.
-- Generates a structured summary for each file, including purpose, domain, responsibilities.
-- Assembles the summaries into a Markdown document describing the entire project layout.
-- Writes the generated document to disk at a specified output path.
-
-Note: The module appears to be well-documented and functional. It does not exhibit characteristics of experimental, auxiliary, legacy, or incomplete code.
-
-### `intergrax\__init__.py`
-
-DESCRIPTION: 
-This is the main entry point and package initializer for the Intergrax framework.
-
-DOMAIN: Package Initialization
-
-KEY RESPONSIBILITIES:
-• Initializes the Intergrax package with necessary imports and setup.
-• Defines package-wide constants and configuration.
-
-### `intergrax\chains\__init__.py`
-
-DESCRIPTION: This is the entry point for Intergrax's chain modules, handling imports and setup.
-
-DOMAIN: Chain Management
-
-KEY RESPONSIBILITIES:
-• Initializes chain module imports
-• Sets up chain-specific configurations and environments
-• Provides a central registry for chains to register their functionality
-
-### `intergrax\chains\langchain_qa_chain.py`
-
-**Description:** 
-This file implements a flexible QA chain based on the LangChain framework, allowing for hooks to modify data at various stages of processing.
-
-**Domain:** RAG logic (Retrieval-Augmented Generation)
-
-**Key Responsibilities:**
-
-* Builds a QA chain with hooks for modifying data at different stages
-* Supports retrieval, re-ranking, and generation using LangChain
-* Configurable via `IntergraxChainConfig` object
-* Provides input/output formats for questions and answers
-
-Note: There is no indication that this file is experimental, auxiliary, legacy, or incomplete.
+- Builds a QA chain with customizable components (RAG retriever, reranker, prompt builder, LLM model)
+- Allows for hooks to modify data at various stages of the chain
+- Supports input filtering using the "where" parameter
+- Returns a LangChain Runnable object that can be used for invoking or asynchronous invocation
+- Includes default prompt builder and configurable options for building context and citations
 
 ### `intergrax\chat_agent.py`
 
-**Description:** The `intergrax.chat_agent` module provides a chat agent that routes user questions to various LLM-based components, including RAG endpoints and tools. It handles memory management, streaming, and structured output.
+**Description:** This module defines a chat agent API that integrates multiple components to provide a unified interface for various tasks. It utilizes LLM adapters, RAG logic, and tool registry to perform routing decisions, execute RAG requests, and handle general inquiries.
 
-**Domain:** LLM (Large Language Model) adapters and routing logic
+**Domain:** Chat Agent / Routing
 
 **Key Responsibilities:**
 
-* Routing user questions to LLM-based components using an LLM router
-* Managing conversational memory and storing user questions
-* Executing RAG endpoints and tools based on the routed component
-* Handling streaming and structured output
-* Providing a stable result shape with answer, tool traces, sources, summary, messages, output structure, stats, route, and rag component
+*   Provides a unified API for different chat-related tasks
+*   Utilizes LLM adapters for routing decisions based on descriptions and tools enabled flag
+*   Supports execution of RAG (ReAdamining Generator) requests with multiple options
+*   Handles general inquiries using the base LLM without external tools or vector stores
+*   Integrates tool registry to perform live, actionable operations
+*   Offers configurable settings for chat agent behavior
 
 ### `intergrax\llm\__init__.py`
 
-DESCRIPTION: The `__init__.py` file is the entry point for the LLM adapters in the Intergrax framework, responsible for initializing and exposing adapter functionality.
+FILE PATH:
+intergrax\llm\__init__.py
 
-DOMAIN: LLM adapters
+Description: The LLM adapters package initializer, responsible for loading and configuring language model adapters.
+Domain: LLM Adapters
 
-KEY RESPONSIBILITIES:
-- Initializes LLM adapter modules
-- Exposes adapter interfaces for external use
+Key Responsibilities:
+- Loads available LLM adapters from disk
+- Configures adapter settings
+- Exposes adapters to the main application
 
 ### `intergrax\llm\conversational_memory.py`
 
-**Description:** This module provides a universal conversation memory that keeps track of chat messages in RAM and allows saving/loading to files (JSON/NDJSON) or SQLite. It supports filtering messages for sending to LLMs/adapters.
+**Description:** This module provides utilities and classes for handling conversational memory in the Intergrax framework. It includes data structures for representing chat messages and a class for managing conversation history.
 
-**Domain:** Conversation Memory
+**Domain:** LLM adapters / Conversational Memory
 
 **Key Responsibilities:**
 
-* Keeping track of chat messages in RAM
-* Saving/loading to files (JSON/NDJSON)
-* Saving/loading to SQLite
-* Filtering messages for sending to LLMs/adapters
-* Providing methods for adding, extending, and clearing the conversation memory
-* Converting conversation memory to a format compatible with OpenAI Responses API / ChatCompletions
+*   Provides a `ChatMessage` dataclass to represent universal chat messages with various fields (e.g., role, content, created_at).
+*   Offers an `IntergraxConversationalMemory` class to manage conversation history in memory and persist it to files or SQLite.
+*   Implements methods for adding, extending, retrieving, and clearing conversation history.
+*   Includes save/load functionality for conversation history from JSON/NDJSON files or SQLite database.
+*   Provides filtering capabilities for OpenAI/Ollama responses and other native tools.
 
 ### `intergrax\llm\llm_adapters_legacy.py`
 
-**Description:** This module provides a universal interface for LLM (Large Language Model) adapters and implementations of specific LLM adapters, including OpenAI Chat Completions.
+**Description:** This module defines a set of adapters and utilities for interacting with Large Language Models (LLMs), specifically OpenAI's Chat Completions API.
 
-**Domain:** LLM Adapters
+**Domain:** LLM adapters
 
 **Key Responsibilities:**
 
-* Defines the `LLMAdapter` protocol with methods for generating and streaming messages
-* Provides concrete adapter implementations, such as `OpenAIChatCompletionsAdapter`
-* Includes helper functions for mapping chat messages to OpenAI schema and converting between different structured output formats
-* Supports tools (optional) and provides a way to validate structured output with Pydantic models
+* Defines the `LLMAdapter` protocol, which specifies the interface for all LLM adapters
+* Provides the `OpenAIChatCompletionsAdapter` class, a concrete implementation of an LLM adapter for interacting with OpenAI's Chat Completions API
+* Includes utilities for:
+	+ Converting chat messages to the format required by the OpenAI API
+	+ Generating and streaming responses from the LLM
+	+ Handling tools (optional) for more complex interactions
+
+Note: This file appears to be a part of the main codebase, with no clear indicators of being experimental or auxiliary.
 
 ### `intergrax\llm_adapters\__init__.py`
 
-Description: This module serves as the entry point for LLM adapters in Intergrax, providing a registry and default adapter registrations.
+Description: This module serves as the entry point for LLM adapters in the Intergrax framework, providing utilities and default registrations for various language model integrations.
 
-Domain: LLM adapters
+Domain: LLM Adapters
 
 Key Responsibilities:
-- Exposes the `LLMAdapter` class for adapter implementation
-- Offers `LLMAdapterRegistry` for managing adapter registrations
-- Includes base classes for model representation (`BaseModel`) and JSON schema handling (_model_json_schema)
-- Provides utility functions for working with OpenAI responses and JSON extraction
-- Registries default adapters (OpenAI, Gemini, Ollama) through the `register()` method
+- Exposes a registry of available LLM adapters
+- Registers default adapter instances with the registry
+- Imports and exports adapters for OpenAI, Gemini, and LangChain Ollama
 
 ### `intergrax\llm_adapters\base.py`
 
-**Description:** This module provides a base implementation for LLM adapters, including utilities for structured output and a universal interface for interacting with language models.
+Description: This module provides a base implementation for LLM (Large Language Model) adapters, including utilities for structured output and an interface for adapters.
 
-**Domain:** LLM Adapters
+Domain: LLM Adapters
 
-**Key Responsibilities:**
-
-* Provides a universal interface (`LLMAdapter` protocol) for interacting with language models
-* Offers tools for extracting JSON objects from text, validating model instances, and creating schema for models
-* Includes an adapter registry (`LLMAdapterRegistry`) for registering and creating adapters
-* Supports structured output generation and streaming for various LLMs
+Key Responsibilities:
+- Provides a universal interface (`LLMAdapter` protocol) for adapters to generate responses
+- Offers tools for extracting JSON objects from text and mapping internal message objects to OpenAI-compatible message dictionaries
+- Implements an adapter registry (`LLMAdapterRegistry`) for easy management of available adapters
 
 ### `intergrax\llm_adapters\gemini_adapter.py`
 
-Description: This module provides a minimal Gemini chat adapter for the Intergrax framework.
-Domain: LLM adapters
-Key Responsibilities:
-- Initializes Gemini chat model with user-provided defaults
-- Splits system messages from conversation and prepends them manually if needed
-- Generates responses based on input messages using the underlying model
-- Supports streaming of generated responses
+**Description:** This module provides a minimal Gemini adapter for the Integrax framework, allowing for simple chat usage without wire tools.
 
-Note: This implementation is a skeleton, intentionally not wiring tools for Gemini.
+**Domain:** LLM adapters
+
+**Key Responsibilities:**
+
+* Initializes the Gemini chat adapter with a model and optional defaults
+* Splits system messages from conversational messages
+* Generates responses to input messages using the provided model
+* Streams generated responses
+* Intentionally does not implement tool functionality (e.g., wiring tools)
+
+Note: This implementation appears to be a skeleton or a minimal version, as indicated by the absence of tool functionality and a note stating that it intentionally does not wire tools.
 
 ### `intergrax\llm_adapters\ollama_adapter.py`
 
-**Description:** This module provides an adapter for Ollama models used via LangChain's ChatModel interface. It allows agents to interact with Ollama models in a planner-style pattern.
-
-**Domain:** LLM adapters
-
-**Key Responsibilities:**
-
-* Converts internal chat messages to LangChain message objects
-* Injects tool result as contextual system message when no native tools are supported
-* Maps generation parameters from base_kwargs to options dictionary for Ollama models
-* Invokes the chat model with adapted messages and returns the generated content
-* Supports structured output via prompt and validation
-
-**Note:** This adapter appears to be part of a larger framework, specifically designed for LLM adapters. It is not marked as experimental, auxiliary, legacy, or incomplete.
-
-### `intergrax\llm_adapters\openai_responses_adapter.py`
-
-**Description:** This module provides an adapter for interacting with OpenAI's Responses API, allowing for chat completion and tool-based interactions.
-
-**Domain:** LLM adapters
-
-**Key Responsibilities:**
-
-* Provides an interface to the OpenAI Responses API
-* Offers methods for generating messages and streaming responses
-* Supports tools and function calls
-* Generates structured JSON output based on a provided model
-
-### `intergrax\logging.py`
-
-**Description:** This module configures and standardizes logging within the Intergrax framework.
-
-**Domain:** Logging Configuration
-
-**Key Responsibilities:**
-- Sets global logging settings using `logging.basicConfig()`.
-- Configures log level to display INFO and higher severity messages.
-- Formats log output with timestamp, severity level, and message.
-
-### `intergrax\multimedia\__init__.py`
-
-Description: The multimedia module serves as an entry point for interacting with multimedia-related components within the Intergrax framework.
-
-Domain: Multimedia integration
-
-Key Responsibilities:
-* Imports and configures necessary multimedia libraries
-* Establishes interfaces for handling multimedia data (e.g., images, videos) 
-* Sets up default settings for multimedia operations
-
-### `intergrax\multimedia\audio_loader.py`
-
-Description: This module provides functionality for downloading and translating audio files from YouTube URLs.
-Domain: Multimedia
-
-Key Responsibilities:
-- Downloads audio from a given YouTube URL using `yt_dlp`.
-- Extracts audio to a specified output directory in a chosen format (default is MP3).
-- Translates the downloaded audio using the Whisper model.
-
-### `intergrax\multimedia\images_loader.py`
-
-**intergrax\multimedia\images_loader.py**
-
-Description: This module contains a function to transcribe images using an external AI model, providing a way to generate text descriptions from visual content.
+Description: This module provides an Ollama model adapter using LangChain's ChatModel interface.
 
 Domain: LLM adapters
 
 Key Responsibilities:
-- Provides a function `transcribe_image` to generate text description of an image
-- Utilizes the ollama library for interfacing with the AI model
-- Supports multiple models, defaulting to "llava-llama3:latest" if none specified
+- Adapts the Ollama model to work within the Integrax framework.
+- Provides methods for generating and streaming messages from the model.
+- Offers support for structured output generation with validation against a specified schema.
+- Indicates that native tool-calling is not supported in this adapter, suggesting a planner-style pattern should be used instead.
 
-### `intergrax\multimedia\ipynb_display.py`
+### `intergrax\llm_adapters\openai_responses_adapter.py`
 
-**Description:** This module provides functionality for displaying multimedia content, including audio, images, and videos with custom playback settings. It uses IPython's display capabilities to render the media.
+**Description:** This module provides OpenAI responses adapter for Integrax framework, enabling integration with OpenAI's Responses API. It supports both plain chat and tool-based interactions.
 
-**Domain:** Multimedia
+**Domain:** LLM adapters
 
 **Key Responsibilities:**
 
-* Displaying audio files at a specific time position
-* Displaying image files (including support for various formats)
-* Serving video files with custom playback settings (e.g., start time, poster frame, autoplay, muted, and playback rate)
-* Utility functions for serving paths and resolving file extensions
+* Provides an interface to generate messages using OpenAI's Responses API
+* Supports streaming completion using the Responses API
+* Enables interaction with tools (functions or external services) through the adapter
+* Generates structured JSON output based on a provided schema
+* Validates the generated output against the specified model's JSON schema
 
-Note: The code appears to be well-maintained and production-ready.
+### `intergrax\logging.py`
+
+Here is the documentation for the `logging.py` file:
+
+Description: This module provides configuration and setup for logging in the Integrax framework.
+
+Domain: Logging Configuration
+
+Key Responsibilities:
+* Sets up basic configuration for the logger with a specified log level (INFO) and format.
+* Configures the logger to display timestamps, log levels, and messages in a specific format.
+* Forces the new configuration to override any previous ones.
+
+### `intergrax\multimedia\__init__.py`
+
+DESCRIPTION: This module serves as the entry point and namespace manager for multimedia-related functionality within the Intergrax framework.
+
+DOMAIN: Multimedia Module
+
+KEY RESPONSIBILITIES:
+- Registers core multimedia components
+- Defines interface for external multimedia modules to interact with the framework's infrastructure
+
+### `intergrax\multimedia\audio_loader.py`
+
+**intergrax\multimedia\audio_loader.py**
+
+Description: This module provides functionality for downloading audio files from YouTube and translating them using the Whisper library.
+
+Domain: Multimedia Processing
+
+Key Responsibilities:
+- Downloads audio files from YouTube using yt_dlp.
+- Converts downloaded videos to audio-only files in specified format (default: mp3).
+- Translates audio files using the Whisper model.
+
+### `intergrax\multimedia\images_loader.py`
+
+Description: This module provides functionality for loading and processing images within the Intergrax framework, enabling integration with LLMs for tasks such as image-to-text transcription.
+
+Domain: Image Processing/LLM Adapters
+
+Key Responsibilities:
+- Loads images from file paths
+- Utilizes Ollama to send images along with text prompts for processing by LLM models (e.g., "llava-llama3")
+- Returns transcribed text responses from the LLM model
+
+### `intergrax\multimedia\ipynb_display.py`
+
+Description: This module provides utilities for displaying multimedia content in Jupyter notebooks, including audio, images, and videos.
+
+Domain: Multimedia
+
+Key Responsibilities:
+- Convert file paths to base64 encoded URLs for inline display
+- Display audio files with optional autoplay and labeling
+- Display image files
+- Serve video files from a temporary directory and jump to a specific timestamp
 
 ### `intergrax\multimedia\video_loader.py`
 
-**Description:** This module provides functionality for working with multimedia content, specifically video files. It includes utilities for downloading videos from YouTube, transcribing audio to text using the Whisper model, and extracting frames and metadata from videos.
+**Description:** This module provides a set of functions for loading, processing, and extracting multimedia content from video files.
 
 **Domain:** Multimedia Processing
 
 **Key Responsibilities:**
-
-* Downloading videos from YouTube using `yt_dl`
-* Transcribing audio to text using the Whisper model
-* Extracting frames and metadata from video files
-	+ Maintaining aspect ratio for resized images
-	+ Saving extracted frames as JPEG images
-	+ Generating metadata for each frame, including transcript, start/end times, and video segment ID
-* Saving extracted metadata as a JSON file
-
-Note: The file appears to be well-structured and complete.
+- Download videos from YouTube using the `yt_dl` library
+- Extract video frames with metadata (time stamps) using OpenCV
+- Transcribe video captions to WebVTT format using Whisper speech recognition model
+- Save extracted frames and metadata as JSON file
 
 ### `intergrax\openai\__init__.py`
 
-Description: This package serves as the entry point for OpenAI integrations within Intergrax, facilitating interactions with the OpenAI API.
+DESCRIPTION: This is the main entry point for the OpenAI adapter within the Intergrax framework.
 
-Domain: LLM adapters
+DOMAIN: LLM adapters
 
-Key Responsibilities:
-* Initializes OpenAI API client instance
-* Sets up default configuration options
-* Provides a basic structure for integrating custom OpenAI models and functionality
+KEY RESPONSIBILITIES:
+* Imports necessary components from other modules
+* Exposes a public interface for interacting with the OpenAI API
+* Possibly initializes or configures related dependencies or settings
 
 ### `intergrax\openai\rag\__init__.py`
 
-DESCRIPTION: This is the main entry point for the RAG (Retrieval-Augmented Generation) logic within Intergrax, responsible for setting up and configuring the retrieval components.
+Description: The `__init__.py` file serves as the entry point and initializer for the RAG (Retrieval-Augmented Generator) logic within the Intergrax framework, enabling the registration of RAG models with OpenAI adapters.
 
-DOMAIN: LLM adapters / RAG logic
+Domain: LLM adapters / RAG logic
 
 Key Responsibilities:
-- Initializes the RAG components
-- Configures the retrieval models and databases
+- Registers RAG models with their corresponding OpenAI adapter classes.
+- Initializes the RAG module and makes its components available for use.
 
 ### `intergrax\openai\rag\rag_openai.py`
 
-**Description:** This module provides the IntergraxRagOpenAI class, which enables the integration of OpenAI's Rag logic with the Integrax framework. The class allows for interacting with an OpenAI client and a vector store to perform tasks such as retrieving documents, verifying consistency, answering questions, and uploading files.
+**Description:** This module provides a Rag OpenAI class, which enables the integration of the Intergrax framework with the OpenAI API for vector stores and file operations.
 
-**Domain:** RAG (Relevant And Grounded) Logic
+**Domain:** LLM adapters
 
 **Key Responsibilities:**
 
-* Initializes the IntergraxRagOpenAI class with an OpenAI client and vector store ID
-* Provides a prompt for Rag logic implementation following specific guidelines
-* Ensures the existence of a vector store by its ID
+* Initializes an IntergraxRagOpenAI object with an OpenAI client and vector store ID
+* Generates a RAG prompt based on the provided guidelines
+* Ensures the existence of a specified vector store
 * Clears all files loaded into the vector store
-* Uploads a folder to the vector store, allowing for file manipulation and management
+* Uploads folders to a vector store, following specific patterns
 
 ### `intergrax\rag\__init__.py`
 
-DESCRIPTION: This is the main entry point for the RAG (Relational Attention-based Graph) logic in Intergrax.
+Description: The __init__.py file is the entry point for the RAG (Retrieval-Augmented Generation) logic within the Intergrax framework.
 
-DOMAIN: RAG logic
+Domain: RAG logic
 
-KEY RESPONSIBILITIES:
-• Initializes and sets up the RAG module.
-• Defines and exposes API endpoints for interacting with the RAG model.
+Key Responsibilities:
+- Initializes the RAG module and its dependencies.
+- Sets up default configuration and parameters for the RAG component.
+- Provides a public API for interacting with the RAG logic.
 
 ### `intergrax\rag\documents_loader.py`
 
-**Description:** This module provides a robust and extensible document loader with metadata injection and safety guards. It supports various file formats, including text files, Word documents, HTML files, PDFs, Excel spreadsheets, CSV files, images, and videos.
+**Description:**
+This module provides a robust and extensible document loader for the Intergrax framework, supporting various file formats and enabling metadata injection and safety guards.
 
-**Domain:** RAG logic (Documents Loader)
+**Domain:** RAG (Reinforced Adversarial Generation) logic / Document loading utilities
 
 **Key Responsibilities:**
 
-* Loads documents from various file formats
-* Injects metadata into the loaded documents
-* Provides safety guards to prevent errors during loading
-* Supports multiple document formats, including text, Word, HTML, PDF, Excel, CSV, images, and videos
-* Offers customization options for loading documents, such as specifying file patterns, extensions map, and exclusions
-* Integrates with other modules in the Intergrax framework, such as LLM adapters and multimedia loaders
+* Loading documents from various file formats (.txt, .md, .docx, .htm, .html, .pdf, .xlsx, .xls, .csv)
+* Supporting metadata injection and safety guards
+* Configurable settings for document loading (e.g., OCR options, image processing)
+* Integration with Intergrax's multimedia loaders (video and audio) through adapter framework
+* Experimental features include captioning images via LLM adapters
 
 ### `intergrax\rag\documents_splitter.py`
 
-**Description:** This module implements a high-quality text splitter for RAG pipelines, generating stable chunk IDs with rich metadata.
-
-**Domain:** RAG Logic
-
-**Key Responsibilities:**
-- Infers page index from common loader keys.
-- Ensures source fields are present in the document's metadata.
-- Decides whether a document is a semantic atom based on its type and content.
-- Builds stable, human-readable chunk IDs using available anchors (para_ix/row_ix/page_index).
-- Finalizes chunks by adding indexing information, parent ID, source name/path, and page index if present.
-- Optionally merges tiny tails and applies hard caps to the number of chunks per document.
-
-### `intergrax\rag\dual_index_builder.py`
-
-**Description:** This module builds and maintains two vector indexes: a primary (CHUNKS) index for all documents and an auxiliary (TOC) index for specific document headings.
+**Description:** 
+This module provides a high-quality text splitter for RAG pipelines, ensuring stable chunk IDs and rich metadata.
 
 **Domain:** RAG logic
 
 **Key Responsibilities:**
+- Provides a `IntergraxDocumentsSplitter` class that splits documents into chunks based on various criteria
+- Implements the 'semantic atom' policy to avoid splitting small semantic units (paragraphs, rows, pages, images)
+- Generates stable chunk IDs using available anchors or hash-based fallback
+- Allows customization of metadata and chunking behavior through optional arguments and functions
+- Merges tiny tail chunks and applies hard caps on maximum number of chunks per document
 
-* Builds two vector indexes: primary (CHUNKS) and auxiliary (TOC)
-* CHUNKS index contains all chunks/documents after splitting
-* TOC index contains only DOCX headings within specified levels [toc_min_level, toc_max_level]
-* Embeds documents using the IntergraxEmbeddingManager
-* Adds documents to the vector stores in batches for efficiency
-* Provides logging and verbosity control
+### `intergrax\rag\dual_index_builder.py`
 
-**Note:** This module appears to be well-structured and well-documented. There are no obvious red flags or indications of experimental or auxiliary code.
+**Description:** This module provides functionality for building dual indexes in the Intergrax framework. It enables the creation of primary and auxiliary vector stores for efficient document indexing.
 
-### `intergrax\rag\dual_retriever.py`
-
-**Description:** This module implements a dual retriever for the Intergrax framework, which combines retrieval from both the TOC (Table of Contents) and local chunks. It uses vector store managers to retrieve relevant documents based on user queries.
-
-**Domain:** RAG logic (Relevance Aware Generators)
+**Domain:** RAG logic (Relationship-Aware Graphs)
 
 **Key Responsibilities:**
 
-*   Initializes the dual retriever with vector store managers for chunks and TOC, as well as an optional embedding manager.
-*   Provides methods for querying the vector stores, normalizing hits, merging where conditions, expanding context via TOC, and retrieving final results.
-*   The main `retrieve` method fetches base hits from chunks, expands context via TOC, merges and deduplicates results, and returns top-k relevant documents based on similarity scores.
+* Building two vector indexes: primary (CHUNKS) and auxiliary (TOC)
+* Splitting documents into chunks
+* Creating auxiliary index from DOCX headings within specified levels
+* Computing embeddings for documents in both indexes
+* Inserting batches of embedded documents into the vector stores
+* Handling logging and verbosity options
 
-Note: The module appears to be well-structured and functional.
+**Note:** This file appears to be a core component of the RAG logic, and its functionality is essential for indexing documents in the Intergrax framework.
 
-### `intergrax\rag\embedding_manager.py`
+### `intergrax\rag\dual_retriever.py`
 
-**Description:** This module provides a unified embedding manager for HuggingFace, Ollama, and OpenAI embeddings.
+**Description:** This module implements a dual retriever for Intergrax, which combines the results of two vector store queries to retrieve relevant information.
 
 **Domain:** RAG (Retrieval-Augmented Generation) logic
 
 **Key Responsibilities:**
 
-* Unified management of different embedding providers (HuggingFace, Ollama, OpenAI)
-* Automatic model loading with reasonable defaults
+* Dual retriever: first query TOC (sections), then fetch local chunks from the same section/source
+* Uses `intergraxVectorstoreManager` to perform queries
+* Embeds input text using an embedding manager and performs similarity searches
+* Merges and deduplicates search results
+* Returns a list of relevant hits with their metadata and similarity scores
+
+**Note:** This file appears to be part of the Intergrax framework, which is proprietary and confidential. The code seems well-structured and functional, but its exact purpose and functionality require more context.
+
+### `intergrax\rag\embedding_manager.py`
+
+**Description:** This module provides a unified embedding manager for integrating various text embedding models, including HuggingFace (SentenceTransformer), Ollama, and OpenAI embeddings.
+
+**Domain:** RAG logic / Embedding Management
+
+**Key Responsibilities:**
+
+* Unified provider switch between HuggingFace, Ollama, and OpenAI
+* Model loading with reasonable defaults for model names
 * Batch/single text embedding with optional L2 normalization
-* Embedding for LangChain Documents (returns np.ndarray + aligned docs)
+* Embedding support for LangChain Documents (returns np.ndarray + aligned docs)
 * Cosine similarity utilities and top-K retrieval
-* Robust logging and transient error handling
+* Robust logging, shape validation, and light retry for transient errors
+
+**Note:** The module appears to be a robust and well-structured implementation of an embedding manager, with clear responsibilities and functionality. There is no indication that it is experimental, auxiliary, or incomplete.
 
 ### `intergrax\rag\rag_answerer.py`
 
-**Description:** This module provides a Rag answerer, responsible for retrieving relevant context fragments, re-ranking them (if configured), building the context and citations, generating answers using LLM adapters, and handling user instructions.
+**Description:** The IntergraxRagAnswerer module is responsible for retrieving and ranking relevant context fragments from a knowledge base, generating an answer using a language model, and producing a structured output.
 
-**Domain:** RAG Logic
+**Domain:** RAG (Retrieval-Augmented Generation) logic
 
 **Key Responsibilities:**
 
-* Retrieval of relevant context fragments
-* Optional re-ranking of retrieved hits
-* Building context from retrieved hits
-* Generating citations for used context fragments
-* Handling user instructions and system prompts
-* Integrating with LLM adapters for answer generation
-* Supporting streaming or non-streaming output modes
+* Retrieve top-k relevant context fragments from the knowledge base
+* Apply local similarity threshold filter on retrieved hits
+* Re-rank retrieved hits using an optional re-ranker module
+* Build context text by concatenating relevant fragments
+* Generate citations for used hits
+* Build system and user messages
+* Send messages to language model for generating answer (text or structured output)
+* Optionally, generate structured output in addition to the textual answer
 
 ### `intergrax\rag\rag_retriever.py`
 
-**Description:** This module provides a scalable, provider-agnostic RAG retriever for the Intergrax framework. It handles various tasks such as normalization of filters and embeddings, deduplication, batch retrieval, and optional reranking.
+**Description:** The Intergrax RAG retriever is a scalable, provider-agnostic module for retrieving relevant documents from a vector store. It normalizes filters, unifies similarity scoring, deduplicates results, and supports optional reranking and MMR diversification.
 
-**Domain:** LLM adapters / RAG logic
+**Domain:** RAG (Relevance-Aware Generator) logic
 
 **Key Responsibilities:**
-- Normalizes `where` filters for Chroma
-- Normalizes query vector shape (1D/2D → [[D]])
-- Unified similarity scoring for various providers
-- Deduplication by ID + per-parent result limiting
-- Optional MMR diversification when embeddings are returned
-- Batch retrieval for multiple queries
-- Optional reranking hook (e.g., cross-encoder, re-ranking model)
+
+* Normalizing `where` filters for Chroma
+* Unifying similarity scoring across different providers
+* Deduplication by ID and per-parent result limiting
+* Optional reranking using cross-encoder or re-ranking models
+* MMR diversification when embeddings are returned
+* Batch retrieval for multiple queries
 
 ### `intergrax\rag\re_ranker.py`
 
-**Description:** This module provides a Re-Ranker component for the Intergrax framework, allowing fast and scalable cosine re-ranking of candidate chunks.
+**Description:** The ReRanker module is a fast and scalable cosine re-ranker that takes candidate chunks as input, embeds them using the EmbeddingManager, and returns a list of hit dictionaries with additional reranked scores.
 
 **Domain:** RAG logic
 
 **Key Responsibilities:**
 
-* Re-rank candidates based on cosine similarity to a query
-* Embed texts in batches using `intergraxEmbeddingManager`
+* Embeds texts in batches using intergraxEmbeddingManager
+* Calculates cosine similarities between query and documents
+* Returns a list of hit dictionaries with additional reranked scores
+* Supports input types: hits from the retriever (dict) or raw LangChain Documents
 * Optional score fusion with original retriever similarity
-* Preserves schema of hits; adds 'rerank_score', 'fusion_score' (if enabled), and 'rank_reranked'
-* Supports various input types, including hits from the retriever (dict) or raw LangChain Documents
-* Configurable parameters for score fusion, normalization, cache query embeddings, and batch sizes
+* Lightweight in-memory cache for query embeddings
 
 ### `intergrax\rag\vectorstore_manager.py`
 
-**Description:** This module manages vector stores for the Intergrax framework, supporting ChromaDB, Qdrant, and Pinecone.
+**Description:** This module provides a unified vector store manager for Intergrax, supporting ChromaDB, Qdrant, and Pinecone.
 
 **Domain:** Vector Store Management
 
 **Key Responsibilities:**
-- Initializes target store with configurable settings.
-- Creates collection/index in target store (lazy creation for Qdrant/Pinecone).
-- Upserts documents + embeddings (with batching) to the vector store.
-- Queries top-K by cosine/dot/euclidean similarity in the vector store.
-- Counts vectors in the vector store.
-- Deletes vectors by their IDs.
 
-**Notes:** The code appears well-maintained and clearly documented. It handles different vector stores, including ChromaDB, Qdrant, and Pinecone, providing a unified interface for vector management within the Intergrax framework.
+* Initialize target store and create collection/index (lazy initialization for Qdrant/Pinecone)
+* Upsert documents + embeddings with batching
+* Query top-K by cosine/dot/euclidean similarity
+* Count vectors
+* Delete by IDs
+
+Note that this file appears to be a complete implementation, without any clear indicators of being experimental, auxiliary, legacy, or incomplete.
 
 ### `intergrax\rag\windowed_answerer.py`
 
-**Description:** This module implements a Windowed Answerer layer on top of the base Answerer in the Integrax framework. It provides functionality for memory-aware question answering with windowing.
+**Description:** This module is a component of the Intergrax framework's Retrieval-Augmented Generation (RAG) logic. It implements a "windowed" answerer, which divides the retrieval process into smaller chunks or windows to improve performance and context-awareness.
+
+**Domain:** RAG Logic
+
+**Key Responsibilities:**
+
+* Divides the retrieval process into smaller window-sized chunks
+* Processes each window separately using the provided answerer and retriever components
+* Builds a final answer by synthesizing partial answers from each window
+* Deduplicates sources across windows
+* Appends the final answer (and optional summary) to memory if available
+
+### `intergrax\runtime\__init__.py`
+
+DESCRIPTION:
+This is the entry point for Intergrax's runtime module, responsible for initializing and configuring the framework.
+
+DOMAIN: Runtime Initialization
+
+KEY RESPONSIBILITIES:
+* Initializes the Intergrax runtime environment
+* Registers necessary components and services
+* Sets up logging and other basic infrastructure
+
+### `intergrax\runtime\drop_in_knowledge_mode\__init__.py`
+
+Description: This module initializes the drop-in knowledge mode for the Intergrax framework, enabling external knowledge sources to be integrated into the system.
+
+Domain: RAG logic
+
+Key Responsibilities:
+- Initializes and configures the drop-in knowledge mode.
+- Integrates external knowledge sources with the Intergrax framework.
+- Sets up necessary data structures and hooks for seamless integration.
+
+### `intergrax\runtime\drop_in_knowledge_mode\attachments.py`
+
+**Description:** This module provides attachment resolution utilities for Intergrax's Drop-In Knowledge Mode, allowing the framework to decouple attachment storage and consumption.
+
+**Domain:** Attachment Resolution (Drop-In Knowledge Mode)
+
+**Key Responsibilities:**
+
+* Defines the `AttachmentResolver` protocol, an abstraction that resolves an `AttachmentRef` into a local `Path`.
+* Implements the `FileSystemAttachmentResolver`, a minimal resolver for local filesystem-based URIs.
+* Provides utility functions to resolve attachments from various sources and return their corresponding file paths.
+
+Note: This module appears to be stable and complete, providing essential functionality for attachment resolution in Intergrax's Drop-In Knowledge Mode.
+
+### `intergrax\runtime\drop_in_knowledge_mode\config.py`
+
+**Description:** This module defines configuration objects for the Drop-In Knowledge Mode runtime in Intergrax, including settings for LLM adapters, embeddings, vector stores, and feature toggles.
+
+**Domain:** Configuration
+
+**Key Responsibilities:**
+
+* Define main knobs for controlling the runtime behavior
+* Integrate with existing Intergrax components (LLM adapters, embedding managers, vector store managers)
+* Configure feature toggles (RAG, web search, tools, long-term memory)
+* Set token budgets and limits for context construction
+* Provide optional arbitrary metadata and app-specific configuration
+
+**Status:** This file appears to be a critical part of the Intergrax framework, and its contents suggest that it is well-documented and widely used. There are no indications of experimental, auxiliary, legacy, or incomplete code.
+
+### `intergrax\runtime\drop_in_knowledge_mode\context_builder.py`
+
+**Description:** This module is responsible for building the context for the Intergrax Drop-In Knowledge Mode, which includes deciding whether to use RAG, retrieving relevant document chunks from the vector store, reducing chat history, and composing a system prompt.
+
+**Domain:** LLM adapters / Context Builder
+
+**Key Responsibilities:**
+
+* Decide whether to use RAG for a given (session, request)
+* Retrieve relevant document chunks from the vector store using session/user/tenant metadata
+* Reduce chat history to a manageable window
+* Return a BuiltContext object that the engine can translate into OpenAI-style messages
+
+This module appears to be a core part of the Intergrax framework's functionality and is not marked as experimental, auxiliary, legacy, or incomplete.
+
+### `intergrax\runtime\drop_in_knowledge_mode\engine.py`
+
+**Description:** This module implements the core runtime engine for Drop-In Knowledge Mode, providing a high-level conversational runtime for the Intergrax framework.
+
+**Domain:** LLM adapters and conversational runtime
+
+**Key Responsibilities:**
+
+* Loads or creates chat sessions via `SessionStore`
+* Appends user messages to the session
+* Builds a conversation history for the LLM (limited by `RuntimeConfig`)
+* Calls the configured LLM adapter
+* Produces a `RuntimeAnswer` object with the final answer text and metadata
+
+Note: The engine is currently a skeleton, missing RAG/web search/tools integration and other features.
+
+### `intergrax\runtime\drop_in_knowledge_mode\ingestion.py`
+
+**Description:** This module provides a high-level service for ingesting attachments in the context of Drop-In Knowledge Mode, leveraging existing Intergrax RAG building blocks to resolve, load, split, embed, and store documents.
+
+**Domain:** Data Ingestion
+
+**Key Responsibilities:**
+
+* Resolve AttachmentRef objects into filesystem Paths using an AttachmentResolver
+* Load documents using IntergraxDocumentsLoader.load_document(...)
+* Split documents into chunks using IntergraxDocumentsSplitter.split_documents(...)
+* Embed chunks via IntergraxEmbeddingManager
+* Store vectors via IntergraxVectorstoreManager
+* Return a structured IngestionResult per attachment
+
+Note: This file appears to be well-structured and production-ready, with clear documentation and separation of concerns.
+
+### `intergrax\runtime\drop_in_knowledge_mode\response_schema.py`
+
+**Description:** This module defines data classes for request and response structures used in the Drop-In Knowledge Mode runtime of the Intergrax framework.
 
 **Domain:** RAG logic
 
 **Key Responsibilities:**
 
-*   Initializes the Windowed Answerer with an Answerer, retriever, and optional verbose mode.
-*   Performs broad retrieval and windowing to process multiple context windows.
-*   Builds messages with memory awareness (if available) and generates partial answers using LLM.
-*   Synthesizes a final answer from partials and deduplicates sources.
-*   Appends the final answer and optional summary to the memory store (if available).
+* Define data classes for high-level contract between applications (FastAPI, Streamlit, CLI, MCP, etc.) and the DropInKnowledgeRuntime
+* Expose citations, routing information, tool calls, and basic statistics in a structured way
+* Intentionally hide low-level implementation details while keeping enough structure to support applications
+* Provide data classes for request (`RuntimeRequest`) and response (`RuntimeAnswer`) structures
+* Define data classes for specific components:
+	+ `Citation`: represents a single citation/reference used in the final answer
+	+ `RouteInfo`: describes how the runtime decided to answer the question
+	+ `ToolCallInfo`: describes a single tool call executed during the runtime request
+	+ `RuntimeStats`: basic statistics about a runtime call
+
+### `intergrax\runtime\drop_in_knowledge_mode\session_store.py`
+
+**Description:** This module provides a session storage abstraction for the Drop-In Knowledge Mode runtime, enabling persistence and retrieval of chat sessions across various backends.
+
+**Domain:** Session Storage
+
+**Key Responsibilities:**
+
+* Defines data classes for `SessionMessage` and `ChatSession` to represent individual messages and top-level chat sessions
+* Establishes the `SessionStore` protocol for session persistence, with methods for getting, creating, saving, appending, and listing sessions
+* Includes an in-memory implementation (`InMemorySessionStore`) for testing and quick experiments
 
 ### `intergrax\supervisor\__init__.py`
 
-DESCRIPTION: The __init__.py file serves as the entry point and initializer for the supervisor module in Intergrax, responsible for setting up its internal structure.
+DESCRIPTION: The __init__.py file serves as the entry point for the supervisor module in Intergrax, responsible for setting up and initializing its internal components.
 
-DOMAIN: Supervision
+DOMAIN: Supervisor Module
 
 KEY RESPONSIBILITIES:
-- Initializes the supervisor module's dependencies and components.
-- Defines the interface for external interactions with the supervisor.
+- Initializes internal components of the supervisor
+- Defines exportable functions and classes
+- Sets up necessary configurations
 
 ### `intergrax\supervisor\supervisor.py`
 
-**Description:** This module provides the core functionality of the Intergrax framework's supervisor component. It includes planning and assignment logic, LLM adapters, component management, and configuration handling.
+**Description:** The supervisor module is responsible for planning and executing tasks within the Intergrax framework. It coordinates with Language Model (LLM) adapters, component execution, and other system services to determine task plans and their execution.
 
-**Domain:** Supervisor / Planner
+**Domain:** Task Planning / Execution Management
 
 **Key Responsibilities:**
 
-* Planning and assignment logic using two-stage decomposition (decompose + per-step assign)
-* LLM adapter integration for text extraction and JSON parsing
-* Component registration and management
-* Configuration handling and validation
-* Robust planning fallbacks (heuristic, minimal) when LLM fails
-* Two-stage planner knobs for customization
-* Semantic fallback for keyword-less component assignment
+*   Planning tasks using LLM-based decomposition and heuristic methods
+*   Executing plan steps through component management and resource allocation
+*   Managing LLM adapters for text processing and analysis
+*   Registering and managing components for task execution
+*   Analyzing plan results and providing diagnostic information
+*   Supporting two-stage planning with decomposed step assignment
 
 ### `intergrax\supervisor\supervisor_components.py`
 
-**Description:** This module provides a framework for building and managing components in the Integrax supervisor, allowing for reusable step implementations with their own logic and context.
+**Description:** This module defines the core components and utility classes for building, managing, and executing pipeline steps in the Integrax framework.
 
-**Domain:** Supervisor components
+**Domain:** Supervisor Components
 
 **Key Responsibilities:**
+- Defines `Component` class for representing individual steps with metadata and executable logic.
+- Provides `ComponentContext` class for passing contextual information to components.
+- Introduces `PipelineState` dataclass for encapsulating pipeline state, including query results, artifacts, and debug logs.
+- Offers a decorator (`component`) for easy registration of new components with their respective functions.
+- Supplies utility classes like `ComponentResult` for handling component output and diagnostic logs.
 
-* Defines the `Component` class, which represents a single step or operation that can be executed within the pipeline.
-* Provides a `run` method for executing a component, taking in a `PipelineState` and `ComponentContext`.
-* Offers a decorator (`component`) for registering new components with minimal boilerplate code.
-* Includes data classes for representing component results (`ComponentResult`) and context (`ComponentContext`).
+Note: This module appears to be a core part of the Integrax framework, providing essential functionality for building and executing pipeline steps.
 
 ### `intergrax\supervisor\supervisor_prompts.py`
 
-**Description:** This module provides a set of default prompt templates for the Intergrax Supervisor, outlining the planning process and constraints for creating auditable DAG plans.
-
-**Domain:** RAG logic / Unified Planning Framework
-
-**Key Responsibilities:**
-
-* Defines the universal prompts for planning, focusing on decomposition-first approach
-* Specifies primary principles for planning, including decomposition, assignment, data-flow, and component selection
-* Outlines strict rules for resource flags, DAG structure, gates, synthesis, reliability, and decomposition coverage
-* Provides a validation checklist to ensure plan correctness before returning
-* Defines the return schema for the unified Supervisor's response
-
-### `intergrax\supervisor\supervisor_to_state_graph.py`
-
-**Description:** This module provides utilities for transforming a Plan into a runnable LangGraph pipeline. It includes functions for ensuring state defaults, appending logs, resolving inputs, persisting outputs, creating node names, and building the graph.
-
-**Domain:** Supervisor to State Graph Utilities
-
-**Key Responsibilities:**
-
-* Ensuring state defaults with `_ensure_state_defaults`
-* Appending logs with `_append_log`
-* Resolving inputs with `_resolve_inputs`
-* Persisting outputs with `_persist_outputs`
-* Creating readable node names with `_slugify` and `_make_node_name`
-* Building the graph with `topo_order` and `build_langgraph_from_plan`
-
-This file appears to be a crucial part of the Integrax framework, handling the transformation of plans into executable LangGraph pipelines. It is likely used by the supervisor components to create and manage the pipeline graphs. The code is well-structured, readable, and seems to be production-ready.
-
-### `intergrax\system_prompts.py`
-
-Here is the documentation of the provided file:
-
-**Description:** This module defines a RAG system instruction template for strict RAG (Rola i Zasady Pracy) operation in the Integrax framework.
-
-**Domain:** RAG logic
-
-**Key Responsibilities:**
-
-* Defines a prompt for the RAG system instruction
-* Specifies the rules and guidelines for the RAG operation, including:
-	+ No use of general knowledge or adding facts not present in documents
-	+ Responses must be based on document content only
-	+ Citing sources is required
-	+ Handling ambiguity and uncertainty
-	+ Precise terminology and formatting requirements
-
-**Note:** The file appears to be a part of the Integrax framework's proprietary and confidential codebase, indicating that it may not be publicly available or modifiable without permission.
-
-### `intergrax\tools\__init__.py`
-
-DESCRIPTION: This package serves as the entry point for various tools within the Intergrax framework, facilitating access to utility functions and modules.
-
-DOMAIN: Configuration/Utilities
-
-KEY RESPONSIBILITIES:
-- Provides a centralized entry point for tool-related functionality.
-- Imports and initializes various utility modules.
-
-### `intergrax\tools\tools_agent.py`
-
-**Description:** 
-This module provides the implementation of an Intergrax tools agent, which is a key component in managing and utilizing external tools for answering questions. The tools agent interacts with language models (LLMs) and manages tool outputs, including processing and formatting responses.
+**Description:** This module defines default prompt templates for the Intergrax Supervisor, used to guide planning and decomposition of tasks. The prompts are structured as JSON objects that contain information about task intent, required components, user inputs, and validation rules.
 
 **Domain:** LLM adapters / RAG logic
 
 **Key Responsibilities:**
-- Manages interaction between the Intergrax framework and external tools
-- Processes tool outputs, extracting relevant information and formatting responses for the user
-- Utilizes language models (LLMs) to generate answers or guide the tool-calling process
-- Maintains a conversational memory to track interactions and context throughout the conversation
-- Supports both native tool-calling in OpenAI LLMs and JSON-based planners like Ollama
+
+* Define default prompt templates for the Intergrax Supervisor
+* Provide a unified structure for planning and decomposition tasks
+* Include domain-specific knowledge and constraints in the prompts
+* Support validation checks to ensure plan correctness and integrity
+
+### `intergrax\supervisor\supervisor_to_state_graph.py`
+
+**Description:** This module is responsible for building and executing the LangGraph pipeline from a given plan. It handles state management, node creation, and graph construction.
+
+**Domain:** RAG logic
+
+**Key Responsibilities:**
+
+* Manages global state traveling through the LangGraph pipeline using the `PipelineState` dataclass.
+* Provides utilities for ensuring default state values, appending logs, resolving inputs, and persisting outputs.
+* Creates readable node names using the `_slugify` function.
+* Builds LangGraph nodes from plan steps using the `make_node_fn` function.
+* Performs topological ordering of plan steps to construct a stable graph.
+* Transforms a plan into a runnable LangGraph pipeline using the `build_langgraph_from_plan` function.
+
+### `intergrax\system_prompts.py`
+
+Description: This module defines a default RAG system instruction for strict RAG protocols in the Integrax framework.
+
+Domain: LLM adapters/RAG logic
+
+Key Responsibilities:
+- Defines the structure and guidelines for responding to user queries based on documents stored in the vector store.
+- Outlines the steps for verifying consistency, citing sources, and providing accurate and precise answers.
+- Specifies the formatting and style requirements for responses, including citations and references.
+
+### `intergrax\tools\__init__.py`
+
+Description: This module initializes and imports the necessary tools within the Intergrax framework.
+
+Domain: Utility modules
+
+Key Responsibilities:
+• Initializes the tooling environment for the framework.
+• Imports and registers essential utility functions.
+
+### `intergrax\tools\tools_agent.py`
+
+**Description:** This module provides the IntergraxToolsAgent class, which acts as a bridge between LLM adapters and tools for handling conversations.
+
+**Domain:** Conversational Agents with integrated tool-calling functionality
+
+**Key Responsibilities:**
+
+* Initializes an LLM adapter and a tool registry instance
+* Manages the conversation flow based on user input and system instructions
+* Supports native tool-calling (OpenAI) or JSON planner-based interaction (Ollama)
+* Prunes messages to ensure OpenAI compatibility when necessary
+* Builds output structures from tool traces, answer text, or extracted JSON
+* Provides a `run` method for handling conversations with tools integration
 
 ### `intergrax\tools\tools_base.py`
 
-**Description:** This module provides a foundation for building tools within the Integrax framework. It offers base classes and functionality for defining, registering, and exporting tools in a format compatible with the OpenAI Responses API.
+**Description:** This module provides a set of base classes and utilities for defining and registering tools within the Integrax framework. It includes functionality for validating tool outputs, serializing tools to OpenAI-compatible JSON schemas, and managing a registry of available tools.
 
-**Domain:** Tooling/Utilities
+**Domain:** LLM adapters
 
 **Key Responsibilities:**
 
-* Defines `ToolBase` class for creating custom tools
-	+ Provides attributes for name, description, schema model, and strict validation
-	+ Offers methods for getting parameters, running the tool (must be overridden), validating arguments, and converting to OpenAI schema
-* Introduces `ToolRegistry` class for managing registered tools
-	+ Allows registering tools with unique names and retrieving them by name
-	+ Exposes tools in a format compatible with the OpenAI Responses API
-
-This module appears to be stable, well-structured, and part of the main Integrax framework.
+* Providing a `ToolBase` class that serves as a base class for all tools, defining common attributes and methods.
+* Implementing a `_limit_tool_output` function for safely truncating long tool outputs to avoid overflowing the LLM context.
+* Offering a `ToolRegistry` class for managing and storing registered tools in a dictionary-like structure.
+* Exporting tools from the registry to a format compatible with the OpenAI Responses API.
+* Enabling validation of tool arguments using Pydantic (if available).
+* Allowing for override of the `run` method by each specific tool.
 
 ### `intergrax\websearch\__init__.py`
 
-DESCRIPTION: This module serves as the entry point for web search functionality within the Intergrax framework, responsible for initializing and configuring related components.
+DESCRIPTION: This module initializes the web search functionality within the Intergrax framework, providing a basic setup and import structure.
 
-DOMAIN: Web Search Module
+DOMAIN: Web Search
 
 KEY RESPONSIBILITIES:
-* Initializes web search-related services
-* Configures web search settings and parameters
-* Exposes necessary interfaces for integrating web search capabilities
+- Initializes the web search component
+- Defines the entry point for the web search functionality
+- Imports necessary modules and sub-modules
+- Exposes the web search service through the application
 
 ### `intergrax\websearch\cache\__init__.py`
 
-**Description:** This module provides a simple in-memory query cache for web search results with optional time-to-live (TTL) and maximum size.
+**Description:** This module provides a simple in-memory query cache with optional time-to-live (TTL) and maximum size for storing web search results. It allows efficient reuse of cached results for equivalent queries.
 
-**Domain:** Data Ingestion/Caching
+**Domain:** Cache/Query Storage
 
 **Key Responsibilities:**
-- Stores cached web documents for given queries
-- Provides `get` method to retrieve cached documents by query key
-- Offers `set` method to store new documents in cache with query key
-- Supports TTL and max size configuration
-- Uses a dictionary-based data structure for storage
+
+* Provides an immutable `QueryCacheKey` dataclass to describe unique web search configurations
+* Offers a simple in-memory query cache with TTL and max size, suitable for single-process use cases (e.g., notebooks, local development)
+* Allows storing and retrieving cached results using the `InMemoryQueryCache` class
+* Implements basic eviction strategy (removing oldest entry) when maximum size is reached
 
 ### `intergrax\websearch\context\__init__.py`
 
-Description: This is the initialization file for the web search context, responsible for setting up the necessary components and configurations.
+DESCRIPTION: 
+This module initializes and configures the context for web search functionality within Intergrax.
 
-Domain: Web Search Context
+DOMAIN: RAG (Retrieval-Augmented Generation) logic
 
-Key Responsibilities:
-* Initializes the web search context with required dependencies
-* Sets up any default configuration or constants
-* Defines the entry point for the web search context module
+KEY RESPONSIBILITIES:
+- Initializes web search context
+- Configures relevant parameters for web search operations
 
 ### `intergrax\websearch\context\websearch_context_builder.py`
 
-**Description:** This module provides a WebSearchContextBuilder class, which builds LLM-ready textual context and chat messages from web search results. It can work with raw WebDocument objects or serialized dicts.
+**Description:** This module, `websearch_context_builder`, is responsible for building LLM-ready textual context and chat messages from web search results.
 
-**Domain:** RAG logic (Relevance Aware Generation)
+**Domain:** RAG logic (Reinforced Active Learning with Graphs)
 
 **Key Responsibilities:**
 
-* Builds textual context string from WebDocument objects or serialized dicts
-* Constructs chat messages for chat-style LLMs, enforcing strict "sources-only" mode
-* Allows customization of context building and message formatting through constructor parameters and override methods
+* Builds a textual context string from WebDocument objects or serialized dicts
+* Constructs chat messages (system + user) for chat-style LLMs
+* Allows customization of context building parameters, such as maximum number of documents and characters per document
+* Provides strict system prompts enforcing web sources-only mode and no hallucinations
 
-Note: The code is well-structured, readable, and includes clear documentation. It appears to be a stable and functional part of the Intergrax framework.
+Note: There is a small typo in the provided content where `contex` should be `context`.
 
 ### `intergrax\websearch\fetcher\__init__.py`
 
-Description: Initializes the web search fetcher component, responsible for retrieving data from various online sources.
+DESCRIPTION: 
+This module initializes and configures the web search fetcher for Intergrax, responsible for retrieving relevant data from various online sources.
+
+DOMAIN: Web Search Fetcher Configuration
+
+KEY RESPONSIBILITIES:
+• Initializes the web search engine instance
+• Configures search parameters (e.g., query filters, result limits)
+• Sets up logging and monitoring for fetcher operations
+
+### `intergrax\websearch\fetcher\extractor.py`
+
+**Description:** This module contains HTML extraction functionality for web pages, providing both lightweight and advanced readability-based extraction capabilities.
+
+**Domain:** Web Search/Fetcher/Extractor
+
+**Key Responsibilities:**
+
+* Perform lightweight HTML extraction on a PageContent instance (extract_basic):
+	+ Extract <title>
+	+ Extract meta description
+	+ Extract <html lang> attribute
+	+ Extract Open Graph meta tags (og:*)
+	+ Produce a plain-text version of the page
+* Perform advanced readability-based extraction on a PageContent instance (extract_advanced):
+	+ Remove obvious boilerplate elements (scripts, styles, iFrames, navigation)
+	+ Prefer trafilatura (when available) to extract primary readable content
+	+ Fallback to BeautifulSoup plain-text extraction if trafilatura fails
+	+ Normalize whitespace and reduce noise
+
+**Notes:** The module appears to be a core component of the web search functionality within the Intergrax framework. It is well-structured, with clear responsibilities and use cases outlined in the code.
+
+### `intergrax\websearch\fetcher\http_fetcher.py`
+
+Description: This module provides an asynchronous HTTP client for fetching web pages, allowing Intergrax to retrieve and process content from external URLs.
 
 Domain: Web Search Fetcher
 
 Key Responsibilities:
-• Registers available web search providers
-• Configures fetcher settings
-• Defines default fetcher behavior
-• Sets up logging and error handling 
-
-Note: This file appears to be a standard initialization module for the web search fetcher component.
-
-### `intergrax\websearch\fetcher\extractor.py`
-
-**Description:** This module provides a basic HTML extractor for web search results, extracting essential metadata and text content from pages.
-
-**Domain:** Web Search Extractor
-
-**Key Responsibilities:**
-- Extracts <title> from the page's HTML.
-- Extracts meta description from the page's HTML.
-- Extracts <html lang> attribute from the page's HTML.
-- Extracts Open Graph meta tags (og:*).
-- Produces a plain-text version of the page.
-
-### `intergrax\websearch\fetcher\http_fetcher.py`
-
-Description: This module provides an asynchronous HTTP fetcher for web pages.
-
-Domain: Web Search Fetchers
-
-Key Responsibilities:
-- Performs HTTP GET requests with customizable headers.
-- Captures final URL, status code, raw HTML, and body size.
-- Keeps higher-level concerns (robots, throttling, extraction) outside.
+- Performs HTTP GET requests with sane default headers
+- Captures final URL, status code, raw HTML, and body size
+- Handles transport-level failures and returns None in such cases
+- Keeps higher-level concerns (robots, throttling, extraction) outside this module
 
 ### `intergrax\websearch\integration\__init__.py`
 
-Description: This module serves as the entry point for web search integration within the Intergrax framework, importing necessary dependencies and configurations.
+Description: The __init__.py file serves as the entry point for the web search integration within Intergrax, responsible for setting up and configuring the integration.
 
-Domain: Web Search Integration
+Domain: Integration
 
 Key Responsibilities:
-• Imports required modules and libraries for web search functionality
-• Sets up configuration options for web search integration
-• Initializes the web search pipeline
+- Initializes the web search integration module.
+- Sets up necessary dependencies and configurations.
 
 ### `intergrax\websearch\integration\langgraph_nodes.py`
 
-**Description:** This module provides a LangGraph-compatible web search node wrapper, encapsulating configuration of a WebSearchExecutor instance and implementing sync and async node methods operating on a minimal state contract for web search nodes.
+Description: This module provides a web search node implementation using the Intergrax framework, allowing integration with various search engines like Google Custom Search and Bing Web.
 
-**Domain:** LLM adapters/RAG logic
+Domain: RAG logic
 
-**Key Responsibilities:**
-
-* Encapsulates the configuration of a WebSearchExecutor instance
-* Provides sync and async node methods operating on a minimal state contract for web search nodes
-* Implements the _extract_query method to extract the search query from the node state
-* Runs synchronous and asynchronous searches using the provided executor instance
-
-**Note:** This file appears to be part of the main Intergrax framework, with clear documentation and well-structured code. No signs of experimental, auxiliary, legacy, or incomplete features are observed.
+Key Responsibilities:
+- Provides a `WebSearchNode` class that wraps a `WebSearchExecutor` instance for encapsulating configuration and delegation of search tasks.
+- Offers synchronous (`run`) and asynchronous (`run_async`) node methods for processing web search queries.
+- Exposes default and functional API wrappers (`websearch_node` and `websearch_node_async`) for convenience and backward compatibility.
+- Utilizes the `WebSearchExecutor` to perform actual search operations, with default parameters configurable via class initialization or node method calls.
 
 ### `intergrax\websearch\pipeline\__init__.py`
 
-**Description:** This module initializes and configures the pipeline for web search functionality within Intergrax.
-**Domain:** Web Search Pipeline Configuration
-**Key Responsibilities:**
-* Initializes pipeline components and dependencies
-* Configures pipeline settings and parameters
-* Exposes API to register pipeline steps and tasks
+DESCRIPTION: This module initializes the pipeline for web search functionality within the Intergrax framework.
+
+DOMAIN: Web Search Pipeline Configuration
+
+KEY RESPONSIBILITIES:
+• Initializes the web search pipeline components
+• Configures pipeline processing flow 
+• Sets up relevant data handlers and transforms
 
 ### `intergrax\websearch\pipeline\search_and_read.py`
 
-**Description:** This module defines the SearchAndReadPipeline class, which orchestrates multi-provider web search, fetching, extraction, deduplication, and basic quality scoring. It provides a high-level flow for executing queries against configured providers.
+**Description:** This file implements a web search pipeline that allows for concurrent fetching and processing of search results from multiple providers. The pipeline is designed to be provider-agnostic and includes features such as rate limiting, deduplication, and quality scoring.
 
-**Domain:** Websearch pipeline logic
+**Domain:** Web Search Pipeline
 
 **Key Responsibilities:**
 
-- Orchestrates multi-provider web search
-- Fetches and extracts SearchHit objects into WebDocument objects
-- Performs deduplication based on simple text-based keys
-- Applies quality scoring heuristics
-- Provides an async interface for fetching multiple pages concurrently
-- Offers a synchronous convenience wrapper for environments without an external event loop
-
-The module appears to be stable and production-ready, with clear design goals and a well-structured implementation.
+* Orchestrates multi-provider web search, fetching, extraction, deduplication, and basic quality scoring
+* Works with any WebSearchProvider instance
+* Async fetching with rate limiting (TokenBucket)
+* Simple deduplication via text-based dedupe key
+* Minimal and testable design with no direct LLM coupling
 
 ### `intergrax\websearch\providers\__init__.py`
 
-DESCRIPTION: 
-This module initializes the web search providers for the Intergrax framework, setting up the necessary infrastructure for interacting with various online resources.
+DESCRIPTION: This module initializes and registers web search providers for the Intergrax framework.
 
 DOMAIN: Web Search Providers
 
 KEY RESPONSIBILITIES:
-- Initializes and configures web search provider instances
-- Sets up connection parameters for each provider
-- Defines the interface for web search operations
+- Initializes web search provider modules.
+- Registers available providers with the framework.
 
 ### `intergrax\websearch\providers\base.py`
 
-**Description:** This module defines the base interface for web search providers in the Integrax framework, specifying a contract for executing searches and exposing minimal capabilities.
+**Description:** This module defines the base interface for web search providers in the Integrax framework, specifying common responsibilities and a stable API.
 
 **Domain:** Web Search Providers
 
 **Key Responsibilities:**
-- Execute a single search request with a provider-agnostic QuerySpec
-- Return a ranked list of SearchHit items
-- Expose minimal capabilities for feature negotiation (language, freshness)
-- Support resource cleanup through the close method (optional)
+
+* Accept provider-agnostic query specifications through the `QuerySpec` class.
+* Return a ranked list of search results (SearchHit items) from executing a single search request.
+* Expose minimal capabilities for feature negotiation, including language and freshness support.
+* Implementations should honor top-k search limits, include provider-specific metadata in hits, and sanitize/validate URLs.
 
 ### `intergrax\websearch\providers\bing_provider.py`
 
-**Description:** This module provides a Bing Web Search (v7) provider for the Intergrax framework, enabling users to perform web searches using the Bing API.
+**Description:** This module provides a Bing Web Search provider for the Intergrax framework, enabling integration with the Bing REST API.
 
 **Domain:** LLM adapters
 
 **Key Responsibilities:**
 
-* Initializes and configures the Bing Web Search provider with an optional API key, session, and timeout.
-* Supports filtering by language and region through environment variables or query specifications.
-* Offers freshness filtering for search results (Day, Week, Month).
-* Implements safeSearch functionality to filter explicit content.
-* Provides a `search` method for executing web searches based on user-specified queries.
-* Converts API responses into SearchHit objects for processing.
-
-Note: This module appears complete and ready for use.
+* Provides a Bing Web Search (v7) provider class (`BingWebProvider`) that integrates with the Bing REST API
+* Allows configuration of API key through environment variables or constructor arguments
+* Supports filtering by language, region, and freshness
+* Fetches search results from Bing and transforms them into `SearchHit` objects
+* Closes the underlying HTTP session when finished
 
 ### `intergrax\websearch\providers\google_cse_provider.py`
 
-**Description:** This module implements a provider for the Google Custom Search (CSE) service, which is used to perform web searches.
+**Description:** 
+This module provides a provider class for Google Custom Search (CSE) within the Intergrax framework, allowing users to query and fetch search results using the CSE REST API.
 
-**Domain:** LLM adapters
+**Domain:** Websearch Providers
 
 **Key Responsibilities:**
 
-* Provides a class `GoogleCSEProvider` that inherits from `WebSearchProvider`
-* Handles API key and search engine ID retrieval from environment variables
-* Defines methods for building query parameters and making requests to the CSE API
-* Parses response data to extract search hits, including title, URL, snippet, and other metadata
-* Supports language filtering using 'lr' (content language) and 'hl' (UI language)
-* Handles pagination with a cap of 10 results per request
+* Provides a `GoogleCSEProvider` class that implements the `WebSearchProvider` interface
+* Exposes environment variables for API key and CX (Search Engine ID)
+* Handles parameters such as language, UI language, and content language filtering
+* Caches search results to prevent excessive requests
+* Supports freshness filtering through custom engines or site filters
+* Returns search hits in a standardized format
 
 ### `intergrax\websearch\providers\google_places_provider.py`
 
-**Description:** This module provides a WebSearchProvider implementation for Google Places, allowing text searches and fetching of business details.
+**Description:** This module provides a web search provider for Google Places, allowing the retrieval of business data and integration with other Intergrax framework components.
 
-**Domain:** LLM adapters (WebSearchProvider)
+**Domain:** LLM adapters > Web Search Providers
 
 **Key Responsibilities:**
 
-* Provides an interface to the Google Places API
-* Supports text search by arbitrary query
-* Fetches business details for searched places
-* Maps results to SearchHit objects
-* Handles environment variables and API key management
-* Implements capabilities and parameter builders for text search and details fetching
-* Performs requests and handles JSON responses from the Google Places API
+* Provides a web search interface for Google Places
+* Supports text search by arbitrary query (name + city, category, etc.)
+* Returns core business data:
+	+ name, address, location (lat/lng)
+	+ rating, user_ratings_total
+	+ types (categories)
+	+ website, international_phone_number, opening_hours
+	+ Google Maps URL (via url or constructed maps link)
+* Handles environment variables and API key configuration
+* Supports pagination and details lookups
+* Mapping helpers for converting Places data to SearchHit objects
 
 ### `intergrax\websearch\providers\reddit_search_provider.py`
 
-**Description:** This module provides a Reddit search provider using the official OAuth2 API, allowing for full-featured search and rich post metadata retrieval.
+**Description:** This module provides a Reddit search provider for the Intergrax framework, utilizing the official OAuth2 API. It enables full-featured searching with rich post metadata and optional comment fetching.
 
-**Domain:** LLM adapters
+**Domain:** Websearch Providers
 
 **Key Responsibilities:**
 
-* Provides authentication with Reddit's OAuth2 API
-* Supports language and freshness filtering in search queries
-* Retrieves top-level comments for each post (optional)
-* Maps search results to the SearchHit schema
-* Handles token refresh and caching for improved performance
+* Authenticates using application-only OAuth2 (client_credentials) to obtain an access token
+* Uses the access token to perform searches on Reddit
+* Fetches top-level comments for each search result, if enabled
+* Returns a simplified list of comment dictionaries for each search result
+* Maps search results to SearchHit objects
+* Provides capabilities metadata, including supported language and freshness features
+* Refreshes the access token if it expires or becomes invalid
 
 ### `intergrax\websearch\schemas\__init__.py`
 
-Description: This module initializes the web search schema configurations and utility functions.
-
-Domain: Web Search Schema Configuration
+Description: This module defines the schema and initialization for web search functionality in the Intergrax framework.
+Domain: Web Search
 
 Key Responsibilities:
-* Registers schema definitions for web search functionality
-* Initializes configuration settings for web search
-* Provides utility functions for schema management
+• Defines the schema for web search queries
+• Initializes the web search configuration and data ingestion mechanisms
+• Registers necessary components for web search operations
+• Optionally includes experimental or auxiliary code, but appears to be a key part of the web search domain.
 
 ### `intergrax\websearch\schemas\page_content.py`
 
-**Description:** This module defines a dataclass representing the content of a web page, encapsulating both raw HTML and extracted metadata.
+**Description:** This module defines a data class `PageContent` to represent and encapsulate the content of a web page, including its metadata and extracted information.
 
-**Domain:** Web search (RAG logic)
+**Domain:** Web search/RAG logic
 
 **Key Responsibilities:**
 
-* Represents web page content as a dataclass with various attributes
-* Includes methods for filtering empty fetches (`has_content`), generating text summaries (`short_summary`), and calculating content size in kilobytes (`content_length_kb`)
-* Supports optional metadata extraction, such as Open Graph tags and schema.org markup
+* Represents the fetched and optionally extracted content of a web page
+* Encapsulates both raw HTML and derived metadata
+* Allows post-processing stages (extraction, readability, deduplication) to work independently of the original HTTP layer
+* Provides methods for checking if the page has content, generating a short summary, and calculating the approximate size of the content in kilobytes
+
+**Note:** The file appears to be part of a production-grade framework, as indicated by its documentation and code quality.
 
 ### `intergrax\websearch\schemas\query_spec.py`
 
-**Description:** This module defines a data class for canonical search query specifications used by web search providers.
+**Description:** This module defines a dataclass `QuerySpec` for canonical search query specifications used by web search providers. It provides attributes and methods to standardize and normalize query parameters.
 
-**Domain:** Web Search Schemas
+**Domain:** RAG (Recurrent Attention-based Generative) logic
 
 **Key Responsibilities:**
-
-* Defines the `QuerySpec` data class with attributes for raw user query, top results per provider, locale, region, language, freshness constraint, site restriction, and safe search filtering.
-* Provides methods to normalize the query string with an applied site filter (`normalized_query`) and cap the number of top results based on a provider's cap (`capped_top_k`).
+- Defines a `QuerySpec` dataclass with attributes for query parameters
+- Provides methods for normalizing the query string (`normalized_query`)
+- Limits the top results count based on provider caps (`capped_top_k`)
 
 ### `intergrax\websearch\schemas\search_hit.py`
 
-**Description:** This module defines a `SearchHit` data class to represent provider-agnostic metadata for a single search result entry, including fields such as provider identifier, query string, rank, title, URL, and more.
+**Description:** This module defines a dataclass `SearchHit` that encapsulates metadata for individual search result entries, providing provider-agnostic information about the hit.
 
-**Domain:** RAG (Retrieval-Augmented Generation) logic
+**Domain:** Web Search Schema
 
 **Key Responsibilities:**
 
-* Defines the `SearchHit` data class with various attributes for storing search result metadata
-* Enforces minimal safety checks in the `__post_init__` method to ensure validity of rank and URL fields
-* Provides methods for extracting domain from the URL (`domain`), and converting the hit to a minimal dictionary representation suitable for LLMs (`to_minimal_dict`)
+* Defines the `SearchHit` dataclass with fields for common search engine result metadata
+* Performs minimal safety checks on URL and rank values during initialization
+* Provides methods for extracting domain (netloc) from URLs and creating a minimal, LLM-friendly representation of each hit.
 
 ### `intergrax\websearch\schemas\web_document.py`
 
-Description: This module defines the WebDocument data class, which serves as a unified structure for representing and processing fetched web documents.
+**Description:** This module defines a unified structure for representing web documents, integrating search hits, page content, and analysis results.
 
-Domain: Web Search Schemas
+**Domain:** Web Search
 
-Key Responsibilities:
-- Provides a standardized representation of web documents with source metadata, content, and analysis results.
-- Offers methods for determining document validity, merging textual content, and generating summary lines.
+**Key Responsibilities:**
+- Defines the `WebDocument` dataclass to hold relevant information about a fetched and processed web document.
+- Connects original search hit metadata with extracted content and analysis results.
+- Provides methods for validating document validity (`is_valid`), merging textual content (`merged_text`), and generating summary lines (`summary_line`).
 
 ### `intergrax\websearch\service\__init__.py`
 
-Description: This service module initializes and sets up the web search functionality for Intergrax.
+Description: The `__init__.py` file serves as the entry point for the web search service, responsible for initializing and setting up the necessary components.
 
-Domain: Web Search Service
+Domain: Web Search Service Configuration
 
 Key Responsibilities:
-- Initializes the web search service instance
-- Sets up event listeners for relevant events
-- Exposes interface for other modules to interact with the web search service
+- Initializes the service
+- Sets up dependencies and configurations for the web search functionality
+- Exposes the service to be used by other modules within the Intergrax framework.
 
 ### `intergrax\websearch\service\websearch_answerer.py`
 
-**Description:** This module provides a high-level helper class `WebSearchAnswerer` that integrates web search results with Large Language Model (LLM) adapters to generate answers.
+**Description:** This module implements a high-level helper for web search and answering questions, integrating with LLM adapters.
 
-**Domain:** Web Search Service
+**Domain:** Web Search, LLM Integration
 
 **Key Responsibilities:**
-- Runs web searches using the `WebSearchExecutor`
-- Builds LLM-ready context/messages from web documents
-- Calls an LLMAdapter to generate a final answer
-- Supports both async and sync execution modes
+
+* Runs web search via `WebSearchExecutor`
+* Builds LLM-ready context/messages from web documents using `WebSearchContextBuilder`
+* Calls an `LLMAdapter` to generate a final answer
+* Provides both async and sync interfaces for question answering (`answer_async` and `answer_sync`)
 
 ### `intergrax\websearch\service\websearch_executor.py`
 
-Description: This module provides a high-level, configurable web search executor that constructs QuerySpec from raw queries and configuration, executes SearchAndReadPipeline with chosen providers, and converts WebDocument objects into LLM-friendly dictionaries.
+**Description:** This module provides a high-level, configurable web search executor that constructs query specifications, executes search pipelines with chosen providers, and converts web documents into LLM-friendly dicts.
 
-Domain: Web search execution and caching
+**Domain:** Web Search Executor
 
-Key Responsibilities:
-- Construct QuerySpec from raw query and configuration
-- Execute SearchAndReadPipeline with chosen providers
-- Convert WebDocument objects into LLM-friendly dictionaries
-- Build a simple, deterministic signature of the provider configuration for cache key generation
-- Serialize WebDocument objects into dicts suitable for LLM prompts and logging
-- Attempt to return cached serialized results when available and valid
+**Key Responsibilities:**
+
+* Construct QuerySpec from raw queries and configuration
+* Execute SearchAndReadPipeline with chosen providers
+* Convert WebDocument objects into LLM-friendly dicts
+* Provide methods for building query specifications and executing web search pipelines asynchronously
+* Integrate with query caching mechanisms for optimized performance
 
 ### `intergrax\websearch\utils\__init__.py`
 
-Description: This module provides a set of utility functions for web search functionality within the Intergrax framework.
+DESCRIPTION: This is an initialization module for web search-related utilities in the Intergrax framework.
 
-Domain: Web Search Utilities
+DOMAIN: Web Search Utilities
 
-Key Responsibilities:
-- Initializes and sets up necessary libraries and dependencies.
-- Provides common utility methods for web search operations.
-- Possibly contains legacy or experimental code. 
-
-Note: The lack of specific content in the file makes it difficult to provide a more detailed analysis, but based on its location within the project structure, it appears to be an initialization module for web search utilities.
+KEY RESPONSIBILITIES:
+* Initializes and sets up utility functions for web search operations
+* Possibly imports or instantiates other modules for web search functionality 
+* Might contain some configuration settings or constants related to web search
 
 ### `intergrax\websearch\utils\dedupe.py`
 
-**Description:** This module provides deduplication utilities for web search, normalizing and hashing input text to detect near-identical documents.
+**Description:** This module provides simple deduplication utilities, specifically designed for web search pipeline usage.
 
-**Domain:** Websearch Utilities
+**Domain:** Data Ingestion/Preprocessing
 
 **Key Responsibilities:**
-* Normalizes text before deduplication by stripping whitespace, converting to lower case, and collapsing internal whitespace sequences.
-* Produces a stable SHA-256 based deduplication key for the given text using the normalized input.
+
+* Normalize text inputs for deduplication by stripping whitespace, converting to lowercase, and collapsing internal whitespace sequences.
+* Generate a stable SHA-256 based deduplication key for given text inputs.
 
 ### `intergrax\websearch\utils\rate_limit.py`
 
-**Description:** This module implements a token bucket rate limiter, allowing for asynchronous and concurrent usage while preventing exceeding the specified average request rate.
+**Description:** This module implements a simple token bucket rate limiter for asyncio-compatible applications, designed to prevent excessive resource consumption.
 
-**Domain:** RAG logic
+**Domain:** Rate limiting
 
 **Key Responsibilities:**
 
-* Provides a simple asyncio-compatible token bucket rate limiter
-* Ensures that the total consumption of tokens never exceeds capacity
-* Guarantees that the average request rate does not exceed the specified rate
-* Offers two methods for acquiring tokens: `acquire` (waits until tokens are available) and `try_acquire` (non-blocking, attempts to consume tokens)
-* Allows for concurrent usage across multiple coroutines in a single process
+* Provides a TokenBucket class for implementing rate limiting policies
+* Allows setting a maximum refill rate (tokens per second) and capacity (maximum number of tokens stored)
+* Offers two methods: `acquire` (waits until tokens are available before consuming them) and `try_acquire` (non-blocking attempt to consume tokens, returning True if successful or False otherwise)
+
+Note: The code appears well-structured and complete.
 
 ### `main.py`
 
-**Description:** This module serves as the entry point for the Intergrax framework, responsible for initiating its execution and providing a basic greeting message.
+Description: This module serves as the entry point for the Intergrax framework, executing the primary function when run directly.
 
-**Domain:** Framework Initialization
+Domain: Configuration/Initialization
 
-**Key Responsibilities:**
-- Serves as the primary entry point for the Integrax framework.
-- Initializes the framework's execution and prints a greeting message.
+Key Responsibilities:
+- Defines the main execution flow of the framework.
+- Provides a print statement to verify framework initialization.
 
 ### `mcp\__init__.py`
 
-**Description:** The `__init__.py` file serves as the entry point for the Intergrax framework, initializing and configuring its core components.
+**Intergrax Framework Documentation**
 
-**Domain:** Framework initialization
+**File:** `mcp/__init__.py`
+
+**Description:** This is the main entry point for the MCP (Module Container Provider) module, responsible for bootstrapping and initializing the Intergrax framework components.
+
+**Domain:** Core Infrastructure
+
+**Key Responsibilities:**
+* Initializes core modules and services
+* Sets up global configuration and constants
+* Defines main application entry points
+
+### `notebooks\drop_in_knowledge_mode\01_basic_memory_demo.ipynb`
+
+**Description:** This Jupyter notebook provides a basic sanity-check demo for the Drop-In Knowledge Mode runtime in the Intergrax framework. It verifies that the runtime can create or load a session, append user and assistant messages, build conversation history from SessionStore, and return a RuntimeAnswer object.
+
+**Domain:** Drop-In Knowledge Mode runtime
 
 **Key Responsibilities:**
 
-* Initializes the Intergrax framework
-* Configures core components and settings
-* Sets up default imports and dependencies
+* Verify the functionality of the Drop-In Knowledge Mode runtime
+* Create or load a session using InMemorySessionStore
+* Append user and assistant messages to the session
+* Build conversation history from SessionStore
+* Return a RuntimeAnswer object
+
+This notebook appears to be a demonstration of the Intergrax framework's capabilities, specifically the Drop-In Knowledge Mode runtime. It does not contain any experimental or auxiliary code, and it is likely intended for educational purposes.
+
+### `notebooks\drop_in_knowledge_mode\02_attachments_ingestion_demo.ipynb`
+
+Description: This Jupyter notebook demonstrates the usage of Intergrax's Drop-In Knowledge Mode runtime, specifically for handling attachments and ingestion in a conversational AI setting.
+
+Domain: LLM adapters
+
+Key Responsibilities:
+- Initializes an InMemorySessionStore for storing session data
+- Sets up an Ollama + LangChain LLM adapter
+- Configures embedding manager using Ollama embeddings and vector store manager using Chroma as the vector store
+- Creates a RuntimeConfig instance with specified configurations (e.g., enabling RAG, websearch, tools, long-term memory, etc.)
+- Initializes a DropInKnowledgeRuntime instance with the session store and configured components
+- Prepares an AttachmentRef for a local project document to simulate attachment ingestion in a chat UI
+
+### `notebooks\drop_in_knowledge_mode\03_rag_context_builder_demo.ipynb`
+
+Description: This Jupyter Notebook demonstrates the usage of the ContextBuilder in Intergrax's Drop-In Knowledge Mode runtime. It provides a step-by-step guide to load a demo chat session, work with an existing attachment, and initialize the ContextBuilder.
+
+Domain: RAG logic (Reactive Attention-based Generator)
+
+Key Responsibilities:
+- Load a demo chat session using SessionStore.
+- Work with an existing attachment by ingesting it or preparing a single demo attachment.
+- Initialize the ContextBuilder instance using RuntimeConfig and IntergraxVectorstoreManager.
+- Build context for a single user question using the ContextBuilder.build_context method.
+- Inspect the result of context building, including reduced chat history, retrieved document chunks, system prompt, and RAG debug information.
+
+### `notebooks\langgraph\hybrid_multi_source_rag_langgraph.ipynb`
+
+Description: This Jupyter Notebook demonstrates an end-to-end hybrid multi-source RAG workflow that combines local files and web search results using Intergrax components with LangGraph.
+
+Domain: LLM adapters, RAG logic, data ingestion
+
+Key Responsibilities:
+- Ingest content from multiple sources (local PDF/DOCX files, live web results).
+- Build a unified RAG corpus by normalizing documents, attaching metadata, and splitting into chunks.
+- Create an in-memory vector index using Intergrax embedding manager and vectorstore manager.
+- Answer user questions with a RAG agent that loads, merges, indexes, retrieves, and answers.
+
+### `notebooks\langgraph\simple_llm_langgraph.ipynb`
+
+Description: This notebook demonstrates the integration between Intergrax and LangGraph, showcasing how to use an Intergrax LLM adapter as a node inside a LangGraph graph.
+
+Domain: Integrax-LangGraph Integration
+
+Key Responsibilities:
+- Initializes an OpenAI API client with the provided key.
+- Defines a simple state for the LLM QA example, holding chat messages and the final answer.
+- Implements a LangGraph node that calls the Intergrax LLM adapter to generate answers.
+- Builds a StateGraph with a single node `llm_answer_node`.
+- Runs the graph on a sample user question.
+
+Note: This notebook is experimental and intended as a starting point for further development. It serves to demonstrate the integration between Intergrax and LangGraph, but it may not be production-ready without additional testing and refinement.
+
+### `notebooks\langgraph\simple_web_research_langgraph.ipynb`
+
+Description: This is a Jupyter notebook that demonstrates the usage of Intergrax framework components for building a practical web research agent. The notebook orchestrates the flow as a multi-step graph to power “no-hallucination” web-based Q&A.
+
+Domain: RAG logic (Reinforcement Augmented Graph)
+
+Key Responsibilities:
+- Defines a WebResearchState data structure representing the graph state
+- Implements nodes for normalizing user questions and running web searches using Intergrax components
+- Demonstrates the usage of OpenAI's LLM adapter with Intergrax's WebSearch components
+- Sets up environment variables for API keys and initializes required components
+- Defines a node for generating a final answer with sources
+
+Note: This notebook is likely intended as an example or proof-of-concept, given its focus on demonstration rather than production-readiness.
 
 ### `notebooks\openai\rag_openai_presentation.ipynb`
 
-**Description:** This Jupyter notebook provides a presentation of the RAG (Retrieve, Answer, Generate) OpenAI integration within the Integrax framework. It showcases how to set up and use this feature for filling a VectorStore with data from a local folder and testing queries.
+Description: This Jupyter Notebook provides a presentation of the RAG (Relational Atomic Graph) functionality using OpenAI, showcasing how to fill VectorStore and test queries.
 
-**Domain:** LLM adapters / RAG logic
+Domain: LLM adapters / RAG logic
+
+Key Responsibilities:
+- Import necessary modules for OpenAI interaction and Intergrax RagOpenAI integration
+- Load environment variables from .env file
+- Set up OpenAI client and Rag instance with a specified vector store ID
+- Fill the VectorStore by uploading a local folder to it
+- Test queries using the Rag instance
+
+### `notebooks\rag\chat_agent_presentation.ipynb`
+
+**Description:** This Jupyter notebook defines a high-level hybrid agent that integrates RAG (Recurrent Attention Generative) logic, tools, and LLM (Large Language Model) chat capabilities.
+
+**Domain:** RAG Logic & Hybrid Agents
 
 **Key Responsibilities:**
 
-* Import necessary libraries and modules
-* Set up environment variables for API keys and VectorStore ID
-* Create an OpenAI client and IntergraxRagOpenAI instance
-* Ensure the VectorStore exists, clear it if necessary, and upload a local folder to it
-* Test queries by running RAG operations on specific questions
+* Creates an instance of the `IntergraxChatAgent` class, which integrates RAG components with tools and LLM chat functionality.
+* Defines a RAG component (`rag_docs`) that responds to questions related to Mooff regulations, privacy policies, internal documentation, and compliance rules.
+* Registers available tools (in this case, a demo weather tool) using the `ToolRegistry`.
+* Configures vector store and RAG components, including embedding manager, retriever, reranker, and answerer.
+* Demonstrates test questions and their routing decisions, highlighting the agent's ability to route queries to relevant tools or RAG components.
 
-**Note:** This file appears to be production-ready.
+**Note:** This notebook appears to be a working example of the Intergrax framework in action, showcasing its hybrid agent capabilities.
+
+### `notebooks\rag\output_structure_presentation.ipynb`
+
+**Description:** This Jupyter notebook demonstrates the usage and integration of various Intergrax components, including LLM adapters, conversational memory, tools agents, and RAG (Retrieval-Augmented Generator) logic. It provides a structured output format for the response using Pydantic models.
+
+**Domain:** RAG Logic
+
+**Key Responsibilities:**
+
+* Demonstrates usage of Intergrax's LLM adapters (e.g., Ollama-backed model)
+* Showcases integration with conversational memory
+* Defines and registers tools agents (WeatherTool) with specific schema models (e.g., WeatherAnswer)
+* Uses RAG components for structured output, including:
+	+ Embedding manager
+	+ Vector store manager
+	+ Retrieval retriever
+	+ ReRanker
+	+ Answerer
+* Provides example usage of the tools agent and RAG logic to generate a structured response
+
+**Status:** This notebook appears to be part of a larger demonstration or tutorial, showcasing the capabilities of the Intergrax framework. It is not marked as experimental, auxiliary, legacy, or incomplete.
 
 ### `notebooks\rag\rag_custom_presentation.ipynb`
 
-**Description:** This Jupyter Notebook appears to be a script for loading and processing documents within the Integrax framework. It demonstrates various tasks such as document loading, splitting, embedding, and vector store management.
+Description: This Jupyter notebook script loads and processes documents, splits them into chunks, generates vector embeddings using the Ollama model, and stores these embeddings in a Vectorstore database. It demonstrates a RAG (Retrieval-Augmented Generation) pipeline within the Integrax framework.
 
-**Domain:** RAG (Recurrent Attention Graph) logic / Documents Management
+Domain: RAG logic
 
-**Key Responsibilities:**
-
-* Load documents from file paths using `IntergraxDocumentsLoader`
-* Split loaded documents into chunks using `IntergraxDocumentsSplitter`
-* Embed documents using `IntergraxEmbeddingManager` and store the embeddings in a vector store
-* Manage vector store configuration and query documents for existence
-* Optionally ingest new documents into the vector store if they do not already exist
-
-Note: This script appears to be self-contained, providing all necessary imports and module calls within itself. However, it relies on external modules (`intergrax.rag.documents_loader`, `intergrax.rag.documents_splitter`, etc.) which may need to be reviewed for their individual documentation.
+Key Responsibilities:
+- Loads raw documents from a specified directory
+- Splits loaded documents into smaller chunks for optimal embedding granularity
+- Generates vector embeddings for each document chunk using an Ollama model
+- Stores generated embeddings in a Vectorstore database
+- Checks if a target corpus is already present in the Vectorstore before performing ingestion
 
 ### `notebooks\rag\rag_multimodal_presentation.ipynb`
 
-Description: This Jupyter notebook script provides an example of loading multimodal documents (video, audio, image), splitting and embedding them, and then ingesting the embeddings into a VectorStore. Additionally, it demonstrates how to query the VectorStore using a retriever.
+Description: This notebook is a test script for the Intergrax framework's RAG (Retrieval-Augmented Generation) components, specifically focusing on multimodal presentation and ingestion into VectorStore.
 
-Domain: RAG (Retriever-Indexer-Generator) logic
+Domain: RAG logic / Multimodal Presentation
 
 Key Responsibilities:
-* Load multimodal documents from file paths
-* Split and embed documents
-* Ingest embedded documents into a VectorStore
-* Query the VectorStore using a retriever
+- Loads documents from various sources (video, audio, image) using `IntergraxDocumentsLoader`.
+- Splits and embeds the loaded documents using `IntergraxDocumentsSplitter` and `IntergraxEmbeddingManager`, respectively.
+- Checks if corpus is present in VectorStore using `IntergraxVectorstoreManager` and determines if ingestion is needed.
+- If ingestion is required, loads documents again, deduplicates IDs, and adds them to VectorStore using `IntergraxDocumentsLoader`, `dedup_batch`, and `IntergraxVectorstoreManager`.
+- Tests retriever functionality using `IntergraxRagRetriever`.
 
 ### `notebooks\rag\rag_video_audio_presentation.ipynb`
 
-**Description:** This Jupyter Notebook demonstrates the usage of various multimedia processing functions within the Intergrax framework, including video and audio loading, transcription, frame extraction, and image description.
+**Description:** This Jupyter Notebook script demonstrates the integration of multimedia processing capabilities within the Integrax framework, showcasing video and audio loading, transcription, frame extraction, and image description.
 
-**Domain:** Multimedia processing
+**Domain:** RAG logic / Multimedia Processing
 
 **Key Responsibilities:**
 
-* Load videos from YouTube using `yt_download_video`
-* Download and save videos to a specified directory
-* Transcribe videos to VTT format using `transcribe_to_vtt`
-* Extract frames and metadata from videos using `extract_frames_and_metadata`
-* Translate audio files using `translate_audio`
-* Use the Ollama model to describe images using `transcribe_image`
+* Loads videos from YouTube using `yt_download_video` function
+* Transcribes videos to VTT format using `transcribe_to_vtt` function
+* Extracts frames and metadatas from video using `extract_frames_and_metadata` function
+* Translates audio using `translate_audio` function
+* Uses ollama model to describe images in the extracted frames
+
+**Note:** The script appears to be a demonstration or tutorial code, showcasing various multimedia processing capabilities within the Integrax framework. It does not appear to be experimental, auxiliary, legacy, or incomplete.
+
+### `notebooks\rag\tool_agent_presentation.ipynb`
+
+**Description:** This Jupyter notebook demonstrates the usage of the Integrax framework, specifically showcasing a tools agent that can execute various tasks such as fetching weather information and performing arithmetic calculations.
+
+**Domain:** RAG logic (Reasoning-Augmented Generative) / Tools Agent
+
+**Key Responsibilities:**
+- Defines two custom tools: `WeatherTool` for fetching weather data and `CalcTool` for basic arithmetic calculations.
+- Sets up a conversational memory shared across interactions using `IntergraxConversationalMemory`.
+- Creates a tool registry holding available tools, registering the custom tools.
+- Initializes an LLM (Large Language Model) adapter using Ollama, which serves as the planner/controller for tools.
+- Orchestrates the agent's behavior by creating an instance of `IntergraxToolsAgent` with specified components (LLM, tools, memory, and config).
+- Runs two test scenarios demonstrating tool selection and invocation:
+  - Test 1: Queries about weather in Warsaw should select the `get_weather` tool.
+  - Test 2: Arithmetic calculation questions should select the `calc_expression` tool.
 
 ### `notebooks\supervisor\supervisor_test.ipynb`
 
-**Description:** This notebook contains a collection of components for the Integrax framework, which are used to build a data pipeline. The components provided include compliance checkers, cost estimators, and final summary generators.
+Description: This notebook defines a set of components for the Integrax framework, each responsible for performing specific tasks such as compliance checking, cost estimation, and financial audits.
 
-**Domain:** RAG (Reasoning And Generation) logic
+Domain: Supervisor Components
 
-**Key Responsibilities:**
+Key Responsibilities:
+- Compliance Checker:
+  - Verifies whether proposed changes comply with privacy policies and terms of service (mock).
+  - Returns findings on compliance, policy violations, and recommended actions.
+- Cost Estimator:
+  - Estimates the cost of changes based on UX audit reports (mock).
+  - Calculates a mock formula-based estimate using base cost and per-issue costs.
+- Final Summary Report:
+  - Generates a final consolidated summary report using all collected artifacts.
+  - Includes status pipeline, terminated by, terminate reason, PM decision, and other relevant information.
+- Financial Audit:
+  - Generates a mock financial report and VAT calculation (test data).
+  - Calculates gross value from net, VAT amount, and other financial metrics.
 
-* Compliance checker:
-	+ Verifies whether proposed changes comply with privacy policies and terms of service
-	+ Returns a mock compliance decision with an 80% chance of success
-* Cost estimator:
-	+ Estimates the cost of changes based on the UX audit report (mock)
-	+ Uses a formula to calculate the base cost and additional cost per issue
-* Final summary generator:
-	+ Generates the final consolidated summary using all collected artifacts
-	+ Includes status pipeline, terminated by, terminate reason, PM decision, and other relevant information
-* Financial auditor:
-	+ Generates a mock financial report and VAT calculation (test data)
-	+ Returns a report with net value, VAT rate, VAT amount, gross value, currency, and last quarter budget
+Note: All components appear to be functional and production-ready.
 
 ### `notebooks\websearch\websearch_presentation.ipynb`
 
-**Description:** This Jupyter Notebook demonstrates the usage of the Intergrax framework's web search capabilities, specifically with Google Custom Search and Bing Search providers.
+Description: This notebook demonstrates the usage of the Intergrax framework's web search capabilities, specifically with Google Custom Search and Bing Search providers.
 
-**Domain:** WebSearch
+Domain: WebSearch/RAG (Reformulated Augmented Generation)
 
-**Key Responsibilities:**
-
-* Demonstrates how to configure and use the Google Custom Search provider
-* Provides an example query specification for searching on a specific topic
-* Executes a search using the specified provider and prints out results
-* Shows how to handle search hits, including retrieving information about each hit
-* Includes examples of handling multiple search results and printing out relevant information.
+Key Responsibilities:
+- Loads environment variables for Google Custom Search API key and CX ID
+- Defines a query specification using the `QuerySpec` class
+- Creates an instance of the `GoogleCSEProvider` class to perform search queries
+- Executes the search query and prints the results, including provider, rank, title, URL, snippet, domain, and published date for each hit.
