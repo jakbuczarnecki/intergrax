@@ -385,22 +385,28 @@ class ContextBuilder:
             retrieved_chunks = filtered_chunks
 
         # 6) Build RAG debug info (backend-agnostic view)
+        rag_used = bool(retrieved_chunks)
+
         rag_debug_info: Dict[str, Any] = {
-            "used": True,
-            # Logical where – the one we reason about and test against
+            "enabled": self._config.enable_rag,        # RAG was globally enabled
+            "used": rag_used,                          # True only if chunks made it into prompt
+            "hits_count": len(retrieved_chunks or []), # Compact indicator
             "where_filter": where,
             "top_k": max_docs,
             "score_threshold": score_threshold,
-            "hits": [
+        }
+
+        # Only store full hit metadata if something was actually retrieved
+        if rag_used:
+            rag_debug_info["hits"] = [
                 {
                     "id": ch.id,
-                    "score": ch.score,
+                    "score": round(ch.score, 4) if hasattr(ch, "score") else None,
                     "metadata": ch.metadata,
-                    "preview": ch.text[:200],
+                    "preview": ch.text[:200] if hasattr(ch, "text") else None,
                 }
                 for ch in retrieved_chunks
-            ],
-        }
+            ]
 
         return retrieved_chunks, rag_debug_info
 

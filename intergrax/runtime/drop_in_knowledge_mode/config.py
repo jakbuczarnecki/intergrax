@@ -76,13 +76,7 @@ class RuntimeConfig:
     max_rag_tokens: int = 4096
     rag_score_threshold: Optional[float] = None
 
-    # Web search providers configuration (provider classes to be instantiated
-    # by the WebSearchExecutor). Use provider classes that inherit from
-    # `intergrax.websearch.providers.base.WebSearchProvider`.
-    websearch_providers: Tuple[Type[WebSearchProvider], ...] = (
-        GoogleCSEProvider,
-        BingWebProvider,
-    )
+    websearch_executor: Optional[Any] = None  # will hold instance of WebSearchExecutor
 
     # Tools / data sources: names understood by ToolRegistry / app-level config
     enabled_tools: Sequence[str] = field(default_factory=list)
