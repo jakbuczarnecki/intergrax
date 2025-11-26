@@ -25,15 +25,14 @@ from __future__ import annotations
 
 import asyncio
 import uuid
-from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any, Protocol
+from typing import List, Optional, Dict, Any
 
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+from intergrax.runtime.drop_in_knowledge_mode.rag_prompt_builder import DefaultRagPromptBuilder, RagPromptBuilder
 from intergrax.runtime.drop_in_knowledge_mode.response_schema import (
     RuntimeRequest,
     RuntimeAnswer,
-    Citation,
     RouteInfo,
     RuntimeStats,
 )
@@ -42,7 +41,7 @@ from intergrax.runtime.drop_in_knowledge_mode.session_store import (
     SessionMessage,
     ChatSession,
 )
-from intergrax.llm.conversational_memory import ChatMessage, MessageRole
+from intergrax.llm.conversational_memory import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.ingestion import (
     AttachmentIngestionService,
     IngestionResult,
@@ -51,110 +50,13 @@ from intergrax.runtime.drop_in_knowledge_mode.attachments import (
     FileSystemAttachmentResolver,
 )
 from intergrax.runtime.drop_in_knowledge_mode.context_builder import ContextBuilder
+from intergrax.runtime.drop_in_knowledge_mode.websearch_prompt_builder import DefaultWebSearchPromptBuilder, WebSearchPromptBuilder
 
-from .context_builder import RetrievedChunk, BuiltContext
+from .context_builder import RetrievedChunk
 
-
-
-
-@dataclass
-class RagPromptBundle:
-    """
-    Container for prompt elements related to RAG:
-
-    - system_prompt: final system prompt string to be sent to the model
-      (may be equal to BuiltContext.system_prompt or modified).
-    - context_messages: extra messages (usually system-level) injecting
-      retrieved document context.
-    """
-    system_prompt: str
-    context_messages: List[ChatMessage]
+from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
 
-class RagPromptBuilder(Protocol):
-    """
-    Strategy interface for building the RAG-related part of the prompt.
-
-    You can provide a custom implementation and pass it to
-    DropInKnowledgeRuntime to fully control:
-
-    - the exact system prompt text,
-    - how retrieved chunks are formatted and injected as messages.
-    """
-
-    def build_rag_prompt(self, built: BuiltContext) -> RagPromptBundle:
-        ...
-
-
-class DefaultRagPromptBuilder(RagPromptBuilder):
-    """
-    Default prompt builder for Drop-In Knowledge Mode.
-
-    Responsibilities:
-    - Use the system_prompt from BuiltContext as-is.
-    - If retrieved_chunks are present, format them into a single
-      additional system-level message with natural, model-friendly text.
-    """
-
-    def __init__(self, config: RuntimeConfig) -> None:
-        self._config = config
-
-    def build_rag_prompt(self, built: BuiltContext) -> RagPromptBundle:
-        # Start from the system prompt computed by ContextBuilder
-        system_prompt = built.system_prompt
-
-        context_messages: List[ChatMessage] = []
-
-        if built.retrieved_chunks:
-            rag_context_text = self._format_rag_context(built.retrieved_chunks)
-            context_messages.append(
-                ChatMessage(
-                    role="system",
-                    content=(
-                        "The following excerpts were retrieved from the user's "
-                        "documents. Use them as factual context when answering "
-                        "the user's question.\n\n"
-                        f"{rag_context_text}"
-                    ),
-                )
-            )
-
-        return RagPromptBundle(
-            system_prompt=system_prompt,
-            context_messages=context_messages,
-        )
-
-
-    def _format_rag_context(self, chunks: List[RetrievedChunk]) -> str:
-        """
-        Build a compact, model-friendly text block from retrieved chunks.
-
-        Design goals:
-        - Provide enough semantic context.
-        - Avoid internal markers ([CTX ...], scores, ids) that the model
-          could copy into the final answer.
-        - Keep format simple and natural.
-        """
-        if not chunks:
-            return ""
-
-        lines: List[str] = []
-
-        for ch in chunks:
-            source_name = (
-                ch.metadata.get("source_name")
-                or ch.metadata.get("attachment_id")
-                or "document"
-            )
-            lines.append(f"Source: {source_name}")
-            lines.append("Excerpt:")
-            lines.append(ch.text)
-            lines.append("")  # blank line separator
-
-        # Optional: add truncation based on config (e.g. max chars)
-        # For now we keep full text and rely on upstream chunking.
-        return "\n".join(lines)
-    
 
 class DropInKnowledgeRuntime:
     """
@@ -187,20 +89,36 @@ class DropInKnowledgeRuntime:
         ingestion_service: Optional[AttachmentIngestionService] = None,
         context_builder: Optional[ContextBuilder] = None,
         rag_prompt_builder: Optional[RagPromptBuilder] = None,
+        websearch_prompt_builder: Optional[WebSearchPromptBuilder] = None,
     ) -> None:
+        
         self._config = config
         self._session_store = session_store
+
         self._ingestion_service = ingestion_service or AttachmentIngestionService(
             resolver=FileSystemAttachmentResolver(),
             embedding_manager=config.embedding_manager,
             vectorstore_manager=config.vectorstore_manager,
         )
+
         self._context_builder = context_builder or ContextBuilder(
             config=config,
             vectorstore_manager=config.vectorstore_manager,
         )
+
         self._rag_prompt_builder: RagPromptBuilder = (
             rag_prompt_builder or DefaultRagPromptBuilder(config)
+        )
+
+        self._websearch_executor = None
+        if self._config.enable_websearch:
+            if self._config.websearch_executor:
+                # Use user-supplied executor instance
+                self._websearch_executor = self._config.websearch_executor
+                
+
+        self._websearch_prompt_builder: Optional[WebSearchPromptBuilder] = (
+            websearch_prompt_builder or DefaultWebSearchPromptBuilder(config)
         )
 
 
@@ -215,7 +133,8 @@ class DropInKnowledgeRuntime:
         4. Build an LLM-ready context:
             - system prompt,
             - reduced chat history,
-            - optional retrieved chunks from documents (RAG).
+            - optional retrieved chunks from documents (RAG),
+            - optional web search context (if enabled).
         5. Call the LLM adapter with the constructed messages.
         6. Append the assistant message to the session.
         7. Return a RuntimeAnswer object.
@@ -279,8 +198,10 @@ class DropInKnowledgeRuntime:
         # 3. Build LLM-ready context
         messages_for_llm: List[ChatMessage] = []
         used_rag_flag: bool = False
-        
-        if (self._config.enable_rag
+        used_websearch_flag: bool = False
+
+        if (
+            self._config.enable_rag
             and hasattr(self, "_context_builder")
             and self._context_builder is not None
         ):
@@ -300,21 +221,16 @@ class DropInKnowledgeRuntime:
             #      system prompt + context messages from RagPromptBuilder.
             bundle = self._rag_prompt_builder.build_rag_prompt(built)
 
-            # Final system prompt (possibly customized)
+            # System prompt from RAG builder
             messages_for_llm.append(
                 ChatMessage(role="system", content=bundle.system_prompt)
             )
 
-            # Any additional context messages (usually system-level)
+            # Additional system-level/context messages (e.g. formatted RAG chunks)
             messages_for_llm.extend(bundle.context_messages)
 
             # 3a.2 Reduced chat history
             messages_for_llm.extend(built.history_messages or [])
-
-            # 3a.3 Current user question
-            messages_for_llm.append(
-                ChatMessage(role="user", content=request.message)
-            )
 
             debug_trace["history_length"] = len(built.history_messages or [])
             debug_trace["rag_chunks"] = len(built.retrieved_chunks or [])
@@ -326,10 +242,57 @@ class DropInKnowledgeRuntime:
             debug_trace["history_length"] = len(history)
             used_rag_flag = False
 
+        # 3c. Optional: Web search enrichment layer
+        # -----------------------------------------
+        # If enabled, this section performs a live web search based on the user query.
+        # Returned results are injected as additional context messages for the LLM
+        # using a dedicated WebSearchPromptBuilder (similar to RagPromptBuilder).
+        websearch_debug: Dict[str, Any] = {}
+
+        if (
+            self._config.enable_websearch
+            and self._websearch_executor is not None
+            and getattr(self, "_websearch_prompt_builder", None) is not None
+        ):
+            try:
+                web_docs = await self._websearch_executor.search_async(
+                    query=request.message,
+                    top_k=self._config.max_docs_per_query,
+                    language=None,     # (Optional) No language binding at runtime level for now.
+                    top_n_fetch=None,
+                    serialize=True,    # Ensure results are returned as Python dictionaries.
+                )
+
+                if web_docs:
+                    used_websearch_flag = True
+
+                    # Delegate formatting of web search results to WebSearchPromptBuilder
+                    bundle = self._websearch_prompt_builder.build_websearch_prompt(
+                        web_docs
+                    )
+
+                    # Inject web search context messages AFTER RAG/system/history,
+                    # but BEFORE the final user message.
+                    messages_for_llm.extend(bundle.context_messages)
+
+                    # Merge debug info from builder (num_docs, top_urls, etc.)
+                    if bundle.debug_info:
+                        websearch_debug.update(bundle.debug_info)
+
+            except Exception as exc:
+                # Capture errors so the runtime doesn't break if the web search provider fails.
+                websearch_debug["error"] = str(exc)
+
+        # Store debugging info in the trace object only if websearch was attempted or produced metadata.
+        if websearch_debug:
+            debug_trace["websearch"] = websearch_debug
+
+        # 3d. Current user message (always last in the context)
+        messages_for_llm.append(
+            ChatMessage(role="user", content=request.message)
+        )
+
         # 4. Call the LLM adapter using the constructed messages.
-        #    We use the generic `generate_messages(...)` API provided by
-        #    LangChainOllamaAdapter (and other Intergrax adapters with the
-        #    same interface).
         try:
             answer_text = self._config.llm_adapter.generate_messages(
                 messages_for_llm,
@@ -352,9 +315,13 @@ class DropInKnowledgeRuntime:
         await self._session_store.append_message(session.id, assistant_session_msg)
 
         # 6. Build RouteInfo and RuntimeStats
-        strategy: str
-        if used_rag_flag and self._config.enable_rag:
+        # Strategy depending on RAG / websearch usage
+        if used_rag_flag and used_websearch_flag:
+            strategy = "llm_with_rag_and_websearch"
+        elif used_rag_flag:
             strategy = "llm_with_rag_context_builder"
+        elif used_websearch_flag:
+            strategy = "llm_with_websearch"
         elif ingestion_results:
             strategy = "llm_only_with_ingestion"
         else:
@@ -362,7 +329,7 @@ class DropInKnowledgeRuntime:
 
         route_info = RouteInfo(
             used_rag=used_rag_flag and self._config.enable_rag,
-            used_websearch=False,
+            used_websearch=used_websearch_flag and self._config.enable_websearch,
             used_tools=False,
             used_long_term_memory=False,
             used_user_profile=self._config.enable_user_profile_memory,
@@ -391,6 +358,8 @@ class DropInKnowledgeRuntime:
             raw_model_output=None,
             debug_trace=debug_trace,
         )
+
+
 
     
 
