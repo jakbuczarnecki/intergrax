@@ -400,7 +400,7 @@ class IntergraxChatAgent:
 
         try:
             res = self._tools_agent.run(
-                user_input=question,
+                input_data=question,
                 context=None,
                 stream=stream,
                 tool_choice=tool_choice,
