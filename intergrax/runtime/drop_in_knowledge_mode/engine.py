@@ -342,7 +342,7 @@ class DropInKnowledgeRuntime:
             )
             try:
                 tools_result = self._config.tools_agent.run(
-                    input_data=messages_for_llm,
+                    input_data=request.message,
                     context=tools_context,
                     stream=False,
                     tool_choice=None,  # Let the tools agent / underlying LLM decide.
@@ -412,22 +412,73 @@ class DropInKnowledgeRuntime:
                 debug_trace["tools_error"] = str(e)
 
         # 5. Final call to the main LLM with all enriched context
-        try:
-            answer_text = self._config.llm_adapter.generate_messages(
-                messages_for_llm,
-                max_tokens=self._config.max_output_tokens,
-                # temperature can be passed here later once you add it to RuntimeConfig
-            )
-        except Exception as e:
-            # In case of any adapter failure, optionally fall back to tools_agent answer.
-            if tools_agent_answer:
-                answer_text = (
-                    "[ERROR] LLM adapter failed, falling back to tools agent answer.\n"
-                    f"Details: {e}\n\n"
-                    f"{tools_agent_answer}"
+        # try:
+        #     answer_text = self._config.llm_adapter.generate_messages(
+        #         messages_for_llm,
+        #         max_tokens=self._config.max_output_tokens,
+        #         # temperature can be passed here later once you add it to RuntimeConfig
+        #     )
+        # except Exception as e:
+        #     # In case of any adapter failure, optionally fall back to tools_agent answer.
+        #     if tools_agent_answer:
+        #         answer_text = (
+        #             "[ERROR] LLM adapter failed, falling back to tools agent answer.\n"
+        #             f"Details: {e}\n\n"
+        #             f"{tools_agent_answer}"
+        #         )
+        #     else:
+        #         answer_text = f"[ERROR] LLM adapter failed: {e}"
+                # 5. Final call to the main LLM with all enriched context
+                # 5. Decide how to produce the final answer text.
+        #    If tools were used and the tools agent already produced a
+        #    natural-language answer, we treat it as the final answer.
+        #    Otherwise we call the main LLM with the full enriched context.
+        answer_text: str
+
+        if used_tools_flag and tools_agent_answer:
+            # Tools agent (planner + executor + answer composer) already
+            # produced a final answer. We do NOT call the main LLM again
+            # to avoid overriding it with an empty or redundant response.
+            answer_text = str(tools_agent_answer)
+        else:
+            # Fallback: no tools were used or tools agent did not produce
+            # an answer. Use the main LLM with the enriched context.
+            try:
+                raw_answer = self._config.llm_adapter.generate_messages(
+                    messages_for_llm,
+                    max_tokens=self._config.max_output_tokens,
                 )
-            else:
-                answer_text = f"[ERROR] LLM adapter failed: {e}"
+
+                # Normalize various adapter return types to a plain string.
+                if isinstance(raw_answer, str):
+                    answer_text = raw_answer
+                else:
+                    content = getattr(raw_answer, "content", None)
+                    if isinstance(content, str) and content.strip():
+                        answer_text = content
+                    else:
+                        # Last resort: string representation of the object.
+                        answer_text = str(raw_answer)
+
+            except Exception as e:
+                if tools_agent_answer:
+                    answer_text = (
+                        "[ERROR] LLM adapter failed, falling back to tools agent answer.\n"
+                        f"Details: {e}\n\n"
+                        f"{tools_agent_answer}"
+                    )
+                else:
+                    answer_text = f"[ERROR] LLM adapter failed: {e}"
+
+        # Final safety: make sure we store a non-empty string.
+        if not isinstance(answer_text, str) or not answer_text.strip():
+            answer_text = (
+                str(tools_agent_answer)
+                if tools_agent_answer
+                else "[ERROR] Empty answer from runtime."
+            )
+
+
 
         # 6. Append assistant message to the session
         assistant_session_msg = SessionMessage(
