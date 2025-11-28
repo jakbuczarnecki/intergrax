@@ -11,16 +11,7 @@ from intergrax.llm_adapters import LLMAdapter
 from .tools_base import ToolRegistry, _limit_tool_output
 
 
-class ToolsAgentConfig:
-    temperature: float = 0.2
-    max_answer_tokens: Optional[int] = None
-    max_tool_iters: int = 6
-    system_instructions: str = (
-        "You are a capable assistant. Use tools when helpful. "
-        "If you call a tool, do not fabricate results—wait for tool outputs."
-    )
-    system_context_template: str = "Session context:\n{context}"
-    planner_instructions : str = (
+PLANNER_PROMPT = (
                     "You do not have native tool-calling.\n"
                     "At each step, reply ONLY with strict JSON:\n"
                     '{\"call_tool\": {\"name\": \"<tool_name>\", \"arguments\": {...}}} '
@@ -29,6 +20,22 @@ class ToolsAgentConfig:
                     "If tool result is insufficient, you may call another tool.\n"
                     "Never include commentary outside JSON."
                 )
+
+SYSTEM_PROMPT = (
+        "You are a capable assistant. Use tools when helpful. "
+        "If you call a tool, do not fabricate results—wait for tool outputs."
+    )
+
+SYSTEM_CONTEXT_TEMPLATE = "Session context:\n{context}"
+
+
+class ToolsAgentConfig:
+    temperature: float = 0.2
+    max_answer_tokens: Optional[int] = None
+    max_tool_iters: int = 6
+    system_instructions: str = SYSTEM_PROMPT
+    system_context_template: str = SYSTEM_CONTEXT_TEMPLATE
+    planner_instructions : str = PLANNER_PROMPT
 
 
 def _maybe_import_pydantic_base() -> Optional[type]:
@@ -193,34 +200,99 @@ class IntergraxToolsAgent:
     # ----- PUBLIC API -----
     def run(
         self,
-        user_input: str,
+        input_data: Union[str, List[ChatMessage]],
         *,
         context: Optional[str] = None,
         stream: bool = False,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         output_model: Optional[Type] = None,
     ) -> Dict[str, Any]:
+        """
+        High-level tools orchestration entrypoint.
 
-        # --- Bootstrap memory & messages ---
-        if self.memory:
-            self.memory.add_message("user", user_input)
-            messages = self.memory.get_for_model(native_tools=self._native_tools)
-            if not any(m.role == "system" for m in messages):
-                messages.insert(0, ChatMessage(role="system", content=self.cfg.system_instructions))
+        Modes:
+        - If `input_data` is a List[ChatMessage]:
+            Use this list as the base conversation context (already built by the caller,
+            e.g. runtime engine with RAG + websearch + history). Optionally inject
+            system instructions and context.
+        - If `input_data` is a str:
+            Fall back to legacy mode with single user_input + optional memory.
+
+        Returns:
+            Dict with keys:
+                - "answer": final answer from tools loop (or planner),
+                - "tool_traces": list of executed tools (name, args, output, preview),
+                - "messages": final message list used by the tools loop,
+                - "output_structure": optional structured output (if output_model provided).
+        """
+
+        # --- Branch 1: caller provides full messages context (ChatGPT-like mode) ---
+        if isinstance(input_data, list):
+            # Treat input_data as List[ChatMessage]
+            base_messages: List[ChatMessage] = list(input_data)
+
+            # Ensure there is at least one system message with core instructions.
+            has_system = any(m.role == "system" for m in base_messages)
+            if not has_system:
+                base_messages.insert(
+                    0,
+                    ChatMessage(role="system", content=self.cfg.system_instructions),
+                )
+
+            # Inject textual session context (RAG + websearch) as extra system message.
             if context:
-                ctx_msg = ChatMessage(role="system", content=self.cfg.system_context_template.format(context=context))
-                if len(messages) and messages[-1].role == "user":
-                    messages = messages[:-1] + [ctx_msg, messages[-1]]
+                ctx_msg = ChatMessage(
+                    role="system",
+                    content=self.cfg.system_context_template.format(context=context),
+                )
+                # Wkładamy go tuż przed ostatnią wiadomością user, jeśli jest,
+                # żeby model widział kontekst „tuż przed pytaniem”.
+                if base_messages and base_messages[-1].role == "user":
+                    base_messages = base_messages[:-1] + [ctx_msg, base_messages[-1]]
                 else:
-                    messages.append(ctx_msg)
+                    base_messages.append(ctx_msg)
+
+            messages: List[ChatMessage] = base_messages
+
+        # --- Branch 2: legacy mode – single user_input string ---
         else:
-            sys = ChatMessage(
-                role="system",
-                content=self.cfg.system_instructions + (
-                    f"\n\n{self.cfg.system_context_template.format(context=context)}" if context else ""
-                ),
-            )
-            messages = [sys, ChatMessage(role="user", content=user_input)]
+            user_input: str = input_data
+            if not user_input:
+                raise ValueError("ToolsAgent.run requires non-empty input_data.")
+
+            if self.memory:
+                self.memory.add_message("user", user_input)
+                messages = self.memory.get_for_model(native_tools=self._native_tools)
+
+                if not any(m.role == "system" for m in messages):
+                    messages.insert(
+                        0,
+                        ChatMessage(
+                            role="system",
+                            content=self.cfg.system_instructions,
+                        ),
+                    )
+
+                if context:
+                    ctx_msg = ChatMessage(
+                        role="system",
+                        content=self.cfg.system_context_template.format(context=context),
+                    )
+                    if messages and messages[-1].role == "user":
+                        messages = messages[:-1] + [ctx_msg, messages[-1]]
+                    else:
+                        messages.append(ctx_msg)
+            else:
+                sys = ChatMessage(
+                    role="system",
+                    content=self.cfg.system_instructions
+                    + (
+                        f"\n\n{self.cfg.system_context_template.format(context=context)}"
+                        if context
+                        else ""
+                    ),
+                )
+                messages = [sys, ChatMessage(role="user", content=user_input)]
 
         iterations = 0
         tool_traces: List[Dict[str, Any]] = []
@@ -235,7 +307,6 @@ class IntergraxToolsAgent:
                 if self.verbose:
                     print(f"[intergraxToolsAgent] Iteration {iterations} (native tools)")
 
-                # Keep the correct pair (assistant.tool_calls → tool)
                 messages = self._prune_messages_for_openai(messages)
 
                 effective_tool_choice = tool_choice if tool_choice is not None else "auto"
@@ -264,15 +335,18 @@ class IntergraxToolsAgent:
                 content = result.get("content") or ""
                 tool_calls = result.get("tool_calls") or []
 
-                # Add assistant message with tool_calls (native OpenAI format)
-                messages.append(ChatMessage(role="assistant", content=content, tool_calls=tool_calls))
+                messages.append(
+                    ChatMessage(role="assistant", content=content, tool_calls=tool_calls)
+                )
 
                 # --- no tools → final ---
                 if not tool_calls:
                     if content.strip():
-                        if self.memory:
+                        if self.memory and messages is not None:
                             self.memory.add_message("assistant", content)
-                        output_obj = self._build_output_structure(output_model, content, tool_traces)
+                        output_obj = self._build_output_structure(
+                            output_model, content, tool_traces
+                        )
                         return {
                             "answer": content,
                             "tool_traces": tool_traces,
@@ -282,7 +356,9 @@ class IntergraxToolsAgent:
                     final = "(no tool call, empty content)"
                     if self.memory:
                         self.memory.add_message("assistant", final)
-                    output_obj = self._build_output_structure(output_model, final, tool_traces)
+                    output_obj = self._build_output_structure(
+                        output_model, final, tool_traces
+                    )
                     return {
                         "answer": final,
                         "tool_traces": tool_traces,
@@ -292,8 +368,6 @@ class IntergraxToolsAgent:
 
                 # --- execute tools ---
                 for tc in tool_calls:
-                    # Handling the native OpenAI shape:
-                    # { id, type:"function", function:{name, arguments} }
                     fn = tc.get("function") or {}
                     name = fn.get("name") or tc.get("name")
                     call_id = tc.get("id")
@@ -307,11 +381,12 @@ class IntergraxToolsAgent:
                     tool = self.tools.get(name)
                     validated = tool.validate_args(args)
 
-                    # Anti-loop
                     fp = (name, json.dumps(validated, sort_keys=True))
                     if fp == last_call_fp:
                         final = "Stopped repeated identical tool call."
-                        output_obj = self._build_output_structure(output_model, final, tool_traces)
+                        output_obj = self._build_output_structure(
+                            output_model, final, tool_traces
+                        )
                         return {
                             "answer": final,
                             "tool_traces": tool_traces,
@@ -321,52 +396,67 @@ class IntergraxToolsAgent:
                     last_call_fp = fp
 
                     if self.verbose:
-                        print(f"[intergraxToolsAgent] Calling tool: {name}({validated})")
+                        print(
+                            f"[intergraxToolsAgent] Calling tool: {name}({validated})"
+                        )
 
                     try:
                         out = tool.run(**validated)  # full result
                     except Exception as e:
                         out = f"[{name}] ERROR: {e}"
 
-                    # Save full result + preview (backward compatibility)
                     safe_out = _limit_tool_output(json.dumps(out, ensure_ascii=False))
-                    tool_traces.append({
-                        "tool": name,
-                        "args": validated,
-                        "output_preview": safe_out[:400],
-                        "output": out,  # FULL result for structured output
-                    })
+                    tool_traces.append(
+                        {
+                            "tool": name,
+                            "args": validated,
+                            "output_preview": safe_out[:400],
+                            "output": out,
+                        }
+                    )
 
-                    # Tool message – must have tool_call_id and (optionally) name
                     messages.append(
                         ChatMessage(
                             role="tool",
-                            content=json.dumps({"tool_name": name, "result": safe_out}, ensure_ascii=False),
+                            content=json.dumps(
+                                {"tool_name": name, "result": safe_out},
+                                ensure_ascii=False,
+                            ),
                             tool_call_id=call_id,
                             name=name,
                         )
                     )
 
-                # Next iteration with tool results
                 continue
 
-            # limit reached
             final = "Reached tool iteration limit."
             if self.memory:
                 self.memory.add_message("assistant", final)
-            output_obj = self._build_output_structure(output_model, final, tool_traces)
-            return {"answer": final, "tool_traces": tool_traces, "messages": messages, "output_structure": output_obj}
+            output_obj = self._build_output_structure(
+                output_model, final, tool_traces
+            )
+            return {
+                "answer": final,
+                "tool_traces": tool_traces,
+                "messages": messages,
+                "output_structure": output_obj,
+            }
 
         # ===== BRANCH B: JSON planner (e.g., Ollama) =====
         tools_desc = [
-            {"name": t.name, "description": t.description, "parameters": t.get_parameters()}
+            {
+                "name": t.name,
+                "description": t.description,
+                "parameters": t.get_parameters(),
+            }
             for t in self.tools.list()
         ]
 
-
         plan_intro = ChatMessage(
             role="system",
-            content=self.cfg.planner_instructions + "\nTOOLS=\n" + json.dumps(tools_desc, ensure_ascii=False),
+            content=self.cfg.planner_instructions
+            + "\nTOOLS=\n"
+            + json.dumps(tools_desc, ensure_ascii=False),
         )
 
         if len(messages) and messages[0].role == "system":
@@ -385,19 +475,20 @@ class IntergraxToolsAgent:
                 max_tokens=self.cfg.max_answer_tokens,
             )
 
-            # tolerant JSON parser
             plan_obj = None
             try:
                 start, end = plan_text.find("{"), plan_text.rfind("}")
                 if start != -1 and end > start:
-                    plan_obj = json.loads(plan_text[start:end + 1])
+                    plan_obj = json.loads(plan_text[start : end + 1])
             except Exception:
                 plan_obj = None
 
             if not plan_obj:
                 if self.memory:
                     self.memory.add_message("assistant", plan_text)
-                output_obj = self._build_output_structure(output_model, plan_text, tool_traces)
+                output_obj = self._build_output_structure(
+                    output_model, plan_text, tool_traces
+                )
                 return {
                     "answer": plan_text,
                     "tool_traces": tool_traces,
@@ -409,7 +500,9 @@ class IntergraxToolsAgent:
                 final = str(plan_obj["final_answer"])
                 if self.memory:
                     self.memory.add_message("assistant", final)
-                output_obj = self._build_output_structure(output_model, final, tool_traces)
+                output_obj = self._build_output_structure(
+                    output_model, final, tool_traces
+                )
                 return {
                     "answer": final,
                     "tool_traces": tool_traces,
@@ -425,7 +518,9 @@ class IntergraxToolsAgent:
                 validated = tool.validate_args(args)
 
                 if self.verbose:
-                    print(f"[intergraxToolsAgent] Calling tool: {name}({validated})")
+                    print(
+                        f"[intergraxToolsAgent] Calling tool: {name}({validated})"
+                    )
 
                 try:
                     out = tool.run(**validated)
@@ -433,17 +528,22 @@ class IntergraxToolsAgent:
                     out = f"[{name}] ERROR: {e}"
 
                 safe_out = _limit_tool_output(json.dumps(out, ensure_ascii=False))
-                tool_traces.append({
-                    "tool": name,
-                    "args": validated,
-                    "output_preview": safe_out[:400],
-                    "output": out,  # FULL result
-                })
+                tool_traces.append(
+                    {
+                        "tool": name,
+                        "args": validated,
+                        "output_preview": safe_out[:400],
+                        "output": out,
+                    }
+                )
 
                 messages.append(
                     ChatMessage(
                         role="tool",
-                        content=json.dumps({"tool_name": name, "result": safe_out}, ensure_ascii=False),
+                        content=json.dumps(
+                            {"tool_name": name, "result": safe_out},
+                            ensure_ascii=False,
+                        ),
                     )
                 )
 
@@ -459,4 +559,11 @@ class IntergraxToolsAgent:
         if self.memory:
             self.memory.add_message("assistant", final)
         output_obj = self._build_output_structure(output_model, final, tool_traces)
-        return {"answer": final, "tool_traces": tool_traces, "messages": messages, "output_structure": output_obj}
+        return {
+            "answer": final,
+            "tool_traces": tool_traces,
+            "messages": messages,
+            "output_structure": output_obj,
+        }
+
+
