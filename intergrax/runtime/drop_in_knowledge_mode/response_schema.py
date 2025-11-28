@@ -103,14 +103,11 @@ class RuntimeRequest:
     session_id: str
     message: str
 
-    attachments: List[AttachmentRef] = field(default_factory=list),
+    attachments: List[AttachmentRef] = field(default_factory=list)
 
     # Optional tenant/workspace scoping
     tenant_id: Optional[str] = None
     workspace_id: Optional[str] = None
-
-    # Optional list of attachment identifiers (file paths, storage IDs, etc.)
-    attachments: List[str] = field(default_factory=list)
 
     # Optional UI / app metadata (channel, app name, etc.)
     metadata: Dict[str, Any] = field(default_factory=dict)

@@ -39,6 +39,7 @@ from intergrax.runtime.drop_in_knowledge_mode.response_schema import (
     RuntimeAnswer,
     RouteInfo,
     RuntimeStats,
+    ToolCallInfo,
 )
 from intergrax.runtime.drop_in_knowledge_mode.session_store import (
     SessionStore,
@@ -59,7 +60,7 @@ from intergrax.runtime.drop_in_knowledge_mode.websearch_prompt_builder import (
     WebSearchPromptBuilder,
 )
 
-from .context_builder import RetrievedChunk
+from intergrax.runtime.drop_in_knowledge_mode.context_builder import RetrievedChunk
 
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
@@ -207,6 +208,7 @@ class DropInKnowledgeRuntime:
 
         # 3. Build LLM-ready context (RAG + history + websearch)
         messages_for_llm: List[ChatMessage] = []
+        history_includes_current_user: bool = False
         used_rag_flag: bool = False
         used_websearch_flag: bool = False
         used_tools_flag: bool = False
@@ -248,6 +250,7 @@ class DropInKnowledgeRuntime:
 
             # 3a.2 Reduced chat history
             messages_for_llm.extend(built.history_messages or [])
+            history_includes_current_user = True
 
             debug_trace["history_length"] = len(built.history_messages or [])
             debug_trace["rag_chunks"] = len(built.retrieved_chunks or [])
@@ -261,6 +264,7 @@ class DropInKnowledgeRuntime:
             # 3b. Fallback: legacy behavior without ContextBuilder / RAG
             history = self._build_chat_history(session)
             messages_for_llm = history
+            history_includes_current_user = True
             debug_trace["history_length"] = len(history)
             used_rag_flag = False
 
@@ -316,7 +320,8 @@ class DropInKnowledgeRuntime:
             debug_trace["websearch"] = websearch_debug
 
         # 3d. Current user message (always last in the base context)
-        messages_for_llm.append(ChatMessage(role="user", content=request.message))
+        if not history_includes_current_user:
+            messages_for_llm.append(ChatMessage(role="user", content=request.message))
 
         # 4. Optional tools execution layer (planning + tool calls).
         # The tools agent decides whether to call tools and which ones, but the final
@@ -478,14 +483,23 @@ class DropInKnowledgeRuntime:
         )
 
         # Prepare lightweight tool call summaries for the answer (for UI / logging).
-        tool_calls_for_answer = [
-            {
-                "tool": t.get("tool"),
-                "args": t.get("args"),
-                "output_preview": t.get("output_preview"),
-            }
-            for t in tool_traces
-        ]
+        tool_calls_for_answer: List[ToolCallInfo] = []
+
+        for t in tool_traces:
+            tool_calls_for_answer.append(
+                ToolCallInfo(
+                    tool_name=t.get("tool") or "",
+                    arguments=t.get("args") or {},
+                    result_summary=(
+                        t.get("output_preview")
+                        if isinstance(t.get("output_preview"), str)
+                        else None
+                    ),
+                    success=not bool(t.get("error")),
+                    error_message=t.get("error"),
+                    extra={"raw_trace": t},
+                )
+            )
 
         # 8. Return RuntimeAnswer
         return RuntimeAnswer(
