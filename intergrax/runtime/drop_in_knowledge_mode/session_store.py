@@ -3,31 +3,27 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 """
-Session storage and memory integration component for the Intergrax
-Drop-In Knowledge Runtime.
+Unified memory component for the Intergrax Drop-In Knowledge Runtime.
 
 This module defines:
-  - ChatSession: a lightweight metadata container for a chat session.
-  - SessionStore: a unified memory component responsible for:
+  - ChatSession: a lightweight metadata model for a chat session.
+  - SessionStore: a central component responsible for:
         * managing session lifecycle,
-        * storing and retrieving conversation history via
+        * storing and retrieving conversational history using
           IntergraxConversationalMemory,
-        * building LLM-ready message context.
+        * producing LLM-ready message context for inference.
 
 Design principles:
-  - The engine sees SessionStore as a single "memory black box".
-  - SessionStore consolidates all memory layers internally (now only
-    conversational memory; later: user profile, org profile, long-term
-    memory, preferences, embeddings, etc.).
-  - The API exposed to the engine remains simple and stable ("get and use").
+  - The engine interacts only with SessionStore (not with any internal memory
+    components such as conversational memory, profiles, or persistent storage).
+  - SessionStore consolidates all memory layers internally.
+  - The public API remains simple and stable ("get and use").
 
-Current status:
-  - Fully in-memory implementation (not production-ready).
+Current implementation:
+  - Fully in-memory (not yet persistent).
   - Conversational memory is the single source of truth for message history.
-  - No persistence backend, no long-term memory yet.
-
-Future extensions will plug into this same SessionStore without changing
-the engine architecture.
+  - User profile memory is provided as a simple in-memory map (not yet used
+    by the engine for prompt injection).
 """
 
 from __future__ import annotations
@@ -47,12 +43,12 @@ from intergrax.llm.conversational_memory import IntergraxConversationalMemory
 @dataclass
 class ChatSession:
     """
-    Lightweight metadata container representing an ongoing chat session.
+    Metadata describing a chat session.
 
     Important:
-      This object does NOT store the messages. The single source of truth
-      for message history is managed by the SessionStore using
-      IntergraxConversationalMemory (or future persistent memory backends).
+      This object does NOT store messages. The single source of truth for
+      conversation history is held by the SessionStore using
+      IntergraxConversationalMemory or future backends.
     """
 
     id: str
@@ -60,69 +56,64 @@ class ChatSession:
     tenant_id: Optional[str] = None
     workspace_id: Optional[str] = None
 
-    created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
-    updated_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
-    # Optional session-level attachments (not tied to specific messages)
+    # Optional per-session attachments (not tied directly to a single message)
     attachments: List[AttachmentRef] = field(default_factory=list)
 
-    # Arbitrary metadata (e.g., runtime labels, task context, custom settings)
+    # Arbitrary metadata (could contain tags, app-specific values, etc.)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def touch(self) -> None:
-        """Update modification timestamp."""
+        """Refresh modification timestamp."""
         self.updated_at = datetime.now(timezone.utc)
 
 
 class SessionStore:
     """
-    Unified memory component used by the Drop-In Knowledge Runtime.
+    The primary memory backbone for the runtime.
 
     Responsibilities:
       - Create and manage chat sessions.
-      - Store and retrieve per-session message history using
-        IntergraxConversationalMemory.
-      - Provide LLM-ready conversation history with trimming already applied.
+      - Maintain conversational message history per session.
+      - Return an LLM-ready ordered list of messages representing the session context.
 
-    Future responsibility expansion (internal, NOT affecting engine API):
-      - User profile memory (preferences, tone, constraints).
-      - Organization-level memory (context, knowledge policies).
-      - Long-term semantic memory (extracted facts, embeddings, indexing).
-      - Memory persistence (SQLite/Postgres/Redis/custom providers).
+    Notes:
+      This class intentionally hides implementation details of memory sources
+      (e.g., conversation history, user profiles, persistent stores, vector memory)
+      from the engine.
 
-    Engine should never know *how* memory works — only that:
-       session_store.build_conversational_history(session) → List[ChatMessage].
+    Future expansion:
+      - user profile memory (preferences, language style, tone),
+      - organization-level memory,
+      - long-term semantic memory (facts, embeddings),
+      - persistence layer adapters (SQLite, PostgreSQL, Redis, Supabase).
     """
 
-    def __init__(
-        self,
-        *,
-        max_history_messages: int = 200,
-    ) -> None:
-        # Session metadata storage (no message history here).
+    def __init__(self, *, max_history_messages: int = 200) -> None:
+        # Metadata storage (chat sessions registry)
         self._sessions: Dict[str, ChatSession] = {}
 
-        # Per-session conversational memory storage.
+        # Internal conversational memory storage (one per session)
         self._conv_memory: Dict[str, IntergraxConversationalMemory] = {}
 
-        # Default maximum message count before trimming occurs.
+        # Maximum number of messages to keep before trimming FIFO-style
         self._max_history_messages = max_history_messages
 
-        # Placeholder for future memory layers:
-        # self._user_profile_memory = ...
-        # self._org_profile_memory = ...
-        # self._long_term_memory = ...
+        # Simple in-memory user profile storage:
+        #   user_id -> { "key": value, ... }
+        # This is the first step towards user profile memory. It is not yet
+        # integrated into the engine prompt, but provides a clear place
+        # to attach and evolve profile data.
+        self._user_profiles: Dict[str, Dict[str, Any]] = {}
 
     # ------------------------------------------------------------------
-    # Session management
+    # Session lifecycle
     # ------------------------------------------------------------------
 
     async def get_session(self, session_id: str) -> Optional[ChatSession]:
-        """Return the session metadata if it exists, otherwise None."""
+        """Return the session metadata if it exists, else None."""
         return self._sessions.get(session_id)
 
     async def create_session(
@@ -134,8 +125,7 @@ class SessionStore:
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> ChatSession:
         """
-        Create and register a new chat session.
-        Also initializes a conversational memory buffer for that session.
+        Create a new chat session and initialize its conversational memory.
         """
         session_id = session_id or str(uuid.uuid4())
 
@@ -148,7 +138,7 @@ class SessionStore:
         )
         self._sessions[session_id] = session
 
-        # Initialize conversational memory backing this session.
+        # Initialize the backing conversation memory for this session
         self._conv_memory[session_id] = IntergraxConversationalMemory(
             session_id=session_id,
             max_messages=self._max_history_messages,
@@ -158,34 +148,28 @@ class SessionStore:
 
     async def save_session(self, session: ChatSession) -> None:
         """
-        Persist session metadata.
-        In-memory implementation only updates the timestamp and replaces the reference.
+        Persist the session metadata.
+        (In-memory version simply updates timestamps and replaces the entry.)
         """
         session.touch()
         self._sessions[session.id] = session
 
     # ------------------------------------------------------------------
-    # Message and memory operations
+    # Message operations
     # ------------------------------------------------------------------
 
-    async def append_message(
-        self,
-        session_id: str,
-        message: ChatMessage,
-    ) -> None:
+    async def append_message(self, session_id: str, message: ChatMessage) -> None:
         """
-        Append a message to the session's memory source of truth.
-
-        - Updates conversational memory
-        - Refreshes session timestamp
+        Append a chat message to the session's conversational history.
         """
         session = self._sessions.get(session_id)
-        if not session:
+        if session is None:
             raise KeyError(f"Session '{session_id}' does not exist")
 
         memory = self._conv_memory.get(session_id)
-        if not memory:
-            # Safety fallback (should not occur)
+
+        # Safety fallback (should not occur)
+        if memory is None:
             memory = IntergraxConversationalMemory(
                 session_id=session_id,
                 max_messages=self._max_history_messages,
@@ -197,38 +181,74 @@ class SessionStore:
         session.touch()
         self._sessions[session_id] = session
 
-    async def list_sessions_for_user(
+    async def list_sessions_for_user(self, user_id: str, limit: int = 50) -> List[ChatSession]:
+        """
+        Return a list of sessions owned by a user, sorted by recent activity.
+        """
+        sessions = [s for s in self._sessions.values() if s.user_id == user_id]
+        sessions.sort(key=lambda s: s.updated_at, reverse=True)
+        return sessions[:limit]
+
+    # ------------------------------------------------------------------
+    # User profile memory (first step)
+    # ------------------------------------------------------------------
+
+    async def get_user_profile(self, user_id: str) -> Dict[str, Any]:
+        """
+        Return a shallow copy of the user's profile dictionary.
+
+        This is intentionally generic (Dict[str, Any]) to support:
+          - language/tone preferences,
+          - domain expertise flags,
+          - feature flags,
+          - custom per-user settings.
+
+        Engine does not call this directly yet; it will be used as an
+        internal building block when injecting profile-based system messages.
+        """
+        profile = self._user_profiles.get(user_id, {})
+        # Return a copy to avoid accidental external mutation.
+        return dict(profile)
+
+    async def upsert_user_profile(
         self,
         user_id: str,
-        limit: int = 50,
-    ) -> List[ChatSession]:
+        updates: Mapping[str, Any],
+    ) -> Dict[str, Any]:
         """
-        Return user sessions ordered by most recent activity.
+        Merge the provided updates into the user's profile and return
+        the resulting profile.
+
+        Example usage:
+          await session_store.upsert_user_profile("u1", {
+              "preferred_language": "pl",
+              "tone": "technical",
+              "no_emojis_in_code": True,
+          })
         """
-        result = [s for s in self._sessions.values() if s.user_id == user_id]
-        result.sort(key=lambda s: s.updated_at, reverse=True)
-        return result[:limit]
+        current = self._user_profiles.get(user_id, {})
+        merged = dict(current)
+        merged.update(dict(updates))
+        self._user_profiles[user_id] = merged
+        return merged
 
     # ------------------------------------------------------------------
-    # Conversation history builder for the engine
+    # Conversation context builder
     # ------------------------------------------------------------------
 
-    def build_conversational_history(
-        self,
-        session: ChatSession
-    ) -> List[ChatMessage]:
+    def get_conversation_history(self, session: ChatSession) -> List[ChatMessage]:
         """
-        Return the LLM-ready message history for a session.
+        Return an ordered list of ChatMessage objects representing the
+        conversation history for the given session.
 
-        Notes:
-        - Trimming is handled by IntergraxConversationalMemory.
-        - `max_history_messages` argument is retained for future extensibility
-          (e.g. persistent database stores may use it to limit retrieval).
-        - Currently `native_tools=False` because we are not yet injecting
-          OpenAI Responses native tool call metadata into the memory structure.
+        Trimming logic (max history size, FIFO) is handled internally by
+        the backing conversational memory implementation.
         """
         memory = self._conv_memory.get(session.id)
-        if not memory:
+        if memory is None:
             return []
 
+        # Still uses IntergraxConversationalMemory under the hood,
+        # but SessionStore does not talk about LLMs or prompts.
         return memory.get_for_model(native_tools=False)
+
