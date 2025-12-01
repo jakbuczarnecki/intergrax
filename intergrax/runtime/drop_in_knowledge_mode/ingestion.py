@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from langchain_core.documents import Document
 
-from intergrax.llm.conversational_memory import AttachmentRef
+from intergrax.llm.messages import AttachmentRef
 from intergrax.rag.documents_loader import IntergraxDocumentsLoader
 from intergrax.rag.documents_splitter import IntergraxDocumentsSplitter
 from intergrax.rag.embedding_manager import IntergraxEmbeddingManager

@@ -46,7 +46,7 @@ from intergrax.runtime.drop_in_knowledge_mode.session_store import (
     SessionMessage,
     ChatSession,
 )
-from intergrax.llm.conversational_memory import ChatMessage
+from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.ingestion import (
     AttachmentIngestionService,
     IngestionResult,

@@ -31,7 +31,7 @@ from typing import (
     Literal, 
     runtime_checkable)
 import uuid
-from intergrax.llm.conversational_memory import (
+from intergrax.llm.messages import (
     AttachmentRef,
     MessageRole
 )

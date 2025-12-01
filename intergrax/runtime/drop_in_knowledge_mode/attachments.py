@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Protocol, runtime_checkable
 from urllib.parse import urlparse
 
-from intergrax.llm.conversational_memory import AttachmentRef
+from intergrax.llm.messages import AttachmentRef
 
 
 @runtime_checkable

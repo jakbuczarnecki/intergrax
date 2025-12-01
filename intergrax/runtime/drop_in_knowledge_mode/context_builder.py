@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from intergrax.rag.vectorstore_manager import IntergraxVectorstoreManager
-from intergrax.llm.conversational_memory import ChatMessage
+from intergrax.llm.messages import ChatMessage
 
 from .config import RuntimeConfig
 from .response_schema import RuntimeRequest

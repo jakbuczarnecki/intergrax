@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
-from intergrax.llm.conversational_memory import AttachmentRef
+from intergrax.llm.messages import AttachmentRef
 
 
 @dataclass

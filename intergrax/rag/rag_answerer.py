@@ -9,7 +9,8 @@ import json
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Protocol, Iterable, Literal, Type
 
-from intergrax.llm.conversational_memory import IntergraxConversationalMemory, ChatMessage
+from intergrax.llm.conversational_memory import IntergraxConversationalMemory
+from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters import LLMAdapter
 
 # Pydantic optionally (no hard runtime dependency)
