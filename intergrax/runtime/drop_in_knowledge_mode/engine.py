@@ -12,11 +12,6 @@ This module defines the `DropInKnowledgeRuntime` class, which:
   - (in the future) augments context with RAG, web search, tools and memory,
   - produces a `RuntimeAnswer` object as a high-level response.
 
-At this stage, the engine is a skeleton:
-  - session handling is implemented,
-  - LLM integration is left as a TODO,
-  - no RAG / web search / tools yet.
-
 The goal is to provide a single, simple entrypoint that can be used from
 FastAPI, Streamlit, MCP-like environments, CLI tools, etc.
 """
@@ -43,7 +38,6 @@ from intergrax.runtime.drop_in_knowledge_mode.response_schema import (
 )
 from intergrax.runtime.drop_in_knowledge_mode.session_store import (
     SessionStore,
-    SessionMessage,
     ChatSession,
 )
 from intergrax.llm.messages import ChatMessage
@@ -411,25 +405,7 @@ class DropInKnowledgeRuntime:
             except Exception as e:
                 debug_trace["tools_error"] = str(e)
 
-        # 5. Final call to the main LLM with all enriched context
-        # try:
-        #     answer_text = self._config.llm_adapter.generate_messages(
-        #         messages_for_llm,
-        #         max_tokens=self._config.max_output_tokens,
-        #         # temperature can be passed here later once you add it to RuntimeConfig
-        #     )
-        # except Exception as e:
-        #     # In case of any adapter failure, optionally fall back to tools_agent answer.
-        #     if tools_agent_answer:
-        #         answer_text = (
-        #             "[ERROR] LLM adapter failed, falling back to tools agent answer.\n"
-        #             f"Details: {e}\n\n"
-        #             f"{tools_agent_answer}"
-        #         )
-        #     else:
-        #         answer_text = f"[ERROR] LLM adapter failed: {e}"
-                # 5. Final call to the main LLM with all enriched context
-                # 5. Decide how to produce the final answer text.
+        # 5. Decide how to produce the final answer text.
         #    If tools were used and the tools agent already produced a
         #    natural-language answer, we treat it as the final answer.
         #    Otherwise we call the main LLM with the full enriched context.
@@ -478,18 +454,14 @@ class DropInKnowledgeRuntime:
                 else "[ERROR] Empty answer from runtime."
             )
 
-
-
         # 6. Append assistant message to the session
-        assistant_session_msg = SessionMessage(
-            id=str(uuid.uuid4()),
-            role="assistant",  # MessageRole alias; type-compatible with the rest of the framework
+        assistant_message = ChatMessage(
+            role="assistant",
             content=answer_text,
-            created_at=datetime.now(timezone.utc),
-            attachments=[],
-            metadata={"placeholder": False},
+            created_at=datetime.now(timezone.utc).isoformat(),
+            # tool_calls / attachments / metadata can be added later if needed
         )
-        await self._session_store.append_message(session.id, assistant_session_msg)
+        await self._session_store.append_message(session.id, assistant_message)
 
         # 7. Build RouteInfo and RuntimeStats
         # Strategy depending on RAG / websearch / tools usage
@@ -563,9 +535,6 @@ class DropInKnowledgeRuntime:
             debug_trace=debug_trace,
         )
 
-
-
-
     def ask_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
         """
         Synchronous wrapper around `ask()`.
@@ -610,23 +579,19 @@ class DropInKnowledgeRuntime:
     def _build_session_message_from_request(
         self,
         request: RuntimeRequest,
-    ) -> SessionMessage:
+    ) -> ChatMessage:
         """
-        Construct a SessionMessage from a RuntimeRequest.
+        Construct a ChatMessage from a RuntimeRequest to be stored in the session.
 
-        Attachments from `request.attachments` are stored directly in the
-        `attachments` field, so that the session fully represents what
-        the user has provided (text + files).
+        Attachments from `request.attachments` are represented at the request level
+        and can be linked via metadata if needed.
         """
-        return SessionMessage(
-            id=str(uuid.uuid4()),
-            role="user",  # MessageRole; kept as a literal for compatibility
+        return ChatMessage(
+            role="user",
             content=request.message,
-            created_at=datetime.now(timezone.utc),
-            attachments=list(request.attachments),
-            metadata={
-                "runtime_request_metadata": request.metadata,
-            },
+            created_at=datetime.now(timezone.utc).isoformat(),
+            # If ChatMessage supports attachments/metadata fields in your version,
+            # you can mirror request.attachments / request.metadata here.
         )
 
     def _build_chat_history(self, session: ChatSession) -> List[ChatMessage]:
@@ -638,26 +603,24 @@ class DropInKnowledgeRuntime:
         handled later using `max_history_tokens`.
         """
         messages = session.messages[-self._config.max_history_messages :]
+
         history: List[ChatMessage] = []
-
         for msg in messages:
-            # Normalize created_at to a string (ISO-like) regardless of how it is stored.
-            # In some SessionStore implementations it may already be a string.
+            # Ensure created_at is a string in the final ChatMessage.
             created_at_value = getattr(msg, "created_at", None)
-
             if hasattr(created_at_value, "isoformat"):
-                # datetime or similar object
                 created_at_str = created_at_value.isoformat()
             else:
-                # already a string or None; we pass it through
                 created_at_str = created_at_value
 
-            chat_msg = ChatMessage(
-                role=msg.role,  # MessageRole
-                content=msg.content,
-                created_at=created_at_str,
-                # tool_call_id, name, tool_calls will be filled later if needed
+            history.append(
+                ChatMessage(
+                    role=msg.role,
+                    content=msg.content,
+                    created_at=created_at_str,
+                    # tool_call_id / tool_calls / metadata can be passed through
+                    # when these fields are defined on ChatMessage.
+                )
             )
-            history.append(chat_msg)
 
         return history

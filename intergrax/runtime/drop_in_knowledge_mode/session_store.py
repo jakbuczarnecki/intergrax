@@ -6,7 +6,7 @@
 Session storage abstractions for the Drop-In Knowledge Mode runtime.
 
 This module defines:
-  - Data classes representing chat sessions and messages.
+  - Data classes representing chat sessions.
   - A SessionStore protocol that can be implemented for different backends
     (in-memory, SQLite, PostgreSQL, Supabase, etc.).
   - A simple in-memory implementation for quick experiments and notebooks.
@@ -14,7 +14,8 @@ This module defines:
 The goal is:
   * Each runtime instance always works inside a session.
   * The session can be loaded from or persisted to any storage backend.
-  * Messages can carry attachment references and arbitrary metadata.
+  * Messages use the core ChatMessage type and can carry attachment references
+    and arbitrary metadata.
 """
 
 from __future__ import annotations
@@ -22,36 +23,20 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import (
-    Any, 
-    Dict, 
-    List, 
-    Mapping, 
-    Optional, 
-    Protocol, 
-    Literal, 
-    runtime_checkable)
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Protocol,
+    runtime_checkable,
+)
 import uuid
+
 from intergrax.llm.messages import (
     AttachmentRef,
-    MessageRole
+    ChatMessage,
 )
-
-
-@dataclass
-class SessionMessage:
-    """
-    A single message in a chat session.
-
-    This is intentionally storage-agnostic and independent from any specific
-    LLM schema. The runtime will later map it to the concrete adapter format.
-    """
-
-    id: str
-    role: MessageRole
-    content: str
-    created_at: datetime
-    attachments: List[AttachmentRef] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -61,6 +46,10 @@ class ChatSession:
 
     A session groups messages, attachments and metadata under a stable ID.
     It also carries tenant / workspace scope for multi-tenant environments.
+
+    Messages are stored as the core `ChatMessage` type used across the
+    framework, so higher-level components (Drop-In Runtime, tools agents,
+    etc.) all operate on a single, unified message model.
     """
 
     id: str
@@ -75,10 +64,13 @@ class ChatSession:
         default_factory=lambda: datetime.now(timezone.utc)
     )
 
-    messages: List[SessionMessage] = field(default_factory=list)
+    # Full conversation history for this session.
+    messages: List[ChatMessage] = field(default_factory=list)
+
     # Optional global session-level attachments (not tied to a single message)
     attachments: List[AttachmentRef] = field(default_factory=list)
 
+    # Arbitrary session-level metadata (e.g. labels, runtime hints, etc.)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def touch(self) -> None:
@@ -113,7 +105,7 @@ class SessionStore(Protocol):
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> ChatSession:
         """
-        Create a new session with a generated ID and return it.
+        Create a new session (with a generated ID if not provided) and return it.
 
         Implementations should persist the session immediately.
         """
@@ -131,7 +123,7 @@ class SessionStore(Protocol):
     async def append_message(
         self,
         session_id: str,
-        message: SessionMessage,
+        message: ChatMessage,
     ) -> None:
         """
         Append a new message to an existing session and persist the change.
@@ -181,7 +173,7 @@ class InMemorySessionStore(SessionStore):
         workspace_id: Optional[str] = None,
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> ChatSession:
-        
+
         session_id = session_id or str(uuid.uuid4())
 
         session = ChatSession(
@@ -201,7 +193,7 @@ class InMemorySessionStore(SessionStore):
     async def append_message(
         self,
         session_id: str,
-        message: SessionMessage,
+        message: ChatMessage,
     ) -> None:
         session = self._sessions.get(session_id)
         if session is None:

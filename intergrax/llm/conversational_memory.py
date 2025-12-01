@@ -8,7 +8,7 @@ import threading
 import uuid
 from typing import List, Optional, Sequence
 
-from intergrax.llm.messages import ChatMessage
+from intergrax.llm.messages import ChatMessage, MessageRole
 
 
 class IntergraxConversationalMemory:
@@ -46,8 +46,14 @@ class IntergraxConversationalMemory:
         """
         Append a new message to the history and enforce max_messages limit.
         """
+        self.add_message(ChatMessage(role=role, content=str(content)))        
+
+    def add_message(self, message: ChatMessage) -> None:
+        """
+        Append a new message to the history and enforce max_messages limit.
+        """
         with self._lock:
-            self._messages.append(ChatMessage(role=role, content=str(content)))
+            self._messages.append(message)
             self._trim_if_needed()
 
     def extend(self, messages: Sequence[ChatMessage]) -> None:

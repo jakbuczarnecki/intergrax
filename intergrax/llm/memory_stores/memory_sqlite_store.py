@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from intergrax.llm.conversational_memory import IntergraxConversationalMemory
-from intergrax.llm.messages import ChatMessage
+from intergrax.llm.messages import ChatMessage, MessageRole
 
 
 class SqliteMemoryStore:
