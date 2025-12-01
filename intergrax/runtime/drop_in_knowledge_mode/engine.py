@@ -596,31 +596,17 @@ class DropInKnowledgeRuntime:
 
     def _build_chat_history(self, session: ChatSession) -> List[ChatMessage]:
         """
-        Build a list of ChatMessage objects from the stored session messages.
+        Build a conversation history for the LLM using the SessionStore.
 
-        Only the last `max_history_messages` messages are included, in order
-        to keep the context size under control. Token-level truncation will be
-        handled later using `max_history_tokens`.
+        The engine does not know how the history is constructed internally:
+        SessionStore is free to use IntergraxConversationalMemory, additional
+        filters, tagging, or other memory mechanisms.
+
+        At this stage:
+          - SessionStore uses IntergraxConversationalMemory under
+            the hood to trim and return a list of ChatMessage objects.
         """
-        messages = session.messages[-self._config.max_history_messages :]
-
-        history: List[ChatMessage] = []
-        for msg in messages:
-            # Ensure created_at is a string in the final ChatMessage.
-            created_at_value = getattr(msg, "created_at", None)
-            if hasattr(created_at_value, "isoformat"):
-                created_at_str = created_at_value.isoformat()
-            else:
-                created_at_str = created_at_value
-
-            history.append(
-                ChatMessage(
-                    role=msg.role,
-                    content=msg.content,
-                    created_at=created_at_str,
-                    # tool_call_id / tool_calls / metadata can be passed through
-                    # when these fields are defined on ChatMessage.
-                )
-            )
-
-        return history
+        return self._session_store.build_conversational_history(
+            session=session,
+            max_history_messages=self._config.max_history_messages,
+        )
