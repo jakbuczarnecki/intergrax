@@ -23,7 +23,7 @@ import json
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 
-from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.rag_prompt_builder import (
     DefaultRagPromptBuilder,
     RagPromptBuilder,
@@ -325,8 +325,18 @@ class DropInKnowledgeRuntime:
                 else None
             )
             try:
+
+                if self._config.tools_context_scope == ToolsContextScope.CURRENT_MESSAGE_ONLY:
+                    agent_input = request.message
+
+                elif self._config.tools_context_scope == ToolsContextScope.CONVERSATION:
+                    agent_input = built.history_messages
+
+                else:
+                    agent_input = messages_for_llm
+
                 tools_result = self._config.tools_agent.run(
-                    input_data=request.message,
+                    input_data=agent_input,
                     context=tools_context,
                     stream=False,
                     tool_choice=None,
@@ -464,7 +474,7 @@ class DropInKnowledgeRuntime:
             used_websearch=used_websearch_flag and self._config.enable_websearch,
             used_tools=used_tools_flag and self._config.tools_mode != "off",
             used_long_term_memory=False,
-            used_user_profile=self._config.enable_user_profile_memory,
+            used_user_profile=False,
             strategy=strategy,
             extra={},
         )
