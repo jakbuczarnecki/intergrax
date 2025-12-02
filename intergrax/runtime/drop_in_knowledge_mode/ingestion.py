@@ -29,10 +29,10 @@ from typing import Any, Dict, List, Optional, Sequence
 from langchain_core.documents import Document
 
 from intergrax.llm.messages import AttachmentRef
-from intergrax.rag.documents_loader import IntergraxDocumentsLoader
-from intergrax.rag.documents_splitter import IntergraxDocumentsSplitter
-from intergrax.rag.embedding_manager import IntergraxEmbeddingManager
-from intergrax.rag.vectorstore_manager import IntergraxVectorstoreManager
+from intergrax.rag.documents_loader import DocumentsLoader
+from intergrax.rag.documents_splitter import DocumentsSplitter
+from intergrax.rag.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore_manager import VectorstoreManager
 
 from .attachments import AttachmentResolver
 
@@ -82,10 +82,10 @@ class AttachmentIngestionService:
         self,
         *,
         resolver: AttachmentResolver,
-        embedding_manager: IntergraxEmbeddingManager,
-        vectorstore_manager: IntergraxVectorstoreManager,
-        loader: Optional[IntergraxDocumentsLoader] = None,
-        splitter: Optional[IntergraxDocumentsSplitter] = None,
+        embedding_manager: EmbeddingManager,
+        vectorstore_manager: VectorstoreManager,
+        loader: Optional[DocumentsLoader] = None,
+        splitter: Optional[DocumentsSplitter] = None,
     ) -> None:
         """
         Args:
@@ -107,8 +107,8 @@ class AttachmentIngestionService:
         self._vectorstore_manager = vectorstore_manager
 
         # Use provided loader/splitter or fall back to default instances.
-        self._loader = loader or IntergraxDocumentsLoader(verbose=False)
-        self._splitter = splitter or IntergraxDocumentsSplitter(
+        self._loader = loader or DocumentsLoader(verbose=False)
+        self._splitter = splitter or DocumentsSplitter(
             verbose=False,
             default_chunk_size=1000,
             default_chunk_overlap=100,

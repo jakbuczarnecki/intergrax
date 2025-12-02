@@ -9,7 +9,7 @@ import json
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Protocol, Iterable, Literal, Type
 
-from intergrax.llm.conversational_memory import IntergraxConversationalMemory
+from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters import LLMAdapter
 
@@ -26,7 +26,7 @@ except Exception:
 # =========================
 
 @dataclass
-class IntergraxAnswererConfig:
+class AnswererConfig:
     # Retrieval / ranking
     top_k: int = 12
     min_score: Optional[float] = None
@@ -70,21 +70,21 @@ class AnswerSource:
 # Main Answerer (messages & roles)
 # =========================
 
-class IntergraxRagAnswerer:
+class RagAnswerer:
     def __init__(
         self,
         retriever: Any,
         llm: LLMAdapter,
         reranker: Optional[Any] = None,
-        config: Optional[IntergraxAnswererConfig] = None,
+        config: Optional[AnswererConfig] = None,
         verbose: bool = False,
         *,
-        memory: Optional[IntergraxConversationalMemory] = None,
+        memory: Optional[ConversationalMemory] = None,
     ):
         self.retriever = retriever
         self.llm = llm
         self.reranker = reranker
-        self.cfg = config or IntergraxAnswererConfig()
+        self.cfg = config or AnswererConfig()
         self.verbose = verbose
         self.memory = memory
 

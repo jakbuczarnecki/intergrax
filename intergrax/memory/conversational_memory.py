@@ -11,7 +11,7 @@ from typing import List, Optional, Sequence
 from intergrax.llm.messages import ChatMessage, MessageRole
 
 
-class IntergraxConversationalMemory:
+class ConversationalMemory:
     """
     Universal in-memory conversation history component.
 
@@ -46,9 +46,9 @@ class IntergraxConversationalMemory:
         """
         Append a new message to the history and enforce max_messages limit.
         """
-        self.add_message(ChatMessage(role=role, content=str(content)))        
+        self.add_message_item(ChatMessage(role=role, content=str(content)))        
 
-    def add_message(self, message: ChatMessage) -> None:
+    def add_message_item(self, message: ChatMessage) -> None:
         """
         Append a new message to the history and enforce max_messages limit.
         """

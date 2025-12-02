@@ -7,8 +7,8 @@ import logging
 import math
 from typing import List, Dict, Callable, Optional
 from langchain_core.documents import Document
-from .vectorstore_manager import IntergraxVectorstoreManager
-from .embedding_manager import IntergraxEmbeddingManager
+from .vectorstore_manager import VectorstoreManager
+from .embedding_manager import EmbeddingManager
 
 logger = logging.getLogger("intergrax.dual_index_builder")
 
@@ -16,9 +16,9 @@ logger = logging.getLogger("intergrax.dual_index_builder")
 def build_dual_index(
     *,
     docs: List[Document],
-    embed_manager: IntergraxEmbeddingManager,                 # intergraxEmbeddingManager
-    vs_chunks: IntergraxVectorstoreManager,                   # main collection (CHUNKS)
-    vs_toc: Optional[IntergraxVectorstoreManager] = None,     # lightweight collection (TOC)
+    embed_manager: EmbeddingManager,                 # intergraxEmbeddingManager
+    vs_chunks: VectorstoreManager,                   # main collection (CHUNKS)
+    vs_toc: Optional[VectorstoreManager] = None,     # lightweight collection (TOC)
     batch_size: int = 512,
     make_toc_from_docx_headings: bool = True,
     toc_min_level: int = 1,

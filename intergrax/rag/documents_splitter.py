@@ -23,7 +23,7 @@ def _hash_text(text: str, n: int = 12) -> str:
     return hashlib.sha1(text.encode("utf-8", errors="ignore")).hexdigest()[:n]
 
 
-class IntergraxDocumentsSplitter:
+class DocumentsSplitter:
     def __init__(
         self,
         *,

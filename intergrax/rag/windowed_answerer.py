@@ -13,7 +13,7 @@ from intergrax.llm.messages import ChatMessage
 logger = logging.getLogger("intergrax.windowed_answerer")
 
 
-class IntergraxWindowedAnswerer:
+class WindowedAnswerer:
     """
     Windowed (map→reduce) layer on top of the base Answerer.
     """

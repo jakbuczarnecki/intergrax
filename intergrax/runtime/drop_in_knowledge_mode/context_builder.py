@@ -27,7 +27,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
-from intergrax.rag.vectorstore_manager import IntergraxVectorstoreManager
+from intergrax.rag.vectorstore_manager import VectorstoreManager
 from intergrax.llm.messages import ChatMessage
 
 from .config import RuntimeConfig
@@ -120,7 +120,7 @@ class ContextBuilder:
     def __init__(
         self,
         config: RuntimeConfig,
-        vectorstore_manager: IntergraxVectorstoreManager,
+        vectorstore_manager: VectorstoreManager,
         *,
         collection_name: Optional[str] = None,
     ) -> None:

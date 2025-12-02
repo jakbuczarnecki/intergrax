@@ -37,7 +37,7 @@ class ReRankerConfig:
     # Key of original score from retriever (if you want fusion)
     hit_orig_score_key: str = "similarity_score"
 
-class IntergraxReRanker:
+class ReRanker:
     """
     Fast, scalable cosine re-ranker over candidate chunks.
     - Accepts hits from intergraxRagRetriever (dict) OR raw LangChain Documents.

@@ -33,7 +33,7 @@ class EmbeddingStats:
     count: int
 
 
-class IntergraxEmbeddingManager:
+class EmbeddingManager:
     """
     Unified embedding manager for HuggingFace (SentenceTransformer), Ollama, or OpenAI embeddings.
 
@@ -283,7 +283,7 @@ class IntergraxEmbeddingManager:
                 np.empty((query_vecs.shape[0], 0), dtype=np.float32),
             )
         k = min(k, corpus_vecs.shape[0])
-        sims = IntergraxEmbeddingManager.cosine_sim_matrix(query_vecs, corpus_vecs)
+        sims = EmbeddingManager.cosine_sim_matrix(query_vecs, corpus_vecs)
         idx = np.argpartition(-sims, kth=k-1, axis=1)[:, :k]
         row_indices = np.arange(sims.shape[0])[:, None]
         top_scores = sims[row_indices, idx]

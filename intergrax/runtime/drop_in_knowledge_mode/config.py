@@ -7,8 +7,8 @@ from enum import Enum
 from typing import Any, Dict, Optional, Literal
 
 from intergrax.llm_adapters.base import LLMAdapter
-from intergrax.rag.embedding_manager import IntergraxEmbeddingManager
-from intergrax.rag.vectorstore_manager import IntergraxVectorstoreManager
+from intergrax.rag.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore_manager import VectorstoreManager
 from intergrax.tools.tools_agent import IntergraxToolsAgent
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
@@ -54,10 +54,10 @@ class RuntimeConfig:
     llm_adapter: LLMAdapter
 
     # Embedding manager used for RAG/document indexing and retrieval.
-    embedding_manager: IntergraxEmbeddingManager
+    embedding_manager: EmbeddingManager
 
     # Vectorstore manager providing semantic search over stored chunks.
-    vectorstore_manager: IntergraxVectorstoreManager
+    vectorstore_manager: VectorstoreManager
 
     # Optional labels for observability/logging only.
     llm_label: str = "default-llm"

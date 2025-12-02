@@ -7,13 +7,13 @@ from typing import List, Dict, Optional, Any
 import logging
 
 from langchain_core.documents import Document
-from .vectorstore_manager import IntergraxVectorstoreManager
-from .embedding_manager import IntergraxEmbeddingManager
+from .vectorstore_manager import VectorstoreManager
+from .embedding_manager import EmbeddingManager
 
 logger = logging.getLogger("intergrax.dual_retriever")
 
 
-class IntergraxDualRetriever:
+class DualRetriever:
     """
     Dual retriever: first query TOC (sections), then fetch local chunks from the same section/source.
     Works with intergraxVectorstoreManager (uses .query, NOT .search).
@@ -21,10 +21,10 @@ class IntergraxDualRetriever:
 
     def __init__(
         self,
-        vs_chunks: IntergraxVectorstoreManager,
-        vs_toc: Optional[IntergraxVectorstoreManager] = None,
+        vs_chunks: VectorstoreManager,
+        vs_toc: Optional[VectorstoreManager] = None,
         *,
-        embed_manager: Optional[IntergraxEmbeddingManager] = None,
+        embed_manager: Optional[EmbeddingManager] = None,
         k_chunks: int = 30,
         k_toc: int = 8,
         verbose: bool = False,
@@ -41,7 +41,7 @@ class IntergraxDualRetriever:
 
     # --- helpers --------------------------------------------------------
 
-    def _ensure_em(self) -> IntergraxEmbeddingManager:
+    def _ensure_em(self) -> EmbeddingManager:
         if self.em is None:
             raise RuntimeError("intergraxDualRetriever needs an EmbeddingManager (embed_manager=...)")
         return self.em
@@ -83,7 +83,7 @@ class IntergraxDualRetriever:
 
     def _query_vs(
         self,
-        vs: IntergraxVectorstoreManager,
+        vs: VectorstoreManager,
         query_text: str,
         *,
         top_k: int,

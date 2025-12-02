@@ -9,14 +9,14 @@ from copy import deepcopy
 import numpy as np
 
 from langchain_core.documents import Document
-from .vectorstore_manager import IntergraxVectorstoreManager
-from .embedding_manager import IntergraxEmbeddingManager
+from .vectorstore_manager import VectorstoreManager
+from .embedding_manager import EmbeddingManager
 
 # Optional reranker function type: accepts and returns a list of hits
 RerankerFn = Callable[[List[Dict[str, Any]]], List[Dict[str, Any]]]
 
 
-class IntergraxRagRetriever:
+class RagRetriever:
     """
     Scalable, provider-agnostic RAG retriever for intergrax.
 
@@ -48,8 +48,8 @@ class IntergraxRagRetriever:
 
     def __init__(
         self,
-        vector_store: IntergraxVectorstoreManager,
-        embedding_manager: IntergraxEmbeddingManager,
+        vector_store: VectorstoreManager,
+        embedding_manager: EmbeddingManager,
         *,
         verbose: bool = False,
         default_max_per_parent: Optional[int] = 2,

@@ -37,7 +37,7 @@ from intergrax.llm.messages import (
     AttachmentRef,
     ChatMessage,
 )
-from intergrax.llm.conversational_memory import IntergraxConversationalMemory
+from intergrax.memory.conversational_memory import ConversationalMemory
 
 
 @dataclass
@@ -96,7 +96,7 @@ class SessionStore:
         self._sessions: Dict[str, ChatSession] = {}
 
         # Internal conversational memory storage (one per session)
-        self._conv_memory: Dict[str, IntergraxConversationalMemory] = {}
+        self._conv_memory: Dict[str, ConversationalMemory] = {}
 
         # Maximum number of messages to keep before trimming FIFO-style
         self._max_history_messages = max_history_messages
@@ -139,7 +139,7 @@ class SessionStore:
         self._sessions[session_id] = session
 
         # Initialize the backing conversation memory for this session
-        self._conv_memory[session_id] = IntergraxConversationalMemory(
+        self._conv_memory[session_id] = ConversationalMemory(
             session_id=session_id,
             max_messages=self._max_history_messages,
         )
@@ -170,13 +170,13 @@ class SessionStore:
 
         # Safety fallback (should not occur)
         if memory is None:
-            memory = IntergraxConversationalMemory(
+            memory = ConversationalMemory(
                 session_id=session_id,
                 max_messages=self._max_history_messages,
             )
             self._conv_memory[session_id] = memory
 
-        memory.add_message(message)
+        memory.add_message_item(message)
 
         session.touch()
         self._sessions[session_id] = session
