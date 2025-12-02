@@ -117,7 +117,7 @@ class IntergraxChatAgent:
 
         # store the question in memory
         if self.memory is not None:
-            self.memory.add_message("user", question)
+            self.memory.add("user", question)
 
         # tool policy influences routing
         tools_enabled = not (tool_usage == "none")
@@ -409,7 +409,7 @@ class IntergraxChatAgent:
             )
 
             if self.memory and res.get("answer"):
-                self.memory.add_message("assistant", res["answer"])
+                self.memory.add("assistant", res["answer"])
 
             return {
                 "answer": res.get("answer", ""),
@@ -499,7 +499,7 @@ class IntergraxChatAgent:
         )
 
         if self.memory and res.get("answer"):
-            self.memory.add_message("assistant", res["answer"])
+            self.memory.add("assistant", res["answer"])
 
         return {
             "answer": res.get("answer", ""),
@@ -560,7 +560,7 @@ class IntergraxChatAgent:
 
         if self.memory:
             payload = answer + (("\n\n" + summary_txt) if summary_txt else "")
-            self.memory.add_message("assistant", payload)
+            self.memory.add("assistant", payload)
 
         return {
             "answer": answer,

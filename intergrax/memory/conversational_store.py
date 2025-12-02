@@ -15,10 +15,10 @@ class ConversationalMemoryStore(Protocol):
     Abstract persistent storage interface for conversational memory.
 
     This interface operates directly on the conversational memory aggregate
-    (`IntergraxConversationalMemory`), instead of raw collections of messages.
+    (`ConversationalMemory`), instead of raw collections of messages.
 
     Motivation:
-    - The runtime always interacts with `IntergraxConversationalMemory`.
+    - The runtime always interacts with `ConversationalMemory`.
     - The application may swap persistence backends (JSON, SQLite, Redis, Cloud DB)
       without changing runtime logic.
     - The storage backend should NOT implement business logic, trimming policies,

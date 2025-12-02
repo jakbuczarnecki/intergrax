@@ -42,13 +42,13 @@ class ConversationalMemory:
     # Core mutation API
     # ------------------------------------------------------------------
 
-    def add_message(self, role: MessageRole, content: str) -> None:
+    def add(self, role: MessageRole, content: str) -> None:
         """
         Append a new message to the history and enforce max_messages limit.
         """
-        self.add_message_item(ChatMessage(role=role, content=str(content)))        
+        self.add_message(ChatMessage(role=role, content=str(content)))        
 
-    def add_message_item(self, message: ChatMessage) -> None:
+    def add_message(self, message: ChatMessage) -> None:
         """
         Append a new message to the history and enforce max_messages limit.
         """

@@ -107,7 +107,7 @@ class RagAnswerer:
         - no 'structured' field.
         """
         if self.memory is not None:
-            self.memory.add_message(role="user", content=question)
+            self.memory.add(role="user", content=question)
 
         tk = self.cfg.top_k
         ms = self.cfg.min_score
@@ -225,7 +225,7 @@ class RagAnswerer:
                         payload = output_structure_obj.dict()
                     else:
                         payload = dict(output_structure_obj)
-                    self.memory.add_message(role="assistant", content=json.dumps(payload, ensure_ascii=False))
+                    self.memory.add(role="assistant", content=json.dumps(payload, ensure_ascii=False))
             except Exception:
                 # if anything fails, keep the text path only
                 output_structure_obj = None
@@ -247,7 +247,7 @@ class RagAnswerer:
             llm_content = answer
             if summary:
                 llm_content += "\n\n" + summary
-            self.memory.add_message(role="assistant", content=llm_content)
+            self.memory.add(role="assistant", content=llm_content)
 
         # 9) Telemetry + return (same shape as intergraxToolsAgent)
         return {

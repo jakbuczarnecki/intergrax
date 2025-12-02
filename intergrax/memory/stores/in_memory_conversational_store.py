@@ -72,7 +72,7 @@ class InMemoryConversationalMemoryStore(ConversationalMemoryStore):
         Append message in memory and persist the updated state.
         """
         # First apply runtime logic (includes trimming & locking)
-        memory.add_message(message)
+        memory.add(message)
 
         # Then persist the new state
         if memory.session_id not in self._sessions:

@@ -176,7 +176,7 @@ class SessionStore:
             )
             self._conv_memory[session_id] = memory
 
-        memory.add_message_item(message)
+        memory.add_message(message)
 
         session.touch()
         self._sessions[session_id] = session
