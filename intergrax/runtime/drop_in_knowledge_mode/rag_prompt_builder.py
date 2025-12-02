@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Protocol
 
-from intergrax.llm.conversational_memory import ChatMessage
+from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
 from intergrax.runtime.drop_in_knowledge_mode.context_builder import (
     RetrievedChunk,

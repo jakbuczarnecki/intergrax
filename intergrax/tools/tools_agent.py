@@ -6,7 +6,8 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional, Union, Type
 
-from intergrax.llm.conversational_memory import IntergraxConversationalMemory, ChatMessage
+from intergrax.memory.conversational_memory import ConversationalMemory
+from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters import LLMAdapter
 from .tools_base import ToolRegistry, _limit_tool_output
 
@@ -105,7 +106,7 @@ class IntergraxToolsAgent:
         llm: LLMAdapter,
         tools: ToolRegistry,
         *,
-        memory: Optional[IntergraxConversationalMemory] = None,
+        memory: Optional[ConversationalMemory] = None,
         config: Optional[ToolsAgentConfig] = None,
         verbose: bool = False,
     ):
@@ -261,7 +262,7 @@ class IntergraxToolsAgent:
                 raise ValueError("ToolsAgent.run requires non-empty input_data.")
 
             if self.memory:
-                self.memory.add_message("user", user_input)
+                self.memory.add("user", user_input)
                 messages = self.memory.get_for_model(native_tools=self._native_tools)
 
                 if not any(m.role == "system" for m in messages):
@@ -343,7 +344,7 @@ class IntergraxToolsAgent:
                 if not tool_calls:
                     if content.strip():
                         if self.memory and messages is not None:
-                            self.memory.add_message("assistant", content)
+                            self.memory.add("assistant", content)
                         output_obj = self._build_output_structure(
                             output_model, content, tool_traces
                         )
@@ -355,7 +356,7 @@ class IntergraxToolsAgent:
                         }
                     final = "(no tool call, empty content)"
                     if self.memory:
-                        self.memory.add_message("assistant", final)
+                        self.memory.add("assistant", final)
                     output_obj = self._build_output_structure(
                         output_model, final, tool_traces
                     )
@@ -431,7 +432,7 @@ class IntergraxToolsAgent:
 
             final = "Reached tool iteration limit."
             if self.memory:
-                self.memory.add_message("assistant", final)
+                self.memory.add("assistant", final)
             output_obj = self._build_output_structure(
                 output_model, final, tool_traces
             )
@@ -485,7 +486,7 @@ class IntergraxToolsAgent:
 
             if not plan_obj:
                 if self.memory:
-                    self.memory.add_message("assistant", plan_text)
+                    self.memory.add("assistant", plan_text)
                 output_obj = self._build_output_structure(
                     output_model, plan_text, tool_traces
                 )
@@ -499,7 +500,7 @@ class IntergraxToolsAgent:
             if "final_answer" in plan_obj:
                 final = str(plan_obj["final_answer"])
                 if self.memory:
-                    self.memory.add_message("assistant", final)
+                    self.memory.add("assistant", final)
                 output_obj = self._build_output_structure(
                     output_model, final, tool_traces
                 )
@@ -557,7 +558,7 @@ class IntergraxToolsAgent:
 
         final = "Reached planner iteration limit."
         if self.memory:
-            self.memory.add_message("assistant", final)
+            self.memory.add("assistant", final)
         output_obj = self._build_output_structure(output_model, final, tool_traces)
         return {
             "answer": final,

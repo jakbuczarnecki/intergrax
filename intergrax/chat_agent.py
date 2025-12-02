@@ -9,11 +9,12 @@ import json
 import time
 
 # Your components
-from intergrax.llm.conversational_memory import IntergraxConversationalMemory, ChatMessage
+from intergrax.memory.conversational_memory import ConversationalMemory
+from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters import LLMAdapter
 from intergrax.tools.tools_agent import IntergraxToolsAgent, ToolsAgentConfig
 from intergrax.tools.tools_base import ToolRegistry
-from intergrax.rag.rag_answerer import IntergraxRagAnswerer
+from intergrax.rag.rag_answerer import RagAnswerer
 
 Route = Literal["rag", "tools", "general"]
 
@@ -36,7 +37,7 @@ class ChatRouterConfig:
 class RagComponent:
     """Single RAG endpoint with a description used for routing decisions."""
     name: str
-    answerer: IntergraxRagAnswerer
+    answerer: RagAnswerer
     description: str
     priority: int = 100
 
@@ -63,7 +64,7 @@ class IntergraxChatAgent:
         self,
         llm: LLMAdapter,
         *,
-        memory: Optional[IntergraxConversationalMemory] = None,
+        memory: Optional[ConversationalMemory] = None,
         tools: Optional[ToolRegistry] = None,
         tools_config: Optional[ToolsAgentConfig] = None,
         rag_components: Optional[Iterable[RagComponent]] = None,
@@ -116,7 +117,7 @@ class IntergraxChatAgent:
 
         # store the question in memory
         if self.memory is not None:
-            self.memory.add_message("user", question)
+            self.memory.add("user", question)
 
         # tool policy influences routing
         tools_enabled = not (tool_usage == "none")
@@ -408,7 +409,7 @@ class IntergraxChatAgent:
             )
 
             if self.memory and res.get("answer"):
-                self.memory.add_message("assistant", res["answer"])
+                self.memory.add("assistant", res["answer"])
 
             return {
                 "answer": res.get("answer", ""),
@@ -498,7 +499,7 @@ class IntergraxChatAgent:
         )
 
         if self.memory and res.get("answer"):
-            self.memory.add_message("assistant", res["answer"])
+            self.memory.add("assistant", res["answer"])
 
         return {
             "answer": res.get("answer", ""),
@@ -559,7 +560,7 @@ class IntergraxChatAgent:
 
         if self.memory:
             payload = answer + (("\n\n" + summary_txt) if summary_txt else "")
-            self.memory.add_message("assistant", payload)
+            self.memory.add("assistant", payload)
 
         return {
             "answer": answer,

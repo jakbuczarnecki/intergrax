@@ -10,7 +10,7 @@ from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 from intergrax.websearch.context.websearch_context_builder import WebSearchContextBuilder
 from intergrax.llm_adapters import LLMAdapter
 
-from intergrax.llm.conversational_memory import ChatMessage
+from intergrax.llm.messages import ChatMessage
 
 
 class WebSearchAnswerer:

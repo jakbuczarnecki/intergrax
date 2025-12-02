@@ -11,7 +11,7 @@ import re
 #     from ..llm.conversational_memory import ChatMessage
 # else:
 #     ChatMessage = Any  # runtime stub
-from ..llm.conversational_memory import ChatMessage
+from ..memory.conversational_memory import ChatMessage
 
 __all__ = [
     "LLMAdapter",

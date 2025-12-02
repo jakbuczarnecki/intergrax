@@ -9,17 +9,17 @@ from typing import Dict, Optional, Tuple, List
 
 # === Twoje komponenty ===
 from intergrax.rag.rag_answerer import (
-    IntergraxRagAnswerer,
-    IntergraxAnswererConfig,
+    RagAnswerer,
+    AnswererConfig,
     ChatMessage,
 )
 from intergrax.llm_adapters import LLMAdapterRegistry
-from intergrax.rag.rag_retriever import IntergraxRagRetriever
-from intergrax.rag.vectorstore_manager import IntergraxVectorstoreManager, VSConfig
-from intergrax.rag.documents_loader import IntergraxDocumentsLoader
-from intergrax.rag.documents_splitter import IntergraxDocumentsSplitter
-from intergrax.rag.re_ranker import IntergraxReRanker,ReRankerConfig
-from intergrax.rag.embedding_manager import IntergraxEmbeddingManager  # ⬅️ embedder
+from intergrax.rag.rag_retriever import RagRetriever
+from intergrax.rag.vectorstore_manager import VectorstoreManager, VSConfig
+from intergrax.rag.documents_loader import DocumentsLoader
+from intergrax.rag.documents_splitter import DocumentsSplitter
+from intergrax.rag.re_ranker import ReRanker,ReRankerConfig
+from intergrax.rag.embedding_manager import EmbeddingManager  # ⬅️ embedder
 
 # === ustawienia środowiskowe / katalogi ===
 PERSIST_DIR = os.environ.get("CHROMA_DIR", "./chroma_db")
@@ -27,17 +27,17 @@ EMBED_MODEL = os.environ.get("EMBED_MODEL", "rjmalagon/gte-qwen2-1.5b-instruct-e
 DEFAULT_MODEL = os.environ.get("LLM_MODEL", "llama3.1:latest")
 
 # === Singletons (leniwe) ===
-_vectorstore: Optional[IntergraxVectorstoreManager] = None
-_embedder: Optional[IntergraxEmbeddingManager] = None
-_retriever: Optional[IntergraxRagRetriever] = None
-_reranker: Optional[IntergraxReRanker] = None
-_answerers: Dict[str, IntergraxRagAnswerer] = {}
+_vectorstore: Optional[VectorstoreManager] = None
+_embedder: Optional[EmbeddingManager] = None
+_retriever: Optional[RagRetriever] = None
+_reranker: Optional[ReRanker] = None
+_answerers: Dict[str, RagAnswerer] = {}
 
 
 # ------------------------------
 # Vectorstore / Embedder
 # ------------------------------
-def _get_vectorstore() -> IntergraxVectorstoreManager:
+def _get_vectorstore() -> VectorstoreManager:
     global _vectorstore
     if _vectorstore is None:
         cfg = VSConfig(
@@ -46,34 +46,34 @@ def _get_vectorstore() -> IntergraxVectorstoreManager:
             metric="cosine",
             chroma_persist_directory=PERSIST_DIR,
         )
-        _vectorstore = IntergraxVectorstoreManager(config=cfg, verbose=True)
+        _vectorstore = VectorstoreManager(config=cfg, verbose=True)
     return _vectorstore
 
 
-def _get_embedder() -> IntergraxEmbeddingManager:
+def _get_embedder() -> EmbeddingManager:
     global _embedder
     if _embedder is None:
-        _embedder = IntergraxEmbeddingManager(provider="ollama", model_name=EMBED_MODEL)
+        _embedder = EmbeddingManager(provider="ollama", model_name=EMBED_MODEL)
     return _embedder
 
 
 # ------------------------------
 # Retriever / Reranker / LLM
 # ------------------------------
-def _get_retriever() -> IntergraxRagRetriever:
+def _get_retriever() -> RagRetriever:
     global _retriever
     if _retriever is None:
-        _retriever = IntergraxRagRetriever(
+        _retriever = RagRetriever(
             vector_store=_get_vectorstore(),
             embedding_manager=_get_embedder(), 
             verbose=True)
     return _retriever
 
 
-def _get_reranker() -> IntergraxReRanker:
+def _get_reranker() -> ReRanker:
     global _reranker
     if _reranker is None:      
-        _reranker = IntergraxReRanker(
+        _reranker = ReRanker(
             embedding_manager=_get_embedder(),
             config=ReRankerConfig(
                 use_score_fusion=True,
@@ -201,7 +201,7 @@ def _default_system_prompt() -> str:
             """
 
 
-def get_answerer(model_name: Optional[str] = None) -> IntergraxRagAnswerer:
+def get_answerer(model_name: Optional[str] = None) -> RagAnswerer:
     global _answerers
     name = model_name or DEFAULT_MODEL
     if name in _answerers:
@@ -210,7 +210,7 @@ def get_answerer(model_name: Optional[str] = None) -> IntergraxRagAnswerer:
     llm = _build_llm_adapter(name)
 
     # create answerer configuration
-    cfg = IntergraxAnswererConfig(
+    cfg = AnswererConfig(
         top_k=10,
         min_score=0.15,
         use_history=True,
@@ -225,7 +225,7 @@ def get_answerer(model_name: Optional[str] = None) -> IntergraxRagAnswerer:
 
 
     # create rag answerer (retriever + LLM)
-    answerer = IntergraxRagAnswerer(
+    answerer = RagAnswerer(
         retriever=_get_retriever(),
         llm=llm,
         reranker=_get_reranker(),  
@@ -243,7 +243,7 @@ def get_answerer(model_name: Optional[str] = None) -> IntergraxRagAnswerer:
 def load_and_split_documents(file_path: str):
     p = Path(file_path)
 
-    loader = IntergraxDocumentsLoader(
+    loader = DocumentsLoader(
         # tu możesz doprecyzować tryby (np. docx_mode="paragraphs", pdf_enable_ocr=True, itd.)
     )
 
@@ -259,7 +259,7 @@ def load_and_split_documents(file_path: str):
         call_custom_metadata=_base_metadata,
     )
 
-    splitter = IntergraxDocumentsSplitter()
+    splitter = DocumentsSplitter()
     splits = splitter.split_documents(docs)
 
     return splits
@@ -353,7 +353,7 @@ def delete_by_file_id(file_id: int) -> bool:
 # ======================
 # Historia → wstrzyknięcie do answerera
 # ======================
-def set_history(answerer: IntergraxRagAnswerer, history_pairs: List[Tuple[str, str]]) -> None:
+def set_history(answerer: RagAnswerer, history_pairs: List[Tuple[str, str]]) -> None:
     """
     history_pairs: lista (user_text, assistant_text) w porządku chronologicznym.
     Nadpisuje wewnętrzną historię answerera.

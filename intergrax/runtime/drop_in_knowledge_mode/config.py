@@ -3,11 +3,12 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, Optional, Literal
 
 from intergrax.llm_adapters.base import LLMAdapter
-from intergrax.rag.embedding_manager import IntergraxEmbeddingManager
-from intergrax.rag.vectorstore_manager import IntergraxVectorstoreManager
+from intergrax.rag.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore_manager import VectorstoreManager
 from intergrax.tools.tools_agent import IntergraxToolsAgent
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
@@ -17,6 +18,17 @@ from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 # - "auto": runtime may decide to call tools when appropriate.
 # - "required": runtime must use tools to answer the request.
 ToolChoiceMode = Literal["off", "auto", "required"]
+
+
+class ToolsContextScope(str, Enum):
+    # Agent dostaje tylko aktualną wiadomość użytkownika.
+    CURRENT_MESSAGE_ONLY = "current_message_only"
+    
+    # Agent dostaje historię rozmowy (bez RAG/Websearch chunks).
+    CONVERSATION = "conversation"
+    
+    # Agent dostaje pełny kontekst tak jak LLM (historia + RAG + websearch).
+    FULL = "full"
 
 
 @dataclass
@@ -42,10 +54,10 @@ class RuntimeConfig:
     llm_adapter: LLMAdapter
 
     # Embedding manager used for RAG/document indexing and retrieval.
-    embedding_manager: IntergraxEmbeddingManager
+    embedding_manager: EmbeddingManager
 
     # Vectorstore manager providing semantic search over stored chunks.
-    vectorstore_manager: IntergraxVectorstoreManager
+    vectorstore_manager: VectorstoreManager
 
     # Optional labels for observability/logging only.
     llm_label: str = "default-llm"
@@ -120,6 +132,22 @@ class RuntimeConfig:
     #   - "auto": runtime may call tools if useful.
     #   - "required": runtime must use at least one tool.
     tools_mode: ToolChoiceMode = "auto"
+
+    # Determines how much contextual information the tools agent receives:
+    #
+    #   - "current_message_only":
+    #       ToolsAgent sees only the newest user query.
+    #       Useful for strict function-calling, cost optimization
+    #       and predictable single-turn behavior.
+    #
+    #   - "conversation":
+    #       ToolsAgent sees full conversation history up to this point.
+    #
+    #   - "full":
+    #       ToolsAgent receives the same context as the LLM:
+    #       system → profile → history → RAG → websearch.
+    #
+    tools_context_scope: ToolsContextScope = ToolsContextScope.CURRENT_MESSAGE_ONLY
 
     # ------------------------------------------------------------------
     # TOKEN LIMITS

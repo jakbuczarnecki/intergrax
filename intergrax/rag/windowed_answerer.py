@@ -8,12 +8,12 @@ from __future__ import annotations
 import logging
 from typing import List, Dict, Tuple
 
-from intergrax.llm.conversational_memory import ChatMessage
+from intergrax.llm.messages import ChatMessage
 
 logger = logging.getLogger("intergrax.windowed_answerer")
 
 
-class IntergraxWindowedAnswerer:
+class WindowedAnswerer:
     """
     Windowed (map→reduce) layer on top of the base Answerer.
     """

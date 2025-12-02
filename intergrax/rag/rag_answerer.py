@@ -9,7 +9,8 @@ import json
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Protocol, Iterable, Literal, Type
 
-from intergrax.llm.conversational_memory import IntergraxConversationalMemory, ChatMessage
+from intergrax.memory.conversational_memory import ConversationalMemory
+from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters import LLMAdapter
 
 # Pydantic optionally (no hard runtime dependency)
@@ -25,7 +26,7 @@ except Exception:
 # =========================
 
 @dataclass
-class IntergraxAnswererConfig:
+class AnswererConfig:
     # Retrieval / ranking
     top_k: int = 12
     min_score: Optional[float] = None
@@ -69,21 +70,21 @@ class AnswerSource:
 # Main Answerer (messages & roles)
 # =========================
 
-class IntergraxRagAnswerer:
+class RagAnswerer:
     def __init__(
         self,
         retriever: Any,
         llm: LLMAdapter,
         reranker: Optional[Any] = None,
-        config: Optional[IntergraxAnswererConfig] = None,
+        config: Optional[AnswererConfig] = None,
         verbose: bool = False,
         *,
-        memory: Optional[IntergraxConversationalMemory] = None,
+        memory: Optional[ConversationalMemory] = None,
     ):
         self.retriever = retriever
         self.llm = llm
         self.reranker = reranker
-        self.cfg = config or IntergraxAnswererConfig()
+        self.cfg = config or AnswererConfig()
         self.verbose = verbose
         self.memory = memory
 
@@ -106,7 +107,7 @@ class IntergraxRagAnswerer:
         - no 'structured' field.
         """
         if self.memory is not None:
-            self.memory.add_message(role="user", content=question)
+            self.memory.add(role="user", content=question)
 
         tk = self.cfg.top_k
         ms = self.cfg.min_score
@@ -224,7 +225,7 @@ class IntergraxRagAnswerer:
                         payload = output_structure_obj.dict()
                     else:
                         payload = dict(output_structure_obj)
-                    self.memory.add_message(role="assistant", content=json.dumps(payload, ensure_ascii=False))
+                    self.memory.add(role="assistant", content=json.dumps(payload, ensure_ascii=False))
             except Exception:
                 # if anything fails, keep the text path only
                 output_structure_obj = None
@@ -246,7 +247,7 @@ class IntergraxRagAnswerer:
             llm_content = answer
             if summary:
                 llm_content += "\n\n" + summary
-            self.memory.add_message(role="assistant", content=llm_content)
+            self.memory.add(role="assistant", content=llm_content)
 
         # 9) Telemetry + return (same shape as intergraxToolsAgent)
         return {

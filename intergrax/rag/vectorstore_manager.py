@@ -71,7 +71,7 @@ class VSConfig:
     pinecone_region: Optional[str] = None      # e.g., "us-east-1" (optional)
 
 
-class IntergraxVectorstoreManager:
+class VectorstoreManager:
     """
     Unified vector store manager supporting ChromaDB, Qdrant, and Pinecone.
 

@@ -12,8 +12,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnableMap, RunnableSequence
 from langchain_core.output_parsers import StrOutputParser
 
-from intergrax.rag.rag_retriever import IntergraxRagRetriever
-from intergrax.rag.re_ranker import IntergraxReRanker
+from intergrax.rag.rag_retriever import RagRetriever
+from intergrax.rag.re_ranker import ReRanker
 
 from operator import itemgetter
 
@@ -80,7 +80,7 @@ PromptBuilder = Union[
 
 
 @dataclass
-class IntergraxChainConfig:
+class ChainConfig:
     # Retrieval
     top_k: int = 10
     min_score: float = 0.15
@@ -170,7 +170,7 @@ def _format_citations(
     return "\n".join(lines)
 
 
-class intergraxLangChainQAChain:
+class LangChainQAChain:
     """
     Builds a flexible QA chain (RAG → [rerank] → prompt → LLM) LangChain-style,
     with hooks modifying data at stages:
@@ -194,16 +194,16 @@ class intergraxLangChainQAChain:
     def __init__(
         self,
         *,
-        retriever: IntergraxRagRetriever,
+        retriever: RagRetriever,
         llm,  # any LangChain LLM (e.g., ChatOllama, ChatOpenAI, etc.)
-        reranker: Optional[IntergraxReRanker] = None,
-        config: Optional[IntergraxChainConfig] = None,
+        reranker: Optional[ReRanker] = None,
+        config: Optional[ChainConfig] = None,
         verbose: bool = True,
     ):
         self.retriever = retriever
         self.llm = llm
         self.reranker = reranker
-        self.cfg = config or IntergraxChainConfig()
+        self.cfg = config or ChainConfig()
         self.verbose = verbose
 
         # Default prompt builder

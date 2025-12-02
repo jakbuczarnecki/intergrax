@@ -89,7 +89,7 @@ DOCX_MODE = Literal["fulltext", "paragraphs", "headings"]
 
 EXCEL_MODE = Literal["rows", "sheets", "markdown"]
 
-class IntergraxDocumentsLoader:
+class DocumentsLoader:
     """Robust, extensible document loader with metadata injection and safety guards."""
 
     def __init__(
