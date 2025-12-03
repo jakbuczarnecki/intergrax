@@ -12,7 +12,7 @@ import time
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters import LLMAdapter
-from intergrax.tools.tools_agent import IntergraxToolsAgent, ToolsAgentConfig
+from intergrax.tools.tools_agent import ToolsAgent, ToolsAgentConfig
 from intergrax.tools.tools_base import ToolRegistry
 from intergrax.rag.rag_answerer import RagAnswerer
 
@@ -50,7 +50,7 @@ class ChatAgentConfig:
     verbose: bool = False
     pass_memory_to_general: bool = True
 
-class IntergraxChatAgent:
+class ChatAgent:
     """
     One API “like ChatGPT”:
       - the model (LLM) decides the ROUTE (RAG / TOOLS / GENERAL),
@@ -76,7 +76,7 @@ class IntergraxChatAgent:
         self.verbose = bool(self.cfg.verbose)
 
         self._tools_registry = tools
-        self._tools_agent: Optional[IntergraxToolsAgent] = None
+        self._tools_agent: Optional[ToolsAgent] = None
         self._tools_config = tools_config or ToolsAgentConfig()
         self._rag_catalog: List[RagComponent] = sorted(list(rag_components or []), key=lambda rc: rc.priority)
 
@@ -380,7 +380,7 @@ class IntergraxChatAgent:
 
         # lazy init
         if self._tools_agent is None:
-            self._tools_agent = IntergraxToolsAgent(
+            self._tools_agent = ToolsAgent(
                 llm=self.llm,
                 tools=self._tools_registry,
                 memory=self.memory,

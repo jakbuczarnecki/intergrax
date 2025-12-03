@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional, Literal
 from intergrax.llm_adapters.base import LLMAdapter
 from intergrax.rag.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore_manager import VectorstoreManager
-from intergrax.tools.tools_agent import IntergraxToolsAgent
+from intergrax.tools.tools_agent import ToolsAgent
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
 
@@ -125,7 +125,7 @@ class RuntimeConfig:
     #   - merging tool results into the final answer.
     #
     # If None, tools cannot be used regardless of tools_mode.
-    tools_agent: Optional[IntergraxToolsAgent] = None
+    tools_agent: Optional[ToolsAgent] = None
 
     # High-level policy defining whether tools may or must be used:
     #   - "off": do not use tools at all.

@@ -9,9 +9,9 @@ This module defines:
   - ChatSession: a lightweight metadata model for a chat session.
   - SessionStore: a central component responsible for:
         * managing session lifecycle,
-        * storing and retrieving conversational history using
-          IntergraxConversationalMemory,
-        * producing LLM-ready message context for inference.
+        * storing and retrieving conversational history,
+        * exposing profile and long-term memory bundles for the runtime,
+        * producing LLM-ready message context for inference (conversation history).
 
 Design principles:
   - The engine interacts only with SessionStore (not with any internal memory
@@ -20,10 +20,9 @@ Design principles:
   - The public API remains simple and stable ("get and use").
 
 Current implementation:
-  - Fully in-memory (not yet persistent).
-  - Conversational memory is the single source of truth for message history.
-  - User profile memory is provided as a simple in-memory map (not yet used
-    by the engine for prompt injection).
+  - Fully in-memory (not yet persistent) for conversational history and sessions.
+  - User and organization profiles, as well as long-term memory, are accessed
+    via dedicated managers injected into this store.
 """
 
 from __future__ import annotations
@@ -38,6 +37,17 @@ from intergrax.llm.messages import (
     ChatMessage,
 )
 from intergrax.memory.conversational_memory import ConversationalMemory
+from intergrax.memory.user_profile_memory import UserProfilePromptBundle
+from intergrax.memory.organization_profile_memory import (
+    OrganizationProfilePromptBundle,
+)
+from intergrax.memory.long_term_memory import (
+    MemoryOwnerRef,
+    LongTermMemoryItem,
+)
+from intergrax.memory.user_profile_manager import UserProfileManager
+from intergrax.memory.organization_profile_manager import OrganizationProfileManager
+from intergrax.memory.long_term_memory_manager import LongTermMemoryManager
 
 
 @dataclass
@@ -47,13 +57,13 @@ class ChatSession:
 
     Important:
       This object does NOT store messages. The single source of truth for
-      conversation history is held by the SessionStore using
-      IntergraxConversationalMemory or future backends.
+      conversation history is held by the SessionStore using ConversationalMemory
+      or future backends.
     """
 
     id: str
     user_id: Optional[str] = None
-    tenant_id: Optional[str] = None
+    tenant_id: Optional[str] = None   # can be used as organization/tenant identifier
     workspace_id: Optional[str] = None
 
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -77,6 +87,7 @@ class SessionStore:
     Responsibilities:
       - Create and manage chat sessions.
       - Maintain conversational message history per session.
+      - Expose user/organization profile bundles and long-term memory context.
       - Return an LLM-ready ordered list of messages representing the session context.
 
     Notes:
@@ -85,13 +96,19 @@ class SessionStore:
       from the engine.
 
     Future expansion:
-      - user profile memory (preferences, language style, tone),
-      - organization-level memory,
-      - long-term semantic memory (facts, embeddings),
-      - persistence layer adapters (SQLite, PostgreSQL, Redis, Supabase).
+      - persistent storage for sessions and conversational history,
+      - deeper integration with long-term semantic memory (facts, embeddings),
+      - tighter coupling with ContextBuilder and RAG components.
     """
 
-    def __init__(self, *, max_history_messages: int = 200) -> None:
+    def __init__(
+        self,
+        *,
+        max_history_messages: int = 200,
+        user_profile_manager: Optional[UserProfileManager] = None,
+        organization_profile_manager: Optional[OrganizationProfileManager] = None,
+        long_term_memory_manager: Optional[LongTermMemoryManager] = None,
+    ) -> None:
         # Metadata storage (chat sessions registry)
         self._sessions: Dict[str, ChatSession] = {}
 
@@ -101,12 +118,11 @@ class SessionStore:
         # Maximum number of messages to keep before trimming FIFO-style
         self._max_history_messages = max_history_messages
 
-        # Simple in-memory user profile storage:
-        #   user_id -> { "key": value, ... }
-        # This is the first step towards user profile memory. It is not yet
-        # integrated into the engine prompt, but provides a clear place
-        # to attach and evolve profile data.
-        self._user_profiles: Dict[str, Dict[str, Any]] = {}
+        # High-level managers for other memory types.
+        # These are optional to keep the SessionStore usable in minimal setups.
+        self._user_profile_manager = user_profile_manager
+        self._organization_profile_manager = organization_profile_manager
+        self._long_term_memory_manager = long_term_memory_manager
 
     # ------------------------------------------------------------------
     # Session lifecycle
@@ -190,53 +206,10 @@ class SessionStore:
         return sessions[:limit]
 
     # ------------------------------------------------------------------
-    # User profile memory (first step)
-    # ------------------------------------------------------------------
-
-    async def get_user_profile(self, user_id: str) -> Dict[str, Any]:
-        """
-        Return a shallow copy of the user's profile dictionary.
-
-        This is intentionally generic (Dict[str, Any]) to support:
-          - language/tone preferences,
-          - domain expertise flags,
-          - feature flags,
-          - custom per-user settings.
-
-        Engine does not call this directly yet; it will be used as an
-        internal building block when injecting profile-based system messages.
-        """
-        profile = self._user_profiles.get(user_id, {})
-        # Return a copy to avoid accidental external mutation.
-        return dict(profile)
-
-    async def upsert_user_profile(
-        self,
-        user_id: str,
-        updates: Mapping[str, Any],
-    ) -> Dict[str, Any]:
-        """
-        Merge the provided updates into the user's profile and return
-        the resulting profile.
-
-        Example usage:
-          await session_store.upsert_user_profile("u1", {
-              "preferred_language": "pl",
-              "tone": "technical",
-              "no_emojis_in_code": True,
-          })
-        """
-        current = self._user_profiles.get(user_id, {})
-        merged = dict(current)
-        merged.update(dict(updates))
-        self._user_profiles[user_id] = merged
-        return merged
-
-    # ------------------------------------------------------------------
     # Conversation context builder
     # ------------------------------------------------------------------
 
-    def get_conversation_history(self, session: ChatSession) -> List[ChatMessage]:
+    def get_conversation_history(self, session: ChatSession, *, native_tools: bool = False) -> List[ChatMessage]:
         """
         Return an ordered list of ChatMessage objects representing the
         conversation history for the given session.
@@ -248,7 +221,102 @@ class SessionStore:
         if memory is None:
             return []
 
-        # Still uses IntergraxConversationalMemory under the hood,
+        # Still uses ConversationalMemory under the hood,
         # but SessionStore does not talk about LLMs or prompts.
-        return memory.get_for_model(native_tools=False)
+        return memory.get_for_model(native_tools=native_tools)
 
+    # ------------------------------------------------------------------
+    # User profile memory – high-level bundle
+    # ------------------------------------------------------------------
+
+    async def get_user_profile_bundle_for_session(
+        self,
+        session: ChatSession,
+    ) -> Optional[UserProfilePromptBundle]:
+        """
+        Build and return a prompt-ready user profile bundle for this session.
+
+        If no user_id is associated with the session or no UserProfileManager
+        is configured, returns None.
+        """
+        if not session.user_id:
+            return None
+        if self._user_profile_manager is None:
+            return None
+
+        return await self._user_profile_manager.get_prompt_bundle(session.user_id)
+
+    # ------------------------------------------------------------------
+    # Organization profile memory – high-level bundle
+    # ------------------------------------------------------------------
+
+    async def get_organization_profile_bundle_for_session(
+        self,
+        session: ChatSession,
+        *,
+        max_summary_length: int = 1200,
+    ) -> Optional[OrganizationProfilePromptBundle]:
+        """
+        Build and return a prompt-ready organization profile bundle
+        for this session.
+
+        By default, the tenant_id is used as the organization identifier.
+        If no tenant_id is associated with the session or no
+        OrganizationProfileManager is configured, returns None.
+        """
+        if not session.tenant_id:
+            return None
+        if self._organization_profile_manager is None:
+            return None
+
+        return await self._organization_profile_manager.get_prompt_bundle(
+            organization_id=session.tenant_id,
+            max_summary_length=max_summary_length,
+        )
+
+    # ------------------------------------------------------------------
+    # Long-term memory – context for a session
+    # ------------------------------------------------------------------
+
+    def _build_memory_owner_for_session(self, session: ChatSession) -> MemoryOwnerRef:
+        """
+        Derive a MemoryOwnerRef for a given session.
+
+        Simple default policy:
+          - If user_id is present  -> user-level memory.
+          - Else if tenant_id      -> organization-level memory.
+          - Else                   -> global memory.
+
+        Higher-level components may later decide to override or refine
+        this policy, but this serves as a sensible default.
+        """
+        if session.user_id:
+            return MemoryOwnerRef(owner_type="user", owner_id=session.user_id)
+        if session.tenant_id:
+            return MemoryOwnerRef(owner_type="organization", owner_id=session.tenant_id)
+        return MemoryOwnerRef(owner_type="global", owner_id="global")
+
+    async def get_long_term_memory_context_for_session(
+        self,
+        session: ChatSession,
+        query: str,
+        *,
+        limit: int = 5,
+        min_importance: float = 0.0,
+    ) -> List[LongTermMemoryItem]:
+        """
+        Search long-term memory for items relevant to the given query,
+        scoped to the logical owner derived from this session.
+
+        If no LongTermMemoryManager is configured, returns an empty list.
+        """
+        if self._long_term_memory_manager is None:
+            return []
+
+        owner = self._build_memory_owner_for_session(session)
+        return await self._long_term_memory_manager.search_for_context(
+            owner=owner,
+            query=query,
+            limit=limit,
+            min_importance=min_importance,
+        )

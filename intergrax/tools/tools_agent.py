@@ -100,7 +100,7 @@ def _extract_json_from_text(text: str) -> Optional[dict]:
     return None
 
 
-class IntergraxToolsAgent:
+class ToolsAgent:
     def __init__(
         self,
         llm: LLMAdapter,
