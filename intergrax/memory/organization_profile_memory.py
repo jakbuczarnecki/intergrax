@@ -135,6 +135,37 @@ class OrganizationProfilePromptBundle:
     # Example: {"default_project": "Mooff", "primary_domain": "erp"}
     runtime_hints: Dict[str, str] = field(default_factory=dict)
 
+    @property
+    def system_prompt(self) -> str:
+        """
+        Build a compact organization-level system prompt.
+
+        Structure:
+          - main summary,
+          - explicit hard constraints (MUST),
+          - explicit soft guidelines (SHOULD).
+        """
+        parts: List[str] = []
+
+        if self.summary_instructions:
+            parts.append(self.summary_instructions.strip())
+
+        if self.hard_constraints:
+            parts.append("Organization-level HARD CONSTRAINTS (MUST follow):")
+            for c in self.hard_constraints:
+                text = c.strip()
+                if text:
+                    parts.append(f"- {text}")
+
+        if self.soft_guidelines:
+            parts.append("Organization-level GUIDELINES (SHOULD follow when possible):")
+            for g in self.soft_guidelines:
+                text = g.strip()
+                if text:
+                    parts.append(f"- {text}")
+
+        return "\n".join(parts).strip()
+
 
 def build_organization_profile_prompt_bundle(
     profile: OrganizationProfile,

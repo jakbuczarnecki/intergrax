@@ -201,34 +201,38 @@ class DropInKnowledgeRuntime:
           7. Tools layer (planning + tool calls).
           8. Core LLM call.
           9. Persist assistant answer and build RuntimeAnswer with route info.
+         10. Final system prompt (Instructions)
         """
         state = RuntimeState(request=request)
 
-        # Step 1: session lifecycle + ingestion & debug init (no history)
+         # 1. Session + ingestion
         await self._step_session_and_ingest(state)
 
-        # Step 2: build base history (load & preprocess conversation history)
+        # 2. Build base history (load & preprocess)
         await self._step_build_base_history(state)
 
-        # Step 3: history layer
+        # 3. History layer (ContextBuilder / raw)
         await self._step_history(state)
 
-        # Step 4: RAG layer
+        # 4. Instructions layer (final system prompt)
+        await self._step_instructions(state)
+
+        # 5. RAG
         await self._step_rag(state)
 
-        # Step 5: Web search layer
+        # 6. Web search
         await self._step_websearch(state)
 
-        # Step 6: Ensure current user message is in the final prompt
+        # 7. Ensure current user message
         self._ensure_current_user_message(state)
 
-        # Step 7: Tools layer
+        # 8. Tools
         await self._step_tools(state)
 
-        # Step 8: Core LLM
+        # 9. Core LLM
         answer_text = self._step_core_llm(state)
 
-        # Step 9: Persist assistant message and build RuntimeAnswer
+        # 10. Persist + RuntimeAnswer
         runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
         return runtime_answer
 
@@ -679,7 +683,7 @@ class DropInKnowledgeRuntime:
 
             if isinstance(raw_answer, str):
                 return raw_answer
-
+            
             content = getattr(raw_answer, "content", None)
             if isinstance(content, str) and content.strip():
                 return content
@@ -798,6 +802,38 @@ class DropInKnowledgeRuntime:
             debug_trace=state.debug_trace,
         )
 
+    
+    # ------------------------------------------------------------------
+    # Step 10: instructions (final system prompt)
+    # ------------------------------------------------------------------
+
+    async def _step_instructions(self, state: RuntimeState) -> None:
+        """
+        Inject the final instructions as the first `system` message in the
+        LLM prompt, if any instructions exist.
+
+        This uses `_build_final_instructions` to combine:
+          - per-request instructions,
+          - user profile instructions,
+          - organization profile instructions.
+
+        It MUST be called AFTER the history step, so that:
+          - history can be freely trimmed/summarized,
+          - instructions are always the first system message,
+          - instructions are never persisted in SessionStore.
+        """
+        instructions_text = await self._build_final_instructions(state)
+        if not instructions_text:
+            return
+
+        system_message = ChatMessage(role="system", content=instructions_text)
+
+        # `messages_for_llm` at this point should contain only history
+        # (built by `_step_history`). We now prepend the system message.
+        state.messages_for_llm = [system_message] + state.messages_for_llm
+
+
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
@@ -829,6 +865,7 @@ class DropInKnowledgeRuntime:
 
         return "\n".join(lines)
 
+
     def _build_session_message_from_request(
         self,
         request: RuntimeRequest,
@@ -845,6 +882,7 @@ class DropInKnowledgeRuntime:
             created_at=datetime.now(timezone.utc).isoformat(),
         )
 
+
     def _build_chat_history(self, session: ChatSession) -> List[ChatMessage]:
         """
         Load raw conversation history for the given session.
@@ -855,3 +893,80 @@ class DropInKnowledgeRuntime:
         """
         return self._session_store.get_conversation_history(session=session)
 
+
+    async def _build_final_instructions(self, state: RuntimeState) -> Optional[str]:
+        """
+        Build the final instructions string for the current request/session.
+
+        Sources:
+          1) User-provided instructions from RuntimeRequest (if any).
+          2) User profile prompt bundle (system_prompt).
+          3) Organization profile prompt bundle (system_prompt).
+
+        The result is a single, short, LLM-ready text that can be used
+        as a `system` message at the top of the prompt.
+
+        This method does NOT persist anything and does NOT modify history.
+        """
+        session = state.session
+        assert session is not None, "Session must be set before building instructions."
+
+        parts: List[str] = []
+        sources = {
+            "request": False,
+            "user_profile": False,
+            "organization_profile": False,
+        }
+
+        # 1) User-provided instructions (per-request, ChatGPT/Gemini-style)
+        if isinstance(state.request.instructions, str):
+            user_instr = state.request.instructions.strip()
+            if user_instr:
+                parts.append(user_instr)
+                sources["request"] = True
+
+        # 2) User profile instructions from bundle
+        user_bundle = await self._session_store.get_user_profile_bundle_for_session(
+            session=session
+        )
+        if user_bundle is not None:
+            # We assume the bundle exposes a `system_prompt` field.
+            user_profile_prompt = user_bundle.system_prompt
+            if isinstance(user_profile_prompt, str):
+                user_profile_prompt = user_profile_prompt.strip()
+                if user_profile_prompt:
+                    parts.append(user_profile_prompt)
+                    sources["user_profile"] = True
+                    state.used_user_profile = True
+
+        # 3) Organization profile instructions from bundle
+        org_bundle = await self._session_store.get_organization_profile_bundle_for_session(
+            session=session
+        )
+        if org_bundle is not None:
+            org_profile_prompt = org_bundle.system_prompt
+            if isinstance(org_profile_prompt, str):
+                org_profile_prompt = org_profile_prompt.strip()
+                if org_profile_prompt:
+                    parts.append(org_profile_prompt)
+                    sources["organization_profile"] = True
+                    state.used_user_profile = True
+
+        if not parts:
+            state.debug_trace["instructions"] = {
+                "has_instructions": False,
+                "sources": sources,
+            }
+            return None
+
+        # For now we simply join the parts with double newlines.
+        # If you want a more structured format later (sections, bullets),
+        # you can adjust the formatting here in one place.
+        final_text = "\n\n".join(parts)
+
+        state.debug_trace["instructions"] = {
+            "has_instructions": True,
+            "sources": sources,
+        }
+
+        return final_text

@@ -136,6 +136,19 @@ class UserProfilePromptBundle:
         )
 
 
+    @property
+    def system_prompt(self) -> str:
+        """
+        Compact system-level instructions derived from the user profile.
+
+        This is intentionally kept small and stable:
+        - we use only `summary_instructions`,
+        - we do NOT inject profile chunks here (they belong in context / RAG).
+        """
+        return (self.summary_instructions or "").strip()        
+    
+
+
 def build_profile_prompt_bundle(profile: UserProfile) -> UserProfilePromptBundle:
     """
     Build a compact, prompt-ready bundle from a UserProfile.
