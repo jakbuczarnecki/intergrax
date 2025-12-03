@@ -9,19 +9,26 @@ This module defines the `DropInKnowledgeRuntime` class, which:
   - loads or creates chat sessions,
   - appends user messages,
   - builds a conversation history for the LLM,
-  - (in the future) augments context with RAG, web search, tools and memory,
+  - augments context with RAG, web search and tools,
   - produces a `RuntimeAnswer` object as a high-level response.
 
 The goal is to provide a single, simple entrypoint that can be used from
 FastAPI, Streamlit, MCP-like environments, CLI tools, etc.
+
+Refactored as a stateful pipeline:
+
+  - RuntimeState holds all intermediate data (session, history, flags, debug).
+  - Each step mutates the state and can be inspected in isolation.
+  - ask() just wires the steps together in a readable order.
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Any
 
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.rag_prompt_builder import (
@@ -47,12 +54,69 @@ from intergrax.runtime.drop_in_knowledge_mode.ingestion import (
 from intergrax.runtime.drop_in_knowledge_mode.attachments import (
     FileSystemAttachmentResolver,
 )
-from intergrax.runtime.drop_in_knowledge_mode.context_builder import ContextBuilder, RetrievedChunk
+from intergrax.runtime.drop_in_knowledge_mode.context_builder import (
+    ContextBuilder,
+    RetrievedChunk,
+)
 from intergrax.runtime.drop_in_knowledge_mode.websearch_prompt_builder import (
     DefaultWebSearchPromptBuilder,
     WebSearchPromptBuilder,
 )
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
+
+
+# ----------------------------------------------------------------------
+# Stateful pipeline model
+# ----------------------------------------------------------------------
+
+
+@dataclass
+class RuntimeState:
+    """
+    Mutable state object passed through the runtime pipeline.
+
+    It aggregates:
+      - request and session metadata,
+      - ingestion results,
+      - conversation history and model-ready messages,
+      - flags indicating which subsystems were used (RAG, websearch, tools, memory),
+      - tools traces and agent answer,
+      - full debug_trace for observability & diagnostics.
+    """
+
+    # Input
+    request: RuntimeRequest
+
+    # Session and ingestion
+    session: Optional[ChatSession] = None
+    ingestion_results: List[IngestionResult] = field(default_factory=list)
+
+    # Conversation / context
+    base_history: List[ChatMessage] = field(default_factory=list)
+    messages_for_llm: List[ChatMessage] = field(default_factory=list)
+    tools_context_parts: List[str] = field(default_factory=list)
+    built_history_messages: List[ChatMessage] = field(default_factory=list)
+    history_includes_current_user: bool = False
+
+    # Usage flags
+    used_rag: bool = False
+    used_websearch: bool = False
+    used_tools: bool = False
+    used_long_term_memory: bool = False  # reserved for future integration
+    used_user_profile: bool = False      # reserved for future integration
+
+    # Tools
+    tools_agent_answer: Optional[str] = None
+    tool_traces: List[Dict[str, Any]] = field(default_factory=list)
+
+    # Debug / diagnostics
+    debug_trace: Dict[str, Any] = field(default_factory=dict)
+    websearch_debug: Dict[str, Any] = field(default_factory=dict)
+
+
+# ----------------------------------------------------------------------
+# DropInKnowledgeRuntime
+# ----------------------------------------------------------------------
 
 
 class DropInKnowledgeRuntime:
@@ -62,6 +126,21 @@ class DropInKnowledgeRuntime:
     This class is designed to behave like a ChatGPT/Claude-style engine,
     but fully powered by Intergrax components (LLM adapters, RAG, web search,
     tools, memory, etc.).
+
+    Responsibilities (current stage):
+      - Accept a RuntimeRequest.
+      - Load or create a ChatSession via SessionStore.
+      - Append the user message to the session.
+      - Build an LLM-ready context:
+          * system prompt(s),
+          * chat history from SessionStore,
+          * optional retrieved chunks from documents (RAG),
+          * optional web search context (if enabled),
+          * optional tools results.
+      - Call the main LLM adapter once with the fully enriched context
+        to produce the final answer.
+      - Append the assistant message to the session.
+      - Return a RuntimeAnswer with the final answer text and metadata.
     """
 
     def __init__(
@@ -109,187 +188,38 @@ class DropInKnowledgeRuntime:
         """
         Main async entrypoint for the runtime.
 
-        High-level pipeline:
-          1. Load or create a session, ingest attachments, append user message.
-          2. Build base conversational history from SessionStore.
-          3. Build RAG + history layer (ContextBuilder).
-          4. Optionally enrich with web search.
-          5. Optionally run tools agent (planning + tool calls).
-          6. Call core LLM adapter with fully built context.
-          7. Append assistant answer to history and build RuntimeAnswer.
+        Pipeline:
+          1. Session + ingestion + user message appended.
+          2. RAG + history layer via ContextBuilder (if configured).
+          3. Web search layer (optional).
+          4. Ensure current user message is present at the end of context.
+          5. Tools layer (planning + tool calls).
+          6. Core LLM call.
+          7. Persist assistant answer and build RuntimeAnswer with route info.
         """
+        state = RuntimeState(request=request)
 
-        # 1) Session + ingestion + user message
-        session, ingestion_results, base_history = await self._load_or_create_session_and_ingest(request)
+        # Step 1: session lifecycle + ingestion + base history & debug init
+        await self._step_session_and_ingest(state)
 
-        # 2) Initialize debug trace
-        debug_trace: Dict[str, Any] = self._init_debug_trace(
-            session=session,
-            ingestion_results=ingestion_results,
-            base_history=base_history,
-        )
+        # Step 2: RAG + history layer
+        await self._step_rag_and_history(state)
 
-        # 3) Build RAG + history layer
-        messages_for_llm: List[ChatMessage] = []
-        tools_context_parts: List[str] = []
+        # Step 3: Web search layer
+        await self._step_websearch(state)
 
-        (
-            messages_for_llm,
-            tools_context_parts,
-            used_rag_flag,
-            rag_debug,
-            built_history_messages,
-            history_includes_current_user,
-        ) = await self._build_rag_and_history_layer(
-            session=session,
-            request=request,
-            base_history=base_history,
-            messages_for_llm=messages_for_llm,
-            tools_context_parts=tools_context_parts,
-        )
+        # Step 4: Ensure current user message is in the final prompt
+        self._ensure_current_user_message(state)
 
-        if rag_debug:
-            debug_trace["rag"] = rag_debug
-        debug_trace["history_length"] = len(built_history_messages or base_history)
-        debug_trace["rag_chunks"] = (
-            rag_debug.get("rag_chunks", 0) if rag_debug else 0
-        )
+        # Step 5: Tools layer
+        await self._step_tools(state)
 
-        # 4) Web search layer
-        (
-            messages_for_llm,
-            tools_context_parts,
-            used_websearch_flag,
-            websearch_debug,
-        ) = await self._run_websearch_layer(
-            request=request,
-            messages_for_llm=messages_for_llm,
-            tools_context_parts=tools_context_parts,
-        )
+        # Step 6: Core LLM
+        answer_text = self._step_core_llm(state)
 
-        if websearch_debug:
-            debug_trace["websearch"] = websearch_debug
-
-        # Ensure current user message is present as the last user message,
-        # if the history builder did not already include it.
-        if not history_includes_current_user:
-            messages_for_llm.append(ChatMessage(role="user", content=request.message))
-
-        # 5) Tools layer
-        used_tools_flag: bool = False
-        tools_agent_answer: Optional[str] = None
-        tool_traces: List[Dict[str, Any]] = []
-
-        (
-            messages_for_llm,
-            used_tools_flag,
-            tools_agent_answer,
-            tool_traces,
-            tools_debug,
-        ) = await self._run_tools_layer(
-            request=request,
-            messages_for_llm=messages_for_llm,
-            tools_context_parts=tools_context_parts,
-            base_history=base_history,
-            built_history_messages=built_history_messages,
-        )
-
-        if tools_debug:
-            debug_trace["tools"] = tools_debug
-        if "tools_error" in tools_debug:
-            debug_trace["tools_error"] = tools_debug["tools_error"]
-
-        # 6) Core LLM call
-        answer_text = self._call_core_llm(
-            messages_for_llm=messages_for_llm,
-            tools_agent_answer=tools_agent_answer,
-            used_tools_flag=used_tools_flag,
-            debug_trace=debug_trace,
-        )
-
-        if not isinstance(answer_text, str) or not answer_text.strip():
-            answer_text = (
-                str(tools_agent_answer)
-                if tools_agent_answer
-                else "[ERROR] Empty answer from runtime."
-            )
-
-        # 7) Append assistant message to the session
-        assistant_message = ChatMessage(
-            role="assistant",
-            content=answer_text,
-            created_at=datetime.now(timezone.utc).isoformat(),
-        )
-        await self._session_store.append_message(session.id, assistant_message)
-
-        # 8) Build RouteInfo and RuntimeStats
-        if used_rag_flag and used_websearch_flag and used_tools_flag:
-            strategy = "llm_with_rag_websearch_and_tools"
-        elif used_rag_flag and used_tools_flag:
-            strategy = "llm_with_rag_and_tools"
-        elif used_websearch_flag and used_tools_flag:
-            strategy = "llm_with_websearch_and_tools"
-        elif used_tools_flag:
-            strategy = "llm_with_tools"
-        elif used_rag_flag and used_websearch_flag:
-            strategy = "llm_with_rag_and_websearch"
-        elif used_rag_flag:
-            strategy = "llm_with_rag_context_builder"
-        elif used_websearch_flag:
-            strategy = "llm_with_websearch"
-        elif ingestion_results:
-            strategy = "llm_only_with_ingestion"
-        else:
-            strategy = "llm_only"
-
-        route_info = RouteInfo(
-            used_rag=used_rag_flag and self._config.enable_rag,
-            used_websearch=used_websearch_flag and self._config.enable_websearch,
-            used_tools=used_tools_flag and self._config.tools_mode != "off",
-            # These flags will be wired when profile / LTM memory are integrated.
-            used_long_term_memory=False,
-            used_user_profile=False,
-            strategy=strategy,
-            extra={},
-        )
-
-        stats = RuntimeStats(
-            total_tokens=None,
-            input_tokens=None,
-            output_tokens=None,
-            rag_tokens=None,
-            websearch_tokens=None,
-            tool_tokens=None,
-            duration_ms=None,
-            extra={},
-        )
-
-        tool_calls_for_answer: List[ToolCallInfo] = []
-        for t in tool_traces:
-            tool_calls_for_answer.append(
-                ToolCallInfo(
-                    tool_name=t.get("tool") or "",
-                    arguments=t.get("args") or {},
-                    result_summary=(
-                        t.get("output_preview")
-                        if isinstance(t.get("output_preview"), str)
-                        else None
-                    ),
-                    success=not bool(t.get("error")),
-                    error_message=t.get("error"),
-                    extra={"raw_trace": t},
-                )
-            )
-
-        return RuntimeAnswer(
-            answer=answer_text,
-            citations=[],
-            route=route_info,
-            tool_calls=tool_calls_for_answer,
-            stats=stats,
-            raw_model_output=None,
-            debug_trace=debug_trace,
-        )
+        # Step 7: Persist assistant message and build RuntimeAnswer
+        runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
+        return runtime_answer
 
     def ask_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
         """
@@ -301,61 +231,49 @@ class DropInKnowledgeRuntime:
         return asyncio.run(self.ask(request))
 
     # ------------------------------------------------------------------
-    # Step 1: Session + ingestion + user message
+    # Step 1: session + ingestion + base history
     # ------------------------------------------------------------------
 
-    async def _load_or_create_session_and_ingest(
-        self,
-        request: RuntimeRequest,
-    ) -> Tuple[ChatSession, List[IngestionResult], List[ChatMessage]]:
+    async def _step_session_and_ingest(self, state: RuntimeState) -> None:
         """
-        Load or create a session, ingest attachments if present,
-        append the user message and return:
+        Load or create a session, ingest attachments (RAG), append user message
+        and build base conversation history + initial debug_trace.
+        """
+        req = state.request
 
-          - ChatSession,
-          - ingestion results,
-          - base conversational history.
-        """
-        session = await self._session_store.get_session(request.session_id)
+        # 1. Load or create session
+        session = await self._session_store.get_session(req.session_id)
         if session is None:
             session = await self._session_store.create_session(
-                session_id=request.session_id,
-                user_id=request.user_id,
-                tenant_id=request.tenant_id or self._config.tenant_id,
-                workspace_id=request.workspace_id or self._config.workspace_id,
-                metadata=request.metadata,
+                session_id=req.session_id,
+                user_id=req.user_id,
+                tenant_id=req.tenant_id or self._config.tenant_id,
+                workspace_id=req.workspace_id or self._config.workspace_id,
+                metadata=req.metadata,
             )
 
+        # 1a. Ingest attachments into vector store (if any)
         ingestion_results: List[IngestionResult] = []
-        if request.attachments:
+        if req.attachments:
             ingestion_results = await self._ingestion_service.ingest_attachments_for_session(
-                attachments=request.attachments,
+                attachments=req.attachments,
                 session_id=session.id,
-                user_id=request.user_id,
+                user_id=req.user_id,
                 tenant_id=session.tenant_id,
                 workspace_id=session.workspace_id,
             )
 
-        user_message = self._build_session_message_from_request(request)
+        # 2. Append user message to session history
+        user_message = self._build_session_message_from_request(req)
         await self._session_store.append_message(session.id, user_message)
 
         # Reload the session to ensure we have the latest metadata
         session = await self._session_store.get_session(session.id) or session
 
+        # 3. Build base conversational history from SessionStore
         base_history: List[ChatMessage] = self._build_chat_history(session)
-        return session, ingestion_results, base_history
 
-    def _init_debug_trace(
-        self,
-        *,
-        session: ChatSession,
-        ingestion_results: List[IngestionResult],
-        base_history: List[ChatMessage],
-    ) -> Dict[str, Any]:
-        """
-        Initialize a debug trace structure with core metadata and
-        ingestion information.
-        """
+        # Initialize debug trace
         debug_trace: Dict[str, Any] = {
             "session_id": session.id,
             "user_id": session.user_id,
@@ -364,6 +282,7 @@ class DropInKnowledgeRuntime:
                 "embedding_label": self._config.embedding_label,
                 "vectorstore_label": self._config.vectorstore_label,
             },
+            "base_history_length": len(base_history),
         }
 
         if ingestion_results:
@@ -378,225 +297,202 @@ class DropInKnowledgeRuntime:
                 for r in ingestion_results
             ]
 
-        debug_trace["base_history_length"] = len(base_history)
-        return debug_trace
+        state.session = session
+        state.ingestion_results = ingestion_results
+        state.base_history = base_history
+        state.debug_trace = debug_trace
 
     # ------------------------------------------------------------------
-    # Step 3: RAG + history layer
+    # Step 2: RAG + history
     # ------------------------------------------------------------------
 
-    async def _build_rag_and_history_layer(
-        self,
-        *,
-        session: ChatSession,
-        request: RuntimeRequest,
-        base_history: List[ChatMessage],
-        messages_for_llm: List[ChatMessage],
-        tools_context_parts: List[str],
-    ) -> Tuple[
-        List[ChatMessage],
-        List[str],
-        bool,
-        Dict[str, Any],
-        List[ChatMessage],
-        bool,
-    ]:
+    async def _step_rag_and_history(self, state: RuntimeState) -> None:
         """
-        Build the RAG + history layer using ContextBuilder (if configured).
+        Build RAG + history layer using ContextBuilder (if configured).
 
-        Returns:
-          - updated messages_for_llm,
-          - updated tools_context_parts,
-          - used_rag_flag,
-          - rag_debug_info dict,
-          - history_messages used for tools scope "CONVERSATION",
-          - history_includes_current_user flag.
+        - If ContextBuilder is present:
+            * delegates to ContextBuilder,
+            * builds RAG system + context messages,
+            * appends conversation history.
+        - If not:
+            * falls back to simple history-only prompt.
         """
-        used_rag_flag: bool = False
-        rag_debug: Dict[str, Any] = {}
-        history_includes_current_user: bool = False
-        history_messages: List[ChatMessage] = []
+        session = state.session
+        assert session is not None, "Session must be set before RAG step."
+        req = state.request
+        base_history = state.base_history
 
         if self._context_builder is not None:
             built = await self._context_builder.build_context(
                 session=session,
-                request=request,
+                request=req,
                 base_history=base_history,
             )
 
             rag_info = built.rag_debug_info or {}
-            rag_debug = rag_info
+            state.debug_trace["rag"] = rag_info
 
-            used_rag_flag = bool(rag_info.get("used", bool(built.retrieved_chunks)))
-
-            if used_rag_flag:
+            state.used_rag = bool(rag_info.get("used", bool(built.retrieved_chunks)))
+            if state.used_rag:
                 # RAG-specific prompt construction
                 bundle = self._rag_prompt_builder.build_rag_prompt(built)
 
                 # System prompt from RAG layer
-                messages_for_llm.append(
+                state.messages_for_llm.append(
                     ChatMessage(role="system", content=bundle.system_prompt)
                 )
 
                 # Additional context messages built from retrieved chunks
-                messages_for_llm.extend(bundle.context_messages or [])
+                context_messages = bundle.context_messages or []
+                state.messages_for_llm.extend(context_messages)
 
                 # Compact textual form of RAG context for tools agent
                 rag_context_text = self._format_rag_context(built.retrieved_chunks or [])
                 if rag_context_text:
-                    tools_context_parts.append("RAG CONTEXT:\n" + rag_context_text)
+                    state.tools_context_parts.append("RAG CONTEXT:\n" + rag_context_text)
 
-                rag_debug["rag_chunks"] = len(built.retrieved_chunks or [])
+                state.debug_trace["rag_chunks"] = len(built.retrieved_chunks or [])
             else:
-                rag_debug["rag_chunks"] = 0
+                state.debug_trace["rag_chunks"] = 0
 
             # Conversation history – always appended, regardless of RAG
             history_messages = built.history_messages or []
-            messages_for_llm.extend(history_messages)
-            history_includes_current_user = True
+            state.messages_for_llm.extend(history_messages)
+            state.built_history_messages = history_messages
+            state.history_includes_current_user = True
+            state.debug_trace["history_length"] = len(history_messages)
         else:
-            # No ContextBuilder configured – fall back to a simple history-only prompt.
-            messages_for_llm.extend(base_history)
-            history_messages = base_history
-            history_includes_current_user = True
-            used_rag_flag = False
-            rag_debug["rag_chunks"] = 0
-
-        return (
-            messages_for_llm,
-            tools_context_parts,
-            used_rag_flag,
-            rag_debug,
-            history_messages,
-            history_includes_current_user,
-        )
+            # No ContextBuilder configured – fall back to history-only prompt
+            state.messages_for_llm.extend(base_history)
+            state.built_history_messages = base_history
+            state.history_includes_current_user = True
+            state.used_rag = False
+            state.debug_trace["history_length"] = len(base_history)
+            state.debug_trace["rag_chunks"] = 0
 
     # ------------------------------------------------------------------
-    # Step 4: Web search layer
+    # Step 3: Web search
     # ------------------------------------------------------------------
 
-    async def _run_websearch_layer(
-        self,
-        *,
-        request: RuntimeRequest,
-        messages_for_llm: List[ChatMessage],
-        tools_context_parts: List[str],
-    ) -> Tuple[List[ChatMessage], List[str], bool, Dict[str, Any]]:
+    async def _step_websearch(self, state: RuntimeState) -> None:
         """
         Run optional web search and inject results as context messages.
         """
-        used_websearch_flag: bool = False
-        websearch_debug: Dict[str, Any] = {}
+        state.websearch_debug = {}
+        state.used_websearch = False
 
         if (
-            self._config.enable_websearch
-            and self._websearch_executor is not None
-            and self._websearch_prompt_builder is not None
+            not self._config.enable_websearch
+            or self._websearch_executor is None
+            or self._websearch_prompt_builder is None
         ):
-            try:
-                web_docs = await self._websearch_executor.search_async(
-                    query=request.message,
-                    top_k=self._config.max_docs_per_query,
-                    language=None,
-                    top_n_fetch=None,
-                    serialize=True,
+            return
+
+        try:
+            web_docs = await self._websearch_executor.search_async(
+                query=state.request.message,
+                top_k=self._config.max_docs_per_query,
+                language=None,
+                top_n_fetch=None,
+                serialize=True,
+            )
+
+            if not web_docs:
+                return
+
+            state.used_websearch = True
+
+            bundle = self._websearch_prompt_builder.build_websearch_prompt(web_docs)
+            context_messages = bundle.context_messages or []
+            state.messages_for_llm.extend(context_messages)
+            state.websearch_debug.update(bundle.debug_info or {})
+
+            # Compact textual context for tools
+            web_context_texts: List[str] = []
+            for msg in context_messages:
+                if getattr(msg, "content", None):
+                    web_context_texts.append(msg.content)
+            if web_context_texts:
+                state.tools_context_parts.append(
+                    "WEBSEARCH CONTEXT:\n" + "\n\n".join(web_context_texts)
                 )
 
-                if web_docs:
-                    used_websearch_flag = True
+        except Exception as exc:
+            state.websearch_debug["error"] = str(exc)
 
-                    bundle = self._websearch_prompt_builder.build_websearch_prompt(
-                        web_docs
-                    )
-
-                    # Inject web search context messages AFTER RAG/system/history,
-                    # but BEFORE the final user message.
-                    messages_for_llm.extend(bundle.context_messages or [])
-
-                    if bundle.debug_info:
-                        websearch_debug.update(bundle.debug_info)
-
-                    # Tools context from websearch (compact textual form)
-                    web_context_texts: List[str] = []
-                    for msg in bundle.context_messages or []:
-                        if getattr(msg, "content", None):
-                            web_context_texts.append(msg.content)
-                    if web_context_texts:
-                        tools_context_parts.append(
-                            "WEBSEARCH CONTEXT:\n" + "\n\n".join(web_context_texts)
-                        )
-
-            except Exception as exc:
-                websearch_debug["error"] = str(exc)
-
-        return messages_for_llm, tools_context_parts, used_websearch_flag, websearch_debug
+        if state.websearch_debug:
+            state.debug_trace["websearch"] = state.websearch_debug
 
     # ------------------------------------------------------------------
-    # Step 5: Tools layer
+    # Step 4: Ensure current user message
     # ------------------------------------------------------------------
 
-    async def _run_tools_layer(
-        self,
-        *,
-        request: RuntimeRequest,
-        messages_for_llm: List[ChatMessage],
-        tools_context_parts: List[str],
-        base_history: List[ChatMessage],
-        built_history_messages: List[ChatMessage],
-    ) -> Tuple[
-        List[ChatMessage],
-        bool,
-        Optional[str],
-        List[Dict[str, Any]],
-        Dict[str, Any],
-    ]:
+    def _ensure_current_user_message(self, state: RuntimeState) -> None:
         """
-        Run tools agent layer if configured.
+        Ensure that the latest user message is present in the final prompt.
 
-        Returns:
-          - updated messages_for_llm,
-          - used_tools_flag,
-          - tools_agent_answer (if any),
-          - tool_traces,
-          - tools_debug_info dict.
+        ContextBuilder may decide to already include it in history; if not,
+        we append it explicitly as the last user message.
         """
-        tools_debug: Dict[str, Any] = {}
-        tools_agent_answer: Optional[str] = None
-        tool_traces: List[Dict[str, Any]] = []
-        used_tools_flag: bool = False
+        if not state.history_includes_current_user:
+            state.messages_for_llm.append(
+                ChatMessage(
+                    role="user",
+                    content=state.request.message,
+                    created_at=datetime.now(timezone.utc).isoformat(),
+                )
+            )
+
+    # ------------------------------------------------------------------
+    # Step 5: Tools
+    # ------------------------------------------------------------------
+
+    async def _step_tools(self, state: RuntimeState) -> None:
+        """
+        Run tools agent (planning + tool calls) if configured.
+
+        The tools result is:
+          - optionally used as the final answer (when tools_mode != "off"),
+          - appended as system context for the core LLM.
+        """
+        state.used_tools = False
+        state.tool_traces = []
+        state.tools_agent_answer = None
 
         use_tools = (
             self._config.tools_agent is not None
             and self._config.tools_mode != "off"
         )
-
         if not use_tools:
-            return messages_for_llm, used_tools_flag, tools_agent_answer, tool_traces, tools_debug
+            return
 
         tools_context = (
-            "\n\n".join(tools_context_parts).strip()
-            if tools_context_parts
+            "\n\n".join(state.tools_context_parts).strip()
+            if state.tools_context_parts
             else None
         )
 
+        debug_tools: Dict[str, Any] = {
+            "mode": self._config.tools_mode,
+        }
+
         try:
-            # Decide what to pass as input_data for the tools agent,
-            # depending on configured scope.
+            # Decide what to pass as input_data for the tools agent.
             if self._config.tools_context_scope == ToolsContextScope.CURRENT_MESSAGE_ONLY:
-                agent_input = request.message
+                agent_input = state.request.message
 
             elif self._config.tools_context_scope == ToolsContextScope.CONVERSATION:
-                # If ContextBuilder was used, we have built_history_messages.
-                # Otherwise fall back to base_history.
-                if built_history_messages:
-                    agent_input = built_history_messages
+                # Use history built by ContextBuilder if available,
+                # otherwise fall back to base_history.
+                if state.built_history_messages:
+                    agent_input = state.built_history_messages
                 else:
-                    agent_input = base_history
+                    agent_input = state.base_history
 
             else:
-                # FULL_CONTEXT (or future additional scopes):
-                # pass the entire message list built so far.
-                agent_input = messages_for_llm
+                # FULL_CONTEXT or any future scope:
+                # pass entire message list built so far.
+                agent_input = state.messages_for_llm
 
             tools_result = self._config.tools_agent.run(
                 input_data=agent_input,
@@ -605,28 +501,24 @@ class DropInKnowledgeRuntime:
                 tool_choice=None,
                 output_model=None,
             )
-            tools_agent_answer = tools_result.get("answer", "") or None
-            tool_traces = tools_result.get("tool_traces") or []
-            used_tools_flag = bool(tool_traces)
 
-            tools_debug.update(
-                {
-                    "mode": self._config.tools_mode,
-                    "used_tools": used_tools_flag,
-                    "tool_traces": tool_traces,
-                }
-            )
-            if tools_agent_answer:
-                tools_debug["agent_answer_preview"] = str(tools_agent_answer)[:200]
-            if self._config.tools_mode == "required" and not used_tools_flag:
-                tools_debug[
-                    "warning"
-                ] = "tools_mode='required' but no tools were invoked by the tools_agent."
+            state.tools_agent_answer = tools_result.get("answer", "") or None
+            state.tool_traces = tools_result.get("tool_traces") or []
+            state.used_tools = bool(state.tool_traces)
 
-            # Inject executed tool calls as system context for the core LLM
-            if tool_traces:
+            debug_tools["used_tools"] = state.used_tools
+            debug_tools["tool_traces"] = state.tool_traces
+            if state.tools_agent_answer:
+                debug_tools["agent_answer_preview"] = str(state.tools_agent_answer)[:200]
+            if self._config.tools_mode == "required" and not state.used_tools:
+                debug_tools["warning"] = (
+                    "tools_mode='required' but no tools were invoked by the tools_agent."
+                )
+
+            # Inject executed tool calls as system context for core LLM.
+            if state.tool_traces:
                 tool_lines: List[str] = []
-                for t in tool_traces:
+                for t in state.tool_traces:
                     name = t.get("tool")
                     args = t.get("args")
                     output = t.get("output")
@@ -654,7 +546,7 @@ class DropInKnowledgeRuntime:
 
                 tools_context_for_llm = "\n".join(tool_lines).strip()
                 if tools_context_for_llm:
-                    messages_for_llm.append(
+                    state.messages_for_llm.append(
                         ChatMessage(
                             role="system",
                             content=(
@@ -666,32 +558,26 @@ class DropInKnowledgeRuntime:
                     )
 
         except Exception as e:
-            tools_debug["tools_error"] = str(e)
+            debug_tools["tools_error"] = str(e)
 
-        return messages_for_llm, used_tools_flag, tools_agent_answer, tool_traces, tools_debug
+        state.debug_trace["tools"] = debug_tools
 
     # ------------------------------------------------------------------
-    # Step 6: Core LLM call
+    # Step 6: Core LLM
     # ------------------------------------------------------------------
 
-    def _call_core_llm(
-        self,
-        *,
-        messages_for_llm: List[ChatMessage],
-        tools_agent_answer: Optional[str],
-        used_tools_flag: bool,
-        debug_trace: Dict[str, Any],
-    ) -> str:
+    def _step_core_llm(self, state: RuntimeState) -> str:
         """
         Call the core LLM adapter and decide on the final answer text,
         possibly falling back to tools_agent_answer when needed.
         """
-        if used_tools_flag and tools_agent_answer:
-            return str(tools_agent_answer)
+        # If tools were used and we have an explicit agent answer, prefer it.
+        if state.used_tools and state.tools_agent_answer:
+            return str(state.tools_agent_answer)
 
         try:
             raw_answer = self._config.llm_adapter.generate_messages(
-                messages_for_llm,
+                state.messages_for_llm,
                 max_tokens=self._config.max_output_tokens,
             )
 
@@ -705,16 +591,116 @@ class DropInKnowledgeRuntime:
             return str(raw_answer)
 
         except Exception as e:
-            debug_trace["llm_error"] = str(e)
+            state.debug_trace["llm_error"] = str(e)
 
-            if tools_agent_answer:
+            if state.tools_agent_answer:
                 return (
                     "[ERROR] LLM adapter failed, falling back to tools agent answer.\n"
                     f"Details: {e}\n\n"
-                    f"{tools_agent_answer}"
+                    f"{state.tools_agent_answer}"
                 )
 
             return f"[ERROR] LLM adapter failed: {e}"
+
+    # ------------------------------------------------------------------
+    # Step 7: Persist answer & build RuntimeAnswer
+    # ------------------------------------------------------------------
+
+    async def _step_persist_and_build_answer(
+        self,
+        state: RuntimeState,
+        answer_text: str,
+    ) -> RuntimeAnswer:
+        """
+        Append assistant message to the session and build a RuntimeAnswer,
+        including RouteInfo and RuntimeStats.
+        """
+        # Fallback if answer is empty for any reason
+        if not isinstance(answer_text, str) or not answer_text.strip():
+            answer_text = (
+                str(state.tools_agent_answer)
+                if state.tools_agent_answer
+                else "[ERROR] Empty answer from runtime."
+            )
+
+        session = state.session
+        assert session is not None, "Session must be set before persistence."
+
+        assistant_message = ChatMessage(
+            role="assistant",
+            content=answer_text,
+            created_at=datetime.now(timezone.utc).isoformat(),
+        )
+        await self._session_store.append_message(session.id, assistant_message)
+
+        # Strategy label
+        if state.used_rag and state.used_websearch and state.used_tools:
+            strategy = "llm_with_rag_websearch_and_tools"
+        elif state.used_rag and state.used_tools:
+            strategy = "llm_with_rag_and_tools"
+        elif state.used_websearch and state.used_tools:
+            strategy = "llm_with_websearch_and_tools"
+        elif state.used_tools:
+            strategy = "llm_with_tools"
+        elif state.used_rag and state.used_websearch:
+            strategy = "llm_with_rag_and_websearch"
+        elif state.used_rag:
+            strategy = "llm_with_rag_context_builder"
+        elif state.used_websearch:
+            strategy = "llm_with_websearch"
+        elif state.ingestion_results:
+            strategy = "llm_only_with_ingestion"
+        else:
+            strategy = "llm_only"
+
+        route_info = RouteInfo(
+            used_rag=state.used_rag and self._config.enable_rag,
+            used_websearch=state.used_websearch and self._config.enable_websearch,
+            used_tools=state.used_tools and self._config.tools_mode != "off",
+            used_long_term_memory=state.used_long_term_memory,
+            used_user_profile=state.used_user_profile,
+            strategy=strategy,
+            extra={},
+        )
+
+        # Token stats are still placeholders – can be wired from LLM adapter later.
+        stats = RuntimeStats(
+            total_tokens=None,
+            input_tokens=None,
+            output_tokens=None,
+            rag_tokens=None,
+            websearch_tokens=None,
+            tool_tokens=None,
+            duration_ms=None,
+            extra={},
+        )
+
+        tool_calls_for_answer: List[ToolCallInfo] = []
+        for t in state.tool_traces:
+            tool_calls_for_answer.append(
+                ToolCallInfo(
+                    tool_name=t.get("tool") or "",
+                    arguments=t.get("args") or {},
+                    result_summary=(
+                        t.get("output_preview")
+                        if isinstance(t.get("output_preview"), str)
+                        else None
+                    ),
+                    success=not bool(t.get("error")),
+                    error_message=t.get("error"),
+                    extra={"raw_trace": t},
+                )
+            )
+
+        return RuntimeAnswer(
+            answer=answer_text,
+            citations=[],
+            route=route_info,
+            tool_calls=tool_calls_for_answer,
+            stats=stats,
+            raw_model_output=None,
+            debug_trace=state.debug_trace,
+        )
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -768,7 +754,7 @@ class DropInKnowledgeRuntime:
         Build a conversation history for the LLM using the SessionStore.
 
         The engine does not know how the history is constructed internally:
-        SessionStore is free to use ConversationalMemory, additional
-        filters, tagging, or other memory mechanisms.
+        SessionStore is free to use ConversationalMemory, additional filters,
+        tagging, or other memory mechanisms.
         """
         return self._session_store.get_conversation_history(session=session)
