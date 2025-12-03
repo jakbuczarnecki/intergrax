@@ -112,6 +112,9 @@ class RuntimeRequest:
     # Optional UI / app metadata (channel, app name, etc.)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    # User-provided instructions (ChatGPT/Gemini-style)
+    instructions: Optional[str] = None
+
 
 @dataclass
 class RuntimeAnswer:
