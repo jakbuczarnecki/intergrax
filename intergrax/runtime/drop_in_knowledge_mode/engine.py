@@ -193,40 +193,45 @@ class DropInKnowledgeRuntime:
 
         Pipeline:
           1. Session + ingestion + user message appended.
-          2. History layer (conversation history for the LLM).
-          3. RAG layer (retrieval + RAG system/context messages).
-          4. Web search layer (optional).
-          5. Ensure current user message is present at the end of context.
-          6. Tools layer (planning + tool calls).
-          7. Core LLM call.
-          8. Persist assistant answer and build RuntimeAnswer with route info.
+          2. Base history builder (load & preprocess conversation history).
+          3. History layer (conversation history for the LLM).
+          4. RAG layer (retrieval + RAG system/context messages).
+          5. Web search layer (optional).
+          6. Ensure current user message is present at the end of context.
+          7. Tools layer (planning + tool calls).
+          8. Core LLM call.
+          9. Persist assistant answer and build RuntimeAnswer with route info.
         """
         state = RuntimeState(request=request)
 
-        # Step 1: session lifecycle + ingestion + base history & debug init
+        # Step 1: session lifecycle + ingestion & debug init (no history)
         await self._step_session_and_ingest(state)
 
-        # Step 2: history layer
+        # Step 2: build base history (load & preprocess conversation history)
+        await self._step_build_base_history(state)
+
+        # Step 3: history layer
         await self._step_history(state)
 
-        # Step 3: RAG layer
+        # Step 4: RAG layer
         await self._step_rag(state)
 
-        # Step 4: Web search layer
+        # Step 5: Web search layer
         await self._step_websearch(state)
 
-        # Step 5: Ensure current user message is in the final prompt
+        # Step 6: Ensure current user message is in the final prompt
         self._ensure_current_user_message(state)
 
-        # Step 6: Tools layer
+        # Step 7: Tools layer
         await self._step_tools(state)
 
-        # Step 7: Core LLM
+        # Step 8: Core LLM
         answer_text = self._step_core_llm(state)
 
-        # Step 8: Persist assistant message and build RuntimeAnswer
+        # Step 9: Persist assistant message and build RuntimeAnswer
         runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
         return runtime_answer
+
 
 
     def ask_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
@@ -239,13 +244,17 @@ class DropInKnowledgeRuntime:
         return asyncio.run(self.ask(request))
 
     # ------------------------------------------------------------------
-    # Step 1: session + ingestion + base history
+    # Step 1: session + ingestion (no history)
     # ------------------------------------------------------------------
 
     async def _step_session_and_ingest(self, state: RuntimeState) -> None:
         """
-        Load or create a session, ingest attachments (RAG), append user message
-        and build base conversation history + initial debug_trace.
+        Load or create a session, ingest attachments (RAG), append the user
+        message and initialize debug_trace.
+
+        IMPORTANT:
+          - This step does NOT load conversation history.
+          - History is loaded and preprocessed in `_step_build_base_history`.
         """
         req = state.request
 
@@ -278,10 +287,7 @@ class DropInKnowledgeRuntime:
         # Reload the session to ensure we have the latest metadata
         session = await self._session_store.get_session(session.id) or session
 
-        # 3. Build base conversational history from SessionStore
-        base_history: List[ChatMessage] = self._build_chat_history(session)
-
-        # Initialize debug trace
+        # Initialize debug trace – history will be attached later
         debug_trace: Dict[str, Any] = {
             "session_id": session.id,
             "user_id": session.user_id,
@@ -290,7 +296,6 @@ class DropInKnowledgeRuntime:
                 "embedding_label": self._config.embedding_label,
                 "vectorstore_label": self._config.vectorstore_label,
             },
-            "base_history_length": len(base_history),
         }
 
         if ingestion_results:
@@ -307,12 +312,49 @@ class DropInKnowledgeRuntime:
 
         state.session = session
         state.ingestion_results = ingestion_results
-        state.base_history = base_history
         state.debug_trace = debug_trace
+        # NOTE: state.base_history is intentionally left empty here.
+
+
+    # ------------------------------------------------------------------
+    # Step 2: build base history (load & preprocess)
+    # ------------------------------------------------------------------
+
+    async def _step_build_base_history(self, state: RuntimeState) -> None:
+        """
+        Load and preprocess the conversation history for the current session.
+
+        This step is the single place where we:
+          - fetch the full session history from SessionStore,
+          - optionally truncate it to the last N messages,
+          - optionally compute token usage,
+          - optionally summarize older parts of the conversation.
+
+        The resulting `state.base_history` is treated as the canonical,
+        preprocessed conversation history for all subsequent steps.
+        """
+        session = state.session
+        assert session is not None, "Session must be set before building history."
+
+        # 1. Load raw history from SessionStore
+        raw_history: List[ChatMessage] = self._build_chat_history(session)
+
+        # 2. Preprocess history for the current model/context limits.
+        #    For now this is a no-op; in the future you can:
+        #      - limit to last N messages,
+        #      - compute token counts,
+        #      - summarize older messages on the fly.
+        base_history = raw_history
+
+        state.base_history = base_history
+
+        # Update debug trace with history-related info
+        state.debug_trace["base_history_length"] = len(base_history)
+
 
     
     # ------------------------------------------------------------------
-    # Step 2: history
+    # Step 3: history
     # ------------------------------------------------------------------
 
     async def _step_history(self, state: RuntimeState) -> None:
@@ -355,7 +397,7 @@ class DropInKnowledgeRuntime:
 
 
     # ------------------------------------------------------------------
-    # Step 3: RAG
+    # Step 4: RAG
     # ------------------------------------------------------------------
 
     async def _step_rag(self, state: RuntimeState) -> None:
@@ -425,7 +467,7 @@ class DropInKnowledgeRuntime:
 
 
     # ------------------------------------------------------------------
-    # Step 4: Web search
+    # Step 5: Web search
     # ------------------------------------------------------------------
 
     async def _step_websearch(self, state: RuntimeState) -> None:
@@ -478,7 +520,7 @@ class DropInKnowledgeRuntime:
             state.debug_trace["websearch"] = state.websearch_debug
 
     # ------------------------------------------------------------------
-    # Step 5: Ensure current user message
+    # Step 6: Ensure current user message
     # ------------------------------------------------------------------
 
     def _ensure_current_user_message(self, state: RuntimeState) -> None:
@@ -498,7 +540,7 @@ class DropInKnowledgeRuntime:
             )
 
     # ------------------------------------------------------------------
-    # Step 6: Tools
+    # Step 7: Tools
     # ------------------------------------------------------------------
 
     async def _step_tools(self, state: RuntimeState) -> None:
@@ -617,7 +659,7 @@ class DropInKnowledgeRuntime:
         state.debug_trace["tools"] = debug_tools
 
     # ------------------------------------------------------------------
-    # Step 7: Core LLM
+    # Step 8: Core LLM
     # ------------------------------------------------------------------
 
     def _step_core_llm(self, state: RuntimeState) -> str:
@@ -657,7 +699,7 @@ class DropInKnowledgeRuntime:
             return f"[ERROR] LLM adapter failed: {e}"
 
     # ------------------------------------------------------------------
-    # Step 8: Persist answer & build RuntimeAnswer
+    # Step 9: Persist answer & build RuntimeAnswer
     # ------------------------------------------------------------------
 
     async def _step_persist_and_build_answer(
@@ -805,10 +847,11 @@ class DropInKnowledgeRuntime:
 
     def _build_chat_history(self, session: ChatSession) -> List[ChatMessage]:
         """
-        Build a conversation history for the LLM using the SessionStore.
+        Load raw conversation history for the given session.
 
-        The engine does not know how the history is constructed internally:
-        SessionStore is free to use ConversationalMemory, additional filters,
-        tagging, or other memory mechanisms.
+        This method is responsible only for fetching history from SessionStore.
+        Any model-specific preprocessing (truncation, summarization, token
+        accounting) should happen in `_step_build_base_history`, not here.
         """
         return self._session_store.get_conversation_history(session=session)
+
