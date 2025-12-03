@@ -98,6 +98,9 @@ class RuntimeState:
     built_history_messages: List[ChatMessage] = field(default_factory=list)
     history_includes_current_user: bool = False
 
+    # ContextBuilder intermediate result (history + retrieved chunks)
+    context_builder_result: Optional[Any] = None
+
     # Usage flags
     used_rag: bool = False
     used_websearch: bool = False
@@ -190,36 +193,41 @@ class DropInKnowledgeRuntime:
 
         Pipeline:
           1. Session + ingestion + user message appended.
-          2. RAG + history layer via ContextBuilder (if configured).
-          3. Web search layer (optional).
-          4. Ensure current user message is present at the end of context.
-          5. Tools layer (planning + tool calls).
-          6. Core LLM call.
-          7. Persist assistant answer and build RuntimeAnswer with route info.
+          2. History layer (conversation history for the LLM).
+          3. RAG layer (retrieval + RAG system/context messages).
+          4. Web search layer (optional).
+          5. Ensure current user message is present at the end of context.
+          6. Tools layer (planning + tool calls).
+          7. Core LLM call.
+          8. Persist assistant answer and build RuntimeAnswer with route info.
         """
         state = RuntimeState(request=request)
 
         # Step 1: session lifecycle + ingestion + base history & debug init
         await self._step_session_and_ingest(state)
 
-        # Step 2: RAG + history layer
-        await self._step_rag_and_history(state)
+        # Step 2: history layer
+        await self._step_history(state)
 
-        # Step 3: Web search layer
+        # Step 3: RAG layer
+        await self._step_rag(state)
+
+        # Step 4: Web search layer
         await self._step_websearch(state)
 
-        # Step 4: Ensure current user message is in the final prompt
+        # Step 5: Ensure current user message is in the final prompt
         self._ensure_current_user_message(state)
 
-        # Step 5: Tools layer
+        # Step 6: Tools layer
         await self._step_tools(state)
 
-        # Step 6: Core LLM
+        # Step 7: Core LLM
         answer_text = self._step_core_llm(state)
 
-        # Step 7: Persist assistant message and build RuntimeAnswer
+        # Step 8: Persist assistant message and build RuntimeAnswer
         runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
         return runtime_answer
+
 
     def ask_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
         """
@@ -302,76 +310,122 @@ class DropInKnowledgeRuntime:
         state.base_history = base_history
         state.debug_trace = debug_trace
 
+    
     # ------------------------------------------------------------------
-    # Step 2: RAG + history
+    # Step 2: history
     # ------------------------------------------------------------------
 
-    async def _step_rag_and_history(self, state: RuntimeState) -> None:
+    async def _step_history(self, state: RuntimeState) -> None:
         """
-        Build RAG + history layer using ContextBuilder (if configured).
+        Build conversation history for the LLM.
 
-        - If ContextBuilder is present:
-            * delegates to ContextBuilder,
-            * builds RAG system + context messages,
-            * appends conversation history.
-        - If not:
-            * falls back to simple history-only prompt.
+        This step is responsible only for selecting and shaping the
+        conversational context (previous user/assistant turns).
+
+        Retrieval (RAG) is handled separately in `_step_rag`.
         """
         session = state.session
-        assert session is not None, "Session must be set before RAG step."
+        assert session is not None, "Session must be set before history step."
         req = state.request
         base_history = state.base_history
 
         if self._context_builder is not None:
+            # Delegate history shaping (truncation, system message stitching, etc.)
+            # to ContextBuilder, but do NOT inject RAG here.
             built = await self._context_builder.build_context(
                 session=session,
                 request=req,
                 base_history=base_history,
             )
 
-            rag_info = built.rag_debug_info or {}
-            state.debug_trace["rag"] = rag_info
+            # Keep the full result for the RAG step.
+            state.context_builder_result = built
 
-            state.used_rag = bool(rag_info.get("used", bool(built.retrieved_chunks)))
-            if state.used_rag:
-                # RAG-specific prompt construction
-                bundle = self._rag_prompt_builder.build_rag_prompt(built)
-
-                # System prompt from RAG layer
-                state.messages_for_llm.append(
-                    ChatMessage(role="system", content=bundle.system_prompt)
-                )
-
-                # Additional context messages built from retrieved chunks
-                context_messages = bundle.context_messages or []
-                state.messages_for_llm.extend(context_messages)
-
-                # Compact textual form of RAG context for tools agent
-                rag_context_text = self._format_rag_context(built.retrieved_chunks or [])
-                if rag_context_text:
-                    state.tools_context_parts.append("RAG CONTEXT:\n" + rag_context_text)
-
-                state.debug_trace["rag_chunks"] = len(built.retrieved_chunks or [])
-            else:
-                state.debug_trace["rag_chunks"] = 0
-
-            # Conversation history – always appended, regardless of RAG
             history_messages = built.history_messages or []
             state.messages_for_llm.extend(history_messages)
             state.built_history_messages = history_messages
             state.history_includes_current_user = True
             state.debug_trace["history_length"] = len(history_messages)
         else:
-            # No ContextBuilder configured – fall back to history-only prompt
+            # No ContextBuilder configured – use raw history from SessionStore.
             state.messages_for_llm.extend(base_history)
             state.built_history_messages = base_history
             state.history_includes_current_user = True
-            state.used_rag = False
             state.debug_trace["history_length"] = len(base_history)
-            state.debug_trace["rag_chunks"] = 0
+
 
     # ------------------------------------------------------------------
-    # Step 3: Web search
+    # Step 3: RAG
+    # ------------------------------------------------------------------
+
+    async def _step_rag(self, state: RuntimeState) -> None:
+        """
+        Build RAG layer (if configured) on top of the already constructed
+        conversation history.
+
+        This step:
+          - uses the result from ContextBuilder (if available),
+          - injects RAG system and context messages,
+          - prepares a compact text summary of retrieved chunks for tools.
+        """
+        # Default values in case RAG is disabled or no chunks are retrieved.
+        state.used_rag = False
+        state.debug_trace.setdefault("rag_chunks", 0)
+
+        # If RAG is globally disabled, do nothing.
+        if not getattr(self._config, "enable_rag", True):
+            return
+
+        # We need ContextBuilder to produce retrieved chunks.
+        if self._context_builder is None:
+            return
+
+        built = state.context_builder_result
+
+        # In normal flow _step_history should have already called build_context
+        # and stored the result. As a fallback, we can call it here.
+        if built is None:
+            session = state.session
+            assert session is not None, "Session must be set before RAG step."
+            built = await self._context_builder.build_context(
+                session=session,
+                request=state.request,
+                base_history=state.base_history,
+            )
+            state.context_builder_result = built
+
+        rag_info = getattr(built, "rag_debug_info", None) or {}
+        state.debug_trace["rag"] = rag_info
+
+        retrieved_chunks = getattr(built, "retrieved_chunks", None) or []
+        state.used_rag = bool(rag_info.get("used", bool(retrieved_chunks)))
+
+        if not state.used_rag:
+            state.debug_trace["rag_chunks"] = 0
+            return
+
+        # RAG-specific prompt construction
+        bundle = self._rag_prompt_builder.build_rag_prompt(built)
+
+        # System prompt from RAG layer
+        state.messages_for_llm.append(
+            ChatMessage(role="system", content=bundle.system_prompt)
+        )
+
+        # Additional context messages built from retrieved chunks
+        context_messages = bundle.context_messages or []
+        state.messages_for_llm.extend(context_messages)
+
+        # Compact textual form of RAG context for tools agent
+        rag_context_text = self._format_rag_context(retrieved_chunks)
+        if rag_context_text:
+            state.tools_context_parts.append("RAG CONTEXT:\n" + rag_context_text)
+
+        state.debug_trace["rag_chunks"] = len(retrieved_chunks)
+
+
+    # ------------------------------------------------------------------
+    # Step 4: Web search
     # ------------------------------------------------------------------
 
     async def _step_websearch(self, state: RuntimeState) -> None:
@@ -424,7 +478,7 @@ class DropInKnowledgeRuntime:
             state.debug_trace["websearch"] = state.websearch_debug
 
     # ------------------------------------------------------------------
-    # Step 4: Ensure current user message
+    # Step 5: Ensure current user message
     # ------------------------------------------------------------------
 
     def _ensure_current_user_message(self, state: RuntimeState) -> None:
@@ -444,7 +498,7 @@ class DropInKnowledgeRuntime:
             )
 
     # ------------------------------------------------------------------
-    # Step 5: Tools
+    # Step 6: Tools
     # ------------------------------------------------------------------
 
     async def _step_tools(self, state: RuntimeState) -> None:
@@ -563,7 +617,7 @@ class DropInKnowledgeRuntime:
         state.debug_trace["tools"] = debug_tools
 
     # ------------------------------------------------------------------
-    # Step 6: Core LLM
+    # Step 7: Core LLM
     # ------------------------------------------------------------------
 
     def _step_core_llm(self, state: RuntimeState) -> str:
@@ -603,7 +657,7 @@ class DropInKnowledgeRuntime:
             return f"[ERROR] LLM adapter failed: {e}"
 
     # ------------------------------------------------------------------
-    # Step 7: Persist answer & build RuntimeAnswer
+    # Step 8: Persist answer & build RuntimeAnswer
     # ------------------------------------------------------------------
 
     async def _step_persist_and_build_answer(
