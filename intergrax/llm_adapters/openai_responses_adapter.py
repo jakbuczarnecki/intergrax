@@ -7,7 +7,8 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, Iterable, Optional, Sequence, List
 
-from .base import (
+from intergrax.llm_adapters.base import (
+    BaseLLMAdapter,
     ChatMessage,
     _map_messages_to_openai,
     _extract_json_object,
@@ -16,7 +17,7 @@ from .base import (
 )
 
 
-class OpenAIChatResponsesAdapter:
+class OpenAIChatResponsesAdapter(BaseLLMAdapter):
     """
     OpenAI adapter based on the new Responses API.
 
@@ -28,10 +29,54 @@ class OpenAIChatResponsesAdapter:
     - generate_structured
     """
 
+    # Conservative context window estimates for common OpenAI models.
+    # For unknown models we fall back to a small, safe default.
+    _OPENAI_CONTEXT_WINDOWS: Dict[str, int] = {
+        "gpt-4o": 128_000,
+        "gpt-4o-mini": 128_000,
+        "gpt-4o-2024-08-06": 128_000,
+        "gpt-3.5-turbo": 16_385,
+        "gpt-3.5-turbo-0301": 16_385,
+        "gpt-4.1": 1_000_000,
+        "gpt-4.1-mini": 1_000_000,
+        "gpt-4.1-nano": 1_000_000,
+        "gpt-5": 400_000,
+        "gpt-5-mini": 400_000,
+    }
+
+
+    def _estimate_openai_context_window(self, model: str) -> int:
+        """
+        Best-effort context window estimation for OpenAI models.
+
+        The result is used once at adapter construction time and then cached
+        in a private attribute.
+        """
+        name = (model or "").strip()
+        base = name.split(":", 1)[0]  # strip possible snapshot suffixes
+
+        if base in self._OPENAI_CONTEXT_WINDOWS:
+            return self._OPENAI_CONTEXT_WINDOWS[base]
+
+        # Conservative fallback for unknown models.
+        return 128_000
+
     def __init__(self, client, model: str, **defaults):
+        super().__init__()
         self.client = client
         self.model = model
+        self.model_name_for_token_estimation = model
         self.defaults = defaults
+        self._context_window_tokens: int = self._estimate_openai_context_window(model)
+
+
+    @property
+    def context_window_tokens(self) -> int:
+        """
+        Cached maximum context window (input + output tokens) for the
+        configured OpenAI model. Computed once in __init__.
+        """
+        return self._context_window_tokens
 
     # ---------------------------------------------------------------------
     # INTERNAL HELPERS (PRIVATE METHODS)
@@ -74,6 +119,7 @@ class OpenAIChatResponsesAdapter:
                     if getattr(c, "type", None) == "output_text":
                         chunks.append(getattr(c, "text", "") or "")
         return "".join(chunks)
+        
 
     # ---------------------------------------------------------------------
     # PUBLIC: Plain chat

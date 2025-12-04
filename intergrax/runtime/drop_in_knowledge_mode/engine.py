@@ -36,6 +36,7 @@ from intergrax.runtime.drop_in_knowledge_mode.rag_prompt_builder import (
     RagPromptBuilder,
 )
 from intergrax.runtime.drop_in_knowledge_mode.response_schema import (
+    HistoryCompressionStrategy,
     RuntimeRequest,
     RuntimeAnswer,
     RouteInfo,
@@ -101,6 +102,15 @@ class RuntimeState:
     # ContextBuilder intermediate result (history + retrieved chunks)
     context_builder_result: Optional[Any] = None
 
+    # Memory layer (will be filled by _step_memory_layer)
+    user_memory_messages: List[ChatMessage] = field(default_factory=list)
+    org_memory_messages: List[ChatMessage] = field(default_factory=list)
+    ltm_memory_messages: List[ChatMessage] = field(default_factory=list)
+
+    # Profile-based instruction fragments prepared by the memory layer
+    profile_user_instructions: Optional[str] = None
+    profile_org_instructions: Optional[str] = None
+
     # Usage flags
     used_rag: bool = False
     used_websearch: bool = False
@@ -115,6 +125,9 @@ class RuntimeState:
     # Debug / diagnostics
     debug_trace: Dict[str, Any] = field(default_factory=dict)
     websearch_debug: Dict[str, Any] = field(default_factory=dict)
+
+    # Token accounting (filled in _step_build_base_history)
+    history_token_count: Optional[int] = None
 
 
 # ----------------------------------------------------------------------
@@ -193,48 +206,53 @@ class DropInKnowledgeRuntime:
 
         Pipeline:
           1. Session + ingestion + user message appended.
-          2. Base history builder (load & preprocess conversation history).
-          3. History layer (conversation history for the LLM).
-          4. RAG layer (retrieval + RAG system/context messages).
-          5. Web search layer (optional).
-          6. Ensure current user message is present at the end of context.
-          7. Tools layer (planning + tool calls).
-          8. Core LLM call.
-          9. Persist assistant answer and build RuntimeAnswer with route info.
-         10. Final system prompt (Instructions)
+          2. Memory layer (user/org profile memory, long-term memory facts).
+          3. Base history builder (load & preprocess conversation history).
+          4. History layer (conversation history for the LLM).
+          5. Instructions layer (final system prompt).
+          6. RAG layer (retrieval + RAG system/context messages).
+          7. Web search layer (optional).
+          8. Ensure current user message is present at the end of context.
+          9. Tools layer (planning + tool calls).
+         10. Core LLM call.
+         11. Persist assistant answer and build RuntimeAnswer with route info.
         """
         state = RuntimeState(request=request)
 
-         # 1. Session + ingestion
+        # 1. Session + ingestion
         await self._step_session_and_ingest(state)
 
-        # 2. Build base history (load & preprocess)
+        # 2. Memory layer (user/org/LTM)
+        await self._step_memory_layer(state)
+
+        # 3. Build base history (load & preprocess)
         await self._step_build_base_history(state)
 
-        # 3. History layer (ContextBuilder / raw)
+        # 4. History layer (ContextBuilder / raw)
         await self._step_history(state)
 
-        # 4. Instructions layer (final system prompt)
+        # 5. Instructions layer (final system prompt)
         await self._step_instructions(state)
 
-        # 5. RAG
+        # 6. RAG
         await self._step_rag(state)
 
-        # 6. Web search
+        # 7. Web search
         await self._step_websearch(state)
 
-        # 7. Ensure current user message
+        # 8. Ensure current user message
         self._ensure_current_user_message(state)
 
-        # 8. Tools
+        # 9. Tools
         await self._step_tools(state)
 
-        # 9. Core LLM
+        # 10. Core LLM
         answer_text = self._step_core_llm(state)
 
-        # 10. Persist + RuntimeAnswer
+        # 11. Persist + RuntimeAnswer
         runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
         return runtime_answer
+
 
 
 
@@ -321,7 +339,86 @@ class DropInKnowledgeRuntime:
 
 
     # ------------------------------------------------------------------
-    # Step 2: build base history (load & preprocess)
+    # Step 2: memory layer (user/org/LTM context + profile instructions)
+    # ------------------------------------------------------------------
+
+    async def _step_memory_layer(self, state: RuntimeState) -> None:
+        """
+        Build the memory layer for the current request.
+
+        Responsibilities:
+          - Load user and organization profile bundles for the current session.
+          - Derive profile-based instruction fragments from these bundles.
+          - (In future steps) derive user/org/long-term memory facts and
+            convert them into lightweight ChatMessage objects.
+
+        Design:
+          - This step is the single source of truth for profile-level data
+            (both memory facts and instruction fragments).
+          - _build_final_instructions() will only consolidate the already
+            prepared instruction fragments into a final system prompt.
+        """
+        session = state.session
+        assert session is not None, "Session must be set before memory layer."
+
+        # Defaults for debug
+        user_instr: Optional[str] = None
+        org_instr: Optional[str] = None
+
+        # 1) Load user profile bundle and extract instruction fragment
+        user_bundle = await self._session_store.get_user_profile_bundle_for_session(
+            session=session
+        )
+        if user_bundle is not None:
+            # We assume the bundle exposes a `system_prompt` field with
+            # stable, profile-level instructions.            
+            candidate = user_bundle.system_prompt
+            if isinstance(candidate, str):
+                candidate = candidate.strip()
+                if candidate:
+                    user_instr = candidate
+                    state.used_user_profile = True
+
+        # 2) Load organization profile bundle and extract instruction fragment
+        org_bundle = await self._session_store.get_organization_profile_bundle_for_session(
+            session=session
+        )
+        if org_bundle is not None:
+            candidate = org_bundle.system_prompt
+            if isinstance(candidate, str):
+                candidate = candidate.strip()
+                if candidate:
+                    org_instr = candidate
+                    # Note: we reuse `used_user_profile` as a generic "profile
+                    # layer used" flag; if you want separate flags later,
+                    # we can extend RuntimeState.
+                    state.used_user_profile = True
+
+        # 3) Store profile-based instruction fragments in the state so that
+        #    _build_final_instructions() can simply consolidate them.
+        state.profile_user_instructions = user_instr
+        state.profile_org_instructions = org_instr
+
+        # 4) Memory messages (user/org/LTM) remain a no-op for now. In the next
+        #    steps we will:
+        #      - query user/org/long-term memory storages,
+        #      - apply heuristic scoring,
+        #      - convert retrieved facts into ChatMessage objects and store them
+        #        in state.user_memory_messages / org_memory_messages /
+        #        ltm_memory_messages.
+        state.debug_trace["memory_layer"] = {
+            "implemented": True,
+            "user_memory_messages": len(state.user_memory_messages),
+            "org_memory_messages": len(state.org_memory_messages),
+            "ltm_memory_messages": len(state.ltm_memory_messages),
+            "has_user_profile_instructions": bool(user_instr),
+            "has_org_profile_instructions": bool(org_instr),
+        }
+
+
+
+    # ------------------------------------------------------------------
+    # Step 3: build base history (load & preprocess)
     # ------------------------------------------------------------------
 
     async def _step_build_base_history(self, state: RuntimeState) -> None:
@@ -330,9 +427,9 @@ class DropInKnowledgeRuntime:
 
         This step is the single place where we:
           - fetch the full session history from SessionStore,
-          - optionally truncate it to the last N messages,
-          - optionally compute token usage,
-          - optionally summarize older parts of the conversation.
+          - compute token usage (if the adapter supports it),
+          - apply token-based truncation according to the per-request
+            history compression strategy.
 
         The resulting `state.base_history` is treated as the canonical,
         preprocessed conversation history for all subsequent steps.
@@ -340,25 +437,127 @@ class DropInKnowledgeRuntime:
         session = state.session
         assert session is not None, "Session must be set before building history."
 
-        # 1. Load raw history from SessionStore
+        # 1. Load raw history from SessionStore.
         raw_history: List[ChatMessage] = self._build_chat_history(session)
 
-        # 2. Preprocess history for the current model/context limits.
-        #    For now this is a no-op; in the future you can:
-        #      - limit to last N messages,
-        #      - compute token counts,
-        #      - summarize older messages on the fly.
-        base_history = raw_history
+        # 2. Compute token usage for the raw history, if possible.
+        raw_token_count = self._count_tokens_for_messages(raw_history)
+        state.history_token_count = raw_token_count
+
+        # 3. Resolve per-request settings.
+        request = state.request
+        strategy = request.history_compression_strategy
+        adapter = self._config.llm_adapter
+
+        # Base history before any truncation.
+        base_history: List[ChatMessage] = raw_history
+        truncated = False
+
+        # If we cannot count tokens at all, we cannot apply token-based
+        # trimming. In that case we simply keep the full history and log
+        # what we know.
+        if raw_token_count is None:
+            state.base_history = base_history
+            state.debug_trace["base_history_length"] = len(base_history)
+            state.debug_trace["history_tokens"] = {
+                "raw_history_messages": len(raw_history),
+                "raw_history_tokens": None,
+                "history_budget_tokens": None,
+                "strategy": strategy.value,
+                "truncated": False,
+            }
+            return
+
+        # 4. Compute a token budget for history based on:
+        #    - the model context window,
+        #    - the requested max_output_tokens (if any).
+        #
+        # We use a simple, conservative heuristic:
+        #   - reserve a portion of the context window for the model output,
+        #   - reserve a portion of the remaining input for system instructions,
+        #     memory, RAG, websearch, tools, etc.
+        #   - whatever remains is the history budget.
+        context_window = adapter.context_window_tokens
+
+        # Determine how many tokens we should reserve for the output.
+        # If the user does not specify max_output_tokens, we assume
+        # roughly 1/4 of the context window is available for the output.
+        if request.max_output_tokens is not None:
+            reserved_for_output = request.max_output_tokens
+            # Never reserve more than half of the context window for output.
+            if reserved_for_output > context_window // 2:
+                reserved_for_output = context_window // 2
+        else:
+            reserved_for_output = context_window // 4
+
+        if reserved_for_output < 0:
+            reserved_for_output = 0
+        if reserved_for_output >= context_window:
+            # Degenerate case – leave at least some room for input.
+            reserved_for_output = context_window // 2
+
+        # Budget for the entire input (system + history + RAG + tools...).
+        input_budget = context_window - reserved_for_output
+
+        if input_budget <= 0:
+            # Extremely small or misconfigured budget; in this case we keep
+            # the history as-is and log the situation.
+            state.base_history = base_history
+            state.debug_trace["base_history_length"] = len(base_history)
+            state.debug_trace["history_tokens"] = {
+                "raw_history_messages": len(raw_history),
+                "raw_history_tokens": raw_token_count,
+                "history_budget_tokens": 0,
+                "strategy": strategy.value,
+                "truncated": False,
+            }
+            return
+
+        # Reserve a portion of the input budget for non-history input
+        # (system instructions, memory, RAG/websearch/tools context).
+        # The remaining portion becomes the token budget for history.
+        reserved_for_meta = input_budget // 3  # ~1/3 for meta context
+        if reserved_for_meta < 0:
+            reserved_for_meta = 0
+        if reserved_for_meta >= input_budget:
+            reserved_for_meta = input_budget // 2
+
+        history_budget_tokens = input_budget - reserved_for_meta
+
+        # 5. Apply history compression strategy.
+        if (
+            strategy == HistoryCompressionStrategy.TRUNCATE_OLDEST
+            and raw_token_count > history_budget_tokens
+            and history_budget_tokens > 0
+        ):
+            base_history = self._truncate_history_by_tokens(
+                messages=raw_history,
+                max_tokens=history_budget_tokens,
+            )
+            truncated = True
+        else:
+            # OFF or history already within budget → keep as-is.
+            base_history = raw_history
+            truncated = False
 
         state.base_history = base_history
 
-        # Update debug trace with history-related info
+        # 6. Update debug trace with history-related info and token stats.
         state.debug_trace["base_history_length"] = len(base_history)
+        state.debug_trace["history_tokens"] = {
+            "raw_history_messages": len(raw_history),
+            "raw_history_tokens": raw_token_count,
+            "history_budget_tokens": history_budget_tokens,
+            "strategy": strategy.value,
+            "truncated": truncated,
+        }
+
+
 
 
     
     # ------------------------------------------------------------------
-    # Step 3: history
+    # Step 4: history
     # ------------------------------------------------------------------
 
     async def _step_history(self, state: RuntimeState) -> None:
@@ -401,7 +600,7 @@ class DropInKnowledgeRuntime:
 
 
     # ------------------------------------------------------------------
-    # Step 4: RAG
+    # Step 5: RAG
     # ------------------------------------------------------------------
 
     async def _step_rag(self, state: RuntimeState) -> None:
@@ -471,7 +670,7 @@ class DropInKnowledgeRuntime:
 
 
     # ------------------------------------------------------------------
-    # Step 5: Web search
+    # Step 6: Web search
     # ------------------------------------------------------------------
 
     async def _step_websearch(self, state: RuntimeState) -> None:
@@ -524,7 +723,7 @@ class DropInKnowledgeRuntime:
             state.debug_trace["websearch"] = state.websearch_debug
 
     # ------------------------------------------------------------------
-    # Step 6: Ensure current user message
+    # Step 7: Ensure current user message
     # ------------------------------------------------------------------
 
     def _ensure_current_user_message(self, state: RuntimeState) -> None:
@@ -544,7 +743,7 @@ class DropInKnowledgeRuntime:
             )
 
     # ------------------------------------------------------------------
-    # Step 7: Tools
+    # Step 8: Tools
     # ------------------------------------------------------------------
 
     async def _step_tools(self, state: RuntimeState) -> None:
@@ -663,7 +862,7 @@ class DropInKnowledgeRuntime:
         state.debug_trace["tools"] = debug_tools
 
     # ------------------------------------------------------------------
-    # Step 8: Core LLM
+    # Step 9: Core LLM
     # ------------------------------------------------------------------
 
     def _step_core_llm(self, state: RuntimeState) -> str:
@@ -676,14 +875,24 @@ class DropInKnowledgeRuntime:
             return str(state.tools_agent_answer)
 
         try:
+            # Determine the per-request max output tokens, if any.
+            max_output_tokens = state.request.max_output_tokens
+
+            generate_kwargs: Dict[str, Any] = {}
+            if max_output_tokens is not None:
+                # Pass a max_tokens hint to the adapter. If the adapter ignores
+                # it or uses a different keyword, that should be handled inside
+                # the adapter implementation.
+                generate_kwargs["max_tokens"] = max_output_tokens
+
             raw_answer = self._config.llm_adapter.generate_messages(
                 state.messages_for_llm,
-                max_tokens=self._config.max_output_tokens,
+                **generate_kwargs,
             )
 
             if isinstance(raw_answer, str):
                 return raw_answer
-            
+
             content = getattr(raw_answer, "content", None)
             if isinstance(content, str) and content.strip():
                 return content
@@ -702,8 +911,9 @@ class DropInKnowledgeRuntime:
 
             return f"[ERROR] LLM adapter failed: {e}"
 
+
     # ------------------------------------------------------------------
-    # Step 9: Persist answer & build RuntimeAnswer
+    # Step 10: Persist answer & build RuntimeAnswer
     # ------------------------------------------------------------------
 
     async def _step_persist_and_build_answer(
@@ -804,7 +1014,7 @@ class DropInKnowledgeRuntime:
 
     
     # ------------------------------------------------------------------
-    # Step 10: instructions (final system prompt)
+    # Step 11: instructions (final system prompt)
     # ------------------------------------------------------------------
 
     async def _step_instructions(self, state: RuntimeState) -> None:
@@ -900,17 +1110,17 @@ class DropInKnowledgeRuntime:
 
         Sources:
           1) User-provided instructions from RuntimeRequest (if any).
-          2) User profile prompt bundle (system_prompt).
-          3) Organization profile prompt bundle (system_prompt).
+          2) Profile-based user instructions prepared by _step_memory_layer.
+          3) Profile-based organization instructions prepared by _step_memory_layer.
 
         The result is a single, short, LLM-ready text that can be used
         as a `system` message at the top of the prompt.
 
-        This method does NOT persist anything and does NOT modify history.
+        This method:
+          - does NOT touch SessionStore,
+          - does NOT modify history,
+          - only consolidates instruction fragments already present in the state.
         """
-        session = state.session
-        assert session is not None, "Session must be set before building instructions."
-
         parts: List[str] = []
         sources = {
             "request": False,
@@ -925,32 +1135,19 @@ class DropInKnowledgeRuntime:
                 parts.append(user_instr)
                 sources["request"] = True
 
-        # 2) User profile instructions from bundle
-        user_bundle = await self._session_store.get_user_profile_bundle_for_session(
-            session=session
-        )
-        if user_bundle is not None:
-            # We assume the bundle exposes a `system_prompt` field.
-            user_profile_prompt = user_bundle.system_prompt
-            if isinstance(user_profile_prompt, str):
-                user_profile_prompt = user_profile_prompt.strip()
-                if user_profile_prompt:
-                    parts.append(user_profile_prompt)
-                    sources["user_profile"] = True
-                    state.used_user_profile = True
+        # 2) User profile instructions prepared by the memory layer
+        if isinstance(state.profile_user_instructions, str):
+            profile_user = state.profile_user_instructions.strip()
+            if profile_user:
+                parts.append(profile_user)
+                sources["user_profile"] = True
 
-        # 3) Organization profile instructions from bundle
-        org_bundle = await self._session_store.get_organization_profile_bundle_for_session(
-            session=session
-        )
-        if org_bundle is not None:
-            org_profile_prompt = org_bundle.system_prompt
-            if isinstance(org_profile_prompt, str):
-                org_profile_prompt = org_profile_prompt.strip()
-                if org_profile_prompt:
-                    parts.append(org_profile_prompt)
-                    sources["organization_profile"] = True
-                    state.used_user_profile = True
+        # 3) Organization profile instructions prepared by the memory layer
+        if isinstance(state.profile_org_instructions, str):
+            profile_org = state.profile_org_instructions.strip()
+            if profile_org:
+                parts.append(profile_org)
+                sources["organization_profile"] = True
 
         if not parts:
             state.debug_trace["instructions"] = {
@@ -959,9 +1156,8 @@ class DropInKnowledgeRuntime:
             }
             return None
 
-        # For now we simply join the parts with double newlines.
-        # If you want a more structured format later (sections, bullets),
-        # you can adjust the formatting here in one place.
+        # Simple concatenation for now; can be replaced with more structured
+        # formatting (sections, headings) in the future.
         final_text = "\n\n".join(parts)
 
         state.debug_trace["instructions"] = {
@@ -970,3 +1166,92 @@ class DropInKnowledgeRuntime:
         }
 
         return final_text
+
+
+    # ------------------------------------------------------------------
+    # Token accounting helpers
+    # ------------------------------------------------------------------
+
+    def _count_tokens_for_messages(self, messages: List[ChatMessage]) -> Optional[int]:
+        """
+        Best-effort token counting for a list of ChatMessage objects.
+
+        Design:
+          - Delegates to the underlying LLM adapter if it exposes a
+            `count_messages_tokens` method.
+          - Returns None if no token counter is available or an error occurs.
+
+        Note:
+          - We deliberately avoid any dynamic attribute lookup (no getattr),
+            to keep the integration surface with the adapter explicit and
+            stable.
+        """
+        adapter = self._config.llm_adapter
+        if adapter is None:
+            return None
+
+        try:
+            # The adapter is expected to implement this method.
+            return int(adapter.count_messages_tokens(messages))
+        except AttributeError:
+            # Adapter does not implement token counting – leave it as None.
+            return None
+        except Exception:
+            # Any other error should not break the runtime; we just skip
+            # token accounting in this case.
+            return None
+
+
+    # ------------------------------------------------------------------
+    # History truncation helpers
+    # ------------------------------------------------------------------
+
+    def _truncate_history_by_tokens(
+        self,
+        messages: List[ChatMessage],
+        max_tokens: int,
+    ) -> List[ChatMessage]:
+        """
+        Truncate conversation history to fit within a token budget.
+
+        Strategy:
+          - Keep the most recent messages.
+          - Walk the history from the end backwards and accumulate messages
+            until the token budget is exhausted.
+          - If token counting is not available, this method returns the
+            input list unchanged.
+
+        Important:
+          - This helper is intentionally conservative; it does NOT attempt to
+            summarize older messages, it only drops them.
+          - Summarization-based compression will be implemented later on top
+            of this function.
+        """
+        if max_tokens <= 0:
+            return []
+
+        # If we cannot count tokens, we cannot safely truncate by tokens.
+        total_tokens = self._count_tokens_for_messages(messages)
+        if total_tokens is None or total_tokens <= max_tokens:
+            return messages
+
+        truncated: List[ChatMessage] = []
+        # Walk from the end (most recent) to the beginning.
+        for msg in reversed(messages):
+            candidate = [msg] + truncated
+            candidate_tokens = self._count_tokens_for_messages(candidate)
+            if candidate_tokens is None:
+                # If counting suddenly fails, bail out and keep what we have.
+                break
+
+            if candidate_tokens > max_tokens:
+                break
+
+            truncated.insert(0, msg)
+
+        # If we ended up with an empty truncated list (e.g. one message already
+        # exceeds the budget), we at least keep the last message.
+        if not truncated and messages:
+            truncated = [messages[-1]]
+
+        return truncated

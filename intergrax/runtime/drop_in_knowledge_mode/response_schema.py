@@ -16,6 +16,7 @@ and basic statistics.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, List, Optional
 from intergrax.llm.messages import AttachmentRef
 
@@ -89,6 +90,25 @@ class RuntimeStats:
     extra: Dict[str, Any] = field(default_factory=dict)
 
 
+class HistoryCompressionStrategy(str, Enum):
+    """
+    High-level strategy describing how the runtime should reduce
+    conversation history when it no longer fits into the model context.
+    """
+
+    # Do not modify or compress history at all.
+    # (Risk: context window overflow for very long conversations.)
+    OFF = "off"
+
+    # Drop the oldest messages first until the history fits within
+    # the computed token budget.
+    TRUNCATE_OLDEST = "truncate_oldest"
+
+    # NOTE:
+    # Additional strategies like SUMMARIZE_OLDEST / HYBRID can be added
+    # later when summarization is implemented.
+    
+
 @dataclass
 class RuntimeRequest:
     """
@@ -114,6 +134,24 @@ class RuntimeRequest:
 
     # User-provided instructions (ChatGPT/Gemini-style)
     instructions: Optional[str] = None
+
+
+    # Strategy used to keep the conversation history within the model
+    # context window for THIS request.
+    #
+    # If you don't specify anything when constructing the request,
+    # TRUNCATE_OLDEST will be used as a reasonable default.
+    history_compression_strategy: HistoryCompressionStrategy = HistoryCompressionStrategy.TRUNCATE_OLDEST
+
+    # Maximum number of output tokens for a single model response
+    # for THIS request.
+    #
+    # If None, the runtime/adapter will use its own internal default.
+    #
+    # NOTE:
+    # This is *not* the context window size. The maximum context window
+    # is defined by the underlying LLM adapter (context_window_tokens).
+    max_output_tokens: Optional[int] = None
 
 
 @dataclass
