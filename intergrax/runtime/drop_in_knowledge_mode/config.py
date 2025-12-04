@@ -31,6 +31,7 @@ class ToolsContextScope(str, Enum):
     FULL = "full"
 
 
+
 @dataclass
 class RuntimeConfig:
     """
@@ -88,13 +89,6 @@ class RuntimeConfig:
     workspace_id: Optional[str] = None
 
     # ------------------------------------------------------------------
-    # CHAT HISTORY LIMITS
-    # ------------------------------------------------------------------
-
-    max_history_messages: int = 20
-    max_history_tokens: int = 4096
-
-    # ------------------------------------------------------------------
     # RAG CONFIGURATION
     # ------------------------------------------------------------------
 
@@ -149,12 +143,6 @@ class RuntimeConfig:
     #
     tools_context_scope: ToolsContextScope = ToolsContextScope.CURRENT_MESSAGE_ONLY
 
-    # ------------------------------------------------------------------
-    # TOKEN LIMITS
-    # ------------------------------------------------------------------
-
-    max_total_tokens: int = 8192
-    max_output_tokens: int = 2048
 
     # ------------------------------------------------------------------
     # MISC METADATA

@@ -449,7 +449,11 @@ class DropInKnowledgeRuntime:
 
         state.base_history = base_history
 
-        # 4. Update debug trace with history-related info and token stats.
+        # 4. Update debug trace with history-related info and token stats.\
+        state.debug_trace["request_settings"] = {
+            "history_compression_strategy": state.request.history_compression_strategy.value,
+            "max_output_tokens": state.request.max_output_tokens,
+        }
         state.debug_trace["base_history_length"] = len(base_history)
         state.debug_trace["history_tokens"] = {
             "raw_history_messages": len(raw_history),
@@ -778,14 +782,24 @@ class DropInKnowledgeRuntime:
             return str(state.tools_agent_answer)
 
         try:
+            # Determine the per-request max output tokens, if any.
+            max_output_tokens = state.request.max_output_tokens
+
+            generate_kwargs: Dict[str, Any] = {}
+            if max_output_tokens is not None:
+                # Pass a max_tokens hint to the adapter. If the adapter ignores
+                # it or uses a different keyword, that should be handled inside
+                # the adapter implementation.
+                generate_kwargs["max_tokens"] = max_output_tokens
+
             raw_answer = self._config.llm_adapter.generate_messages(
                 state.messages_for_llm,
-                max_tokens=self._config.max_output_tokens,
+                **generate_kwargs,
             )
 
             if isinstance(raw_answer, str):
                 return raw_answer
-            
+
             content = getattr(raw_answer, "content", None)
             if isinstance(content, str) and content.strip():
                 return content
@@ -803,6 +817,7 @@ class DropInKnowledgeRuntime:
                 )
 
             return f"[ERROR] LLM adapter failed: {e}"
+
 
     # ------------------------------------------------------------------
     # Step 10: Persist answer & build RuntimeAnswer
