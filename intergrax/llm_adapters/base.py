@@ -268,6 +268,19 @@ class LLMAdapter(Protocol):
         ...
 
 
+    # ---- Context window (required) ----
+    @property
+    def context_window_tokens(self) -> int:
+        """
+        Maximum number of tokens the underlying model can accept in a single
+        request (input + output), as defined by the model provider.
+
+        Implementations should compute this once (e.g. in __init__) based on
+        the configured model name and cache it in a private attribute.
+        """
+        ...
+
+
 # ============================================================
 # Helper – convert ChatMessage → OpenAI schema
 # ============================================================

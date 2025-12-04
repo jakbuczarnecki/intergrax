@@ -36,6 +36,7 @@ from intergrax.runtime.drop_in_knowledge_mode.rag_prompt_builder import (
     RagPromptBuilder,
 )
 from intergrax.runtime.drop_in_knowledge_mode.response_schema import (
+    HistoryCompressionStrategy,
     RuntimeRequest,
     RuntimeAnswer,
     RouteInfo,
@@ -427,7 +428,8 @@ class DropInKnowledgeRuntime:
         This step is the single place where we:
           - fetch the full session history from SessionStore,
           - compute token usage (if the adapter supports it),
-          - in the future: apply token-based truncation and summarization.
+          - apply token-based truncation according to the per-request
+            history compression strategy.
 
         The resulting `state.base_history` is treated as the canonical,
         preprocessed conversation history for all subsequent steps.
@@ -435,30 +437,121 @@ class DropInKnowledgeRuntime:
         session = state.session
         assert session is not None, "Session must be set before building history."
 
-        # 1. Load raw history from SessionStore
+        # 1. Load raw history from SessionStore.
         raw_history: List[ChatMessage] = self._build_chat_history(session)
 
         # 2. Compute token usage for the raw history, if possible.
         raw_token_count = self._count_tokens_for_messages(raw_history)
         state.history_token_count = raw_token_count
 
-        # 3. For now we do not modify or truncate the history.
-        #    All trimming/summarization logic will be implemented later,
-        #    once token accounting is verified and stable.
-        base_history = raw_history
+        # 3. Resolve per-request settings.
+        request = state.request
+        strategy = request.history_compression_strategy
+        adapter = self._config.llm_adapter
+
+        # Base history before any truncation.
+        base_history: List[ChatMessage] = raw_history
+        truncated = False
+
+        # If we cannot count tokens at all, we cannot apply token-based
+        # trimming. In that case we simply keep the full history and log
+        # what we know.
+        if raw_token_count is None:
+            state.base_history = base_history
+            state.debug_trace["base_history_length"] = len(base_history)
+            state.debug_trace["history_tokens"] = {
+                "raw_history_messages": len(raw_history),
+                "raw_history_tokens": None,
+                "history_budget_tokens": None,
+                "strategy": strategy.value,
+                "truncated": False,
+            }
+            return
+
+        # 4. Compute a token budget for history based on:
+        #    - the model context window,
+        #    - the requested max_output_tokens (if any).
+        #
+        # We use a simple, conservative heuristic:
+        #   - reserve a portion of the context window for the model output,
+        #   - reserve a portion of the remaining input for system instructions,
+        #     memory, RAG, websearch, tools, etc.
+        #   - whatever remains is the history budget.
+        context_window = adapter.context_window_tokens
+
+        # Determine how many tokens we should reserve for the output.
+        # If the user does not specify max_output_tokens, we assume
+        # roughly 1/4 of the context window is available for the output.
+        if request.max_output_tokens is not None:
+            reserved_for_output = request.max_output_tokens
+            # Never reserve more than half of the context window for output.
+            if reserved_for_output > context_window // 2:
+                reserved_for_output = context_window // 2
+        else:
+            reserved_for_output = context_window // 4
+
+        if reserved_for_output < 0:
+            reserved_for_output = 0
+        if reserved_for_output >= context_window:
+            # Degenerate case – leave at least some room for input.
+            reserved_for_output = context_window // 2
+
+        # Budget for the entire input (system + history + RAG + tools...).
+        input_budget = context_window - reserved_for_output
+
+        if input_budget <= 0:
+            # Extremely small or misconfigured budget; in this case we keep
+            # the history as-is and log the situation.
+            state.base_history = base_history
+            state.debug_trace["base_history_length"] = len(base_history)
+            state.debug_trace["history_tokens"] = {
+                "raw_history_messages": len(raw_history),
+                "raw_history_tokens": raw_token_count,
+                "history_budget_tokens": 0,
+                "strategy": strategy.value,
+                "truncated": False,
+            }
+            return
+
+        # Reserve a portion of the input budget for non-history input
+        # (system instructions, memory, RAG/websearch/tools context).
+        # The remaining portion becomes the token budget for history.
+        reserved_for_meta = input_budget // 3  # ~1/3 for meta context
+        if reserved_for_meta < 0:
+            reserved_for_meta = 0
+        if reserved_for_meta >= input_budget:
+            reserved_for_meta = input_budget // 2
+
+        history_budget_tokens = input_budget - reserved_for_meta
+
+        # 5. Apply history compression strategy.
+        if (
+            strategy == HistoryCompressionStrategy.TRUNCATE_OLDEST
+            and raw_token_count > history_budget_tokens
+            and history_budget_tokens > 0
+        ):
+            base_history = self._truncate_history_by_tokens(
+                messages=raw_history,
+                max_tokens=history_budget_tokens,
+            )
+            truncated = True
+        else:
+            # OFF or history already within budget → keep as-is.
+            base_history = raw_history
+            truncated = False
 
         state.base_history = base_history
 
-        # 4. Update debug trace with history-related info and token stats.\
-        state.debug_trace["request_settings"] = {
-            "history_compression_strategy": state.request.history_compression_strategy.value,
-            "max_output_tokens": state.request.max_output_tokens,
-        }
+        # 6. Update debug trace with history-related info and token stats.
         state.debug_trace["base_history_length"] = len(base_history)
         state.debug_trace["history_tokens"] = {
             "raw_history_messages": len(raw_history),
             "raw_history_tokens": raw_token_count,
+            "history_budget_tokens": history_budget_tokens,
+            "strategy": strategy.value,
+            "truncated": truncated,
         }
+
 
 
 
@@ -1107,3 +1200,58 @@ class DropInKnowledgeRuntime:
             # Any other error should not break the runtime; we just skip
             # token accounting in this case.
             return None
+
+
+    # ------------------------------------------------------------------
+    # History truncation helpers
+    # ------------------------------------------------------------------
+
+    def _truncate_history_by_tokens(
+        self,
+        messages: List[ChatMessage],
+        max_tokens: int,
+    ) -> List[ChatMessage]:
+        """
+        Truncate conversation history to fit within a token budget.
+
+        Strategy:
+          - Keep the most recent messages.
+          - Walk the history from the end backwards and accumulate messages
+            until the token budget is exhausted.
+          - If token counting is not available, this method returns the
+            input list unchanged.
+
+        Important:
+          - This helper is intentionally conservative; it does NOT attempt to
+            summarize older messages, it only drops them.
+          - Summarization-based compression will be implemented later on top
+            of this function.
+        """
+        if max_tokens <= 0:
+            return []
+
+        # If we cannot count tokens, we cannot safely truncate by tokens.
+        total_tokens = self._count_tokens_for_messages(messages)
+        if total_tokens is None or total_tokens <= max_tokens:
+            return messages
+
+        truncated: List[ChatMessage] = []
+        # Walk from the end (most recent) to the beginning.
+        for msg in reversed(messages):
+            candidate = [msg] + truncated
+            candidate_tokens = self._count_tokens_for_messages(candidate)
+            if candidate_tokens is None:
+                # If counting suddenly fails, bail out and keep what we have.
+                break
+
+            if candidate_tokens > max_tokens:
+                break
+
+            truncated.insert(0, msg)
+
+        # If we ended up with an empty truncated list (e.g. one message already
+        # exceeds the budget), we at least keep the last message.
+        if not truncated and messages:
+            truncated = [messages[-1]]
+
+        return truncated
