@@ -6,17 +6,20 @@ from __future__ import annotations
 from typing import Protocol, Sequence, Iterable, Optional, Any, Dict, Union, List, TYPE_CHECKING
 import json
 import re
+import tiktoken
 
 # if TYPE_CHECKING:
 #     from ..llm.conversational_memory import ChatMessage
 # else:
 #     ChatMessage = Any  # runtime stub
-from ..memory.conversational_memory import ChatMessage
+from intergrax.memory.conversational_memory import ChatMessage
 
 __all__ = [
     "LLMAdapter",
     "LLMAdapterRegistry",
     "BaseModel",
+    "BaseLLMAdapter",
+    "estimate_tokens_for_messages",
     "_extract_json_object",
     "_model_json_schema",
     "_validate_with_model",
@@ -133,6 +136,70 @@ def _validate_with_model(model_cls: type, json_str: str):
         raise ValueError(f"Cannot validate structured output with {model_cls}: {e}")
 
 
+def estimate_tokens_for_messages(
+    messages: Sequence[ChatMessage],
+    model_hint: Optional[str] = None,
+) -> int:
+    """
+    Estimate token count for a list of ChatMessage objects.
+
+    Strategy:
+      - If tiktoken is available:
+          * use encoding_for_model(model_hint) when model_hint is provided,
+          * otherwise fall back to a generic encoding (e.g. cl100k_base).
+      - If tiktoken is not available:
+          * use a simple character-based heuristic (approx. 4 chars/token).
+
+    This is a generic, model-agnostic estimator designed to be "good enough"
+    for budgeting and trimming, not for billing accuracy.
+    """
+    # Aggregate all message contents into a single string.
+    parts: List[str] = []
+    for m in messages:
+        content = m.content
+        if not isinstance(content, str):
+            content = str(content)
+        parts.append(content)
+    joined = "\n".join(parts)
+    if not joined:
+        return 0
+
+    if model_hint:
+        enc = tiktoken.encoding_for_model(model_hint)
+    else:
+        # Reasonable default for many chat models.
+        enc = tiktoken.get_encoding("cl100k_base")
+
+    return len(enc.encode(joined))
+
+
+class BaseLLMAdapter:
+    """
+    Optional base class providing shared utilities such as token counting.
+
+    Adapters may subclass this to inherit the default implementation of
+    `count_messages_tokens`. If a specific provider exposes a more accurate
+    or native token counter, the adapter can override this method.
+    """
+
+    # Hint used by the generic token estimator (e.g. OpenAI model name).
+    model_name_for_token_estimation: Optional[str] = None
+
+    def count_messages_tokens(self, messages: Sequence[ChatMessage]) -> int:
+        """
+        Default token counting implementation.
+
+        Uses `estimate_tokens_for_messages` with an optional model hint.
+        Concrete adapters are free to override this method if they can
+        provide a provider-specific implementation.
+        """
+        return estimate_tokens_for_messages(
+            messages,
+            model_hint=self.model_name_for_token_estimation,
+        )
+
+
+
 # ============================================================
 # Universal interface (protocol)
 # ============================================================
@@ -190,6 +257,14 @@ class LLMAdapter(Protocol):
         temperature: float = 0.2,
         max_tokens: Optional[int] = None,
     ):
+        ...
+
+
+    def count_messages_tokens(self, messages: Sequence[ChatMessage]) -> int:
+        """
+        Return approximate token count for the given list of messages.
+        A best-effort implementation is acceptable.
+        """
         ...
 
 

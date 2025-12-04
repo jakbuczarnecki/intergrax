@@ -125,6 +125,9 @@ class RuntimeState:
     debug_trace: Dict[str, Any] = field(default_factory=dict)
     websearch_debug: Dict[str, Any] = field(default_factory=dict)
 
+    # Token accounting (filled in _step_build_base_history)
+    history_token_count: Optional[int] = None
+
 
 # ----------------------------------------------------------------------
 # DropInKnowledgeRuntime
@@ -423,9 +426,8 @@ class DropInKnowledgeRuntime:
 
         This step is the single place where we:
           - fetch the full session history from SessionStore,
-          - optionally truncate it to the last N messages,
-          - optionally compute token usage,
-          - optionally summarize older parts of the conversation.
+          - compute token usage (if the adapter supports it),
+          - in the future: apply token-based truncation and summarization.
 
         The resulting `state.base_history` is treated as the canonical,
         preprocessed conversation history for all subsequent steps.
@@ -436,17 +438,24 @@ class DropInKnowledgeRuntime:
         # 1. Load raw history from SessionStore
         raw_history: List[ChatMessage] = self._build_chat_history(session)
 
-        # 2. Preprocess history for the current model/context limits.
-        #    For now this is a no-op; in the future you can:
-        #      - limit to last N messages,
-        #      - compute token counts,
-        #      - summarize older messages on the fly.
+        # 2. Compute token usage for the raw history, if possible.
+        raw_token_count = self._count_tokens_for_messages(raw_history)
+        state.history_token_count = raw_token_count
+
+        # 3. For now we do not modify or truncate the history.
+        #    All trimming/summarization logic will be implemented later,
+        #    once token accounting is verified and stable.
         base_history = raw_history
 
         state.base_history = base_history
 
-        # Update debug trace with history-related info
+        # 4. Update debug trace with history-related info and token stats.
         state.debug_trace["base_history_length"] = len(base_history)
+        state.debug_trace["history_tokens"] = {
+            "raw_history_messages": len(raw_history),
+            "raw_history_tokens": raw_token_count,
+        }
+
 
 
     
@@ -1049,3 +1058,37 @@ class DropInKnowledgeRuntime:
         }
 
         return final_text
+
+
+    # ------------------------------------------------------------------
+    # Token accounting helpers
+    # ------------------------------------------------------------------
+
+    def _count_tokens_for_messages(self, messages: List[ChatMessage]) -> Optional[int]:
+        """
+        Best-effort token counting for a list of ChatMessage objects.
+
+        Design:
+          - Delegates to the underlying LLM adapter if it exposes a
+            `count_messages_tokens` method.
+          - Returns None if no token counter is available or an error occurs.
+
+        Note:
+          - We deliberately avoid any dynamic attribute lookup (no getattr),
+            to keep the integration surface with the adapter explicit and
+            stable.
+        """
+        adapter = self._config.llm_adapter
+        if adapter is None:
+            return None
+
+        try:
+            # The adapter is expected to implement this method.
+            return int(adapter.count_messages_tokens(messages))
+        except AttributeError:
+            # Adapter does not implement token counting – leave it as None.
+            return None
+        except Exception:
+            # Any other error should not break the runtime; we just skip
+            # token accounting in this case.
+            return None

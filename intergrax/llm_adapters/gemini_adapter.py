@@ -5,10 +5,10 @@
 from __future__ import annotations
 from typing import Iterable, Optional, Sequence
 
-from .base import ChatMessage
+from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
 
 
-class GeminiChatAdapter:
+class GeminiChatAdapter(BaseLLMAdapter):
     """
     Minimal Gemini adapter.
 
@@ -18,6 +18,7 @@ class GeminiChatAdapter:
     """
 
     def __init__(self, model, **defaults):
+        super().__init__()
         self.model = model
         self.defaults = defaults
 
@@ -71,3 +72,18 @@ class GeminiChatAdapter:
 
     def stream_with_tools(self, *a, **k):
         raise NotImplementedError("Gemini tools are not wired in this adapter.")
+    
+
+    def generate_structured(
+        self,
+        messages: Sequence[ChatMessage],
+        output_model: type,
+        *,
+        temperature: float = 0.2,
+        max_tokens: Optional[int] = None,
+    ):
+        """
+        Structured output is not implemented for this adapter.
+        """
+        raise NotImplementedError("Structured output is not implemented for GeminiChatAdapter.")
+

@@ -7,7 +7,8 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, Iterable, Optional, Sequence, List
 
-from .base import (
+from intergrax.llm_adapters.base import (
+    BaseLLMAdapter,
     ChatMessage,
     _map_messages_to_openai,
     _extract_json_object,
@@ -16,7 +17,7 @@ from .base import (
 )
 
 
-class OpenAIChatResponsesAdapter:
+class OpenAIChatResponsesAdapter(BaseLLMAdapter):
     """
     OpenAI adapter based on the new Responses API.
 
@@ -29,8 +30,10 @@ class OpenAIChatResponsesAdapter:
     """
 
     def __init__(self, client, model: str, **defaults):
+        super().__init__()
         self.client = client
         self.model = model
+        self.model_name_for_token_estimation = model
         self.defaults = defaults
 
     # ---------------------------------------------------------------------

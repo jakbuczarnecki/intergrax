@@ -6,7 +6,8 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, Iterable, Optional, Sequence
 
-from .base import (
+from intergrax.llm_adapters.base import (
+    BaseLLMAdapter,
     ChatMessage,
     _extract_json_object,
     _model_json_schema,
@@ -14,7 +15,7 @@ from .base import (
 )
 
 
-class LangChainOllamaAdapter:
+class LangChainOllamaAdapter(BaseLLMAdapter):
     """
     Adapter for Ollama models used via LangChain's ChatModel interface.
 
@@ -23,6 +24,7 @@ class LangChainOllamaAdapter:
     """
 
     def __init__(self, chat, **defaults):
+        super().__init__()
         self.chat = chat
         self.defaults = defaults
 
@@ -157,3 +159,19 @@ class LangChainOllamaAdapter:
             raise ValueError("Model did not return JSON content for structured output (Ollama).")
 
         return _validate_with_model(output_model, json_str)
+    
+
+    def generate_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema,
+        *,
+        temperature: float = 0.2,
+        max_tokens: Optional[int] = None,
+        tool_choice=None,
+    ):
+        raise NotImplementedError("Tools are not supported by LangChainOllamaAdapter.")
+
+    def stream_with_tools(self, *args, **kwargs):
+        raise NotImplementedError("Tools are not supported by LangChainOllamaAdapter.")
+
