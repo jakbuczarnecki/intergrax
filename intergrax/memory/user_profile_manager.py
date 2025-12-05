@@ -4,12 +4,11 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Dict, Any, List
 
 from intergrax.memory.user_profile_memory import (
     UserProfile,
-    UserProfilePromptBundle,
-    build_profile_prompt_bundle,
+    UserProfileMemoryEntry,
 )
 from intergrax.memory.user_profile_store import UserProfileStore
 
@@ -22,7 +21,8 @@ class UserProfileManager:
       - provide convenient methods to:
           * load or create a UserProfile for a given user_id,
           * persist profile changes,
-          * build a prompt-ready bundle for the LLM/runtime;
+          * manage long-term user memory entries,
+          * manage system-level instructions derived from the profile;
       - hide direct interaction with the underlying UserProfileStore.
 
     It intentionally does NOT:
@@ -65,30 +65,205 @@ class UserProfileManager:
         await self._store.delete_profile(user_id)
 
     # ---------------------------------------------------------------------
-    # Prompt bundle API
+    # System instructions management
     # ---------------------------------------------------------------------
 
-    async def get_prompt_bundle(
+    async def get_system_instructions_for_user(self, user_id: str) -> str:
+        """
+        Return a compact system-level instruction string for the given user.
+
+        Behavior:
+          - loads the user's profile from the store,
+          - uses the profile's `system_instructions` if set,
+          - otherwise builds a deterministic fallback based on identity
+            and preferences via `UserProfile.build_default_system_instructions()`.
+
+        This method does NOT call any LLM and does NOT use long-term memory.
+        Higher-level components may choose to update `system_instructions`
+        using LLMs and then persist the result via `update_system_instructions()`.
+        """
+        profile = await self._store.get_profile(user_id)
+        return self._build_default_system_instructions(profile)
+
+    async def update_system_instructions(
         self,
         user_id: str,
+        instructions: str,
+    ) -> UserProfile:
+        """
+        Update the `system_instructions` field of the user's profile.
+
+        This method assumes that some higher-level component (e.g. the runtime
+        or a batch job) has already decided *what* the new instructions should be,
+        possibly by calling an LLM over `memory_entries` and other data.
+
+        The manager is responsible only for:
+          - loading the profile,
+          - updating the field,
+          - persisting the aggregate.
+
+        Returns the updated UserProfile for convenience.
+        """
+        profile = await self._store.get_profile(user_id)
+        normalized = instructions.strip()
+        profile.system_instructions = normalized or None
+        profile.modified=True
+        await self._store.save_profile(profile)
+        profile.modified=False
+        return profile
+
+    # ---------------------------------------------------------------------
+    # Long-term memory management
+    # ---------------------------------------------------------------------
+
+    async def add_memory_entry(
+        self,
+        user_id: str,
+        content: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> UserProfile:
+        """
+        Append a new long-term memory entry to the user's profile.
+
+        This method only updates the profile aggregate and persists it via
+        the store. It does NOT call any LLM and does NOT update
+        `system_instructions` automatically.
+
+        Returns the updated UserProfile for convenience.
+        """
+        profile = await self._store.get_profile(user_id)
+
+        entry = UserProfileMemoryEntry(
+            content=content,
+            metadata=metadata or {},
+        )
+        profile.memory_entries.append(entry)
+
+        await self._store.save_profile(profile)
+        
+        return profile
+
+    async def update_memory_entry(
+        self,
+        user_id: str,
+        entry_id: int,
         *,
-        override_profile: Optional[UserProfile] = None,
-    ) -> UserProfilePromptBundle:
+        content: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> UserProfile:
         """
-        Build a prompt-ready bundle for the given user.
-
-        Behaviour:
-          - if `override_profile` is provided, it is used directly;
-          - otherwise the profile is loaded from the store for `user_id`.
-
-        The resulting UserProfilePromptBundle is suitable to be injected
-        into system instructions or used by the runtime to configure
-        language, tone, formatting preferences, etc.
+        Update a single long-term memory entry identified by `entry_id`.
         """
-        profile: UserProfile
-        if override_profile is not None:
-            profile = override_profile
+        profile = await self._store.get_profile(user_id)
+
+        for entry in profile.memory_entries:
+            if entry.entry_id == entry_id:
+                if content is not None:
+                    entry.content = content
+                if metadata is not None:
+                    entry.metadata = metadata
+                entry.modified=True                
+                break
+
+        await self._store.save_profile(profile)
+
+        if entry:
+            entry.modified=False
+
+        return profile
+
+    async def remove_memory_entry(
+        self,
+        user_id: str,
+        entry_id: int,
+    ) -> UserProfile:
+        """
+        Remove a single long-term memory entry identified by `entry_id`.
+        """
+        profile = await self._store.get_profile(user_id)
+
+        for entry in profile.memory_entries:
+            if entry.entry_id == entry_id:
+                entry.deleted = True
+                break
+       
+        await self._store.save_profile(profile)
+
+        profile.memory_entries = [
+            e for e in profile.memory_entries if e.entry_id != entry_id
+        ]
+
+        return profile
+
+
+    async def clear_memory(self, user_id: str) -> UserProfile:
+        """
+        Remove all long-term memory entries for the given user.
+
+        This is usually used for privacy/cleanup flows or when the application
+        decides to reset user-level memory.
+        """
+        profile = await self._store.get_profile(user_id)     
+        
+        for entry in profile.memory_entries:
+            entry.deleted=True  
+        
+        await self._store.save_profile(profile)
+
+        profile.memory_entries.clear()
+
+        return profile
+    
+
+    def _build_default_system_instructions(self, profile: UserProfile) -> str:
+        """
+        Deterministic, non-LLM helper that builds system instructions
+        from the given profile (identity + preferences) when the profile
+        does not yet have explicit system_instructions.
+        """
+        if profile.system_instructions:
+            return profile.system_instructions.strip()
+
+        identity = profile.identity
+        prefs = profile.preferences
+
+        lines: list[str] = []
+
+        # Identity
+        if identity.display_name:
+            lines.append(f"You are talking to {identity.display_name}.")
         else:
-            profile = await self._store.get_profile(user_id)
+            lines.append(f"You are talking to a user with id '{identity.user_id}'.")
 
-        return build_profile_prompt_bundle(profile)
+        if identity.role:
+            lines.append(f"The user is: {identity.role}.")
+        if identity.domain_expertise:
+            lines.append(f"Domain expertise: {identity.domain_expertise}.")
+
+        # Language / style
+        if prefs.preferred_language:
+            lines.append(
+                f"Always answer in {prefs.preferred_language} unless explicitly asked otherwise."
+            )
+        if prefs.tone:
+            lines.append(f"Default tone: {prefs.tone}.")
+        if prefs.answer_length:
+            lines.append(f"Default answer length: {prefs.answer_length}.")
+
+        # Formatting rules
+        if prefs.no_emojis_in_code:
+            lines.append("Never use emojis in code blocks.")
+        if prefs.no_emojis_in_docs:
+            lines.append("Avoid emojis in technical documentation.")
+        if prefs.default_project_context:
+            lines.append(
+                f"Assume the default project context is: {prefs.default_project_context}."
+            )
+
+        if not lines:
+            lines.append(
+                "You are talking to a user. Use a helpful, concise, and technical style by default."
+            )
+
+        return " ".join(lines)
+

@@ -17,6 +17,21 @@ from typing import Any, Dict, List, Optional
 
 
 @dataclass
+class UserProfileMemoryEntry:
+    """
+    Long-term memory entry for a user profile.
+
+    Stores stable facts, insights, or notes about the user. 
+    Not tied to any runtime message structure.
+    """
+    entry_id: Optional[int] = None
+    content: str
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    deleted: bool = False
+    modified: bool = False
+
+
+@dataclass
 class UserIdentity:
     """
     High-level description of who the user is.
@@ -76,176 +91,28 @@ class UserProfile:
     It separates:
     - identity      (who the user is),
     - preferences   (how the user wants the system to behave),
-    - summary       (short, compressed natural-language description used
-                     as a base for system instructions).
+    - system instructions (short, compressed natural-language description
+                           used as a base for LLM system prompts),
+    - memory        (long-term factual and conceptual notes about the user).
     """
 
     identity: UserIdentity
     preferences: UserPreferences
 
-    # Short natural-language summary suitable as a base for system instructions.
-    # This should be kept small and periodically re-generated / compressed.
-    summary_instructions: Optional[str] = None
+    # Short natural-language instructions used directly (or almost directly)
+    # as system-level instructions for the runtime. This should be kept small
+    # and periodically re-generated / compressed.
+    system_instructions: Optional[str] = None
+
+    # Long-term memory entries about the user (facts, insights, stable notes).
+    # These are not sent directly to the LLM by default; they are used to
+    # derive or update `system_instructions` and other summaries.
+    memory_entries: List[UserProfileMemoryEntry] = field(default_factory=list)
 
     # Versioning / metadata hook if needed.
-    version: int = 1
+    version: int = 1    
 
+    entry_id: Optional[int] = None
+    deleted: bool = False
+    modified: bool = False
 
-@dataclass
-class UserProfilePromptBundle:
-    """
-    Small, prompt-ready bundle derived from the full profile and (optionally)
-    from long-term / RAG-like profile memory.
-
-    The engine should not need the full UserProfile on each request,
-    only this compact bundle.
-
-    Typical usage:
-        - summary_instructions -> goes into system messages (small, stable)
-        - hard_preferences     -> may influence runtime parameters (e.g. max_tokens)
-        - user_profile_chunks  -> optional, RAG-derived facts about the user
-        - org_profile_chunks   -> optional, RAG-derived facts about the org/tenant
-    """
-
-    # Short, compressed instructions to prepend as system messages.
-    # This should already encode:
-    #   - preferred language
-    #   - tone and length defaults
-    #   - "no emojis in code" rules, etc.
-    summary_instructions: str = ""
-
-    # Structured preferences that the runtime can use without asking the LLM.
-    hard_preferences: Dict[str, Any] = field(default_factory=dict)
-
-    # Optional additional context about the user, retrieved via RAG from
-    # long-term profile memory. Should be used sparingly.
-    user_profile_chunks: List[str] = field(default_factory=list)
-
-    # Optional analogous chunks for organization / tenant profile.
-    org_profile_chunks: List[str] = field(default_factory=list)
-
-    def is_empty(self) -> bool:
-        """
-        Quick check to see if the bundle carries any meaningful information.
-        """
-        return (
-            not self.summary_instructions
-            and not self.hard_preferences
-            and not self.user_profile_chunks
-            and not self.org_profile_chunks
-        )
-
-
-    @property
-    def system_prompt(self) -> str:
-        """
-        Compact system-level instructions derived from the user profile.
-
-        This is intentionally kept small and stable:
-        - we use only `summary_instructions`,
-        - we do NOT inject profile chunks here (they belong in context / RAG).
-        """
-        return (self.summary_instructions or "").strip()        
-    
-
-
-def build_profile_prompt_bundle(profile: UserProfile) -> UserProfilePromptBundle:
-    """
-    Build a compact, prompt-ready bundle from a UserProfile.
-
-    This function is intentionally conservative:
-    - It does NOT call any LLM.
-    - It does NOT perform RAG or long-term profile retrieval.
-    - It uses existing `summary_instructions` if available,
-      or constructs a minimal, deterministic fallback.
-
-    Later, this function can be extended or replaced by a more advanced
-    component that also uses long-term profile memory / RAG.
-    """
-
-    # 1) Determine summary instructions text
-    if profile.summary_instructions:
-        summary = profile.summary_instructions
-    else:
-        summary = _build_fallback_summary(profile)
-
-    # 2) Structured hard preferences for the runtime
-    hard_prefs: Dict[str, Any] = {}
-
-    prefs = profile.preferences
-    if prefs.preferred_language:
-        hard_prefs["preferred_language"] = prefs.preferred_language
-    if prefs.answer_length:
-        hard_prefs["answer_length"] = prefs.answer_length
-    if prefs.tone:
-        hard_prefs["tone"] = prefs.tone
-
-    hard_prefs["no_emojis_in_code"] = prefs.no_emojis_in_code
-    hard_prefs["no_emojis_in_docs"] = prefs.no_emojis_in_docs
-    hard_prefs["prefer_markdown"] = prefs.prefer_markdown
-    hard_prefs["prefer_code_blocks"] = prefs.prefer_code_blocks
-
-    if prefs.default_project_context:
-        hard_prefs["default_project_context"] = prefs.default_project_context
-
-    # Merge extra preferences as-is
-    if prefs.extra:
-        hard_prefs["extra"] = dict(prefs.extra)
-
-    # At this stage we do NOT populate user_profile_chunks / org_profile_chunks.
-    # These will be filled later when long-term profile memory (RAG) is introduced.
-    bundle = UserProfilePromptBundle(
-        summary_instructions=summary,
-        hard_preferences=hard_prefs,
-        user_profile_chunks=[],
-        org_profile_chunks=[],
-    )
-    return bundle
-
-
-def _build_fallback_summary(profile: UserProfile) -> str:
-    """
-    Build a deterministic, compact fallback summary used as system instructions
-    when `profile.summary_instructions` is not explicitly set.
-
-    This should remain short and stable; it is not meant to be a rich biography.
-    """
-    identity = profile.identity
-    prefs = profile.preferences
-
-    lines = []
-
-    # Identity
-    if identity.display_name:
-        lines.append(f"You are talking to {identity.display_name}.")
-    else:
-        lines.append(f"You are talking to a user with id '{identity.user_id}'.")
-
-    if identity.role:
-        lines.append(f"The user is: {identity.role}.")
-    if identity.domain_expertise:
-        lines.append(f"Domain expertise: {identity.domain_expertise}.")
-
-    # Language / style
-    if prefs.preferred_language:
-        lines.append(f"Always answer in {prefs.preferred_language} unless explicitly asked otherwise.")
-    if prefs.tone:
-        lines.append(f"Default tone: {prefs.tone}.")
-    if prefs.answer_length:
-        lines.append(f"Default answer length: {prefs.answer_length}.")
-
-    # Formatting rules
-    if prefs.no_emojis_in_code:
-        lines.append("Never use emojis in code blocks.")
-    if prefs.no_emojis_in_docs:
-        lines.append("Avoid emojis in technical documentation.")
-    if prefs.default_project_context:
-        lines.append(f"Assume the default project context is: {prefs.default_project_context}.")
-
-    # Fallback for minimal profile
-    if not lines:
-        lines.append(
-            "You are talking to a user. Use a helpful, concise, and technical style by default."
-        )
-
-    return " ".join(lines)

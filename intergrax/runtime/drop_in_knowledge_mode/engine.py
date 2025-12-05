@@ -170,7 +170,7 @@ class DropInKnowledgeRuntime:
         # 1. Session + ingestion
         await self._step_session_and_ingest(state)
 
-        # 2. Memory layer (user/org/LTM)
+        # 2. Memory layer (user/org)
         await self._step_memory_layer(state)
 
         # 3. Build base history (load & preprocess)
@@ -287,81 +287,73 @@ class DropInKnowledgeRuntime:
 
 
     # ------------------------------------------------------------------
-    # Step 2: memory layer (user/org/LTM context + profile instructions)
+    # Step 2: memory layer (user/org context + profile instructions)
     # ------------------------------------------------------------------
-
     async def _step_memory_layer(self, state: RuntimeState) -> None:
         """
-        Build the memory layer for the current request.
+        Load profile-based instruction fragments for this request.
 
-        Responsibilities:
-          - Load user and organization profile bundles for the current session.
-          - Derive profile-based instruction fragments from these bundles.
-          - (In future steps) derive user/org/long-term memory facts and
-            convert them into lightweight ChatMessage objects.
-
-        Design:
-          - This step is the single source of truth for profile-level data
-            (both memory facts and instruction fragments).
-          - _build_final_instructions() will only consolidate the already
-            prepared instruction fragments into a final system prompt.
+        Rules:
+          - Use profile memory only if enabled in RuntimeConfig.
+          - Do NOT rebuild or cache anything here yet (this is step 1 only).
+          - Extract prebuilt 'system_prompt' strings from profile bundles.
+          - Store the resulting fragments in RuntimeState so the engine
+            can merge them into a system message later.
         """
         session = state.session
-        assert session is not None, "Session must be set before memory layer."
+        assert session is not None, "Session must exist before memory layer."
 
-        # Defaults for debug
+        cfg = self._config
+
         user_instr: Optional[str] = None
         org_instr: Optional[str] = None
 
-        # 1) Load user profile bundle and extract instruction fragment
-        user_bundle = await self._session_store.get_user_profile_bundle_for_session(
-            session=session
-        )
-        if user_bundle is not None:
-            # We assume the bundle exposes a `system_prompt` field with
-            # stable, profile-level instructions.            
-            candidate = user_bundle.system_prompt
-            if isinstance(candidate, str):
-                candidate = candidate.strip()
-                if candidate:
-                    user_instr = candidate
+        # 1) User profile memory (optional)
+        if cfg.enable_user_profile_memory:
+            user_instr_candidate = await self._session_store.get_user_profile_instructions_for_session(
+                session=session
+            )
+            if isinstance(user_instr_candidate, str):
+                stripped = user_instr_candidate.strip()
+                if stripped:
+                    user_instr = stripped
                     state.used_user_profile = True
 
-        # 2) Load organization profile bundle and extract instruction fragment
-        org_bundle = await self._session_store.get_organization_profile_bundle_for_session(
-            session=session
-        )
-        if org_bundle is not None:
-            candidate = org_bundle.system_prompt
-            if isinstance(candidate, str):
-                candidate = candidate.strip()
-                if candidate:
-                    org_instr = candidate
-                    # Note: we reuse `used_user_profile` as a generic "profile
-                    # layer used" flag; if you want separate flags later,
-                    # we can extend RuntimeState.
+        # 2) Organization profile memory (optional)
+        if cfg.enable_org_profile_memory:
+            org_instr_candidate = await self._session_store.get_org_profile_instructions_for_session(
+                session=session
+            )
+            if isinstance(org_instr_candidate, str):
+                stripped = org_instr_candidate.strip()
+                if stripped:
+                    org_instr = stripped
+                    # For now we reuse the same flag to indicate that some profile
+                    # (user or organization) has been used.
                     state.used_user_profile = True
 
-        # 3) Store profile-based instruction fragments in the state so that
-        #    _build_final_instructions() can simply consolidate them.
+        # 3) Store extracted profile instruction fragments in state
         state.profile_user_instructions = user_instr
         state.profile_org_instructions = org_instr
 
-        # 4) Memory messages (user/org/LTM) remain a no-op for now. In the next
-        #    steps we will:
-        #      - query user/org/long-term memory storages,
-        #      - apply heuristic scoring,
-        #      - convert retrieved facts into ChatMessage objects and store them
-        #        in state.user_memory_messages / org_memory_messages /
-        #        ltm_memory_messages.
+        # 4) Long-term memory hook (implemented in next steps)
+        #    This step is a placeholder and intentionally does nothing now.
+        if cfg.enable_long_term_memory:
+            pass
+
+        # 5) Debug info
         state.debug_trace["memory_layer"] = {
             "implemented": True,
             "user_memory_messages": len(state.user_memory_messages),
             "org_memory_messages": len(state.org_memory_messages),
-            "ltm_memory_messages": len(state.ltm_memory_messages),
             "has_user_profile_instructions": bool(user_instr),
             "has_org_profile_instructions": bool(org_instr),
+            "enable_user_profile_memory": cfg.enable_user_profile_memory,
+            "enable_org_profile_memory": cfg.enable_org_profile_memory,
+            "enable_long_term_memory": cfg.enable_long_term_memory,
         }
+
+
 
     
     # ------------------------------------------------------------------
@@ -782,8 +774,7 @@ class DropInKnowledgeRuntime:
         route_info = RouteInfo(
             used_rag=state.used_rag and self._config.enable_rag,
             used_websearch=state.used_websearch and self._config.enable_websearch,
-            used_tools=state.used_tools and self._config.tools_mode != "off",
-            used_long_term_memory=state.used_long_term_memory,
+            used_tools=state.used_tools and self._config.tools_mode != "off",            
             used_user_profile=state.used_user_profile,
             strategy=strategy,
             extra={},

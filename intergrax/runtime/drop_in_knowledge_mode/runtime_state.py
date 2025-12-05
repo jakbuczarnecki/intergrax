@@ -46,7 +46,6 @@ class RuntimeState:
     # Memory layer (will be filled by _step_memory_layer)
     user_memory_messages: List[ChatMessage] = field(default_factory=list)
     org_memory_messages: List[ChatMessage] = field(default_factory=list)
-    ltm_memory_messages: List[ChatMessage] = field(default_factory=list)
 
     # Profile-based instruction fragments prepared by the memory layer
     profile_user_instructions: Optional[str] = None
@@ -56,7 +55,6 @@ class RuntimeState:
     used_rag: bool = False
     used_websearch: bool = False
     used_tools: bool = False
-    used_long_term_memory: bool = False  # reserved for future integration
     used_user_profile: bool = False      # reserved for future integration
 
     # Tools
