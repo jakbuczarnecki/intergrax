@@ -37,17 +37,8 @@ from intergrax.llm.messages import (
     ChatMessage,
 )
 from intergrax.memory.conversational_memory import ConversationalMemory
-from intergrax.memory.user_profile_memory import UserProfilePromptBundle
-from intergrax.memory.organization_profile_memory import (
-    OrganizationProfilePromptBundle,
-)
-from intergrax.memory.long_term_memory import (
-    MemoryOwnerRef,
-    LongTermMemoryItem,
-)
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.organization_profile_manager import OrganizationProfileManager
-from intergrax.memory.long_term_memory_manager import LongTermMemoryManager
 
 
 @dataclass
@@ -106,8 +97,7 @@ class SessionStore:
         *,
         max_history_messages: int = 200,
         user_profile_manager: Optional[UserProfileManager] = None,
-        organization_profile_manager: Optional[OrganizationProfileManager] = None,
-        long_term_memory_manager: Optional[LongTermMemoryManager] = None,
+        organization_profile_manager: Optional[OrganizationProfileManager] = None
     ) -> None:
         # Metadata storage (chat sessions registry)
         self._sessions: Dict[str, ChatSession] = {}
@@ -122,7 +112,6 @@ class SessionStore:
         # These are optional to keep the SessionStore usable in minimal setups.
         self._user_profile_manager = user_profile_manager
         self._organization_profile_manager = organization_profile_manager
-        self._long_term_memory_manager = long_term_memory_manager
 
     # ------------------------------------------------------------------
     # Session lifecycle
@@ -225,98 +214,115 @@ class SessionStore:
         # but SessionStore does not talk about LLMs or prompts.
         return memory.get_for_model(native_tools=native_tools)
 
-    # ------------------------------------------------------------------
-    # User profile memory – high-level bundle
-    # ------------------------------------------------------------------
 
-    async def get_user_profile_bundle_for_session(
+    # ------------------------------------------------------------------
+    # User profile memory – prompt-level instructions (per session)
+    # ------------------------------------------------------------------
+    async def get_user_profile_instructions_for_session(
         self,
         session: ChatSession,
-    ) -> Optional[UserProfilePromptBundle]:
+    ) -> Optional[str]:
         """
-        Build and return a prompt-ready user profile bundle for this session.
+        Return a prompt-ready user profile instruction string for this session.
 
-        If no user_id is associated with the session or no UserProfileManager
-        is configured, returns None.
+        Behavior:
+          - If a cached value is present in session.metadata["user_profile_instructions"],
+            it is returned (after stripping whitespace).
+          - Otherwise this method delegates to UserProfileManager, calling
+            `get_system_instructions_for_user(user_id)` which returns the
+            effective user-level system instructions (already including any
+            internal fallbacks), caches the resulting string in metadata,
+            and saves the updated session.
+
+        Note:
+          - This method no longer uses prompt bundles; it works purely on
+            the final system-instructions string exposed by the manager.
         """
+        # No associated user or no profile manager → no instructions.
         if not session.user_id:
             return None
         if self._user_profile_manager is None:
             return None
 
-        return await self._user_profile_manager.get_prompt_bundle(session.user_id)
+        # 1) Try cached instructions from session metadata.
+        cached = session.metadata.get("user_profile_instructions")
+        if isinstance(cached, str):
+            stripped = cached.strip()
+            if stripped:
+                return stripped
+
+        # 2) Fallback: resolve from the user profile manager.
+        # The manager encapsulates all logic of:
+        #   - using profile.system_instructions if set,
+        #   - or falling back to a deterministic summary if not.
+        instructions = await self._user_profile_manager.get_system_instructions_for_user(
+            session.user_id
+        )
+        if not isinstance(instructions, str):
+            return None
+
+        stripped = instructions.strip()
+        if not stripped:
+            return None
+
+        # 3) Cache in session metadata and persist the session.
+        session.metadata["user_profile_instructions"] = stripped
+        await self.save_session(session)
+
+        return stripped
+
+
 
     # ------------------------------------------------------------------
-    # Organization profile memory – high-level bundle
+    # Organization profile memory – prompt-level instructions (per session)
     # ------------------------------------------------------------------
-
-    async def get_organization_profile_bundle_for_session(
+    async def get_org_profile_instructions_for_session(
         self,
-        session: ChatSession,
-        *,
-        max_summary_length: int = 1200,
-    ) -> Optional[OrganizationProfilePromptBundle]:
+        session: ChatSession
+    ) -> Optional[str]:
         """
-        Build and return a prompt-ready organization profile bundle
+        Return a prompt-ready organization profile instruction string
         for this session.
 
-        By default, the tenant_id is used as the organization identifier.
-        If no tenant_id is associated with the session or no
-        OrganizationProfileManager is configured, returns None.
+        Behavior:
+          - If a cached value is present in session.metadata["org_profile_instructions"],
+            it is returned (after stripping whitespace).
+          - Otherwise this method delegates to OrganizationProfileManager, calling
+            `get_system_instructions_for_organization(organization_id, max_summary_length=...)`,
+            caches the resulting string in metadata, and saves the updated session.
+
+        Note:
+          - This method no longer uses prompt bundles; it works purely on
+            the final system-instructions string exposed by the manager.
         """
+        # No associated tenant or no organization profile manager → no instructions.
         if not session.tenant_id:
             return None
         if self._organization_profile_manager is None:
             return None
 
-        return await self._organization_profile_manager.get_prompt_bundle(
-            organization_id=session.tenant_id,
-            max_summary_length=max_summary_length,
+        # 1) Try cached instructions from session metadata.
+        cached = session.metadata.get("org_profile_instructions")
+        if isinstance(cached, str):
+            stripped = cached.strip()
+            if stripped:
+                return stripped
+
+        # 2) Fallback: resolve from the organization profile manager.
+        instructions = await self._organization_profile_manager.get_system_instructions_for_organization(
+            organization_id=session.tenant_id
         )
+        if not isinstance(instructions, str):
+            return None
 
-    # ------------------------------------------------------------------
-    # Long-term memory – context for a session
-    # ------------------------------------------------------------------
+        stripped = instructions.strip()
+        if not stripped:
+            return None
 
-    def _build_memory_owner_for_session(self, session: ChatSession) -> MemoryOwnerRef:
-        """
-        Derive a MemoryOwnerRef for a given session.
+        # 3) Cache in session metadata and persist the session.
+        session.metadata["org_profile_instructions"] = stripped
+        await self.save_session(session)
 
-        Simple default policy:
-          - If user_id is present  -> user-level memory.
-          - Else if tenant_id      -> organization-level memory.
-          - Else                   -> global memory.
+        return stripped
 
-        Higher-level components may later decide to override or refine
-        this policy, but this serves as a sensible default.
-        """
-        if session.user_id:
-            return MemoryOwnerRef(owner_type="user", owner_id=session.user_id)
-        if session.tenant_id:
-            return MemoryOwnerRef(owner_type="organization", owner_id=session.tenant_id)
-        return MemoryOwnerRef(owner_type="global", owner_id="global")
 
-    async def get_long_term_memory_context_for_session(
-        self,
-        session: ChatSession,
-        query: str,
-        *,
-        limit: int = 5,
-        min_importance: float = 0.0,
-    ) -> List[LongTermMemoryItem]:
-        """
-        Search long-term memory for items relevant to the given query,
-        scoped to the logical owner derived from this session.
-
-        If no LongTermMemoryManager is configured, returns an empty list.
-        """
-        if self._long_term_memory_manager is None:
-            return []
-
-        owner = self._build_memory_owner_for_session(session)
-        return await self._long_term_memory_manager.search_for_context(
-            owner=owner,
-            query=query,
-            limit=limit,
-            min_importance=min_importance,
-        )

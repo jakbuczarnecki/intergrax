@@ -144,6 +144,11 @@ class RuntimeConfig:
     tools_context_scope: ToolsContextScope = ToolsContextScope.CURRENT_MESSAGE_ONLY
 
 
+    # Memory toggles
+    enable_user_profile_memory: bool = True
+    enable_org_profile_memory: bool = True
+    enable_long_term_memory: bool = True
+
     # ------------------------------------------------------------------
     # MISC METADATA
     # ------------------------------------------------------------------

@@ -37,8 +37,13 @@ class ChatMessage:
       - tool_call_id  → for single tool calls (from field 'id'),
       - tool_calls    → list of calls (for assistant.tool_calls).
     """
+
     role: MessageRole
     content: str
+
+    entry_id: Optional[int] = None
+    deleted: bool = False
+    modified: bool = False    
     created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
     tool_call_id: Optional[str] = None
     name: Optional[str] = None
