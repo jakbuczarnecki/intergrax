@@ -28,9 +28,10 @@ import asyncio
 import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
+from intergrax.runtime.drop_in_knowledge_mode.history_prompt_builder import DefaultHistorySummaryPromptBuilder, HistorySummaryPromptBuilder
 from intergrax.runtime.drop_in_knowledge_mode.rag_prompt_builder import (
     DefaultRagPromptBuilder,
     RagPromptBuilder,
@@ -130,6 +131,43 @@ class RuntimeState:
     history_token_count: Optional[int] = None
 
 
+@dataclass
+class HistoryCompressionResult:
+    """
+    Result of applying a history compression strategy.
+
+    This object groups both the compressed messages (the actual base history
+    to be sent to the LLM) and all diagnostic / bookkeeping information
+    that is useful for debugging and telemetry.
+    """
+
+    # Final history that should be used as the base conversation context.
+    history: List[ChatMessage]
+
+    # Whether any truncation or summarization was applied.
+    truncated: bool
+
+    # Strategy that was actually used. This may differ from the requested
+    # strategy in case of fallbacks (e.g. summarization failing and falling
+    # back to pure truncation).
+    effective_strategy: HistoryCompressionStrategy
+
+    # Whether a summarization step was successfully used.
+    summary_used: bool
+
+    # Token budgets used during compression. These are best-effort diagnostic
+    # values and may be zero if the strategy did not rely on them.
+    summary_tokens_budget: int
+    tail_tokens_budget: int
+
+    # Raw metrics for the original history.
+    raw_history_messages: int
+    raw_history_tokens: Optional[int]
+
+    # Budget that was passed into the compressor for the history.
+    history_budget_tokens: int
+
+
 # ----------------------------------------------------------------------
 # DropInKnowledgeRuntime
 # ----------------------------------------------------------------------
@@ -167,6 +205,7 @@ class DropInKnowledgeRuntime:
         context_builder: Optional[ContextBuilder] = None,
         rag_prompt_builder: Optional[RagPromptBuilder] = None,
         websearch_prompt_builder: Optional[WebSearchPromptBuilder] = None,
+        history_prompt_builder: Optional[HistorySummaryPromptBuilder] = None,
     ) -> None:
 
         self._config = config
@@ -194,6 +233,10 @@ class DropInKnowledgeRuntime:
 
         self._websearch_prompt_builder: Optional[WebSearchPromptBuilder] = (
             websearch_prompt_builder or DefaultWebSearchPromptBuilder(config)
+        )
+
+        self._history_prompt_builder: HistorySummaryPromptBuilder = (
+            history_prompt_builder or DefaultHistorySummaryPromptBuilder(config)
         )
 
     # ------------------------------------------------------------------
@@ -415,6 +458,30 @@ class DropInKnowledgeRuntime:
             "has_org_profile_instructions": bool(org_instr),
         }
 
+    
+    def _build_history_debug_trace(
+        self,
+        *,
+        requested_strategy: HistoryCompressionStrategy,
+        compression_result: HistoryCompressionResult,
+    ) -> dict:
+        """
+        Build a unified debug trace dictionary for history compression.
+        Ensures that all call paths (OFF, no-token, no-budget, full compression)
+        produce the exact same set of keys.
+        """
+        return {
+            "raw_history_messages": compression_result.raw_history_messages,
+            "raw_history_tokens": compression_result.raw_history_tokens,
+            "history_budget_tokens": compression_result.history_budget_tokens,
+            "strategy_requested": requested_strategy.value,
+            "strategy_effective": compression_result.effective_strategy.value,
+            "truncated": compression_result.truncated,
+            "summary_used": compression_result.summary_used,
+            "summary_tokens_budget": compression_result.summary_tokens_budget,
+            "tail_tokens_budget": compression_result.tail_tokens_budget,
+        }
+
 
 
     # ------------------------------------------------------------------
@@ -449,23 +516,28 @@ class DropInKnowledgeRuntime:
         strategy = request.history_compression_strategy
         adapter = self._config.llm_adapter
 
-        # Base history before any truncation.
-        base_history: List[ChatMessage] = raw_history
-        truncated = False
-
         # If we cannot count tokens at all, we cannot apply token-based
         # trimming. In that case we simply keep the full history and log
-        # what we know.
+        # what we know in a unified way.
         if raw_token_count is None:
-            state.base_history = base_history
-            state.debug_trace["base_history_length"] = len(base_history)
-            state.debug_trace["history_tokens"] = {
-                "raw_history_messages": len(raw_history),
-                "raw_history_tokens": None,
-                "history_budget_tokens": None,
-                "strategy": strategy.value,
-                "truncated": False,
-            }
+            compression_result = HistoryCompressionResult(
+                history=raw_history,
+                truncated=False,
+                effective_strategy=strategy,
+                summary_used=False,
+                summary_tokens_budget=0,
+                tail_tokens_budget=0,
+                raw_history_messages=len(raw_history),
+                raw_history_tokens=None,
+                history_budget_tokens=None,
+            )
+
+            state.base_history = compression_result.history
+            state.debug_trace["base_history_length"] = len(compression_result.history)
+            state.debug_trace["history_tokens"] = self._build_history_debug_trace(
+                requested_strategy=strategy,
+                compression_result=compression_result,
+            )
             return
 
         # 4. Compute a token budget for history based on:
@@ -501,16 +573,25 @@ class DropInKnowledgeRuntime:
 
         if input_budget <= 0:
             # Extremely small or misconfigured budget; in this case we keep
-            # the history as-is and log the situation.
-            state.base_history = base_history
-            state.debug_trace["base_history_length"] = len(base_history)
-            state.debug_trace["history_tokens"] = {
-                "raw_history_messages": len(raw_history),
-                "raw_history_tokens": raw_token_count,
-                "history_budget_tokens": 0,
-                "strategy": strategy.value,
-                "truncated": False,
-            }
+            # the history as-is and log the situation in a unified way.
+            compression_result = HistoryCompressionResult(
+                history=raw_history,
+                truncated=False,
+                effective_strategy=strategy,
+                summary_used=False,
+                summary_tokens_budget=0,
+                tail_tokens_budget=0,
+                raw_history_messages=len(raw_history),
+                raw_history_tokens=raw_token_count,
+                history_budget_tokens=0,
+            )
+
+            state.base_history = compression_result.history
+            state.debug_trace["base_history_length"] = len(compression_result.history)
+            state.debug_trace["history_tokens"] = self._build_history_debug_trace(
+                requested_strategy=strategy,
+                compression_result=compression_result,
+            )
             return
 
         # Reserve a portion of the input budget for non-history input
@@ -525,32 +606,23 @@ class DropInKnowledgeRuntime:
         history_budget_tokens = input_budget - reserved_for_meta
 
         # 5. Apply history compression strategy.
-        if (
-            strategy == HistoryCompressionStrategy.TRUNCATE_OLDEST
-            and raw_token_count > history_budget_tokens
-            and history_budget_tokens > 0
-        ):
-            base_history = self._truncate_history_by_tokens(
-                messages=raw_history,
-                max_tokens=history_budget_tokens,
-            )
-            truncated = True
-        else:
-            # OFF or history already within budget → keep as-is.
-            base_history = raw_history
-            truncated = False
+        compression_result = self._compress_history(
+            request=request,
+            raw_history=raw_history,
+            raw_token_count=raw_token_count,
+            strategy=strategy,
+            history_budget_tokens=history_budget_tokens,
+        )
 
-        state.base_history = base_history
+        state.base_history = compression_result.history
 
         # 6. Update debug trace with history-related info and token stats.
-        state.debug_trace["base_history_length"] = len(base_history)
-        state.debug_trace["history_tokens"] = {
-            "raw_history_messages": len(raw_history),
-            "raw_history_tokens": raw_token_count,
-            "history_budget_tokens": history_budget_tokens,
-            "strategy": strategy.value,
-            "truncated": truncated,
-        }
+        state.debug_trace["base_history_length"] = len(compression_result.history)
+        state.debug_trace["history_tokens"] = self._build_history_debug_trace(
+            requested_strategy=strategy,
+            compression_result=compression_result,
+        )
+
 
 
 
@@ -1255,3 +1327,225 @@ class DropInKnowledgeRuntime:
             truncated = [messages[-1]]
 
         return truncated
+
+
+    def _compress_history(
+        self,
+        *,
+        request: RuntimeRequest,
+        raw_history: List[ChatMessage],
+        raw_token_count: Optional[int],
+        strategy: HistoryCompressionStrategy,
+        history_budget_tokens: int,
+    ) -> HistoryCompressionResult:
+        """
+        Apply the configured history compression strategy to the raw history
+        and return a structured result object with both the final history
+        and diagnostic metadata.
+        """
+        # Defaults for the result – will be updated below.
+        effective_strategy = strategy
+        truncated = False
+        summary_used = False
+        summary_tokens_budget = 0
+        tail_tokens_budget = 0
+
+        raw_len = len(raw_history)
+
+        # Helper to build the result object in one place.
+        def _build_result(history: List[ChatMessage]) -> HistoryCompressionResult:
+            return HistoryCompressionResult(
+                history=history,
+                truncated=truncated,
+                effective_strategy=effective_strategy,
+                summary_used=summary_used,
+                summary_tokens_budget=summary_tokens_budget,
+                tail_tokens_budget=tail_tokens_budget,
+                raw_history_messages=raw_len,
+                raw_history_tokens=raw_token_count,
+                history_budget_tokens=history_budget_tokens,
+            )
+
+        # 0) OFF → do not touch the history at all.
+        if strategy == HistoryCompressionStrategy.OFF:
+            effective_strategy = HistoryCompressionStrategy.OFF
+            return _build_result(raw_history)
+
+        # 1) If we have no token info or a non-positive budget, we cannot
+        # meaningfully compress the history. Keep it as-is.
+        if raw_token_count is None or history_budget_tokens <= 0:
+            # We keep the requested strategy in effective_strategy for
+            # diagnostic purposes, but we do not modify the history.
+            return _build_result(raw_history)
+
+        # 2) If history already fits into the budget -> nothing to do.
+        if raw_token_count <= history_budget_tokens:
+            return _build_result(raw_history)
+
+        # 3) Pure truncation strategy.
+        if strategy == HistoryCompressionStrategy.TRUNCATE_OLDEST:
+            compressed = self._truncate_history_by_tokens(
+                messages=raw_history,
+                max_tokens=history_budget_tokens,
+            )
+            truncated = True
+            effective_strategy = HistoryCompressionStrategy.TRUNCATE_OLDEST
+            tail_tokens_budget = history_budget_tokens
+            return _build_result(compressed)
+
+        # 4) Summarization-based strategies.
+        if strategy in (
+            HistoryCompressionStrategy.SUMMARIZE_OLDEST,
+            HistoryCompressionStrategy.HYBRID,
+        ):
+            # If the budget is extremely small, summarization will not be
+            # very helpful. Fall back to pure truncation.
+            if history_budget_tokens <= 64:
+                compressed = self._truncate_history_by_tokens(
+                    messages=raw_history,
+                    max_tokens=history_budget_tokens,
+                )
+                truncated = True
+                effective_strategy = HistoryCompressionStrategy.TRUNCATE_OLDEST
+                tail_tokens_budget = history_budget_tokens
+                return _build_result(compressed)
+
+            # Basic split of the budget between summary and tail.
+            summary_max_tokens = max(
+                32,
+                min(history_budget_tokens // 4, 256),
+            )
+            tail_budget = history_budget_tokens - summary_max_tokens
+
+            if tail_budget <= 32:
+                tail_budget = max(32, history_budget_tokens // 2)
+                summary_max_tokens = history_budget_tokens - tail_budget
+
+            summary_tokens_budget = summary_max_tokens
+            tail_tokens_budget = tail_budget
+
+            # Build the most recent tail first.
+            tail_messages = self._truncate_history_by_tokens(
+                messages=raw_history,
+                max_tokens=tail_budget,
+            )
+            if not tail_messages:
+                compressed = self._truncate_history_by_tokens(
+                    messages=raw_history,
+                    max_tokens=history_budget_tokens,
+                )
+                truncated = True
+                effective_strategy = HistoryCompressionStrategy.TRUNCATE_OLDEST
+                tail_tokens_budget = history_budget_tokens
+                return _build_result(compressed)
+
+            tail_len = len(tail_messages)
+            prefix_len = max(0, len(raw_history) - tail_len)
+            older_messages = raw_history[:prefix_len]
+
+            if not older_messages:
+                # Nothing older to summarize; we effectively behave like pure
+                # truncation here, but we still mark the requested strategy.
+                truncated = True
+                effective_strategy = strategy
+                return _build_result(tail_messages)
+
+            prompt_bundle = self._history_prompt_builder.build_history_summary_prompt(
+                request=request,
+                strategy=strategy,
+                older_messages=older_messages,
+                tail_messages=tail_messages,
+            )
+
+            summary_msg = self._summarize_history_chunk(
+                messages=older_messages,
+                max_summary_tokens=summary_max_tokens,
+                system_prompt=prompt_bundle.system_prompt,
+            )
+
+            if summary_msg is None:
+                # Summarization failed; fall back to truncation.
+                compressed = self._truncate_history_by_tokens(
+                    messages=raw_history,
+                    max_tokens=history_budget_tokens,
+                )
+                truncated = True
+                effective_strategy = HistoryCompressionStrategy.TRUNCATE_OLDEST
+                tail_tokens_budget = history_budget_tokens
+                summary_tokens_budget = 0
+                return _build_result(compressed)
+
+            compressed_history: List[ChatMessage] = [summary_msg]
+            compressed_history.extend(tail_messages)
+
+            truncated = True
+            summary_used = True
+            effective_strategy = strategy
+
+            return _build_result(compressed_history)
+
+        # 5) Unknown strategy -> keep as-is.
+        return _build_result(raw_history)
+
+
+
+    
+    def _summarize_history_chunk(
+        self,
+        messages: List[ChatMessage],
+        max_summary_tokens: int,
+        system_prompt: str,
+    ) -> Optional[ChatMessage]:
+        """
+        Summarize a block of older conversation history into a single
+        compact system-level message.
+
+        This helper uses the core LLM adapter synchronously. The summary
+        message is NOT persisted in the SessionStore; it is meant to be
+        injected into the prompt as a synthetic meta-history.
+        """
+        if not messages:
+            return None
+
+        if max_summary_tokens <= 0:
+            return None
+
+        adapter = self._config.llm_adapter
+        if adapter is None:
+            return None
+
+        # Build a simple, robust summarization prompt.
+        summary_prompt: List[ChatMessage] = [
+            ChatMessage(
+                role="system",
+                content=system_prompt,
+            )
+        ]
+        summary_prompt.extend(messages)
+
+        generate_kwargs: Dict[str, Any] = {}
+        # We keep the summary small and controlled by a separate token budget.
+        if max_summary_tokens > 0:
+            generate_kwargs["max_tokens"] = max_summary_tokens
+
+        try:
+            raw = adapter.generate_messages(summary_prompt, **generate_kwargs)
+        except Exception:
+            # If summarization fails for any reason, we simply return None
+            # and let the caller fall back to truncation.
+            return None
+        
+        if not isinstance(raw, str):
+            return None
+
+        if not raw:
+            return None
+        
+        text = raw.strip()
+
+        # We wrap the summary in a system message so that it is clearly
+        # separated from user/assistant turns.
+        return ChatMessage(
+            role="system",
+            content=f"Conversation summary (earlier turns):\n{text}",
+        )

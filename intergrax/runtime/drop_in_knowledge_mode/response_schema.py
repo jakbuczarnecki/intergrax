@@ -90,23 +90,29 @@ class RuntimeStats:
     extra: Dict[str, Any] = field(default_factory=dict)
 
 
-class HistoryCompressionStrategy(str, Enum):
+class HistoryCompressionStrategy(Enum):
     """
-    High-level strategy describing how the runtime should reduce
-    conversation history when it no longer fits into the model context.
+    Strategy for compressing the conversation history before sending it
+    to the LLM.
+
+    - OFF
+        Do not modify or compress history at all.
+        (Risk: context window overflow for very long conversations.)
+
+    - TRUNCATE_OLDEST:
+        Drop the oldest messages until the history fits into the budget.
+    - SUMMARIZE_OLDEST:
+        Summarize the oldest portion of the history into a compact
+        synthetic message and keep more recent turns verbatim.
+    - HYBRID:
+        Combine truncation and summarization, e.g. truncate very old noise
+        and summarize the remaining older block.
     """
 
-    # Do not modify or compress history at all.
-    # (Risk: context window overflow for very long conversations.)
     OFF = "off"
-
-    # Drop the oldest messages first until the history fits within
-    # the computed token budget.
     TRUNCATE_OLDEST = "truncate_oldest"
-
-    # NOTE:
-    # Additional strategies like SUMMARIZE_OLDEST / HYBRID can be added
-    # later when summarization is implemented.
+    SUMMARIZE_OLDEST = "summarize_oldest"
+    HYBRID = "hybrid"
     
 
 @dataclass
