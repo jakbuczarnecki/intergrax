@@ -8,12 +8,9 @@ from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 
 from intergrax.llm_adapters.base import LLMAdapter
-from intergrax.memory.organization_profile_manager import OrganizationProfileManager
-from intergrax.memory.organization_profile_memory import (
-    OrganizationProfile,
-    OrganizationProfileMemoryEntry,
-)
 from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.organization.organization_profile import OrganizationProfile
+from intergrax.runtime.organization.organization_profile_manager import OrganizationProfileManager
 
 
 @dataclass
@@ -23,7 +20,7 @@ class OrgProfileInstructionsConfig:
     """
 
     max_chars: int = 1500
-    language: str = "pl"
+    language: str = "en"
     regenerate_if_present: bool = False
     extra: Dict[str, Any] = None
 
@@ -116,23 +113,11 @@ class OrganizationProfileInstructionsService:
         """
         identity = profile.identity
         prefs = profile.preferences
-        memory_entries: List[OrganizationProfileMemoryEntry] = profile.memory_entries
 
         domain_summary = profile.domain_summary or "(no domain_summary provided)"
         knowledge_summary = profile.knowledge_summary or "(no knowledge_summary provided)"
         knowledge_sources = profile.knowledge_sources or []
         tags = profile.tags or []
-
-        memory_lines: List[str] = []
-        for entry in memory_entries:
-            if entry.deleted:
-                continue
-            memory_lines.append(f"- {entry.content}")
-        memory_block = (
-            "\n".join(memory_lines)
-            if memory_lines
-            else "(no long-term org memory entries yet)"
-        )
 
         return f"""
 You are a system-instructions builder for a conversational AI assistant
@@ -179,9 +164,6 @@ DOMAIN & KNOWLEDGE SUMMARY:
 - knowledge_sources: {knowledge_sources}
 - tags: {tags}
 
-LONG-TERM ORG MEMORY ENTRIES (facts, policies, stable notes):
-{memory_block}
-
 OUTPUT FORMAT:
 - Return ONLY the final organization-level system prompt text,
   in {self._config.language}.
@@ -210,6 +192,6 @@ OUTPUT FORMAT:
 
         return await self._llm.generate_messages(
             messages,
-            temperature=0.2,
+            temperature=None,
             max_tokens=None,
         )

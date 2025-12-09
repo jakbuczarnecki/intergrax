@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Literal, Optional
 
 
 # ---------------------------------------------------------------------------
@@ -15,18 +17,63 @@ from typing import Any, Dict, List, Optional
 # and how they should be injected into LLM prompts.
 # ---------------------------------------------------------------------------
 
+class MemoryKind(Enum):
+    USER_FACT = "user_fact"
+    PREFERENCE = "preference"
+    SESSION_SUMMARY = "session_summary"
+    ORG_FACT = "org_fact"
+    POLICY = "policy"
+    OTHER = "other"
+
+
+class MemoryImportance(Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
 
 @dataclass
 class UserProfileMemoryEntry:
     """
     Long-term memory entry for a user profile.
 
-    Stores stable facts, insights, or notes about the user. 
-    Not tied to any runtime message structure.
+    Stores stable facts, insights, or notes about the user.
+    Can also store session-related summaries, linked via session_id.
     """
+
+    # Persistent identifier in the storage backend.
     entry_id: Optional[int] = None
-    content: str
+
+    # Main content of the memory entry (human-readable text).
+    content: str = ""
+
+    # Optional link to the session from which this entry was derived.
+    # None means "not tied to a specific session".
+    session_id: Optional[str] = None
+
+    # High-level type of this memory entry.
+    # Useful for filtering, retrieval strategies, and UI.
+    kind: MemoryKind = MemoryKind.OTHER
+
+    # Short human-readable title (e.g. "Summary of session 2025-12-09").
+    title: Optional[str] = None
+
+    # Importance level used to prioritize entries during retrieval.
+    importance: MemoryImportance = MemoryImportance.MEDIUM
+
+    # Creation timestamp in ISO format (UTC).
+    # You can also store datetime and convert in the store layer;
+    # here we keep string for easier serialization.
+    created_at: str = field(
+        default_factory=lambda: datetime.utcnow().isoformat()
+    )
+
+    # Additional, less frequently queried metadata.
+    # Example: {"tags": ["intergrax", "memory", "profiles"], "source": "session_summarizer"}
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+    # Unit-of-work flags used by the manager/store.
     deleted: bool = False
     modified: bool = False
 
