@@ -17,17 +17,20 @@ from intergrax.memory.user_profile_memory import (
     MemoryKind,
     MemoryImportance,
 )
+from intergrax.runtime.user_profile.user_profile_instructions_service import UserProfileInstructionsService
 
 
 @dataclass
 class SessionMemoryConsolidationConfig:
     """
     Configuration for consolidating a single chat session into long-term
-    user profile memory entries.
+    user profile memory entries and optionally refreshing user-level
+    system instructions.
     """
 
     # Target language for extracted content (facts, preferences, summaries).
-    language: str = GLOBAL_SETTINGS.default_language
+    # If you introduce GLOBAL_SETTINGS, you can set the default from there.
+    language: str = "pl"
 
     # Maximum number of extracted USER_FACT entries to persist.
     max_facts: int = 8
@@ -50,16 +53,24 @@ class SessionMemoryConsolidationConfig:
     # passed to the model. Older messages will be trimmed if necessary.
     max_conversation_chars: int = 6000
 
-    # Temperature for the LLM call.
+    # Temperature for the LLM call that extracts memory.
     temperature: float = 0.1
 
-    # Optional extra knobs.
+    # Whether this service should trigger regeneration of user-level
+    # system instructions after storing new memory entries.
+    regenerate_system_instructions: bool = True
+
+    # If True, system instructions regeneration will be forced even if they
+    # already exist and the instructions-service config would normally skip it.
+    force_regenerate_system_instructions: bool = False
+
+    # Optional extra knobs (e.g. style hints, domain hints).
     extra: Dict[str, Any] = None
 
     def __post_init__(self) -> None:
         if self.extra is None:
             self.extra = {}
-
+            
 
 class SessionMemoryConsolidationService:
     """
@@ -80,11 +91,14 @@ class SessionMemoryConsolidationService:
         self,
         llm: LLMAdapter,
         profile_manager: UserProfileManager,
+        instructions_service: UserProfileInstructionsService,
         config: Optional[SessionMemoryConsolidationConfig] = None,
     ) -> None:
         self._llm = llm
         self._profile_manager = profile_manager
+        self._instructions_service = instructions_service
         self._config = config or SessionMemoryConsolidationConfig()
+
 
     async def consolidate_session(
         self,
@@ -93,8 +107,8 @@ class SessionMemoryConsolidationService:
         messages: Sequence[ChatMessage],
     ) -> List[UserProfileMemoryEntry]:
         """
-        Extract long-term memory from a single session and store it in the
-        user's profile.
+        Extract long-term memory from a single session, store it in the
+        user's profile, and optionally refresh user-level system instructions.
 
         Parameters:
             user_id:
@@ -106,15 +120,24 @@ class SessionMemoryConsolidationService:
 
         Returns:
             The list of UserProfileMemoryEntry objects that were created and stored.
+            Note: system instructions regeneration is a side-effect and its
+            string result (if any) is not returned here.
         """
         trimmed = self._prepare_conversation_for_prompt(messages)
-        prompt_text = self._build_prompt(trimmed, session_id=session_id)
+        if not trimmed:
+            return []
+
+        prompt_text = self._build_prompt(
+            trimmed,
+            session_id=session_id,
+        )
 
         llm_output = await self._call_llm(prompt_text)
         parsed = self._parse_llm_output(llm_output)
 
         if parsed is None:
-            # If parsing failed, we do not create any entries.
+            # If parsing failed, we do not create any entries and we do not
+            # touch system instructions.
             return []
 
         entries = self._build_memory_entries_from_parsed(
@@ -129,6 +152,17 @@ class SessionMemoryConsolidationService:
             # The manager is responsible for assigning entry_id / timestamps if needed.
             stored = await self._profile_manager.add_memory_entry(user_id, entry)
             stored_entries.append(stored)
+
+        # Optionally refresh user-level system instructions as part of the
+        # same pipeline, but only if something was actually stored.
+        if (
+            stored_entries
+            and self._config.regenerate_system_instructions
+        ):
+            await self._instructions_service.build_and_save_system_instructions(
+                user_id=user_id,
+                force=self._config.force_regenerate_system_instructions,
+            )
 
         return stored_entries
 
@@ -187,7 +221,7 @@ class SessionMemoryConsolidationService:
         """
         conversation_lines: List[str] = []
         for m in messages:
-            role = getattr(m, "role", "user")
+            role = m.role
             content = (m.content or "").strip()
             if not content:
                 continue
