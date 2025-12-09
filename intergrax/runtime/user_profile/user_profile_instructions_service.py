@@ -219,6 +219,6 @@ OUTPUT FORMAT:
         # LLMAdapter.generate_messages() returns a plain string.
         return await self._llm.generate_messages(
             messages,
-            temperature=0.2,
+            temperature=None,
             max_tokens=None,
         )
