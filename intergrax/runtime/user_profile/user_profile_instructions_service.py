@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 
+from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.base import LLMAdapter
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_memory import (
@@ -26,7 +27,7 @@ class UserProfileInstructionsConfig:
     max_chars: int = 1200
 
     # Target language of the generated instructions, e.g. "pl" or "en".
-    language: str = "pl"
+    language: str = GLOBAL_SETTINGS.default_language
 
     # If False and profile.system_instructions already exists,
     # the service may simply return the existing value instead of regenerating.
@@ -218,6 +219,6 @@ OUTPUT FORMAT:
         # LLMAdapter.generate_messages() returns a plain string.
         return await self._llm.generate_messages(
             messages,
-            temperature=0.2,
+            temperature=None,
             max_tokens=None,
         )

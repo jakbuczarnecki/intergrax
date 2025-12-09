@@ -11,6 +11,8 @@ from typing import List, Dict, Any, Tuple, Literal, Optional, Sequence, Union
 import numpy as np
 from numpy.typing import NDArray
 
+from intergrax.globals.settings import GlobalSettings
+
 try:
     from sentence_transformers import SentenceTransformer
 except Exception:
@@ -90,12 +92,12 @@ class EmbeddingManager:
     # ----------------------
     def _default_model_for(self, provider: PROVIDERS) -> str:
         if provider == "hg":
-            return "sentence-transformers/all-MiniLM-L6-v2"
+            return GlobalSettings.default_hf_embed_model
         elif provider == "ollama":
-            return "rjmalagon/gte-qwen2-1.5b-instruct-embed-f16:latest"
+            return GlobalSettings.default_ollama_embed_model
         elif provider == "openai":
             # stable, inexpensive default model; larger one is "text-embedding-3-large"
-            return "text-embedding-3-small"
+            return GlobalSettings.default_openai_embed_model
         raise ValueError(f"Unknown provider: {provider}")
 
     def _load_model(self) -> None:

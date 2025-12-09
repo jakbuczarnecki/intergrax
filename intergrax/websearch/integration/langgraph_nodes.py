@@ -11,6 +11,7 @@ except ImportError:
     def add_messages(x: Any) -> Any:
         return x
 
+from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
 
@@ -48,9 +49,9 @@ class WebSearchNode:
         enable_google_cse: bool = True,
         enable_bing_web: bool = True,
         default_top_k: int = 8,
-        default_locale: str = "pl-PL",
-        default_region: str = "pl-PL",
-        default_language: str = "pl",
+        default_locale: str = GLOBAL_SETTINGS.default_locale,
+        default_region: str = GLOBAL_SETTINGS.default_region,
+        default_language: str = GLOBAL_SETTINGS.default_language,
         default_safe_search: bool = True,
         max_text_chars: int = 4000,
     ) -> None:

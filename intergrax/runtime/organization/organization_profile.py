@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
+from intergrax.globals.settings import GLOBAL_SETTINGS
+
 
 @dataclass
 class OrganizationIdentity:
@@ -45,7 +47,7 @@ class OrganizationPreferences:
     """
 
     # Output / communication preferences
-    default_language: str = "en"
+    default_language: str = GLOBAL_SETTINGS.default_language
     default_output_format: str = "markdown"  # e.g. "markdown", "text", "html"
     tone_of_voice: str = "neutral-professional"
 

@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 
+from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.base import LLMAdapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.organization.organization_profile import OrganizationProfile
@@ -20,7 +21,7 @@ class OrgProfileInstructionsConfig:
     """
 
     max_chars: int = 1500
-    language: str = "en"
+    language: str = GLOBAL_SETTINGS.default_language
     regenerate_if_present: bool = False
     extra: Dict[str, Any] = None
 

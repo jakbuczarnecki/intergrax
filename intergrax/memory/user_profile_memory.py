@@ -9,6 +9,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional
 
+from intergrax.globals.settings import GLOBAL_SETTINGS
+
 
 # ---------------------------------------------------------------------------
 # Core domain models for user / org profile and prompt bundles.
@@ -95,9 +97,9 @@ class UserIdentity:
     domain_expertise: Optional[str] = None      # e.g. "AI runtimes, RAG, ERP systems"
 
     # Environment / locale
-    language: Optional[str] = None              # e.g. "pl", "en"
-    locale: Optional[str] = None                # e.g. "pl-PL"
-    timezone: Optional[str] = None              # e.g. "Europe/Warsaw"
+    language: Optional[str] = GLOBAL_SETTINGS.default_language             # e.g. "pl", "en"
+    locale: Optional[str] = GLOBAL_SETTINGS.default_locale                # e.g. "pl-PL"
+    timezone: Optional[str] = GLOBAL_SETTINGS.default_timezone              # e.g. "Europe/Warsaw"
 
 
 @dataclass

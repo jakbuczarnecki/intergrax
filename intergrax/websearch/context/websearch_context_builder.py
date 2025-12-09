@@ -4,6 +4,7 @@
 
 from typing import Sequence, Mapping, Any, List, Dict, Optional
 
+from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.websearch.schemas.web_document import WebDocument
 
 
@@ -173,7 +174,7 @@ class WebSearchContextBuilder:
             "2) Extract ONLY the information that is explicitly stated in the sources and relevant to the question.\n"
             "3) Answer the question in a single, coherent response in language: "
             f"{answer_language}.\n"
-            "4) Be concise and avoid repetition. Prefer 1–3 short paragraphs or a short bullet list.\n"
+            "4) Be concise and avoid repetition. Prefer 1-3 short paragraphs or a short bullet list.\n"
             "5) If some aspect of the question is NOT covered by the sources, clearly say that the sources do not provide this information.\n"
             f"6) Add [{self.source_label_prefix} N] markers next to statements that come from specific sources.\n"
         )
@@ -182,7 +183,7 @@ class WebSearchContextBuilder:
         self,
         user_question: str,
         web_docs: Sequence[Mapping[str, Any]],
-        answer_language: str = "pl",
+        answer_language: str = GLOBAL_SETTINGS.default_language,
         system_prompt_override: Optional[str] = None,
     ) -> List[Dict[str, str]]:
         """
@@ -214,7 +215,7 @@ class WebSearchContextBuilder:
         self,
         user_question: str,
         documents: Sequence[WebDocument],
-        answer_language: str = "pl",
+        answer_language: str = GLOBAL_SETTINGS.default_language,
         system_prompt_override: Optional[str] = None,
     ) -> List[Dict[str, str]]:
         """

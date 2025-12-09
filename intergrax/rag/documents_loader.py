@@ -14,6 +14,7 @@ import base64
 import requests
 
 
+from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.multimedia.video_loader import (
     transcribe_to_vtt,
     extract_frames_and_metadata,
@@ -1175,7 +1176,7 @@ class AudioSmartLoader:
         out_dir: str | Path | None = None,
         audio_format: str = "mp3",
         whisper_model: str = "medium",
-        whisper_language: str = "en",
+        whisper_language: str = GLOBAL_SETTINGS.default_language,
         translate: bool = True,
     ):
         """
