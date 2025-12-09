@@ -6,12 +6,8 @@ from __future__ import annotations
 
 from typing import Dict
 
-from intergrax.memory.organization_profile_memory import (
-    OrganizationProfile,
-    OrganizationIdentity,
-    OrganizationPreferences,
-)
-from intergrax.memory.organization_profile_store import OrganizationProfileStore
+from intergrax.runtime.organization.organization_profile import OrganizationIdentity, OrganizationPreferences, OrganizationProfile
+from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
 
 
 class InMemoryOrganizationProfileStore(OrganizationProfileStore):

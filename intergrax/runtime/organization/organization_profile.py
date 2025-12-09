@@ -67,26 +67,6 @@ class OrganizationPreferences:
 
 
 @dataclass
-class OrganizationProfileMemoryEntry:
-    """
-    Long-term organization memory entry (unit-of-work).
-
-    Semantics mirror `UserProfileMemoryEntry`:
-
-    - entry_id is None        -> new entry, INSERT on next save
-    - deleted is True         -> DELETE on next save
-    - modified is True        -> UPDATE on next save
-    """
-
-    entry_id: Optional[int]   # None = new entry, not yet persisted
-    content: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-    deleted: bool = False
-    modified: bool = False
-
-
-@dataclass
 class OrganizationProfile:
     """
     Single source of truth for an organization's long-term profile.
@@ -112,11 +92,6 @@ class OrganizationProfile:
     # used directly (or almost directly) in the runtime as system-level
     # instructions for this organization.
     system_instructions: Optional[str] = None
-
-    # Long-term organization memory entries, analogous to user profile memory.
-    memory_entries: List[OrganizationProfileMemoryEntry] = field(
-        default_factory=list
-    )
 
     # ------------------------------------------------------------------
     # Legacy / high-level summary fields

@@ -38,7 +38,7 @@ from intergrax.llm.messages import (
 )
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.memory.user_profile_manager import UserProfileManager
-from intergrax.memory.organization_profile_manager import OrganizationProfileManager
+from intergrax.runtime.organization.organization_profile_manager import OrganizationProfileManager
 
 
 @dataclass

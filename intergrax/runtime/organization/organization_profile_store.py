@@ -10,8 +10,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from intergrax.memory.organization_profile_memory import OrganizationProfile
-
+from intergrax.runtime.organization.organization_profile import OrganizationProfile
 
 class OrganizationProfileStore(Protocol):
     """

@@ -6,9 +6,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-from intergrax.memory.organization_profile_memory import OrganizationProfile
-from intergrax.memory.organization_profile_store import OrganizationProfileStore
-
+from intergrax.runtime.organization.organization_profile import OrganizationProfile
+from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
 
 class OrganizationProfileManager:
     """
