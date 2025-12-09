@@ -148,7 +148,7 @@ class DropInKnowledgeRuntime:
     # Public API
     # ------------------------------------------------------------------
 
-    async def ask(self, request: RuntimeRequest) -> RuntimeAnswer:
+    async def run(self, request: RuntimeRequest) -> RuntimeAnswer:
         """
         Main async entrypoint for the runtime.
 
@@ -204,14 +204,14 @@ class DropInKnowledgeRuntime:
 
 
 
-    def ask_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
+    def run_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
         """
         Synchronous wrapper around `ask()`.
 
         Useful for environments where `await` is not easily available,
         such as simple scripts or some notebook setups.
         """
-        return asyncio.run(self.ask(request))
+        return asyncio.run(self.run(request))
 
     # ------------------------------------------------------------------
     # Step 1: session + ingestion (no history)
