@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import List, Dict, Any, Optional
 
+from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 from intergrax.websearch.context.websearch_context_builder import WebSearchContextBuilder
 from intergrax.llm_adapters import LLMAdapter
@@ -28,7 +29,7 @@ class WebSearchAnswerer:
         executor: WebSearchExecutor,
         adapter: LLMAdapter,
         context_builder: Optional[WebSearchContextBuilder] = None,
-        answer_language: str = "en",
+        answer_language: str = GLOBAL_SETTINGS.default_language,
         system_prompt_override: Optional[str] = None,
     ) -> None:
         """
