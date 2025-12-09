@@ -31,8 +31,8 @@ from typing import List, Optional, Dict, Any
 
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.engine_history_layer import HistoryLayer
-from intergrax.runtime.drop_in_knowledge_mode.history_prompt_builder import DefaultHistorySummaryPromptBuilder, HistorySummaryPromptBuilder
-from intergrax.runtime.drop_in_knowledge_mode.rag_prompt_builder import (
+from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import DefaultHistorySummaryPromptBuilder, HistorySummaryPromptBuilder
+from intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder import (
     DefaultRagPromptBuilder,
     RagPromptBuilder,
 )
@@ -44,10 +44,7 @@ from intergrax.runtime.drop_in_knowledge_mode.response_schema import (
     ToolCallInfo,
 )
 from intergrax.runtime.drop_in_knowledge_mode.runtime_state import RuntimeState
-from intergrax.runtime.drop_in_knowledge_mode.session_store import (
-    SessionStore,
-    ChatSession,
-)
+
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.ingestion import (
     AttachmentIngestionService,
@@ -60,10 +57,11 @@ from intergrax.runtime.drop_in_knowledge_mode.context_builder import (
     ContextBuilder,
     RetrievedChunk,
 )
-from intergrax.runtime.drop_in_knowledge_mode.websearch_prompt_builder import (
+from intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder import (
     DefaultWebSearchPromptBuilder,
     WebSearchPromptBuilder,
 )
+from intergrax.runtime.drop_in_knowledge_mode.session.session_manager import SessionManager
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
 
@@ -82,11 +80,11 @@ class DropInKnowledgeRuntime:
 
     Responsibilities (current stage):
       - Accept a RuntimeRequest.
-      - Load or create a ChatSession via SessionStore.
+      - Load or create a ChatSession via SessionManager.
       - Append the user message to the session.
       - Build an LLM-ready context:
           * system prompt(s),
-          * chat history from SessionStore,
+          * chat history from SessionManager,
           * optional retrieved chunks from documents (RAG),
           * optional web search context (if enabled),
           * optional tools results.
@@ -99,7 +97,7 @@ class DropInKnowledgeRuntime:
     def __init__(
         self,
         config: RuntimeConfig,
-        session_store: SessionStore,
+        session_manager: SessionManager,
         ingestion_service: Optional[AttachmentIngestionService] = None,
         context_builder: Optional[ContextBuilder] = None,
         rag_prompt_builder: Optional[RagPromptBuilder] = None,
@@ -108,7 +106,7 @@ class DropInKnowledgeRuntime:
     ) -> None:
 
         self._config = config
-        self._session_store = session_store
+        self._session_manager = session_manager
 
         self._ingestion_service = ingestion_service or AttachmentIngestionService(
             resolver=FileSystemAttachmentResolver(),
@@ -140,7 +138,7 @@ class DropInKnowledgeRuntime:
 
         self._history_layer = HistoryLayer(
             config=config,
-            session_store=session_store,
+            session_manager=session_manager,
             history_prompt_builder=self._history_prompt_builder,
         )
 
@@ -206,7 +204,7 @@ class DropInKnowledgeRuntime:
 
     def run_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
         """
-        Synchronous wrapper around `ask()`.
+        Synchronous wrapper around `run()`.
 
         Useful for environments where `await` is not easily available,
         such as simple scripts or some notebook setups.
@@ -229,9 +227,9 @@ class DropInKnowledgeRuntime:
         req = state.request
 
         # 1. Load or create session
-        session = await self._session_store.get_session(req.session_id)
+        session = await self._session_manager.get_session(req.session_id)
         if session is None:
-            session = await self._session_store.create_session(
+            session = await self._session_manager.create_session(
                 session_id=req.session_id,
                 user_id=req.user_id,
                 tenant_id=req.tenant_id or self._config.tenant_id,
@@ -252,10 +250,10 @@ class DropInKnowledgeRuntime:
 
         # 2. Append user message to session history
         user_message = self._build_session_message_from_request(req)
-        await self._session_store.append_message(session.id, user_message)
+        await self._session_manager.append_message(session.id, user_message)
 
         # Reload the session to ensure we have the latest metadata
-        session = await self._session_store.get_session(session.id) or session
+        session = await self._session_manager.get_session(session.id) or session
 
         # Initialize debug trace – history will be attached later
         debug_trace: Dict[str, Any] = {
@@ -310,7 +308,7 @@ class DropInKnowledgeRuntime:
 
         # 1) User profile memory (optional)
         if cfg.enable_user_profile_memory:
-            user_instr_candidate = await self._session_store.get_user_profile_instructions_for_session(
+            user_instr_candidate = await self._session_manager.get_user_profile_instructions_for_session(
                 session=session
             )
             if isinstance(user_instr_candidate, str):
@@ -321,7 +319,7 @@ class DropInKnowledgeRuntime:
 
         # 2) Organization profile memory (optional)
         if cfg.enable_org_profile_memory:
-            org_instr_candidate = await self._session_store.get_org_profile_instructions_for_session(
+            org_instr_candidate = await self._session_manager.get_org_profile_instructions_for_session(
                 session=session
             )
             if isinstance(org_instr_candidate, str):
@@ -400,7 +398,8 @@ class DropInKnowledgeRuntime:
             state.history_includes_current_user = True
             state.debug_trace["history_length"] = len(history_messages)
         else:
-            # No ContextBuilder configured – use raw history from SessionStore.
+            # Fall back to using the base_history as-is (no additional
+            # history layer beyond what ContextBuilder already produced).
             state.messages_for_llm.extend(base_history)
             state.built_history_messages = base_history
             state.history_includes_current_user = True
@@ -425,8 +424,8 @@ class DropInKnowledgeRuntime:
         state.used_rag = False
         state.debug_trace.setdefault("rag_chunks", 0)
 
-        # If RAG is globally disabled, do nothing.
-        if not getattr(self._config, "enable_rag", True):
+        # If RAG is globally disabled, do nothing.        
+        if not self._config.enable_rag:
             return
 
         # We need ContextBuilder to produce retrieved chunks.
@@ -447,10 +446,10 @@ class DropInKnowledgeRuntime:
             )
             state.context_builder_result = built
 
-        rag_info = getattr(built, "rag_debug_info", None) or {}
+        rag_info =built.rag_debug_info or {}
         state.debug_trace["rag"] = rag_info
 
-        retrieved_chunks = getattr(built, "retrieved_chunks", None) or []
+        retrieved_chunks = built.retrieved_chunks or []
         state.used_rag = bool(rag_info.get("used", bool(retrieved_chunks)))
 
         if not state.used_rag:
@@ -517,7 +516,7 @@ class DropInKnowledgeRuntime:
             # Compact textual context for tools
             web_context_texts: List[str] = []
             for msg in context_messages:
-                if getattr(msg, "content", None):
+                if msg.content:
                     web_context_texts.append(msg.content)
             if web_context_texts:
                 state.tools_context_parts.append(
@@ -749,7 +748,7 @@ class DropInKnowledgeRuntime:
             content=answer_text,
             created_at=datetime.now(timezone.utc).isoformat(),
         )
-        await self._session_store.append_message(session.id, assistant_message)
+        await self._session_manager.append_message(session.id, assistant_message)
 
         # Strategy label
         if state.used_rag and state.used_websearch and state.used_tools:

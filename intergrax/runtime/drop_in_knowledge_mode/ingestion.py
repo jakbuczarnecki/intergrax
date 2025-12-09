@@ -33,8 +33,8 @@ from intergrax.rag.documents_loader import DocumentsLoader
 from intergrax.rag.documents_splitter import DocumentsSplitter
 from intergrax.rag.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.runtime.drop_in_knowledge_mode.attachments import AttachmentResolver
 
-from .attachments import AttachmentResolver
 
 
 # ---------------------------------------------------------------------------

@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.ingestion import IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.response_schema import RuntimeRequest
-from intergrax.runtime.drop_in_knowledge_mode.session_store import ChatSession
+from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
 
 
 @dataclass

@@ -10,9 +10,10 @@ from typing import Any, Dict, List, Optional
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
 from intergrax.runtime.drop_in_knowledge_mode.runtime_state import RuntimeState
-from intergrax.runtime.drop_in_knowledge_mode.history_prompt_builder import HistorySummaryPromptBuilder
+from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import HistorySummaryPromptBuilder
 from intergrax.runtime.drop_in_knowledge_mode.response_schema import HistoryCompressionStrategy, RuntimeRequest
-from intergrax.runtime.drop_in_knowledge_mode.session_store import ChatSession, SessionStore
+from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
+from intergrax.runtime.drop_in_knowledge_mode.session.session_manager import SessionManager
 
 
 @dataclass
@@ -56,7 +57,7 @@ class HistoryLayer:
     def __init__(
         self,
         config: RuntimeConfig,
-        session_store: SessionStore,
+        session_manager: SessionManager,
         history_prompt_builder: HistorySummaryPromptBuilder,
     ) -> None:
         """
@@ -68,7 +69,7 @@ class HistoryLayer:
           - updating RuntimeState with base_history and debug info.
         """
         self._config = config
-        self._session_store = session_store
+        self._session_manager = session_manager
         self._history_prompt_builder = history_prompt_builder
 
     
@@ -216,7 +217,7 @@ class HistoryLayer:
         Any model-specific preprocessing (truncation, summarization, token
         accounting) should happen in `_step_build_base_history`, not here.
         """
-        return self._session_store.get_conversation_history(session=session)
+        return self._session_manager.get_conversation_history(session=session)
 
 
     def _build_history_debug_trace(
