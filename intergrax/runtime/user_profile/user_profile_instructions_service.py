@@ -26,7 +26,7 @@ class UserProfileInstructionsConfig:
     max_chars: int = 1200
 
     # Target language of the generated instructions, e.g. "pl" or "en".
-    language: str = "pl"
+    language: str = "en"
 
     # If False and profile.system_instructions already exists,
     # the service may simply return the existing value instead of regenerating.
