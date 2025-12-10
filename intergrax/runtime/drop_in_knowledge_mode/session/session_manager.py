@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 from datetime import datetime, timezone
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
@@ -47,6 +47,7 @@ class SessionManager:
         organization_profile_manager: Optional[OrganizationProfileManager] = None,
         session_memory_consolidation_service: Optional[SessionMemoryConsolidationService] = None,
         user_turns_consolidation_interval: Optional[int] = GLOBAL_SETTINGS.default_user_turns_consolidation_interval,
+        consolidation_cooldown_seconds: Optional[int] = GLOBAL_SETTINGS.default_consolidation_cooldown_seconds,
     ) -> None:
         # Low-level storage backend (in-memory, DB, Redis, etc.).
         self._storage = storage
@@ -62,6 +63,9 @@ class SessionManager:
 
         # Effective interval used by append_message() mid-session hook.
         self._user_turns_consolidation_interval = user_turns_consolidation_interval
+
+        # Effective cooldown in seconds between mid-session consolidations.
+        self._consolidation_cooldown_seconds: int = consolidation_cooldown_seconds
 
     # ------------------------------------------------------------------
     # Session lifecycle (metadata)
@@ -150,11 +154,15 @@ class SessionManager:
 
             # If there's no history, there is nothing to consolidate.
             if messages:
-                await self._session_memory_consolidation_service.consolidate_session(
-                    user_id=session.user_id,
-                    session_id=session_id,
-                    messages=messages,
+                stored_entries = (
+                    await self._session_memory_consolidation_service.consolidate_session(
+                        user_id=session.user_id,
+                        session_id=session_id,
+                        messages=messages,
+                    )
                 )
+
+                debug_info = self._build_consolidation_debug_info(stored_entries)
 
                 # Mark that this session has been consolidated as part of close_session.
                 await self._mark_session_consolidated(
@@ -163,6 +171,7 @@ class SessionManager:
                     # We can optionally store the final user_turns value
                     # to indicate at which point the last consolidation happened.
                     turn=int(session.metadata.get("user_turns", 0) or 0),
+                    debug_info=debug_info
                 )
 
 
@@ -218,29 +227,38 @@ class SessionManager:
             if (
                 self._session_memory_consolidation_service is not None
                 and session.user_id
-                and self._user_turns_consolidation_interval is not None
             ):
                 interval = self._user_turns_consolidation_interval
                 # Only trigger if the interval is positive and we reached
                 # an exact multiple, e.g. 8, 16, 24...
-                if interval > 0 and (user_turns % interval) == 0:
+                if (
+                    interval > 0 
+                    and (user_turns % interval) == 0
+                    and self._is_mid_session_consolidation_allowed(session)
+                ):
                     # Fetch the current conversation history for this session.
                     # The consolidation service is responsible for trimming
                     # or summarizing as needed based on its own config.
                     messages = await self.get_history_for_session(session_id)
 
                     if messages:
-                        await self._session_memory_consolidation_service.consolidate_session(
-                            user_id=session.user_id,
-                            session_id=session_id,
-                            messages=messages,
+                        stored_entries = (
+                            await self._session_memory_consolidation_service.consolidate_session(
+                                user_id=session.user_id,
+                                session_id=session_id,
+                                messages=messages,
+                            )
                         )
+
+                        # Build a small debug payload based on the stored entries.
+                        debug_info = self._build_consolidation_debug_info(stored_entries)
 
                         # Record consolidation metadata for debugging and future heuristics.
                         await self._mark_session_consolidated(
                             session,
                             reason=SessionConsolidationReason.MID_SESSION,
                             turn=user_turns,
+                            debug_info=debug_info
                         )
 
         # Delegate message persistence to the storage backend. The storage
@@ -380,6 +398,33 @@ class SessionManager:
 
         return stripped
 
+    @staticmethod
+    def _build_consolidation_debug_info(
+        entries: Sequence[Any],
+    ) -> Dict[str, Any]:
+        """
+        Build a lightweight debug payload describing the outcome of a
+        consolidation run.
+
+        The structure is intentionally simple and JSON-serializable so it can
+        be safely stored in session.metadata["last_consolidation_debug"].
+        """
+        total = len(entries)
+
+        # Try to infer entry types in a defensive way. We avoid importing
+        # UserProfileMemoryEntry here to keep this manager decoupled from
+        # the concrete memory model; instead we use getattr.
+        type_counts: Dict[str, int] = {}
+        for e in entries:
+            entry_type = getattr(e, "entry_type", None) or "unknown"
+            key = str(entry_type)
+            type_counts[key] = type_counts.get(key, 0) + 1
+
+        return {
+            "entries_count": total,
+            "entry_types": type_counts,
+        }
+
 
     async def _mark_session_consolidated(
         self,
@@ -387,6 +432,7 @@ class SessionManager:
         *,
         reason: SessionConsolidationReason,
         turn: Optional[int] = None,
+        debug_info: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Mark the given session as having been consolidated into long-term
@@ -395,21 +441,60 @@ class SessionManager:
         Side effects:
           - Updates metadata fields:
               metadata["last_consolidated_at"]      → ISO-8601 UTC timestamp
-              metadata["last_consolidated_reason"]  → e.g. "mid_session" or "close_session"
+              metadata["last_consolidated_reason"]  → enum value (as string)
               metadata["last_consolidated_turn"]    → optional, current user_turns
+              metadata["last_consolidation_debug"]  → optional debug payload
           - Persists the updated session via save_session().
 
-        This helper is intentionally kept internal to SessionManager, so
-        higher-level components only see a single place where consolidation
-        status is tracked.
+        The debug payload is intentionally small and JSON-serializable so it
+        can be logged or inspected by tooling without additional parsing.
         """
         now_utc = datetime.now(timezone.utc).isoformat()
 
         session.metadata["last_consolidated_at"] = now_utc
-        session.metadata["last_consolidated_reason"] = reason
+        session.metadata["last_consolidated_reason"] = reason.value
 
         if turn is not None:
             session.metadata["last_consolidated_turn"] = int(turn)
 
+        if debug_info is not None:
+            session.metadata["last_consolidation_debug"] = debug_info
+
         # Persist the updated metadata (and refresh modification timestamp).
         await self.save_session(session)
+
+
+    def _is_mid_session_consolidation_allowed(self, session: ChatSession) -> bool:
+        """
+        Check whether we are allowed to run a mid-session consolidation
+        for the given session based on a simple cooldown.
+
+        Logic:
+          - If cooldown <= 0 → always allowed.
+          - If there is no 'last_consolidated_at' in metadata → allowed.
+          - If parsing the timestamp fails → allowed (fail-open).
+          - Otherwise, only allowed if at least `cooldown` seconds have
+            passed since the last consolidation.
+        """
+        cooldown = self._consolidation_cooldown_seconds
+        if cooldown <= 0:
+            return True
+
+        last_ts = session.metadata.get("last_consolidated_at")
+        if not isinstance(last_ts, str):
+            return True
+
+        try:
+            last_dt = datetime.fromisoformat(last_ts)
+        except ValueError:
+            # If we cannot parse, do not block consolidation.
+            return True
+
+        # Normalize to aware UTC datetimes.
+        if last_dt.tzinfo is None:
+            last_dt = last_dt.replace(tzinfo=timezone.utc)
+
+        now = datetime.now(timezone.utc)
+        elapsed_seconds = (now - last_dt).total_seconds()
+
+        return elapsed_seconds >= cooldown

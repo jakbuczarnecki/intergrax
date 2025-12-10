@@ -85,6 +85,12 @@ class GlobalSettings:
         int(raw_interval) if raw_interval and raw_interval.isdigit() else None
     )
 
+    raw_cooldown_sec = os.getenv("INTERGRAX_DEFAULT_CONSOLIDATION_COOLDOWN_SECONDS", None)
+
+    default_consolidation_cooldown_seconds: Optional[int] = (
+        int(raw_cooldown_sec) if raw_cooldown_sec and raw_cooldown_sec.isdigit() else None
+    )
+
 
 # Singleton-style global settings instance used across the framework.
 GLOBAL_SETTINGS = GlobalSettings()
