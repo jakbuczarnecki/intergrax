@@ -8,6 +8,8 @@ from pathlib import Path
 from yt_dlp import YoutubeDL
 import whisper
 
+from intergrax.globals.settings import GLOBAL_SETTINGS
+
 def yt_download_audio(youtube_url: str, out_dir: str | Path, audio_format: str = "mp3") -> Path:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -40,8 +42,8 @@ def yt_download_audio(youtube_url: str, out_dir: str | Path, audio_format: str =
     return filepath
 
 
-def translate_audio(audio_path:str, model:str="medium", language:str="en"):
+def translate_audio(audio_path:str, model:str="medium", language:str=GLOBAL_SETTINGS.default_language):
     model = whisper.load_model("medium")
-    options = dict(task="translate", best_of=1, language="en")
+    options = dict(task="translate", best_of=1, language=language)
     results = model.transcribe(str(audio_path), **options)
     return results

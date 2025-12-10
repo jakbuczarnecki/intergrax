@@ -30,7 +30,7 @@ class SessionMemoryConsolidationConfig:
 
     # Target language for extracted content (facts, preferences, summaries).
     # If you introduce GLOBAL_SETTINGS, you can set the default from there.
-    language: str = "pl"
+    language: str = GLOBAL_SETTINGS.default_language
 
     # Maximum number of extracted USER_FACT entries to persist.
     max_facts: int = 8
