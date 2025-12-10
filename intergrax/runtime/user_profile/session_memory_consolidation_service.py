@@ -10,7 +10,7 @@ from typing import List, Optional, Sequence, Dict, Any
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.base import LLMAdapter
-from intergrax.llm.messages import ChatMessage
+from intergrax.llm.messages import ChatMessage, MessageRole
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_memory import (
     UserProfileMemoryEntry,
@@ -54,7 +54,7 @@ class SessionMemoryConsolidationConfig:
     max_conversation_chars: int = 6000
 
     # Temperature for the LLM call that extracts memory.
-    temperature: float = 0.1
+    temperature: Optional[float] = None
 
     # Whether this service should trigger regeneration of user-level
     # system instructions after storing new memory entries.
@@ -64,12 +64,18 @@ class SessionMemoryConsolidationConfig:
     # already exist and the instructions-service config would normally skip it.
     force_regenerate_system_instructions: bool = False
 
+    # Which message roles from the conversation should be considered when
+    # building the consolidation prompt. By default we focus on user/assistant
+    # turns and skip system/tool messages.
+    included_roles: Sequence[MessageRole] = ("user", "assistant")
+
     # Optional extra knobs (e.g. style hints, domain hints).
     extra: Dict[str, Any] = None
 
     def __post_init__(self) -> None:
         if self.extra is None:
             self.extra = {}
+
             
 
 class SessionMemoryConsolidationService:
@@ -176,6 +182,8 @@ class SessionMemoryConsolidationService:
     ) -> List[ChatMessage]:
         """
         Take the raw session messages and trim them so that:
+          - only messages with roles listed in config.included_roles
+            are considered,
           - at most max_messages_in_prompt are included,
           - the total concatenated content length does not exceed
             max_conversation_chars (oldest messages are removed first).
@@ -183,16 +191,25 @@ class SessionMemoryConsolidationService:
         if not messages:
             return []
 
+        # Filter by allowed roles first.
+        filtered: List[ChatMessage] = []
+        for msg in messages:            
+            if msg.role in self._config.included_roles:
+                filtered.append(msg)
+
+        if not filtered:
+            return []
+
         # Use only the last N messages by default.
-        if len(messages) > self._config.max_messages_in_prompt:
-            messages = list(messages)[-self._config.max_messages_in_prompt :]
+        if len(filtered) > self._config.max_messages_in_prompt:
+            filtered = filtered[-self._config.max_messages_in_prompt :]
 
         # Further trim by character budget.
         total_chars = 0
         trimmed: List[ChatMessage] = []
 
         # Iterate from the end (most recent) backwards, accumulate until budget.
-        for msg in reversed(messages):
+        for msg in reversed(filtered):
             content = msg.content or ""
             length = len(content)
             if total_chars + length > self._config.max_conversation_chars:
@@ -203,6 +220,7 @@ class SessionMemoryConsolidationService:
         # Reverse again so that they are in chronological order.
         trimmed.reverse()
         return trimmed
+
 
     # -------------------------------------------------------------------------
     # Internal: prompt building and LLM call
@@ -218,14 +236,19 @@ class SessionMemoryConsolidationService:
         Build a plain-text representation of the conversation and a task
         description for the LLM. The model will be asked to output a JSON
         structure describing facts, preferences and a session summary.
+
+        The goal of this prompt is to extract ONLY long-term, re-usable
+        information that will improve future conversations with this user,
+        and to avoid hallucinations or speculative content.
         """
         conversation_lines: List[str] = []
         for m in messages:
-            role = m.role
             content = (m.content or "").strip()
             if not content:
                 continue
-            conversation_lines.append(f"{role}: {content}")
+            # We keep the role label mainly for context; the actual filtering
+            # by included_roles happens earlier in _prepare_conversation_for_prompt.
+            conversation_lines.append(f"{m.role}: {content}")
 
         conversation_block = "\n".join(conversation_lines) or "(empty session)"
 
@@ -236,17 +259,41 @@ from a single chat session.
 Your task:
 - Read the conversation below.
 - Decide which pieces of information are:
-    * stable user facts or goals (USER_FACT),
-    * stable or recurring preferences (PREFERENCE),
-    * a short global summary of what happened in this session (SESSION_SUMMARY).
+    * USER_FACT  - stable facts or long-term goals about the user
+                   (e.g. background, skills, health constraints, recurring goals).
+    * PREFERENCE - stable or recurring preferences about communication,
+                   workflow, tools, style, or constraints (e.g. "no emojis in code").
+    * SESSION_SUMMARY - a short global summary of what happened in this
+                   specific session, useful as context for future work.
+
+Important distinctions:
+- USER_FACT:
+    - Should be true regardless of a single session.
+    - Describes who the user is, what they does, what they cares about,
+      which constraints and long-term goals they have.
+    - Example: "The user is a senior software engineer working with Python and .NET."
+- PREFERENCE:
+    - Describes how the user wants the assistant to respond or work.
+    - Example: "The user prefers very technical, concise answers in English,
+      without emojis and with code examples."
+- SESSION_SUMMARY:
+    - High-level recap of the current session only.
+    - Should mention the main problem(s), decisions, and next steps.
+    - Avoid very fine-grained step-by-step details.
 
 Rules:
 - Focus ONLY on information that will be useful across many future sessions.
-- Ignore transient, very local details that are unlikely to matter later.
-- Avoid time-sensitive language such as "today", "recently" etc.
+- Ignore transient, local details that are unlikely to matter later
+  (e.g. one-off examples, small talk, debug attempts that will not repeat).
+- Ignore meta-information about the model itself (e.g. that you are an AI).
+- Do NOT invent facts that are not clearly supported by the conversation.
+- If you are not sure whether something is true or stable, either:
+    * skip it, or
+    * mark it with LOWER importance (LOW).
+- Avoid time-sensitive language such as "today", "recently", "this week".
 - Use the target language: {self._config.language}.
-- If there is nothing meaningful for a category, use an empty list or null.
-- Do NOT include sensitive data that should not be stored long-term.
+- Do NOT include sensitive data that should not be stored long-term
+  (e.g. passwords, tokens, very private health details).
 - Keep the content concise but precise.
 
 Output format:
@@ -258,7 +305,7 @@ Return a single JSON object with the following structure:
       "title": "short label",
       "content": "concise description of the fact or goal",
       "importance": "LOW | MEDIUM | HIGH | CRITICAL",
-      "tags": ["user", "health", "goal"]
+      "tags": ["user", "goal"]
     }}
   ],
   "preferences": [
@@ -280,7 +327,9 @@ Return a single JSON object with the following structure:
 Constraints:
 - Return ONLY valid JSON (no comments, no trailing commas, no markdown).
 - If you do not want to provide a session summary, set "session_summary": null.
-- Respect the importance scale: HIGH/CRITICAL only for very important items.
+- Respect the importance scale: use HIGH or CRITICAL only for items that
+  are clearly central for future collaboration and appear strongly in the
+  conversation.
 
 Session identifier (for your reasoning only, do not repeat it verbatim):
 - session_id: {session_id}
@@ -288,6 +337,7 @@ Session identifier (for your reasoning only, do not repeat it verbatim):
 Conversation:
 {conversation_block}
 """
+
 
     async def _call_llm(self, prompt_text: str) -> str:
         """
