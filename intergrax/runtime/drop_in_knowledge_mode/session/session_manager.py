@@ -7,12 +7,19 @@ from datetime import datetime, timezone
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm.messages import ChatMessage
 from intergrax.memory.user_profile_manager import UserProfileManager
-from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
-from intergrax.runtime.drop_in_knowledge_mode.session.session_storage import SessionStorage
+from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import (
+    ChatSession,
+    SessionCloseReason,
+)
+from intergrax.runtime.drop_in_knowledge_mode.session.session_storage import (
+    SessionStorage,
+)
 from intergrax.runtime.organization.organization_profile_manager import (
     OrganizationProfileManager,
 )
-from intergrax.runtime.user_profile.session_memory_consolidation_service import SessionMemoryConsolidationService
+from intergrax.runtime.user_profile.session_memory_consolidation_service import (
+    SessionMemoryConsolidationService,
+)
 
 
 class SessionConsolidationReason(str, Enum):
@@ -21,9 +28,10 @@ class SessionConsolidationReason(str, Enum):
     Keeping this as `str` + `Enum` ensures that the value
     is safe to serialize into metadata and logs.
     """
+
     MID_SESSION = "mid_session"
     CLOSE_SESSION = "close_session"
-    
+
 
 class SessionManager:
     """
@@ -34,6 +42,7 @@ class SessionManager:
       - Provide a stable API for the runtime engine (DropInKnowledgeRuntime).
       - Integrate with user/organization profile managers to expose
         prompt-ready system instructions per session.
+      - Optionally trigger long-term user memory consolidation for a session.
 
     This class should be the *only* component that the runtime engine
     talks to when it comes to sessions and their metadata/history.
@@ -45,10 +54,39 @@ class SessionManager:
         *,
         user_profile_manager: Optional[UserProfileManager] = None,
         organization_profile_manager: Optional[OrganizationProfileManager] = None,
-        session_memory_consolidation_service: Optional[SessionMemoryConsolidationService] = None,
-        user_turns_consolidation_interval: Optional[int] = GLOBAL_SETTINGS.default_user_turns_consolidation_interval,
-        consolidation_cooldown_seconds: Optional[int] = GLOBAL_SETTINGS.default_consolidation_cooldown_seconds,
+        session_memory_consolidation_service: Optional[
+            SessionMemoryConsolidationService
+        ] = None,
+        user_turns_consolidation_interval: Optional[
+            int
+        ] = GLOBAL_SETTINGS.default_user_turns_consolidation_interval,
+        consolidation_cooldown_seconds: Optional[
+            int
+        ] = GLOBAL_SETTINGS.default_consolidation_cooldown_seconds,
     ) -> None:
+        """
+        Initialize a new SessionManager instance.
+
+        Args:
+            storage:
+                Low-level session + history storage backend (in-memory, DB, etc.).
+            user_profile_manager:
+                Optional manager used to resolve user-level system instructions
+                and to write long-term user profile memory.
+            organization_profile_manager:
+                Optional manager used to resolve organization-level
+                system instructions (per tenant / org).
+            session_memory_consolidation_service:
+                Optional service responsible for consolidating a single session
+                into long-term user profile memory entries and refreshing
+                user-level system instructions.
+            user_turns_consolidation_interval:
+                Interval (in user turns) for mid-session consolidation.
+                If None or non-positive, mid-session consolidation is disabled.
+            consolidation_cooldown_seconds:
+                Cooldown (in seconds) between mid-session consolidations for a
+                single session. If None or non-positive, no cooldown is applied.
+        """
         # Low-level storage backend (in-memory, DB, Redis, etc.).
         self._storage = storage
 
@@ -59,13 +97,37 @@ class SessionManager:
         # Optional service that can consolidate a single session into
         # long-term user profile memory entries and refresh user-level
         # system instructions.
-        self._session_memory_consolidation_service = session_memory_consolidation_service
+        self._session_memory_consolidation_service = (
+            session_memory_consolidation_service
+        )
 
-        # Effective interval used by append_message() mid-session hook.
-        self._user_turns_consolidation_interval = user_turns_consolidation_interval
+        # Resolve the effective interval for mid-session consolidation.
+        # The value is interpreted as:
+        #   - > 0  → consolidate every N-th user message,
+        #   - <= 0 → mid-session consolidation disabled.
+        if (
+            user_turns_consolidation_interval is not None
+            and user_turns_consolidation_interval > 0
+        ):
+            effective_interval = user_turns_consolidation_interval
+        else:
+            effective_interval = 0
+
+        self._user_turns_consolidation_interval: int = effective_interval
 
         # Effective cooldown in seconds between mid-session consolidations.
-        self._consolidation_cooldown_seconds: int = consolidation_cooldown_seconds
+        # The value is interpreted as:
+        #   - > 0  → enforce cooldown,
+        #   - <= 0 → no cooldown (only the interval is applied).
+        if (
+            consolidation_cooldown_seconds is not None
+            and consolidation_cooldown_seconds > 0
+        ):
+            effective_cooldown = consolidation_cooldown_seconds
+        else:
+            effective_cooldown = 0
+
+        self._consolidation_cooldown_seconds: int = effective_cooldown
 
     # ------------------------------------------------------------------
     # Session lifecycle (metadata)
@@ -116,7 +178,7 @@ class SessionManager:
         self,
         session_id: str,
         *,
-        reason: Optional[str] = None,
+        reason: Optional[SessionCloseReason] = None,
     ) -> None:
         """
         Mark a session as closed at the domain level and, if configured,
@@ -130,13 +192,26 @@ class SessionManager:
               * call consolidate_session(user_id, session_id, messages)
                 to extract long-term memory entries and update the
                 user's system_instructions (side-effect).
+
+        Args:
+            session_id:
+                Identifier of the session to close.
+            reason:
+                Optional domain-level reason. If None, a default
+                SessionCloseReason.EXPLICIT is used.
         """
         session = await self._storage.get_session(session_id)
         if session is None:
             return
 
+        # Decide which close reason to apply. If caller did not provide one,
+        # we use EXPLICIT as the default semantic.
+        effective_reason = reason or SessionCloseReason.EXPLICIT
+
         # 1) Domain-level close (no deletion of messages).
-        session.mark_closed(reason=reason)
+        #    ChatSession is responsible for updating its own status and
+        #    closed_reason according to the enum value.
+        session.mark_closed(reason=effective_reason)
         await self._storage.save_session(session)
 
         # 2) Optional: consolidate this session into long-term user memory.
@@ -168,13 +243,11 @@ class SessionManager:
                 await self._mark_session_consolidated(
                     session,
                     reason=SessionConsolidationReason.CLOSE_SESSION,
-                    # We can optionally store the final user_turns value
-                    # to indicate at which point the last consolidation happened.
-                    turn=int(session.metadata.get("user_turns", 0) or 0),
-                    debug_info=debug_info
+                    # Store the final user_turns value to indicate at which
+                    # point the last consolidation happened.
+                    turn=session.user_turns,
+                    debug_info=debug_info,
                 )
-
-
 
     async def list_sessions_for_user(
         self,
@@ -201,14 +274,16 @@ class SessionManager:
 
         Domain rules:
           - For user messages, increment the per-session "user_turns" counter
-            stored in ChatSession.metadata["user_turns"].
+            stored in ChatSession.user_turns.
+          - Optionally, every N-th user message, trigger mid-session
+            long-term memory consolidation for this session.
           - Trimming / retention policies for history are implemented by the
             underlying storage (e.g. ConversationalMemory).
 
         Note:
-          - This method intentionally keeps domain logic (user_turns) at the
-            manager level, while the storage remains responsible only for
-            persisting sessions and their history.
+          - This method intentionally keeps domain logic (user_turns and
+            consolidation hooks) at the manager level, while the storage
+            remains responsible only for persisting sessions and their history.
         """
         # Try to load the session so we can apply domain-level updates
         # (user_turns counter, timestamps, etc.).
@@ -218,7 +293,7 @@ class SessionManager:
         # session exists. If the session is missing, we delegate error
         # handling to the storage.append_message call below.
         if session is not None and message.role == "user":
-            # This updates in-memory metadata and timestamps; persistence is
+            # This updates in-memory state and timestamps; persistence is
             # delegated to save_session().
             user_turns = session.increment_user_turns()
             await self.save_session(session)
@@ -229,10 +304,12 @@ class SessionManager:
                 and session.user_id
             ):
                 interval = self._user_turns_consolidation_interval
-                # Only trigger if the interval is positive and we reached
-                # an exact multiple, e.g. 8, 16, 24...
+                # Only trigger if:
+                #   - the interval is positive,
+                #   - we reached an exact multiple (e.g. 8, 16, 24...),
+                #   - and the cooldown since the last consolidation has passed.
                 if (
-                    interval > 0 
+                    interval > 0
                     and (user_turns % interval) == 0
                     and self._is_mid_session_consolidation_allowed(session)
                 ):
@@ -251,14 +328,16 @@ class SessionManager:
                         )
 
                         # Build a small debug payload based on the stored entries.
-                        debug_info = self._build_consolidation_debug_info(stored_entries)
+                        debug_info = self._build_consolidation_debug_info(
+                            stored_entries
+                        )
 
                         # Record consolidation metadata for debugging and future heuristics.
                         await self._mark_session_consolidated(
                             session,
                             reason=SessionConsolidationReason.MID_SESSION,
                             turn=user_turns,
-                            debug_info=debug_info
+                            debug_info=debug_info,
                         )
 
         # Delegate message persistence to the storage backend. The storage
@@ -295,19 +374,20 @@ class SessionManager:
         Return a prompt-ready user profile instruction string for this session.
 
         Behavior:
-          - If a cached value is present in session.metadata["user_profile_instructions"],
-            it is returned (after stripping whitespace).
+          - If a cached value is present in session.user_profile_instructions
+            and the session is not marked as requiring a refresh, it is
+            returned (after stripping whitespace).
           - Otherwise this method delegates to UserProfileManager, calling
             `get_system_instructions_for_user(user_id)` which returns the
             effective user-level system instructions (already including any
-            internal fallbacks), caches the resulting string in metadata,
+            internal fallbacks), caches the resulting string on the session,
             and saves the updated session.
 
         Semantics:
           - Instructions are effectively *snapshotted per session*.
-            If the underlying user profile changes, existing sessions
-            keep their cached version until explicitly refreshed or
-            the session is recreated.
+            If the underlying user profile changes (e.g. after consolidation),
+            the session can be marked as requiring a refresh and will then
+            re-resolve instructions on the next call.
         """
         # No associated user or no profile manager → no instructions.
         if not session.user_id:
@@ -315,9 +395,11 @@ class SessionManager:
         if self._user_profile_manager is None:
             return None
 
-        # 1) Try cached instructions from session metadata.
-        cached = session.metadata.get("user_profile_instructions")
-        if isinstance(cached, str):
+        needs_refresh = session.needs_user_instructions_refresh
+
+        # 1) Try cached instructions from the session.
+        cached = session.user_profile_instructions
+        if not needs_refresh and isinstance(cached, str):
             stripped = cached.strip()
             if stripped:
                 return stripped
@@ -336,8 +418,10 @@ class SessionManager:
         if not stripped:
             return None
 
-        # 3) Cache in session metadata and persist the session.
-        session.metadata["user_profile_instructions"] = stripped
+        # 3) Cache on the session and persist.
+        session.user_profile_instructions = stripped
+        session.needs_user_instructions_refresh = False
+
         await self.save_session(session)
 
         return stripped
@@ -355,11 +439,12 @@ class SessionManager:
         for this session.
 
         Behavior:
-          - If a cached value is present in session.metadata["org_profile_instructions"],
+          - If a cached value is present in session.org_profile_instructions,
             it is returned (after stripping whitespace).
           - Otherwise this method delegates to OrganizationProfileManager, calling
             `get_system_instructions_for_organization(organization_id, ...)`,
-            caches the resulting string in metadata, and saves the updated session.
+            caches the resulting string on the session, and saves the updated
+            session.
 
         Note:
           - This method no longer uses prompt bundles; it works purely on
@@ -372,8 +457,8 @@ class SessionManager:
         if self._organization_profile_manager is None:
             return None
 
-        # 1) Try cached instructions from session metadata.
-        cached = session.metadata.get("org_profile_instructions")
+        # 1) Try cached instructions from the session.
+        cached = session.org_profile_instructions
         if isinstance(cached, str):
             stripped = cached.strip()
             if stripped:
@@ -392,11 +477,15 @@ class SessionManager:
         if not stripped:
             return None
 
-        # 3) Cache in session metadata and persist the session.
-        session.metadata["org_profile_instructions"] = stripped
+        # 3) Cache on the session and persist.
+        session.org_profile_instructions = stripped
         await self.save_session(session)
 
         return stripped
+
+    # ------------------------------------------------------------------
+    # Consolidation helpers
+    # ------------------------------------------------------------------
 
     @staticmethod
     def _build_consolidation_debug_info(
@@ -407,16 +496,23 @@ class SessionManager:
         consolidation run.
 
         The structure is intentionally simple and JSON-serializable so it can
-        be safely stored in session.metadata["last_consolidation_debug"].
+        be safely stored in session.last_consolidation_debug.
         """
         total = len(entries)
 
-        # Try to infer entry types in a defensive way. We avoid importing
-        # UserProfileMemoryEntry here to keep this manager decoupled from
-        # the concrete memory model; instead we use getattr.
+        # Try to infer entry types in a defensive way. We deliberately avoid
+        # using getattr(...) here. Instead:
+        #   - if the object exposes an 'entry_type' attribute, we use it,
+        #   - otherwise we fallback to the literal "unknown".
         type_counts: Dict[str, int] = {}
         for e in entries:
-            entry_type = getattr(e, "entry_type", None) or "unknown"
+            if hasattr(e, "entry_type"):
+                # We ignore type-checker complaints here because not all
+                # objects in the list are guaranteed to have this attribute.
+                entry_type = e.entry_type  # type: ignore[attr-defined]
+            else:
+                entry_type = "unknown"
+
             key = str(entry_type)
             type_counts[key] = type_counts.get(key, 0) + 1
 
@@ -424,7 +520,6 @@ class SessionManager:
             "entries_count": total,
             "entry_types": type_counts,
         }
-
 
     async def _mark_session_consolidated(
         self,
@@ -439,30 +534,40 @@ class SessionManager:
         user memory.
 
         Side effects:
-          - Updates metadata fields:
-              metadata["last_consolidated_at"]      → ISO-8601 UTC timestamp
-              metadata["last_consolidated_reason"]  → enum value (as string)
-              metadata["last_consolidated_turn"]    → optional, current user_turns
-              metadata["last_consolidation_debug"]  → optional debug payload
+          - Updates typed consolidation fields on the ChatSession:
+              last_consolidated_at
+              last_consolidated_reason
+              last_consolidated_turn
+              last_consolidation_debug
+              needs_user_instructions_refresh
           - Persists the updated session via save_session().
 
         The debug payload is intentionally small and JSON-serializable so it
         can be logged or inspected by tooling without additional parsing.
         """
-        now_utc = datetime.now(timezone.utc).isoformat()
+        # When using typed fields we keep the timestamp as a proper datetime
+        # object in UTC. If string serialization is needed (e.g. for DB),
+        # the storage backend is responsible for that conversion.
+        now_utc = datetime.now(timezone.utc)
 
-        session.metadata["last_consolidated_at"] = now_utc
-        session.metadata["last_consolidated_reason"] = reason.value
+        session.last_consolidated_at = now_utc
+        session.last_consolidated_reason = reason.value
+
+        # Mark that the underlying user profile may have changed
+        # (new memory entries, regenerated system_instructions).
+        # Existing sessions should refresh their cached instructions
+        # on the next call to get_user_profile_instructions_for_session().
+        session.needs_user_instructions_refresh = True
 
         if turn is not None:
-            session.metadata["last_consolidated_turn"] = int(turn)
+            session.last_consolidated_turn = int(turn)
 
         if debug_info is not None:
-            session.metadata["last_consolidation_debug"] = debug_info
+            session.last_consolidation_debug = debug_info
 
-        # Persist the updated metadata (and refresh modification timestamp).
+        # Persist the updated consolidation metadata (and refresh modification
+        # timestamp via save_session()).
         await self.save_session(session)
-
 
     def _is_mid_session_consolidation_allowed(self, session: ChatSession) -> bool:
         """
@@ -471,26 +576,20 @@ class SessionManager:
 
         Logic:
           - If cooldown <= 0 → always allowed.
-          - If there is no 'last_consolidated_at' in metadata → allowed.
-          - If parsing the timestamp fails → allowed (fail-open).
+          - If there is no last_consolidated_at on the session → allowed.
           - Otherwise, only allowed if at least `cooldown` seconds have
             passed since the last consolidation.
         """
         cooldown = self._consolidation_cooldown_seconds
+
         if cooldown <= 0:
             return True
 
-        last_ts = session.metadata.get("last_consolidated_at")
-        if not isinstance(last_ts, str):
+        last_dt = session.last_consolidated_at
+        if last_dt is None:
             return True
 
-        try:
-            last_dt = datetime.fromisoformat(last_ts)
-        except ValueError:
-            # If we cannot parse, do not block consolidation.
-            return True
-
-        # Normalize to aware UTC datetimes.
+        # Ensure we are working with an aware UTC datetime.
         if last_dt.tzinfo is None:
             last_dt = last_dt.replace(tzinfo=timezone.utc)
 
