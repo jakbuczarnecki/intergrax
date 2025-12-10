@@ -69,7 +69,7 @@ class SessionStorage(Protocol):
         self,
         user_id: str,
         *,
-        limit: int = 50,
+        limit: Optional[int] = None,
     ) -> List[ChatSession]:
         """
         List recent sessions for a given user, ordered by recency

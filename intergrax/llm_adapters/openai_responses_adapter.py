@@ -129,7 +129,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: float = None,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ) -> str:
         """
@@ -154,7 +154,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: float = None,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ) -> Iterable[str]:
         """
@@ -198,7 +198,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         tools_schema,
         *,
-        temperature: float = None,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         tool_choice=None,
     ) -> Dict[str, Any]:
@@ -276,7 +276,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         output_model: type,
         *,
-        temperature: float = None,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ):
         """

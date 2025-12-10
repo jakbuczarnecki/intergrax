@@ -1,11 +1,10 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
-
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any, Dict, List, Optional
+from datetime import datetime, timezone
 
+from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm.messages import ChatMessage
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
@@ -13,7 +12,18 @@ from intergrax.runtime.drop_in_knowledge_mode.session.session_storage import Ses
 from intergrax.runtime.organization.organization_profile_manager import (
     OrganizationProfileManager,
 )
+from intergrax.runtime.user_profile.session_memory_consolidation_service import SessionMemoryConsolidationService
 
+
+class SessionConsolidationReason(str, Enum):
+    """
+    Enumeration of session consolidation triggers.
+    Keeping this as `str` + `Enum` ensures that the value
+    is safe to serialize into metadata and logs.
+    """
+    MID_SESSION = "mid_session"
+    CLOSE_SESSION = "close_session"
+    
 
 class SessionManager:
     """
@@ -35,6 +45,8 @@ class SessionManager:
         *,
         user_profile_manager: Optional[UserProfileManager] = None,
         organization_profile_manager: Optional[OrganizationProfileManager] = None,
+        session_memory_consolidation_service: Optional[SessionMemoryConsolidationService] = None,
+        user_turns_consolidation_interval: Optional[int] = GLOBAL_SETTINGS.default_user_turns_consolidation_interval,
     ) -> None:
         # Low-level storage backend (in-memory, DB, Redis, etc.).
         self._storage = storage
@@ -42,6 +54,14 @@ class SessionManager:
         # High-level managers for profile-based instructions (optional).
         self._user_profile_manager = user_profile_manager
         self._organization_profile_manager = organization_profile_manager
+
+        # Optional service that can consolidate a single session into
+        # long-term user profile memory entries and refresh user-level
+        # system instructions.
+        self._session_memory_consolidation_service = session_memory_consolidation_service
+
+        # Effective interval used by append_message() mid-session hook.
+        self._user_turns_consolidation_interval = user_turns_consolidation_interval
 
     # ------------------------------------------------------------------
     # Session lifecycle (metadata)
@@ -88,7 +108,6 @@ class SessionManager:
         session.touch()
         await self._storage.save_session(session)
 
-    
     async def close_session(
         self,
         session_id: str,
@@ -96,26 +115,63 @@ class SessionManager:
         reason: Optional[str] = None,
     ) -> None:
         """
-        Mark a session as closed at the domain level.
+        Mark a session as closed at the domain level and, if configured,
+        trigger long-term memory consolidation for this session.
 
-        This does NOT delete messages or remove the session. It only updates
-        metadata so that higher-level components (APIs, UI, runtime) can
-        treat the session as no longer active.
+        Behavior:
+          - Mark the ChatSession as closed and persist it.
+          - If a SessionMemoryConsolidationService is available and the
+            session has an associated user_id:
+              * load the conversation history for this session,
+              * call consolidate_session(user_id, session_id, messages)
+                to extract long-term memory entries and update the
+                user's system_instructions (side-effect).
         """
         session = await self._storage.get_session(session_id)
         if session is None:
             return
 
-        # Use domain logic encapsulated in ChatSession.
+        # 1) Domain-level close (no deletion of messages).
         session.mark_closed(reason=reason)
         await self._storage.save_session(session)
+
+        # 2) Optional: consolidate this session into long-term user memory.
+        #    We only do this if:
+        #      - the service is configured, and
+        #      - the session is associated with a user_id.
+        if (
+            self._session_memory_consolidation_service is not None
+            and session.user_id
+        ):
+            # Fetch full conversation history for this session. This allows the
+            # consolidation service to decide how much to trim and which parts
+            # to keep, based on its own config (max messages, char budget, etc.).
+            messages = await self.get_history_for_session(session_id)
+
+            # If there's no history, there is nothing to consolidate.
+            if messages:
+                await self._session_memory_consolidation_service.consolidate_session(
+                    user_id=session.user_id,
+                    session_id=session_id,
+                    messages=messages,
+                )
+
+                # Mark that this session has been consolidated as part of close_session.
+                await self._mark_session_consolidated(
+                    session,
+                    reason=SessionConsolidationReason.CLOSE_SESSION,
+                    # We can optionally store the final user_turns value
+                    # to indicate at which point the last consolidation happened.
+                    turn=int(session.metadata.get("user_turns", 0) or 0),
+                )
+
 
 
     async def list_sessions_for_user(
         self,
         user_id: str,
         *,
-        limit: int = 50,
+        limit: Optional[int] = None,
     ) -> List[ChatSession]:
         """
         List recent sessions for a given user, ordered by recency.
@@ -134,9 +190,61 @@ class SessionManager:
         """
         Append a single message to the conversation history of a session.
 
-        Trimming / retention policies are implemented by the storage
-        (e.g. via ConversationalMemory in an in-memory backend).
+        Domain rules:
+          - For user messages, increment the per-session "user_turns" counter
+            stored in ChatSession.metadata["user_turns"].
+          - Trimming / retention policies for history are implemented by the
+            underlying storage (e.g. ConversationalMemory).
+
+        Note:
+          - This method intentionally keeps domain logic (user_turns) at the
+            manager level, while the storage remains responsible only for
+            persisting sessions and their history.
         """
+        # Try to load the session so we can apply domain-level updates
+        # (user_turns counter, timestamps, etc.).
+        session = await self._storage.get_session(session_id)
+
+        # Increment user_turns only for user messages and only if the
+        # session exists. If the session is missing, we delegate error
+        # handling to the storage.append_message call below.
+        if session is not None and message.role == "user":
+            # This updates in-memory metadata and timestamps; persistence is
+            # delegated to save_session().
+            user_turns = session.increment_user_turns()
+            await self.save_session(session)
+
+            # Decide whether to trigger mid-session consolidation.
+            if (
+                self._session_memory_consolidation_service is not None
+                and session.user_id
+                and self._user_turns_consolidation_interval is not None
+            ):
+                interval = self._user_turns_consolidation_interval
+                # Only trigger if the interval is positive and we reached
+                # an exact multiple, e.g. 8, 16, 24...
+                if interval > 0 and (user_turns % interval) == 0:
+                    # Fetch the current conversation history for this session.
+                    # The consolidation service is responsible for trimming
+                    # or summarizing as needed based on its own config.
+                    messages = await self.get_history_for_session(session_id)
+
+                    if messages:
+                        await self._session_memory_consolidation_service.consolidate_session(
+                            user_id=session.user_id,
+                            session_id=session_id,
+                            messages=messages,
+                        )
+
+                        # Record consolidation metadata for debugging and future heuristics.
+                        await self._mark_session_consolidated(
+                            session,
+                            reason=SessionConsolidationReason.MID_SESSION,
+                            turn=user_turns,
+                        )
+
+        # Delegate message persistence to the storage backend. The storage
+        # may apply its own retention/trimming logic (FIFO, max_messages, etc.).
         return await self._storage.append_message(session_id, message)
 
     async def get_history_for_session(
@@ -271,3 +379,37 @@ class SessionManager:
         await self.save_session(session)
 
         return stripped
+
+
+    async def _mark_session_consolidated(
+        self,
+        session: ChatSession,
+        *,
+        reason: SessionConsolidationReason,
+        turn: Optional[int] = None,
+    ) -> None:
+        """
+        Mark the given session as having been consolidated into long-term
+        user memory.
+
+        Side effects:
+          - Updates metadata fields:
+              metadata["last_consolidated_at"]      → ISO-8601 UTC timestamp
+              metadata["last_consolidated_reason"]  → e.g. "mid_session" or "close_session"
+              metadata["last_consolidated_turn"]    → optional, current user_turns
+          - Persists the updated session via save_session().
+
+        This helper is intentionally kept internal to SessionManager, so
+        higher-level components only see a single place where consolidation
+        status is tracked.
+        """
+        now_utc = datetime.now(timezone.utc).isoformat()
+
+        session.metadata["last_consolidated_at"] = now_utc
+        session.metadata["last_consolidated_reason"] = reason
+
+        if turn is not None:
+            session.metadata["last_consolidated_turn"] = int(turn)
+
+        # Persist the updated metadata (and refresh modification timestamp).
+        await self.save_session(session)

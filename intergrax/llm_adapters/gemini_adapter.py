@@ -72,7 +72,7 @@ class GeminiChatAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: float = 0.2,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ) -> str:
         sys_txt, convo = self._split_system(messages)
@@ -94,7 +94,7 @@ class GeminiChatAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: float = 0.2,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ) -> Iterable[str]:
         # Simple fallback streaming: single-shot only
@@ -116,7 +116,7 @@ class GeminiChatAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         output_model: type,
         *,
-        temperature: float = 0.2,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ):
         """
