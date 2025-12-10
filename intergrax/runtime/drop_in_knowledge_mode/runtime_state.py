@@ -43,10 +43,6 @@ class RuntimeState:
     # ContextBuilder intermediate result (history + retrieved chunks)
     context_builder_result: Optional[Any] = None
 
-    # Memory layer (will be filled by _step_memory_layer)
-    user_memory_messages: List[ChatMessage] = field(default_factory=list)
-    org_memory_messages: List[ChatMessage] = field(default_factory=list)
-
     # Profile-based instruction fragments prepared by the memory layer
     profile_user_instructions: Optional[str] = None
     profile_org_instructions: Optional[str] = None

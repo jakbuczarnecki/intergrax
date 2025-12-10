@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import uuid
+from dataclasses import replace
 from typing import Dict, List, Optional
 
 from intergrax.llm.messages import ChatMessage
@@ -54,9 +55,14 @@ class InMemorySessionStorage(SessionStorage):
     async def get_session(self, session_id: str) -> Optional[ChatSession]:
         """
         Return the session metadata if it exists, else None.
-        """
-        return self._sessions.get(session_id)
 
+        A shallow copy of the session is returned so that callers cannot
+        accidentally mutate the internal storage without calling save_session().
+        """
+        session = self._sessions.get(session_id)
+        if session is None:
+            return None
+        return replace(session)
 
     async def create_session(
         self,
@@ -87,7 +93,7 @@ class InMemorySessionStorage(SessionStorage):
         )
 
         self._sessions[session_id] = session
-        return session
+        return replace(session)
 
     async def save_session(self, session: ChatSession) -> None:
         """
@@ -109,10 +115,12 @@ class InMemorySessionStorage(SessionStorage):
         """
         sessions = [s for s in self._sessions.values() if s.user_id == user_id]
         sessions.sort(key=lambda s: s.updated_at, reverse=True)
-        if limit:
-            return sessions[:limit]
-        
-        return sessions
+
+        if limit is not None and limit > 0:
+            sessions = sessions[:limit]
+
+        # Return copies so callers cannot mutate internal state directly.
+        return [replace(s) for s in sessions]
 
     # ------------------------------------------------------------------
     # Conversation history operations

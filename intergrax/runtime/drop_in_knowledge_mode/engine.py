@@ -418,8 +418,6 @@ class DropInKnowledgeRuntime:
         # 5) Debug info
         state.debug_trace["memory_layer"] = {
             "implemented": True,
-            "user_memory_messages": len(state.user_memory_messages),
-            "org_memory_messages": len(state.org_memory_messages),
             "has_user_profile_instructions": bool(user_instr),
             "has_org_profile_instructions": bool(org_instr),
             "enable_user_profile_memory": cfg.enable_user_profile_memory,
