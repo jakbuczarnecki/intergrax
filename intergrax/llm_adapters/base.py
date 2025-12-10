@@ -208,7 +208,7 @@ class LLMAdapter(Protocol):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: float = 0.2,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ) -> str:
         ...
@@ -217,7 +217,7 @@ class LLMAdapter(Protocol):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: float = 0.2,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ) -> Iterable[str]:
         ...
@@ -231,7 +231,7 @@ class LLMAdapter(Protocol):
         messages: Sequence[ChatMessage],
         tools_schema: List[Dict[str, Any]],
         *,
-        temperature: float = 0.2,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
@@ -242,7 +242,7 @@ class LLMAdapter(Protocol):
         messages: Sequence[ChatMessage],
         tools_schema: List[Dict[str, Any]],
         *,
-        temperature: float = 0.2,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
     ) -> Iterable[Dict[str, Any]]:
@@ -254,7 +254,7 @@ class LLMAdapter(Protocol):
         messages: Sequence[ChatMessage],
         output_model: type,
         *,
-        temperature: float = 0.2,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ):
         ...

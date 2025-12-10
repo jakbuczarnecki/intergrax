@@ -4,6 +4,7 @@
 
 from typing import List, Dict, Any, Optional
 
+from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.websearch.schemas.query_spec import QuerySpec
 from intergrax.websearch.schemas.web_document import WebDocument
 from intergrax.websearch.providers.base import WebSearchProvider
@@ -36,9 +37,9 @@ class WebSearchExecutor:
         http_rate_per_sec: float = 2.0,
         http_capacity: int = 5,
         default_top_k: int = 8,
-        default_locale="en-US",
-        default_region="en-US",
-        default_language="en",
+        default_locale=GLOBAL_SETTINGS.default_locale,
+        default_region=GLOBAL_SETTINGS.default_region,
+        default_language=GLOBAL_SETTINGS.default_language,
         default_safe_search: bool = True,
         max_text_chars: int = 4000,
         query_cache: Optional[InMemoryQueryCache] = None,

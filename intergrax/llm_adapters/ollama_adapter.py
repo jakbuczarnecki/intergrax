@@ -175,7 +175,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: float = 0.2,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ) -> Iterable[str]:
         lc_msgs = self._to_lc_messages(messages)
@@ -203,7 +203,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         output_model: type,
         *,
-        temperature: float = 0.2,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ):
         """
@@ -242,7 +242,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         tools_schema,
         *,
-        temperature: float = 0.2,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         tool_choice=None,
     ):

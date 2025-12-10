@@ -31,7 +31,10 @@ from typing import List, Optional, Dict, Any
 
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.engine_history_layer import HistoryLayer
-from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import DefaultHistorySummaryPromptBuilder, HistorySummaryPromptBuilder
+from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import (
+    DefaultHistorySummaryPromptBuilder,
+    HistorySummaryPromptBuilder,
+)
 from intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder import (
     DefaultRagPromptBuilder,
     RagPromptBuilder,
@@ -165,6 +168,19 @@ class DropInKnowledgeRuntime:
         """
         state = RuntimeState(request=request)
 
+        # Initial trace entry for this request.
+        self._trace(
+            state,
+            component="engine",
+            step="run_start",
+            message="DropInKnowledgeRuntime.run() called.",
+            data={
+                "session_id": request.session_id,
+                "user_id": request.user_id,
+                "tenant_id": request.tenant_id or self._config.tenant_id,
+            },
+        )
+
         # 1. Session + ingestion
         await self._step_session_and_ingest(state)
 
@@ -197,10 +213,22 @@ class DropInKnowledgeRuntime:
 
         # 11. Persist + RuntimeAnswer
         runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
+
+        # Final trace entry for this request.
+        self._trace(
+            state,
+            component="engine",
+            step="run_end",
+            message="DropInKnowledgeRuntime.run() finished.",
+            data={
+                "strategy": runtime_answer.route.strategy,
+                "used_rag": runtime_answer.route.used_rag,
+                "used_websearch": runtime_answer.route.used_websearch,
+                "used_tools": runtime_answer.route.used_tools,
+            },
+        )
+
         return runtime_answer
-
-
-
 
     def run_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
         """
@@ -210,6 +238,39 @@ class DropInKnowledgeRuntime:
         such as simple scripts or some notebook setups.
         """
         return asyncio.run(self.run(request))
+
+    def _trace(
+        self,
+        state: RuntimeState,
+        *,
+        component: str,
+        step: str,
+        message: str,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Append a single, structured diagnostic entry to the state's debug_trace.
+
+        This helper:
+          - ensures a consistent schema for all pipeline steps,
+          - does not introspect objects (no getattr / reflection),
+          - relies only on data explicitly provided by the caller.
+        """
+        if data is None:
+            data = {}
+
+        trace = state.debug_trace
+        steps = trace.setdefault("steps", [])
+
+        steps.append(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "component": component,
+                "step": step,
+                "message": message,
+                "data": data,
+            }
+        )
 
     # ------------------------------------------------------------------
     # Step 1: session + ingestion (no history)
@@ -278,15 +339,30 @@ class DropInKnowledgeRuntime:
                 for r in ingestion_results
             ]
 
+        # Trace session and ingestion step.
+        self._trace(
+            state,
+            component="engine",
+            step="session_and_ingest",
+            message="Session loaded/created and user message appended; attachments ingested.",
+            data={
+                "session_id": session.id,
+                "user_id": session.user_id,
+                "tenant_id": session.tenant_id,
+                "attachments_count": len(req.attachments or []),
+                "ingestion_results_count": len(ingestion_results),
+            },
+        )
+
         state.session = session
         state.ingestion_results = ingestion_results
         state.debug_trace = debug_trace
         # NOTE: state.base_history is intentionally left empty here.
 
-
     # ------------------------------------------------------------------
     # Step 2: memory layer (user/org context + profile instructions)
     # ------------------------------------------------------------------
+
     async def _step_memory_layer(self, state: RuntimeState) -> None:
         """
         Load profile-based instruction fragments for this request.
@@ -351,16 +427,27 @@ class DropInKnowledgeRuntime:
             "enable_long_term_memory": cfg.enable_long_term_memory,
         }
 
+        # Trace memory layer step.
+        self._trace(
+            state,
+            component="engine",
+            step="memory_layer",
+            message="Profile-based instructions loaded for session.",
+            data={
+                "has_user_profile_instructions": bool(user_instr),
+                "has_org_profile_instructions": bool(org_instr),
+                "enable_user_profile_memory": cfg.enable_user_profile_memory,
+                "enable_org_profile_memory": cfg.enable_org_profile_memory,
+                "enable_long_term_memory": cfg.enable_long_term_memory,
+            },
+        )
 
-
-    
     # ------------------------------------------------------------------
     # Step 3: build base history (load & preprocess)
     # ------------------------------------------------------------------
 
     async def _step_build_base_history(self, state: RuntimeState) -> None:
         await self._history_layer.build_base_history(state)
-
 
     # ------------------------------------------------------------------
     # Step 4: history
@@ -405,6 +492,18 @@ class DropInKnowledgeRuntime:
             state.history_includes_current_user = True
             state.debug_trace["history_length"] = len(base_history)
 
+        # Trace history building step.
+        self._trace(
+            state,
+            component="engine",
+            step="history",
+            message="Conversation history built for LLM.",
+            data={
+                "history_length": len(state.built_history_messages),
+                "base_history_length": len(state.base_history),
+                "history_includes_current_user": state.history_includes_current_user,
+            },
+        )
 
     # ------------------------------------------------------------------
     # Step 5: RAG
@@ -424,7 +523,7 @@ class DropInKnowledgeRuntime:
         state.used_rag = False
         state.debug_trace.setdefault("rag_chunks", 0)
 
-        # If RAG is globally disabled, do nothing.        
+        # If RAG is globally disabled, do nothing.
         if not self._config.enable_rag:
             return
 
@@ -446,7 +545,7 @@ class DropInKnowledgeRuntime:
             )
             state.context_builder_result = built
 
-        rag_info =built.rag_debug_info or {}
+        rag_info = built.rag_debug_info or {}
         state.debug_trace["rag"] = rag_info
 
         retrieved_chunks = built.retrieved_chunks or []
@@ -475,6 +574,18 @@ class DropInKnowledgeRuntime:
 
         state.debug_trace["rag_chunks"] = len(retrieved_chunks)
 
+        # Trace RAG step.
+        self._trace(
+            state,
+            component="engine",
+            step="rag",
+            message="RAG step executed.",
+            data={
+                "rag_enabled": self._config.enable_rag,
+                "used_rag": state.used_rag,
+                "retrieved_chunks": len(retrieved_chunks),
+            },
+        )
 
     # ------------------------------------------------------------------
     # Step 6: Web search
@@ -528,6 +639,19 @@ class DropInKnowledgeRuntime:
 
         if state.websearch_debug:
             state.debug_trace["websearch"] = state.websearch_debug
+
+        # Trace web search step.
+        self._trace(
+            state,
+            component="engine",
+            step="websearch",
+            message="Web search step executed.",
+            data={
+                "websearch_enabled": self._config.enable_websearch,
+                "used_websearch": state.used_websearch,
+                "has_error": "error" in (state.websearch_debug or {}),
+            },
+        )
 
     # ------------------------------------------------------------------
     # Step 7: Ensure current user message
@@ -668,6 +792,19 @@ class DropInKnowledgeRuntime:
 
         state.debug_trace["tools"] = debug_tools
 
+        # Trace tools step.
+        self._trace(
+            state,
+            component="engine",
+            step="tools",
+            message="Tools agent step executed.",
+            data={
+                "tools_mode": self._config.tools_mode,
+                "used_tools": state.used_tools,
+                "tool_traces_count": len(state.tool_traces),
+            },
+        )
+
     # ------------------------------------------------------------------
     # Step 9: Core LLM
     # ------------------------------------------------------------------
@@ -679,6 +816,18 @@ class DropInKnowledgeRuntime:
         """
         # If tools were used and we have an explicit agent answer, prefer it.
         if state.used_tools and state.tools_agent_answer:
+            # Trace the fact that we are reusing the tools agent answer
+            # instead of calling the core LLM adapter.
+            self._trace(
+                state,
+                component="engine",
+                step="core_llm",
+                message="Using tools_agent_answer as the final answer.",
+                data={
+                    "used_tools_answer": True,
+                    "has_tools_agent_answer": True,
+                },
+            )
             return str(state.tools_agent_answer)
 
         try:
@@ -697,17 +846,65 @@ class DropInKnowledgeRuntime:
                 **generate_kwargs,
             )
 
+            # LLM adapter may return a simple string.
             if isinstance(raw_answer, str):
+                self._trace(
+                    state,
+                    component="engine",
+                    step="core_llm",
+                    message="Core LLM adapter returned a plain string.",
+                    data={
+                        "used_tools_answer": False,
+                        "adapter_return_type": "str",
+                    },
+                )
                 return raw_answer
 
-            content = getattr(raw_answer, "content", None)
-            if isinstance(content, str) and content.strip():
-                return content
+            # Or an object with a .content attribute (dataclass / pydantic model).
+            if hasattr(raw_answer, "content"):
+                content_value = raw_answer.content  # type: ignore[attr-defined]
+                if isinstance(content_value, str) and content_value.strip():
+                    self._trace(
+                        state,
+                        component="engine",
+                        step="core_llm",
+                        message="Core LLM adapter returned an object with non-empty content.",
+                        data={
+                            "used_tools_answer": False,
+                            "adapter_return_type": type(raw_answer).__name__,
+                            "has_content_attribute": True,
+                        },
+                    )
+                    return content_value
 
+            # Fallback: stringify whatever the adapter returned.
+            self._trace(
+                state,
+                component="engine",
+                step="core_llm",
+                message="Core LLM adapter returned a non-string object without usable content; using stringified value.",
+                data={
+                    "used_tools_answer": False,
+                    "adapter_return_type": type(raw_answer).__name__,
+                    "has_content_attribute": hasattr(raw_answer, "content"),
+                },
+            )
             return str(raw_answer)
 
         except Exception as e:
             state.debug_trace["llm_error"] = str(e)
+
+            # Trace the error and whether a tools_agent_answer fallback is available.
+            self._trace(
+                state,
+                component="engine",
+                step="core_llm_error",
+                message="Core LLM adapter failed; falling back if possible.",
+                data={
+                    "error": str(e),
+                    "has_tools_agent_answer": bool(state.tools_agent_answer),
+                },
+            )
 
             if state.tools_agent_answer:
                 return (
@@ -717,7 +914,6 @@ class DropInKnowledgeRuntime:
                 )
 
             return f"[ERROR] LLM adapter failed: {e}"
-
 
     # ------------------------------------------------------------------
     # Step 10: Persist answer & build RuntimeAnswer
@@ -773,7 +969,7 @@ class DropInKnowledgeRuntime:
         route_info = RouteInfo(
             used_rag=state.used_rag and self._config.enable_rag,
             used_websearch=state.used_websearch and self._config.enable_websearch,
-            used_tools=state.used_tools and self._config.tools_mode != "off",            
+            used_tools=state.used_tools and self._config.tools_mode != "off",
             used_user_profile=state.used_user_profile,
             strategy=strategy,
             extra={},
@@ -808,6 +1004,21 @@ class DropInKnowledgeRuntime:
                 )
             )
 
+        # Trace persistence and answer building step.
+        self._trace(
+            state,
+            component="engine",
+            step="persist_and_build_answer",
+            message="Assistant answer persisted and RuntimeAnswer built.",
+            data={
+                "session_id": session.id,
+                "strategy": strategy,
+                "used_rag": state.used_rag,
+                "used_websearch": state.used_websearch,
+                "used_tools": state.used_tools,
+            },
+        )
+
         return RuntimeAnswer(
             answer=answer_text,
             citations=[],
@@ -818,7 +1029,6 @@ class DropInKnowledgeRuntime:
             debug_trace=state.debug_trace,
         )
 
-    
     # ------------------------------------------------------------------
     # Step 11: instructions (final system prompt)
     # ------------------------------------------------------------------
@@ -847,8 +1057,6 @@ class DropInKnowledgeRuntime:
         # `messages_for_llm` at this point should contain only history
         # (built by `_step_history`). We now prepend the system message.
         state.messages_for_llm = [system_message] + state.messages_for_llm
-
-
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -881,7 +1089,6 @@ class DropInKnowledgeRuntime:
 
         return "\n".join(lines)
 
-
     def _build_session_message_from_request(
         self,
         request: RuntimeRequest,
@@ -897,7 +1104,6 @@ class DropInKnowledgeRuntime:
             content=request.message,
             created_at=datetime.now(timezone.utc).isoformat(),
         )
-
 
     async def _build_final_instructions(self, state: RuntimeState) -> Optional[str]:
         """

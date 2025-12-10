@@ -102,14 +102,17 @@ class InMemorySessionStorage(SessionStorage):
         self,
         user_id: str,
         *,
-        limit: int = 50,
+        limit: Optional[int] = None,
     ) -> List[ChatSession]:
         """
         List recent sessions for a given user, ordered by recency.
         """
         sessions = [s for s in self._sessions.values() if s.user_id == user_id]
         sessions.sort(key=lambda s: s.updated_at, reverse=True)
-        return sessions[:limit]
+        if limit:
+            return sessions[:limit]
+        
+        return sessions
 
     # ------------------------------------------------------------------
     # Conversation history operations
