@@ -30,7 +30,8 @@ from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
-from intergrax.runtime.drop_in_knowledge_mode.engine_history_layer import HistoryLayer
+from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
+from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import AttachmentIngestionService, IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import (
     DefaultHistorySummaryPromptBuilder,
     HistorySummaryPromptBuilder,
@@ -39,24 +40,21 @@ from intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder import 
     DefaultRagPromptBuilder,
     RagPromptBuilder,
 )
-from intergrax.runtime.drop_in_knowledge_mode.response_schema import (
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
     RuntimeRequest,
     RuntimeAnswer,
     RouteInfo,
     RuntimeStats,
     ToolCallInfo,
 )
-from intergrax.runtime.drop_in_knowledge_mode.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.drop_in_knowledge_mode.ingestion import (
-    AttachmentIngestionService,
-    IngestionResult,
-)
-from intergrax.runtime.drop_in_knowledge_mode.attachments import (
+
+from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import (
     FileSystemAttachmentResolver,
 )
-from intergrax.runtime.drop_in_knowledge_mode.context_builder import (
+from intergrax.runtime.drop_in_knowledge_mode.context.context_builder import (
     ContextBuilder,
     RetrievedChunk,
 )

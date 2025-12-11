@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Protocol, Mapping, Any
+from typing import Dict, List, Protocol, Any
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
