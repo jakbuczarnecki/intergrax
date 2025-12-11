@@ -7,8 +7,8 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.drop_in_knowledge_mode.ingestion import IngestionResult
-from intergrax.runtime.drop_in_knowledge_mode.response_schema import RuntimeRequest
+from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import IngestionResult
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
 from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
 
 

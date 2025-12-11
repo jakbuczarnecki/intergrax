@@ -9,9 +9,9 @@ from typing import Any, Dict, List, Optional
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
-from intergrax.runtime.drop_in_knowledge_mode.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import HistorySummaryPromptBuilder
-from intergrax.runtime.drop_in_knowledge_mode.response_schema import HistoryCompressionStrategy, RuntimeRequest
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import HistoryCompressionStrategy, RuntimeRequest
 from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
 from intergrax.runtime.drop_in_knowledge_mode.session.session_manager import SessionManager
 

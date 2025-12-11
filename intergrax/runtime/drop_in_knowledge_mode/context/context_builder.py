@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from intergrax.rag.vectorstore_manager import VectorstoreManager
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
-from intergrax.runtime.drop_in_knowledge_mode.response_schema import RuntimeRequest
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
 from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
 
 

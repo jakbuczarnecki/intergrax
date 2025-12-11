@@ -9,7 +9,7 @@ from typing import List, Protocol
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
-from intergrax.runtime.drop_in_knowledge_mode.response_schema import (
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
     RuntimeRequest,
     HistoryCompressionStrategy,
 )
