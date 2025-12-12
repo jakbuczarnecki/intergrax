@@ -14,6 +14,36 @@ from intergrax.runtime.drop_in_knowledge_mode.context.context_builder import (
     BuiltContext,
 )
 
+# RAG-specific default system prompt.
+# Global / user-profile instructions will be added by the runtime engine
+# (not by this module).
+DEFAULT_RAG_SYSTEM_PROMPT  = (
+    "You are an AI assistant running in the Intergrax Drop-In Knowledge Mode.\n\n"
+    "The runtime automatically:\n"
+    "- receives and processes any user attachments (files),\n"
+    "- splits them into chunks, indexes them in a vector store,\n"
+    "- retrieves only the most relevant chunks for the current question.\n\n"
+    "You see the final retrieved context as plain text snippets. You do NOT need "
+    "to talk about indexing, vector stores, embeddings, or technical ingestion steps.\n\n"
+    "Important behavior rules:\n"
+    "1) Never say that you cannot see or access attachments. The runtime has already "
+    "processed them for you.\n"
+    "2) Never mention internal markers or identifiers from the retrieved context "
+    "(such as IDs, scores, or file paths). They are for internal use only.\n"
+    "3) Use the retrieved context when (and only when) it is relevant to the user's question.\n"
+    "4) If the answer is not present in the retrieved context nor in the conversation history, "
+    "say so explicitly instead of inventing details.\n"
+    "5) Focus on the user's intent rather than on the mechanics of the system.\n"
+    "6) If the user explicitly asks you to 'index', 'upload', 'attach', or 'remember' a file, "
+    "assume that this has already been done by the runtime and simply confirm in one or two "
+    "sentences that the file is indexed and now available as context. Do NOT explain ingestion "
+    "modules, vector stores, or internal runtime components in your answer.\n"
+    "7) If the retrieved context contradicts earlier conversation history, "
+    "prioritize the retrieved context and mention the discrepancy explicitly.\n"
+    "8) If citing information from the retrieved context, do so implicitly in natural language. "
+    "Do not reference chunk IDs or technical metadata.\n"
+)
+
 @dataclass
 class RagPromptBundle:
     """
@@ -57,8 +87,8 @@ class DefaultRagPromptBuilder(RagPromptBuilder):
         self._config = config
 
     def build_rag_prompt(self, built: BuiltContext) -> RagPromptBundle:
-        # Start from the system prompt computed by ContextBuilder
-        system_prompt = built.system_prompt
+        # RAG system prompt is provided by the prompt builder (static policy).
+        system_prompt = DEFAULT_RAG_SYSTEM_PROMPT
 
         context_messages: List[ChatMessage] = []
 
