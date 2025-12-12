@@ -40,6 +40,7 @@ from intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder import 
     DefaultRagPromptBuilder,
     RagPromptBuilder,
 )
+from intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer import ReasoningLayer
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
     RuntimeRequest,
     RuntimeAnswer,
@@ -142,6 +143,10 @@ class DropInKnowledgeRuntime:
             session_manager=session_manager,
             history_prompt_builder=self._history_prompt_builder,
         )
+
+        self._reasoning_layer = ReasoningLayer(
+            config=config
+        )        
 
     # ------------------------------------------------------------------
     # Public API
@@ -1047,6 +1052,24 @@ class DropInKnowledgeRuntime:
         instructions_text = await self._build_final_instructions(state)
         if not instructions_text:
             return
+        
+        # Apply reasoning / CoT policy (no-op in DIRECT mode)
+        reasoning_result = self._reasoning_layer.apply_reasoning_to_instructions(
+            state=state,
+            base_system_instructions=instructions_text,
+        )
+
+        # Trace reasoning application
+        self._trace(
+            state,
+            component="reasoning",
+            step="apply_reasoning_to_instructions",
+            message="Reasoning policy applied to system instructions.",
+            data={
+                "mode": reasoning_result.mode.value,
+                "applied": reasoning_result.applied,
+            },
+        )
 
         system_message = ChatMessage(role="system", content=instructions_text)
 
