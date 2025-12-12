@@ -63,7 +63,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         # Conservative fallback for unknown models.
         return 128_000
 
-    def __init__(self, client: Optional[Client], model: Optional[str] = None, **defaults):
+    def __init__(self, client: Optional[Client] = None, model: Optional[str] = None, **defaults):
         super().__init__()
         self.client = client or Client()
         self.model = model or GLOBAL_SETTINGS.default_openai_model

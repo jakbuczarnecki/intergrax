@@ -81,7 +81,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         # Conservative fallback if the model is unknown.
         return 8_192
 
-    def __init__(self, chat : Optional[ChatOllama], context_window_tokens: int = None, **defaults):
+    def __init__(self, chat : Optional[ChatOllama] = None, context_window_tokens: int = None, **defaults):
         super().__init__()
 
         self.chat = chat or ChatOllama(

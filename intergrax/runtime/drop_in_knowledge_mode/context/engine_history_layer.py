@@ -90,7 +90,7 @@ class HistoryLayer:
         assert session is not None, "Session must be set before building history."
 
         # 1. Load raw history from SessionStore.
-        raw_history: List[ChatMessage] = self._build_chat_history(session)
+        raw_history: List[ChatMessage] = await self._build_chat_history(session)
 
         # 2. Compute token usage for the raw history, if possible.
         raw_token_count = self._count_tokens_for_messages(raw_history)
@@ -209,7 +209,7 @@ class HistoryLayer:
         )
 
 
-    def _build_chat_history(self, session: ChatSession) -> List[ChatMessage]:
+    async def _build_chat_history(self, session: ChatSession) -> List[ChatMessage]:
         """
         Load raw conversation history for the given session.
 
@@ -217,7 +217,7 @@ class HistoryLayer:
         Any model-specific preprocessing (truncation, summarization, token
         accounting) should happen in `_step_build_base_history`, not here.
         """
-        return self._session_manager.get_conversation_history(session=session)
+        return await self._session_manager.get_history(session_id=session.id)
 
 
     def _build_history_debug_trace(

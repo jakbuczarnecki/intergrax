@@ -131,7 +131,7 @@ class SessionManager:
 
 
     async def get_history(self, session_id: str) -> List[ChatMessage]:
-        return self._storage.get_history(session_id=session_id)
+        return await self._storage.get_history(session_id=session_id)
 
     # ------------------------------------------------------------------
     # Session lifecycle (metadata)
