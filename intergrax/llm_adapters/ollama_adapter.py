@@ -7,6 +7,7 @@ import json
 from typing import Any, Dict, Iterable, Optional, Sequence
 from langchain_ollama import ChatOllama
 
+from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.base import (
     BaseLLMAdapter,
     ChatMessage,
@@ -80,9 +81,12 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         # Conservative fallback if the model is unknown.
         return 8_192
 
-    def __init__(self, chat : ChatOllama, context_window_tokens: int = None, **defaults):
+    def __init__(self, chat : Optional[ChatOllama], context_window_tokens: int = None, **defaults):
         super().__init__()
-        self.chat = chat
+
+        self.chat = chat or ChatOllama(
+            model=GLOBAL_SETTINGS.default_ollama_model
+        )
         self.defaults = defaults
 
         if context_window_tokens is not None and context_window_tokens > 0:
@@ -91,7 +95,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         else:
             # Otherwise estimate from the model name (fallback path).
             self._context_window_tokens = int(
-                self._estimate_ollama_context_window_from_model(chat.model)
+                self._estimate_ollama_context_window_from_model(self.chat.model)
             )
 
 
