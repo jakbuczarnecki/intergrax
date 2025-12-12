@@ -556,13 +556,8 @@ class DropInKnowledgeRuntime:
             state.debug_trace["rag_chunks"] = 0
             return
 
-        # RAG-specific prompt construction
+        # RAG-specific prompt construction (context messages only)
         bundle = self._rag_prompt_builder.build_rag_prompt(built)
-
-        # System prompt from RAG layer
-        state.messages_for_llm.append(
-            ChatMessage(role="system", content=bundle.system_prompt)
-        )
 
         # Additional context messages built from retrieved chunks
         context_messages = bundle.context_messages or []
@@ -1071,7 +1066,7 @@ class DropInKnowledgeRuntime:
             },
         )
 
-        system_message = ChatMessage(role="system", content=instructions_text)
+        system_message = ChatMessage(role="system", content=reasoning_result.final_instructions)
 
         # `messages_for_llm` at this point should contain only history
         # (built by `_step_history`). We now prepend the system message.

@@ -129,6 +129,10 @@ class SessionManager:
 
         self._consolidation_cooldown_seconds: int = effective_cooldown
 
+
+    async def get_history(self, session_id: str) -> List[ChatMessage]:
+        return await self._storage.get_history(session_id=session_id)
+
     # ------------------------------------------------------------------
     # Session lifecycle (metadata)
     # ------------------------------------------------------------------

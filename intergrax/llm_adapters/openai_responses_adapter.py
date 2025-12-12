@@ -6,7 +6,9 @@
 from __future__ import annotations
 import json
 from typing import Any, Dict, Iterable, Optional, Sequence, List
+from openai import Client
 
+from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.base import (
     BaseLLMAdapter,
     ChatMessage,
@@ -61,13 +63,13 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         # Conservative fallback for unknown models.
         return 128_000
 
-    def __init__(self, client, model: str, **defaults):
+    def __init__(self, client: Optional[Client] = None, model: Optional[str] = None, **defaults):
         super().__init__()
-        self.client = client
-        self.model = model
-        self.model_name_for_token_estimation = model
+        self.client = client or Client()
+        self.model = model or GLOBAL_SETTINGS.default_openai_model
+        self.model_name_for_token_estimation = self.model
         self.defaults = defaults
-        self._context_window_tokens: int = self._estimate_openai_context_window(model)
+        self._context_window_tokens: int = self._estimate_openai_context_window(self.model)
 
 
     @property

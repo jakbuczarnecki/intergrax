@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple, List
 
 # === Twoje komponenty ===
-from intergrax.globals.settings import GlobalSettings
+from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.rag.rag_answerer import (
     RagAnswerer,
     AnswererConfig,
@@ -24,8 +24,8 @@ from intergrax.rag.embedding_manager import EmbeddingManager  # ⬅️ embedder
 
 # === ustawienia środowiskowe / katalogi ===
 PERSIST_DIR = os.environ.get("CHROMA_DIR", "./chroma_db")
-EMBED_MODEL = GlobalSettings.default_ollama_embed_model
-DEFAULT_MODEL = GlobalSettings.default_ollama_model
+EMBED_MODEL = GLOBAL_SETTINGS.default_ollama_embed_model
+DEFAULT_MODEL = GLOBAL_SETTINGS.default_ollama_model
 
 # === Singletons (leniwe) ===
 _vectorstore: Optional[VectorstoreManager] = None

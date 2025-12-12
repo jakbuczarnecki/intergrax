@@ -14,17 +14,14 @@ from intergrax.runtime.drop_in_knowledge_mode.context.context_builder import (
     BuiltContext,
 )
 
+
 @dataclass
 class RagPromptBundle:
     """
-    Container for prompt elements related to RAG:
+    Prompt elements related to RAG:
 
-    - system_prompt: final system prompt string to be sent to the model
-      (may be equal to BuiltContext.system_prompt or modified).
-    - context_messages: extra messages (usually system-level) injecting
-      retrieved document context.
+    - context_messages: system-level messages injecting retrieved document context.
     """
-    system_prompt: str
     context_messages: List[ChatMessage]
 
 
@@ -48,18 +45,14 @@ class DefaultRagPromptBuilder(RagPromptBuilder):
     Default prompt builder for Drop-In Knowledge Mode.
 
     Responsibilities:
-    - Use the system_prompt from BuiltContext as-is.
-    - If retrieved_chunks are present, format them into a single
-      additional system-level message with natural, model-friendly text.
+    - Inject retrieved chunks into system-level context messages.
+    - Global system instructions are owned by the runtime.
     """
 
     def __init__(self, config: RuntimeConfig) -> None:
         self._config = config
 
     def build_rag_prompt(self, built: BuiltContext) -> RagPromptBundle:
-        # Start from the system prompt computed by ContextBuilder
-        system_prompt = built.system_prompt
-
         context_messages: List[ChatMessage] = []
 
         if built.retrieved_chunks:
@@ -77,7 +70,6 @@ class DefaultRagPromptBuilder(RagPromptBuilder):
             )
 
         return RagPromptBundle(
-            system_prompt=system_prompt,
             context_messages=context_messages,
         )
 

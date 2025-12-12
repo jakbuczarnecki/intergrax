@@ -32,7 +32,7 @@ from typing import List, Optional, Sequence
 
 from tqdm.auto import tqdm
 
-from intergrax.globals.settings import GlobalSettings
+from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters import LangChainOllamaAdapter
 
 
@@ -224,7 +224,7 @@ if __name__ == "__main__":
 
     adapter = LangChainOllamaAdapter(
         chat=ChatOllama(
-            model=GlobalSettings.default_ollama_model
+            model=GLOBAL_SETTINGS.default_ollama_model
         )
     )
 

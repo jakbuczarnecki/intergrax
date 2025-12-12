@@ -34,34 +34,6 @@ from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import R
 from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
 
 
-
-# RAG-specific default system prompt.
-# Global / user-profile instructions will be added by the runtime engine
-# (not by this module).
-DEFAULT_SYSTEM_PROMPT = (
-    "You are an AI assistant running in the Intergrax Drop-In Knowledge Mode.\n\n"
-    "The runtime automatically:\n"
-    "- receives and processes any user attachments (files),\n"
-    "- splits them into chunks, indexes them in a vector store,\n"
-    "- retrieves only the most relevant chunks for the current question.\n\n"
-    "You see the final retrieved context as plain text snippets. You do NOT need "
-    "to talk about indexing, vector stores, embeddings, or technical ingestion steps.\n\n"
-    "Important behavior rules:\n"
-    "1) Never say that you cannot see or access attachments. The runtime has already "
-    "processed them for you.\n"
-    "2) Never mention internal markers or identifiers from the retrieved context "
-    "(such as IDs, scores, or file paths). They are for internal use only.\n"
-    "3) Use the retrieved context when (and only when) it is relevant to the user's question.\n"
-    "4) If the answer is not present in the retrieved context nor in the conversation history, "
-    "say so explicitly instead of inventing details.\n"
-    "5) Focus on the user's intent rather than on the mechanics of the system.\n"
-    "6) If the user explicitly asks you to 'index', 'upload', 'attach', or 'remember' a file, "
-    "assume that this has already been done by the runtime and simply confirm in one or two "
-    "sentences that the file is indexed and now available as context. Do NOT explain ingestion "
-    "modules, vector stores, or internal runtime components in your answer.\n"
-)
-
-
 @dataclass
 class RetrievedChunk:
     """
@@ -95,8 +67,6 @@ class BuiltContext:
     - rag_debug_info: structured debug trace to be surfaced in
       RuntimeAnswer.debug_trace["rag"].
     """
-
-    system_prompt: str
     history_messages: List[ChatMessage]
     retrieved_chunks: List[RetrievedChunk]
     rag_debug_info: Dict[str, Any]
@@ -171,24 +141,17 @@ class ContextBuilder:
             # to see in RuntimeAnswer.debug_trace why RAG was skipped.
             retrieved_chunks = []
             rag_debug_info = {
-                "enabled": bool(getattr(self._config, "enable_rag", True)),
+                "enabled": bool(self._config.enable_rag),
                 "used": False,
                 "reason": rag_reason,
                 "hits_count": 0,
                 "where_filter": {},
-                "top_k": int(getattr(self._config, "max_docs_per_query", 5)),
-                "score_threshold": getattr(self._config, "rag_score_threshold", None),
+                "top_k": int(self._config.max_docs_per_query),
+                "score_threshold": self._config.rag_score_threshold,
                 "hits": [],
             }
 
-        # 2. RAG-related system prompt.
-        #    Even jeśli w danym requestcie retrieved_chunks jest puste,
-        #    runtime nadal faktycznie indeksuje załączniki i może korzystać
-        #    z RAG, więc ten system prompt może zostać globalnie.
-        system_prompt = getattr(self._config, "system_prompt", None) or DEFAULT_SYSTEM_PROMPT
-
         return BuiltContext(
-            system_prompt=system_prompt,
             history_messages=list(base_history or []),
             retrieved_chunks=retrieved_chunks,
             rag_debug_info=rag_debug_info,
@@ -244,15 +207,15 @@ class ContextBuilder:
         - Compute query embeddings via the configured embedding manager.
         - Call `IntergraxVectorstoreManager.query(...)` with `query_embeddings`.
         """
-        # 1) Build the logical `where` based on session and request metadata
-        query_text = getattr(request, "message", None) or getattr(request, "query", "")
+        # 1) Build the logical `where` based on session and request metadata        
+        query_text = request.message
         query_text = str(query_text or "")
 
         # Base metadata filters – this keeps all chunks that belong to this
         # logical conversation scope (session/user/tenant/workspace).
         where: Dict[str, Any] = {}
-        for attr in ("id", "user_id", "tenant_id", "workspace_id"):
-            value = getattr(session, attr, None)
+        for attr in ("id", "user_id", "tenant_id", "workspace_id"):            
+            value = getattr(session, attr) if hasattr(session, attr) else None
             if value is not None:
                 # We normalize "id" to "session_id" for clarity in the metadata.
                 if attr == "id":
@@ -272,14 +235,14 @@ class ContextBuilder:
         # - "only chunks for a specific AttachmentRef.id",
         # based on request.attachments or request.metadata.
 
-        max_docs: int = int(getattr(self._config, "max_docs_per_query", 5))
-        score_threshold: Optional[float] = getattr(self._config, "rag_score_threshold", None)
+        max_docs: int = int(self._config.max_docs_per_query)
+        score_threshold: Optional[float] = self._config.rag_score_threshold
 
         # Translate logical `where` into backend-specific filter
         backend_where = self._build_backend_where(where)
 
         # 2) Get embedding manager from runtime config
-        embedding_manager = getattr(self._config, "embedding_manager", None)
+        embedding_manager = self._config.embedding_manager
         if embedding_manager is None:
             # Without an embedding manager we cannot perform semantic search.
             # We return an empty result with a clear diagnostic reason.
@@ -340,7 +303,7 @@ class ContextBuilder:
         rag_used = bool(retrieved_chunks)
 
         rag_debug_info: Dict[str, Any] = {
-            "enabled": getattr(self._config, "enable_rag", False),
+            "enabled": bool(self._config.enable_rag),
             "used": rag_used,
             "hits_count": len(retrieved_chunks or []),
             "where_filter": where,
@@ -473,7 +436,7 @@ class ContextBuilder:
 
         for raw in flat_hits:
             if not isinstance(raw, dict):
-                raw_dict = getattr(raw, "__dict__", {}) or {}
+                raw_dict = raw.__dict__ if hasattr(raw, "__dict__") else {}
             else:
                 raw_dict = raw
 
