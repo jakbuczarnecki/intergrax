@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.config import ReasoningMode
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
 from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
@@ -51,7 +52,7 @@ class RuntimeState:
     used_rag: bool = False
     used_websearch: bool = False
     used_tools: bool = False
-    used_user_profile: bool = False      # reserved for future integration
+    used_user_profile: bool = False
 
     # Tools
     tools_agent_answer: Optional[str] = None
@@ -63,3 +64,14 @@ class RuntimeState:
 
     # Token accounting (filled in _step_build_base_history)
     history_token_count: Optional[int] = None
+
+    # ------------------------------------------------------------------
+    # REASONING / CHAIN-OF-THOUGHT
+    # ------------------------------------------------------------------
+
+    # Active reasoning mode for this request.
+    reasoning_mode: ReasoningMode = ReasoningMode.DIRECT
+
+    # Optional reasoning metadata captured during execution.
+    # This NEVER contains raw chain-of-thought text.
+    reasoning_trace: Optional[Dict[str, Any]] = None
