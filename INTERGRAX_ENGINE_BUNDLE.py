@@ -1,0 +1,22017 @@
+# ======================================================================
+# LLM INSTRUCTIONS
+# ======================================================================
+# This file is an auto-generated, complete source code bundle of the Intergrax framework.
+# It contains all Python modules from the package directory:
+#   - Package root: intergrax/
+#   - Project root: D:\Projekty\intergrax
+#
+# IMPORTANT RULES FOR THE MODEL:
+# 1) Treat THIS file as the single source of truth for Intergrax.
+# 2) Do NOT assume any missing code exists elsewhere.
+# 3) When proposing changes, always reference the exact FILE and MODULE headers below.
+# 4) Prefer edits that preserve existing architecture, naming, and conventions.
+#
+# How to navigate this bundle:
+# - Use the MODULE MAP and INDEX to find modules.
+# - Each original file is included below with a header:
+#     FILE: <relative path>
+#     MODULE: <python import path>
+#     MODULE_GROUP: <first folder under intergrax/>
+#     SYMBOLS: <top-level classes/functions>
+#
+# Included module groups (dynamic):
+# - chains/
+# - globals/
+# - llm/
+# - llm_adapters/
+# - memory/
+# - multimedia/
+# - openai/
+# - rag/
+# - root/
+# - runtime/
+# - supervisor/
+# - tools/
+# - websearch/
+#
+# Files included: 117
+# Total lines: 20058
+# ======================================================================
+
+# INTERGRAX ENGINE BUNDLE (auto-generated)
+# ROOT: D:\Projekty\intergrax
+# PACKAGE: intergrax
+# FILES: 117
+#
+# MODULE MAP (dynamic):
+# - chains/ (2 files)
+# - globals/ (2 files)
+# - llm/ (3 files)
+# - llm_adapters/ (5 files)
+# - memory/ (9 files)
+# - multimedia/ (5 files)
+# - openai/ (3 files)
+# - rag/ (11 files)
+# - root/ (4 files)
+# - runtime/ (37 files)
+# - supervisor/ (5 files)
+# - tools/ (3 files)
+# - websearch/ (28 files)
+#
+# INDEX (path | module | module_group | lines | sha256[0:12]):
+# - intergrax/chains/__init__.py | intergrax.chains | chains | 0 | e3b0c44298fc
+# - intergrax/chains/langchain_qa_chain.py | intergrax.chains.langchain_qa_chain | chains | 374 | 4345775d43b8
+# - intergrax/globals/__init__.py | intergrax.globals | globals | 0 | e3b0c44298fc
+# - intergrax/globals/settings.py | intergrax.globals.settings | globals | 96 | c27862674028
+# - intergrax/llm/__init__.py | intergrax.llm | llm | 0 | e3b0c44298fc
+# - intergrax/llm/llm_adapters_legacy.py | intergrax.llm.llm_adapters_legacy | llm | 722 | d8b23a113fab
+# - intergrax/llm/messages.py | intergrax.llm.messages | llm | 97 | 5a1ccfac1016
+# - intergrax/llm_adapters/__init__.py | intergrax.llm_adapters | llm_adapters | 32 | 46e63774b46b
+# - intergrax/llm_adapters/base.py | intergrax.llm_adapters.base | llm_adapters | 336 | 263844146472
+# - intergrax/llm_adapters/gemini_adapter.py | intergrax.llm_adapters.gemini_adapter | llm_adapters | 126 | aade42a5a263
+# - intergrax/llm_adapters/ollama_adapter.py | intergrax.llm_adapters.ollama_adapter | llm_adapters | 257 | 9949b7fb0057
+# - intergrax/llm_adapters/openai_responses_adapter.py | intergrax.llm_adapters.openai_responses_adapter | llm_adapters | 328 | 19e22314f566
+# - intergrax/memory/__init__.py | intergrax.memory | memory | 0 | e3b0c44298fc
+# - intergrax/memory/conversational_memory.py | intergrax.memory.conversational_memory | memory | 123 | e5e9f9312647
+# - intergrax/memory/conversational_store.py | intergrax.memory.conversational_store | memory | 106 | 291f5ffa339e
+# - intergrax/memory/stores/__init__.py | intergrax.memory.stores | memory | 0 | e3b0c44298fc
+# - intergrax/memory/stores/in_memory_conversational_store.py | intergrax.memory.stores.in_memory_conversational_store | memory | 95 | d6bc9b36d93e
+# - intergrax/memory/stores/in_memory_user_profile_store.py | intergrax.memory.stores.in_memory_user_profile_store | memory | 59 | 9c1690d3981d
+# - intergrax/memory/user_profile_manager.py | intergrax.memory.user_profile_manager | memory | 269 | cf80d957757a
+# - intergrax/memory/user_profile_memory.py | intergrax.memory.user_profile_memory | memory | 167 | b742d06f0359
+# - intergrax/memory/user_profile_store.py | intergrax.memory.user_profile_store | memory | 52 | ea286a228ae9
+# - intergrax/multimedia/__init__.py | intergrax.multimedia | multimedia | 0 | e3b0c44298fc
+# - intergrax/multimedia/audio_loader.py | intergrax.multimedia.audio_loader | multimedia | 49 | e3fdeea55543
+# - intergrax/multimedia/images_loader.py | intergrax.multimedia.images_loader | multimedia | 23 | b6b4f6ceff3c
+# - intergrax/multimedia/ipynb_display.py | intergrax.multimedia.ipynb_display | multimedia | 130 | c3f9a1c73521
+# - intergrax/multimedia/video_loader.py | intergrax.multimedia.video_loader | multimedia | 235 | 3aee5fa55bdb
+# - intergrax/openai/__init__.py | intergrax.openai | openai | 0 | e3b0c44298fc
+# - intergrax/openai/rag/__init__.py | intergrax.openai.rag | openai | 0 | e3b0c44298fc
+# - intergrax/openai/rag/rag_openai.py | intergrax.openai.rag.rag_openai | openai | 252 | 899401a17b6e
+# - intergrax/rag/__init__.py | intergrax.rag | rag | 0 | e3b0c44298fc
+# - intergrax/rag/documents_loader.py | intergrax.rag.documents_loader | rag | 1289 | 3eb3420b8e20
+# - intergrax/rag/documents_splitter.py | intergrax.rag.documents_splitter | rag | 351 | b6796ab15bd6
+# - intergrax/rag/dual_index_builder.py | intergrax.rag.dual_index_builder | rag | 138 | 8a9266949177
+# - intergrax/rag/dual_retriever.py | intergrax.rag.dual_retriever | rag | 170 | 3e87b936dea9
+# - intergrax/rag/embedding_manager.py | intergrax.rag.embedding_manager | rag | 306 | e77bf68e4fe2
+# - intergrax/rag/rag_answerer.py | intergrax.rag.rag_answerer | rag | 425 | 25b567672739
+# - intergrax/rag/rag_retriever.py | intergrax.rag.rag_retriever | rag | 426 | 4f2ef95f2004
+# - intergrax/rag/re_ranker.py | intergrax.rag.re_ranker | rag | 307 | 3d5cb2ebb6b4
+# - intergrax/rag/vectorstore_manager.py | intergrax.rag.vectorstore_manager | rag | 577 | bda67f53d196
+# - intergrax/rag/windowed_answerer.py | intergrax.rag.windowed_answerer | rag | 185 | 6dd3864cb639
+# - intergrax/__init__.py | intergrax | root | 0 | e3b0c44298fc
+# - intergrax/chat_agent.py | intergrax.chat_agent | root | 592 | a346a03152df
+# - intergrax/logging.py | intergrax.logging | root | 12 | 3966fbef0c6b
+# - intergrax/system_prompts.py | intergrax.system_prompts | root | 84 | f66fdf33ac4c
+# - intergrax/runtime/__init__.py | intergrax.runtime | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/drop_in_knowledge_mode/__init__.py | intergrax.runtime.drop_in_knowledge_mode | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 207 | 7df36a0fc0be
+# - intergrax/runtime/drop_in_knowledge_mode/context/__init__.py | intergrax.runtime.drop_in_knowledge_mode.context | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/drop_in_knowledge_mode/context/context_builder.py | intergrax.runtime.drop_in_knowledge_mode.context.context_builder | runtime | 485 | 2cca85dc5dcb
+# - intergrax/runtime/drop_in_knowledge_mode/context/engine_history_layer.py | intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer | runtime | 558 | f27bd61d0560
+# - intergrax/runtime/drop_in_knowledge_mode/engine/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1183 | d92fff0a9855
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 77 | e732cb8d02c4
+# - intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py | intergrax.runtime.drop_in_knowledge_mode.ingestion | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/drop_in_knowledge_mode/ingestion/attachments.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments | runtime | 124 | f1f76309b50f
+# - intergrax/runtime/drop_in_knowledge_mode/ingestion/ingestion_service.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service | runtime | 315 | 72d130deaccc
+# - intergrax/runtime/drop_in_knowledge_mode/prompts/__init__.py | intergrax.runtime.drop_in_knowledge_mode.prompts | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/drop_in_knowledge_mode/prompts/history_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder | runtime | 89 | 7a99ef869b92
+# - intergrax/runtime/drop_in_knowledge_mode/prompts/rag_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder | runtime | 105 | 26282bc3326a
+# - intergrax/runtime/drop_in_knowledge_mode/prompts/websearch_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder | runtime | 106 | 74ed1e139cec
+# - intergrax/runtime/drop_in_knowledge_mode/reasoning/__init__.py | intergrax.runtime.drop_in_knowledge_mode.reasoning | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/drop_in_knowledge_mode/reasoning/reasoning_layer.py | intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer | runtime | 163 | 7f704f315d6e
+# - intergrax/runtime/drop_in_knowledge_mode/responses/__init__.py | intergrax.runtime.drop_in_knowledge_mode.responses | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/drop_in_knowledge_mode/responses/response_schema.py | intergrax.runtime.drop_in_knowledge_mode.responses.response_schema | runtime | 179 | 5e4b2ba82508
+# - intergrax/runtime/drop_in_knowledge_mode/session/__init__.py | intergrax.runtime.drop_in_knowledge_mode.session | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/drop_in_knowledge_mode/session/chat_session.py | intergrax.runtime.drop_in_knowledge_mode.session.chat_session | runtime | 145 | 3b849ae2b512
+# - intergrax/runtime/drop_in_knowledge_mode/session/in_memory_session_storage.py | intergrax.runtime.drop_in_knowledge_mode.session.in_memory_session_storage | runtime | 181 | 5d9d175f4412
+# - intergrax/runtime/drop_in_knowledge_mode/session/session_manager.py | intergrax.runtime.drop_in_knowledge_mode.session.session_manager | runtime | 603 | 026e1eaf66e8
+# - intergrax/runtime/drop_in_knowledge_mode/session/session_storage.py | intergrax.runtime.drop_in_knowledge_mode.session.session_storage | runtime | 129 | 135a750dd885
+# - intergrax/runtime/organization/__init__.py | intergrax.runtime.organization | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/organization/organization_profile.py | intergrax.runtime.organization.organization_profile | runtime | 132 | fefdf8264834
+# - intergrax/runtime/organization/organization_profile_instructions_service.py | intergrax.runtime.organization.organization_profile_instructions_service | runtime | 198 | 04818763165e
+# - intergrax/runtime/organization/organization_profile_manager.py | intergrax.runtime.organization.organization_profile_manager | runtime | 223 | 64b1e3192846
+# - intergrax/runtime/organization/organization_profile_store.py | intergrax.runtime.organization.organization_profile_store | runtime | 55 | 9da26dc6bd62
+# - intergrax/runtime/organization/stores/__init__.py | intergrax.runtime.organization.stores | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/organization/stores/in_memory_organization_profile_store.py | intergrax.runtime.organization.stores.in_memory_organization_profile_store | runtime | 59 | 54ad9b6060ed
+# - intergrax/runtime/user_profile/__init__.py | intergrax.runtime.user_profile | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/user_profile/session_memory_consolidation_service.py | intergrax.runtime.user_profile.session_memory_consolidation_service | runtime | 508 | 288769edc850
+# - intergrax/runtime/user_profile/user_profile_debug_service.py | intergrax.runtime.user_profile.user_profile_debug_service | runtime | 194 | af5221ab8049
+# - intergrax/runtime/user_profile/user_profile_debug_snapshot.py | intergrax.runtime.user_profile.user_profile_debug_snapshot | runtime | 167 | 9f54fa8ac9bd
+# - intergrax/runtime/user_profile/user_profile_instructions_service.py | intergrax.runtime.user_profile.user_profile_instructions_service | runtime | 224 | 0112e6cbb0ed
+# - intergrax/supervisor/__init__.py | intergrax.supervisor | supervisor | 0 | e3b0c44298fc
+# - intergrax/supervisor/supervisor.py | intergrax.supervisor.supervisor | supervisor | 854 | f0303875966e
+# - intergrax/supervisor/supervisor_components.py | intergrax.supervisor.supervisor_components | supervisor | 65 | f87c0b7de5a4
+# - intergrax/supervisor/supervisor_prompts.py | intergrax.supervisor.supervisor_prompts | supervisor | 149 | 3dfe61f1124e
+# - intergrax/supervisor/supervisor_to_state_graph.py | intergrax.supervisor.supervisor_to_state_graph | supervisor | 242 | bef58f90d04d
+# - intergrax/tools/__init__.py | intergrax.tools | tools | 0 | e3b0c44298fc
+# - intergrax/tools/tools_agent.py | intergrax.tools.tools_agent | tools | 570 | 2a22c8cfca1e
+# - intergrax/tools/tools_base.py | intergrax.tools.tools_base | tools | 126 | ebe4be89b8a7
+# - intergrax/websearch/__init__.py | intergrax.websearch | websearch | 0 | e3b0c44298fc
+# - intergrax/websearch/cache/__init__.py | intergrax.websearch.cache | websearch | 106 | 3df58e81467d
+# - intergrax/websearch/context/__init__.py | intergrax.websearch.context | websearch | 0 | e3b0c44298fc
+# - intergrax/websearch/context/websearch_context_builder.py | intergrax.websearch.context.websearch_context_builder | websearch | 237 | a443b8e46bd6
+# - intergrax/websearch/fetcher/__init__.py | intergrax.websearch.fetcher | websearch | 0 | e3b0c44298fc
+# - intergrax/websearch/fetcher/extractor.py | intergrax.websearch.fetcher.extractor | websearch | 224 | bc0acd405677
+# - intergrax/websearch/fetcher/http_fetcher.py | intergrax.websearch.fetcher.http_fetcher | websearch | 76 | 9bbb458fd8bd
+# - intergrax/websearch/integration/__init__.py | intergrax.websearch.integration | websearch | 0 | e3b0c44298fc
+# - intergrax/websearch/integration/langgraph_nodes.py | intergrax.websearch.integration.langgraph_nodes | websearch | 170 | cdc656a8a1c9
+# - intergrax/websearch/pipeline/__init__.py | intergrax.websearch.pipeline | websearch | 0 | e3b0c44298fc
+# - intergrax/websearch/pipeline/search_and_read.py | intergrax.websearch.pipeline.search_and_read | websearch | 211 | d710548a62e5
+# - intergrax/websearch/providers/__init__.py | intergrax.websearch.providers | websearch | 0 | e3b0c44298fc
+# - intergrax/websearch/providers/base.py | intergrax.websearch.providers.base | websearch | 60 | b7ebdb574d01
+# - intergrax/websearch/providers/bing_provider.py | intergrax.websearch.providers.bing_provider | websearch | 135 | 75a7d7bade37
+# - intergrax/websearch/providers/google_cse_provider.py | intergrax.websearch.providers.google_cse_provider | websearch | 169 | e5196e33a780
+# - intergrax/websearch/providers/google_places_provider.py | intergrax.websearch.providers.google_places_provider | websearch | 323 | d193e19d7534
+# - intergrax/websearch/providers/reddit_search_provider.py | intergrax.websearch.providers.reddit_search_provider | websearch | 340 | 3ab46da246f5
+# - intergrax/websearch/schemas/__init__.py | intergrax.websearch.schemas | websearch | 0 | e3b0c44298fc
+# - intergrax/websearch/schemas/page_content.py | intergrax.websearch.schemas.page_content | websearch | 73 | 7dac001c0f6d
+# - intergrax/websearch/schemas/query_spec.py | intergrax.websearch.schemas.query_spec | websearch | 50 | bac19776113c
+# - intergrax/websearch/schemas/search_hit.py | intergrax.websearch.schemas.search_hit | websearch | 74 | e497f81ae2c9
+# - intergrax/websearch/schemas/web_document.py | intergrax.websearch.schemas.web_document | websearch | 57 | 90d7bf2a2e98
+# - intergrax/websearch/service/__init__.py | intergrax.websearch.service | websearch | 0 | e3b0c44298fc
+# - intergrax/websearch/service/websearch_answerer.py | intergrax.websearch.service.websearch_answerer | websearch | 137 | 02e18fb81613
+# - intergrax/websearch/service/websearch_executor.py | intergrax.websearch.service.websearch_executor | websearch | 266 | ee05bcec140d
+# - intergrax/websearch/utils/__init__.py | intergrax.websearch.utils | websearch | 0 | e3b0c44298fc
+# - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
+# - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
+#
+# TOTAL LINES: 20058
+# ======================================================================
+
+# ======================================================================
+# FILE: intergrax/chains/__init__.py
+# MODULE: intergrax.chains
+# MODULE_GROUP: chains
+# TAGS:
+#   - package=intergrax
+#   - module_group=chains
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/chains/langchain_qa_chain.py
+# MODULE: intergrax.chains.langchain_qa_chain
+# MODULE_GROUP: chains
+# TAGS:
+#   - package=intergrax
+#   - module_group=chains
+#   - file=langchain_qa_chain.py
+# LINES: 374
+# SHA256: 4345775d43b8d1f489616861e982b15145a62f13f78414af11f46957782169ef
+# SYMBOLS:
+#   - class ChainConfig
+#   - def _default_prompt_builder()
+#   - def _build_context()
+#   - def _format_citations()
+#   - class LangChainQAChain
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+
+# LangChain
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableLambda, RunnableMap, RunnableSequence
+from langchain_core.output_parsers import StrOutputParser
+
+from intergrax.rag.rag_retriever import RagRetriever
+from intergrax.rag.re_ranker import ReRanker
+
+from operator import itemgetter
+
+
+# How to use:
+# 1) You already have:
+# store, embed_manager, retriever = intergraxRagRetriever(...), reranker = intergraxReRanker(...) (optional)
+# llm: e.g. from langchain_ollama import ChatOllama
+# from langchain_ollama import ChatOllama
+# llm = ChatOllama(model="llama3.1:latest", temperature=0.2)
+
+# 2) Hooks (optional)
+# def before(payload):
+#     # e.g. force an additional filter
+#     if payload.get("where") is None:
+#         payload["where"] = {}
+#     return payload
+
+# def after_prompt(prompt_text, payload):
+#     # e.g. append a note for the model
+#     return prompt_text + "\n\nNote: Be precise and cite context segments."
+
+# def after_llm(answer_text, payload):
+#     # e.g. post-processing
+#     return answer_text.strip()
+
+# 3) Configuration
+# cfg = intergraxChainConfig(
+#     top_k=12,
+#     min_score=0.18,
+#     use_rerank=True,
+#     rerank_k=6,
+#     max_context_chars=10_000,
+#     on_before_build_prompt=before,
+#     on_after_build_prompt=after_prompt,
+#     on_after_llm=after_llm,
+# )
+
+# 4) Build the chain
+# qa_chain = intergraxLangChainQAChain(
+#     retriever=retriever,
+#     llm=llm,
+#     reranker=reranker,   # or None
+#     config=cfg,
+#     verbose=True,
+# )
+
+# 5) Call
+# res = qa_chain.invoke("What are intergrax virtual fairs?")
+# print(res["answer"])
+
+
+# ----------------------------
+# Helper types
+# ----------------------------
+BeforeBuildPromptHook = Callable[[Dict[str, Any]], Dict[str, Any]]
+AfterBuildPromptHook  = Callable[[str, Dict[str, Any]], str]
+AfterLLMHook          = Callable[[str, Dict[str, Any]], str]
+
+PromptBuilder = Union[
+    ChatPromptTemplate,
+    Callable[[str, str, List[Dict[str, Any]]], str],  # (question, context, hits) -> prompt_text
+]
+
+
+@dataclass
+class ChainConfig:
+    # Retrieval
+    top_k: int = 10
+    min_score: float = 0.15
+    where: Optional[Dict[str, Any]] = None
+
+    # Re-rank
+    use_rerank: bool = False
+    rerank_k: int = 5
+
+    # Context
+    max_context_chars: int = 12000
+
+    # Prompt
+    prompt_builder: Optional[PromptBuilder] = None  # none => default
+
+    # Citations
+    meta_source_keys: Tuple[str, ...] = ("source_file", "source", "file_name")
+    meta_page_keys: Tuple[str, ...] = ("page", "page_number", "page_index")
+
+    # Hooks (optional)
+    on_before_build_prompt: Optional[BeforeBuildPromptHook] = None
+    on_after_build_prompt: Optional[AfterBuildPromptHook]   = None
+    on_after_llm: Optional[AfterLLMHook]                    = None
+
+    # Return extended data
+    return_traces: bool = True
+
+
+def _default_prompt_builder(question: str, context: str, hits: List[Dict[str, Any]]) -> str:
+    """Simple, strict QA prompt using only context."""
+    return (
+        "You are a careful, factual assistant.\n"
+        "Answer ONLY using the information from CONTEXT below.\n"
+        "If the answer is not in the context, say you don't know.\n"
+        "Use the language of the question.\n\n"
+        "CONTEXT:\n"
+        f"{context}\n\n"
+        "QUESTION:\n"
+        f"{question}\n\n"
+        "FINAL ANSWER:"
+    )
+
+
+def _build_context(hits: List[Dict[str, Any]], max_chars: int) -> Tuple[str, List[Dict[str, Any]]]:
+    parts: List[str] = []
+    used: List[Dict[str, Any]] = []
+    total = 0
+    for h in hits:
+        txt = (h.get("content") or "").strip()
+        if not txt:
+            continue
+        need = len(txt)
+        if total + need > max_chars:
+            remain = max(max_chars - total, 0)
+            if remain <= 0:
+                break
+            txt = txt[:remain]
+            need = len(txt)
+        parts.append(txt)
+        used.append(h)
+        total += need
+        if total >= max_chars:
+            break
+    return "\n\n---\n\n".join(parts), used
+
+
+def _format_citations(
+    hits: List[Dict[str, Any]],
+    meta_source_keys: Tuple[str, ...],
+    meta_page_keys: Tuple[str, ...],
+) -> str:
+    lines: List[str] = []
+    for i, h in enumerate(hits, start=1):
+        meta = h.get("metadata", {}) or {}
+        src = next((meta.get(k) for k in meta_source_keys if meta.get(k)), "unknown")
+        page = next((meta.get(k) for k in meta_page_keys if meta.get(k) is not None), None)
+        score = h.get("similarity_score")
+        chunk_info = ""
+        if page is None:
+            ci = meta.get("chunk_index")
+            ct = meta.get("chunk_total")
+            if ci is not None and ct:
+                chunk_info = f" | chunk {ci+1}/{ct}"
+        page_txt = f" (page {page})" if page is not None else chunk_info
+        sc = f" | score={score:.3f}" if isinstance(score, (int, float)) else ""
+        lines.append(f"[{i}] {src}{page_txt}{sc}")
+    return "\n".join(lines)
+
+
+class LangChainQAChain:
+    """
+    Builds a flexible QA chain (RAG → [rerank] → prompt → LLM) LangChain-style,
+    with hooks modifying data at stages:
+      - on_before_build_prompt(payload): Dict -> Dict
+      - on_after_build_prompt(prompt_text, payload): str
+      - on_after_llm(answer_text, payload): str
+
+    Input to .invoke / .astream:
+      {"question": str, "where": Optional[dict]}
+
+    Output:
+      {
+        "answer": str,
+        "sources": List[dict],
+        "prompt": str,
+        "raw_hits": List[dict],
+        "used_hits": List[dict]
+      }
+    """
+
+    def __init__(
+        self,
+        *,
+        retriever: RagRetriever,
+        llm,  # any LangChain LLM (e.g., ChatOllama, ChatOpenAI, etc.)
+        reranker: Optional[ReRanker] = None,
+        config: Optional[ChainConfig] = None,
+        verbose: bool = True,
+    ):
+        self.retriever = retriever
+        self.llm = llm
+        self.reranker = reranker
+        self.cfg = config or ChainConfig()
+        self.verbose = verbose
+
+        # Default prompt builder
+        if self.cfg.prompt_builder is None:
+            self.cfg.prompt_builder = _default_prompt_builder
+
+        # Build Runnable pipeline
+        self._chain = self._build_chain()
+
+    # ----------------------
+    # Public API
+    # ----------------------
+
+    def runnable(self):
+        """Returns a LangChain Runnable (you can use .invoke / .astream)."""
+        return self._chain
+
+    def invoke(self, question: str, where: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        return self._chain.invoke({"question": question, "where": where})
+
+    async def ainvoke(self, question: str, where: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        return await self._chain.ainvoke({"question": question, "where": where})
+
+    # ----------------------
+    # Chain construction
+    # ----------------------
+
+    def _build_chain(self) -> RunnableSequence:
+        """
+        Creates a sequence:
+          1) prepare_payload (RunnableLambda)
+          2) retrieve_stage     (RunnableLambda)
+          3) rerank_stage       (RunnableLambda, optional)
+          4) build_context      (RunnableLambda)
+          5) build_prompt       (RunnableLambda)  + hooks before/after
+          6) llm                (self.llm)
+          7) parse              (StrOutputParser)
+          8) package_result     (RunnableLambda)
+        """
+        # 1) input -> payload
+        def prepare_payload(inp: Dict[str, Any]) -> Dict[str, Any]:
+            payload = {
+                "question": inp.get("question") or "",
+                "where": inp.get("where") if inp.get("where") is not None else self.cfg.where,
+                "top_k": self.cfg.top_k,
+                "min_score": self.cfg.min_score,
+            }
+            if self.verbose:
+                print(f"[intergraxChain] Q='{payload['question']}' | top_k={payload['top_k']} | min_score={payload['min_score']}")
+            return payload
+
+        # 2) retrieve
+        def retrieve_stage(payload: Dict[str, Any]) -> Dict[str, Any]:
+            hits = self.retriever.retrieve(
+                question=payload["question"],
+                top_k=payload["top_k"],
+                score_threshold=payload["min_score"],
+                where=payload["where"],
+            )
+            payload["raw_hits"] = hits
+            if self.verbose:
+                print(f"[intergraxChain] Retrieved {len(hits)} hits")
+            return payload
+
+        # 3) rerank (optional)
+        def rerank_stage(payload: Dict[str, Any]) -> Dict[str, Any]:
+            hits = payload.get("raw_hits", [])
+            if self.cfg.use_rerank and self.reranker and hits:
+                if self.verbose:
+                    print(f"[intergraxChain] Reranking to top {self.cfg.rerank_k}")
+                payload["raw_hits"] = self.reranker.rerank_candidates(
+                    query=payload["question"],
+                    candidates=hits,
+                    rerank_k=self.cfg.rerank_k,
+                )
+            return payload
+
+        # 4) build context
+        def build_context_stage(payload: Dict[str, Any]) -> Dict[str, Any]:
+            hits = payload.get("raw_hits", [])
+            context, used = _build_context(hits, self.cfg.max_context_chars)
+            payload["context"] = context
+            payload["used_hits"] = used
+            return payload
+
+        # 5) build prompt (with hooks)
+        def build_prompt_stage(payload: Dict[str, Any]) -> Dict[str, Any]:
+            # hook: on_before_build_prompt (e.g., enrich payload)
+            if callable(self.cfg.on_before_build_prompt):
+                try:
+                    payload = self.cfg.on_before_build_prompt(payload) or payload
+                except Exception as e:
+                    print(f"[intergraxChain] on_before_build_prompt error: {e}")
+
+            question = payload["question"]
+            context  = payload.get("context", "")
+            used     = payload.get("used_hits", [])
+
+            # builder can be ChatPromptTemplate or callable
+            prompt_builder = self.cfg.prompt_builder
+            if isinstance(prompt_builder, ChatPromptTemplate):
+                # ChatPromptTemplate -> text (single-turn)
+                prompt_text = prompt_builder.format(question=question, context=context)
+            else:
+                # callable(question, context, hits) -> str
+                prompt_text = prompt_builder(question, context, used)
+
+            # hook: on_after_build_prompt (e.g., add headers, instructions, system msg)
+            if callable(self.cfg.on_after_build_prompt):
+                try:
+                    prompt_text = self.cfg.on_after_build_prompt(prompt_text, payload) or prompt_text
+                except Exception as e:
+                    print(f"[intergraxChain] on_after_build_prompt error: {e}")
+
+            payload["prompt_text"] = prompt_text
+            return payload
+
+        # 6) LLM call → returns pure text (use StrOutputParser)
+        def prompt_to_llm(payload: Dict[str, Any]) -> str:
+            return payload["prompt_text"]
+
+        # 7) Post-LLM hook and packaging
+        def package_result(answer_text: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+            # hook: on_after_llm
+            if callable(self.cfg.on_after_llm):
+                try:
+                    answer_text = self.cfg.on_after_llm(answer_text, payload) or answer_text
+                except Exception as e:
+                    print(f"[intergraxChain] on_after_llm error: {e}")
+
+            used_hits = payload.get("used_hits", [])
+            citations = _format_citations(
+                hits=used_hits,
+                meta_source_keys=self.cfg.meta_source_keys,
+                meta_page_keys=self.cfg.meta_page_keys,
+            )
+            final_answer = answer_text
+            if citations:
+                final_answer = f"{answer_text}\n\nCitations:\n{citations}"
+
+            out = {
+                "answer": final_answer,
+                "sources": used_hits,
+                "prompt": payload.get("prompt_text", ""),
+                "raw_hits": payload.get("raw_hits", []) if self.cfg.return_traces else None,
+                "used_hits": used_hits if self.cfg.return_traces else None,
+            }
+            return out
+
+        # Build Runnable
+        chain: RunnableSequence = (
+            RunnableLambda(prepare_payload)
+            | RunnableLambda(retrieve_stage)
+            | RunnableLambda(rerank_stage)
+            | RunnableLambda(build_context_stage)
+            | RunnableLambda(build_prompt_stage)
+            # ↓ KEY CHANGE: payload = full input dictionary at this stage
+            | RunnableMap({
+                "llm_out": itemgetter("prompt_text") | self.llm,   # LLM receives only the string
+                "payload": RunnableLambda(lambda x: x),            # preserve all other data
+            })
+            | RunnableMap({
+                "answer_text": itemgetter("llm_out") | StrOutputParser(),
+                "payload": itemgetter("payload"),
+            })
+            | RunnableLambda(lambda d: package_result(d["answer_text"], d["payload"]))
+        )
+        return chain
+
+# ======================================================================
+# FILE: intergrax/globals/__init__.py
+# MODULE: intergrax.globals
+# MODULE_GROUP: globals
+# TAGS:
+#   - package=intergrax
+#   - module_group=globals
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/globals/settings.py
+# MODULE: intergrax.globals.settings
+# MODULE_GROUP: globals
+# TAGS:
+#   - package=intergrax
+#   - module_group=globals
+#   - file=settings.py
+# LINES: 96
+# SHA256: c27862674028b84e898d27337212407b3211ca1f17fcb33d660bb33022ce025c
+# SYMBOLS:
+#   - class GlobalSettings
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+import os
+from typing import Optional
+
+
+@dataclass
+class GlobalSettings:
+    """
+    Global framework-wide configuration.
+
+    This is the single source of truth for defaults such as:
+      - default language,
+      - default locale,
+      - default timezone,
+      - default LLM model,
+      - default memory/consolidation intervals, etc.
+
+    Local modules (runtime, memory, tools) should import and use these
+    defaults instead of hardcoding values.
+    """
+
+    # ------------------------------------------------------------------
+    # Language, locale, timezone defaults
+    # ------------------------------------------------------------------
+
+    # Default language for prompts, instructions, extracted content, etc.
+    # May be overridden by environment variable.
+    default_language: str = os.getenv("INTERGRAX_DEFAULT_LANGUAGE", "pl")
+
+    # Default locale (used when no user/org override is available).
+    default_locale: str = os.getenv("INTERGRAX_DEFAULT_LOCALE", "pl-PL")
+
+    # Default region (country/market context), used only as a fallback.
+    default_region: str = os.getenv("INTERGRAX_DEFAULT_REGION", "pl-PL")
+
+    # Default timezone (used if no user/org-specific value is configured).
+    default_timezone: str = os.getenv("INTERGRAX_DEFAULT_TIMEZONE", "Europe/Warsaw")
+
+    # ------------------------------------------------------------------
+    # Default model identifiers (fallbacks for runtime components)
+    # ------------------------------------------------------------------
+
+    # Default local Ollama chat model.
+    default_ollama_model: str = os.getenv(
+        "INTERGRAX_DEFAULT_OLLAMA_MODEL", "llama3.1:latest"
+    )
+
+    # Default local Ollama embedding model.
+    default_ollama_embed_model: str = os.getenv(
+        "INTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL",
+        "rjmalagon/gte-qwen2-1.5b-instruct-embed-f16:latest",
+    )
+
+    # Default OpenAI chat model.
+    default_openai_model: str = os.getenv("INTERGRAX_DEFAULT_OPENAI_MODEL", "gpt-5-mini")
+
+    # Default OpenAI embedding model.
+    default_openai_embed_model: str = os.getenv(
+        "INTERGRAX_DEFAULT_OPENAI_EMBED_MODEL", "text-embedding-3-small"
+    )
+
+    # Default HuggingFace embedding model (fallback).
+    default_hf_embed_model: str = os.getenv(
+        "INTERGRAX_DEFAULT_HG_EMBED_MODEL",
+        "sentence-transformers/all-MiniLM-L6-v2",
+    )
+
+    # ------------------------------------------------------------------
+    # Session memory / consolidation defaults
+    # ------------------------------------------------------------------
+
+    # Default interval (in user turns) for mid-session consolidation.
+    # If None or non-integer, the runtime components should treat it as disabled
+    # or fall back to a module-local constant. Since os.getenv ALWAYS returns
+    # strings, we cast to int when possible; otherwise None.
+    raw_interval = os.getenv("INTERGRAX_DEFAULT_USER_TURNS_CONSOLIDATION_INTERVAL", None)
+
+    default_user_turns_consolidation_interval: Optional[int] = (
+        int(raw_interval) if raw_interval and raw_interval.isdigit() else None
+    )
+
+    raw_cooldown_sec = os.getenv("INTERGRAX_DEFAULT_CONSOLIDATION_COOLDOWN_SECONDS", None)
+
+    default_consolidation_cooldown_seconds: Optional[int] = (
+        int(raw_cooldown_sec) if raw_cooldown_sec and raw_cooldown_sec.isdigit() else None
+    )
+
+
+# Singleton-style global settings instance used across the framework.
+GLOBAL_SETTINGS = GlobalSettings()
+
+# ======================================================================
+# FILE: intergrax/llm/__init__.py
+# MODULE: intergrax.llm
+# MODULE_GROUP: llm
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/llm/llm_adapters_legacy.py
+# MODULE: intergrax.llm.llm_adapters_legacy
+# MODULE_GROUP: llm
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm
+#   - file=llm_adapters_legacy.py
+# LINES: 722
+# SHA256: d8b23a113fab3776f931599e8d95a46a328fa71e0bc30c92230357663a7525e7
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+# # © Artur Czarnecki. All rights reserved.
+# # Integrax framework – proprietary and confidential.
+# # Use, modification, or distribution without written permission is prohibited.
+
+# from __future__ import annotations
+# from typing import Protocol, Sequence, Iterable, Optional, Any, Dict, Union, List
+
+# # If it's only for types – remove runtime dependency (eliminates import cycles)
+# from typing import TYPE_CHECKING
+# if TYPE_CHECKING:
+#     from .conversational_memory import ChatMessage
+# else:
+#     ChatMessage = Any  # runtime stub
+
+# import json
+# import re
+
+# __all__ = [
+#     "LLMAdapter",
+#     "OpenAIChatCompletionsAdapter",
+#     "GeminiChatAdapter",
+#     "LangChainOllamaAdapter",
+#     "LLMAdapterRegistry",
+# ]
+
+# # ============================================================
+# # Pydantic compat (v2/v1/fallback) – for structured output only
+# # ============================================================
+# try:
+#     from pydantic import BaseModel  # type: ignore
+#     _HAS_PYDANTIC = True
+# except Exception:
+#     class BaseModel: ...
+#     _HAS_PYDANTIC = False
+
+
+# def _strip_code_fences(text: str) -> str:
+#     """
+#     Removes wrappers like ```json ... ``` or ``` ... ``` if present.
+#     """
+#     if not text:
+#         return text
+#     # Remove known fence variants
+#     fence_re = r"^\s*```(?:json|JSON)?\s*(.*?)\s*```\s*$"
+#     m = re.match(fence_re, text, flags=re.DOTALL)
+#     return m.group(1) if m else text
+
+
+# def _extract_json_object(text: str) -> str:
+#     """
+#     Returns the first sensible {} as a JSON string (tolerantly trims noise).
+#     When absent, returns an empty string.
+#     """
+#     if not text:
+#         return ""
+#     text = _strip_code_fences(text).strip()
+#     start = text.find("{")
+#     end = text.rfind("}")
+#     if start == -1 or end == -1 or end <= start:
+#         return ""
+#     return text[start:end + 1]
+
+
+# def _model_json_schema(model_cls: type) -> Dict[str, Any]:
+#     """
+#     Returns JSON Schema for the model class (Pydantic v2/v1). If unavailable, a minimal schema.
+#     """
+#     # pydantic v2
+#     if hasattr(model_cls, "model_json_schema"):
+#         try:
+#             return model_cls.model_json_schema()  # type: ignore[attr-defined]
+#         except Exception:
+#             pass
+#     # pydantic v1
+#     if hasattr(model_cls, "schema"):
+#         try:
+#             return model_cls.schema()  # type: ignore[attr-defined]
+#         except Exception:
+#             pass
+#     # fallback
+#     return {"type": "object"}
+
+
+# def _validate_with_model(model_cls: type, json_str: str):
+#     """
+#     Validates and creates a model instance from JSON.
+#     Supports Pydantic v2, v1, and a fallback **dict constructor.
+#     """
+#     if not json_str or not json_str.strip():
+#         raise ValueError("Empty JSON content for structured output.")
+#     data = json.loads(json_str)
+
+#     # pydantic v2
+#     if hasattr(model_cls, "model_validate_json"):
+#         try:
+#             return model_cls.model_validate_json(json_str)  # type: ignore[attr-defined]
+#         except Exception:
+#             pass
+#     if hasattr(model_cls, "model_validate"):
+#         try:
+#             return model_cls.model_validate(data)  # type: ignore[attr-defined]
+#         except Exception:
+#             pass
+
+#     # pydantic v1
+#     if hasattr(model_cls, "parse_raw"):
+#         try:
+#             return model_cls.parse_raw(json_str)  # type: ignore[attr-defined]
+#         except Exception:
+#             pass
+#     if hasattr(model_cls, "parse_obj"):
+#         try:
+#             return model_cls.parse_obj(data)  # type: ignore[attr-defined]
+#         except Exception:
+#             pass
+
+#     # fallback (plain class/dataclass with a compatible __init__)
+#     try:
+#         return model_cls(**data)
+#     except Exception as e:
+#         raise ValueError(f"Cannot validate structured output with {model_cls}: {e}")
+
+
+# # ============================================================
+# # Universal interface
+# # ============================================================
+# class LLMAdapter(Protocol):
+#     def generate_messages(
+#         self, messages: Sequence[ChatMessage], *, temperature: float = 0.2, max_tokens: Optional[int] = None
+#     ) -> str: ...
+
+#     def stream_messages(
+#         self, messages: Sequence[ChatMessage], *, temperature: float = 0.2, max_tokens: Optional[int] = None
+#     ) -> Iterable[str]: ...
+
+#     # ---- Tools (optional) ----
+#     def supports_tools(self) -> bool: ...
+#     def generate_with_tools(
+#         self,
+#         messages: Sequence[ChatMessage],
+#         tools_schema: List[Dict[str, Any]],
+#         *,
+#         temperature: float = 0.2,
+#         max_tokens: Optional[int] = None,
+#         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+#     ) -> Dict[str, Any]: ...
+#     def stream_with_tools(
+#         self,
+#         messages: Sequence[ChatMessage],
+#         tools_schema: List[Dict[str, Any]],
+#         *,
+#         temperature: float = 0.2,
+#         max_tokens: Optional[int] = None,
+#         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+#     ) -> Iterable[Dict[str, Any]]: ...
+
+#     # ---- Structured output (optional) ----
+#     def generate_structured(
+#         self,
+#         messages: Sequence[ChatMessage],
+#         output_model: type,
+#         *,
+#         temperature: float = 0.2,
+#         max_tokens: Optional[int] = None,
+#     ): ...
+
+
+# # ============================================================
+# # Helper – convert ChatMessage → OpenAI schema
+# # ============================================================
+# def _map_messages_to_openai(msgs: Sequence[ChatMessage]) -> List[Dict[str, Any]]:
+#     out: List[Dict[str, Any]] = []
+#     for m in msgs:
+#         d: Dict[str, Any] = {"role": m.role, "content": m.content}
+#         # Tool messages must have correct id/name fields
+#         if m.role == "tool":
+#             if getattr(m, "tool_call_id", None) is not None:
+#                 d["tool_call_id"] = m.tool_call_id
+#             if getattr(m, "name", None) is not None:
+#                 d["name"] = m.name
+#         if getattr(m, "tool_calls", None):
+#             d["tool_calls"] = m.tool_calls
+#         out.append(d)
+#     return out
+
+
+# # ============================================================
+# # OpenAI Chat Completions
+# # ============================================================
+# class OpenAIChatCompletionsAdapter:
+#     """
+#     client = openai.OpenAI()
+#     OpenAIChatAdapter(client, model="gpt-4o-mini")
+#     """
+
+#     def __init__(self, client, model: str, **defaults):
+#         self.client = client
+#         self.model = model
+#         self.defaults = defaults
+
+#     # --- plain chat ---
+#     def generate_messages(self, messages, *, temperature=0.2, max_tokens=None) -> str:
+#         payload = dict(model=self.model, messages=_map_messages_to_openai(messages), temperature=temperature)
+#         if max_tokens is not None:
+#             payload["max_tokens"] = max_tokens
+#         res = self.client.chat.completions.create(**payload, **self.defaults)
+#         return res.choices[0].message.content or ""
+
+#     def stream_messages(self, messages, *, temperature=0.2, max_tokens=None) -> Iterable[str]:
+#         payload = dict(model=self.model, messages=_map_messages_to_openai(messages), temperature=temperature, stream=True)
+#         if max_tokens is not None:
+#             payload["max_tokens"] = max_tokens
+#         stream = self.client.chat.completions.create(**payload, **self.defaults)
+#         for ev in stream:
+#             delta = getattr(ev.choices[0].delta, "content", None)
+#             if delta:
+#                 yield delta
+
+#     # --- tools ---
+#     def supports_tools(self) -> bool:
+#         return True  # signal for the agent to use the native tools path
+
+#     def generate_with_tools(
+#         self, messages, tools_schema, *, temperature=0.2, max_tokens=None, tool_choice=None
+#     ) -> Dict[str, Any]:
+#         payload = dict(
+#             model=self.model,
+#             messages=_map_messages_to_openai(messages),
+#             temperature=temperature,
+#             tools=tools_schema,
+#         )
+#         if tool_choice is not None:
+#             payload["tool_choice"] = tool_choice
+#         if max_tokens is not None:
+#             payload["max_tokens"] = max_tokens
+
+#         res = self.client.chat.completions.create(**payload, **self.defaults)
+#         choice = res.choices[0]
+#         msg = choice.message
+#         tool_calls = getattr(msg, "tool_calls", None) or []
+
+#         # We RETURN tool_calls in the native OpenAI shape (with 'type' and 'function')
+#         native_tool_calls = []
+#         for tc in tool_calls:
+#             native_tool_calls.append({
+#                 "id": getattr(tc, "id", None),
+#                 "type": "function",
+#                 "function": {
+#                     "name": getattr(tc.function, "name", None),
+#                     "arguments": getattr(tc.function, "arguments", "{}"),
+#                 },
+#             })
+
+#         return {
+#             "content": msg.content or "",
+#             "tool_calls": native_tool_calls,
+#             "finish_reason": choice.finish_reason,
+#         }
+
+#     def stream_with_tools(self, *args, **kwargs):
+#         # Streaming tool_calls is rarely used → fallback to single call
+#         yield self.generate_with_tools(*args, **kwargs)
+
+#     # --- structured output (new) ---
+#     def generate_structured(
+#         self,
+#         messages,
+#         output_model: type,
+#         *,
+#         temperature: float = 0.2,
+#         max_tokens: Optional[int] = None,
+#     ):
+#         """
+#         Returns a model *instance* conforming to the given schema (supports Pydantic v2/v1).
+#         Enforces pure JSON via response_format=json_object and appends a system description with the schema.
+#         """
+#         schema = _model_json_schema(output_model)
+
+#         sys_extra = {
+#             "role": "system",
+#             "content": (
+#                 "Return ONLY a single JSON object that strictly conforms to this JSON Schema. "
+#                 "No prose, no markdown, no backticks. If a field is optional and unknown, omit it.\n"
+#                 f"JSON_SCHEMA: {json.dumps(schema, ensure_ascii=False)}"
+#             ),
+#         }
+#         mapped = _map_messages_to_openai(messages)
+#         mapped = [sys_extra] + mapped
+
+#         payload = dict(
+#             model=self.model,
+#             messages=mapped,
+#             temperature=temperature,
+#             response_format={"type": "json_object"},
+#         )
+#         if max_tokens is not None:
+#             payload["max_tokens"] = max_tokens
+
+#         res = self.client.chat.completions.create(**payload, **self.defaults)
+#         txt = res.choices[0].message.content or ""
+#         json_str = _extract_json_object(txt) or txt.strip()
+#         if not json_str:
+#             raise ValueError("Model did not return JSON content for structured output.")
+
+#         return _validate_with_model(output_model, json_str)
+
+
+# # ============================================================
+# # OpenAI Chat Responses
+# # ============================================================
+# class OpenAIChatResponsesAdapter:
+#     """
+#     Drop-in replacement for the previous Chat Completions-based adapter,
+#     now using the new OpenAI Responses API under the hood.
+
+#     Public interface is preserved:
+#     - generate_messages
+#     - stream_messages
+#     - generate_with_tools
+#     - stream_with_tools
+#     - generate_structured
+
+#     No calling code changes required.
+#     """
+
+#     def __init__(self, client, model: str, **defaults):
+#         self.client = client
+#         self.model = model
+#         self.defaults = defaults
+
+#     # ---------------------------------------------------------------------
+#     # INTERNAL HELPERS (PRIVATE METHODS)
+#     # ---------------------------------------------------------------------
+
+#     def _messages_to_responses_input(self, mapped_messages):
+#         """
+#         Convert legacy Chat Completion style messages:
+#             { "role": "user", "content": "Hello" }
+
+#         Into the Responses API "input items" format:
+#             { "type": "message", "role": "user", "content": "Hello" }
+
+#         Required because Responses API expects explicit typed input blocks.
+#         """
+#         items = []
+#         for m in mapped_messages:
+#             items.append({
+#                 "type": "message",
+#                 "role": m.get("role", "user"),
+#                 "content": m.get("content", ""),
+#             })
+#         return items
+
+#     def _collect_output_text(self, response):
+#         """
+#         Extract the final assistant output text from a Responses response object.
+
+#         The SDK provides response.output_text, but not all models return it.
+#         If it's missing, we manually aggregate text from:
+#             response.output[*].content[*] where type == "output_text".
+
+#         This ensures consistent return behavior across all models.
+#         """
+#         # Fast path: preferred attribute
+#         txt = getattr(response, "output_text", None)
+#         if txt:
+#             return txt
+
+#         # Fallback: walk through the structured response
+#         chunks = []
+#         for item in getattr(response, "output", []) or []:
+#             if getattr(item, "type", None) == "message":
+#                 for c in getattr(item, "content", []) or []:
+#                     if getattr(c, "type", None) == "output_text":
+#                         chunks.append(getattr(c, "text", "") or "")
+
+#         return "".join(chunks)
+
+#     # ---------------------------------------------------------------------
+#     # PUBLIC: Plain chat
+#     # ---------------------------------------------------------------------
+
+#     def generate_messages(self, messages, *, temperature=0.2, max_tokens=None) -> str:
+#         """
+#         Standard single-shot assistant response (non-streaming).
+#         Equivalent to the old chat.completions.create(...) adapter behavior.
+#         """
+#         mapped = _map_messages_to_openai(messages)
+#         input_items = self._messages_to_responses_input(mapped)
+
+#         payload = dict(
+#             model=self.model,
+#             input=input_items,
+#             temperature=temperature,
+#         )
+
+#         # Responses API uses `max_output_tokens`, not `max_tokens`
+#         if max_tokens is not None:
+#             payload["max_output_tokens"] = max_tokens
+
+#         response = self.client.responses.create(**payload, **self.defaults)
+#         return self._collect_output_text(response)
+
+#     def stream_messages(self, messages, *, temperature=0.2, max_tokens=None):
+#         """
+#         Streaming response generator.
+
+#         Yields incremental text chunks extracted from the streaming
+#         Responses API delta events.
+#         """
+#         mapped = _map_messages_to_openai(messages)
+#         input_items = self._messages_to_responses_input(mapped)
+
+#         payload = dict(
+#             model=self.model,
+#             input=input_items,
+#             temperature=temperature,
+#             stream=True,
+#         )
+
+#         if max_tokens is not None:
+#             payload["max_output_tokens"] = max_tokens
+
+#         stream = self.client.responses.create(**payload, **self.defaults)
+
+#         for ev in stream:
+#             # Relevant event type: "response.output_text.delta"
+#             if getattr(ev, "type", None) == "response.output_text.delta":
+#                 delta = getattr(ev, "delta", None)
+#                 if delta:
+#                     yield delta
+
+#     # ---------------------------------------------------------------------
+#     # PUBLIC: Tools
+#     # ---------------------------------------------------------------------
+
+#     def supports_tools(self) -> bool:
+#         """
+#         Signal to higher-level agent framework code:
+#         this adapter supports calling functions / tools natively.
+#         """
+#         return True
+
+#     def generate_with_tools(self, messages, tools_schema, *, temperature=0.2, max_tokens=None, tool_choice=None):
+#         """
+#         Equivalent to generate_messages, but enabling tool call extraction.
+
+#         The returned structure preserves backward compatibility:
+#         - `content`
+#         - `tool_calls[]`
+#         - `finish_reason`
+#         """
+#         mapped = _map_messages_to_openai(messages)
+#         input_items = self._messages_to_responses_input(mapped)
+
+#         payload = dict(
+#             model=self.model,
+#             input=input_items,
+#             temperature=temperature,
+#             tools=tools_schema,
+#         )
+
+#         if tool_choice is not None:
+#             payload["tool_choice"] = tool_choice
+
+#         if max_tokens is not None:
+#             payload["max_output_tokens"] = max_tokens
+
+#         response = self.client.responses.create(**payload, **self.defaults)
+
+#         # Extract assistant text (if any)
+#         content = self._collect_output_text(response)
+
+#         # Extract tool calls
+#         native_tool_calls = []
+#         for item in getattr(response, "output", []) or []:
+#             if getattr(item, "type", None) == "function_call":
+#                 # Normalize tool call arguments to JSON string
+#                 args = getattr(item, "arguments", "{}")
+#                 if not isinstance(args, str):
+#                     args = json.dumps(args, ensure_ascii=False)
+
+#                 native_tool_calls.append({
+#                     "id": getattr(item, "call_id", None),
+#                     "type": "function",
+#                     "function": {
+#                         "name": getattr(item, "name", None),
+#                         "arguments": args,
+#                     },
+#                 })
+
+#         # Responses API doesn't expose a direct finish_reason field;
+#         # we approximate via status for compatibility.
+#         finish_reason = getattr(response, "status", None) or "completed"
+
+#         return {
+#             "content": content or "",
+#             "tool_calls": native_tool_calls,
+#             "finish_reason": finish_reason,
+#         }
+
+#     def stream_with_tools(self, *args, **kwargs):
+#         """
+#         Streaming tool-calls is rarely useful.
+#         For now we fallback to generate_with_tools for compatibility.
+#         """
+#         yield self.generate_with_tools(*args, **kwargs)
+
+#     # ---------------------------------------------------------------------
+#     # PUBLIC: Structured JSON output
+#     # ---------------------------------------------------------------------
+
+#     def generate_structured(self, messages, output_model, *, temperature=0.2, max_tokens=None):
+#         """
+#         Structured output wrapper using Responses API + JSON Schema validation.
+
+#         The API surface matches the previous implementation and returns:
+#             validated_instance = output_model(...)
+#         """
+#         schema = _model_json_schema(output_model)
+
+#         # Prepend schema instruction as a system message
+#         sys_extra = {
+#             "role": "system",
+#             "content": (
+#                 "Return ONLY a single JSON object that strictly conforms to this JSON Schema. "
+#                 "No prose, no markdown, no backticks. If a field is optional and unknown, omit it.\n"
+#                 f"JSON_SCHEMA: {json.dumps(schema, ensure_ascii=False)}"
+#             )
+#         }
+
+#         mapped = [_map_messages_to_openai(messages)[0]] if messages else []
+#         mapped = [sys_extra] + _map_messages_to_openai(messages)
+
+#         input_items = self._messages_to_responses_input(mapped)
+
+#         payload = dict(
+#             model=self.model,
+#             input=input_items,
+#             temperature=temperature,
+#             response_format={
+#                 "type": "json_schema",
+#                 "json_schema": {
+#                     "name": getattr(output_model, "__name__", "OutputModel"),
+#                     "schema": schema,
+#                     "strict": True,
+#                 },
+#             },
+#         )
+
+#         if max_tokens is not None:
+#             payload["max_output_tokens"] = max_tokens
+
+#         response = self.client.responses.create(**payload, **self.defaults)
+
+#         txt = self._collect_output_text(response)
+#         json_str = _extract_json_object(txt) or txt.strip()
+#         if not json_str:
+#             raise ValueError("Model did not return valid JSON.")
+
+#         return _validate_with_model(output_model, json_str)
+
+
+# # ============================================================
+# # Gemini (skeleton)
+# # ============================================================
+# class GeminiChatAdapter:
+#     """
+#     Skeleton - depends on the Google SDK version. Versions from 2025 support function calling.
+#     """
+#     def __init__(self, model, **defaults):
+#         self.model = model
+#         self.defaults = defaults
+
+#     def _split_system(self, messages: Sequence[ChatMessage]):
+#         sys_txt = "\n".join(m.content for m in messages if m.role == "system").strip() or None
+#         convo = [m for m in messages if m.role != "system"]
+#         return sys_txt, convo
+
+#     def generate_messages(self, messages, *, temperature=0.2, max_tokens=None) -> str:
+#         sys_txt, convo = self._split_system(messages)
+#         chat = self.model.start_chat(history=[{"role": m.role, "parts": [m.content]} for m in convo[:-1]])
+#         user_last = convo[-1].content if convo else ""
+#         kwargs = {"temperature": temperature, **self.defaults}
+#         if max_tokens is not None:
+#             kwargs["max_output_tokens"] = max_tokens
+#         if sys_txt:
+#             user_last = f"[SYSTEM]\n{sys_txt}\n\n[USER]\n{user_last}"
+#         res = chat.send_message(user_last, **kwargs)
+#         return res.text or ""
+
+#     def stream_messages(self, messages, *, temperature=0.2, max_tokens=None) -> Iterable[str]:
+#         yield self.generate_messages(messages, temperature=temperature, max_tokens=max_tokens)
+
+#     def supports_tools(self) -> bool: return False
+#     def generate_with_tools(self, *a, **k): raise NotImplementedError("Gemini tools not wired here")
+#     def stream_with_tools(self, *a, **k): raise NotImplementedError("Gemini tools not wired here")
+
+#     # (optionally implement generate_structured similar to the Ollama path)
+
+
+# # ============================================================
+# # LangChain + Ollama (no native tools → planner JSON)
+# # ============================================================
+# class LangChainOllamaAdapter:
+#     def __init__(self, chat, **defaults):
+#         self.chat = chat
+#         self.defaults = defaults
+
+#     def _to_lc_messages(self, messages):
+#         from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+#         out = []
+#         for m in messages:
+#             if m.role == "system":
+#                 out.append(SystemMessage(content=m.content))
+#             elif m.role == "user":
+#                 out.append(HumanMessage(content=m.content))
+#             elif m.role == "assistant":
+#                 out.append(AIMessage(content=m.content))
+#             elif m.role == "tool":
+#                 # no native tools → inject tool result as context
+#                 out.append(SystemMessage(content=f"[TOOL RESULT]\n{m.content}"))
+#             else:
+#                 out.append(SystemMessage(content=f"[{m.role.upper()}]\n{m.content}"))
+#         return out
+
+#     @staticmethod
+#     def _with_ollama_options(base_kwargs: Dict[str, Any], *, temperature: float=None, max_tokens: Optional[int]=None):
+#         """
+#         Ollama (via langchain_ollama) expects generation parameters inside `options`.
+#         Mapping:
+#           - temperature -> options["temperature"]
+#           - max_tokens  -> options["num_predict"]
+#         """
+#         kwargs = dict(base_kwargs or {})
+#         opts = dict(kwargs.get("options") or {})
+#         if temperature is not None:
+#             opts["temperature"] = temperature
+#         if max_tokens is not None:
+#             opts["num_predict"] = max_tokens
+#         kwargs["options"] = opts
+#         return kwargs
+
+#     def generate_messages(self, messages, *, temperature=None, max_tokens=None):
+#         lc_msgs = self._to_lc_messages(messages)
+#         kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
+#         res = self.chat.invoke(lc_msgs, **kwargs)
+#         return getattr(res, "content", None) or str(res)
+
+#     def stream_messages(self, messages, *, temperature=0.2, max_tokens=None):
+#         lc_msgs = self._to_lc_messages(messages)
+#         kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
+#         try:
+#             for chunk in self.chat.stream(lc_msgs, **kwargs):
+#                 c = getattr(chunk, "content", None)
+#                 if c:
+#                     yield c
+#         except Exception:
+#             # fallback to single call
+#             yield self.generate_messages(messages, temperature=temperature, max_tokens=max_tokens)
+
+#     def supports_tools(self) -> bool:
+#         return False  # key point – the agent will take the “planner” branch
+
+#     # --- structured output (new) ---
+#     def generate_structured(
+#         self,
+#         messages,
+#         output_model: type,
+#         *,
+#         temperature: float = 0.2,
+#         max_tokens: Optional[int] = None,
+#     ):
+#         """
+#         Enforces returning a single JSON object conforming to the schema (strict JSON prompt + validation).
+#         """
+#         schema = _model_json_schema(output_model)
+
+#         from langchain_core.messages import SystemMessage, HumanMessage
+#         lc_msgs = self._to_lc_messages(messages)
+
+#         strict = SystemMessage(
+#             content=(
+#                 "Return ONLY a single JSON object that strictly conforms to the JSON Schema below. "
+#                 "Do not add any commentary, markdown, or backticks. "
+#                 "If a field is optional and unknown, omit it."
+#             )
+#         )
+#         schema_msg = HumanMessage(content=f"JSON_SCHEMA:\n{json.dumps(schema, ensure_ascii=False)}")
+#         lc_msgs = [strict, schema_msg] + lc_msgs
+
+#         kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
+#         res = self.chat.invoke(lc_msgs, **kwargs)
+#         txt = getattr(res, "content", None) or str(res)
+#         json_str = _extract_json_object(txt) or txt.strip()
+#         if not json_str:
+#             raise ValueError("Model did not return JSON content for structured output (Ollama).")
+
+#         return _validate_with_model(output_model, json_str)
+
+
+# # ============================================================
+# # Adapter registry
+# # ============================================================
+# class LLMAdapterRegistry:
+#     _registry = {}
+
+#     @classmethod
+#     def register(cls, name: str, factory):
+#         cls._registry[name.lower()] = factory
+
+#     @classmethod
+#     def create(cls, name: str, **kwargs) -> LLMAdapter:
+#         key = name.lower()
+#         if key not in cls._registry:
+#             raise ValueError(f"Unknown adapter: {name}")
+#         return cls._registry[key](**kwargs)
+
+# # Default adapter registrations
+# LLMAdapterRegistry.register("openai", lambda **kw: OpenAIChatCompletionsAdapter(**kw))
+# LLMAdapterRegistry.register("gemini", lambda **kw: GeminiChatAdapter(**kw))
+# LLMAdapterRegistry.register("ollama", lambda **kw: LangChainOllamaAdapter(**kw))
+
+# ======================================================================
+# FILE: intergrax/llm/messages.py
+# MODULE: intergrax.llm.messages
+# MODULE_GROUP: llm
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm
+#   - file=messages.py
+# LINES: 97
+# SHA256: 5a1ccfac101639633f1f830ca3e34fc33e5765d7ac73348891a42911dcc90e26
+# SYMBOLS:
+#   - class AttachmentRef
+#   - class ChatMessage
+#   - def append_chat_messages()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass, asdict, field
+from datetime import datetime
+from typing import Any, Dict, List, Literal, Optional
+
+MessageRole = Literal["system", "user", "assistant", "tool"]
+
+
+@dataclass
+class AttachmentRef:
+    """
+    Lightweight reference to an attachment associated with a message or session.
+
+    The actual binary content is stored elsewhere (filesystem, object storage,
+    database BLOB, etc.). Here we only keep stable identifiers and metadata.
+    """
+
+    id: str
+    type: str  # e.g. "pdf", "docx", "image", "audio", "video", "code", "json"
+    uri: str   # e.g. "file://...", "s3://...", "db://attachments/<id>"
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+# ============================================================
+# ChatMessage – extended with tool_calls and to_dict() method
+# ============================================================
+@dataclass
+class ChatMessage:
+    """
+    Universal chat message compatible with the OpenAI Responses API.
+    Supports fields:
+      - tool_call_id  → for single tool calls (from field 'id'),
+      - tool_calls    → list of calls (for assistant.tool_calls).
+    """
+
+    role: MessageRole
+    content: str
+
+    entry_id: Optional[int] = None
+    deleted: bool = False
+    modified: bool = False    
+    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    tool_call_id: Optional[str] = None
+    name: Optional[str] = None
+    tool_calls: Optional[List[dict]] = None
+    attachments: List[AttachmentRef] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        """
+        Converts the object to a dict compatible with OpenAI Responses API / ChatCompletions.
+        """
+        msg = {
+            "role": self.role,
+            "content": self.content,
+        }
+        if self.name:
+            msg["name"] = self.name
+        if self.tool_call_id:
+            msg["tool_call_id"] = self.tool_call_id
+        if self.tool_calls:
+            msg["tool_calls"] = self.tool_calls
+        return msg
+
+    def __repr__(self):
+        extras = []
+        if self.name:
+            extras.append(f"name={self.name}")
+        if self.tool_call_id:
+            extras.append(f"tool_call_id={self.tool_call_id}")
+        if self.tool_calls:
+            extras.append(f"tool_calls={len(self.tool_calls)}")
+        extras_str = ", ".join(extras)
+        return f"<ChatMessage role={self.role} {extras_str}>"
+
+
+def append_chat_messages(
+        existing: Optional[List[ChatMessage]],
+        new: List[ChatMessage]
+) -> List[ChatMessage]:
+    """
+    Custom reducer for LangGraph state.
+
+    LangGraph calls this function when merging state updates:
+      - `existing`: the current list of messages in the state (may be None)
+      - `new`: the list of messages provided by a node update
+
+    We simply append the new messages to the existing ones.
+    """
+    if existing is None:
+        return list(new)
+    return [*existing, *new]
+
+# ======================================================================
+# FILE: intergrax/llm_adapters/__init__.py
+# MODULE: intergrax.llm_adapters
+# MODULE_GROUP: llm_adapters
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm_adapters
+#   - file=__init__.py
+# LINES: 32
+# SHA256: 46e63774b46b6848ea4c87b1e605f9974358d95a190fed547f361efdf969150e
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+# intergrax/llm_adapters/__init__.py
+
+from .base import (
+    LLMAdapter,
+    LLMAdapterRegistry,
+    BaseModel,
+    _extract_json_object,
+    _model_json_schema,
+    _validate_with_model,
+    _map_messages_to_openai,
+)
+from .openai_responses_adapter import OpenAIChatResponsesAdapter
+from .gemini_adapter import GeminiChatAdapter
+from .ollama_adapter import LangChainOllamaAdapter
+
+__all__ = [
+    "LLMAdapter",
+    "LLMAdapterRegistry",
+    "BaseModel",
+    "OpenAIChatResponsesAdapter",
+    "GeminiChatAdapter",
+    "LangChainOllamaAdapter",
+    "_extract_json_object",
+    "_model_json_schema",
+    "_validate_with_model",
+    "_map_messages_to_openai",
+]
+
+# Default adapter registrations
+LLMAdapterRegistry.register("openai", lambda **kw: OpenAIChatResponsesAdapter(**kw))
+LLMAdapterRegistry.register("gemini", lambda **kw: GeminiChatAdapter(**kw))
+LLMAdapterRegistry.register("ollama", lambda **kw: LangChainOllamaAdapter(**kw))
+
+# ======================================================================
+# FILE: intergrax/llm_adapters/base.py
+# MODULE: intergrax.llm_adapters.base
+# MODULE_GROUP: llm_adapters
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm_adapters
+#   - file=base.py
+# LINES: 336
+# SHA256: 2638441464721304e9ad0f8e6cb8fc474f45a7bf20555fa74c2055a51e0e3a03
+# SYMBOLS:
+#   - def _strip_code_fences()
+#   - def _extract_json_object()
+#   - def _model_json_schema()
+#   - def _validate_with_model()
+#   - def estimate_tokens_for_messages()
+#   - class BaseLLMAdapter
+#   - class LLMAdapter
+#   - def _map_messages_to_openai()
+#   - class LLMAdapterRegistry
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import Protocol, Sequence, Iterable, Optional, Any, Dict, Union, List, TYPE_CHECKING
+import json
+import re
+import tiktoken
+
+# if TYPE_CHECKING:
+#     from ..llm.conversational_memory import ChatMessage
+# else:
+#     ChatMessage = Any  # runtime stub
+from intergrax.memory.conversational_memory import ChatMessage
+
+__all__ = [
+    "LLMAdapter",
+    "LLMAdapterRegistry",
+    "BaseModel",
+    "BaseLLMAdapter",
+    "estimate_tokens_for_messages",
+    "_extract_json_object",
+    "_model_json_schema",
+    "_validate_with_model",
+    "_map_messages_to_openai",
+]
+
+# ============================================================
+# Pydantic compatibility (v2/v1/fallback) – for structured output only
+# ============================================================
+try:
+    from pydantic import BaseModel  # type: ignore
+    _HAS_PYDANTIC = True
+except Exception:  # pragma: no cover - pydantic not installed
+    class BaseModel: ...
+    _HAS_PYDANTIC = False
+
+
+def _strip_code_fences(text: str) -> str:
+    """
+    Remove wrappers like ```json ... ``` or ``` ... ``` if present.
+    Useful when the model wraps a JSON object in Markdown fences.
+    """
+    if not text:
+        return text
+    fence_re = r"^\s*```(?:json|JSON)?\s*(.*?)\s*```\s*$"
+    m = re.match(fence_re, text, flags=re.DOTALL)
+    return m.group(1) if m else text
+
+
+def _extract_json_object(text: str) -> str:
+    """
+    Try to extract the first {...} block that looks like a JSON object.
+    Returns an empty string if none is found.
+
+    This is tolerant to extra text around the JSON.
+    """
+    if not text:
+        return ""
+    text = _strip_code_fences(text).strip()
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        return ""
+    return text[start : end + 1]
+
+
+def _model_json_schema(model_cls: type) -> Dict[str, Any]:
+    """
+    Return JSON Schema for the model class (Pydantic v2/v1).
+    If unavailable, return a minimal object schema.
+    """
+    # pydantic v2
+    if hasattr(model_cls, "model_json_schema"):
+        try:
+            return model_cls.model_json_schema()  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    # pydantic v1
+    if hasattr(model_cls, "schema"):
+        try:
+            return model_cls.schema()  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    # fallback
+    return {"type": "object"}
+
+
+def _validate_with_model(model_cls: type, json_str: str):
+    """
+    Validate and create a model instance from JSON string.
+
+    Supports:
+    - Pydantic v2 (model_validate_json/model_validate)
+    - Pydantic v1 (parse_raw/parse_obj)
+    - Plain dataclasses/classes via **data
+    """
+    if not json_str or not json_str.strip():
+        raise ValueError("Empty JSON content for structured output.")
+
+    data = json.loads(json_str)
+
+    # pydantic v2
+    if hasattr(model_cls, "model_validate_json"):
+        try:
+            return model_cls.model_validate_json(json_str)  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    if hasattr(model_cls, "model_validate"):
+        try:
+            return model_cls.model_validate(data)  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    # pydantic v1
+    if hasattr(model_cls, "parse_raw"):
+        try:
+            return model_cls.parse_raw(json_str)  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    if hasattr(model_cls, "parse_obj"):
+        try:
+            return model_cls.parse_obj(data)  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    # fallback (plain class/dataclass with compatible __init__)
+    try:
+        return model_cls(**data)
+    except Exception as e:
+        raise ValueError(f"Cannot validate structured output with {model_cls}: {e}")
+
+
+def estimate_tokens_for_messages(
+    messages: Sequence[ChatMessage],
+    model_hint: Optional[str] = None,
+) -> int:
+    """
+    Estimate token count for a list of ChatMessage objects.
+
+    Strategy:
+      - If tiktoken is available:
+          * use encoding_for_model(model_hint) when model_hint is provided,
+          * otherwise fall back to a generic encoding (e.g. cl100k_base).
+      - If tiktoken is not available:
+          * use a simple character-based heuristic (approx. 4 chars/token).
+
+    This is a generic, model-agnostic estimator designed to be "good enough"
+    for budgeting and trimming, not for billing accuracy.
+    """
+    # Aggregate all message contents into a single string.
+    parts: List[str] = []
+    for m in messages:
+        content = m.content
+        if not isinstance(content, str):
+            content = str(content)
+        parts.append(content)
+    joined = "\n".join(parts)
+    if not joined:
+        return 0
+
+    if model_hint:
+        enc = tiktoken.encoding_for_model(model_hint)
+    else:
+        # Reasonable default for many chat models.
+        enc = tiktoken.get_encoding("cl100k_base")
+
+    return len(enc.encode(joined))
+
+
+class BaseLLMAdapter:
+    """
+    Optional base class providing shared utilities such as token counting.
+
+    Adapters may subclass this to inherit the default implementation of
+    `count_messages_tokens`. If a specific provider exposes a more accurate
+    or native token counter, the adapter can override this method.
+    """
+
+    # Hint used by the generic token estimator (e.g. OpenAI model name).
+    model_name_for_token_estimation: Optional[str] = None
+
+    def count_messages_tokens(self, messages: Sequence[ChatMessage]) -> int:
+        """
+        Default token counting implementation.
+
+        Uses `estimate_tokens_for_messages` with an optional model hint.
+        Concrete adapters are free to override this method if they can
+        provide a provider-specific implementation.
+        """
+        return estimate_tokens_for_messages(
+            messages,
+            model_hint=self.model_name_for_token_estimation,
+        )
+
+
+
+# ============================================================
+# Universal interface (protocol)
+# ============================================================
+class LLMAdapter(Protocol):
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        ...
+
+    def stream_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Iterable[str]:
+        ...
+
+    # ---- Tools (optional) ----
+    def supports_tools(self) -> bool:
+        ...
+
+    def generate_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema: List[Dict[str, Any]],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+    ) -> Dict[str, Any]:
+        ...
+
+    def stream_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema: List[Dict[str, Any]],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+    ) -> Iterable[Dict[str, Any]]:
+        ...
+
+    # ---- Structured output (optional) ----
+    def generate_structured(
+        self,
+        messages: Sequence[ChatMessage],
+        output_model: type,
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ):
+        ...
+
+
+    def count_messages_tokens(self, messages: Sequence[ChatMessage]) -> int:
+        """
+        Return approximate token count for the given list of messages.
+        A best-effort implementation is acceptable.
+        """
+        ...
+
+
+    # ---- Context window (required) ----
+    @property
+    def context_window_tokens(self) -> int:
+        """
+        Maximum number of tokens the underlying model can accept in a single
+        request (input + output), as defined by the model provider.
+
+        Implementations should compute this once (e.g. in __init__) based on
+        the configured model name and cache it in a private attribute.
+        """
+        ...
+
+
+# ============================================================
+# Helper – convert ChatMessage → OpenAI schema
+# ============================================================
+def _map_messages_to_openai(msgs: Sequence[ChatMessage]) -> List[Dict[str, Any]]:
+    """
+    Map internal ChatMessage objects to OpenAI-compatible message dicts.
+
+    Handles:
+    - role/content
+    - tool messages with tool_call_id/name
+    - assistant messages with tool_calls[]
+    """
+    out: List[Dict[str, Any]] = []
+    for m in msgs:
+        d: Dict[str, Any] = {"role": m.role, "content": m.content}
+
+        if m.role == "tool":
+            if getattr(m, "tool_call_id", None) is not None:
+                d["tool_call_id"] = m.tool_call_id
+            if getattr(m, "name", None) is not None:
+                d["name"] = m.name
+
+        if getattr(m, "tool_calls", None):
+            d["tool_calls"] = m.tool_calls
+
+        out.append(d)
+    return out
+
+
+# ============================================================
+# Adapter registry
+# ============================================================
+class LLMAdapterRegistry:
+    """
+    Simple string-keyed registry for LLM adapter factories.
+
+    Usage:
+        LLMAdapterRegistry.register("openai", lambda **kw: OpenAIChatResponsesAdapter(**kw))
+        adapter = LLMAdapterRegistry.create("openai", client=..., model=...)
+    """
+
+    _registry: Dict[str, Any] = {}
+
+    @classmethod
+    def register(cls, name: str, factory) -> None:
+        cls._registry[name.lower()] = factory
+
+    @classmethod
+    def create(cls, name: str, **kwargs) -> LLMAdapter:
+        key = name.lower()
+        if key not in cls._registry:
+            raise ValueError(f"Unknown adapter: {name}")
+        return cls._registry[key](**kwargs)
+
+# ======================================================================
+# FILE: intergrax/llm_adapters/gemini_adapter.py
+# MODULE: intergrax.llm_adapters.gemini_adapter
+# MODULE_GROUP: llm_adapters
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm_adapters
+#   - file=gemini_adapter.py
+# LINES: 126
+# SHA256: aade42a5a2638948069121c82cd289335a4fe80cd8d340a0172d6643bfaf2b61
+# SYMBOLS:
+#   - class GeminiChatAdapter
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import Dict, Iterable, Optional, Sequence
+
+from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
+
+
+class GeminiChatAdapter(BaseLLMAdapter):
+    """
+    Minimal Gemini adapter.
+
+    NOTE:
+    - This implementation intentionally does not wire tools.
+    - It focuses on simple chat usage.
+    """
+
+    # Conservative context window estimates for common Gemini models.
+    _GEMINI_CONTEXT_WINDOWS: Dict[str, int] = {
+        # Gemini 1.5 family (1M tokens)
+        "gemini-1.5-pro": 1_000_000,
+        "gemini-1.5-flash": 1_000_000,
+
+        # Gemini 2.0 Flash family (1,048,576 tokens = 2^20)
+        "gemini-2.0-flash": 1_048_576,
+        "gemini-2.0-flash-lite": 1_048_576,
+        "gemini-2.0-flash-thinking": 1_048_576,
+    }
+
+
+    def _estimate_gemini_context_window(self, model: str) -> int:
+        """
+        Best-effort context window estimation for Gemini models.
+        Computed once at adapter construction time.
+        """
+        name = (model or "").strip()
+        base = name.split(":", 1)[0]
+
+        if base in self._GEMINI_CONTEXT_WINDOWS:
+            return self._GEMINI_CONTEXT_WINDOWS[base]
+
+        return 1_000_000
+
+    def __init__(self, model, **defaults):
+        super().__init__()
+        self.model = model
+        self.defaults = defaults
+        self._context_window_tokens: int = self._estimate_gemini_context_window(str(model))
+
+
+    @property
+    def context_window_tokens(self) -> int:
+        """
+        Cached maximum context window (input + output tokens) for the
+        configured Gemini model. Computed once in __init__.
+        """
+        return self._context_window_tokens
+    
+
+    def _split_system(self, messages: Sequence[ChatMessage]):
+        """
+        Separate system messages from the rest of the conversation, so that
+        we can prepend them manually if needed.
+        """
+        sys_txt = "\n".join(m.content for m in messages if m.role == "system").strip() or None
+        convo = [m for m in messages if m.role != "system"]
+        return sys_txt, convo
+
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        sys_txt, convo = self._split_system(messages)
+        history = [{"role": m.role, "parts": [m.content]} for m in convo[:-1]]
+        chat = self.model.start_chat(history=history)
+        user_last = convo[-1].content if convo else ""
+
+        kwargs = {"temperature": temperature, **self.defaults}
+        if max_tokens is not None:
+            kwargs["max_output_tokens"] = max_tokens
+
+        if sys_txt:
+            user_last = f"[SYSTEM]\n{sys_txt}\n\n[USER]\n{user_last}"
+
+        res = chat.send_message(user_last, **kwargs)
+        return getattr(res, "text", "") or ""
+
+    def stream_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Iterable[str]:
+        # Simple fallback streaming: single-shot only
+        yield self.generate_messages(messages, temperature=temperature, max_tokens=max_tokens)
+
+    # Tools not implemented in this skeleton.
+    def supports_tools(self) -> bool:
+        return False
+
+    def generate_with_tools(self, *a, **k):
+        raise NotImplementedError("Gemini tools are not wired in this adapter.")
+
+    def stream_with_tools(self, *a, **k):
+        raise NotImplementedError("Gemini tools are not wired in this adapter.")
+    
+
+    def generate_structured(
+        self,
+        messages: Sequence[ChatMessage],
+        output_model: type,
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ):
+        """
+        Structured output is not implemented for this adapter.
+        """
+        raise NotImplementedError("Structured output is not implemented for GeminiChatAdapter.")
+
+
+# ======================================================================
+# FILE: intergrax/llm_adapters/ollama_adapter.py
+# MODULE: intergrax.llm_adapters.ollama_adapter
+# MODULE_GROUP: llm_adapters
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm_adapters
+#   - file=ollama_adapter.py
+# LINES: 257
+# SHA256: 9949b7fb00577740887e80e08300caeb13e6cf1eb021da375e2e365ec82d2994
+# SYMBOLS:
+#   - class LangChainOllamaAdapter
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+import json
+from typing import Any, Dict, Iterable, Optional, Sequence
+from langchain_ollama import ChatOllama
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.llm_adapters.base import (
+    BaseLLMAdapter,
+    ChatMessage,
+    _extract_json_object,
+    _model_json_schema,
+    _validate_with_model,
+)
+
+
+class LangChainOllamaAdapter(BaseLLMAdapter):
+    """
+    Adapter for Ollama models used via LangChain's ChatModel interface.
+
+    There is no native tools API here, so the agent typically uses a
+    "planner" pattern (tool calls are reasoned about in JSON).
+    """
+
+
+    # Conservative context window estimates for common Ollama models.
+    # Extend this mapping with the models you actually use.
+    _OLLAMA_CONTEXT_WINDOWS: Dict[str, int] = {
+        # LLaMA 3 / LLaMA 3.1
+        "llama3:8b": 8_192,
+        "llama3:70b": 8_192,
+        "llama3.1:8b": 16_384,
+        "llama3.1:70b": 16_384,
+
+        # Qwen 2 / Qwen 2.5
+        "qwen2:7b": 32_768,
+        "qwen2:72b": 32_768,
+        "qwen2.5:1.5b": 32_768,
+        "qwen2.5:7b": 32_768,
+        "qwen2.5:14b": 32_768,
+
+        # Phi-3 / Phi-3.5
+        "phi3:mini": 4_096,
+        "phi3:medium": 8_192,
+        "phi3.5:mini": 128_000,
+        "phi3.5:moe": 128_000,
+
+        # Mistral / Mixtral
+        "mistral:7b": 8_192,
+        "mixtral:8x7b": 32_768,
+
+        # StarCoder2
+        "starcoder2:7b": 8_192,
+        "starcoder2:15b": 8_192,
+
+        # Gemma 2
+        "gemma2:2b": 8_192,
+        "gemma2:9b": 8_192,
+        "gemma2:27b": 8_192,
+
+        # openAI
+        "gpt-oss:20b": 128_000,
+        "gpt-oss:120b": 128_000,
+    }
+
+
+    def _estimate_ollama_context_window_from_model(self, model: str) -> int:
+        """
+        Best-effort context window estimation for an Ollama model based on
+        its name. This is computed once in the adapter __init__.
+        """
+        name = (model or "").strip()
+        base = name.split(":", 1)[0]  # remove possible tags like ":latest"
+
+        if base in self._OLLAMA_CONTEXT_WINDOWS:
+            return self._OLLAMA_CONTEXT_WINDOWS[base]
+
+        # Conservative fallback if the model is unknown.
+        return 8_192
+
+    def __init__(self, chat : Optional[ChatOllama] = None, context_window_tokens: int = None, **defaults):
+        super().__init__()
+
+        self.chat = chat or ChatOllama(
+            model=GLOBAL_SETTINGS.default_ollama_model
+        )
+        self.defaults = defaults
+
+        if context_window_tokens is not None and context_window_tokens > 0:
+            # User-provided value = authoritative.
+            self._context_window_tokens = int(context_window_tokens)
+        else:
+            # Otherwise estimate from the model name (fallback path).
+            self._context_window_tokens = int(
+                self._estimate_ollama_context_window_from_model(self.chat.model)
+            )
+
+
+    @property
+    def context_window_tokens(self) -> int:
+        """
+        Cached maximum context window (input + output tokens) for the
+        configured Ollama model. Computed once in __init__.
+        """
+        return self._context_window_tokens
+    
+
+    # --------------------------------------------------------
+    # Internal helpers
+    # --------------------------------------------------------
+
+    def _to_lc_messages(self, messages: Sequence[ChatMessage]):
+        """
+        Convert internal ChatMessage list into LangChain message objects.
+        """
+        from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+
+        out = []
+        for m in messages:
+            if m.role == "system":
+                out.append(SystemMessage(content=m.content))
+            elif m.role == "user":
+                out.append(HumanMessage(content=m.content))
+            elif m.role == "assistant":
+                out.append(AIMessage(content=m.content))
+            elif m.role == "tool":
+                # No native tools: inject tool result as contextual system message
+                out.append(SystemMessage(content=f"[TOOL RESULT]\n{m.content}"))
+            else:
+                out.append(SystemMessage(content=f"[{m.role.upper()}]\n{m.content}"))
+        return out
+
+    @staticmethod
+    def _with_ollama_options(
+        base_kwargs: Dict[str, Any],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        Ollama (via langchain_ollama) expects generation parameters inside
+        the `options` dictionary.
+
+        Mapping:
+            temperature -> options["temperature"]
+            max_tokens  -> options["num_predict"]
+        """
+        kwargs = dict(base_kwargs or {})
+        opts = dict(kwargs.get("options") or {})
+
+        if temperature is not None:
+            opts["temperature"] = temperature
+        if max_tokens is not None:
+            opts["num_predict"] = max_tokens
+
+        kwargs["options"] = opts
+        return kwargs
+
+    # --------------------------------------------------------
+    # Public API
+    # --------------------------------------------------------
+
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        lc_msgs = self._to_lc_messages(messages)
+        kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
+        res = self.chat.invoke(lc_msgs, **kwargs)
+        return getattr(res, "content", None) or str(res)
+
+    def stream_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Iterable[str]:
+        lc_msgs = self._to_lc_messages(messages)
+        kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
+
+        try:
+            for chunk in self.chat.stream(lc_msgs, **kwargs):
+                c = getattr(chunk, "content", None)
+                if c:
+                    yield c
+        except Exception:
+            # Fallback to single-shot call on any streaming error
+            yield self.generate_messages(messages, temperature=temperature, max_tokens=max_tokens)
+
+    def supports_tools(self) -> bool:
+        """
+        There is no native tool-calling support in this adapter.
+        The agent should use a planner-style pattern instead.
+        """
+        return False
+
+    # --- Structured output via prompt + validation ---
+    def generate_structured(
+        self,
+        messages: Sequence[ChatMessage],
+        output_model: type,
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ):
+        """
+        Enforce returning a single JSON object conforming to the schema,
+        using a strict JSON prompt and post-hoc validation.
+        """
+        schema = _model_json_schema(output_model)
+
+        from langchain_core.messages import SystemMessage, HumanMessage
+
+        lc_msgs = self._to_lc_messages(messages)
+
+        strict = SystemMessage(
+            content=(
+                "Return ONLY a single JSON object that strictly conforms to the JSON Schema below. "
+                "Do not add any commentary, markdown, or backticks. "
+                "If a field is optional and unknown, omit it."
+            )
+        )
+        schema_msg = HumanMessage(content=f"JSON_SCHEMA:\n{json.dumps(schema, ensure_ascii=False)}")
+        lc_msgs = [strict, schema_msg] + lc_msgs
+
+        kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
+        res = self.chat.invoke(lc_msgs, **kwargs)
+        txt = getattr(res, "content", None) or str(res)
+
+        json_str = _extract_json_object(txt) or txt.strip()
+        if not json_str:
+            raise ValueError("Model did not return JSON content for structured output (Ollama).")
+
+        return _validate_with_model(output_model, json_str)
+    
+
+    def generate_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema,
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        tool_choice=None,
+    ):
+        raise NotImplementedError("Tools are not supported by LangChainOllamaAdapter.")
+
+    def stream_with_tools(self, *args, **kwargs):
+        raise NotImplementedError("Tools are not supported by LangChainOllamaAdapter.")
+
+
+# ======================================================================
+# FILE: intergrax/llm_adapters/openai_responses_adapter.py
+# MODULE: intergrax.llm_adapters.openai_responses_adapter
+# MODULE_GROUP: llm_adapters
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm_adapters
+#   - file=openai_responses_adapter.py
+# LINES: 328
+# SHA256: 19e22314f566e6788a17eb02d072353c359c0a1280419fcb503ef33459d24800
+# SYMBOLS:
+#   - class OpenAIChatResponsesAdapter
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+
+from __future__ import annotations
+import json
+from typing import Any, Dict, Iterable, Optional, Sequence, List
+from openai import Client
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.llm_adapters.base import (
+    BaseLLMAdapter,
+    ChatMessage,
+    _map_messages_to_openai,
+    _extract_json_object,
+    _model_json_schema,
+    _validate_with_model,
+)
+
+
+class OpenAIChatResponsesAdapter(BaseLLMAdapter):
+    """
+    OpenAI adapter based on the new Responses API.
+
+    Public interface is compatible with the previous Chat Completions adapter:
+    - generate_messages
+    - stream_messages
+    - generate_with_tools
+    - stream_with_tools
+    - generate_structured
+    """
+
+    # Conservative context window estimates for common OpenAI models.
+    # For unknown models we fall back to a small, safe default.
+    _OPENAI_CONTEXT_WINDOWS: Dict[str, int] = {
+        "gpt-4o": 128_000,
+        "gpt-4o-mini": 128_000,
+        "gpt-4o-2024-08-06": 128_000,
+        "gpt-3.5-turbo": 16_385,
+        "gpt-3.5-turbo-0301": 16_385,
+        "gpt-4.1": 1_000_000,
+        "gpt-4.1-mini": 1_000_000,
+        "gpt-4.1-nano": 1_000_000,
+        "gpt-5": 400_000,
+        "gpt-5-mini": 400_000,
+    }
+
+
+    def _estimate_openai_context_window(self, model: str) -> int:
+        """
+        Best-effort context window estimation for OpenAI models.
+
+        The result is used once at adapter construction time and then cached
+        in a private attribute.
+        """
+        name = (model or "").strip()
+        base = name.split(":", 1)[0]  # strip possible snapshot suffixes
+
+        if base in self._OPENAI_CONTEXT_WINDOWS:
+            return self._OPENAI_CONTEXT_WINDOWS[base]
+
+        # Conservative fallback for unknown models.
+        return 128_000
+
+    def __init__(self, client: Optional[Client] = None, model: Optional[str] = None, **defaults):
+        super().__init__()
+        self.client = client or Client()
+        self.model = model or GLOBAL_SETTINGS.default_openai_model
+        self.model_name_for_token_estimation = self.model
+        self.defaults = defaults
+        self._context_window_tokens: int = self._estimate_openai_context_window(self.model)
+
+
+    @property
+    def context_window_tokens(self) -> int:
+        """
+        Cached maximum context window (input + output tokens) for the
+        configured OpenAI model. Computed once in __init__.
+        """
+        return self._context_window_tokens
+
+    # ---------------------------------------------------------------------
+    # INTERNAL HELPERS (PRIVATE METHODS)
+    # ---------------------------------------------------------------------
+
+    def _messages_to_responses_input(self, mapped_messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Convert Chat Completion style messages:
+            { "role": "user", "content": "Hello" }
+
+        Into the Responses API "input items":
+            { "type": "message", "role": "user", "content": "Hello" }
+        """
+        items: List[Dict[str, Any]] = []
+        for m in mapped_messages:
+            items.append(
+                {
+                    "type": "message",
+                    "role": m.get("role", "user"),
+                    "content": m.get("content", ""),
+                }
+            )
+        return items
+
+    def _collect_output_text(self, response) -> str:
+        """
+        Extract the assistant's output text from a Responses API result.
+
+        Prefer response.output_text when available, otherwise aggregate
+        all text blocks from response.output[*].content[*] where type == "output_text".
+        """
+        txt = getattr(response, "output_text", None)
+        if txt:
+            return txt
+
+        chunks: List[str] = []
+        for item in getattr(response, "output", []) or []:
+            if getattr(item, "type", None) == "message":
+                for c in getattr(item, "content", []) or []:
+                    if getattr(c, "type", None) == "output_text":
+                        chunks.append(getattr(c, "text", "") or "")
+        return "".join(chunks)
+        
+
+    # ---------------------------------------------------------------------
+    # PUBLIC: Plain chat
+    # ---------------------------------------------------------------------
+
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        """
+        Single-shot completion (non-streaming) using Responses API.
+        """
+        mapped = _map_messages_to_openai(messages)
+        input_items = self._messages_to_responses_input(mapped)
+
+        payload: Dict[str, Any] = dict(
+            model=self.model,
+            input=input_items,
+            # temperature=temperature, - not applicable in openai responses
+        )
+
+        if max_tokens is not None:
+            payload["max_output_tokens"] = max_tokens
+
+        response = self.client.responses.create(**payload, **self.defaults)
+        return self._collect_output_text(response)
+
+    def stream_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Iterable[str]:
+        """
+        Streaming completion using Responses API.
+
+        Yields incremental text deltas taken from the streaming events.
+        """
+        mapped = _map_messages_to_openai(messages)
+        input_items = self._messages_to_responses_input(mapped)
+
+        payload: Dict[str, Any] = dict(
+            model=self.model,
+            input=input_items,
+            # temperature=temperature, - not applicable in openai responses
+            stream=True,
+        )
+
+        if max_tokens is not None:
+            payload["max_output_tokens"] = max_tokens
+
+        stream = self.client.responses.create(**payload, **self.defaults)
+        for ev in stream:
+            # We are interested in "response.output_text.delta" events
+            if getattr(ev, "type", None) == "response.output_text.delta":
+                delta = getattr(ev, "delta", None)
+                if delta:
+                    yield delta
+
+    # ---------------------------------------------------------------------
+    # PUBLIC: Tools
+    # ---------------------------------------------------------------------
+
+    def supports_tools(self) -> bool:
+        """
+        Signal to higher-level orchestration that this adapter supports tools.
+        """
+        return True
+
+    def generate_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema,
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        tool_choice=None,
+    ) -> Dict[str, Any]:
+        """
+        Generate a response with potential function/tool calls.
+
+        Returns:
+            {
+              "content": str,
+              "tool_calls": [...],
+              "finish_reason": str
+            }
+        """
+        mapped = _map_messages_to_openai(messages)
+        input_items = self._messages_to_responses_input(mapped)
+
+        payload: Dict[str, Any] = dict(
+            model=self.model,
+            input=input_items,
+            # temperature=temperature, - not applicable in openai responses
+            tools=tools_schema,
+        )
+
+        if tool_choice is not None:
+            payload["tool_choice"] = tool_choice
+
+        if max_tokens is not None:
+            payload["max_output_tokens"] = max_tokens
+
+        response = self.client.responses.create(**payload, **self.defaults)
+
+        # Assistant text (if present)
+        content = self._collect_output_text(response)
+
+        # Extract tool calls in a format compatible with Chat Completions
+        native_tool_calls: List[Dict[str, Any]] = []
+        for item in getattr(response, "output", []) or []:
+            if getattr(item, "type", None) == "function_call":
+                args = getattr(item, "arguments", "{}")
+                if not isinstance(args, str):
+                    args = json.dumps(args, ensure_ascii=False)
+
+                native_tool_calls.append(
+                    {
+                        "id": getattr(item, "call_id", None),
+                        "type": "function",
+                        "function": {
+                            "name": getattr(item, "name", None),
+                            "arguments": args,
+                        },
+                    }
+                )
+
+        finish_reason = getattr(response, "status", None) or "completed"
+
+        return {
+            "content": content or "",
+            "tool_calls": native_tool_calls,
+            "finish_reason": finish_reason,
+        }
+
+    def stream_with_tools(self, *args, **kwargs):
+        """
+        Currently we do not stream tool calls.
+        Fallback to a single non-streaming call for simplicity.
+        """
+        yield self.generate_with_tools(*args, **kwargs)
+
+    # ---------------------------------------------------------------------
+    # PUBLIC: Structured JSON output
+    # ---------------------------------------------------------------------
+
+    def generate_structured(
+        self,
+        messages: Sequence[ChatMessage],
+        output_model: type,
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ):
+        """
+        Use Responses API + JSON Schema to produce a validated structured output.
+
+        Returns an instance of `output_model` validated from the JSON payload.
+        """
+        schema = _model_json_schema(output_model)
+
+        sys_extra = {
+            "role": "system",
+            "content": (
+                "Return ONLY a single JSON object that strictly conforms to this JSON Schema. "
+                "No prose, no markdown, no backticks. If a field is optional and unknown, omit it.\n"
+                f"JSON_SCHEMA: {json.dumps(schema, ensure_ascii=False)}"
+            ),
+        }
+
+        mapped = _map_messages_to_openai(messages)
+        mapped = [sys_extra] + mapped
+        input_items = self._messages_to_responses_input(mapped)
+
+        payload: Dict[str, Any] = dict(
+            model=self.model,
+            input=input_items,
+            # temperature=temperature, - not applicable in openai responses
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": getattr(output_model, "__name__", "OutputModel"),
+                    "schema": schema,
+                    "strict": True,
+                },
+            },
+        )
+
+        if max_tokens is not None:
+            payload["max_output_tokens"] = max_tokens
+
+        response = self.client.responses.create(**payload, **self.defaults)
+
+        txt = self._collect_output_text(response)
+        json_str = _extract_json_object(txt) or txt.strip()
+        if not json_str:
+            raise ValueError("Model did not return valid JSON content for structured output.")
+
+        return _validate_with_model(output_model, json_str)
+
+# ======================================================================
+# FILE: intergrax/memory/__init__.py
+# MODULE: intergrax.memory
+# MODULE_GROUP: memory
+# TAGS:
+#   - package=intergrax
+#   - module_group=memory
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/memory/conversational_memory.py
+# MODULE: intergrax.memory.conversational_memory
+# MODULE_GROUP: memory
+# TAGS:
+#   - package=intergrax
+#   - module_group=memory
+#   - file=conversational_memory.py
+# LINES: 123
+# SHA256: e5e9f9312647e23e52052b75464c76e495579704c5f9ce9a153116cffd7b6bcc
+# SYMBOLS:
+#   - class ConversationalMemory
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+import threading
+import uuid
+from typing import List, Optional, Sequence
+
+from intergrax.llm.messages import ChatMessage, MessageRole
+
+
+class ConversationalMemory:
+    """
+    Universal in-memory conversation history component.
+
+    Responsibilities:
+      - keep messages in RAM,
+      - provide a simple API to add / extend / read / clear messages,
+      - optionally enforce a max_messages limit,
+      - prepare messages for different model backends (get_for_model).
+
+    Important:
+      - this class does NOT know anything about persistence
+        (no files, no SQLite, no external storage).
+      - persistence is delegated to dedicated memory store providers.
+    """
+
+    def __init__(
+        self,
+        session_id: Optional[str] = None,
+        *,
+        max_messages: Optional[int] = None,
+    ) -> None:
+        self.session_id: str = session_id or str(uuid.uuid4())
+        self._messages: List[ChatMessage] = []
+        self._max_messages = max_messages
+        self._lock = threading.RLock()
+
+    # ------------------------------------------------------------------
+    # Core mutation API
+    # ------------------------------------------------------------------
+
+    def add(self, role: MessageRole, content: str) -> None:
+        """
+        Append a new message to the history and enforce max_messages limit.
+        """
+        self.add_message(ChatMessage(role=role, content=str(content)))        
+
+    def add_message(self, message: ChatMessage) -> None:
+        """
+        Append a new message to the history and enforce max_messages limit.
+        """
+        with self._lock:
+            self._messages.append(message)
+            self._trim_if_needed()
+
+    def extend(self, messages: Sequence[ChatMessage]) -> None:
+        """
+        Append multiple messages (e.g., loaded from a store).
+        """
+        with self._lock:
+            self._messages.extend(messages)
+            self._trim_if_needed()
+
+    def _trim_if_needed(self) -> None:
+        """
+        If max_messages is set, keep only the most recent messages.
+        """
+        if self._max_messages is not None and len(self._messages) > self._max_messages:
+            overflow = len(self._messages) - self._max_messages
+            if overflow > 0:
+                del self._messages[0:overflow]
+
+    def clear(self) -> None:
+        """
+        Remove all messages from memory.
+        """
+        with self._lock:
+            self._messages.clear()
+
+    # ------------------------------------------------------------------
+    # Read API
+    # ------------------------------------------------------------------
+
+    def get_all(self) -> List[ChatMessage]:
+        """
+        Return a shallow copy of all messages.
+        """
+        with self._lock:
+            return list(self._messages)
+
+    def get_for_model(self, native_tools: bool = False) -> List[ChatMessage]:
+        """
+        Returns messages prepared for sending to the model.
+
+        If native_tools=True (e.g., OpenAI Responses with tool calling),
+        removes 'tool' messages from history and keeps only
+        system/user/assistant messages, so that the model sees a clean
+        conversation history. Tools will be represented by the new
+        assistant.tool_calls + tool messages, not by old historical tool logs.
+
+        For planners (e.g., Ollama) or generic models, set native_tools=False
+        to return the full history.
+        """
+        with self._lock:
+            if native_tools:
+                return [
+                    m
+                    for m in self._messages
+                    if m.role in ("system", "user", "assistant")
+                ]
+            return list(self._messages)
+
+    def get_recent(self, n: int) -> List[ChatMessage]:
+        """
+        Return the last `n` messages (or fewer, if history is shorter).
+        """
+        if n <= 0:
+            return []
+        with self._lock:
+            return self._messages[-n:]
+
+# ======================================================================
+# FILE: intergrax/memory/conversational_store.py
+# MODULE: intergrax.memory.conversational_store
+# MODULE_GROUP: memory
+# TAGS:
+#   - package=intergrax
+#   - module_group=memory
+#   - file=conversational_store.py
+# LINES: 106
+# SHA256: 291f5ffa339e1e90e874c01b25a36b724e4e9bf0fdf010c5478e8e2c19a7ffcc
+# SYMBOLS:
+#   - class ConversationalMemoryStore
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Protocol, Optional
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.memory.conversational_memory import ConversationalMemory
+
+
+class ConversationalMemoryStore(Protocol):
+    """
+    Abstract persistent storage interface for conversational memory.
+
+    This interface operates directly on the conversational memory aggregate
+    (`ConversationalMemory`), instead of raw collections of messages.
+
+    Motivation:
+    - The runtime always interacts with `ConversationalMemory`.
+    - The application may swap persistence backends (JSON, SQLite, Redis, Cloud DB)
+      without changing runtime logic.
+    - The storage backend should NOT implement business logic, trimming policies,
+      token heuristics, or model-format conversions — that belongs to the aggregate.
+
+    Implementations MUST guarantee:
+    - deterministic persistence,
+    - idempotent write operations,
+    - no modification of semantic meaning of messages,
+    - safe interaction in async environments.
+    """
+
+    async def load_memory(
+        self,
+        session_id: str,
+        *,
+        max_messages: Optional[int] = None,
+    ) -> ConversationalMemory:
+        """
+        Load the full conversational history for a given session
+        and return a fully initialized `IntergraxConversationalMemory` instance.
+
+        Parameters:
+            session_id: Unique identifier representing a logical conversation.
+            max_messages: Optional soft limit for the number of messages to preload.
+
+        NOTE:
+            Implementations may choose to:
+            - preload full history (recommended),
+            - respect the limit pre-load,
+            - or ignore the parameter entirely if unsupported.
+
+        Returns:
+            A ready-to-use conversational memory object.
+        """
+        ...
+
+    async def save_memory(
+        self,
+        memory: ConversationalMemory,
+    ) -> None:
+        """
+        Persist the entire state of the conversational memory for a session.
+
+        Typical usage:
+        - after summarization / compression steps,
+        - when closing or archiving a session,
+        - when switching storage backends or running maintenance.
+
+        MUST overwrite existing storage for the given session_id.
+        """
+        ...
+
+    async def append_message(
+        self,
+        memory: ConversationalMemory,
+        message: ChatMessage,
+    ) -> None:
+        """
+        Append a single message to persistent storage AND update the in-memory
+        instance accordingly.
+
+        Implementations that do not support incremental persistence may fallback to:
+        - load + append + save_memory(memory)
+
+        This method SHOULD respect trimming rules applied by the aggregate.
+        """
+        ...
+
+    async def delete_session(
+        self,
+        session_id: str,
+    ) -> None:
+        """
+        Permanently remove stored history for a given session.
+
+        Required for:
+        - GDPR compliance,
+        - explicit "clear conversation"
+        - session reset flows,
+        - user privacy controls.
+
+        MUST silently ignore unknown session IDs (no-error semantics).
+        """
+        ...
+
+# ======================================================================
+# FILE: intergrax/memory/stores/__init__.py
+# MODULE: intergrax.memory.stores
+# MODULE_GROUP: memory
+# TAGS:
+#   - package=intergrax
+#   - module_group=memory
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/memory/stores/in_memory_conversational_store.py
+# MODULE: intergrax.memory.stores.in_memory_conversational_store
+# MODULE_GROUP: memory
+# TAGS:
+#   - package=intergrax
+#   - module_group=memory
+#   - file=in_memory_conversational_store.py
+# LINES: 95
+# SHA256: d6bc9b36d93ec24d7cdfb304d3925aefbc34207a8ef97b95ca582f3a8b1df639
+# SYMBOLS:
+#   - class InMemoryConversationalMemoryStore
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Dict, List, Optional
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.memory.conversational_memory import ConversationalMemory
+from intergrax.memory.conversational_store import ConversationalMemoryStore
+
+
+class InMemoryConversationalMemoryStore(ConversationalMemoryStore):
+    """
+    In-memory implementation of ConversationalMemoryStore.
+
+    Primary use-cases:
+    - local development,
+    - prototyping,
+    - unit and integration testing,
+    - environments where persistence is NOT required.
+
+    This implementation is NOT suitable for:
+    - distributed runtime deployments,
+    - multi-instance scaling,
+    - long-lived production storage.
+
+    Data remains isolated per Python interpreter and will NOT survive restart.
+    """
+
+    def __init__(self) -> None:
+        # Maps session_id -> ordered list of ChatMessage
+        self._sessions: Dict[str, List[ChatMessage]] = {}
+
+    async def load_memory(
+        self,
+        session_id: str,
+        *,
+        max_messages: Optional[int] = None,
+    ) -> ConversationalMemory:
+        """
+        Load conversation history into an IntergraxConversationalMemory instance.
+        """
+        messages = self._sessions.get(session_id, [])
+
+        memory = ConversationalMemory(
+            session_id=session_id,
+            max_messages=max_messages,
+        )
+
+        if messages:
+            memory.extend(messages)
+
+        return memory
+
+    async def save_memory(
+        self,
+        memory: ConversationalMemory,
+    ) -> None:
+        """
+        Persist the full conversation history using defensive copying.
+        """
+        self._sessions[memory.session_id] = list(memory.get_all())
+
+    async def append_message(
+        self,
+        memory: ConversationalMemory,
+        message: ChatMessage,
+    ) -> None:
+        """
+        Append message in memory and persist the updated state.
+        """
+        # First apply runtime logic (includes trimming & locking)
+        memory.add(message)
+
+        # Then persist the new state
+        if memory.session_id not in self._sessions:
+            self._sessions[memory.session_id] = []
+
+        self._sessions[memory.session_id].append(message)
+
+    async def delete_session(
+        self,
+        session_id: str,
+    ) -> None:
+        """
+        Remove persistent session data (no-error semantics).
+        """
+        self._sessions.pop(session_id, None)
+
+    # Optional helper for diagnostics and testing
+    def list_sessions(self) -> List[str]:
+        """Return list of active persisted session IDs."""
+        return list(self._sessions.keys())
+
+# ======================================================================
+# FILE: intergrax/memory/stores/in_memory_user_profile_store.py
+# MODULE: intergrax.memory.stores.in_memory_user_profile_store
+# MODULE_GROUP: memory
+# TAGS:
+#   - package=intergrax
+#   - module_group=memory
+#   - file=in_memory_user_profile_store.py
+# LINES: 59
+# SHA256: 9c1690d3981da5294e656858954226b823d4cace4d2e769c3764afb970d77bad
+# SYMBOLS:
+#   - class InMemoryUserProfileStore
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Dict
+
+from intergrax.memory.user_profile_memory import UserProfile, UserIdentity, UserPreferences
+from intergrax.memory.user_profile_store import UserProfileStore
+
+
+class InMemoryUserProfileStore(UserProfileStore):
+    """
+    In-memory implementation of UserProfileStore.
+
+    Use cases:
+      - unit tests,
+      - local development,
+      - experiments and notebooks.
+
+    This implementation does NOT provide durability or cross-process sharing.
+    """
+
+    def __init__(self) -> None:
+        # user_id -> UserProfile
+        self._profiles: Dict[str, UserProfile] = {}
+
+    async def get_profile(self, user_id: str) -> UserProfile:
+        """
+        Return an existing profile or a default one if not present.
+        """
+        if user_id in self._profiles:
+            return self._profiles[user_id]
+
+        # Create a default, mostly empty profile for a new user.
+        identity = UserIdentity(user_id=user_id)
+        preferences = UserPreferences()
+        profile = UserProfile(identity=identity, preferences=preferences)
+
+        # Optionally store the default profile to make subsequent calls cheaper.
+        self._profiles[user_id] = profile
+        return profile
+
+    async def save_profile(self, profile: UserProfile) -> None:
+        """
+        Persist or update the profile in memory.
+        """
+        self._profiles[profile.identity.user_id] = profile
+
+    async def delete_profile(self, user_id: str) -> None:
+        """
+        Remove a stored profile, if present. Ignore unknown IDs.
+        """
+        self._profiles.pop(user_id, None)
+
+    # Optional helper for debugging / tests
+    def list_user_ids(self):
+        return list(self._profiles.keys())
+
+# ======================================================================
+# FILE: intergrax/memory/user_profile_manager.py
+# MODULE: intergrax.memory.user_profile_manager
+# MODULE_GROUP: memory
+# TAGS:
+#   - package=intergrax
+#   - module_group=memory
+#   - file=user_profile_manager.py
+# LINES: 269
+# SHA256: cf80d957757a0cad0eb9959b7a74728a7b4f0a52544362f41723787746ef4037
+# SYMBOLS:
+#   - class UserProfileManager
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Optional, Dict, Any, List
+
+from intergrax.memory.user_profile_memory import (
+    UserProfile,
+    UserProfileMemoryEntry,
+)
+from intergrax.memory.user_profile_store import UserProfileStore
+
+
+class UserProfileManager:
+    """
+    High-level facade for working with user profiles.
+
+    Responsibilities:
+      - provide convenient methods to:
+          * load or create a UserProfile for a given user_id,
+          * persist profile changes,
+          * manage long-term user memory entries,
+          * manage system-level instructions derived from the profile;
+      - hide direct interaction with the underlying UserProfileStore.
+
+    It intentionally does NOT:
+      - call LLMs directly,
+      - perform RAG over long-term user memory,
+      - decide *when* the profile should be updated (this is a policy concern
+        for higher-level components such as the runtime or application logic).
+    """
+
+    def __init__(self, store: UserProfileStore) -> None:
+        self._store = store
+
+    # ---------------------------------------------------------------------
+    # Core profile APIs
+    # ---------------------------------------------------------------------
+
+    async def get_profile(self, user_id: str) -> UserProfile:
+        """
+        Load the user profile for the given user_id.
+
+        Implementations of UserProfileStore are expected to return an
+        initialized profile even if no data exists yet for that user.
+        """
+        return await self._store.get_profile(user_id)
+
+    async def save_profile(self, profile: UserProfile) -> None:
+        """
+        Persist the given UserProfile aggregate.
+
+        This MUST overwrite any previously stored profile for the same user.
+        """
+        await self._store.save_profile(profile)
+
+    async def delete_profile(self, user_id: str) -> None:
+        """
+        Remove any stored profile data for the given user_id.
+
+        This operation is typically used for cleanup or account deletion flows.
+        """
+        await self._store.delete_profile(user_id)
+
+    # ---------------------------------------------------------------------
+    # System instructions management
+    # ---------------------------------------------------------------------
+
+    async def get_system_instructions_for_user(self, user_id: str) -> str:
+        """
+        Return a compact system-level instruction string for the given user.
+
+        Behavior:
+          - loads the user's profile from the store,
+          - uses the profile's `system_instructions` if set,
+          - otherwise builds a deterministic fallback based on identity
+            and preferences via `UserProfile.build_default_system_instructions()`.
+
+        This method does NOT call any LLM and does NOT use long-term memory.
+        Higher-level components may choose to update `system_instructions`
+        using LLMs and then persist the result via `update_system_instructions()`.
+        """
+        profile = await self._store.get_profile(user_id)
+        return self._build_default_system_instructions(profile)
+
+    async def update_system_instructions(
+        self,
+        user_id: str,
+        instructions: str,
+    ) -> UserProfile:
+        """
+        Update the `system_instructions` field of the user's profile.
+
+        This method assumes that some higher-level component (e.g. the runtime
+        or a batch job) has already decided *what* the new instructions should be,
+        possibly by calling an LLM over `memory_entries` and other data.
+
+        The manager is responsible only for:
+          - loading the profile,
+          - updating the field,
+          - persisting the aggregate.
+
+        Returns the updated UserProfile for convenience.
+        """
+        profile = await self._store.get_profile(user_id)
+        normalized = instructions.strip()
+        profile.system_instructions = normalized or None
+        profile.modified=True
+        await self._store.save_profile(profile)
+        profile.modified=False
+        return profile
+
+    # ---------------------------------------------------------------------
+    # Long-term memory management
+    # ---------------------------------------------------------------------
+
+    async def add_memory_entry(
+        self,
+        user_id: str,
+        content: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> UserProfile:
+        """
+        Append a new long-term memory entry to the user's profile.
+
+        This method only updates the profile aggregate and persists it via
+        the store. It does NOT call any LLM and does NOT update
+        `system_instructions` automatically.
+
+        Returns the updated UserProfile for convenience.
+        """
+        profile = await self._store.get_profile(user_id)
+
+        entry = UserProfileMemoryEntry(
+            content=content,
+            metadata=metadata or {},
+        )
+        profile.memory_entries.append(entry)
+
+        await self._store.save_profile(profile)
+        
+        return profile
+
+    async def update_memory_entry(
+        self,
+        user_id: str,
+        entry_id: int,
+        *,
+        content: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> UserProfile:
+        """
+        Update a single long-term memory entry identified by `entry_id`.
+        """
+        profile = await self._store.get_profile(user_id)
+
+        for entry in profile.memory_entries:
+            if entry.entry_id == entry_id:
+                if content is not None:
+                    entry.content = content
+                if metadata is not None:
+                    entry.metadata = metadata
+                entry.modified=True                
+                break
+
+        await self._store.save_profile(profile)
+
+        if entry:
+            entry.modified=False
+
+        return profile
+
+    async def remove_memory_entry(
+        self,
+        user_id: str,
+        entry_id: int,
+    ) -> UserProfile:
+        """
+        Remove a single long-term memory entry identified by `entry_id`.
+        """
+        profile = await self._store.get_profile(user_id)
+
+        for entry in profile.memory_entries:
+            if entry.entry_id == entry_id:
+                entry.deleted = True
+                break
+       
+        await self._store.save_profile(profile)
+
+        profile.memory_entries = [
+            e for e in profile.memory_entries if e.entry_id != entry_id
+        ]
+
+        return profile
+
+
+    async def clear_memory(self, user_id: str) -> UserProfile:
+        """
+        Remove all long-term memory entries for the given user.
+
+        This is usually used for privacy/cleanup flows or when the application
+        decides to reset user-level memory.
+        """
+        profile = await self._store.get_profile(user_id)     
+        
+        for entry in profile.memory_entries:
+            entry.deleted=True  
+        
+        await self._store.save_profile(profile)
+
+        profile.memory_entries.clear()
+
+        return profile
+    
+
+    def _build_default_system_instructions(self, profile: UserProfile) -> str:
+        """
+        Deterministic, non-LLM helper that builds system instructions
+        from the given profile (identity + preferences) when the profile
+        does not yet have explicit system_instructions.
+        """
+        if profile.system_instructions:
+            return profile.system_instructions.strip()
+
+        identity = profile.identity
+        prefs = profile.preferences
+
+        lines: list[str] = []
+
+        # Identity
+        if identity.display_name:
+            lines.append(f"You are talking to {identity.display_name}.")
+        else:
+            lines.append(f"You are talking to a user with id '{identity.user_id}'.")
+
+        if identity.role:
+            lines.append(f"The user is: {identity.role}.")
+        if identity.domain_expertise:
+            lines.append(f"Domain expertise: {identity.domain_expertise}.")
+
+        # Language / style
+        if prefs.preferred_language:
+            lines.append(
+                f"Always answer in {prefs.preferred_language} unless explicitly asked otherwise."
+            )
+        if prefs.tone:
+            lines.append(f"Default tone: {prefs.tone}.")
+        if prefs.answer_length:
+            lines.append(f"Default answer length: {prefs.answer_length}.")
+
+        # Formatting rules
+        if prefs.no_emojis_in_code:
+            lines.append("Never use emojis in code blocks.")
+        if prefs.no_emojis_in_docs:
+            lines.append("Avoid emojis in technical documentation.")
+        if prefs.default_project_context:
+            lines.append(
+                f"Assume the default project context is: {prefs.default_project_context}."
+            )
+
+        if not lines:
+            lines.append(
+                "You are talking to a user. Use a helpful, concise, and technical style by default."
+            )
+
+        return " ".join(lines)
+
+
+# ======================================================================
+# FILE: intergrax/memory/user_profile_memory.py
+# MODULE: intergrax.memory.user_profile_memory
+# MODULE_GROUP: memory
+# TAGS:
+#   - package=intergrax
+#   - module_group=memory
+#   - file=user_profile_memory.py
+# LINES: 167
+# SHA256: b742d06f0359b9b4580ff6d2fc76a751336332b00df6a8e0c200b833ba84928d
+# SYMBOLS:
+#   - class MemoryKind
+#   - class MemoryImportance
+#   - class UserProfileMemoryEntry
+#   - class UserIdentity
+#   - class UserPreferences
+#   - class UserProfile
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Literal, Optional
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+
+
+# ---------------------------------------------------------------------------
+# Core domain models for user / org profile and prompt bundles.
+# These models are intentionally independent from any storage or engine logic.
+# They represent the "language" in which we describe identities, preferences
+# and how they should be injected into LLM prompts.
+# ---------------------------------------------------------------------------
+
+class MemoryKind(Enum):
+    USER_FACT = "user_fact"
+    PREFERENCE = "preference"
+    SESSION_SUMMARY = "session_summary"
+    ORG_FACT = "org_fact"
+    POLICY = "policy"
+    OTHER = "other"
+
+
+class MemoryImportance(Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+@dataclass
+class UserProfileMemoryEntry:
+    """
+    Long-term memory entry for a user profile.
+
+    Stores stable facts, insights, or notes about the user.
+    Can also store session-related summaries, linked via session_id.
+    """
+
+    # Persistent identifier in the storage backend.
+    entry_id: Optional[int] = None
+
+    # Main content of the memory entry (human-readable text).
+    content: str = ""
+
+    # Optional link to the session from which this entry was derived.
+    # None means "not tied to a specific session".
+    session_id: Optional[str] = None
+
+    # High-level type of this memory entry.
+    # Useful for filtering, retrieval strategies, and UI.
+    kind: MemoryKind = MemoryKind.OTHER
+
+    # Short human-readable title (e.g. "Summary of session 2025-12-09").
+    title: Optional[str] = None
+
+    # Importance level used to prioritize entries during retrieval.
+    importance: MemoryImportance = MemoryImportance.MEDIUM
+
+    # Creation timestamp in ISO format (UTC).
+    # You can also store datetime and convert in the store layer;
+    # here we keep string for easier serialization.
+    created_at: str = field(
+        default_factory=lambda: datetime.utcnow().isoformat()
+    )
+
+    # Additional, less frequently queried metadata.
+    # Example: {"tags": ["intergrax", "memory", "profiles"], "source": "session_summarizer"}
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    # Unit-of-work flags used by the manager/store.
+    deleted: bool = False
+    modified: bool = False
+
+
+@dataclass
+class UserIdentity:
+    """
+    High-level description of who the user is.
+
+    This is a domain model, not something that must be sent directly to the LLM.
+    It can be summarized and transformed into instructions when needed.
+    """
+
+    user_id: str
+
+    # Human-level description
+    display_name: Optional[str] = None          # e.g. "Artur"
+    role: Optional[str] = None                  # e.g. "Senior .NET / Python Engineer"
+    domain_expertise: Optional[str] = None      # e.g. "AI runtimes, RAG, ERP systems"
+
+    # Environment / locale
+    language: Optional[str] = GLOBAL_SETTINGS.default_language             # e.g. "pl", "en"
+    locale: Optional[str] = GLOBAL_SETTINGS.default_locale                # e.g. "pl-PL"
+    timezone: Optional[str] = GLOBAL_SETTINGS.default_timezone              # e.g. "Europe/Warsaw"
+
+
+@dataclass
+class UserPreferences:
+    """
+    Stable user preferences that influence how the runtime and the LLM
+    should behave by default.
+
+    These preferences can be:
+    - mirrored into system instructions (for the LLM),
+    - and used programmatically by the runtime (e.g. to set max_tokens).
+    """
+
+    # Answer language & style
+    preferred_language: Optional[str] = None    # e.g. "pl", "en"
+    answer_length: Optional[str] = None         # e.g. "short", "detailed"
+    tone: Optional[str] = None                  # e.g. "technical", "formal", "casual"
+
+    # Formatting & content rules
+    no_emojis_in_code: bool = False
+    no_emojis_in_docs: bool = False
+    prefer_markdown: bool = True
+    prefer_code_blocks: bool = True
+
+    # Project / domain context (high-level)
+    default_project_context: Optional[str] = None
+    # e.g. "Building Intergrax Drop-In Knowledge Runtime and Mooff ERP platform"
+
+    # Arbitrary extra preferences to keep this extensible
+    extra: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class UserProfile:
+    """
+    Canonical user profile aggregate.
+
+    It separates:
+    - identity      (who the user is),
+    - preferences   (how the user wants the system to behave),
+    - system instructions (short, compressed natural-language description
+                           used as a base for LLM system prompts),
+    - memory        (long-term factual and conceptual notes about the user).
+    """
+
+    identity: UserIdentity
+    preferences: UserPreferences
+
+    # Short natural-language instructions used directly (or almost directly)
+    # as system-level instructions for the runtime. This should be kept small
+    # and periodically re-generated / compressed.
+    system_instructions: Optional[str] = None
+
+    # Long-term memory entries about the user (facts, insights, stable notes).
+    # These are not sent directly to the LLM by default; they are used to
+    # derive or update `system_instructions` and other summaries.
+    memory_entries: List[UserProfileMemoryEntry] = field(default_factory=list)
+
+    # Versioning / metadata hook if needed.
+    version: int = 1    
+
+    entry_id: Optional[int] = None
+    deleted: bool = False
+    modified: bool = False
+
+
+# ======================================================================
+# FILE: intergrax/memory/user_profile_store.py
+# MODULE: intergrax.memory.user_profile_store
+# MODULE_GROUP: memory
+# TAGS:
+#   - package=intergrax
+#   - module_group=memory
+#   - file=user_profile_store.py
+# LINES: 52
+# SHA256: ea286a228ae9e15730f87cc51bada7a0532b903389122ba6351806030aaa7157
+# SYMBOLS:
+#   - class UserProfileStore
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Protocol
+
+from intergrax.memory.user_profile_memory import UserProfile
+
+
+class UserProfileStore(Protocol):
+    """
+    Persistent storage interface for user profiles.
+
+    This store is responsible for:
+    - loading and saving the `UserProfile` aggregate,
+    - providing sane defaults for new users,
+    - hiding backend-specific concerns (JSON files, SQL DB, etc.).
+
+    It MUST NOT:
+    - implement LLM prompt logic,
+    - perform RAG operations,
+    - decide how profile is injected into prompts.
+    """
+
+    async def get_profile(self, user_id: str) -> UserProfile:
+        """
+        Load user profile for the given user_id.
+
+        Implementations SHOULD:
+        - return an initialized profile even if no data exists yet
+          (e.g. with default identity/preferences),
+        - never return None.
+        """
+        ...
+
+    async def save_profile(self, profile: UserProfile) -> None:
+        """
+        Persist the given profile aggregate for the associated user_id.
+
+        This MUST overwrite any previously stored profile for that user.
+        """
+        ...
+
+    async def delete_profile(self, user_id: str) -> None:
+        """
+        Remove any stored profile data for the given user_id.
+
+        Implementations MUST tolerate unknown user_ids without error.
+        """
+        ...
+
+# ======================================================================
+# FILE: intergrax/multimedia/__init__.py
+# MODULE: intergrax.multimedia
+# MODULE_GROUP: multimedia
+# TAGS:
+#   - package=intergrax
+#   - module_group=multimedia
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/multimedia/audio_loader.py
+# MODULE: intergrax.multimedia.audio_loader
+# MODULE_GROUP: multimedia
+# TAGS:
+#   - package=intergrax
+#   - module_group=multimedia
+#   - file=audio_loader.py
+# LINES: 49
+# SHA256: e3fdeea5554326c16faaf03aa1105e3dbc5730a20ccba57e4ad0e4e3eb533f70
+# SYMBOLS:
+#   - def yt_download_audio()
+#   - def translate_audio()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from pathlib import Path
+from yt_dlp import YoutubeDL
+import whisper
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+
+def yt_download_audio(youtube_url: str, out_dir: str | Path, audio_format: str = "mp3") -> Path:
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    outtmpl = str(out_dir / "audio_%(id)s.%(ext)s")
+    ydl_opts = {
+        "format": "bestaudio/best",
+        "outtmpl": outtmpl,
+        "noplaylist": True,
+        "quiet": True,
+        "no_warnings": True,
+        "postprocessors": [
+            {
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": audio_format,
+                "preferredquality": "192",
+            }
+        ],
+    }
+
+    with YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(youtube_url, download=True)
+
+    video_id = info.get("id")
+    filepath = out_dir / f"audio_{video_id}.{audio_format}"
+
+    if not filepath.exists():
+        raise FileNotFoundError("Cannot find downloaded audio file.")
+
+    return filepath
+
+
+def translate_audio(audio_path:str, model:str="medium", language:str=GLOBAL_SETTINGS.default_language):
+    model = whisper.load_model("medium")
+    options = dict(task="translate", best_of=1, language=language)
+    results = model.transcribe(str(audio_path), **options)
+    return results
+
+# ======================================================================
+# FILE: intergrax/multimedia/images_loader.py
+# MODULE: intergrax.multimedia.images_loader
+# MODULE_GROUP: multimedia
+# TAGS:
+#   - package=intergrax
+#   - module_group=multimedia
+#   - file=images_loader.py
+# LINES: 23
+# SHA256: b6b4f6ceff3ce0a6d19a133554821a1cbd0d11192bcc4690607cba103a24956a
+# SYMBOLS:
+#   - def transcribe_image()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+import ollama
+from IPython.display import Image, display
+
+# !ollama pull llava-llama3:latest
+
+def transcribe_image(prompt:str, image_path: str, model:str = "llava-llama3:latest")->str:
+    response = ollama.chat(
+        model=model,
+        messages=[
+            {
+                "role":"user",
+                "content": prompt,
+                "images": [image_path]
+            }
+        ]
+    )
+    return response['message']['content']
+
+
+# ======================================================================
+# FILE: intergrax/multimedia/ipynb_display.py
+# MODULE: intergrax.multimedia.ipynb_display
+# MODULE_GROUP: multimedia
+# TAGS:
+#   - package=intergrax
+#   - module_group=multimedia
+#   - file=ipynb_display.py
+# LINES: 130
+# SHA256: c3f9a1c73521211be2b6522be37bf600a9cee34ebf248c5ffafeeb22b6a6b510
+# SYMBOLS:
+#   - def display_audio_at_data()
+#   - def _is_image_ext()
+#   - def display_image()
+#   - def _serve_path()
+#   - def display_video_jump()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from pathlib import Path
+import mimetypes
+import os
+import base64
+import uuid
+import subprocess
+import shutil
+from IPython.display import display, Image, HTML
+
+
+def display_audio_at_data(path: str, start_s: float = 0.0, autoplay: bool = False, label: str | None = None):
+    p = Path(path).resolve()
+    mime, _ = mimetypes.guess_type(p.name)
+    if mime is None:
+        # typy częste:
+        if p.suffix.lower() == ".mp3": mime = "audio/mpeg"
+        elif p.suffix.lower() in (".m4a", ".mp4"): mime = "audio/mp4"
+        elif p.suffix.lower() == ".wav": mime = "audio/wav"
+        else: mime = "audio/mpeg"
+    b64 = base64.b64encode(p.read_bytes()).decode("utf-8")
+    src = f"data:{mime};base64,{b64}"
+
+    el_id = f"a_{uuid.uuid4().hex[:8]}"
+    label_html = f"<div style='font:12px monospace;margin:4px 0'>{label or ''}</div>"
+    autoplay_attr = "autoplay" if autoplay else ""
+    html = f"""
+    {label_html}
+    <audio id="{el_id}" controls preload="auto" src="{src}" {autoplay_attr} style="width:100%"></audio>
+    <script>
+      (function(){{
+        const a = document.getElementById("{el_id}");
+        if(!a) return;
+        const setPos = () => {{
+          try {{ a.currentTime = {float(start_s):.3f}; }} catch(e) {{}}
+        }};
+        a.addEventListener('loadedmetadata', setPos, {{once:true}});
+      }})();
+    </script>
+    """
+    display(HTML(html))
+
+
+def _is_image_ext(path: str) -> bool:
+    ext = os.path.splitext(path.lower())[1]
+    return ext in {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp", ".heic", ".heif"}
+
+
+def display_image(path: str):
+    if path and os.path.exists(path):
+        try:
+            display(Image(filename=path))
+            return
+        except Exception as e:
+            print(f"[WARN] Cannot display frame: {e}")
+    
+    elif _is_image_ext(path) and os.path.exists(path):
+        try:
+            display(Image(filename=path))
+        except Exception as e:
+            print(f"[WARN] Cannot display image: {e}")
+
+
+
+_SERVE_DIR = Path("_served"); _SERVE_DIR.mkdir(exist_ok=True)
+
+def _serve_path(p: str | Path) -> str:
+    p = Path(p).resolve()
+    try:
+        rel = p.relative_to(Path.cwd().resolve())
+        dst = p
+    except ValueError:
+        dst = _SERVE_DIR / f"{uuid.uuid4().hex}_{p.name}"
+        shutil.copy2(p, dst)
+        rel = dst.relative_to(Path.cwd())
+
+    return f"files/{rel.as_posix()}"
+
+def display_video_jump(*, path: str | Path, start_s: float,
+                       poster: str | None = None,
+                       autoplay: bool = False,
+                       muted: bool = False,
+                       label: str | None = None,
+                       max_height_px: int = 480,
+                       playback_rate: float = 1.0) -> None:
+
+    src_url = _serve_path(path)
+    poster_attr = f'poster="{_serve_path(poster)}"' if poster else ""
+    autoplay_attr = "autoplay muted" if autoplay else ("muted" if muted else "")
+    vid_id = f"vid_{uuid.uuid4().hex}"
+    lbl = f"<div style='font:12px monospace;margin:6px 0'>{label or ''}</div>" if label else ""
+
+    js = f"""
+    <script>
+    (function() {{
+      const v = document.getElementById('{vid_id}');
+      if (!v) return;
+      const desired = {float(start_s):.3f};
+      const rate = {float(playback_rate):.3f};
+      function seekAndMaybePlay(){{
+        try {{
+          v.playbackRate = rate;
+          v.currentTime = desired;
+          {"v.play().catch(()=>{});" if autoplay else ""}
+        }} catch (e) {{ /* ignore */ }}
+      }}
+      if (v.readyState >= 1) {{
+        seekAndMaybePlay();
+      }} else {{
+        v.addEventListener('loadedmetadata', seekAndMaybePlay, {{ once: true }});
+      }}
+    }})();
+    </script>
+    """
+
+    html = f"""
+    {lbl}
+    <video id="{vid_id}" controls {autoplay_attr} {poster_attr} preload="metadata"
+           style="width:100%;max-height:{max_height_px}px;">
+      <source src="{src_url}" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+    {js}
+    """
+    display(HTML(html))
+
+# ======================================================================
+# FILE: intergrax/multimedia/video_loader.py
+# MODULE: intergrax.multimedia.video_loader
+# MODULE_GROUP: multimedia
+# TAGS:
+#   - package=intergrax
+#   - module_group=multimedia
+#   - file=video_loader.py
+# LINES: 235
+# SHA256: 3aee5fa55bdb3ba4ee6fb441ca0e50c454600ae8f8d3da0f1978068177165e09
+# SYMBOLS:
+#   - def yt_download_video()
+#   - def transcribe_to_vtt()
+#   - def extract_frames_and_metadata()
+#   - def extract_frames_from_video()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from pathlib import Path
+from yt_dlp import YoutubeDL
+from typing import Optional
+import whisper
+import webvtt
+from tqdm.auto import tqdm
+import cv2
+import os
+import json
+
+
+def yt_download_video(youtube_url: str, out_dir:str | Path)->Path:
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    outtmpl = str(out_dir/"vid_%(id)s.%(ext)s")
+    ydl_opts = {
+        # "format": "bv*+ba/b[ext=mp4]/b",
+        "format": "bestvideo+bestaudio/best",
+        "outtmpl": outtmpl,
+        "merge_output_format":"mp4",
+        "noplaylist":True,
+        "quiet": True,
+        "no_warnings": True        
+    }
+
+    with YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(youtube_url, download=True)
+
+    video_id = info.get("id")
+    filepath = out_dir / f"vid_{video_id}.mp4"
+
+    if not filepath.exists():
+        ext = info.get("ext", "mp4")
+        alt = out_dir / f"vid_{video_id}.{ext}"
+        if alt.exists():
+            filepath = alt
+        else:
+            raise FileNotFoundError("Cannot find downloaded video file.")
+        
+    return filepath
+
+
+
+def transcribe_to_vtt(
+        input_media_path: str | Path,
+        output_vtt_path: Optional[str|Path] = None,
+        model_size:str="base",
+        language: Optional[str] =None
+    )->Path:
+
+    input_media_path = Path(input_media_path)
+    output_vtt_path = Path(output_vtt_path) if output_vtt_path else input_media_path.with_suffix('.vtt')
+    output_vtt_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _sec_to_vtt_ts(s: float) -> str:
+        h = int(s // 3600)
+        m = int((s % 3600) // 60)
+        sec = s % 60
+        return f"{h:02d}:{m:02d}:{sec:06.3f}"
+
+    if not output_vtt_path.exists():
+        model = whisper.load_model(model_size)
+        result = model.transcribe(str(input_media_path), language=language)
+
+        vtt = webvtt.WebVTT()
+        for seq in tqdm(result.get("segments", []), desc="Transcripting", unit="frame"):
+            start = _sec_to_vtt_ts(seq['start'])
+            end = _sec_to_vtt_ts(seq['end'])
+            text = " ".join(seq.get('text', "").split())
+            vtt.captions.append(webvtt.Caption(start,end, text))
+        vtt.save(str(output_vtt_path))
+    return output_vtt_path
+
+
+def extract_frames_and_metadata(
+    path_to_video: str,
+    path_to_transcript: str,
+    path_to_save_extracted_frames :str,
+    path_to_save_metadatas :str,
+    save_metadata:bool=True
+):
+
+    def time_str_to_ms(time_str: str) -> int:
+        time_str = time_str.strip().replace(',', '.')
+        if time_str.count(':') == 3:  
+            # HH:MM:SS:MMM → HH:MM:SS.MMM
+            parts = time_str.split(':')
+            time_str = ':'.join(parts[:-1]) + '.' + parts[-1]
+
+        try:
+            h, m, s = time_str.split(':')
+            s, ms = (s.split('.') + ['0'])[:2]
+            total_ms = (int(h) * 3600 + int(m) * 60 + int(s)) * 1000 + int(ms.ljust(3, '0')[:3])
+            return total_ms
+        except Exception:
+            raise ValueError(f"Invalid time format: {time_str}")
+        
+    def maintain_aspect_ratio_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
+        
+        (h, w) = image.shape[:2]
+
+        if width is None and height is None:
+            return image
+
+        if width is not None and height is not None:
+            r = width / float(w)
+            dim = (int(width), int(round(h * r)))
+        elif width is None:
+            r = height / float(h)
+            dim = (int(round(w * r)), int(height))
+        else:
+            r = width / float(w)
+            dim = (int(width), int(round(h * r)))
+
+        return cv2.resize(image, dim, interpolation=inter)
+
+    metadatas = []        
+
+    video = cv2.VideoCapture(path_to_video)
+    trans = webvtt.read(path_to_transcript)
+    
+    for idx, transcript in enumerate(tqdm(trans, desc="Extracting frames", unit="frame", total=len(trans))):
+        start_ms = time_str_to_ms(transcript.start)
+        end_ms = time_str_to_ms(transcript.end)
+        mid_time_ms = (end_ms+start_ms)/2
+        
+        text = transcript.text.replace("\n"," ")
+
+        video.set(cv2.CAP_PROP_POS_MSEC, mid_time_ms)
+
+        success, frame = video.read()
+        if success:
+            image = maintain_aspect_ratio_resize(frame, height=350)
+
+            img_fname = f"frame_{idx}.jpg"
+            img_fpath = os.path.join(
+                path_to_save_extracted_frames, 
+                img_fname
+            )
+            cv2.imwrite(img_fpath, image)
+
+            metadata = {
+                "extracted_frame_path": img_fpath,
+                "transcript": text,
+                "video_segment_id": idx,
+                "video_path": path_to_video,
+                "mid_time_ms" : mid_time_ms,
+                "start": transcript.start,       # original timestamp string (e.g. "00:00:04.500")
+                "end": transcript.end,           # original timestamp string
+                "start_ms": start_ms,            # numeric start time in milliseconds
+                "end_ms": end_ms,                # numeric end time in milliseconds
+                "duration_ms": end_ms - start_ms # useful for analytics/timeline
+            }
+            metadatas.append(metadata)
+        else:
+            print(f"ERROR! Cannot extract frame: idx = {idx}")
+
+    if save_metadata:
+        fn = os.path.join(path_to_save_metadatas, "metadatas.json")
+        with open(fn, "w") as outfile:
+            json.dump(metadatas, outfile)
+
+    return metadatas
+
+
+
+def extract_frames_from_video(
+    path_to_video: str | Path,
+    path_to_save_extracted_frames: str | Path,
+    every_seconds: float = 1.0,
+    target_height: int = 350,
+    limit: int | None = None,
+):
+    
+    path_to_video = str(path_to_video)
+    out_dir = Path(path_to_save_extracted_frames)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    def maintain_aspect_ratio_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
+        (h, w) = image.shape[:2]
+        if width is None and height is None:
+            return image
+        if width is not None and height is not None:
+            r = width / float(w)
+            dim = (int(width), int(round(h * r)))
+        elif width is None:
+            r = height / float(h)
+            dim = (int(round(w * r)), int(height))
+        else:
+            r = width / float(w)
+            dim = (int(width), int(round(h * r)))
+        return cv2.resize(image, dim, interpolation=inter)
+
+    cap = cv2.VideoCapture(path_to_video)
+    if not cap.isOpened():
+        raise RuntimeError(f"Cannot open video: {path_to_video}")
+
+    fps = cap.get(cv2.CAP_PROP_FPS) or 0.0
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+    if fps <= 0:
+        fps = 25.0
+    step = max(int(round(fps * every_seconds)), 1)
+
+    saved_paths: list[str] = []
+    frame_idx = 0
+    saved = 0
+
+    with tqdm(total=total_frames, desc="Extracting frames", unit="frame") as pbar:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            if frame_idx % step == 0:
+                image = maintain_aspect_ratio_resize(frame, height=target_height)
+                img_fname = f"frame_{len(saved_paths):06d}.jpg"
+                img_fpath = out_dir / img_fname
+                cv2.imwrite(str(img_fpath), image)
+                saved_paths.append(str(img_fpath))
+                saved += 1
+                if limit is not None and saved >= limit:
+                    pbar.update(total_frames - frame_idx - 1)
+                    break
+
+            frame_idx += 1
+            pbar.update(1)
+
+    cap.release()
+    return saved_paths
+
+# ======================================================================
+# FILE: intergrax/openai/__init__.py
+# MODULE: intergrax.openai
+# MODULE_GROUP: openai
+# TAGS:
+#   - package=intergrax
+#   - module_group=openai
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/openai/rag/__init__.py
+# MODULE: intergrax.openai.rag
+# MODULE_GROUP: openai
+# TAGS:
+#   - package=intergrax
+#   - module_group=openai
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/openai/rag/rag_openai.py
+# MODULE: intergrax.openai.rag.rag_openai
+# MODULE_GROUP: openai
+# TAGS:
+#   - package=intergrax
+#   - module_group=openai
+#   - file=rag_openai.py
+# LINES: 252
+# SHA256: 899401a17b6e8c4d05ebf57fb87ff717349f83444092f4baade48333b2fcedec
+# SYMBOLS:
+#   - class IntergraxRagOpenAI
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from openai import OpenAI
+from openai.types.vector_store import VectorStore
+from typing import List, Iterable
+from pathlib import Path
+from tqdm.auto import tqdm
+import time
+from dotenv import load_dotenv
+load_dotenv()
+
+class IntergraxRagOpenAI:
+
+    def __init__(self, client: OpenAI, vector_store_id:str):
+        self.client = client
+        self.vector_store_id = vector_store_id
+
+
+    def rag_prompt(self) -> str:
+        prompt = """
+        ROLE (STRICT RAG)
+
+        You are a Knowledge Retrieval Assistant. Your ONLY allowed source of truth is the content retrieved from documents via the file_search tool (vector store).  
+        You MUST NOT use general knowledge, outside facts, assumptions, or world knowledge.
+
+        PURPOSE
+
+        Answer the user's questions using ONLY the retrieved document fragments.  
+        Provide accurate, thorough, source-backed answers.
+
+        WORKFLOW (MANDATORY, STEP-BY-STEP)
+
+        1. Understand the question.  
+        - If multi-part: split into sub-questions and address each one.
+
+        2. Retrieve context.  
+        - Use file_search.  
+        - Perform multiple differently-phrased queries if needed.  
+        - Ensure you have enough coverage.
+
+        3. Verify consistency.  
+        - Compare fragments.  
+        - If contradictions appear: explicitly describe them and list possible interpretations (each with source reference).
+
+        4. Answer.  
+        - Write concise conclusions.  
+        - Then provide expanded explanation (definitions, context, consequences).  
+        - ALL content must come from cited fragments.
+
+        5. Cite sources.  
+        - After each important claim add a parenthetical reference:  
+            (Source: file_name, p. X) or (Source: file_name, section Y).  
+        - For long answers: add a final “Sources” section.  
+        - Use direct quotes only when truly necessary and keep them short.
+
+        UNCERTAINTY RULES
+
+        If the documents do NOT contain enough information:  
+        - Say explicitly: “Based on the available documents, I cannot fully answer X.”  
+        - Specify what is missing (section name, document type, etc.).  
+        - Suggest concrete search phrases or additional documents.
+
+        You MUST NOT:  
+        - invent information  
+        - speculate  
+        - rely on prior knowledge  
+        - fill gaps with assumptions  
+
+        If you infer something from the provided fragments, label it clearly as:  
+        “Conclusion based on sources.”
+
+        RESPONSE STYLE
+
+        1. Start with a short, 2-4 sentence summary.  
+        2. Then provide detailed explanation:  
+        - step-by-step reasoning  
+        - bullet lists  
+        - small headings  
+        3. Use precise terminology, no generalities or abstract phrasing.  
+        4. For procedures or algorithms: produce a checklist or pseudo-procedure.  
+        5. For numeric values: provide exact numbers and cite sources.
+
+        OUTPUT FORMAT
+
+        Summary  
+        Detailed explanation (with inline citations)  
+        Sources (file name + page/section)
+
+        PROHIBITED ACTIONS (ABSOLUTE)
+
+        - Do not use ANY information outside the retrieved documents.  
+        - Do not rely on common knowledge, intuition, or the internet.  
+        - Do not hide uncertainty.  
+        - Do not strengthen or reinterpret claims beyond what is written.
+
+        EXAMPLES OF REFERENCES
+
+        “... according to the process definition (Source: Specification_Process_A.pdf, p. 12) ...”  
+        “... non-functional requirement: availability 99.9% (Source: System_Requirements.docx, section 3.2) ...”
+        """
+        return prompt
+
+
+    def ensure_vector_store_exists(self)-> VectorStore:
+        """Retrieve vector store by its id"""
+        try:
+            vs = self.client.vector_stores.retrieve(self.vector_store_id)
+            return vs
+        except Exception as e:
+            print(f"Error while retreiving vector store: {e}")
+            raise
+        
+
+    def clear_vector_store_and_storage(self)->None:
+        """Delete all files loaded into vectorstore"""
+
+        files_page = self.client.vector_stores.files.list(
+            vector_store_id=self.vector_store_id,
+            limit=100
+        )
+
+        file_ids: List[str] = [f.id for f in files_page.data]
+
+        if not file_ids:
+            print("No files in vector store")
+            return
+        else:
+            print(f"Found {len(file_ids)} files in vector store")
+
+        next_page = getattr(files_page, "has_more", False)
+        cursor = getattr(files_page, "last_id", None)
+
+        with tqdm(desc=f"Loading files from VS {self.vector_store_id}", unit="page", leave=False) as pbar:
+
+            while next_page and cursor:
+                page = self.client.vector_stores.files.list(
+                    vector_store_id=self.vector_store_id,
+                    after=cursor,
+                    limit=100
+                )
+
+                file_ids.extend([f.id for f in page.data])
+                next_page = getattr(page, "has_more", False)
+                cursor = getattr(page, "last_id", None)
+                pbar.update(1)
+
+        if file_ids:
+            with tqdm(desc=f"Deleting files from VS {self.vector_store_id}", unit="page", leave=False, total=len(file_ids)) as pbar:
+                for fid in file_ids:
+                    try:                        
+                        self.client.vector_stores.files.delete(
+                            vector_store_id=self.vector_store_id,
+                            file_id=fid
+                        )
+
+                        pbar.update(1)
+                    except Exception as e:
+                        print(f"Error while deleting file from vector store: {fid}: {e}")
+                        continue
+            
+            with tqdm(desc=f"Deleting files from storage", unit="page", leave=False, total=len(file_ids)) as pbar:
+                for fid in file_ids:
+                    try:
+                        self.client.files.delete(file_id=fid)
+                        pbar.update(1)
+                    except Exception as e:
+                        print(f"Error while deleting file: {fid}: {e}")
+                        continue
+
+
+    def upload_folder_to_vector_store(self, folder: str | Path, patterns: Iterable = ("*.pdf", "*.txt", "*.doc", "*.docx"))->None:
+        folder = Path(folder)
+        if not folder.exists():
+            print(f"Directory {folder} not exists.")
+            return
+        
+        paths : List[Path] = []
+
+        for pat in patterns:
+            paths.extend(folder.glob(pat))
+
+        if not paths:
+            print(f"No files found in folder: {folder}")
+            return
+        
+        print(f"Found {len(paths)} files.")
+        print("\n".join([f.name for f in paths]))
+        
+        with tqdm(desc=f"Uploading files to {self.vector_store_id}", unit="page", leave=False, total=len(paths)) as pbar:
+            for p in paths:
+                with open(p, "rb") as file:                    
+                    up = self.client.files.create(file=file, purpose="user_data")
+                
+                print(f"Uploaded {p.name} (id={up.id}) - checking availability...")
+
+                while True:
+                    print(f"Checking status: {p}")
+                    f_info = self.client.files.retrieve(up.id)
+
+                    if f_info.status == "uploaded":
+                       print(f"File {p.name} is not ready - waiting")
+                       time.sleep(5)
+                       continue     
+
+                    if f_info.status == "error":
+                        print(f"File {p.name} failed to upload (storage error).")
+                        break
+                    
+                    if f_info.status == "processed":
+                        print(f"File {p.name} processed")
+                        break                
+                
+                link = self.client.vector_stores.files.create(
+                    vector_store_id=self.vector_store_id,
+                    file_id=up.id,
+                )
+
+                pbar.update(1)        
+                    
+                    
+        print(f"Upload completed ({len(paths)}).")
+        
+    
+    def run(self, question: str, model:str="gpt-5-mini", instructions:str=None, n_results:int=10)->str:
+
+        if not instructions:
+            instructions = self.rag_prompt()
+
+        response = self.client.responses.create(
+            model=model,
+            instructions=instructions,
+            input=question,
+            tools=[
+                {
+                    "type":"file_search",
+                    "vector_store_ids": [self.vector_store_id],
+                    "max_num_results": n_results,
+                    "ranking_options": {
+                        "ranker": "auto",
+                        "score_threshold": 0.2,
+                    }
+                }
+            ],            
+        )
+
+        return response.output_text
+
+        
+
+# ======================================================================
+# FILE: intergrax/rag/__init__.py
+# MODULE: intergrax.rag
+# MODULE_GROUP: rag
+# TAGS:
+#   - package=intergrax
+#   - module_group=rag
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/rag/documents_loader.py
+# MODULE: intergrax.rag.documents_loader
+# MODULE_GROUP: rag
+# TAGS:
+#   - package=intergrax
+#   - module_group=rag
+#   - file=documents_loader.py
+# LINES: 1289
+# SHA256: 3eb3420b8e2037daf16d0b169546cc722369a8b1f21421a14e42da2fbac21abc
+# SYMBOLS:
+#   - class DocumentsLoader
+#   - class DocxParagraphLoader
+#   - class PdfSmartLoader
+#   - class ExcelSmartLoader
+#   - class ImageSmartLoader
+#   - class VideoSmartLoader
+#   - class AudioSmartLoader
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+import hashlib
+import json
+import docx
+import logging
+import os
+import io
+import base64
+import requests
+
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.multimedia.video_loader import (
+    transcribe_to_vtt,
+    extract_frames_and_metadata,
+)
+from intergrax.multimedia.audio_loader import (
+    yt_download_audio, 
+    translate_audio
+)
+
+# LLM adaptery frameworka (model + provider w adapterze)
+from intergrax.llm_adapters import (
+    LLMAdapter,
+    LangChainOllamaAdapter,
+)
+
+from pathlib import Path
+
+from pandas import DataFrame
+
+from typing import (
+    Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Union,
+)
+
+from langchain_community.document_loaders import (
+    Docx2txtLoader,
+    PyMuPDFLoader,
+    TextLoader,
+    UnstructuredHTMLLoader,
+)
+from langchain_core.documents import Document
+from tqdm.auto import tqdm
+from typing import Literal
+
+try:
+    import fitz  # PyMuPDF (used only for raster OCR)
+except Exception:
+    fitz = None
+
+try:
+    import pytesseract
+except Exception:
+    pytesseract = None
+
+from PIL import Image, ExifTags
+
+
+try:
+    import pandas as pd
+except Exception:
+    pd = None
+
+try:
+    import openpyxl  # engine for .xlsx (used by pandas)
+except Exception:
+    openpyxl = None
+
+try:
+    import xlrd  # engine for .xls (legacy Excel files)
+except Exception:
+    xlrd = None
+
+try:
+    import pytesseract
+except Exception:
+    pytesseract = None
+
+
+logger = logging.getLogger(__name__)
+
+MetadataFn = Callable[[Document, Path], Optional[Dict]]
+
+DOCX_MODE = Literal["fulltext", "paragraphs", "headings"]
+
+EXCEL_MODE = Literal["rows", "sheets", "markdown"]
+
+class DocumentsLoader:
+    """Robust, extensible document loader with metadata injection and safety guards."""
+
+    def __init__(
+        self,
+        *,
+        verbose: bool = False,
+        file_patterns: Iterable[str] = ("**/*",),  # include files without extension too
+        extensions_map: Optional[Mapping[str, Callable[[str], object]]] = None,
+        exclude_globs: Optional[Iterable[str]] = None,
+        follow_symlinks: bool = False,
+        max_files: Optional[int] = None,
+        max_file_size_mb: Optional[int] = 64,
+        docx_mode: DOCX_MODE = "fulltext",
+        pdf_enable_ocr: bool = False,
+        pdf_ocr_lang: str = "eng",
+        pdf_ocr_dpi: int = 200,
+        pdf_ocr_psm: Optional[int] = None,
+        pdf_ocr_oem: Optional[int] = None,
+        pdf_ocr_max_pages: Optional[int] = None,
+        excel_mode: EXCEL_MODE = "rows",           # "rows" | "sheets" | "markdown"
+        excel_header: int = 0,
+        excel_sheet: str | int | None = None,
+        excel_na_filter: bool = True,
+        excel_max_rows_per_sheet: Optional[int] = None,
+        csv_encoding: Optional[str] = None,
+        csv_delimiter: Optional[str] = None,
+        # --- image (existing) ---
+        image_ocr_lang: str = "eng",
+        image_ocr_psm: Optional[int] = None,
+        image_ocr_oem: Optional[int] = None,
+        image_extract_exif: bool = True,
+        image_max_dim: Optional[int] = 2000,
+        # --- image NEW: captioning modes via framework adapter ---
+        image_text_mode: Literal["ocr", "caption", "both"] = "both",
+        image_caption_llm: Optional[LLMAdapter] = None, 
+        image_both_joiner: str = "\n\n---\n\n",
+    ):
+        self._verbose = verbose
+        self._file_patterns = tuple(file_patterns)
+        self._exclude_globs = tuple(exclude_globs or ())
+        self._follow_symlinks = follow_symlinks
+        self._max_files = max_files
+        self._max_file_size_mb = max_file_size_mb
+        self._docx_mode = docx_mode 
+
+        self._pdf_enable_ocr = bool(pdf_enable_ocr)
+        self._pdf_ocr_lang = pdf_ocr_lang
+        self._pdf_ocr_dpi = int(pdf_ocr_dpi)
+        self._pdf_ocr_psm = pdf_ocr_psm
+        self._pdf_ocr_oem = pdf_ocr_oem
+        self._pdf_ocr_max_pages = pdf_ocr_max_pages
+
+        self._excel_mode = excel_mode
+        self._excel_header = excel_header
+        self._excel_sheet = excel_sheet
+        self._excel_na_filter = excel_na_filter
+        self._excel_max_rows_per_sheet = excel_max_rows_per_sheet
+        self._csv_encoding = csv_encoding
+        self._csv_delimiter = csv_delimiter
+
+        # images (existing)
+        self._image_ocr_lang = image_ocr_lang
+        self._image_ocr_psm = image_ocr_psm
+        self._image_ocr_oem = image_ocr_oem
+        self._image_extract_exif = bool(image_extract_exif)
+        self._image_max_dim = image_max_dim
+        # images NEW (captioning via adapter)
+        self._image_text_mode = image_text_mode
+        self._image_caption_llm = image_caption_llm
+        self._image_both_joiner = image_both_joiner
+
+
+        default_map: Dict[str, Callable[[str], object]] = {
+            ".txt":  lambda p: TextLoader(p, autodetect_encoding=True),  # autodetect
+            
+            ".md":       lambda p: TextLoader(p, autodetect_encoding=True),
+            ".markdown": lambda p: TextLoader(p, autodetect_encoding=True),
+
+            ".docx": lambda p: Docx2txtLoader(p),            
+            ".htm":  lambda p: UnstructuredHTMLLoader(p),
+            ".html": lambda p: UnstructuredHTMLLoader(p),
+            ".pdf":  lambda p: PdfSmartLoader(
+                p,
+                enable_ocr=self._pdf_enable_ocr,
+                ocr_lang=self._pdf_ocr_lang,
+                ocr_dpi=self._pdf_ocr_dpi,
+                ocr_psm=self._pdf_ocr_psm,
+                ocr_oem=self._pdf_ocr_oem,
+                ocr_max_pages=self._pdf_ocr_max_pages,
+            ),
+            ".xlsx": lambda p: ExcelSmartLoader(
+                p,
+                mode=self._excel_mode,
+                header=self._excel_header,
+                sheet=self._excel_sheet,
+                na_filter=self._excel_na_filter,
+                max_rows_per_sheet=self._excel_max_rows_per_sheet,
+            ),
+            ".xls":  lambda p: ExcelSmartLoader(
+                p,
+                mode=self._excel_mode,
+                header=self._excel_header,
+                sheet=self._excel_sheet,
+                na_filter=self._excel_na_filter,
+                max_rows_per_sheet=self._excel_max_rows_per_sheet,
+            ),
+            ".csv":  lambda p: ExcelSmartLoader(
+                p,
+                mode=self._excel_mode,
+                header=self._excel_header,
+                na_filter=self._excel_na_filter,
+                max_rows_per_sheet=self._excel_max_rows_per_sheet,
+                encoding=self._csv_encoding,
+                delimiter=self._csv_delimiter or ",",
+            ),
+            ".tsv":  lambda p: ExcelSmartLoader(
+                p,
+                mode=self._excel_mode,
+                header=self._excel_header,
+                na_filter=self._excel_na_filter,
+                max_rows_per_sheet=self._excel_max_rows_per_sheet,
+                encoding=self._csv_encoding,
+                delimiter=self._csv_delimiter or "\t",
+            ),
+        }
+
+        # images
+        image_exts = (
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".tiff",
+            ".bmp",
+            ".webp",
+            ".heic",  # optional modern iPhone format
+            ".heif",  # optional, same family
+        )
+
+        for ext in image_exts:
+            default_map[ext] = lambda p, _ext=ext: ImageSmartLoader(
+                p,
+                ocr_lang=self._image_ocr_lang,
+                ocr_psm=self._image_ocr_psm,
+                ocr_oem=self._image_ocr_oem,
+                extract_exif=self._image_extract_exif,
+                max_image_dim=self._image_max_dim,                
+                text_mode=self._image_text_mode,                # "ocr" | "caption" | "both"
+                caption_llm=self._image_caption_llm,
+                both_joiner=self._image_both_joiner,
+            )
+
+        # videos
+        video_exts = (
+            ".mp4",
+            ".mkv",
+            ".mov",
+            ".avi",
+            ".webm",
+            ".m4v",
+            ".flv",
+            ".wmv",
+            ".ts",
+            ".3gp",
+            ".ogv",
+        )
+
+        for ext in video_exts:
+            default_map[ext] = lambda p, _ext=ext: VideoSmartLoader(
+                p,
+                out_dir=None,                # optional, saves frames/metadata next to the video
+                frames_subdir="frames",
+                meta_subdir="video_meta",
+                transcribe_if_missing=True,  # automatically generates VTT if missing
+                whisper_model_size="base",
+                whisper_language=None,       # e.g. "pl" if you want to force Polish
+                frame_target_height=350,
+            )
+
+
+        # Audio
+        audio_exts = (
+            ".wav",
+            ".mp3",
+            ".m4a",
+            ".flac",
+            ".ogg",
+            ".opus",
+            ".aac",
+            ".wma",
+            ".aiff",  # aka .aif
+            ".aif",
+            ".mka",   # Matroska audio
+        )
+
+        for ext in audio_exts:
+            default_map[ext] = lambda p, _ext=ext: AudioSmartLoader(
+                path=p,
+                out_dir=None,
+                audio_format=_ext.lstrip("."),
+                whisper_model="medium",
+                whisper_language=None,
+                translate=True,
+            )
+
+
+        if self._docx_mode == "fulltext":
+            # original behavior: single Document with full text
+            default_map[".docx"] = lambda p: Docx2txtLoader(p)
+        elif self._docx_mode in ("paragraphs", "headings"):
+            # custom loader returning a list of Documents per paragraph / heading
+            default_map[".docx"] = lambda p: DocxParagraphLoader(p, mode=self._docx_mode)
+        else:
+            raise ValueError("docx_mode must be one of: 'fulltext', 'paragraphs', 'headings'")
+
+
+        self._extensions_map: Dict[str, Callable[[str], object]] = dict(default_map)
+
+        if extensions_map:
+            for k, v in extensions_map.items():
+                if not callable(v):
+                    raise TypeError(f"extensions_map['{k}'] must be callable(path)->Loader")
+                self._extensions_map[k.lower()] = v
+
+        self._allowed_exts = set(self._extensions_map.keys())
+
+    def _is_within_limits(self, file_path: Path) -> bool:
+        # size guard
+        if self._max_file_size_mb is not None:
+            try:
+                size_mb = file_path.stat().st_size / (1024 * 1024)
+                if size_mb > self._max_file_size_mb:
+                    if self._verbose:
+                        logger.warning("[intergraxDocumentsLoader] Skipping large file (%.1f MB): %s", size_mb, file_path)
+                    return False
+            except OSError as e:
+                logger.warning("[intergraxDocumentsLoader] Could not stat file %s: %s", file_path, e)
+                return False
+        return True
+
+    def _is_excluded(self, file_path: Path, root: Path) -> bool:
+        # apply exclude globs relative to root
+        if not self._exclude_globs:
+            return False
+        rel = file_path.relative_to(root)
+        for pat in self._exclude_globs:
+            if rel.match(pat):
+                return True
+        return False
+
+    @staticmethod
+    def _stable_parent_id(path: Path) -> str:
+        # stable id from absolute path
+        return hashlib.sha1(str(path).encode("utf-8")).hexdigest()[:16]
+
+
+    def load_document(
+        self,
+        file_path: str,
+        *,
+        use_default_metadata: bool = True,
+        call_custom_metadata: Optional[Union[MetadataFn, Sequence[MetadataFn]]] = None,
+    ) -> List[Document]:
+        """
+        Load a SPECIFIC file (single-file) and enrich with metadata, like in load_documents().
+        Returns a list of Document (e.g., PDF → 1 per page, DOCX paragraphs → many, etc.).
+        """
+        p = Path(file_path).resolve()
+        docs: List[Document] = []
+
+        if not p.exists() or not p.is_file():
+            logger.error("[intergraxDocumentsLoader] File not found: %s", p)
+            return docs
+
+        # size / exclude / extension
+        if not self._is_within_limits(p):
+            return docs
+
+        ext = p.suffix.lower()
+        if ext not in self._allowed_exts:
+            logger.warning("[intergraxDocumentsLoader] Unsupported extension for single-file load: %s", p)
+            return docs
+
+        # callbacks → list
+        callbacks: List[MetadataFn] = []
+        if call_custom_metadata:
+            callbacks = (
+                list(call_custom_metadata)
+                if isinstance(call_custom_metadata, (list, tuple))
+                else [call_custom_metadata]
+            )
+
+        try:
+            loader_factory = self._extensions_map.get(ext)
+            if loader_factory is None:
+                logger.warning("[intergraxDocumentsLoader] No loader for extension: %s", ext)
+                return docs
+
+            loader = loader_factory(str(p))
+            loaded = loader.load()  # typically List[Document]
+            if not loaded:
+                return docs
+
+            parent_id = self._stable_parent_id(p)
+
+            for d in loaded:
+                if use_default_metadata:
+                    d.metadata.setdefault("source_path", str(p))
+                    d.metadata.setdefault("source_name", p.name)
+                    d.metadata.setdefault("ext", ext)
+                    if "page" in d.metadata and "page_index" not in d.metadata:
+                        d.metadata["page_index"] = d.metadata["page"]
+                    d.metadata.setdefault("parent_id", parent_id)
+
+                for cb in callbacks:
+                    try:
+                        extra = cb(d, p)
+                        if isinstance(extra, dict):
+                            d.metadata.update({k: v for k, v in extra.items() if v is not None})
+                    except Exception as cb_e:
+                        logger.exception("[intergraxDocumentsLoader] Callback error for %s: %s", p, cb_e)
+
+            docs.extend(loaded)
+            return docs
+
+        except Exception as e:
+            logger.exception("[intergraxDocumentsLoader] Error while loading file %s: %s", p, e)
+            return docs
+
+
+    def load_documents(
+        self,
+        directory_path: str,
+        *,
+        use_default_metadata: bool = True,
+        call_custom_metadata: Optional[Union[MetadataFn, Sequence[MetadataFn]]] = None
+    ) -> List[Document]:
+        """
+        Scans a directory according to file_patterns/exclusions/limits and
+        delegates each file to load_document(...).
+        """
+        if self._verbose:
+            logger.info("[intergraxDocumentsLoader] Loading documents from %s", directory_path)
+
+        docs: List[Document] = []
+        root = Path(directory_path).resolve()
+        if not root.exists():
+            logger.error("[intergraxDocumentsLoader] Directory not found: %s", root)
+            return docs
+
+        # Gather candidates by patterns
+        all_files: List[Path] = []
+        for pattern in self._file_patterns:
+            for f in root.glob(pattern):
+                try:
+                    if not self._follow_symlinks and f.is_symlink():
+                        continue
+                    all_files.append(f)
+                except OSError:
+                    continue
+
+        # Filtering: file, extension, exclude, size
+        candidate_files: List[Path] = []
+        for f in all_files:
+            try:
+                if not f.is_file():
+                    continue
+                if self._is_excluded(f, root):
+                    continue
+                if f.suffix.lower() not in self._allowed_exts:
+                    continue
+                if not self._is_within_limits(f):
+                    continue
+                candidate_files.append(f)
+            except OSError:
+                continue
+
+        # File count limit
+        if self._max_files is not None and len(candidate_files) > self._max_files:
+            if self._verbose:
+                logger.warning(
+                    "[intergraxDocumentsLoader] Too many files (%d). Truncating to %d.",
+                    len(candidate_files),
+                    self._max_files,
+                )
+            candidate_files = candidate_files[: self._max_files]
+
+        # Progress bar + delegation to single-file loader
+        with tqdm(
+            desc=f"Loading files from {directory_path}",
+            unit="file",
+            leave=False,
+            total=len(candidate_files),
+            disable=not self._verbose,
+        ) as pbar:
+            for file in candidate_files:
+                try:
+                    file_docs = self.load_document(
+                        str(file),
+                        use_default_metadata=use_default_metadata,
+                        call_custom_metadata=call_custom_metadata,
+                    )
+                    if file_docs:
+                        docs.extend(file_docs)
+                except Exception as e:
+                    logger.exception("[intergraxDocumentsLoader] Error while loading file %s: %s", file, e)
+                finally:
+                    pbar.update(1)
+
+        if self._verbose:
+            logger.info("[intergraxDocumentsLoader] Done. Loaded documents: %d", len(docs))
+
+        return docs
+
+
+
+class DocxParagraphLoader:
+    """
+    DOCX → list of Documents (1 per paragraph or heading).
+    Returns List[langchain_core.documents.Document], compatible with your load_documents().
+    """
+    def __init__(self, path: str, mode: str = "paragraphs"):  # "paragraphs" | "headings"
+        if docx is None:
+            raise ImportError("python-docx is required for DocxParagraphLoader (pip install python-docx)")
+        self.path = path
+        self.mode = mode
+
+    def _is_heading(self, para) -> tuple[bool, int]:
+        """Returns (is_heading, level 1..9 or 0)."""
+        style = getattr(para.style, "name", "") or ""
+        if not style:
+            return (False, 0)
+        s = style.lower()
+        if s.startswith("heading"):
+            # e.g., 'Heading 1'.. 'Heading 9'
+            for i in range(1, 10):
+                if s == f"heading {i}":
+                    return (True, i)
+            return (True, 1)
+        return (False, 0)
+
+    def load(self):
+        from langchain_core.documents import Document
+        d = docx.Document(self.path)
+        items = []
+        heading_stack: list[str] = []   # ["H1", "H2", ...]
+        section_ix = 0
+        para_ix = 0
+
+        for p in d.paragraphs:
+            text = (p.text or "").strip()
+            if not text:
+                continue
+
+            is_head, level = self._is_heading(p)
+            if is_head:
+                # update heading path
+                heading_stack = heading_stack[:max(level - 1, 0)]
+                heading_stack.append(text)
+                section_ix += 1
+
+                if self.mode == "headings":
+                    meta = {
+                        "doc_type": "docx",
+                        "source_path": self.path,
+                        "source_name": str(self.path).split("/")[-1],
+                        "section_ix": section_ix,
+                        "heading_path": " / ".join(heading_stack),
+                        "is_heading": True,
+                    }
+                    items.append(Document(page_content=text, metadata=meta))
+                continue
+
+            # paragraphs mode: each paragraph as a separate document
+            if self.mode == "paragraphs":
+                para_ix += 1
+                meta = {
+                    "doc_type": "docx",
+                    "source_path": self.path,
+                    "source_name": str(self.path).split("/")[-1],
+                    "section_ix": section_ix,  # 0 if paragraphs before the first Hx
+                    "para_ix": para_ix,
+                    "heading_path": " / ".join(heading_stack),
+                    "is_heading": False,
+                }
+                items.append(Document(page_content=text, metadata=meta))
+
+        return items
+
+
+
+class PdfSmartLoader:
+    """
+    PDF → list of Document(s), with OCR fallback ONLY for pages that are empty after text extraction.
+    - Main text source: PyMuPDFLoader (langchain community)
+    - Fallback: rasterization to bitmap and pytesseract.image_to_string(...)
+    """
+    def __init__(
+        self,
+        path: str,
+        *,
+        enable_ocr: bool = False,
+        ocr_lang: str = "eng",
+        ocr_dpi: int = 200,
+        ocr_psm: int | None = None,
+        ocr_oem: int | None = None,
+        ocr_max_pages: int | None = None,   # hard-cap on number of pages for OCR (None = no limit)
+    ):
+        from langchain_community.document_loaders import PyMuPDFLoader
+        self.path = path
+        self.enable_ocr = bool(enable_ocr)
+        self.ocr_lang = ocr_lang
+        self.ocr_dpi = int(ocr_dpi)
+        self.ocr_psm = ocr_psm
+        self.ocr_oem = ocr_oem
+        self.ocr_max_pages = ocr_max_pages
+        self._base = PyMuPDFLoader(path)
+
+    def _ocr_page(self, page) -> str:
+        """Rasterizes a page and performs OCR. Returns text (may be empty)."""
+        if not (fitz and pytesseract and Image):
+            return ""
+        pix = page.get_pixmap(dpi=self.ocr_dpi)
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        cfg_parts = []
+        if self.ocr_psm is not None:
+            cfg_parts.append(f"--psm {int(self.ocr_psm)}")
+        if self.ocr_oem is not None:
+            cfg_parts.append(f"--oem {int(self.ocr_oem)}")
+        config = " ".join(cfg_parts) if cfg_parts else None
+        try:
+            return pytesseract.image_to_string(img, lang=self.ocr_lang, config=config) or ""
+        except Exception:
+            return ""
+
+    def load(self) -> list[Document]:
+        # 1) first do the “normal” parsing
+        docs = self._base.load()  # usually each Document = one page (metadata['page'])
+        if not docs or not self.enable_ocr:
+            return docs
+
+        # 2) identify empty pages and do OCR only there
+        # open the PDF with PyMuPDF once (if available)
+        pdf = None
+        if fitz:
+            try:
+                pdf = fitz.open(self.path)
+            except Exception:
+                pdf = None
+
+        ocr_done = 0
+        for d in docs:
+            content = (d.page_content or "").strip()
+            if content:
+                continue
+            if self.ocr_max_pages is not None and ocr_done >= self.ocr_max_pages:
+                break
+            # find page index (PyMuPDFLoader adds 'page' → copied below as 'page_index' in intergrax loader)
+            pidx = d.metadata.get("page") or d.metadata.get("page_index")
+            if pidx is None or pdf is None:
+                continue
+            try:
+                page = pdf.load_page(int(pidx))
+            except Exception:
+                continue
+            ocr_text = (self._ocr_page(page) or "").strip()
+            if ocr_text:
+                d.page_content = ocr_text
+                # mark that it came from OCR (useful for debugging/metrics)
+                md = dict(d.metadata or {})
+                md["ocr"] = True
+                md["ocr_lang"] = self.ocr_lang
+                md["ocr_dpi"] = self.ocr_dpi
+                d.metadata = md
+                ocr_done += 1
+
+        if pdf is not None:
+            try:
+                pdf.close()
+            except Exception:
+                pass
+        return docs
+    
+
+class ExcelSmartLoader:
+    """
+    Excel/CSV → list of Documents.
+    Modes:
+      - rows:    1 doc = 1 row (page_content = JSON; best for RAG)
+      - sheets:  1 doc = 1 sheet as a Markdown table (smaller files / overview)
+      - markdown:1 doc = 1 row as readable text "col: value"
+    Supports: .xlsx, .xls, .csv, .tsv
+    """
+
+    def __init__(
+        self,
+        path: str,
+        *,
+        mode: str = "rows",            # "rows" | "sheets" | "markdown"
+        header: int = 0,               # header row (as in pandas), None = no headers
+        sheet: str | int | None = None,# sheet name/index; None => all
+        na_filter: bool = True,        # drop empty rows (all NaN/empty)
+        max_rows_per_sheet: int | None = None,  # limit for huge files
+        encoding: str | None = None,   # for CSV/TSV
+        delimiter: str | None = None,  # for CSV/TSV; None => auto (, / \t)
+    ):
+        if pd is None:
+            raise ImportError("pandas is required for ExcelSmartLoader (pip install pandas openpyxl)")
+
+        self.path = path
+        self.mode = mode
+        self.header = header
+        self.sheet = sheet
+        self.na_filter = na_filter
+        self.max_rows_per_sheet = max_rows_per_sheet
+        self.encoding = encoding
+        self.delimiter = delimiter
+
+    def _is_excel(self) -> bool:
+        low = self.path.lower()
+        return low.endswith(".xlsx") or low.endswith(".xls")
+
+    def _is_tsv(self) -> bool:
+        return self.path.lower().endswith(".tsv")
+
+    def _read_excel(self) -> dict[str, DataFrame]:
+        # sheet_name=None => dict of DataFrames
+        kwargs = dict(sheet_name=self.sheet if self.sheet is not None else None, header=self.header, engine=None)
+        # pandas will automatically choose openpyxl/xlrd if available
+        dfs = pd.read_excel(self.path, **kwargs)
+        if isinstance(dfs, DataFrame):
+            # single sheet → wrap in dict
+            return {"Sheet1": dfs}
+        return dfs  # {sheet_name: df}
+
+    def _read_csv_like(self) -> dict[str, DataFrame]:
+        # Treat CSV/TSV as "one sheet"
+        sep = self.delimiter
+        if sep is None:
+            sep = "\t" if self._is_tsv() else ","  # simple heuristic choice
+        df = pd.read_csv(self.path, sep=sep, header=self.header, encoding=self.encoding)
+        return {"csv": df}
+
+    @staticmethod
+    def _dtype_map(df: DataFrame) -> dict:
+        return {str(c): str(t) for c, t in df.dtypes.items()}
+
+    @staticmethod
+    def _row_to_json(df: DataFrame, idx: int) -> str:
+        rec = df.iloc[idx].to_dict()
+        # safe JSON (strings, numbers, dates → str)
+        def _safe(v):
+            if pd.isna(v):
+                return None
+            if hasattr(v, "isoformat"):
+                try:
+                    return v.isoformat()
+                except Exception:
+                    return str(v)
+            return v if isinstance(v, (int, float, bool, str)) else str(v)
+        rec = {str(k): _safe(v) for k, v in rec.items()}
+        return json.dumps(rec, ensure_ascii=False)
+
+    @staticmethod
+    def _row_to_markdown(df: DataFrame, idx: int) -> str:
+        rec = df.iloc[idx].to_dict()
+        parts = []
+        for k, v in rec.items():
+            if pd.isna(v):
+                continue
+            parts.append(f"- **{k}**: {v}")
+        return "\n".join(parts) if parts else "- (empty row)"
+
+    @staticmethod
+    def _df_to_markdown(df: DataFrame, max_rows: int | None = None) -> str:
+        _df = df if max_rows is None else df.head(max_rows)
+        try:
+            return _df.to_markdown(index=False)
+        except Exception:
+            # fallback (without tabulate dependency)
+            header = " | ".join(map(str, _df.columns))
+            sep = " | ".join(["---"] * len(_df.columns))
+            rows = [" | ".join(map(lambda x: "" if pd.isna(x) else str(x), r)) for _, r in _df.iterrows()]
+            return "\n".join([header, sep] + rows)
+
+    def load(self) -> list[Document]:
+        docs: list[Document] = []
+        is_excel = self._is_excel()
+
+        sheets = self._read_excel() if is_excel else self._read_csv_like()
+
+        for sname, df in sheets.items():
+            if self.na_filter:
+                df = df.dropna(how="all")
+            n_rows, n_cols = int(df.shape[0]), int(df.shape[1])
+            headers = [str(c) for c in df.columns]
+            dtype_map = self._dtype_map(df)
+
+            # hard cap (huge files)
+            row_cap = self.max_rows_per_sheet if self.max_rows_per_sheet is not None else n_rows
+
+            if self.mode == "sheets":
+                content = self._df_to_markdown(df, max_rows=row_cap)
+                docs.append(Document(
+                    page_content=content,
+                    metadata={
+                        "source_name": self.path.split("/")[-1],
+                        "source_path": self.path,
+                        "ext": ".xlsx" if is_excel else ".csv",
+                        "sheet_name": sname,
+                        "n_rows": n_rows,
+                        "n_cols": n_cols,
+                        # list/dict → JSON string:
+                        "headers_json": json.dumps(headers, ensure_ascii=False),
+                        "dtype_map_json": json.dumps(dtype_map, ensure_ascii=False),
+                        "excel_mode": "sheets",
+                    }
+                ))
+                continue
+
+            # rows / markdown
+            max_i = min(row_cap, n_rows)
+            for i in range(max_i):
+                content = (
+                    self._row_to_json(df, i) if self.mode == "rows"
+                    else self._row_to_markdown(df, i)
+                )
+                docs.append(Document(
+                    page_content=content,
+                    metadata={
+                        "source_name": self.path.split("/")[-1],
+                        "source_path": self.path,
+                        "ext": ".xlsx" if is_excel else ".csv",
+                        "sheet_name": sname,
+                        "row_ix": i,
+                        "n_rows": n_rows,
+                        "n_cols": n_cols,
+                        # list/dict → JSON string:
+                        "headers_json": json.dumps(headers, ensure_ascii=False),
+                        "dtype_map_json": json.dumps(dtype_map, ensure_ascii=False),
+                        "excel_mode": self.mode,
+                    }
+                ))
+
+        return docs
+    
+
+class ImageSmartLoader:
+    """
+    Universal image loader: JPG, PNG, TIFF, BMP, WEBP, HEIC/HEIF.
+    Modes:
+      - OCR:     extract visible text with Tesseract
+      - Caption: call your framework LLM adapter (e.g., Ollama) to describe the image
+      - Both:    combine caption + OCR (with a joiner)
+    Always returns 1 Document per image with clear provenance metadata.
+    """
+
+    def __init__(
+        self,
+        path: str,
+        *,
+        ocr_lang: str = "eng",
+        ocr_psm: int | None = None,
+        ocr_oem: int | None = None,
+        extract_exif: bool = True,
+        max_image_dim: int | None = None,  # e.g., 2000 – downscale if larger
+        # NEW:
+        text_mode: Literal["ocr", "caption", "both"] = "both",
+        caption_llm: Optional[LLMAdapter] = None,
+        both_joiner: str = "\n\n---\n\n",
+    ):
+        self.path = path
+        self.ocr_lang = ocr_lang
+        self.ocr_psm = ocr_psm
+        self.ocr_oem = ocr_oem
+        self.extract_exif = bool(extract_exif)
+        self.max_image_dim = max_image_dim
+
+        self.text_mode = text_mode
+        self.caption_llm = caption_llm
+        self.both_joiner = both_joiner
+
+    # ---------- helpers ----------
+    def _resize_if_needed(self, img: Image) -> Image:
+        if self.max_image_dim is None:
+            return img
+        w, h = img.size
+        if max(w, h) <= self.max_image_dim:
+            return img
+        ratio = self.max_image_dim / float(max(w, h))
+        new_size = (int(w * ratio), int(h * ratio))
+        return img.resize(new_size)
+
+    def _ocr(self, img: Image) -> str:
+        if pytesseract is None:
+            return ""
+        cfg_parts = []
+        if self.ocr_psm is not None:
+            cfg_parts.append(f"--psm {int(self.ocr_psm)}")
+        if self.ocr_oem is not None:
+            cfg_parts.append(f"--oem {int(self.ocr_oem)}")
+        config = " ".join(cfg_parts) if cfg_parts else None
+        try:
+            return pytesseract.image_to_string(img, lang=self.ocr_lang, config=config) or ""
+        except Exception:
+            return ""
+
+    def _infer_ollama_model(self) -> Optional[str]:
+        """
+        Try to infer model name from the LangChainOllamaAdapter.
+        - Prefer adapter.defaults.get("model")
+        - Fallbacks are possible (chat.model), else None
+        """
+        if not isinstance(self.caption_llm, LangChainOllamaAdapter):
+            return None
+        defaults = getattr(self.caption_llm, "defaults", {}) or {}
+        model = defaults.get("model")
+        if model:
+            return model
+        chat = getattr(self.caption_llm, "chat", None)
+        if chat is not None:
+            for attr in ("model", "model_name", "model_id"):
+                if hasattr(chat, attr):
+                    try:
+                        val = getattr(chat, attr)
+                        if isinstance(val, str) and val.strip():
+                            return val.strip()
+                    except Exception:
+                        pass
+            for attr in ("kwargs", "config", "client"):
+                try:
+                    obj = getattr(chat, attr, None)
+                    if isinstance(obj, dict):
+                        for k in ("model", "model_name", "model_id"):
+                            if isinstance(obj.get(k), str) and obj[k].strip():
+                                return obj[k].strip()
+                except Exception:
+                    pass
+        return None
+
+    def _caption_via_ollama(self, img_path: str) -> str:
+        """
+        Vision caption bridge for Ollama (local REST).
+        Uses model inferred from the adapter. Endpoint defaults to localhost.
+        """
+        from intergrax.multimedia.images_loader import transcribe_image
+
+        model = self._infer_ollama_model() or "llava-llama3:latest"
+        prompt = "Describe the image in detail."
+
+
+        resp = transcribe_image(
+            prompt=prompt, 
+            model=model,
+            image_path=img_path,
+        )
+
+        return resp
+
+    def _caption_via_adapter(self, img_path: str) -> str:
+        """
+        Generic bridge:
+        - If adapter exposes describe_image(path) → use it.
+        - Else if it's LangChainOllamaAdapter → use REST vision bridge.
+        - Else raise (you can extend here for OpenAI/Gemini Vision).
+        """
+        if self.caption_llm is None:
+            return ""
+        # 1) Native helper, if adapter ją posiada
+        if hasattr(self.caption_llm, "describe_image"):
+            try:
+                txt = self.caption_llm.describe_image(img_path)
+                return (txt or "").strip()
+            except Exception as e:
+                raise RuntimeError(f"LLMAdapter.describe_image failed: {e}")
+        # 2) Ollama vision fallback
+        if isinstance(self.caption_llm, LangChainOllamaAdapter):
+            return self._caption_via_ollama(img_path)
+        # 3) Not supported yet
+        raise ValueError("Captioning supported for adapters exposing describe_image(...) or LangChainOllamaAdapter (vision).")
+
+    def _exif_dict(self, img: Image) -> dict:
+        out = {}
+        if not (self.extract_exif and ExifTags and hasattr(img, "_getexif")):
+            return out
+        try:
+            exif_raw = img._getexif() or {}
+            for tag, value in exif_raw.items():
+                tag_name = ExifTags.TAGS.get(tag, str(tag))
+                out[tag_name] = str(value)
+        except Exception:
+            pass
+        return out
+
+    # ---------- main ----------
+    def load(self) -> list[Document]:
+        if Image is None:
+            raise ImportError("Pillow (PIL) is required for ImageSmartLoader")
+
+        img = Image.open(self.path)
+        img = self._resize_if_needed(img)
+        width, height = img.size
+        dpi = img.info.get("dpi", None)
+        exif = self._exif_dict(img)
+
+        # Decide which mechanisms to run
+        run_ocr = (self.text_mode in ("ocr", "both")) and (pytesseract is not None)
+        run_caption = (self.text_mode in ("caption", "both")) and (self.caption_llm is not None)
+
+        ocr_text = self._ocr(img) if run_ocr else ""
+        caption_text = self._caption_via_adapter(self.path) if run_caption else ""
+
+        # Assemble content
+        if self.text_mode == "ocr":
+            content = (ocr_text or "").strip() or "(No visible text detected.)"
+        elif self.text_mode == "caption":
+            content = (caption_text or "").strip() or "(No caption generated.)"
+        else:
+            left = (caption_text or "").strip()
+            right = (ocr_text or "").strip()
+            if left and right:
+                content = f"{left}{self.both_joiner}{right}"
+            elif left:
+                content = left
+            elif right:
+                content = right
+            else:
+                content = "(No caption nor OCR text produced.)"
+
+        # Metadata
+        meta = {
+            "source_name": os.path.basename(self.path),
+            "source_path": self.path,
+            "format": img.format,
+            "width": width,
+            "height": height,
+            "dpi": (dpi[0] if isinstance(dpi, tuple) and len(dpi) > 0 else dpi),
+            "exif_json": json.dumps(exif, ensure_ascii=False) if exif else None,
+
+            # Provenance & modes
+            "image_text_mode": self.text_mode,                 # "ocr" | "caption" | "both"
+            "ocr_lang": self.ocr_lang if (self.text_mode in ("ocr", "both")) else None,
+            "caption_llm": type(self.caption_llm).__name__ if (self.text_mode in ("caption", "both") and self.caption_llm) else None,
+            "caption_model_inferred": (self._infer_ollama_model() or "llava-llama3:latest")
+                if (self.text_mode in ("caption", "both") and isinstance(self.caption_llm, LangChainOllamaAdapter))
+                else None,
+        }
+
+        return [Document(page_content=content, metadata=meta)]
+
+
+class VideoSmartLoader:
+    """
+    Loads video files and converts them into a list of LangChain Documents.
+
+    For each subtitle (VTT) segment:
+      - page_content: transcript text
+      - metadata: extracted frame path, mid_time_ms, video_segment_id, etc.
+
+    If a .vtt transcript file is missing, it can automatically generate one
+    using Whisper via transcribe_to_vtt().
+
+    It also extracts key video frames using extract_and_frames_and_metadata().
+    """
+
+    def __init__(
+        self,
+        path: str,
+        *,
+        out_dir: str | None = None,
+        frames_subdir: str = "frames",
+        meta_subdir: str = "video_meta",
+        transcribe_if_missing: bool = True,
+        whisper_model_size: str = "base",
+        whisper_language: str | None = None,
+        frame_target_height: int = 350,
+    ):
+        """
+        Args:
+            path: Path to the video file.
+            out_dir: Optional directory to save extracted data.
+            frames_subdir: Subfolder for extracted frames.
+            meta_subdir: Subfolder for metadata.
+            transcribe_if_missing: Whether to generate .vtt if missing.
+            whisper_model_size: Whisper model name ('tiny', 'base', etc.).
+            whisper_language: Optional language code (e.g. 'en', 'pl').
+            frame_target_height: Frame resize height while keeping aspect ratio.
+        """
+        self.path = str(path)
+        self._p = Path(path).resolve()
+
+        # Determine output directories
+        self.out_root = Path(out_dir) if out_dir else self._p.parent
+        self.frames_dir = self.out_root / frames_subdir
+        self.meta_dir = self.out_root / meta_subdir
+
+        self.transcribe_if_missing = bool(transcribe_if_missing)
+        self.whisper_model_size = whisper_model_size
+        self.whisper_language = whisper_language
+        self.frame_target_height = int(frame_target_height)
+
+        self.frames_dir.mkdir(parents=True, exist_ok=True)
+        self.meta_dir.mkdir(parents=True, exist_ok=True)
+
+    def _ensure_vtt(self) -> str:
+        """
+        Checks if a .vtt transcript exists next to the video file.
+        If not, optionally generates it using Whisper.
+        Returns the absolute path to the .vtt file.
+        """
+        vtt_path = self._p.with_suffix(".vtt")
+        if vtt_path.exists():
+            return str(vtt_path)
+
+        if not self.transcribe_if_missing:
+            raise FileNotFoundError(f"Missing transcript: {vtt_path}")
+
+        # Generate transcript using your component (Whisper)
+        vtt_path = transcribe_to_vtt(
+            input_media_path=str(self._p),
+            output_vtt_path=str(vtt_path),
+            model_size=self.whisper_model_size,
+            language=self.whisper_language,
+        )
+        return str(vtt_path)
+
+    def load(self) -> list[Document]:
+        """
+        Extracts transcript and representative frames per subtitle segment.
+        Returns a list of LangChain Document objects.
+        """
+        # 1. Ensure transcript exists
+        vtt_path = self._ensure_vtt()
+
+        # 2. Extract frames and metadata using your helper
+        metas = extract_frames_and_metadata(
+            path_to_video=str(self._p),
+            path_to_transcript=str(vtt_path),
+            path_to_save_extracted_frames=str(self.frames_dir),
+            path_to_save_metadatas=str(self.meta_dir),
+        )
+
+        docs: list[Document] = []
+        for m in metas:
+            transcript = (m.get("transcript") or "").strip()
+            if not transcript:
+                continue
+
+            metadata = {
+                "doc_type": "video",
+                "video_path": m.get("video_path") or str(self._p),
+                "video_segment_id": m.get("video_segment_id"),
+                "mid_time_ms": m.get("mid_time_ms"),
+                "extracted_frame_path": m.get("extracted_frame_path"),
+                "transcript_source": "vtt",
+            }
+
+            # Include optional timing/frame info if available
+            for k in ("start_ms", "end_ms", "start", "end", "frame_index","duration_ms"):
+                if k in m and m[k] is not None:
+                    metadata[k] = m[k]
+
+            docs.append(Document(page_content=transcript, metadata=metadata))
+
+        return docs
+
+
+
+class AudioSmartLoader:
+    """
+    Smart loader for audio files and YouTube audio sources.
+
+    Capabilities:
+    - Accepts either a local audio file or a YouTube URL.
+    - Downloads the audio (if YouTube URL) using yt_dlp.
+    - Transcribes or translates audio using Whisper (translate_audio).
+    - Returns a list of LangChain Document objects with metadata per segment.
+    """
+
+    def __init__(
+        self,
+        path: str,
+        *,
+        out_dir: str | Path | None = None,
+        audio_format: str = "mp3",
+        whisper_model: str = "medium",
+        whisper_language: str = GLOBAL_SETTINGS.default_language,
+        translate: bool = True,
+    ):
+        """
+        Args:
+            path: Local audio path or YouTube URL.
+            out_dir: Directory for downloaded audio files (if YouTube).
+            audio_format: Desired output format (mp3, wav, flac, etc.).
+            whisper_model: Whisper model name (tiny, base, small, medium, large).
+            whisper_language: Language code for transcription/translation.
+            translate: If True, translates speech to English (Whisper task="translate").
+        """
+        self.path = path
+        self.out_dir = Path(out_dir or "./audio_downloads")
+        self.audio_format = audio_format
+        self.whisper_model = whisper_model
+        self.whisper_language = whisper_language
+        self.translate = translate
+
+    def load(self) -> List[Document]:
+        """
+        Executes the end-to-end audio pipeline:
+        - If path is a YouTube URL → download audio.
+        - Run Whisper transcription/translation.
+        - Return list of LangChain Documents with metadata.
+        """
+        audio_path = self._ensure_audio_file()
+        transcription = self._transcribe_audio(audio_path)
+
+        # Whisper output example:
+        # {
+        #   "text": "full transcription",
+        #   "segments": [
+        #       {"id":0,"start":0.0,"end":3.1,"text":"Hello world"},
+        #       ...
+        #   ]
+        # }
+
+        results = transcription.get("segments", [])
+        if not results:
+            # fallback: single document with whole text
+            return [
+                Document(
+                    page_content=transcription.get("text", "").strip(),
+                    metadata={
+                        "source_path": str(audio_path),
+                        "source_type": "audio",
+                        "language": self.whisper_language,
+                        "whisper_model": self.whisper_model,
+                    },
+                )
+            ]
+
+        # Build documents for each segment
+        docs: List[Document] = []
+        for seg in results:
+            seg_text = seg.get("text", "").strip()
+            seg_start = float(seg.get("start", 0))
+            seg_end = float(seg.get("end", 0))
+            duration = seg_end - seg_start
+
+            metadata = {
+                "source_path": str(audio_path),
+                "source_type": "audio",
+                "segment_id": seg.get("id"),
+                "start_s": seg_start,
+                "end_s": seg_end,
+                "duration_s": duration,
+                "whisper_model": self.whisper_model,
+                "language": self.whisper_language,
+                "translated": self.translate,
+            }
+
+            docs.append(Document(page_content=seg_text, metadata=metadata))
+
+        return docs
+
+    # ---------------------------------------------------------
+    # Internal helpers
+    # ---------------------------------------------------------
+    def _ensure_audio_file(self) -> Path:
+        """If given a YouTube URL, downloads the audio file."""
+        if self.path.startswith("http://") or self.path.startswith("https://"):
+            # YouTube link → download audio
+            print(f"[AudioSmartLoader] Downloading audio from YouTube: {self.path}")
+            audio_path = yt_download_audio(
+                youtube_url=self.path,
+                out_dir=self.out_dir,
+                audio_format=self.audio_format,
+            )
+            print(f"[AudioSmartLoader] Audio downloaded: {audio_path}")
+            return audio_path
+
+        # Local file
+        audio_path = Path(self.path)
+        if not audio_path.exists():
+            raise FileNotFoundError(f"Audio file not found: {audio_path}")
+        return audio_path
+
+    def _transcribe_audio(self, audio_path: Path) -> dict:
+        """Transcribes or translates the given audio file using Whisper."""
+        print(f"[AudioSmartLoader] Transcribing audio: {audio_path}")
+        try:
+            result = translate_audio(
+                str(audio_path),
+                model=self.whisper_model,
+                language=self.whisper_language,
+            )
+            return result
+        except Exception as e:
+            raise RuntimeError(f"Failed to transcribe audio {audio_path}: {e}")
+
+# ======================================================================
+# FILE: intergrax/rag/documents_splitter.py
+# MODULE: intergrax.rag.documents_splitter
+# MODULE_GROUP: rag
+# TAGS:
+#   - package=intergrax
+#   - module_group=rag
+#   - file=documents_splitter.py
+# LINES: 351
+# SHA256: b6796ab15bd6baf8920b9060bb55c90b5330b5877e39119482f8e95b6082940d
+# SYMBOLS:
+#   - def _hash_text()
+#   - class DocumentsSplitter
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+import hashlib
+import logging
+from hashlib import sha1
+from copy import deepcopy
+from typing import Any, Callable, Dict, List, Optional, Sequence
+
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+logger = logging.getLogger(__name__)
+
+# signature: (chunk_doc, chunk_index, chunk_total) -> dict | None
+ChunkMetadataFn = Callable[[Document, int, int], Optional[Dict[str, Any]]]
+
+
+def _hash_text(text: str, n: int = 12) -> str:
+    return hashlib.sha1(text.encode("utf-8", errors="ignore")).hexdigest()[:n]
+
+
+class DocumentsSplitter:
+    def __init__(
+        self,
+        *,
+        verbose: bool = False,
+        default_chunk_size: int = 1000,
+        default_chunk_overlap: int = 100,
+        default_separators: Sequence[str] = ("\n\n", "\n", " ", ""),
+        min_chunk_chars: int = 0,                 # 0 = off
+        length_function: Optional[Callable[[str], int]] = None,
+        drop_empty: bool = True,
+        merge_small_tail: bool = True,
+        tail_min_chars: int = 120,
+        max_chunks_per_doc: Optional[int] = None,
+    ):
+        """
+        High-quality text splitter for RAG pipelines (stable chunk ids + rich metadata).
+        Implements 'semantic atom' policy: if a doc is already a small semantic unit
+        (paragraph/row/page/image), do not split it further.
+        """
+        self.verbose = verbose
+        self.default_chunk_size = int(default_chunk_size)
+        self.default_chunk_overlap = int(default_chunk_overlap)
+        self.default_separators = tuple(default_separators)
+        self.min_chunk_chars = int(min_chunk_chars)
+        self.length_function = length_function or len
+        self.drop_empty = drop_empty
+        self.merge_small_tail = merge_small_tail
+        self.tail_min_chars = int(tail_min_chars)
+        self.max_chunks_per_doc = max_chunks_per_doc
+
+        if self.default_chunk_size <= self.default_chunk_overlap:
+            raise ValueError("default_chunk_size must be > default_chunk_overlap.")
+
+    # -----------------------------
+    # internals
+    # -----------------------------
+    @staticmethod
+    def _infer_page_index(meta: Dict[str, Any]) -> Optional[int]:
+        """Try to infer page index from common loader keys."""
+        for key in ("page_index", "page", "page_number", "pdf_page"):
+            if key in meta:
+                try:
+                    return int(meta[key])
+                except Exception:
+                    return None
+        return None
+
+    @staticmethod
+    def _ensure_source_fields(doc: Document) -> tuple[Optional[str], Optional[str], Optional[str]]:
+        """
+        Returns (parent_id, source_name, source_path) derived from known metadata keys.
+        """
+        m = doc.metadata or {}
+        parent_id = m.get("parent_id") or m.get("id") or m.get("source_path") or m.get("source") or m.get("file_name")
+        source_name = m.get("source_name") or m.get("file_name") or m.get("source") or "unknown"
+        source_path = m.get("source_path") or m.get("source") or m.get("file_path") or ""
+        return parent_id, source_name, source_path
+
+    @staticmethod
+    def _is_semantic_atom(meta: Dict[str, Any]) -> bool:
+        """
+        Decide if document should be treated as an indivisible semantic atom.
+        """
+        # DOCX paragraph-mode
+        if meta.get("doc_type") == "docx" and meta.get("para_ix") is not None:
+            return True
+        # Excel/CSV row
+        if meta.get("excel_mode") == "rows" and meta.get("row_ix") is not None:
+            return True
+        # PDF page (with or without OCR)
+        if meta.get("doc_type") == "pdf" and (
+            meta.get("page_index") is not None or meta.get("page") is not None
+        ):
+            return True
+        # Images
+        fmt = meta.get("format")
+        if fmt in {"JPEG", "PNG", "TIFF", "BMP", "WEBP"}:
+            return True
+        return False
+
+    @staticmethod
+    def _build_chunk_id(meta: Dict[str, Any], idx: int, content: str) -> str:
+        """
+        Build a stable, human-readable chunk_id using available anchors (para_ix/row_ix/page_index).
+        Fallback: index + hash of content.
+        """
+        parent = meta.get("parent_id") or meta.get("source_path") or meta.get("source_name", "doc")
+        h8 = _hash_text(content, n=8)
+
+        # Prefer semantic anchors if present
+        if meta.get("doc_type") == "docx" and meta.get("para_ix") is not None:
+            sec = meta.get("section_ix")
+            if sec is not None:
+                return f"{parent}#sec{int(sec)}:p{int(meta['para_ix']):06d}-{h8}"
+            return f"{parent}#p{int(meta['para_ix']):06d}-{h8}"
+
+        if meta.get("excel_mode") == "rows" and meta.get("row_ix") is not None:
+            return f"{parent}#row{int(meta['row_ix']):06d}-{h8}"
+
+        pg = meta.get("page_index")
+        if meta.get("doc_type") == "pdf" and pg is not None:
+            return f"{parent}#pg{int(pg):05d}-{h8}"
+
+        # Default: chunk index + hash
+        return f"{parent}#ch{idx:04d}-{h8}"
+
+    def _finalize_chunks(
+        self,
+        chunks: List[Document],
+        *,
+        parent_id: Optional[str],
+        source_name: Optional[str],
+        source_path: Optional[str],
+        call_custom_metadata: Optional[ChunkMetadataFn],
+    ) -> List[Document]:
+        """
+        Adds:
+          - chunk_index, chunk_total
+          - parent_id, source_name, source_path
+          - page_index (if present upstream)
+          - stable chunk_id (uses para_ix/row_ix/page_index when possible)
+        Optionally merges tiny tail; applies max cap; merges custom metadata safely.
+        """
+
+        # Merge tiny last chunk with previous one (per document)
+        if self.merge_small_tail and len(chunks) >= 2:
+            last = chunks[-1]
+            if len(last.page_content.strip()) < self.tail_min_chars:
+                prev = chunks[-2]
+                merged = deepcopy(prev)
+                merged.page_content = (prev.page_content.rstrip() + "\n" + last.page_content.lstrip()).strip()
+                # keep prev metadata; reindex below
+                chunks = chunks[:-2] + [merged]
+
+        # Optional hard cap
+        if self.max_chunks_per_doc is not None and len(chunks) > self.max_chunks_per_doc:
+            if self.verbose:
+                logger.warning(
+                    "[intergraxDocumentsSplitter] Cap reached: %d > %d (source=%s)",
+                    len(chunks), self.max_chunks_per_doc, source_name or parent_id or "unknown",
+                )
+            chunks = chunks[: self.max_chunks_per_doc]
+
+        chunk_total = len(chunks)
+        finalized: List[Document] = []
+
+        # Fallback parent when none available
+        base_parent = parent_id or source_name or "doc"
+        if base_parent == "doc":
+            seed = (chunks[0].page_content[:256] if chunks else "empty")
+            base_parent = f"doc-{_hash_text(seed, n=10)}"
+
+        for idx, ch in enumerate(chunks):
+            c = deepcopy(ch)
+            meta = dict(c.metadata or {})
+
+            # Core source fields (do not overwrite existing)
+            meta.setdefault("parent_id", base_parent)
+            meta.setdefault("source_name", source_name or "unknown")
+            if source_path:
+                meta.setdefault("source_path", source_path)
+
+            # Indexing
+            meta["chunk_index"] = idx
+            meta["chunk_total"] = chunk_total
+
+            # Page index if available
+            if "page_index" not in meta:
+                pg = self._infer_page_index(meta)
+                if pg is not None:
+                    meta["page_index"] = pg
+
+            # Stable chunk id: prefer existing; otherwise build new (with anchors if present)
+            if "chunk_id" not in meta:
+                meta["chunk_id"] = self._build_chunk_id(meta, idx, c.page_content)
+
+            # Custom metadata (safe merge; do not override core keys)
+            if callable(call_custom_metadata):
+                try:
+                    extra = call_custom_metadata(c, idx, chunk_total) or {}
+                    if isinstance(extra, dict):
+                        for k, v in extra.items():
+                            if v is None:
+                                continue
+                            if k in {"chunk_id", "chunk_index", "chunk_total", "parent_id"}:
+                                continue  # protect core ids
+                            meta.setdefault(k, v)
+                except Exception as e:
+                    if self.verbose:
+                        logger.exception("[intergraxDocumentsSplitter] Metadata callback error: %s", e)
+
+            c.metadata = meta
+            finalized.append(c)
+
+        return finalized
+
+    # -----------------------------
+    # public
+    # -----------------------------
+    def split_documents(
+        self,
+        documents: List[Document],
+        *,
+        chunk_size: Optional[int] = None,
+        chunk_overlap: Optional[int] = None,
+        separators: Optional[Sequence[str]] = None,
+        call_custom_metadata: Optional[ChunkMetadataFn] = None,
+    ) -> List[Document]:
+        """
+        Split documents for RAG with stable chunk ids and rich metadata.
+
+        Each chunk gets:
+          - chunk_id (stable), chunk_index, chunk_total
+          - parent_id, source_name, source_path
+          - page_index (if present upstream)
+          - plus any extras from call_custom_metadata (without overriding core ids)
+
+        Policy:
+          - If document is a semantic atom (paragraph/row/page/image), do NOT split it.
+          - Otherwise, use RecursiveCharacterTextSplitter.
+        """
+        if not documents:
+            if self.verbose:
+                logger.info("[intergraxDocumentsSplitter] Empty document list.")
+            return []
+
+        eff_chunk_size = int(chunk_size or self.default_chunk_size)
+        eff_overlap = int(chunk_overlap or self.default_chunk_overlap)
+        if eff_chunk_size <= eff_overlap:
+            raise ValueError("chunk_size must be > chunk_overlap.")
+
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=eff_chunk_size,
+            chunk_overlap=eff_overlap,
+            length_function=self.length_function,
+            separators=list(separators or self.default_separators),
+        )
+
+        all_chunks: List[Document] = []
+        total_inputs = len(documents)
+
+        for i, doc in enumerate(documents):
+            if not isinstance(doc, Document):
+                continue
+
+            meta = doc.metadata or {}
+
+            # === 0) Semantic atom short-circuit ===
+            if self._is_semantic_atom(meta):
+                content = (doc.page_content or "").strip()
+                if self.drop_empty and not content:
+                    # do not add empty atoms
+                    continue
+                atom_doc = deepcopy(doc)
+                atom_doc.page_content = content
+                parent_id, source_name, source_path = self._ensure_source_fields(atom_doc)
+                finalized = self._finalize_chunks(
+                    [atom_doc],  # single chunk
+                    parent_id=parent_id,
+                    source_name=source_name,
+                    source_path=source_path,
+                    call_custom_metadata=call_custom_metadata,
+                )
+                all_chunks.extend(finalized)
+
+                if self.verbose:
+                    src = source_name or f"doc_{i}"
+                    logger.info("[intergraxDocumentsSplitter] %d/%d -> '%s': semantic-atom (1 chunk)",
+                                i + 1, total_inputs, src)
+                continue
+
+            # === 1) Standard split path ===
+            doc_chunks = splitter.split_documents([doc])
+
+            # === 2) Normalize / filter ===
+            normalized: List[Document] = []
+            for c in doc_chunks:
+                content = (c.page_content or "").strip()
+                if self.drop_empty and not content:
+                    continue
+                if self.min_chunk_chars > 0 and len(content) < self.min_chunk_chars:
+                    continue
+                if content != c.page_content:
+                    c = deepcopy(c)
+                    c.page_content = content
+                normalized.append(c)
+
+            # === 3) Source fields for this document ===
+            parent_id, source_name, source_path = self._ensure_source_fields(doc)
+
+            # === 4) Finalize chunk metadata (ids, indices, page, extras) ===
+            finalized = self._finalize_chunks(
+                normalized,
+                parent_id=parent_id,
+                source_name=source_name,
+                source_path=source_path,
+                call_custom_metadata=call_custom_metadata,
+            )
+            all_chunks.extend(finalized)
+
+            if self.verbose:
+                src = source_name or f"doc_{i}"
+                logger.info(
+                    "[intergraxDocumentsSplitter] %d/%d -> '%s': %d chunks",
+                    i + 1, total_inputs, src, len(finalized)
+                )
+
+        if self.verbose:
+            logger.info("[intergraxDocumentsSplitter] Split %d documents into %d chunks",
+                        len(documents), len(all_chunks))
+            if all_chunks:
+                ex = all_chunks[0]
+                logger.info("[intergraxDocumentsSplitter] Example chunk: %s ...", ex.page_content[:300])
+                logger.info("[intergraxDocumentsSplitter] Example metadata: %s", ex.metadata)
+
+        return all_chunks
+
+    def make_id(self, d: Document) -> str:
+        cid = d.metadata.get("chunk_id")
+        if not cid:
+            parent = d.metadata.get("parent_id") or d.metadata.get("source_path") or d.metadata.get("source_name", "doc")
+            h8 = sha1(d.page_content.encode("utf-8", "ignore")).hexdigest()[:8]
+            idx = int(d.metadata.get("chunk_index", 0))
+            cid = f"{parent}#ch{idx:04d}-{h8}"
+        return cid
+
+# ======================================================================
+# FILE: intergrax/rag/dual_index_builder.py
+# MODULE: intergrax.rag.dual_index_builder
+# MODULE_GROUP: rag
+# TAGS:
+#   - package=intergrax
+#   - module_group=rag
+#   - file=dual_index_builder.py
+# LINES: 138
+# SHA256: 8a9266949177757a7923c691d131fb9eacc461c9c3f942481261704046168ba5
+# SYMBOLS:
+#   - def build_dual_index()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+import logging
+import math
+from typing import List, Dict, Callable, Optional
+from langchain_core.documents import Document
+from .vectorstore_manager import VectorstoreManager
+from .embedding_manager import EmbeddingManager
+
+logger = logging.getLogger("intergrax.dual_index_builder")
+
+
+def build_dual_index(
+    *,
+    docs: List[Document],
+    embed_manager: EmbeddingManager,                 # intergraxEmbeddingManager
+    vs_chunks: VectorstoreManager,                   # main collection (CHUNKS)
+    vs_toc: Optional[VectorstoreManager] = None,     # lightweight collection (TOC)
+    batch_size: int = 512,
+    make_toc_from_docx_headings: bool = True,
+    toc_min_level: int = 1,
+    toc_max_level: int = 3,
+    prefilter: Optional[Callable[[Document], bool]] = None,
+    verbose: bool = False,
+):
+    """
+    Builds two vector indexes: primary (CHUNKS) and auxiliary (TOC).
+    - CHUNKS: all chunks/documents after splitting.
+    - TOC: only DOCX headings within levels [toc_min_level, toc_max_level].
+    """
+    log = logger.getChild("build")
+    if verbose:
+        log.setLevel(logging.INFO)
+
+    # sanity for level range
+    if toc_min_level > toc_max_level:
+        toc_min_level, toc_max_level = toc_max_level, toc_min_level
+
+    total = len(docs)
+    log.info("[DualIndex] Start (input=%d)", total)
+
+    chunk_docs: List[Document] = []
+    toc_docs: List[Document] = []
+
+    for d in docs:
+        if prefilter and not prefilter(d):
+            continue
+
+        text = (d.page_content or "").strip()
+        if not text:
+            continue
+
+        md: Dict = dict(d.metadata or {})
+        # simplified source name (e.g., file name)
+        if "source_name" not in md:
+            sp = md.get("source_path") or md.get("path") or md.get("file_name") or md.get("filename") or "unknown"
+            md["source_name"] = str(sp).split("/")[-1].split("\\")[-1]
+
+        # 1) CHUNKS: every doc/chunk goes to the primary collection
+        chunk_docs.append(Document(page_content=text, metadata=md))
+
+        # 2) TOC: from DOCX headings (if enabled and we have a TOC collection)
+        if (
+            vs_toc is not None
+            and make_toc_from_docx_headings
+            and md.get("doc_type") == "docx"
+            and md.get("is_heading") is True
+        ):
+            # determine level
+            level = md.get("heading_level")
+            if level is None:
+                hp = md.get("heading_path") or ""
+                level = 1 + hp.count(" / ") if hp else 1
+            try:
+                ilevel = int(level)
+            except Exception:
+                ilevel = toc_min_level  # fallback
+
+            if toc_min_level <= ilevel <= toc_max_level:
+                # shorten heading content to a reasonable length (e.g., 512 chars)
+                toc_docs.append(Document(page_content=text[:512], metadata=md))
+
+    log.info("[DualIndex] Prepared: chunks=%d, toc=%d", len(chunk_docs), len(toc_docs))
+
+    # --- CHUNKS ---
+    if chunk_docs:
+        # compute embeddings (returns (embeddings, aligned_docs))
+        X_chunks, aligned_chunks = embed_manager.embed_documents(chunk_docs)
+
+        n = len(aligned_chunks)
+        total_batches = math.ceil(n / batch_size)
+        for i in range(0, n, batch_size):
+            j = min(i + batch_size, n)
+            vs_chunks.add_documents(
+                documents=aligned_chunks[i:j],
+                embeddings=X_chunks[i:j],
+                batch_size=batch_size,
+            )
+            if verbose:
+                log.info(
+                    "[DualIndex] CHUNKS batch %d/%d inserted (%d items)",
+                    (i // batch_size) + 1, total_batches, j - i
+                )
+        try:
+            log.info("[DualIndex] CHUNKS done (count now ~%d)", vs_chunks.count())
+        except Exception:
+            log.info("[DualIndex] CHUNKS done")
+
+    # --- TOC ---
+    if vs_toc is not None:
+        if toc_docs:
+            X_toc, aligned_toc = embed_manager.embed_documents(toc_docs)
+
+            n = len(aligned_toc)
+            total_batches = math.ceil(n / batch_size)
+            for i in range(0, n, batch_size):
+                j = min(i + batch_size, n)
+                vs_toc.add_documents(
+                    documents=aligned_toc[i:j],
+                    embeddings=X_toc[i:j],
+                    batch_size=batch_size,
+                )
+                if verbose:
+                    log.info(
+                        "[DualIndex] TOC batch %d/%d inserted (%d items)",
+                        (i // batch_size) + 1, total_batches, j - i
+                    )
+            try:
+                log.info("[DualIndex] TOC done (count now ~%d)", vs_toc.count())
+            except Exception:
+                log.info("[DualIndex] TOC done")
+        else:
+            log.warning("[DualIndex] TOC enabled, but no DOCX headings matched the criteria.")
+
+    log.info("[DualIndex] Done.")
+
+# ======================================================================
+# FILE: intergrax/rag/dual_retriever.py
+# MODULE: intergrax.rag.dual_retriever
+# MODULE_GROUP: rag
+# TAGS:
+#   - package=intergrax
+#   - module_group=rag
+#   - file=dual_retriever.py
+# LINES: 170
+# SHA256: 3e87b936dea9bfa029fbab584fa98b267d37274154042dfd8b7b43bf358c1cfb
+# SYMBOLS:
+#   - class DualRetriever
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import List, Dict, Optional, Any
+import logging
+
+from langchain_core.documents import Document
+from .vectorstore_manager import VectorstoreManager
+from .embedding_manager import EmbeddingManager
+
+logger = logging.getLogger("intergrax.dual_retriever")
+
+
+class DualRetriever:
+    """
+    Dual retriever: first query TOC (sections), then fetch local chunks from the same section/source.
+    Works with intergraxVectorstoreManager (uses .query, NOT .search).
+    """
+
+    def __init__(
+        self,
+        vs_chunks: VectorstoreManager,
+        vs_toc: Optional[VectorstoreManager] = None,
+        *,
+        embed_manager: Optional[EmbeddingManager] = None,
+        k_chunks: int = 30,
+        k_toc: int = 8,
+        verbose: bool = False,
+    ):
+        self.vs_chunks = vs_chunks
+        self.vs_toc = vs_toc
+        self.em = embed_manager  # if not provided, we will raise on first use
+        self.k_chunks = int(k_chunks)
+        self.k_toc = int(k_toc)
+        self.verbose = verbose
+        self.log = logger.getChild("retrieve")
+        if self.verbose:
+            self.log.setLevel(logging.INFO)
+
+    # --- helpers --------------------------------------------------------
+
+    def _ensure_em(self) -> EmbeddingManager:
+        if self.em is None:
+            raise RuntimeError("intergraxDualRetriever needs an EmbeddingManager (embed_manager=...)")
+        return self.em
+
+    def _normalize_hits(self, res: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        intergraxVectorstoreManager.query() returns:
+          {"ids":[[...]], "scores":[[...]], "metadatas":[[...]], "documents":[[...]]}
+        (for Chroma: 'scores' are similarity in [0..1], because the manager converts distance->1-distance)
+        """
+        ids_b        = res.get("ids", [[]])
+        scores_b     = res.get("scores", [[]])
+        metadatas_b  = res.get("metadatas", [[]])
+        documents_b  = res.get("documents", [[]])
+
+        ids       = ids_b[0] if ids_b else []
+        scores    = scores_b[0] if scores_b else []
+        metadatas = metadatas_b[0] if metadatas_b else []
+        documents = documents_b[0] if documents_b else []
+
+        n = min(len(ids), len(scores), len(metadatas))
+        if isinstance(documents, list) and documents:
+            n = min(n, len(documents))
+
+        hits: List[Dict[str, Any]] = []
+        for i in range(n):
+            md = dict(metadatas[i] or {})
+            txt = (documents[i] if (isinstance(documents, list) and i < len(documents)) else md.get("text", "")) or ""
+            hits.append({
+                "id": ids[i],
+                "content": str(txt),
+                "metadata": md,
+                "similarity_score": float(scores[i]),
+                "distance": None,   # in Chroma converted; for other providers we use similarity_score anyway
+            })
+        # sort descending by similarity
+        hits.sort(key=lambda h: h.get("similarity_score", 0.0), reverse=True)
+        return hits
+
+    def _query_vs(
+        self,
+        vs: VectorstoreManager,
+        query_text: str,
+        *,
+        top_k: int,
+        where: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        em = self._ensure_em()
+        q_vec = em.embed_one(query_text)  # 1xD (ndarray or list)
+        res = vs.query(query_embeddings=q_vec, top_k=top_k, where=where, include_embeddings=False)
+        return self._normalize_hits(res)
+
+    @staticmethod
+    def _merge_where_with_parent(where: Optional[Dict[str, Any]], parent_id: Any) -> Optional[Dict[str, Any]]:
+        """
+        Returns a filter that ANDs the existing `where` with a parent_id condition.
+        If `where` has a conflicting parent_id, returns None (means: skip this expansion).
+        """
+        if where is None:
+            return {"parent_id": parent_id}
+        # conflicting parent_id → no point in querying
+        if "parent_id" in where and where["parent_id"] != parent_id:
+            return None
+        merged = dict(where)
+        merged["parent_id"] = parent_id
+        return merged
+
+    def _expand_by_toc(self, question: str, where: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Returns local CHUNKS hits expanded based on the sections matched in TOC."""
+        if self.vs_toc is None:
+            return []
+
+        toc_hits = self._query_vs(self.vs_toc, question, top_k=self.k_toc, where=where)
+        self.log.info("[DualRetriever] TOC hits: %d", len(toc_hits))
+
+        expanded: List[Dict[str, Any]] = []
+        for h in toc_hits:
+            md = h.get("metadata", {}) or {}
+            parent = md.get("parent_id") or md.get("source_path") or md.get("source_name")
+            if not parent:
+                continue
+
+            where_local = self._merge_where_with_parent(where, parent)
+            if where_local is None:
+                # filter collision (e.g., where['parent_id'] differs from matched parent)
+                continue
+
+            local = self._query_vs(self.vs_chunks, question, top_k=self.k_chunks, where=where_local)
+            expanded.extend(local)
+
+        self.log.info("[DualRetriever] Expanded via TOC to %d local hits", len(expanded))
+        return expanded
+
+    # --- public ---------------------------------------------------------
+
+    def retrieve(self, question: str, *, top_k: int = 40, where: Optional[dict] = None) -> List[Dict[str, Any]]:
+        """
+        1) Fetch base hits from CHUNKS (max(self.k_chunks, top_k))
+        2) Expand context via TOC (if available) and search locally by parent_id (propagates `where`)
+        3) Merge, dedupe and sort by similarity, then trim to top_k
+        """
+        self.log.info("[DualRetriever] Query: '%s' (top_k=%d)", question, top_k)
+
+        base_k = max(int(top_k), self.k_chunks)
+        base_hits = self._query_vs(self.vs_chunks, question, top_k=base_k, where=where)
+        self.log.info("[DualRetriever] Base CHUNKS hits: %d", len(base_hits))
+
+        toc_expanded = self._expand_by_toc(question, where)
+
+        # merge + dedupe
+        def _key(h: Dict[str, Any]):
+            m = h.get("metadata", {}) or {}
+            return (h.get("id"), m.get("chunk_id"), m.get("parent_id"))
+
+        seen, merged = set(), []
+        for h in (toc_expanded + base_hits):
+            k = _key(h)
+            if k in seen:
+                continue
+            seen.add(k)
+            merged.append(h)
+
+        merged.sort(key=lambda x: x.get("similarity_score", 0.0), reverse=True)
+        out = merged[: int(top_k)]
+        self.log.info("[DualRetriever] Total merged: %d", len(out))
+        return out
+
+# ======================================================================
+# FILE: intergrax/rag/embedding_manager.py
+# MODULE: intergrax.rag.embedding_manager
+# MODULE_GROUP: rag
+# TAGS:
+#   - package=intergrax
+#   - module_group=rag
+#   - file=embedding_manager.py
+# LINES: 306
+# SHA256: e77bf68e4fe2dca3aa0bfbbe256abb3c1dbcc5ac89297e03563bc8d9880657d7
+# SYMBOLS:
+#   - class EmbeddingStats
+#   - class EmbeddingManager
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass
+from typing import List, Dict, Any, Tuple, Literal, Optional, Sequence, Union
+
+import numpy as np
+from numpy.typing import NDArray
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+
+try:
+    from sentence_transformers import SentenceTransformer
+except Exception:
+    SentenceTransformer = None
+
+from langchain_ollama import OllamaEmbeddings
+from langchain_openai import OpenAIEmbeddings   # <— NEW
+from langchain_core.documents import Document
+
+logger = logging.getLogger(__name__)
+
+PROVIDERS = Literal["ollama", "hg", "openai"]  # <— NEW: openai
+
+
+@dataclass(frozen=True)
+class EmbeddingStats:
+    provider: str
+    model_name: str
+    dim: int
+    count: int
+
+
+class EmbeddingManager:
+    """
+    Unified embedding manager for HuggingFace (SentenceTransformer), Ollama, or OpenAI embeddings.
+
+    Features:
+    - Provider switch: "hg", "ollama", "openai"
+    - Reasonable defaults if model_name is None
+    - Batch/single text embedding; optional L2 normalization
+    - Embedding for LangChain Documents (returns np.ndarray + aligned docs)
+    - Cosine similarity utilities and top-K retrieval
+    - Robust logging, shape validation, light retry for transient errors
+    """
+
+    def __init__(
+        self,
+        provider: PROVIDERS,
+        model_name: Optional[str] = None,
+        *,
+        normalize: bool = True,
+        # HF settings
+        hf_device: Optional[str] = None,
+        hf_batch_size: int = 32,
+        hf_normalize_inside: bool = False,
+        hf_max_length: Optional[int] = None,
+        # Ollama settings
+        ollama_probe_dim: bool = True,
+        assume_ollama_dim: int = 1536,
+        # OpenAI settings: use default env variables (OPENAI_API_KEY, OPENAI_BASE, etc.)
+        # nothing to pass here — model and key are handled by `langchain_openai.OpenAIEmbeddings`
+        retries: int = 1,
+        verbose: bool = True,
+    ) -> None:
+        self.provider: PROVIDERS = provider
+        self.model_name = model_name or self._default_model_for(provider)
+        self.normalize = normalize
+
+        self.hf_device = hf_device
+        self.hf_batch_size = int(hf_batch_size)
+        self.hf_normalize_inside = hf_normalize_inside
+        self.hf_max_length = hf_max_length
+
+        self.ollama_probe_dim = ollama_probe_dim
+        self._assume_ollama_dim = int(assume_ollama_dim)
+
+        self.retries = max(0, int(retries))
+        self.verbose = verbose
+
+        self.model: Optional[Union[SentenceTransformer, OllamaEmbeddings, OpenAIEmbeddings]] = None # type: ignore
+        self.embed_dim: Optional[int] = None
+
+        self._load_model()
+
+    # ----------------------
+    # Model loading
+    # ----------------------
+    def _default_model_for(self, provider: PROVIDERS) -> str:
+        if provider == "hg":
+            return GLOBAL_SETTINGS.default_hf_embed_model
+        elif provider == "ollama":
+            return GLOBAL_SETTINGS.default_ollama_embed_model
+        elif provider == "openai":
+            # stable, inexpensive default model; larger one is "text-embedding-3-large"
+            return GLOBAL_SETTINGS.default_openai_embed_model
+        raise ValueError(f"Unknown provider: {provider}")
+
+    def _load_model(self) -> None:
+        try:
+            if self.verbose:
+                logger.info("[intergraxEmbeddingManager] Loading model '%s' (provider=%s)",
+                            self.model_name, self.provider)
+
+            if self.provider == "hg":
+                self.model = SentenceTransformer(self.model_name, device=self.hf_device)
+                if self.hf_max_length is not None:
+                    try:
+                        self.model.max_seq_length = int(self.hf_max_length)
+                    except Exception:
+                        pass
+                self.embed_dim = int(self.model.get_sentence_embedding_dimension())
+
+            elif self.provider == "ollama":
+                self.model = OllamaEmbeddings(model=self.model_name)
+                if self.ollama_probe_dim:
+                    try:
+                        test = self.model.embed_query("probe-dimension")
+                        dim = len(test)
+                        self.embed_dim = int(dim) if dim > 0 else self._assume_ollama_dim
+                    except Exception as e:
+                        logger.warning("[intergraxEmbeddingManager] Ollama dim probe failed: %s", e)
+                        self.embed_dim = self._assume_ollama_dim
+                else:
+                    self.embed_dim = self._assume_ollama_dim
+
+            elif self.provider == "openai":
+                # Uses OPENAI_API_KEY from env; you can also pass api_key/base via OpenAIEmbeddings(...)
+                self.model = OpenAIEmbeddings(model=self.model_name)
+                # Probe dimension — quick single-vector request
+                try:
+                    test_vec = self.model.embed_query("probe-dimension")
+                    self.embed_dim = int(len(test_vec)) if test_vec else None
+                except Exception as e:
+                    logger.exception("[intergraxEmbeddingManager] OpenAI dim probe failed: %s", e)
+                    # if probing fails, assume common sizes (small=1536, large=3072)
+                    self.embed_dim = 1536 if "small" in (self.model_name or "") else 3072
+
+            else:
+                raise ValueError(f"Unsupported provider: {self.provider}")
+
+            if self.verbose:
+                logger.info("[intergraxEmbeddingManager] Loaded. Embedding dim = %s", self.embed_dim)
+
+        except Exception as e:
+            logger.exception("[intergraxEmbeddingManager] Error loading model '%s': %s", self.model_name, e)
+            raise
+
+    # ----------------------
+    # Embedding helpers
+    # ----------------------
+    def _to_ndarray(self, vecs: Sequence[Sequence[float]]) -> NDArray[np.float32]:
+        arr = np.asarray(vecs, dtype=np.float32)
+        if arr.ndim == 1:
+            arr = np.expand_dims(arr, axis=0)
+        return arr
+
+    def _maybe_normalize(self, X: NDArray[np.float32]) -> NDArray[np.float32]:
+        if not self.normalize:
+            return X
+        norms = np.linalg.norm(X, axis=1, keepdims=True)
+        norms = np.where(norms == 0.0, 1e-12, norms)
+        return X / norms
+
+    def _ensure_dim_known(self) -> None:
+        if self.embed_dim is None:
+            raise RuntimeError("Embedding dimension is unknown (model not loaded or probe failed).")
+
+    # ----------------------
+    # Public API
+    # ----------------------
+    def embed_texts(self, texts: Sequence[str]) -> NDArray[np.float32]:
+        """
+        Embed a list of texts. Returns a 2D numpy array [n_texts, dim].
+        """
+        self._ensure_dim_known()
+
+        if not texts:
+            return np.empty((0, self.embed_dim or 0), dtype=np.float32)
+        if self.model is None:
+            raise RuntimeError("Model is not loaded.")
+
+        if self.verbose:
+            logger.info("[intergraxEmbeddingManager] Embedding %d texts...", len(texts))
+
+        attempts = self.retries + 1
+        last_err: Optional[Exception] = None
+
+        for attempt in range(1, attempts + 1):
+            try:
+                if self.provider == "hg":
+                    vecs = self.model.encode(
+                        list(texts),
+                        batch_size=self.hf_batch_size,
+                        show_progress_bar=self.verbose,
+                        convert_to_numpy=True,
+                        normalize_embeddings=self.hf_normalize_inside,
+                    )
+                    X = vecs.astype(np.float32)
+
+                elif self.provider in ("ollama", "openai"):
+                    # Both providers in LC expose embed_documents for batches
+                    vecs = self.model.embed_documents(list(texts))  # type: ignore[attr-defined]
+                    X = self._to_ndarray(vecs)
+
+                else:
+                    raise ValueError(f"Unsupported provider at embed_texts: {self.provider}")
+
+                X = self._maybe_normalize(X)
+                return X
+
+            except Exception as e:
+                last_err = e
+                logger.warning("[intergraxEmbeddingManager] Embed attempt %d/%d failed: %s",
+                               attempt, attempts, e)
+
+        logger.exception("[intergraxEmbeddingManager] All embedding attempts failed.")
+        raise last_err or RuntimeError("Embedding failed for unknown reason.")
+
+    def embed_one(self, text: str) -> NDArray[np.float32]:
+        """
+        Embed a single text. Returns a 1xD numpy array.
+        Uses provider-specific 'query' method for Ollama/OpenAI.
+        """
+        self._ensure_dim_known()
+        if self.model is None:
+            raise RuntimeError("Model is not loaded.")
+
+        if self.provider in ("ollama", "openai"):
+            attempts = self.retries + 1
+            last_err: Optional[Exception] = None
+            for attempt in range(1, attempts + 1):
+                try:
+                    vec = self.model.embed_query(text)  # type: ignore[attr-defined]
+                    X = self._to_ndarray(vec)
+                    return self._maybe_normalize(X)
+                except Exception as e:
+                    last_err = e
+                    logger.warning("[intergraxEmbeddingManager] embed_query attempt %d/%d failed: %s",
+                                   attempt, attempts, e)
+            raise last_err or RuntimeError("embed_query failed.")
+        else:
+            return self.embed_texts([text])
+
+    def embed_documents(self, docs: Sequence[Document]) -> Tuple[NDArray[np.float32], List[Document]]:
+        """
+        Embed LangChain Document objects based on their page_content.
+        Returns: (embeddings, aligned_docs)
+        """
+        self._ensure_dim_known()
+        if not docs:
+            return np.empty((0, self.embed_dim or 0), dtype=np.float32), []
+        texts = [d.page_content or "" for d in docs]
+        X = self.embed_texts(texts)
+        return X, list(docs)
+
+    # ----------------------
+    # Similarity utilities
+    # ----------------------
+    @staticmethod
+    def cosine_sim_matrix(A: NDArray[np.float32], B: NDArray[np.float32]) -> NDArray[np.float32]:
+        if A.size == 0 or B.size == 0:
+            return np.empty((A.shape[0], B.shape[0]), dtype=np.float32)
+        if A.shape[1] != B.shape[1]:
+            raise ValueError(f"Dim mismatch: A is (*,{A.shape[1]}), B is (*,{B.shape[1]})")
+        A_norms = np.linalg.norm(A, axis=1, keepdims=True)
+        B_norms = np.linalg.norm(B, axis=1, keepdims=True)
+        A_norms = np.where(A_norms == 0.0, 1e-12, A_norms)
+        B_norms = np.where(B_norms == 0.0, 1e-12, B_norms)
+        return (A @ B.T) / (A_norms * B_norms)
+
+    @staticmethod
+    def top_k_similar(
+        query_vecs: NDArray[np.float32],
+        corpus_vecs: NDArray[np.float32],
+        k: int = 5,
+    ) -> Tuple[NDArray[np.int64], NDArray[np.float32]]:
+        if corpus_vecs.size == 0 or k <= 0:
+            return (
+                np.empty((query_vecs.shape[0], 0), dtype=np.int64),
+                np.empty((query_vecs.shape[0], 0), dtype=np.float32),
+            )
+        k = min(k, corpus_vecs.shape[0])
+        sims = EmbeddingManager.cosine_sim_matrix(query_vecs, corpus_vecs)
+        idx = np.argpartition(-sims, kth=k-1, axis=1)[:, :k]
+        row_indices = np.arange(sims.shape[0])[:, None]
+        top_scores = sims[row_indices, idx]
+        order = np.argsort(-top_scores, axis=1)
+        idx_sorted = idx[row_indices, order]
+        scores_sorted = top_scores[row_indices, order]
+        return idx_sorted, scores_sorted
+
+    # ----------------------
+    # Introspection
+    # ----------------------
+    def stats(self, count: int = 0) -> EmbeddingStats:
+        return EmbeddingStats(
+            provider=self.provider,
+            model_name=self.model_name,
+            dim=int(self.embed_dim or 0),
+            count=int(count),
+        )
+
+# ======================================================================
+# FILE: intergrax/rag/rag_answerer.py
+# MODULE: intergrax.rag.rag_answerer
+# MODULE_GROUP: rag
+# TAGS:
+#   - package=intergrax
+#   - module_group=rag
+#   - file=rag_answerer.py
+# LINES: 425
+# SHA256: 25b56767273987662d52a80ea586a8739e80f2752441e2bbf433fecef9ee879e
+# SYMBOLS:
+#   - class AnswererConfig
+#   - class AnswerSource
+#   - class RagAnswerer
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+import time
+import json
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Protocol, Iterable, Literal, Type
+
+from intergrax.memory.conversational_memory import ConversationalMemory
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters import LLMAdapter
+
+# Pydantic optionally (no hard runtime dependency)
+try:
+    from pydantic import BaseModel  # type: ignore
+except Exception:
+    class BaseModel:  # fallback
+        pass
+
+
+# =========================
+# Configuration & data models
+# =========================
+
+@dataclass
+class AnswererConfig:
+    # Retrieval / ranking
+    top_k: int = 12
+    min_score: Optional[float] = None
+    re_rank_k: int = 0
+    max_context_chars: int = 12000
+
+    # LLM
+    temperature: float = 0.2
+    max_answer_tokens: Optional[int] = None
+
+    # Citations
+    meta_source_keys: Tuple[str, ...] = (
+        "source_id", "source_path", "source_file", "source", "file_name", "path", "filename", "title"
+    )
+    meta_page_keys: Tuple[str, ...] = ("page", "page_number", "page_index", "page_no")
+
+    # Prompts
+    system_instructions: str = (
+        "You are a factual, precise assistant. Base your answer ONLY on the provided context if present.\n"
+        "If the answer is not in the context, say you don't know.\n"
+        "Answer in user's language, concise but complete. If useful, cite sources like [source|page]."
+    )
+    system_context_template: str = "Context for this session:\n{context}"
+    user_question_template: str = "Question:\n{question}"
+    user_instruction_template: str = "{instruction}"
+
+    summary_prompt_template: str = (
+        "Summarize the answer below into no more than 6 bullet points. Keep it factual and do not introduce new content.\n\nANSWER:\n{answer}\n"
+    )
+
+
+@dataclass
+class AnswerSource:
+    source: str
+    page: Optional[str]
+    score: Optional[float]
+    preview: str
+
+
+# =========================
+# Main Answerer (messages & roles)
+# =========================
+
+class RagAnswerer:
+    def __init__(
+        self,
+        retriever: Any,
+        llm: LLMAdapter,
+        reranker: Optional[Any] = None,
+        config: Optional[AnswererConfig] = None,
+        verbose: bool = False,
+        *,
+        memory: Optional[ConversationalMemory] = None,
+    ):
+        self.retriever = retriever
+        self.llm = llm
+        self.reranker = reranker
+        self.cfg = config or AnswererConfig()
+        self.verbose = verbose
+        self.memory = memory
+
+    # ---------- Public API ----------
+
+    def run(
+        self,
+        question: str,
+        *,
+        where: Optional[dict] = None,
+        stream: bool = False,
+        summarize: bool = False,
+        user_instruction: Optional[str] = None,
+        output_model: Optional[Type[BaseModel]] = None,   # ← like in intergraxToolsAgent: additional structured output next to text
+    ) -> Dict[str, Any]:
+        """
+        Behavior identical to intergraxToolsAgent.run:
+        - 'answer': textual LLM answer (string),
+        - 'output_structure': Pydantic instance (if output_model is provided and the adapter supports generate_structured),
+        - no 'structured' field.
+        """
+        if self.memory is not None:
+            self.memory.add(role="user", content=question)
+
+        tk = self.cfg.top_k
+        ms = self.cfg.min_score
+
+        # 1) Retrieval
+        if self.verbose:
+            print(f"[intergraxRagAnswerer] Retrieve: top_k={tk}, min_score={ms}")
+        t0 = time.perf_counter()
+        # ⬇️ remove unsupported score_threshold argument (we apply the threshold locally)
+        hits_raw = self.retriever.retrieve(question=question, top_k=tk, where=where)
+        t_retrieve = time.perf_counter() - t0
+        hits = [self._normalize_hit(h) for h in hits_raw]
+
+        # Local similarity threshold filter (if configured)
+        if ms is not None:
+            try:
+                thr = float(ms)
+                hits = [h for h in hits if (h.get("similarity_score") or 0.0) >= thr]
+            except Exception:
+                # if parsing min_score fails, skip the filter
+                pass
+
+        if not hits:
+            msg = "No sufficiently relevant context fragments were found to answer the question."
+            return {
+                "answer": msg,
+                "output_structure": None,
+                "sources": [],
+                "summary": None,
+                "context": "",
+                "messages": [],
+                "stats": {
+                    "hits_in": 0,
+                    "context_chars": 0,
+                    "retrieve_s": round(t_retrieve, 4),
+                    "rerank_s": 0.0,
+                    "llm_s": 0.0,
+                },
+            }
+
+        # 2) (Optional) Re-rank
+        t_rerank = 0.0
+        if self.reranker and (self.cfg.re_rank_k or 0) > 0:
+            if self.verbose:
+                print(f"[intergraxRagAnswerer] Re-rank to top {self.cfg.re_rank_k}")
+            t1 = time.perf_counter()
+            rr_hits = None
+            try:
+                if hasattr(self.reranker, "__call__"):
+                    rr_hits = self.reranker(question=question, candidates=hits, top_k=self.cfg.re_rank_k)
+                elif hasattr(self.reranker, "rerank_candidates"):
+                    rr_hits = self.reranker.rerank_candidates(question, hits, rerank_k=self.cfg.re_rank_k)
+                else:
+                    rr_hits = hits
+            except TypeError:
+                rr_hits = self.reranker(question, hits, self.cfg.re_rank_k)
+            hits = [self._normalize_hit(h) for h in rr_hits]
+            t_rerank = time.perf_counter() - t1
+
+        # 3) Build context
+        context_text, used_hits = self._build_context(hits, self.cfg.max_context_chars, per_chunk_cap=4000)
+        sources = self._make_citations(used_hits)
+
+        # 4) Build messages (system + user)
+        if self.memory is not None:
+            messages = self._build_messages_memory_aware(context_text)
+        else:
+            messages = self._build_messages(question, context_text, user_instruction=user_instruction)
+
+        if self.verbose:
+            print(f"[intergraxRagAnswerer] Sending message to LLM: {messages}")
+
+        # 5) LLM — always generate TEXT (answer)
+        t_llm = 0.0
+        if stream:
+            if self.verbose:
+                print("[intergraxRagAnswerer] Streaming answer...")
+            t2 = time.perf_counter()
+            parts: List[str] = []
+            for piece in self.llm.stream_messages(
+                messages,
+                temperature=self.cfg.temperature,
+                max_tokens=self.cfg.max_answer_tokens,
+            ):
+                parts.append(piece or "")
+            answer = "".join(parts)
+            t_llm = time.perf_counter() - t2
+        else:
+            if self.verbose:
+                print("[intergraxRagAnswerer] Generating answer...")
+            t2 = time.perf_counter()
+            answer = self.llm.generate_messages(
+                messages,
+                temperature=self.cfg.temperature,
+                max_tokens=self.cfg.max_answer_tokens,
+            )
+            t_llm = time.perf_counter() - t2
+
+        # 6) (Optional) output_structure — like in intergraxToolsAgent
+        output_structure_obj: Optional[BaseModel] = None
+        if (output_model is not None) and (not stream) and hasattr(self.llm, "generate_structured"):
+            try:
+                # Reuse the same messages (which include the context) to force a schema matching output_model
+                output_structure_obj = self.llm.generate_structured(
+                    messages,
+                    output_model,
+                    temperature=self.cfg.temperature,
+                    max_tokens=self.cfg.max_answer_tokens,
+                )
+                # (Optional) write to memory as a JSON log
+                if self.memory is not None:
+                    if hasattr(output_structure_obj, "model_dump"):
+                        payload = output_structure_obj.model_dump()
+                    elif hasattr(output_structure_obj, "dict"):
+                        payload = output_structure_obj.dict()
+                    else:
+                        payload = dict(output_structure_obj)
+                    self.memory.add(role="assistant", content=json.dumps(payload, ensure_ascii=False))
+            except Exception:
+                # if anything fails, keep the text path only
+                output_structure_obj = None
+
+        # 7) (Optional) textual summary
+        summary = None
+        if summarize:
+            summary_msgs = [
+                ChatMessage(role="system", content="You summarize answers without adding facts."),
+                ChatMessage(role="user", content=self.cfg.summary_prompt_template.format(answer=answer)),
+            ]
+            try:
+                summary = self.llm.generate_messages(summary_msgs, temperature=0.0, max_tokens=512)
+            except Exception:
+                summary = None
+
+        # 8) Memory — store TEXT answer (+ optional summary)
+        if self.memory is not None:
+            llm_content = answer
+            if summary:
+                llm_content += "\n\n" + summary
+            self.memory.add(role="assistant", content=llm_content)
+
+        # 9) Telemetry + return (same shape as intergraxToolsAgent)
+        return {
+            "answer": answer,                   # ← TEXT
+            "output_structure": output_structure_obj,  # ← Pydantic instance or None
+            "sources": sources,
+            "summary": summary,
+            "context": context_text,
+            "messages": messages,
+            "stats": {
+                "hits_in": len(hits),
+                "context_chars": len(context_text),
+                "retrieve_s": round(t_retrieve, 4),
+                "rerank_s": round(t_rerank, 4),
+                "llm_s": round(t_llm, 4),
+            },
+        }
+
+    # ---------- Helpers ----------
+
+    def _build_messages_memory_aware(
+        self,
+        context_text: str,
+    ) -> List[ChatMessage]:
+        """
+        Builds messages using conversation memory:
+        - takes the full history from memory,
+        - if the history lacks a system prompt, inserts it at the BEGINNING (instructions only),
+        - injects the CURRENT context as a one-off 'system' message directly BEFORE the last 'user' message (if present), otherwise at the end.
+        """
+        assert self.memory is not None, "memory is required"
+
+        history = self.memory.get_all()  # already contains the current user question
+        msgs: List[ChatMessage] = list(history)
+
+        has_system = any(m.role == "system" for m in msgs)
+        if not has_system:
+            msgs.insert(0, ChatMessage(role="system", content=self.cfg.system_instructions))
+
+        if context_text:
+            ctx_msg = ChatMessage(
+                role="system",
+                content=self.cfg.system_context_template.format(context=context_text)
+            )
+            if len(msgs) >= 1 and msgs[-1].role == "user":
+                msgs = msgs[:-1] + [ctx_msg, msgs[-1]]
+            else:
+                msgs.append(ctx_msg)
+
+        return msgs
+
+    def _build_messages(
+        self,
+        question: str,
+        context_text: str,
+        *,
+        user_instruction: Optional[str] = None
+    ) -> List[ChatMessage]:
+        # 1) SYSTEM
+        if context_text:
+            system_content = (
+                f"{self.cfg.system_instructions}\n\n"
+                f"{self.cfg.system_context_template.format(context=context_text)}"
+            )
+        else:
+            system_content = self.cfg.system_instructions
+
+        messages: List[ChatMessage] = [ChatMessage(role="system", content=system_content)]
+
+        # 2) USER
+        user_parts = [self.cfg.user_question_template.format(question=question)]
+        if user_instruction:
+            user_parts.append(self.cfg.user_instruction_template.format(instruction=user_instruction))
+
+        messages.append(ChatMessage(role="user", content="\n\n".join(p.strip() for p in user_parts if p and p.strip())))
+        return messages
+
+    def _sanitize_text(self, s: str) -> str:
+        return "".join(ch for ch in s if ch.isprintable() or ch in "\n\t ").strip()
+
+    def _build_context(self, hits: List[Dict[str, Any]], max_chars: int, per_chunk_cap: int = 4000) -> Tuple[str, List[Dict[str, Any]]]:
+        parts: List[str] = []
+        used_hits: List[Dict[str, Any]] = []
+        total = 0
+        for h in hits:
+            txt = self._sanitize_text((h.get("content") or "").strip())
+            if not txt:
+                continue
+            if per_chunk_cap and len(txt) > per_chunk_cap:
+                txt = txt[:per_chunk_cap]
+            need = len(txt)
+            if total + need > max_chars:
+                remain = max(max_chars - total, 0)
+                if remain == 0:
+                    break
+                txt = txt[:remain]
+                need = len(txt)
+            parts.append(txt)
+            used_hits.append(h)
+            total += need
+            if total >= max_chars:
+                break
+        return "\n\n---\n\n".join(parts), used_hits
+
+    def _make_citations(self, hits: List[Dict[str, Any]]) -> List[AnswerSource]:
+        out: List[AnswerSource] = []
+        for h in hits:
+            meta = h.get("metadata", {}) or {}
+            # source
+            source = None
+            for k in self.cfg.meta_source_keys:
+                v = meta.get(k)
+                if v:
+                    source = v
+                    break
+            source = source or "unknown"
+            # page
+            page = None
+            for k in self.cfg.meta_page_keys:
+                if meta.get(k) is not None:
+                    page = str(meta.get(k))
+                    break
+            # preview
+            pv = (h.get("content") or "").strip()
+            if len(pv) > 300:
+                cut = pv[:300]
+                last_space = cut.rfind(" ")
+                pv = (cut if last_space < 0 else cut[:last_space]) + "..."
+            out.append(AnswerSource(source=source, page=page, score=h.get("similarity_score"), preview=pv))
+        return out
+
+    def _normalize_hit(self, h: Any) -> Dict[str, Any]:
+        # 1) dict
+        if isinstance(h, dict):
+            content = h.get("content") or h.get("text") or h.get("page_content") or ""
+            meta = h.get("metadata") or {}
+            score = h.get("similarity_score") or h.get("score")
+            return {"content": content, "metadata": meta, "similarity_score": score}
+
+        # 2) LangChain Document
+        try:
+            from langchain_core.documents import Document
+            if isinstance(h, Document):
+                return {
+                    "content": getattr(h, "page_content", "") or "",
+                    "metadata": dict(getattr(h, "metadata", {}) or {}),
+                    "similarity_score": None,
+                }
+        except Exception:
+            pass
+
+        # 3) DocHit (your internal shape: .doc, .score)
+        if hasattr(h, "doc") and hasattr(h, "score"):
+            doc = getattr(h, "doc")
+            meta = getattr(doc, "metadata", {}) if hasattr(doc, "metadata") else {}
+            content = getattr(doc, "page_content", None) or getattr(doc, "content", None) or ""
+            return {
+                "content": content,
+                "metadata": dict(meta or {}),
+                "similarity_score": float(getattr(h, "score", 0.0)),
+            }
+
+        # 4) tuple (Document, score)
+        if isinstance(h, (tuple, list)) and len(h) == 2:
+            doc, score = h
+            meta = getattr(doc, "metadata", {}) if hasattr(doc, "metadata") else {}
+            content = getattr(doc, "page_content", None) or getattr(doc, "content", None) or ""
+            return {
+                "content": content or "",
+                "metadata": dict(meta or {}),
+                "similarity_score": float(score),
+            }
+
+        # fallback
+        return {"content": str(h), "metadata": {}, "similarity_score": None}
+
+# ======================================================================
+# FILE: intergrax/rag/rag_retriever.py
+# MODULE: intergrax.rag.rag_retriever
+# MODULE_GROUP: rag
+# TAGS:
+#   - package=intergrax
+#   - module_group=rag
+#   - file=rag_retriever.py
+# LINES: 426
+# SHA256: 4f2ef95f2004fdbfe29de0e270c8751808680af7b284fc9be6db66aa7bdd4c91
+# SYMBOLS:
+#   - class RagRetriever
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Any, Callable, Dict, List, Optional, Sequence
+from copy import deepcopy
+import numpy as np
+
+from langchain_core.documents import Document
+from .vectorstore_manager import VectorstoreManager
+from .embedding_manager import EmbeddingManager
+
+# Optional reranker function type: accepts and returns a list of hits
+RerankerFn = Callable[[List[Dict[str, Any]]], List[Dict[str, Any]]]
+
+
+class RagRetriever:
+    """
+    Scalable, provider-agnostic RAG retriever for intergrax.
+
+    ### Key Features
+    - Normalizes `where` filters for Chroma (flat dict → $and/$eq)
+    - Normalizes query vector shape (1D/2D → [[D]])
+    - Unified similarity scoring:
+        * Chroma → converts distance to similarity = 1 - distance
+        * Others → uses raw similarity as returned
+    - Deduplication by ID + per-parent result limiting (diversification)
+    - Optional MMR diversification when embeddings are returned
+    - Batch retrieval for multiple queries
+    - Optional reranker hook (e.g., cross-encoder, re-ranking model)
+
+    ### Returned structure (list of dicts)
+    Each hit includes:
+    ```
+    {
+      "id": str,
+      "content": str,
+      "metadata": dict,
+      "similarity_score": float,
+      "distance": float | None,
+      "rank": int,
+      "embedding": Optional[List[float]]
+    }
+    ```
+    """
+
+    def __init__(
+        self,
+        vector_store: VectorstoreManager,
+        embedding_manager: EmbeddingManager,
+        *,
+        verbose: bool = False,
+        default_max_per_parent: Optional[int] = 2,
+        chroma_auto_where_normalize: bool = True,
+    ):
+        self.vs = vector_store
+        self.em = embedding_manager
+        self.verbose = verbose
+        self.default_max_per_parent = default_max_per_parent
+        self.chroma_auto_where_normalize = chroma_auto_where_normalize
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+    def _normalize_where(self, where: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """
+        Converts flat dict filters into a proper Chroma `$and/$eq` structure.
+
+        Example:
+            {"tenant": "intergrax", "corpus": "v1"}
+        becomes:
+            {"$and": [{"tenant": {"$eq": "intergrax"}}, {"corpus": {"$eq": "v1"}}]}
+        """
+        if not where:
+            return None
+        if self.vs.cfg.provider != "chroma":
+            return where
+        if not self.chroma_auto_where_normalize:
+            return where
+        if any(str(k).startswith("$") for k in where.keys()):
+            return where
+        return {"$and": [{k: {"$eq": v}} for k, v in where.items()]}
+
+    @staticmethod
+    def _as_query_batch(vec: Any) -> List[List[float]]:
+        """Ensure the embedding is formatted as [[D]] regardless of input shape."""
+        if isinstance(vec, np.ndarray):
+            if vec.ndim == 1:
+                return [vec.astype("float32").tolist()]
+            if vec.ndim == 2:
+                return vec.astype("float32").tolist()
+        if isinstance(vec, list):
+            if vec and isinstance(vec[0], (list, np.ndarray)):
+                return [list(map(float, row)) for row in vec]
+            return [list(map(float, vec))]
+        return [[float(vec)]]
+
+    @staticmethod
+    def _scores_to_similarity(scores: Sequence[float], provider: str) -> List[float]:
+        """Convert provider-specific scores into similarity values in [0..1]."""
+        if provider == "chroma":
+            return [min(1.0, max(0.0, 1.0 - float(d))) for d in scores]
+        return [float(s) for s in scores]
+
+    @staticmethod
+    def _mmr(
+        query_vec: np.ndarray,
+        cand_vecs: np.ndarray,
+        k: int,
+        lambda_mult: float = 0.5,
+    ) -> List[int]:
+        """
+        Maximal Marginal Relevance diversification.
+
+        Args:
+            query_vec: (D,) array – query embedding.
+            cand_vecs: (N, D) array – candidate embeddings.
+            k: number of items to select.
+            lambda_mult: trade-off between relevance (to query) and diversity (to other items).
+
+        Returns:
+            List of selected indices.
+        """
+        if k <= 0 or cand_vecs.size == 0:
+            return []
+        k = min(k, cand_vecs.shape[0])
+
+        def _unit(x):
+            n = np.linalg.norm(x, axis=-1, keepdims=True) + 1e-12
+            return x / n
+
+        q = _unit(query_vec)
+        C = _unit(cand_vecs)
+
+        sim_q = (C @ q.reshape(-1, 1)).ravel()  # similarity to query
+        selected: List[int] = []
+        candidates = list(range(C.shape[0]))
+
+        while len(selected) < k and candidates:
+            if not selected:
+                # pick highest relevance first
+                best = int(np.argmax(sim_q[candidates]))
+                selected.append(candidates.pop(best))
+                continue
+            # penalize redundancy relative to selected items
+            S = C[selected]                   # (m, D)
+            sim_div = C[candidates] @ S.T     # (c, m)
+            max_div = np.max(sim_div, axis=1)
+            mmr_score = lambda_mult * sim_q[candidates] - (1 - lambda_mult) * max_div
+            best = int(np.argmax(mmr_score))
+            selected.append(candidates.pop(best))
+        return selected
+    
+
+    def _batch_embed_contents(self, texts: List[str]) -> np.ndarray:
+        """
+        Robustly embed a list of texts using intergraxEmbeddingManager.
+        Handles different return signatures:
+        - returns ndarray directly
+        - or (ndarray, anything)
+        - or list[list[float]]
+        - or falls back to per-item embed_one
+        """
+        # Preferred: vectorized method exists
+        if hasattr(self.em, "embed_texts") and callable(getattr(self.em, "embed_texts")):
+            try:
+                res = self.em.embed_texts(texts)  # may return ndarray OR (ndarray, ...)
+                # If it looks like a tuple/list, try to take first element as ndarray
+                if isinstance(res, (tuple, list)) and len(res) > 0:
+                    vecs = res[0]
+                else:
+                    vecs = res
+                # Normalize to ndarray
+                if isinstance(vecs, np.ndarray):
+                    return vecs
+                if isinstance(vecs, list) and vecs and isinstance(vecs[0], (list, tuple, np.ndarray)):
+                    return np.array(vecs, dtype="float32")
+            except Exception:
+                # Fall through to per-item
+                pass
+
+        # Fallback: per-item
+        arrs: List[np.ndarray] = []
+        for t in texts:
+            v = self.em.embed_one(t)  # expected 1xD
+            # ensure 1D row
+            v = np.array(v, dtype="float32").reshape(-1)
+            arrs.append(v)
+        return np.vstack(arrs).astype("float32")
+
+
+
+    # ------------------------------------------------------------------
+    # Core retrieval
+    # ------------------------------------------------------------------
+    def retrieve(
+        self,
+        question: str,
+        top_k: int = 5,
+        *,
+        score_threshold: float = 0.0,
+        where: Optional[Dict[str, Any]] = None,
+        include_embeddings: bool = False,
+        max_per_parent: Optional[int] = None,
+        use_mmr: bool = False,
+        mmr_lambda: float = 0.5,
+        reranker: Optional[RerankerFn] = None,
+        prefetch_factor: int = 5,   # fetch a wider candidate pool from the vector DB
+    ) -> List[Dict[str, Any]]:
+        # Guard: empty store
+        if hasattr(self.vs, "count") and self.vs.count() == 0:
+            if self.verbose:
+                print("[intergraxRagRetriever] Vector store is empty.")
+            return []
+
+        # 1) Embed query → [[D]]
+        q_vec_1d = self.em.embed_one(question)
+        Q = self._as_query_batch(q_vec_1d)
+
+        # 2) Normalize filters (Chroma: flat → {$and:[{k:{$eq:v}}...]})
+        norm_where = self._normalize_where(where)
+
+        # 3) Prefetch from the vector DB (with filter fallbacks for Chroma)
+        raw_top_k = max(int(top_k), 1)
+        prefetch_k = max(raw_top_k * int(prefetch_factor or 1), raw_top_k)
+
+        def _do_query(_where):
+            return self.vs.query(
+                query_embeddings=Q,
+                top_k=prefetch_k,
+                where=_where,
+                include_embeddings=include_embeddings,
+            )
+
+        # Try normalized → flat → none
+        res = _do_query(norm_where)
+        if (not res.get("ids") or not res["ids"][0]) and where and self.vs.cfg.provider == "chroma":
+            if self.verbose:
+                print("[Retriever] No hits with normalized where → retrying with flat where…")
+            res = _do_query(where)
+        if (not res.get("ids") or not res["ids"][0]) and self.vs.cfg.provider == "chroma":
+            if self.verbose:
+                print("[Retriever] Still no hits → retrying with no filter (diagnostic)…")
+            res = _do_query(None)
+
+        provider = self.vs.cfg.provider
+        ids_b    = res.get("ids", [[]])
+        scores_b = res.get("scores", [[]])    # Chroma: distances; others: similarity
+        metas_b  = res.get("metadatas", [[]])
+        docs_b   = res.get("documents", [[]])
+        embs_b   = res.get("embeddings", [[]]) if include_embeddings else [[]]
+
+        ids        = ids_b[0] if ids_b else []
+        raw_scores = scores_b[0] if scores_b else []
+        metadatas  = metas_b[0] if metas_b else []
+        documents  = docs_b[0] if docs_b else []
+        emb_vecs   = embs_b[0] if include_embeddings and embs_b else []
+
+        if not ids:
+            if self.verbose:
+                print("[intergraxRagRetriever] No results from vector store.")
+            return []
+
+        # 4) Normalize scores → similarity in [0,1]
+        sims = self._scores_to_similarity(raw_scores, provider)
+        distances = [1.0 - s for s in sims] if provider == "chroma" else [None] * len(sims)
+
+        # Align lengths (do NOT clamp by emb_vecs length — embeddings may be absent)
+        n = min(len(ids), len(metadatas), len(sims), len(distances))
+        docs_present = isinstance(documents, list) and any(documents)
+        if docs_present:
+            n = min(n, len(documents))
+
+        if self.verbose:
+            print(
+                f"[Retriever] raw candidates: {n}, "
+                f"min_sim={min(sims[:n] or [0]):.3f}, max_sim={max(sims[:n] or [0]):.3f}, "
+                f"threshold={score_threshold:.3f}, prefetch_k={prefetch_k}"
+            )
+
+        # 5) Build candidates WITHOUT early thresholding
+        cands: List[Dict[str, Any]] = []
+        for i in range(n):
+            meta = dict(metadatas[i] or {})
+            content = (
+                documents[i]
+                if (docs_present and i < len(documents) and documents[i])
+                else str(meta.get("text", ""))
+            )
+            item = {
+                "id": str(ids[i]),
+                "content": content,
+                "metadata": meta,
+                "similarity_score": float(sims[i]),
+                "distance": float(distances[i]) if provider == "chroma" else None,
+            }
+            # Embeddings from provider (optional)
+            if include_embeddings and i < len(emb_vecs) and emb_vecs[i] is not None:
+                item["embedding"] = emb_vecs[i]
+            cands.append(item)
+
+        if not cands:
+            return []
+
+        # 6) Deduplicate by ID
+        seen_ids = set()
+        uniq: List[Dict[str, Any]] = []
+        for it in cands:
+            if it["id"] in seen_ids:
+                continue
+            seen_ids.add(it["id"])
+            uniq.append(it)
+
+        # 7) Optional MMR: ensure we HAVE embeddings; if not, compute them on the fly
+        if use_mmr:
+            have_embs = include_embeddings and any("embedding" in x for x in uniq)
+
+            if not have_embs:
+                try:
+                    texts = [x["content"] for x in uniq]
+                    C = self._batch_embed_contents(texts)  # <- NEW helper
+                    # inject vectors into items
+                    for i, x in enumerate(uniq):
+                        x["embedding"] = C[i]
+                    have_embs = True
+                    if self.verbose:
+                        print("[intergraxRagRetriever] Computed candidate embeddings on-the-fly for MMR.")
+                except Exception as e:
+                    have_embs = False
+                    if self.verbose:
+                        print(f"[intergraxRagRetriever] Could not compute embeddings on-the-fly; skipping MMR. Err: {e}")
+
+            if have_embs:
+                q = np.array(q_vec_1d, dtype="float32").reshape(-1)
+                C = np.array([it["embedding"] for it in uniq], dtype="float32")
+                k_for_mmr = min(prefetch_k, len(uniq))
+                order = self._mmr(q, C, k=k_for_mmr, lambda_mult=mmr_lambda)
+                if order:
+                    uniq = [uniq[i] for i in order]
+                if not uniq:
+                    uniq = cands  # defensive fallback
+
+        # 8) Now apply threshold
+        if score_threshold > 0.0:
+            uniq = [it for it in uniq if it.get("similarity_score", 0.0) >= score_threshold]
+
+        if not uniq:
+            # Defensive fallback: return top_k by raw similarity from the original candidates
+            uniq = sorted(cands, key=lambda x: x.get("similarity_score", 0.0), reverse=True)[:raw_top_k]
+
+        # 9) Per-parent limit AFTER MMR/threshold
+        limit = self.default_max_per_parent if max_per_parent is None else max_per_parent
+        if limit and limit > 0:
+            buckets: Dict[str, int] = {}
+            diversified: List[Dict[str, Any]] = []
+            for it in uniq:
+                parent = str(it["metadata"].get("parent_id", "unknown_parent"))
+                cnt = buckets.get(parent, 0)
+                if cnt < limit:
+                    diversified.append(it)
+                    buckets[parent] = cnt + 1
+            uniq = diversified or uniq
+
+        # 10) Optional reranker (e.g., cross-encoder)
+        if callable(reranker):
+            try:
+                # prefer new signature accepting query/top_k
+                try:
+                    uniq = reranker(uniq, query=question, top_k=raw_top_k)
+                except TypeError:
+                    # fallback: legacy rerankers that only take the list
+                    uniq = reranker(uniq)
+            except Exception as e:
+                if self.verbose:
+                    print(f"[intergraxRagRetriever] Reranker error ignored: {e}")
+
+        # 11) Final sort, rank, and cap
+        uniq.sort(key=lambda x: x.get("similarity_score", 0.0), reverse=True)
+        for r, it in enumerate(uniq, start=1):
+            it["rank"] = r
+
+        return uniq[:raw_top_k]
+
+
+
+
+
+    # ------------------------------------------------------------------
+    # Batch retrieval
+    # ------------------------------------------------------------------
+    def retrieve_many(
+        self,
+        queries: Sequence[str],
+        *,
+        top_k: int = 5,
+        score_threshold: float = 0.0,
+        where: Optional[Dict[str, Any]] = None,
+        include_embeddings: bool = False,
+        max_per_parent: Optional[int] = None,
+        use_mmr: bool = False,
+        mmr_lambda: float = 0.5,
+        reranker: Optional[RerankerFn] = None,
+    ) -> List[List[Dict[str, Any]]]:
+        """
+        Run retrieval for multiple queries sequentially (simple loop-based batching).
+
+        Returns:
+            List of results per query.
+        """
+        out: List[List[Dict[str, Any]]] = []
+        for q in queries:
+            hits = self.retrieve(
+                question=q,
+                top_k=top_k,
+                score_threshold=score_threshold,
+                where=where,
+                include_embeddings=include_embeddings,
+                max_per_parent=max_per_parent,
+                use_mmr=use_mmr,
+                mmr_lambda=mmr_lambda,
+                reranker=reranker,
+            )
+            out.append(hits)
+        return out
+
+# ======================================================================
+# FILE: intergrax/rag/re_ranker.py
+# MODULE: intergrax.rag.re_ranker
+# MODULE_GROUP: rag
+# TAGS:
+#   - package=intergrax
+#   - module_group=rag
+#   - file=re_ranker.py
+# LINES: 307
+# SHA256: 3d5cb2ebb6b498b8ced51b2ca897abe536c2a63005b2ce029e53e8d6911c9573
+# SYMBOLS:
+#   - class ReRankerConfig
+#   - class ReRanker
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from dataclasses import dataclass
+from functools import lru_cache
+import logging
+import numpy as np
+from langchain_core.documents import Document
+
+logger = logging.getLogger("intergrax.reranker")
+
+# Input types: hits from the retriever (dict) or raw LangChain Documents
+Hit = Dict[str, Any]
+Candidates = Union[List[Hit], List[Document]]
+
+@dataclass(frozen=True)
+class ReRankerConfig:
+    """Config for intergraxReRanker."""
+    # Score fusion: combine original retriever score with rerank score.
+    # fusion_alpha=0 → only rerank score, 1.0 → only original retriever score
+    use_score_fusion: bool = True
+    fusion_alpha: float = 0.5  # final = alpha*orig_sim + (1-alpha)*rerank_score
+    # Normalization before fusion (stabilization): "minmax" | "zscore" | None
+    normalize: Optional[str] = "minmax"
+    # Batch sizes
+    query_batch_size: int = 512     # for potential multi-query scenarios
+    doc_batch_size: int = 256
+    # Cache query embeddings (by text hash). Good trade-off for repeated questions.
+    cache_query_embeddings: bool = True
+    # How to read text from hits
+    # default fields: 'content' or metadata['text']
+    hit_text_key: str = "content"
+    meta_text_key: str = "text"
+    # Key of original score from retriever (if you want fusion)
+    hit_orig_score_key: str = "similarity_score"
+
+class ReRanker:
+    """
+    Fast, scalable cosine re-ranker over candidate chunks.
+    - Accepts hits from intergraxRagRetriever (dict) OR raw LangChain Documents.
+    - Embeds texts in batches using intergraxEmbeddingManager.
+    - Optional score fusion with original retriever similarity.
+    - Preserves schema of hits; only adds:
+        - 'rerank_score': float in [0..1] (cosine on L2-normalized vectors)
+        - 'fusion_score': float (if use_score_fusion=True)
+        - 'rank_reranked': final integer rank (1-based)
+    """
+
+    def __init__(self,
+                 embedding_manager,  # intergraxEmbeddingManager
+                 config: Optional[ReRankerConfig] = None,
+                 *,
+                 verbose: bool = False) -> None:
+        self.em = embedding_manager
+        self.cfg = config or ReRankerConfig()
+        self.verbose = verbose
+        self.log = logger.getChild("core")
+        if self.verbose:
+            self.log.setLevel(logging.INFO)
+
+        # ensure alpha in [0,1]
+        if self.cfg.fusion_alpha is not None:
+            a = float(self.cfg.fusion_alpha)
+            if not (0.0 <= a <= 1.0):
+                raise ValueError("fusion_alpha must be in [0,1]")
+
+        # lightweight in-memory cache for query embeddings
+        if self.cfg.cache_query_embeddings:
+            # wrap embed_one with LRU by text
+            self._embed_query_cached = lru_cache(maxsize=256)(self._embed_query_no_cache)
+        else:
+            self._embed_query_cached = self._embed_query_no_cache
+
+    # ---------- public API ----------
+
+    def __call__(self, *args, **kwargs) -> List[Hit]:
+        """
+        Supports:
+          a) __call__(query=..., candidates=..., top_k=...)
+          b) __call__(query, candidates, top_k)
+          c) __call__(candidates)
+        """
+        # a) keywords
+        if ("candidates" in kwargs) or ("query" in kwargs) or ("top_k" in kwargs):
+            query: Optional[str] = kwargs.get("query")
+            candidates: Optional[Candidates] = kwargs.get("candidates")
+            top_k: Optional[int] = kwargs.get("top_k")
+            if candidates is None:
+                raise TypeError("intergraxReRanker.__call__ requires 'candidates' when using keyword arguments.")
+            return self.rerank_candidates(query=query, candidates=candidates, rerank_k=top_k)
+
+        # b/c) positional
+        if len(args) == 1:
+            # only candidates
+            candidates = args[0]
+            return self.rerank_candidates(query=None, candidates=candidates, rerank_k=None)
+        elif len(args) == 2:
+            # (query, candidates)
+            query, candidates = args
+            return self.rerank_candidates(query=query, candidates=candidates, rerank_k=None)
+        elif len(args) >= 3:
+            # (query, candidates, top_k)
+            query, candidates, top_k = args[0], args[1], args[2]
+            return self.rerank_candidates(query=query, candidates=candidates, rerank_k=top_k)
+
+        raise TypeError("intergraxReRanker.__call__ expected (candidates) or (query, candidates[, top_k]) or keywords.")
+
+    def rerank_candidates(self,
+                          query: Optional[str],
+                          candidates: Candidates,
+                          *,
+                          rerank_k: Optional[int] = None) -> List[Hit]:
+        """
+        Re-rank a given candidate list by cosine similarity to the query.
+        Returns list of hit dicts (schema preserved + 'rerank_score', optional 'fusion_score').
+        If query is None/empty → no re-ranking (optionally sort by original similarity_score).
+        """
+        if not candidates:
+            return []
+
+        # No query provided → return as-is (or sort by original score)
+        if query is None or not str(query).strip():
+            hits_out = self._ensure_hit_dicts(candidates)
+            # if original scores exist, sort by them
+            if any(isinstance(h.get(self.cfg.hit_orig_score_key), (int, float)) for h in hits_out):
+                hits_out.sort(key=lambda x: float(x.get(self.cfg.hit_orig_score_key, 0.0)), reverse=True)
+            if rerank_k is not None and rerank_k > 0:
+                hits_out = hits_out[: int(rerank_k)]
+            # set rank_reranked for consistency
+            for r, h in enumerate(hits_out, start=1):
+                h["rank_reranked"] = r
+            return hits_out
+
+        # 1) Prepare raw texts and "carry" structs referencing original objects
+        texts: List[str] = []
+        carriers: List[Tuple[int, Union[Hit, Document]]] = []
+
+        if isinstance(candidates[0], Document):
+            for i, d in enumerate(candidates):  # type: ignore[arg-type]
+                if not isinstance(d, Document):
+                    continue
+                t = (d.page_content or "").strip()
+                if not t:
+                    continue
+                texts.append(t)
+                carriers.append((i, d))
+        else:
+            # hits (dict)
+            for i, h in enumerate(candidates):  # type: ignore[arg-type]
+                if not isinstance(h, dict):
+                    continue
+                # content → text → metadata['text']
+                t = (h.get(self.cfg.hit_text_key)
+                     or h.get("text")
+                     or h.get("page_content")
+                     or h.get("metadata", {}).get(self.cfg.meta_text_key, ""))
+                t = str(t).strip()
+                if not t:
+                    continue
+                texts.append(t)
+                carriers.append((i, h))
+
+        if not texts:
+            return self._ensure_hit_dicts(candidates)
+
+        # 2) Embed query + documents (batched), L2-normalize
+        q_vec = self._embed_query_cached(query)
+        D = self._embed_texts_batched(texts, batch_size=self.cfg.doc_batch_size)
+        q = self._l2_norm(q_vec.reshape(1, -1))
+        M = self._l2_norm(D)
+
+        # 3) Cosine similarities: q (1 x d) · M.T (d x n) → (1 x n)
+        sims = (q @ M.T).astype("float32").reshape(-1)  # in [-1..1], with L2 norm typically [0..1]
+
+        # 4) Build result hit dicts and compute rerank scores
+        hits_out: List[Hit] = []
+        for (orig_idx, obj), sim in zip(carriers, sims):
+            hit = self._to_hit(obj)
+            hit["rerank_score"] = float(sim)
+            # Optional fusion with original retriever score
+            if self.cfg.use_score_fusion:
+                orig = hit.get(self.cfg.hit_orig_score_key)
+                if isinstance(orig, (int, float)):
+                    s_orig = float(orig)
+                    s_rr = float(sim)
+                    s_orig_n = self._normalize_scalar(s_orig, self.cfg.normalize)
+                    s_rr_n = self._normalize_scalar(s_rr, self.cfg.normalize)
+                    alpha = float(self.cfg.fusion_alpha)
+                    hit["fusion_score"] = alpha * s_orig_n + (1.0 - alpha) * s_rr_n
+                else:
+                    hit["fusion_score"] = float(sim)  # fallback: same as rerank_score
+            hits_out.append(hit)
+
+        # 5) Final sort by 'fusion_score' (if enabled) else by 'rerank_score'
+        key = ("fusion_score" if self.cfg.use_score_fusion else "rerank_score")
+        hits_out.sort(key=lambda x: float(x.get(key, 0.0)), reverse=True)
+
+        # 6) Cap, add 'rank_reranked'
+        if rerank_k is not None and rerank_k > 0:
+            hits_out = hits_out[: int(rerank_k)]
+        for r, h in enumerate(hits_out, start=1):
+            h["rank_reranked"] = r
+
+        if self.verbose and hits_out:
+            top = hits_out[0]
+            dbg = top.get(key, top.get("rerank_score", 0.0))
+            self.log.info("[intergraxReRanker] Top1 %s=%.4f  (text≈ %s...)", key, float(dbg),
+                          str(top.get("content",""))[:120].replace("\n"," "))
+
+        return hits_out
+
+    # ---------- convenience wrapper over retriever ----------
+
+    def rerank_via_retriever(self,
+                             query: str,
+                             *,
+                             base_retriever,                 # intergraxRagRetriever
+                             retriever_k: int = 30,
+                             rerank_k: int = 10,
+                             score_threshold: float = 0.0,
+                             where: Optional[Dict[str, Any]] = None) -> List[Hit]:
+        """
+        Convenience: recall with retriever (broad), then re-rank here.
+        """
+        if self.verbose:
+            self.log.info("[intergraxReRanker] Recall: top_k=%d, thr=%.4f", retriever_k, score_threshold)
+        base_hits = base_retriever.retrieve(
+            question=query,
+            top_k=retriever_k,
+            score_threshold=score_threshold,
+            where=where,
+            include_embeddings=False,   # not needed: we embed here
+            use_mmr=True,               # recommendation: diversify before re-ranking
+            prefetch_factor=5,
+        )
+        return self.rerank_candidates(query=query, candidates=base_hits, rerank_k=rerank_k)
+
+    # ---------- internals ----------
+
+    def _embed_query_no_cache(self, text: str) -> np.ndarray:
+        v = self.em.embed_one(text)
+        if not isinstance(v, np.ndarray):
+            v = np.array(v, dtype="float32")
+        return v.astype("float32")
+
+    def _embed_texts_batched(self, texts: List[str], batch_size: int) -> np.ndarray:
+        # If you have a fast API that embeds a list of texts, prefer it.
+        # Try .embed_texts; if unavailable, fall back to per-item embed_one.
+        if hasattr(self.em, "embed_texts"):
+            V = self.em.embed_texts(texts)  # type: ignore[attr-defined]
+            return np.asarray(V, dtype="float32")
+        # fallback: small batches on embed_one
+        vecs: List[np.ndarray] = []
+        for i in range(0, len(texts), batch_size):
+            part = texts[i:i+batch_size]
+            for t in part:
+                vecs.append(self._embed_query_cached(t))
+        return np.vstack(vecs).astype("float32")
+
+    @staticmethod
+    def _l2_norm(X: np.ndarray, eps: float = 1e-12) -> np.ndarray:
+        n = np.linalg.norm(X, axis=1, keepdims=True) + eps
+        return X / n
+
+    def _normalize_scalar(self, x: float, mode: Optional[str]) -> float:
+        """Per-value normalization for fusion. We assume score ranges ~[0..1]; provide light stabilization."""
+        if mode is None:
+            return x
+        if mode == "minmax":
+            # clamp to [0,1] if slightly out of range due to numerics
+            return float(max(0.0, min(1.0, x)))
+        if mode == "zscore":
+            # without batch stats, center around 0.5 (approximation)
+            return float((x - 0.5) / 0.25)  # 0.5→0, [0..1]→[-2..+2]
+        return x
+
+    def _to_hit(self, obj: Union[Hit, Document]) -> Hit:
+        """Return a hit-dict; preserve input dict; convert Document to hit-like dict."""
+        if isinstance(obj, dict):
+            return dict(obj)
+        # Document → dict
+        meta = dict(obj.metadata or {})
+        return {
+            "id": meta.get("id") or meta.get("doc_id") or meta.get("chunk_id") or "",
+            "content": obj.page_content or "",
+            "text": obj.page_content or "",
+            "page_content": obj.page_content or "",
+            "metadata": meta,
+            "similarity_score": meta.get("similarity_score"),  # if present
+            "distance": meta.get("distance"),                  # if present
+            "rank": meta.get("rank"),                          # if present
+        }
+
+    def _ensure_hit_dicts(self, candidates: Candidates) -> List[Hit]:
+        out: List[Hit] = []
+        if not candidates:
+            return out
+        if isinstance(candidates[0], Document):
+            for d in candidates:  # type: ignore[arg-type]
+                out.append(self._to_hit(d))
+        else:
+            for h in candidates:  # type: ignore[arg-type]
+                out.append(self._to_hit(h))
+        return out
+
+# ======================================================================
+# FILE: intergrax/rag/vectorstore_manager.py
+# MODULE: intergrax.rag.vectorstore_manager
+# MODULE_GROUP: rag
+# TAGS:
+#   - package=intergrax
+#   - module_group=rag
+#   - file=vectorstore_manager.py
+# LINES: 577
+# SHA256: bda67f53d19610e34733d0aa358b3b759c3c7957d8f9c8b6f957dead592e689c
+# SYMBOLS:
+#   - class VSConfig
+#   - class VectorstoreManager
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+import os
+import uuid
+from dataclasses import dataclass
+from typing import Any, Dict, Iterable, List, Literal, Optional, Sequence, Tuple, Union
+
+import numpy as np
+from numpy.typing import NDArray
+from langchain_core.documents import Document
+
+# --- ChromaDB ---
+import chromadb
+from chromadb.config import Settings as ChromaSettings
+
+# --- Qdrant ---
+try:
+    from qdrant_client import QdrantClient
+    from qdrant_client.http.models import (
+        Distance,
+        VectorParams,
+        PointStruct,
+        Filter as QFilter,
+        FieldCondition,
+        MatchValue,
+        PointIdsList,
+    )
+except ImportError:
+    QdrantClient = None  # type: ignore
+    Distance = None      # type: ignore
+    VectorParams = None  # type: ignore
+    PointStruct = None   # type: ignore
+    QFilter = None       # type: ignore
+    FieldCondition = None # type: ignore
+    MatchValue = None    # type: ignore
+    PointIdsList = None  # type: ignore
+
+# --- Pinecone ---
+try:
+    from pinecone import Pinecone
+except ImportError:
+    Pinecone = None  # type: ignore
+
+VectorProvider = Literal["chroma", "qdrant", "pinecone"]
+Metric = Literal["cosine", "dot", "euclidean"]
+
+
+@dataclass
+class VSConfig:
+    """Generic vector-store configuration."""
+    provider: VectorProvider
+    collection_name: str = "documentation"
+    metric: Metric = "cosine"
+
+    # Chroma
+    chroma_persist_directory: Optional[str] = "data/vector_store"
+    chroma_settings: Optional[ChromaSettings] = None
+
+    # Qdrant
+    qdrant_url: Optional[str] = None  # e.g., "http://localhost:6333" or Cloud endpoint
+    qdrant_api_key: Optional[str] = None
+
+    # Pinecone
+    pinecone_api_key: Optional[str] = None
+    pinecone_index_name: Optional[str] = None  # if None, defaults to collection_name
+    pinecone_cloud: Optional[str] = None       # e.g., "aws" (optional)
+    pinecone_region: Optional[str] = None      # e.g., "us-east-1" (optional)
+
+
+class VectorstoreManager:
+    """
+    Unified vector store manager supporting ChromaDB, Qdrant, and Pinecone.
+
+    Features:
+    - Initialize target store and (if needed) create collection/index (lazy for Qdrant/Pinecone)
+    - Upsert documents + embeddings (with batching)
+    - Query top-K by cosine/dot/euclidean similarity
+    - Count vectors
+    - Delete by ids
+
+    Assumptions:
+    - `embeddings` is either a numpy array of shape [N, D] or list[list[float]]
+    - `documents` is a list of LangChain `Document` with text in `.page_content`
+    """
+
+    # ------------------------------
+    # Construction
+    # ------------------------------
+    def __init__(self, config: VSConfig, *, verbose: bool = True) -> None:
+        self.cfg = config
+        self.verbose = verbose
+
+        self.provider: VectorProvider = config.provider
+        self.collection_name = config.collection_name
+        self.metric = config.metric
+
+        self._client = None
+        self._collection = None  # Chroma collection or Pinecone Index handle; Qdrant uses client only
+        self._dim: Optional[int] = None  # remember vector dimension after first upsert if needed
+
+        self._initialize_store()
+
+    # ------------------------------
+    # Initialization
+    # ------------------------------
+    def _initialize_store(self) -> None:
+        try:
+            if self.provider == "chroma":
+                self._init_chroma()
+            elif self.provider == "qdrant":
+                self._init_qdrant()
+            elif self.provider == "pinecone":
+                self._init_pinecone()
+            else:
+                raise ValueError(f"Unsupported provider: {self.provider}")
+
+            if self.verbose:
+                print(f"[intergraxVectorstoreManager] Initialized provider={self.provider}, collection={self.collection_name}")
+                # count() may create indexes lazily (pinecone/qdrant) – that's fine.
+                print(f"[intergraxVectorstoreManager] Existing count: {self.count()}")
+
+        except Exception as e:
+            print(f"[intergraxVectorstoreManager] Error initializing vector store: {e}")
+            raise
+
+    def _init_chroma(self) -> None:
+        # Create Chroma client (persistent or in-memory)
+        settings = self.cfg.chroma_settings or ChromaSettings()
+
+        persist_dir = self.cfg.chroma_persist_directory
+        if persist_dir:
+            os.makedirs(persist_dir, exist_ok=True)
+            self._client = chromadb.PersistentClient(path=persist_dir, settings=settings)
+        else:
+            # In newer versions you can use EphemeralClient, but Client is a safe choice.
+            self._client = chromadb.Client(settings=settings)
+
+        self._collection = self._client.get_or_create_collection(
+            name=self.collection_name,
+            metadata={"description": "Document embeddings for intergrax system"},
+        )
+
+    def _init_qdrant(self) -> None:
+        if QdrantClient is None:
+            raise ImportError("qdrant-client is not installed. `pip install qdrant-client`")
+
+        if self.cfg.qdrant_url:
+            self._client = QdrantClient(url=self.cfg.qdrant_url, api_key=self.cfg.qdrant_api_key)
+        else:
+            # Local default
+            self._client = QdrantClient(host="localhost", port=6333, api_key=self.cfg.qdrant_api_key)
+        # Collection is created lazily when we know the dimension (first upsert or explicit ensure_collection()).
+
+    def _init_pinecone(self) -> None:
+        if Pinecone is None:
+            raise ImportError("pinecone client is not installed. `pip install pinecone-client`")
+        if not self.cfg.pinecone_api_key:
+            raise ValueError("Pinecone requires `pinecone_api_key` in VSConfig.")
+
+        pc = Pinecone(api_key=self.cfg.pinecone_api_key)
+        self._client = pc
+
+        index_name = self.cfg.pinecone_index_name or self.collection_name
+        self.collection_name = index_name  # unify naming
+
+        # If the index exists, keep a handle; otherwise create it lazily.
+        try:
+            self._collection = pc.Index(index_name)
+        except Exception:
+            self._collection = None  # create lazily when we know dim
+
+    # ------------------------------
+    # Helpers
+    # ------------------------------
+    @staticmethod
+    def _to_list_of_lists(emb: Union[NDArray[np.float32], Sequence[Sequence[float]]]) -> List[List[float]]:
+        if isinstance(emb, np.ndarray):
+            if emb.ndim == 1:
+                emb = np.expand_dims(emb, axis=0)
+            return emb.astype(np.float32).tolist()
+        return [list(map(float, v)) for v in emb]
+
+    @staticmethod
+    def _doc_texts(docs: Sequence[Document]) -> List[str]:
+        return [d.page_content or "" for d in docs]
+
+    @staticmethod
+    def _doc_payloads(docs: Sequence[Document], base: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        base = base or {}
+        out: List[Dict[str, Any]] = []
+        for d in docs:
+            md = dict(base)
+            md.update(dict(d.metadata))
+            out.append(md)
+        return out
+
+    @staticmethod
+    def _make_ids(n: int, prefix: str = "doc") -> List[str]:
+        return [f"{prefix}_{uuid.uuid4().hex[:8]}_{i}" for i in range(n)]
+
+    def _ensure_dim_consistency(self, batch: Sequence[Sequence[float]]):
+        if not batch:
+            return
+        if self._dim is None:
+            self._dim = len(batch[0])
+        else:
+            bad = [i for i, v in enumerate(batch) if len(v) != self._dim]
+            if bad:
+                raise ValueError(
+                    f"Inconsistent embedding dimension in batch at positions {bad[:5]} (expected {self._dim})."
+                )
+
+    def _pinecone_metric(self) -> str:
+        # Pinecone uses “dotproduct” instead of “dot”
+        mapping = {"cosine": "cosine", "euclidean": "euclidean", "dot": "dotproduct"}
+        return mapping.get(self.metric, "cosine")
+
+    def _ensure_qdrant_collection(self) -> None:
+        assert self._client is not None, "Qdrant client is not initialized"
+        assert self._dim is not None, "Embedding dim unknown; cannot create Qdrant collection."
+
+        # Map metric
+        metric_map = {
+            "cosine": Distance.COSINE,
+            "dot": Distance.DOT,
+            "euclidean": Distance.EUCLID,
+        }
+        dist = metric_map.get(self.metric, Distance.COSINE)
+
+        try:
+            # If the collection does not exist, get_collection will raise
+            self._client.get_collection(self.collection_name)
+        except Exception:
+            # Create only if it does not exist (no destructive recreate)
+            self._client.create_collection(
+                collection_name=self.collection_name,
+                vectors_config=VectorParams(size=self._dim, distance=dist),
+            )
+
+    def _ensure_pinecone_index(self) -> None:
+        assert self._client is not None, "Pinecone client is not initialized"
+        assert self._dim is not None, "Embedding dim unknown; cannot create Pinecone index."
+
+        pc: Pinecone = self._client  # type: ignore
+        index_name = self.collection_name
+        try:
+            # If exists — just get a handle
+            self._collection = pc.Index(index_name)
+        except Exception:
+            # Create index
+            pc.create_index(
+                name=index_name,
+                dimension=self._dim,
+                metric=self._pinecone_metric(),
+                # cloud=self.cfg.pinecone_cloud,
+                # region=self.cfg.pinecone_region,
+            )
+            self._collection = pc.Index(index_name)
+
+    def _qdrant_filter(self, where: Optional[Dict[str, Any]]) -> Optional[QFilter]:  # type: ignore
+        """Lightweight helper: simple dict -> Filter(must=[FieldCondition(...)])."""
+        if not where or QFilter is None:
+            return None
+        must: List[Dict[str, Any]] = []
+        for k, v in where.items():
+            # simple equality
+            must.append({"key": k, "match": {"value": v}})
+        return QFilter(**{"must": must})
+
+    # ------------------------------
+    # Public: optional explicit ensure
+    # ------------------------------
+    def ensure_collection(self, dim: int) -> None:
+        """
+        (Optional) Explicitly create collection/index if it does not exist yet.
+        Lets you enforce parameters ahead of upserts.
+        """
+        self._dim = self._dim or int(dim)
+        if self.provider == "qdrant":
+            self._ensure_qdrant_collection()
+        elif self.provider == "pinecone":
+            self._ensure_pinecone_index()
+        elif self.provider == "chroma":
+            # Chroma is created at init
+            pass
+        else:
+            raise ValueError(f"Unsupported provider: {self.provider}")
+
+    # ------------------------------
+    # Upsert
+    # ------------------------------
+    def add_documents(
+        self,
+        documents: Sequence[Document],
+        embeddings: Union[NDArray[np.float32], Sequence[Sequence[float]]],
+        *,
+        ids: Optional[Sequence[str]] = None,
+        batch_size: int = 256,
+        store_text_in_metadata_for: Optional[Sequence[VectorProvider]] = ("qdrant", "pinecone"),
+        base_metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Upsert documents + embeddings into the configured vector store.
+
+        Notes:
+        - For Chroma we store `documents` field (raw text) and `metadatas`.
+        - For Qdrant/Pinecone we put text into metadata under key `"text"` (configurable via `store_text_in_metadata_for`).
+        - Qdrant/Pinecone collections/indexes are created lazily on the first call when `dim` is known.
+        """
+        if len(documents) == 0:
+            if self.verbose:
+                print("[intergraxVectorstoreManager] No documents to add.")
+            return
+
+        X = self._to_list_of_lists(embeddings)
+        if len(X) != len(documents):
+            raise ValueError("Number of documents must match number of embeddings")
+
+        n = len(documents)
+        ids = list(ids) if ids else self._make_ids(n)
+        if len(ids) != n:
+            raise ValueError("Length of `ids` must match number of documents")
+
+        # Remember/check dimension for lazy creation
+        first_dim = len(X[0]) if X and X[0] else None
+        if first_dim is None:
+            raise ValueError("Embeddings appear empty/corrupt; cannot infer dimension.")
+        self._dim = self._dim or first_dim
+
+        if self.verbose:
+            print(f"[intergraxVectorstoreManager] Upserting {n} items (dim={self._dim}) to provider={self.provider}...")
+
+        # Perform batched upsert
+        for start in range(0, n, batch_size):
+            end = min(start + batch_size, n)
+            ids_batch = ids[start:end]
+            embeddings_batch = X[start:end]
+            self._ensure_dim_consistency(embeddings_batch)
+
+            docs_batch = documents[start:end]
+            metas_batch = self._doc_payloads(docs_batch, base=base_metadata)
+
+            # Provider-specific upsert
+            if self.provider == "chroma":
+                self._upsert_chroma(ids_batch, embeddings_batch, metas_batch, self._doc_texts(docs_batch))
+            elif self.provider == "qdrant":
+                if store_text_in_metadata_for and "qdrant" in store_text_in_metadata_for:
+                    for i, d in enumerate(docs_batch):
+                        metas_batch[i] = dict(metas_batch[i], text=d.page_content or "")
+                self._upsert_qdrant(ids_batch, embeddings_batch, metas_batch)
+            elif self.provider == "pinecone":
+                if store_text_in_metadata_for and "pinecone" in store_text_in_metadata_for:
+                    for i, d in enumerate(docs_batch):
+                        metas_batch[i] = dict(metas_batch[i], text=d.page_content or "")
+                self._upsert_pinecone(ids_batch, embeddings_batch, metas_batch)
+            else:
+                raise ValueError(f"Unsupported provider: {self.provider}")
+
+        if self.verbose:
+            print(f"[intergraxVectorstoreManager] Upsert complete. New count: {self.count()}")
+
+    # --- Provider-specific upsert implementations ---
+    def _upsert_chroma(
+        self,
+        ids: Sequence[str],
+        embeddings: Sequence[Sequence[float]],
+        metadatas: Sequence[Dict[str, Any]],
+        documents: Sequence[str],
+    ) -> None:
+        # Some Chroma versions may not have upsert; fall back to add.
+        try:
+            self._collection.upsert(
+                ids=list(ids),
+                embeddings=list(embeddings),
+                metadatas=list(metadatas),
+                documents=list(documents),
+            )
+        except AttributeError:
+            self._collection.add(
+                ids=list(ids),
+                embeddings=list(embeddings),
+                metadatas=list(metadatas),
+                documents=list(documents),
+            )
+
+    def _upsert_qdrant(
+        self,
+        ids: Sequence[str],
+        embeddings: Sequence[Sequence[float]],
+        metadatas: Sequence[Dict[str, Any]],
+    ) -> None:
+        self._ensure_qdrant_collection()
+        points = [
+            PointStruct(
+                id=ids[i],
+                vector=list(map(float, embeddings[i])),
+                payload=metadatas[i],
+            )
+            for i in range(len(ids))
+        ]
+        self._client.upsert(collection_name=self.collection_name, points=points)
+
+    def _upsert_pinecone(
+        self,
+        ids: Sequence[str],
+        embeddings: Sequence[Sequence[float]],
+        metadatas: Sequence[Dict[str, Any]],
+    ) -> None:
+        self._ensure_pinecone_index()
+        vectors = [
+            {"id": ids[i], "values": list(map(float, embeddings[i])), "metadata": metadatas[i]}
+            for i in range(len(ids))
+        ]
+        # Different client versions use different parameter names
+        try:
+            self._collection.upsert(vectors=vectors)
+        except TypeError:
+            self._collection.upsert(items=vectors)
+
+    # ------------------------------
+    # Query
+    # ------------------------------
+    def query(
+        self,
+        query_embeddings: Union[NDArray[np.float32], Sequence[Sequence[float]]],
+        top_k: int = 5,
+        *,
+        where: Optional[Dict[str, Any]] = None,  # filter/payload filter
+        include_embeddings: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Query the vector store by embeddings.
+
+        Returns provider-normalized-ish result dict:
+          {
+            "ids": List[List[str]],
+            "scores": List[List[float]],     # note: for Chroma cosine -> 1 - distance (approximate ascending “score”)
+            "metadatas": List[List[dict]],
+            "documents": List[List[str]] | None,
+          }
+        """
+        Q = self._to_list_of_lists(query_embeddings)
+
+        if self.provider == "chroma":
+            include = ["metadatas", "documents", "distances"]
+            if include_embeddings:
+                include.append("embeddings")
+
+            res = self._collection.query(
+                query_embeddings=Q,
+                n_results=top_k,
+                where=where or None,   # important: None instead of {}
+                include=include,
+            )
+
+            distances = res.get("distances", [])
+            if self.metric == "cosine":
+                # convert to “ascending score” for consumer convenience
+                scores = [[1.0 - float(d) for d in row] for row in distances]
+            else:
+                # for other metrics leave as-is (or add your own normalization)
+                scores = distances
+
+            return {
+                "ids": res.get("ids", []),
+                "scores": scores,
+                "metadatas": res.get("metadatas", []),
+                "documents": res.get("documents", []),
+            }
+
+        elif self.provider == "qdrant":
+            self._ensure_qdrant_collection()
+            out = {"ids": [], "scores": [], "metadatas": [], "documents": []}
+            for q in Q:
+                qr = self._client.search(
+                    collection_name=self.collection_name,
+                    query_vector=list(map(float, q)),
+                    limit=top_k,
+                    query_filter=self._qdrant_filter(where),
+                )
+                out["ids"].append([str(h.id) for h in qr])
+                out["scores"].append([float(h.score) for h in qr])  # ascending = better (Qdrant returns similarity)
+                out["metadatas"].append([dict(h.payload or {}) for h in qr])
+                out["documents"].append([str((h.payload or {}).get("text", "")) for h in qr])
+            return out
+
+        elif self.provider == "pinecone":
+            self._ensure_pinecone_index()
+            out = {"ids": [], "scores": [], "metadatas": [], "documents": []}
+            for q in Q:
+                qr = self._collection.query(
+                    vector=list(map(float, q)),
+                    top_k=top_k,
+                    include_values=False,
+                    include_metadata=True,
+                    filter=where or None,
+                )
+                matches = qr.get("matches", []) if isinstance(qr, dict) else qr.matches
+                ids_row, scores_row, mds_row, docs_row = [], [], [], []
+                for m in matches:
+                    if isinstance(m, dict):
+                        ids_row.append(m.get("id"))
+                        scores_row.append(float(m.get("score", 0.0)))
+                        md = m.get("metadata", {}) or {}
+                    else:
+                        ids_row.append(m.id)
+                        scores_row.append(float(m.score))
+                        md = m.metadata or {}
+                    mds_row.append(md)
+                    docs_row.append(str(md.get("text", "")))
+                out["ids"].append(ids_row)
+                out["scores"].append(scores_row)  # Pinecone: higher score = better
+                out["metadatas"].append(mds_row)
+                out["documents"].append(docs_row)
+            return out
+
+        else:
+            raise ValueError(f"Unsupported provider: {self.provider}")
+
+    # ------------------------------
+    # Count
+    # ------------------------------
+    def count(self) -> int:
+        if self.provider == "chroma":
+            return int(self._collection.count())
+        elif self.provider == "qdrant":
+            self._ensure_qdrant_collection()
+            c = self._client.count(self.collection_name, exact=True)
+            # Newer versions return an object with a `.count` field
+            try:
+                return int(c.count)  # type: ignore[attr-defined]
+            except Exception:
+                # Fallback: if the client returns a dict-like or different shape
+                return int(getattr(c, "count", 0))
+        elif self.provider == "pinecone":
+            self._ensure_pinecone_index()
+            try:
+                stats = self._collection.describe_index_stats()
+                return int(stats.get("total_vector_count", 0))
+            except Exception:
+                # Some versions expose describe_index_stats on the client
+                stats = self._client.describe_index_stats(index_name=self.collection_name)
+                return int(stats.get("total_vector_count", 0))
+        else:
+            raise ValueError(f"Unsupported provider: {self.provider}")
+
+    # ------------------------------
+    # Delete by ids
+    # ------------------------------
+    def delete(self, ids: Sequence[str]) -> None:
+        if not ids:
+            return
+        if self.provider == "chroma":
+            self._collection.delete(ids=list(ids))
+        elif self.provider == "qdrant":
+            self._ensure_qdrant_collection()
+            try:
+                if PointIdsList is not None:
+                    self._client.delete(
+                        collection_name=self.collection_name,
+                        points_selector=PointIdsList(points=list(ids)),
+                    )
+                else:
+                    # Older client versions accepted a dict selector
+                    self._client.delete(self.collection_name, points_selector={"points": list(ids)})
+            except TypeError:
+                # Backward compatibility
+                self._client.delete(self.collection_name, points_selector={"points": list(ids)})
+        elif self.provider == "pinecone":
+            self._ensure_pinecone_index()
+            self._collection.delete(ids=list(ids))
+        else:
+            raise ValueError(f"Unsupported provider: {self.provider}")
+
+# ======================================================================
+# FILE: intergrax/rag/windowed_answerer.py
+# MODULE: intergrax.rag.windowed_answerer
+# MODULE_GROUP: rag
+# TAGS:
+#   - package=intergrax
+#   - module_group=rag
+#   - file=windowed_answerer.py
+# LINES: 185
+# SHA256: 6dd3864cb639848d4690e5dd2c154b05a8c78dad482c1e032f55968d67c46bef
+# SYMBOLS:
+#   - class WindowedAnswerer
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+
+import logging
+from typing import List, Dict, Tuple
+
+from intergrax.llm.messages import ChatMessage
+
+logger = logging.getLogger("intergrax.windowed_answerer")
+
+
+class WindowedAnswerer:
+    """
+    Windowed (map→reduce) layer on top of the base Answerer.
+    """
+    def __init__(self, answerer, retriever, *, verbose: bool = False):
+        self.answerer = answerer
+        self.retriever = retriever
+        self.verbose = verbose
+        self.log = logger.getChild("window")
+        if self.verbose:
+            self.log.setLevel(logging.INFO)
+
+    def _build_context_local(
+        self,
+        hits: List[Dict],
+        max_chars: int,
+        per_chunk_cap: int = 4000
+    ) -> Tuple[str, List[Dict]]:
+        def sanitize(s: str) -> str:
+            return "".join(ch for ch in s if ch.isprintable() or ch in "\n\t ").strip()
+
+        parts, used, total = [], [], 0
+        for h in hits:
+            txt = sanitize(h.get("text") or h.get("content") or "")
+            if not txt:
+                continue
+            if per_chunk_cap and len(txt) > per_chunk_cap:
+                txt = txt[:per_chunk_cap]
+            need = len(txt)
+            if total + need > max_chars:
+                remain = max(max_chars - total, 0)
+                if remain == 0:
+                    break
+                txt = txt[:remain]
+                need = len(txt)
+            parts.append(txt)
+            used.append(h)
+            total += need
+            if total >= max_chars:
+                break
+        return "\n\n---\n\n".join(parts), used
+
+    def _build_messages_for_context(self, question: str, context_text: str):
+        """
+        Build messages with memory-awareness, without duplicating the system prompt.
+        If the answerer has `_build_messages_memory_aware` and a memory store, use it.
+        Otherwise, fall back to `_build_messages`.
+        """
+        use_memory = getattr(self.answerer, "memory", None) is not None
+        mem_aware = hasattr(self.answerer, "_build_messages_memory_aware")
+
+        if use_memory and mem_aware:
+            # Memory-aware variant — inject context as a separate system message
+            return self.answerer._build_messages_memory_aware(context_text=context_text)
+        else:
+            # No-memory variant — standard message construction
+            return self.answerer._build_messages(
+                question=question,
+                context_text=context_text,
+                user_instruction=None
+            )
+
+    def ask_windowed(
+        self,
+        question: str,
+        *,
+        top_k_total: int = 60,
+        window_size: int = 12,
+        summarize_each: bool = False
+    ):
+        self.log.info("[Windowed] Asking: '%s' (top_k_total=%d, window=%d)", question, top_k_total, window_size)
+
+        # If we have memory, record the user's question ONCE (to keep history consistent).
+        if getattr(self.answerer, "memory", None) is not None:
+            self.answerer.memory.add_message("user", question)
+
+        # 1) Broad retrieval
+        raw_hits = self.retriever.retrieve(question, top_k=top_k_total)
+        self.log.info("[Windowed] Retrieved %d candidates", len(raw_hits))
+
+        if not raw_hits:
+            msg = "No sufficiently relevant context was found to answer."
+            # If we have memory, append an informational assistant reply.
+            if getattr(self.answerer, "memory", None) is not None:
+                self.answerer.memory.add_message("assistant", msg)
+            return {
+                "answer": msg,
+                "sources": [],
+                "summary": None,
+                "stats": {"windows": 0, "top_k_total": top_k_total, "window_size": window_size},
+            }
+
+        # 2) Windows
+        windows = [raw_hits[i:i + window_size] for i in range(0, len(raw_hits), window_size)]
+        self.log.info("[Windowed] Processing %d windows", len(windows))
+
+        partial_answers, collected_sources = [], []
+
+        for wi, w in enumerate(windows, 1):
+            ctx_text, used_hits = self._build_context_local(
+                w,
+                max_chars=self.answerer.cfg.max_context_chars
+            )
+            self.log.info("[Windowed] Window %d/%d: %d hits", wi, len(windows), len(used_hits))
+
+            # 2a) Build MESSAGES (memory-aware if available)
+            msgs = self._build_messages_for_context(question=question, context_text=ctx_text)
+
+            # 2b) LLM → partial answer for this window
+            ans = self.answerer.llm.generate_messages(
+                msgs,
+                temperature=self.answerer.cfg.temperature,
+                max_tokens=self.answerer.cfg.max_answer_tokens,
+            )
+
+            # 2c) (Optional) summarize per-window partial
+            if summarize_each:
+                sum_msgs = [
+                    ChatMessage(role="system", content="You summarize answers without adding facts."),
+                    ChatMessage(role="user", content=self.answerer.cfg.summary_prompt_template.format(answer=ans)),
+                ]
+                ans = self.answerer.llm.generate_messages(sum_msgs, temperature=0.0, max_tokens=512)
+
+            partial_answers.append(ans)
+
+            # 2d) Collect sources
+            collected_sources.extend(
+                self.answerer._make_citations([self.answerer._normalize_hit(h) for h in used_hits])
+            )
+
+        # 3) Reduce — synthesize final answer from partials
+        synthesis_ctx = "\n\n---\n\n".join(partial_answers)
+        msgs_reduce = self._build_messages_for_context(question=question, context_text=synthesis_ctx)
+        final_answer = self.answerer.llm.generate_messages(
+            msgs_reduce,
+            temperature=self.answerer.cfg.temperature,
+            max_tokens=self.answerer.cfg.max_answer_tokens,
+        )
+
+        final_summary = None
+        if summarize_each:
+            sum_msgs = [
+                ChatMessage(role="system", content="You summarize answers without adding facts."),
+                ChatMessage(role="user", content=self.answerer.cfg.summary_prompt_template.format(answer=final_answer)),
+            ]
+            final_summary = self.answerer.llm.generate_messages(sum_msgs, temperature=0.0, max_tokens=512)
+
+        # 4) Deduplicate sources
+        seen, dedup_sources = set(), []
+        for s in collected_sources:
+            key = (s.source, s.page, getattr(s, "score", None), getattr(s, "preview", "")[:64])
+            if key in seen:
+                continue
+            seen.add(key)
+            dedup_sources.append(s)
+
+        # 5) If we have memory, append the final answer (and optional summary)
+        if getattr(self.answerer, "memory", None) is not None:
+            content_to_save = final_answer
+            if final_summary:
+                content_to_save += "\n\n" + final_summary
+            self.answerer.memory.add_message("assistant", content_to_save)
+
+        self.log.info("[Windowed] Done (%d windows)", len(windows))
+        return {
+            "answer": final_answer,
+            "sources": dedup_sources,
+            "summary": final_summary,
+            "stats": {"windows": len(windows), "top_k_total": top_k_total, "window_size": window_size},
+        }
+
+# ======================================================================
+# FILE: intergrax/__init__.py
+# MODULE: intergrax
+# MODULE_GROUP: root
+# TAGS:
+#   - package=intergrax
+#   - module_group=root
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/chat_agent.py
+# MODULE: intergrax.chat_agent
+# MODULE_GROUP: root
+# TAGS:
+#   - package=intergrax
+#   - module_group=root
+#   - file=chat_agent.py
+# LINES: 592
+# SHA256: a346a03152dfb00d6ade5a5715c7fc0e43301b6661b33470066a133469e5114c
+# SYMBOLS:
+#   - class ChatRouterConfig
+#   - class RagComponent
+#   - class ChatAgentConfig
+#   - class ChatAgent
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Any, Dict, Iterable, List, Optional, Type, Union, Literal
+import json
+import time
+
+# Your components
+from intergrax.memory.conversational_memory import ConversationalMemory
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters import LLMAdapter
+from intergrax.tools.tools_agent import ToolsAgent, ToolsAgentConfig
+from intergrax.tools.tools_base import ToolRegistry
+from intergrax.rag.rag_answerer import RagAnswerer
+
+Route = Literal["rag", "tools", "general"]
+
+@dataclass
+class ChatRouterConfig:
+    """LLM router configuration (descriptive, not hard rules)."""
+    use_llm_router: bool = True
+    router_max_tokens: int = 256
+    router_temperature: float = 0.0
+    tools_description: str = (
+        "TOOLS provide live, actionable operations such as calculations, "
+        "summaries of numeric data, or calling external services/APIs."
+    )
+    general_description: str = (
+        "GENERAL uses the base LLM without external tools or vector stores."
+    )
+    allow_override: bool = True
+
+@dataclass
+class RagComponent:
+    """Single RAG endpoint with a description used for routing decisions."""
+    name: str
+    answerer: RagAnswerer
+    description: str
+    priority: int = 100
+
+@dataclass
+class ChatAgentConfig:
+    """Global chat-agent settings."""
+    temperature: float = 0.2
+    max_answer_tokens: Optional[int] = None
+    router: ChatRouterConfig = field(default_factory=ChatRouterConfig)
+    verbose: bool = False
+    pass_memory_to_general: bool = True
+
+class ChatAgent:
+    """
+    One API “like ChatGPT”:
+      - the model (LLM) decides the ROUTE (RAG / TOOLS / GENERAL),
+      - for RAG the model chooses which RagComponent to use, based on descriptions,
+      - accepts a ToolRegistry (lazy creation of intergraxToolsAgent),
+      - handles memory, streaming, structured output,
+      - returns a stable result: {answer, tool_traces, sources, summary, messages, output_structure, stats, route, rag_component}.
+    """
+
+    def __init__(
+        self,
+        llm: LLMAdapter,
+        *,
+        memory: Optional[ConversationalMemory] = None,
+        tools: Optional[ToolRegistry] = None,
+        tools_config: Optional[ToolsAgentConfig] = None,
+        rag_components: Optional[Iterable[RagComponent]] = None,
+        config: Optional[ChatAgentConfig] = None,
+    ):
+        self.llm = llm
+        self.memory = memory
+        self.cfg = config or ChatAgentConfig()
+        self.verbose = bool(self.cfg.verbose)
+
+        self._tools_registry = tools
+        self._tools_agent: Optional[ToolsAgent] = None
+        self._tools_config = tools_config or ToolsAgentConfig()
+        self._rag_catalog: List[RagComponent] = sorted(list(rag_components or []), key=lambda rc: rc.priority)
+
+    # --------------------------
+    #  Public API
+    # --------------------------
+
+    def run(
+        self,
+        question: str,
+        *,
+        stream: bool = False,
+        force_route: Optional[Route] = None,
+        allowed_tools: Optional[List[str]] = None,
+        allowed_vectorstores: Optional[List[str]] = None,   # names of RagComponent
+        output_model: Optional[Type] = None,
+        summarize: bool = False,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,  # e.g., "auto"|"none"|OpenAI schema
+        routing_context: Optional[str] = None,
+        # tool usage policy
+        tool_usage: Literal["auto", "required", "none"] = "auto",
+    ) -> Dict[str, Any]:
+        """
+        Stable result shape:
+        {
+          "answer": str,
+          "output_structure": Any|None,
+          "tool_traces": list,
+          "sources": list,
+          "summary": str|None,
+          "messages": list[ChatMessage],
+          "stats": dict,
+          "route": "rag"|"tools"|"general",
+          "rag_component": str|None
+        }
+        """
+        t0 = time.perf_counter()
+
+        # store the question in memory
+        if self.memory is not None:
+            self.memory.add("user", question)
+
+        # tool policy influences routing
+        tools_enabled = not (tool_usage == "none")
+
+        # 1) routing decision via LLM (with descriptions and tools_enabled flag)
+        route, rag_name = self._decide_route_via_llm(
+            question=question,
+            force_route=force_route,
+            allowed_vectorstores=allowed_vectorstores,
+            routing_context=routing_context,
+            tools_enabled=tools_enabled,
+        )
+
+        # Enforce policy after router decision
+        if route == "tools" and not tools_enabled:
+            route, rag_name = "general", None
+
+        if tool_usage == "required" and route != "tools":
+            # user REQUIRES tools: if no tools → error,
+            # if tools exist → try tools regardless of router decision
+            if not self._tools_registry or len(self._tools_registry.list()) == 0:
+                raise RuntimeError("No tools registered. Tool usage policy = 'required'. Aborting.")
+            route, rag_name = "tools", None
+
+        if self.verbose:
+            print(f"[intergraxChatAgent] ROUTE={route} RAG={rag_name or '-'}")
+
+        # 2) execution
+        if route == "rag":
+            result = self._do_rag(
+                question=question,
+                rag_name=rag_name,
+                allowed_vectorstores=allowed_vectorstores,
+                stream=stream,
+                summarize=summarize,
+                output_model=output_model,
+            )
+            result["route"] = "rag"
+            result["stats"] = {**result.get("stats", {}), "router_s": round(time.perf_counter() - t0, 4)}
+            return result
+
+        if route == "tools":
+            result = self._do_tools(
+                question=question,
+                allowed_tools=allowed_tools,
+                output_model=output_model,
+                stream=stream,
+                tool_choice=tool_choice or "auto",
+                tool_usage=tool_usage,  # pass policy to _do_tools
+            )
+            result["route"] = "tools"
+            result["stats"] = {**result.get("stats", {}), "router_s": round(time.perf_counter() - t0, 4)}
+            result["rag_component"] = None
+            return result
+
+        # general
+        result = self._do_general(question=question, output_model=output_model, stream=stream, summarize=summarize)
+        result["route"] = "general"
+        result["stats"] = {**result.get("stats", {}), "router_s": round(time.perf_counter() - t0, 4)}
+        result["rag_component"] = None
+        return result
+
+    # --------------------------
+    #  LLM routing
+    # --------------------------
+
+    def _decide_route_via_llm(
+        self,
+        *,
+        question: str,
+        force_route: Optional[Route],
+        allowed_vectorstores: Optional[List[str]],
+        routing_context: Optional[str],
+        tools_enabled: bool,
+    ) -> tuple[Route, Optional[str]]:
+        router_cfg = self.cfg.router
+
+        # ---- manual override ----
+        if force_route and router_cfg.allow_override:
+            if force_route == "rag":
+                chosen = self._choose_rag_name_default(allowed_vectorstores)
+                return "rag", chosen
+            if force_route == "tools" and not tools_enabled:
+                return "general", None
+            return force_route, None
+
+        if not router_cfg.use_llm_router:
+            if allowed_vectorstores:
+                return "rag", self._choose_rag_name_default(allowed_vectorstores)
+            return "general", None
+
+        # ---- Build component catalogs ----
+        rag_options = [
+            {"name": rc.name, "description": rc.description}
+            for rc in self._rag_catalog
+            if (not allowed_vectorstores or rc.name in allowed_vectorstores)
+        ]
+
+        tools_available = (
+            tools_enabled
+            and (self._tools_registry is not None)
+            and (len(self._tools_registry.list()) > 0)
+        )
+        tool_options = []
+        if tools_available:
+            try:
+                for t in self._tools_registry.list():
+                    tool_options.append({
+                        "name": getattr(t, "name", "<unnamed>"),
+                        "description": getattr(t, "description", ""),
+                    })
+            except Exception:
+                tool_options = []
+
+        # ---- Router prompt ----
+        sys_txt = (
+            "You are a strict routing model responsible for choosing how to answer a user's query.\n"
+            "Available routes:\n"
+            "- RAG: use a vector-store retriever for company documents, policies, or structured internal knowledge.\n"
+            f"- TOOLS: ({'ENABLED' if tools_enabled else 'DISABLED'}; AVAILABLE={len(tool_options) if tools_available else 0}) "
+            f"use an agent equipped with specific function tools (e.g., calculations, weather lookup, external API calls). {router_cfg.tools_description}\n"
+            f"- GENERAL: respond directly using only your own knowledge and reasoning. {router_cfg.general_description}\n\n"
+            "Choose TOOLS only if at least one of the available tools is clearly relevant to the user's question.\n"
+            "Your output must be a strict JSON object: {\"route\": \"RAG\"|\"TOOLS\"|\"GENERAL\", \"rag_component\": string|null}."
+        )
+        if routing_context:
+            sys_txt += f"\nContext: {routing_context}"
+
+        rag_catalog_txt = json.dumps(rag_options, ensure_ascii=False, indent=2)
+        tools_catalog_txt = json.dumps(tool_options, ensure_ascii=False, indent=2)
+
+        # ---- Few-shot examples to bias the model ----
+        examples = [
+            {
+                "q": "What is the weather in Warsaw?",
+                "explanation": "A weather-related question. The available tool get_weather is relevant -> TOOLS.",
+                "out": {"route": "TOOLS", "rag_component": None},
+            },
+            {
+                "q": "Calculate 25,000 net + 23% VAT.",
+                "explanation": "A numerical or tax calculation -> TOOLS if a calculator-like tool exists.",
+                "out": {"route": "TOOLS", "rag_component": None},
+            },
+            {
+                "q": "What is intergrax's privacy policy?",
+                "explanation": "A company policy or documentation request -> RAG (use intergrax_docs).",
+                "out": {"route": "RAG", "rag_component": "intergrax_docs"},
+            },
+            {
+                "q": "Tell me in general what intergrax is.",
+                "explanation": "A general question not tied to any vector store or tool -> GENERAL.",
+                "out": {"route": "GENERAL", "rag_component": None},
+            },
+        ]
+        ex_txt = json.dumps(examples, ensure_ascii=False, indent=2)
+
+        usr_txt = (
+            "Decide which route should handle the following user query.\n\n"
+            f"User query:\n{question}\n\n"
+            f"RAG components:\n{rag_catalog_txt}\n\n"
+            f"Available tools:\n{tools_catalog_txt}\n\n"
+            "Routing rules:\n"
+            "- If the question refers to company documentation, policies, or terms -> use RAG.\n"
+            "- If the question asks for an operation that a listed tool can perform (e.g., weather, calculations, API lookup) -> use TOOLS.\n"
+            "- Only choose TOOLS if at least one available tool is relevant to the question.\n"
+            "- Otherwise, choose GENERAL.\n\n"
+            f"Reference examples:\n{ex_txt}\n\n"
+            "Output STRICT JSON ONLY, for example: {\"route\":\"RAG\",\"rag_component\":\"intergrax_docs\"}"
+        )
+
+        msgs = [
+            ChatMessage(role="system", content=sys_txt),
+            ChatMessage(role="user", content=usr_txt),
+        ]
+
+        raw = ""
+        try:
+            raw = self.llm.generate_messages(
+                msgs,
+                temperature=router_cfg.router_temperature,
+                max_tokens=router_cfg.router_max_tokens,
+            ).strip()
+
+            obj = json.loads(self._extract_json_block(raw))
+            route = str(obj.get("route", "")).strip().lower()
+            rag_name = obj.get("rag_component")
+
+            if route not in ("rag", "tools", "general"):
+                raise ValueError("invalid route")
+
+            if route == "tools" and not tools_available:
+                return "general", None
+
+            if route != "rag":
+                rag_name = None
+            else:
+                if not rag_name:
+                    rag_name = self._choose_rag_name_default(allowed_vectorstores)
+
+            return route, rag_name
+
+        except Exception:
+            if self.verbose:
+                print(f"[intergraxChatAgent][router] fallback (raw='{raw[:200]}')")
+            if allowed_vectorstores:
+                return "rag", self._choose_rag_name_default(allowed_vectorstores)
+            return "general", None
+
+
+
+    def _extract_json_block(self, text: str) -> str:
+        """Extracts the first JSON block (from ```json ...``` or raw)."""
+        t = text.strip()
+        if t.startswith("```"):
+            # remove backticks
+            t = t.strip("`")
+            # after an optional ```json label
+            parts = t.split("\n", 1)
+            if len(parts) == 2 and parts[0].lower().startswith("json"):
+                t = parts[1]
+        # models sometimes add comments — attempt to sanitize
+        t = t.strip()
+        # if the response has prefixes/suffixes, try to locate the braces
+        start = t.find("{")
+        end = t.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            return t[start:end+1]
+        return t
+
+    def _choose_rag_name_default(self, allowed: Optional[List[str]]) -> Optional[str]:
+        for rc in self._rag_catalog:
+            if not allowed or rc.name in allowed:
+                return rc.name
+        return None
+
+    # --------------------------
+    #  Execution paths
+    # --------------------------
+
+    def _do_tools(
+        self,
+        *,
+        question: str,
+        allowed_tools: Optional[List[str]],
+        output_model: Optional[Type],
+        stream: bool,
+        tool_choice: Optional[Union[str, Dict[str, Any]]],
+        tool_usage: Literal["auto", "required", "none"] = "auto",
+    ) -> Dict[str, Any]:
+        """TOOLS path with policy control (auto/required/none)."""
+
+        # no tools → react per policy
+        if not self._tools_registry or len(self._tools_registry.list()) == 0:
+            msg = "[intergraxChatAgent][tools] No tools registered."
+            if self.verbose:
+                print(msg)
+            if tool_usage == "required":
+                raise RuntimeError(f"{msg} Tool usage policy = 'required'. Aborting.")
+            return self._do_general(question=question, output_model=output_model, stream=stream)
+
+        # lazy init
+        if self._tools_agent is None:
+            self._tools_agent = ToolsAgent(
+                llm=self.llm,
+                tools=self._tools_registry,
+                memory=self.memory,
+                config=self._tools_config,
+                verbose=self.verbose,
+            )
+
+        # temporary tools filter
+        backup_registry = None
+        if allowed_tools:
+            backup_registry = self._tools_registry
+            filtered = ToolRegistry()
+            for t in self._tools_registry.list():
+                if t.name in allowed_tools:
+                    filtered.register(t)
+            self._tools_registry = filtered
+            self._tools_agent.tools = filtered
+
+        try:
+            res = self._tools_agent.run(
+                input_data=question,
+                context=None,
+                stream=stream,
+                tool_choice=tool_choice,
+                output_model=output_model,
+            )
+
+            if self.memory and res.get("answer"):
+                self.memory.add("assistant", res["answer"])
+
+            return {
+                "answer": res.get("answer", ""),
+                "tool_traces": res.get("tool_traces", []),
+                "sources": [],
+                "summary": None,
+                "messages": res.get("messages", []),
+                "output_structure": res.get("output_structure"),
+                "stats": {},
+                "rag_component": None,
+            }
+
+        except KeyError as e:
+            # missing specific tool (e.g., calculate_vat)
+            missing = None
+            msg = str(e)
+            if "Unknown tool:" in msg:
+                missing = msg.split("Unknown tool:", 1)[1].strip().strip("'").strip()
+
+            if self.verbose:
+                print(f"[intergraxChatAgent][tools] Missing tool → {missing or '<?>'}")
+
+            if tool_usage == "required":
+                # hard stop (per policy)
+                raise RuntimeError(f"Tool '{missing or 'unknown'}' required by LLM is not registered.")
+
+            # in auto mode — soft fallback
+            general = self._do_general(question=question, output_model=output_model, stream=stream)
+            general.setdefault("tool_traces", []).append({
+                "status": "error",
+                "error": "missing_tool",
+                "tool": missing or "unknown",
+                "note": "Planner requested a tool that is not registered. Fell back to GENERAL.",
+            })
+            general.setdefault("stats", {})["tool_fallback"] = "missing_tool"
+            return general
+
+        except Exception as e:
+            # other tool runtime errors
+            if self.verbose:
+                print(f"[intergraxChatAgent][tools] Tool runtime error: {e}")
+
+            if tool_usage == "required":
+                raise RuntimeError(f"Tool execution failed under 'required' policy: {e}")
+
+            general = self._do_general(question=question, output_model=output_model, stream=stream)
+            general.setdefault("tool_traces", []).append({
+                "status": "error",
+                "error": "tool_runtime_error",
+                "note": f"Exception during tool run: {type(e).__name__}",
+            })
+            general.setdefault("stats", {})["tool_fallback"] = "runtime_error"
+            return general
+
+        finally:
+            if backup_registry is not None:
+                self._tools_registry = backup_registry
+                self._tools_agent.tools = backup_registry
+
+    def _do_rag(
+        self,
+        *,
+        question: str,
+        rag_name: Optional[str],
+        allowed_vectorstores: Optional[List[str]],
+        stream: bool,
+        summarize: bool,
+        output_model: Optional[Type],
+    ) -> Dict[str, Any]:
+        rc = None
+        if rag_name:
+            rc = next((x for x in self._rag_catalog if x.name == rag_name), None)
+        if rc is None:
+            # if no specified RAG — choose default allowed one
+            chosen = self._choose_rag_name_default(allowed_vectorstores)
+            rc = next((x for x in self._rag_catalog if x.name == chosen), None)
+
+        if rc is None:
+            return self._do_general(question=question, output_model=output_model, stream=stream, summarize=summarize)
+
+        res = rc.answerer.run(
+            question=question,
+            where=None,             # inject where-clauses inside the answerer if needed
+            stream=stream,
+            summarize=summarize,
+            output_model=output_model,
+        )
+
+        if self.memory and res.get("answer"):
+            self.memory.add("assistant", res["answer"])
+
+        return {
+            "answer": res.get("answer", ""),
+            "tool_traces": [],
+            "sources": res.get("sources", []),
+            "summary": res.get("summary"),
+            "messages": res.get("messages", []),
+            "output_structure": res.get("output_structure"),
+            "stats": res.get("stats", {}),
+            "rag_component": rc.name,
+        }
+
+    def _do_general(
+        self,
+        *,
+        question: str,
+        output_model: Optional[Type],
+        stream: bool,
+        summarize: bool = False,
+    ) -> Dict[str, Any]:
+        msgs: List[ChatMessage] = [ChatMessage(role="system", content="You are a helpful, concise assistant.")]
+        if self.memory and self.cfg.pass_memory_to_general:
+            msgs.extend(self.memory.get_all())
+        if not (len(msgs) and msgs[-1].role == "user"):
+            msgs.append(ChatMessage(role="user", content=question))
+
+        if stream:
+            parts: List[str] = []
+            for p in self.llm.stream_messages(
+                msgs, temperature=self.cfg.temperature, max_tokens=self.cfg.max_answer_tokens
+            ):
+                parts.append(p or "")
+            answer = "".join(parts)
+        else:
+            answer = self.llm.generate_messages(
+                msgs, temperature=self.cfg.temperature, max_tokens=self.cfg.max_answer_tokens
+            )
+
+        output_obj = None
+        if (output_model is not None) and (not stream) and hasattr(self.llm, "generate_structured"):
+            try:
+                output_obj = self.llm.generate_structured(
+                    msgs, output_model, temperature=self.cfg.temperature, max_tokens=self.cfg.max_answer_tokens
+                )
+            except Exception:
+                output_obj = None
+
+        summary_txt = None
+        if summarize:
+            try:
+                s_msgs = [
+                    ChatMessage(role="system", content="Summarize briefly."),
+                    ChatMessage(role="user", content=answer),
+                ]
+                summary_txt = self.llm.generate_messages(s_msgs, temperature=0.0, max_tokens=256)
+            except Exception:
+                summary_txt = None
+
+        if self.memory:
+            payload = answer + (("\n\n" + summary_txt) if summary_txt else "")
+            self.memory.add("assistant", payload)
+
+        return {
+            "answer": answer,
+            "tool_traces": [],
+            "sources": [],
+            "summary": summary_txt,
+            "messages": msgs,
+            "output_structure": output_obj,
+            "stats": {},
+            "rag_component": None,
+        }
+
+    # --------------------------
+    #  RAG/TOOLS registration
+    # --------------------------
+
+    def register_rag(self, comp: RagComponent) -> None:
+        self._rag_catalog.append(comp)
+        self._rag_catalog.sort(key=lambda rc: rc.priority)
+
+    def register_rag_many(self, comps: Iterable[RagComponent]) -> None:
+        self._rag_catalog.extend(list(comps))
+        self._rag_catalog.sort(key=lambda rc: rc.priority)
+
+    def set_tools(self, tools: ToolRegistry, config: Optional[ToolsAgentConfig] = None) -> None:
+        self._tools_registry = tools
+        if config:
+            self._tools_config = config
+        self._tools_agent = None  # lazy re-init
+
+# ======================================================================
+# FILE: intergrax/logging.py
+# MODULE: intergrax.logging
+# MODULE_GROUP: root
+# TAGS:
+#   - package=intergrax
+#   - module_group=root
+#   - file=logging.py
+# LINES: 12
+# SHA256: 3966fbef0c6b3cf32d50106a8b534a5f3520f3be5648d9badf77f562c3c5965e
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+import logging
+
+# Ustawienia globalne loggera
+logging.basicConfig(
+    level=logging.INFO,  # pokazuj INFO i wyżej (DEBUG pokaże więcej)
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    force=True  # nadpisuje poprzednie konfiguracje
+)
+
+# ======================================================================
+# FILE: intergrax/system_prompts.py
+# MODULE: intergrax.system_prompts
+# MODULE_GROUP: root
+# TAGS:
+#   - package=intergrax
+#   - module_group=root
+#   - file=system_prompts.py
+# LINES: 84
+# SHA256: f66fdf33ac4c8fe02c9c10c5caa82aae7b72fb5cea20aa96d4d073e6c4dbec0b
+# SYMBOLS:
+#   - def default_rag_system_instruction()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+def default_rag_system_instruction():
+    prompt = """
+            Rola i zasady pracy (STRICT RAG)
+
+            Jesteś asystentem wiedzy. Twoim jedynym źródłem informacji są dokumenty podłączone do tej rozmowy przez narzędzie file_search (vector store). Nie wolno Ci korzystać z wiedzy ogólnej ani dopowiadać faktów, których nie ma w dokumentach.
+
+            Cel
+
+            Odpowiadaj na pytania użytkownika wyłącznie na podstawie treści znalezionych w dokumentach bazy wiedzy.
+
+            Odpowiedzi mają być dokładne, precyzyjne i rozwinięte, z jasnymi odniesieniami do źródeł.
+
+            Procedura (krok po kroku)
+
+            Zrozum pytanie. Jeśli jest wieloczęściowe, rozbij je na podzadania i pokryj każde z nich.
+
+            Wyszukaj kontekst. Użyj file_search, pobierz wystarczającą liczbę trafień (w razie potrzeby wykonaj kilka zapytań o różnym sformułowaniu).
+
+            Zweryfikuj spójność. Porównaj znalezione fragmenty; jeśli źródła są sprzeczne, wskaż rozbieżności i podaj możliwe interpretacje, każdą z odnośnikiem.
+
+            Odpowiedz. Opracuj zwięzłe wnioski + szersze objaśnienie (definicje, kontekst, konsekwencje) - wyłącznie na bazie przytoczonych fragmentów.
+
+            Cytuj. Zawsze dołącz odniesienia do źródeł (tytuł/pliku + lokalizacja: strona/sekcja/rozdział, jeśli dostępne). Gdy cytujesz kluczowe zdania, oznacz je jako cytat i podaj źródło.
+
+            Zasady cytowania
+
+            Po każdym kluczowym twierdzeniu dodaj nawias z referencją, np.:
+            (Źródło: 'nazwa_pliku', s. 'strona') lub (Źródło: 'nazwa_pliku', sekcja 'sekcja').
+
+            Przy dłuższej odpowiedzi dodaj na końcu sekcję „Źródła” z listą pozycji.
+
+            Cytaty dosłowne używaj oszczędnie i tylko gdy są niezbędne; nie przekraczaj krótkich fragmentów.
+
+            Granice i niepewność
+
+            Jeśli w dokumentach brakuje danych do pełnej odpowiedzi, powiedz to wprost:
+            „Na podstawie dostępnych dokumentów nie mogę jednoznacznie odpowiedzieć na X.”
+            Następnie:
+
+            wskaż, jakich informacji brakuje (np. nazwa sekcji/rodzaj dokumentu),
+
+            zaproponuj konkretne frazy do doszukania w bazie lub dodania nowych plików.
+
+            Nie przywołuj wiedzy spoza dokumentów. Nie spekuluj. Jeśli musisz sformułować wniosek, oprzyj go na przytoczonych fragmentach i oznacz jako „Wniosek na podstawie źródeł”.
+
+            Styl odpowiedzi
+
+            Najpierw krótkie podsumowanie (2-4 zdania z sednem odpowiedzi).
+
+            Potem szczegółowe wyjaśnienie (krok po kroku, listy punktowane, małe nagłówki).
+
+            Precyzyjna terminologia, zero ogólników.
+
+            Jeśli pytanie dotyczy procedury/algorytmu/listy wymagań - przygotuj listę kontrolną lub pseudo-procedurę.
+
+            Jeśli pytanie dotyczy liczb/zakresów - podaj konkretne wartości z cytatami.
+
+            Format wynikowy (gdy to możliwe)
+
+            Podsumowanie
+
+            Szczegóły i uzasadnienie (z odnośnikami w tekście)
+
+            Źródła (lista: nazwa pliku + strona/sekcja)
+
+            Zakazy (ważne)
+
+            Nie używaj informacji, których nie znalazłeś w dokumentach.
+
+            Nie odwołuj się do „wiedzy powszechnej”, internetu ani własnych domysłów.
+
+            Nie ukrywaj niepewności - jeśli coś nie wynika z materiałów, powiedz to.
+
+            (Opcjonalnie) Przykładowe odniesienia
+
+            „… zgodnie z definicją procesu (Źródło: Specyfikacja_Proces_A.pdf, s. 12) …”
+
+            „… wymagania niefunkcjonalne: dostępność 99.9% (Źródło: Wymagania_Systemowe.docx, sekcja 3.2) …”
+            """
+    return prompt
+
+# ======================================================================
+# FILE: intergrax/runtime/__init__.py
+# MODULE: intergrax.runtime
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/__init__.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/config.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.config
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=config.py
+# LINES: 207
+# SHA256: 7df36a0fc0be071834fc5f645dbeb4f7a86d4fdeb5092f917bc3f38c9f6e98d9
+# SYMBOLS:
+#   - class ToolsContextScope
+#   - class ReasoningMode
+#   - class ReasoningConfig
+#   - class RuntimeConfig
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, Optional, Literal
+
+from intergrax.llm_adapters.base import LLMAdapter
+from intergrax.rag.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.tools.tools_agent import ToolsAgent
+from intergrax.websearch.service.websearch_executor import WebSearchExecutor
+
+
+# Defines how the runtime should interact with tools.
+# - "off": tools are never used, even if a tools_agent is provided.
+# - "auto": runtime may decide to call tools when appropriate.
+# - "required": runtime must use tools to answer the request.
+ToolChoiceMode = Literal["off", "auto", "required"]
+
+
+class ToolsContextScope(str, Enum):
+    # Agent dostaje tylko aktualną wiadomość użytkownika.
+    CURRENT_MESSAGE_ONLY = "current_message_only"
+    
+    # Agent dostaje historię rozmowy (bez RAG/Websearch chunks).
+    CONVERSATION = "conversation"
+    
+    # Agent dostaje pełny kontekst tak jak LLM (historia + RAG + websearch).
+    FULL = "full"
+
+
+class ReasoningMode(str, Enum):
+    """
+    Defines how the runtime should guide the model's reasoning process.
+    """
+
+    # Default behavior – no explicit reasoning instructions.
+    DIRECT = "direct"
+
+    # Model reasons step-by-step internally but does not reveal chain-of-thought.
+    COT_INTERNAL = "cot_internal"
+
+
+@dataclass
+class ReasoningConfig:
+    """
+    Configuration for reasoning / Chain-of-Thought behavior.
+
+    This config does NOT guarantee visibility of reasoning steps.
+    It only controls how the model is instructed to reason.
+    """
+
+    mode: ReasoningMode = ReasoningMode.DIRECT
+
+    # Reserved for future extensions (e.g. planning calls, JSON reasoning).
+    max_reasoning_tokens: Optional[int] = None
+
+    # Whether runtime should attempt to capture any reasoning metadata
+    # for debug/observability purposes (never exposed to end user).
+    capture_reasoning_trace: bool = False
+
+
+@dataclass
+class RuntimeConfig:
+    """
+    Global configuration object for the Drop-In Knowledge Runtime.
+
+    This configuration defines:
+      - Which LLM is used for generation.
+      - How RAG (vectorstore-based retrieval) is applied.
+      - Whether web search is available as an additional context source.
+      - Whether a tools agent (for function/tool calling) can be used.
+
+    The runtime is backend-agnostic and only depends on the abstract
+    interfaces defined in the Intergrax framework.
+    """
+
+    # ------------------------------------------------------------------
+    # CORE MODEL & RAG BACKENDS
+    # ------------------------------------------------------------------
+
+    # Primary LLM adapter used for chat-style generation.
+    llm_adapter: LLMAdapter
+
+    # Embedding manager used for RAG/document indexing and retrieval.
+    embedding_manager: EmbeddingManager
+
+    # Vectorstore manager providing semantic search over stored chunks.
+    vectorstore_manager: VectorstoreManager
+
+    # Optional labels for observability/logging only.
+    llm_label: str = "default-llm"
+    embedding_label: str = "default-embedding"
+    vectorstore_label: str = "default-vectorstore"
+
+    # ------------------------------------------------------------------
+    # FEATURE FLAGS
+    # ------------------------------------------------------------------
+
+    # Enables Retrieval-Augmented Generation based on stored documents.
+    enable_rag: bool = True
+
+    # Enables real-time web search as an additional context layer.
+    enable_websearch: bool = True
+
+    # Enables long-term memory (not yet implemented).
+    enable_long_term_memory: bool = False
+
+    # Enables short-term user profile / conversational memory.
+    enable_user_profile_memory: bool = True
+
+    # ------------------------------------------------------------------
+    # MULTI-TENANCY
+    # ------------------------------------------------------------------
+
+    tenant_id: Optional[str] = None
+    workspace_id: Optional[str] = None
+
+    # ------------------------------------------------------------------
+    # RAG CONFIGURATION
+    # ------------------------------------------------------------------
+
+    # Maximum number of retrieved chunks per query.
+    max_docs_per_query: int = 8
+
+    # Maximum token budget reserved for RAG content.
+    max_rag_tokens: int = 4096
+
+    # Optional semantic score threshold for filtering low-quality hits.
+    rag_score_threshold: Optional[float] = None
+
+    # ------------------------------------------------------------------
+    # WEB SEARCH CONFIGURATION
+    # ------------------------------------------------------------------
+
+    # Pre-configured executor capable of performing web search queries.
+    # If None, web search is effectively unavailable.
+    websearch_executor: Optional[WebSearchExecutor] = None
+
+    # ------------------------------------------------------------------
+    # TOOLS / AGENT EXECUTION
+    # ------------------------------------------------------------------
+
+    # Optional tools agent responsible for:
+    #   - planning tool calls,
+    #   - invoking tools,
+    #   - merging tool results into the final answer.
+    #
+    # If None, tools cannot be used regardless of tools_mode.
+    tools_agent: Optional[ToolsAgent] = None
+
+    # High-level policy defining whether tools may or must be used:
+    #   - "off": do not use tools at all.
+    #   - "auto": runtime may call tools if useful.
+    #   - "required": runtime must use at least one tool.
+    tools_mode: ToolChoiceMode = "auto"
+
+    # Determines how much contextual information the tools agent receives:
+    #
+    #   - "current_message_only":
+    #       ToolsAgent sees only the newest user query.
+    #       Useful for strict function-calling, cost optimization
+    #       and predictable single-turn behavior.
+    #
+    #   - "conversation":
+    #       ToolsAgent sees full conversation history up to this point.
+    #
+    #   - "full":
+    #       ToolsAgent receives the same context as the LLM:
+    #       system → profile → history → RAG → websearch.
+    #
+    tools_context_scope: ToolsContextScope = ToolsContextScope.CURRENT_MESSAGE_ONLY
+
+
+    # Memory toggles
+    enable_user_profile_memory: bool = True
+    enable_org_profile_memory: bool = True
+    enable_long_term_memory: bool = True
+
+    # ------------------------------------------------------------------
+    # MISC METADATA
+    # ------------------------------------------------------------------
+
+    # Arbitrary metadata for app-specific instrumentation or tags.
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+    # ------------------------------------------------------------------
+    # REASONING / CHAIN-OF-THOUGHT
+    # ------------------------------------------------------------------
+
+    reasoning_config: Optional[ReasoningConfig] = None
+
+
+    @property
+    def reasoning_mode(self) -> ReasoningMode:
+        """
+        Returns the active reasoning mode.
+        Defaults to DIRECT if no reasoning_config is provided.
+        """
+
+        if self.reasoning_config is None:
+            return ReasoningMode.DIRECT
+        
+        return self.reasoning_config.mode
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/context/__init__.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.context
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/context/context_builder.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.context.context_builder
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=context_builder.py
+# LINES: 485
+# SHA256: 2cca85dc5dcbde6059a625ff220ac733db5b694ea433527fe9f57be923ab01e6
+# SYMBOLS:
+#   - class RetrievedChunk
+#   - class BuiltContext
+#   - class ContextBuilder
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+"""
+Context builder for Drop-In Knowledge Mode.
+
+This module is responsible for:
+- Deciding whether RAG should be used for a given request.
+- Retrieving relevant document chunks from the vector store for the current session.
+- Providing:
+    * a RAG-specific system prompt,
+    * a list of retrieved chunks,
+    * debug metadata for observability.
+
+Design principles:
+- ContextBuilder does NOT own or build conversation history.
+  Conversation history is managed by SessionStore and composed by the runtime engine.
+- ContextBuilder is ignorant of:
+    * LLM adapter details,
+    * how messages are serialized for OpenAI/Gemini/Claude,
+    * how RouteInfo is built.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
+
+from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
+from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
+
+
+@dataclass
+class RetrievedChunk:
+    """
+    Lightweight representation of a single retrieved document chunk.
+
+    This is an internal structure used by Drop-In Knowledge Mode.
+    It wraps whatever the underlying vector store returns into a
+    stable shape that can be:
+    - injected into prompts,
+    - exposed in debug traces,
+    - later used for citations.
+    """
+
+    id: str
+    text: str
+    metadata: Dict[str, Any]
+    score: float
+
+
+@dataclass
+class BuiltContext:
+    """
+    Result of ContextBuilder.build_context(...).
+
+    This object is consumed by the runtime engine and prompt builders:
+    - system_prompt: RAG-related system message for the LLM.
+    - history_messages: conversation history built by the runtime / SessionStore.
+      ContextBuilder does not build or trim history; it only passes through
+      the list it receives from the engine.
+    - retrieved_chunks: RAG context (can be serialized into prompt).
+    - rag_debug_info: structured debug trace to be surfaced in
+      RuntimeAnswer.debug_trace["rag"].
+    """
+    history_messages: List[ChatMessage]
+    retrieved_chunks: List[RetrievedChunk]
+    rag_debug_info: Dict[str, Any]
+
+
+class ContextBuilder:
+    """
+    Build RAG-related context for Drop-In Knowledge Mode.
+
+    Responsibilities:
+    - Decide whether to use RAG for a given (session, request).
+    - Retrieve relevant document chunks from the vector store using
+      session/user/tenant/workspace metadata.
+
+    This class does NOT:
+    - build or trim conversation history,
+    - know anything about tools,
+    - know anything about user/organization profiles.
+    """
+
+    def __init__(
+        self,
+        config: RuntimeConfig,
+        vectorstore_manager: VectorstoreManager,
+        *,
+        collection_name: Optional[str] = None,
+    ) -> None:
+        """
+        Args:
+            config: Drop-In Knowledge Mode runtime configuration.
+            vectorstore_manager: Shared vector store manager instance.
+            collection_name: Optional explicit collection/index name.
+                If None, the manager's default collection should be used.
+        """
+        self._config = config
+        self._vectorstore = vectorstore_manager
+        self._collection_name = collection_name
+
+    
+    async def build_context(
+        self,
+        session: ChatSession,
+        request: RuntimeRequest,
+        base_history: List[ChatMessage]
+    ) -> BuiltContext:
+        """
+        High-level orchestration method.
+
+        Steps:
+        1. Receive base conversation history (already built/reduced by the runtime).
+        2. Decide whether RAG should be used for this request.
+        3. If yes, retrieve document chunks from the vector store.
+        4. Compose a RAG-specific system prompt (for now: DEFAULT_SYSTEM_PROMPT).
+        5. Return BuiltContext with:
+            - system_prompt,
+            - reduced history_messages,
+            - retrieved_chunks,
+            - structured RAG debug info.
+
+        Important:
+        - Conversation history comes from the ChatSession, which is populated
+          by SessionStore. ContextBuilder does NOT own any persistence layer.
+        """
+
+        # 1. Decide whether we should use RAG for this request
+        use_rag, rag_reason = self._should_use_rag(session, request)
+
+        if use_rag:
+            retrieved_chunks, rag_debug_info = self._retrieve_for_session(session, request)
+        else:
+            # No RAG for this request – keep debug info explicit so it is easy
+            # to see in RuntimeAnswer.debug_trace why RAG was skipped.
+            retrieved_chunks = []
+            rag_debug_info = {
+                "enabled": bool(self._config.enable_rag),
+                "used": False,
+                "reason": rag_reason,
+                "hits_count": 0,
+                "where_filter": {},
+                "top_k": int(self._config.max_docs_per_query),
+                "score_threshold": self._config.rag_score_threshold,
+                "hits": [],
+            }
+
+        return BuiltContext(
+            history_messages=list(base_history or []),
+            retrieved_chunks=retrieved_chunks,
+            rag_debug_info=rag_debug_info,
+        )
+
+
+    # -------------------------------------------------------------------------
+    # Internal helpers
+    # -------------------------------------------------------------------------
+
+    def _should_use_rag(
+        self,
+        session: ChatSession,
+        request: RuntimeRequest,
+    ) -> Tuple[bool, str]:
+        """
+        Decide whether to use RAG for this request.
+
+        Current policy (intentionally simple and predictable):
+
+        - If RAG is disabled in the runtime config -> do not use it.
+        - If RAG is enabled -> always query the vector store.
+
+        Whether any chunks are actually retrieved depends on vector store
+        contents and metadata filters.
+
+        More sophisticated heuristics (e.g. based on attachments or message type)
+        can be added later without changing the engine API.
+        """
+        if not self._config.enable_rag:
+            return False, "rag_disabled_in_config"
+
+        return True, "rag_enabled_in_config"
+
+    
+    def _retrieve_for_session(
+        self,
+        session: ChatSession,
+        request: RuntimeRequest,
+    ) -> Tuple[List[RetrievedChunk], Dict[str, Any]]:
+        """
+        Perform a vector store query for this session.
+
+        Strategy:
+        - Build a logical `where` filter using:
+            * session_id
+            * user_id
+            * tenant_id
+            * workspace_id
+          (optionally you can extend this in the future with additional
+           filters derived from request.metadata or attachments).
+        - Use `request.message` as the query text.
+        - Compute query embeddings via the configured embedding manager.
+        - Call `IntergraxVectorstoreManager.query(...)` with `query_embeddings`.
+        """
+        # 1) Build the logical `where` based on session and request metadata        
+        query_text = request.message
+        query_text = str(query_text or "")
+
+        # Base metadata filters – this keeps all chunks that belong to this
+        # logical conversation scope (session/user/tenant/workspace).
+        where: Dict[str, Any] = {}
+        for attr in ("id", "user_id", "tenant_id", "workspace_id"):            
+            value = getattr(session, attr) if hasattr(session, attr) else None
+            if value is not None:
+                # We normalize "id" to "session_id" for clarity in the metadata.
+                if attr == "id":
+                    where["session_id"] = value
+                else:
+                    where[attr] = value
+
+        # NOTE:
+        # We intentionally do NOT filter by a single attachment_id here, because
+        # RuntimeRequest currently exposes attachments as a list[AttachmentRef],
+        # not as a single "attachment_id". At this stage we want to retrieve
+        # all chunks for the given session/user/tenant/workspace.
+        #
+        # In the future, when the attachment model is fully stabilized, you can
+        # extend this method to support additional scoping such as:
+        # - "only chunks for the last uploaded attachment",
+        # - "only chunks for a specific AttachmentRef.id",
+        # based on request.attachments or request.metadata.
+
+        max_docs: int = int(self._config.max_docs_per_query)
+        score_threshold: Optional[float] = self._config.rag_score_threshold
+
+        # Translate logical `where` into backend-specific filter
+        backend_where = self._build_backend_where(where)
+
+        # 2) Get embedding manager from runtime config
+        embedding_manager = self._config.embedding_manager
+        if embedding_manager is None:
+            # Without an embedding manager we cannot perform semantic search.
+            # We return an empty result with a clear diagnostic reason.
+            return [], {
+                "enabled": self._config.enable_rag,
+                "used": False,
+                "reason": "no_embedding_manager_in_config",
+                "where_filter": where,
+                "top_k": max_docs,
+                "score_threshold": score_threshold,
+                "hits": [],
+            }
+
+        # 3) Compute query embeddings using IntergraxEmbeddingManager API
+        # Preferred path: single-text embedding
+        try:
+            query_embeddings = embedding_manager.embed_one(query_text)
+        except Exception:
+            # Fallback: some providers might only support batch embedding
+            query_embeddings = embedding_manager.embed_texts([query_text])
+
+        # Normalize embeddings shape for vector store:
+        # - numpy array: ensure 2D
+        # - plain list: wrap 1D into batch-of-1
+        if hasattr(query_embeddings, "ndim"):
+            try:
+                if query_embeddings.ndim == 1:
+                    query_embeddings = query_embeddings.reshape(1, -1)
+            except Exception:
+                pass
+        else:
+            if isinstance(query_embeddings, (list, tuple)) and query_embeddings:
+                first = query_embeddings[0]
+                if isinstance(first, (float, int)):
+                    # 1D -> wrap into batch
+                    query_embeddings = [query_embeddings]
+
+        # 4) Call vector store with embeddings + backend_where
+        hits_dict = self._vectorstore.query(
+            query_embeddings=query_embeddings,
+            top_k=max_docs,
+            where=backend_where,
+            include_embeddings=False,
+        )
+
+        # 5) Normalize hits into RetrievedChunk objects
+        retrieved_chunks = self._map_hits_to_chunks(hits_dict)
+
+        # Apply score_threshold as an extra safety net
+        if score_threshold is not None:
+            filtered_chunks: List[RetrievedChunk] = []
+            for ch in retrieved_chunks:
+                if ch.score >= score_threshold:
+                    filtered_chunks.append(ch)
+            retrieved_chunks = filtered_chunks
+
+        # 6) Build RAG debug info (backend-agnostic view)
+        rag_used = bool(retrieved_chunks)
+
+        rag_debug_info: Dict[str, Any] = {
+            "enabled": bool(self._config.enable_rag),
+            "used": rag_used,
+            "hits_count": len(retrieved_chunks or []),
+            "where_filter": where,
+            "top_k": max_docs,
+            "score_threshold": score_threshold,
+        }
+
+        # Only store full hit metadata if something was actually retrieved
+        if rag_used:
+            rag_debug_info["hits"] = [
+                {
+                    "id": ch.id,
+                    "score": round(ch.score, 4),
+                    "metadata": ch.metadata,
+                    "preview": ch.text[:200],
+                }
+                for ch in retrieved_chunks
+            ]
+        else:
+            rag_debug_info["hits"] = []
+
+        return retrieved_chunks, rag_debug_info
+
+
+    def _build_backend_where(self, where: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Translate a simple metadata dict into a backend-compatible `where` filter.
+
+        For a Chroma-like backend we produce:
+
+            {
+                "$and": [
+                    {"session_id": {"$eq": "..."}},
+                    {"user_id": {"$eq": "..."}},
+                    ...
+                ]
+            }
+
+        If the input dict is empty, returns None (no filter).
+        """
+        if not where:
+            return None
+
+        conditions: List[Dict[str, Any]] = []
+        for key, value in where.items():
+            if value is None:
+                continue
+            conditions.append({key: {"$eq": value}})
+
+        if not conditions:
+            return None
+
+        return {"$and": conditions}
+
+    def _map_hits_to_chunks(self, hits: Any) -> List[RetrievedChunk]:
+        """
+        Normalize raw hits from the vector store into RetrievedChunk objects.
+
+        Supported patterns:
+        - Dict with parallel lists (Chroma-style).
+        - Dict with a `matches` list.
+        - Flat list or list-of-lists of dict-like objects.
+        """
+        if not hits:
+            return []
+
+        if isinstance(hits, dict):
+            if "matches" in hits and isinstance(hits["matches"], list):
+                flat_hits = hits["matches"]
+            else:
+                docs = (
+                    hits.get("documents")
+                    or hits.get("texts")
+                    or hits.get("contents")
+                )
+                metas = hits.get("metadatas") or hits.get("metadata")
+                scores = hits.get("scores") or hits.get("distances")
+                ids = hits.get("ids") or hits.get("id")
+
+                if docs is None:
+                    return []
+
+                if isinstance(docs, list) and docs and isinstance(docs[0], list):
+                    docs_list = docs[0]
+                    metas_list = metas[0] if isinstance(metas, list) and metas else metas
+                    scores_list = scores[0] if isinstance(scores, list) and scores else scores
+                    ids_list = ids[0] if isinstance(ids, list) and ids else ids
+                else:
+                    docs_list = docs
+                    metas_list = metas
+                    scores_list = scores
+                    ids_list = ids
+
+                flat_hits = []
+                n = len(docs_list)
+
+                for i in range(n):
+                    doc_text = docs_list[i]
+
+                    if isinstance(metas_list, (list, tuple)) and i < len(metas_list):
+                        meta_i = metas_list[i]
+                    else:
+                        meta_i = metas_list or {}
+
+                    if isinstance(scores_list, (list, tuple)) and i < len(scores_list):
+                        score_i = scores_list[i]
+                    else:
+                        score_i = scores_list
+
+                    if isinstance(ids_list, (list, tuple)) and i < len(ids_list):
+                        id_i = ids_list[i]
+                    else:
+                        id_i = ids_list
+
+                    flat_hits.append(
+                        {
+                            "id": id_i,
+                            "text": doc_text,
+                            "metadata": meta_i,
+                            "distance": score_i,
+                        }
+                    )
+        else:
+            if isinstance(hits, list) and hits and isinstance(hits[0], list):
+                flat_hits = hits[0]
+            else:
+                flat_hits = hits
+
+        chunks: List[RetrievedChunk] = []
+
+        for raw in flat_hits:
+            if not isinstance(raw, dict):
+                raw_dict = raw.__dict__ if hasattr(raw, "__dict__") else {}
+            else:
+                raw_dict = raw
+
+            metadata = raw_dict.get("metadata") or raw_dict.get("meta") or {}
+            if not isinstance(metadata, dict):
+                metadata = {"_raw_metadata": metadata}
+
+            raw_id = (
+                raw_dict.get("id")
+                or raw_dict.get("doc_id")
+                or metadata.get("id")
+                or metadata.get("doc_id")
+                or "unknown"
+            )
+
+            raw_text = (
+                raw_dict.get("text")
+                or raw_dict.get("page_content")
+                or raw_dict.get("content")
+                or ""
+            )
+
+            raw_score = raw_dict.get("score")
+            if raw_score is None:
+                raw_score = raw_dict.get("distance")
+                if raw_score is not None:
+                    try:
+                        raw_score = 1.0 / (1.0 + float(raw_score))
+                    except Exception:
+                        raw_score = 0.0
+
+            try:
+                score = float(raw_score) if raw_score is not None else 0.0
+            except Exception:
+                score = 0.0
+
+            chunks.append(
+                RetrievedChunk(
+                    id=str(raw_id),
+                    text=str(raw_text),
+                    metadata=metadata,
+                    score=score,
+                )
+            )
+
+        return chunks
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/context/engine_history_layer.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=engine_history_layer.py
+# LINES: 558
+# SHA256: f27bd61d0560ee65fb2aada06a34b077ac56f2e4879d5a9bde0f37dce4cd3d8c
+# SYMBOLS:
+#   - class HistoryCompressionResult
+#   - class HistoryLayer
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import HistorySummaryPromptBuilder
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import HistoryCompressionStrategy, RuntimeRequest
+from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
+from intergrax.runtime.drop_in_knowledge_mode.session.session_manager import SessionManager
+
+
+@dataclass
+class HistoryCompressionResult:
+    """
+    Result of applying a history compression strategy.
+
+    This object groups both the compressed messages (the actual base history
+    to be sent to the LLM) and all diagnostic / bookkeeping information
+    that is useful for debugging and telemetry.
+    """
+
+    # Final history that should be used as the base conversation context.
+    history: List[ChatMessage]
+
+    # Whether any truncation or summarization was applied.
+    truncated: bool
+
+    # Strategy that was actually used. This may differ from the requested
+    # strategy in case of fallbacks (e.g. summarization failing and falling
+    # back to pure truncation).
+    effective_strategy: HistoryCompressionStrategy
+
+    # Whether a summarization step was successfully used.
+    summary_used: bool
+
+    # Token budgets used during compression. These are best-effort diagnostic
+    # values and may be zero if the strategy did not rely on them.
+    summary_tokens_budget: int
+    tail_tokens_budget: int
+
+    # Raw metrics for the original history.
+    raw_history_messages: int
+    raw_history_tokens: Optional[int]
+
+    # Budget that was passed into the compressor for the history.
+    history_budget_tokens: Optional[int]
+
+class HistoryLayer:
+    
+    def __init__(
+        self,
+        config: RuntimeConfig,
+        session_manager: SessionManager,
+        history_prompt_builder: HistorySummaryPromptBuilder,
+    ) -> None:
+        """
+        HistoryLayer encapsulates all logic related to:
+
+          - loading raw conversation history,
+          - counting tokens,
+          - applying history compression strategies,
+          - updating RuntimeState with base_history and debug info.
+        """
+        self._config = config
+        self._session_manager = session_manager
+        self._history_prompt_builder = history_prompt_builder
+
+    
+    async def build_base_history(self, state: RuntimeState) -> None:
+        """
+        Load and preprocess the conversation history for the current session.
+
+        This step is the single place where we:
+          - fetch the full session history from SessionStore,
+          - compute token usage (if the adapter supports it),
+          - apply token-based truncation according to the per-request
+            history compression strategy.
+
+        The resulting `state.base_history` is treated as the canonical,
+        preprocessed conversation history for all subsequent steps.
+        """
+        session = state.session
+        assert session is not None, "Session must be set before building history."
+
+        # 1. Load raw history from SessionStore.
+        raw_history: List[ChatMessage] = await self._build_chat_history(session)
+
+        # 2. Compute token usage for the raw history, if possible.
+        raw_token_count = self._count_tokens_for_messages(raw_history)
+        state.history_token_count = raw_token_count
+
+        # 3. Resolve per-request settings.
+        request = state.request
+        strategy = request.history_compression_strategy
+        adapter = self._config.llm_adapter
+
+        # If we cannot count tokens at all, we cannot apply token-based
+        # trimming. In that case we simply keep the full history and log
+        # what we know in a unified way.
+        if raw_token_count is None:
+            compression_result = HistoryCompressionResult(
+                history=raw_history,
+                truncated=False,
+                effective_strategy=strategy,
+                summary_used=False,
+                summary_tokens_budget=0,
+                tail_tokens_budget=0,
+                raw_history_messages=len(raw_history),
+                raw_history_tokens=None,
+                history_budget_tokens=None,
+            )
+
+            state.base_history = compression_result.history
+            state.debug_trace["base_history_length"] = len(compression_result.history)
+            state.debug_trace["history_tokens"] = self._build_history_debug_trace(
+                requested_strategy=strategy,
+                compression_result=compression_result,
+            )
+            return
+
+        # 4. Compute a token budget for history based on:
+        #    - the model context window,
+        #    - the requested max_output_tokens (if any).
+        #
+        # We use a simple, conservative heuristic:
+        #   - reserve a portion of the context window for the model output,
+        #   - reserve a portion of the remaining input for system instructions,
+        #     memory, RAG, websearch, tools, etc.
+        #   - whatever remains is the history budget.
+        context_window = adapter.context_window_tokens
+
+        # Determine how many tokens we should reserve for the output.
+        # If the user does not specify max_output_tokens, we assume
+        # roughly 1/4 of the context window is available for the output.
+        if request.max_output_tokens is not None:
+            reserved_for_output = request.max_output_tokens
+            # Never reserve more than half of the context window for output.
+            if reserved_for_output > context_window // 2:
+                reserved_for_output = context_window // 2
+        else:
+            reserved_for_output = context_window // 4
+
+        if reserved_for_output < 0:
+            reserved_for_output = 0
+        if reserved_for_output >= context_window:
+            # Degenerate case – leave at least some room for input.
+            reserved_for_output = context_window // 2
+
+        # Budget for the entire input (system + history + RAG + tools...).
+        input_budget = context_window - reserved_for_output
+
+        if input_budget <= 0:
+            # Extremely small or misconfigured budget; in this case we keep
+            # the history as-is and log the situation in a unified way.
+            compression_result = HistoryCompressionResult(
+                history=raw_history,
+                truncated=False,
+                effective_strategy=strategy,
+                summary_used=False,
+                summary_tokens_budget=0,
+                tail_tokens_budget=0,
+                raw_history_messages=len(raw_history),
+                raw_history_tokens=raw_token_count,
+                history_budget_tokens=0,
+            )
+
+            state.base_history = compression_result.history
+            state.debug_trace["base_history_length"] = len(compression_result.history)
+            state.debug_trace["history_tokens"] = self._build_history_debug_trace(
+                requested_strategy=strategy,
+                compression_result=compression_result,
+            )
+            return
+
+        # Reserve a portion of the input budget for non-history input
+        # (system instructions, memory, RAG/websearch/tools context).
+        # The remaining portion becomes the token budget for history.
+        reserved_for_meta = input_budget // 3  # ~1/3 for meta context
+        if reserved_for_meta < 0:
+            reserved_for_meta = 0
+        if reserved_for_meta >= input_budget:
+            reserved_for_meta = input_budget // 2
+
+        history_budget_tokens = input_budget - reserved_for_meta
+
+        # 5. Apply history compression strategy.
+        compression_result = self._compress_history(
+            request=request,
+            raw_history=raw_history,
+            raw_token_count=raw_token_count,
+            strategy=strategy,
+            history_budget_tokens=history_budget_tokens,
+        )
+
+        state.base_history = compression_result.history
+
+        # 6. Update debug trace with history-related info and token stats.
+        state.debug_trace["base_history_length"] = len(compression_result.history)
+        state.debug_trace["history_tokens"] = self._build_history_debug_trace(
+            requested_strategy=strategy,
+            compression_result=compression_result,
+        )
+
+
+    async def _build_chat_history(self, session: ChatSession) -> List[ChatMessage]:
+        """
+        Load raw conversation history for the given session.
+
+        This method is responsible only for fetching history from SessionStore.
+        Any model-specific preprocessing (truncation, summarization, token
+        accounting) should happen in `_step_build_base_history`, not here.
+        """
+        return await self._session_manager.get_history(session_id=session.id)
+
+
+    def _build_history_debug_trace(
+            self,
+            *,
+            requested_strategy: HistoryCompressionStrategy,
+            compression_result: HistoryCompressionResult,
+        ) -> dict:
+            """
+            Build a unified debug trace dictionary for history compression.
+            Ensures that all call paths (OFF, no-token, no-budget, full compression)
+            produce the exact same set of keys.
+            """
+            return {
+                "raw_history_messages": compression_result.raw_history_messages,
+                "raw_history_tokens": compression_result.raw_history_tokens,
+                "history_budget_tokens": compression_result.history_budget_tokens,
+                "strategy_requested": requested_strategy.value,
+                "strategy_effective": compression_result.effective_strategy.value,
+                "truncated": compression_result.truncated,
+                "summary_used": compression_result.summary_used,
+                "summary_tokens_budget": compression_result.summary_tokens_budget,
+                "tail_tokens_budget": compression_result.tail_tokens_budget,
+            }
+    
+
+    def _count_tokens_for_messages(self, messages: List[ChatMessage]) -> Optional[int]:
+        """
+        Best-effort token counting for a list of ChatMessage objects.
+
+        Design:
+          - Delegates to the underlying LLM adapter if it exposes a
+            `count_messages_tokens` method.
+          - Returns None if no token counter is available or an error occurs.
+
+        Note:
+          - We deliberately avoid any dynamic attribute lookup (no getattr),
+            to keep the integration surface with the adapter explicit and
+            stable.
+        """
+        adapter = self._config.llm_adapter
+        if adapter is None:
+            return None
+
+        try:
+            # The adapter is expected to implement this method.
+            return int(adapter.count_messages_tokens(messages))
+        except AttributeError:
+            # Adapter does not implement token counting – leave it as None.
+            return None
+        except Exception:
+            # Any other error should not break the runtime; we just skip
+            # token accounting in this case.
+            return None
+
+
+    def _truncate_history_by_tokens(
+        self,
+        messages: List[ChatMessage],
+        max_tokens: int,
+    ) -> List[ChatMessage]:
+        """
+        Truncate conversation history to fit within a token budget.
+
+        Strategy:
+        - Keep the most recent messages (suffix of the history).
+        - Walk the history from the end backwards and accumulate messages
+            until the token budget is exhausted.
+        - If token counting is not available, this method returns the
+            input list unchanged.
+
+        Important:
+        - This helper is intentionally conservative; it does NOT attempt to
+            summarize older messages, it only drops them.
+        - Summarization-based compression is implemented on top of this
+            function in `_compress_history`.
+        """
+        # Degenerate cases – no budget or empty history.
+        if max_tokens is None or max_tokens <= 0:
+            return []
+
+        if not messages:
+            return []
+
+        # If we cannot count tokens at all, we cannot safely truncate.
+        # In that case we keep the history as-is and let the caller decide
+        # how to handle potential context overflow.
+        if self._count_tokens_for_messages(messages) is None:
+            return messages
+
+        truncated: List[ChatMessage] = []
+
+        # Walk from the end (most recent) to the beginning.
+        # We always keep a suffix of the conversation in chronological order.
+        for msg in reversed(messages):
+            # Candidate history if we include this message at the front
+            # of the already-kept suffix.
+            candidate = [msg] + truncated
+            candidate_tokens = self._count_tokens_for_messages(candidate)
+            if candidate_tokens is None:
+                # If counting suddenly fails, bail out and keep what we have.
+                break
+
+            if candidate_tokens > max_tokens:
+                # Adding this message would exceed the budget; stop here.
+                break
+
+            # Safe to include – prepend to keep chronological order.
+            truncated.insert(0, msg)
+
+        # If we ended up with an empty truncated list (e.g. a single message
+        # already exceeds the budget), we at least keep the last message.
+        if not truncated and messages:
+            truncated = [messages[-1]]
+
+        return truncated
+    
+    
+    def _compress_history(
+        self,
+        *,
+        request: RuntimeRequest,
+        raw_history: List[ChatMessage],
+        raw_token_count: Optional[int],
+        strategy: HistoryCompressionStrategy,
+        history_budget_tokens: int,
+    ) -> HistoryCompressionResult:
+        """
+        Apply the configured history compression strategy to the raw history
+        and return a structured result object with both the final history
+        and diagnostic metadata.
+        """
+        # Defaults for the result – will be updated below.
+        effective_strategy = strategy
+        truncated = False
+        summary_used = False
+        summary_tokens_budget = 0
+        tail_tokens_budget = 0
+
+        raw_len = len(raw_history)
+
+        # Helper to build the result object in one place.
+        def _build_result(history: List[ChatMessage]) -> HistoryCompressionResult:
+            return HistoryCompressionResult(
+                history=history,
+                truncated=truncated,
+                effective_strategy=effective_strategy,
+                summary_used=summary_used,
+                summary_tokens_budget=summary_tokens_budget,
+                tail_tokens_budget=tail_tokens_budget,
+                raw_history_messages=raw_len,
+                raw_history_tokens=raw_token_count,
+                history_budget_tokens=history_budget_tokens,
+            )
+
+        # 0) OFF → do not touch the history at all.
+        if strategy == HistoryCompressionStrategy.OFF:
+            effective_strategy = HistoryCompressionStrategy.OFF
+            return _build_result(raw_history)
+
+        # 1) If we have no token info or a non-positive budget, we cannot
+        # meaningfully compress the history. Keep it as-is.
+        if raw_token_count is None or history_budget_tokens <= 0:
+            # We keep the requested strategy in effective_strategy for
+            # diagnostic purposes, but we do not modify the history.
+            return _build_result(raw_history)
+
+        # 2) If history already fits into the budget -> nothing to do.
+        if raw_token_count <= history_budget_tokens:
+            return _build_result(raw_history)
+
+        # 3) Pure truncation strategy.
+        if strategy == HistoryCompressionStrategy.TRUNCATE_OLDEST:
+            compressed = self._truncate_history_by_tokens(
+                messages=raw_history,
+                max_tokens=history_budget_tokens,
+            )
+            truncated = True
+            effective_strategy = HistoryCompressionStrategy.TRUNCATE_OLDEST
+            tail_tokens_budget = history_budget_tokens
+            return _build_result(compressed)
+
+        # 4) Summarization-based strategies.
+        if strategy in (
+            HistoryCompressionStrategy.SUMMARIZE_OLDEST,
+            HistoryCompressionStrategy.HYBRID,
+        ):
+            # If the budget is extremely small, summarization will not be
+            # very helpful. Fall back to pure truncation.
+            if history_budget_tokens <= 64:
+                compressed = self._truncate_history_by_tokens(
+                    messages=raw_history,
+                    max_tokens=history_budget_tokens,
+                )
+                truncated = True
+                effective_strategy = HistoryCompressionStrategy.TRUNCATE_OLDEST
+                tail_tokens_budget = history_budget_tokens
+                return _build_result(compressed)
+
+            # Basic split of the budget between summary and tail.
+            summary_max_tokens = max(
+                32,
+                min(history_budget_tokens // 4, 256),
+            )
+            tail_budget = history_budget_tokens - summary_max_tokens
+
+            if tail_budget <= 32:
+                tail_budget = max(32, history_budget_tokens // 2)
+                summary_max_tokens = history_budget_tokens - tail_budget
+
+            summary_tokens_budget = summary_max_tokens
+            tail_tokens_budget = tail_budget
+
+            # Build the most recent tail first.
+            tail_messages = self._truncate_history_by_tokens(
+                messages=raw_history,
+                max_tokens=tail_budget,
+            )
+            if not tail_messages:
+                compressed = self._truncate_history_by_tokens(
+                    messages=raw_history,
+                    max_tokens=history_budget_tokens,
+                )
+                truncated = True
+                effective_strategy = HistoryCompressionStrategy.TRUNCATE_OLDEST
+                tail_tokens_budget = history_budget_tokens
+                return _build_result(compressed)
+
+            tail_len = len(tail_messages)
+            prefix_len = max(0, len(raw_history) - tail_len)
+            older_messages = raw_history[:prefix_len]
+
+            if not older_messages:
+                # Nothing older to summarize; we effectively behave like pure
+                # truncation here, but we still mark the requested strategy.
+                truncated = True
+                effective_strategy = strategy
+                return _build_result(tail_messages)
+
+            prompt_bundle = self._history_prompt_builder.build_history_summary_prompt(
+                request=request,
+                strategy=strategy,
+                older_messages=older_messages,
+                tail_messages=tail_messages,
+            )
+
+            summary_msg = self._summarize_history_chunk(
+                messages=older_messages,
+                max_summary_tokens=summary_max_tokens,
+                system_prompt=prompt_bundle.system_prompt,
+            )
+
+            if summary_msg is None:
+                # Summarization failed; fall back to truncation.
+                compressed = self._truncate_history_by_tokens(
+                    messages=raw_history,
+                    max_tokens=history_budget_tokens,
+                )
+                truncated = True
+                effective_strategy = HistoryCompressionStrategy.TRUNCATE_OLDEST
+                tail_tokens_budget = history_budget_tokens
+                summary_tokens_budget = 0
+                return _build_result(compressed)
+
+            compressed_history: List[ChatMessage] = [summary_msg]
+            compressed_history.extend(tail_messages)
+
+            truncated = True
+            summary_used = True
+            effective_strategy = strategy
+
+            return _build_result(compressed_history)
+
+        # 5) Unknown strategy -> keep as-is.
+        return _build_result(raw_history)
+
+
+
+    
+    def _summarize_history_chunk(
+        self,
+        messages: List[ChatMessage],
+        max_summary_tokens: int,
+        system_prompt: str,
+    ) -> Optional[ChatMessage]:
+        """
+        Summarize a block of older conversation history into a single
+        compact system-level message.
+
+        This helper uses the core LLM adapter synchronously. The summary
+        message is NOT persisted in the SessionStore; it is meant to be
+        injected into the prompt as a synthetic meta-history.
+        """
+        if not messages:
+            return None
+
+        if max_summary_tokens <= 0:
+            return None
+
+        adapter = self._config.llm_adapter
+        if adapter is None:
+            return None
+
+        # Build a simple, robust summarization prompt.
+        summary_prompt: List[ChatMessage] = [
+            ChatMessage(
+                role="system",
+                content=system_prompt,
+            )
+        ]
+        summary_prompt.extend(messages)
+
+        generate_kwargs: Dict[str, Any] = {}
+        # We keep the summary small and controlled by a separate token budget.
+        if max_summary_tokens > 0:
+            generate_kwargs["max_tokens"] = max_summary_tokens
+
+        try:
+            raw = adapter.generate_messages(summary_prompt, **generate_kwargs)
+        except Exception:
+            # If summarization fails for any reason, we simply return None
+            # and let the caller fall back to truncation.
+            return None
+        
+        if not isinstance(raw, str):
+            return None
+
+        if not raw:
+            return None
+        
+        text = raw.strip()
+
+        # We wrap the summary in a system message so that it is clearly
+        # separated from user/assistant turns.
+        return ChatMessage(
+            role="system",
+            content=f"Conversation summary (earlier turns):\n{text}",
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/__init__.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=runtime.py
+# LINES: 1183
+# SHA256: d92fff0a98555279de5342c2a60f2a0ae8ef08919e05986dc2de5d257432ede9
+# SYMBOLS:
+#   - class DropInKnowledgeRuntime
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+"""
+Core runtime engine for Drop-In Knowledge Mode.
+
+This module defines the `DropInKnowledgeRuntime` class, which:
+  - loads or creates chat sessions,
+  - appends user messages,
+  - builds a conversation history for the LLM,
+  - augments context with RAG, web search and tools,
+  - produces a `RuntimeAnswer` object as a high-level response.
+
+The goal is to provide a single, simple entrypoint that can be used from
+FastAPI, Streamlit, MCP-like environments, CLI tools, etc.
+
+Refactored as a stateful pipeline:
+
+  - RuntimeState holds all intermediate data (session, history, flags, debug).
+  - Each step mutates the state and can be inspected in isolation.
+  - ask() just wires the steps together in a readable order.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+from datetime import datetime, timezone
+from typing import List, Optional, Dict, Any
+
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
+from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
+from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import AttachmentIngestionService, IngestionResult
+from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import (
+    DefaultHistorySummaryPromptBuilder,
+    HistorySummaryPromptBuilder,
+)
+from intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder import (
+    DefaultRagPromptBuilder,
+    RagPromptBuilder,
+)
+from intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer import ReasoningLayer
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
+    RuntimeRequest,
+    RuntimeAnswer,
+    RouteInfo,
+    RuntimeStats,
+    ToolCallInfo,
+)
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+
+from intergrax.llm.messages import ChatMessage
+
+from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import (
+    FileSystemAttachmentResolver,
+)
+from intergrax.runtime.drop_in_knowledge_mode.context.context_builder import (
+    ContextBuilder,
+    RetrievedChunk,
+)
+from intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder import (
+    DefaultWebSearchPromptBuilder,
+    WebSearchPromptBuilder,
+)
+from intergrax.runtime.drop_in_knowledge_mode.session.session_manager import SessionManager
+from intergrax.websearch.service.websearch_executor import WebSearchExecutor
+
+
+# ----------------------------------------------------------------------
+# DropInKnowledgeRuntime
+# ----------------------------------------------------------------------
+
+
+class DropInKnowledgeRuntime:
+    """
+    High-level conversational runtime for the Intergrax framework.
+
+    This class is designed to behave like a ChatGPT/Claude-style engine,
+    but fully powered by Intergrax components (LLM adapters, RAG, web search,
+    tools, memory, etc.).
+
+    Responsibilities (current stage):
+      - Accept a RuntimeRequest.
+      - Load or create a ChatSession via SessionManager.
+      - Append the user message to the session.
+      - Build an LLM-ready context:
+          * system prompt(s),
+          * chat history from SessionManager,
+          * optional retrieved chunks from documents (RAG),
+          * optional web search context (if enabled),
+          * optional tools results.
+      - Call the main LLM adapter once with the fully enriched context
+        to produce the final answer.
+      - Append the assistant message to the session.
+      - Return a RuntimeAnswer with the final answer text and metadata.
+    """
+
+    def __init__(
+        self,
+        config: RuntimeConfig,
+        session_manager: SessionManager,
+        ingestion_service: Optional[AttachmentIngestionService] = None,
+        context_builder: Optional[ContextBuilder] = None,
+        rag_prompt_builder: Optional[RagPromptBuilder] = None,
+        websearch_prompt_builder: Optional[WebSearchPromptBuilder] = None,
+        history_prompt_builder: Optional[HistorySummaryPromptBuilder] = None,
+    ) -> None:
+
+        self._config = config
+        self._session_manager = session_manager
+
+        self._ingestion_service = ingestion_service or AttachmentIngestionService(
+            resolver=FileSystemAttachmentResolver(),
+            embedding_manager=config.embedding_manager,
+            vectorstore_manager=config.vectorstore_manager,
+        )
+
+        self._context_builder = context_builder or ContextBuilder(
+            config=config,
+            vectorstore_manager=config.vectorstore_manager,
+        )
+
+        self._rag_prompt_builder: RagPromptBuilder = (
+            rag_prompt_builder or DefaultRagPromptBuilder(config)
+        )
+
+        self._websearch_executor: Optional[WebSearchExecutor] = None
+        if self._config.enable_websearch and self._config.websearch_executor:
+            # Use user-supplied executor instance
+            self._websearch_executor = self._config.websearch_executor
+
+        self._websearch_prompt_builder: Optional[WebSearchPromptBuilder] = (
+            websearch_prompt_builder or DefaultWebSearchPromptBuilder(config)
+        )
+
+        self._history_prompt_builder: HistorySummaryPromptBuilder = (
+            history_prompt_builder or DefaultHistorySummaryPromptBuilder(config)
+        )
+
+        self._history_layer = HistoryLayer(
+            config=config,
+            session_manager=session_manager,
+            history_prompt_builder=self._history_prompt_builder,
+        )
+
+        self._reasoning_layer = ReasoningLayer(
+            config=config
+        )        
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    async def run(self, request: RuntimeRequest) -> RuntimeAnswer:
+        """
+        Main async entrypoint for the runtime.
+
+        Pipeline:
+          1. Session + ingestion + user message appended.
+          2. Memory layer (user/org profile memory, long-term memory facts).
+          3. Base history builder (load & preprocess conversation history).
+          4. History layer (conversation history for the LLM).
+          5. Instructions layer (final system prompt).
+          6. RAG layer (retrieval + RAG system/context messages).
+          7. Web search layer (optional).
+          8. Ensure current user message is present at the end of context.
+          9. Tools layer (planning + tool calls).
+         10. Core LLM call.
+         11. Persist assistant answer and build RuntimeAnswer with route info.
+        """
+        state = RuntimeState(request=request)
+
+        # Initial trace entry for this request.
+        self._trace(
+            state,
+            component="engine",
+            step="run_start",
+            message="DropInKnowledgeRuntime.run() called.",
+            data={
+                "session_id": request.session_id,
+                "user_id": request.user_id,
+                "tenant_id": request.tenant_id or self._config.tenant_id,
+            },
+        )
+
+        # 1. Session + ingestion
+        await self._step_session_and_ingest(state)
+
+        # 2. Memory layer (user/org)
+        await self._step_memory_layer(state)
+
+        # 3. Build base history (load & preprocess)
+        await self._step_build_base_history(state)
+
+        # 4. History layer (ContextBuilder / raw)
+        await self._step_history(state)
+
+        # 5. Instructions layer (final system prompt)
+        await self._step_instructions(state)
+
+        # 6. RAG
+        await self._step_rag(state)
+
+        # 7. Web search
+        await self._step_websearch(state)
+
+        # 8. Ensure current user message
+        self._ensure_current_user_message(state)
+
+        # 9. Tools
+        await self._step_tools(state)
+
+        # 10. Core LLM
+        answer_text = self._step_core_llm(state)
+
+        # 11. Persist + RuntimeAnswer
+        runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
+
+        # Final trace entry for this request.
+        self._trace(
+            state,
+            component="engine",
+            step="run_end",
+            message="DropInKnowledgeRuntime.run() finished.",
+            data={
+                "strategy": runtime_answer.route.strategy,
+                "used_rag": runtime_answer.route.used_rag,
+                "used_websearch": runtime_answer.route.used_websearch,
+                "used_tools": runtime_answer.route.used_tools,
+            },
+        )
+
+        return runtime_answer
+
+    def run_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
+        """
+        Synchronous wrapper around `run()`.
+
+        Useful for environments where `await` is not easily available,
+        such as simple scripts or some notebook setups.
+        """
+        return asyncio.run(self.run(request))
+
+    def _trace(
+        self,
+        state: RuntimeState,
+        *,
+        component: str,
+        step: str,
+        message: str,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Append a single, structured diagnostic entry to the state's debug_trace.
+
+        This helper:
+          - ensures a consistent schema for all pipeline steps,
+          - does not introspect objects (no getattr / reflection),
+          - relies only on data explicitly provided by the caller.
+        """
+        if data is None:
+            data = {}
+
+        trace = state.debug_trace
+        steps = trace.setdefault("steps", [])
+
+        steps.append(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "component": component,
+                "step": step,
+                "message": message,
+                "data": data,
+            }
+        )
+
+    # ------------------------------------------------------------------
+    # Step 1: session + ingestion (no history)
+    # ------------------------------------------------------------------
+
+    async def _step_session_and_ingest(self, state: RuntimeState) -> None:
+        """
+        Load or create a session, ingest attachments (RAG), append the user
+        message and initialize debug_trace.
+
+        IMPORTANT:
+          - This step does NOT load conversation history.
+          - History is loaded and preprocessed in `_step_build_base_history`.
+        """
+        req = state.request
+
+        # 1. Load or create session
+        session = await self._session_manager.get_session(req.session_id)
+        if session is None:
+            session = await self._session_manager.create_session(
+                session_id=req.session_id,
+                user_id=req.user_id,
+                tenant_id=req.tenant_id or self._config.tenant_id,
+                workspace_id=req.workspace_id or self._config.workspace_id,
+                metadata=req.metadata,
+            )
+
+        # 1a. Ingest attachments into vector store (if any)
+        ingestion_results: List[IngestionResult] = []
+        if req.attachments:
+            ingestion_results = await self._ingestion_service.ingest_attachments_for_session(
+                attachments=req.attachments,
+                session_id=session.id,
+                user_id=req.user_id,
+                tenant_id=session.tenant_id,
+                workspace_id=session.workspace_id,
+            )
+
+        # 2. Append user message to session history
+        user_message = self._build_session_message_from_request(req)
+        await self._session_manager.append_message(session.id, user_message)
+
+        # Reload the session to ensure we have the latest metadata
+        session = await self._session_manager.get_session(session.id) or session
+
+        # Initialize debug trace – history will be attached later
+        debug_trace: Dict[str, Any] = {
+            "session_id": session.id,
+            "user_id": session.user_id,
+            "config": {
+                "llm_label": self._config.llm_label,
+                "embedding_label": self._config.embedding_label,
+                "vectorstore_label": self._config.vectorstore_label,
+            },
+        }
+
+        if ingestion_results:
+            debug_trace["ingestion"] = [
+                {
+                    "attachment_id": r.attachment_id,
+                    "attachment_type": r.attachment_type,
+                    "num_chunks": r.num_chunks,
+                    "vector_ids_count": len(r.vector_ids),
+                    "metadata": r.metadata,
+                }
+                for r in ingestion_results
+            ]
+
+        # Trace session and ingestion step.
+        self._trace(
+            state,
+            component="engine",
+            step="session_and_ingest",
+            message="Session loaded/created and user message appended; attachments ingested.",
+            data={
+                "session_id": session.id,
+                "user_id": session.user_id,
+                "tenant_id": session.tenant_id,
+                "attachments_count": len(req.attachments or []),
+                "ingestion_results_count": len(ingestion_results),
+            },
+        )
+
+        state.session = session
+        state.ingestion_results = ingestion_results
+        state.debug_trace = debug_trace
+        # NOTE: state.base_history is intentionally left empty here.
+
+    # ------------------------------------------------------------------
+    # Step 2: memory layer (user/org context + profile instructions)
+    # ------------------------------------------------------------------
+
+    async def _step_memory_layer(self, state: RuntimeState) -> None:
+        """
+        Load profile-based instruction fragments for this request.
+
+        Rules:
+          - Use profile memory only if enabled in RuntimeConfig.
+          - Do NOT rebuild or cache anything here yet (this is step 1 only).
+          - Extract prebuilt 'system_prompt' strings from profile bundles.
+          - Store the resulting fragments in RuntimeState so the engine
+            can merge them into a system message later.
+        """
+        session = state.session
+        assert session is not None, "Session must exist before memory layer."
+
+        cfg = self._config
+
+        user_instr: Optional[str] = None
+        org_instr: Optional[str] = None
+
+        # 1) User profile memory (optional)
+        if cfg.enable_user_profile_memory:
+            user_instr_candidate = await self._session_manager.get_user_profile_instructions_for_session(
+                session=session
+            )
+            if isinstance(user_instr_candidate, str):
+                stripped = user_instr_candidate.strip()
+                if stripped:
+                    user_instr = stripped
+                    state.used_user_profile = True
+
+        # 2) Organization profile memory (optional)
+        if cfg.enable_org_profile_memory:
+            org_instr_candidate = await self._session_manager.get_org_profile_instructions_for_session(
+                session=session
+            )
+            if isinstance(org_instr_candidate, str):
+                stripped = org_instr_candidate.strip()
+                if stripped:
+                    org_instr = stripped
+                    # For now we reuse the same flag to indicate that some profile
+                    # (user or organization) has been used.
+                    state.used_user_profile = True
+
+        # 3) Store extracted profile instruction fragments in state
+        state.profile_user_instructions = user_instr
+        state.profile_org_instructions = org_instr
+
+        # 4) Long-term memory hook (implemented in next steps)
+        #    This step is a placeholder and intentionally does nothing now.
+        if cfg.enable_long_term_memory:
+            pass
+
+        # 5) Debug info
+        state.debug_trace["memory_layer"] = {
+            "implemented": True,
+            "has_user_profile_instructions": bool(user_instr),
+            "has_org_profile_instructions": bool(org_instr),
+            "enable_user_profile_memory": cfg.enable_user_profile_memory,
+            "enable_org_profile_memory": cfg.enable_org_profile_memory,
+            "enable_long_term_memory": cfg.enable_long_term_memory,
+        }
+
+        # Trace memory layer step.
+        self._trace(
+            state,
+            component="engine",
+            step="memory_layer",
+            message="Profile-based instructions loaded for session.",
+            data={
+                "has_user_profile_instructions": bool(user_instr),
+                "has_org_profile_instructions": bool(org_instr),
+                "enable_user_profile_memory": cfg.enable_user_profile_memory,
+                "enable_org_profile_memory": cfg.enable_org_profile_memory,
+                "enable_long_term_memory": cfg.enable_long_term_memory,
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Step 3: build base history (load & preprocess)
+    # ------------------------------------------------------------------
+
+    async def _step_build_base_history(self, state: RuntimeState) -> None:
+        await self._history_layer.build_base_history(state)
+
+    # ------------------------------------------------------------------
+    # Step 4: history
+    # ------------------------------------------------------------------
+
+    async def _step_history(self, state: RuntimeState) -> None:
+        """
+        Build conversation history for the LLM.
+
+        This step is responsible only for selecting and shaping the
+        conversational context (previous user/assistant turns).
+
+        Retrieval (RAG) is handled separately in `_step_rag`.
+        """
+        session = state.session
+        assert session is not None, "Session must be set before history step."
+        req = state.request
+        base_history = state.base_history
+
+        if self._context_builder is not None:
+            # Delegate history shaping (truncation, system message stitching, etc.)
+            # to ContextBuilder, but do NOT inject RAG here.
+            built = await self._context_builder.build_context(
+                session=session,
+                request=req,
+                base_history=base_history,
+            )
+
+            # Keep the full result for the RAG step.
+            state.context_builder_result = built
+
+            history_messages = built.history_messages or []
+            state.messages_for_llm.extend(history_messages)
+            state.built_history_messages = history_messages
+            state.history_includes_current_user = True
+            state.debug_trace["history_length"] = len(history_messages)
+        else:
+            # Fall back to using the base_history as-is (no additional
+            # history layer beyond what ContextBuilder already produced).
+            state.messages_for_llm.extend(base_history)
+            state.built_history_messages = base_history
+            state.history_includes_current_user = True
+            state.debug_trace["history_length"] = len(base_history)
+
+        # Trace history building step.
+        self._trace(
+            state,
+            component="engine",
+            step="history",
+            message="Conversation history built for LLM.",
+            data={
+                "history_length": len(state.built_history_messages),
+                "base_history_length": len(state.base_history),
+                "history_includes_current_user": state.history_includes_current_user,
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Step 5: RAG
+    # ------------------------------------------------------------------
+
+    async def _step_rag(self, state: RuntimeState) -> None:
+        """
+        Build RAG layer (if configured) on top of the already constructed
+        conversation history.
+
+        This step:
+          - uses the result from ContextBuilder (if available),
+          - injects RAG system and context messages,
+          - prepares a compact text summary of retrieved chunks for tools.
+        """
+        # Default values in case RAG is disabled or no chunks are retrieved.
+        state.used_rag = False
+        state.debug_trace.setdefault("rag_chunks", 0)
+
+        # If RAG is globally disabled, do nothing.
+        if not self._config.enable_rag:
+            return
+
+        # We need ContextBuilder to produce retrieved chunks.
+        if self._context_builder is None:
+            return
+
+        built = state.context_builder_result
+
+        # In normal flow _step_history should have already called build_context
+        # and stored the result. As a fallback, we can call it here.
+        if built is None:
+            session = state.session
+            assert session is not None, "Session must be set before RAG step."
+            built = await self._context_builder.build_context(
+                session=session,
+                request=state.request,
+                base_history=state.base_history,
+            )
+            state.context_builder_result = built
+
+        rag_info = built.rag_debug_info or {}
+        state.debug_trace["rag"] = rag_info
+
+        retrieved_chunks = built.retrieved_chunks or []
+        state.used_rag = bool(rag_info.get("used", bool(retrieved_chunks)))
+
+        if not state.used_rag:
+            state.debug_trace["rag_chunks"] = 0
+            return
+
+        # RAG-specific prompt construction (context messages only)
+        bundle = self._rag_prompt_builder.build_rag_prompt(built)
+
+        # Additional context messages built from retrieved chunks
+        context_messages = bundle.context_messages or []
+        state.messages_for_llm.extend(context_messages)
+
+        # Compact textual form of RAG context for tools agent
+        rag_context_text = self._format_rag_context(retrieved_chunks)
+        if rag_context_text:
+            state.tools_context_parts.append("RAG CONTEXT:\n" + rag_context_text)
+
+        state.debug_trace["rag_chunks"] = len(retrieved_chunks)
+
+        # Trace RAG step.
+        self._trace(
+            state,
+            component="engine",
+            step="rag",
+            message="RAG step executed.",
+            data={
+                "rag_enabled": self._config.enable_rag,
+                "used_rag": state.used_rag,
+                "retrieved_chunks": len(retrieved_chunks),
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Step 6: Web search
+    # ------------------------------------------------------------------
+
+    async def _step_websearch(self, state: RuntimeState) -> None:
+        """
+        Run optional web search and inject results as context messages.
+        """
+        state.websearch_debug = {}
+        state.used_websearch = False
+
+        if (
+            not self._config.enable_websearch
+            or self._websearch_executor is None
+            or self._websearch_prompt_builder is None
+        ):
+            return
+
+        try:
+            web_docs = await self._websearch_executor.search_async(
+                query=state.request.message,
+                top_k=self._config.max_docs_per_query,
+                language=None,
+                top_n_fetch=None,
+                serialize=True,
+            )
+
+            if not web_docs:
+                return
+
+            state.used_websearch = True
+
+            bundle = self._websearch_prompt_builder.build_websearch_prompt(web_docs)
+            context_messages = bundle.context_messages or []
+            state.messages_for_llm.extend(context_messages)
+            state.websearch_debug.update(bundle.debug_info or {})
+
+            # Compact textual context for tools
+            web_context_texts: List[str] = []
+            for msg in context_messages:
+                if msg.content:
+                    web_context_texts.append(msg.content)
+            if web_context_texts:
+                state.tools_context_parts.append(
+                    "WEBSEARCH CONTEXT:\n" + "\n\n".join(web_context_texts)
+                )
+
+        except Exception as exc:
+            state.websearch_debug["error"] = str(exc)
+
+        if state.websearch_debug:
+            state.debug_trace["websearch"] = state.websearch_debug
+
+        # Trace web search step.
+        self._trace(
+            state,
+            component="engine",
+            step="websearch",
+            message="Web search step executed.",
+            data={
+                "websearch_enabled": self._config.enable_websearch,
+                "used_websearch": state.used_websearch,
+                "has_error": "error" in (state.websearch_debug or {}),
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Step 7: Ensure current user message
+    # ------------------------------------------------------------------
+
+    def _ensure_current_user_message(self, state: RuntimeState) -> None:
+        """
+        Ensure that the latest user message is present in the final prompt.
+
+        ContextBuilder may decide to already include it in history; if not,
+        we append it explicitly as the last user message.
+        """
+        if not state.history_includes_current_user:
+            state.messages_for_llm.append(
+                ChatMessage(
+                    role="user",
+                    content=state.request.message,
+                    created_at=datetime.now(timezone.utc).isoformat(),
+                )
+            )
+
+    # ------------------------------------------------------------------
+    # Step 8: Tools
+    # ------------------------------------------------------------------
+
+    async def _step_tools(self, state: RuntimeState) -> None:
+        """
+        Run tools agent (planning + tool calls) if configured.
+
+        The tools result is:
+          - optionally used as the final answer (when tools_mode != "off"),
+          - appended as system context for the core LLM.
+        """
+        state.used_tools = False
+        state.tool_traces = []
+        state.tools_agent_answer = None
+
+        use_tools = (
+            self._config.tools_agent is not None
+            and self._config.tools_mode != "off"
+        )
+        if not use_tools:
+            return
+
+        tools_context = (
+            "\n\n".join(state.tools_context_parts).strip()
+            if state.tools_context_parts
+            else None
+        )
+
+        debug_tools: Dict[str, Any] = {
+            "mode": self._config.tools_mode,
+        }
+
+        try:
+            # Decide what to pass as input_data for the tools agent.
+            if self._config.tools_context_scope == ToolsContextScope.CURRENT_MESSAGE_ONLY:
+                agent_input = state.request.message
+
+            elif self._config.tools_context_scope == ToolsContextScope.CONVERSATION:
+                # Use history built by ContextBuilder if available,
+                # otherwise fall back to base_history.
+                if state.built_history_messages:
+                    agent_input = state.built_history_messages
+                else:
+                    agent_input = state.base_history
+
+            else:
+                # FULL_CONTEXT or any future scope:
+                # pass entire message list built so far.
+                agent_input = state.messages_for_llm
+
+            tools_result = self._config.tools_agent.run(
+                input_data=agent_input,
+                context=tools_context,
+                stream=False,
+                tool_choice=None,
+                output_model=None,
+            )
+
+            state.tools_agent_answer = tools_result.get("answer", "") or None
+            state.tool_traces = tools_result.get("tool_traces") or []
+            state.used_tools = bool(state.tool_traces)
+
+            debug_tools["used_tools"] = state.used_tools
+            debug_tools["tool_traces"] = state.tool_traces
+            if state.tools_agent_answer:
+                debug_tools["agent_answer_preview"] = str(state.tools_agent_answer)[:200]
+            if self._config.tools_mode == "required" and not state.used_tools:
+                debug_tools["warning"] = (
+                    "tools_mode='required' but no tools were invoked by the tools_agent."
+                )
+
+            # Inject executed tool calls as system context for core LLM.
+            if state.tool_traces:
+                tool_lines: List[str] = []
+                for t in state.tool_traces:
+                    name = t.get("tool")
+                    args = t.get("args")
+                    output = t.get("output")
+
+                    tool_lines.append(f"Tool '{name}' was called.")
+                    if args is not None:
+                        try:
+                            args_str = json.dumps(args, ensure_ascii=False)
+                        except Exception:
+                            args_str = str(args)
+                        tool_lines.append(f"Arguments: {args_str}")
+
+                    if output is not None:
+                        if isinstance(output, (dict, list)):
+                            try:
+                                out_str = json.dumps(output, ensure_ascii=False)
+                            except Exception:
+                                out_str = str(output)
+                        else:
+                            out_str = str(output)
+                        tool_lines.append("Output:")
+                        tool_lines.append(out_str)
+
+                    tool_lines.append("")
+
+                tools_context_for_llm = "\n".join(tool_lines).strip()
+                if tools_context_for_llm:
+                    state.messages_for_llm.append(
+                        ChatMessage(
+                            role="system",
+                            content=(
+                                "The following tool calls have been executed. "
+                                "Use their results when answering the user.\n\n"
+                                + tools_context_for_llm
+                            ),
+                        )
+                    )
+
+        except Exception as e:
+            debug_tools["tools_error"] = str(e)
+
+        state.debug_trace["tools"] = debug_tools
+
+        # Trace tools step.
+        self._trace(
+            state,
+            component="engine",
+            step="tools",
+            message="Tools agent step executed.",
+            data={
+                "tools_mode": self._config.tools_mode,
+                "used_tools": state.used_tools,
+                "tool_traces_count": len(state.tool_traces),
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Step 9: Core LLM
+    # ------------------------------------------------------------------
+
+    def _step_core_llm(self, state: RuntimeState) -> str:
+        """
+        Call the core LLM adapter and decide on the final answer text,
+        possibly falling back to tools_agent_answer when needed.
+        """
+        # If tools were used and we have an explicit agent answer, prefer it.
+        if state.used_tools and state.tools_agent_answer:
+            # Trace the fact that we are reusing the tools agent answer
+            # instead of calling the core LLM adapter.
+            self._trace(
+                state,
+                component="engine",
+                step="core_llm",
+                message="Using tools_agent_answer as the final answer.",
+                data={
+                    "used_tools_answer": True,
+                    "has_tools_agent_answer": True,
+                },
+            )
+            return str(state.tools_agent_answer)
+
+        try:
+            # Determine the per-request max output tokens, if any.
+            max_output_tokens = state.request.max_output_tokens
+
+            generate_kwargs: Dict[str, Any] = {}
+            if max_output_tokens is not None:
+                # Pass a max_tokens hint to the adapter. If the adapter ignores
+                # it or uses a different keyword, that should be handled inside
+                # the adapter implementation.
+                generate_kwargs["max_tokens"] = max_output_tokens
+
+            raw_answer = self._config.llm_adapter.generate_messages(
+                state.messages_for_llm,
+                **generate_kwargs,
+            )
+
+            # LLM adapter may return a simple string.
+            if isinstance(raw_answer, str):
+                self._trace(
+                    state,
+                    component="engine",
+                    step="core_llm",
+                    message="Core LLM adapter returned a plain string.",
+                    data={
+                        "used_tools_answer": False,
+                        "adapter_return_type": "str",
+                    },
+                )
+                return raw_answer
+
+            # Or an object with a .content attribute (dataclass / pydantic model).
+            if hasattr(raw_answer, "content"):
+                content_value = raw_answer.content  # type: ignore[attr-defined]
+                if isinstance(content_value, str) and content_value.strip():
+                    self._trace(
+                        state,
+                        component="engine",
+                        step="core_llm",
+                        message="Core LLM adapter returned an object with non-empty content.",
+                        data={
+                            "used_tools_answer": False,
+                            "adapter_return_type": type(raw_answer).__name__,
+                            "has_content_attribute": True,
+                        },
+                    )
+                    return content_value
+
+            # Fallback: stringify whatever the adapter returned.
+            self._trace(
+                state,
+                component="engine",
+                step="core_llm",
+                message="Core LLM adapter returned a non-string object without usable content; using stringified value.",
+                data={
+                    "used_tools_answer": False,
+                    "adapter_return_type": type(raw_answer).__name__,
+                    "has_content_attribute": hasattr(raw_answer, "content"),
+                },
+            )
+            return str(raw_answer)
+
+        except Exception as e:
+            state.debug_trace["llm_error"] = str(e)
+
+            # Trace the error and whether a tools_agent_answer fallback is available.
+            self._trace(
+                state,
+                component="engine",
+                step="core_llm_error",
+                message="Core LLM adapter failed; falling back if possible.",
+                data={
+                    "error": str(e),
+                    "has_tools_agent_answer": bool(state.tools_agent_answer),
+                },
+            )
+
+            if state.tools_agent_answer:
+                return (
+                    "[ERROR] LLM adapter failed, falling back to tools agent answer.\n"
+                    f"Details: {e}\n\n"
+                    f"{state.tools_agent_answer}"
+                )
+
+            return f"[ERROR] LLM adapter failed: {e}"
+
+    # ------------------------------------------------------------------
+    # Step 10: Persist answer & build RuntimeAnswer
+    # ------------------------------------------------------------------
+
+    async def _step_persist_and_build_answer(
+        self,
+        state: RuntimeState,
+        answer_text: str,
+    ) -> RuntimeAnswer:
+        """
+        Append assistant message to the session and build a RuntimeAnswer,
+        including RouteInfo and RuntimeStats.
+        """
+        # Fallback if answer is empty for any reason
+        if not isinstance(answer_text, str) or not answer_text.strip():
+            answer_text = (
+                str(state.tools_agent_answer)
+                if state.tools_agent_answer
+                else "[ERROR] Empty answer from runtime."
+            )
+
+        session = state.session
+        assert session is not None, "Session must be set before persistence."
+
+        assistant_message = ChatMessage(
+            role="assistant",
+            content=answer_text,
+            created_at=datetime.now(timezone.utc).isoformat(),
+        )
+        await self._session_manager.append_message(session.id, assistant_message)
+
+        # Strategy label
+        if state.used_rag and state.used_websearch and state.used_tools:
+            strategy = "llm_with_rag_websearch_and_tools"
+        elif state.used_rag and state.used_tools:
+            strategy = "llm_with_rag_and_tools"
+        elif state.used_websearch and state.used_tools:
+            strategy = "llm_with_websearch_and_tools"
+        elif state.used_tools:
+            strategy = "llm_with_tools"
+        elif state.used_rag and state.used_websearch:
+            strategy = "llm_with_rag_and_websearch"
+        elif state.used_rag:
+            strategy = "llm_with_rag_context_builder"
+        elif state.used_websearch:
+            strategy = "llm_with_websearch"
+        elif state.ingestion_results:
+            strategy = "llm_only_with_ingestion"
+        else:
+            strategy = "llm_only"
+
+        route_info = RouteInfo(
+            used_rag=state.used_rag and self._config.enable_rag,
+            used_websearch=state.used_websearch and self._config.enable_websearch,
+            used_tools=state.used_tools and self._config.tools_mode != "off",
+            used_user_profile=state.used_user_profile,
+            strategy=strategy,
+            extra={},
+        )
+
+        # Token stats are still placeholders – can be wired from LLM adapter later.
+        stats = RuntimeStats(
+            total_tokens=None,
+            input_tokens=None,
+            output_tokens=None,
+            rag_tokens=None,
+            websearch_tokens=None,
+            tool_tokens=None,
+            duration_ms=None,
+            extra={},
+        )
+
+        tool_calls_for_answer: List[ToolCallInfo] = []
+        for t in state.tool_traces:
+            tool_calls_for_answer.append(
+                ToolCallInfo(
+                    tool_name=t.get("tool") or "",
+                    arguments=t.get("args") or {},
+                    result_summary=(
+                        t.get("output_preview")
+                        if isinstance(t.get("output_preview"), str)
+                        else None
+                    ),
+                    success=not bool(t.get("error")),
+                    error_message=t.get("error"),
+                    extra={"raw_trace": t},
+                )
+            )
+
+        # Trace persistence and answer building step.
+        self._trace(
+            state,
+            component="engine",
+            step="persist_and_build_answer",
+            message="Assistant answer persisted and RuntimeAnswer built.",
+            data={
+                "session_id": session.id,
+                "strategy": strategy,
+                "used_rag": state.used_rag,
+                "used_websearch": state.used_websearch,
+                "used_tools": state.used_tools,
+            },
+        )
+
+        return RuntimeAnswer(
+            answer=answer_text,
+            citations=[],
+            route=route_info,
+            tool_calls=tool_calls_for_answer,
+            stats=stats,
+            raw_model_output=None,
+            debug_trace=state.debug_trace,
+        )
+
+    # ------------------------------------------------------------------
+    # Step 11: instructions (final system prompt)
+    # ------------------------------------------------------------------
+
+    async def _step_instructions(self, state: RuntimeState) -> None:
+        """
+        Inject the final instructions as the first `system` message in the
+        LLM prompt, if any instructions exist.
+
+        This uses `_build_final_instructions` to combine:
+          - per-request instructions,
+          - user profile instructions,
+          - organization profile instructions.
+
+        It MUST be called AFTER the history step, so that:
+          - history can be freely trimmed/summarized,
+          - instructions are always the first system message,
+          - instructions are never persisted in SessionStore.
+        """
+        instructions_text = await self._build_final_instructions(state)
+        if not instructions_text:
+            return
+        
+        # Apply reasoning / CoT policy (no-op in DIRECT mode)
+        reasoning_result = self._reasoning_layer.apply_reasoning_to_instructions(
+            state=state,
+            base_system_instructions=instructions_text,
+        )
+
+        # Trace reasoning application
+        self._trace(
+            state,
+            component="reasoning",
+            step="apply_reasoning_to_instructions",
+            message="Reasoning policy applied to system instructions.",
+            data={
+                "mode": reasoning_result.mode.value,
+                "applied": reasoning_result.applied,
+            },
+        )
+
+        system_message = ChatMessage(role="system", content=reasoning_result.final_instructions)
+
+        # `messages_for_llm` at this point should contain only history
+        # (built by `_step_history`). We now prepend the system message.
+        state.messages_for_llm = [system_message] + state.messages_for_llm
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _format_rag_context(self, chunks: List[RetrievedChunk]) -> str:
+        """
+        Build a compact, model-friendly text block from retrieved chunks.
+
+        Design goals:
+        - Provide enough semantic context.
+        - Avoid internal markers ([CTX ...], scores, ids) that the model could
+          copy into the final answer.
+        - Keep format simple and natural.
+        """
+        if not chunks:
+            return ""
+
+        lines: List[str] = []
+        for ch in chunks:
+            source_name = (
+                ch.metadata.get("source_name")
+                or ch.metadata.get("attachment_id")
+                or "document"
+            )
+            lines.append(f"Source: {source_name}")
+            lines.append("Excerpt:")
+            lines.append(ch.text)
+            lines.append("")  # blank line separator
+
+        return "\n".join(lines)
+
+    def _build_session_message_from_request(
+        self,
+        request: RuntimeRequest,
+    ) -> ChatMessage:
+        """
+        Construct a ChatMessage from a RuntimeRequest to be stored in the session.
+
+        Attachments from `request.attachments` are represented at the request level
+        and can be linked via metadata if needed.
+        """
+        return ChatMessage(
+            role="user",
+            content=request.message,
+            created_at=datetime.now(timezone.utc).isoformat(),
+        )
+
+    async def _build_final_instructions(self, state: RuntimeState) -> Optional[str]:
+        """
+        Build the final instructions string for the current request/session.
+
+        Sources:
+          1) User-provided instructions from RuntimeRequest (if any).
+          2) Profile-based user instructions prepared by _step_memory_layer.
+          3) Profile-based organization instructions prepared by _step_memory_layer.
+
+        The result is a single, short, LLM-ready text that can be used
+        as a `system` message at the top of the prompt.
+
+        This method:
+          - does NOT touch SessionStore,
+          - does NOT modify history,
+          - only consolidates instruction fragments already present in the state.
+        """
+        parts: List[str] = []
+        sources = {
+            "request": False,
+            "user_profile": False,
+            "organization_profile": False,
+        }
+
+        # 1) User-provided instructions (per-request, ChatGPT/Gemini-style)
+        if isinstance(state.request.instructions, str):
+            user_instr = state.request.instructions.strip()
+            if user_instr:
+                parts.append(user_instr)
+                sources["request"] = True
+
+        # 2) User profile instructions prepared by the memory layer
+        if isinstance(state.profile_user_instructions, str):
+            profile_user = state.profile_user_instructions.strip()
+            if profile_user:
+                parts.append(profile_user)
+                sources["user_profile"] = True
+
+        # 3) Organization profile instructions prepared by the memory layer
+        if isinstance(state.profile_org_instructions, str):
+            profile_org = state.profile_org_instructions.strip()
+            if profile_org:
+                parts.append(profile_org)
+                sources["organization_profile"] = True
+
+        if not parts:
+            state.debug_trace["instructions"] = {
+                "has_instructions": False,
+                "sources": sources,
+            }
+            return None
+
+        # Simple concatenation for now; can be replaced with more structured
+        # formatting (sections, headings) in the future.
+        final_text = "\n\n".join(parts)
+
+        state.debug_trace["instructions"] = {
+            "has_instructions": True,
+            "sources": sources,
+        }
+
+        return final_text
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=runtime_state.py
+# LINES: 77
+# SHA256: e732cb8d02c4e76bb0ed45db7e6a65d2dd64b3209ea30c267bc26cce8ba310bc
+# SYMBOLS:
+#   - class RuntimeState
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.config import ReasoningMode
+from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import IngestionResult
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
+from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
+
+
+@dataclass
+class RuntimeState:
+    """
+    Mutable state object passed through the runtime pipeline.
+
+    It aggregates:
+      - request and session metadata,
+      - ingestion results,
+      - conversation history and model-ready messages,
+      - flags indicating which subsystems were used (RAG, websearch, tools, memory),
+      - tools traces and agent answer,
+      - full debug_trace for observability & diagnostics.
+    """
+
+    # Input
+    request: RuntimeRequest
+
+    # Session and ingestion
+    session: Optional[ChatSession] = None
+    ingestion_results: List[IngestionResult] = field(default_factory=list)
+
+    # Conversation / context
+    base_history: List[ChatMessage] = field(default_factory=list)
+    messages_for_llm: List[ChatMessage] = field(default_factory=list)
+    tools_context_parts: List[str] = field(default_factory=list)
+    built_history_messages: List[ChatMessage] = field(default_factory=list)
+    history_includes_current_user: bool = False
+
+    # ContextBuilder intermediate result (history + retrieved chunks)
+    context_builder_result: Optional[Any] = None
+
+    # Profile-based instruction fragments prepared by the memory layer
+    profile_user_instructions: Optional[str] = None
+    profile_org_instructions: Optional[str] = None
+
+    # Usage flags
+    used_rag: bool = False
+    used_websearch: bool = False
+    used_tools: bool = False
+    used_user_profile: bool = False
+
+    # Tools
+    tools_agent_answer: Optional[str] = None
+    tool_traces: List[Dict[str, Any]] = field(default_factory=list)
+
+    # Debug / diagnostics
+    debug_trace: Dict[str, Any] = field(default_factory=dict)
+    websearch_debug: Dict[str, Any] = field(default_factory=dict)
+
+    # Token accounting (filled in _step_build_base_history)
+    history_token_count: Optional[int] = None
+
+    # ------------------------------------------------------------------
+    # REASONING / CHAIN-OF-THOUGHT
+    # ------------------------------------------------------------------
+
+    # Active reasoning mode for this request.
+    reasoning_mode: ReasoningMode = ReasoningMode.DIRECT
+
+    # Optional reasoning metadata captured during execution.
+    # This NEVER contains raw chain-of-thought text.
+    reasoning_trace: Optional[Dict[str, Any]] = None
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.ingestion
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/ingestion/attachments.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=attachments.py
+# LINES: 124
+# SHA256: f1f76309b50f858810044e515eb5831eab90919fe622b77456f47e0ada8a12d9
+# SYMBOLS:
+#   - class AttachmentResolver
+#   - class FileSystemAttachmentResolver
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework - proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+"""
+Attachment resolution utilities for Drop-In Knowledge Mode.
+
+This module defines:
+  - `AttachmentResolver` protocol - an abstraction that knows how to turn
+    an `AttachmentRef` into a local `Path` (or raise if it cannot).
+  - `FileSystemAttachmentResolver` - a minimal implementation that handles
+    local filesystem-based URIs, such as `file:///...`.
+
+The goal is to decouple:
+  - how and where attachments are stored (filesystem, DB, object storage),
+  - from how the RAG pipeline consumes them (Intergrax document loaders).
+
+In other words:
+  Runtime deals with AttachmentRef -> AttachmentResolver -> Path,
+  and then passes the resolved Paths to Intergrax RAG components.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Protocol, runtime_checkable
+from urllib.parse import urlparse
+
+from intergrax.llm.messages import AttachmentRef
+
+
+@runtime_checkable
+class AttachmentResolver(Protocol):
+    """
+    Resolves an AttachmentRef into a local file path that can be passed
+    to Intergrax document loaders.
+
+    Implementations may:
+      - download from object storage (S3, GCS, etc.),
+      - fetch from a database and materialize as a temporary file,
+      - validate and return local filesystem paths.
+
+    The only hard requirement for the RAG pipeline is that the returned
+    object can be consumed by the Intergrax documents loader (typically
+    a string path).
+    """
+
+    async def resolve_to_path(self, attachment: AttachmentRef) -> Path:
+        """
+        Resolve the given AttachmentRef into a local filesystem Path.
+
+        Raises:
+          - FileNotFoundError if the attachment cannot be found.
+          - ValueError for unsupported URI schemes.
+        """
+        ...
+
+
+@dataclass
+class FileSystemAttachmentResolver:
+    """
+    Minimal resolver for URIs like:
+
+      - file:///absolute/path/to/file.pdf
+      - file://C:/path/to/file.pdf
+      - /relative/or/absolute/path (with empty scheme)
+
+    This implementation is intended for:
+      - local experiments,
+      - Jupyter notebooks,
+      - simple on-prem setups.
+
+    In production you are expected to provide additional resolvers
+    (e.g. S3AttachmentResolver, DBAttachmentResolver, etc.).
+    """
+
+    def _from_file_uri(self, uri: str) -> Path:
+        parsed = urlparse(uri)
+
+        # Allow both explicit "file" scheme and an empty scheme (raw path).
+        if parsed.scheme not in ("", "file"):
+            raise ValueError(f"Unsupported URI scheme for file resolver: {parsed.scheme}")
+
+        # Case 1: raw path without scheme (e.g. "D:/..." or "C:\\...")
+        if parsed.scheme == "":
+            # `uri` is a plain path string in this branch.
+            return Path(uri).expanduser()
+
+        # Case 2: proper file:// URI
+        # Example on Windows:
+        #   file:///D:/Projekty/intergrax/PROJECT_STRUCTURE.md
+        #   -> parsed.path == "/D:/Projekty/intergrax/PROJECT_STRUCTURE.md"
+        path_str = parsed.path
+
+        # Fix Windows-style drive letters:
+        # If path looks like "/D:/something", strip the leading slash.
+        if (
+            len(path_str) >= 4
+            and path_str[0] == "/"
+            and path_str[2] == ":"
+        ):
+            path_str = path_str[1:]  # "D:/Projekty/..."
+
+        # UNC / netloc case (rare in this context, but we keep it for completeness)
+        if parsed.netloc:
+            # e.g. file://server/share/path
+            # You can adapt this logic if you want UNC support.
+            path_str = f"//{parsed.netloc}{path_str}"
+
+        return Path(path_str).expanduser()
+
+    async def resolve_to_path(self, attachment: AttachmentRef) -> Path:
+        """
+        Resolve the AttachmentRef's URI into an existing filesystem Path.
+
+        This implementation assumes that `attachment.uri` is either:
+          - a raw filesystem path, or
+          - a `file://` URI pointing to a local file.
+        """
+        path = self._from_file_uri(attachment.uri)
+        if not path.exists():
+            raise FileNotFoundError(f"Attachment path does not exist: {path}")
+        return path
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/ingestion/ingestion_service.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=ingestion_service.py
+# LINES: 315
+# SHA256: 72d130deaccc558a2aebb76edc17b1e1bad1f32ca4dc22a7b32b50165d0033df
+# SYMBOLS:
+#   - class IngestionResult
+#   - class AttachmentIngestionService
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+"""
+Attachment ingestion pipeline for Drop-In Knowledge Mode.
+
+This module defines a high-level service that:
+  - takes AttachmentRef objects (from sessions/messages),
+  - resolves them to loader-compatible paths via AttachmentResolver,
+  - loads and splits documents using Intergrax RAG components:
+      * IntergraxDocumentsLoader
+      * IntergraxDocumentsSplitter
+  - embeds them and stores them in a vector database via:
+      * IntergraxEmbeddingManager
+      * IntergraxVectorstoreManager
+
+The goal is to reuse existing Intergrax RAG building blocks while providing
+a clean, runtime-oriented API that operates on AttachmentRef.
+"""
+
+from __future__ import annotations
+
+import inspect
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence
+
+from langchain_core.documents import Document
+
+from intergrax.llm.messages import AttachmentRef
+from intergrax.rag.documents_loader import DocumentsLoader
+from intergrax.rag.documents_splitter import DocumentsSplitter
+from intergrax.rag.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import AttachmentResolver
+
+
+
+# ---------------------------------------------------------------------------
+# Ingestion result model
+# ---------------------------------------------------------------------------
+
+@dataclass
+class IngestionResult:
+    """
+    Summary information about ingestion of a single attachment.
+    """
+
+    attachment_id: str
+    attachment_type: str
+    num_chunks: int
+    vector_ids: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
+# Attachment ingestion service (Intergrax-native)
+# ---------------------------------------------------------------------------
+
+class AttachmentIngestionService:
+    """
+    High-level ingestion service for Drop-In Knowledge Mode.
+
+    Responsibilities:
+      - Resolve AttachmentRef objects into filesystem Paths (via AttachmentResolver).
+      - Load documents using IntergraxDocumentsLoader.load_document(...).
+      - Split them into chunks using IntergraxDocumentsSplitter.split_documents(...).
+      - Embed chunks (via IntergraxEmbeddingManager).
+      - Store vectors (via IntergraxVectorstoreManager).
+      - Return a structured IngestionResult per attachment.
+
+    This service does NOT:
+      - manage ChatSession objects,
+      - perform retrieval or answering.
+
+    It is intended to be called from DropInKnowledgeRuntime or other
+    orchestration layers when new attachments are added to a session.
+    """
+
+    def __init__(
+        self,
+        *,
+        resolver: AttachmentResolver,
+        embedding_manager: EmbeddingManager,
+        vectorstore_manager: VectorstoreManager,
+        loader: Optional[DocumentsLoader] = None,
+        splitter: Optional[DocumentsSplitter] = None,
+    ) -> None:
+        """
+        Args:
+            resolver:
+                Component that knows how to resolve AttachmentRef.uri into a local Path.
+            embedding_manager:
+                IntergraxEmbeddingManager used to generate embeddings.
+            vectorstore_manager:
+                IntergraxVectorstoreManager used to store embeddings + metadata.
+            loader:
+                Optional custom IntergraxDocumentsLoader instance. If None, a default
+                instance is created with conservative settings.
+            splitter:
+                Optional custom IntergraxDocumentsSplitter instance. If None, a default
+                instance is created with standard chunking parameters.
+        """
+        self._resolver = resolver
+        self._embedding_manager = embedding_manager
+        self._vectorstore_manager = vectorstore_manager
+
+        # Use provided loader/splitter or fall back to default instances.
+        self._loader = loader or DocumentsLoader(verbose=False)
+        self._splitter = splitter or DocumentsSplitter(
+            verbose=False,
+            default_chunk_size=1000,
+            default_chunk_overlap=100,
+        )
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    async def ingest_attachments_for_session(
+        self,
+        attachments: Sequence[AttachmentRef],
+        *,
+        session_id: str,
+        user_id: str,
+        tenant_id: Optional[str] = None,
+        workspace_id: Optional[str] = None,
+    ) -> List[IngestionResult]:
+        """
+        Ingest all provided attachments in the context of a specific session.
+
+        The session/user/tenant/workspace identifiers are injected as metadata,
+        so that RAG retrieval can later filter documents appropriately.
+        """
+        results: List[IngestionResult] = []
+
+        for attachment in attachments:
+            result = await self._ingest_single_attachment(
+                attachment=attachment,
+                session_id=session_id,
+                user_id=user_id,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+            results.append(result)
+
+        return results
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    async def _ingest_single_attachment(
+        self,
+        attachment: AttachmentRef,
+        *,
+        session_id: str,
+        user_id: str,
+        tenant_id: Optional[str],
+        workspace_id: Optional[str],
+    ) -> IngestionResult:
+        """
+        End-to-end ingestion pipeline for a single AttachmentRef.
+        """
+        # 1) Resolve AttachmentRef → Path (or raise FileNotFoundError/ValueError)
+        path: Path = await self._resolver.resolve_to_path(attachment)
+
+        # 2) Build base metadata that we want on every chunk
+        base_metadata: Dict[str, Any] = {
+            "attachment_id": attachment.id,
+            "attachment_type": attachment.type,
+            "session_id": session_id,
+            "user_id": user_id,
+            "tenant_id": tenant_id,
+            "workspace_id": workspace_id,
+        }
+        if attachment.metadata:
+            base_metadata.update(attachment.metadata)
+
+        # 3) Use IntergraxDocumentsLoader.load_document(...) for a single file
+        def _metadata_callback(doc: Document, p: Path) -> Dict[str, Any]:
+            """
+            Custom metadata callback for the IntergraxDocumentsLoader.
+
+            It receives each loaded Document and its Path, and returns a dict
+            merged into doc.metadata. We always inject our base_metadata, but
+            we do not override keys that the loader already set (unless they
+            are absent).
+            """
+            merged = dict(base_metadata)
+            # Optionally, we could inspect doc.metadata here and adjust.
+            return merged
+
+        docs: List[Document] = self._loader.load_document(
+            str(path),
+            use_default_metadata=True,
+            call_custom_metadata=_metadata_callback,
+        )
+
+        if not docs:
+            return IngestionResult(
+                attachment_id=attachment.id,
+                attachment_type=attachment.type,
+                num_chunks=0,
+                vector_ids=[],
+                metadata={
+                    "reason": "no_documents_loaded",
+                    "source_path": str(path),
+                },
+            )
+
+        # 4) Split into chunks via IntergraxDocumentsSplitter
+        chunks: List[Document] = self._splitter.split_documents(docs)
+
+        if not chunks:
+            return IngestionResult(
+                attachment_id=attachment.id,
+                attachment_type=attachment.type,
+                num_chunks=0,
+                vector_ids=[],
+                metadata={
+                    "reason": "no_chunks_generated",
+                    "source_path": str(path),
+                },
+            )
+
+        # 5) Embed chunks and store in vectorstore
+        #
+        # The IntergraxEmbeddingManager / IntergraxVectorstoreManager in your
+        # project are currently synchronous. However, to keep this runtime
+        # future-proof, we support both sync and async interfaces.
+        #
+        # Pattern:
+        #   result = func(...)
+        #   if inspect.iscoroutine(result): await it
+        #   else: use it directly
+
+        # 5a) Embeddings
+        try:
+            # Preferred path: the manager exposes embed_documents(chunks)
+            embed_result = self._embedding_manager.embed_documents(chunks)
+
+            if inspect.iscoroutine(embed_result):
+                embed_result = await embed_result
+
+            # Normalize result: either (embeddings, docs) or embeddings-only
+            if isinstance(embed_result, tuple) and len(embed_result) == 2:
+                embeddings, aligned_docs = embed_result
+            else:
+                embeddings = embed_result
+                aligned_docs = chunks
+
+        except AttributeError:
+            # Fallback: manager exposes only embed_texts(texts)
+            texts = [c.page_content for c in chunks]
+            embed_result = self._embedding_manager.embed_texts(texts)
+
+            if inspect.iscoroutine(embed_result):
+                embeddings = await embed_result
+            else:
+                embeddings = embed_result
+
+            aligned_docs = chunks
+
+        # 5b) Enrich metadata on documents with base_metadata
+        #
+        # This ensures that later retrieval can filter by session/tenant/user/etc.
+        for d in aligned_docs:
+            d.metadata = {**(d.metadata or {}), **base_metadata}
+
+        # 5c) Generate stable IDs for each stored chunk
+        ids = [f"{attachment.id}-{i}" for i in range(len(aligned_docs))]
+
+        # 5d) Store in vectorstore using the current IntergraxVectorstoreManager API.
+        #
+        # We assume a signature similar to:
+        #   add_documents(
+        #       documents: Sequence[Document],
+        #       embeddings: Optional[Any] = None,
+        #       ids: Optional[Sequence[str]] = None,
+        #       base_metadata: Optional[Dict[str, Any]] = None,
+        #       ...
+        #   )
+        add_result = self._vectorstore_manager.add_documents(
+            documents=aligned_docs,
+            embeddings=embeddings,
+            ids=ids,
+            base_metadata=base_metadata,
+        )
+
+        if inspect.iscoroutine(add_result):
+            stored_ids = await add_result
+        else:
+            stored_ids = add_result
+
+        # Normalize stored_ids: if the manager returns None, fall back to local ids
+        if stored_ids is None:
+            vector_ids = ids
+        else:
+            vector_ids = list(stored_ids)
+
+        return IngestionResult(
+            attachment_id=attachment.id,
+            attachment_type=attachment.type,
+            num_chunks=len(aligned_docs),
+            vector_ids=vector_ids,
+            metadata={
+                "source_path": str(path),
+                "session_id": session_id,
+                "user_id": user_id,
+                "tenant_id": tenant_id,
+                "workspace_id": workspace_id,
+            },
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/prompts/__init__.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.prompts
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/prompts/history_prompt_builder.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=history_prompt_builder.py
+# LINES: 89
+# SHA256: 7a99ef869b924ae8b98afb7409f51ccddb42fba28a79488896d4eefa17552286
+# SYMBOLS:
+#   - class HistorySummaryPromptBundle
+#   - class HistorySummaryPromptBuilder
+#   - class DefaultHistorySummaryPromptBuilder
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import List, Protocol
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
+    RuntimeRequest,
+    HistoryCompressionStrategy,
+)
+
+
+@dataclass
+class HistorySummaryPromptBundle:
+    """
+    Container for prompt elements related to history optimization
+    (mainly summarization of older conversation turns).
+
+    For now it only carries a single system_prompt string, but this
+    structure allows us to extend it later (e.g. additional guardrails,
+    style hints, etc.) without changing the interface.
+    """
+
+    system_prompt: str
+
+
+class HistorySummaryPromptBuilder(Protocol):
+    """
+    Strategy interface for building the history-summary-related part
+    of the prompt.
+
+    You can provide a custom implementation and pass it to
+    DropInKnowledgeRuntime to fully control:
+
+    - the exact system prompt text used when summarizing older history,
+    - how the request / strategy / message splits influence that prompt.
+    """
+
+    def build_history_summary_prompt(
+        self,
+        *,
+        request: RuntimeRequest,
+        strategy: HistoryCompressionStrategy,
+        older_messages: List[ChatMessage],
+        tail_messages: List[ChatMessage],
+    ) -> HistorySummaryPromptBundle:
+        ...
+
+
+class DefaultHistorySummaryPromptBuilder(HistorySummaryPromptBuilder):
+    """
+    Default prompt builder for history summarization in Drop-In Knowledge Mode.
+
+    Responsibilities:
+    - Provide a safe, generic system prompt for summarizing older
+      conversation turns into an information-dense summary.
+    - Ignore request / strategy / messages for now (but the signature
+      allows future, more advanced implementations).
+    """
+
+    def __init__(self, config: RuntimeConfig) -> None:
+        self._config = config
+
+    def build_history_summary_prompt(
+        self,
+        *,
+        request: RuntimeRequest,
+        strategy: HistoryCompressionStrategy,
+        older_messages: List[ChatMessage],
+        tail_messages: List[ChatMessage],
+    ) -> HistorySummaryPromptBundle:
+        # For now we return a static, default prompt. Later we can use
+        # fields from `request` or `config` (e.g. domain, language,
+        # user preferences) to customize the text.
+        system_prompt = (
+            "You are a summarization assistant.\n"
+            "Summarize the following conversation history into a short, "
+            "factual bullet list that preserves key decisions, key facts, "
+            "and open questions.\n"
+            "Do not invent new facts. Do not change the meaning.\n"
+            "Keep the summary compact and information-dense."
+        )
+
+        return HistorySummaryPromptBundle(system_prompt=system_prompt)
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/prompts/rag_prompt_builder.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=rag_prompt_builder.py
+# LINES: 105
+# SHA256: 26282bc3326ad04e3e3145221ed454a6c7b40080abf9f0bb69b31f2285f057f0
+# SYMBOLS:
+#   - class RagPromptBundle
+#   - class RagPromptBuilder
+#   - class DefaultRagPromptBuilder
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import List, Protocol
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+from intergrax.runtime.drop_in_knowledge_mode.context.context_builder import (
+    RetrievedChunk,
+    BuiltContext,
+)
+
+
+@dataclass
+class RagPromptBundle:
+    """
+    Prompt elements related to RAG:
+
+    - context_messages: system-level messages injecting retrieved document context.
+    """
+    context_messages: List[ChatMessage]
+
+
+class RagPromptBuilder(Protocol):
+    """
+    Strategy interface for building the RAG-related part of the prompt.
+
+    You can provide a custom implementation and pass it to
+    DropInKnowledgeRuntime to fully control:
+
+    - the exact system prompt text,
+    - how retrieved chunks are formatted and injected as messages.
+    """
+
+    def build_rag_prompt(self, built: BuiltContext) -> RagPromptBundle:
+        ...
+
+
+class DefaultRagPromptBuilder(RagPromptBuilder):
+    """
+    Default prompt builder for Drop-In Knowledge Mode.
+
+    Responsibilities:
+    - Inject retrieved chunks into system-level context messages.
+    - Global system instructions are owned by the runtime.
+    """
+
+    def __init__(self, config: RuntimeConfig) -> None:
+        self._config = config
+
+    def build_rag_prompt(self, built: BuiltContext) -> RagPromptBundle:
+        context_messages: List[ChatMessage] = []
+
+        if built.retrieved_chunks:
+            rag_context_text = self._format_rag_context(built.retrieved_chunks)
+            context_messages.append(
+                ChatMessage(
+                    role="system",
+                    content=(
+                        "The following excerpts were retrieved from the user's "
+                        "documents. Use them as factual context when answering "
+                        "the user's question.\n\n"
+                        f"{rag_context_text}"
+                    ),
+                )
+            )
+
+        return RagPromptBundle(
+            context_messages=context_messages,
+        )
+
+
+    def _format_rag_context(self, chunks: List[RetrievedChunk]) -> str:
+        """
+        Build a compact, model-friendly text block from retrieved chunks.
+
+        Design goals:
+        - Provide enough semantic context.
+        - Avoid internal markers ([CTX ...], scores, ids) that the model
+          could copy into the final answer.
+        - Keep format simple and natural.
+        """
+        if not chunks:
+            return ""
+
+        lines: List[str] = []
+
+        for ch in chunks:
+            source_name = (
+                ch.metadata.get("source_name")
+                or ch.metadata.get("attachment_id")
+                or "document"
+            )
+            lines.append(f"Source: {source_name}")
+            lines.append("Excerpt:")
+            lines.append(ch.text)
+            lines.append("")  # blank line separator
+
+        # Optional: add truncation based on config (e.g. max chars)
+        # For now we keep full text and rely on upstream chunking.
+        return "\n".join(lines)
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/prompts/websearch_prompt_builder.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=websearch_prompt_builder.py
+# LINES: 106
+# SHA256: 74ed1e139ceceb08f9a0c363669305cac1bc13ffbf2626677c9229d706d7781d
+# SYMBOLS:
+#   - class WebSearchPromptBundle
+#   - class WebSearchPromptBuilder
+#   - class DefaultWebSearchPromptBuilder
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Dict, List, Protocol, Any
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+
+
+@dataclass
+class WebSearchPromptBundle:
+    """
+    Container for prompt elements related to web search:
+
+    - context_messages: system-level messages injecting web search results.
+    - debug_info: structured metadata for debug traces (URLs, counts, errors).
+    """
+    context_messages: List[ChatMessage]
+    debug_info: Dict[str, Any]
+
+
+class WebSearchPromptBuilder(Protocol):
+    """
+    Strategy interface for building the web search part of the prompt.
+
+    You can provide a custom implementation and pass it to
+    DropInKnowledgeRuntime to fully control:
+
+    - how web documents are summarized,
+    - how many results are injected,
+    - the exact wording of the system messages.
+    """
+
+    def build_websearch_prompt(
+        self,
+        web_docs: List[Dict[str, Any]],
+    ) -> WebSearchPromptBundle:
+        ...
+    
+
+class DefaultWebSearchPromptBuilder(WebSearchPromptBuilder):
+    """
+    Default prompt builder for web search results in Drop-In Knowledge Mode.
+
+    Responsibilities:
+    - Take a list of web documents (dict-like objects) returned by WebSearchExecutor.
+    - Build a single system-level message that lists titles, URLs and snippets.
+    - Provide basic debug info: number of docs and top URLs.
+    """
+
+    def __init__(self, config: RuntimeConfig) -> None:
+        self._config = config
+
+    def build_websearch_prompt(
+        self,
+        web_docs: List[Dict[str, Any]],
+    ) -> WebSearchPromptBundle:
+        debug_info: Dict[str, Any] = {}
+
+        if not web_docs:
+            return WebSearchPromptBundle(
+                context_messages=[],
+                debug_info=debug_info,
+            )
+
+        debug_info["num_docs"] = len(web_docs)
+        debug_info["top_urls"] = [
+            d.get("url") for d in web_docs[:3] if isinstance(d, dict)
+        ]
+
+        lines: List[str] = [
+            "The following web search results may be relevant. "
+            "Use them together with uploaded documents and chat history. "
+            "Treat them as external context, and never fabricate additional "
+            "facts that are not supported by these sources or your base knowledge."
+        ]
+
+        max_docs = self._config.max_docs_per_query
+
+        for idx, doc in enumerate(web_docs[:max_docs], start=1):
+            if not isinstance(doc, dict):
+                continue
+
+            title = doc.get("title") or "(no title)"
+            url = doc.get("url") or ""
+            snippet = doc.get("snippet") or doc.get("text") or ""
+
+            lines.append(f"\n[{idx}] {title}\nURL: {url}\nSnippet: {snippet}")
+
+        context_text = "\n".join(lines)
+
+        context_messages = [
+            ChatMessage(
+                role="system",
+                content=context_text,
+            )
+        ]
+
+        return WebSearchPromptBundle(
+            context_messages=context_messages,
+            debug_info=debug_info,
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/reasoning/__init__.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.reasoning
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/reasoning/reasoning_layer.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=reasoning_layer.py
+# LINES: 163
+# SHA256: 7f704f315d6e1687f75eb75f8f6b08981924203fc31cddc31a110eeb79bcdc9b
+# SYMBOLS:
+#   - class ReasoningApplyResult
+#   - class ReasoningLayer
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
+
+from intergrax.runtime.drop_in_knowledge_mode.config import ReasoningConfig, ReasoningMode, RuntimeConfig
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+
+
+@dataclass(frozen=True)
+class ReasoningApplyResult:
+    """
+    Result of applying reasoning policy to system instructions.
+    """
+
+    mode: ReasoningMode
+    applied: bool
+    final_instructions: str
+    extra: Dict[str, Any]
+
+
+class ReasoningLayer:
+    """
+    Reasoning / Chain-of-Thought layer for Drop-In Knowledge Runtime.
+
+    v1 responsibilities:
+      - Augment system instructions based on ReasoningMode.
+      - Never store or expose raw chain-of-thought content.
+      - Write lightweight observability info into RuntimeState.debug_trace.
+
+    v1 does NOT:
+      - Run separate planning calls.
+      - Change tools/websearch/RAG flow.
+      - Perform self-critique passes.
+    """
+
+    def __init__(self, config: RuntimeConfig) -> None:
+        self._config = config
+
+    def apply_reasoning_to_instructions(
+        self,
+        state: RuntimeState,
+        base_system_instructions: str,
+    ) -> ReasoningApplyResult:
+        """
+        Returns the final system instructions after applying the configured reasoning mode.
+        Updates RuntimeState.reasoning_mode and debug_trace["reasoning"].
+
+        Note: This method must be a no-op in DIRECT mode.
+        """
+
+        reasoning_config = self._get_reasoning_config()
+        mode = reasoning_config.mode
+
+        # Keep state consistent even if engine forgets to set it.
+        state.reasoning_mode = mode
+
+        if not base_system_instructions:
+            base_system_instructions = ""
+
+        if mode == ReasoningMode.DIRECT:
+            result = ReasoningApplyResult(
+                mode=mode,
+                applied=False,
+                final_instructions=base_system_instructions,
+                extra={"note": "DIRECT mode (no reasoning augmentation)."},
+            )
+            self._write_reasoning_debug(state, result)
+            return result
+
+        if mode == ReasoningMode.COT_INTERNAL:
+            augmentation = self._cot_internal_instructions()
+            final = self._join_instructions(base_system_instructions, augmentation)
+
+            result = ReasoningApplyResult(
+                mode=mode,
+                applied=True,
+                final_instructions=final,
+                extra={
+                    "note": "COT_INTERNAL mode (internal reasoning; do not reveal chain-of-thought).",
+                    "capture_reasoning_trace": bool(reasoning_config.capture_reasoning_trace),
+                },
+            )
+            self._write_reasoning_debug(state, result)
+            return result
+
+        # Forward-compatible default: treat unknown modes as DIRECT.
+        result = ReasoningApplyResult(
+            mode=ReasoningMode.DIRECT,
+            applied=False,
+            final_instructions=base_system_instructions,
+            extra={
+                "note": f"Unknown ReasoningMode '{mode}'. Fallback to DIRECT.",
+                "requested_mode": str(mode),
+            },
+        )
+        state.reasoning_mode = ReasoningMode.DIRECT
+        self._write_reasoning_debug(state, result)
+        return result
+
+    # -----------------------
+    # Internals
+    # -----------------------
+
+    def _get_reasoning_config(self) -> ReasoningConfig:
+        """
+        Normalizes missing config to a default ReasoningConfig(DIRECT).
+        """
+        if self._config.reasoning_config is None:
+            return ReasoningConfig(mode=ReasoningMode.DIRECT)
+        return self._config.reasoning_config
+
+    def _cot_internal_instructions(self) -> str:
+        """
+        A minimal, safe instruction block for internal step-by-step reasoning.
+
+        Important: We instruct the model to keep chain-of-thought private
+        and produce only the final answer to the user.
+        """
+        return (
+            "Reason internally step by step before answering.\n"
+            "Do not reveal your chain-of-thought, internal steps, or hidden reasoning.\n"
+            "Provide only the final answer, clearly and concisely.\n"
+            "If uncertainty exists, state it explicitly and explain what is missing."
+        )
+
+    def _join_instructions(self, base: str, addition: str) -> str:
+        base = (base or "").strip()
+        addition = (addition or "").strip()
+        if not base:
+            return addition
+        if not addition:
+            return base
+        return f"{base}\n\n{addition}"
+
+    def _write_reasoning_debug(self, state: RuntimeState, result: ReasoningApplyResult) -> None:
+        """
+        Writes reasoning metadata to state.debug_trace and (optionally) to state.reasoning_trace.
+        Never stores raw chain-of-thought.
+        """
+        if state.debug_trace is None:
+            state.debug_trace = {}
+
+        state.debug_trace["reasoning"] = {
+            "mode": result.mode.value,
+            "applied": result.applied,
+            "extra": result.extra,
+        }
+
+        # Optional lightweight per-request trace object (still without CoT content).
+        # This is reserved for future PLAN_EXECUTE / structured reasoning modes.
+        if state.reasoning_trace is None:
+            state.reasoning_trace = {}
+        state.reasoning_trace.update(
+            {
+                "mode": result.mode.value,
+                "applied": result.applied,
+            }
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/responses/__init__.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.responses
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/responses/response_schema.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.responses.response_schema
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=response_schema.py
+# LINES: 179
+# SHA256: 5e4b2ba8250830508046eb1061b9ef0bccd6acfe1499d95b772a4d4b7563944b
+# SYMBOLS:
+#   - class Citation
+#   - class RouteInfo
+#   - class ToolCallInfo
+#   - class RuntimeStats
+#   - class HistoryCompressionStrategy
+#   - class RuntimeRequest
+#   - class RuntimeAnswer
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+"""
+Request and response data models for the Drop-In Knowledge Mode runtime.
+
+These dataclasses define the high-level contract between applications
+(FastAPI, Streamlit, CLI, MCP, etc.) and the DropInKnowledgeRuntime.
+
+They intentionally hide low-level implementation details while keeping
+enough structure to expose citations, routing information, tool calls,
+and basic statistics.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional
+from intergrax.llm.messages import AttachmentRef
+
+
+@dataclass
+class Citation:
+    """
+    Represents a single citation/reference used in the final answer.
+
+    This can point to:
+      - a document chunk in a vector store,
+      - a specific file and location,
+      - a web page,
+      - an internal knowledge base entry.
+    """
+
+    source_id: str
+    source_type: str  # e.g. "vectorstore", "file", "web", "db"
+    source_label: Optional[str] = None  # human-readable label
+    url: Optional[str] = None
+    score: Optional[float] = None
+    extra: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class RouteInfo:
+    """
+    Describes how the runtime decided to answer the question.
+
+    Useful for debugging, observability, and UI explanations.
+    """
+
+    used_rag: bool = False
+    used_websearch: bool = False
+    used_tools: bool = False
+    used_user_profile: bool = False
+    strategy: Optional[str] = None  # e.g. "simple", "agentic", "fallback_websearch"
+    extra: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ToolCallInfo:
+    """
+    Describes a single tool call executed during the runtime request.
+    """
+
+    tool_name: str
+    arguments: Dict[str, Any] = field(default_factory=dict)
+    result_summary: Optional[str] = None
+    success: bool = True
+    error_message: Optional[str] = None
+    extra: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class RuntimeStats:
+    """
+    Basic statistics about a runtime call.
+
+    This is intentionally simple and can be extended over time.
+    """
+
+    total_tokens: Optional[int] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    rag_tokens: Optional[int] = None
+    websearch_tokens: Optional[int] = None
+    tool_tokens: Optional[int] = None
+    duration_ms: Optional[int] = None
+    extra: Dict[str, Any] = field(default_factory=dict)
+
+
+class HistoryCompressionStrategy(Enum):
+    """
+    Strategy for compressing the conversation history before sending it
+    to the LLM.
+
+    - OFF
+        Do not modify or compress history at all.
+        (Risk: context window overflow for very long conversations.)
+
+    - TRUNCATE_OLDEST:
+        Drop the oldest messages until the history fits into the budget.
+    - SUMMARIZE_OLDEST:
+        Summarize the oldest portion of the history into a compact
+        synthetic message and keep more recent turns verbatim.
+    - HYBRID:
+        Combine truncation and summarization, e.g. truncate very old noise
+        and summarize the remaining older block.
+    """
+
+    OFF = "off"
+    TRUNCATE_OLDEST = "truncate_oldest"
+    SUMMARIZE_OLDEST = "summarize_oldest"
+    HYBRID = "hybrid"
+    
+
+@dataclass
+class RuntimeRequest:
+    """
+    High-level request structure for the Drop-In Knowledge runtime.
+
+    This object is built by the application layer and passed into the
+    DropInKnowledgeRuntime. It can be created directly or via helper
+    functions/wrappers in web frameworks.
+    """
+
+    user_id: str
+    session_id: str
+    message: str
+
+    attachments: List[AttachmentRef] = field(default_factory=list)
+
+    # Optional tenant/workspace scoping
+    tenant_id: Optional[str] = None
+    workspace_id: Optional[str] = None
+
+    # Optional UI / app metadata (channel, app name, etc.)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    # User-provided instructions (ChatGPT/Gemini-style)
+    instructions: Optional[str] = None
+
+
+    # Strategy used to keep the conversation history within the model
+    # context window for THIS request.
+    #
+    # If you don't specify anything when constructing the request,
+    # TRUNCATE_OLDEST will be used as a reasonable default.
+    history_compression_strategy: HistoryCompressionStrategy = HistoryCompressionStrategy.TRUNCATE_OLDEST
+
+    # Maximum number of output tokens for a single model response
+    # for THIS request.
+    #
+    # If None, the runtime/adapter will use its own internal default.
+    #
+    # NOTE:
+    # This is *not* the context window size. The maximum context window
+    # is defined by the underlying LLM adapter (context_window_tokens).
+    max_output_tokens: Optional[int] = None
+
+
+@dataclass
+class RuntimeAnswer:
+    """
+    High-level response structure returned by the Drop-In Knowledge runtime.
+
+    This contains the final answer, along with citations, routing info,
+    tool call summaries, and basic statistics.
+    """
+
+    answer: str
+    citations: List[Citation] = field(default_factory=list)
+    route: RouteInfo = field(default_factory=RouteInfo)
+    tool_calls: List[ToolCallInfo] = field(default_factory=list)
+    stats: RuntimeStats = field(default_factory=RuntimeStats)
+
+    # Optional raw model output or intermediate artifacts
+    raw_model_output: Optional[Any] = None
+    debug_trace: Dict[str, Any] = field(default_factory=dict)
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/session/__init__.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.session
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/session/chat_session.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.session.chat_session
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=chat_session.py
+# LINES: 145
+# SHA256: 3b849ae2b512c86002b303a4ac748ad8b9624d2a04a2eb1108972deb2354779d
+# SYMBOLS:
+#   - class SessionStatus
+#   - class SessionCloseReason
+#   - class ChatSession
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+from intergrax.llm.messages import AttachmentRef
+from enum import Enum
+
+
+class SessionStatus(str, Enum):
+    """
+    Domain-level status of a chat session.
+
+    Kept as `str` + `Enum` so that the value is JSON-serializable and
+    safe to store in DB or metadata.
+
+    Typical lifecycle:
+      - OPEN   → session is active and can receive messages
+      - CLOSED → session was finalized and should not be appended to
+    """
+
+    OPEN = "open"
+    CLOSED = "closed"
+
+
+class SessionCloseReason(str, Enum):
+    """
+    Optional domain-level reason for closing a chat session.
+
+    This is intentionally minimal for now; additional categories can
+    be added when the domain evolves (e.g. timeout, user_logout, etc.)
+    """
+
+    # The session was explicitly closed (default)
+    EXPLICIT = "explicit"
+
+    # Could be triggered by inactivity / timeout (future use)
+    TIMEOUT = "timeout"
+
+    # Session closed because the tenant/user context changed (future use)
+    CONTEXT_SWITCH = "context_switch"
+
+    # Generic fallback reason
+    UNKNOWN = "unknown"
+
+
+@dataclass
+class ChatSession:
+    """
+    Domain model describing a single chat session.
+
+    Important:
+      - This object does NOT store messages. The single source of truth for
+        conversation history is maintained by session-level storage
+        (e.g. ConversationalMemory, database, Redis, etc.).
+      - This model is intentionally I/O-free. It should not talk directly
+        to any storage backend. All persistence is handled by a manager
+        or storage component above it.
+    """
+
+    # Stable session identifier used throughout the runtime.
+    id: str
+
+    # Optional identifiers for user, tenant and workspace.
+    user_id: Optional[str] = None
+    tenant_id: Optional[str] = None     # can be used as organization/tenant identifier
+    workspace_id: Optional[str] = None  # workspace/project/context within a tenant
+
+    # Timestamps for auditing and retention policies.
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    # Optional per-session attachments (not tied directly to a single message).
+    attachments: List[AttachmentRef] = field(default_factory=list)
+
+    # Core domain state (typed)
+    status: SessionStatus = SessionStatus.OPEN  # "open" / "closed" – można kiedyś zamienić na Enum
+    closed_reason: Optional[SessionCloseReason] = None
+
+    user_turns: int = 0
+
+    # Consolidation-related state
+    last_consolidated_at: Optional[datetime] = None
+    last_consolidated_reason: Optional[str] = None  # wartości z SessionConsolidationReason.value
+    last_consolidated_turn: Optional[int] = None
+    last_consolidation_debug: Optional[Dict[str, Any]] = None
+
+    # Per-session instructions snapshot + refresh flag
+    user_profile_instructions: Optional[str] = None
+    org_profile_instructions: Optional[str] = None
+    needs_user_instructions_refresh: bool = False
+
+    # Arbitrary metadata (could contain tags, profile instruction cache, counters, etc.).
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    # ------------------------------------------------------------------
+    # Domain helpers (no I/O)
+    # ------------------------------------------------------------------
+
+    def touch(self) -> None:
+        """
+        Refresh modification timestamp.
+
+        Managers / storage components should call this before/after
+        mutating the session, but this method itself does not persist
+        anything.
+        """
+        self.updated_at = datetime.now(timezone.utc)
+
+    @property
+    def is_closed(self) -> bool:
+        """
+        Return True if this session is marked as closed at the domain level.
+        """
+        return self.status == SessionStatus.CLOSED
+
+    def mark_closed(self, reason: SessionCloseReason = None) -> None:
+        """
+        Mark this session as closed at the domain level.
+
+        This method does not persist changes. The caller is responsible
+        for saving the session via the session manager / storage.
+        """
+        self.status = SessionStatus.CLOSED        
+        self.closed_reason = reason or SessionCloseReason.EXPLICIT
+
+        self.touch()
+
+    def increment_user_turns(self) -> int:
+        """
+        Increment and return the per-session counter of user turns.
+
+        This is useful for heuristics like "synthesize memory every N user
+        messages". The counter is stored in user_turns.
+
+        This method updates in-memory state only. Persistence is the
+        responsibility of the manager / storage layer.
+        """        
+        self.user_turns += 1
+        self.touch()
+        return self.user_turns
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/session/in_memory_session_storage.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.session.in_memory_session_storage
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=in_memory_session_storage.py
+# LINES: 181
+# SHA256: 5d9d175f44122ddc9b86a9e41403c6c0070b94fe09c1692a8c6ad69bd5fbd769
+# SYMBOLS:
+#   - class InMemorySessionStorage
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+import uuid
+from dataclasses import replace
+from typing import Dict, List, Optional
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.memory.conversational_memory import ConversationalMemory
+from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
+from intergrax.runtime.drop_in_knowledge_mode.session.session_storage import SessionStorage
+
+
+class InMemorySessionStorage(SessionStorage):
+    """
+    In-memory implementation of SessionStorage.
+
+    Responsibilities:
+      - Keep ChatSession metadata in an in-process dictionary.
+      - Maintain per-session conversation history using ConversationalMemory.
+      - Apply a simple FIFO trimming policy via ConversationalMemory's
+        max_messages setting.
+
+    This implementation is suitable for:
+      - development,
+      - tests,
+      - single-process / single-node setups.
+
+    It is NOT intended for production use in distributed or long-lived
+    environments. For production you should implement a persistent
+    SessionStorage based on a database, Redis, or another durable backend.
+    """
+
+    def __init__(
+        self,
+        *,
+        max_history_messages: Optional[int] = None,
+    ) -> None:
+        # Metadata storage (chat sessions registry).
+        self._sessions: Dict[str, ChatSession] = {}
+
+        # Internal conversational memory storage (one per session).
+        self._conv_memory: Dict[str, ConversationalMemory] = {}
+
+        # Maximum number of messages to keep before trimming FIFO-style.
+        self._max_history_messages = max_history_messages
+
+    # ------------------------------------------------------------------
+    # Session metadata CRUD
+    # ------------------------------------------------------------------
+
+    async def get_session(self, session_id: str) -> Optional[ChatSession]:
+        """
+        Return the session metadata if it exists, else None.
+
+        A shallow copy of the session is returned so that callers cannot
+        accidentally mutate the internal storage without calling save_session().
+        """
+        session = self._sessions.get(session_id)
+        if session is None:
+            return None
+        return replace(session)
+
+    async def create_session(
+        self,
+        session_id: Optional[str] = None,
+        *,
+        user_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        workspace_id: Optional[str] = None,
+        metadata: Optional[dict] = None,
+    ) -> ChatSession:
+        """
+        Create and persist a new ChatSession.
+
+        If session_id is None, a new UUID4-based id is generated.
+        """
+        if session_id is None:
+            session_id = str(uuid.uuid4())
+
+        if metadata is None:
+            metadata = {}
+
+        session = ChatSession(
+            id=session_id,
+            user_id=user_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            metadata=dict(metadata),
+        )
+
+        self._sessions[session_id] = session
+        return replace(session)
+
+    async def save_session(self, session: ChatSession) -> None:
+        """
+        Persist changes to an existing ChatSession.
+
+        For the in-memory implementation this simply updates
+        the internal dictionary.
+        """
+        self._sessions[session.id] = session
+
+    async def list_sessions_for_user(
+        self,
+        user_id: str,
+        *,
+        limit: Optional[int] = None,
+    ) -> List[ChatSession]:
+        """
+        List recent sessions for a given user, ordered by recency.
+        """
+        sessions = [s for s in self._sessions.values() if s.user_id == user_id]
+        sessions.sort(key=lambda s: s.updated_at, reverse=True)
+
+        if limit is not None and limit > 0:
+            sessions = sessions[:limit]
+
+        # Return copies so callers cannot mutate internal state directly.
+        return [replace(s) for s in sessions]
+
+    # ------------------------------------------------------------------
+    # Conversation history operations
+    # ------------------------------------------------------------------
+
+    async def append_message(
+        self,
+        session_id: str,
+        message: ChatMessage,
+    ) -> ChatMessage:
+        """
+        Append a single message to the conversation history of a session.
+
+        If the session does not exist, a KeyError is raised.
+        If no ConversationalMemory exists yet for the session, it is created.
+        """
+        session = self._sessions.get(session_id)
+        if session is None:
+            raise KeyError(f"Session '{session_id}' does not exist")
+
+        memory = self._conv_memory.get(session_id)
+
+        # Safety fallback: create a new conversational memory if missing.
+        if memory is None:
+            memory = ConversationalMemory(
+                session_id=session_id,
+                max_messages=self._max_history_messages,
+            )
+            self._conv_memory[session_id] = memory
+
+        # Delegate trimming / retention policy to ConversationalMemory.
+        memory.add_message(message)
+
+        # Update session recency.
+        session.touch()
+        self._sessions[session_id] = session
+
+        return message
+
+    async def get_history(
+        self,
+        session_id: str,
+        *,
+        native_tools: bool = False,
+    ) -> List[ChatMessage]:
+        """
+        Return the ordered conversation history for a given session id.
+
+        Trimming logic (max history size, FIFO) is handled internally by
+        the underlying ConversationalMemory instance.
+        """
+        memory = self._conv_memory.get(session_id)
+        if memory is None:
+            return []
+
+        # Still uses ConversationalMemory under the hood, but the storage
+        # interface does not talk about LLMs or prompts.
+        return memory.get_for_model(native_tools=native_tools)
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/session/session_manager.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.session.session_manager
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=session_manager.py
+# LINES: 603
+# SHA256: 026e1eaf66e88054d93d18ca05a06cbd8b78ee01a77dfb7545bcefda5281af8b
+# SYMBOLS:
+#   - class SessionConsolidationReason
+#   - class SessionManager
+# ======================================================================
+from __future__ import annotations
+
+from enum import Enum
+from typing import Any, Dict, List, Optional, Sequence
+from datetime import datetime, timezone
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.llm.messages import ChatMessage
+from intergrax.memory.user_profile_manager import UserProfileManager
+from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import (
+    ChatSession,
+    SessionCloseReason,
+)
+from intergrax.runtime.drop_in_knowledge_mode.session.session_storage import (
+    SessionStorage,
+)
+from intergrax.runtime.organization.organization_profile_manager import (
+    OrganizationProfileManager,
+)
+from intergrax.runtime.user_profile.session_memory_consolidation_service import (
+    SessionMemoryConsolidationService,
+)
+
+
+class SessionConsolidationReason(str, Enum):
+    """
+    Enumeration of session consolidation triggers.
+    Keeping this as `str` + `Enum` ensures that the value
+    is safe to serialize into metadata and logs.
+    """
+
+    MID_SESSION = "mid_session"
+    CLOSE_SESSION = "close_session"
+
+
+class SessionManager:
+    """
+    High-level manager for chat sessions.
+
+    Responsibilities:
+      - Orchestrate session lifecycle on top of a SessionStorage backend.
+      - Provide a stable API for the runtime engine (DropInKnowledgeRuntime).
+      - Integrate with user/organization profile managers to expose
+        prompt-ready system instructions per session.
+      - Optionally trigger long-term user memory consolidation for a session.
+
+    This class should be the *only* component that the runtime engine
+    talks to when it comes to sessions and their metadata/history.
+    """
+
+    def __init__(
+        self,
+        storage: SessionStorage,
+        *,
+        user_profile_manager: Optional[UserProfileManager] = None,
+        organization_profile_manager: Optional[OrganizationProfileManager] = None,
+        session_memory_consolidation_service: Optional[
+            SessionMemoryConsolidationService
+        ] = None,
+        user_turns_consolidation_interval: Optional[
+            int
+        ] = GLOBAL_SETTINGS.default_user_turns_consolidation_interval,
+        consolidation_cooldown_seconds: Optional[
+            int
+        ] = GLOBAL_SETTINGS.default_consolidation_cooldown_seconds,
+    ) -> None:
+        """
+        Initialize a new SessionManager instance.
+
+        Args:
+            storage:
+                Low-level session + history storage backend (in-memory, DB, etc.).
+            user_profile_manager:
+                Optional manager used to resolve user-level system instructions
+                and to write long-term user profile memory.
+            organization_profile_manager:
+                Optional manager used to resolve organization-level
+                system instructions (per tenant / org).
+            session_memory_consolidation_service:
+                Optional service responsible for consolidating a single session
+                into long-term user profile memory entries and refreshing
+                user-level system instructions.
+            user_turns_consolidation_interval:
+                Interval (in user turns) for mid-session consolidation.
+                If None or non-positive, mid-session consolidation is disabled.
+            consolidation_cooldown_seconds:
+                Cooldown (in seconds) between mid-session consolidations for a
+                single session. If None or non-positive, no cooldown is applied.
+        """
+        # Low-level storage backend (in-memory, DB, Redis, etc.).
+        self._storage = storage
+
+        # High-level managers for profile-based instructions (optional).
+        self._user_profile_manager = user_profile_manager
+        self._organization_profile_manager = organization_profile_manager
+
+        # Optional service that can consolidate a single session into
+        # long-term user profile memory entries and refresh user-level
+        # system instructions.
+        self._session_memory_consolidation_service = (
+            session_memory_consolidation_service
+        )
+
+        # Resolve the effective interval for mid-session consolidation.
+        # The value is interpreted as:
+        #   - > 0  → consolidate every N-th user message,
+        #   - <= 0 → mid-session consolidation disabled.
+        if (
+            user_turns_consolidation_interval is not None
+            and user_turns_consolidation_interval > 0
+        ):
+            effective_interval = user_turns_consolidation_interval
+        else:
+            effective_interval = 0
+
+        self._user_turns_consolidation_interval: int = effective_interval
+
+        # Effective cooldown in seconds between mid-session consolidations.
+        # The value is interpreted as:
+        #   - > 0  → enforce cooldown,
+        #   - <= 0 → no cooldown (only the interval is applied).
+        if (
+            consolidation_cooldown_seconds is not None
+            and consolidation_cooldown_seconds > 0
+        ):
+            effective_cooldown = consolidation_cooldown_seconds
+        else:
+            effective_cooldown = 0
+
+        self._consolidation_cooldown_seconds: int = effective_cooldown
+
+
+    async def get_history(self, session_id: str) -> List[ChatMessage]:
+        return await self._storage.get_history(session_id=session_id)
+
+    # ------------------------------------------------------------------
+    # Session lifecycle (metadata)
+    # ------------------------------------------------------------------
+
+    async def get_session(self, session_id: str) -> Optional[ChatSession]:
+        """
+        Return ChatSession metadata if it exists, else None.
+        """
+        return await self._storage.get_session(session_id)
+
+    async def create_session(
+        self,
+        session_id: Optional[str] = None,
+        *,
+        user_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        workspace_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> ChatSession:
+        """
+        Create and persist a new ChatSession via the underlying storage.
+
+        Notes:
+          - If session_id is None, the storage may generate a new identifier.
+          - This method only encapsulates construction + basic defaults;
+            all persistence is delegated to SessionStorage.
+        """
+        return await self._storage.create_session(
+            session_id=session_id,
+            user_id=user_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            metadata=metadata,
+        )
+
+    async def save_session(self, session: ChatSession) -> None:
+        """
+        Persist changes to an existing ChatSession.
+
+        The manager refreshes the modification timestamp and delegates
+        the actual persistence to the storage backend.
+        """
+        session.touch()
+        await self._storage.save_session(session)
+
+    async def close_session(
+        self,
+        session_id: str,
+        *,
+        reason: Optional[SessionCloseReason] = None,
+    ) -> None:
+        """
+        Mark a session as closed at the domain level and, if configured,
+        trigger long-term memory consolidation for this session.
+
+        Behavior:
+          - Mark the ChatSession as closed and persist it.
+          - If a SessionMemoryConsolidationService is available and the
+            session has an associated user_id:
+              * load the conversation history for this session,
+              * call consolidate_session(user_id, session_id, messages)
+                to extract long-term memory entries and update the
+                user's system_instructions (side-effect).
+
+        Args:
+            session_id:
+                Identifier of the session to close.
+            reason:
+                Optional domain-level reason. If None, a default
+                SessionCloseReason.EXPLICIT is used.
+        """
+        session = await self._storage.get_session(session_id)
+        if session is None:
+            return
+
+        # Decide which close reason to apply. If caller did not provide one,
+        # we use EXPLICIT as the default semantic.
+        effective_reason = reason or SessionCloseReason.EXPLICIT
+
+        # 1) Domain-level close (no deletion of messages).
+        #    ChatSession is responsible for updating its own status and
+        #    closed_reason according to the enum value.
+        session.mark_closed(reason=effective_reason)
+        await self._storage.save_session(session)
+
+        # 2) Optional: consolidate this session into long-term user memory.
+        #    We only do this if:
+        #      - the service is configured, and
+        #      - the session is associated with a user_id.
+        if (
+            self._session_memory_consolidation_service is not None
+            and session.user_id
+        ):
+            # Fetch full conversation history for this session. This allows the
+            # consolidation service to decide how much to trim and which parts
+            # to keep, based on its own config (max messages, char budget, etc.).
+            messages = await self.get_history_for_session(session_id)
+
+            # If there's no history, there is nothing to consolidate.
+            if messages:
+                stored_entries = (
+                    await self._session_memory_consolidation_service.consolidate_session(
+                        user_id=session.user_id,
+                        session_id=session_id,
+                        messages=messages,
+                    )
+                )
+
+                debug_info = self._build_consolidation_debug_info(stored_entries)
+
+                # Mark that this session has been consolidated as part of close_session.
+                await self._mark_session_consolidated(
+                    session,
+                    reason=SessionConsolidationReason.CLOSE_SESSION,
+                    # Store the final user_turns value to indicate at which
+                    # point the last consolidation happened.
+                    turn=session.user_turns,
+                    debug_info=debug_info,
+                )
+
+    async def list_sessions_for_user(
+        self,
+        user_id: str,
+        *,
+        limit: Optional[int] = None,
+    ) -> List[ChatSession]:
+        """
+        List recent sessions for a given user, ordered by recency.
+        """
+        return await self._storage.list_sessions_for_user(user_id, limit=limit)
+
+    # ------------------------------------------------------------------
+    # Conversation history
+    # ------------------------------------------------------------------
+
+    async def append_message(
+        self,
+        session_id: str,
+        message: ChatMessage,
+    ) -> ChatMessage:
+        """
+        Append a single message to the conversation history of a session.
+
+        Domain rules:
+          - For user messages, increment the per-session "user_turns" counter
+            stored in ChatSession.user_turns.
+          - Optionally, every N-th user message, trigger mid-session
+            long-term memory consolidation for this session.
+          - Trimming / retention policies for history are implemented by the
+            underlying storage (e.g. ConversationalMemory).
+
+        Note:
+          - This method intentionally keeps domain logic (user_turns and
+            consolidation hooks) at the manager level, while the storage
+            remains responsible only for persisting sessions and their history.
+        """
+        # Try to load the session so we can apply domain-level updates
+        # (user_turns counter, timestamps, etc.).
+        session = await self._storage.get_session(session_id)
+
+        # Increment user_turns only for user messages and only if the
+        # session exists. If the session is missing, we delegate error
+        # handling to the storage.append_message call below.
+        if session is not None and message.role == "user":
+            # This updates in-memory state and timestamps; persistence is
+            # delegated to save_session().
+            user_turns = session.increment_user_turns()
+            await self.save_session(session)
+
+            # Decide whether to trigger mid-session consolidation.
+            if (
+                self._session_memory_consolidation_service is not None
+                and session.user_id
+            ):
+                interval = self._user_turns_consolidation_interval
+                # Only trigger if:
+                #   - the interval is positive,
+                #   - we reached an exact multiple (e.g. 8, 16, 24...),
+                #   - and the cooldown since the last consolidation has passed.
+                if (
+                    interval > 0
+                    and (user_turns % interval) == 0
+                    and self._is_mid_session_consolidation_allowed(session)
+                ):
+                    # Fetch the current conversation history for this session.
+                    # The consolidation service is responsible for trimming
+                    # or summarizing as needed based on its own config.
+                    messages = await self.get_history_for_session(session_id)
+
+                    if messages:
+                        stored_entries = (
+                            await self._session_memory_consolidation_service.consolidate_session(
+                                user_id=session.user_id,
+                                session_id=session_id,
+                                messages=messages,
+                            )
+                        )
+
+                        # Build a small debug payload based on the stored entries.
+                        debug_info = self._build_consolidation_debug_info(
+                            stored_entries
+                        )
+
+                        # Record consolidation metadata for debugging and future heuristics.
+                        await self._mark_session_consolidated(
+                            session,
+                            reason=SessionConsolidationReason.MID_SESSION,
+                            turn=user_turns,
+                            debug_info=debug_info,
+                        )
+
+        # Delegate message persistence to the storage backend. The storage
+        # may apply its own retention/trimming logic (FIFO, max_messages, etc.).
+        return await self._storage.append_message(session_id, message)
+
+    async def get_history_for_session(
+        self,
+        session_id: str,
+        *,
+        native_tools: bool = False,
+    ) -> List[ChatMessage]:
+        """
+        Convenience helper: return conversation history by session id.
+
+        This is the primary method to use from higher-level components
+        (e.g. memory consolidation services) when they need the full
+        conversation for a given session.
+        """
+        return await self._storage.get_history(
+            session_id=session_id,
+            native_tools=native_tools,
+        )
+
+    # ------------------------------------------------------------------
+    # User profile memory – prompt-level instructions (per session)
+    # ------------------------------------------------------------------
+
+    async def get_user_profile_instructions_for_session(
+        self,
+        session: ChatSession,
+    ) -> Optional[str]:
+        """
+        Return a prompt-ready user profile instruction string for this session.
+
+        Behavior:
+          - If a cached value is present in session.user_profile_instructions
+            and the session is not marked as requiring a refresh, it is
+            returned (after stripping whitespace).
+          - Otherwise this method delegates to UserProfileManager, calling
+            `get_system_instructions_for_user(user_id)` which returns the
+            effective user-level system instructions (already including any
+            internal fallbacks), caches the resulting string on the session,
+            and saves the updated session.
+
+        Semantics:
+          - Instructions are effectively *snapshotted per session*.
+            If the underlying user profile changes (e.g. after consolidation),
+            the session can be marked as requiring a refresh and will then
+            re-resolve instructions on the next call.
+        """
+        # No associated user or no profile manager → no instructions.
+        if not session.user_id:
+            return None
+        if self._user_profile_manager is None:
+            return None
+
+        needs_refresh = session.needs_user_instructions_refresh
+
+        # 1) Try cached instructions from the session.
+        cached = session.user_profile_instructions
+        if not needs_refresh and isinstance(cached, str):
+            stripped = cached.strip()
+            if stripped:
+                return stripped
+
+        # 2) Fallback: resolve from the user profile manager.
+        # The manager encapsulates all logic of:
+        #   - using profile.system_instructions if set,
+        #   - or falling back to a deterministic summary if not.
+        instructions = await self._user_profile_manager.get_system_instructions_for_user(
+            session.user_id
+        )
+        if not isinstance(instructions, str):
+            return None
+
+        stripped = instructions.strip()
+        if not stripped:
+            return None
+
+        # 3) Cache on the session and persist.
+        session.user_profile_instructions = stripped
+        session.needs_user_instructions_refresh = False
+
+        await self.save_session(session)
+
+        return stripped
+
+    # ------------------------------------------------------------------
+    # Organization profile memory – prompt-level instructions (per session)
+    # ------------------------------------------------------------------
+
+    async def get_org_profile_instructions_for_session(
+        self,
+        session: ChatSession,
+    ) -> Optional[str]:
+        """
+        Return a prompt-ready organization profile instruction string
+        for this session.
+
+        Behavior:
+          - If a cached value is present in session.org_profile_instructions,
+            it is returned (after stripping whitespace).
+          - Otherwise this method delegates to OrganizationProfileManager, calling
+            `get_system_instructions_for_organization(organization_id, ...)`,
+            caches the resulting string on the session, and saves the updated
+            session.
+
+        Note:
+          - This method no longer uses prompt bundles; it works purely on
+            the final system-instructions string exposed by the manager.
+          - The organization identifier is derived from session.tenant_id.
+        """
+        # No associated tenant or no organization profile manager → no instructions.
+        if not session.tenant_id:
+            return None
+        if self._organization_profile_manager is None:
+            return None
+
+        # 1) Try cached instructions from the session.
+        cached = session.org_profile_instructions
+        if isinstance(cached, str):
+            stripped = cached.strip()
+            if stripped:
+                return stripped
+
+        # 2) Fallback: resolve from the organization profile manager.
+        instructions = (
+            await self._organization_profile_manager.get_system_instructions_for_organization(
+                organization_id=session.tenant_id
+            )
+        )
+        if not isinstance(instructions, str):
+            return None
+
+        stripped = instructions.strip()
+        if not stripped:
+            return None
+
+        # 3) Cache on the session and persist.
+        session.org_profile_instructions = stripped
+        await self.save_session(session)
+
+        return stripped
+
+    # ------------------------------------------------------------------
+    # Consolidation helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _build_consolidation_debug_info(
+        entries: Sequence[Any],
+    ) -> Dict[str, Any]:
+        """
+        Build a lightweight debug payload describing the outcome of a
+        consolidation run.
+
+        The structure is intentionally simple and JSON-serializable so it can
+        be safely stored in session.last_consolidation_debug.
+        """
+        total = len(entries)
+
+        # Try to infer entry types in a defensive way. We deliberately avoid
+        # using getattr(...) here. Instead:
+        #   - if the object exposes an 'entry_type' attribute, we use it,
+        #   - otherwise we fallback to the literal "unknown".
+        type_counts: Dict[str, int] = {}
+        for e in entries:
+            if hasattr(e, "entry_type"):
+                # We ignore type-checker complaints here because not all
+                # objects in the list are guaranteed to have this attribute.
+                entry_type = e.entry_type  # type: ignore[attr-defined]
+            else:
+                entry_type = "unknown"
+
+            key = str(entry_type)
+            type_counts[key] = type_counts.get(key, 0) + 1
+
+        return {
+            "entries_count": total,
+            "entry_types": type_counts,
+        }
+
+    async def _mark_session_consolidated(
+        self,
+        session: ChatSession,
+        *,
+        reason: SessionConsolidationReason,
+        turn: Optional[int] = None,
+        debug_info: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Mark the given session as having been consolidated into long-term
+        user memory.
+
+        Side effects:
+          - Updates typed consolidation fields on the ChatSession:
+              last_consolidated_at
+              last_consolidated_reason
+              last_consolidated_turn
+              last_consolidation_debug
+              needs_user_instructions_refresh
+          - Persists the updated session via save_session().
+
+        The debug payload is intentionally small and JSON-serializable so it
+        can be logged or inspected by tooling without additional parsing.
+        """
+        # When using typed fields we keep the timestamp as a proper datetime
+        # object in UTC. If string serialization is needed (e.g. for DB),
+        # the storage backend is responsible for that conversion.
+        now_utc = datetime.now(timezone.utc)
+
+        session.last_consolidated_at = now_utc
+        session.last_consolidated_reason = reason.value
+
+        # Mark that the underlying user profile may have changed
+        # (new memory entries, regenerated system_instructions).
+        # Existing sessions should refresh their cached instructions
+        # on the next call to get_user_profile_instructions_for_session().
+        session.needs_user_instructions_refresh = True
+
+        if turn is not None:
+            session.last_consolidated_turn = int(turn)
+
+        if debug_info is not None:
+            session.last_consolidation_debug = debug_info
+
+        # Persist the updated consolidation metadata (and refresh modification
+        # timestamp via save_session()).
+        await self.save_session(session)
+
+    def _is_mid_session_consolidation_allowed(self, session: ChatSession) -> bool:
+        """
+        Check whether we are allowed to run a mid-session consolidation
+        for the given session based on a simple cooldown.
+
+        Logic:
+          - If cooldown <= 0 → always allowed.
+          - If there is no last_consolidated_at on the session → allowed.
+          - Otherwise, only allowed if at least `cooldown` seconds have
+            passed since the last consolidation.
+        """
+        cooldown = self._consolidation_cooldown_seconds
+
+        if cooldown <= 0:
+            return True
+
+        last_dt = session.last_consolidated_at
+        if last_dt is None:
+            return True
+
+        # Ensure we are working with an aware UTC datetime.
+        if last_dt.tzinfo is None:
+            last_dt = last_dt.replace(tzinfo=timezone.utc)
+
+        now = datetime.now(timezone.utc)
+        elapsed_seconds = (now - last_dt).total_seconds()
+
+        return elapsed_seconds >= cooldown
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/session/session_storage.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.session.session_storage
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=session_storage.py
+# LINES: 129
+# SHA256: 135a750dd88598fc774666a50b5adc868df52bfe8e5f70271f58329aef89f4b4
+# SYMBOLS:
+#   - class SessionStorage
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Protocol, Optional, List
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
+
+
+class SessionStorage(Protocol):
+    """
+    Low-level storage interface for chat sessions and their conversation
+    history.
+
+    Responsibilities:
+      - Persist and load ChatSession objects.
+      - Persist and load conversation history (ChatMessage sequences)
+        for a given session.
+
+    This interface is intentionally minimal and does not contain any
+    higher-level domain logic (no profile instructions, no memory
+    synthesis, no counters). Those responsibilities belong to the
+    SessionManager layer built on top of this storage.
+    """
+
+    # ------------------------------------------------------------------
+    # Session metadata CRUD
+    # ------------------------------------------------------------------
+
+    async def get_session(self, session_id: str) -> Optional[ChatSession]:
+        """
+        Load a session by its identifier.
+
+        Returns:
+            ChatSession if found, otherwise None.
+        """
+        ...
+
+    async def create_session(
+        self,
+        session_id: Optional[str] = None,
+        *,
+        user_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        workspace_id: Optional[str] = None,
+        metadata: Optional[dict] = None,
+    ) -> ChatSession:
+        """
+        Create and persist a new ChatSession.
+
+        If session_id is None, the storage is allowed to generate its own
+        identifier (e.g. UUID4).
+        """
+        ...
+        
+
+    async def save_session(self, session: ChatSession) -> None:
+        """
+        Persist changes to an existing ChatSession.
+
+        This should be called by the SessionManager whenever session
+        metadata (including timestamps) is updated.
+        """
+        ...
+
+    async def list_sessions_for_user(
+        self,
+        user_id: str,
+        *,
+        limit: Optional[int] = None,
+    ) -> List[ChatSession]:
+        """
+        List recent sessions for a given user, ordered by recency
+        (e.g. updated_at descending).
+
+        Parameters:
+            user_id:
+                Identifier of the user.
+            limit:
+                Maximum number of sessions to return.
+
+        Returns:
+            A list of ChatSession objects (may be empty).
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Conversation history operations
+    # ------------------------------------------------------------------
+
+    async def append_message(
+        self,
+        session_id: str,
+        message: ChatMessage,
+    ) -> ChatMessage:
+        """
+        Append a single message to the conversation history of a session.
+
+        Implementations may apply trimming or other retention policies,
+        but the general contract is:
+          - message is persisted,
+          - the stored message (possibly enriched with additional data)
+            is returned.
+        """
+        ...
+
+    async def get_history(
+        self,
+        session_id: str,
+        *,
+        native_tools: bool = False,
+    ) -> List[ChatMessage]:
+        """
+        Return the ordered conversation history for a given session id.
+
+        Parameters:
+            session_id:
+                Identifier of the session.
+            native_tools:
+                If True, return messages with native tool-calls preserved
+                (depending on the underlying history implementation).
+
+        Returns:
+            A list of ChatMessage objects in chronological order
+            (may be empty if no history exists for the session).
+        """
+        ...
+
+# ======================================================================
+# FILE: intergrax/runtime/organization/__init__.py
+# MODULE: intergrax.runtime.organization
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/organization/organization_profile.py
+# MODULE: intergrax.runtime.organization.organization_profile
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=organization_profile.py
+# LINES: 132
+# SHA256: fefdf82648349202cb93ca0841ecb9939750647296530293e82f5d3121c867f5
+# SYMBOLS:
+#   - class OrganizationIdentity
+#   - class OrganizationPreferences
+#   - class OrganizationProfile
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import List, Dict, Any, Optional
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+
+
+@dataclass
+class OrganizationIdentity:
+    """
+    Stable identification data for an organization.
+
+    This is the organizational counterpart of `UserIdentity`.
+    It should be stable over time and independent from the current session.
+    """
+
+    organization_id: str
+    # Human-readable display name (short)
+    name: str
+
+    # Optional legal / extended naming
+    legal_name: Optional[str] = None
+
+    # Optional technical identifiers
+    slug: Optional[str] = None           # e.g. "buildlogic", "acme-corp"
+    primary_domain: Optional[str] = None # e.g. "buildlogic.pl"
+
+    # Optional basic metadata
+    industry: Optional[str] = None       # e.g. "software", "finance", "manufacturing"
+    headquarters_location: Optional[str] = None  # e.g. "Warsaw, PL"
+    default_timezone: Optional[str] = None       # e.g. "Europe/Warsaw"
+
+
+@dataclass
+class OrganizationPreferences:
+    """
+    Stable organization-level preferences that influence how the runtime
+    should behave when working in the context of this organization.
+
+    This is analogous to `UserPreferences`, but from a corporate / org perspective.
+    """
+
+    # Output / communication preferences
+    default_language: str = GLOBAL_SETTINGS.default_language
+    default_output_format: str = "markdown"  # e.g. "markdown", "text", "html"
+    tone_of_voice: str = "neutral-professional"
+
+    # Runtime capabilities and safety
+    allow_web_search: bool = True
+    allow_tools: bool = True
+
+    # Sensitive / restricted topics (organization-specific)
+    # Example: ["confidential_projects", "legal_disputes"]
+    sensitive_topics: List[str] = field(default_factory=list)
+
+    # Hard constraints: MUST be respected by the runtime
+    # Example: ["Never share internal source code.", "Do not mention client names."]
+    hard_constraints: List[str] = field(default_factory=list)
+
+    # Soft guidelines: SHOULD be respected when possible
+    # Example: ["Prefer concise answers.", "Use bullet points for checklists."]
+    soft_guidelines: List[str] = field(default_factory=list)
+
+
+@dataclass
+class OrganizationProfile:
+    """
+    Single source of truth for an organization's long-term profile.
+
+    Mirrors the UserProfile structure:
+
+      - identity + preferences: stable configuration
+      - system_instructions: compact, prompt-ready instructions for the runtime
+      - memory_entries: list of long-term memory entries (unit-of-work)
+
+    Legacy fields (summary_instructions, domain_summary, knowledge_summary, ...)
+    are kept for backwards compatibility and potential migration,
+    but new code should treat `system_instructions` as the primary
+    organization-level system prompt.
+    """
+
+    identity: OrganizationIdentity
+    preferences: OrganizationPreferences = field(
+        default_factory=OrganizationPreferences
+    )
+
+    # New architecture: compact, prompt-ready system instructions
+    # used directly (or almost directly) in the runtime as system-level
+    # instructions for this organization.
+    system_instructions: Optional[str] = None
+
+    # ------------------------------------------------------------------
+    # Legacy / high-level summary fields
+    # ------------------------------------------------------------------
+
+    # Legacy field: if present, can be used as a pre-composed summary
+    # for older code or migration logic. New code should prefer
+    # `system_instructions` instead.
+    summary_instructions: str = ""
+
+    # Short, high-level description of what the organization does.
+    # Example: "Buildlogic is a software company focused on AI-powered ERP systems."
+    domain_summary: str = ""
+
+    # Compressed summary of known organizational knowledge:
+    # architecture principles, domain rules, important projects, etc.
+    knowledge_summary: str = ""
+
+    # Where the organization knowledge comes from (for traceability).
+    # Example: ["Confluence: /ai/architecture", "Mooff docs v2", "Security handbook"]
+    knowledge_sources: List[str] = field(default_factory=list)
+
+    # Tags for filtering / routing.
+    # Example: ["fintech", "erp", "ai", "b2b"]
+    tags: List[str] = field(default_factory=list)
+
+    # Last update timestamp of the profile (UTC).
+    last_updated_utc: datetime = field(default_factory=datetime.utcnow)
+
+    # Extra extensible metadata (for future use).
+    extra: Dict[str, Any] = field(default_factory=dict)
+
+    # Top-level modification flag for the profile (e.g. preferences,
+    # system_instructions, extra). Concrete stores may use this to decide
+    # whether they need to perform an UPDATE at the profile level.
+    modified: bool = False
+
+# ======================================================================
+# FILE: intergrax/runtime/organization/organization_profile_instructions_service.py
+# MODULE: intergrax.runtime.organization.organization_profile_instructions_service
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=organization_profile_instructions_service.py
+# LINES: 198
+# SHA256: 04818763165ea49e74baf57c2c8882f78da275ebe9330ebf901b8e9443d28785
+# SYMBOLS:
+#   - class OrgProfileInstructionsConfig
+#   - class OrganizationProfileInstructionsService
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Optional, List, Dict, Any
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.llm_adapters.base import LLMAdapter
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.organization.organization_profile import OrganizationProfile
+from intergrax.runtime.organization.organization_profile_manager import OrganizationProfileManager
+
+
+@dataclass
+class OrgProfileInstructionsConfig:
+    """
+    Configuration for organization-level system instructions generation.
+    """
+
+    max_chars: int = 1500
+    language: str = GLOBAL_SETTINGS.default_language
+    regenerate_if_present: bool = False
+    extra: Dict[str, Any] = None
+
+    def __post_init__(self) -> None:
+        if self.extra is None:
+            self.extra = {}
+
+
+class OrganizationProfileInstructionsService:
+    """
+    Service that generates and updates organization-level system_instructions
+    using an LLMAdapter, based on OrganizationProfile:
+
+      - identity              (who the organization is),
+      - preferences           (how the runtime should behave in this org),
+      - domain/knowledge data,
+      - memory_entries        (long-term org-level notes).
+
+    Responsibilities:
+      - Load OrganizationProfile via OrganizationProfileManager.
+      - Build an LLM prompt using identity, preferences, summaries and memory entries.
+      - Call LLMAdapter.generate_messages() to obtain a compact, stable
+        organization-level system prompt.
+      - Persist the result via OrganizationProfileManager.update_system_instructions().
+    """
+
+    def __init__(
+        self,
+        llm: LLMAdapter,
+        manager: OrganizationProfileManager,
+        config: Optional[OrgProfileInstructionsConfig] = None,
+    ) -> None:
+        self._llm = llm
+        self._manager = manager
+        self._config = config or OrgProfileInstructionsConfig()
+
+    async def build_and_save_system_instructions(
+        self,
+        organization_id: str,
+        *,
+        force: bool = False,
+    ) -> str:
+        """
+        Generate and persist organization-level system instructions.
+
+        Parameters:
+          organization_id:
+              Identifier of the organization whose profile should be updated.
+          force:
+              If True, always regenerate instructions even if they already exist.
+
+        Behavior:
+          - If force is False and profile.system_instructions exists and
+            config.regenerate_if_present is False -> return existing value.
+          - Otherwise:
+              1) Load OrganizationProfile.
+              2) Build an LLM prompt from identity, preferences, domain/knowledge
+                 summaries and memory entries.
+              3) Call LLMAdapter.generate_messages() to generate compact instructions.
+              4) Truncate to max_chars, strip whitespace.
+              5) Save via OrganizationProfileManager.update_system_instructions().
+              6) Return the final string.
+        """
+        profile = await self._manager.get_profile(organization_id)
+
+        if (
+            profile.system_instructions
+            and not force
+            and not self._config.regenerate_if_present
+        ):
+            return profile.system_instructions
+
+        prompt_text = self._build_prompt(profile)
+        raw_instructions = await self._call_llm(prompt_text)
+
+        instructions = raw_instructions.strip()
+        if len(instructions) > self._config.max_chars:
+            instructions = instructions[: self._config.max_chars].rstrip()
+
+        await self._manager.update_system_instructions(organization_id, instructions)
+        return instructions
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _build_prompt(self, profile: OrganizationProfile) -> str:
+        """
+        Build a text prompt for the LLM from the given organization profile.
+        """
+        identity = profile.identity
+        prefs = profile.preferences
+
+        domain_summary = profile.domain_summary or "(no domain_summary provided)"
+        knowledge_summary = profile.knowledge_summary or "(no knowledge_summary provided)"
+        knowledge_sources = profile.knowledge_sources or []
+        tags = profile.tags or []
+
+        return f"""
+You are a system-instructions builder for a conversational AI assistant
+working in the context of a specific organization (tenant).
+
+Your TASK:
+- Create a compact, stable organization-level system prompt describing
+  how the assistant should behave when serving users from this organization.
+
+Constraints:
+- Language of the output: {self._config.language}.
+- Maximum length: about {self._config.max_chars} characters.
+- The instructions will apply across MANY sessions and users within this tenant.
+- Focus on:
+    * industry, products/services, typical use-cases,
+    * tone, language, and formality,
+    * policies regarding web search, tools, and data safety,
+    * sensitive topics to avoid or handle carefully,
+    * what the assistant is allowed or not allowed to do.
+
+ORGANIZATION IDENTITY:
+- organization_id: {identity.organization_id}
+- name: {identity.name}
+- legal_name: {identity.legal_name}
+- slug: {identity.slug}
+- primary_domain: {identity.primary_domain}
+- industry: {identity.industry}
+- headquarters_location: {identity.headquarters_location}
+- default_timezone: {identity.default_timezone}
+
+ORGANIZATION PREFERENCES:
+- default_language: {prefs.default_language}
+- default_output_format: {prefs.default_output_format}
+- tone_of_voice: {prefs.tone_of_voice}
+- allow_web_search: {prefs.allow_web_search}
+- allow_tools: {prefs.allow_tools}
+- sensitive_topics: {prefs.sensitive_topics}
+- hard_constraints: {prefs.hard_constraints}
+- soft_guidelines: {prefs.soft_guidelines}
+
+DOMAIN & KNOWLEDGE SUMMARY:
+- domain_summary: {domain_summary}
+- knowledge_summary: {knowledge_summary}
+- knowledge_sources: {knowledge_sources}
+- tags: {tags}
+
+OUTPUT FORMAT:
+- Return ONLY the final organization-level system prompt text,
+  in {self._config.language}.
+- Use short paragraphs and bullet points where helpful.
+- Do NOT output JSON, XML or any machine-readable markup.
+"""
+
+    async def _call_llm(self, prompt_text: str) -> str:
+        """
+        Delegate generation to the underlying LLMAdapter.
+
+        We build a small ChatMessage list:
+          - one system message describing the meta-task,
+          - one user message containing the full prompt_text.
+        """
+        messages: List[ChatMessage] = [
+            ChatMessage(
+                role="system",
+                content="You generate stable organization-level system instructions for an AI assistant.",
+            ),
+            ChatMessage(
+                role="user",
+                content=prompt_text,
+            ),
+        ]
+
+        return await self._llm.generate_messages(
+            messages,
+            temperature=None,
+            max_tokens=None,
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/organization/organization_profile_manager.py
+# MODULE: intergrax.runtime.organization.organization_profile_manager
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=organization_profile_manager.py
+# LINES: 223
+# SHA256: 64b1e319284649cc0c29242da554f486455625542f785b2c24304eb0ac5e8c8c
+# SYMBOLS:
+#   - class OrganizationProfileManager
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Optional
+
+from intergrax.runtime.organization.organization_profile import OrganizationProfile
+from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
+
+class OrganizationProfileManager:
+    """
+    High-level facade for working with organization profiles.
+
+    Responsibilities:
+      - provide convenient methods to:
+          * load an OrganizationProfile for a given organization_id,
+          * persist profile changes,
+          * resolve organization-level system instructions string
+            for use in the runtime;
+      - hide direct interaction with the underlying OrganizationProfileStore.
+
+    It intentionally does NOT:
+      - call LLMs directly,
+      - perform RAG over organizational knowledge bases,
+      - decide *when* the profile should be updated (this is a policy concern
+        for higher-level components such as the runtime or application logic).
+    """
+
+    def __init__(self, store: OrganizationProfileStore) -> None:
+        self._store = store
+
+    # ---------------------------------------------------------------------
+    # Core profile APIs
+    # ---------------------------------------------------------------------
+
+    async def get_profile(self, organization_id: str) -> OrganizationProfile:
+        """
+        Load the organization profile for the given organization_id.
+
+        Implementations of OrganizationProfileStore are expected to return
+        an initialized profile even if no data exists yet for that organization.
+        """
+        return await self._store.get_profile(organization_id)
+
+    async def save_profile(self, profile: OrganizationProfile) -> None:
+        """
+        Persist the given OrganizationProfile aggregate.
+
+        This MUST overwrite any previously stored profile for the same organization.
+        """
+        await self._store.save_profile(profile)
+
+    async def delete_profile(self, organization_id: str) -> None:
+        """
+        Remove any stored profile data for the given organization_id.
+
+        This operation is typically used for cleanup or tenant deletion flows.
+        """
+        await self._store.delete_profile(organization_id)
+
+    # ---------------------------------------------------------------------
+    # System instructions management
+    # ---------------------------------------------------------------------
+
+    async def get_system_instructions_for_organization(
+        self,
+        organization_id: str,
+    ) -> str:
+        """
+        Return a compact system-level instruction string for the given organization.
+
+        Behavior:
+          - loads the organization's profile from the store,
+          - uses the profile's `system_instructions` if set,
+          - otherwise builds a deterministic fallback based on identity,
+            preferences and high-level summary fields.
+
+        This method does NOT call any LLM. It is pure, deterministic logic
+        that always returns a non-empty string.
+        """
+        profile = await self._store.get_profile(organization_id)
+        return self._build_default_system_instructions(profile)
+
+    async def update_system_instructions(
+        self,
+        organization_id: str,
+        instructions: str,
+    ) -> OrganizationProfile:
+        """
+        Update the `system_instructions` field of the organization's profile.
+
+        This method assumes that some higher-level component (e.g. the runtime
+        or a batch job) has already decided *what* the new instructions should be,
+        possibly by calling an LLM over organization knowledge and other data.
+
+        The manager is responsible only for:
+          - loading the profile,
+          - normalizing and setting `system_instructions`,
+          - marking the profile as modified,
+          - persisting it via the store,
+          - and clearing the `modified` flag after a successful save.
+
+        Returns the updated OrganizationProfile for convenience.
+        """
+        profile = await self._store.get_profile(organization_id)
+
+        normalized = instructions.strip()
+        profile.system_instructions = normalized or None
+        profile.modified = True
+
+        await self._store.save_profile(profile)
+
+        # Lack of exception is interpreted as success.
+        profile.modified = False
+        return profile
+
+    # ---------------------------------------------------------------------
+    # Internal helpers
+    # ---------------------------------------------------------------------
+
+    def _build_default_system_instructions(
+        self,
+        profile: OrganizationProfile,
+    ) -> str:
+        """
+        Deterministic, non-LLM helper that builds system instructions
+        from the given organization profile when `system_instructions`
+        is not explicitly set.
+
+        This mirrors `_build_default_system_instructions` from UserProfileManager,
+        but uses organization-specific fields.
+        """
+        # If explicit instructions exist, respect them.
+        if profile.system_instructions:
+            return profile.system_instructions.strip()
+
+        identity = profile.identity
+        prefs = profile.preferences
+
+        parts: list[str] = []
+
+        # Identity
+        parts.append(
+            f"You are working in the context of the organization '{identity.name}'."
+        )
+
+        if identity.legal_name and identity.legal_name != identity.name:
+            parts.append(
+                f"The legal name of the organization is: {identity.legal_name}."
+            )
+
+        if identity.industry:
+            parts.append(
+                f"The organization operates in the '{identity.industry}' industry."
+            )
+
+        # High-level domain description and knowledge
+        if profile.domain_summary:
+            parts.append(
+                "High-level description of the organization:\n"
+                f"{profile.domain_summary}"
+            )
+
+        if profile.knowledge_summary:
+            parts.append(
+                "Summary of key organizational knowledge, principles "
+                "and domain rules:\n"
+                f"{profile.knowledge_summary}"
+            )
+
+        # Default behaviour
+        parts.append(
+            "When generating answers for this organization, use the following "
+            "default behaviour unless the user explicitly asks otherwise:"
+        )
+        parts.append(
+            f"- Default language: {prefs.default_language}\n"
+            f"- Default output format: {prefs.default_output_format}\n"
+            f"- Tone of voice: {prefs.tone_of_voice}"
+        )
+
+        # Capabilities
+        capability_lines: list[str] = []
+        capability_lines.append(
+            f"- Web search is {'allowed' if prefs.allow_web_search else 'NOT allowed'} "
+            "by default."
+        )
+        capability_lines.append(
+            f"- Tools are {'allowed' if prefs.allow_tools else 'NOT allowed'} "
+            "by default."
+        )
+        parts.append("Capabilities and constraints:\n" + "\n".join(capability_lines))
+
+        # Sensitive topics
+        if prefs.sensitive_topics:
+            parts.append(
+                "Treat the following topics as sensitive or restricted; "
+                "handle them carefully and prefer concise, non-revealing answers "
+                "unless explicitly authorized:\n"
+                + ", ".join(prefs.sensitive_topics)
+            )
+
+        # Knowledge sources (traceability only, may be useful for the model)
+        if profile.knowledge_sources:
+            parts.append(
+                "Main knowledge sources used to construct this organizational profile:\n"
+                + ", ".join(profile.knowledge_sources)
+            )
+
+        summary = "\n\n".join(parts).strip()
+
+        if not summary:
+            # Extreme fallback – should not normally happen, but we want
+            # to guarantee a non-empty instruction string.
+            return (
+                "You are working in the context of an organization. "
+                "Use a professional, concise tone and respect any "
+                "organization-specific constraints if they are provided."
+            )
+
+        return summary
+
+# ======================================================================
+# FILE: intergrax/runtime/organization/organization_profile_store.py
+# MODULE: intergrax.runtime.organization.organization_profile_store
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=organization_profile_store.py
+# LINES: 55
+# SHA256: 9da26dc6bd6249c961c7ff66dbc3c6fa83b1f28978e59932e2f45a5950ba295e
+# SYMBOLS:
+#   - class OrganizationProfileStore
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Protocol
+
+from intergrax.runtime.organization.organization_profile import OrganizationProfile
+
+class OrganizationProfileStore(Protocol):
+    """
+    Persistent storage interface for organization profiles.
+
+    This store is responsible for:
+    - loading and saving the `OrganizationProfile` aggregate,
+    - providing sane defaults for new organizations,
+    - hiding backend-specific concerns (JSON files, SQL DB, etc.).
+
+    It MUST NOT:
+    - implement LLM prompt logic,
+    - perform RAG operations,
+    - decide how the profile is injected into prompts.
+    """
+
+    async def get_profile(self, organization_id: str) -> OrganizationProfile:
+        """
+        Load organization profile for the given organization_id.
+
+        Implementations SHOULD:
+        - return an initialized profile even if no data exists yet
+          (e.g. with default identity/preferences),
+        - never return None.
+        """
+        ...
+
+    async def save_profile(self, profile: OrganizationProfile) -> None:
+        """
+        Persist the given profile aggregate for the associated organization_id.
+
+        This MUST overwrite any previously stored profile for that organization.
+        """
+        ...
+
+    async def delete_profile(self, organization_id: str) -> None:
+        """
+        Remove any stored profile data for the given organization_id.
+
+        Implementations MUST tolerate unknown organization_ids without error.
+        """
+        ...
+
+# ======================================================================
+# FILE: intergrax/runtime/organization/stores/__init__.py
+# MODULE: intergrax.runtime.organization.stores
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/organization/stores/in_memory_organization_profile_store.py
+# MODULE: intergrax.runtime.organization.stores.in_memory_organization_profile_store
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=in_memory_organization_profile_store.py
+# LINES: 59
+# SHA256: 54ad9b6060edd0a6802b0b1f5e516147b004b688b1bde5a0b16d87e797eea5b4
+# SYMBOLS:
+#   - class InMemoryOrganizationProfileStore
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Dict
+
+from intergrax.runtime.organization.organization_profile import OrganizationIdentity, OrganizationPreferences, OrganizationProfile
+from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
+
+
+class InMemoryOrganizationProfileStore(OrganizationProfileStore):
+    """
+    In-memory implementation of OrganizationProfileStore.
+
+    Use cases:
+      - unit tests,
+      - local development,
+      - experiments and notebooks.
+
+    This implementation does NOT provide durability or cross-process sharing.
+    """
+
+    def __init__(self) -> None:
+        # organization_id -> OrganizationProfile
+        self._profiles: Dict[str, OrganizationProfile] = {}
+
+    async def get_profile(self, organization_id: str) -> OrganizationProfile:
+        """
+        Return an existing profile or a default one if not present.
+        """
+        if organization_id in self._profiles:
+            return self._profiles[organization_id]
+
+        # Create a default, mostly empty profile for a new organization.
+        identity = OrganizationIdentity(organization_id=organization_id, name=organization_id)
+        preferences = OrganizationPreferences()
+        profile = OrganizationProfile(identity=identity, preferences=preferences)
+
+        # Optionally store the default profile to make subsequent calls cheaper.
+        self._profiles[organization_id] = profile
+        return profile
+
+    async def save_profile(self, profile: OrganizationProfile) -> None:
+        """
+        Persist or update the profile in memory.
+        """
+        self._profiles[profile.identity.organization_id] = profile
+
+    async def delete_profile(self, organization_id: str) -> None:
+        """
+        Remove a stored profile, if present. Ignore unknown IDs.
+        """
+        self._profiles.pop(organization_id, None)
+
+    # Optional helper for debugging / tests
+    def list_organization_ids(self):
+        return list(self._profiles.keys())
+
+# ======================================================================
+# FILE: intergrax/runtime/user_profile/__init__.py
+# MODULE: intergrax.runtime.user_profile
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/user_profile/session_memory_consolidation_service.py
+# MODULE: intergrax.runtime.user_profile.session_memory_consolidation_service
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=session_memory_consolidation_service.py
+# LINES: 508
+# SHA256: 288769edc850765b71626112fac35f33c9a427e48b1aa0f64e9bc3e377af3285
+# SYMBOLS:
+#   - class SessionMemoryConsolidationConfig
+#   - class SessionMemoryConsolidationService
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+from typing import List, Optional, Sequence, Dict, Any
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.llm_adapters.base import LLMAdapter
+from intergrax.llm.messages import ChatMessage, MessageRole
+from intergrax.memory.user_profile_manager import UserProfileManager
+from intergrax.memory.user_profile_memory import (
+    UserProfileMemoryEntry,
+    MemoryKind,
+    MemoryImportance,
+)
+from intergrax.runtime.user_profile.user_profile_instructions_service import UserProfileInstructionsService
+
+
+@dataclass
+class SessionMemoryConsolidationConfig:
+    """
+    Configuration for consolidating a single chat session into long-term
+    user profile memory entries and optionally refreshing user-level
+    system instructions.
+    """
+
+    # Target language for extracted content (facts, preferences, summaries).
+    # If you introduce GLOBAL_SETTINGS, you can set the default from there.
+    language: str = GLOBAL_SETTINGS.default_language
+
+    # Maximum number of extracted USER_FACT entries to persist.
+    max_facts: int = 8
+
+    # Maximum number of extracted PREFERENCE entries to persist.
+    max_preferences: int = 6
+
+    # Whether to create a single SESSION_SUMMARY entry.
+    include_session_summary: bool = True
+
+    # Default importance used when the model does not provide one or it is invalid.
+    default_fact_importance: MemoryImportance = MemoryImportance.MEDIUM
+    default_preference_importance: MemoryImportance = MemoryImportance.MEDIUM
+    default_summary_importance: MemoryImportance = MemoryImportance.MEDIUM
+
+    # Maximum number of messages from the session to feed into the prompt.
+    max_messages_in_prompt: int = 80
+
+    # Soft limit for the total concatenated characters of the conversation
+    # passed to the model. Older messages will be trimmed if necessary.
+    max_conversation_chars: int = 6000
+
+    # Temperature for the LLM call that extracts memory.
+    temperature: Optional[float] = None
+
+    # Whether this service should trigger regeneration of user-level
+    # system instructions after storing new memory entries.
+    regenerate_system_instructions: bool = True
+
+    # If True, system instructions regeneration will be forced even if they
+    # already exist and the instructions-service config would normally skip it.
+    force_regenerate_system_instructions: bool = False
+
+    # Which message roles from the conversation should be considered when
+    # building the consolidation prompt. By default we focus on user/assistant
+    # turns and skip system/tool messages.
+    included_roles: Sequence[MessageRole] = ("user", "assistant")
+
+    # Optional extra knobs (e.g. style hints, domain hints).
+    extra: Dict[str, Any] = None
+
+    def __post_init__(self) -> None:
+        if self.extra is None:
+            self.extra = {}
+
+            
+
+class SessionMemoryConsolidationService:
+    """
+    Service responsible for converting a single chat session history
+    into structured long-term memory entries for the user profile.
+
+    High-level responsibilities:
+      - Take the session conversation (ChatMessage sequence).
+      - Ask the LLM to extract:
+          * USER_FACT items (stable facts / goals),
+          * PREFERENCE items (communication / workflow preferences),
+          * optional SESSION_SUMMARY item (short global summary).
+      - Map the extracted data into UserProfileMemoryEntry objects.
+      - Persist them through UserProfileManager (add_memory_entry).
+    """
+
+    def __init__(
+        self,
+        llm: LLMAdapter,
+        profile_manager: UserProfileManager,
+        instructions_service: UserProfileInstructionsService,
+        config: Optional[SessionMemoryConsolidationConfig] = None,
+    ) -> None:
+        self._llm = llm
+        self._profile_manager = profile_manager
+        self._instructions_service = instructions_service
+        self._config = config or SessionMemoryConsolidationConfig()
+
+
+    async def consolidate_session(
+        self,
+        user_id: str,
+        session_id: str,
+        messages: Sequence[ChatMessage],
+    ) -> List[UserProfileMemoryEntry]:
+        """
+        Extract long-term memory from a single session, store it in the
+        user's profile, and optionally refresh user-level system instructions.
+
+        Parameters:
+            user_id:
+                Identifier of the user whose profile memory will be updated.
+            session_id:
+                Identifier of the session (used to tag memory entries).
+            messages:
+                Full or partial conversation history for this session.
+
+        Returns:
+            The list of UserProfileMemoryEntry objects that were created and stored.
+            Note: system instructions regeneration is a side-effect and its
+            string result (if any) is not returned here.
+        """
+        trimmed = self._prepare_conversation_for_prompt(messages)
+        if not trimmed:
+            return []
+
+        prompt_text = self._build_prompt(
+            trimmed,
+            session_id=session_id,
+        )
+
+        llm_output = await self._call_llm(prompt_text)
+        parsed = self._parse_llm_output(llm_output)
+
+        if parsed is None:
+            # If parsing failed, we do not create any entries and we do not
+            # touch system instructions.
+            return []
+
+        entries = self._build_memory_entries_from_parsed(
+            user_id=user_id,
+            session_id=session_id,
+            parsed=parsed,
+        )
+
+        # Persist entries via UserProfileManager.
+        stored_entries: List[UserProfileMemoryEntry] = []
+        for entry in entries:
+            # The manager is responsible for assigning entry_id / timestamps if needed.
+            stored = await self._profile_manager.add_memory_entry(user_id, entry)
+            stored_entries.append(stored)
+
+        # Optionally refresh user-level system instructions as part of the
+        # same pipeline, but only if something was actually stored.
+        if (
+            stored_entries
+            and self._config.regenerate_system_instructions
+        ):
+            await self._instructions_service.build_and_save_system_instructions(
+                user_id=user_id,
+                force=self._config.force_regenerate_system_instructions,
+            )
+
+        return stored_entries
+
+    # -------------------------------------------------------------------------
+    # Internal: building the conversation snippet
+    # -------------------------------------------------------------------------
+
+    def _prepare_conversation_for_prompt(
+        self,
+        messages: Sequence[ChatMessage],
+    ) -> List[ChatMessage]:
+        """
+        Take the raw session messages and trim them so that:
+          - only messages with roles listed in config.included_roles
+            are considered,
+          - at most max_messages_in_prompt are included,
+          - the total concatenated content length does not exceed
+            max_conversation_chars (oldest messages are removed first).
+        """
+        if not messages:
+            return []
+
+        # Filter by allowed roles first.
+        filtered: List[ChatMessage] = []
+        for msg in messages:            
+            if msg.role in self._config.included_roles:
+                filtered.append(msg)
+
+        if not filtered:
+            return []
+
+        # Use only the last N messages by default.
+        if len(filtered) > self._config.max_messages_in_prompt:
+            filtered = filtered[-self._config.max_messages_in_prompt :]
+
+        # Further trim by character budget.
+        total_chars = 0
+        trimmed: List[ChatMessage] = []
+
+        # Iterate from the end (most recent) backwards, accumulate until budget.
+        for msg in reversed(filtered):
+            content = msg.content or ""
+            length = len(content)
+            if total_chars + length > self._config.max_conversation_chars:
+                break
+            trimmed.append(msg)
+            total_chars += length
+
+        # Reverse again so that they are in chronological order.
+        trimmed.reverse()
+        return trimmed
+
+
+    # -------------------------------------------------------------------------
+    # Internal: prompt building and LLM call
+    # -------------------------------------------------------------------------
+
+    def _build_prompt(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        session_id: str,
+    ) -> str:
+        """
+        Build a plain-text representation of the conversation and a task
+        description for the LLM. The model will be asked to output a JSON
+        structure describing facts, preferences and a session summary.
+
+        The goal of this prompt is to extract ONLY long-term, re-usable
+        information that will improve future conversations with this user,
+        and to avoid hallucinations or speculative content.
+        """
+        conversation_lines: List[str] = []
+        for m in messages:
+            content = (m.content or "").strip()
+            if not content:
+                continue
+            # We keep the role label mainly for context; the actual filtering
+            # by included_roles happens earlier in _prepare_conversation_for_prompt.
+            conversation_lines.append(f"{m.role}: {content}")
+
+        conversation_block = "\n".join(conversation_lines) or "(empty session)"
+
+        return f"""
+You are an AI specializing in extracting long-term user profile memory
+from a single chat session.
+
+Your task:
+- Read the conversation below.
+- Decide which pieces of information are:
+    * USER_FACT  - stable facts or long-term goals about the user
+                   (e.g. background, skills, health constraints, recurring goals).
+    * PREFERENCE - stable or recurring preferences about communication,
+                   workflow, tools, style, or constraints (e.g. "no emojis in code").
+    * SESSION_SUMMARY - a short global summary of what happened in this
+                   specific session, useful as context for future work.
+
+Important distinctions:
+- USER_FACT:
+    - Should be true regardless of a single session.
+    - Describes who the user is, what they does, what they cares about,
+      which constraints and long-term goals they have.
+    - Example: "The user is a senior software engineer working with Python and .NET."
+- PREFERENCE:
+    - Describes how the user wants the assistant to respond or work.
+    - Example: "The user prefers very technical, concise answers in English,
+      without emojis and with code examples."
+- SESSION_SUMMARY:
+    - High-level recap of the current session only.
+    - Should mention the main problem(s), decisions, and next steps.
+    - Avoid very fine-grained step-by-step details.
+
+Rules:
+- Focus ONLY on information that will be useful across many future sessions.
+- Ignore transient, local details that are unlikely to matter later
+  (e.g. one-off examples, small talk, debug attempts that will not repeat).
+- Ignore meta-information about the model itself (e.g. that you are an AI).
+- Do NOT invent facts that are not clearly supported by the conversation.
+- If you are not sure whether something is true or stable, either:
+    * skip it, or
+    * mark it with LOWER importance (LOW).
+- Avoid time-sensitive language such as "today", "recently", "this week".
+- Use the target language: {self._config.language}.
+- Do NOT include sensitive data that should not be stored long-term
+  (e.g. passwords, tokens, very private health details).
+- Keep the content concise but precise.
+
+Output format:
+Return a single JSON object with the following structure:
+
+{{
+  "facts": [
+    {{
+      "title": "short label",
+      "content": "concise description of the fact or goal",
+      "importance": "LOW | MEDIUM | HIGH | CRITICAL",
+      "tags": ["user", "goal"]
+    }}
+  ],
+  "preferences": [
+    {{
+      "title": "short label",
+      "content": "concise description of the preference",
+      "importance": "LOW | MEDIUM | HIGH | CRITICAL",
+      "tags": ["communication", "tone"]
+    }}
+  ],
+  "session_summary": {{
+    "title": "global summary",
+    "content": "short paragraph describing the session",
+    "importance": "LOW | MEDIUM | HIGH | CRITICAL",
+    "tags": ["session_summary"]
+  }}
+}}
+
+Constraints:
+- Return ONLY valid JSON (no comments, no trailing commas, no markdown).
+- If you do not want to provide a session summary, set "session_summary": null.
+- Respect the importance scale: use HIGH or CRITICAL only for items that
+  are clearly central for future collaboration and appear strongly in the
+  conversation.
+
+Session identifier (for your reasoning only, do not repeat it verbatim):
+- session_id: {session_id}
+
+Conversation:
+{conversation_block}
+"""
+
+
+    async def _call_llm(self, prompt_text: str) -> str:
+        """
+        Call the underlying LLMAdapter.generate_messages with a simple
+        system+user prompt.
+        """
+        messages: List[ChatMessage] = [
+            ChatMessage(
+                role="system",
+                content=(
+                    "You extract structured long-term memory from a single "
+                    "chat session and output pure JSON."
+                ),
+            ),
+            ChatMessage(
+                role="user",
+                content=prompt_text,
+            ),
+        ]
+
+        return await self._llm.generate_messages(
+            messages=messages,
+            temperature=self._config.temperature,
+            max_tokens=None,
+        )
+
+    # -------------------------------------------------------------------------
+    # Internal: parsing and mapping
+    # -------------------------------------------------------------------------
+
+    def _parse_llm_output(self, text: str) -> Optional[Dict[str, Any]]:
+        """
+        Try to parse the LLM output as JSON. If parsing fails, attempt a
+        simple brace-based extraction. If everything fails, return None.
+        """
+        if not text:
+            return None
+
+        text = text.strip()
+
+        # First attempt: direct JSON parse.
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+        # Second attempt: try to extract the first JSON object in the text.
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            candidate = text[start : end + 1]
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError:
+                return None
+
+        return None
+
+    def _build_memory_entries_from_parsed(
+        self,
+        user_id: str,  # Currently unused, but kept for future extensions.
+        session_id: str,
+        parsed: Dict[str, Any],
+    ) -> List[UserProfileMemoryEntry]:
+        """
+        Map the parsed JSON structure into UserProfileMemoryEntry instances,
+        applying config constraints (max items, importance defaults, etc.).
+        """
+        entries: List[UserProfileMemoryEntry] = []
+
+        facts = parsed.get("facts") or []
+        preferences = parsed.get("preferences") or []
+        summary = parsed.get("session_summary")
+
+        # Facts
+        for item in facts[: self._config.max_facts]:
+            entry = self._create_entry_from_item(
+                item=item,
+                session_id=session_id,
+                expected_kind=MemoryKind.USER_FACT,
+                default_importance=self._config.default_fact_importance,
+            )
+            if entry is not None:
+                entries.append(entry)
+
+        # Preferences
+        for item in preferences[: self._config.max_preferences]:
+            entry = self._create_entry_from_item(
+                item=item,
+                session_id=session_id,
+                expected_kind=MemoryKind.PREFERENCE,
+                default_importance=self._config.default_preference_importance,
+            )
+            if entry is not None:
+                entries.append(entry)
+
+        # Session summary
+        if self._config.include_session_summary and summary:
+            summary_entry = self._create_entry_from_item(
+                item=summary,
+                session_id=session_id,
+                expected_kind=MemoryKind.SESSION_SUMMARY,
+                default_importance=self._config.default_summary_importance,
+            )
+            if summary_entry is not None:
+                entries.append(summary_entry)
+
+        return entries
+
+    def _create_entry_from_item(
+        self,
+        item: Dict[str, Any],
+        session_id: str,
+        expected_kind: MemoryKind,
+        default_importance: MemoryImportance,
+    ) -> Optional[UserProfileMemoryEntry]:
+        """
+        Create a single UserProfileMemoryEntry from a dict item produced by
+        the LLM. If mandatory fields are missing, returns None.
+        """
+        if not isinstance(item, dict):
+            return None
+
+        content = (item.get("content") or "").strip()
+        if not content:
+            return None
+
+        title = (item.get("title") or "").strip() or None
+        importance_str = (item.get("importance") or "").strip().upper()
+        tags = item.get("tags") or []
+
+        # Map importance string to enum, with a safe fallback.
+        importance = self._map_importance(importance_str, default_importance)
+
+        metadata: Dict[str, Any] = {
+            "tags": tags,
+            "source": "session_consolidation",
+        }
+
+        return UserProfileMemoryEntry(
+            content=content,
+            session_id=session_id,
+            kind=expected_kind,
+            title=title,
+            importance=importance,
+            metadata=metadata,
+            deleted=False,
+            modified=False,
+        )
+
+    def _map_importance(
+        self,
+        value: str,
+        default: MemoryImportance,
+    ) -> MemoryImportance:
+        """
+        Convert the provided importance string into MemoryImportance enum.
+        If conversion fails, return the default.
+        """
+        if not value:
+            return default
+
+        upper = value.upper()
+        for level in MemoryImportance:
+            if level.name == upper:
+                return level
+
+        return default
+
+# ======================================================================
+# FILE: intergrax/runtime/user_profile/user_profile_debug_service.py
+# MODULE: intergrax.runtime.user_profile.user_profile_debug_service
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=user_profile_debug_service.py
+# LINES: 194
+# SHA256: af5221ab8049f833587538cfc614e1a465716e74f2d9d18c1d8af06b0afcb429
+# SYMBOLS:
+#   - class UserProfileDebugService
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import asdict
+from typing import List, Optional
+from datetime import datetime
+
+from intergrax.memory.user_profile_manager import UserProfileManager
+from intergrax.memory.user_profile_memory import UserProfile, UserProfileMemoryEntry
+from intergrax.runtime.drop_in_knowledge_mode.session.session_manager import SessionManager
+from intergrax.runtime.user_profile.user_profile_debug_snapshot import (
+    UserProfileDebugSnapshot,
+    SessionDebugView,
+    MemoryEntryDebugView,
+    UNKNOWN,
+)
+
+
+class UserProfileDebugService:
+    """
+    High-level service responsible for building UserProfileDebugSnapshot
+    objects for a given user.
+
+    This service is read-only and does not introduce any new behavior in
+    the runtime. It aggregates data from:
+
+      - UserProfileManager (identity, preferences, memory, system_instructions),
+      - SessionManager (recent ChatSession metadata).
+
+    Typical usage:
+      - exposing a "debug user profile" API endpoint,
+      - feeding an admin / developer UI panel,
+      - ad-hoc diagnostics during development.
+    """
+
+    def __init__(
+        self,
+        user_profile_manager: UserProfileManager,
+        session_manager: SessionManager,
+        *,
+        max_sessions: int = 10,
+        max_memory_entries: int = 50,
+    ) -> None:
+        self._user_profile_manager = user_profile_manager
+        self._session_manager = session_manager
+        self._max_sessions = max_sessions
+        self._max_memory_entries = max_memory_entries
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    async def get_debug_snapshot(self, user_id: str) -> UserProfileDebugSnapshot:
+        """
+        Build and return a UserProfileDebugSnapshot for the given user_id.
+
+        This method performs only read operations on the underlying managers.
+        It does not modify any profile, memory entries or sessions.
+        """
+        profile: UserProfile = await self._user_profile_manager.get_profile(user_id)
+        identity_dict = self._build_identity_dict(profile)
+        preferences_dict = self._build_preferences_dict(profile)
+
+        # System instructions as currently stored on the profile.
+        system_instructions: Optional[str] = profile.system_instructions
+
+        # Long-term memory entries as seen from the profile.
+        all_entries: List[UserProfileMemoryEntry] = list(profile.memory_entries)
+        memory_entries_total = len(all_entries)
+        memory_entries_by_kind = UserProfileDebugSnapshot.build_memory_kind_counters(
+            all_entries
+        )
+
+        # Select most recent memory entries for detailed debug view.
+        recent_memory_entries = self._build_recent_memory_entries(all_entries)
+
+        # Recent sessions for this user.
+        recent_sessions = await self._build_recent_sessions(user_id)
+
+        snapshot = UserProfileDebugSnapshot(
+            user_id=user_id,
+            identity=identity_dict,
+            preferences=preferences_dict,
+            system_instructions=system_instructions,
+            memory_entries_total=memory_entries_total,
+            memory_entries_by_kind=memory_entries_by_kind,
+            recent_memory_entries=recent_memory_entries,
+            recent_sessions=recent_sessions,
+        )
+
+        return snapshot
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _build_identity_dict(self, profile: UserProfile) -> dict:
+        """
+        Convert the profile.identity object into a plain dict.
+
+        We intentionally only expose a well-defined subset of fields so the
+        debug surface remains stable even if the UserProfile model evolves.
+        """
+        identity = profile.identity
+
+        # If identity is a dataclass, asdict() will work. Otherwise we
+        # explicitly map the known fields.
+        try:
+            identity_dict = asdict(identity)  # type: ignore[arg-type]
+        except TypeError:
+            identity_dict = {
+                "user_id": identity.user_id,
+                "display_name": identity.display_name,
+                "role": identity.role,
+                "domain_expertise": identity.domain_expertise,
+                "language": identity.language,
+                "locale": identity.locale,
+                "timezone": identity.timezone,
+            }
+
+        return identity_dict
+
+    def _build_preferences_dict(self, profile: UserProfile) -> dict:
+        """
+        Convert the profile.preferences object into a plain dict.
+
+        Same rationale as for identity: we expose only the subset of fields
+        that is relevant for debug and instructions generation.
+        """
+        prefs = profile.preferences
+
+        try:
+            prefs_dict = asdict(prefs)  # type: ignore[arg-type]
+        except TypeError:
+            prefs_dict = {
+                "preferred_language": prefs.preferred_language,
+                "answer_length": prefs.answer_length,
+                "tone": prefs.tone,
+                "no_emojis_in_code": prefs.no_emojis_in_code,
+                "no_emojis_in_docs": prefs.no_emojis_in_docs,
+                "prefer_markdown": prefs.prefer_markdown,
+                "prefer_code_blocks": prefs.prefer_code_blocks,
+                "default_project_context": prefs.default_project_context,
+            }
+
+        return prefs_dict
+
+    def _build_recent_memory_entries(
+        self,
+        all_entries: List[UserProfileMemoryEntry],
+    ) -> List[MemoryEntryDebugView]:
+        """
+        Select a limited number of most recent memory entries and convert
+        them into debug views.
+        """
+        if not all_entries:
+            return []
+
+        # Sort entries by created_at descending if available.
+        sorted_entries = sorted(
+            all_entries,
+            key=lambda e: e.created_at if e.created_at is not None else datetime.min,  # type: ignore[name-defined]
+            reverse=True,
+        )
+
+        limited_entries = sorted_entries[: self._max_memory_entries]
+
+        result: List[MemoryEntryDebugView] = []
+        for entry in limited_entries:
+            result.append(UserProfileDebugSnapshot.from_memory_entry(entry))
+
+        return result
+
+    async def _build_recent_sessions(
+        self,
+        user_id: str,
+    ) -> List[SessionDebugView]:
+        """
+        Fetch recent sessions for the given user and convert them into
+        debug views.
+        """
+        sessions = await self._session_manager.list_sessions_for_user(
+            user_id=user_id,
+            limit=self._max_sessions,
+        )
+
+        result: List[SessionDebugView] = []
+        for session in sessions:
+            result.append(UserProfileDebugSnapshot.from_domain_session(session))
+
+        return result
+
+# ======================================================================
+# FILE: intergrax/runtime/user_profile/user_profile_debug_snapshot.py
+# MODULE: intergrax.runtime.user_profile.user_profile_debug_snapshot
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=user_profile_debug_snapshot.py
+# LINES: 167
+# SHA256: 9f54fa8ac9bd54cbf12bee3abdb723c4762d99fcec77a058d006eb91c4cf424e
+# SYMBOLS:
+#   - class SessionDebugView
+#   - class MemoryEntryDebugView
+#   - class UserProfileDebugSnapshot
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from intergrax.memory.user_profile_memory import (
+    UserProfileMemoryEntry,
+    MemoryKind,
+)
+from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
+
+UNKNOWN:str = "UNKNOWN"
+
+@dataclass
+class SessionDebugView:
+    """
+    Lightweight, debug-friendly view of a single ChatSession.
+
+    This structure is intentionally small and only contains fields that
+    are useful for understanding how this user's sessions behave in
+    the context of long-term memory and system instructions.
+    """
+
+    session_id: str
+    status: str
+    user_turns: int
+    last_consolidated_at: Optional[datetime]
+    last_consolidated_reason: Optional[str]
+    last_consolidated_turn: Optional[int]
+
+
+@dataclass
+class MemoryEntryDebugView:
+    """
+    Lightweight, debug-friendly view of a single UserProfileMemoryEntry.
+
+    Only exposes the most relevant fields for inspection and UI display.
+    The full UserProfileMemoryEntry remains owned by the memory layer.
+    """
+
+    entry_id: Optional[int]
+    kind: str
+    title: Optional[str]
+    content: str
+    importance: str
+    session_id: Optional[str]
+    created_at: Optional[datetime]
+    modified: bool
+    deleted: bool
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class UserProfileDebugSnapshot:
+    """
+    Immutable snapshot of user profile state for debugging and observability.
+
+    This model does NOT introduce any new behavior in the runtime. It is
+    a read-only view that can be constructed by a higher-level service
+    (e.g. UserProfileDebugService) from:
+
+      - UserProfile (identity, preferences, system_instructions, memory),
+      - SessionManager / SessionStorage (recent sessions metadata).
+
+    Typical usage:
+      - exposing a "debug user profile" API endpoint,
+      - rendering an inspector panel in a UI,
+      - logging / tracing long-term memory behavior.
+    """
+
+    # Core identifiers
+    user_id: str
+
+    # Basic identity and preferences flattened into dicts so we do not depend
+    # on concrete domain models in the debug API surface.
+    identity: Dict[str, Any]
+    preferences: Dict[str, Any]
+
+    # Current user-level system instructions (as stored on the profile).
+    system_instructions: Optional[str]
+
+    # Memory statistics
+    memory_entries_total: int
+    memory_entries_by_kind: Dict[str, int]
+
+    # Recent memory entries (e.g. latest N items) in a compact view.
+    recent_memory_entries: List[MemoryEntryDebugView] = field(default_factory=list)
+
+    # Recent sessions related to this user (e.g. latest N sessions).
+    recent_sessions: List[SessionDebugView] = field(default_factory=list)
+
+    # Timestamp when this snapshot was generated (UTC).
+    generated_at: datetime = field(default_factory=datetime.utcnow)
+
+    # Optional bag for future extensions (debug-only metadata, feature flags, etc.).
+    extra: Dict[str, Any] = field(default_factory=dict)
+
+    @staticmethod
+    def build_memory_kind_counters(
+        entries: List[UserProfileMemoryEntry],
+    ) -> Dict[str, int]:
+        """
+        Helper that can be used by the debug service to calculate how many
+        entries exist per MemoryKind.
+
+        This method is purely computational and does not touch storage.
+        """
+        counters: Dict[str, int] = {}
+
+        for entry in entries:
+            # We treat the enum name as the canonical string representation.
+            kind_name = UNKNOWN
+            if isinstance(entry.kind, MemoryKind):
+                kind_name = entry.kind.name
+
+            current = counters.get(kind_name, 0)
+            counters[kind_name] = current + 1
+
+        return counters
+
+    @staticmethod
+    def from_domain_session(session: ChatSession) -> SessionDebugView:
+        """
+        Build a SessionDebugView from a ChatSession domain object.
+
+        This method is intended to be used by a higher-level debug service
+        when assembling the snapshot. It does not perform any I/O.
+        """
+        return SessionDebugView(
+            session_id=session.id,
+            status=session.status.name if session.status is not None else UNKNOWN,
+            user_turns=session.user_turns,
+            last_consolidated_at=session.last_consolidated_at,
+            last_consolidated_reason=session.last_consolidated_reason,
+            last_consolidated_turn=session.last_consolidated_turn,
+        )
+
+    @staticmethod
+    def from_memory_entry(
+        entry: UserProfileMemoryEntry,
+    ) -> MemoryEntryDebugView:
+        """
+        Build a MemoryEntryDebugView from a UserProfileMemoryEntry.
+
+        This keeps the debug surface stable even if the underlying domain
+        model grows additional fields in the future.
+        """
+        importance_name = entry.importance.name if entry.importance is not None else UNKNOWN
+        kind_name = entry.kind.name if entry.kind is not None else UNKNOWN
+
+        return MemoryEntryDebugView(
+            entry_id=entry.entry_id,
+            kind=kind_name,
+            title=entry.title,
+            content=entry.content,
+            importance=importance_name,
+            session_id=entry.session_id,
+            created_at=entry.created_at,
+            modified=entry.modified,
+            deleted=entry.deleted,
+            metadata=entry.metadata or {},
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/user_profile/user_profile_instructions_service.py
+# MODULE: intergrax.runtime.user_profile.user_profile_instructions_service
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=user_profile_instructions_service.py
+# LINES: 224
+# SHA256: 0112e6cbb0ed0267f1ab98651458238e5d0563b51d97b8025ca6470be972cbb0
+# SYMBOLS:
+#   - class UserProfileInstructionsConfig
+#   - class UserProfileInstructionsService
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Optional, List, Dict, Any
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.llm_adapters.base import LLMAdapter
+from intergrax.memory.user_profile_manager import UserProfileManager
+from intergrax.memory.user_profile_memory import (
+    UserProfile,
+    UserProfileMemoryEntry,
+)
+from intergrax.llm.messages import ChatMessage
+
+
+@dataclass
+class UserProfileInstructionsConfig:
+    """
+    Configuration for user-level system instructions generation.
+    """
+
+    # Maximum length of the final system instructions string.
+    max_chars: int = 1200
+
+    # Target language of the generated instructions, e.g. "pl" or "en".
+    language: str = GLOBAL_SETTINGS.default_language
+
+    # If False and profile.system_instructions already exists,
+    # the service may simply return the existing value instead of regenerating.
+    regenerate_if_present: bool = False
+
+    # Optional extra knobs (for future use).
+    # Example: {"style": "technical", "allow_bullets": True}
+    extra: Dict[str, Any] = None
+
+    def __post_init__(self) -> None:
+        if self.extra is None:
+            self.extra = {}
+
+
+class UserProfileInstructionsService:
+    """
+    High-level service that generates and updates user-level system_instructions
+    using an LLMAdapter, based on UserProfile:
+
+      - identity          (who the user is),
+      - preferences       (how the user wants the system to behave),
+      - memory_entries    (long-term facts and notes about the user).
+
+    Responsibilities:
+      - Load UserProfile via UserProfileManager.
+      - Build an LLM prompt using identity, preferences and memory entries.
+      - Call LLMAdapter.generate_messages() to obtain a compact, stable
+        system prompt.
+      - Persist the result via UserProfileManager.update_system_instructions().
+    """
+
+    def __init__(
+        self,
+        llm: LLMAdapter,
+        manager: UserProfileManager,
+        config: Optional[UserProfileInstructionsConfig] = None,
+    ) -> None:
+        self._llm = llm
+        self._manager = manager
+        self._config = config or UserProfileInstructionsConfig()
+
+    async def build_and_save_system_instructions(
+        self,
+        user_id: str,
+        *,
+        force: bool = False,
+    ) -> str:
+        """
+        Generate and persist user-level system instructions.
+
+        Parameters:
+          user_id:
+              Identifier of the user whose profile should be updated.
+          force:
+              If True, always regenerate instructions even if they already exist.
+
+        Behavior:
+          - If force is False and profile.system_instructions exists and
+            config.regenerate_if_present is False -> return existing value.
+          - Otherwise:
+              1) Load UserProfile.
+              2) Build an LLM prompt from identity, preferences and memory entries.
+              3) Call LLMAdapter.generate_messages() to generate compact instructions.
+              4) Truncate to max_chars, strip whitespace.
+              5) Save via UserProfileManager.update_system_instructions().
+              6) Return the final string.
+        """
+        profile = await self._manager.get_profile(user_id)
+
+        if (
+            profile.system_instructions
+            and not force
+            and not self._config.regenerate_if_present
+        ):
+            return profile.system_instructions
+
+        prompt_text = self._build_prompt(profile)
+        raw_instructions = await self._call_llm(prompt_text)
+
+        instructions = raw_instructions.strip()
+        if len(instructions) > self._config.max_chars:
+            instructions = instructions[: self._config.max_chars].rstrip()
+
+        await self._manager.update_system_instructions(user_id, instructions)
+        return instructions
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _build_prompt(self, profile: UserProfile) -> str:
+        """
+        Build a single text prompt for the LLM from the given user profile.
+
+        We intentionally pass:
+          - a compact view of identity,
+          - a compact view of preferences,
+          - a joined view of long-term memory entries.
+
+        The LLM is responsible for synthesizing them into a single,
+        stable system prompt for this user.
+        """
+        identity = profile.identity
+        prefs = profile.preferences
+        memory_entries: List[UserProfileMemoryEntry] = profile.memory_entries
+
+        # Compact representation of long-term memory entries.
+        memory_lines: List[str] = []
+        for entry in memory_entries:
+            # Ignore entries marked as deleted; they should not influence
+            # new instructions.
+            if entry.deleted:
+                continue
+            memory_lines.append(f"- {entry.content}")
+        memory_block = (
+            "\n".join(memory_lines)
+            if memory_lines
+            else "(no long-term memory entries yet)"
+        )
+
+        return f"""
+You are a system-instructions builder for a conversational AI assistant.
+
+Your TASK:
+- Create a compact, stable system prompt that describes this user
+  and how the AI assistant should behave when talking to them.
+- The instructions will be used as a SYSTEM message, prepended to EVERY conversation.
+- Focus ONLY on:
+    * who the user is,
+    * how they prefer to communicate,
+    * what their long-term goals and constraints are,
+    * which facts the assistant MUST remember and respect.
+
+Constraints:
+- Language of the output: {self._config.language}.
+- Maximum length: about {self._config.max_chars} characters.
+- Avoid time-sensitive statements (e.g. "recently", "this week", "currently").
+- Do NOT mention that you are generating instructions.
+- Write ABOUT the user in third person (e.g. "The user prefers..."),
+  and give direct rules for the assistant (e.g. "Always respond...").
+
+USER IDENTITY (high-level, do not copy verbatim if too detailed):
+- user_id: {identity.user_id}
+- display_name: {identity.display_name}
+- role: {identity.role}
+- domain_expertise: {identity.domain_expertise}
+- language: {identity.language}
+- locale: {identity.locale}
+- timezone: {identity.timezone}
+
+USER PREFERENCES:
+- preferred_language: {prefs.preferred_language}
+- answer_length: {prefs.answer_length}
+- tone: {prefs.tone}
+- no_emojis_in_code: {prefs.no_emojis_in_code}
+- no_emojis_in_docs: {prefs.no_emojis_in_docs}
+- prefer_markdown: {prefs.prefer_markdown}
+- prefer_code_blocks: {prefs.prefer_code_blocks}
+- default_project_context: {prefs.default_project_context}
+
+LONG-TERM USER MEMORY ENTRIES (facts, goals, stable notes):
+{memory_block}
+
+OUTPUT FORMAT:
+- Return ONLY the final system prompt text, in {self._config.language}.
+- Use short paragraphs and/or bullet points.
+- Do NOT output JSON, XML or any machine-readable markup.
+"""
+
+    async def _call_llm(self, prompt_text: str) -> str:
+        """
+        Delegate generation to the underlying LLMAdapter.
+
+        We build a small ChatMessage list:
+          - one system instruction describing the meta-task,
+          - one user message containing the full prompt_text.
+        """
+        messages: List[ChatMessage] = [
+            ChatMessage(
+                role="system",
+                content="You generate stable, compact user-level system instructions for an AI assistant.",
+            ),
+            ChatMessage(
+                role="user",
+                content=prompt_text,
+            ),
+        ]
+
+        # LLMAdapter.generate_messages() returns a plain string.
+        return await self._llm.generate_messages(
+            messages,
+            temperature=None,
+            max_tokens=None,
+        )
+
+# ======================================================================
+# FILE: intergrax/supervisor/__init__.py
+# MODULE: intergrax.supervisor
+# MODULE_GROUP: supervisor
+# TAGS:
+#   - package=intergrax
+#   - module_group=supervisor
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/supervisor/supervisor.py
+# MODULE: intergrax.supervisor.supervisor
+# MODULE_GROUP: supervisor
+# TAGS:
+#   - package=intergrax
+#   - module_group=supervisor
+#   - file=supervisor.py
+# LINES: 854
+# SHA256: f0303875966e24d550a7eb8caa0cc2a5371b9bb367a660df992c22a50398787c
+# SYMBOLS:
+#   - class PlanStep
+#   - class Plan
+#   - class SupervisorConfig
+#   - class IntergraxSupervisor
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from dataclasses import dataclass, field
+from types import SimpleNamespace
+from typing import Any, Dict, List, Optional, Literal, Iterable, Callable
+import json, re, math
+
+from .supervisor_components import Component, ComponentContext, ComponentResult, PipelineState
+from .supervisor_prompts import SupervisorPromptPack, SupervisorPromptPack as _DefaultPack
+
+NeedsDict = Dict[str, bool]
+Intent = Literal["qa", "procedural", "creative", "decision", "unknown"]
+
+@dataclass
+class PlanStep:
+    id: str
+    title: str
+    goal: str
+    method: str                 # "RAG" | "TOOL" | "GENERAL"
+    component: Optional[str]
+    inputs: List[str]
+    outputs: List[str]
+    success_criteria: List[str]
+    fallback: str
+    depends_on: List[str] = field(default_factory=list)
+    why_method: Optional[str] = None
+    why_component: Optional[str] = None
+    notes: Optional[str] = None
+    # assignment diagnostics
+    router_score: float = 0.0
+    router_notes: str = ""
+    low_confidence: bool = False
+
+@dataclass
+class Plan:
+    intent: Intent
+    needs: NeedsDict
+    confidence: float
+    assumptions: List[str]
+    steps: List[PlanStep] = field(default_factory=list)
+    risks: List[str] = field(default_factory=list)
+    iteration_policy: Dict[str, Any] = field(default_factory=lambda: {"max_passes": 1, "improve_if": []})
+
+@dataclass
+class SupervisorConfig:
+    llm_adapter: Any
+    temperature: float = 0.1
+    max_tokens: int = 1200
+    heuristic_enable: bool = True
+    prompts: SupervisorPromptPack = field(default_factory=_DefaultPack)
+    components: List[Component] = field(default_factory=list)
+    debug: bool = False
+    llm_response_format_json: bool = True
+    pass_temperature: bool = False
+    pass_max_tokens: bool = False
+    resources: Dict[str, Any] = field(default_factory=dict)
+    # "finally" components — always executed at the end
+    finally_components: List[str] = field(default_factory=list)
+    # fallback component used only when none could be assigned
+    fallback_component: Optional[str] = None         # e.g., "Generalny"
+    fallback_on_miss: bool = True                    # whether to enable fallback
+
+    # Two-stage knobs
+    planner_mode: Literal["one_shot", "two_stage"] = "two_stage"
+    plan_retries: int = 2
+    assign_retries: int = 2
+    assign_self_consistency: int = 3
+    assign_threshold: float = 0.5
+    skip_on_low_confidence: bool = False
+    assign_temperature: float = 0.3   # NEW: mild creativity helps the model commit
+
+    # Semantic fallback (no keywords/tags required)
+    semantic_fallback: bool = True
+    semantic_weight: float = 0.15     # how much to boost score if semantic match is strong
+
+    # Legacy post-fix (kept for compatibility)
+    auto_fix_assignments: bool = False
+    method_guards: bool = False
+    auto_fix_passes: int = 1
+
+class IntergraxSupervisor:
+    def __init__(self, cfg: SupervisorConfig):
+        self.cfg = cfg
+        self.llm = cfg.llm_adapter
+        self._prompts = cfg.prompts
+        self._debug = bool(cfg.debug)
+        self._components: Dict[str, Component] = {c.name: c for c in (cfg.components or [])}
+        self.last_plan_meta: Dict[str, Any] = {}
+
+    def make_context(self) -> ComponentContext:
+        # Build a clean component execution context
+        return ComponentContext(
+            llm_adapter=self.cfg.llm_adapter,
+            resources=getattr(self.cfg, "resources", {}) or {}
+        )
+
+    def register_components(self, comps: Iterable[Component]):
+        for c in comps:
+            self._components[c.name] = c
+
+    def list_components(self) -> List[Component]:
+        return list(self._components.values())
+
+    def _is_available(self, c: Component) -> bool:
+        return getattr(c, "available", True)
+
+    def set_prompts(self, *, plan_system: Optional[str] = None, plan_user_template: Optional[str] = None):
+        if plan_system is not None:
+            self._prompts.plan_system = plan_system
+        if plan_user_template is not None:
+            self._prompts.plan_user_template = plan_user_template
+
+    # --------- LLM helpers ---------
+    def _extract_text(self, raw: Any) -> str:
+        """
+        Robustly extract assistant text from various adapter return types.
+        This avoids empty {} after str(raw), which caused score=0.0 everywhere.
+        """
+        try:
+            # common shape: {"choices":[{"message":{"role":"assistant","content":"..."}}]}
+            if isinstance(raw, dict):
+                ch = raw.get("choices")
+                if isinstance(ch, list) and ch:
+                    msg = ch[0].get("message") or {}
+                    content = msg.get("content")
+                    if isinstance(content, str):
+                        return content
+            # some adapters return SimpleNamespace/objects with .content
+            content = getattr(raw, "content", None)
+            if isinstance(content, str):
+                return content
+            # some return list of messages
+            if isinstance(raw, list) and raw:
+                maybe = getattr(raw[-1], "content", None)
+                if isinstance(maybe, str):
+                    return maybe
+            # fallback to string
+            return str(raw)
+        except Exception:
+            return str(raw)
+
+    def _safe_json(self, text: str) -> Optional[Dict[str, Any]]:
+        try:
+            t = text.strip()
+            if t.startswith("```"):
+                t = re.sub(r"^```(?:json)?\s*|\s*```$", "", t, flags=re.MULTILINE)
+            if not t.startswith("{"):
+                match = re.findall(r"\{.*\}", t, flags=re.DOTALL)
+                if match:
+                    t = max(match, key=len)
+            return json.loads(t)
+        except Exception:
+            return None
+
+    # --------- Public: plan ---------
+    def plan(self, query: str, meta: Optional[Dict[str, Any]] = None) -> Plan:
+        self.last_plan_meta = {}
+        meta = meta or {}
+        if self.cfg.planner_mode == "two_stage":
+            plan = self._llm_plan_two_stage(query)
+            if plan:
+                self.last_plan_meta.setdefault("source", "stepwise")
+                self.last_plan_meta["analysis"] = self.analyze_plan(plan)
+                return plan
+
+        # fallback one-shot
+        catalog = self._render_catalog_for_prompt()
+        plan = self._llm_plan_one_shot(query, catalog)
+        if plan:
+            self.last_plan_meta.setdefault("source", "llm")
+            self.last_plan_meta["analysis"] = self.analyze_plan(plan)
+            return plan
+        if self.cfg.heuristic_enable:
+            plan = self._heuristic_plan(query, meta)
+            self.last_plan_meta.setdefault("source", "heuristic")
+            self.last_plan_meta["analysis"] = self.analyze_plan(plan)
+            return plan
+        plan = self._minimal_plan()
+        self.last_plan_meta.setdefault("source", "minimal_fallback")
+        self.last_plan_meta["analysis"] = self.analyze_plan(plan)
+        return plan
+
+    # --------- Two-stage: decompose -> per-step assign ---------
+    def _llm_plan_two_stage(self, query: str) -> Optional[Plan]:
+        decomp = self._llm_decompose(query)
+        if not decomp:
+            return None
+        catalog_rows = self._render_catalog_rows()
+        for s in decomp.steps:
+            self._assign_step_with_llm(s, catalog_rows)
+        # recompute needs
+        has_rag = any(x.method == "RAG" for x in decomp.steps)
+        has_tools = any(x.method == "TOOL" for x in decomp.steps)
+        has_general = any(x.method == "GENERAL" for x in decomp.steps)
+        decomp.needs = {"rag": has_rag, "tools": has_tools, "general": has_general}
+        return decomp
+
+    def _llm_decompose(self, query: str) -> Optional[Plan]:
+        """
+        Stage 1: get a clean step decomposition (no components bound).
+        Strong JSON contract + retry if JSON parsing fails.
+        """
+        sys = (
+            self._prompts.plan_system
+            + "\n\nIMPORTANT: Return ONLY a single strict JSON object per schema. No prose, no explanations."
+        )
+        usr = (
+            self._prompts.plan_user_template
+            .replace("{query}", query)
+            .replace("{catalog}", "- (catalog hidden at this stage)")
+        )
+
+        best: Optional[Plan] = None
+        for _ in range(max(1, self.cfg.plan_retries)):
+            messages = [
+                SimpleNamespace(role="system", content=sys),
+                SimpleNamespace(role="user", content=usr),
+            ]
+            call_kwargs: Dict[str, Any] = {"messages": messages}
+            if self.cfg.pass_temperature:
+                call_kwargs["temperature"] = self.cfg.temperature
+            if self.cfg.pass_max_tokens:
+                call_kwargs["max_tokens"] = self.cfg.max_tokens
+
+            try:
+                raw = self.llm.generate_messages(**call_kwargs)
+            except TypeError:
+                raw = self.llm.generate_messages(messages=messages)
+
+            raw_text = self._extract_text(raw)
+            if self._debug:
+                self.last_plan_meta["raw_response_decompose"] = raw_text[:4000]
+
+            data = self._safe_json(raw_text)
+            if not data:
+                # one corrective nudge
+                corrective = "You must return ONLY valid JSON per schema, with double quotes and no trailing commas."
+                raw2 = self.llm.generate_messages(messages=[
+                    SimpleNamespace(role="system", content=sys),
+                    SimpleNamespace(role="user", content=usr + "\n\n" + corrective),
+                ])
+                raw_text = self._extract_text(raw2)
+                data = self._safe_json(raw_text)
+
+            if not data:
+                continue
+
+            plan = self._parse_plan(data)
+            # sanitize steps
+            for i, s in enumerate(plan.steps, start=1):
+                if not s.id:
+                    s.id = f"S{i}"
+                if not (s.title or "").strip():
+                    s.title = f"Step {i}"
+                if not (s.goal or "").strip():
+                    s.goal = s.title
+                s.component = None
+                s.method = s.method if s.method in ("RAG", "TOOL", "GENERAL") else "GENERAL"
+            best = plan
+            break
+        return best
+
+    def _assign_step_with_llm(self, step: PlanStep, catalog_rows: List[Dict[str, Any]]) -> None:
+        """
+        Stage 2: assign METHOD+COMPONENT per step using the catalog.
+        Uses self-consistency voting and a semantic fallback if the JSON is empty/low-scored.
+        """
+        catalog_json = json.dumps(catalog_rows, ensure_ascii=False)
+        # Strong JSON-only protocol with a micro few-shot baked-in via rules
+        assign_system = (
+            "You are an Assignment Adjudicator.\n"
+            "Given ONE step (title, goal, inputs, outputs) and a catalog of components "
+            "(name, description, use_when, outputs), select the best METHOD among: RAG | TOOL | GENERAL, "
+            "and the best COMPONENT when METHOD != GENERAL.\n"
+            "Return ONLY a JSON object with keys: method, component, score, reason.\n"
+            "Constraints:\n"
+            "- component MUST be null for GENERAL; must be a catalog name for RAG/TOOL.\n"
+            "- Prefer components whose declared outputs overlap with step.outputs; use descriptions/use_when to disambiguate.\n"
+            "- Be decisive; give score in [0.0,1.0].\n"
+            "- Absolutely no text besides the single JSON object."
+        )
+        step_json = json.dumps({
+            "id": step.id,
+            "title": step.title,
+            "goal": step.goal or step.title,
+            "inputs": step.inputs,
+            "outputs": step.outputs
+        }, ensure_ascii=False)
+
+        user_prompt = (
+            "STEP:\n"
+            f"{step_json}\n\n"
+            "CATALOG:\n"
+            f"{catalog_json}\n\n"
+            "Return JSON only."
+        )
+
+        votes: Dict[str, int] = {}
+        best = {"method": "GENERAL", "component": None, "score": 0.0, "reason": ""}
+
+        rounds = max(1, self.cfg.assign_retries)
+        per_round = max(1, self.cfg.assign_self_consistency)
+
+        for _ in range(rounds):
+            for _ in range(per_round):
+                msgs = [
+                    SimpleNamespace(role="system", content=assign_system),
+                    SimpleNamespace(role="user", content=user_prompt),
+                ]
+                # Slight non-zero temperature helps avoid 'empty JSON' pathologies
+                try:
+                    raw = self.llm.generate_messages(messages=msgs, temperature=self.cfg.assign_temperature)
+                except TypeError:
+                    raw = self.llm.generate_messages(messages=msgs)
+                data = self._safe_json(self._extract_text(raw)) or {}
+                method = (str(data.get("method") or "GENERAL")).upper()
+                comp = data.get("component")
+                comp = str(comp) if isinstance(comp, str) else None
+                score = float(data.get("score", 0.0))
+                reason = data.get("reason", "")
+
+                if comp and comp in self._components and self._is_available(self._components[comp]):
+                    votes[comp] = votes.get(comp, 0) + 1
+
+                if score > best["score"]:
+                    best = {"method": method, "component": comp, "score": score, "reason": reason}
+
+        # Majority vote consolidation
+        if votes:
+            winner = max(votes.items(), key=lambda kv: kv[1])[0]
+            if best["component"] == winner:
+                final = best
+            else:
+                final = {"method": best["method"], "component": winner,
+                         "score": max(best["score"], 0.51), "reason": best.get("reason", "majority vote")}
+        else:
+            final = best
+
+        # --- Semantic fallback (no keywords/tags needed) ---
+        # If model didn't select a usable component or score is too low,
+        # try cosine similarity between step text and catalog texts using an embed_fn passed in resources.
+        if self.cfg.semantic_fallback:
+            need_semantic = (final["component"] is None) or (final["score"] < self.cfg.assign_threshold)
+            if need_semantic:
+                pick_name, pick_score, pick_reason = self._semantic_route_component(step, catalog_rows)
+                if pick_name:
+                    # Blend LLM score with semantic evidence
+                    blended = max(final["score"], min(1.0, pick_score + self.cfg.semantic_weight))
+                    if blended > final["score"]:
+                        final = {
+                            "method": "TOOL",                 # semantic route implies a concrete tool pick
+                            "component": pick_name,
+                            "score": blended,
+                            "reason": f"{final.get('reason','')}; semantic:{pick_reason}".strip("; ")
+                        }
+
+        # Apply final decision to step (respect threshold/skip flag)
+        step.router_score = float(final["score"])
+        step.router_notes = final.get("reason") or ""
+        low_conf = step.router_score < float(self.cfg.assign_threshold)
+        step.low_confidence = bool(low_conf)
+
+        if (not low_conf or not self.cfg.skip_on_low_confidence) and final["component"]:
+            step.component = final["component"]
+            step.method = final["method"] if final["method"] in ("RAG", "TOOL", "GENERAL") else "GENERAL"
+        else:
+            step.component = None
+            step.method = final["method"] if (not low_conf and final["method"] in ("RAG", "TOOL", "GENERAL")) else "GENERAL"
+
+    # --------- Semantic router (embedding-based, no keywords) ---------
+    def _semantic_route_component(self, step: PlanStep, catalog_rows: List[Dict[str, Any]]) -> (Optional[str], float, str): # type: ignore
+        """
+        Uses a user-provided embed_fn in cfg.resources['embed_fn'] to compute cosine similarity
+        between step text and each component's (name+description+use_when+outputs).
+        Returns (component_name, score[0..1], reason) or (None, 0.0, "").
+        """
+        embed_fn = (self.cfg.resources or {}).get("embed_fn")
+        if not callable(embed_fn):
+            return None, 0.0, ""
+
+        def _vec(text: str) -> List[float]:
+            try:
+                v = embed_fn(text or "")
+                return list(v) if v is not None else []
+            except Exception:
+                return []
+
+        def _cos(a: List[float], b: List[float]) -> float:
+            if not a or not b or len(a) != len(b):
+                return 0.0
+            num = sum(x*y for x, y in zip(a, b))
+            da = math.sqrt(sum(x*x for x in a))
+            db = math.sqrt(sum(y*y for y in b))
+            if da == 0.0 or db == 0.0:
+                return 0.0
+            return max(0.0, min(1.0, num / (da * db)))
+
+        step_text = " ".join([
+            step.title or "",
+            step.goal or "",
+            " ".join(step.inputs or []),
+            " ".join(step.outputs or [])
+        ]).strip()
+        v_step = _vec(step_text)
+        if not v_step:
+            return None, 0.0, ""
+
+        best_name, best_sim = None, 0.0
+        for row in catalog_rows:
+            name = str(row.get("name") or "")
+            if not name or name not in self._components or not self._is_available(self._components[name]):
+                continue
+            blob = " ".join([
+                name,
+                str(row.get("description") or ""),
+                str(row.get("use_when") or ""),
+                " ".join(row.get("outputs") or []),
+            ]).strip()
+            v_comp = _vec(blob)
+            sim = _cos(v_step, v_comp)
+            if sim > best_sim:
+                best_name, best_sim = name, sim
+
+        if best_name and best_sim >= 0.35:  # modest floor; tune if needed
+            return best_name, float(best_sim), f"cosine={best_sim:.2f}"
+        return None, 0.0, ""
+
+    # --------- One-shot fallback ---------
+    def _llm_plan_one_shot(self, query: str, catalog_text: str) -> Optional[Plan]:
+        try:
+            sys = (
+                self._prompts.plan_system
+                + "\n\nIMPORTANT: Return ONLY a single strict JSON object per schema. No prose."
+            )
+            usr = (
+                self._prompts.plan_user_template
+                .replace("{query}", query)
+                .replace("{catalog}", catalog_text)
+            )
+            messages = [
+                SimpleNamespace(role="system", content=sys),
+                SimpleNamespace(role="user", content=usr),
+            ]
+            call_kwargs: Dict[str, Any] = {"messages": messages}
+            if self.cfg.pass_temperature:
+                call_kwargs["temperature"] = self.cfg.temperature
+            if self.cfg.pass_max_tokens:
+                call_kwargs["max_tokens"] = self.cfg.max_tokens
+
+            try:
+                raw = self.llm.generate_messages(**call_kwargs)
+            except TypeError:
+                raw = self.llm.generate_messages(messages=messages)
+
+            raw_text = self._extract_text(raw)
+            if self._debug:
+                self.last_plan_meta["raw_response"] = raw_text[:4000]
+
+            data = self._safe_json(raw_text)
+            if not data:
+                return None
+
+            plan = self._parse_plan(data)
+            for step in plan.steps:
+                if step.component and step.component not in self._components:
+                    step.method = "GENERAL"
+                    step.component = None
+            return plan
+        except Exception as e:
+            if self._debug:
+                self.last_plan_meta["llm_exception"] = repr(e)
+            return None
+
+    # --------- Catalog rendering ---------
+    def _render_catalog_for_prompt(self) -> str:
+        lines = []
+        for c in self._components.values():
+            if not self._is_available(c):
+                continue
+            ex = f" | examples: {', '.join(c.examples)}" if getattr(c, "examples", None) else ""
+            lines.append(f"- name: {c.name} | desc: {c.description} | use_when: {c.use_when}{ex}")
+        if not lines:
+            return "- (no components available)"
+        return "\n".join(lines)
+
+    def _render_catalog_rows(self) -> List[Dict[str, Any]]:
+        rows = []
+        for c in self._components.values():
+            if not self._is_available(c):
+                continue
+            rows.append({
+                "name": c.name,
+                "description": getattr(c, "description", ""),
+                "use_when": getattr(c, "use_when", ""),
+                "outputs": getattr(c, "outputs", []) or getattr(c, "allowed_outputs", []) or [],
+            })
+        return rows
+
+    # --------- Parse plan JSON ---------
+    def _parse_plan(self, data: Dict[str, Any]) -> Plan:
+        steps: List[PlanStep] = []
+        for s in data.get("steps", []):
+            steps.append(PlanStep(
+                id=s.get("id", f"S{len(steps)+1}"),
+                title=s.get("title", ""),
+                goal=s.get("goal", ""),
+                method=s.get("method", "GENERAL"),
+                component=s.get("component"),
+                inputs=s.get("inputs", []),
+                outputs=s.get("outputs", []),
+                success_criteria=s.get("success_criteria", []),
+                fallback=s.get("fallback", "Retry or ask user"),
+                depends_on=s.get("depends_on", []),
+                why_method=s.get("why_method"),
+                why_component=s.get("why_component"),
+                notes=s.get("notes"),
+            ))
+        return Plan(
+            intent=data.get("intent", "unknown"),
+            needs=data.get("needs", {"rag": False, "tools": False, "general": True}),
+            confidence=float(data.get("confidence", 0.5)),
+            assumptions=data.get("assumptions", []),
+            steps=steps,
+            risks=data.get("risks", []),
+            iteration_policy=data.get("iteration_policy", {"max_passes": 1, "improve_if": []})
+        )
+
+    # --------- Heuristic/minimal fallbacks ---------
+    def _heuristic_plan(self, query: str, meta: Dict[str, Any]) -> Plan:
+        steps = [
+            PlanStep(
+                id="S1",
+                title="Synthesis (general)",
+                goal="Draft an initial answer using general reasoning.",
+                method="GENERAL",
+                component=None,
+                inputs=["query"],
+                outputs=["draft_answer"],
+                success_criteria=["relevance", "clarity"],
+                fallback="Ask user for clarification."
+            )
+        ]
+        return Plan(
+            intent="unknown",
+            needs={"rag": False, "tools": False, "general": True},
+            confidence=0.3,
+            assumptions=[],
+            steps=steps,
+            risks=["Heuristic fallback used"],
+            iteration_policy={"max_passes": 1, "improve_if": ["user dissatisfied"]}
+        )
+
+    def _minimal_plan(self) -> Plan:
+        return Plan(
+            intent="unknown",
+            needs={"general": True},
+            confidence=0.2,
+            assumptions=[],
+            steps=[
+                PlanStep(
+                    id="S1",
+                    title="General draft",
+                    goal="Provide minimal answer",
+                    method="GENERAL",
+                    component=None,
+                    inputs=["query"],
+                    outputs=["draft_answer"],
+                    success_criteria=["clarity"],
+                    fallback="Ask user for more info."
+                )
+            ],
+            risks=["No context"],
+            iteration_policy={"max_passes": 1}
+        )
+
+    # --------- Printing & diagnostics ---------
+    def _preview(self, val, n: int = 400) -> str:
+        try:
+            s = json.dumps(val, ensure_ascii=False)
+        except Exception:
+            s = str(val)
+        return s if len(s) <= n else s[:n] + "…"
+
+    def _per_step_index(self, analysis: dict) -> dict:
+        rows = analysis.get("per_step", []) if analysis else []
+        return {r.get("id"): r for r in rows}
+
+    def _print_step_common(self, idx: int, step: "PlanStep", comp_obj, comp_found: bool, analysis_row: dict | None, print_fn=print):
+        print_fn(f"{idx}. {step.title or step.id}")
+        goal_txt = (step.goal or "").strip()
+        if not goal_txt or goal_txt == "-":
+            goal_txt = (step.notes or "").strip() or (step.title or "").strip() or "(no goal)"
+        print_fn(f"   Goal: {goal_txt}")
+        print_fn(f"   How to execute: method={step.method}, depends_on={step.depends_on or []}")
+        print_fn(f"   Component: {step.component or '—'}")
+        print_fn(f"   Component found: {comp_found}")
+        if hasattr(step, "router_score"):
+            print_fn(f"   Assign score: {step.router_score:.2f} | low_confidence={bool(getattr(step,'low_confidence',False))}")
+        print_fn(f"   Inputs: {step.inputs or []}")
+        print_fn(f"   Outputs: {step.outputs or []}")
+        print_fn(f"   Success criteria: {step.success_criteria or []}")
+        print_fn(f"   Fallback: {step.fallback or '-'}")
+        wm = getattr(step, "why_method", None) or (analysis_row or {}).get("why_method")
+        wc = getattr(step, "why_component", None) or (analysis_row or {}).get("why_component")
+        if wm or wc:
+            print_fn("   Rationale:")
+            if wm: print_fn(f"     why_method: {wm}")
+            if wc: print_fn(f"     why_component: {wc}")
+
+    def print_plan(self, plan: "Plan", *, print_fn: Callable[[str], None] = print) -> None:
+        needs_str = f"rag={plan.needs.get('rag', False)}, tools={plan.needs.get('tools', False)}, general={plan.needs.get('general', False)}"
+        print_fn(f"INTENT: {plan.intent} | Needs: {needs_str} | Confidence: {plan.confidence:.2f}")
+        if plan.assumptions:
+            print_fn("Assumptions: " + "; ".join(plan.assumptions))
+
+        analysis = (self.last_plan_meta or {}).get("analysis") or self.analyze_plan(plan)
+        per_idx = self._per_step_index(analysis)
+
+        for i, s in enumerate(plan.steps, start=1):
+            comp_obj = self._components.get(s.component) if s.component else None
+            comp_found = bool(comp_obj and self._is_available(comp_obj))
+            self._print_step_common(i, s, comp_obj, comp_found, per_idx.get(s.id), print_fn=print_fn)
+
+        meta = self.last_plan_meta or {}
+        print_fn("\n--- Supervisor diagnostics ---")
+        print_fn("Source: " + str(meta.get("source", "unknown")))
+
+        dag = analysis.get("dag", {})
+        violations = dag.get("violations", []) or []
+
+        has_rag = any(s.method == "RAG" for s in plan.steps)
+        has_tools = any(s.method == "TOOL" for s in plan.steps)
+        has_general = any(s.method == "GENERAL" for s in plan.steps)
+        mm = []
+        if bool(plan.needs.get("rag", False)) != has_rag:
+            mm.append(f"needs.rag={plan.needs.get('rag')} vs steps_have_rag={has_rag}")
+        if bool(plan.needs.get("tools", False)) != has_tools:
+            mm.append(f"needs.tools={plan.needs.get('tools')} vs steps_have_tools={has_tools}")
+        if bool(plan.needs.get("general", False)) != has_general:
+            mm.append(f"needs.general={plan.needs.get('general')} vs steps_have_general={has_general}")
+
+        print_fn("Needs consistency: " + ("OK" if not mm else "; ".join(mm)))
+        print_fn("DAG violations: " + ("none" if not violations else str(violations)))
+
+    # --------- Execute ---------
+    def execute_plan(
+        self,
+        plan: "Plan",
+        *,
+        query: str = "",
+        entry_artifacts: Optional[Dict[str, Any]] = None,
+        verbose: bool = True,
+        print_fn: Callable[[str], None] = print,
+        max_output_len: int = 400
+    ) -> Dict[str, Any]:
+        ctx = self.make_context()
+        state: PipelineState = {
+            "query": query or "",
+            "artifacts": dict(entry_artifacts or {}),
+            "step_status": {},
+            "debug_logs": [],
+            "last_output": None,
+            "cursor": {},
+            "terminated": False,
+            "terminated_by": None,
+            "terminate_reason": None,
+            "finally_status": {}
+        }
+
+        analysis = self.analyze_plan(plan)
+        per_idx = self._per_step_index(analysis)
+
+        for idx, step in enumerate(plan.steps, start=1):
+            comp = self._components.get(step.component) if step.component else None
+            comp_found = bool(comp and self._is_available(comp))
+
+            # Runtime fallback only when missing
+            used_fallback = False
+            if (not comp_found) and self.cfg.fallback_on_miss and self.cfg.fallback_component:
+                fb = self._components.get(self.cfg.fallback_component)
+                if fb and self._is_available(fb):
+                    comp = fb
+                    comp_found = True
+                    used_fallback = True
+                    state["debug_logs"].append(
+                        f"[{step.id}] fallback component used: '{self.cfg.fallback_component}'"
+                    )
+
+            if verbose:
+                self._print_step_common(idx, step, comp, comp_found, per_idx.get(step.id), print_fn=print_fn)
+                if used_fallback:
+                    print_fn(f"   (Default component used: {self.cfg.fallback_component})")
+
+            # inputs presence info
+            missing_inputs = []
+            for inp in (step.inputs or []):
+                key = (inp or "").strip().rstrip("?")
+                if not key:
+                    continue
+                if key in state["artifacts"]:
+                    continue
+                missing_inputs.append(key)
+            if missing_inputs and verbose:
+                print_fn(f"   Note: missing inputs: {missing_inputs} (treated as user input or skipped)")
+
+            if not comp_found:
+                state["step_status"][step.id] = {"status": "error", "error": "component_not_found"}
+                state["debug_logs"].append(f"[{step.id}] component '{step.component}' not found/available and no fallback")
+                if verbose:
+                    print_fn(f"   Invocation: skipped (component unavailable)")
+                continue
+
+            try:
+                result: ComponentResult = comp.run(state, ctx)
+            except Exception as e:
+                result = ComponentResult(ok=False, logs=[f"exception: {e}"], meta={"error": str(e)})
+
+            if result.logs:
+                state["debug_logs"].extend([f"[{step.id}:{comp.name}] {l}" for l in result.logs])
+            if result.produces:
+                state["artifacts"].update(result.produces)
+            state["last_output"] = result.output if result.output is not None else state.get("last_output")
+
+            step_meta = dict(result.meta or {})
+            state["step_status"][step.id] = {"status": "ok" if result.ok else "error", **step_meta}
+
+            stop_flag = bool(step_meta.get("stop") or step_meta.get("halt") or step_meta.get("terminate"))
+            if stop_flag:
+                reason = step_meta.get("reason") or "component_requested_stop"
+                state["terminated"] = True
+                state["terminated_by"] = step.id
+                state["terminate_reason"] = reason
+                state["debug_logs"].append(f"[{step.id}:{comp.name}] PIPELINE STOP: {reason}")
+
+            if verbose:
+                status_txt = "OK" if result.ok else "ERROR"
+                out_preview = self._preview(result.output, n=max_output_len) if (result.output is not None) else "-"
+                prod_preview = self._preview(result.produces, n=max_output_len) if result.produces else "-"
+                print_fn(f"   Invocation: {status_txt}")
+                print_fn(f"   Result (output): {out_preview}")
+                print_fn(f"   Artifacts (produces): {prod_preview}")
+                if result.logs:
+                    print_fn(f"   Logs: {', '.join(result.logs)}")
+                if stop_flag:
+                    print_fn(f"   *** PIPELINE TERMINATED *** reason: {reason}")
+
+            if stop_flag:
+                break
+
+        self._run_finally_components(state, ctx, verbose=verbose, print_fn=print_fn, max_output_len=max_output_len)
+        return state
+
+    def _run_finally_components(
+        self,
+        state: PipelineState,
+        ctx: ComponentContext,
+        *,
+        verbose: bool,
+        print_fn: Callable[[str], None],
+        max_output_len: int
+    ):
+        if not self.cfg.finally_components:
+            return
+
+        print_fn("\n=== FINALLY (components always executed) ===")
+        for i, name in enumerate(self.cfg.finally_components, start=1):
+            comp = self._components.get(name)
+            comp_found = bool(comp and self._is_available(comp))
+            print_fn(f"{i}. {name}")
+            print_fn("   Goal: final component / cleanup / aggregate report")
+            print_fn("   How to execute: method=GENERAL, depends_on=[]")
+            print_fn(f"   Component: {name}")
+            print_fn(f"   Component found: {comp_found}")
+            print_fn(f"   Inputs: {list((state.get('artifacts') or {}).keys())[:6]}{' …' if len((state.get('artifacts') or {}))>6 else ''}")
+            print_fn("   Outputs: ['*per component*']")
+            print_fn("   Success criteria: ['runs without exception']")
+            print_fn("   Fallback: '-'")
+
+            if not comp_found:
+                state["finally_status"][name] = {"status": "error", "error": "component_not_found"}
+                print_fn("   Invocation: skipped (component unavailable)")
+                continue
+
+            try:
+                result: ComponentResult = comp.run(state, ctx)
+            except Exception as e:
+                result = ComponentResult(ok=False, logs=[f"exception: {e}"], meta={"error": str(e)})
+
+            if result.logs:
+                state["debug_logs"].extend([f"[FINALLY:{name}] {l}" for l in result.logs])
+            if result.produces:
+                state["artifacts"].update(result.produces)
+
+            state["finally_status"][name] = {"status": "ok" if result.ok else "error", **(result.meta or {})}
+
+            status_txt = "OK" if result.ok else "ERROR"
+            out_preview = self._preview(result.output, n=max_output_len) if (result.output is not None) else "-"
+            prod_preview = self._preview(result.produces, n=max_output_len) if result.produces else "-"
+            print_fn(f"   Invocation: {status_txt}")
+            print_fn(f"   Result (output): {out_preview}")
+            print_fn(f"   Artifacts (produces): {prod_preview}")
+
+    # --------- Static analysis ---------
+    def analyze_plan(self, plan: Plan) -> Dict[str, Any]:
+        available = {n: self._is_available(c) for n, c in self._components.items()}
+        produced_by, violations = {}, []
+        step_index = {s.id: i for i, s in enumerate(plan.steps)}
+
+        for s in plan.steps:
+            for out in s.outputs:
+                key = (out or "").strip()
+                if not key:
+                    continue
+                if key in produced_by:
+                    violations.append(f"Duplicate output '{key}' in {produced_by[key]} and {s.id}")
+                else:
+                    produced_by[key] = s.id
+
+        for s in plan.steps:
+            for dep in s.depends_on:
+                if dep not in step_index:
+                    violations.append(f"{s.id} depends_on unknown {dep}")
+                elif step_index[dep] >= step_index[s.id]:
+                    violations.append(f"{s.id} depends_on non-prior step {dep}")
+
+        per_step = []
+        for s in plan.steps:
+            comp = self._components.get(s.component) if s.component else None
+            per_step.append({
+                "id": s.id,
+                "method": s.method,
+                "component": s.component,
+                "available": bool(comp and self._is_available(comp)),
+                "why_method": s.why_method or self._infer_why_method(s),
+                "why_component": s.why_component or self._infer_why_component(s)
+            })
+
+        return {
+            "dag": {"produced_by": produced_by, "violations": violations},
+            "components_available": available,
+            "per_step": per_step
+        }
+
+    def _infer_why_method(self, s: PlanStep) -> str:
+        if s.method == "TOOL":
+            return "Domain operation handled by a specialized tool."
+        if s.method == "RAG":
+            return "Requires domain retrieval or knowledge search."
+        return "General reasoning step."
+
+    def _infer_why_component(self, s: PlanStep) -> Optional[str]:
+        return f"Chosen by planner: {s.component}" if s.component else None
+
+# ======================================================================
+# FILE: intergrax/supervisor/supervisor_components.py
+# MODULE: intergrax.supervisor.supervisor_components
+# MODULE_GROUP: supervisor
+# TAGS:
+#   - package=intergrax
+#   - module_group=supervisor
+#   - file=supervisor_components.py
+# LINES: 65
+# SHA256: f87c0b7de5a4f0c3d62338176be33af71ce82d050a41866f05b922364cd35c0b
+# SYMBOLS:
+#   - class PipelineState
+#   - class ComponentResult
+#   - class ComponentContext
+#   - class Component
+#   - def component()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Callable, Optional, TypedDict
+
+# Reuse your PipelineState definition if it already exists. Otherwise:
+class PipelineState(TypedDict, total=False):
+    query: str
+    artifacts: Dict[str, Any]
+    step_status: Dict[str, Any]
+    debug_logs: List[str]
+    last_output: Any      # last result (shortcut for quick hand-off to the next step)
+    cursor: Dict[str, Any]  # arbitrary pointers/offsets passed between steps
+
+@dataclass
+class ComponentResult:
+    ok: bool = True
+    # What to merge into state.artifacts (e.g., {"ux_report": {...}, "answer": "..."}).
+    produces: Dict[str, Any] = field(default_factory=dict)
+    # Optional "main result" — automatically stored in state["last_output"].
+    output: Any = None
+    # Diagnostic logs.
+    logs: List[str] = field(default_factory=list)
+    # Additional entries for step_status (e.g., {"details": "..."}); status is inferred from `ok`.
+    meta: Dict[str, Any] = field(default_factory=dict)
+
+# Context passed to components — they can pull LLMs, retrievers, etc. from here.
+@dataclass
+class ComponentContext:
+    llm_adapter: Any = None
+    resources: Dict[str, Any] = field(default_factory=dict)  # e.g., retriever, ranker, etc.
+
+@dataclass
+class Component:
+    name: str
+    description: str
+    use_when: str = ""
+    examples: List[str] = field(default_factory=list)
+    available: bool = True
+    # Actual step implementation.
+    fn: Callable[[PipelineState, ComponentContext], ComponentResult] = None
+
+    def run(self, state: PipelineState, ctx: ComponentContext) -> ComponentResult:
+        if not self.available:
+            return ComponentResult(ok=False, logs=[f"{self.name} unavailable"], meta={"error": "unavailable"})
+        try:
+            return self.fn(state, ctx)
+        except Exception as e:
+            return ComponentResult(ok=False, logs=[f"{self.name} error: {e}"], meta={"error": str(e)})
+
+# Syntactic sugar: decorator for quick registration.
+def component(name: str, description: str, use_when: str = "", examples: Optional[List[str]] = None, available: bool = True):
+    def wrap(fn):
+        return Component(
+            name=name,
+            description=description,
+            use_when=use_when,
+            examples=examples or [],
+            available=available,
+            fn=fn
+        )
+    return wrap
+
+# ======================================================================
+# FILE: intergrax/supervisor/supervisor_prompts.py
+# MODULE: intergrax.supervisor.supervisor_prompts
+# MODULE_GROUP: supervisor
+# TAGS:
+#   - package=intergrax
+#   - module_group=supervisor
+#   - file=supervisor_prompts.py
+# LINES: 149
+# SHA256: 3dfe61f1124ef061ca3ed55cc0c93218b6952d40efeee2422484384b8b7bbfdb
+# SYMBOLS:
+#   - class SupervisorPromptPack
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from dataclasses import dataclass
+
+# ===============================
+# UNIVERSAL EN PROMPTS (v2.1) — stronger decomposition-first
+# ===============================
+
+DEFAULT_PLAN_SYSTEM_V2 = """
+You are the Supervisor-Planner for a hybrid RAG + Tools + General Reasoning engine.
+Your output is a precise, auditable DAG plan that an executor will run.
+
+DECOMPOSITION-FIRST MANDATE
+Before assigning any METHOD or COMPONENT, perform a complete task decomposition:
+- Parse the user's goal into minimal, logically ordered, non-overlapping sub-goals.
+- Ensure MECE quality (mutually exclusive, collectively exhaustive).
+- Verify atomicity: each sub-goal is the smallest meaningful action that can be executed or delegated.
+- Do NOT insert components, tools, or methods during decomposition. That happens later.
+- If information is missing, capture it as required_user_inputs (and mark missing_inputs).
+
+PRIMARY PRINCIPLES
+1) First DECOMPOSE the user's goal into minimal, logically ordered sub-steps (no components yet).
+2) Then ASSIGN realization to each executable step: METHOD (RAG|TOOL|GENERAL), COMPONENT (if RAG/TOOL), INPUTS, OUTPUTS.
+3) Enforce correct DATA-FLOW (acyclic, no forward refs). Use explicit artifacts and dependencies.
+4) Insert GATE steps for decisions/conditions; insert IO steps for external data fetch; end with a SYNTHESIS step.
+5) Prefer correctness and observability over brevity.
+
+COMPONENT SELECTION POLICY
+- Always choose a COMPONENT when METHOD is RAG or TOOL. Component MUST be one of the provided catalog names.
+- Select the component whose declared outputs **cover** the step's requested outputs (contract match).
+- GENERAL is only allowed for reasoning/text transformation steps that do not require cataloged components or vector retrieval.
+
+OUTPUT→METHOD GUARDS (hard rules)
+- If a step requires: citations, context_chunks, retrieved_passages → METHOD=RAG (choose a Knowledge RAG component).
+- If a step requires: numeric calculations, API calls, file I/O, UX audits, finance extraction → METHOD=TOOL (choose the matching tool component).
+- If a step produces only narrative synthesis (final_report/final_decision/rationale) without new retrieval or API calls → METHOD=GENERAL or SYNTHESIS.
+
+COMPONENT OUTPUT CONTRACTS (examples; only use outputs allowed by a chosen component):
+- UX/Audit tool: ux_audit_report, findings, cost_estimate (number), citations?
+- Finance tool: financial_report, last_quarter_budget, budget_notes, cost_estimate
+- PM tool: pm_decision ('approved'|'rejected'), decision_rationale|pm_notes
+- Knowledge RAG: context_chunks, citations
+- Final report/synthesis: final_report, final_decision, rationale
+If a step lists outputs outside its component’s contract → INVALID PLAN.
+
+STRICT RULES
+A) Resource flags:
+   needs.rag=true iff ≥1 RAG step with valid component; needs.tools=true iff ≥1 TOOL step; needs.general=true iff ≥1 GENERAL step.
+B) DAG:
+   Every step MUST specify depends_on referencing only earlier step IDs. No cycles. Inputs reference only user inputs or outputs of depends_on.
+C) Gates:
+   kind="gate" with terminate_if / continue_if, conditions must reference existing artifacts with simple comparisons.
+D) Synthesis:
+   End with kind="synthesis" that consumes prior artifacts and outputs final_decision and rationale (and/or final_report).
+E) Reliability:
+   Each step must include success_criteria and fallback.
+F) Decomposition coverage and integrity:
+   - Every decomposition item MUST be mapped by ≥1 step (via maps).
+   - No step may be unmapped (every step MUST reference ≥1 decomposition id).
+   - No components/methods in the decomposition section itself.
+
+VALIDATION CHECKLIST (the model must self-check before returning):
+- Every TOOL or RAG step has a non-null, catalog-matching component.
+- Step outputs are a subset of the chosen component’s declared contract.
+- If outputs include citations/context_chunks → RAG is used.
+- If outputs include cost_estimate/financial_report/ux_audit_report or API/data fetch → TOOL is used.
+- GENERAL steps do not claim component-specific outputs.
+
+RETURN ONLY ONE JSON OBJECT (no prose/markdown).
+"""
+
+
+DEFAULT_PLAN_USER_V2 = """
+User request:
+{query}
+
+Available components (choose by exact 'name' only):
+{catalog}
+
+Component contracts (name → allowed outputs):
+{component_contracts}
+
+Return EXACTLY ONE JSON object with this schema:
+{
+  "intent": "qa|procedural|creative|decision|unknown",
+  "needs": { "rag": true/false, "tools": true/false, "general": true/false },
+  "confidence": 0.0-1.0,
+  "assumptions": ["optional explicit assumptions"],
+  "constraints": ["optional global constraints (quality, latency, cost)"],
+  "required_user_inputs": ["inputs expected from user if any"],
+  "missing_inputs": ["subset of required_user_inputs not currently available"],
+
+  "decomposition": [
+    { "id": "D1", "title": "atomic sub-goal (no components yet)", "goal": "what this sub-step achieves", "notes": "optional" }
+  ],
+
+  "decomposition_audit": {
+    "is_mece": true/false,
+    "gaps": ["missing sub-goals if any"],
+    "overlaps": ["overlapping/duplicate sub-goals if any"],
+    "coverage": { "expected_count": <int>, "mapped_count": <int>, "unmapped_decomposition_ids": ["if any"] }
+  },
+
+  "steps": [
+    {
+      "id": "S1",
+      "title": "short step title",
+      "kind": "task|io|gate|synthesis",
+      "maps": ["D1","D2"],
+      "method": "RAG|TOOL|GENERAL",
+      "component": "EXACT component name or null for GENERAL/SYNTHESIS",
+      "depends_on": ["S#","S#"],
+      "inputs": ["only from user inputs or from depends_on outputs"],
+      "outputs": ["artifacts allowed by the chosen component (see component_contracts)"],
+      "terminate_if": ["optional gate conditions using prior artifacts"],
+      "continue_if": ["optional gate conditions using prior artifacts"],
+      "success_criteria": ["verifiable conditions"],
+      "fallback": "practical action on failure",
+      "parallel_group": "optional label if can run with others"
+    }
+  ],
+
+  "risks": ["key risks or uncertainties"],
+  "iteration_policy": {
+    "max_passes": 2,
+    "improve_if": ["low confidence", "missing outputs", "contract violations", "DAG errors", "decomposition gaps/overlaps"]
+  }
+}
+
+Planning constraints (MUST follow):
+- Decomposition first, then assignment (no methods/components in the decomposition section).
+- Keep plan acyclic; inputs cannot reference yet-unproduced artifacts.
+- Ensure every decomposition item is covered by ≥1 step; no unmapped steps.
+- Use component_contracts to select components so that step outputs ⊆ chosen component's outputs.
+- If citations/context retrieval are required → use RAG with a knowledge component.
+- If API/UX/finance/compute is required → use TOOL with a matching component.
+- Always end with a synthesis step producing final_decision and rationale (and final_report if relevant).
+
+Return ONLY the JSON object.
+"""
+
+
+@dataclass
+class SupervisorPromptPack:
+    """Default prompt templates for the intergrax unified Supervisor (can be overridden at runtime)."""
+    plan_system: str = DEFAULT_PLAN_SYSTEM_V2
+    plan_user_template: str = DEFAULT_PLAN_USER_V2
+
+# ======================================================================
+# FILE: intergrax/supervisor/supervisor_to_state_graph.py
+# MODULE: intergrax.supervisor.supervisor_to_state_graph
+# MODULE_GROUP: supervisor
+# TAGS:
+#   - package=intergrax
+#   - module_group=supervisor
+#   - file=supervisor_to_state_graph.py
+# LINES: 242
+# SHA256: bef58f90d04de30355a9588e0a03229f51fce520b73d5740a0bc542ea1c60e78
+# SYMBOLS:
+#   - class PipelineState
+#   - def _ensure_state_defaults()
+#   - def _append_log()
+#   - def _resolve_inputs()
+#   - def _persist_outputs()
+#   - def _slugify()
+#   - def _make_node_name()
+#   - def make_node_fn()
+#   - def topo_order()
+#   - def build_langgraph_from_plan()
+# ======================================================================
+# plan_to_langgraph.py
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import TypedDict, Dict, Any, List, Callable, Optional
+from dataclasses import asdict
+import re  # NEW
+
+# LangGraph
+from langgraph.graph import StateGraph, END
+
+from .supervisor import Plan, PlanStep
+from .supervisor_components import BaseSupervisorComponent
+
+# -----------------------------
+# 1) State schema + utils
+# -----------------------------
+class PipelineState(TypedDict, total=False):
+    """Global state traveling through the LangGraph pipeline."""
+    query: str
+    artifacts: Dict[str, Any]      # map: artifact name -> value
+    step_status: Dict[str, Any]    # map: step_id -> {"status": "ok"|"error", "error": Optional[str]}
+    debug_logs: List[str]          # chronological logs
+    scratchpad: Dict[str, Any]     # free-form workspace
+
+def _ensure_state_defaults(state: PipelineState) -> PipelineState:
+    state.setdefault("artifacts", {})
+    state.setdefault("step_status", {})
+    state.setdefault("debug_logs", [])
+    state.setdefault("scratchpad", {})
+    return state
+
+def _append_log(state: PipelineState, msg: str) -> None:
+    state["debug_logs"].append(msg)
+
+def _resolve_inputs(state: PipelineState, step: PlanStep) -> Dict[str, Any]:
+    """
+    Reads inputs declared in the plan. Convention:
+      - bare name 'foo' → take from artifacts['foo'] if present, else from state['foo'] if present
+      - names ending with '?' are optional (no error if missing)
+      - the reserved name 'query' maps to state['query']
+    """
+    inputs: Dict[str, Any] = {}
+    for name in (step.inputs or []):
+        opt = name.endswith("?")
+        key = name[:-1] if opt else name
+        if key == "query":
+            inputs[key] = state.get("query")
+            continue
+        if key in state.get("artifacts", {}):
+            inputs[key] = state["artifacts"][key]
+            continue
+        if key in state:
+            inputs[key] = state[key]
+            continue
+        if not opt:
+            raise KeyError(f"Required input '{key}' for step {step.id} not found")
+    return inputs
+
+def _persist_outputs(state: PipelineState, step: PlanStep, result: Any) -> None:
+    """
+    Persists node results into artifacts. If result is a dict and step.outputs are named,
+    we map names to result keys when possible; else we store the whole result under each named output.
+    """
+    artifacts = state["artifacts"]
+    out_names = step.outputs or []
+    if isinstance(result, dict) and out_names:
+        for name in out_names:
+            artifacts[name] = result.get(name, result)
+    elif out_names:
+        for name in out_names:
+            artifacts[name] = result
+    else:
+        artifacts[step.id] = result
+
+# -----------------------------
+# 1b) Readable node names
+# -----------------------------
+def _slugify(text: str, max_len: int = 40) -> str:
+    """
+    Make a LangGraph-safe, readable identifier from a title.
+    Keeps ASCII letters/numbers/underscores, collapses spaces, trims length.
+    """
+    text = (text or "").strip()
+    if not text:
+        return "step"
+    s = re.sub(r"[^A-Za-z0-9]+", "_", text)   # non-alnum -> _
+    s = re.sub(r"_+", "_", s).strip("_")       # collapse
+    if not s:
+        s = "step"
+    return s[:max_len]
+
+def _make_node_name(step: PlanStep, used: set) -> str:
+    """
+    Compose a unique node name from step.id and slugified title.
+    Example: S1__UX_Audit_Report_Generation
+    """
+    base = f"{step.id}__{_slugify(step.title)}"
+    name = base
+    i = 2
+    while name in used:
+        name = f"{base}__{i}"
+        i += 1
+    used.add(name)
+    return name
+
+# -----------------------------
+# 2) Node factory
+# -----------------------------
+def make_node_fn(step: PlanStep, component: Optional[BaseSupervisorComponent]) -> Callable[[PipelineState], PipelineState]:
+    """
+    Returns a LangGraph node function that executes one plan step.
+    Resolution:
+      - GENERAL → pure reasoning node (if a component was provided, we call it; else no-op synthesis scaffold)
+      - TOOL/RAG → call provided component.instance.execute(**inputs)
+    Contract for components:
+      component.instance.execute(**inputs) -> Any (dict recommended)
+    """
+    method = (step.method or "GENERAL").upper()
+
+    def node_fn(state: PipelineState) -> PipelineState:
+        state = _ensure_state_defaults(state)
+        _append_log(state, f"[{step.id}] START {method} | component={step.component or '∅'} | title={step.title}")
+
+        try:
+            resolved_inputs = _resolve_inputs(state, step)
+            _append_log(state, f"[{step.id}] inputs = {resolved_inputs}")
+
+            if method in ("TOOL", "RAG"):
+                if not component or not getattr(component, "instance", None):
+                    raise RuntimeError(f"Step {step.id} requires component '{step.component}' but it's unavailable.")
+                exec_fn = getattr(component.instance, "execute", None)
+                if not callable(exec_fn):
+                    raise RuntimeError(f"Component '{component.name}' has no callable execute(...)")
+                result = exec_fn(**resolved_inputs)
+            else:
+                if component and getattr(component, "instance", None):
+                    exec_fn = getattr(component.instance, "execute", None)
+                    if not callable(exec_fn):
+                        raise RuntimeError(f"Component '{component.name}' has no callable execute(...)")
+                    result = exec_fn(**resolved_inputs)
+                else:
+                    result = {"final_answer": resolved_inputs.get("draft_answer") or resolved_inputs.get("answer") or ""}
+
+            _persist_outputs(state, step, result)
+            state["step_status"][step.id] = {"status": "ok"}
+            _append_log(state, f"[{step.id}] ok → outputs={step.outputs or [step.id]}")
+
+        except Exception as e:
+            state["step_status"][step.id] = {"status": "error", "error": repr(e)}
+            _append_log(state, f"[{step.id}] ERROR: {e}")
+        return state
+
+    return node_fn
+
+# -----------------------------
+# 3) Build graph
+# -----------------------------
+def topo_order(steps: List[PlanStep]) -> List[PlanStep]:
+    """
+    Stable topological ordering:
+      - primary: honor explicit depends_on
+      - fallback: preserve original order when no dependencies given
+    """
+    if any(getattr(s, "depends_on", None) for s in steps):
+        id_to_step = {s.id: s for s in steps}
+        indeg = {s.id: 0 for s in steps}
+        graph = {s.id: [] for s in steps}
+
+        for s in steps:
+            deps = getattr(s, "depends_on", []) or []
+            for dep in deps:
+                if dep in id_to_step:
+                    graph[dep].append(s.id)
+                    indeg[s.id] += 1
+
+        queue = [sid for sid, d in indeg.items() if d == 0]
+        ordered_ids: List[str] = []
+        while queue:
+            sid = queue.pop(0)
+            ordered_ids.append(sid)
+            for nxt in graph[sid]:
+                indeg[nxt] -= 1
+                if indeg[nxt] == 0:
+                    queue.append(nxt)
+
+        if len(ordered_ids) != len(steps):
+            remain = [s.id for s in steps if s.id not in ordered_ids]
+            ordered_ids.extend(remain)
+
+        return [id_to_step[sid] for sid in ordered_ids]
+
+    return list(steps)
+
+def build_langgraph_from_plan(
+    plan: Plan,
+    components_by_name: Dict[str, BaseSupervisorComponent],
+    *,
+    entry_inject: Optional[Dict[str, Any]] = None
+):
+    """
+    Transforms a Plan into a runnable LangGraph pipeline.
+    - Creates one node per PlanStep (function built by make_node_fn)
+    - Connects nodes in a stable topological order (parallel branches are linearized)
+    - Returns: (graph, compiled)
+    """
+    g = StateGraph(PipelineState)
+
+    def _entry(state: PipelineState) -> PipelineState:
+        state = _ensure_state_defaults(state)
+        if entry_inject:
+            state.update(entry_inject)
+        return state
+
+    g.add_node("ENTRY", _entry)
+
+    ordered_steps = topo_order(plan.steps)
+    node_names: List[str] = []
+    used: set = set()
+
+    for step in ordered_steps:
+        comp = components_by_name.get(step.component) if step.component else None
+        node_fn = make_node_fn(step, comp)
+        # READABLE NAME instead of "NODE_S1"
+        node_name = _make_node_name(step, used)   # e.g., "S1__UX_Audit"
+        g.add_node(node_name, node_fn)
+        node_names.append(node_name)
+
+    g.set_entry_point("ENTRY")
+    if node_names:
+        prev = "ENTRY"
+        for nn in node_names:
+            g.add_edge(prev, nn)
+            prev = nn
+        g.add_edge(prev, END)
+    else:
+        g.add_edge("ENTRY", END)
+
+    app = g.compile()
+    return g, app
+
+# ======================================================================
+# FILE: intergrax/tools/__init__.py
+# MODULE: intergrax.tools
+# MODULE_GROUP: tools
+# TAGS:
+#   - package=intergrax
+#   - module_group=tools
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/tools/tools_agent.py
+# MODULE: intergrax.tools.tools_agent
+# MODULE_GROUP: tools
+# TAGS:
+#   - package=intergrax
+#   - module_group=tools
+#   - file=tools_agent.py
+# LINES: 570
+# SHA256: 2a22c8cfca1e6169e9e5e2ffcfe2dc70ce5006681f2af37307c1949ad186dad8
+# SYMBOLS:
+#   - class ToolsAgentConfig
+#   - def _maybe_import_pydantic_base()
+#   - def _instantiate_output_model()
+#   - def _extract_json_from_text()
+#   - class ToolsAgent
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+import json
+from typing import Any, Dict, List, Optional, Union, Type
+
+from intergrax.memory.conversational_memory import ConversationalMemory
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters import LLMAdapter
+from .tools_base import ToolRegistry, _limit_tool_output
+
+
+PLANNER_PROMPT = (
+                    "You do not have native tool-calling.\n"
+                    "At each step, reply ONLY with strict JSON:\n"
+                    '{\"call_tool\": {\"name\": \"<tool_name>\", \"arguments\": {...}}} '
+                    'or {\"final_answer\": \"<text>\"}.\n'
+                    "Use the declared TOOLS catalog to choose function name and arguments.\n"
+                    "If tool result is insufficient, you may call another tool.\n"
+                    "Never include commentary outside JSON."
+                )
+
+SYSTEM_PROMPT = (
+        "You are a capable assistant. Use tools when helpful. "
+        "If you call a tool, do not fabricate results—wait for tool outputs."
+    )
+
+SYSTEM_CONTEXT_TEMPLATE = "Session context:\n{context}"
+
+
+class ToolsAgentConfig:
+    temperature: float = 0.2
+    max_answer_tokens: Optional[int] = None
+    max_tool_iters: int = 6
+    system_instructions: str = SYSTEM_PROMPT
+    system_context_template: str = SYSTEM_CONTEXT_TEMPLATE
+    planner_instructions : str = PLANNER_PROMPT
+
+
+def _maybe_import_pydantic_base() -> Optional[type]:
+    try:
+        from pydantic import BaseModel  # type: ignore
+        return BaseModel
+    except Exception:
+        return None
+
+
+def _instantiate_output_model(model_cls: Type, payload: Any) -> Any:
+    """
+    Creates an instance of output_model:
+    - If it is Pydantic v2/v1 → model_cls(**payload)
+    - Otherwise: model_cls(**payload) (duck-typing)
+    """
+    if payload is None:
+        return None
+    # If payload is a JSON string → decode
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except Exception:
+            return None
+    # If payload is not a dict but has .dict/.model_dump → use it
+    if not isinstance(payload, dict):
+        try:
+            if hasattr(payload, "model_dump"):
+                payload = payload.model_dump()
+            elif hasattr(payload, "dict"):
+                payload = payload.dict()
+            else:
+                return None
+        except Exception:
+            return None
+
+    # Pydantic / regular class with **kwargs
+    try:
+        return model_cls(**payload)
+    except Exception:
+        # Another attempt: if a pydantic model needs type conversion
+        try:
+            base = _maybe_import_pydantic_base()
+            if base and isinstance(model_cls, type) and issubclass(model_cls, base):
+                return model_cls.model_validate(payload)  # v2 compat
+        except Exception:
+            pass
+        return None
+
+
+def _extract_json_from_text(text: str) -> Optional[dict]:
+    """Tolerant extraction of the first JSON object from text."""
+    if not text:
+        return None
+    try:
+        start, end = text.find("{"), text.rfind("}")
+        if start != -1 and end > start:
+            return json.loads(text[start:end + 1])
+    except Exception:
+        return None
+    return None
+
+
+class ToolsAgent:
+    def __init__(
+        self,
+        llm: LLMAdapter,
+        tools: ToolRegistry,
+        *,
+        memory: Optional[ConversationalMemory] = None,
+        config: Optional[ToolsAgentConfig] = None,
+        verbose: bool = False,
+    ):
+        self.llm = llm
+        self.tools = tools
+        self.memory = memory
+        self.cfg = config or ToolsAgentConfig()
+        self.verbose = verbose
+
+        # Does the LLM support native tools (OpenAI) or a JSON planner (Ollama)?
+        self._native_tools = False
+        if hasattr(self.llm, "supports_tools"):
+            try:
+                self._native_tools = bool(self.llm.supports_tools())
+            except Exception:
+                self._native_tools = False        
+        
+    # ----- helpers -----
+
+    def _prune_messages_for_openai(self, messages: List[ChatMessage]) -> List[ChatMessage]:
+        """
+        OpenAI requires that tool messages appear only in response
+        to the immediately preceding assistant message with tool_calls.
+        Therefore, remove all older 'tool' messages and keep only those
+        that appear after the *last* assistant with tool_calls.
+        """
+        last_tc_idx: Optional[int] = None
+        for i in range(len(messages) - 1, -1, -1):
+            m = messages[i]
+            if m.role == "assistant" and getattr(m, "tool_calls", None):
+                last_tc_idx = i
+                break
+
+        if last_tc_idx is None:
+            # No active tool_calls → remove all 'tool' messages
+            return [m for m in messages if m.role in ("system", "user", "assistant")]
+
+        pruned: List[ChatMessage] = []
+        for i, m in enumerate(messages):
+            if m.role == "tool":
+                # Keep only tool messages after the last assistant.tool_calls
+                if i > last_tc_idx:
+                    pruned.append(m)
+            else:
+                pruned.append(m)
+        return pruned
+
+    def _build_output_structure(
+        self,
+        output_model: Optional[Type],
+        answer_text: str,
+        tool_traces: List[Dict[str, Any]],
+    ) -> Any:
+        """
+        Strategy:
+        1) If there are tool_traces and they have 'output' (full result) → use the last one.
+        2) If there were no tools → try to extract JSON from answer_text.
+        3) Map to output_model (Pydantic / regular class).
+        """
+        if not output_model:
+            return None
+
+        # 1) Prefer tools (full result — see change in append tool trace)
+        if tool_traces:
+            last = tool_traces[-1]
+            full = last.get("output")  # full, not truncated result
+            if full is not None:
+                obj = _instantiate_output_model(output_model, full)
+                if obj is not None:
+                    return obj
+
+            # If there's no 'output' but there is output_preview → try JSON
+            preview = last.get("output_preview")
+            if preview:
+                try:
+                    obj = _instantiate_output_model(output_model, json.loads(preview))
+                    if obj is not None:
+                        return obj
+                except Exception:
+                    pass
+
+        # 2) Without tools: try to extract JSON from text
+        data = _extract_json_from_text(answer_text)
+        if data is not None:
+            obj = _instantiate_output_model(output_model, data)
+            if obj is not None:
+                return obj
+
+        return None
+        
+
+    # ----- PUBLIC API -----
+    def run(
+        self,
+        input_data: Union[str, List[ChatMessage]],
+        *,
+        context: Optional[str] = None,
+        stream: bool = False,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        output_model: Optional[Type] = None,
+    ) -> Dict[str, Any]:
+        """
+        High-level tools orchestration entrypoint.
+
+        Modes:
+        - If `input_data` is a List[ChatMessage]:
+            Use this list as the base conversation context (already built by the caller,
+            e.g. runtime engine with RAG + websearch + history). Optionally inject
+            system instructions and context.
+        - If `input_data` is a str:
+            Fall back to legacy mode with single user_input + optional memory.
+
+        Returns:
+            Dict with keys:
+                - "answer": final answer from tools loop (or planner),
+                - "tool_traces": list of executed tools (name, args, output, preview),
+                - "messages": final message list used by the tools loop,
+                - "output_structure": optional structured output (if output_model provided).
+        """
+
+        # --- Branch 1: caller provides full messages context (ChatGPT-like mode) ---
+        if isinstance(input_data, list):
+            # Treat input_data as List[ChatMessage]
+            base_messages: List[ChatMessage] = list(input_data)
+
+            # Ensure there is at least one system message with core instructions.
+            has_system = any(m.role == "system" for m in base_messages)
+            if not has_system:
+                base_messages.insert(
+                    0,
+                    ChatMessage(role="system", content=self.cfg.system_instructions),
+                )
+
+            # Inject textual session context (RAG + websearch) as extra system message.
+            if context:
+                ctx_msg = ChatMessage(
+                    role="system",
+                    content=self.cfg.system_context_template.format(context=context),
+                )
+                # Wkładamy go tuż przed ostatnią wiadomością user, jeśli jest,
+                # żeby model widział kontekst „tuż przed pytaniem”.
+                if base_messages and base_messages[-1].role == "user":
+                    base_messages = base_messages[:-1] + [ctx_msg, base_messages[-1]]
+                else:
+                    base_messages.append(ctx_msg)
+
+            messages: List[ChatMessage] = base_messages
+
+        # --- Branch 2: legacy mode – single user_input string ---
+        else:
+            user_input: str = input_data
+            if not user_input:
+                raise ValueError("ToolsAgent.run requires non-empty input_data.")
+
+            if self.memory:
+                self.memory.add("user", user_input)
+                messages = self.memory.get_for_model(native_tools=self._native_tools)
+
+                if not any(m.role == "system" for m in messages):
+                    messages.insert(
+                        0,
+                        ChatMessage(
+                            role="system",
+                            content=self.cfg.system_instructions,
+                        ),
+                    )
+
+                if context:
+                    ctx_msg = ChatMessage(
+                        role="system",
+                        content=self.cfg.system_context_template.format(context=context),
+                    )
+                    if messages and messages[-1].role == "user":
+                        messages = messages[:-1] + [ctx_msg, messages[-1]]
+                    else:
+                        messages.append(ctx_msg)
+            else:
+                sys = ChatMessage(
+                    role="system",
+                    content=self.cfg.system_instructions
+                    + (
+                        f"\n\n{self.cfg.system_context_template.format(context=context)}"
+                        if context
+                        else ""
+                    ),
+                )
+                messages = [sys, ChatMessage(role="user", content=user_input)]
+
+        iterations = 0
+        tool_traces: List[Dict[str, Any]] = []
+        last_call_fp = None  # anti-loop
+
+        # ===== BRANCH A: Native tools (OpenAI, etc.) =====
+        if self._native_tools:
+            tools_schema = self.tools.to_openai_tools()
+
+            while iterations < self.cfg.max_tool_iters:
+                iterations += 1
+                if self.verbose:
+                    print(f"[intergraxToolsAgent] Iteration {iterations} (native tools)")
+
+                messages = self._prune_messages_for_openai(messages)
+
+                effective_tool_choice = tool_choice if tool_choice is not None else "auto"
+
+                # --- LLM call ---
+                if stream:
+                    chunks: List[Dict[str, Any]] = []
+                    for ev in self.llm.stream_with_tools(
+                        messages,
+                        tools_schema,
+                        temperature=self.cfg.temperature,
+                        max_tokens=self.cfg.max_answer_tokens,
+                        tool_choice=effective_tool_choice,
+                    ):
+                        chunks.append(ev)
+                    result = chunks[-1] if chunks else {"content": "", "tool_calls": []}
+                else:
+                    result = self.llm.generate_with_tools(
+                        messages,
+                        tools_schema,
+                        temperature=self.cfg.temperature,
+                        max_tokens=self.cfg.max_answer_tokens,
+                        tool_choice=effective_tool_choice,
+                    )
+
+                content = result.get("content") or ""
+                tool_calls = result.get("tool_calls") or []
+
+                messages.append(
+                    ChatMessage(role="assistant", content=content, tool_calls=tool_calls)
+                )
+
+                # --- no tools → final ---
+                if not tool_calls:
+                    if content.strip():
+                        if self.memory and messages is not None:
+                            self.memory.add("assistant", content)
+                        output_obj = self._build_output_structure(
+                            output_model, content, tool_traces
+                        )
+                        return {
+                            "answer": content,
+                            "tool_traces": tool_traces,
+                            "messages": messages,
+                            "output_structure": output_obj,
+                        }
+                    final = "(no tool call, empty content)"
+                    if self.memory:
+                        self.memory.add("assistant", final)
+                    output_obj = self._build_output_structure(
+                        output_model, final, tool_traces
+                    )
+                    return {
+                        "answer": final,
+                        "tool_traces": tool_traces,
+                        "messages": messages,
+                        "output_structure": output_obj,
+                    }
+
+                # --- execute tools ---
+                for tc in tool_calls:
+                    fn = tc.get("function") or {}
+                    name = fn.get("name") or tc.get("name")
+                    call_id = tc.get("id")
+                    args_json = fn.get("arguments") or tc.get("arguments") or "{}"
+
+                    try:
+                        args = json.loads(args_json)
+                    except Exception:
+                        args = {}
+
+                    tool = self.tools.get(name)
+                    validated = tool.validate_args(args)
+
+                    fp = (name, json.dumps(validated, sort_keys=True))
+                    if fp == last_call_fp:
+                        final = "Stopped repeated identical tool call."
+                        output_obj = self._build_output_structure(
+                            output_model, final, tool_traces
+                        )
+                        return {
+                            "answer": final,
+                            "tool_traces": tool_traces,
+                            "messages": messages,
+                            "output_structure": output_obj,
+                        }
+                    last_call_fp = fp
+
+                    if self.verbose:
+                        print(
+                            f"[intergraxToolsAgent] Calling tool: {name}({validated})"
+                        )
+
+                    try:
+                        out = tool.run(**validated)  # full result
+                    except Exception as e:
+                        out = f"[{name}] ERROR: {e}"
+
+                    safe_out = _limit_tool_output(json.dumps(out, ensure_ascii=False))
+                    tool_traces.append(
+                        {
+                            "tool": name,
+                            "args": validated,
+                            "output_preview": safe_out[:400],
+                            "output": out,
+                        }
+                    )
+
+                    messages.append(
+                        ChatMessage(
+                            role="tool",
+                            content=json.dumps(
+                                {"tool_name": name, "result": safe_out},
+                                ensure_ascii=False,
+                            ),
+                            tool_call_id=call_id,
+                            name=name,
+                        )
+                    )
+
+                continue
+
+            final = "Reached tool iteration limit."
+            if self.memory:
+                self.memory.add("assistant", final)
+            output_obj = self._build_output_structure(
+                output_model, final, tool_traces
+            )
+            return {
+                "answer": final,
+                "tool_traces": tool_traces,
+                "messages": messages,
+                "output_structure": output_obj,
+            }
+
+        # ===== BRANCH B: JSON planner (e.g., Ollama) =====
+        tools_desc = [
+            {
+                "name": t.name,
+                "description": t.description,
+                "parameters": t.get_parameters(),
+            }
+            for t in self.tools.list()
+        ]
+
+        plan_intro = ChatMessage(
+            role="system",
+            content=self.cfg.planner_instructions
+            + "\nTOOLS=\n"
+            + json.dumps(tools_desc, ensure_ascii=False),
+        )
+
+        if len(messages) and messages[0].role == "system":
+            messages = [messages[0], plan_intro] + messages[1:]
+        else:
+            messages = [plan_intro] + messages
+
+        while iterations < self.cfg.max_tool_iters:
+            iterations += 1
+            if self.verbose:
+                print(f"[intergraxToolsAgent] Iteration {iterations} (planner)")
+
+            plan_text = self.llm.generate_messages(
+                messages,
+                temperature=self.cfg.temperature,
+                max_tokens=self.cfg.max_answer_tokens,
+            )
+
+            plan_obj = None
+            try:
+                start, end = plan_text.find("{"), plan_text.rfind("}")
+                if start != -1 and end > start:
+                    plan_obj = json.loads(plan_text[start : end + 1])
+            except Exception:
+                plan_obj = None
+
+            if not plan_obj:
+                if self.memory:
+                    self.memory.add("assistant", plan_text)
+                output_obj = self._build_output_structure(
+                    output_model, plan_text, tool_traces
+                )
+                return {
+                    "answer": plan_text,
+                    "tool_traces": tool_traces,
+                    "messages": messages,
+                    "output_structure": output_obj,
+                }
+
+            if "final_answer" in plan_obj:
+                final = str(plan_obj["final_answer"])
+                if self.memory:
+                    self.memory.add("assistant", final)
+                output_obj = self._build_output_structure(
+                    output_model, final, tool_traces
+                )
+                return {
+                    "answer": final,
+                    "tool_traces": tool_traces,
+                    "messages": messages,
+                    "output_structure": output_obj,
+                }
+
+            if "call_tool" in plan_obj:
+                call = plan_obj["call_tool"]
+                name = call.get("name")
+                args = call.get("arguments", {}) or {}
+                tool = self.tools.get(name)
+                validated = tool.validate_args(args)
+
+                if self.verbose:
+                    print(
+                        f"[intergraxToolsAgent] Calling tool: {name}({validated})"
+                    )
+
+                try:
+                    out = tool.run(**validated)
+                except Exception as e:
+                    out = f"[{name}] ERROR: {e}"
+
+                safe_out = _limit_tool_output(json.dumps(out, ensure_ascii=False))
+                tool_traces.append(
+                    {
+                        "tool": name,
+                        "args": validated,
+                        "output_preview": safe_out[:400],
+                        "output": out,
+                    }
+                )
+
+                messages.append(
+                    ChatMessage(
+                        role="tool",
+                        content=json.dumps(
+                            {"tool_name": name, "result": safe_out},
+                            ensure_ascii=False,
+                        ),
+                    )
+                )
+
+                messages.append(
+                    ChatMessage(
+                        role="user",
+                        content="Use the TOOL RESULT above. Continue and return final_answer as JSON.",
+                    )
+                )
+                continue
+
+        final = "Reached planner iteration limit."
+        if self.memory:
+            self.memory.add("assistant", final)
+        output_obj = self._build_output_structure(output_model, final, tool_traces)
+        return {
+            "answer": final,
+            "tool_traces": tool_traces,
+            "messages": messages,
+            "output_structure": output_obj,
+        }
+
+
+
+# ======================================================================
+# FILE: intergrax/tools/tools_base.py
+# MODULE: intergrax.tools.tools_base
+# MODULE_GROUP: tools
+# TAGS:
+#   - package=intergrax
+#   - module_group=tools
+#   - file=tools_base.py
+# LINES: 126
+# SHA256: ebe4be89b8a78d2f9ca3cd60d0d915f258d7d442fd8a299c0987d2a8db23a257
+# SYMBOLS:
+#   - def _limit_tool_output()
+#   - class ToolBase
+#   - class ToolRegistry
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import Any, Dict, List, Optional
+
+# --- Optional Pydantic (as before) ---
+try:
+    from pydantic import BaseModel, ValidationError  # type: ignore
+except Exception:  # no pydantic or another import error
+    class BaseModel:  # lightweight stub
+        def __init__(self, **kwargs): pass
+        def model_dump(self): return {}
+        @classmethod
+        def model_json_schema(cls): return {"type": "object", "properties": {}, "required": []}
+    class ValidationError(Exception):
+        pass
+
+__all__ = ["ToolBase", "ToolRegistry", "_limit_tool_output"]
+
+
+# --- Helper for safely truncating tool outputs ---
+def _limit_tool_output(s: str, limit: int = 16000) -> str:
+    """
+    Safely truncates long tool output to avoid overflowing LLM context.
+    """
+    if not isinstance(s, str):
+        try:
+            s = str(s)
+        except Exception:
+            s = "<unserializable tool output>"
+    return s if len(s) <= limit else s[:limit] + f"\n[...trimmed {len(s)-limit} chars]"
+
+
+class ToolBase:
+    """
+    Base class for tools.
+    Define:
+      - name
+      - description
+      - schema_model (Pydantic BaseModel) ← used to derive JSON Schema for 'parameters'
+    """
+    name: str = "tool"
+    description: str = "No description"
+    schema_model: Optional[type[BaseModel]] = None
+    strict_validation: bool = True  # option to disable 'additionalProperties=False'
+
+    def get_parameters(self) -> Dict[str, Any]:
+        """
+        Returns an OpenAI-compatible JSON Schema 'parameters' (type=object, properties, required).
+        By default, derived from Pydantic v2: model_json_schema().
+        """
+        if self.schema_model is None:
+            # fallback: empty object
+            return {"type": "object", "properties": {}, "required": []}
+
+        raw = self.schema_model.model_json_schema()
+        props = raw.get("properties", {})
+        required = raw.get("required", [])
+
+        parameters = {
+            "type": "object",
+            "properties": props,
+            "required": required,
+        }
+
+        # Optionally enforce strict validation
+        if self.strict_validation:
+            parameters["additionalProperties"] = False
+
+        return parameters
+
+    def run(self, **kwargs) -> Any:
+        """Each tool must override this method."""
+        raise NotImplementedError
+
+    def validate_args(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Validates arguments with Pydantic (if schema_model is available).
+        """
+        if self.schema_model is None:
+            return args
+        try:
+            return self.schema_model(**args).model_dump()
+        except ValidationError as e:
+            raise ValueError(f"{self.name}: invalid arguments: {e}") from e
+
+    def to_openai_schema(self) -> Dict[str, Any]:
+        """
+        Builds the JSON object for the 'tools' field in the OpenAI Responses API.
+        """
+        return {
+            "type": "function",
+            "function": {
+                "name": self.name,
+                "description": self.description,
+                "parameters": self.get_parameters(),
+            },
+        }
+
+
+class ToolRegistry:
+    """
+    Tool registry that stores ToolBase instances and exports them
+    to a format accepted by the OpenAI Responses API.
+    """
+    def __init__(self):
+        self._tools: Dict[str, ToolBase] = {}
+
+    def register(self, tool: ToolBase):
+        if tool.name in self._tools:
+            raise ValueError(f"Tool already registered: {tool.name}")
+        self._tools[tool.name] = tool
+
+    def get(self, name: str) -> ToolBase:
+        if name not in self._tools:
+            raise KeyError(f"Unknown tool: {name}")
+        return self._tools[name]
+
+    def list(self) -> List[ToolBase]:
+        return list(self._tools.values())
+
+    def to_openai_tools(self) -> List[Dict[str, Any]]:
+        """Returns tools in a format compatible with the OpenAI Responses API."""
+        return [t.to_openai_schema() for t in self._tools.values()]
+
+# ======================================================================
+# FILE: intergrax/websearch/__init__.py
+# MODULE: intergrax.websearch
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/websearch/cache/__init__.py
+# MODULE: intergrax.websearch.cache
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=__init__.py
+# LINES: 106
+# SHA256: 3df58e81467d7481f7fe39cf377bf82055d064bf4ef5d3c24f7a8725f5dbe0e5
+# SYMBOLS:
+#   - class QueryCacheKey
+#   - class QueryCacheEntry
+#   - class InMemoryQueryCache
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Dict, Any, Optional, List, Tuple
+import time
+
+
+@dataclass(frozen=True)
+class QueryCacheKey:
+    """
+    Immutable key describing a unique web search configuration.
+
+    Two searches with the same key should be considered equivalent
+    and safe to reuse cached results.
+    """
+    query: str
+    top_k: int
+    locale: str
+    region: str
+    language: str
+    safe_search: bool
+    provider_signature: str  # identifies enabled providers configuration
+
+    def as_tuple(self) -> Tuple[Any, ...]:
+        return (
+            self.query,
+            self.top_k,
+            self.locale,
+            self.region,
+            self.language,
+            self.safe_search,
+            self.provider_signature,
+        )
+
+
+@dataclass
+class QueryCacheEntry:
+    """
+    Stored cache value for a given query key.
+    """
+    documents: List[Dict[str, Any]]
+    created_at: float
+
+
+class InMemoryQueryCache:
+    """
+    Simple in-memory query cache with optional TTL and max size.
+
+    This cache stores already serialized web documents:
+      List[Dict[str, Any]]
+
+    It is intentionally simple and single-process only:
+    - suitable for notebooks and local development
+    - can be replaced with a distributed backend later (Redis, etc.)
+    """
+
+    def __init__(
+        self,
+        max_entries: int = 256,
+        ttl_seconds: Optional[int] = 600,
+    ) -> None:
+        """
+        Parameters:
+          max_entries: maximum number of entries stored in memory
+          ttl_seconds: time-to-live in seconds; if None → never expire
+        """
+        self._max_entries = max_entries
+        self._ttl_seconds = ttl_seconds
+        self._store: Dict[Tuple[Any, ...], QueryCacheEntry] = {}
+
+    def _is_expired(self, entry: QueryCacheEntry) -> bool:
+        if self._ttl_seconds is None:
+            return False
+        return (time.time() - entry.created_at) > self._ttl_seconds
+
+    def get(self, key: QueryCacheKey) -> Optional[List[Dict[str, Any]]]:
+        k = key.as_tuple()
+        entry = self._store.get(k)
+        if entry is None:
+            return None
+        if self._is_expired(entry):
+            # Remove expired entry
+            self._store.pop(k, None)
+            return None
+        return entry.documents
+
+    def set(self, key: QueryCacheKey, documents: List[Dict[str, Any]]) -> None:
+        if len(self._store) >= self._max_entries:
+            # Very simple eviction: remove oldest entry
+            oldest_key = None
+            oldest_ts = float("inf")
+            for kk, entry in self._store.items():
+                if entry.created_at < oldest_ts:
+                    oldest_ts = entry.created_at
+                    oldest_key = kk
+            if oldest_key is not None:
+                self._store.pop(oldest_key, None)
+
+        self._store[key.as_tuple()] = QueryCacheEntry(
+            documents=documents,
+            created_at=time.time(),
+        )
+
+# ======================================================================
+# FILE: intergrax/websearch/context/__init__.py
+# MODULE: intergrax.websearch.context
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/websearch/context/websearch_context_builder.py
+# MODULE: intergrax.websearch.context.websearch_context_builder
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=websearch_context_builder.py
+# LINES: 237
+# SHA256: a443b8e46bd696615a66c08743d723503096ec07daca5a5dc265c40c9dd7c7ff
+# SYMBOLS:
+#   - class WebSearchContextBuilder
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from typing import Sequence, Mapping, Any, List, Dict, Optional
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.websearch.schemas.web_document import WebDocument
+
+
+class WebSearchContextBuilder:
+    """
+    Builds LLM-ready textual context and chat messages from web search results.
+
+    It can work with:
+      - raw WebDocument objects (from the pipeline / executor),
+      - serialized dicts (as returned by WebSearchExecutor with serialize=True).
+
+    Typical flow:
+      1) Run websearch → obtain list[WebDocument] or list[dict]
+      2) Build context string from top-N documents
+      3) Build chat messages (system + user) for any chat-style LLM
+    """
+
+    def __init__(
+        self,
+        max_docs: int = 4,
+        max_chars_per_doc: int = 1500,
+        include_snippet: bool = True,
+        include_url: bool = True,
+        source_label_prefix: str = "Source",
+    ) -> None:
+        """
+        Parameters:
+          max_docs           : maximum number of documents to include in context
+          max_chars_per_doc  : maximum number of characters from each document text
+          include_snippet    : include search snippet in context header
+          include_url        : include document URL in context header
+          source_label_prefix: prefix for source labels, e.g. "Source" -> [Source 1]
+        """
+        self.max_docs = max_docs
+        self.max_chars_per_doc = max_chars_per_doc
+        self.include_snippet = include_snippet
+        self.include_url = include_url
+        self.source_label_prefix = source_label_prefix
+
+    # -------------------------------------------------------------------------
+    # Context building
+    # -------------------------------------------------------------------------
+
+    def build_context_from_documents(
+        self,
+        documents: Sequence[WebDocument],
+    ) -> str:
+        """
+        Builds a textual context string from WebDocument objects.
+
+        Each document is rendered as:
+
+          [Source N]
+          Title: ...
+          URL: ...
+          Snippet: ...
+          <document text>
+
+        Sections are separated by "\n\n---\n\n".
+        """
+        sections: List[str] = []
+        for idx, doc in enumerate(documents[: self.max_docs], start=1):
+            page = doc.page
+            hit = doc.hit
+
+            title = (page.title or hit.title or "").strip() or "(no title)"
+            url = (hit.url or "").strip()
+            snippet = (hit.snippet or "").strip()
+            text = (page.text or "").strip()
+
+            if self.max_chars_per_doc and len(text) > self.max_chars_per_doc:
+                text = text[: self.max_chars_per_doc]
+
+            header_lines: List[str] = []
+            header_lines.append(f"[{self.source_label_prefix} {idx}]")
+            header_lines.append(f"Title: {title}")
+            if self.include_url and url:
+                header_lines.append(f"URL: {url}")
+            if self.include_snippet and snippet:
+                header_lines.append(f"Snippet: {snippet}")
+            header_lines.append("")  # blank line before body
+
+            section = "\n".join(header_lines + [text])
+            sections.append(section)
+
+        return "\n\n---\n\n".join(sections)
+
+    def build_context_from_serialized(
+        self,
+        web_docs: Sequence[Mapping[str, Any]],
+    ) -> str:
+        """
+        Builds a textual context string from serialized web documents
+        (dicts produced by WebSearchExecutor with serialize=True).
+
+        Expected keys (optional but recommended):
+          - title
+          - url
+          - snippet
+          - text
+        """
+        sections: List[str] = []
+        for idx, doc in enumerate(web_docs[: self.max_docs], start=1):
+            title = str(doc.get("title") or "").strip() or "(no title)"
+            url = str(doc.get("url") or "").strip()
+            snippet = str(doc.get("snippet") or "").strip()
+            text = str(doc.get("text") or "").strip()
+
+            if self.max_chars_per_doc and len(text) > self.max_chars_per_doc:
+                text = text[: self.max_chars_per_doc]
+
+            header_lines: List[str] = []
+            header_lines.append(f"[{self.source_label_prefix} {idx}]")
+            header_lines.append(f"Title: {title}")
+            if self.include_url and url:
+                header_lines.append(f"URL: {url}")
+            if self.include_snippet and snippet:
+                header_lines.append(f"Snippet: {snippet}")
+            header_lines.append("")
+
+            section = "\n".join(header_lines + [text])
+            sections.append(section)
+
+        return "\n\n---\n\n".join(sections)
+
+    # -------------------------------------------------------------------------
+    # Messages for LLM – STRICT "sources-only" mode
+    # -------------------------------------------------------------------------
+
+    def _build_system_prompt(self) -> str:
+        """
+        Builds a strict system prompt enforcing:
+          - use only web sources,
+          - no hallucinations,
+          - single, concise answer,
+          - explicit handling of missing information.
+        """
+        return (
+            "You are a careful research assistant.\n"
+            "You MUST base your answer ONLY on the information contained in the 'Web sources' section.\n"
+            "Follow these rules strictly:\n"
+            "1) Do NOT use any outside knowledge or assumptions beyond the provided sources.\n"
+            "2) If the sources do NOT contain enough information to answer something, explicitly say that it is not specified.\n"
+            "3) Do NOT invent or guess facts (e.g. prices, popularity, performance, features) that are not clearly stated.\n"
+            "4) Do NOT repeat the same information multiple times.\n"
+            "5) Provide ONE coherent answer, not a list of alternative stories.\n"
+            "6) When you refer to a specific statement from the sources, cite it using [Source N].\n"
+        )
+
+    def _build_user_prompt(
+        self,
+        user_question: str,
+        context: str,
+        answer_language: str,
+    ) -> str:
+        """
+        Builds the user-facing prompt that wraps:
+          - web sources,
+          - the question,
+          - concrete tasks.
+        """
+        return (
+            f"Web sources:\n{context}\n\n"
+            f"User question:\n{user_question}\n\n"
+            "Tasks:\n"
+            "1) Read all web sources carefully.\n"
+            "2) Extract ONLY the information that is explicitly stated in the sources and relevant to the question.\n"
+            "3) Answer the question in a single, coherent response in language: "
+            f"{answer_language}.\n"
+            "4) Be concise and avoid repetition. Prefer 1-3 short paragraphs or a short bullet list.\n"
+            "5) If some aspect of the question is NOT covered by the sources, clearly say that the sources do not provide this information.\n"
+            f"6) Add [{self.source_label_prefix} N] markers next to statements that come from specific sources.\n"
+        )
+
+    def build_messages_from_serialized(
+        self,
+        user_question: str,
+        web_docs: Sequence[Mapping[str, Any]],
+        answer_language: str = GLOBAL_SETTINGS.default_language,
+        system_prompt_override: Optional[str] = None,
+    ) -> List[Dict[str, str]]:
+        """
+        Builds a typical pair of chat messages (system + user) for chat-style LLMs
+        from serialized web documents.
+
+        Returns:
+          list of messages in format:
+            [
+              {"role": "system", "content": "..."},
+              {"role": "user", "content": "..."}
+            ]
+        """
+        context = self.build_context_from_serialized(web_docs)
+
+        system_prompt = system_prompt_override or self._build_system_prompt()
+        user_prompt = self._build_user_prompt(
+            user_question=user_question,
+            context=context,
+            answer_language=answer_language,
+        )
+
+        return [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+    def build_messages_from_documents(
+        self,
+        user_question: str,
+        documents: Sequence[WebDocument],
+        answer_language: str = GLOBAL_SETTINGS.default_language,
+        system_prompt_override: Optional[str] = None,
+    ) -> List[Dict[str, str]]:
+        """
+        Same as 'build_messages_from_serialized', but takes WebDocument objects
+        instead of serialized dicts.
+        """
+        context = self.build_context_from_documents(documents)
+
+        system_prompt = system_prompt_override or self._build_system_prompt()
+        user_prompt = self._build_user_prompt(
+            user_question=user_question,
+            context=context,
+            answer_language=answer_language,
+        )
+
+        return [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+# ======================================================================
+# FILE: intergrax/websearch/fetcher/__init__.py
+# MODULE: intergrax.websearch.fetcher
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/websearch/fetcher/extractor.py
+# MODULE: intergrax.websearch.fetcher.extractor
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=extractor.py
+# LINES: 224
+# SHA256: bc0acd405677e0cb4198f16d2424ebaa7a553225e325bd861a8a1b1e1654a6ba
+# SYMBOLS:
+#   - def extract_basic()
+#   - def extract_advanced()
+#   - def _normalize_whitespace()
+#   - def _attach_extraction_metadata()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import Dict, Any, Optional
+from bs4 import BeautifulSoup
+
+from intergrax.websearch.schemas.page_content import PageContent
+
+
+try:
+    import trafilatura
+    HAS_TRAFILATURA = True
+except ImportError:
+    HAS_TRAFILATURA = False
+
+
+def extract_basic(page: PageContent) -> PageContent:
+    """
+    Performs lightweight HTML extraction on a PageContent instance.
+
+    Responsibilities:
+      - Extract <title>.
+      - Extract meta description.
+      - Extract <html lang> attribute.
+      - Extract Open Graph meta tags (og:*).
+      - Produce a plain-text version of the page.
+
+    This function is intentionally conservative:
+      - It does not perform advanced readability or boilerplate removal.
+      - It does not modify HTTP-related fields (status_code, final_url, etc.).
+    """
+    if not page or not page.html:
+        return page
+
+    soup = BeautifulSoup(page.html, "lxml")
+
+    # Title
+    if not page.title:
+        if soup.title and soup.title.string:
+            page.title = soup.title.string.strip()
+
+    # Description: meta[name="description"] or meta[property="og:description"]
+    if not page.description:
+        meta_desc = soup.find("meta", attrs={"name": "description"})
+        if not meta_desc:
+            meta_desc = soup.find("meta", attrs={"property": "og:description"})
+        if meta_desc and meta_desc.get("content"):
+            page.description = meta_desc["content"].strip()
+
+    # Language: <html lang="...">
+    if not page.lang:
+        html_tag = soup.find("html")
+        if html_tag:
+            lang_attr = html_tag.get("lang") or html_tag.get("xml:lang")
+            if lang_attr:
+                page.lang = lang_attr.strip()
+
+    # Open Graph tags: meta[property^="og:"]
+    if not page.og:
+        og: Dict[str, Any] = {}
+        for tag in soup.find_all("meta"):
+            prop = tag.get("property") or tag.get("name")
+            if not prop:
+                continue
+            prop_lower = prop.lower()
+            if prop_lower.startswith("og:") and tag.get("content"):
+                og[prop_lower] = tag["content"].strip()
+        page.og = og
+
+    # Plain text extraction
+    if not page.text:
+        # Using '\n' as separator to preserve some structure.
+        raw_text = soup.get_text(separator="\n")
+        page.text = raw_text.strip()
+
+    return page
+
+
+def extract_advanced(
+    page: PageContent,
+    *,
+    min_text_chars: int = 300,
+    overwrite_existing_text: bool = True,
+) -> PageContent:
+    """
+    Performs advanced readability-based extraction on a PageContent instance.
+
+    This step is applied AFTER lightweight metadata extraction (extract_basic).
+
+    Responsibilities:
+    - Remove obvious boilerplate elements (scripts, styles, iFrames, navigation).
+    - Prefer trafilatura (when available) to extract primary readable content.
+    - Fallback to BeautifulSoup plain-text extraction if trafilatura fails.
+    - Normalize whitespace and reduce noise.
+    - Optionally overwrite existing text if it already exists.
+
+    This function is intentionally synchronous to allow use in both
+    synchronous and async pipelines.
+    """
+    if not page or not page.html:
+        return page
+
+    html = page.html
+    extracted_text: Optional[str] = None
+
+    # ---------------------------------
+    # STEP 1: Try readability extraction via trafilatura (if installed)
+    # ---------------------------------
+    if HAS_TRAFILATURA:
+        try:
+            extracted_text = trafilatura.extract(
+                html,
+                url=page.final_url or None,
+                include_comments=False,
+                favor_precision=True,
+            )
+        except Exception:
+            extracted_text = None
+
+    # ---------------------------------
+    # STEP 2: Fallback to manual HTML cleanup and extraction
+    # ---------------------------------
+    if not extracted_text:
+        soup = BeautifulSoup(html, "lxml")
+
+        # Remove non-content HTML nodes
+        for tag in soup(["script", "style", "noscript", "iframe", "header", "footer"]):
+            tag.decompose()
+
+        # Extract readable text and normalize formatting
+        raw_text = soup.get_text(separator="\n", strip=True)
+        extracted_text = _normalize_whitespace(raw_text)
+
+    # ---------------------------------
+    # STEP 3: Respect overwrite mode
+    # If page already contains text and overwrite is disabled,
+    # attach metadata and return without replacing.
+    # ---------------------------------
+    if page.text and not overwrite_existing_text:
+        _attach_extraction_metadata(
+            page,
+            used_trafilatura=HAS_TRAFILATURA,
+            overwritten=False,
+            length_before=len(page.text),
+            length_after=len(extracted_text),
+        )
+        return page
+
+    # ---------------------------------
+    # STEP 4: Replace or set PageContent.text with extracted form
+    # ---------------------------------
+    page.text = extracted_text
+
+    # Optional threshold check: flag unusually small content bodies
+    if extracted_text and len(extracted_text) < min_text_chars:
+        extra = page.extra or {}
+        extra["advanced_extraction_warning"] = (
+            f"Extracted content too short ({len(extracted_text)} chars; "
+            f"min={min_text_chars})."
+        )
+        page.extra = extra
+
+    # ---------------------------------
+    # STEP 5: Attach trace/debug metadata for observability
+    # ---------------------------------
+    _attach_extraction_metadata(
+        page,
+        used_trafilatura=HAS_TRAFILATURA,
+        overwritten=True,
+        length_before=0 if not page.text else len(page.text),
+        length_after=len(extracted_text or ""),
+    )
+
+    return page
+
+
+# =====================================================================
+# Helper Functions
+# =====================================================================
+
+def _normalize_whitespace(text: str) -> str:
+    """
+    Normalizes whitespace by stripping extra line breaks,
+    trimming trailing/leading spaces, and collapsing empty lines.
+    """
+    lines = [line.strip() for line in text.splitlines()]
+    non_empty = [l for l in lines if l]
+    return "\n".join(non_empty)
+
+
+def _attach_extraction_metadata(
+    page: PageContent,
+    *,
+    used_trafilatura: bool,
+    overwritten: bool,
+    length_before: int,
+    length_after: int,
+) -> None:
+    """
+    Attaches metadata to PageContent.extra to help debugging and analysis.
+
+    Metadata recorded includes:
+    - whether trafilatura was used,
+    - whether existing text was overwritten,
+    - before/after text length comparison.
+
+    This supports observability in multi-source pipelines.
+    """
+    extra = page.extra or {}
+    extraction_info: Dict[str, Any] = extra.get("advanced_extraction", {})
+
+    extraction_info.update(
+        {
+            "used_trafilatura": used_trafilatura,
+            "overwritten_existing_text": overwritten,
+            "length_before": length_before,
+            "length_after": length_after,
+        }
+    )
+
+    extra["advanced_extraction"] = extraction_info
+    page.extra = extra
+
+# ======================================================================
+# FILE: intergrax/websearch/fetcher/http_fetcher.py
+# MODULE: intergrax.websearch.fetcher.http_fetcher
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=http_fetcher.py
+# LINES: 76
+# SHA256: 9bbb458fd8bd6bec8d1160d33d7ef6340497c8c06a1eef9949803cb80a1225d8
+# SYMBOLS:
+#   - async def fetch_page()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import Optional, Dict
+import httpx
+
+from intergrax.websearch.schemas.page_content import PageContent
+
+
+DEFAULT_HEADERS: Dict[str, str] = {
+    "User-Agent": "IntergraxWebSearch/1.0 (+https://example.com/botinfo)",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+}
+
+
+async def fetch_page(
+    url: str,
+    timeout: int = 20,
+    headers: Optional[Dict[str, str]] = None,
+    follow_redirects: bool = True,
+) -> Optional[PageContent]:
+    """
+    Fetches a single URL and returns a PageContent instance.
+
+    Responsibilities:
+      - Perform an HTTP GET request with sane defaults.
+      - Capture final URL, status code, raw HTML, and body size.
+      - Keep higher-level concerns (robots, throttling, extraction) outside.
+
+    Returns:
+      PageContent on success, or None on transport-level failure.
+      HTTP error codes (4xx/5xx) are represented in PageContent.status_code.
+    """
+    merged_headers = dict(DEFAULT_HEADERS)
+    if headers:
+        merged_headers.update(headers)
+
+    try:
+        async with httpx.AsyncClient(
+            headers=merged_headers,
+            follow_redirects=follow_redirects,
+            timeout=timeout,
+        ) as client:
+            response = await client.get(url)
+    except (httpx.RequestError, httpx.HTTPError):
+        return None
+
+    html: Optional[str] = None
+    try:
+        html = response.text
+    except Exception:
+        html = None
+
+    content_bytes = len(response.content) if response.content is not None else None
+
+    page = PageContent(
+        final_url=str(response.url),
+        status_code=response.status_code,
+        html=html,
+        text=None,
+        title=None,
+        description=None,
+        lang=None,
+        og={},
+        schema_org={},
+        robots_allowed=None,
+        content_bytes=content_bytes,
+        is_paywalled=None,
+        extra={
+            "headers": dict(response.headers),
+            "http_version": getattr(response, "http_version", None),
+        },
+    )
+    return page
+
+# ======================================================================
+# FILE: intergrax/websearch/integration/__init__.py
+# MODULE: intergrax.websearch.integration
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/websearch/integration/langgraph_nodes.py
+# MODULE: intergrax.websearch.integration.langgraph_nodes
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=langgraph_nodes.py
+# LINES: 170
+# SHA256: cdc656a8a1c9096d68611f8c9994604dc251ae6596e6912aa173bb5a56cf60af
+# SYMBOLS:
+#   - class WebSearchState
+#   - class WebSearchNode
+#   - def _get_default_node()
+#   - def websearch_node()
+#   - async def websearch_node_async()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import TypedDict, Optional, List, Dict, Any, Annotated
+
+try:
+    from langgraph.graph.message import add_messages
+except ImportError:
+    def add_messages(x: Any) -> Any:
+        return x
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.websearch.service.websearch_executor import WebSearchExecutor
+
+
+class WebSearchState(TypedDict, total=False):
+    """
+    Minimal state contract for web search nodes.
+
+    Fields:
+      messages        : conversation history (LangGraph-compatible)
+      user_question   : last user question (fallback for query)
+      websearch_query : explicit query string for web search (optional)
+      websearch_docs  : serialized web documents (ready for LLM consumption)
+    """
+    messages: Annotated[list, add_messages]
+    user_question: Optional[str]
+    websearch_query: Optional[str]
+    websearch_docs: Optional[List[Dict[str, Any]]]
+
+
+class WebSearchNode:
+    """
+    LangGraph-compatible web search node wrapper.
+
+    This class encapsulates:
+      - configuration of WebSearchExecutor (providers, defaults),
+      - sync and async node methods operating on WebSearchState.
+
+    The node does not implement search logic itself. It delegates
+    to the provided WebSearchExecutor instance.
+    """
+
+    def __init__(
+        self,
+        executor: Optional[WebSearchExecutor] = None,
+        enable_google_cse: bool = True,
+        enable_bing_web: bool = True,
+        default_top_k: int = 8,
+        default_locale: str = GLOBAL_SETTINGS.default_locale,
+        default_region: str = GLOBAL_SETTINGS.default_region,
+        default_language: str = GLOBAL_SETTINGS.default_language,
+        default_safe_search: bool = True,
+        max_text_chars: int = 4000,
+    ) -> None:
+        """
+        Parameters:
+          executor           : externally configured WebSearchExecutor. If None, one is created.
+          enable_google_cse  : used only when executor is None.
+          enable_bing_web    : used only when executor is None.
+          default_top_k      : used only when executor is None.
+          default_locale     : used only when executor is None.
+          default_region     : used only when executor is None.
+          default_language   : used only when executor is None.
+          default_safe_search: used only when executor is None.
+          max_text_chars     : used only when executor is None.
+        """
+        if executor is not None:
+            self.executor = executor
+        else:
+            self.executor = WebSearchExecutor(
+                enable_google_cse=enable_google_cse,
+                enable_bing_web=enable_bing_web,
+                default_top_k=default_top_k,
+                default_locale=default_locale,
+                default_region=default_region,
+                default_language=default_language,
+                default_safe_search=default_safe_search,
+                max_text_chars=max_text_chars,
+            )
+
+    def _extract_query(self, state: WebSearchState) -> str:
+        """
+        Extracts the search query from the node state.
+        Preference order:
+          1) websearch_query
+          2) user_question
+        """
+        return (state.get("websearch_query") or state.get("user_question") or "").strip()
+
+    def run(self, state: WebSearchState) -> WebSearchState:
+        """
+        Synchronous node method - suitable for non-async environments.
+
+        In environments with a running event loop (e.g. Jupyter),
+        prefer using 'run_async' directly.
+        """
+        query = self._extract_query(state)
+        if not query:
+            state["websearch_docs"] = []
+            return state
+
+        docs = self.executor.search_sync(
+            query=query,
+            top_k=None,       # use executor defaults
+            top_n_fetch=None, # use top_k
+            serialize=True,
+        )
+
+        state["websearch_docs"] = docs
+        return state
+
+    async def run_async(self, state: WebSearchState) -> WebSearchState:
+        """
+        Async node method - safe to use in environments with an existing
+        event loop (Jupyter, async web frameworks, LangGraph runtimes).
+        """
+        query = self._extract_query(state)
+        if not query:
+            state["websearch_docs"] = []
+            return state
+
+        docs = await self.executor.search_async(
+            query=query,
+            top_k=None,       # use executor defaults
+            top_n_fetch=None, # use top_k
+            serialize=True,
+        )
+
+        state["websearch_docs"] = docs
+        return state
+
+
+# Default, module-level node instance for convenience and backward compatibility
+_DEFAULT_NODE: Optional[WebSearchNode] = None
+
+
+def _get_default_node() -> WebSearchNode:
+    """
+    Lazily constructs a default WebSearchNode instance.
+
+    This keeps the previous simple functional API available while
+    allowing full customization via the WebSearchNode class.
+    """
+    global _DEFAULT_NODE
+    if _DEFAULT_NODE is None:
+        _DEFAULT_NODE = WebSearchNode()
+    return _DEFAULT_NODE
+
+
+def websearch_node(state: WebSearchState) -> WebSearchState:
+    """
+    Functional, synchronous wrapper around the default WebSearchNode.
+
+    Suitable for simple integrations where custom configuration is not required.
+    """
+    node = _get_default_node()
+    return node.run(state)
+
+
+async def websearch_node_async(state: WebSearchState) -> WebSearchState:
+    """
+    Functional, async wrapper around the default WebSearchNode.
+
+    Suitable for LangGraph graphs and async environments.
+    """
+    node = _get_default_node()
+    return await node.run_async(state)
+
+# ======================================================================
+# FILE: intergrax/websearch/pipeline/__init__.py
+# MODULE: intergrax.websearch.pipeline
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/websearch/pipeline/search_and_read.py
+# MODULE: intergrax.websearch.pipeline.search_and_read
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=search_and_read.py
+# LINES: 211
+# SHA256: d710548a62e52d591bba6d790a2b34428b4b7fd69b7b72b0f7c7fb212e42eef8
+# SYMBOLS:
+#   - class SearchAndReadPipeline
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import Iterable, List, Optional, Sequence
+
+import asyncio
+
+from intergrax.websearch.schemas.query_spec import QuerySpec
+from intergrax.websearch.schemas.search_hit import SearchHit
+from intergrax.websearch.schemas.web_document import WebDocument
+
+from intergrax.websearch.providers.base import WebSearchProvider
+
+from intergrax.websearch.fetcher.http_fetcher import fetch_page
+from intergrax.websearch.fetcher.extractor import extract_basic, extract_advanced
+
+from intergrax.websearch.utils.rate_limit import TokenBucket
+from intergrax.websearch.utils.dedupe import simple_dedupe_key
+
+
+class SearchAndReadPipeline:
+    """
+    Orchestrates multi-provider web search, fetching, extraction,
+    deduplication, and basic quality scoring.
+
+    High-level flow:
+      1) search_all(spec)         -> List[SearchHit]
+      2) fetch_and_extract(hits)  -> List[WebDocument]
+      3) caller passes WebDocument objects to LLM / RAG layers.
+
+    Design goals:
+      - Provider-agnostic: works with any WebSearchProvider.
+      - Async fetching with rate limiting (TokenBucket).
+      - Simple deduplication via text-based dedupe key.
+      - Minimal and testable, with no direct LLM coupling.
+    """
+
+    def __init__(
+        self,
+        providers: Iterable[WebSearchProvider],
+        http_rate_per_sec: float = 2.0,
+        http_capacity: int = 5,
+    ) -> None:
+        self._providers: List[WebSearchProvider] = list(providers)
+        self._bucket = TokenBucket(
+            rate_per_sec=http_rate_per_sec,
+            capacity=http_capacity,
+        )
+
+    @property
+    def providers(self) -> Sequence[WebSearchProvider]:
+        """
+        Returns the current list of configured providers.
+        """
+        return tuple(self._providers)
+
+    def search_all(self, spec: QuerySpec) -> List[SearchHit]:
+        """
+        Executes the given query against all configured providers.
+
+        Behavior:
+          - Calls each provider sequentially (providers can be rate-limited internally).
+          - Merges all hits into a single list.
+          - Sorts results by 'rank' within each provider, but does not
+            perform complex cross-provider fusion (caller can add it later).
+
+        Failures:
+          - Provider-level exceptions are swallowed; failed providers
+            contribute zero results. Logging should be added at integration time.
+        """
+        hits: List[SearchHit] = []
+        for provider in self._providers:
+            try:
+                provider_hits = provider.search(spec)
+                hits.extend(provider_hits)
+            except Exception:
+                # Intentionally silent here; integration layer should add logging if needed.
+                continue
+
+        # Preserve provider ordering and rank while still returning a deterministic list.
+        hits.sort(key=lambda h: (h.provider, h.rank))
+        return hits
+
+    async def _fetch_one(self, hit: SearchHit) -> Optional[WebDocument]:
+        """
+        Fetches and extracts a single SearchHit into a WebDocument.
+
+        Steps:
+          - Rate-limited HTTP GET of hit.url.
+          - Basic HTML extraction (title, text, metadata).
+          - Quality scoring and dedupe key computation.
+        """
+        await self._bucket.acquire(1)
+
+        page = await fetch_page(hit.url)
+        if not page or not page.html:
+            return None
+
+        page = extract_basic(page)
+        page = extract_advanced(page)
+
+        if not page.has_content():
+            return None
+
+        doc = WebDocument(hit=hit, page=page)
+
+        # Very simple quality heuristic:
+        text_len = len(page.text or "")
+        has_title = bool(page.title and page.title.strip())
+        score = 0.0
+        if text_len >= 400:
+            score += 1.0
+        if text_len >= 2000:
+            score += 0.5
+        if has_title:
+            score += 0.5
+        doc.quality_score = score
+
+        # Deduplication key based on title + text.
+        base_text = (page.title or "") + "\n" + (page.text or "")
+        doc.dedupe_key = simple_dedupe_key(base_text)
+
+        # Initial source_rank mirrors the provider-local rank.
+        doc.source_rank = hit.rank
+
+        return doc
+
+    async def fetch_and_extract(
+        self,
+        hits: List[SearchHit],
+        top_n_fetch: int = 8,
+    ) -> List[WebDocument]:
+        """
+        Fetches and processes the top-N hits into WebDocument objects.
+
+        Parameters:
+          hits        : list of SearchHit returned from search_all.
+          top_n_fetch : maximum number of URLs to fetch in this pass.
+
+        Behavior:
+          - Uses asyncio to fetch multiple pages concurrently.
+          - Deduplicates documents based on dedupe_key.
+          - Sorts results by quality_score (descending), then by source_rank (ascending).
+        """
+        if not hits:
+            return []
+
+        limited_hits = hits[:max(0, top_n_fetch)]
+        tasks = [self._fetch_one(h) for h in limited_hits]
+        results = await asyncio.gather(*tasks, return_exceptions=False)
+
+        docs: List[WebDocument] = [d for d in results if d and d.is_valid()]
+
+        # Deduplicate by dedupe_key, keeping the first occurrence.
+        seen_keys = set()
+        unique_docs: List[WebDocument] = []
+        for doc in docs:
+            key = doc.dedupe_key or ""
+            if key and key in seen_keys:
+                continue
+            if key:
+                seen_keys.add(key)
+            unique_docs.append(doc)
+
+        # Sort by quality_score (desc) then source_rank (asc).
+        unique_docs.sort(
+            key=lambda d: (-float(d.quality_score or 0.0), int(d.source_rank or 0)),
+        )
+
+        return unique_docs
+
+    async def run(
+        self,
+        spec: QuerySpec,
+        top_n_fetch: int = 8,
+    ) -> List[WebDocument]:
+        """
+        Full pipeline execution for a single query.
+
+        Steps:
+          1) search_all(spec)
+          2) fetch_and_extract(hits, top_n_fetch)
+          3) return List[WebDocument]
+
+        The returned documents are ready to be consumed by:
+          - LLM adapters (as web context),
+          - embedding pipelines (as text to index),
+          - logging and inspection tools (summary_line, etc.).
+        """
+        hits = self.search_all(spec)
+        if not hits:
+            return []
+        docs = await self.fetch_and_extract(hits, top_n_fetch=top_n_fetch)
+        return docs
+
+    def run_sync(
+        self,
+        spec: QuerySpec,
+        top_n_fetch: int = 8,
+    ) -> List[WebDocument]:
+        """
+        Synchronous convenience wrapper around the async 'run' method.
+
+        This is intended for environments where no event loop is managed
+        externally (e.g., simple scripts or sync LangGraph nodes).
+
+        In async applications, prefer calling 'await run(...)' directly.
+        """
+        return asyncio.run(self.run(spec, top_n_fetch=top_n_fetch))
+
+# ======================================================================
+# FILE: intergrax/websearch/providers/__init__.py
+# MODULE: intergrax.websearch.providers
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/websearch/providers/base.py
+# MODULE: intergrax.websearch.providers.base
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=base.py
+# LINES: 60
+# SHA256: b7ebdb574d0123c3914a8e3b6edfedda85e2ec6ebdbc723985e1ab8df6c40b82
+# SYMBOLS:
+#   - class WebSearchProvider
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from typing import List, Optional, Mapping, Any
+from intergrax.websearch.schemas.query_spec import QuerySpec
+from intergrax.websearch.schemas.search_hit import SearchHit
+
+class WebSearchProvider(ABC):
+    """
+    Base interface for all web search providers (Google, Bing, DuckDuckGo, Reddit, News, etc.).
+
+    Responsibilities:
+      - Accept a provider-agnostic QuerySpec.
+      - Return a ranked list of SearchHit items.
+      - Expose minimal capabilities for feature negotiation (language, freshness).
+
+    Design notes:
+      - Keep this interface stable; providers should adapt to it, not the other way around.
+      - Avoid leaking provider-specific parameters here; put them in provider constructors.
+    """
+
+    name: str = "base"
+
+    @abstractmethod
+    def search(self, spec: QuerySpec) -> List[SearchHit]:
+        """
+        Executes a single search request.
+        Must return a list of SearchHit with 1-based 'rank' ordering.
+        Implementations should:
+          - honor QuerySpec.top_k with provider-side caps,
+          - include 'provider' and 'query_issued' fields in hits,
+          - sanitize/validate URLs.
+        """
+        raise NotImplementedError
+
+    def capabilities(self) -> Mapping[str, Any]:
+        """
+        Returns a static capability map for feature negotiation.
+        Keys are stable, values are simple scalars/flags.
+
+        Example keys:
+          supports_language: bool
+          supports_freshness: bool
+          max_page_size: int
+        """
+        return {
+            "supports_language": False,
+            "supports_freshness": False,
+            "max_page_size": 10,
+        }
+
+    def close(self) -> None:
+        """
+        Optional resource cleanup (HTTP sessions, clients, caches).
+        Providers that own such resources should override this method.
+        """
+        return None
+
+# ======================================================================
+# FILE: intergrax/websearch/providers/bing_provider.py
+# MODULE: intergrax.websearch.providers.bing_provider
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=bing_provider.py
+# LINES: 135
+# SHA256: 75a7d7bade37a3869373cd0cfb034bcd164ae041fd12201dad590053cf29e699
+# SYMBOLS:
+#   - class BingWebProvider
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+import os
+import requests
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+from urllib.parse import urlparse
+
+from intergrax.websearch.schemas.query_spec import QuerySpec
+from intergrax.websearch.schemas.search_hit import SearchHit
+from intergrax.websearch.providers.base import WebSearchProvider
+
+
+class BingWebProvider(WebSearchProvider):
+    """
+    Bing Web Search (v7) provider (REST API).
+
+    Environment variables:
+      BING_SEARCH_V7_API_KEY : API key
+
+    Notes:
+      - Bing supports language (setLang) and region (mkt) filtering.
+      - Freshness filtering is available via 'freshness' parameter (Day, Week, Month).
+      - SafeSearch has values: Off, Moderate, Strict.
+    """
+
+    name: str = "bing_web"
+    _ENDPOINT: str = "https://api.bing.microsoft.com/v7.0/search"
+    _DEFAULT_TIMEOUT: int = 20
+    _PAGE_CAP: int = 50
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        session: Optional[requests.Session] = None,
+        timeout: Optional[int] = None,
+    ) -> None:
+        self.api_key = api_key or os.getenv("BING_SEARCH_V7_API_KEY", "")
+        self.session = session or requests.Session()
+        self.timeout = int(timeout or self._DEFAULT_TIMEOUT)
+
+        if not self.api_key:
+            raise ValueError("BingWebProvider: missing API key (BING_SEARCH_V7_API_KEY).")
+
+    def capabilities(self) -> Dict[str, Any]:
+        return {
+            "supports_language": True,
+            "supports_freshness": True,
+            "max_page_size": self._PAGE_CAP,
+        }
+
+    def _build_headers(self) -> Dict[str, str]:
+        return {"Ocp-Apim-Subscription-Key": self.api_key}
+
+    def _build_params(self, spec: QuerySpec) -> Dict[str, Any]:
+        params: Dict[str, Any] = {
+            "q": spec.normalized_query(),
+            "count": spec.capped_top_k(self._PAGE_CAP),
+            "safeSearch": "Strict" if spec.safe_search else "Off",
+        }
+
+        if spec.region:
+            params["mkt"] = spec.region
+
+        if spec.language:
+            params["setLang"] = spec.language.lower()
+
+        if spec.freshness:
+            # Accepted values: "Day", "Week", "Month"
+            val = spec.freshness.capitalize()
+            if val in ("Day", "Week", "Month"):
+                params["freshness"] = val
+
+        return params
+
+    def _to_hit(self, item: Dict[str, Any], spec: QuerySpec, rank: int) -> Optional[SearchHit]:
+        url = item.get("url") or ""
+        parsed = urlparse(url)
+        if not (parsed.scheme and parsed.netloc):
+            return None
+
+        title = item.get("name", "") or ""
+        snippet = item.get("snippet", "") or None
+        display_link = item.get("displayUrl", "") or None
+
+        published_at: Optional[datetime] = None
+        date_str = item.get("dateLastCrawled")
+        if date_str:
+            try:
+                published_at = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+            except Exception:
+                published_at = None
+
+        language = item.get("language") or None
+
+        return SearchHit(
+            provider=self.name,
+            query_issued=spec.query,
+            rank=rank,
+            title=title,
+            url=url,
+            snippet=snippet,
+            displayed_link=display_link,
+            published_at=published_at,
+            source_type="web",
+            extra={"language": language} if language else {},
+        )
+
+    def search(self, spec: QuerySpec) -> List[SearchHit]:
+        headers = self._build_headers()
+        params = self._build_params(spec)
+
+        try:
+            r = self.session.get(self._ENDPOINT, headers=headers, params=params, timeout=self.timeout)
+            r.raise_for_status()
+            data = r.json()
+        except requests.RequestException:
+            return []
+
+        web_pages = (data.get("webPages") or {}).get("value", []) or []
+        hits: List[SearchHit] = []
+        for i, it in enumerate(web_pages, start=1):
+            hit = self._to_hit(it, spec, i)
+            if hit:
+                hits.append(hit)
+        return hits
+
+    def close(self) -> None:
+        try:
+            self.session.close()
+        except Exception:
+            pass
+
+# ======================================================================
+# FILE: intergrax/websearch/providers/google_cse_provider.py
+# MODULE: intergrax.websearch.providers.google_cse_provider
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=google_cse_provider.py
+# LINES: 169
+# SHA256: e5196e33a780e92fabf37886886a7ec37e6c51d33405c177351039531ad97393
+# SYMBOLS:
+#   - class GoogleCSEProvider
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+import os
+import requests
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+from urllib.parse import urlparse
+
+from intergrax.websearch.schemas.query_spec import QuerySpec
+from intergrax.websearch.schemas.search_hit import SearchHit
+from intergrax.websearch.providers.base import WebSearchProvider
+
+
+class GoogleCSEProvider(WebSearchProvider):
+    """
+    Google Custom Search (CSE) provider (REST API).
+
+    Environment variables:
+      GOOGLE_CSE_API_KEY : API key
+      GOOGLE_CSE_CX      : Search engine ID
+
+    Notes:
+      - Google CSE caps 'num' to 10 per request.
+      - Language filtering uses 'lr' (e.g., 'lang_pl') and/or 'hl' (UI lang).
+      - Freshness is not natively supported; ignore spec.freshness here.
+    """
+
+    name: str = "google_cse"
+    _ENDPOINT: str = "https://www.googleapis.com/customsearch/v1"
+    _PAGE_CAP: int = 10
+    _DEFAULT_TIMEOUT: int = 20
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        cx: Optional[str] = None,
+        session: Optional[requests.Session] = None,
+        timeout: Optional[int] = None,
+    ) -> None:
+        self.api_key = api_key or os.getenv("GOOGLE_CSE_API_KEY", "")
+        self.cx = cx or os.getenv("GOOGLE_CSE_CX", "")
+        self.session = session or requests.Session()
+        self.timeout = int(timeout or self._DEFAULT_TIMEOUT)
+
+        if not self.api_key:
+            raise ValueError("GoogleCSEProvider: missing API key (GOOGLE_CSE_API_KEY).")
+        if not self.cx:
+            raise ValueError("GoogleCSEProvider: missing CX (GOOGLE_CSE_CX).")
+
+    def capabilities(self) -> Dict[str, Any]:
+        return {
+            "supports_language": True,    # via 'lr' and 'hl'
+            "supports_freshness": False,  # not exposed in CSE
+            "max_page_size": self._PAGE_CAP,
+        }
+
+    def _build_params(self, spec: QuerySpec) -> Dict[str, Any]:
+        params: Dict[str, Any] = {
+            "key": self.api_key,
+            "cx": self.cx,
+            "q": spec.normalized_query(),
+            "num": spec.capped_top_k(self._PAGE_CAP),
+            "safe": "active" if spec.safe_search else "off",
+        }
+
+        # UI language (hl): affects interface and possibly ranking hints.
+        if spec.locale:
+            params["hl"] = spec.locale
+
+        # Content language (lr): restrict results to a specific language (if provided).
+        # Google expects 'lr=lang_<code>', e.g. 'lang_pl', 'lang_en'.
+        if spec.language:
+            params["lr"] = f"lang_{spec.language.lower()}"
+
+        # Region is not directly supported here; could be handled via custom engines or site filters.
+        # Freshness ignored (no native param in CSE).
+
+        return params
+
+    def _to_hit(self, item: Dict[str, Any], spec: QuerySpec, rank: int) -> Optional[SearchHit]:
+        # Validate URL early; drop entries without a valid absolute URL.
+        url = item.get("link", "") or ""
+        parsed = urlparse(url)
+        if not (parsed.scheme and parsed.netloc):
+            return None
+
+        title = item.get("title", "") or ""
+        snippet = item.get("snippet", "") or None
+        display_link = item.get("displayLink", "") or None
+
+        # Published time is rarely present in CSE items; attempt best-effort extraction from pagemap.
+        published_at: Optional[datetime] = None
+        pagemap = item.get("pagemap") or {}
+        metatags = (pagemap.get("metatags") or [])
+        # Try common keys
+        for meta in metatags:
+            dt = meta.get("article:published_time") or meta.get("og:updated_time") or meta.get("og:published_time")
+            if dt:
+                try:
+                    published_at = datetime.fromisoformat(dt.replace("Z", "+00:00"))
+                    break
+                except Exception:
+                    published_at = None
+
+        # Infer coarse type from MIME if provided
+        source_type = None
+        mime = item.get("mime") or ""
+        if mime:
+            if "pdf" in mime.lower():
+                source_type = "pdf"
+            else:
+                source_type = "web"
+
+        return SearchHit(
+            provider=self.name,
+            query_issued=spec.query,
+            rank=rank,
+            title=title,
+            url=url,
+            snippet=snippet,
+            displayed_link=display_link,
+            published_at=published_at,
+            source_type=source_type,
+            extra={"mime": mime} if mime else {},
+        )
+
+    def search(self, spec: QuerySpec) -> List[SearchHit]:
+        params = self._build_params(spec)
+        try:
+            r = self.session.get(self._ENDPOINT, params=params, timeout=self.timeout)
+            r.raise_for_status()
+            data = r.json()
+        except requests.RequestException as e:
+            # Fail fast with empty results; upstream pipeline can log/handle.
+            return []
+
+        items = data.get("items") or []
+        hits: List[SearchHit] = []
+        for i, it in enumerate(items, start=1):
+            hit = self._to_hit(it, spec, i)
+            if hit:
+                hits.append(hit)
+
+        # Ensure stable 1-based rank ordering (some items may be filtered out).
+        for idx, h in enumerate(hits, start=1):
+            # dataclass is frozen=False by default here; ensure safe mutation
+            if h.rank != idx:
+                hits[idx - 1] = SearchHit(
+                    provider=h.provider,
+                    query_issued=h.query_issued,
+                    rank=idx,
+                    title=h.title,
+                    url=h.url,
+                    snippet=h.snippet,
+                    displayed_link=h.displayed_link,
+                    published_at=h.published_at,
+                    source_type=h.source_type,
+                    extra=h.extra,
+                )
+        return hits
+
+    def close(self) -> None:
+        try:
+            self.session.close()
+        except Exception:
+            pass
+
+# ======================================================================
+# FILE: intergrax/websearch/providers/google_places_provider.py
+# MODULE: intergrax.websearch.providers.google_places_provider
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=google_places_provider.py
+# LINES: 323
+# SHA256: d193e19d7534ebd6aea62d48922c9fe6686ce0b1c4e71a1c5c31ddb7d2c739fb
+# SYMBOLS:
+#   - class GooglePlacesProvider
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+import os
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+
+import requests
+
+from intergrax.websearch.schemas.query_spec import QuerySpec
+from intergrax.websearch.schemas.search_hit import SearchHit
+from intergrax.websearch.providers.base import WebSearchProvider
+
+
+class GooglePlacesProvider(WebSearchProvider):
+    """
+    Google Places / Google Business provider (Text Search + Details).
+
+    Environment variables:
+      GOOGLE_PLACES_API_KEY : API key for Google Places API
+
+    Endpoints (Places API):
+      - Text Search: https://maps.googleapis.com/maps/api/place/textsearch/json
+      - Details:     https://maps.googleapis.com/maps/api/place/details/json
+
+    Features:
+      - Text search by arbitrary query (name + city, category, etc.).
+      - Returns core business data:
+          * name, address, location (lat/lng)
+          * rating, user_ratings_total
+          * types (categories)
+          * website, international_phone_number, opening_hours
+          * Google Maps URL (via url or constructed maps link)
+
+    Notes:
+      - Uses QuerySpec.query as textsearch query.
+      - spec.language → Places "language"
+      - spec.region   → Places "region"
+      - Freshness is not applicable (ignored).
+    """
+
+    name: str = "google_places"
+
+    _TEXT_SEARCH_ENDPOINT: str = "https://maps.googleapis.com/maps/api/place/textsearch/json"
+    _DETAILS_ENDPOINT: str = "https://maps.googleapis.com/maps/api/place/details/json"
+
+    _DEFAULT_TIMEOUT: int = 20
+    _MAX_PAGE_SIZE: int = 20           # textsearch default max=20
+    _MAX_DETAILS_LOOKUPS: int = 10     # to limit extra calls / quotas
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        session: Optional[requests.Session] = None,
+        timeout: Optional[int] = None,
+        fetch_details: bool = True,
+        max_details_lookups: Optional[int] = None,
+    ) -> None:
+        self.api_key = api_key or os.getenv("GOOGLE_PLACES_API_KEY", "")
+        if not self.api_key:
+            raise ValueError("GooglePlacesProvider: missing API key (GOOGLE_PLACES_API_KEY).")
+
+        self.session = session or requests.Session()
+        self.timeout = int(timeout or self._DEFAULT_TIMEOUT)
+        self.fetch_details = fetch_details
+        self.max_details_lookups = int(max_details_lookups or self._MAX_DETAILS_LOOKUPS)
+
+    # ------------------------------------------------------------------
+    # Capabilities
+    # ------------------------------------------------------------------
+    def capabilities(self) -> Dict[str, Any]:
+        return {
+            "supports_language": True,    # via Places "language" param
+            "supports_freshness": False,  # not applicable
+            "max_page_size": self._MAX_PAGE_SIZE,
+        }
+
+    # ------------------------------------------------------------------
+    # Parameter builders
+    # ------------------------------------------------------------------
+    def _build_textsearch_params(self, spec: QuerySpec) -> Dict[str, Any]:
+        params: Dict[str, Any] = {
+            "key": self.api_key,
+            "query": spec.normalized_query(),     # np. "restauracja włoska Warszawa"
+        }
+
+        # language param – ISO code or BCP-47 (np. "pl", "pl-PL")
+        if spec.language:
+            params["language"] = spec.language
+        elif spec.locale:
+            # gdy user podaje locale "pl-PL", Places sobie poradzi
+            params["language"] = spec.locale
+
+        # region param (ccTLD) – np. "pl"
+        if spec.region:
+            # jeśli w QuerySpec masz "pl-PL", możesz chcieć wyciąć country
+            region = spec.region
+            if "-" in region:
+                region = region.split("-")[-1]
+            params["region"] = region.lower()
+
+        # Places Text Search nie ma natywnego "top_k"; limit 20 na stronę.
+        # Możesz ewentualnie trzymać target w spec.top_k i przycinać wyniki po stronie klienta.
+        return params
+
+    def _build_details_params(self, place_id: str, language: Optional[str] = None) -> Dict[str, Any]:
+        params: Dict[str, Any] = {
+            "key": self.api_key,
+            "place_id": place_id,
+            # fields: ograniczamy do kluczowych pól, reszta to "extra"
+            "fields": ",".join([
+                "name",
+                "formatted_address",
+                "geometry/location",
+                "international_phone_number",
+                "website",
+                "url",
+                "opening_hours",
+                "rating",
+                "user_ratings_total",
+                "types",
+                "business_status",
+            ]),
+        }
+        if language:
+            params["language"] = language
+        return params
+
+    # ------------------------------------------------------------------
+    # Mapping helpers
+    # ------------------------------------------------------------------
+    def _fetch_place_details(
+        self,
+        place_id: str,
+        language: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Fetch extended details for a single place_id.
+        Returns result dict (or empty dict on failure).
+        """
+        params = self._build_details_params(place_id, language=language)
+        try:
+            r = self.session.get(self._DETAILS_ENDPOINT, params=params, timeout=self.timeout)
+            r.raise_for_status()
+            data = r.json()
+        except Exception:
+            return {}
+
+        if data.get("status") != "OK":
+            return {}
+
+        return data.get("result") or {}
+
+    def _to_hit(
+        self,
+        base_place: Dict[str, Any],
+        spec: QuerySpec,
+        rank: int,
+        details: Optional[Dict[str, Any]] = None,
+    ) -> Optional[SearchHit]:
+        """
+        Map a Places TextSearch result (+ optional Details) to SearchHit.
+        """
+        details = details or {}
+
+        # Prefer details.name, fallback to base_place.name
+        name = details.get("name") or base_place.get("name") or ""
+        if not name:
+            return None
+
+        # Address
+        formatted_address = details.get("formatted_address") or base_place.get("formatted_address") or None
+
+        # Website vs Maps URL
+        website = details.get("website")
+        maps_url = details.get("url")  # direct Google Maps link
+        url = website or maps_url
+        if not url:
+            # Ostateczny fallback – możemy skonstruować link:
+            #  https://www.google.com/maps/search/?api=1&query=lat,lng&query_place_id=PLACE_ID
+            place_id = base_place.get("place_id") or details.get("place_id")
+            loc = details.get("geometry", {}).get("location") or base_place.get("geometry", {}).get("location", {})
+            lat = loc.get("lat")
+            lng = loc.get("lng")
+            if place_id and lat is not None and lng is not None:
+                url = (
+                    "https://www.google.com/maps/search/"
+                    f"?api=1&query={lat},{lng}&query_place_id={place_id}"
+                )
+
+        # rating & reviews
+        rating = details.get("rating", base_place.get("rating"))
+        user_ratings_total = details.get("user_ratings_total", base_place.get("user_ratings_total"))
+
+        # snippet: prosty opis łączący adres + rating
+        snippet_parts: List[str] = []
+        if formatted_address:
+            snippet_parts.append(formatted_address)
+        if rating is not None and user_ratings_total is not None:
+            snippet_parts.append(f"Ocena: {rating} ({user_ratings_total} opinii)")
+        snippet = " | ".join(snippet_parts) if snippet_parts else None
+
+        # location
+        geom = details.get("geometry", {}).get("location") or base_place.get("geometry", {}).get("location", {})
+        lat = geom.get("lat")
+        lng = geom.get("lng")
+
+        # phone
+        phone = details.get("international_phone_number")
+
+        # opening hours
+        opening_hours = details.get("opening_hours") or {}
+        opening_weekday_text = opening_hours.get("weekday_text")
+
+        # types / categories
+        types = details.get("types") or base_place.get("types") or []
+
+        extra: Dict[str, Any] = {
+            "place_id": base_place.get("place_id") or details.get("place_id"),
+            "formatted_address": formatted_address,
+            "location": {"lat": lat, "lng": lng},
+            "rating": rating,
+            "user_ratings_total": user_ratings_total,
+            "types": types,
+            "business_status": details.get("business_status") or base_place.get("business_status"),
+            "website": website,
+            "google_maps_url": maps_url,
+            "international_phone_number": phone,
+            "opening_hours": opening_hours,
+            "opening_weekday_text": opening_weekday_text,
+        }
+
+        # published_at – Places nie podaje daty "utworzenia" biznesu.
+        # Można by kiedyś dodać heurystykę, ale na razie None.
+        published_at: Optional[datetime] = None
+
+        return SearchHit(
+            provider=self.name,
+            query_issued=spec.query,
+            rank=rank,
+            title=name,
+            url=url or "",
+            snippet=snippet,
+            displayed_link=formatted_address,
+            published_at=published_at,
+            source_type="business_place",
+            extra=extra,
+        )
+
+    # ------------------------------------------------------------------
+    # Public search
+    # ------------------------------------------------------------------
+    def search(self, spec: QuerySpec) -> List[SearchHit]:
+        params = self._build_textsearch_params(spec)
+
+        try:
+            r = self.session.get(self._TEXT_SEARCH_ENDPOINT, params=params, timeout=self.timeout)
+            r.raise_for_status()
+            data = r.json()
+        except Exception:
+            return []
+
+        if data.get("status") not in ("OK", "ZERO_RESULTS"):
+            return []
+
+        results = data.get("results") or []
+        if not results:
+            return []
+
+        # Opcjonalnie pobieramy szczegóły dla pierwszych N wyników, żeby wzbogacić dane.
+        details_by_id: Dict[str, Dict[str, Any]] = {}
+        if self.fetch_details:
+            language = params.get("language")
+            for place in results[: self.max_details_lookups]:
+                place_id = place.get("place_id")
+                if not place_id:
+                    continue
+                details = self._fetch_place_details(place_id, language=language)
+                if details:
+                    details_by_id[place_id] = details
+
+        hits: List[SearchHit] = []
+        for i, place in enumerate(results, start=1):
+            place_id = place.get("place_id")
+            details = details_by_id.get(place_id) if place_id else None
+            hit = self._to_hit(place, spec, i, details=details)
+            if hit:
+                hits.append(hit)
+
+        # Uporządkuj rank po ewentualnym filtrowaniu
+        normalized_hits: List[SearchHit] = []
+        for idx, h in enumerate(hits, start=1):
+            if h.rank == idx:
+                normalized_hits.append(h)
+            else:
+                normalized_hits.append(
+                    SearchHit(
+                        provider=h.provider,
+                        query_issued=h.query_issued,
+                        rank=idx,
+                        title=h.title,
+                        url=h.url,
+                        snippet=h.snippet,
+                        displayed_link=h.displayed_link,
+                        published_at=h.published_at,
+                        source_type=h.source_type,
+                        extra=h.extra,
+                    )
+                )
+
+        return normalized_hits
+
+    # ------------------------------------------------------------------
+    # Cleanup
+    # ------------------------------------------------------------------
+    def close(self) -> None:
+        try:
+            self.session.close()
+        except Exception:
+            pass
+
+# ======================================================================
+# FILE: intergrax/websearch/providers/reddit_search_provider.py
+# MODULE: intergrax.websearch.providers.reddit_search_provider
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=reddit_search_provider.py
+# LINES: 340
+# SHA256: 3ab46da246f5219be40576eaca6453e4cfb1814f5820c826ecbcb522bf7423cf
+# SYMBOLS:
+#   - class RedditAPIProvider
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+import os
+import time
+import base64
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+
+import requests
+
+from intergrax.websearch.schemas.query_spec import QuerySpec
+from intergrax.websearch.schemas.search_hit import SearchHit
+from intergrax.websearch.providers.base import WebSearchProvider
+
+
+class RedditAPIProvider(WebSearchProvider):
+    """
+    Full-featured Reddit search provider using official OAuth2 API.
+
+    Auth:
+      - Uses application-only OAuth2 (client_credentials).
+      - Env vars:
+          REDDIT_CLIENT_ID
+          REDDIT_CLIENT_SECRET
+          REDDIT_USER_AGENT
+
+    Endpoints:
+      - Auth:   https://www.reddit.com/api/v1/access_token
+      - Search: https://oauth.reddit.com/search
+      - Post + comments: https://oauth.reddit.com/comments/{id}.json
+
+    Features:
+      - Full search (title + body).
+      - Rich post metadata (score, num_comments, upvote_ratio, nsfw, etc.).
+      - Optional: fetch top-level comments for each post.
+
+    Limitations:
+      - Language filter: Reddit nie ma natywnego filtra językowego → ignorujemy spec.language.
+      - Freshness: mapujemy spec.freshness (np. "day", "week", "month") na parametr `t`.
+    """
+
+    name: str = "reddit_api"
+
+    _AUTH_URL: str = "https://www.reddit.com/api/v1/access_token"
+    _API_BASE: str = "https://oauth.reddit.com"
+    _SEARCH_ENDPOINT: str = f"{_API_BASE}/search"
+    _COMMENTS_ENDPOINT_TEMPLATE: str = f"{_API_BASE}/comments/{{id}}.json"
+
+    _DEFAULT_TIMEOUT: int = 20
+    _MAX_LIMIT: int = 50  # Reddit pozwala do 100, ale ograniczamy dla stabilności.
+
+    def __init__(
+        self,
+        client_id: Optional[str] = None,
+        client_secret: Optional[str] = None,
+        user_agent: Optional[str] = None,
+        session: Optional[requests.Session] = None,
+        timeout: Optional[int] = None,
+        include_comments: bool = True,
+        comments_limit: int = 10,
+        default_freshness: Optional[str] = None,  # "hour", "day", "week", "month", "year", "all"
+    ) -> None:
+        self.client_id = client_id or os.getenv("REDDIT_CLIENT_ID", "")
+        self.client_secret = client_secret or os.getenv("REDDIT_CLIENT_SECRET", "")
+        self.user_agent = user_agent or os.getenv("REDDIT_USER_AGENT", "IntegraxWebSearch/1.0 (by intergrax.ai)")
+
+        if not self.client_id:
+            raise ValueError("RedditAPIProvider: missing client_id (REDDIT_CLIENT_ID).")
+        if not self.client_secret:
+            raise ValueError("RedditAPIProvider: missing client_secret (REDDIT_CLIENT_SECRET).")
+
+        self.session = session or requests.Session()
+        self.timeout = int(timeout or self._DEFAULT_TIMEOUT)
+        self.include_comments = include_comments
+        self.comments_limit = comments_limit
+        self.default_freshness = default_freshness
+
+        # Auth state
+        self._access_token: Optional[str] = None
+        self._token_expires_at: float = 0.0
+
+        # Required UA header for Reddit
+        self.session.headers.update({"User-Agent": self.user_agent})
+
+    # ------------------------------------------------------------------
+    # Capabilities
+    # ------------------------------------------------------------------
+    def capabilities(self) -> Dict[str, Any]:
+        return {
+            "supports_language": False,
+            "supports_freshness": True,   # via 't' param in search
+            "max_page_size": self._MAX_LIMIT,
+        }
+
+    # ------------------------------------------------------------------
+    # OAuth2 handling
+    # ------------------------------------------------------------------
+    def _ensure_token(self) -> None:
+        """
+        Ensure we have a valid access token (client_credentials).
+        Refresh if expired or missing.
+        """
+        now = time.time()
+        if self._access_token and now < self._token_expires_at - 30:  # 30s safety margin
+            return
+
+        auth = requests.auth.HTTPBasicAuth(self.client_id, self.client_secret)
+        data = {"grant_type": "client_credentials"}
+        headers = {"User-Agent": self.user_agent}
+
+        try:
+            resp = self.session.post(
+                self._AUTH_URL,
+                auth=auth,
+                data=data,
+                headers=headers,
+                timeout=self.timeout,
+            )
+            resp.raise_for_status()
+            payload = resp.json()
+        except Exception:
+            # Fail fast 
+            self._access_token = None
+            self._token_expires_at = 0
+            raise
+
+        token = payload.get("access_token")
+        expires_in = payload.get("expires_in", 3600)
+
+        if not token:
+            raise RuntimeError("RedditAPIProvider: missing access_token in auth response.")
+
+        self._access_token = token
+        self._token_expires_at = now + int(expires_in)
+
+        self.session.headers.update({
+            "Authorization": f"bearer {self._access_token}",
+            "User-Agent": self.user_agent,
+        })
+
+    # ------------------------------------------------------------------
+    # Param building
+    # ------------------------------------------------------------------
+    def _build_search_params(self, spec: QuerySpec) -> Dict[str, Any]:
+        params: Dict[str, Any] = {
+            "q": spec.normalized_query(),
+            "limit": spec.capped_top_k(self._MAX_LIMIT),
+            "sort": "relevance",
+            "restrict_sr": "false",
+        }
+
+        # Freshness: spec.freshness → t
+        # Reddit options: hour, day, week, month, year, all
+        freshness = getattr(spec, "freshness", None) or self.default_freshness
+        if freshness:
+            params["t"] = freshness
+
+        return params
+
+    # ------------------------------------------------------------------
+    # Comments fetch
+    # ------------------------------------------------------------------
+    def _fetch_comments(self, post_id: str) -> List[Dict[str, Any]]:
+        """
+        Fetch top-level comments for a given post.
+
+        Returns a simplified list of comment dicts:
+          {
+            "author": str,
+            "body": str,
+            "score": int,
+            "created_utc": float,
+            "num_replies": int,
+          }
+        """
+        if not self.include_comments or not post_id:
+            return []
+
+        url = self._COMMENTS_ENDPOINT_TEMPLATE.format(id=post_id)
+        params = {
+            "limit": self.comments_limit,
+            "depth": 1,
+        }
+
+        try:
+            r = self.session.get(url, params=params, timeout=self.timeout)
+            r.raise_for_status()
+            data = r.json()
+        except Exception:
+            return []
+
+        # comments data is typically in data[1]["data"]["children"]
+        comments_block = []
+        if isinstance(data, list) and len(data) > 1:
+            comments_block = data[1].get("data", {}).get("children", [])
+
+        comments: List[Dict[str, Any]] = []
+        for c in comments_block:
+            cdata = c.get("data") if isinstance(c, dict) else None
+            if not cdata:
+                continue
+            if cdata.get("body") is None:
+                continue
+
+            created_utc = cdata.get("created_utc")
+            num_replies = len(cdata.get("replies", {}).get("data", {}).get("children", [])) \
+                if isinstance(cdata.get("replies"), dict) else 0
+
+            comments.append({
+                "id": cdata.get("id"),
+                "author": cdata.get("author"),
+                "body": cdata.get("body"),
+                "score": cdata.get("score"),
+                "created_utc": created_utc,
+                "num_replies": num_replies,
+            })
+
+        return comments
+
+    # ------------------------------------------------------------------
+    # Mapping to SearchHit
+    # ------------------------------------------------------------------
+    def _to_hit(self, child: Dict[str, Any], spec: QuerySpec, rank: int) -> Optional[SearchHit]:
+        data = child.get("data")
+        if not data:
+            return None
+
+        title = data.get("title") or ""
+        permalink = data.get("permalink") or ""
+        url = f"https://www.reddit.com{permalink}" if permalink else None
+
+        if not url:
+            return None
+
+        snippet = data.get("selftext") or None
+        subreddit = data.get("subreddit") or None
+        author = data.get("author") or None
+
+        created_utc = data.get("created_utc")
+        published_at: Optional[datetime] = None
+        if created_utc:
+            try:
+                published_at = datetime.utcfromtimestamp(float(created_utc))
+            except Exception:
+                published_at = None
+
+        post_id = data.get("id")
+
+        comments = self._fetch_comments(post_id) if self.include_comments else []
+
+        extra: Dict[str, Any] = {
+            "subreddit": subreddit,
+            "author": author,
+            "score": data.get("score"),
+            "ups": data.get("ups"),
+            "downs": data.get("downs"),
+            "num_comments": data.get("num_comments"),
+            "upvote_ratio": data.get("upvote_ratio"),
+            "over_18": data.get("over_18"),
+            "is_self": data.get("is_self"),
+            "is_original_content": data.get("is_original_content"),
+            "is_crosspostable": data.get("is_crosspostable"),
+            "permalink": permalink,
+            "reddit_id": post_id,
+            "domain": data.get("domain"),
+            "url_overridden_by_dest": data.get("url_overridden_by_dest"),
+            "thumbnail": data.get("thumbnail"),
+            "created_utc": created_utc,
+            "comments": comments,
+        }
+
+        return SearchHit(
+            provider=self.name,
+            query_issued=spec.query,
+            rank=rank,
+            title=title,
+            url=url,
+            snippet=snippet,
+            displayed_link=subreddit,
+            published_at=published_at,
+            source_type="reddit_post",
+            extra=extra,
+        )
+
+    # ------------------------------------------------------------------
+    # Public search
+    # ------------------------------------------------------------------
+    def search(self, spec: QuerySpec) -> List[SearchHit]:
+        self._ensure_token()
+        params = self._build_search_params(spec)
+
+        try:
+            r = self.session.get(self._SEARCH_ENDPOINT, params=params, timeout=self.timeout)
+            r.raise_for_status()
+            data = r.json()
+        except Exception:
+            return []
+
+        children = data.get("data", {}).get("children", []) or []
+        hits: List[SearchHit] = []
+
+        for i, child in enumerate(children, start=1):
+            hit = self._to_hit(child, spec, i)
+            if hit:
+                hits.append(hit)
+
+        normalized_hits: List[SearchHit] = []
+        for idx, h in enumerate(hits, start=1):
+            if h.rank == idx:
+                normalized_hits.append(h)
+            else:
+                normalized_hits.append(
+                    SearchHit(
+                        provider=h.provider,
+                        query_issued=h.query_issued,
+                        rank=idx,
+                        title=h.title,
+                        url=h.url,
+                        snippet=h.snippet,
+                        displayed_link=h.displayed_link,
+                        published_at=h.published_at,
+                        source_type=h.source_type,
+                        extra=h.extra,
+                    )
+                )
+
+        return normalized_hits
+
+    # ------------------------------------------------------------------
+    # Cleanup
+    # ------------------------------------------------------------------
+    def close(self) -> None:
+        try:
+            self.session.close()
+        except Exception:
+            pass
+
+# ======================================================================
+# FILE: intergrax/websearch/schemas/__init__.py
+# MODULE: intergrax.websearch.schemas
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/websearch/schemas/page_content.py
+# MODULE: intergrax.websearch.schemas.page_content
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=page_content.py
+# LINES: 73
+# SHA256: 7dac001c0f6d8a86367b78877a08f028d1562a697900c067905c4d165d43f4f3
+# SYMBOLS:
+#   - class PageContent
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Optional, Dict, Any
+
+@dataclass
+class PageContent:
+    """
+    Represents the fetched and optionally extracted content of a web page.
+
+    This class encapsulates both raw HTML and derived metadata, 
+    allowing post-processing stages (extraction, readability, deduplication)
+    to work independently of the original HTTP layer.
+
+    Fields:
+      final_url       : resolved final URL after redirects
+      status_code     : HTTP response code
+      html            : full HTML source of the page (if available)
+      text            : extracted plain text content (after cleaning)
+      title           : extracted <title> tag or OG title
+      description     : meta or OG description
+      lang            : detected or declared language (ISO 639-1)
+      og              : extracted Open Graph tags
+      schema_org      : parsed JSON-LD or microdata (subset)
+      fetched_at      : UTC timestamp of when the page was fetched
+      robots_allowed  : whether fetching was allowed per robots.txt (if checked)
+      content_bytes   : size of the HTTP body in bytes
+      is_paywalled    : heuristic flag if the page is detected as paywalled
+      extra           : reserved for future per-provider metadata (headers, mime, etc.)
+    """
+    final_url: str
+    status_code: int
+    html: Optional[str]
+    text: Optional[str]
+    title: Optional[str]
+    description: Optional[str]
+    lang: Optional[str]
+    og: Dict[str, Any] = field(default_factory=dict)
+    schema_org: Dict[str, Any] = field(default_factory=dict)
+    fetched_at: datetime = field(default_factory=datetime.utcnow)
+    robots_allowed: Optional[bool] = None
+    content_bytes: Optional[int] = None
+    is_paywalled: Optional[bool] = None
+    extra: Dict[str, Any] = field(default_factory=dict)
+
+    def has_content(self) -> bool:
+        """
+        Returns True if the page contains non-empty text or HTML.
+        Used to filter out failed or empty fetches.
+        """
+        return bool((self.text and self.text.strip()) or (self.html and self.html.strip()))
+
+    def short_summary(self, length: int = 200) -> str:
+        """
+        Returns a truncated text snippet useful for logging and debugging.
+        """
+        if not self.text:
+            return ""
+        return (self.text[:length] + "...") if len(self.text) > length else self.text
+
+    def content_length_kb(self) -> float:
+        """
+        Returns the approximate size of the content in kilobytes.
+        """
+        if self.content_bytes is None:
+            if self.html:
+                return len(self.html.encode("utf-8")) / 1024
+            return 0.0
+        return self.content_bytes / 1024.0
+
+# ======================================================================
+# FILE: intergrax/websearch/schemas/query_spec.py
+# MODULE: intergrax.websearch.schemas.query_spec
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=query_spec.py
+# LINES: 50
+# SHA256: bac19776113c5b9505583d5609ccdf5492f659479a9c9f78dedb78424cc84dcf
+# SYMBOLS:
+#   - class QuerySpec
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass(frozen=True)
+class QuerySpec:
+    """
+    Canonical search query specification used by all web search providers.
+    Keep this model minimal, provider-agnostic, and stable.
+
+    Fields:
+      query       : raw user query (required)
+      top_k       : desired number of top results per provider (provider may cap this)
+      locale      : BCP 47 locale (e.g., "pl-PL") used for UI language hints
+      region      : market/region code (e.g., "PL", "US" or "pl-PL" for certain APIs)
+      language    : ISO 639-1 content language code (e.g., "pl", "en"), 
+                    used to restrict results by language when the provider supports it
+      freshness   : optional recency constraint (provider-specific semantics)
+      site_filter : optional site restriction (e.g., "site:example.com")
+      safe_search : request safe-search filtering where available
+    """
+    query: str
+    top_k: int = 8
+    locale: Optional[str] = None
+    region: Optional[str] = None
+    language: Optional[str] = None
+    freshness: Optional[str] = None
+    site_filter: Optional[str] = None
+    safe_search: bool = True
+
+    def normalized_query(self) -> str:
+        """
+        Returns the query string with an applied site filter (if present).
+        Providers that accept a combined 'q' parameter can use this directly.
+        """
+        q = (self.query or "").strip()
+        if self.site_filter:
+            q = f"{q} {self.site_filter}".strip()
+        return q
+
+    def capped_top_k(self, provider_cap: int) -> int:
+        """
+        Returns a provider-safe 'top_k' that never exceeds the provider's cap and is >= 1.
+        """
+        k = max(1, int(self.top_k or 1))
+        return min(k, max(1, int(provider_cap or k)))
+
+# ======================================================================
+# FILE: intergrax/websearch/schemas/search_hit.py
+# MODULE: intergrax.websearch.schemas.search_hit
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=search_hit.py
+# LINES: 74
+# SHA256: e497f81ae2c9c183a3f117ddaf8417c4c318fe1e9c89c4ad2aa84ed61b994a35
+# SYMBOLS:
+#   - class SearchHit
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Optional, Dict, Any
+from urllib.parse import urlparse
+
+@dataclass(frozen=True)
+class SearchHit:
+    """
+    Provider-agnostic metadata for a single search result entry.
+
+    Fields:
+      provider       : provider identifier (e.g., "google_cse", "bing_web")
+      query_issued   : original user query string used for this search
+      rank           : 1-based rank within the provider's result list
+      title          : result title as returned by the provider
+      url            : canonical or direct URL to the resource
+      snippet        : short textual summary shown by the provider (if any)
+      displayed_link : human-readable display URL (if provided by the API)
+      published_at   : optional publication datetime (if available)
+      source_type    : coarse-grained type (e.g., "web", "news", "forum", "video", "pdf")
+      extra          : provider-specific fields (kept for debugging/telemetry)
+    """
+    provider: str
+    query_issued: str
+    rank: int
+    title: str
+    url: str
+    snippet: Optional[str] = None
+    displayed_link: Optional[str] = None
+    published_at: Optional[datetime] = None
+    source_type: Optional[str] = None
+    extra: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        """
+        Minimal safety checks:
+        - enforce rank >= 1
+        - ensure URL has a scheme and netloc
+        """
+        if self.rank < 1:
+            object.__setattr__(self, "rank", 1)
+
+        parsed = urlparse(self.url or "")
+        if not (parsed.scheme and parsed.netloc):
+            # Keep strict failure early — invalid hits should not propagate.
+            raise ValueError(f"Invalid URL in SearchHit: '{self.url}'")
+
+    def domain(self) -> str:
+        """
+        Returns the netloc (domain:port) part of the URL for quick grouping or scoring.
+        """
+        return urlparse(self.url).netloc
+
+    def to_minimal_dict(self) -> Dict[str, Any]:
+        """
+        Returns a minimal, LLM-friendly representation of the hit.
+        Intended for prompts and logs without leaking provider internals.
+        """
+        return {
+            "provider": self.provider,
+            "rank": self.rank,
+            "title": self.title,
+            "url": self.url,
+            "snippet": self.snippet,
+            "displayed_link": self.displayed_link,
+            "published_at": self.published_at.isoformat() if self.published_at else None,
+            "source_type": self.source_type,
+            "domain": self.domain(),
+        }
+
+# ======================================================================
+# FILE: intergrax/websearch/schemas/web_document.py
+# MODULE: intergrax.websearch.schemas.web_document
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=web_document.py
+# LINES: 57
+# SHA256: 90d7bf2a2e98c714ed4359a482f160af6c8cee03fcbdf5e424e3dcfa4d7876c9
+# SYMBOLS:
+#   - class WebDocument
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Optional
+from .search_hit import SearchHit
+from .page_content import PageContent
+
+@dataclass
+class WebDocument:
+    """
+    Unified structure representing a fetched and processed web document.
+
+    It connects the original search hit (provider metadata)
+    with the extracted content (PageContent) and analysis results
+    such as deduplication and quality scores.
+
+    Fields:
+      hit           : source SearchHit from provider API
+      page          : fetched PageContent (HTML + extracted text)
+      dedupe_key    : stable hash or simhash for duplicate detection
+      quality_score : normalized quality metric (0–1 or arbitrary float)
+      source_rank   : optional adjusted rank after multi-provider fusion
+    """
+    hit: SearchHit
+    page: PageContent
+    dedupe_key: Optional[str] = None
+    quality_score: float = 0.0
+    source_rank: Optional[int] = None
+
+    def is_valid(self) -> bool:
+        """
+        Returns True if the document contains valid textual content and a valid URL.
+        """
+        return bool(self.page and self.page.has_content() and self.hit and self.hit.url)
+
+    def merged_text(self, max_length: Optional[int] = None) -> str:
+        """
+        Returns combined textual content for LLM or retrieval embedding.
+        """
+        if not self.page or not self.page.text:
+            return ""
+        text = self.page.text.strip()
+        if max_length and len(text) > max_length:
+            return text[:max_length]
+        return text
+
+    def summary_line(self) -> str:
+        """
+        Returns a short one-line summary used in logs or console outputs.
+        """
+        t = self.page.title or self.hit.title or ""
+        domain = self.hit.domain()
+        score = f"{self.quality_score:.2f}"
+        return f"[{domain}] {t} (score={score})"
+
+# ======================================================================
+# FILE: intergrax/websearch/service/__init__.py
+# MODULE: intergrax.websearch.service
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/websearch/service/websearch_answerer.py
+# MODULE: intergrax.websearch.service.websearch_answerer
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=websearch_answerer.py
+# LINES: 137
+# SHA256: 02e18fb81613168c6975ea48bf99b2708607c190f2fc8161c5708eeabc112fd5
+# SYMBOLS:
+#   - class WebSearchAnswerer
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import List, Dict, Any, Optional
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.websearch.service.websearch_executor import WebSearchExecutor
+from intergrax.websearch.context.websearch_context_builder import WebSearchContextBuilder
+from intergrax.llm_adapters import LLMAdapter
+
+from intergrax.llm.messages import ChatMessage
+
+
+class WebSearchAnswerer:
+    """
+    High-level helper that:
+      1) runs web search via WebSearchExecutor,
+      2) builds LLM-ready context/messages from web documents,
+      3) calls any LLMAdapter to generate a final answer.
+
+    This class is model-agnostic: it only requires an LLMAdapter implementation.
+    """
+
+    def __init__(
+        self,
+        executor: WebSearchExecutor,
+        adapter: LLMAdapter,
+        context_builder: Optional[WebSearchContextBuilder] = None,
+        answer_language: str = GLOBAL_SETTINGS.default_language,
+        system_prompt_override: Optional[str] = None,
+    ) -> None:
+        """
+        Parameters:
+          executor              : WebSearchExecutor instance (providers, rate limits, etc.).
+          adapter               : LLMAdapter instance (OpenAI, Gemini, Ollama, etc.).
+          context_builder       : WebSearchContextBuilder for building messages from web docs.
+          answer_language       : language of the final answer (for prompt instruction).
+          system_prompt_override: optional global system prompt for all calls (can be overridden per call).
+        """
+        self.executor = executor
+        self.adapter = adapter
+        self.context_builder = context_builder or WebSearchContextBuilder()
+        self.answer_language = answer_language
+        self.system_prompt_override = system_prompt_override
+
+    async def answer_async(
+        self,
+        question: str,
+        *,
+        top_k: Optional[int] = None,
+        temperature: float = 0.2,
+        max_tokens: Optional[int] = None,
+        system_prompt_override: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Full async flow:
+          1) Web search,
+          2) Build messages from sources,
+          3) Call LLMAdapter,
+          4) Return answer + sources.
+
+        Per-call system_prompt_override, if provided, has priority over the
+        instance-level system_prompt_override set in __init__.
+
+        Returns:
+          {
+            "answer": str,
+            "messages": List[ChatMessage],
+            "web_docs": List[Dict[str, Any]]
+          }
+        """
+        # 1) Run web search (serialized dicts ready for context building)
+        web_docs = await self.executor.search_async(
+            query=question,
+            top_k=top_k,
+            serialize=True,
+        )
+
+        # 2) Decide which system prompt to use
+        effective_system_prompt = system_prompt_override or self.system_prompt_override
+
+        # 3) Build LLM-ready messages (system + user)
+        msg_dicts = self.context_builder.build_messages_from_serialized(
+            user_question=question,
+            web_docs=web_docs,
+            answer_language=self.answer_language,
+            system_prompt_override=effective_system_prompt,
+        )
+
+        messages: List[ChatMessage] = [
+            ChatMessage(role=m["role"], content=m["content"])
+            for m in msg_dicts
+        ]
+
+        # 4) Call LLM via adapter
+        answer_text = self.adapter.generate_messages(
+            messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+
+        return {
+            "answer": answer_text,
+            "messages": messages,
+            "web_docs": web_docs,
+        }
+
+    def answer_sync(
+        self,
+        question: str,
+        *,
+        top_k: Optional[int] = None,
+        temperature: float = 0.2,
+        max_tokens: Optional[int] = None,
+        system_prompt_override: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Synchronous convenience wrapper for non-async environments.
+
+        NOTE:
+          Do not use this inside environments with a running event loop
+          (e.g. Jupyter). Prefer 'answer_async' there.
+        """
+        import asyncio
+
+        return asyncio.run(
+            self.answer_async(
+                question=question,
+                top_k=top_k,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                system_prompt_override=system_prompt_override,
+            )
+        )
+
+# ======================================================================
+# FILE: intergrax/websearch/service/websearch_executor.py
+# MODULE: intergrax.websearch.service.websearch_executor
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=websearch_executor.py
+# LINES: 266
+# SHA256: ee05bcec140d0bdb700d9c1cf51780e8cd1f2f92d40c3311435441d07fa17571
+# SYMBOLS:
+#   - class WebSearchExecutor
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from typing import List, Dict, Any, Optional
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.websearch.schemas.query_spec import QuerySpec
+from intergrax.websearch.schemas.web_document import WebDocument
+from intergrax.websearch.providers.base import WebSearchProvider
+from intergrax.websearch.providers.google_cse_provider import GoogleCSEProvider
+from intergrax.websearch.providers.bing_provider import BingWebProvider
+from intergrax.websearch.pipeline.search_and_read import SearchAndReadPipeline
+from intergrax.websearch.cache import InMemoryQueryCache, QueryCacheKey
+
+
+class WebSearchExecutor:
+    """
+    High-level, configurable web search executor.
+
+    Responsibilities:
+      - construct QuerySpec from a raw query and configuration,
+      - execute SearchAndReadPipeline with chosen providers,
+      - convert WebDocument objects into LLM-friendly dicts.
+
+    This class is the main entry point for:
+      - notebooks,
+      - LangGraph nodes,
+      - any other orchestration code that needs web search results.
+    """
+
+    def __init__(
+        self,
+        providers: Optional[List[WebSearchProvider]] = None,
+        enable_google_cse: bool = True,
+        enable_bing_web: bool = True,
+        http_rate_per_sec: float = 2.0,
+        http_capacity: int = 5,
+        default_top_k: int = 8,
+        default_locale=GLOBAL_SETTINGS.default_locale,
+        default_region=GLOBAL_SETTINGS.default_region,
+        default_language=GLOBAL_SETTINGS.default_language,
+        default_safe_search: bool = True,
+        max_text_chars: int = 4000,
+        query_cache: Optional[InMemoryQueryCache] = None,
+    ) -> None:
+        """
+        Parameters:
+          providers        : explicit list of providers. If None, they are built from flags.
+          enable_google_cse: if True and no explicit providers, include Google CSE.
+          enable_bing_web  : if True and no explicit providers, include Bing Web Search.
+          http_rate_per_sec: HTTP token refill rate for the pipeline.
+          http_capacity    : HTTP token bucket capacity.
+          default_top_k    : default number of search hits to request.
+          default_locale   : default locale for QuerySpec.
+          default_region   : default region for QuerySpec.
+          default_language : default language for QuerySpec.
+          default_safe_search: default safe search flag.
+          max_text_chars   : max length of extracted text per document in serialized output.
+          query_cache      : optional in-memory query-level cache for serialized results.
+        """
+        self.default_top_k = default_top_k
+        self.default_locale = default_locale
+        self.default_region = default_region
+        self.default_language = default_language
+        self.default_safe_search = default_safe_search
+        self.max_text_chars = max_text_chars
+        self._query_cache = query_cache
+
+        if providers is None:
+            providers = self._build_default_providers(
+                enable_google_cse=enable_google_cse,
+                enable_bing_web=enable_bing_web,
+            )
+
+        if not providers:
+            raise ValueError(
+                "WebSearchExecutor: no providers configured. "
+                "Check API key configuration or pass providers explicitly."
+            )
+
+        self.pipeline = SearchAndReadPipeline(
+            providers=providers,
+            http_rate_per_sec=http_rate_per_sec,
+            http_capacity=http_capacity,
+        )
+        self._provider_signature = self._build_provider_signature(providers)
+
+    @staticmethod
+    def _build_default_providers(
+        enable_google_cse: bool,
+        enable_bing_web: bool,
+    ) -> List[WebSearchProvider]:
+        providers: List[WebSearchProvider] = []
+
+        if enable_google_cse:
+            try:
+                providers.append(GoogleCSEProvider())
+            except Exception:
+                # Missing configuration or init error; skip.
+                pass
+
+        if enable_bing_web:
+            try:
+                providers.append(BingWebProvider())
+            except Exception:
+                # Missing configuration or init error; skip.
+                pass
+
+        return providers
+
+    @staticmethod
+    def _build_provider_signature(providers: List[WebSearchProvider]) -> str:
+        """
+        Builds a simple, deterministic signature of the provider configuration.
+
+        Used as part of the cache key so that changing providers (e.g. enabling/disabling
+        Bing or Google CSE) naturally invalidates previous cached entries.
+        """
+        names = sorted(p.__class__.__name__ for p in providers)
+        return "+".join(names)
+
+    def _serialize_web_document(self, doc: WebDocument) -> Dict[str, Any]:
+        """
+        Converts a WebDocument into a dict suitable for LLM prompts and logging.
+        """
+        page = doc.page
+        hit = doc.hit
+
+        full_text = page.text or ""
+        if self.max_text_chars and len(full_text) > self.max_text_chars:
+            text = full_text[: self.max_text_chars]
+        else:
+            text = full_text
+
+        return {
+            "provider": hit.provider,
+            "rank": hit.rank,
+            "source_rank": doc.source_rank,
+            "quality_score": doc.quality_score,
+            "title": page.title or hit.title,
+            "url": hit.url,
+            "snippet": hit.snippet,
+            "description": page.description,
+            "lang": page.lang,
+            "domain": hit.domain(),
+            "published_at": hit.published_at.isoformat() if hit.published_at else None,
+            "fetched_at": page.fetched_at.isoformat(),
+            "text": text,
+        }
+
+    def build_query_spec(
+        self,
+        query: str,
+        top_k: Optional[int] = None,
+        locale: Optional[str] = None,
+        region: Optional[str] = None,
+        language: Optional[str] = None,
+        safe_search: Optional[bool] = None,
+    ) -> QuerySpec:
+        """
+        Builds a QuerySpec using executor defaults and optional overrides.
+        """
+        return QuerySpec(
+            query=query,
+            top_k=top_k if top_k is not None else self.default_top_k,
+            locale=locale or self.default_locale,
+            region=region or self.default_region,
+            language=language or self.default_language,
+            safe_search=self.default_safe_search if safe_search is None else safe_search,
+        )
+
+    async def search_async(
+        self,
+        query: str,
+        top_k: Optional[int] = None,
+        locale: Optional[str] = None,
+        region: Optional[str] = None,
+        language: Optional[str] = None,
+        safe_search: Optional[bool] = None,
+        top_n_fetch: Optional[int] = None,
+        serialize: bool = True,
+    ) -> List[Any]:
+        """
+        Executes the full web search pipeline asynchronously.
+
+        Returns:
+          - list of serialized dicts if serialize=True,
+          - list of WebDocument objects if serialize=False.
+
+        When a query cache is configured and active:
+          - attempts to return cached serialized results when available and valid.
+        """
+        spec = self.build_query_spec(
+            query=query,
+            top_k=top_k,
+            locale=locale,
+            region=region,
+            language=language,
+            safe_search=safe_search,
+        )
+
+        final_top_n = top_n_fetch if top_n_fetch is not None else spec.top_k
+
+        cache_key: Optional[QueryCacheKey] = None
+        if serialize and self._query_cache is not None:
+            cache_key = QueryCacheKey(
+                query=spec.query,
+                top_k=final_top_n,
+                locale=spec.locale or "",
+                region=spec.region or "",
+                language=spec.language or "",
+                safe_search=spec.safe_search,
+                provider_signature=self._provider_signature,
+            )
+            cached = self._query_cache.get(cache_key)
+            if cached is not None:
+                return cached
+
+        docs = await self.pipeline.run(
+            spec,
+            top_n_fetch=final_top_n,
+        )
+
+        if not serialize:
+            return docs
+
+        serialized_docs = [self._serialize_web_document(d) for d in docs]
+
+        if cache_key is not None and self._query_cache is not None:
+            self._query_cache.set(cache_key, serialized_docs)
+
+        return serialized_docs
+
+    def search_sync(
+        self,
+        query: str,
+        top_k: Optional[int] = None,
+        locale: Optional[str] = None,
+        region: Optional[str] = None,
+        language: Optional[str] = None,
+        safe_search: Optional[bool] = None,
+        top_n_fetch: Optional[int] = None,
+        serialize: bool = True,
+    ) -> List[Any]:
+        """
+        Synchronous wrapper for environments without an existing event loop.
+
+        NOTE:
+          Do not use this method inside Jupyter or any environment with
+          a running event loop. In such cases, use 'search_async' instead.
+        """
+        import asyncio
+
+        return asyncio.run(
+            self.search_async(
+                query=query,
+                top_k=top_k,
+                locale=locale,
+                region=region,
+                language=language,
+                safe_search=safe_search,
+                top_n_fetch=top_n_fetch,
+                serialize=serialize,
+            )
+        )
+
+# ======================================================================
+# FILE: intergrax/websearch/utils/__init__.py
+# MODULE: intergrax.websearch.utils
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/websearch/utils/dedupe.py
+# MODULE: intergrax.websearch.utils.dedupe
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=dedupe.py
+# LINES: 44
+# SHA256: 5cdd0083ed7df051dce0a4912330a0c7360cd26cb4b9191271fe37f42ea732e4
+# SYMBOLS:
+#   - def normalize_for_dedupe()
+#   - def simple_dedupe_key()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+import hashlib
+from typing import Optional
+
+
+def normalize_for_dedupe(text: Optional[str]) -> str:
+    """
+    Normalizes text before deduplication.
+
+    Steps:
+      - Treats None as empty string.
+      - Strips leading and trailing whitespace.
+      - Converts to lower case.
+      - Collapses internal whitespace sequences to a single space.
+
+    This is intentionally simple and fast; heavy normalization
+    (e.g., stemming, punctuation removal) should be done elsewhere
+    if needed.
+    """
+    if not text:
+        return ""
+    stripped = text.strip().lower()
+    # Collapse whitespace: split/join to avoid regex dependency.
+    return " ".join(stripped.split())
+
+
+def simple_dedupe_key(text: Optional[str]) -> str:
+    """
+    Produces a stable SHA-256 based deduplication key for the given text.
+
+    This is used to detect near-identical documents in the web search pipeline.
+    For more advanced scenarios, this can later be replaced or extended with
+    simhash/minhash, but the interface (text -> key) should remain stable.
+
+    Returns:
+      Hex-encoded SHA-256 digest of the normalized text.
+    """
+    normalized = normalize_for_dedupe(text)
+    digest = hashlib.sha256(normalized.encode("utf-8", errors="ignore")).hexdigest()
+    return digest
+
+# ======================================================================
+# FILE: intergrax/websearch/utils/rate_limit.py
+# MODULE: intergrax.websearch.utils.rate_limit
+# MODULE_GROUP: websearch
+# TAGS:
+#   - package=intergrax
+#   - module_group=websearch
+#   - file=rate_limit.py
+# LINES: 101
+# SHA256: 35c20ff623982d019cb7f4166904bc8d8d86fc7499da94dcdeb614eb2dceb16c
+# SYMBOLS:
+#   - class TokenBucket
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+import asyncio
+import time
+from typing import Optional
+
+
+class TokenBucket:
+    """
+    Simple asyncio-compatible token bucket rate limiter.
+
+    Usage:
+        bucket = TokenBucket(rate_per_sec=2.0, capacity=5)
+        await bucket.acquire()  # waits until at least 1 token is available
+
+    Parameters:
+      rate_per_sec : average token refill rate (tokens per second)
+      capacity     : maximum number of tokens stored in the bucket
+
+    Behavior:
+      - Tokens accumulate over time up to 'capacity'.
+      - 'acquire(n)' waits until at least n tokens are available,
+        then consumes them atomically.
+      - Designed to be used across concurrent coroutines (single process).
+    """
+
+    def __init__(self, rate_per_sec: float, capacity: int) -> None:
+        if rate_per_sec <= 0:
+            raise ValueError("TokenBucket: rate_per_sec must be > 0.")
+        if capacity <= 0:
+            raise ValueError("TokenBucket: capacity must be > 0.")
+
+        self._rate = float(rate_per_sec)
+        self._capacity = int(capacity)
+        self._tokens: float = float(capacity)
+        self._timestamp: float = time.monotonic()
+        self._lock = asyncio.Lock()
+
+    async def acquire(self, tokens: int = 1) -> None:
+        """
+        Waits until 'tokens' tokens are available and consumes them.
+
+        This method is safe to call from multiple coroutines concurrently.
+        It guarantees that the total consumption never exceeds capacity
+        and that the average request rate does not exceed 'rate_per_sec'.
+        """
+        if tokens <= 0:
+            return
+
+        async with self._lock:
+            while True:
+                now = time.monotonic()
+                elapsed = now - self._timestamp
+                self._timestamp = now
+
+                # Refill tokens based on elapsed time.
+                self._tokens = min(
+                    self._capacity,
+                    self._tokens + elapsed * self._rate,
+                )
+
+                if self._tokens >= tokens:
+                    self._tokens -= tokens
+                    return
+
+                # Not enough tokens: compute wait time until enough tokens accumulate.
+                missing = tokens - self._tokens
+                wait_seconds = max(missing / self._rate, 0.001)
+                await asyncio.sleep(wait_seconds)
+
+    def try_acquire(self, tokens: int = 1) -> bool:
+        """
+        Non-blocking attempt to consume 'tokens' tokens.
+
+        Returns:
+          True  if tokens were available and consumed,
+          False if not enough tokens are currently available.
+
+        This method does not wait; it is intended for lightweight checks
+        in paths where best-effort limiting is sufficient.
+        """
+        if tokens <= 0:
+            return True
+
+        now = time.monotonic()
+        elapsed = now - self._timestamp
+        self._timestamp = now
+
+        self._tokens = min(
+            self._capacity,
+            self._tokens + elapsed * self._rate,
+        )
+
+        if self._tokens >= tokens:
+            self._tokens -= tokens
+            return True
+
+        return False
+
