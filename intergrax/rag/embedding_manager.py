@@ -50,7 +50,7 @@ class EmbeddingManager:
 
     def __init__(
         self,
-        provider: PROVIDERS,
+        provider: Optional[PROVIDERS] = None,
         model_name: Optional[str] = None,
         *,
         normalize: bool = True,
@@ -66,9 +66,9 @@ class EmbeddingManager:
         # nothing to pass here — model and key are handled by `langchain_openai.OpenAIEmbeddings`
         retries: int = 1,
         verbose: bool = True,
-    ) -> None:
-        self.provider: PROVIDERS = provider
-        self.model_name = model_name or self._default_model_for(provider)
+    ) -> None:        
+        self.provider: PROVIDERS = provider or "ollama"
+        self.model_name = model_name or self._default_model_for(self.provider)
         self.normalize = normalize
 
         self.hf_device = hf_device
