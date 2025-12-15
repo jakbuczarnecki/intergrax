@@ -36,7 +36,7 @@
 # - websearch/
 #
 # Files included: 117
-# Total lines: 20058
+# Total lines: 20081
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
@@ -78,7 +78,7 @@
 # - intergrax/memory/stores/__init__.py | intergrax.memory.stores | memory | 0 | e3b0c44298fc
 # - intergrax/memory/stores/in_memory_conversational_store.py | intergrax.memory.stores.in_memory_conversational_store | memory | 95 | d6bc9b36d93e
 # - intergrax/memory/stores/in_memory_user_profile_store.py | intergrax.memory.stores.in_memory_user_profile_store | memory | 59 | 9c1690d3981d
-# - intergrax/memory/user_profile_manager.py | intergrax.memory.user_profile_manager | memory | 269 | cf80d957757a
+# - intergrax/memory/user_profile_manager.py | intergrax.memory.user_profile_manager | memory | 302 | 20f205f0d17e
 # - intergrax/memory/user_profile_memory.py | intergrax.memory.user_profile_memory | memory | 167 | b742d06f0359
 # - intergrax/memory/user_profile_store.py | intergrax.memory.user_profile_store | memory | 52 | ea286a228ae9
 # - intergrax/multimedia/__init__.py | intergrax.multimedia | multimedia | 0 | e3b0c44298fc
@@ -94,7 +94,7 @@
 # - intergrax/rag/documents_splitter.py | intergrax.rag.documents_splitter | rag | 351 | b6796ab15bd6
 # - intergrax/rag/dual_index_builder.py | intergrax.rag.dual_index_builder | rag | 138 | 8a9266949177
 # - intergrax/rag/dual_retriever.py | intergrax.rag.dual_retriever | rag | 170 | 3e87b936dea9
-# - intergrax/rag/embedding_manager.py | intergrax.rag.embedding_manager | rag | 306 | e77bf68e4fe2
+# - intergrax/rag/embedding_manager.py | intergrax.rag.embedding_manager | rag | 306 | f5e15925a7b8
 # - intergrax/rag/rag_answerer.py | intergrax.rag.rag_answerer | rag | 425 | 25b567672739
 # - intergrax/rag/rag_retriever.py | intergrax.rag.rag_retriever | rag | 426 | 4f2ef95f2004
 # - intergrax/rag/re_ranker.py | intergrax.rag.re_ranker | rag | 307 | 3d5cb2ebb6b4
@@ -106,12 +106,12 @@
 # - intergrax/system_prompts.py | intergrax.system_prompts | root | 84 | f66fdf33ac4c
 # - intergrax/runtime/__init__.py | intergrax.runtime | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/__init__.py | intergrax.runtime.drop_in_knowledge_mode | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 207 | 7df36a0fc0be
+# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 203 | e4c23cdbac1d
 # - intergrax/runtime/drop_in_knowledge_mode/context/__init__.py | intergrax.runtime.drop_in_knowledge_mode.context | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/context/context_builder.py | intergrax.runtime.drop_in_knowledge_mode.context.context_builder | runtime | 485 | 2cca85dc5dcb
 # - intergrax/runtime/drop_in_knowledge_mode/context/engine_history_layer.py | intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer | runtime | 558 | f27bd61d0560
 # - intergrax/runtime/drop_in_knowledge_mode/engine/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1183 | d92fff0a9855
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1177 | 8abe77f2b1ab
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 77 | e732cb8d02c4
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py | intergrax.runtime.drop_in_knowledge_mode.ingestion | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/attachments.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments | runtime | 124 | f1f76309b50f
@@ -178,7 +178,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 20058
+# TOTAL LINES: 20081
 # ======================================================================
 
 # ======================================================================
@@ -3211,8 +3211,8 @@ class InMemoryUserProfileStore(UserProfileStore):
 #   - package=intergrax
 #   - module_group=memory
 #   - file=user_profile_manager.py
-# LINES: 269
-# SHA256: cf80d957757a0cad0eb9959b7a74728a7b4f0a52544362f41723787746ef4037
+# LINES: 302
+# SHA256: 20f205f0d17e95d069dfcf6091130279cd5b8af44e7a0e246ae9d4f03b36f067
 # SYMBOLS:
 #   - class UserProfileManager
 # ======================================================================
@@ -3222,7 +3222,7 @@ class InMemoryUserProfileStore(UserProfileStore):
 
 from __future__ import annotations
 
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 
 from intergrax.memory.user_profile_memory import (
     UserProfile,
@@ -3337,7 +3337,7 @@ class UserProfileManager:
     async def add_memory_entry(
         self,
         user_id: str,
-        content: str,
+        entry_or_content: Union[UserProfileMemoryEntry, str],
         metadata: Optional[Dict[str, Any]] = None,
     ) -> UserProfile:
         """
@@ -3351,10 +3351,17 @@ class UserProfileManager:
         """
         profile = await self._store.get_profile(user_id)
 
-        entry = UserProfileMemoryEntry(
-            content=content,
-            metadata=metadata or {},
-        )
+        if isinstance(entry_or_content, UserProfileMemoryEntry):
+            entry = entry_or_content
+            # Ensure metadata dict exists (avoid None)
+            if entry.metadata is None:
+                entry.metadata = {}
+        else:
+            entry = UserProfileMemoryEntry(
+                content=str(entry_or_content),
+                metadata=metadata or {},
+            )
+
         profile.memory_entries.append(entry)
 
         await self._store.save_profile(profile)
@@ -3400,16 +3407,21 @@ class UserProfileManager:
         """
         profile = await self._store.get_profile(user_id)
 
+        found = False
         for entry in profile.memory_entries:
             if entry.entry_id == entry_id:
                 entry.deleted = True
+                found = True
                 break
+
+        if not found:
+            return profile
        
         await self._store.save_profile(profile)
 
-        profile.memory_entries = [
-            e for e in profile.memory_entries if e.entry_id != entry_id
-        ]
+        # profile.memory_entries = [
+        #     e for e in profile.memory_entries if e.entry_id != entry_id
+        # ]
 
         return profile
 
@@ -3423,12 +3435,15 @@ class UserProfileManager:
         """
         profile = await self._store.get_profile(user_id)     
         
+        changed = False
         for entry in profile.memory_entries:
-            entry.deleted=True  
+            if not entry.deleted:
+                entry.deleted=True  
+                changed = True
         
-        await self._store.save_profile(profile)
-
-        profile.memory_entries.clear()
+        if changed:
+            await self._store.save_profile(profile)
+            # profile.memory_entries.clear()
 
         return profile
     
@@ -3485,6 +3500,24 @@ class UserProfileManager:
 
         return " ".join(lines)
 
+
+    async def purge_deleted_memory_entries(self, user_id: str) -> UserProfile:
+        """
+        Permanently remove entries marked as deleted=True from the profile aggregate.
+
+        This is a maintenance operation. Normal read flows should still ignore
+        deleted entries even if purge is not called.
+        """
+        profile = await self._store.get_profile(user_id)
+
+        before = len(profile.memory_entries)
+        profile.memory_entries = [e for e in profile.memory_entries if not e.deleted]
+        after = len(profile.memory_entries)
+
+        if after != before:
+            await self._store.save_profile(profile)
+
+        return profile
 
 # ======================================================================
 # FILE: intergrax/memory/user_profile_memory.py
@@ -6585,7 +6618,7 @@ class DualRetriever:
 #   - module_group=rag
 #   - file=embedding_manager.py
 # LINES: 306
-# SHA256: e77bf68e4fe2dca3aa0bfbbe256abb3c1dbcc5ac89297e03563bc8d9880657d7
+# SHA256: f5e15925a7b84f186887bb6942a1cfe2feb0fdf80c6d1e9a1962684162591d5c
 # SYMBOLS:
 #   - class EmbeddingStats
 #   - class EmbeddingManager
@@ -6642,7 +6675,7 @@ class EmbeddingManager:
 
     def __init__(
         self,
-        provider: PROVIDERS,
+        provider: Optional[PROVIDERS] = None,
         model_name: Optional[str] = None,
         *,
         normalize: bool = True,
@@ -6658,9 +6691,9 @@ class EmbeddingManager:
         # nothing to pass here — model and key are handled by `langchain_openai.OpenAIEmbeddings`
         retries: int = 1,
         verbose: bool = True,
-    ) -> None:
-        self.provider: PROVIDERS = provider
-        self.model_name = model_name or self._default_model_for(provider)
+    ) -> None:        
+        self.provider: PROVIDERS = provider or "ollama"
+        self.model_name = model_name or self._default_model_for(self.provider)
         self.normalize = normalize
 
         self.hf_device = hf_device
@@ -9677,8 +9710,8 @@ def default_rag_system_instruction():
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=config.py
-# LINES: 207
-# SHA256: 7df36a0fc0be071834fc5f645dbeb4f7a86d4fdeb5092f917bc3f38c9f6e98d9
+# LINES: 203
+# SHA256: e4c23cdbac1d938bc1aa2ea01efbc84d5ec822d5480799919b6aebd0569e2bf1
 # SYMBOLS:
 #   - class ToolsContextScope
 #   - class ReasoningMode
@@ -9792,9 +9825,6 @@ class RuntimeConfig:
     # Enables real-time web search as an additional context layer.
     enable_websearch: bool = True
 
-    # Enables long-term memory (not yet implemented).
-    enable_long_term_memory: bool = False
-
     # Enables short-term user profile / conversational memory.
     enable_user_profile_memory: bool = True
 
@@ -9864,7 +9894,6 @@ class RuntimeConfig:
     # Memory toggles
     enable_user_profile_memory: bool = True
     enable_org_profile_memory: bool = True
-    enable_long_term_memory: bool = True
 
     # ------------------------------------------------------------------
     # MISC METADATA
@@ -11005,8 +11034,8 @@ class HistoryLayer:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime.py
-# LINES: 1183
-# SHA256: d92fff0a98555279de5342c2a60f2a0ae8ef08919e05986dc2de5d257432ede9
+# LINES: 1177
+# SHA256: 8abe77f2b1abc48d6f1d2f97c2bf4538a70d01c8cb609fa6bca4bd6d09595878
 # SYMBOLS:
 #   - class DropInKnowledgeRuntime
 # ======================================================================
@@ -11425,19 +11454,14 @@ class DropInKnowledgeRuntime:
         state.profile_user_instructions = user_instr
         state.profile_org_instructions = org_instr
 
-        # 4) Long-term memory hook (implemented in next steps)
-        #    This step is a placeholder and intentionally does nothing now.
-        if cfg.enable_long_term_memory:
-            pass
 
-        # 5) Debug info
+        # 4) Debug info
         state.debug_trace["memory_layer"] = {
             "implemented": True,
             "has_user_profile_instructions": bool(user_instr),
             "has_org_profile_instructions": bool(org_instr),
             "enable_user_profile_memory": cfg.enable_user_profile_memory,
             "enable_org_profile_memory": cfg.enable_org_profile_memory,
-            "enable_long_term_memory": cfg.enable_long_term_memory,
         }
 
         # Trace memory layer step.
@@ -11451,7 +11475,6 @@ class DropInKnowledgeRuntime:
                 "has_org_profile_instructions": bool(org_instr),
                 "enable_user_profile_memory": cfg.enable_user_profile_memory,
                 "enable_org_profile_memory": cfg.enable_org_profile_memory,
-                "enable_long_term_memory": cfg.enable_long_term_memory,
             },
         )
 
