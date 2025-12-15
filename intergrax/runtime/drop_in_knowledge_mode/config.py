@@ -105,9 +105,6 @@ class RuntimeConfig:
     # Enables real-time web search as an additional context layer.
     enable_websearch: bool = True
 
-    # Enables long-term memory (not yet implemented).
-    enable_long_term_memory: bool = False
-
     # Enables short-term user profile / conversational memory.
     enable_user_profile_memory: bool = True
 
@@ -177,7 +174,6 @@ class RuntimeConfig:
     # Memory toggles
     enable_user_profile_memory: bool = True
     enable_org_profile_memory: bool = True
-    enable_long_term_memory: bool = True
 
     # ------------------------------------------------------------------
     # MISC METADATA

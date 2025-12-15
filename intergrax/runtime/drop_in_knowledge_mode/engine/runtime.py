@@ -413,19 +413,14 @@ class DropInKnowledgeRuntime:
         state.profile_user_instructions = user_instr
         state.profile_org_instructions = org_instr
 
-        # 4) Long-term memory hook (implemented in next steps)
-        #    This step is a placeholder and intentionally does nothing now.
-        if cfg.enable_long_term_memory:
-            pass
 
-        # 5) Debug info
+        # 4) Debug info
         state.debug_trace["memory_layer"] = {
             "implemented": True,
             "has_user_profile_instructions": bool(user_instr),
             "has_org_profile_instructions": bool(org_instr),
             "enable_user_profile_memory": cfg.enable_user_profile_memory,
             "enable_org_profile_memory": cfg.enable_org_profile_memory,
-            "enable_long_term_memory": cfg.enable_long_term_memory,
         }
 
         # Trace memory layer step.
@@ -439,7 +434,6 @@ class DropInKnowledgeRuntime:
                 "has_org_profile_instructions": bool(org_instr),
                 "enable_user_profile_memory": cfg.enable_user_profile_memory,
                 "enable_org_profile_memory": cfg.enable_org_profile_memory,
-                "enable_long_term_memory": cfg.enable_long_term_memory,
             },
         )
 
