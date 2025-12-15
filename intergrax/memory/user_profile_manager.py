@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 
 from intergrax.memory.user_profile_memory import (
     UserProfile,
@@ -119,7 +119,7 @@ class UserProfileManager:
     async def add_memory_entry(
         self,
         user_id: str,
-        content: str,
+        entry_or_content: Union[UserProfileMemoryEntry, str],
         metadata: Optional[Dict[str, Any]] = None,
     ) -> UserProfile:
         """
@@ -133,10 +133,17 @@ class UserProfileManager:
         """
         profile = await self._store.get_profile(user_id)
 
-        entry = UserProfileMemoryEntry(
-            content=content,
-            metadata=metadata or {},
-        )
+        if isinstance(entry_or_content, UserProfileMemoryEntry):
+            entry = entry_or_content
+            # Ensure metadata dict exists (avoid None)
+            if entry.metadata is None:
+                entry.metadata = {}
+        else:
+            entry = UserProfileMemoryEntry(
+                content=str(entry_or_content),
+                metadata=metadata or {},
+            )
+
         profile.memory_entries.append(entry)
 
         await self._store.save_profile(profile)
@@ -182,16 +189,21 @@ class UserProfileManager:
         """
         profile = await self._store.get_profile(user_id)
 
+        found = False
         for entry in profile.memory_entries:
             if entry.entry_id == entry_id:
                 entry.deleted = True
+                found = True
                 break
+
+        if not found:
+            return profile
        
         await self._store.save_profile(profile)
 
-        profile.memory_entries = [
-            e for e in profile.memory_entries if e.entry_id != entry_id
-        ]
+        # profile.memory_entries = [
+        #     e for e in profile.memory_entries if e.entry_id != entry_id
+        # ]
 
         return profile
 
@@ -205,12 +217,15 @@ class UserProfileManager:
         """
         profile = await self._store.get_profile(user_id)     
         
+        changed = False
         for entry in profile.memory_entries:
-            entry.deleted=True  
+            if not entry.deleted:
+                entry.deleted=True  
+                changed = True
         
-        await self._store.save_profile(profile)
-
-        profile.memory_entries.clear()
+        if changed:
+            await self._store.save_profile(profile)
+            # profile.memory_entries.clear()
 
         return profile
     
@@ -267,3 +282,21 @@ class UserProfileManager:
 
         return " ".join(lines)
 
+
+    async def purge_deleted_memory_entries(self, user_id: str) -> UserProfile:
+        """
+        Permanently remove entries marked as deleted=True from the profile aggregate.
+
+        This is a maintenance operation. Normal read flows should still ignore
+        deleted entries even if purge is not called.
+        """
+        profile = await self._store.get_profile(user_id)
+
+        before = len(profile.memory_entries)
+        profile.memory_entries = [e for e in profile.memory_entries if not e.deleted]
+        after = len(profile.memory_entries)
+
+        if after != before:
+            await self._store.save_profile(profile)
+
+        return profile
