@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass, asdict, field
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
+import uuid
 
 MessageRole = Literal["system", "user", "assistant", "tool"]
 
@@ -39,9 +40,8 @@ class ChatMessage:
     """
 
     role: MessageRole
-    content: str
-
-    entry_id: Optional[int] = None
+    content: str    
+    entry_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     deleted: bool = False
     modified: bool = False    
     created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())

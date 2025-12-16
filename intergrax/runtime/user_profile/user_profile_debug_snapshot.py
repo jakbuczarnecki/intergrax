@@ -43,7 +43,7 @@ class MemoryEntryDebugView:
     The full UserProfileMemoryEntry remains owned by the memory layer.
     """
 
-    entry_id: Optional[int]
+    entry_id: Optional[str]
     kind: str
     title: Optional[str]
     content: str

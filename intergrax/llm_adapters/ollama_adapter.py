@@ -173,7 +173,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         lc_msgs = self._to_lc_messages(messages)
         kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
         res = self.chat.invoke(lc_msgs, **kwargs)
-        return getattr(res, "content", None) or str(res)
+        return res.content or str(res)
 
     def stream_messages(
         self,
@@ -187,7 +187,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
 
         try:
             for chunk in self.chat.stream(lc_msgs, **kwargs):
-                c = getattr(chunk, "content", None)
+                c = chunk.content
                 if c:
                     yield c
         except Exception:
@@ -232,7 +232,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
 
         kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
         res = self.chat.invoke(lc_msgs, **kwargs)
-        txt = getattr(res, "content", None) or str(res)
+        txt = res.content or str(res)
 
         json_str = _extract_json_object(txt) or txt.strip()
         if not json_str:

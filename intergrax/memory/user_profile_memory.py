@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional
+import uuid
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 
@@ -45,7 +46,7 @@ class UserProfileMemoryEntry:
     """
 
     # Persistent identifier in the storage backend.
-    entry_id: Optional[int] = None
+    entry_id: str = field(default_factory=lambda: uuid.uuid4().hex)
 
     # Main content of the memory entry (human-readable text).
     content: str = ""
@@ -161,7 +162,7 @@ class UserProfile:
     # Versioning / metadata hook if needed.
     version: int = 1    
 
-    entry_id: Optional[int] = None
+    entry_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     deleted: bool = False
     modified: bool = False
 

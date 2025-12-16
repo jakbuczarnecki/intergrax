@@ -138,7 +138,7 @@ class SessionMemoryConsolidationService:
             session_id=session_id,
         )
 
-        llm_output = await self._call_llm(prompt_text)
+        llm_output = self._call_llm(prompt_text)
         parsed = self._parse_llm_output(llm_output)
 
         if parsed is None:
@@ -339,7 +339,7 @@ Conversation:
 """
 
 
-    async def _call_llm(self, prompt_text: str) -> str:
+    def _call_llm(self, prompt_text: str) -> str:
         """
         Call the underlying LLMAdapter.generate_messages with a simple
         system+user prompt.
@@ -358,7 +358,7 @@ Conversation:
             ),
         ]
 
-        return await self._llm.generate_messages(
+        return  self._llm.generate_messages(
             messages=messages,
             temperature=self._config.temperature,
             max_tokens=None,
