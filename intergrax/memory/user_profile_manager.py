@@ -121,7 +121,7 @@ class UserProfileManager:
         user_id: str,
         entry_or_content: Union[UserProfileMemoryEntry, str],
         metadata: Optional[Dict[str, Any]] = None,
-    ) -> UserProfile:
+    ) -> UserProfileMemoryEntry:
         """
         Append a new long-term memory entry to the user's profile.
 
@@ -148,12 +148,12 @@ class UserProfileManager:
 
         await self._store.save_profile(profile)
         
-        return profile
+        return entry
 
     async def update_memory_entry(
         self,
         user_id: str,
-        entry_id: int,
+        entry_id: str,
         *,
         content: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
@@ -182,7 +182,7 @@ class UserProfileManager:
     async def remove_memory_entry(
         self,
         user_id: str,
-        entry_id: int,
+        entry_id: str,
     ) -> UserProfile:
         """
         Remove a single long-term memory entry identified by `entry_id`.

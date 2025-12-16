@@ -105,7 +105,7 @@ class UserProfileInstructionsService:
             return profile.system_instructions
 
         prompt_text = self._build_prompt(profile)
-        raw_instructions = await self._call_llm(prompt_text)
+        raw_instructions = self._call_llm(prompt_text)
 
         instructions = raw_instructions.strip()
         if len(instructions) > self._config.max_chars:
@@ -197,7 +197,7 @@ OUTPUT FORMAT:
 - Do NOT output JSON, XML or any machine-readable markup.
 """
 
-    async def _call_llm(self, prompt_text: str) -> str:
+    def _call_llm(self, prompt_text: str) -> str:
         """
         Delegate generation to the underlying LLMAdapter.
 
@@ -217,7 +217,7 @@ OUTPUT FORMAT:
         ]
 
         # LLMAdapter.generate_messages() returns a plain string.
-        return await self._llm.generate_messages(
+        return self._llm.generate_messages(
             messages,
             temperature=None,
             max_tokens=None,
