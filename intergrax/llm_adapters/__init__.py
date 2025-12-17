@@ -1,9 +1,11 @@
 # intergrax/llm_adapters/__init__.py
 
+from intergrax.llm_adapters.claude_adapter import ClaudeChatAdapter
 from .base import (
     LLMAdapter,
     LLMAdapterRegistry,
     BaseModel,
+    LLMProvider,
     _extract_json_object,
     _model_json_schema,
     _validate_with_model,
@@ -20,6 +22,7 @@ __all__ = [
     "OpenAIChatResponsesAdapter",
     "GeminiChatAdapter",
     "LangChainOllamaAdapter",
+    "ClaudeChatAdapter",
     "_extract_json_object",
     "_model_json_schema",
     "_validate_with_model",
@@ -27,6 +30,7 @@ __all__ = [
 ]
 
 # Default adapter registrations
-LLMAdapterRegistry.register("openai", lambda **kw: OpenAIChatResponsesAdapter(**kw))
-LLMAdapterRegistry.register("gemini", lambda **kw: GeminiChatAdapter(**kw))
-LLMAdapterRegistry.register("ollama", lambda **kw: LangChainOllamaAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.OPENAI, lambda **kw: OpenAIChatResponsesAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.GEMINI, lambda **kw: GeminiChatAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.OLLAMA, lambda **kw: LangChainOllamaAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.CLAUDE, lambda **kw: ClaudeChatAdapter(**kw))

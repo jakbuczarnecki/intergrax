@@ -9,6 +9,7 @@ from typing import Dict, Optional, Tuple, List
 
 # === Twoje komponenty ===
 from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.llm_adapters.base import LLMProvider
 from intergrax.rag.rag_answerer import (
     RagAnswerer,
     AnswererConfig,
@@ -88,9 +89,7 @@ def _get_reranker() -> ReRanker:
 
 
 def _build_llm_adapter(model_name: str):
-    from  langchain_ollama import ChatOllama
-    chat = ChatOllama(model=model_name)
-    return LLMAdapterRegistry.create("ollama", chat=chat)
+    return LLMAdapterRegistry.create(LLMProvider.OLLAMA)
 
 
 def _default_user_prompt() -> str:

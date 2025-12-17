@@ -3,9 +3,11 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from enum import Enum
 from typing import Protocol, Sequence, Iterable, Optional, Any, Dict, Union, List, TYPE_CHECKING
 import json
 import re
+from requests_cache import Callable
 import tiktoken
 
 # if TYPE_CHECKING:
@@ -24,6 +26,7 @@ __all__ = [
     "_model_json_schema",
     "_validate_with_model",
     "_map_messages_to_openai",
+    "LLMProvider",
 ]
 
 # ============================================================
@@ -35,6 +38,14 @@ try:
 except Exception:  # pragma: no cover - pydantic not installed
     class BaseModel: ...
     _HAS_PYDANTIC = False
+
+
+class LLMProvider(str, Enum):
+    OPENAI = "openai"
+    GEMINI = "gemini"
+    OLLAMA = "ollama"
+    MISTRAL = "mistral"
+    CLAUDE = "claude"
 
 
 def _strip_code_fences(text: str) -> str:
@@ -314,23 +325,25 @@ def _map_messages_to_openai(msgs: Sequence[ChatMessage]) -> List[Dict[str, Any]]
 # Adapter registry
 # ============================================================
 class LLMAdapterRegistry:
-    """
-    Simple string-keyed registry for LLM adapter factories.
+    _factories: Dict[str, Callable[..., "LLMAdapter"]] = {}
 
-    Usage:
-        LLMAdapterRegistry.register("openai", lambda **kw: OpenAIChatResponsesAdapter(**kw))
-        adapter = LLMAdapterRegistry.create("openai", client=..., model=...)
-    """
-
-    _registry: Dict[str, Any] = {}
-
-    @classmethod
-    def register(cls, name: str, factory) -> None:
-        cls._registry[name.lower()] = factory
+    @staticmethod
+    def _normalize_provider(provider: Union[str, LLMProvider]) -> str:
+        if isinstance(provider, LLMProvider):
+            return provider.value
+        p = str(provider).strip().lower()
+        if not p:
+            raise ValueError("provider must not be empty")
+        return p
 
     @classmethod
-    def create(cls, name: str, **kwargs) -> LLMAdapter:
-        key = name.lower()
-        if key not in cls._registry:
-            raise ValueError(f"Unknown adapter: {name}")
-        return cls._registry[key](**kwargs)
+    def register(cls, provider: Union[str, LLMProvider], factory: Callable[..., "LLMAdapter"]) -> None:
+        key = cls._normalize_provider(provider)
+        cls._factories[key] = factory
+
+    @classmethod
+    def create(cls, provider: Union[str, LLMProvider], **kwargs) -> "LLMAdapter":
+        key = cls._normalize_provider(provider)
+        if key not in cls._factories:
+            raise ValueError(f"LLM adapter not registered for provider='{key}'")
+        return cls._factories[key](**kwargs)
