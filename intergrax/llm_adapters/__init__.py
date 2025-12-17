@@ -1,17 +1,20 @@
 # intergrax/llm_adapters/__init__.py
 
+from INTERGRAX_ENGINE_BUNDLE import GeminiChatAdapter, LangChainOllamaAdapter, OpenAIChatResponsesAdapter
+from intergrax.llm_adapters.aws_bedrock_adapter import BedrockChatAdapter
+from intergrax.llm_adapters.azure_openai_adapter import AzureOpenAIChatAdapter
+from intergrax.llm_adapters.claude_adapter import ClaudeChatAdapter
+from intergrax.llm_adapters.mistral_adapter import MistralChatAdapter
 from .base import (
     LLMAdapter,
     LLMAdapterRegistry,
     BaseModel,
+    LLMProvider,
     _extract_json_object,
     _model_json_schema,
     _validate_with_model,
     _map_messages_to_openai,
 )
-from .openai_responses_adapter import OpenAIChatResponsesAdapter
-from .gemini_adapter import GeminiChatAdapter
-from .ollama_adapter import LangChainOllamaAdapter
 
 __all__ = [
     "LLMAdapter",
@@ -20,6 +23,10 @@ __all__ = [
     "OpenAIChatResponsesAdapter",
     "GeminiChatAdapter",
     "LangChainOllamaAdapter",
+    "ClaudeChatAdapter",
+    "MistralChatAdapter",
+    "AzureOpenAIChatAdapter",
+    "BedrockChatAdapter",
     "_extract_json_object",
     "_model_json_schema",
     "_validate_with_model",
@@ -27,6 +34,10 @@ __all__ = [
 ]
 
 # Default adapter registrations
-LLMAdapterRegistry.register("openai", lambda **kw: OpenAIChatResponsesAdapter(**kw))
-LLMAdapterRegistry.register("gemini", lambda **kw: GeminiChatAdapter(**kw))
-LLMAdapterRegistry.register("ollama", lambda **kw: LangChainOllamaAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.OPENAI, lambda **kw: OpenAIChatResponsesAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.GEMINI, lambda **kw: GeminiChatAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.OLLAMA, lambda **kw: LangChainOllamaAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.CLAUDE, lambda **kw: ClaudeChatAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.MISTRAL, lambda **kw: MistralChatAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.AZURE_OPENAI, lambda **kw: AzureOpenAIChatAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.AWS_BEDROCK, lambda **kw: BedrockChatAdapter(**kw))

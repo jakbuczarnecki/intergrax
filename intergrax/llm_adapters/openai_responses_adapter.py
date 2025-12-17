@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, Iterable, Optional, Sequence, List
 from openai import Client
+from openai.types.responses import Response
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.base import (
@@ -103,23 +104,23 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
             )
         return items
 
-    def _collect_output_text(self, response) -> str:
+    def _collect_output_text(self, response: Response) -> str:
         """
         Extract the assistant's output text from a Responses API result.
 
         Prefer response.output_text when available, otherwise aggregate
         all text blocks from response.output[*].content[*] where type == "output_text".
         """
-        txt = getattr(response, "output_text", None)
+        txt = response.output_text
         if txt:
             return txt
-
+        
         chunks: List[str] = []
-        for item in getattr(response, "output", []) or []:
-            if getattr(item, "type", None) == "message":
-                for c in getattr(item, "content", []) or []:
-                    if getattr(c, "type", None) == "output_text":
-                        chunks.append(getattr(c, "text", "") or "")
+        for item in response.output or []:
+            if item.type == "message":
+                for c in item.content or []:
+                    if c.type == "output_text":
+                        chunks.append(c.text or "")
         return "".join(chunks)
         
 
@@ -177,7 +178,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         if max_tokens is not None:
             payload["max_output_tokens"] = max_tokens
 
-        stream = self.client.responses.create(**payload, **self.defaults)
+        stream = self.client.responses.stream(**payload, **self.defaults)
         for ev in stream:
             # We are interested in "response.output_text.delta" events
             if getattr(ev, "type", None) == "response.output_text.delta":
@@ -230,31 +231,31 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         if max_tokens is not None:
             payload["max_output_tokens"] = max_tokens
 
-        response = self.client.responses.create(**payload, **self.defaults)
+        response: Response = self.client.responses.create(**payload, **self.defaults)
 
         # Assistant text (if present)
         content = self._collect_output_text(response)
 
         # Extract tool calls in a format compatible with Chat Completions
         native_tool_calls: List[Dict[str, Any]] = []
-        for item in getattr(response, "output", []) or []:
-            if getattr(item, "type", None) == "function_call":
-                args = getattr(item, "arguments", "{}")
+        for item in response.output or []:
+            if item.type == "function_call":
+                args = item.arguments
                 if not isinstance(args, str):
                     args = json.dumps(args, ensure_ascii=False)
 
                 native_tool_calls.append(
                     {
-                        "id": getattr(item, "call_id", None),
+                        "id": item.call_id,
                         "type": "function",
                         "function": {
-                            "name": getattr(item, "name", None),
+                            "name": item.name,
                             "arguments": args,
                         },
                     }
                 )
 
-        finish_reason = getattr(response, "status", None) or "completed"
+        finish_reason = response.status or "completed"
 
         return {
             "content": content or "",
@@ -318,7 +319,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         if max_tokens is not None:
             payload["max_output_tokens"] = max_tokens
 
-        response = self.client.responses.create(**payload, **self.defaults)
+        response : Response = self.client.responses.create(**payload, **self.defaults)
 
         txt = self._collect_output_text(response)
         json_str = _extract_json_object(txt) or txt.strip()

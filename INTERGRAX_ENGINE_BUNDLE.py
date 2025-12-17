@@ -36,7 +36,7 @@
 # - websearch/
 #
 # Files included: 117
-# Total lines: 20081
+# Total lines: 20082
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
@@ -66,20 +66,20 @@
 # - intergrax/globals/settings.py | intergrax.globals.settings | globals | 96 | c27862674028
 # - intergrax/llm/__init__.py | intergrax.llm | llm | 0 | e3b0c44298fc
 # - intergrax/llm/llm_adapters_legacy.py | intergrax.llm.llm_adapters_legacy | llm | 722 | d8b23a113fab
-# - intergrax/llm/messages.py | intergrax.llm.messages | llm | 97 | 5a1ccfac1016
+# - intergrax/llm/messages.py | intergrax.llm.messages | llm | 97 | 5d5feec8a7c4
 # - intergrax/llm_adapters/__init__.py | intergrax.llm_adapters | llm_adapters | 32 | 46e63774b46b
 # - intergrax/llm_adapters/base.py | intergrax.llm_adapters.base | llm_adapters | 336 | 263844146472
 # - intergrax/llm_adapters/gemini_adapter.py | intergrax.llm_adapters.gemini_adapter | llm_adapters | 126 | aade42a5a263
-# - intergrax/llm_adapters/ollama_adapter.py | intergrax.llm_adapters.ollama_adapter | llm_adapters | 257 | 9949b7fb0057
+# - intergrax/llm_adapters/ollama_adapter.py | intergrax.llm_adapters.ollama_adapter | llm_adapters | 257 | 6b70bef17763
 # - intergrax/llm_adapters/openai_responses_adapter.py | intergrax.llm_adapters.openai_responses_adapter | llm_adapters | 328 | 19e22314f566
 # - intergrax/memory/__init__.py | intergrax.memory | memory | 0 | e3b0c44298fc
 # - intergrax/memory/conversational_memory.py | intergrax.memory.conversational_memory | memory | 123 | e5e9f9312647
 # - intergrax/memory/conversational_store.py | intergrax.memory.conversational_store | memory | 106 | 291f5ffa339e
 # - intergrax/memory/stores/__init__.py | intergrax.memory.stores | memory | 0 | e3b0c44298fc
-# - intergrax/memory/stores/in_memory_conversational_store.py | intergrax.memory.stores.in_memory_conversational_store | memory | 95 | d6bc9b36d93e
+# - intergrax/memory/stores/in_memory_conversational_store.py | intergrax.memory.stores.in_memory_conversational_store | memory | 95 | 445319c34e4c
 # - intergrax/memory/stores/in_memory_user_profile_store.py | intergrax.memory.stores.in_memory_user_profile_store | memory | 59 | 9c1690d3981d
-# - intergrax/memory/user_profile_manager.py | intergrax.memory.user_profile_manager | memory | 302 | 20f205f0d17e
-# - intergrax/memory/user_profile_memory.py | intergrax.memory.user_profile_memory | memory | 167 | b742d06f0359
+# - intergrax/memory/user_profile_manager.py | intergrax.memory.user_profile_manager | memory | 302 | b18dc194c491
+# - intergrax/memory/user_profile_memory.py | intergrax.memory.user_profile_memory | memory | 168 | 1e835ef567d2
 # - intergrax/memory/user_profile_store.py | intergrax.memory.user_profile_store | memory | 52 | ea286a228ae9
 # - intergrax/multimedia/__init__.py | intergrax.multimedia | multimedia | 0 | e3b0c44298fc
 # - intergrax/multimedia/audio_loader.py | intergrax.multimedia.audio_loader | multimedia | 49 | e3fdeea55543
@@ -137,10 +137,10 @@
 # - intergrax/runtime/organization/stores/__init__.py | intergrax.runtime.organization.stores | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/organization/stores/in_memory_organization_profile_store.py | intergrax.runtime.organization.stores.in_memory_organization_profile_store | runtime | 59 | 54ad9b6060ed
 # - intergrax/runtime/user_profile/__init__.py | intergrax.runtime.user_profile | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/user_profile/session_memory_consolidation_service.py | intergrax.runtime.user_profile.session_memory_consolidation_service | runtime | 508 | 288769edc850
+# - intergrax/runtime/user_profile/session_memory_consolidation_service.py | intergrax.runtime.user_profile.session_memory_consolidation_service | runtime | 508 | 59cec3399b14
 # - intergrax/runtime/user_profile/user_profile_debug_service.py | intergrax.runtime.user_profile.user_profile_debug_service | runtime | 194 | af5221ab8049
-# - intergrax/runtime/user_profile/user_profile_debug_snapshot.py | intergrax.runtime.user_profile.user_profile_debug_snapshot | runtime | 167 | 9f54fa8ac9bd
-# - intergrax/runtime/user_profile/user_profile_instructions_service.py | intergrax.runtime.user_profile.user_profile_instructions_service | runtime | 224 | 0112e6cbb0ed
+# - intergrax/runtime/user_profile/user_profile_debug_snapshot.py | intergrax.runtime.user_profile.user_profile_debug_snapshot | runtime | 167 | 6a4c95cd9f40
+# - intergrax/runtime/user_profile/user_profile_instructions_service.py | intergrax.runtime.user_profile.user_profile_instructions_service | runtime | 224 | 8d44a54a3115
 # - intergrax/supervisor/__init__.py | intergrax.supervisor | supervisor | 0 | e3b0c44298fc
 # - intergrax/supervisor/supervisor.py | intergrax.supervisor.supervisor | supervisor | 854 | f0303875966e
 # - intergrax/supervisor/supervisor_components.py | intergrax.supervisor.supervisor_components | supervisor | 65 | f87c0b7de5a4
@@ -178,7 +178,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 20081
+# TOTAL LINES: 20082
 # ======================================================================
 
 # ======================================================================
@@ -1473,7 +1473,7 @@ GLOBAL_SETTINGS = GlobalSettings()
 #   - module_group=llm
 #   - file=messages.py
 # LINES: 97
-# SHA256: 5a1ccfac101639633f1f830ca3e34fc33e5765d7ac73348891a42911dcc90e26
+# SHA256: 5d5feec8a7c47c82b163d53772b914f96577b3bc21474c71412a51a4f1a26d24
 # SYMBOLS:
 #   - class AttachmentRef
 #   - class ChatMessage
@@ -1488,6 +1488,7 @@ from __future__ import annotations
 from dataclasses import dataclass, asdict, field
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
+import uuid
 
 MessageRole = Literal["system", "user", "assistant", "tool"]
 
@@ -1520,9 +1521,8 @@ class ChatMessage:
     """
 
     role: MessageRole
-    content: str
-
-    entry_id: Optional[int] = None
+    content: str    
+    entry_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     deleted: bool = False
     modified: bool = False    
     created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
@@ -2130,7 +2130,7 @@ class GeminiChatAdapter(BaseLLMAdapter):
 #   - module_group=llm_adapters
 #   - file=ollama_adapter.py
 # LINES: 257
-# SHA256: 9949b7fb00577740887e80e08300caeb13e6cf1eb021da375e2e365ec82d2994
+# SHA256: 6b70bef17763263358840857723f96dc4abc801590500d9c5c13d1a3fc1eda59
 # SYMBOLS:
 #   - class LangChainOllamaAdapter
 # ======================================================================
@@ -2309,7 +2309,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         lc_msgs = self._to_lc_messages(messages)
         kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
         res = self.chat.invoke(lc_msgs, **kwargs)
-        return getattr(res, "content", None) or str(res)
+        return res.content or str(res)
 
     def stream_messages(
         self,
@@ -2323,7 +2323,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
 
         try:
             for chunk in self.chat.stream(lc_msgs, **kwargs):
-                c = getattr(chunk, "content", None)
+                c = chunk.content
                 if c:
                     yield c
         except Exception:
@@ -2368,7 +2368,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
 
         kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
         res = self.chat.invoke(lc_msgs, **kwargs)
-        txt = getattr(res, "content", None) or str(res)
+        txt = res.content or str(res)
 
         json_str = _extract_json_object(txt) or txt.strip()
         if not json_str:
@@ -3030,7 +3030,7 @@ class ConversationalMemoryStore(Protocol):
 #   - module_group=memory
 #   - file=in_memory_conversational_store.py
 # LINES: 95
-# SHA256: d6bc9b36d93ec24d7cdfb304d3925aefbc34207a8ef97b95ca582f3a8b1df639
+# SHA256: 445319c34e4c60e64f7dcc26379de6752dc0e316fe15a083dd1df298fff6835e
 # SYMBOLS:
 #   - class InMemoryConversationalMemoryStore
 # ======================================================================
@@ -3108,7 +3108,7 @@ class InMemoryConversationalMemoryStore(ConversationalMemoryStore):
         Append message in memory and persist the updated state.
         """
         # First apply runtime logic (includes trimming & locking)
-        memory.add(message)
+        memory.add(message.role, message.content)
 
         # Then persist the new state
         if memory.session_id not in self._sessions:
@@ -3212,7 +3212,7 @@ class InMemoryUserProfileStore(UserProfileStore):
 #   - module_group=memory
 #   - file=user_profile_manager.py
 # LINES: 302
-# SHA256: 20f205f0d17e95d069dfcf6091130279cd5b8af44e7a0e246ae9d4f03b36f067
+# SHA256: b18dc194c491bf414f18932d5626c2cff6b36565ff3d9d196de842c91e476421
 # SYMBOLS:
 #   - class UserProfileManager
 # ======================================================================
@@ -3339,7 +3339,7 @@ class UserProfileManager:
         user_id: str,
         entry_or_content: Union[UserProfileMemoryEntry, str],
         metadata: Optional[Dict[str, Any]] = None,
-    ) -> UserProfile:
+    ) -> UserProfileMemoryEntry:
         """
         Append a new long-term memory entry to the user's profile.
 
@@ -3366,12 +3366,12 @@ class UserProfileManager:
 
         await self._store.save_profile(profile)
         
-        return profile
+        return entry
 
     async def update_memory_entry(
         self,
         user_id: str,
-        entry_id: int,
+        entry_id: str,
         *,
         content: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
@@ -3400,7 +3400,7 @@ class UserProfileManager:
     async def remove_memory_entry(
         self,
         user_id: str,
-        entry_id: int,
+        entry_id: str,
     ) -> UserProfile:
         """
         Remove a single long-term memory entry identified by `entry_id`.
@@ -3527,8 +3527,8 @@ class UserProfileManager:
 #   - package=intergrax
 #   - module_group=memory
 #   - file=user_profile_memory.py
-# LINES: 167
-# SHA256: b742d06f0359b9b4580ff6d2fc76a751336332b00df6a8e0c200b833ba84928d
+# LINES: 168
+# SHA256: 1e835ef567d238bcf8e296a5d9c0adf28ae48ef59f416f87adc1cca104d18523
 # SYMBOLS:
 #   - class MemoryKind
 #   - class MemoryImportance
@@ -3547,6 +3547,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional
+import uuid
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 
@@ -3584,7 +3585,7 @@ class UserProfileMemoryEntry:
     """
 
     # Persistent identifier in the storage backend.
-    entry_id: Optional[int] = None
+    entry_id: str = field(default_factory=lambda: uuid.uuid4().hex)
 
     # Main content of the memory entry (human-readable text).
     content: str = ""
@@ -3700,7 +3701,7 @@ class UserProfile:
     # Versioning / metadata hook if needed.
     version: int = 1    
 
-    entry_id: Optional[int] = None
+    entry_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     deleted: bool = False
     modified: bool = False
 
@@ -15488,7 +15489,7 @@ class InMemoryOrganizationProfileStore(OrganizationProfileStore):
 #   - module_group=runtime
 #   - file=session_memory_consolidation_service.py
 # LINES: 508
-# SHA256: 288769edc850765b71626112fac35f33c9a427e48b1aa0f64e9bc3e377af3285
+# SHA256: 59cec3399b1434a57ecb6a748f921f882b21fa23214d1bebb5ab2d0526b5e397
 # SYMBOLS:
 #   - class SessionMemoryConsolidationConfig
 #   - class SessionMemoryConsolidationService
@@ -15633,7 +15634,7 @@ class SessionMemoryConsolidationService:
             session_id=session_id,
         )
 
-        llm_output = await self._call_llm(prompt_text)
+        llm_output = self._call_llm(prompt_text)
         parsed = self._parse_llm_output(llm_output)
 
         if parsed is None:
@@ -15834,7 +15835,7 @@ Conversation:
 """
 
 
-    async def _call_llm(self, prompt_text: str) -> str:
+    def _call_llm(self, prompt_text: str) -> str:
         """
         Call the underlying LLMAdapter.generate_messages with a simple
         system+user prompt.
@@ -15853,7 +15854,7 @@ Conversation:
             ),
         ]
 
-        return await self._llm.generate_messages(
+        return  self._llm.generate_messages(
             messages=messages,
             temperature=self._config.temperature,
             max_tokens=None,
@@ -16219,7 +16220,7 @@ class UserProfileDebugService:
 #   - module_group=runtime
 #   - file=user_profile_debug_snapshot.py
 # LINES: 167
-# SHA256: 9f54fa8ac9bd54cbf12bee3abdb723c4762d99fcec77a058d006eb91c4cf424e
+# SHA256: 6a4c95cd9f40ac24cf333db2df98378fda7c807447ea3ba90a461c1079d02b54
 # SYMBOLS:
 #   - class SessionDebugView
 #   - class MemoryEntryDebugView
@@ -16270,7 +16271,7 @@ class MemoryEntryDebugView:
     The full UserProfileMemoryEntry remains owned by the memory layer.
     """
 
-    entry_id: Optional[int]
+    entry_id: Optional[str]
     kind: str
     title: Optional[str]
     content: str
@@ -16402,7 +16403,7 @@ class UserProfileDebugSnapshot:
 #   - module_group=runtime
 #   - file=user_profile_instructions_service.py
 # LINES: 224
-# SHA256: 0112e6cbb0ed0267f1ab98651458238e5d0563b51d97b8025ca6470be972cbb0
+# SHA256: 8d44a54a31154c781dff8743b8cda6478f4a3a68bceee50d5add58266b228c25
 # SYMBOLS:
 #   - class UserProfileInstructionsConfig
 #   - class UserProfileInstructionsService
@@ -16514,7 +16515,7 @@ class UserProfileInstructionsService:
             return profile.system_instructions
 
         prompt_text = self._build_prompt(profile)
-        raw_instructions = await self._call_llm(prompt_text)
+        raw_instructions = self._call_llm(prompt_text)
 
         instructions = raw_instructions.strip()
         if len(instructions) > self._config.max_chars:
@@ -16606,7 +16607,7 @@ OUTPUT FORMAT:
 - Do NOT output JSON, XML or any machine-readable markup.
 """
 
-    async def _call_llm(self, prompt_text: str) -> str:
+    def _call_llm(self, prompt_text: str) -> str:
         """
         Delegate generation to the underlying LLMAdapter.
 
@@ -16626,7 +16627,7 @@ OUTPUT FORMAT:
         ]
 
         # LLMAdapter.generate_messages() returns a plain string.
-        return await self._llm.generate_messages(
+        return self._llm.generate_messages(
             messages,
             temperature=None,
             max_tokens=None,
