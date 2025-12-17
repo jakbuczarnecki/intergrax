@@ -46,6 +46,7 @@ class LLMProvider(str, Enum):
     OLLAMA = "ollama"
     MISTRAL = "mistral"
     CLAUDE = "claude"
+    AZURE_OPENAI = "azure_openai"
 
 
 def _strip_code_fences(text: str) -> str:

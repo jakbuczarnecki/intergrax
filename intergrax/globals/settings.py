@@ -80,6 +80,13 @@ class GlobalSettings:
     # Default Mistral chat model.
     default_mistral_model: str = os.getenv("INTERGRAX_DEFAULT_MISTRAL_MODEL", "mistral-large-latest")
 
+
+    azure_openai_endpoint: str = os.getenv("INTERGRAX_DEFAULT_AZURE_OPENAI_ENDPOINT", "")
+    
+    azure_openai_api_version: str = os.getenv("INTERGRAX_DEFAULT_AZURE_OPENAI_API_VERSION", "")
+
+    default_azure_openai_deployment: str = os.getenv("INTERGRAX_DEFAULT_AZURE_OPENAI_DEPLOYMENT", "")
+
     # ------------------------------------------------------------------
     # Session memory / consolidation defaults
     # ------------------------------------------------------------------
