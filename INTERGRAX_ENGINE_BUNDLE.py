@@ -35,20 +35,20 @@
 # - tools/
 # - websearch/
 #
-# Files included: 117
-# Total lines: 20082
+# Files included: 120
+# Total lines: 20670
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
 # ROOT: D:\Projekty\intergrax
 # PACKAGE: intergrax
-# FILES: 117
+# FILES: 120
 #
 # MODULE MAP (dynamic):
 # - chains/ (2 files)
 # - globals/ (2 files)
-# - llm/ (3 files)
-# - llm_adapters/ (5 files)
+# - llm/ (2 files)
+# - llm_adapters/ (9 files)
 # - memory/ (9 files)
 # - multimedia/ (5 files)
 # - openai/ (3 files)
@@ -63,15 +63,18 @@
 # - intergrax/chains/__init__.py | intergrax.chains | chains | 0 | e3b0c44298fc
 # - intergrax/chains/langchain_qa_chain.py | intergrax.chains.langchain_qa_chain | chains | 374 | 4345775d43b8
 # - intergrax/globals/__init__.py | intergrax.globals | globals | 0 | e3b0c44298fc
-# - intergrax/globals/settings.py | intergrax.globals.settings | globals | 96 | c27862674028
+# - intergrax/globals/settings.py | intergrax.globals.settings | globals | 118 | 2c072be447af
 # - intergrax/llm/__init__.py | intergrax.llm | llm | 0 | e3b0c44298fc
-# - intergrax/llm/llm_adapters_legacy.py | intergrax.llm.llm_adapters_legacy | llm | 722 | d8b23a113fab
 # - intergrax/llm/messages.py | intergrax.llm.messages | llm | 97 | 5d5feec8a7c4
-# - intergrax/llm_adapters/__init__.py | intergrax.llm_adapters | llm_adapters | 32 | 46e63774b46b
-# - intergrax/llm_adapters/base.py | intergrax.llm_adapters.base | llm_adapters | 336 | 263844146472
-# - intergrax/llm_adapters/gemini_adapter.py | intergrax.llm_adapters.gemini_adapter | llm_adapters | 126 | aade42a5a263
+# - intergrax/llm_adapters/__init__.py | intergrax.llm_adapters | llm_adapters | 43 | 21c943dff256
+# - intergrax/llm_adapters/aws_bedrock_adapter.py | intergrax.llm_adapters.aws_bedrock_adapter | llm_adapters | 531 | 2963227c8aad
+# - intergrax/llm_adapters/azure_openai_adapter.py | intergrax.llm_adapters.azure_openai_adapter | llm_adapters | 231 | 8c7fa5b5b5b8
+# - intergrax/llm_adapters/base.py | intergrax.llm_adapters.base | llm_adapters | 351 | 1527154b8284
+# - intergrax/llm_adapters/claude_adapter.py | intergrax.llm_adapters.claude_adapter | llm_adapters | 168 | 0d18f9319fb1
+# - intergrax/llm_adapters/gemini_adapter.py | intergrax.llm_adapters.gemini_adapter | llm_adapters | 238 | 7043ae0404ba
+# - intergrax/llm_adapters/mistral_adapter.py | intergrax.llm_adapters.mistral_adapter | llm_adapters | 219 | b12c2701989a
 # - intergrax/llm_adapters/ollama_adapter.py | intergrax.llm_adapters.ollama_adapter | llm_adapters | 257 | 6b70bef17763
-# - intergrax/llm_adapters/openai_responses_adapter.py | intergrax.llm_adapters.openai_responses_adapter | llm_adapters | 328 | 19e22314f566
+# - intergrax/llm_adapters/openai_responses_adapter.py | intergrax.llm_adapters.openai_responses_adapter | llm_adapters | 329 | a0d02ef1bd7a
 # - intergrax/memory/__init__.py | intergrax.memory | memory | 0 | e3b0c44298fc
 # - intergrax/memory/conversational_memory.py | intergrax.memory.conversational_memory | memory | 123 | e5e9f9312647
 # - intergrax/memory/conversational_store.py | intergrax.memory.conversational_store | memory | 106 | 291f5ffa339e
@@ -178,7 +181,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 20082
+# TOTAL LINES: 20670
 # ======================================================================
 
 # ======================================================================
@@ -611,8 +614,8 @@ class LangChainQAChain:
 #   - package=intergrax
 #   - module_group=globals
 #   - file=settings.py
-# LINES: 96
-# SHA256: c27862674028b84e898d27337212407b3211ca1f17fcb33d660bb33022ce025c
+# LINES: 118
+# SHA256: 2c072be447af34cdb1493888ca3c0deb5d52e51d6fd86dd5d0b49b2bcbd01c9f
 # SYMBOLS:
 #   - class GlobalSettings
 # ======================================================================
@@ -689,6 +692,28 @@ class GlobalSettings:
         "sentence-transformers/all-MiniLM-L6-v2",
     )
 
+    # Default Google Gemini chat model.
+    default_gemini_model: str = os.getenv("INTERGRAX_DEFAULT_GEMINI_MODEL", "gemini-2.5-flash")
+
+    # Default Anthropic Claude chat model.
+    default_claude_model: str = os.getenv("INTERGRAX_DEFAULT_CLAUDE_MODEL", "claude-3-5-sonnet-latest")
+
+    # Default Mistral chat model.
+    default_mistral_model: str = os.getenv("INTERGRAX_DEFAULT_MISTRAL_MODEL", "mistral-large-latest")
+
+
+    azure_openai_endpoint: str = os.getenv("INTERGRAX_DEFAULT_AZURE_OPENAI_ENDPOINT", "")
+    
+    azure_openai_api_version: str = os.getenv("INTERGRAX_DEFAULT_AZURE_OPENAI_API_VERSION", "")
+
+    default_azure_openai_deployment: str = os.getenv("INTERGRAX_DEFAULT_AZURE_OPENAI_DEPLOYMENT", "")
+
+
+    aws_region: str = os.getenv("INTERGRAX_DEFAULT_AWS_REGION", "")
+
+
+    default_bedrock_model_id: str = os.getenv("INTERGRAX_DEFAULT_BEDROCK_MODEL_ID", "")
+
     # ------------------------------------------------------------------
     # Session memory / consolidation defaults
     # ------------------------------------------------------------------
@@ -727,742 +752,6 @@ GLOBAL_SETTINGS = GlobalSettings()
 #   - <none>
 # ======================================================================
 
-
-# ======================================================================
-# FILE: intergrax/llm/llm_adapters_legacy.py
-# MODULE: intergrax.llm.llm_adapters_legacy
-# MODULE_GROUP: llm
-# TAGS:
-#   - package=intergrax
-#   - module_group=llm
-#   - file=llm_adapters_legacy.py
-# LINES: 722
-# SHA256: d8b23a113fab3776f931599e8d95a46a328fa71e0bc30c92230357663a7525e7
-# SYMBOLS:
-#   - <none>
-# ======================================================================
-# # © Artur Czarnecki. All rights reserved.
-# # Integrax framework – proprietary and confidential.
-# # Use, modification, or distribution without written permission is prohibited.
-
-# from __future__ import annotations
-# from typing import Protocol, Sequence, Iterable, Optional, Any, Dict, Union, List
-
-# # If it's only for types – remove runtime dependency (eliminates import cycles)
-# from typing import TYPE_CHECKING
-# if TYPE_CHECKING:
-#     from .conversational_memory import ChatMessage
-# else:
-#     ChatMessage = Any  # runtime stub
-
-# import json
-# import re
-
-# __all__ = [
-#     "LLMAdapter",
-#     "OpenAIChatCompletionsAdapter",
-#     "GeminiChatAdapter",
-#     "LangChainOllamaAdapter",
-#     "LLMAdapterRegistry",
-# ]
-
-# # ============================================================
-# # Pydantic compat (v2/v1/fallback) – for structured output only
-# # ============================================================
-# try:
-#     from pydantic import BaseModel  # type: ignore
-#     _HAS_PYDANTIC = True
-# except Exception:
-#     class BaseModel: ...
-#     _HAS_PYDANTIC = False
-
-
-# def _strip_code_fences(text: str) -> str:
-#     """
-#     Removes wrappers like ```json ... ``` or ``` ... ``` if present.
-#     """
-#     if not text:
-#         return text
-#     # Remove known fence variants
-#     fence_re = r"^\s*```(?:json|JSON)?\s*(.*?)\s*```\s*$"
-#     m = re.match(fence_re, text, flags=re.DOTALL)
-#     return m.group(1) if m else text
-
-
-# def _extract_json_object(text: str) -> str:
-#     """
-#     Returns the first sensible {} as a JSON string (tolerantly trims noise).
-#     When absent, returns an empty string.
-#     """
-#     if not text:
-#         return ""
-#     text = _strip_code_fences(text).strip()
-#     start = text.find("{")
-#     end = text.rfind("}")
-#     if start == -1 or end == -1 or end <= start:
-#         return ""
-#     return text[start:end + 1]
-
-
-# def _model_json_schema(model_cls: type) -> Dict[str, Any]:
-#     """
-#     Returns JSON Schema for the model class (Pydantic v2/v1). If unavailable, a minimal schema.
-#     """
-#     # pydantic v2
-#     if hasattr(model_cls, "model_json_schema"):
-#         try:
-#             return model_cls.model_json_schema()  # type: ignore[attr-defined]
-#         except Exception:
-#             pass
-#     # pydantic v1
-#     if hasattr(model_cls, "schema"):
-#         try:
-#             return model_cls.schema()  # type: ignore[attr-defined]
-#         except Exception:
-#             pass
-#     # fallback
-#     return {"type": "object"}
-
-
-# def _validate_with_model(model_cls: type, json_str: str):
-#     """
-#     Validates and creates a model instance from JSON.
-#     Supports Pydantic v2, v1, and a fallback **dict constructor.
-#     """
-#     if not json_str or not json_str.strip():
-#         raise ValueError("Empty JSON content for structured output.")
-#     data = json.loads(json_str)
-
-#     # pydantic v2
-#     if hasattr(model_cls, "model_validate_json"):
-#         try:
-#             return model_cls.model_validate_json(json_str)  # type: ignore[attr-defined]
-#         except Exception:
-#             pass
-#     if hasattr(model_cls, "model_validate"):
-#         try:
-#             return model_cls.model_validate(data)  # type: ignore[attr-defined]
-#         except Exception:
-#             pass
-
-#     # pydantic v1
-#     if hasattr(model_cls, "parse_raw"):
-#         try:
-#             return model_cls.parse_raw(json_str)  # type: ignore[attr-defined]
-#         except Exception:
-#             pass
-#     if hasattr(model_cls, "parse_obj"):
-#         try:
-#             return model_cls.parse_obj(data)  # type: ignore[attr-defined]
-#         except Exception:
-#             pass
-
-#     # fallback (plain class/dataclass with a compatible __init__)
-#     try:
-#         return model_cls(**data)
-#     except Exception as e:
-#         raise ValueError(f"Cannot validate structured output with {model_cls}: {e}")
-
-
-# # ============================================================
-# # Universal interface
-# # ============================================================
-# class LLMAdapter(Protocol):
-#     def generate_messages(
-#         self, messages: Sequence[ChatMessage], *, temperature: float = 0.2, max_tokens: Optional[int] = None
-#     ) -> str: ...
-
-#     def stream_messages(
-#         self, messages: Sequence[ChatMessage], *, temperature: float = 0.2, max_tokens: Optional[int] = None
-#     ) -> Iterable[str]: ...
-
-#     # ---- Tools (optional) ----
-#     def supports_tools(self) -> bool: ...
-#     def generate_with_tools(
-#         self,
-#         messages: Sequence[ChatMessage],
-#         tools_schema: List[Dict[str, Any]],
-#         *,
-#         temperature: float = 0.2,
-#         max_tokens: Optional[int] = None,
-#         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
-#     ) -> Dict[str, Any]: ...
-#     def stream_with_tools(
-#         self,
-#         messages: Sequence[ChatMessage],
-#         tools_schema: List[Dict[str, Any]],
-#         *,
-#         temperature: float = 0.2,
-#         max_tokens: Optional[int] = None,
-#         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
-#     ) -> Iterable[Dict[str, Any]]: ...
-
-#     # ---- Structured output (optional) ----
-#     def generate_structured(
-#         self,
-#         messages: Sequence[ChatMessage],
-#         output_model: type,
-#         *,
-#         temperature: float = 0.2,
-#         max_tokens: Optional[int] = None,
-#     ): ...
-
-
-# # ============================================================
-# # Helper – convert ChatMessage → OpenAI schema
-# # ============================================================
-# def _map_messages_to_openai(msgs: Sequence[ChatMessage]) -> List[Dict[str, Any]]:
-#     out: List[Dict[str, Any]] = []
-#     for m in msgs:
-#         d: Dict[str, Any] = {"role": m.role, "content": m.content}
-#         # Tool messages must have correct id/name fields
-#         if m.role == "tool":
-#             if getattr(m, "tool_call_id", None) is not None:
-#                 d["tool_call_id"] = m.tool_call_id
-#             if getattr(m, "name", None) is not None:
-#                 d["name"] = m.name
-#         if getattr(m, "tool_calls", None):
-#             d["tool_calls"] = m.tool_calls
-#         out.append(d)
-#     return out
-
-
-# # ============================================================
-# # OpenAI Chat Completions
-# # ============================================================
-# class OpenAIChatCompletionsAdapter:
-#     """
-#     client = openai.OpenAI()
-#     OpenAIChatAdapter(client, model="gpt-4o-mini")
-#     """
-
-#     def __init__(self, client, model: str, **defaults):
-#         self.client = client
-#         self.model = model
-#         self.defaults = defaults
-
-#     # --- plain chat ---
-#     def generate_messages(self, messages, *, temperature=0.2, max_tokens=None) -> str:
-#         payload = dict(model=self.model, messages=_map_messages_to_openai(messages), temperature=temperature)
-#         if max_tokens is not None:
-#             payload["max_tokens"] = max_tokens
-#         res = self.client.chat.completions.create(**payload, **self.defaults)
-#         return res.choices[0].message.content or ""
-
-#     def stream_messages(self, messages, *, temperature=0.2, max_tokens=None) -> Iterable[str]:
-#         payload = dict(model=self.model, messages=_map_messages_to_openai(messages), temperature=temperature, stream=True)
-#         if max_tokens is not None:
-#             payload["max_tokens"] = max_tokens
-#         stream = self.client.chat.completions.create(**payload, **self.defaults)
-#         for ev in stream:
-#             delta = getattr(ev.choices[0].delta, "content", None)
-#             if delta:
-#                 yield delta
-
-#     # --- tools ---
-#     def supports_tools(self) -> bool:
-#         return True  # signal for the agent to use the native tools path
-
-#     def generate_with_tools(
-#         self, messages, tools_schema, *, temperature=0.2, max_tokens=None, tool_choice=None
-#     ) -> Dict[str, Any]:
-#         payload = dict(
-#             model=self.model,
-#             messages=_map_messages_to_openai(messages),
-#             temperature=temperature,
-#             tools=tools_schema,
-#         )
-#         if tool_choice is not None:
-#             payload["tool_choice"] = tool_choice
-#         if max_tokens is not None:
-#             payload["max_tokens"] = max_tokens
-
-#         res = self.client.chat.completions.create(**payload, **self.defaults)
-#         choice = res.choices[0]
-#         msg = choice.message
-#         tool_calls = getattr(msg, "tool_calls", None) or []
-
-#         # We RETURN tool_calls in the native OpenAI shape (with 'type' and 'function')
-#         native_tool_calls = []
-#         for tc in tool_calls:
-#             native_tool_calls.append({
-#                 "id": getattr(tc, "id", None),
-#                 "type": "function",
-#                 "function": {
-#                     "name": getattr(tc.function, "name", None),
-#                     "arguments": getattr(tc.function, "arguments", "{}"),
-#                 },
-#             })
-
-#         return {
-#             "content": msg.content or "",
-#             "tool_calls": native_tool_calls,
-#             "finish_reason": choice.finish_reason,
-#         }
-
-#     def stream_with_tools(self, *args, **kwargs):
-#         # Streaming tool_calls is rarely used → fallback to single call
-#         yield self.generate_with_tools(*args, **kwargs)
-
-#     # --- structured output (new) ---
-#     def generate_structured(
-#         self,
-#         messages,
-#         output_model: type,
-#         *,
-#         temperature: float = 0.2,
-#         max_tokens: Optional[int] = None,
-#     ):
-#         """
-#         Returns a model *instance* conforming to the given schema (supports Pydantic v2/v1).
-#         Enforces pure JSON via response_format=json_object and appends a system description with the schema.
-#         """
-#         schema = _model_json_schema(output_model)
-
-#         sys_extra = {
-#             "role": "system",
-#             "content": (
-#                 "Return ONLY a single JSON object that strictly conforms to this JSON Schema. "
-#                 "No prose, no markdown, no backticks. If a field is optional and unknown, omit it.\n"
-#                 f"JSON_SCHEMA: {json.dumps(schema, ensure_ascii=False)}"
-#             ),
-#         }
-#         mapped = _map_messages_to_openai(messages)
-#         mapped = [sys_extra] + mapped
-
-#         payload = dict(
-#             model=self.model,
-#             messages=mapped,
-#             temperature=temperature,
-#             response_format={"type": "json_object"},
-#         )
-#         if max_tokens is not None:
-#             payload["max_tokens"] = max_tokens
-
-#         res = self.client.chat.completions.create(**payload, **self.defaults)
-#         txt = res.choices[0].message.content or ""
-#         json_str = _extract_json_object(txt) or txt.strip()
-#         if not json_str:
-#             raise ValueError("Model did not return JSON content for structured output.")
-
-#         return _validate_with_model(output_model, json_str)
-
-
-# # ============================================================
-# # OpenAI Chat Responses
-# # ============================================================
-# class OpenAIChatResponsesAdapter:
-#     """
-#     Drop-in replacement for the previous Chat Completions-based adapter,
-#     now using the new OpenAI Responses API under the hood.
-
-#     Public interface is preserved:
-#     - generate_messages
-#     - stream_messages
-#     - generate_with_tools
-#     - stream_with_tools
-#     - generate_structured
-
-#     No calling code changes required.
-#     """
-
-#     def __init__(self, client, model: str, **defaults):
-#         self.client = client
-#         self.model = model
-#         self.defaults = defaults
-
-#     # ---------------------------------------------------------------------
-#     # INTERNAL HELPERS (PRIVATE METHODS)
-#     # ---------------------------------------------------------------------
-
-#     def _messages_to_responses_input(self, mapped_messages):
-#         """
-#         Convert legacy Chat Completion style messages:
-#             { "role": "user", "content": "Hello" }
-
-#         Into the Responses API "input items" format:
-#             { "type": "message", "role": "user", "content": "Hello" }
-
-#         Required because Responses API expects explicit typed input blocks.
-#         """
-#         items = []
-#         for m in mapped_messages:
-#             items.append({
-#                 "type": "message",
-#                 "role": m.get("role", "user"),
-#                 "content": m.get("content", ""),
-#             })
-#         return items
-
-#     def _collect_output_text(self, response):
-#         """
-#         Extract the final assistant output text from a Responses response object.
-
-#         The SDK provides response.output_text, but not all models return it.
-#         If it's missing, we manually aggregate text from:
-#             response.output[*].content[*] where type == "output_text".
-
-#         This ensures consistent return behavior across all models.
-#         """
-#         # Fast path: preferred attribute
-#         txt = getattr(response, "output_text", None)
-#         if txt:
-#             return txt
-
-#         # Fallback: walk through the structured response
-#         chunks = []
-#         for item in getattr(response, "output", []) or []:
-#             if getattr(item, "type", None) == "message":
-#                 for c in getattr(item, "content", []) or []:
-#                     if getattr(c, "type", None) == "output_text":
-#                         chunks.append(getattr(c, "text", "") or "")
-
-#         return "".join(chunks)
-
-#     # ---------------------------------------------------------------------
-#     # PUBLIC: Plain chat
-#     # ---------------------------------------------------------------------
-
-#     def generate_messages(self, messages, *, temperature=0.2, max_tokens=None) -> str:
-#         """
-#         Standard single-shot assistant response (non-streaming).
-#         Equivalent to the old chat.completions.create(...) adapter behavior.
-#         """
-#         mapped = _map_messages_to_openai(messages)
-#         input_items = self._messages_to_responses_input(mapped)
-
-#         payload = dict(
-#             model=self.model,
-#             input=input_items,
-#             temperature=temperature,
-#         )
-
-#         # Responses API uses `max_output_tokens`, not `max_tokens`
-#         if max_tokens is not None:
-#             payload["max_output_tokens"] = max_tokens
-
-#         response = self.client.responses.create(**payload, **self.defaults)
-#         return self._collect_output_text(response)
-
-#     def stream_messages(self, messages, *, temperature=0.2, max_tokens=None):
-#         """
-#         Streaming response generator.
-
-#         Yields incremental text chunks extracted from the streaming
-#         Responses API delta events.
-#         """
-#         mapped = _map_messages_to_openai(messages)
-#         input_items = self._messages_to_responses_input(mapped)
-
-#         payload = dict(
-#             model=self.model,
-#             input=input_items,
-#             temperature=temperature,
-#             stream=True,
-#         )
-
-#         if max_tokens is not None:
-#             payload["max_output_tokens"] = max_tokens
-
-#         stream = self.client.responses.create(**payload, **self.defaults)
-
-#         for ev in stream:
-#             # Relevant event type: "response.output_text.delta"
-#             if getattr(ev, "type", None) == "response.output_text.delta":
-#                 delta = getattr(ev, "delta", None)
-#                 if delta:
-#                     yield delta
-
-#     # ---------------------------------------------------------------------
-#     # PUBLIC: Tools
-#     # ---------------------------------------------------------------------
-
-#     def supports_tools(self) -> bool:
-#         """
-#         Signal to higher-level agent framework code:
-#         this adapter supports calling functions / tools natively.
-#         """
-#         return True
-
-#     def generate_with_tools(self, messages, tools_schema, *, temperature=0.2, max_tokens=None, tool_choice=None):
-#         """
-#         Equivalent to generate_messages, but enabling tool call extraction.
-
-#         The returned structure preserves backward compatibility:
-#         - `content`
-#         - `tool_calls[]`
-#         - `finish_reason`
-#         """
-#         mapped = _map_messages_to_openai(messages)
-#         input_items = self._messages_to_responses_input(mapped)
-
-#         payload = dict(
-#             model=self.model,
-#             input=input_items,
-#             temperature=temperature,
-#             tools=tools_schema,
-#         )
-
-#         if tool_choice is not None:
-#             payload["tool_choice"] = tool_choice
-
-#         if max_tokens is not None:
-#             payload["max_output_tokens"] = max_tokens
-
-#         response = self.client.responses.create(**payload, **self.defaults)
-
-#         # Extract assistant text (if any)
-#         content = self._collect_output_text(response)
-
-#         # Extract tool calls
-#         native_tool_calls = []
-#         for item in getattr(response, "output", []) or []:
-#             if getattr(item, "type", None) == "function_call":
-#                 # Normalize tool call arguments to JSON string
-#                 args = getattr(item, "arguments", "{}")
-#                 if not isinstance(args, str):
-#                     args = json.dumps(args, ensure_ascii=False)
-
-#                 native_tool_calls.append({
-#                     "id": getattr(item, "call_id", None),
-#                     "type": "function",
-#                     "function": {
-#                         "name": getattr(item, "name", None),
-#                         "arguments": args,
-#                     },
-#                 })
-
-#         # Responses API doesn't expose a direct finish_reason field;
-#         # we approximate via status for compatibility.
-#         finish_reason = getattr(response, "status", None) or "completed"
-
-#         return {
-#             "content": content or "",
-#             "tool_calls": native_tool_calls,
-#             "finish_reason": finish_reason,
-#         }
-
-#     def stream_with_tools(self, *args, **kwargs):
-#         """
-#         Streaming tool-calls is rarely useful.
-#         For now we fallback to generate_with_tools for compatibility.
-#         """
-#         yield self.generate_with_tools(*args, **kwargs)
-
-#     # ---------------------------------------------------------------------
-#     # PUBLIC: Structured JSON output
-#     # ---------------------------------------------------------------------
-
-#     def generate_structured(self, messages, output_model, *, temperature=0.2, max_tokens=None):
-#         """
-#         Structured output wrapper using Responses API + JSON Schema validation.
-
-#         The API surface matches the previous implementation and returns:
-#             validated_instance = output_model(...)
-#         """
-#         schema = _model_json_schema(output_model)
-
-#         # Prepend schema instruction as a system message
-#         sys_extra = {
-#             "role": "system",
-#             "content": (
-#                 "Return ONLY a single JSON object that strictly conforms to this JSON Schema. "
-#                 "No prose, no markdown, no backticks. If a field is optional and unknown, omit it.\n"
-#                 f"JSON_SCHEMA: {json.dumps(schema, ensure_ascii=False)}"
-#             )
-#         }
-
-#         mapped = [_map_messages_to_openai(messages)[0]] if messages else []
-#         mapped = [sys_extra] + _map_messages_to_openai(messages)
-
-#         input_items = self._messages_to_responses_input(mapped)
-
-#         payload = dict(
-#             model=self.model,
-#             input=input_items,
-#             temperature=temperature,
-#             response_format={
-#                 "type": "json_schema",
-#                 "json_schema": {
-#                     "name": getattr(output_model, "__name__", "OutputModel"),
-#                     "schema": schema,
-#                     "strict": True,
-#                 },
-#             },
-#         )
-
-#         if max_tokens is not None:
-#             payload["max_output_tokens"] = max_tokens
-
-#         response = self.client.responses.create(**payload, **self.defaults)
-
-#         txt = self._collect_output_text(response)
-#         json_str = _extract_json_object(txt) or txt.strip()
-#         if not json_str:
-#             raise ValueError("Model did not return valid JSON.")
-
-#         return _validate_with_model(output_model, json_str)
-
-
-# # ============================================================
-# # Gemini (skeleton)
-# # ============================================================
-# class GeminiChatAdapter:
-#     """
-#     Skeleton - depends on the Google SDK version. Versions from 2025 support function calling.
-#     """
-#     def __init__(self, model, **defaults):
-#         self.model = model
-#         self.defaults = defaults
-
-#     def _split_system(self, messages: Sequence[ChatMessage]):
-#         sys_txt = "\n".join(m.content for m in messages if m.role == "system").strip() or None
-#         convo = [m for m in messages if m.role != "system"]
-#         return sys_txt, convo
-
-#     def generate_messages(self, messages, *, temperature=0.2, max_tokens=None) -> str:
-#         sys_txt, convo = self._split_system(messages)
-#         chat = self.model.start_chat(history=[{"role": m.role, "parts": [m.content]} for m in convo[:-1]])
-#         user_last = convo[-1].content if convo else ""
-#         kwargs = {"temperature": temperature, **self.defaults}
-#         if max_tokens is not None:
-#             kwargs["max_output_tokens"] = max_tokens
-#         if sys_txt:
-#             user_last = f"[SYSTEM]\n{sys_txt}\n\n[USER]\n{user_last}"
-#         res = chat.send_message(user_last, **kwargs)
-#         return res.text or ""
-
-#     def stream_messages(self, messages, *, temperature=0.2, max_tokens=None) -> Iterable[str]:
-#         yield self.generate_messages(messages, temperature=temperature, max_tokens=max_tokens)
-
-#     def supports_tools(self) -> bool: return False
-#     def generate_with_tools(self, *a, **k): raise NotImplementedError("Gemini tools not wired here")
-#     def stream_with_tools(self, *a, **k): raise NotImplementedError("Gemini tools not wired here")
-
-#     # (optionally implement generate_structured similar to the Ollama path)
-
-
-# # ============================================================
-# # LangChain + Ollama (no native tools → planner JSON)
-# # ============================================================
-# class LangChainOllamaAdapter:
-#     def __init__(self, chat, **defaults):
-#         self.chat = chat
-#         self.defaults = defaults
-
-#     def _to_lc_messages(self, messages):
-#         from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-#         out = []
-#         for m in messages:
-#             if m.role == "system":
-#                 out.append(SystemMessage(content=m.content))
-#             elif m.role == "user":
-#                 out.append(HumanMessage(content=m.content))
-#             elif m.role == "assistant":
-#                 out.append(AIMessage(content=m.content))
-#             elif m.role == "tool":
-#                 # no native tools → inject tool result as context
-#                 out.append(SystemMessage(content=f"[TOOL RESULT]\n{m.content}"))
-#             else:
-#                 out.append(SystemMessage(content=f"[{m.role.upper()}]\n{m.content}"))
-#         return out
-
-#     @staticmethod
-#     def _with_ollama_options(base_kwargs: Dict[str, Any], *, temperature: float=None, max_tokens: Optional[int]=None):
-#         """
-#         Ollama (via langchain_ollama) expects generation parameters inside `options`.
-#         Mapping:
-#           - temperature -> options["temperature"]
-#           - max_tokens  -> options["num_predict"]
-#         """
-#         kwargs = dict(base_kwargs or {})
-#         opts = dict(kwargs.get("options") or {})
-#         if temperature is not None:
-#             opts["temperature"] = temperature
-#         if max_tokens is not None:
-#             opts["num_predict"] = max_tokens
-#         kwargs["options"] = opts
-#         return kwargs
-
-#     def generate_messages(self, messages, *, temperature=None, max_tokens=None):
-#         lc_msgs = self._to_lc_messages(messages)
-#         kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
-#         res = self.chat.invoke(lc_msgs, **kwargs)
-#         return getattr(res, "content", None) or str(res)
-
-#     def stream_messages(self, messages, *, temperature=0.2, max_tokens=None):
-#         lc_msgs = self._to_lc_messages(messages)
-#         kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
-#         try:
-#             for chunk in self.chat.stream(lc_msgs, **kwargs):
-#                 c = getattr(chunk, "content", None)
-#                 if c:
-#                     yield c
-#         except Exception:
-#             # fallback to single call
-#             yield self.generate_messages(messages, temperature=temperature, max_tokens=max_tokens)
-
-#     def supports_tools(self) -> bool:
-#         return False  # key point – the agent will take the “planner” branch
-
-#     # --- structured output (new) ---
-#     def generate_structured(
-#         self,
-#         messages,
-#         output_model: type,
-#         *,
-#         temperature: float = 0.2,
-#         max_tokens: Optional[int] = None,
-#     ):
-#         """
-#         Enforces returning a single JSON object conforming to the schema (strict JSON prompt + validation).
-#         """
-#         schema = _model_json_schema(output_model)
-
-#         from langchain_core.messages import SystemMessage, HumanMessage
-#         lc_msgs = self._to_lc_messages(messages)
-
-#         strict = SystemMessage(
-#             content=(
-#                 "Return ONLY a single JSON object that strictly conforms to the JSON Schema below. "
-#                 "Do not add any commentary, markdown, or backticks. "
-#                 "If a field is optional and unknown, omit it."
-#             )
-#         )
-#         schema_msg = HumanMessage(content=f"JSON_SCHEMA:\n{json.dumps(schema, ensure_ascii=False)}")
-#         lc_msgs = [strict, schema_msg] + lc_msgs
-
-#         kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
-#         res = self.chat.invoke(lc_msgs, **kwargs)
-#         txt = getattr(res, "content", None) or str(res)
-#         json_str = _extract_json_object(txt) or txt.strip()
-#         if not json_str:
-#             raise ValueError("Model did not return JSON content for structured output (Ollama).")
-
-#         return _validate_with_model(output_model, json_str)
-
-
-# # ============================================================
-# # Adapter registry
-# # ============================================================
-# class LLMAdapterRegistry:
-#     _registry = {}
-
-#     @classmethod
-#     def register(cls, name: str, factory):
-#         cls._registry[name.lower()] = factory
-
-#     @classmethod
-#     def create(cls, name: str, **kwargs) -> LLMAdapter:
-#         key = name.lower()
-#         if key not in cls._registry:
-#             raise ValueError(f"Unknown adapter: {name}")
-#         return cls._registry[key](**kwargs)
-
-# # Default adapter registrations
-# LLMAdapterRegistry.register("openai", lambda **kw: OpenAIChatCompletionsAdapter(**kw))
-# LLMAdapterRegistry.register("gemini", lambda **kw: GeminiChatAdapter(**kw))
-# LLMAdapterRegistry.register("ollama", lambda **kw: LangChainOllamaAdapter(**kw))
 
 # ======================================================================
 # FILE: intergrax/llm/messages.py
@@ -1585,25 +874,28 @@ def append_chat_messages(
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=__init__.py
-# LINES: 32
-# SHA256: 46e63774b46b6848ea4c87b1e605f9974358d95a190fed547f361efdf969150e
+# LINES: 43
+# SHA256: 21c943dff2563aa43a4c3be91c29aca801d1e8a59ce96726f4256b487bba8ce8
 # SYMBOLS:
 #   - <none>
 # ======================================================================
 # intergrax/llm_adapters/__init__.py
 
+from INTERGRAX_ENGINE_BUNDLE import GeminiChatAdapter, LangChainOllamaAdapter, OpenAIChatResponsesAdapter
+from intergrax.llm_adapters.aws_bedrock_adapter import BedrockChatAdapter
+from intergrax.llm_adapters.azure_openai_adapter import AzureOpenAIChatAdapter
+from intergrax.llm_adapters.claude_adapter import ClaudeChatAdapter
+from intergrax.llm_adapters.mistral_adapter import MistralChatAdapter
 from .base import (
     LLMAdapter,
     LLMAdapterRegistry,
     BaseModel,
+    LLMProvider,
     _extract_json_object,
     _model_json_schema,
     _validate_with_model,
     _map_messages_to_openai,
 )
-from .openai_responses_adapter import OpenAIChatResponsesAdapter
-from .gemini_adapter import GeminiChatAdapter
-from .ollama_adapter import LangChainOllamaAdapter
 
 __all__ = [
     "LLMAdapter",
@@ -1612,6 +904,10 @@ __all__ = [
     "OpenAIChatResponsesAdapter",
     "GeminiChatAdapter",
     "LangChainOllamaAdapter",
+    "ClaudeChatAdapter",
+    "MistralChatAdapter",
+    "AzureOpenAIChatAdapter",
+    "BedrockChatAdapter",
     "_extract_json_object",
     "_model_json_schema",
     "_validate_with_model",
@@ -1619,9 +915,810 @@ __all__ = [
 ]
 
 # Default adapter registrations
-LLMAdapterRegistry.register("openai", lambda **kw: OpenAIChatResponsesAdapter(**kw))
-LLMAdapterRegistry.register("gemini", lambda **kw: GeminiChatAdapter(**kw))
-LLMAdapterRegistry.register("ollama", lambda **kw: LangChainOllamaAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.OPENAI, lambda **kw: OpenAIChatResponsesAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.GEMINI, lambda **kw: GeminiChatAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.OLLAMA, lambda **kw: LangChainOllamaAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.CLAUDE, lambda **kw: ClaudeChatAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.MISTRAL, lambda **kw: MistralChatAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.AZURE_OPENAI, lambda **kw: AzureOpenAIChatAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.AWS_BEDROCK, lambda **kw: BedrockChatAdapter(**kw))
+
+# ======================================================================
+# FILE: intergrax/llm_adapters/aws_bedrock_adapter.py
+# MODULE: intergrax.llm_adapters.aws_bedrock_adapter
+# MODULE_GROUP: llm_adapters
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm_adapters
+#   - file=aws_bedrock_adapter.py
+# LINES: 531
+# SHA256: 2963227c8aad90657724905ab8e885dffc0dc17d2cf316507f483ac7989a9f1b
+# SYMBOLS:
+#   - class BedrockModelFamily
+#   - class BedrockNativeCodec
+#   - class AnthropicClaudeCodec
+#   - class MetaLlamaCodec
+#   - class MistralCodec
+#   - class AmazonTitanTextCodec
+#   - class BedrockAdapterConfig
+#   - class BedrockChatAdapter
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+from enum import Enum
+from typing import Dict, Iterable, List, Optional, Protocol, Sequence, Tuple
+
+import boto3
+from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
+
+
+class BedrockModelFamily(str, Enum):
+    """Model family inferred from Bedrock modelId prefix."""
+    ANTHROPIC = "anthropic"
+    META = "meta"
+    MISTRAL = "mistral"
+    AMAZON = "amazon"
+    UNKNOWN = "unknown"
+
+
+class BedrockNativeCodec(Protocol):
+    """
+    A model-family specific codec for Bedrock InvokeModel / InvokeModelWithResponseStream.
+
+    Responsibilities:
+      - Build native request body for the given model family
+      - Extract final text from InvokeModel response JSON
+      - Extract streamed text chunks from InvokeModelWithResponseStream event payload JSON
+    """
+
+    def build_body(
+        self,
+        *,
+        system_text: str,
+        convo: Sequence[ChatMessage],
+        temperature: Optional[float],
+        max_tokens: Optional[int],
+        defaults: Dict,
+        model_id: str,
+    ) -> dict: ...
+
+    def extract_text(self, parsed: dict) -> str: ...
+
+    def extract_stream_text(self, payload: dict) -> str: ...
+
+
+# -----------------------------
+# Codecs (official formats)
+# -----------------------------
+
+class AnthropicClaudeCodec:
+    """
+    Anthropic Claude Messages API format on Bedrock InvokeModel.
+    See 'anthropic_version=bedrock-2023-05-31' requirement and messages structure. :contentReference[oaicite:2]{index=2}
+    """
+
+    def build_body(
+        self,
+        *,
+        system_text: str,
+        convo: Sequence[ChatMessage],
+        temperature: Optional[float],
+        max_tokens: Optional[int],
+        defaults: Dict,
+        model_id: str,
+    ) -> dict:
+        # Resolve parameters
+        temp = temperature if temperature is not None else defaults.get("temperature")
+        out_tokens = max_tokens if max_tokens is not None else defaults.get("max_tokens", 1024)
+
+        messages: List[dict] = []
+        for m in convo:
+            if not m.content:
+                continue
+            role = m.role if m.role in ("user", "assistant") else "assistant"
+            messages.append({"role": role, "content": [{"type": "text", "text": m.content}]})
+
+        body: dict = {
+            "anthropic_version": "bedrock-2023-05-31",
+            "messages": messages,
+            "max_tokens": int(out_tokens),
+        }
+        if system_text:
+            body["system"] = system_text
+        if temp is not None:
+            body["temperature"] = float(temp)
+
+        return body
+
+    def extract_text(self, parsed: dict) -> str:
+        # Typical: {"content":[{"type":"text","text":"..."}], ...}
+        content = parsed.get("content")
+        if not isinstance(content, list):
+            return ""
+        parts: List[str] = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                txt = block.get("text")
+                if isinstance(txt, str) and txt:
+                    parts.append(txt)
+        return "".join(parts)
+
+    def extract_stream_text(self, payload: dict) -> str:
+        # Bedrock Anthropic streaming deltas often contain "delta" text blocks.
+        delta = payload.get("delta")
+        if isinstance(delta, dict) and delta.get("type") == "text_delta":
+            txt = delta.get("text")
+            if isinstance(txt, str) and txt:
+                return txt
+
+        cbd = payload.get("content_block_delta")
+        if isinstance(cbd, dict):
+            d = cbd.get("delta")
+            if isinstance(d, dict) and d.get("type") == "text_delta":
+                txt = d.get("text")
+                if isinstance(txt, str) and txt:
+                    return txt
+
+        return ""
+
+
+class MetaLlamaCodec:
+    """
+    Meta Llama native completion format on Bedrock InvokeModel.
+    Request: {prompt, temperature, top_p, max_gen_len}
+    Response: {"generation": "..."} :contentReference[oaicite:3]{index=3}
+    """
+
+    def build_body(
+        self,
+        *,
+        system_text: str,
+        convo: Sequence[ChatMessage],
+        temperature: Optional[float],
+        max_tokens: Optional[int],
+        defaults: Dict,
+        model_id: str,
+    ) -> dict:
+        # Llama uses "max_gen_len" instead of max_tokens.
+        temp = temperature if temperature is not None else defaults.get("temperature", 0.5)
+        max_gen_len = max_tokens if max_tokens is not None else defaults.get("max_gen_len", 512)
+        top_p = defaults.get("top_p", 0.9)
+
+        prompt = self._format_llama_prompt(system_text=system_text, convo=convo)
+
+        body: dict = {"prompt": prompt, "temperature": float(temp), "max_gen_len": int(max_gen_len)}
+        # top_p is optional
+        if top_p is not None:
+            body["top_p"] = float(top_p)
+        return body
+
+    def extract_text(self, parsed: dict) -> str:
+        gen = parsed.get("generation")
+        return gen if isinstance(gen, str) else ""
+
+    def extract_stream_text(self, payload: dict) -> str:
+        # Streaming chunk contains "generation" segments in AWS examples. :contentReference[oaicite:4]{index=4}
+        gen = payload.get("generation")
+        return gen if isinstance(gen, str) else ""
+
+    def _format_llama_prompt(self, *, system_text: str, convo: Sequence[ChatMessage]) -> str:
+        # Official prompt template uses special tokens and headers. :contentReference[oaicite:5]{index=5}
+        parts: List[str] = ["<|begin_of_text|>"]
+        if system_text:
+            parts.append("<|start_header_id|>system<|end_header_id|>\n")
+            parts.append(system_text.strip())
+            parts.append("<|eot_id|>\n")
+
+        for m in convo:
+            if not m.content:
+                continue
+            role = m.role if m.role in ("user", "assistant") else "assistant"
+            parts.append(f"<|start_header_id|>{role}<|end_header_id|>\n")
+            parts.append(m.content)
+            parts.append("<|eot_id|>\n")
+
+        parts.append("<|start_header_id|>assistant<|end_header_id|>\n")
+        return "".join(parts)
+
+
+class MistralCodec:
+    """
+    Mistral native format on Bedrock InvokeModel.
+    Request: {prompt:"<s>[INST] ... [/INST]", max_tokens, temperature}
+    Response: {"outputs":[{"text":"..."}]} :contentReference[oaicite:6]{index=6}
+    """
+
+    def build_body(
+        self,
+        *,
+        system_text: str,
+        convo: Sequence[ChatMessage],
+        temperature: Optional[float],
+        max_tokens: Optional[int],
+        defaults: Dict,
+        model_id: str,
+    ) -> dict:
+        temp = temperature if temperature is not None else defaults.get("temperature", 0.5)
+        out_tokens = max_tokens if max_tokens is not None else defaults.get("max_tokens", 512)
+
+        prompt = self._format_mistral_inst(system_text=system_text, convo=convo)
+
+        return {"prompt": prompt, "max_tokens": int(out_tokens), "temperature": float(temp)}
+
+    def extract_text(self, parsed: dict) -> str:
+        outputs = parsed.get("outputs")
+        if not isinstance(outputs, list) or not outputs:
+            return ""
+        first = outputs[0]
+        if not isinstance(first, dict):
+            return ""
+        txt = first.get("text")
+        return txt if isinstance(txt, str) else ""
+
+    def extract_stream_text(self, payload: dict) -> str:
+        # Streaming example extracts outputs[0].text per event. :contentReference[oaicite:7]{index=7}
+        return self.extract_text(payload)
+
+    def _format_mistral_inst(self, *, system_text: str, convo: Sequence[ChatMessage]) -> str:
+        # AWS example uses "<s>[INST] ... [/INST]" wrapper. :contentReference[oaicite:8]{index=8}
+        # Keep it deterministic: flatten to a single instruction block.
+        lines: List[str] = []
+        if system_text:
+            lines.append(system_text.strip())
+
+        for m in convo:
+            if not m.content:
+                continue
+            if m.role == "user":
+                lines.append(m.content.strip())
+            elif m.role == "assistant":
+                # Preserve assistant context for multi-turn by prefixing.
+                lines.append(f"Assistant: {m.content.strip()}")
+            else:
+                lines.append(m.content.strip())
+
+        joined = "\n\n".join([x for x in lines if x])
+        return f"<s>[INST] {joined} [/INST]"
+
+
+class AmazonTitanTextCodec:
+    """
+    Amazon Titan Text native format on Bedrock InvokeModel.
+    Request: {"inputText": "...", "textGenerationConfig": {...}}
+    Response: {"results":[{"outputText":"..."}]} :contentReference[oaicite:9]{index=9}
+    """
+
+    def build_body(
+        self,
+        *,
+        system_text: str,
+        convo: Sequence[ChatMessage],
+        temperature: Optional[float],
+        max_tokens: Optional[int],
+        defaults: Dict,
+        model_id: str,
+    ) -> dict:
+        temp = temperature if temperature is not None else defaults.get("temperature", 0.7)
+        top_p = defaults.get("top_p", 0.9)
+        max_count = max_tokens if max_tokens is not None else defaults.get("maxTokenCount", 512)
+
+        # Titan suggests "User: ...\nBot:" conversational prompt format. :contentReference[oaicite:10]{index=10}
+        prompt = self._format_titan(system_text=system_text, convo=convo)
+
+        return {
+            "inputText": prompt,
+            "textGenerationConfig": {
+                "temperature": float(temp),
+                "topP": float(top_p),
+                "maxTokenCount": int(max_count),
+                "stopSequences": defaults.get("stopSequences", []),
+            },
+        }
+
+    def extract_text(self, parsed: dict) -> str:
+        results = parsed.get("results")
+        if not isinstance(results, list) or not results:
+            return ""
+        first = results[0]
+        if not isinstance(first, dict):
+            return ""
+        out = first.get("outputText")
+        return out if isinstance(out, str) else ""
+
+    def extract_stream_text(self, payload: dict) -> str:
+        # For Titan streaming chunks, docs show "outputText" in the decoded bytes. :contentReference[oaicite:11]{index=11}
+        out = payload.get("outputText")
+        return out if isinstance(out, str) else ""
+
+    def _format_titan(self, *, system_text: str, convo: Sequence[ChatMessage]) -> str:
+        # Minimal deterministic transcript.
+        lines: List[str] = []
+        if system_text:
+            lines.append(f"System: {system_text.strip()}")
+
+        for m in convo:
+            if not m.content:
+                continue
+            if m.role == "user":
+                lines.append(f"User: {m.content.strip()}")
+            elif m.role == "assistant":
+                lines.append(f"Bot: {m.content.strip()}")
+            else:
+                lines.append(m.content.strip())
+
+        # Titan conversational format ends with "Bot:" to cue completion.
+        return "\n".join(lines + ["Bot:"])
+
+
+# -----------------------------
+# Adapter
+# -----------------------------
+
+@dataclass(frozen=True)
+class BedrockAdapterConfig:
+    """Small config object to keep adapter initialization explicit."""
+    region: str
+    model_id: str
+    family: BedrockModelFamily
+
+
+class BedrockChatAdapter(BaseLLMAdapter):
+    """
+    AWS Bedrock adapter using InvokeModel / InvokeModelWithResponseStream.
+    Supports multiple model families by dispatching to native codecs.
+
+    Contract:
+      - __init__(client: Optional[BedrockRuntimeClient] = None, model_id: Optional[str] = None, region: Optional[str] = None, family: Optional[BedrockModelFamily] = None, **defaults)
+      - generate_messages(...) -> str
+      - stream_messages(...)   -> Iterable[str]
+    """
+
+    _CODECS: Dict[BedrockModelFamily, BedrockNativeCodec] = {
+        BedrockModelFamily.ANTHROPIC: AnthropicClaudeCodec(),
+        BedrockModelFamily.META: MetaLlamaCodec(),
+        BedrockModelFamily.MISTRAL: MistralCodec(),
+        BedrockModelFamily.AMAZON: AmazonTitanTextCodec(),
+    }
+
+    def __init__(
+        self,
+        client: Optional[BedrockRuntimeClient] = None,
+        model_id: Optional[str] = None,
+        region: Optional[str] = None,
+        family: Optional[BedrockModelFamily] = None,
+        **defaults,
+    ):
+        super().__init__()
+
+        resolved_region = region or GLOBAL_SETTINGS.aws_region
+        resolved_model_id = model_id or GLOBAL_SETTINGS.default_bedrock_model_id
+
+        inferred_family = family or self._infer_family_from_model_id(resolved_model_id)
+
+        self.client: BedrockRuntimeClient = client or boto3.client(
+            service_name="bedrock-runtime",
+            region_name=resolved_region,
+        )
+        self.config = BedrockAdapterConfig(
+            region=resolved_region,
+            model_id=resolved_model_id,
+            family=inferred_family,
+        )
+        self.defaults = defaults
+
+        # Keep existing contract compatibility: a single name for token estimation if needed elsewhere.
+        self.model_name_for_token_estimation: str = self.config.model_id
+
+        # Conservative default; you can refine per family if you want.
+        self._context_window_tokens: int = self._estimate_context_window(self.config.model_id)
+
+    @property
+    def context_window_tokens(self) -> int:
+        return self._context_window_tokens
+
+    # ------------------------------------------------------------------
+    # Core API
+    # ------------------------------------------------------------------
+
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        system_text, convo = self._split_system(messages)
+
+        codec = self._get_codec(self.config.family)
+
+        body = codec.build_body(
+            system_text=system_text,
+            convo=convo,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            defaults=self.defaults,
+            model_id=self.config.model_id,
+        )
+
+        res = self.client.invoke_model(
+            modelId=self.config.model_id,
+            body=json.dumps(body).encode("utf-8"),
+            accept="application/json",
+            contentType="application/json",
+        )
+
+        raw = res["body"].read().decode("utf-8")
+        parsed = json.loads(raw)
+
+        return codec.extract_text(parsed)
+
+    def stream_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Iterable[str]:
+        system_text, convo = self._split_system(messages)
+
+        codec = self._get_codec(self.config.family)
+
+        body = codec.build_body(
+            system_text=system_text,
+            convo=convo,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            defaults=self.defaults,
+            model_id=self.config.model_id,
+        )
+
+        res = self.client.invoke_model_with_response_stream(
+            modelId=self.config.model_id,
+            body=json.dumps(body).encode("utf-8"),
+            accept="application/json",
+            contentType="application/json",
+        )
+
+        # Bedrock stream is an event stream, each event has event["chunk"]["bytes"].
+        stream = res["body"]
+        for event in stream:
+            chunk = event.get("chunk")
+            if not isinstance(chunk, dict):
+                continue
+            data = chunk.get("bytes")
+            if not data:
+                continue
+
+            payload = json.loads(data.decode("utf-8"))
+            text = codec.extract_stream_text(payload)
+            if text:
+                yield text
+
+    # ------------------------------------------------------------------
+    # Tools / structured output (not wired)
+    # ------------------------------------------------------------------
+
+    def supports_tools(self) -> bool:
+        return False
+
+    def generate_with_tools(self, *a, **k):
+        raise NotImplementedError("Bedrock tools are not wired in this adapter.")
+
+    def stream_with_tools(self, *a, **k):
+        raise NotImplementedError("Bedrock tools are not wired in this adapter.")
+
+    def generate_structured(self, *a, **k):
+        raise NotImplementedError("Structured output is not implemented for BedrockChatAdapter.")
+
+    # ------------------------------------------------------------------
+    # Extensibility
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def register_codec(cls, family: BedrockModelFamily, codec: BedrockNativeCodec) -> None:
+        """Allow adding support for additional Bedrock model families without editing adapter internals."""
+        cls._CODECS[family] = codec
+
+    # ------------------------------------------------------------------
+    # Internals
+    # ------------------------------------------------------------------
+
+    def _get_codec(self, family: BedrockModelFamily) -> BedrockNativeCodec:
+        codec = self._CODECS.get(family)
+        if codec is None:
+            raise ValueError(
+                f"Unsupported Bedrock model family '{family}'. "
+                f"Provide family=... or register a codec via BedrockChatAdapter.register_codec()."
+            )
+        return codec
+
+    def _estimate_context_window(self, model_id: str) -> int:
+        # TODO: Optional: refine using a lookup table per model_id.
+        return 32_000
+
+    def _split_system(self, messages: Sequence[ChatMessage]) -> Tuple[str, List[ChatMessage]]:
+        system_parts: List[str] = []
+        convo: List[ChatMessage] = []
+
+        for m in messages:
+            if m.role == "system":
+                if m.content:
+                    system_parts.append(m.content)
+                continue
+            convo.append(m)
+
+        return ("\n\n".join(system_parts).strip(), convo)
+
+    def _infer_family_from_model_id(self, model_id: str) -> BedrockModelFamily:
+        # Bedrock model ids are usually prefixed as "<provider>.<model...>".
+        prefix = model_id.split(".", 1)[0].strip().lower()
+        if prefix == "anthropic":
+            return BedrockModelFamily.ANTHROPIC
+        if prefix == "meta":
+            return BedrockModelFamily.META
+        if prefix == "mistral":
+            return BedrockModelFamily.MISTRAL
+        if prefix == "amazon":
+            return BedrockModelFamily.AMAZON
+        return BedrockModelFamily.UNKNOWN
+
+# ======================================================================
+# FILE: intergrax/llm_adapters/azure_openai_adapter.py
+# MODULE: intergrax.llm_adapters.azure_openai_adapter
+# MODULE_GROUP: llm_adapters
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm_adapters
+#   - file=azure_openai_adapter.py
+# LINES: 231
+# SHA256: 8c7fa5b5b5b8bcb103071a6f885b1d51ecc49ea9c01fad885de878f2002da0a7
+# SYMBOLS:
+#   - class AzureOpenAIChatAdapter
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+
+from openai import AzureOpenAI
+from openai.types.chat import ChatCompletion, ChatCompletionChunk
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
+
+
+class AzureOpenAIChatAdapter(BaseLLMAdapter):
+    """
+    Azure OpenAI adapter based on the official OpenAI Python SDK (AzureOpenAI).
+
+    Contract (aligned with other adapters):
+      - __init__(client: Optional[AzureOpenAI] = None, deployment: Optional[str] = None, **defaults)
+      - generate_messages(...) -> str
+      - stream_messages(...)   -> Iterable[str]
+
+    Notes:
+      - On Azure, the 'model' field in chat completions must be set to the DEPLOYMENT NAME,
+        not the underlying model id. :contentReference[oaicite:2]{index=2}
+      - Tools / structured output are not wired here (yet).
+    """
+
+    # Conservative context window estimates (input + output).
+    # Keep safe unless you add a token counter per deployment.
+    _AZURE_CONTEXT_WINDOWS: Dict[str, int] = {
+        # deployments are tenant-specific; keep fallback conservative
+    }
+
+    def __init__(
+        self,
+        client: Optional[AzureOpenAI] = None,
+        deployment: Optional[str] = None,
+        **defaults,
+    ):
+        super().__init__()
+
+        # Framework-wide defaults should be routed via GLOBAL_SETTINGS.
+        # Keep these names consistent with your settings pattern.
+        endpoint = GLOBAL_SETTINGS.azure_openai_endpoint
+        api_version = GLOBAL_SETTINGS.azure_openai_api_version
+        default_deployment = GLOBAL_SETTINGS.default_azure_openai_deployment
+
+        # Official SDK can read API key from env (AZURE_OPENAI_API_KEY),
+        # but we keep instantiation explicit and consistent with other adapters.
+        self.client: AzureOpenAI = client or AzureOpenAI(
+            azure_endpoint=endpoint,
+            api_version=api_version,
+        )
+
+        # Azure: "model" = deployment name.
+        self.deployment: str = deployment or default_deployment
+        self.model_name_for_token_estimation: str = self.deployment
+
+        self.defaults = defaults
+        self._context_window_tokens: int = self._estimate_context_window(self.deployment)
+
+    @property
+    def context_window_tokens(self) -> int:
+        """
+        Cached maximum context window (input + output tokens) for the configured deployment.
+        """
+        return self._context_window_tokens
+
+    # ------------------------------------------------------------------
+    # Core API
+    # ------------------------------------------------------------------
+
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        system_text, convo = self._split_system(messages)
+
+        payload = self._build_chat_params(
+            system_text=system_text,
+            convo=convo,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=False,
+        )
+
+        res: ChatCompletion = self.client.chat.completions.create(**payload)
+
+        if not res.choices:
+            return ""
+
+        msg = res.choices[0].message
+        return msg.content or ""
+
+    def stream_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Iterable[str]:
+        system_text, convo = self._split_system(messages)
+
+        payload = self._build_chat_params(
+            system_text=system_text,
+            convo=convo,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=True,
+        )
+
+        stream = self.client.chat.completions.create(**payload)
+
+        # The OpenAI SDK returns an iterator of typed ChatCompletionChunk.
+        for chunk in stream:
+            c: ChatCompletionChunk = chunk
+            if not c.choices:
+                continue
+
+            delta = c.choices[0].delta
+            if delta is None:
+                continue
+
+            if delta.content:
+                yield delta.content
+
+    # ------------------------------------------------------------------
+    # Tools / structured output (not wired)
+    # ------------------------------------------------------------------
+
+    def supports_tools(self) -> bool:
+        return False
+
+    def generate_with_tools(self, *a, **k):
+        raise NotImplementedError("AzureOpenAI tools are not wired in this adapter.")
+
+    def stream_with_tools(self, *a, **k):
+        raise NotImplementedError("AzureOpenAI tools are not wired in this adapter.")
+
+    def generate_structured(
+        self,
+        messages: Sequence[ChatMessage],
+        output_model: type,
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ):
+        raise NotImplementedError("Structured output is not implemented for AzureOpenAIChatAdapter.")
+
+    # ------------------------------------------------------------------
+    # Internals
+    # ------------------------------------------------------------------
+
+    def _estimate_context_window(self, deployment: str) -> int:
+        # Deployments are user-defined names; keep fallback conservative.
+        return self._AZURE_CONTEXT_WINDOWS.get(deployment, 32_000)
+
+    def _split_system(self, messages: Sequence[ChatMessage]) -> Tuple[str, List[ChatMessage]]:
+        system_parts: List[str] = []
+        convo: List[ChatMessage] = []
+
+        for m in messages:
+            if m.role == "system":
+                if m.content:
+                    system_parts.append(m.content)
+                continue
+            convo.append(m)
+
+        return ("\n\n".join(system_parts).strip(), convo)
+
+    def _build_chat_params(
+        self,
+        *,
+        system_text: str,
+        convo: Sequence[ChatMessage],
+        temperature: Optional[float],
+        max_tokens: Optional[int],
+        stream: bool,
+    ) -> dict:
+        """
+        Build a minimal, explicit Azure Chat Completions payload.
+
+        Azure expects:
+          - model: deployment name (not model id) :contentReference[oaicite:3]{index=3}
+          - messages: list of {role, content}
+        """
+        temp = temperature if temperature is not None else self.defaults.get("temperature", None)
+        out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
+
+        mapped = self._map_messages(system_text=system_text, convo=convo)
+
+        payload: dict = {
+            "model": self.deployment,
+            "messages": mapped,
+            "stream": stream,
+        }
+
+        if temp is not None:
+            payload["temperature"] = float(temp)
+        if out_tokens is not None:
+            payload["max_tokens"] = int(out_tokens)
+
+        return payload
+
+    def _map_messages(self, *, system_text: str, convo: Sequence[ChatMessage]) -> List[dict]:
+        """
+        Map ChatMessage -> Azure chat completion message dicts.
+        """
+        out: List[dict] = []
+
+        if system_text:
+            out.append({"role": "system", "content": system_text})
+
+        for m in convo:
+            if not m.content:
+                continue
+
+            role = m.role
+            if role not in ("user", "assistant"):
+                # Tools are not wired; treat other roles as assistant text.
+                role = "assistant"
+
+            out.append({"role": role, "content": m.content})
+
+        return out
 
 # ======================================================================
 # FILE: intergrax/llm_adapters/base.py
@@ -1631,9 +1728,10 @@ LLMAdapterRegistry.register("ollama", lambda **kw: LangChainOllamaAdapter(**kw))
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=base.py
-# LINES: 336
-# SHA256: 2638441464721304e9ad0f8e6cb8fc474f45a7bf20555fa74c2055a51e0e3a03
+# LINES: 351
+# SHA256: 1527154b82842ed07303fa73bbe1088a97e40b8a7f54af1f996b69b3559791da
 # SYMBOLS:
+#   - class LLMProvider
 #   - def _strip_code_fences()
 #   - def _extract_json_object()
 #   - def _model_json_schema()
@@ -1649,9 +1747,11 @@ LLMAdapterRegistry.register("ollama", lambda **kw: LangChainOllamaAdapter(**kw))
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from enum import Enum
 from typing import Protocol, Sequence, Iterable, Optional, Any, Dict, Union, List, TYPE_CHECKING
 import json
 import re
+from requests_cache import Callable
 import tiktoken
 
 # if TYPE_CHECKING:
@@ -1670,6 +1770,7 @@ __all__ = [
     "_model_json_schema",
     "_validate_with_model",
     "_map_messages_to_openai",
+    "LLMProvider",
 ]
 
 # ============================================================
@@ -1681,6 +1782,16 @@ try:
 except Exception:  # pragma: no cover - pydantic not installed
     class BaseModel: ...
     _HAS_PYDANTIC = False
+
+
+class LLMProvider(str, Enum):
+    OPENAI = "openai"
+    GEMINI = "gemini"
+    OLLAMA = "ollama"
+    MISTRAL = "mistral"
+    CLAUDE = "claude"
+    AZURE_OPENAI = "azure_openai"
+    AWS_BEDROCK = "aws_bedrock"
 
 
 def _strip_code_fences(text: str) -> str:
@@ -1960,26 +2071,210 @@ def _map_messages_to_openai(msgs: Sequence[ChatMessage]) -> List[Dict[str, Any]]
 # Adapter registry
 # ============================================================
 class LLMAdapterRegistry:
-    """
-    Simple string-keyed registry for LLM adapter factories.
+    _factories: Dict[str, Callable[..., "LLMAdapter"]] = {}
 
-    Usage:
-        LLMAdapterRegistry.register("openai", lambda **kw: OpenAIChatResponsesAdapter(**kw))
-        adapter = LLMAdapterRegistry.create("openai", client=..., model=...)
-    """
-
-    _registry: Dict[str, Any] = {}
-
-    @classmethod
-    def register(cls, name: str, factory) -> None:
-        cls._registry[name.lower()] = factory
+    @staticmethod
+    def _normalize_provider(provider: Union[str, LLMProvider]) -> str:
+        if isinstance(provider, LLMProvider):
+            return provider.value
+        p = str(provider).strip().lower()
+        if not p:
+            raise ValueError("provider must not be empty")
+        return p
 
     @classmethod
-    def create(cls, name: str, **kwargs) -> LLMAdapter:
-        key = name.lower()
-        if key not in cls._registry:
-            raise ValueError(f"Unknown adapter: {name}")
-        return cls._registry[key](**kwargs)
+    def register(cls, provider: Union[str, LLMProvider], factory: Callable[..., "LLMAdapter"]) -> None:
+        key = cls._normalize_provider(provider)
+        cls._factories[key] = factory
+
+    @classmethod
+    def create(cls, provider: Union[str, LLMProvider], **kwargs) -> "LLMAdapter":
+        key = cls._normalize_provider(provider)
+        if key not in cls._factories:
+            raise ValueError(f"LLM adapter not registered for provider='{key}'")
+        return cls._factories[key](**kwargs)
+
+# ======================================================================
+# FILE: intergrax/llm_adapters/claude_adapter.py
+# MODULE: intergrax.llm_adapters.claude_adapter
+# MODULE_GROUP: llm_adapters
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm_adapters
+#   - file=claude_adapter.py
+# LINES: 168
+# SHA256: 0d18f9319fb16948be09f1e69f034a2ac2cab3c978784e9cae8e6ec6e41f2c31
+# SYMBOLS:
+#   - class ClaudeChatAdapter
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+
+from anthropic import Anthropic
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
+
+
+class ClaudeChatAdapter(BaseLLMAdapter):
+    """
+    Claude (Anthropic) adapter based on the official anthropic Python SDK.
+
+    Contract (aligned with OpenAI adapter pattern):
+      - __init__(client: Optional[Anthropic] = None, model: Optional[str] = None, **defaults)
+      - generate_messages(...) -> str
+      - stream_messages(...)   -> Iterable[str]
+
+    Notes:
+      - Tools and structured output are not wired here (yet).
+    """
+
+    # Conservative context window estimates (keep safe unless you add real token accounting).
+    _CLAUDE_CONTEXT_WINDOWS: Dict[str, int] = {
+        "claude-3-5-sonnet-latest": 200_000,
+        "claude-3-5-haiku-latest": 200_000,
+        # Add exact model ids used in your env as needed.
+    }
+
+    def __init__(
+        self,
+        client: Optional[Anthropic] = None,
+        model: Optional[str] = None,
+        **defaults,
+    ):
+        super().__init__()
+        self.client: Anthropic = client or Anthropic()
+        default_model = GLOBAL_SETTINGS.default_claude_model
+        self.model: str = model or default_model
+        self.defaults = defaults
+        self.model_name_for_token_estimation: str = self.model
+        self._context_window_tokens: int = self._CLAUDE_CONTEXT_WINDOWS.get(self.model, 32_000)
+
+    @property
+    def context_window_tokens(self) -> int:
+        return self._context_window_tokens
+
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        system_text, convo = self._split_system(messages)
+        payload_msgs = self._map_messages(convo)
+
+        temp = temperature if temperature is not None else self.defaults.get("temperature", None)
+        out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
+
+        # Claude requires max_tokens
+        if out_tokens is None:
+            out_tokens = 1024
+
+        resp = self.client.messages.create(
+            model=self.model,
+            system=system_text or None,
+            messages=payload_msgs,
+            max_tokens=int(out_tokens),
+            temperature=float(temp) if temp is not None else None,
+        )
+
+        # SDK returns content blocks; text is typically in resp.content[*].text
+        parts: List[str] = []
+        for block in (resp.content or []):            
+            if block.type == "text":
+                parts.append(block.text or "")
+        return "".join(parts)
+
+    def stream_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Iterable[str]:
+        system_text, convo = self._split_system(messages)
+        payload_msgs = self._map_messages(convo)
+
+        temp = temperature if temperature is not None else self.defaults.get("temperature", None)
+        out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
+        if out_tokens is None:
+            out_tokens = 1024
+
+        stream = self.client.messages.create(
+            model=self.model,
+            system=system_text or None,
+            messages=payload_msgs,
+            max_tokens=int(out_tokens),
+            temperature=float(temp) if temp is not None else None,
+            stream=True,
+        )
+
+        # Anthropic streaming emits SSE events; yield text deltas.
+        # Event types vary; the SDK exposes event.type (string).
+        for event in stream:
+            if event.type == "content_block_delta":
+                delta = event.delta
+                if getattr(delta, "type", None) == "text_delta":
+                    txt = delta.text or ""
+                    if txt:
+                        yield txt
+
+    # -------------------------
+    # Not wired (yet)
+    # -------------------------
+
+    def supports_tools(self) -> bool:
+        return False
+
+    def generate_with_tools(self, *a, **k):
+        raise NotImplementedError("Claude tools are not wired in this adapter.")
+
+    def stream_with_tools(self, *a, **k):
+        raise NotImplementedError("Claude tools are not wired in this adapter.")
+
+    def generate_structured(self, *a, **k):
+        raise NotImplementedError("Structured output is not implemented for ClaudeChatAdapter.")
+
+    # -------------------------
+    # Internals
+    # -------------------------
+
+    def _split_system(self, messages: Sequence[ChatMessage]) -> Tuple[str, List[ChatMessage]]:
+        sys_parts: List[str] = []
+        convo: List[ChatMessage] = []
+        for m in messages:
+            if m.role == "system":
+                if m.content:
+                    sys_parts.append(m.content)
+            else:
+                convo.append(m)
+        return ("\n\n".join(sys_parts).strip(), convo)
+
+    def _map_messages(self, msgs: Sequence[ChatMessage]) -> List[Dict[str, str]]:
+        """
+        Map ChatMessage list to Anthropic Messages API format:
+        [{"role": "user"|"assistant", "content": "..."}]
+
+        - System is passed separately via system=...
+        - Tool messages are not supported here; treat tool as assistant text if present.
+        """
+        out: List[Dict[str, str]] = []
+        for m in msgs:
+            if not m.content:
+                continue
+
+            if m.role == "user":
+                out.append({"role": "user", "content": m.content})
+            else:
+                # assistant | tool -> assistant
+                out.append({"role": "assistant", "content": m.content})
+        return out
 
 # ======================================================================
 # FILE: intergrax/llm_adapters/gemini_adapter.py
@@ -1989,8 +2284,8 @@ class LLMAdapterRegistry:
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=gemini_adapter.py
-# LINES: 126
-# SHA256: aade42a5a2638948069121c82cd289335a4fe80cd8d340a0172d6643bfaf2b61
+# LINES: 238
+# SHA256: 7043ae0404ba2e189fe4f99db0c24497dd2e3e20bffdc87ebbe2e335a09e4802
 # SYMBOLS:
 #   - class GeminiChatAdapter
 # ======================================================================
@@ -1999,70 +2294,66 @@ class LLMAdapterRegistry:
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from typing import Dict, Iterable, Optional, Sequence
 
+import os
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+
+from google import genai
+from google.genai import types
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
 
 
 class GeminiChatAdapter(BaseLLMAdapter):
     """
-    Minimal Gemini adapter.
+    Gemini adapter based on the official Google Gen AI SDK (google-genai).
 
-    NOTE:
-    - This implementation intentionally does not wire tools.
-    - It focuses on simple chat usage.
+    - Uses genai.Client (official client type).
+    - Supports:
+        - generate_messages
+        - stream_messages
+    - Tools + structured output are intentionally not wired here (yet).
     """
 
-    # Conservative context window estimates for common Gemini models.
+    # Conservative context window estimates (input + output).
+    # Keep this small/safe unless you add a real token counter for Gemini.
     _GEMINI_CONTEXT_WINDOWS: Dict[str, int] = {
-        # Gemini 1.5 family (1M tokens)
-        "gemini-1.5-pro": 1_000_000,
-        "gemini-1.5-flash": 1_000_000,
-
-        # Gemini 2.0 Flash family (1,048,576 tokens = 2^20)
-        "gemini-2.0-flash": 1_048_576,
-        "gemini-2.0-flash-lite": 1_048_576,
-        "gemini-2.0-flash-thinking": 1_048_576,
+        "gemini-2.5-pro": 1_000_000,
+        "gemini-2.5-flash": 1_000_000,
+        "gemini-2.0-pro": 1_000_000,
+        "gemini-2.0-flash": 1_000_000,
     }
 
-
-    def _estimate_gemini_context_window(self, model: str) -> int:
-        """
-        Best-effort context window estimation for Gemini models.
-        Computed once at adapter construction time.
-        """
-        name = (model or "").strip()
-        base = name.split(":", 1)[0]
-
-        if base in self._GEMINI_CONTEXT_WINDOWS:
-            return self._GEMINI_CONTEXT_WINDOWS[base]
-
-        return 1_000_000
-
-    def __init__(self, model, **defaults):
+    def __init__(
+        self,
+        client: Optional[genai.Client] = None,
+        model: Optional[str] = None,
+        **defaults,
+    ):
         super().__init__()
-        self.model = model
-        self.defaults = defaults
-        self._context_window_tokens: int = self._estimate_gemini_context_window(str(model))
 
+        # If you want framework-wide defaults later, you can route this via GLOBAL_SETTINGS,
+        # but this adapter stays self-contained to avoid inventing missing settings fields.
+        default_model = GLOBAL_SETTINGS.default_gemini_model
+
+        self.client: genai.Client = client or genai.Client()
+        self.model: str = model or default_model
+        self.model_name_for_token_estimation: str = self.model
+        self.defaults = defaults
+
+        self._context_window_tokens: int = self._estimate_gemini_context_window(self.model)
 
     @property
     def context_window_tokens(self) -> int:
         """
-        Cached maximum context window (input + output tokens) for the
-        configured Gemini model. Computed once in __init__.
+        Cached maximum context window (input + output tokens) for the configured model.
         """
         return self._context_window_tokens
-    
 
-    def _split_system(self, messages: Sequence[ChatMessage]):
-        """
-        Separate system messages from the rest of the conversation, so that
-        we can prepend them manually if needed.
-        """
-        sys_txt = "\n".join(m.content for m in messages if m.role == "system").strip() or None
-        convo = [m for m in messages if m.role != "system"]
-        return sys_txt, convo
+    # ------------------------------------------------------------------
+    # Core API
+    # ------------------------------------------------------------------
 
     def generate_messages(
         self,
@@ -2071,20 +2362,35 @@ class GeminiChatAdapter(BaseLLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ) -> str:
-        sys_txt, convo = self._split_system(messages)
-        history = [{"role": m.role, "parts": [m.content]} for m in convo[:-1]]
-        chat = self.model.start_chat(history=history)
-        user_last = convo[-1].content if convo else ""
+        system_text, convo = self._split_system(messages)
 
-        kwargs = {"temperature": temperature, **self.defaults}
-        if max_tokens is not None:
-            kwargs["max_output_tokens"] = max_tokens
+        config = self._build_generation_config(
+            system_text=system_text,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
 
-        if sys_txt:
-            user_last = f"[SYSTEM]\n{sys_txt}\n\n[USER]\n{user_last}"
+        # Typical case: last message is user -> create chat with history and send last user message.
+        if convo and convo[-1].role == "user":
+            history = self._map_history(convo[:-1])
+            prompt = convo[-1].content or ""
 
-        res = chat.send_message(user_last, **kwargs)
-        return getattr(res, "text", "") or ""
+            chat_session = self.client.chats.create(
+                model=self.model,
+                history=history,
+                config=config,
+            )
+            response = chat_session.send_message(prompt)
+            return response.text or ""
+
+        # Fallback: use generate_content with full contents list (handles odd turn ordering).
+        contents = self._map_contents(convo)
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=contents,
+            config=config,
+        )
+        return response.text or ""
 
     def stream_messages(
         self,
@@ -2093,19 +2399,45 @@ class GeminiChatAdapter(BaseLLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ) -> Iterable[str]:
-        # Simple fallback streaming: single-shot only
-        yield self.generate_messages(messages, temperature=temperature, max_tokens=max_tokens)
+        system_text, convo = self._split_system(messages)
 
-    # Tools not implemented in this skeleton.
-    def supports_tools(self) -> bool:
-        return False
+        config = self._build_generation_config(
+            system_text=system_text,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+
+        if convo and convo[-1].role == "user":
+            history = self._map_history(convo[:-1])
+            prompt = convo[-1].content or ""
+
+            chat_session = self.client.chats.create(
+                model=self.model,
+                history=history,
+                config=config,
+            )
+
+            for chunk in chat_session.send_message_stream(prompt):
+                txt = getattr(chunk, "text", None)
+                if txt:
+                    yield txt
+            return
+
+        # Fallback streaming is not consistently exposed for generate_content across all configs.
+        # Keep behavior explicit and predictable.
+        raise NotImplementedError(
+            "GeminiChatAdapter.stream_messages requires the last message to be role='user'."
+        )
+
+    # ------------------------------------------------------------------
+    # Tools / structured output (not wired)
+    # ------------------------------------------------------------------
 
     def generate_with_tools(self, *a, **k):
         raise NotImplementedError("Gemini tools are not wired in this adapter.")
 
     def stream_with_tools(self, *a, **k):
         raise NotImplementedError("Gemini tools are not wired in this adapter.")
-    
 
     def generate_structured(
         self,
@@ -2115,11 +2447,322 @@ class GeminiChatAdapter(BaseLLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ):
-        """
-        Structured output is not implemented for this adapter.
-        """
         raise NotImplementedError("Structured output is not implemented for GeminiChatAdapter.")
 
+    # ------------------------------------------------------------------
+    # Internals
+    # ------------------------------------------------------------------
+
+    def _estimate_gemini_context_window(self, model: str) -> int:
+        # Safe fallback (small) if unknown.
+        return self._GEMINI_CONTEXT_WINDOWS.get(model, 32_000)
+
+    def _split_system(self, messages: Sequence[ChatMessage]) -> Tuple[str, List[ChatMessage]]:
+        system_parts: List[str] = []
+        convo: List[ChatMessage] = []
+
+        for m in messages:
+            if m.role == "system":
+                if m.content:
+                    system_parts.append(m.content)
+                continue
+            convo.append(m)
+
+        return ("\n\n".join(system_parts).strip(), convo)
+
+    def _build_generation_config(
+        self,
+        *,
+        system_text: str,
+        temperature: Optional[float],
+        max_tokens: Optional[int],
+    ) -> types.GenerateContentConfig:
+        # Merge defaults (adapter-level) with call-level overrides.
+        # Keep it explicit: only pass supported fields.
+        temp = temperature if temperature is not None else self.defaults.get("temperature", None)
+        out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
+
+        kwargs = {}
+
+        if system_text:
+            kwargs["system_instruction"] = system_text
+        if temp is not None:
+            kwargs["temperature"] = float(temp)
+        if out_tokens is not None:
+            kwargs["max_output_tokens"] = int(out_tokens)
+
+        return types.GenerateContentConfig(**kwargs)
+
+    def _map_history(self, msgs: Sequence[ChatMessage]) -> List[types.Content]:
+        """
+        Map prior messages (excluding the last user prompt) into chat history.
+        Uses official typed Content classes.
+        """
+        out: List[types.Content] = []
+        for m in msgs:
+            if not m.content:
+                continue
+            out.append(self._to_content(m))
+        return out
+
+    def _map_contents(self, msgs: Sequence[ChatMessage]) -> List[types.Content]:
+        """
+        Map full conversation into contents list (for generate_content fallback).
+        """
+        out: List[types.Content] = []
+        for m in msgs:
+            if not m.content:
+                continue
+            out.append(self._to_content(m))
+        return out
+
+    def _to_content(self, m: ChatMessage) -> types.Content:
+        """
+        ChatMessage -> google.genai.types.*Content
+        """
+        part = types.Part(text=m.content)
+
+        if m.role == "user":
+            return types.UserContent(parts=[part])
+
+        # Treat assistant/tool as model content (tools are not wired; keep history coherent).
+        return types.ModelContent(parts=[part])
+
+# ======================================================================
+# FILE: intergrax/llm_adapters/mistral_adapter.py
+# MODULE: intergrax.llm_adapters.mistral_adapter
+# MODULE_GROUP: llm_adapters
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm_adapters
+#   - file=mistral_adapter.py
+# LINES: 219
+# SHA256: b12c2701989a747257b88e7850c7d8650c9fbfeb2438c9d2d3200ccbad2dc450
+# SYMBOLS:
+#   - class _MistralDelta
+#   - class _MistralStreamChoice
+#   - class _MistralStreamChunk
+#   - class MistralChatAdapter
+# ======================================================================
+from __future__ import annotations
+
+from typing import Dict, Iterable, List, Optional, Protocol, Sequence, Tuple
+
+from mistralai import Mistral
+from mistralai.models import ChatCompletionResponse
+
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
+
+
+# -----------------------------
+# Typed streaming contracts
+# -----------------------------
+class _MistralDelta(Protocol):
+    content: Optional[str]
+
+
+class _MistralStreamChoice(Protocol):
+    delta: _MistralDelta
+
+
+class _MistralStreamChunk(Protocol):
+    choices: List[_MistralStreamChoice]
+
+
+class MistralChatAdapter(BaseLLMAdapter):
+    """
+    Mistral adapter based on the official Mistral Python SDK (mistralai).
+
+    - Uses Mistral (official client type).
+    - Supports:
+        - generate_messages
+        - stream_messages
+    - Tools + structured output are intentionally not wired here (yet).
+    """
+
+    _MISTRAL_CONTEXT_WINDOWS: Dict[str, int] = {
+        "mistral-small-latest": 32_000,
+        "mistral-medium-latest": 32_000,
+        "mistral-large-latest": 32_000,
+        "codestral-latest": 32_000,
+    }
+
+    def __init__(
+        self,
+        client: Optional[Mistral] = None,
+        model: Optional[str] = None,
+        **defaults,
+    ):
+        super().__init__()
+
+        # Framework-wide defaults should be routed via GLOBAL_SETTINGS.
+        self.client: Mistral = client or Mistral()
+        self.model: str = model or GLOBAL_SETTINGS.default_mistral_model
+        self.model_name_for_token_estimation: str = self.model
+        self.defaults = defaults
+
+        self._context_window_tokens: int = self._estimate_mistral_context_window(self.model)
+
+    @property
+    def context_window_tokens(self) -> int:
+        """
+        Cached maximum context window (input + output tokens) for the configured model.
+        """
+        return self._context_window_tokens
+
+    # ------------------------------------------------------------------
+    # Core API
+    # ------------------------------------------------------------------
+
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        system_text, convo = self._split_system(messages)
+
+        payload = self._build_chat_params(
+            system_text=system_text,
+            convo=convo,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=False,
+        )
+
+        res: ChatCompletionResponse = self.client.chat.complete(**payload)
+
+        if not res.choices:
+            return ""
+
+        # response_format={"type":"text"} -> content is expected to be plain text.
+        return res.choices[0].message.content or ""
+
+    def stream_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Iterable[str]:
+        system_text, convo = self._split_system(messages)
+
+        payload = self._build_chat_params(
+            system_text=system_text,
+            convo=convo,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=True,
+        )
+
+        # The official SDK returns an iterator of stream chunks.
+        # We strongly type only the fields we actually use (choices[0].delta.content).
+        stream: Iterable[_MistralStreamChunk] = self.client.chat.complete(**payload)
+
+        for chunk in stream:
+            if not chunk.choices:
+                continue
+            delta = chunk.choices[0].delta
+            if delta.content:
+                yield delta.content
+
+    # ------------------------------------------------------------------
+    # Tools / structured output (not wired)
+    # ------------------------------------------------------------------
+
+    def generate_with_tools(self, *a, **k):
+        raise NotImplementedError("Mistral tools are not wired in this adapter.")
+
+    def stream_with_tools(self, *a, **k):
+        raise NotImplementedError("Mistral tools are not wired in this adapter.")
+
+    def generate_structured(
+        self,
+        messages: Sequence[ChatMessage],
+        output_model: type,
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ):
+        raise NotImplementedError("Structured output is not implemented for MistralChatAdapter.")
+
+    # ------------------------------------------------------------------
+    # Internals
+    # ------------------------------------------------------------------
+
+    def _estimate_mistral_context_window(self, model: str) -> int:
+        return self._MISTRAL_CONTEXT_WINDOWS.get(model, 32_000)
+
+    def _split_system(self, messages: Sequence[ChatMessage]) -> Tuple[str, List[ChatMessage]]:
+        system_parts: List[str] = []
+        convo: List[ChatMessage] = []
+
+        for m in messages:
+            if m.role == "system":
+                if m.content:
+                    system_parts.append(m.content)
+                continue
+            convo.append(m)
+
+        return ("\n\n".join(system_parts).strip(), convo)
+
+    def _build_chat_params(
+        self,
+        *,
+        system_text: str,
+        convo: Sequence[ChatMessage],
+        temperature: Optional[float],
+        max_tokens: Optional[int],
+        stream: bool,
+    ) -> dict:
+        """
+        Build a minimal, explicit Mistral Chat payload.
+
+        We force response_format={"type":"text"} to keep extraction deterministic
+        (content as a plain string, not a list of chunks).
+        """
+        temp = temperature if temperature is not None else self.defaults.get("temperature", None)
+        out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
+
+        mapped = self._map_messages(system_text=system_text, convo=convo)
+
+        payload: dict = {
+            "model": self.model,
+            "messages": mapped,
+            "stream": stream,
+            "response_format": {"type": "text"},
+        }
+
+        if temp is not None:
+            payload["temperature"] = float(temp)
+        if out_tokens is not None:
+            payload["max_tokens"] = int(out_tokens)
+
+        return payload
+
+    def _map_messages(self, *, system_text: str, convo: Sequence[ChatMessage]) -> List[dict]:
+        """
+        Map ChatMessage -> Mistral chat completion message dicts.
+        """
+        out: List[dict] = []
+
+        if system_text:
+            out.append({"role": "system", "content": system_text})
+
+        for m in convo:
+            if not m.content:
+                continue
+
+            role = m.role
+            if role not in ("user", "assistant"):
+                # Tools are not wired; treat other roles as assistant text.
+                role = "assistant"
+
+            out.append({"role": role, "content": m.content})
+
+        return out
 
 # ======================================================================
 # FILE: intergrax/llm_adapters/ollama_adapter.py
@@ -2400,8 +3043,8 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=openai_responses_adapter.py
-# LINES: 328
-# SHA256: 19e22314f566e6788a17eb02d072353c359c0a1280419fcb503ef33459d24800
+# LINES: 329
+# SHA256: a0d02ef1bd7ac44a855080ac9e20831e3f88dcbe58d1795727b0f7def503643d
 # SYMBOLS:
 #   - class OpenAIChatResponsesAdapter
 # ======================================================================
@@ -2414,6 +3057,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, Iterable, Optional, Sequence, List
 from openai import Client
+from openai.types.responses import Response
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.base import (
@@ -2510,23 +3154,23 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
             )
         return items
 
-    def _collect_output_text(self, response) -> str:
+    def _collect_output_text(self, response: Response) -> str:
         """
         Extract the assistant's output text from a Responses API result.
 
         Prefer response.output_text when available, otherwise aggregate
         all text blocks from response.output[*].content[*] where type == "output_text".
         """
-        txt = getattr(response, "output_text", None)
+        txt = response.output_text
         if txt:
             return txt
-
+        
         chunks: List[str] = []
-        for item in getattr(response, "output", []) or []:
-            if getattr(item, "type", None) == "message":
-                for c in getattr(item, "content", []) or []:
-                    if getattr(c, "type", None) == "output_text":
-                        chunks.append(getattr(c, "text", "") or "")
+        for item in response.output or []:
+            if item.type == "message":
+                for c in item.content or []:
+                    if c.type == "output_text":
+                        chunks.append(c.text or "")
         return "".join(chunks)
         
 
@@ -2584,7 +3228,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         if max_tokens is not None:
             payload["max_output_tokens"] = max_tokens
 
-        stream = self.client.responses.create(**payload, **self.defaults)
+        stream = self.client.responses.stream(**payload, **self.defaults)
         for ev in stream:
             # We are interested in "response.output_text.delta" events
             if getattr(ev, "type", None) == "response.output_text.delta":
@@ -2637,31 +3281,31 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         if max_tokens is not None:
             payload["max_output_tokens"] = max_tokens
 
-        response = self.client.responses.create(**payload, **self.defaults)
+        response: Response = self.client.responses.create(**payload, **self.defaults)
 
         # Assistant text (if present)
         content = self._collect_output_text(response)
 
         # Extract tool calls in a format compatible with Chat Completions
         native_tool_calls: List[Dict[str, Any]] = []
-        for item in getattr(response, "output", []) or []:
-            if getattr(item, "type", None) == "function_call":
-                args = getattr(item, "arguments", "{}")
+        for item in response.output or []:
+            if item.type == "function_call":
+                args = item.arguments
                 if not isinstance(args, str):
                     args = json.dumps(args, ensure_ascii=False)
 
                 native_tool_calls.append(
                     {
-                        "id": getattr(item, "call_id", None),
+                        "id": item.call_id,
                         "type": "function",
                         "function": {
-                            "name": getattr(item, "name", None),
+                            "name": item.name,
                             "arguments": args,
                         },
                     }
                 )
 
-        finish_reason = getattr(response, "status", None) or "completed"
+        finish_reason = response.status or "completed"
 
         return {
             "content": content or "",
@@ -2725,7 +3369,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         if max_tokens is not None:
             payload["max_output_tokens"] = max_tokens
 
-        response = self.client.responses.create(**payload, **self.defaults)
+        response : Response = self.client.responses.create(**payload, **self.defaults)
 
         txt = self._collect_output_text(response)
         json_str = _extract_json_object(txt) or txt.strip()
