@@ -77,6 +77,9 @@ class GlobalSettings:
     # Default Anthropic Claude chat model.
     default_claude_model: str = os.getenv("INTERGRAX_DEFAULT_CLAUDE_MODEL", "claude-3-5-sonnet-latest")
 
+    # Default Mistral chat model.
+    default_mistral_model: str = os.getenv("INTERGRAX_DEFAULT_MISTRAL_MODEL", "mistral-large-latest")
+
     # ------------------------------------------------------------------
     # Session memory / consolidation defaults
     # ------------------------------------------------------------------
