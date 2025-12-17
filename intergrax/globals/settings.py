@@ -71,6 +71,12 @@ class GlobalSettings:
         "sentence-transformers/all-MiniLM-L6-v2",
     )
 
+    # Default Google Gemini chat model.
+    default_gemini_model: str = os.getenv("INTERGRAX_DEFAULT_GEMINI_MODEL", "gemini-2.5-flash")
+
+    # Default Anthropic Claude chat model.
+    default_claude_model: str = os.getenv("INTERGRAX_DEFAULT_CLAUDE_MODEL", "claude-3-5-sonnet-latest")
+
     # ------------------------------------------------------------------
     # Session memory / consolidation defaults
     # ------------------------------------------------------------------
