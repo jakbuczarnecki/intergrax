@@ -1,6 +1,7 @@
 # intergrax/llm_adapters/__init__.py
 
 from INTERGRAX_ENGINE_BUNDLE import GeminiChatAdapter, LangChainOllamaAdapter, OpenAIChatResponsesAdapter
+from intergrax.llm_adapters.aws_bedrock_adapter import BedrockChatAdapter
 from intergrax.llm_adapters.azure_openai_adapter import AzureOpenAIChatAdapter
 from intergrax.llm_adapters.claude_adapter import ClaudeChatAdapter
 from intergrax.llm_adapters.mistral_adapter import MistralChatAdapter
@@ -25,6 +26,7 @@ __all__ = [
     "ClaudeChatAdapter",
     "MistralChatAdapter",
     "AzureOpenAIChatAdapter",
+    "BedrockChatAdapter",
     "_extract_json_object",
     "_model_json_schema",
     "_validate_with_model",
@@ -38,3 +40,4 @@ LLMAdapterRegistry.register(LLMProvider.OLLAMA, lambda **kw: LangChainOllamaAdap
 LLMAdapterRegistry.register(LLMProvider.CLAUDE, lambda **kw: ClaudeChatAdapter(**kw))
 LLMAdapterRegistry.register(LLMProvider.MISTRAL, lambda **kw: MistralChatAdapter(**kw))
 LLMAdapterRegistry.register(LLMProvider.AZURE_OPENAI, lambda **kw: AzureOpenAIChatAdapter(**kw))
+LLMAdapterRegistry.register(LLMProvider.AWS_BEDROCK, lambda **kw: BedrockChatAdapter(**kw))

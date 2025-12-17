@@ -47,6 +47,7 @@ class LLMProvider(str, Enum):
     MISTRAL = "mistral"
     CLAUDE = "claude"
     AZURE_OPENAI = "azure_openai"
+    AWS_BEDROCK = "aws_bedrock"
 
 
 def _strip_code_fences(text: str) -> str:

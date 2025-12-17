@@ -87,6 +87,12 @@ class GlobalSettings:
 
     default_azure_openai_deployment: str = os.getenv("INTERGRAX_DEFAULT_AZURE_OPENAI_DEPLOYMENT", "")
 
+
+    aws_region: str = os.getenv("INTERGRAX_DEFAULT_AWS_REGION", "")
+
+
+    default_bedrock_model_id: str = os.getenv("INTERGRAX_DEFAULT_BEDROCK_MODEL_ID", "")
+
     # ------------------------------------------------------------------
     # Session memory / consolidation defaults
     # ------------------------------------------------------------------
