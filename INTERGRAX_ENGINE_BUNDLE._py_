@@ -36,7 +36,7 @@
 # - websearch/
 #
 # Files included: 121
-# Total lines: 21151
+# Total lines: 21153
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
@@ -66,7 +66,7 @@
 # - intergrax/globals/settings.py | intergrax.globals.settings | globals | 118 | 2c072be447af
 # - intergrax/llm/__init__.py | intergrax.llm | llm | 0 | e3b0c44298fc
 # - intergrax/llm/messages.py | intergrax.llm.messages | llm | 97 | 5d5feec8a7c4
-# - intergrax/llm_adapters/__init__.py | intergrax.llm_adapters | llm_adapters | 43 | 21c943dff256
+# - intergrax/llm_adapters/__init__.py | intergrax.llm_adapters | llm_adapters | 45 | cf59a674a0af
 # - intergrax/llm_adapters/aws_bedrock_adapter.py | intergrax.llm_adapters.aws_bedrock_adapter | llm_adapters | 531 | 2963227c8aad
 # - intergrax/llm_adapters/azure_openai_adapter.py | intergrax.llm_adapters.azure_openai_adapter | llm_adapters | 231 | 8c7fa5b5b5b8
 # - intergrax/llm_adapters/base.py | intergrax.llm_adapters.base | llm_adapters | 351 | 1527154b8284
@@ -182,7 +182,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 21151
+# TOTAL LINES: 21153
 # ======================================================================
 
 # ======================================================================
@@ -875,18 +875,20 @@ def append_chat_messages(
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=__init__.py
-# LINES: 43
-# SHA256: 21c943dff2563aa43a4c3be91c29aca801d1e8a59ce96726f4256b487bba8ce8
+# LINES: 45
+# SHA256: cf59a674a0af83c649440bd1420367a6148ed25d2e649ef499fd9766edcb5add
 # SYMBOLS:
 #   - <none>
 # ======================================================================
 # intergrax/llm_adapters/__init__.py
 
-from INTERGRAX_ENGINE_BUNDLE import GeminiChatAdapter, LangChainOllamaAdapter, OpenAIChatResponsesAdapter
 from intergrax.llm_adapters.aws_bedrock_adapter import BedrockChatAdapter
 from intergrax.llm_adapters.azure_openai_adapter import AzureOpenAIChatAdapter
 from intergrax.llm_adapters.claude_adapter import ClaudeChatAdapter
+from intergrax.llm_adapters.gemini_adapter import GeminiChatAdapter
 from intergrax.llm_adapters.mistral_adapter import MistralChatAdapter
+from intergrax.llm_adapters.ollama_adapter import LangChainOllamaAdapter
+from intergrax.llm_adapters.openai_responses_adapter import OpenAIChatResponsesAdapter
 from .base import (
     LLMAdapter,
     LLMAdapterRegistry,

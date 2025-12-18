@@ -307,7 +307,7 @@ def main() -> None:
     script_dir = Path(__file__).resolve().parent
 
     package_dir_name = "intergrax"
-    out_file_name = "INTERGRAX_ENGINE_BUNDLE.py"
+    out_file_name = "INTERGRAX_ENGINE_BUNDLE._py_"
 
     metas = build_bundle(
         project_root=script_dir,

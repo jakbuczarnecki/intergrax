@@ -1,10 +1,12 @@
 # intergrax/llm_adapters/__init__.py
 
-from INTERGRAX_ENGINE_BUNDLE import GeminiChatAdapter, LangChainOllamaAdapter, OpenAIChatResponsesAdapter
 from intergrax.llm_adapters.aws_bedrock_adapter import BedrockChatAdapter
 from intergrax.llm_adapters.azure_openai_adapter import AzureOpenAIChatAdapter
 from intergrax.llm_adapters.claude_adapter import ClaudeChatAdapter
+from intergrax.llm_adapters.gemini_adapter import GeminiChatAdapter
 from intergrax.llm_adapters.mistral_adapter import MistralChatAdapter
+from intergrax.llm_adapters.ollama_adapter import LangChainOllamaAdapter
+from intergrax.llm_adapters.openai_responses_adapter import OpenAIChatResponsesAdapter
 from .base import (
     LLMAdapter,
     LLMAdapterRegistry,
