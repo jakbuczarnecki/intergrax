@@ -430,6 +430,30 @@ class SessionManager:
 
         return stripped
 
+
+    async def search_user_longterm_memory(
+        self,
+        user_id: str,
+        query: str,
+        *,
+        top_k: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Delegate long-term memory retrieval to UserProfileManager (if available).
+        Engine should not know how the profile manager implements retrieval.
+        """
+        if self._user_profile_manager is None:
+            return None
+
+        return await self._user_profile_manager.search_longterm_memory(
+            user_id=user_id,
+            query=query,
+            top_k=top_k,
+            score_threshold=score_threshold,
+        )
+
+
     # ------------------------------------------------------------------
     # Organization profile memory – prompt-level instructions (per session)
     # ------------------------------------------------------------------

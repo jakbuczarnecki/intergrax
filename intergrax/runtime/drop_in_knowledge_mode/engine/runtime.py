@@ -202,19 +202,22 @@ class DropInKnowledgeRuntime:
         # 6. RAG
         await self._step_rag(state)
 
-        # 7. Web search
+        # 7. User long-term memory
+        await self._step_user_longterm_memory(state)
+
+        # 8. Web search
         await self._step_websearch(state)
 
-        # 8. Ensure current user message
+        # 9. Ensure current user message
         self._ensure_current_user_message(state)
 
-        # 9. Tools
+        # 10. Tools
         await self._step_tools(state)
 
-        # 10. Core LLM
+        # 11. Core LLM
         answer_text = self._step_core_llm(state)
 
-        # 11. Persist + RuntimeAnswer
+        # 12. Persist + RuntimeAnswer
         runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
 
         # Final trace entry for this request.
@@ -228,6 +231,7 @@ class DropInKnowledgeRuntime:
                 "used_rag": runtime_answer.route.used_rag,
                 "used_websearch": runtime_answer.route.used_websearch,
                 "used_tools": runtime_answer.route.used_tools,
+                "used_user_longterm_memory": runtime_answer.route.used_user_longterm_memory,
             },
         )
 
@@ -961,6 +965,7 @@ class DropInKnowledgeRuntime:
             used_websearch=state.used_websearch and self._config.enable_websearch,
             used_tools=state.used_tools and self._config.tools_mode != "off",
             used_user_profile=state.used_user_profile,
+            used_user_longterm_memory=state.used_user_longterm_memory and self._config.enable_user_longterm_memory,
             strategy=strategy,
             extra={},
         )
@@ -1065,6 +1070,111 @@ class DropInKnowledgeRuntime:
         # `messages_for_llm` at this point should contain only history
         # (built by `_step_history`). We now prepend the system message.
         state.messages_for_llm = [system_message] + state.messages_for_llm
+
+
+    # ------------------------------------------------------------------
+    # Step 12: LongTerm memory RAG
+    # ------------------------------------------------------------------
+    async def _step_user_longterm_memory(self, state: RuntimeState) -> None:
+        """
+        Build user long-term memory context layer (if configured).
+
+        This step:
+        - uses cached long-term retrieval result from RuntimeState (if available),
+        - falls back to SessionManager -> UserProfileManager retrieval,
+        - injects LTM context messages,
+        - prepares compact text summary for tools,
+        - logs debug info in a RAG-like manner.
+        """
+        # Default values in case LTM is disabled or no hits are retrieved.
+        state.used_user_longterm_memory = False
+        state.debug_trace.setdefault("user_longterm_memory_hits", 0)
+
+        # If LTM retrieval is globally disabled, do nothing.
+        if not self._config.enable_user_longterm_memory:
+            return
+
+        # SessionManager provides the delegation to UserProfileManager.
+        if self._session_manager is None:
+            return
+
+        built = state.user_longterm_memory_result
+
+        # Fallback: retrieve if not precomputed by any earlier step.
+        if built is None:
+            session = state.session
+            assert session is not None, "Session must be set before long-term memory step."
+
+            query_text = (state.request.message or "").strip()
+            if not query_text:
+                state.debug_trace["user_longterm_memory"] = {"enabled": True, "used": False, "reason": "empty_query"}
+                state.debug_trace["user_longterm_memory_hits"] = 0
+                return
+
+            built = await self._session_manager.search_user_longterm_memory(
+                user_id=session.user_id,
+                query=query_text,
+                top_k=getattr(self._config, "max_longterm_entries_per_query", None),
+                score_threshold=getattr(self._config, "longterm_score_threshold", None),
+            )
+            state.user_longterm_memory_result = built
+
+        # Normalize result structure.
+        built = built or {}
+        ltm_debug = built.get("debug") or {}
+        hits = built.get("hits") or []
+
+        # Store debug info (RAG-style).
+        state.debug_trace["user_longterm_memory"] = ltm_debug
+
+        # Decide usage (same pattern as RAG: debug flag wins, fallback to bool(hits)).
+        state.used_user_longterm_memory = bool(ltm_debug.get("used", bool(hits)))
+
+        if not state.used_user_longterm_memory:
+            state.debug_trace["user_longterm_memory_hits"] = 0
+            return
+
+        # Build prompt-ready context messages.
+        # We keep this analogous to RAG: engine builds context messages from retrieved items.
+        # If you prefer to move message construction to UserProfileManager, we can do that next.
+        ltm_context_text = self._format_longterm_memory_context(hits)
+        if not ltm_context_text:
+            state.used_user_longterm_memory = False
+            state.debug_trace["user_longterm_memory_hits"] = 0
+            return
+
+        # Inject as system context message (NOT system instructions).
+        state.messages_for_llm.append(
+            ChatMessage(
+                role="system",
+                content=(
+                    "USER LONG-TERM MEMORY (retrieved):\n"
+                    "Use the following items as factual context. Do not invent details.\n\n"
+                    f"{ltm_context_text}"
+                ),
+            )
+        )
+
+        # Compact textual form for tools agent context parts (mirrors RAG tools context).
+        state.tools_context_parts.append("USER LONG-TERM MEMORY:\n" + ltm_context_text)
+
+        state.debug_trace["user_longterm_memory_hits"] = len(hits)
+
+        # Trace step (same shape as RAG trace).
+        self._trace(
+            state,
+            component="engine",
+            step="user_longterm_memory",
+            message="User long-term memory step executed.",
+            data={
+                "ltm_enabled": self._config.enable_user_longterm_memory,
+                "used_user_longterm_memory": state.used_user_longterm_memory,
+                "retrieved_hits": len(hits),
+            },
+        )
+
+
+
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -1175,3 +1285,20 @@ class DropInKnowledgeRuntime:
         }
 
         return final_text
+    
+
+    def _format_longterm_memory_context(self, entries: List[Any]) -> str:
+        """
+        Format user long-term memory entries into a compact, prompt-ready text block.
+        Keeps engine independent from retrieval details (no embeddings/vectorstore here).
+        """
+        lines: List[str] = []
+        for e in entries:
+            entry_id = getattr(e, "entry_id", None)
+            content = (getattr(e, "content", "") or "").strip()
+            if not content:
+                continue
+            prefix = f"[LTM:{entry_id}] " if entry_id is not None else "[LTM] "
+            lines.append(prefix + content)
+
+        return "\n".join(lines).strip()
