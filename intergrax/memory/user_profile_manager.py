@@ -5,12 +5,15 @@
 from __future__ import annotations
 
 from typing import Optional, Dict, Any, List, Union
+from xml.dom.minidom import Document
 
 from intergrax.memory.user_profile_memory import (
     UserProfile,
     UserProfileMemoryEntry,
 )
 from intergrax.memory.user_profile_store import UserProfileStore
+from intergrax.rag.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore_manager import VectorstoreManager
 
 
 class UserProfileManager:
@@ -32,8 +35,172 @@ class UserProfileManager:
         for higher-level components such as the runtime or application logic).
     """
 
-    def __init__(self, store: UserProfileStore) -> None:
+    def __init__(
+            self, 
+            store: UserProfileStore,
+            *,
+            embedding_manager: Optional[EmbeddingManager] = None,
+            vectorstore_manager: Optional[VectorstoreManager] = None,
+            longterm_top_k: int = 6,
+            longterm_score_threshold: float = 0.25,
+    ) -> None:
         self._store = store
+
+        # Optional Long-Term Memory RAG dependencies
+        self._embedding_manager = embedding_manager
+        self._vectorstore_manager = vectorstore_manager
+
+        # Retrieval defaults (can be overridden per call)
+        self._longterm_top_k = int(longterm_top_k)
+        self._longterm_score_threshold = float(longterm_score_threshold)
+
+
+    def is_longterm_rag_enabled(self) -> bool:
+        return self._embedding_manager is not None and self._vectorstore_manager is not None
+    
+
+    async def _index_upsert_entry(self, user_id: str, entry: UserProfileMemoryEntry) -> None:
+        """
+        Upsert a single memory entry into the vector store (if enabled).
+        Engine does not know about this.
+        """
+        if not self.is_longterm_rag_enabled():
+            return
+        if entry.deleted:
+            return
+
+        text = (entry.content or "").strip()
+        if not text:
+            return
+
+        meta = dict(entry.metadata or {})
+        meta.update(
+            {
+                "user_id": user_id,
+                "entry_id": entry.entry_id,
+                "kind": getattr(entry.kind, "value", str(entry.kind)),
+                "deleted": bool(entry.deleted),
+            }
+        )
+
+        # Create a Document so VectorstoreManager handles provider specifics consistently.
+        doc = Document(page_content=text, metadata=meta)
+
+        emb = self._embedding_manager.embed_texts([text])  # np.ndarray [1, D] or list[list[float]]
+        self._vectorstore_manager.add_documents(
+            documents=[doc],
+            embeddings=emb,
+            ids=[entry.entry_id],
+            base_metadata=None,
+        )
+
+    async def _index_delete_entry(self, entry_id: str) -> None:
+        """
+        Delete a memory entry vector by id (if enabled).
+        """
+        if not self.is_longterm_rag_enabled():
+            return
+        if not entry_id:
+            return
+        self._vectorstore_manager.delete([entry_id])
+
+    
+    async def search_longterm_memory(
+        self,
+        user_id: str,
+        query: str,
+        *,
+        top_k: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """
+        Vector-based retrieval over user's long-term memory entries.
+
+        Returns:
+          {
+            "used_longterm": bool,
+            "hits": List[UserProfileMemoryEntry],
+            "scores": List[float],
+            "debug": { ...raw-ish info... }
+          }
+        """
+        q = (query or "").strip()
+        if not q or not self.is_longterm_rag_enabled():
+            return {
+                "used_longterm": False,
+                "hits": [],
+                "scores": [],
+                "debug": {"reason": "disabled_or_empty_query"},
+            }
+
+        k = int(top_k if top_k is not None else self._longterm_top_k)
+        thr = float(score_threshold if score_threshold is not None else self._longterm_score_threshold)
+
+        q_emb = self._embedding_manager.embed_texts([q])
+
+        # Filter strictly to this user, and exclude deleted entries.
+        where = {"user_id": user_id, "deleted": False}
+
+        res = self._vectorstore_manager.query(q_emb, top_k=k, where=where)
+
+        ids = (res.get("ids") or [[]])[0] or []
+        scores = (res.get("scores") or [[]])[0] or []
+        metas = (res.get("metadatas") or [[]])[0] or []
+        docs = (res.get("documents") or [[]])[0] or []
+
+        # Apply threshold
+        filtered: List[tuple[str, float]] = []
+        for i, entry_id in enumerate(ids):
+            try:
+                sc = float(scores[i])
+            except Exception:
+                continue
+            if sc >= thr:
+                filtered.append((str(entry_id), sc))
+
+        if not filtered:
+            return {
+                "used_longterm": True,
+                "hits": [],
+                "scores": [],
+                "debug": {
+                    "where": where,
+                    "top_k": k,
+                    "threshold": thr,
+                    "raw_count": len(ids),
+                    "filtered_count": 0,
+                },
+            }
+
+        # Map ids -> canonical entries from the stored profile (source of truth)
+        profile = await self._store.get_profile(user_id)
+        by_id = {e.entry_id: e for e in profile.memory_entries if not e.deleted}
+
+        hits: List[UserProfileMemoryEntry] = []
+        hit_scores: List[float] = []
+        for entry_id, sc in filtered:
+            e = by_id.get(entry_id)
+            if e is not None:
+                hits.append(e)
+                hit_scores.append(sc)
+
+        return {
+            "used_longterm": True,
+            "hits": hits,
+            "scores": hit_scores,
+            "debug": {
+                "where": where,
+                "top_k": k,
+                "threshold": thr,
+                "raw_ids": ids,
+                "raw_scores": scores,
+                "raw_metadatas": metas,
+                "raw_documents_preview": [str(d)[:200] for d in docs],
+                "returned_count": len(hits),
+            },
+        }
+
+
 
     # ---------------------------------------------------------------------
     # Core profile APIs
@@ -147,6 +314,9 @@ class UserProfileManager:
         profile.memory_entries.append(entry)
 
         await self._store.save_profile(profile)
+
+        # Long-term memory vector index (optional)
+        await self._index_upsert_entry(user_id=user_id, entry=entry)
         
         return entry
 
@@ -173,6 +343,10 @@ class UserProfileManager:
                 break
 
         await self._store.save_profile(profile)
+
+        # If content changed, refresh vector index
+        if content is not None:
+            await self._index_upsert_entry(user_id=user_id, entry=entry)
 
         if entry:
             entry.modified=False
@@ -201,9 +375,8 @@ class UserProfileManager:
        
         await self._store.save_profile(profile)
 
-        # profile.memory_entries = [
-        #     e for e in profile.memory_entries if e.entry_id != entry_id
-        # ]
+        # Keep rerieval deterministic: remove from vector index on soft delete
+        await self._index_delete_entry(entry_id=entry_id)
 
         return profile
 

@@ -53,6 +53,7 @@ class RouteInfo:
     used_websearch: bool = False
     used_tools: bool = False
     used_user_profile: bool = False
+    used_user_longterm_memory: bool = False
     strategy: Optional[str] = None  # e.g. "simple", "agentic", "fallback_websearch"
     extra: Dict[str, Any] = field(default_factory=dict)
 
