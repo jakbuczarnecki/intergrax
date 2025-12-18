@@ -44,6 +44,9 @@ class RuntimeState:
     # ContextBuilder intermediate result (history + retrieved chunks)
     context_builder_result: Optional[Any] = None
 
+    # Long-term memory retrieval intermediate result (retrieved entries + context messages)
+    user_longterm_memory_result: Optional[Any] = None
+
     # Profile-based instruction fragments prepared by the memory layer
     profile_user_instructions: Optional[str] = None
     profile_org_instructions: Optional[str] = None
@@ -53,6 +56,7 @@ class RuntimeState:
     used_websearch: bool = False
     used_tools: bool = False
     used_user_profile: bool = False
+    used_user_longterm_memory: bool = False
 
     # Tools
     tools_agent_answer: Optional[str] = None

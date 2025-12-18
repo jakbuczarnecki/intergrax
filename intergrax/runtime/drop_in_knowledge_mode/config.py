@@ -104,9 +104,7 @@ class RuntimeConfig:
 
     # Enables real-time web search as an additional context layer.
     enable_websearch: bool = True
-
-    # Enables short-term user profile / conversational memory.
-    enable_user_profile_memory: bool = True
+    
 
     # ------------------------------------------------------------------
     # MULTI-TENANCY
@@ -127,6 +125,21 @@ class RuntimeConfig:
 
     # Optional semantic score threshold for filtering low-quality hits.
     rag_score_threshold: Optional[float] = None
+
+
+    # ------------------------------------------------------------------
+    # LONG-TERM MEMORY (USER) RETRIEVAL CONFIGURATION
+    # ------------------------------------------------------------------
+
+    # Maximum number of long-term memory entries retrieved per query.
+    max_longterm_entries_per_query: int = 8
+
+    # Maximum token budget reserved for long-term memory context.
+    max_longterm_tokens: int = 4096
+
+    # Optional semantic score threshold for filtering low-quality long-term hits.
+    longterm_score_threshold: Optional[float] = None
+
 
     # ------------------------------------------------------------------
     # WEB SEARCH CONFIGURATION
@@ -174,6 +187,7 @@ class RuntimeConfig:
     # Memory toggles
     enable_user_profile_memory: bool = True
     enable_org_profile_memory: bool = True
+    enable_user_longterm_memory: bool = True
 
     # ------------------------------------------------------------------
     # MISC METADATA

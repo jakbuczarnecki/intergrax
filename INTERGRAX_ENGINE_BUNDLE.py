@@ -35,14 +35,14 @@
 # - tools/
 # - websearch/
 #
-# Files included: 120
-# Total lines: 20670
+# Files included: 121
+# Total lines: 21151
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
 # ROOT: D:\Projekty\intergrax
 # PACKAGE: intergrax
-# FILES: 120
+# FILES: 121
 #
 # MODULE MAP (dynamic):
 # - chains/ (2 files)
@@ -54,7 +54,7 @@
 # - openai/ (3 files)
 # - rag/ (11 files)
 # - root/ (4 files)
-# - runtime/ (37 files)
+# - runtime/ (38 files)
 # - supervisor/ (5 files)
 # - tools/ (3 files)
 # - websearch/ (28 files)
@@ -81,7 +81,7 @@
 # - intergrax/memory/stores/__init__.py | intergrax.memory.stores | memory | 0 | e3b0c44298fc
 # - intergrax/memory/stores/in_memory_conversational_store.py | intergrax.memory.stores.in_memory_conversational_store | memory | 95 | 445319c34e4c
 # - intergrax/memory/stores/in_memory_user_profile_store.py | intergrax.memory.stores.in_memory_user_profile_store | memory | 59 | 9c1690d3981d
-# - intergrax/memory/user_profile_manager.py | intergrax.memory.user_profile_manager | memory | 302 | b18dc194c491
+# - intergrax/memory/user_profile_manager.py | intergrax.memory.user_profile_manager | memory | 515 | 44a3c7915e21
 # - intergrax/memory/user_profile_memory.py | intergrax.memory.user_profile_memory | memory | 168 | 1e835ef567d2
 # - intergrax/memory/user_profile_store.py | intergrax.memory.user_profile_store | memory | 52 | ea286a228ae9
 # - intergrax/multimedia/__init__.py | intergrax.multimedia | multimedia | 0 | e3b0c44298fc
@@ -109,28 +109,29 @@
 # - intergrax/system_prompts.py | intergrax.system_prompts | root | 84 | f66fdf33ac4c
 # - intergrax/runtime/__init__.py | intergrax.runtime | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/__init__.py | intergrax.runtime.drop_in_knowledge_mode | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 203 | e4c23cdbac1d
+# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 217 | 0ca41af59e05
 # - intergrax/runtime/drop_in_knowledge_mode/context/__init__.py | intergrax.runtime.drop_in_knowledge_mode.context | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/context/context_builder.py | intergrax.runtime.drop_in_knowledge_mode.context.context_builder | runtime | 485 | 2cca85dc5dcb
 # - intergrax/runtime/drop_in_knowledge_mode/context/engine_history_layer.py | intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer | runtime | 558 | f27bd61d0560
 # - intergrax/runtime/drop_in_knowledge_mode/engine/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1177 | 8abe77f2b1ab
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 77 | e732cb8d02c4
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1285 | ca44d21b0287
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 81 | 8fa21be600cb
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py | intergrax.runtime.drop_in_knowledge_mode.ingestion | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/attachments.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments | runtime | 124 | f1f76309b50f
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/ingestion_service.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service | runtime | 315 | 72d130deaccc
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/__init__.py | intergrax.runtime.drop_in_knowledge_mode.prompts | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/history_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder | runtime | 89 | 7a99ef869b92
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/rag_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder | runtime | 105 | 26282bc3326a
+# - intergrax/runtime/drop_in_knowledge_mode/prompts/user_longterm_memory_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder | runtime | 117 | 54d89aa0f3b4
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/websearch_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder | runtime | 106 | 74ed1e139cec
 # - intergrax/runtime/drop_in_knowledge_mode/reasoning/__init__.py | intergrax.runtime.drop_in_knowledge_mode.reasoning | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/reasoning/reasoning_layer.py | intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer | runtime | 163 | 7f704f315d6e
 # - intergrax/runtime/drop_in_knowledge_mode/responses/__init__.py | intergrax.runtime.drop_in_knowledge_mode.responses | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/responses/response_schema.py | intergrax.runtime.drop_in_knowledge_mode.responses.response_schema | runtime | 179 | 5e4b2ba82508
+# - intergrax/runtime/drop_in_knowledge_mode/responses/response_schema.py | intergrax.runtime.drop_in_knowledge_mode.responses.response_schema | runtime | 180 | 29c97885c7e5
 # - intergrax/runtime/drop_in_knowledge_mode/session/__init__.py | intergrax.runtime.drop_in_knowledge_mode.session | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/session/chat_session.py | intergrax.runtime.drop_in_knowledge_mode.session.chat_session | runtime | 145 | 3b849ae2b512
 # - intergrax/runtime/drop_in_knowledge_mode/session/in_memory_session_storage.py | intergrax.runtime.drop_in_knowledge_mode.session.in_memory_session_storage | runtime | 181 | 5d9d175f4412
-# - intergrax/runtime/drop_in_knowledge_mode/session/session_manager.py | intergrax.runtime.drop_in_knowledge_mode.session.session_manager | runtime | 603 | 026e1eaf66e8
+# - intergrax/runtime/drop_in_knowledge_mode/session/session_manager.py | intergrax.runtime.drop_in_knowledge_mode.session.session_manager | runtime | 627 | 89cc79f06e5b
 # - intergrax/runtime/drop_in_knowledge_mode/session/session_storage.py | intergrax.runtime.drop_in_knowledge_mode.session.session_storage | runtime | 129 | 135a750dd885
 # - intergrax/runtime/organization/__init__.py | intergrax.runtime.organization | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/organization/organization_profile.py | intergrax.runtime.organization.organization_profile | runtime | 132 | fefdf8264834
@@ -181,7 +182,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 20670
+# TOTAL LINES: 21151
 # ======================================================================
 
 # ======================================================================
@@ -3855,8 +3856,8 @@ class InMemoryUserProfileStore(UserProfileStore):
 #   - package=intergrax
 #   - module_group=memory
 #   - file=user_profile_manager.py
-# LINES: 302
-# SHA256: b18dc194c491bf414f18932d5626c2cff6b36565ff3d9d196de842c91e476421
+# LINES: 515
+# SHA256: 44a3c7915e21dcdd7cb8063fa1947af9d579a5ad65faedbf0ae870aa794e07dd
 # SYMBOLS:
 #   - class UserProfileManager
 # ======================================================================
@@ -3867,12 +3868,15 @@ class InMemoryUserProfileStore(UserProfileStore):
 from __future__ import annotations
 
 from typing import Optional, Dict, Any, List, Union
+from xml.dom.minidom import Document
 
 from intergrax.memory.user_profile_memory import (
     UserProfile,
     UserProfileMemoryEntry,
 )
 from intergrax.memory.user_profile_store import UserProfileStore
+from intergrax.rag.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore_manager import VectorstoreManager
 
 
 class UserProfileManager:
@@ -3894,8 +3898,212 @@ class UserProfileManager:
         for higher-level components such as the runtime or application logic).
     """
 
-    def __init__(self, store: UserProfileStore) -> None:
+    def __init__(
+            self, 
+            store: UserProfileStore,
+            *,
+            embedding_manager: Optional[EmbeddingManager] = None,
+            vectorstore_manager: Optional[VectorstoreManager] = None,
+            longterm_top_k: int = 6,
+            longterm_score_threshold: float = 0.25,
+    ) -> None:
         self._store = store
+
+        # Optional Long-Term Memory RAG dependencies
+        self._embedding_manager = embedding_manager
+        self._vectorstore_manager = vectorstore_manager
+
+        # Retrieval defaults (can be overridden per call)
+        self._longterm_top_k = int(longterm_top_k)
+        self._longterm_score_threshold = float(longterm_score_threshold)
+
+
+    def is_longterm_rag_enabled(self) -> bool:
+        return self._embedding_manager is not None and self._vectorstore_manager is not None
+    
+
+    async def _index_upsert_entry(self, user_id: str, entry: UserProfileMemoryEntry) -> None:
+        """
+        Upsert a single memory entry into the vector store (if enabled).
+        Engine does not know about this.
+        """
+        if not self.is_longterm_rag_enabled():
+            return
+        if entry.deleted:
+            return
+
+        text = (entry.content or "").strip()
+        if not text:
+            return
+
+        meta = dict(entry.metadata or {})
+        meta.update(
+            {
+                "user_id": user_id,
+                "entry_id": entry.entry_id,
+                "kind": getattr(entry.kind, "value", str(entry.kind)),
+                "deleted": bool(entry.deleted),
+            }
+        )
+
+        # Create a Document so VectorstoreManager handles provider specifics consistently.
+        doc = Document(page_content=text, metadata=meta)
+
+        emb = self._embedding_manager.embed_texts([text])  # np.ndarray [1, D] or list[list[float]]
+        self._vectorstore_manager.add_documents(
+            documents=[doc],
+            embeddings=emb,
+            ids=[entry.entry_id],
+            base_metadata=None,
+        )
+
+    async def _index_delete_entry(self, entry_id: str) -> None:
+        """
+        Delete a memory entry vector by id (if enabled).
+        """
+        if not self.is_longterm_rag_enabled():
+            return
+        if not entry_id:
+            return
+        self._vectorstore_manager.delete([entry_id])
+
+    
+    async def search_longterm_memory(
+        self,
+        user_id: str,
+        query: str,
+        *,
+        top_k: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """
+        Vector-based retrieval over user's long-term memory entries.
+
+        Contract (engine-friendly):
+        - debug.used is the canonical flag (like rag_debug_info["used"])
+        - hits contains canonical UserProfileMemoryEntry objects from the profile store
+
+        Returns:
+        {
+            "used_longterm": bool,   # kept for backward compatibility
+            "hits": List[UserProfileMemoryEntry],
+            "scores": List[float],
+            "debug": {
+                "enabled": bool,
+                "used": bool,
+                "reason": str,
+                ...
+            }
+        }
+        """
+        q = (query or "").strip()
+        enabled = self.is_longterm_rag_enabled()
+
+        if not q or not enabled:
+            reason = "empty_query" if not q else "disabled"
+            debug = {
+                "enabled": bool(enabled),
+                "used": False,
+                "reason": reason,
+                "hits_count": 0,
+            }
+            return {
+                "used_longterm": False,
+                "hits": [],
+                "scores": [],
+                "debug": debug,
+            }
+
+        k = int(top_k if top_k is not None else self._longterm_top_k)
+
+        # IMPORTANT: score_threshold may be None (as in RuntimeConfig.longterm_score_threshold).
+        # Treat None as "no threshold" (keep all).
+        thr: Optional[float]
+        if score_threshold is None:
+            thr = None
+        else:
+            thr = float(score_threshold)
+
+        # Embed query
+        q_emb = self._embedding_manager.embed_texts([q])
+
+        # Filter strictly to this user, and exclude deleted entries.
+        where = {"user_id": user_id, "deleted": False}
+
+        res = self._vectorstore_manager.query(q_emb, top_k=k, where=where)
+
+        ids = (res.get("ids") or [[]])[0] or []
+        scores = (res.get("scores") or [[]])[0] or []
+        metas = (res.get("metadatas") or [[]])[0] or []
+        docs = (res.get("documents") or [[]])[0] or []
+
+        # Apply threshold (if any)
+        filtered: List[tuple[str, float]] = []
+        for i, entry_id in enumerate(ids):
+            try:
+                sc = float(scores[i])
+            except Exception:
+                continue
+
+            if thr is None or sc >= thr:
+                filtered.append((str(entry_id), sc))
+
+        if not filtered:
+            debug = {
+                "enabled": True,
+                "used": False,
+                "reason": "no_hits",
+                "where": where,
+                "top_k": k,
+                "threshold": thr,
+                "raw_count": len(ids),
+                "filtered_count": 0,
+            }
+            return {
+                "used_longterm": False,
+                "hits": [],
+                "scores": [],
+                "debug": debug,
+            }
+
+        # Map ids -> canonical entries from the stored profile (source of truth)
+        profile = await self._store.get_profile(user_id)
+        by_id = {e.entry_id: e for e in profile.memory_entries if not e.deleted}
+
+        hits: List[UserProfileMemoryEntry] = []
+        hit_scores: List[float] = []
+        for entry_id, sc in filtered:
+            e = by_id.get(entry_id)
+            if e is not None:
+                hits.append(e)
+                hit_scores.append(sc)
+
+        used = bool(hits)
+
+        debug = {
+            "enabled": True,
+            "used": used,
+            "reason": "hits" if used else "all_filtered_or_missing_in_profile",
+            "where": where,
+            "top_k": k,
+            "threshold": thr,
+            "raw_ids": ids,
+            "raw_scores": scores,
+            "raw_metadatas": metas,
+            "raw_documents_preview": [str(d)[:200] for d in docs],
+            "returned_count": len(hits),
+            "hits_count": len(hits),
+        }
+
+        return {
+            "used_longterm": used,
+            "hits": hits,
+            "scores": hit_scores,
+            "debug": debug,
+        }
+
+
+
 
     # ---------------------------------------------------------------------
     # Core profile APIs
@@ -4009,6 +4217,9 @@ class UserProfileManager:
         profile.memory_entries.append(entry)
 
         await self._store.save_profile(profile)
+
+        # Long-term memory vector index (optional)
+        await self._index_upsert_entry(user_id=user_id, entry=entry)
         
         return entry
 
@@ -4035,6 +4246,10 @@ class UserProfileManager:
                 break
 
         await self._store.save_profile(profile)
+
+        # If content changed, refresh vector index
+        if content is not None:
+            await self._index_upsert_entry(user_id=user_id, entry=entry)
 
         if entry:
             entry.modified=False
@@ -4063,9 +4278,8 @@ class UserProfileManager:
        
         await self._store.save_profile(profile)
 
-        # profile.memory_entries = [
-        #     e for e in profile.memory_entries if e.entry_id != entry_id
-        # ]
+        # Keep rerieval deterministic: remove from vector index on soft delete
+        await self._index_delete_entry(entry_id=entry_id)
 
         return profile
 
@@ -10355,8 +10569,8 @@ def default_rag_system_instruction():
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=config.py
-# LINES: 203
-# SHA256: e4c23cdbac1d938bc1aa2ea01efbc84d5ec822d5480799919b6aebd0569e2bf1
+# LINES: 217
+# SHA256: 0ca41af59e05cc9e303acf06736c07a24d84aace7fd4058e44d563e7b033d818
 # SYMBOLS:
 #   - class ToolsContextScope
 #   - class ReasoningMode
@@ -10469,9 +10683,7 @@ class RuntimeConfig:
 
     # Enables real-time web search as an additional context layer.
     enable_websearch: bool = True
-
-    # Enables short-term user profile / conversational memory.
-    enable_user_profile_memory: bool = True
+    
 
     # ------------------------------------------------------------------
     # MULTI-TENANCY
@@ -10492,6 +10704,21 @@ class RuntimeConfig:
 
     # Optional semantic score threshold for filtering low-quality hits.
     rag_score_threshold: Optional[float] = None
+
+
+    # ------------------------------------------------------------------
+    # LONG-TERM MEMORY (USER) RETRIEVAL CONFIGURATION
+    # ------------------------------------------------------------------
+
+    # Maximum number of long-term memory entries retrieved per query.
+    max_longterm_entries_per_query: int = 8
+
+    # Maximum token budget reserved for long-term memory context.
+    max_longterm_tokens: int = 4096
+
+    # Optional semantic score threshold for filtering low-quality long-term hits.
+    longterm_score_threshold: Optional[float] = None
+
 
     # ------------------------------------------------------------------
     # WEB SEARCH CONFIGURATION
@@ -10539,6 +10766,7 @@ class RuntimeConfig:
     # Memory toggles
     enable_user_profile_memory: bool = True
     enable_org_profile_memory: bool = True
+    enable_user_longterm_memory: bool = True
 
     # ------------------------------------------------------------------
     # MISC METADATA
@@ -11679,8 +11907,8 @@ class HistoryLayer:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime.py
-# LINES: 1177
-# SHA256: 8abe77f2b1abc48d6f1d2f97c2bf4538a70d01c8cb609fa6bca4bd6d09595878
+# LINES: 1285
+# SHA256: ca44d21b02875ae26c6cfdd46357cce97f7a9104826b80d9c24d87c9d18e3e55
 # SYMBOLS:
 #   - class DropInKnowledgeRuntime
 # ======================================================================
@@ -11726,6 +11954,7 @@ from intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder import 
     DefaultRagPromptBuilder,
     RagPromptBuilder,
 )
+from intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder import DefaultUserLongTermMemoryPromptBuilder, UserLongTermMemoryPromptBuilder
 from intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer import ReasoningLayer
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
     RuntimeRequest,
@@ -11789,6 +12018,7 @@ class DropInKnowledgeRuntime:
         ingestion_service: Optional[AttachmentIngestionService] = None,
         context_builder: Optional[ContextBuilder] = None,
         rag_prompt_builder: Optional[RagPromptBuilder] = None,
+        user_longterm_memory_prompt_builder: Optional[UserLongTermMemoryPromptBuilder] = None,
         websearch_prompt_builder: Optional[WebSearchPromptBuilder] = None,
         history_prompt_builder: Optional[HistorySummaryPromptBuilder] = None,
     ) -> None:
@@ -11809,6 +12039,14 @@ class DropInKnowledgeRuntime:
 
         self._rag_prompt_builder: RagPromptBuilder = (
             rag_prompt_builder or DefaultRagPromptBuilder(config)
+        )
+
+        self._user_longterm_memory_prompt_builder = (
+            user_longterm_memory_prompt_builder
+            or DefaultUserLongTermMemoryPromptBuilder(
+                max_entries=self._config.max_longterm_entries_per_query,
+                max_chars=int(self._config.max_longterm_tokens * 4),
+            )
         )
 
         self._websearch_executor: Optional[WebSearchExecutor] = None
@@ -11888,19 +12126,22 @@ class DropInKnowledgeRuntime:
         # 6. RAG
         await self._step_rag(state)
 
-        # 7. Web search
+        # 7. User long-term memory
+        await self._step_user_longterm_memory(state)
+
+        # 8. Web search
         await self._step_websearch(state)
 
-        # 8. Ensure current user message
+        # 9. Ensure current user message
         self._ensure_current_user_message(state)
 
-        # 9. Tools
+        # 10. Tools
         await self._step_tools(state)
 
-        # 10. Core LLM
+        # 11. Core LLM
         answer_text = self._step_core_llm(state)
 
-        # 11. Persist + RuntimeAnswer
+        # 12. Persist + RuntimeAnswer
         runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
 
         # Final trace entry for this request.
@@ -11914,6 +12155,7 @@ class DropInKnowledgeRuntime:
                 "used_rag": runtime_answer.route.used_rag,
                 "used_websearch": runtime_answer.route.used_websearch,
                 "used_tools": runtime_answer.route.used_tools,
+                "used_user_longterm_memory": runtime_answer.route.used_user_longterm_memory,
             },
         )
 
@@ -12647,6 +12889,7 @@ class DropInKnowledgeRuntime:
             used_websearch=state.used_websearch and self._config.enable_websearch,
             used_tools=state.used_tools and self._config.tools_mode != "off",
             used_user_profile=state.used_user_profile,
+            used_user_longterm_memory=state.used_user_longterm_memory and self._config.enable_user_longterm_memory,
             strategy=strategy,
             extra={},
         )
@@ -12751,6 +12994,82 @@ class DropInKnowledgeRuntime:
         # `messages_for_llm` at this point should contain only history
         # (built by `_step_history`). We now prepend the system message.
         state.messages_for_llm = [system_message] + state.messages_for_llm
+
+
+    # ------------------------------------------------------------------
+    # Step 12: LongTerm memory RAG
+    # ------------------------------------------------------------------
+    async def _step_user_longterm_memory(self, state: RuntimeState) -> None:
+        state.used_user_longterm_memory = False
+        state.debug_trace.setdefault("user_longterm_memory_hits", 0)
+
+        if not self._config.enable_user_longterm_memory:
+            return
+
+        built = state.user_longterm_memory_result
+
+        if built is None:
+            session = state.session
+            assert session is not None, "Session must be set before user long-term memory step."
+
+            query = (state.request.message or "").strip()
+            if not query:
+                state.debug_trace["user_longterm_memory"] = {
+                    "enabled": True,
+                    "used": False,
+                    "reason": "empty_query",
+                }
+                state.debug_trace["user_longterm_memory_hits"] = 0
+                return
+
+            built = await self._session_manager.search_user_longterm_memory(
+                user_id=session.user_id,
+                query=query,
+                top_k=self._config.max_longterm_entries_per_query,
+                score_threshold=self._config.longterm_score_threshold,
+            )
+            state.user_longterm_memory_result = built
+
+        built = built or {}
+        ltm_info = built.get("debug") or {}
+        hits = built.get("hits") or []
+
+        state.debug_trace["user_longterm_memory"] = ltm_info
+        state.used_user_longterm_memory = bool(ltm_info.get("used", bool(hits)))
+
+        if not state.used_user_longterm_memory:
+            state.debug_trace["user_longterm_memory_hits"] = 0
+            return
+
+        bundle = self._user_longterm_memory_prompt_builder.build_user_longterm_memory_prompt(hits)
+        context_messages = bundle.context_messages or []
+        state.messages_for_llm.extend(context_messages)
+
+        # Tools context (symetrycznie do RAG)
+        ltm_context_texts: List[str] = []
+        for msg in context_messages:
+            if msg.content:
+                ltm_context_texts.append(msg.content)
+        if ltm_context_texts:
+            state.tools_context_parts.append(
+                "USER LONG-TERM MEMORY CONTEXT:\n" + "\n\n".join(ltm_context_texts)
+            )
+
+        state.debug_trace["user_longterm_memory_hits"] = len(hits)
+
+        self._trace(
+            state,
+            component="engine",
+            step="user_longterm_memory",
+            message="User long-term memory step executed.",
+            data={
+                "ltm_enabled": self._config.enable_user_longterm_memory,
+                "used_user_longterm_memory": state.used_user_longterm_memory,
+                "hits": len(hits),
+            },
+        )
+
+
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -12861,6 +13180,23 @@ class DropInKnowledgeRuntime:
         }
 
         return final_text
+    
+
+    def _format_longterm_memory_context(self, entries: List[Any]) -> str:
+        """
+        Format user long-term memory entries into a compact, prompt-ready text block.
+        Keeps engine independent from retrieval details (no embeddings/vectorstore here).
+        """
+        lines: List[str] = []
+        for e in entries:
+            entry_id = getattr(e, "entry_id", None)
+            content = (getattr(e, "content", "") or "").strip()
+            if not content:
+                continue
+            prefix = f"[LTM:{entry_id}] " if entry_id is not None else "[LTM] "
+            lines.append(prefix + content)
+
+        return "\n".join(lines).strip()
 
 # ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py
@@ -12870,8 +13206,8 @@ class DropInKnowledgeRuntime:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime_state.py
-# LINES: 77
-# SHA256: e732cb8d02c4e76bb0ed45db7e6a65d2dd64b3209ea30c267bc26cce8ba310bc
+# LINES: 81
+# SHA256: 8fa21be600cb6178cb8b36ac1de011a25eb5c2ecb0b67b0294d0fc427fa90b56
 # SYMBOLS:
 #   - class RuntimeState
 # ======================================================================
@@ -12921,6 +13257,9 @@ class RuntimeState:
     # ContextBuilder intermediate result (history + retrieved chunks)
     context_builder_result: Optional[Any] = None
 
+    # Long-term memory retrieval intermediate result (retrieved entries + context messages)
+    user_longterm_memory_result: Optional[Any] = None
+
     # Profile-based instruction fragments prepared by the memory layer
     profile_user_instructions: Optional[str] = None
     profile_org_instructions: Optional[str] = None
@@ -12930,6 +13269,7 @@ class RuntimeState:
     used_websearch: bool = False
     used_tools: bool = False
     used_user_profile: bool = False
+    used_user_longterm_memory: bool = False
 
     # Tools
     tools_agent_answer: Optional[str] = None
@@ -13679,6 +14019,139 @@ class DefaultRagPromptBuilder(RagPromptBuilder):
         return "\n".join(lines)
 
 # ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/prompts/user_longterm_memory_prompt_builder.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=user_longterm_memory_prompt_builder.py
+# LINES: 117
+# SHA256: 54d89aa0f3b478e425cb794d9eb78c7c107244f6ad0985076ba09037cc945131
+# SYMBOLS:
+#   - class UserLongTermMemoryPromptBundle
+#   - class UserLongTermMemoryPromptBuilder
+#   - class DefaultUserLongTermMemoryPromptBuilder
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import List, Protocol, Optional
+
+from intergrax.llm.messages import ChatMessage, MessageRole
+from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
+
+
+@dataclass
+class UserLongTermMemoryPromptBundle:
+    """
+    Prompt-ready bundle built from retrieved long-term memory entries.
+
+    Design goals:
+      - deterministic formatting (no LLM inference here),
+      - compact but traceable,
+      - safe: contains only retrieved entries, never the full profile.
+    """
+    context_messages: List[ChatMessage] = field(default_factory=list)
+
+
+class UserLongTermMemoryPromptBuilder(Protocol):
+    """
+    Builds prompt messages to inject retrieved user long-term memory
+    into the LLM context (similar role as RagPromptBuilder, but for LTM).
+
+    NOTE: This is pure prompt construction only.
+    Retrieval / embeddings / ranking live in UserProfileManager.
+    """
+
+    def build_user_longterm_memory_prompt(
+        self,
+        retrieved_entries: List[UserProfileMemoryEntry],
+    ) -> UserLongTermMemoryPromptBundle:
+        ...
+
+
+class DefaultUserLongTermMemoryPromptBuilder(UserLongTermMemoryPromptBuilder):
+    """
+    Default deterministic LTM prompt builder.
+
+    Output strategy:
+      - single SYSTEM message containing compact bullet list,
+      - includes entry_id and optional session_id for traceability,
+      - avoids any inferred claims (just retrieved content).
+    """
+
+    def __init__(
+        self,
+        max_entries: int = 12,
+        max_chars: int = 3000,
+        title: str = "USER LONG-TERM MEMORY",
+    ) -> None:
+        self._max_entries = max_entries
+        self._max_chars = max_chars
+        self._title = title
+
+    def build_user_longterm_memory_prompt(
+        self,
+        retrieved_entries: List[UserProfileMemoryEntry],
+    ) -> UserLongTermMemoryPromptBundle:
+        if not retrieved_entries:
+            return UserLongTermMemoryPromptBundle(context_messages=[])
+
+        # Filter deleted entries defensively (should already be handled upstream).
+        entries = [e for e in retrieved_entries if not e.deleted]
+        if not entries:
+            return UserLongTermMemoryPromptBundle(context_messages=[])
+
+        # Limit count.
+        entries = entries[: self._max_entries]
+
+        lines: List[str] = []
+        lines.append(f"{self._title} (retrieved)")
+        lines.append("Use these as factual user memory only if relevant to the question.")
+        lines.append("If not relevant, ignore them.")
+        lines.append("")
+
+        # Build bullet list with traceable IDs.
+        for e in entries:
+            entry_id = (e.entry_id or "").strip()
+            session_id = (e.session_id or "").strip() if e.session_id else ""
+            kind = e.kind.value
+            importance = e.importance.value
+
+            meta_bits: List[str] = []
+            if entry_id:
+                meta_bits.append(f"id={entry_id}")
+            if session_id:
+                meta_bits.append(f"session={session_id}")
+            if kind:
+                meta_bits.append(f"kind={kind}")
+            if importance:
+                meta_bits.append(f"importance={importance}")
+
+            meta = ", ".join(meta_bits)
+            content = (e.content or "").strip()
+
+            # Keep deterministic structure.
+            if meta:
+                lines.append(f"- [{meta}] {content}")
+            else:
+                lines.append(f"- {content}")
+
+        text = "\n".join(lines).strip()
+
+        # Hard char limit (deterministic truncation).
+        if self._max_chars and len(text) > self._max_chars:
+            text = text[: self._max_chars].rstrip() + "\n[...truncated]"
+
+        msg = ChatMessage(role="system", content=text)
+        return UserLongTermMemoryPromptBundle(context_messages=[msg])
+
+# ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/prompts/websearch_prompt_builder.py
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder
 # MODULE_GROUP: runtime
@@ -14016,8 +14489,8 @@ class ReasoningLayer:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=response_schema.py
-# LINES: 179
-# SHA256: 5e4b2ba8250830508046eb1061b9ef0bccd6acfe1499d95b772a4d4b7563944b
+# LINES: 180
+# SHA256: 29c97885c7e59228793b565551e6fe61d1c3811d0f94b601dab006a35ca4d0ca
 # SYMBOLS:
 #   - class Citation
 #   - class RouteInfo
@@ -14082,6 +14555,7 @@ class RouteInfo:
     used_websearch: bool = False
     used_tools: bool = False
     used_user_profile: bool = False
+    used_user_longterm_memory: bool = False
     strategy: Optional[str] = None  # e.g. "simple", "agentic", "fallback_websearch"
     extra: Dict[str, Any] = field(default_factory=dict)
 
@@ -14586,8 +15060,8 @@ class InMemorySessionStorage(SessionStorage):
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=session_manager.py
-# LINES: 603
-# SHA256: 026e1eaf66e88054d93d18ca05a06cbd8b78ee01a77dfb7545bcefda5281af8b
+# LINES: 627
+# SHA256: 89cc79f06e5b99172353624c37df513aa4911d09375768f77e42a41ea86e23ac
 # SYMBOLS:
 #   - class SessionConsolidationReason
 #   - class SessionManager
@@ -15023,6 +15497,30 @@ class SessionManager:
         await self.save_session(session)
 
         return stripped
+
+
+    async def search_user_longterm_memory(
+        self,
+        user_id: str,
+        query: str,
+        *,
+        top_k: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Delegate long-term memory retrieval to UserProfileManager (if available).
+        Engine should not know how the profile manager implements retrieval.
+        """
+        if self._user_profile_manager is None:
+            return None
+
+        return await self._user_profile_manager.search_longterm_memory(
+            user_id=user_id,
+            query=query,
+            top_k=top_k,
+            score_threshold=score_threshold,
+        )
+
 
     # ------------------------------------------------------------------
     # Organization profile memory – prompt-level instructions (per session)
