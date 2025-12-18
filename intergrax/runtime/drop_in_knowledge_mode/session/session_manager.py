@@ -167,6 +167,28 @@ class SessionManager:
             workspace_id=workspace_id,
             metadata=metadata,
         )
+    
+    async def get_or_create_session(
+        self,
+        *,
+        user_id: str,
+        session_id: str,
+    ) -> ChatSession:
+        session = await self.get_session(            
+            session_id=session_id,
+        )
+
+        if session is not None:
+            return session
+
+        session = await self.create_session(
+            user_id=user_id,
+            session_id=session_id
+        )
+
+        await self._storage.save_session(session)
+        return session
+
 
     async def save_session(self, session: ChatSession) -> None:
         """

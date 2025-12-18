@@ -4,8 +4,9 @@
 
 from __future__ import annotations
 
+import json
 from typing import Optional, Dict, Any, List, Union
-from xml.dom.minidom import Document
+from langchain.schema import Document
 
 from intergrax.memory.user_profile_memory import (
     UserProfile,
@@ -82,9 +83,10 @@ class UserProfileManager:
                 "deleted": bool(entry.deleted),
             }
         )
-
+        
         # Create a Document so VectorstoreManager handles provider specifics consistently.
-        doc = Document(page_content=text, metadata=meta)
+        meta = self._sanitize_vectorstore_metadata(meta)
+        doc = Document(page_content=text, metadata=meta)    
 
         emb = self._embedding_manager.embed_texts([text])  # np.ndarray [1, D] or list[list[float]]
         self._vectorstore_manager.add_documents(
@@ -93,6 +95,31 @@ class UserProfileManager:
             ids=[entry.entry_id],
             base_metadata=None,
         )
+
+    def _sanitize_vectorstore_metadata(self, meta: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Chroma (and some other vectorstores) accept only scalar metadata values:
+        str | int | float | bool | None.
+        We normalize lists/dicts to stable strings.
+        """
+        out: Dict[str, Any] = {}
+        for k, v in (meta or {}).items():
+            if v is None or isinstance(v, (str, int, float, bool)):
+                out[k] = v
+                continue
+
+            if isinstance(v, (list, tuple)):
+                # Preserve information but keep scalar type
+                out[k] = ",".join(str(x) for x in v)
+                continue
+
+            if isinstance(v, dict):
+                out[k] = json.dumps(v, ensure_ascii=False, separators=(",", ":"))
+                continue
+
+            out[k] = str(v)
+
+        return out
 
     async def _index_delete_entry(self, entry_id: str) -> None:
         """

@@ -421,6 +421,39 @@ class VectorstoreManager:
         except TypeError:
             self._collection.upsert(items=vectors)
 
+    def _normalize_chroma_where(self, where: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """
+        Chroma expects `where` to have exactly one top-level operator when multiple
+        conditions are present. We support a friendly dict form and convert it.
+
+        Examples:
+        {"user_id": "u1"} ->
+            {"user_id": {"$eq": "u1"}}
+
+        {"user_id": "u1", "deleted": False} ->
+            {"$and": [{"user_id": {"$eq": "u1"}}, {"deleted": {"$eq": False}}]}
+
+        If `where` already contains an operator key (starts with '$'), it is returned as-is.
+        """
+        if not where:
+            return None
+
+        # Already operator-based (user may pass {"$and": [...]} etc.)
+        if any(isinstance(k, str) and k.startswith("$") for k in where.keys()):
+            return where
+
+        items = list(where.items())
+
+        # Single condition
+        if len(items) == 1:
+            k, v = items[0]
+            return {str(k): {"$eq": v}}
+
+        # Multiple conditions -> $and
+        and_terms = [{str(k): {"$eq": v}} for k, v in items]
+        return {"$and": and_terms}
+
+
     # ------------------------------
     # Query
     # ------------------------------
@@ -453,7 +486,7 @@ class VectorstoreManager:
             res = self._collection.query(
                 query_embeddings=Q,
                 n_results=top_k,
-                where=where or None,   # important: None instead of {}
+                where=self._normalize_chroma_where(where),
                 include=include,
             )
 
