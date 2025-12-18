@@ -31,6 +31,7 @@ from typing import List, Optional, Dict, Any
 
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
+from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import FileSystemAttachmentResolver
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import AttachmentIngestionService, IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import (
     DefaultHistorySummaryPromptBuilder,
@@ -53,9 +54,6 @@ from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import Runtim
 
 from intergrax.llm.messages import ChatMessage
 
-from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import (
-    FileSystemAttachmentResolver,
-)
 from intergrax.runtime.drop_in_knowledge_mode.context.context_builder import (
     ContextBuilder,
     RetrievedChunk,
@@ -112,11 +110,7 @@ class DropInKnowledgeRuntime:
         self._config = config
         self._session_manager = session_manager
 
-        self._ingestion_service = ingestion_service or AttachmentIngestionService(
-            resolver=FileSystemAttachmentResolver(),
-            embedding_manager=config.embedding_manager,
-            vectorstore_manager=config.vectorstore_manager,
-        )
+        self._ingestion_service = ingestion_service
 
         self._context_builder = context_builder or ContextBuilder(
             config=config,
@@ -318,6 +312,12 @@ class DropInKnowledgeRuntime:
         # 1a. Ingest attachments into vector store (if any)
         ingestion_results: List[IngestionResult] = []
         if req.attachments:
+            if self._ingestion_service is None:
+                raise ValueError(
+                    "Attachments were provided but ingestion_service is not configured. "
+                    "Pass ingestion_service explicitly to control where attachments are indexed."
+                )
+    
             ingestion_results = await self._ingestion_service.ingest_attachments_for_session(
                 attachments=req.attachments,
                 session_id=session.id,
@@ -844,6 +844,12 @@ class DropInKnowledgeRuntime:
                 # it or uses a different keyword, that should be handled inside
                 # the adapter implementation.
                 generate_kwargs["max_tokens"] = max_output_tokens
+
+            msgs = state.messages_for_llm
+            if not msgs or msgs[-1].role != "user":
+                raise Exception(
+                    f"Last message must be 'user' (got: {msgs[-1].role if msgs else 'None'})."
+                )
 
             raw_answer = self._config.llm_adapter.generate_messages(
                 state.messages_for_llm,

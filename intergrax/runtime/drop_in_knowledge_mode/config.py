@@ -85,10 +85,10 @@ class RuntimeConfig:
     llm_adapter: LLMAdapter
 
     # Embedding manager used for RAG/document indexing and retrieval.
-    embedding_manager: EmbeddingManager
+    embedding_manager: Optional[EmbeddingManager] = None
 
     # Vectorstore manager providing semantic search over stored chunks.
-    vectorstore_manager: VectorstoreManager
+    vectorstore_manager: Optional[VectorstoreManager] = None
 
     # Optional labels for observability/logging only.
     llm_label: str = "default-llm"
@@ -215,3 +215,14 @@ class RuntimeConfig:
             return ReasoningMode.DIRECT
         
         return self.reasoning_config.mode
+    
+
+    def validate(self) -> None:
+        """
+        Validates config consistency. Keeps the runtime fail-fast and predictable.
+        """
+        if self.enable_rag:
+            if self.embedding_manager is None or self.vectorstore_manager is None:
+                raise ValueError(
+                    "enable_rag=True requires embedding_manager and vectorstore_manager."
+                )

@@ -59,7 +59,7 @@ class DefaultRagPromptBuilder(RagPromptBuilder):
             rag_context_text = self._format_rag_context(built.retrieved_chunks)
             context_messages.append(
                 ChatMessage(
-                    role="system",
+                    role="user",
                     content=(
                         "The following excerpts were retrieved from the user's "
                         "documents. Use them as factual context when answering "

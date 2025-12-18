@@ -36,7 +36,7 @@
 # - websearch/
 #
 # Files included: 121
-# Total lines: 21151
+# Total lines: 21259
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
@@ -66,7 +66,7 @@
 # - intergrax/globals/settings.py | intergrax.globals.settings | globals | 118 | 2c072be447af
 # - intergrax/llm/__init__.py | intergrax.llm | llm | 0 | e3b0c44298fc
 # - intergrax/llm/messages.py | intergrax.llm.messages | llm | 97 | 5d5feec8a7c4
-# - intergrax/llm_adapters/__init__.py | intergrax.llm_adapters | llm_adapters | 43 | 21c943dff256
+# - intergrax/llm_adapters/__init__.py | intergrax.llm_adapters | llm_adapters | 45 | cf59a674a0af
 # - intergrax/llm_adapters/aws_bedrock_adapter.py | intergrax.llm_adapters.aws_bedrock_adapter | llm_adapters | 531 | 2963227c8aad
 # - intergrax/llm_adapters/azure_openai_adapter.py | intergrax.llm_adapters.azure_openai_adapter | llm_adapters | 231 | 8c7fa5b5b5b8
 # - intergrax/llm_adapters/base.py | intergrax.llm_adapters.base | llm_adapters | 351 | 1527154b8284
@@ -81,7 +81,7 @@
 # - intergrax/memory/stores/__init__.py | intergrax.memory.stores | memory | 0 | e3b0c44298fc
 # - intergrax/memory/stores/in_memory_conversational_store.py | intergrax.memory.stores.in_memory_conversational_store | memory | 95 | 445319c34e4c
 # - intergrax/memory/stores/in_memory_user_profile_store.py | intergrax.memory.stores.in_memory_user_profile_store | memory | 59 | 9c1690d3981d
-# - intergrax/memory/user_profile_manager.py | intergrax.memory.user_profile_manager | memory | 515 | 44a3c7915e21
+# - intergrax/memory/user_profile_manager.py | intergrax.memory.user_profile_manager | memory | 542 | b37c9e084ab3
 # - intergrax/memory/user_profile_memory.py | intergrax.memory.user_profile_memory | memory | 168 | 1e835ef567d2
 # - intergrax/memory/user_profile_store.py | intergrax.memory.user_profile_store | memory | 52 | ea286a228ae9
 # - intergrax/multimedia/__init__.py | intergrax.multimedia | multimedia | 0 | e3b0c44298fc
@@ -101,7 +101,7 @@
 # - intergrax/rag/rag_answerer.py | intergrax.rag.rag_answerer | rag | 425 | 25b567672739
 # - intergrax/rag/rag_retriever.py | intergrax.rag.rag_retriever | rag | 426 | 4f2ef95f2004
 # - intergrax/rag/re_ranker.py | intergrax.rag.re_ranker | rag | 307 | 3d5cb2ebb6b4
-# - intergrax/rag/vectorstore_manager.py | intergrax.rag.vectorstore_manager | rag | 577 | bda67f53d196
+# - intergrax/rag/vectorstore_manager.py | intergrax.rag.vectorstore_manager | rag | 610 | aa4d6c197b1b
 # - intergrax/rag/windowed_answerer.py | intergrax.rag.windowed_answerer | rag | 185 | 6dd3864cb639
 # - intergrax/__init__.py | intergrax | root | 0 | e3b0c44298fc
 # - intergrax/chat_agent.py | intergrax.chat_agent | root | 592 | a346a03152df
@@ -109,21 +109,21 @@
 # - intergrax/system_prompts.py | intergrax.system_prompts | root | 84 | f66fdf33ac4c
 # - intergrax/runtime/__init__.py | intergrax.runtime | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/__init__.py | intergrax.runtime.drop_in_knowledge_mode | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 217 | 0ca41af59e05
+# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 228 | 2d16085ec489
 # - intergrax/runtime/drop_in_knowledge_mode/context/__init__.py | intergrax.runtime.drop_in_knowledge_mode.context | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/context/context_builder.py | intergrax.runtime.drop_in_knowledge_mode.context.context_builder | runtime | 485 | 2cca85dc5dcb
 # - intergrax/runtime/drop_in_knowledge_mode/context/engine_history_layer.py | intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer | runtime | 558 | f27bd61d0560
 # - intergrax/runtime/drop_in_knowledge_mode/engine/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1285 | ca44d21b0287
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1291 | 32ab9d4603c9
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 81 | 8fa21be600cb
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py | intergrax.runtime.drop_in_knowledge_mode.ingestion | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/attachments.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments | runtime | 124 | f1f76309b50f
-# - intergrax/runtime/drop_in_knowledge_mode/ingestion/ingestion_service.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service | runtime | 315 | 72d130deaccc
+# - intergrax/runtime/drop_in_knowledge_mode/ingestion/ingestion_service.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service | runtime | 322 | 2d1af899b85d
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/__init__.py | intergrax.runtime.drop_in_knowledge_mode.prompts | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/history_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder | runtime | 89 | 7a99ef869b92
-# - intergrax/runtime/drop_in_knowledge_mode/prompts/rag_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder | runtime | 105 | 26282bc3326a
+# - intergrax/runtime/drop_in_knowledge_mode/prompts/rag_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder | runtime | 105 | 487e17f834e1
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/user_longterm_memory_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder | runtime | 117 | 54d89aa0f3b4
-# - intergrax/runtime/drop_in_knowledge_mode/prompts/websearch_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder | runtime | 106 | 74ed1e139cec
+# - intergrax/runtime/drop_in_knowledge_mode/prompts/websearch_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder | runtime | 106 | 9defd6c0d7be
 # - intergrax/runtime/drop_in_knowledge_mode/reasoning/__init__.py | intergrax.runtime.drop_in_knowledge_mode.reasoning | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/reasoning/reasoning_layer.py | intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer | runtime | 163 | 7f704f315d6e
 # - intergrax/runtime/drop_in_knowledge_mode/responses/__init__.py | intergrax.runtime.drop_in_knowledge_mode.responses | runtime | 0 | e3b0c44298fc
@@ -131,7 +131,7 @@
 # - intergrax/runtime/drop_in_knowledge_mode/session/__init__.py | intergrax.runtime.drop_in_knowledge_mode.session | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/session/chat_session.py | intergrax.runtime.drop_in_knowledge_mode.session.chat_session | runtime | 145 | 3b849ae2b512
 # - intergrax/runtime/drop_in_knowledge_mode/session/in_memory_session_storage.py | intergrax.runtime.drop_in_knowledge_mode.session.in_memory_session_storage | runtime | 181 | 5d9d175f4412
-# - intergrax/runtime/drop_in_knowledge_mode/session/session_manager.py | intergrax.runtime.drop_in_knowledge_mode.session.session_manager | runtime | 627 | 89cc79f06e5b
+# - intergrax/runtime/drop_in_knowledge_mode/session/session_manager.py | intergrax.runtime.drop_in_knowledge_mode.session.session_manager | runtime | 649 | f7a28afc1821
 # - intergrax/runtime/drop_in_knowledge_mode/session/session_storage.py | intergrax.runtime.drop_in_knowledge_mode.session.session_storage | runtime | 129 | 135a750dd885
 # - intergrax/runtime/organization/__init__.py | intergrax.runtime.organization | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/organization/organization_profile.py | intergrax.runtime.organization.organization_profile | runtime | 132 | fefdf8264834
@@ -182,7 +182,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 21151
+# TOTAL LINES: 21259
 # ======================================================================
 
 # ======================================================================
@@ -875,18 +875,20 @@ def append_chat_messages(
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=__init__.py
-# LINES: 43
-# SHA256: 21c943dff2563aa43a4c3be91c29aca801d1e8a59ce96726f4256b487bba8ce8
+# LINES: 45
+# SHA256: cf59a674a0af83c649440bd1420367a6148ed25d2e649ef499fd9766edcb5add
 # SYMBOLS:
 #   - <none>
 # ======================================================================
 # intergrax/llm_adapters/__init__.py
 
-from INTERGRAX_ENGINE_BUNDLE import GeminiChatAdapter, LangChainOllamaAdapter, OpenAIChatResponsesAdapter
 from intergrax.llm_adapters.aws_bedrock_adapter import BedrockChatAdapter
 from intergrax.llm_adapters.azure_openai_adapter import AzureOpenAIChatAdapter
 from intergrax.llm_adapters.claude_adapter import ClaudeChatAdapter
+from intergrax.llm_adapters.gemini_adapter import GeminiChatAdapter
 from intergrax.llm_adapters.mistral_adapter import MistralChatAdapter
+from intergrax.llm_adapters.ollama_adapter import LangChainOllamaAdapter
+from intergrax.llm_adapters.openai_responses_adapter import OpenAIChatResponsesAdapter
 from .base import (
     LLMAdapter,
     LLMAdapterRegistry,
@@ -3856,8 +3858,8 @@ class InMemoryUserProfileStore(UserProfileStore):
 #   - package=intergrax
 #   - module_group=memory
 #   - file=user_profile_manager.py
-# LINES: 515
-# SHA256: 44a3c7915e21dcdd7cb8063fa1947af9d579a5ad65faedbf0ae870aa794e07dd
+# LINES: 542
+# SHA256: b37c9e084ab39c76cd09a03c6e81199d0fc8d0236fdffa7a0be4c70d9cb3f252
 # SYMBOLS:
 #   - class UserProfileManager
 # ======================================================================
@@ -3867,8 +3869,9 @@ class InMemoryUserProfileStore(UserProfileStore):
 
 from __future__ import annotations
 
+import json
 from typing import Optional, Dict, Any, List, Union
-from xml.dom.minidom import Document
+from langchain.schema import Document
 
 from intergrax.memory.user_profile_memory import (
     UserProfile,
@@ -3945,9 +3948,10 @@ class UserProfileManager:
                 "deleted": bool(entry.deleted),
             }
         )
-
+        
         # Create a Document so VectorstoreManager handles provider specifics consistently.
-        doc = Document(page_content=text, metadata=meta)
+        meta = self._sanitize_vectorstore_metadata(meta)
+        doc = Document(page_content=text, metadata=meta)    
 
         emb = self._embedding_manager.embed_texts([text])  # np.ndarray [1, D] or list[list[float]]
         self._vectorstore_manager.add_documents(
@@ -3956,6 +3960,31 @@ class UserProfileManager:
             ids=[entry.entry_id],
             base_metadata=None,
         )
+
+    def _sanitize_vectorstore_metadata(self, meta: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Chroma (and some other vectorstores) accept only scalar metadata values:
+        str | int | float | bool | None.
+        We normalize lists/dicts to stable strings.
+        """
+        out: Dict[str, Any] = {}
+        for k, v in (meta or {}).items():
+            if v is None or isinstance(v, (str, int, float, bool)):
+                out[k] = v
+                continue
+
+            if isinstance(v, (list, tuple)):
+                # Preserve information but keep scalar type
+                out[k] = ",".join(str(x) for x in v)
+                continue
+
+            if isinstance(v, dict):
+                out[k] = json.dumps(v, ensure_ascii=False, separators=(",", ":"))
+                continue
+
+            out[k] = str(v)
+
+        return out
 
     async def _index_delete_entry(self, entry_id: str) -> None:
         """
@@ -9000,8 +9029,8 @@ class ReRanker:
 #   - package=intergrax
 #   - module_group=rag
 #   - file=vectorstore_manager.py
-# LINES: 577
-# SHA256: bda67f53d19610e34733d0aa358b3b759c3c7957d8f9c8b6f957dead592e689c
+# LINES: 610
+# SHA256: aa4d6c197b1be246a457f68e53ab66a88600631777d6a2efdbc76923a1459c7b
 # SYMBOLS:
 #   - class VSConfig
 #   - class VectorstoreManager
@@ -9429,6 +9458,39 @@ class VectorstoreManager:
         except TypeError:
             self._collection.upsert(items=vectors)
 
+    def _normalize_chroma_where(self, where: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """
+        Chroma expects `where` to have exactly one top-level operator when multiple
+        conditions are present. We support a friendly dict form and convert it.
+
+        Examples:
+        {"user_id": "u1"} ->
+            {"user_id": {"$eq": "u1"}}
+
+        {"user_id": "u1", "deleted": False} ->
+            {"$and": [{"user_id": {"$eq": "u1"}}, {"deleted": {"$eq": False}}]}
+
+        If `where` already contains an operator key (starts with '$'), it is returned as-is.
+        """
+        if not where:
+            return None
+
+        # Already operator-based (user may pass {"$and": [...]} etc.)
+        if any(isinstance(k, str) and k.startswith("$") for k in where.keys()):
+            return where
+
+        items = list(where.items())
+
+        # Single condition
+        if len(items) == 1:
+            k, v = items[0]
+            return {str(k): {"$eq": v}}
+
+        # Multiple conditions -> $and
+        and_terms = [{str(k): {"$eq": v}} for k, v in items]
+        return {"$and": and_terms}
+
+
     # ------------------------------
     # Query
     # ------------------------------
@@ -9461,7 +9523,7 @@ class VectorstoreManager:
             res = self._collection.query(
                 query_embeddings=Q,
                 n_results=top_k,
-                where=where or None,   # important: None instead of {}
+                where=self._normalize_chroma_where(where),
                 include=include,
             )
 
@@ -10569,8 +10631,8 @@ def default_rag_system_instruction():
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=config.py
-# LINES: 217
-# SHA256: 0ca41af59e05cc9e303acf06736c07a24d84aace7fd4058e44d563e7b033d818
+# LINES: 228
+# SHA256: 2d16085ec489ed4b23b723e1cbc59977916f38c5246e67c2b2b9fc6bfae64a54
 # SYMBOLS:
 #   - class ToolsContextScope
 #   - class ReasoningMode
@@ -10664,10 +10726,10 @@ class RuntimeConfig:
     llm_adapter: LLMAdapter
 
     # Embedding manager used for RAG/document indexing and retrieval.
-    embedding_manager: EmbeddingManager
+    embedding_manager: Optional[EmbeddingManager] = None
 
     # Vectorstore manager providing semantic search over stored chunks.
-    vectorstore_manager: VectorstoreManager
+    vectorstore_manager: Optional[VectorstoreManager] = None
 
     # Optional labels for observability/logging only.
     llm_label: str = "default-llm"
@@ -10794,6 +10856,17 @@ class RuntimeConfig:
             return ReasoningMode.DIRECT
         
         return self.reasoning_config.mode
+    
+
+    def validate(self) -> None:
+        """
+        Validates config consistency. Keeps the runtime fail-fast and predictable.
+        """
+        if self.enable_rag:
+            if self.embedding_manager is None or self.vectorstore_manager is None:
+                raise ValueError(
+                    "enable_rag=True requires embedding_manager and vectorstore_manager."
+                )
 
 # ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/context/__init__.py
@@ -11907,8 +11980,8 @@ class HistoryLayer:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime.py
-# LINES: 1285
-# SHA256: ca44d21b02875ae26c6cfdd46357cce97f7a9104826b80d9c24d87c9d18e3e55
+# LINES: 1291
+# SHA256: 32ab9d4603c9a2a77b4eac4f96dfae25170cc7183ac35d3d35596edd3d96a109
 # SYMBOLS:
 #   - class DropInKnowledgeRuntime
 # ======================================================================
@@ -11945,6 +12018,7 @@ from typing import List, Optional, Dict, Any
 
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
+from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import FileSystemAttachmentResolver
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import AttachmentIngestionService, IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import (
     DefaultHistorySummaryPromptBuilder,
@@ -11967,9 +12041,6 @@ from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import Runtim
 
 from intergrax.llm.messages import ChatMessage
 
-from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import (
-    FileSystemAttachmentResolver,
-)
 from intergrax.runtime.drop_in_knowledge_mode.context.context_builder import (
     ContextBuilder,
     RetrievedChunk,
@@ -12026,11 +12097,7 @@ class DropInKnowledgeRuntime:
         self._config = config
         self._session_manager = session_manager
 
-        self._ingestion_service = ingestion_service or AttachmentIngestionService(
-            resolver=FileSystemAttachmentResolver(),
-            embedding_manager=config.embedding_manager,
-            vectorstore_manager=config.vectorstore_manager,
-        )
+        self._ingestion_service = ingestion_service
 
         self._context_builder = context_builder or ContextBuilder(
             config=config,
@@ -12232,6 +12299,12 @@ class DropInKnowledgeRuntime:
         # 1a. Ingest attachments into vector store (if any)
         ingestion_results: List[IngestionResult] = []
         if req.attachments:
+            if self._ingestion_service is None:
+                raise ValueError(
+                    "Attachments were provided but ingestion_service is not configured. "
+                    "Pass ingestion_service explicitly to control where attachments are indexed."
+                )
+    
             ingestion_results = await self._ingestion_service.ingest_attachments_for_session(
                 attachments=req.attachments,
                 session_id=session.id,
@@ -12758,6 +12831,12 @@ class DropInKnowledgeRuntime:
                 # it or uses a different keyword, that should be handled inside
                 # the adapter implementation.
                 generate_kwargs["max_tokens"] = max_output_tokens
+
+            msgs = state.messages_for_llm
+            if not msgs or msgs[-1].role != "user":
+                raise Exception(
+                    f"Last message must be 'user' (got: {msgs[-1].role if msgs else 'None'})."
+                )
 
             raw_answer = self._config.llm_adapter.generate_messages(
                 state.messages_for_llm,
@@ -13455,8 +13534,8 @@ class FileSystemAttachmentResolver:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=ingestion_service.py
-# LINES: 315
-# SHA256: 72d130deaccc558a2aebb76edc17b1e1bad1f32ca4dc22a7b32b50165d0033df
+# LINES: 322
+# SHA256: 2d1af899b85deb2fb5115e9a767d360896349dba99802d7a88b3d5da40c27bfa
 # SYMBOLS:
 #   - class IngestionResult
 #   - class AttachmentIngestionService
@@ -13596,6 +13675,13 @@ class AttachmentIngestionService:
         The session/user/tenant/workspace identifiers are injected as metadata,
         so that RAG retrieval can later filter documents appropriately.
         """
+
+        if self._embedding_manager is None or self._vectorstore_manager is None:
+            raise ValueError(
+                "Attachment ingestion requires embedding_manager and vectorstore_manager. "
+                "Provide them in RuntimeConfig or pass a custom ingestion_service."
+            )
+
         results: List[IngestionResult] = []
 
         for attachment in attachments:
@@ -13906,7 +13992,7 @@ class DefaultHistorySummaryPromptBuilder(HistorySummaryPromptBuilder):
 #   - module_group=runtime
 #   - file=rag_prompt_builder.py
 # LINES: 105
-# SHA256: 26282bc3326ad04e3e3145221ed454a6c7b40080abf9f0bb69b31f2285f057f0
+# SHA256: 487e17f834e16f6b28434c4e88072d4f318281f1d26952e1f4d9ac75a6bb422a
 # SYMBOLS:
 #   - class RagPromptBundle
 #   - class RagPromptBuilder
@@ -13973,7 +14059,7 @@ class DefaultRagPromptBuilder(RagPromptBuilder):
             rag_context_text = self._format_rag_context(built.retrieved_chunks)
             context_messages.append(
                 ChatMessage(
-                    role="system",
+                    role="user",
                     content=(
                         "The following excerpts were retrieved from the user's "
                         "documents. Use them as factual context when answering "
@@ -14160,7 +14246,7 @@ class DefaultUserLongTermMemoryPromptBuilder(UserLongTermMemoryPromptBuilder):
 #   - module_group=runtime
 #   - file=websearch_prompt_builder.py
 # LINES: 106
-# SHA256: 74ed1e139ceceb08f9a0c363669305cac1bc13ffbf2626677c9229d706d7781d
+# SHA256: 9defd6c0d7be0cea6d5d02ff9d563cb70ce7978c49cd4179ee31fc1f92455561
 # SYMBOLS:
 #   - class WebSearchPromptBundle
 #   - class WebSearchPromptBuilder
@@ -14263,7 +14349,7 @@ class DefaultWebSearchPromptBuilder(WebSearchPromptBuilder):
 
         context_messages = [
             ChatMessage(
-                role="system",
+                role="user",
                 content=context_text,
             )
         ]
@@ -15060,8 +15146,8 @@ class InMemorySessionStorage(SessionStorage):
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=session_manager.py
-# LINES: 627
-# SHA256: 89cc79f06e5b99172353624c37df513aa4911d09375768f77e42a41ea86e23ac
+# LINES: 649
+# SHA256: f7a28afc1821aa5a8246a1cfba1f2fddea6619a77b5724d7c674fc1d89987699
 # SYMBOLS:
 #   - class SessionConsolidationReason
 #   - class SessionManager
@@ -15235,6 +15321,28 @@ class SessionManager:
             workspace_id=workspace_id,
             metadata=metadata,
         )
+    
+    async def get_or_create_session(
+        self,
+        *,
+        user_id: str,
+        session_id: str,
+    ) -> ChatSession:
+        session = await self.get_session(            
+            session_id=session_id,
+        )
+
+        if session is not None:
+            return session
+
+        session = await self.create_session(
+            user_id=user_id,
+            session_id=session_id
+        )
+
+        await self._storage.save_session(session)
+        return session
+
 
     async def save_session(self, session: ChatSession) -> None:
         """

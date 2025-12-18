@@ -133,6 +133,13 @@ class AttachmentIngestionService:
         The session/user/tenant/workspace identifiers are injected as metadata,
         so that RAG retrieval can later filter documents appropriately.
         """
+
+        if self._embedding_manager is None or self._vectorstore_manager is None:
+            raise ValueError(
+                "Attachment ingestion requires embedding_manager and vectorstore_manager. "
+                "Provide them in RuntimeConfig or pass a custom ingestion_service."
+            )
+
         results: List[IngestionResult] = []
 
         for attachment in attachments:
