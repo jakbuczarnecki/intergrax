@@ -95,7 +95,7 @@ class DefaultWebSearchPromptBuilder(WebSearchPromptBuilder):
 
         context_messages = [
             ChatMessage(
-                role="system",
+                role="user",
                 content=context_text,
             )
         ]

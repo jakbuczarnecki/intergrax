@@ -845,6 +845,12 @@ class DropInKnowledgeRuntime:
                 # the adapter implementation.
                 generate_kwargs["max_tokens"] = max_output_tokens
 
+            msgs = state.messages_for_llm
+            if not msgs or msgs[-1].role != "user":
+                raise Exception(
+                    f"Last message must be 'user' (got: {msgs[-1].role if msgs else 'None'})."
+                )
+
             raw_answer = self._config.llm_adapter.generate_messages(
                 state.messages_for_llm,
                 **generate_kwargs,
