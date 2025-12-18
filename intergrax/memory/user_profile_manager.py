@@ -116,26 +116,52 @@ class UserProfileManager:
         """
         Vector-based retrieval over user's long-term memory entries.
 
+        Contract (engine-friendly):
+        - debug.used is the canonical flag (like rag_debug_info["used"])
+        - hits contains canonical UserProfileMemoryEntry objects from the profile store
+
         Returns:
-          {
-            "used_longterm": bool,
+        {
+            "used_longterm": bool,   # kept for backward compatibility
             "hits": List[UserProfileMemoryEntry],
             "scores": List[float],
-            "debug": { ...raw-ish info... }
-          }
+            "debug": {
+                "enabled": bool,
+                "used": bool,
+                "reason": str,
+                ...
+            }
+        }
         """
         q = (query or "").strip()
-        if not q or not self.is_longterm_rag_enabled():
+        enabled = self.is_longterm_rag_enabled()
+
+        if not q or not enabled:
+            reason = "empty_query" if not q else "disabled"
+            debug = {
+                "enabled": bool(enabled),
+                "used": False,
+                "reason": reason,
+                "hits_count": 0,
+            }
             return {
                 "used_longterm": False,
                 "hits": [],
                 "scores": [],
-                "debug": {"reason": "disabled_or_empty_query"},
+                "debug": debug,
             }
 
         k = int(top_k if top_k is not None else self._longterm_top_k)
-        thr = float(score_threshold if score_threshold is not None else self._longterm_score_threshold)
 
+        # IMPORTANT: score_threshold may be None (as in RuntimeConfig.longterm_score_threshold).
+        # Treat None as "no threshold" (keep all).
+        thr: Optional[float]
+        if score_threshold is None:
+            thr = None
+        else:
+            thr = float(score_threshold)
+
+        # Embed query
         q_emb = self._embedding_manager.embed_texts([q])
 
         # Filter strictly to this user, and exclude deleted entries.
@@ -148,28 +174,33 @@ class UserProfileManager:
         metas = (res.get("metadatas") or [[]])[0] or []
         docs = (res.get("documents") or [[]])[0] or []
 
-        # Apply threshold
+        # Apply threshold (if any)
         filtered: List[tuple[str, float]] = []
         for i, entry_id in enumerate(ids):
             try:
                 sc = float(scores[i])
             except Exception:
                 continue
-            if sc >= thr:
+
+            if thr is None or sc >= thr:
                 filtered.append((str(entry_id), sc))
 
         if not filtered:
+            debug = {
+                "enabled": True,
+                "used": False,
+                "reason": "no_hits",
+                "where": where,
+                "top_k": k,
+                "threshold": thr,
+                "raw_count": len(ids),
+                "filtered_count": 0,
+            }
             return {
-                "used_longterm": True,
+                "used_longterm": False,
                 "hits": [],
                 "scores": [],
-                "debug": {
-                    "where": where,
-                    "top_k": k,
-                    "threshold": thr,
-                    "raw_count": len(ids),
-                    "filtered_count": 0,
-                },
+                "debug": debug,
             }
 
         # Map ids -> canonical entries from the stored profile (source of truth)
@@ -184,21 +215,30 @@ class UserProfileManager:
                 hits.append(e)
                 hit_scores.append(sc)
 
+        used = bool(hits)
+
+        debug = {
+            "enabled": True,
+            "used": used,
+            "reason": "hits" if used else "all_filtered_or_missing_in_profile",
+            "where": where,
+            "top_k": k,
+            "threshold": thr,
+            "raw_ids": ids,
+            "raw_scores": scores,
+            "raw_metadatas": metas,
+            "raw_documents_preview": [str(d)[:200] for d in docs],
+            "returned_count": len(hits),
+            "hits_count": len(hits),
+        }
+
         return {
-            "used_longterm": True,
+            "used_longterm": used,
             "hits": hits,
             "scores": hit_scores,
-            "debug": {
-                "where": where,
-                "top_k": k,
-                "threshold": thr,
-                "raw_ids": ids,
-                "raw_scores": scores,
-                "raw_metadatas": metas,
-                "raw_documents_preview": [str(d)[:200] for d in docs],
-                "returned_count": len(hits),
-            },
+            "debug": debug,
         }
+
 
 
 
