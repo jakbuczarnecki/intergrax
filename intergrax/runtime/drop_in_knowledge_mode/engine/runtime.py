@@ -108,14 +108,19 @@ class DropInKnowledgeRuntime:
     ) -> None:
 
         self._config = config
+        self._config.validate()
+
         self._session_manager = session_manager
 
         self._ingestion_service = ingestion_service
 
-        self._context_builder = context_builder or ContextBuilder(
-            config=config,
-            vectorstore_manager=config.vectorstore_manager,
-        )
+        self._context_builder = context_builder
+        if self._context_builder is None and self._config.enable_rag:
+           self._context_builder = ContextBuilder(
+                config=config,
+                vectorstore_manager=config.vectorstore_manager,
+            )
+            
 
         self._rag_prompt_builder: RagPromptBuilder = (
             rag_prompt_builder or DefaultRagPromptBuilder(config)
@@ -535,10 +540,10 @@ class DropInKnowledgeRuntime:
         # If RAG is globally disabled, do nothing.
         if not self._config.enable_rag:
             return
-
-        # We need ContextBuilder to produce retrieved chunks.
+        
+    
         if self._context_builder is None:
-            return
+            raise RuntimeError("RAG enabled but ContextBuilder is not configured.")
 
         built = state.context_builder_result
 
@@ -569,7 +574,7 @@ class DropInKnowledgeRuntime:
 
         # Additional context messages built from retrieved chunks
         context_messages = bundle.context_messages or []
-        state.messages_for_llm.extend(context_messages)
+        self._insert_context_before_last_user(state, context_messages)
 
         # Compact textual form of RAG context for tools agent
         rag_context_text = self._format_rag_context(retrieved_chunks)
@@ -625,24 +630,35 @@ class DropInKnowledgeRuntime:
 
             bundle = self._websearch_prompt_builder.build_websearch_prompt(web_docs)
             context_messages = bundle.context_messages or []
-            state.messages_for_llm.extend(context_messages)
+            self._insert_context_before_last_user(state, context_messages)
             state.websearch_debug.update(bundle.debug_info or {})
 
-            # Compact textual context for tools
+            # Debug trace (no tools coupling)
             web_context_texts: List[str] = []
             for msg in context_messages:
                 if msg.content:
                     web_context_texts.append(msg.content)
-            if web_context_texts:
-                state.tools_context_parts.append(
-                    "WEBSEARCH CONTEXT:\n" + "\n\n".join(web_context_texts)
-                )
+
+            dbg = state.debug_trace.setdefault("websearch", {})
+            dbg["context_blocks_count"] = len(web_context_texts)
+
+            # Preview only to avoid bloating trace
+            preview = "\n\n".join(web_context_texts[:1])
+            dbg["context_preview"] = preview
+            dbg["context_preview_chars"] = len(preview)
+
+            # Optional: doc-level preview (titles/urls only)
+            dbg["docs_preview"] = [
+                {
+                    "title": (d.get("title") if isinstance(d, dict) else None),
+                    "url": (d.get("url") if isinstance(d, dict) else None),
+                }
+                for d in (web_docs or [])[:5]
+            ]
 
         except Exception as exc:
             state.websearch_debug["error"] = str(exc)
-
-        if state.websearch_debug:
-            state.debug_trace["websearch"] = state.websearch_debug
+        
 
         # Trace web search step.
         self._trace(
@@ -662,20 +678,24 @@ class DropInKnowledgeRuntime:
     # ------------------------------------------------------------------
 
     def _ensure_current_user_message(self, state: RuntimeState) -> None:
-        """
-        Ensure that the latest user message is present in the final prompt.
+        msg = (state.request.message or "").strip()
+        if not msg:
+            return
 
-        ContextBuilder may decide to already include it in history; if not,
-        we append it explicitly as the last user message.
-        """
-        if not state.history_includes_current_user:
-            state.messages_for_llm.append(
-                ChatMessage(
-                    role="user",
-                    content=state.request.message,
-                    created_at=datetime.now(timezone.utc).isoformat(),
-                )
-            )
+        if not state.messages_for_llm:
+            state.messages_for_llm.append(ChatMessage(role="user", content=msg))
+            return
+
+        last = state.messages_for_llm[-1]
+        last_content = (last.content or "").strip()
+
+        # If the last message already equals the current user prompt, do nothing.
+        if last.role == "user" and last_content == msg:
+            return
+
+        # Otherwise append current user prompt to enforce user-last semantics.
+        state.messages_for_llm.append(ChatMessage(role="user", content=msg))
+
 
     # ------------------------------------------------------------------
     # Step 8: Tools
@@ -780,7 +800,9 @@ class DropInKnowledgeRuntime:
 
                 tools_context_for_llm = "\n".join(tool_lines).strip()
                 if tools_context_for_llm:
-                    state.messages_for_llm.append(
+                    insert_at = len(state.messages_for_llm) - 1
+                    state.messages_for_llm.insert(
+                        insert_at,
                         ChatMessage(
                             role="system",
                             content=(
@@ -788,7 +810,7 @@ class DropInKnowledgeRuntime:
                                 "Use their results when answering the user.\n\n"
                                 + tools_context_for_llm
                             ),
-                        )
+                        ),
                     )
 
         except Exception as e:
@@ -856,50 +878,20 @@ class DropInKnowledgeRuntime:
                 **generate_kwargs,
             )
 
-            # LLM adapter may return a simple string.
-            if isinstance(raw_answer, str):
-                self._trace(
-                    state,
-                    component="engine",
-                    step="core_llm",
-                    message="Core LLM adapter returned a plain string.",
-                    data={
-                        "used_tools_answer": False,
-                        "adapter_return_type": "str",
-                    },
-                )
-                return raw_answer
-
-            # Or an object with a .content attribute (dataclass / pydantic model).
-            if hasattr(raw_answer, "content"):
-                content_value = raw_answer.content  # type: ignore[attr-defined]
-                if isinstance(content_value, str) and content_value.strip():
-                    self._trace(
-                        state,
-                        component="engine",
-                        step="core_llm",
-                        message="Core LLM adapter returned an object with non-empty content.",
-                        data={
-                            "used_tools_answer": False,
-                            "adapter_return_type": type(raw_answer).__name__,
-                            "has_content_attribute": True,
-                        },
-                    )
-                    return content_value
-
-            # Fallback: stringify whatever the adapter returned.
             self._trace(
                 state,
                 component="engine",
                 step="core_llm",
-                message="Core LLM adapter returned a non-string object without usable content; using stringified value.",
+                message="Core LLM adapter returned answer.",
                 data={
                     "used_tools_answer": False,
-                    "adapter_return_type": type(raw_answer).__name__,
-                    "has_content_attribute": hasattr(raw_answer, "content"),
+                    "adapter_return_type": "str",
+                    "answer_len": len(raw_answer),
+                    "answer_is_empty": not bool(raw_answer),
                 },
             )
-            return str(raw_answer)
+            
+            return raw_answer
 
         except Exception as e:
             state.debug_trace["llm_error"] = str(e)
@@ -1135,17 +1127,29 @@ class DropInKnowledgeRuntime:
 
         bundle = self._user_longterm_memory_prompt_builder.build_user_longterm_memory_prompt(hits)
         context_messages = bundle.context_messages or []
-        state.messages_for_llm.extend(context_messages)
+        self._insert_context_before_last_user(state, context_messages)
 
-        # Tools context (symetrycznie do RAG)
+        # Debug trace (no tools coupling)
         ltm_context_texts: List[str] = []
         for msg in context_messages:
             if msg.content:
                 ltm_context_texts.append(msg.content)
-        if ltm_context_texts:
-            state.tools_context_parts.append(
-                "USER LONG-TERM MEMORY CONTEXT:\n" + "\n\n".join(ltm_context_texts)
-            )
+
+        dbg = state.debug_trace.setdefault("user_longterm_memory", {})
+        # Preview only (avoid bloating trace)
+        dbg["context_blocks_count"] = len(ltm_context_texts)
+        dbg["context_preview"] = "\n\n".join(ltm_context_texts[:2])  # first 1-2 blocks is enough
+        dbg["context_preview_chars"] = len(dbg["context_preview"])
+
+        dbg["hits_preview"] = [
+            {
+                "entry_id": h.entry_id,
+                "title": getattr(h, "title", None),
+                "kind": getattr(getattr(h, "kind", None), "value", getattr(h, "kind", None)),
+                "deleted": bool(getattr(h, "deleted", False)),
+            }
+            for h in hits[:5]
+        ]
 
         state.debug_trace["user_longterm_memory_hits"] = len(hits)
 
@@ -1289,3 +1293,26 @@ class DropInKnowledgeRuntime:
             lines.append(prefix + content)
 
         return "\n".join(lines).strip()
+    
+
+    def _insert_context_before_last_user(self, state: RuntimeState, msgs: List[ChatMessage]) -> None:
+        if not msgs:
+            return
+
+        # find last user message in current assembled prompt
+        last_user_idx = None
+        for i in range(len(state.messages_for_llm) - 1, -1, -1):
+            if state.messages_for_llm[i].role == "user":
+                last_user_idx = i
+                break
+
+        if last_user_idx is None:
+            # no user in prompt yet -> append (rare, but safe)
+            state.messages_for_llm.extend(msgs)
+            return
+
+        for m in msgs:
+            state.messages_for_llm.insert(last_user_idx, m)
+            last_user_idx += 1    
+
+

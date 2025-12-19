@@ -80,7 +80,7 @@ class UserProfileManager:
                 "user_id": user_id,
                 "entry_id": entry.entry_id,
                 "kind": getattr(entry.kind, "value", str(entry.kind)),
-                "deleted": bool(entry.deleted),
+                "deleted": 1 if entry.deleted else 0,
             }
         )
         
@@ -192,7 +192,7 @@ class UserProfileManager:
         q_emb = self._embedding_manager.embed_texts([q])
 
         # Filter strictly to this user, and exclude deleted entries.
-        where = {"user_id": user_id, "deleted": False}
+        where = {"user_id": user_id, "deleted": 0}
 
         res = self._vectorstore_manager.query(q_emb, top_k=k, where=where)
 
