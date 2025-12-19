@@ -542,9 +542,8 @@ class DropInKnowledgeRuntime:
             return
         
     
-        if self._config.enable_rag:
-            if self._context_builder is None:
-                raise RuntimeError("RAG enabled but ContextBuilder is not configured.")
+        if self._context_builder is None:
+            raise RuntimeError("RAG enabled but ContextBuilder is not configured.")
 
         built = state.context_builder_result
 
@@ -659,9 +658,7 @@ class DropInKnowledgeRuntime:
 
         except Exception as exc:
             state.websearch_debug["error"] = str(exc)
-
-        if state.websearch_debug:
-            state.debug_trace["websearch"] = state.websearch_debug
+        
 
         # Trace web search step.
         self._trace(
@@ -807,7 +804,7 @@ class DropInKnowledgeRuntime:
                     state.messages_for_llm.insert(
                         insert_at,
                         ChatMessage(
-                            role="user",
+                            role="system",
                             content=(
                                 "The following tool calls have been executed. "
                                 "Use their results when answering the user.\n\n"
@@ -881,50 +878,20 @@ class DropInKnowledgeRuntime:
                 **generate_kwargs,
             )
 
-            # LLM adapter may return a simple string.
-            if isinstance(raw_answer, str):
-                self._trace(
-                    state,
-                    component="engine",
-                    step="core_llm",
-                    message="Core LLM adapter returned a plain string.",
-                    data={
-                        "used_tools_answer": False,
-                        "adapter_return_type": "str",
-                    },
-                )
-                return raw_answer
-
-            # Or an object with a .content attribute (dataclass / pydantic model).
-            if hasattr(raw_answer, "content"):
-                content_value = raw_answer.content  # type: ignore[attr-defined]
-                if isinstance(content_value, str) and content_value.strip():
-                    self._trace(
-                        state,
-                        component="engine",
-                        step="core_llm",
-                        message="Core LLM adapter returned an object with non-empty content.",
-                        data={
-                            "used_tools_answer": False,
-                            "adapter_return_type": type(raw_answer).__name__,
-                            "has_content_attribute": True,
-                        },
-                    )
-                    return content_value
-
-            # Fallback: stringify whatever the adapter returned.
             self._trace(
                 state,
                 component="engine",
                 step="core_llm",
-                message="Core LLM adapter returned a non-string object without usable content; using stringified value.",
+                message="Core LLM adapter returned answer.",
                 data={
                     "used_tools_answer": False,
-                    "adapter_return_type": type(raw_answer).__name__,
-                    "has_content_attribute": hasattr(raw_answer, "content"),
+                    "adapter_return_type": "str",
+                    "answer_len": len(raw_answer),
+                    "answer_is_empty": not bool(raw_answer),
                 },
             )
-            return str(raw_answer)
+            
+            return raw_answer
 
         except Exception as e:
             state.debug_trace["llm_error"] = str(e)
@@ -1330,7 +1297,6 @@ class DropInKnowledgeRuntime:
 
     def _insert_context_before_last_user(self, state: RuntimeState, msgs: List[ChatMessage]) -> None:
         if not msgs:
-            state.messages_for_llm.extend(msgs)
             return
 
         # find last user message in current assembled prompt
