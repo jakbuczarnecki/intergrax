@@ -113,5 +113,5 @@ class DefaultUserLongTermMemoryPromptBuilder(UserLongTermMemoryPromptBuilder):
         if self._max_chars and len(text) > self._max_chars:
             text = text[: self._max_chars].rstrip() + "\n[...truncated]"
 
-        msg = ChatMessage(role="system", content=text)
+        msg = ChatMessage(role="user", content=text)
         return UserLongTermMemoryPromptBundle(context_messages=[msg])

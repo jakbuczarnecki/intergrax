@@ -108,14 +108,19 @@ class DropInKnowledgeRuntime:
     ) -> None:
 
         self._config = config
+        self._config.validate()
+
         self._session_manager = session_manager
 
         self._ingestion_service = ingestion_service
 
-        self._context_builder = context_builder or ContextBuilder(
-            config=config,
-            vectorstore_manager=config.vectorstore_manager,
-        )
+        self._context_builder = context_builder
+        if self._context_builder is None and self._config.enable_rag:
+           self._context_builder = ContextBuilder(
+                config=config,
+                vectorstore_manager=config.vectorstore_manager,
+            )
+            
 
         self._rag_prompt_builder: RagPromptBuilder = (
             rag_prompt_builder or DefaultRagPromptBuilder(config)
@@ -535,10 +540,11 @@ class DropInKnowledgeRuntime:
         # If RAG is globally disabled, do nothing.
         if not self._config.enable_rag:
             return
-
-        # We need ContextBuilder to produce retrieved chunks.
-        if self._context_builder is None:
-            return
+        
+    
+        if self._config.enable_rag:
+            if self._context_builder is None:
+                raise RuntimeError("RAG enabled but ContextBuilder is not configured.")
 
         built = state.context_builder_result
 
@@ -780,15 +786,17 @@ class DropInKnowledgeRuntime:
 
                 tools_context_for_llm = "\n".join(tool_lines).strip()
                 if tools_context_for_llm:
-                    state.messages_for_llm.append(
+                    insert_at = len(state.messages_for_llm) - 1
+                    state.messages_for_llm.insert(
+                        insert_at,
                         ChatMessage(
-                            role="system",
+                            role="user",
                             content=(
                                 "The following tool calls have been executed. "
                                 "Use their results when answering the user.\n\n"
                                 + tools_context_for_llm
                             ),
-                        )
+                        ),
                     )
 
         except Exception as e:

@@ -36,7 +36,7 @@
 # - websearch/
 #
 # Files included: 121
-# Total lines: 21259
+# Total lines: 21267
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
@@ -114,7 +114,7 @@
 # - intergrax/runtime/drop_in_knowledge_mode/context/context_builder.py | intergrax.runtime.drop_in_knowledge_mode.context.context_builder | runtime | 485 | 2cca85dc5dcb
 # - intergrax/runtime/drop_in_knowledge_mode/context/engine_history_layer.py | intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer | runtime | 558 | f27bd61d0560
 # - intergrax/runtime/drop_in_knowledge_mode/engine/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1291 | 32ab9d4603c9
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1299 | 0c3f07959948
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 81 | 8fa21be600cb
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py | intergrax.runtime.drop_in_knowledge_mode.ingestion | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/attachments.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments | runtime | 124 | f1f76309b50f
@@ -122,7 +122,7 @@
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/__init__.py | intergrax.runtime.drop_in_knowledge_mode.prompts | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/history_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder | runtime | 89 | 7a99ef869b92
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/rag_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder | runtime | 105 | 487e17f834e1
-# - intergrax/runtime/drop_in_knowledge_mode/prompts/user_longterm_memory_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder | runtime | 117 | 54d89aa0f3b4
+# - intergrax/runtime/drop_in_knowledge_mode/prompts/user_longterm_memory_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder | runtime | 117 | 8608ee04efaf
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/websearch_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder | runtime | 106 | 9defd6c0d7be
 # - intergrax/runtime/drop_in_knowledge_mode/reasoning/__init__.py | intergrax.runtime.drop_in_knowledge_mode.reasoning | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/reasoning/reasoning_layer.py | intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer | runtime | 163 | 7f704f315d6e
@@ -182,7 +182,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 21259
+# TOTAL LINES: 21267
 # ======================================================================
 
 # ======================================================================
@@ -11980,8 +11980,8 @@ class HistoryLayer:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime.py
-# LINES: 1291
-# SHA256: 32ab9d4603c9a2a77b4eac4f96dfae25170cc7183ac35d3d35596edd3d96a109
+# LINES: 1299
+# SHA256: 0c3f07959948c1f4e17859a62aa29d84ec63c134cdb2e3566025f96d83b970ba
 # SYMBOLS:
 #   - class DropInKnowledgeRuntime
 # ======================================================================
@@ -12095,14 +12095,19 @@ class DropInKnowledgeRuntime:
     ) -> None:
 
         self._config = config
+        self._config.validate()
+
         self._session_manager = session_manager
 
         self._ingestion_service = ingestion_service
 
-        self._context_builder = context_builder or ContextBuilder(
-            config=config,
-            vectorstore_manager=config.vectorstore_manager,
-        )
+        self._context_builder = context_builder
+        if self._context_builder is None and self._config.enable_rag:
+           self._context_builder = ContextBuilder(
+                config=config,
+                vectorstore_manager=config.vectorstore_manager,
+            )
+            
 
         self._rag_prompt_builder: RagPromptBuilder = (
             rag_prompt_builder or DefaultRagPromptBuilder(config)
@@ -12522,10 +12527,11 @@ class DropInKnowledgeRuntime:
         # If RAG is globally disabled, do nothing.
         if not self._config.enable_rag:
             return
-
-        # We need ContextBuilder to produce retrieved chunks.
-        if self._context_builder is None:
-            return
+        
+    
+        if self._config.enable_rag:
+            if self._context_builder is None:
+                raise RuntimeError("RAG enabled but ContextBuilder is not configured.")
 
         built = state.context_builder_result
 
@@ -12767,15 +12773,17 @@ class DropInKnowledgeRuntime:
 
                 tools_context_for_llm = "\n".join(tool_lines).strip()
                 if tools_context_for_llm:
-                    state.messages_for_llm.append(
+                    insert_at = len(state.messages_for_llm) - 1
+                    state.messages_for_llm.insert(
+                        insert_at,
                         ChatMessage(
-                            role="system",
+                            role="user",
                             content=(
                                 "The following tool calls have been executed. "
                                 "Use their results when answering the user.\n\n"
                                 + tools_context_for_llm
                             ),
-                        )
+                        ),
                     )
 
         except Exception as e:
@@ -14113,7 +14121,7 @@ class DefaultRagPromptBuilder(RagPromptBuilder):
 #   - module_group=runtime
 #   - file=user_longterm_memory_prompt_builder.py
 # LINES: 117
-# SHA256: 54d89aa0f3b478e425cb794d9eb78c7c107244f6ad0985076ba09037cc945131
+# SHA256: 8608ee04efafc18df98ae70b097e4ddc92d0cc63a28c151fa8deac5e3568f0ad
 # SYMBOLS:
 #   - class UserLongTermMemoryPromptBundle
 #   - class UserLongTermMemoryPromptBuilder
@@ -14234,7 +14242,7 @@ class DefaultUserLongTermMemoryPromptBuilder(UserLongTermMemoryPromptBuilder):
         if self._max_chars and len(text) > self._max_chars:
             text = text[: self._max_chars].rstrip() + "\n[...truncated]"
 
-        msg = ChatMessage(role="system", content=text)
+        msg = ChatMessage(role="user", content=text)
         return UserLongTermMemoryPromptBundle(context_messages=[msg])
 
 # ======================================================================
