@@ -36,7 +36,7 @@
 # - websearch/
 #
 # Files included: 121
-# Total lines: 21286
+# Total lines: 21714
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
@@ -95,14 +95,14 @@
 # - intergrax/rag/__init__.py | intergrax.rag | rag | 0 | e3b0c44298fc
 # - intergrax/rag/documents_loader.py | intergrax.rag.documents_loader | rag | 1289 | 3eb3420b8e20
 # - intergrax/rag/documents_splitter.py | intergrax.rag.documents_splitter | rag | 351 | b6796ab15bd6
-# - intergrax/rag/dual_index_builder.py | intergrax.rag.dual_index_builder | rag | 138 | 8a9266949177
-# - intergrax/rag/dual_retriever.py | intergrax.rag.dual_retriever | rag | 170 | 3e87b936dea9
+# - intergrax/rag/dual_index_builder.py | intergrax.rag.dual_index_builder | rag | 157 | 81ca53a93d14
+# - intergrax/rag/dual_retriever.py | intergrax.rag.dual_retriever | rag | 311 | 768f2857999c
 # - intergrax/rag/embedding_manager.py | intergrax.rag.embedding_manager | rag | 306 | f5e15925a7b8
-# - intergrax/rag/rag_answerer.py | intergrax.rag.rag_answerer | rag | 425 | 25b567672739
-# - intergrax/rag/rag_retriever.py | intergrax.rag.rag_retriever | rag | 426 | 4f2ef95f2004
-# - intergrax/rag/re_ranker.py | intergrax.rag.re_ranker | rag | 307 | 3d5cb2ebb6b4
+# - intergrax/rag/rag_answerer.py | intergrax.rag.rag_answerer | rag | 415 | 84c9cef5e754
+# - intergrax/rag/rag_retriever.py | intergrax.rag.rag_retriever | rag | 555 | 3143a9774ada
+# - intergrax/rag/re_ranker.py | intergrax.rag.re_ranker | rag | 399 | 710b3356e2cc
 # - intergrax/rag/vectorstore_manager.py | intergrax.rag.vectorstore_manager | rag | 610 | aa4d6c197b1b
-# - intergrax/rag/windowed_answerer.py | intergrax.rag.windowed_answerer | rag | 185 | 6dd3864cb639
+# - intergrax/rag/windowed_answerer.py | intergrax.rag.windowed_answerer | rag | 242 | 8594e4986f82
 # - intergrax/__init__.py | intergrax | root | 0 | e3b0c44298fc
 # - intergrax/chat_agent.py | intergrax.chat_agent | root | 592 | a346a03152df
 # - intergrax/logging.py | intergrax.logging | root | 12 | 3966fbef0c6b
@@ -182,7 +182,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 21286
+# TOTAL LINES: 21714
 # ======================================================================
 
 # ======================================================================
@@ -7169,8 +7169,8 @@ class DocumentsSplitter:
 #   - package=intergrax
 #   - module_group=rag
 #   - file=dual_index_builder.py
-# LINES: 138
-# SHA256: 8a9266949177757a7923c691d131fb9eacc461c9c3f942481261704046168ba5
+# LINES: 157
+# SHA256: 81ca53a93d146f7ffa203a83498ffe95056dc3b5c1cd1efd2a92349f69f86522
 # SYMBOLS:
 #   - def build_dual_index()
 # ======================================================================
@@ -7200,6 +7200,7 @@ def build_dual_index(
     toc_min_level: int = 1,
     toc_max_level: int = 3,
     prefilter: Optional[Callable[[Document], bool]] = None,
+    skip_if_populated: bool = True,    
     verbose: bool = False,
 ):
     """
@@ -7210,6 +7211,24 @@ def build_dual_index(
     log = logger.getChild("build")
     if verbose:
         log.setLevel(logging.INFO)
+
+    def _safe_count(vs: VectorstoreManager) -> int:
+        try:
+            return int(vs.count() or 0)
+        except Exception:
+            return 0
+
+    if skip_if_populated:
+        chunks_count = _safe_count(vs_chunks)
+        toc_count = _safe_count(vs_toc) if vs_toc is not None else 0
+
+        if chunks_count > 0 or toc_count > 0:
+            log.warning(
+                "[DualIndex] skip_if_populated=True → skipping ingest "
+                "(CHUNKS=%d, TOC=%d).",
+                chunks_count, toc_count
+            )
+            return
 
     # sanity for level range
     if toc_min_level > toc_max_level:
@@ -7310,7 +7329,7 @@ def build_dual_index(
                 log.info("[DualIndex] TOC done")
         else:
             log.warning("[DualIndex] TOC enabled, but no DOCX headings matched the criteria.")
-
+    
     log.info("[DualIndex] Done.")
 
 # ======================================================================
@@ -7321,8 +7340,8 @@ def build_dual_index(
 #   - package=intergrax
 #   - module_group=rag
 #   - file=dual_retriever.py
-# LINES: 170
-# SHA256: 3e87b936dea9bfa029fbab584fa98b267d37274154042dfd8b7b43bf358c1cfb
+# LINES: 311
+# SHA256: 768f2857999c8d92009c8ab18643438aa700be3ebf87d3010c4efc3ec056994d
 # SYMBOLS:
 #   - class DualRetriever
 # ======================================================================
@@ -7334,9 +7353,10 @@ from __future__ import annotations
 from typing import List, Dict, Optional, Any
 import logging
 
-from langchain_core.documents import Document
-from .vectorstore_manager import VectorstoreManager
-from .embedding_manager import EmbeddingManager
+import numpy as np
+
+from intergrax.rag.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore_manager import VectorstoreManager
 
 logger = logging.getLogger("intergrax.dual_retriever")
 
@@ -7355,13 +7375,19 @@ class DualRetriever:
         embed_manager: Optional[EmbeddingManager] = None,
         k_chunks: int = 30,
         k_toc: int = 8,
+        max_toc_parents: int = 5,
+        toc_weight: float = 1.0, 
+        chunks_weight: float = 1.0,
         verbose: bool = False,
     ):
         self.vs_chunks = vs_chunks
+        self.max_toc_parents = int(max_toc_parents)
         self.vs_toc = vs_toc
         self.em = embed_manager  # if not provided, we will raise on first use
         self.k_chunks = int(k_chunks)
         self.k_toc = int(k_toc)
+        self.toc_weight = float(toc_weight)
+        self.chunks_weight = float(chunks_weight)
         self.verbose = verbose
         self.log = logger.getChild("retrieve")
         if self.verbose:
@@ -7377,8 +7403,12 @@ class DualRetriever:
     def _normalize_hits(self, res: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         intergraxVectorstoreManager.query() returns:
-          {"ids":[[...]], "scores":[[...]], "metadatas":[[...]], "documents":[[...]]}
-        (for Chroma: 'scores' are similarity in [0..1], because the manager converts distance->1-distance)
+        {"ids":[[.]], "scores":[[.]], "metadatas":[[.]], "documents":[[.]]}
+
+        Contract:
+        - scores are similarity in [0,1] for all providers
+        - VectorstoreManager is responsible for provider-specific conversions
+            (e.g., Chroma distance -> 1 - distance)
         """
         ids_b        = res.get("ids", [[]])
         scores_b     = res.get("scores", [[]])
@@ -7397,17 +7427,34 @@ class DualRetriever:
         hits: List[Dict[str, Any]] = []
         for i in range(n):
             md = dict(metadatas[i] or {})
-            txt = (documents[i] if (isinstance(documents, list) and i < len(documents)) else md.get("text", "")) or ""
+            txt = (
+                documents[i]
+                if (isinstance(documents, list) and i < len(documents))
+                else md.get("text", "")
+            ) or ""
+
+            sim = float(scores[i])
+            # Defensive clamp to contract range [0,1]
+            if sim < 0.0:
+                if self.verbose:
+                    self.log.info(f"[DualRetriever] similarity_score < 0 (clamped): {sim}")
+                sim = 0.0
+            elif sim > 1.0:
+                if self.verbose:
+                    self.log.info(f"[DualRetriever] similarity_score > 1 (clamped): {sim}")
+                sim = 1.0
+
             hits.append({
-                "id": ids[i],
+                "id": str(ids[i]),
                 "content": str(txt),
                 "metadata": md,
-                "similarity_score": float(scores[i]),
-                "distance": None,   # in Chroma converted; for other providers we use similarity_score anyway
+                "similarity_score": sim,
+                "distance": None,  # optional; we standardize on similarity_score
             })
-        # sort descending by similarity
+
         hits.sort(key=lambda h: h.get("similarity_score", 0.0), reverse=True)
         return hits
+
 
     def _query_vs(
         self,
@@ -7418,24 +7465,78 @@ class DualRetriever:
         where: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         em = self._ensure_em()
-        q_vec = em.embed_one(query_text)  # 1xD (ndarray or list)
-        res = vs.query(query_embeddings=q_vec, top_k=top_k, where=where, include_embeddings=False)
+        q_vec = em.embed_one(query_text)
+        # normalize to [[D]]
+        if isinstance(q_vec, np.ndarray):
+            if q_vec.ndim == 1:
+                Q = [q_vec.astype("float32").tolist()]
+            else:
+                Q = q_vec.astype("float32").tolist()
+        elif isinstance(q_vec, list):
+            Q = [q_vec] if (not q_vec or not isinstance(q_vec[0], list)) else q_vec
+        else:
+            Q = [[float(q_vec)]]
+
+        res = vs.query(query_embeddings=Q, top_k=top_k, where=where, include_embeddings=False)
+
         return self._normalize_hits(res)
 
-    @staticmethod
-    def _merge_where_with_parent(where: Optional[Dict[str, Any]], parent_id: Any) -> Optional[Dict[str, Any]]:
+    def _merge_where_with_parent(
+        self,
+        where: Optional[Dict[str, Any]],
+        parent_id: str,
+    ) -> Optional[Dict[str, Any]]:
         """
-        Returns a filter that ANDs the existing `where` with a parent_id condition.
-        If `where` has a conflicting parent_id, returns None (means: skip this expansion).
+        Merge user's `where` filter with a required `parent_id` constraint.
+
+        Supports both:
+        - flat dict (legacy) e.g. {"tenant": "x"}
+        - Chroma normalized AND form: {"$and":[{...},{...}]}
+
+        Returns None if filters conflict.
         """
+        parent_id = str(parent_id)
+
+        # No user filter -> just parent constraint
         if where is None:
-            return {"parent_id": parent_id}
-        # conflicting parent_id → no point in querying
-        if "parent_id" in where and where["parent_id"] != parent_id:
-            return None
-        merged = dict(where)
-        merged["parent_id"] = parent_id
-        return merged
+            return {"parent_id": {"$eq": parent_id}}
+
+        # Chroma normalized form
+        if isinstance(where, dict) and "$and" in where and isinstance(where.get("$and"), list):
+            and_list = list(where["$and"])
+
+            # Detect conflicting parent_id if already present in AND
+            for cond in and_list:
+                if not isinstance(cond, dict):
+                    continue
+                if "parent_id" in cond:
+                    existing = cond.get("parent_id")
+                    # existing may be {"$eq": "..."} or plain value
+                    if isinstance(existing, dict) and "$eq" in existing:
+                        if str(existing["$eq"]) != parent_id:
+                            return None
+                    elif existing is not None and str(existing) != parent_id:
+                        return None
+
+            # Append parent constraint
+            and_list.append({"parent_id": {"$eq": parent_id}})
+            return {"$and": and_list}
+
+        # Flat dict form
+        if isinstance(where, dict):
+            # If parent_id already exists and conflicts -> None
+            if "parent_id" in where:
+                existing = where.get("parent_id")
+                if existing is not None and str(existing) != parent_id:
+                    return None
+
+            merged = dict(where)
+            merged["parent_id"] = parent_id
+            return merged
+
+        # Unexpected type -> safest fallback: ignore user filter and enforce parent
+        return {"parent_id": {"$eq": parent_id}}
+
 
     def _expand_by_toc(self, question: str, where: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Returns local CHUNKS hits expanded based on the sections matched in TOC."""
@@ -7443,24 +7544,54 @@ class DualRetriever:
             return []
 
         toc_hits = self._query_vs(self.vs_toc, question, top_k=self.k_toc, where=where)
-        self.log.info("[DualRetriever] TOC hits: %d", len(toc_hits))
 
-        expanded: List[Dict[str, Any]] = []
+        if self.verbose:
+            self.log.info("[DualRetriever] TOC hits: %d", len(toc_hits))
+
+        # Collect unique parent ids (limit expansion cost)
+        parent_ids: List[str] = []
+        seen_parents = set()
+
         for h in toc_hits:
             md = h.get("metadata", {}) or {}
-            parent = md.get("parent_id") or md.get("source_path") or md.get("source_name")
+            parent = md.get("parent_id")
             if not parent:
+                if self.verbose:
+                    self.log.info("[DualRetriever] TOC hit without parent_id -> skipping TOC expansion for this item.")
                 continue
 
+            parent = str(parent)
+            if parent in seen_parents:
+                continue
+
+            # Check for filter collision early
             where_local = self._merge_where_with_parent(where, parent)
             if where_local is None:
-                # filter collision (e.g., where['parent_id'] differs from matched parent)
+                continue
+
+            seen_parents.add(parent)
+            parent_ids.append(parent)
+
+            if self.max_toc_parents > 0 and len(parent_ids) >= self.max_toc_parents:
+                break
+
+        expanded: List[Dict[str, Any]] = []
+        for parent in parent_ids:
+            where_local = self._merge_where_with_parent(where, parent)
+            if where_local is None:
                 continue
 
             local = self._query_vs(self.vs_chunks, question, top_k=self.k_chunks, where=where_local)
             expanded.extend(local)
 
-        self.log.info("[DualRetriever] Expanded via TOC to %d local hits", len(expanded))
+        if self.verbose:
+            self.log.info(
+                "[DualRetriever] Expanded via TOC (parents=%d, max=%d) -> %d local hits",
+                len(parent_ids),
+                self.max_toc_parents,
+                len(expanded),
+            )
+
         return expanded
 
     # --- public ---------------------------------------------------------
@@ -7471,18 +7602,44 @@ class DualRetriever:
         2) Expand context via TOC (if available) and search locally by parent_id (propagates `where`)
         3) Merge, dedupe and sort by similarity, then trim to top_k
         """
-        self.log.info("[DualRetriever] Query: '%s' (top_k=%d)", question, top_k)
+        if self.verbose:
+            self.log.info("[DualRetriever] Query: '%s' (top_k=%d)", question, top_k)
 
         base_k = max(int(top_k), self.k_chunks)
         base_hits = self._query_vs(self.vs_chunks, question, top_k=base_k, where=where)
-        self.log.info("[DualRetriever] Base CHUNKS hits: %d", len(base_hits))
-
         toc_expanded = self._expand_by_toc(question, where)
 
+        # Apply weights: keep base score for diagnostics, and scale similarity_score for merge ordering.
+        for h in base_hits:
+            base = float(h.get("similarity_score", 0.0))
+            h["base_similarity_score"] = base
+            h["similarity_score"] = base * self.chunks_weight
+
+        for h in toc_expanded:
+            base = float(h.get("similarity_score", 0.0))
+            h["base_similarity_score"] = base
+            h["similarity_score"] = base * self.toc_weight
+
+        if self.verbose:
+            self.log.info("[DualRetriever] Base CHUNKS hits: %d", len(base_hits))
+        
         # merge + dedupe
-        def _key(h: Dict[str, Any]):
+        def _key(h: Dict[str, Any]) -> str:
             m = h.get("metadata", {}) or {}
-            return (h.get("id"), m.get("chunk_id"), m.get("parent_id"))
+
+            hid = h.get("id")
+            if hid:
+                return f"id:{hid}"
+
+            chunk_id = m.get("chunk_id")
+            if chunk_id:
+                return f"chunk:{chunk_id}"
+
+            source = m.get("source") or m.get("file") or m.get("path") or "unknown_source"
+            page = m.get("page")
+            start = m.get("start_char")
+            end = m.get("end_char")
+            return f"loc:{source}|{page}|{start}|{end}"
 
         seen, merged = set(), []
         for h in (toc_expanded + base_hits):
@@ -7494,7 +7651,10 @@ class DualRetriever:
 
         merged.sort(key=lambda x: x.get("similarity_score", 0.0), reverse=True)
         out = merged[: int(top_k)]
-        self.log.info("[DualRetriever] Total merged: %d", len(out))
+
+        if self.verbose:
+            self.log.info("[DualRetriever] Total merged: %d", len(out))
+
         return out
 
 # ======================================================================
@@ -7826,8 +7986,8 @@ class EmbeddingManager:
 #   - package=intergrax
 #   - module_group=rag
 #   - file=rag_answerer.py
-# LINES: 425
-# SHA256: 25b56767273987662d52a80ea586a8739e80f2752441e2bbf433fecef9ee879e
+# LINES: 415
+# SHA256: 84c9cef5e75438e800fa7a7d68cc6943176fabcea8f2853bb6185aa92c895ec2
 # SYMBOLS:
 #   - class AnswererConfig
 #   - class AnswerSource
@@ -7842,11 +8002,12 @@ from __future__ import annotations
 import time
 import json
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Protocol, Iterable, Literal, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters import LLMAdapter
+from intergrax.rag.rag_retriever import RagRetriever
 
 # Pydantic optionally (no hard runtime dependency)
 try:
@@ -7869,7 +8030,7 @@ class AnswererConfig:
     max_context_chars: int = 12000
 
     # LLM
-    temperature: float = 0.2
+    temperature: Optional[float] = None,
     max_answer_tokens: Optional[int] = None
 
     # Citations
@@ -7892,6 +8053,10 @@ class AnswererConfig:
         "Summarize the answer below into no more than 6 bullet points. Keep it factual and do not introduce new content.\n\nANSWER:\n{answer}\n"
     )
 
+    summary_system_instruction: str = (
+        "You summarize answers without adding facts."
+    )
+
 
 @dataclass
 class AnswerSource:
@@ -7908,7 +8073,7 @@ class AnswerSource:
 class RagAnswerer:
     def __init__(
         self,
-        retriever: Any,
+        retriever: RagRetriever,
         llm: LLMAdapter,
         reranker: Optional[Any] = None,
         config: Optional[AnswererConfig] = None,
@@ -7951,7 +8116,8 @@ class RagAnswerer:
         if self.verbose:
             print(f"[intergraxRagAnswerer] Retrieve: top_k={tk}, min_score={ms}")
         t0 = time.perf_counter()
-        # ⬇️ remove unsupported score_threshold argument (we apply the threshold locally)
+
+        # remove unsupported score_threshold argument (we apply the threshold locally)
         hits_raw = self.retriever.retrieve(question=question, top_k=tk, where=where)
         t_retrieve = time.perf_counter() - t0
         hits = [self._normalize_hit(h) for h in hits_raw]
@@ -7990,15 +8156,12 @@ class RagAnswerer:
                 print(f"[intergraxRagAnswerer] Re-rank to top {self.cfg.re_rank_k}")
             t1 = time.perf_counter()
             rr_hits = None
+
             try:
-                if hasattr(self.reranker, "__call__"):
-                    rr_hits = self.reranker(question=question, candidates=hits, top_k=self.cfg.re_rank_k)
-                elif hasattr(self.reranker, "rerank_candidates"):
-                    rr_hits = self.reranker.rerank_candidates(question, hits, rerank_k=self.cfg.re_rank_k)
-                else:
-                    rr_hits = hits
+                rr_hits = self.reranker(question=question, candidates=hits, top_k=self.cfg.re_rank_k)
             except TypeError:
                 rr_hits = self.reranker(question, hits, self.cfg.re_rank_k)
+
             hits = [self._normalize_hit(h) for h in rr_hits]
             t_rerank = time.perf_counter() - t1
 
@@ -8043,7 +8206,7 @@ class RagAnswerer:
 
         # 6) (Optional) output_structure — like in intergraxToolsAgent
         output_structure_obj: Optional[BaseModel] = None
-        if (output_model is not None) and (not stream) and hasattr(self.llm, "generate_structured"):
+        if (output_model is not None) and (not stream):
             try:
                 # Reuse the same messages (which include the context) to force a schema matching output_model
                 output_structure_obj = self.llm.generate_structured(
@@ -8053,7 +8216,7 @@ class RagAnswerer:
                     max_tokens=self.cfg.max_answer_tokens,
                 )
                 # (Optional) write to memory as a JSON log
-                if self.memory is not None:
+                if self.memory is not None:                    
                     if hasattr(output_structure_obj, "model_dump"):
                         payload = output_structure_obj.model_dump()
                     elif hasattr(output_structure_obj, "dict"):
@@ -8073,7 +8236,11 @@ class RagAnswerer:
                 ChatMessage(role="user", content=self.cfg.summary_prompt_template.format(answer=answer)),
             ]
             try:
-                summary = self.llm.generate_messages(summary_msgs, temperature=0.0, max_tokens=512)
+                summary = self.llm.generate_messages(
+                    summary_msgs, 
+                    temperature=self.cfg.temperature, 
+                    max_tokens=self.cfg.max_answer_tokens
+                )                
             except Exception:
                 summary = None
 
@@ -8215,49 +8382,32 @@ class RagAnswerer:
         return out
 
     def _normalize_hit(self, h: Any) -> Dict[str, Any]:
-        # 1) dict
-        if isinstance(h, dict):
-            content = h.get("content") or h.get("text") or h.get("page_content") or ""
-            meta = h.get("metadata") or {}
-            score = h.get("similarity_score") or h.get("score")
-            return {"content": content, "metadata": meta, "similarity_score": score}
+        """
+        Contract (advanced RAG):
+        - Retriever returns a list of dict hits.
+        - Each hit must contain:
+            - content: str
+            - metadata: dict
+            - similarity_score: Optional[float]
+        """
+        if not isinstance(h, dict):
+            raise TypeError(f"RagAnswerer expects hit as dict, got: {type(h)}")
 
-        # 2) LangChain Document
-        try:
-            from langchain_core.documents import Document
-            if isinstance(h, Document):
-                return {
-                    "content": getattr(h, "page_content", "") or "",
-                    "metadata": dict(getattr(h, "metadata", {}) or {}),
-                    "similarity_score": None,
-                }
-        except Exception:
-            pass
+        content = (h.get("content") or h.get("text") or "").strip()
+        meta = h.get("metadata") or {}
+        score = h.get("similarity_score")
+        if score is None:
+            score = h.get("score")
 
-        # 3) DocHit (your internal shape: .doc, .score)
-        if hasattr(h, "doc") and hasattr(h, "score"):
-            doc = getattr(h, "doc")
-            meta = getattr(doc, "metadata", {}) if hasattr(doc, "metadata") else {}
-            content = getattr(doc, "page_content", None) or getattr(doc, "content", None) or ""
-            return {
-                "content": content,
-                "metadata": dict(meta or {}),
-                "similarity_score": float(getattr(h, "score", 0.0)),
-            }
+        return {
+            "content": content,
+            "metadata": dict(meta or {}),
+            "similarity_score": float(score) if isinstance(score, (int, float)) else None,
+            # preserve optional fields if present
+            "id": h.get("id"),
+            "distance": h.get("distance"),
+        }
 
-        # 4) tuple (Document, score)
-        if isinstance(h, (tuple, list)) and len(h) == 2:
-            doc, score = h
-            meta = getattr(doc, "metadata", {}) if hasattr(doc, "metadata") else {}
-            content = getattr(doc, "page_content", None) or getattr(doc, "content", None) or ""
-            return {
-                "content": content or "",
-                "metadata": dict(meta or {}),
-                "similarity_score": float(score),
-            }
-
-        # fallback
-        return {"content": str(h), "metadata": {}, "similarity_score": None}
 
 # ======================================================================
 # FILE: intergrax/rag/rag_retriever.py
@@ -8267,8 +8417,8 @@ class RagAnswerer:
 #   - package=intergrax
 #   - module_group=rag
 #   - file=rag_retriever.py
-# LINES: 426
-# SHA256: 4f2ef95f2004fdbfe29de0e270c8751808680af7b284fc9be6db66aa7bdd4c91
+# LINES: 555
+# SHA256: 3143a9774ada8047c96feb40fcfb394810a37f085c83243497b7c749df270a31
 # SYMBOLS:
 #   - class RagRetriever
 # ======================================================================
@@ -8279,15 +8429,13 @@ class RagAnswerer:
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Optional, Sequence
-from copy import deepcopy
 import numpy as np
 
-from langchain_core.documents import Document
 from .vectorstore_manager import VectorstoreManager
 from .embedding_manager import EmbeddingManager
 
 # Optional reranker function type: accepts and returns a list of hits
-RerankerFn = Callable[[List[Dict[str, Any]]], List[Dict[str, Any]]]
+RerankerFn = Callable[..., List[Dict[str, Any]]]
 
 
 class RagRetriever:
@@ -8313,7 +8461,7 @@ class RagRetriever:
       "content": str,
       "metadata": dict,
       "similarity_score": float,
-      "distance": float | None,
+      "distance": float,  # only for Chroma; omitted for other providers
       "rank": int,
       "embedding": Optional[List[float]]
     }
@@ -8389,43 +8537,71 @@ class RagRetriever:
         Maximal Marginal Relevance diversification.
 
         Args:
-            query_vec: (D,) array – query embedding.
-            cand_vecs: (N, D) array – candidate embeddings.
+            query_vec: (D,) array - query embedding.
+            cand_vecs: (N, D) array - candidate embeddings.
             k: number of items to select.
             lambda_mult: trade-off between relevance (to query) and diversity (to other items).
 
         Returns:
-            List of selected indices.
+            List of selected indices (indices in cand_vecs).
         """
-        if k <= 0 or cand_vecs.size == 0:
+        if k <= 0:
             return []
-        k = min(k, cand_vecs.shape[0])
 
-        def _unit(x):
-            n = np.linalg.norm(x, axis=-1, keepdims=True) + 1e-12
-            return x / n
+        # Ensure shapes + dtype
+        q_in = np.asarray(query_vec, dtype="float32").reshape(-1)          # (D,)
+        C_in = np.asarray(cand_vecs, dtype="float32")
+        if C_in.ndim != 2 or C_in.shape[0] == 0 or C_in.shape[1] == 0:
+            return []
 
-        q = _unit(query_vec)
-        C = _unit(cand_vecs)
+        k = min(int(k), int(C_in.shape[0]))
 
-        sim_q = (C @ q.reshape(-1, 1)).ravel()  # similarity to query
+        # Clamp lambda to [0, 1]
+        if not isinstance(lambda_mult, (int, float)):
+            lambda_mult = 0.5
+        lambda_mult = float(lambda_mult)
+        if lambda_mult < 0.0:
+            lambda_mult = 0.0
+        if lambda_mult > 1.0:
+            lambda_mult = 1.0
+
+        def _unit(x: np.ndarray) -> np.ndarray:
+            """
+            L2-normalize on the last axis.
+            Always returns float32 ndarray.
+            """
+            x = np.asarray(x, dtype="float32")
+            n = np.linalg.norm(x, axis=-1, keepdims=True).astype("float32") + np.float32(1e-12)
+            return (x / n).astype("float32")
+
+        q = _unit(q_in)     # (D,)
+        C = _unit(C_in)     # (N, D)
+
+        # Similarity to query for each candidate: (N,)
+        sim_q = (C @ q.reshape(-1, 1)).ravel()
+
         selected: List[int] = []
-        candidates = list(range(C.shape[0]))
+        candidates: List[int] = list(range(int(C.shape[0])))
 
         while len(selected) < k and candidates:
             if not selected:
-                # pick highest relevance first
-                best = int(np.argmax(sim_q[candidates]))
-                selected.append(candidates.pop(best))
+                # Pick highest relevance first
+                best_pos = int(np.argmax(sim_q[candidates]))
+                selected.append(candidates.pop(best_pos))
                 continue
-            # penalize redundancy relative to selected items
-            S = C[selected]                   # (m, D)
-            sim_div = C[candidates] @ S.T     # (c, m)
-            max_div = np.max(sim_div, axis=1)
-            mmr_score = lambda_mult * sim_q[candidates] - (1 - lambda_mult) * max_div
-            best = int(np.argmax(mmr_score))
-            selected.append(candidates.pop(best))
+
+            # Penalize redundancy relative to selected items
+            S = C[selected]               # (m, D)
+            cand_mat = C[candidates]      # (c, D)
+            sim_div = cand_mat @ S.T      # (c, m)
+            max_div = np.max(sim_div, axis=1)  # (c,)
+
+            mmr_score = (lambda_mult * sim_q[candidates]) - ((1.0 - lambda_mult) * max_div)
+            best_pos = int(np.argmax(mmr_score))
+            selected.append(candidates.pop(best_pos))
+
         return selected
+
     
 
     def _batch_embed_contents(self, texts: List[str]) -> np.ndarray:
@@ -8438,7 +8614,7 @@ class RagRetriever:
         - or falls back to per-item embed_one
         """
         # Preferred: vectorized method exists
-        if hasattr(self.em, "embed_texts") and callable(getattr(self.em, "embed_texts")):
+        if callable(self.em.embed_texts):
             try:
                 res = self.em.embed_texts(texts)  # may return ndarray OR (ndarray, ...)
                 # If it looks like a tuple/list, try to take first element as ndarray
@@ -8448,7 +8624,7 @@ class RagRetriever:
                     vecs = res
                 # Normalize to ndarray
                 if isinstance(vecs, np.ndarray):
-                    return vecs
+                    return vecs.astype("float32")
                 if isinstance(vecs, list) and vecs and isinstance(vecs[0], (list, tuple, np.ndarray)):
                     return np.array(vecs, dtype="float32")
             except Exception:
@@ -8484,10 +8660,17 @@ class RagRetriever:
         prefetch_factor: int = 5,   # fetch a wider candidate pool from the vector DB
     ) -> List[Dict[str, Any]]:
         # Guard: empty store
-        if hasattr(self.vs, "count") and self.vs.count() == 0:
-            if self.verbose:
-                print("[intergraxRagRetriever] Vector store is empty.")
-            return []
+        try:            
+            if int(self.vs.count() or 0) == 0:
+                if self.verbose:
+                    print("[intergraxRagRetriever] Vector store is empty.")
+                return []
+        except Exception:
+            # If count() is unsupported, ignore and continue
+            pass
+
+        used_mmr = False
+        used_reranker = False
 
         # 1) Embed query → [[D]]
         q_vec_1d = self.em.embed_one(question)
@@ -8520,17 +8703,17 @@ class RagRetriever:
             res = _do_query(None)
 
         provider = self.vs.cfg.provider
-        ids_b    = res.get("ids", [[]])
-        scores_b = res.get("scores", [[]])    # Chroma: distances; others: similarity
-        metas_b  = res.get("metadatas", [[]])
-        docs_b   = res.get("documents", [[]])
-        embs_b   = res.get("embeddings", [[]]) if include_embeddings else [[]]
+        ids_b = res.get("ids", [[]])
+        scores_b = res.get("scores", [[]])  # Chroma: distances; others: similarity
+        metas_b = res.get("metadatas", [[]])
+        docs_b = res.get("documents", [[]])
+        embs_b = res.get("embeddings", [[]]) if include_embeddings else [[]]
 
-        ids        = ids_b[0] if ids_b else []
+        ids = ids_b[0] if ids_b else []
         raw_scores = scores_b[0] if scores_b else []
-        metadatas  = metas_b[0] if metas_b else []
-        documents  = docs_b[0] if docs_b else []
-        emb_vecs   = embs_b[0] if include_embeddings and embs_b else []
+        metadatas = metas_b[0] if metas_b else []
+        documents = docs_b[0] if docs_b else []
+        emb_vecs = embs_b[0] if include_embeddings and embs_b else []
 
         if not ids:
             if self.verbose:
@@ -8539,10 +8722,9 @@ class RagRetriever:
 
         # 4) Normalize scores → similarity in [0,1]
         sims = self._scores_to_similarity(raw_scores, provider)
-        distances = [1.0 - s for s in sims] if provider == "chroma" else [None] * len(sims)
 
         # Align lengths (do NOT clamp by emb_vecs length — embeddings may be absent)
-        n = min(len(ids), len(metadatas), len(sims), len(distances))
+        n = min(len(ids), len(metadatas), len(sims))
         docs_present = isinstance(documents, list) and any(documents)
         if docs_present:
             n = min(n, len(documents))
@@ -8568,8 +8750,15 @@ class RagRetriever:
                 "content": content,
                 "metadata": meta,
                 "similarity_score": float(sims[i]),
-                "distance": float(distances[i]) if provider == "chroma" else None,
             }
+
+            if provider == "chroma":
+                # raw_scores are distances for chroma
+                try:
+                    item["distance"] = float(raw_scores[i])
+                except Exception:
+                    item["distance"] = float(1.0 - sims[i])
+
             # Embeddings from provider (optional)
             if include_embeddings and i < len(emb_vecs) and emb_vecs[i] is not None:
                 item["embedding"] = emb_vecs[i]
@@ -8582,10 +8771,14 @@ class RagRetriever:
         seen_ids = set()
         uniq: List[Dict[str, Any]] = []
         for it in cands:
-            if it["id"] in seen_ids:
+            _id = it.get("id")
+            if _id in seen_ids:
                 continue
-            seen_ids.add(it["id"])
+            seen_ids.add(_id)
             uniq.append(it)
+
+        # Keep a defensive snapshot BEFORE MMR/rerank so we can fall back safely
+        uniq_before_mmr = list(uniq)
 
         # 7) Optional MMR: ensure we HAVE embeddings; if not, compute them on the fly
         if use_mmr:
@@ -8594,10 +8787,9 @@ class RagRetriever:
             if not have_embs:
                 try:
                     texts = [x["content"] for x in uniq]
-                    C = self._batch_embed_contents(texts)  # <- NEW helper
-                    # inject vectors into items
+                    C_list = self._batch_embed_contents(texts)  # helper assumed to exist
                     for i, x in enumerate(uniq):
-                        x["embedding"] = C[i]
+                        x["embedding"] = C_list[i]
                     have_embs = True
                     if self.verbose:
                         print("[intergraxRagRetriever] Computed candidate embeddings on-the-fly for MMR.")
@@ -8607,14 +8799,48 @@ class RagRetriever:
                         print(f"[intergraxRagRetriever] Could not compute embeddings on-the-fly; skipping MMR. Err: {e}")
 
             if have_embs:
-                q = np.array(q_vec_1d, dtype="float32").reshape(-1)
-                C = np.array([it["embedding"] for it in uniq], dtype="float32")
-                k_for_mmr = min(prefetch_k, len(uniq))
-                order = self._mmr(q, C, k=k_for_mmr, lambda_mult=mmr_lambda)
-                if order:
-                    uniq = [uniq[i] for i in order]
-                if not uniq:
-                    uniq = cands  # defensive fallback
+                try:
+                    # Safe coerce embeddings to 1D float32 and keep mapping to uniq indices
+                    emb_items: List[np.ndarray] = []
+                    emb_indices: List[int] = []
+
+                    for idx, it in enumerate(uniq):
+                        emb = it.get("embedding")
+                        if emb is None:
+                            continue
+                        try:
+                            v = np.asarray(emb, dtype="float32").reshape(-1)
+                            emb_items.append(v)
+                            emb_indices.append(idx)
+                        except Exception:
+                            continue
+
+                    if len(emb_items) >= 2:
+                        q = np.asarray(q_vec_1d, dtype="float32").reshape(-1)
+                        C = np.vstack(emb_items).astype("float32")
+
+                        k_for_mmr = min(len(emb_items), prefetch_k)
+                        order_local = self._mmr(q, C, k=k_for_mmr, lambda_mult=mmr_lambda)
+
+                        if order_local:
+                            selected_idxs = [emb_indices[i] for i in order_local]
+                            selected_set = set(selected_idxs)
+
+                            # Keep the MMR-selected items first, then append the remaining candidates
+                            uniq = [uniq[i] for i in selected_idxs] + [it for j, it in enumerate(uniq) if j not in selected_set]
+                            used_mmr = True
+                    else:
+                        if self.verbose:
+                            print("[intergraxRagRetriever] MMR skipped: not enough valid embeddings.")
+                except Exception as e:
+                    if self.verbose:
+                        print(f"[intergraxRagRetriever] MMR error ignored: {e}")
+                    uniq = uniq_before_mmr  # safe fallback
+
+
+            # If something went wrong and we ended up empty, revert safely
+            if not uniq:
+                uniq = uniq_before_mmr
 
         # 8) Now apply threshold
         if score_threshold > 0.0:
@@ -8624,41 +8850,92 @@ class RagRetriever:
             # Defensive fallback: return top_k by raw similarity from the original candidates
             uniq = sorted(cands, key=lambda x: x.get("similarity_score", 0.0), reverse=True)[:raw_top_k]
 
-        # 9) Per-parent limit AFTER MMR/threshold
+       
+        # Snapshot before rerank (for safe fallback)
+        uniq_before_rerank = list(uniq)
+
+        # 9a) Optional reranker (e.g., cross-encoder)
+        if callable(reranker):
+            try:
+                out = None
+                try:
+                    # prefer signature compatible with intergrax ReRanker
+                    out = reranker(candidates=uniq, query=question, top_k=raw_top_k)  # type: ignore[call-arg]
+                except TypeError:
+                    try:
+                        # fallback: rerankers that accept (hits, query=?, top_k=?)
+                        out = reranker(uniq, query=question, top_k=raw_top_k)  # type: ignore[call-arg]
+                    except TypeError:
+                        # legacy: rerankers that only take the list
+                        out = reranker(uniq)
+
+                if isinstance(out, list) and out:
+                    uniq = out
+                    used_reranker = True
+                elif isinstance(out, list) and not out:
+                    # If reranker returns [], treat as "no-op" and fallback
+                    uniq = uniq_before_rerank
+                else:
+                    # Unexpected return type -> fallback
+                    uniq = uniq_before_rerank
+            except Exception as e:
+                if self.verbose:
+                    print(f"[intergraxRagRetriever] Reranker error ignored: {e}")
+                uniq = uniq_before_rerank
+
+
+        # 9a.1) If reranker was used, sort by reranker-provided score before diversification/cap.
+        # Prefer fusion_score (if present), otherwise rerank_score.
+        if used_reranker:
+            def _rerank_key(x: Dict[str, Any]) -> float:
+                fs = x.get("fusion_score")
+                if isinstance(fs, (int, float)):
+                    return float(fs)
+                rs = x.get("rerank_score")
+                if isinstance(rs, (int, float)):
+                    return float(rs)
+                return 0.0
+
+            uniq.sort(key=_rerank_key, reverse=True)
+
+        
+        # 9b) Per-parent limit AFTER reranker (final diversification)
         limit = self.default_max_per_parent if max_per_parent is None else max_per_parent
         if limit and limit > 0:
             buckets: Dict[str, int] = {}
             diversified: List[Dict[str, Any]] = []
             for it in uniq:
-                parent = str(it["metadata"].get("parent_id", "unknown_parent"))
+                md = it.get("metadata") or {}
+                
+                parent = (
+                    md.get("parent_id")
+                    or md.get("source_path")
+                    or md.get("source")
+                    or md.get("source_name")
+                )
+
+                # If we cannot determine a stable parent, skip per-parent limiting for this item
+                if not parent:
+                    diversified.append(it)
+                    continue
+
+                parent = str(parent)
+
                 cnt = buckets.get(parent, 0)
                 if cnt < limit:
                     diversified.append(it)
                     buckets[parent] = cnt + 1
             uniq = diversified or uniq
+        
+        # 10) Final sort, rank, and cap
+        # IMPORTANT: do NOT destroy the order produced by MMR/reranker.
+        if not used_mmr and not used_reranker:
+            uniq.sort(key=lambda x: x.get("similarity_score", 0.0), reverse=True)
 
-        # 10) Optional reranker (e.g., cross-encoder)
-        if callable(reranker):
-            try:
-                # prefer new signature accepting query/top_k
-                try:
-                    uniq = reranker(uniq, query=question, top_k=raw_top_k)
-                except TypeError:
-                    # fallback: legacy rerankers that only take the list
-                    uniq = reranker(uniq)
-            except Exception as e:
-                if self.verbose:
-                    print(f"[intergraxRagRetriever] Reranker error ignored: {e}")
-
-        # 11) Final sort, rank, and cap
-        uniq.sort(key=lambda x: x.get("similarity_score", 0.0), reverse=True)
         for r, it in enumerate(uniq, start=1):
             it["rank"] = r
 
         return uniq[:raw_top_k]
-
-
-
 
 
     # ------------------------------------------------------------------
@@ -8676,6 +8953,7 @@ class RagRetriever:
         use_mmr: bool = False,
         mmr_lambda: float = 0.5,
         reranker: Optional[RerankerFn] = None,
+        prefetch_factor: int = 5,
     ) -> List[List[Dict[str, Any]]]:
         """
         Run retrieval for multiple queries sequentially (simple loop-based batching).
@@ -8695,6 +8973,7 @@ class RagRetriever:
                 use_mmr=use_mmr,
                 mmr_lambda=mmr_lambda,
                 reranker=reranker,
+                prefetch_factor=prefetch_factor
             )
             out.append(hits)
         return out
@@ -8707,8 +8986,8 @@ class RagRetriever:
 #   - package=intergrax
 #   - module_group=rag
 #   - file=re_ranker.py
-# LINES: 307
-# SHA256: 3d5cb2ebb6b498b8ced51b2ca897abe536c2a63005b2ce029e53e8d6911c9573
+# LINES: 399
+# SHA256: 710b3356e2cc7dea2c6c7891e1b85b7723509888e642c2a543b91a9ad2f72e98
 # SYMBOLS:
 #   - class ReRankerConfig
 #   - class ReRanker
@@ -8724,6 +9003,9 @@ from functools import lru_cache
 import logging
 import numpy as np
 from langchain_core.documents import Document
+
+from intergrax.rag.embedding_manager import EmbeddingManager
+from intergrax.rag.rag_retriever import RagRetriever
 
 logger = logging.getLogger("intergrax.reranker")
 
@@ -8765,7 +9047,7 @@ class ReRanker:
     """
 
     def __init__(self,
-                 embedding_manager,  # intergraxEmbeddingManager
+                 embedding_manager: EmbeddingManager,
                  config: Optional[ReRankerConfig] = None,
                  *,
                  verbose: bool = False) -> None:
@@ -8835,26 +9117,58 @@ class ReRanker:
         """
         if not candidates:
             return []
+        
+        # Filter out candidates with empty/whitespace content (stabilizes embeddings and scoring)
+        filtered: List[Dict[str, Any]] = []
+        for c in candidates:
+            txt = (c.get("content") or "").strip()
+            if not txt:
+                continue
+            filtered.append(c)
+
+        if not filtered:
+            return []
 
         # No query provided → return as-is (or sort by original score)
         if query is None or not str(query).strip():
-            hits_out = self._ensure_hit_dicts(candidates)
+            hits_out = self._ensure_hit_dicts(filtered)
+
+            # propagate original score as rerank/fusion score for consistency
+            for h in hits_out:
+                orig = h.get(self.cfg.hit_orig_score_key)
+                if isinstance(orig, (int, float)):
+                    h["rerank_score"] = float(orig)
+                    if self.cfg.use_score_fusion:
+                        h["fusion_score"] = float(orig)
+                else:
+                    # no original score → neutral fallback
+                    h["rerank_score"] = 0.0
+                    if self.cfg.use_score_fusion:
+                        h["fusion_score"] = 0.0
+
             # if original scores exist, sort by them
             if any(isinstance(h.get(self.cfg.hit_orig_score_key), (int, float)) for h in hits_out):
-                hits_out.sort(key=lambda x: float(x.get(self.cfg.hit_orig_score_key, 0.0)), reverse=True)
+                hits_out.sort(
+                    key=lambda x: float(x.get(self.cfg.hit_orig_score_key, 0.0)),
+                    reverse=True,
+                )
+
             if rerank_k is not None and rerank_k > 0:
                 hits_out = hits_out[: int(rerank_k)]
+
             # set rank_reranked for consistency
             for r, h in enumerate(hits_out, start=1):
                 h["rank_reranked"] = r
+
             return hits_out
+
 
         # 1) Prepare raw texts and "carry" structs referencing original objects
         texts: List[str] = []
         carriers: List[Tuple[int, Union[Hit, Document]]] = []
 
-        if isinstance(candidates[0], Document):
-            for i, d in enumerate(candidates):  # type: ignore[arg-type]
+        if isinstance(filtered[0], Document):
+            for i, d in enumerate(filtered):  # type: ignore[arg-type]
                 if not isinstance(d, Document):
                     continue
                 t = (d.page_content or "").strip()
@@ -8864,7 +9178,7 @@ class ReRanker:
                 carriers.append((i, d))
         else:
             # hits (dict)
-            for i, h in enumerate(candidates):  # type: ignore[arg-type]
+            for i, h in enumerate(filtered):  # type: ignore[arg-type]
                 if not isinstance(h, dict):
                     continue
                 # content → text → metadata['text']
@@ -8879,7 +9193,7 @@ class ReRanker:
                 carriers.append((i, h))
 
         if not texts:
-            return self._ensure_hit_dicts(candidates)
+            return self._ensure_hit_dicts(filtered)
 
         # 2) Embed query + documents (batched), L2-normalize
         q_vec = self._embed_query_cached(query)
@@ -8892,22 +9206,74 @@ class ReRanker:
 
         # 4) Build result hit dicts and compute rerank scores
         hits_out: List[Hit] = []
+
+        # First pass: build hits and collect raw scores
+        tmp_hits: List[Hit] = []
+        orig_vals: List[Optional[float]] = []
+        rr_vals: List[float] = []
+
         for (orig_idx, obj), sim in zip(carriers, sims):
             hit = self._to_hit(obj)
-            hit["rerank_score"] = float(sim)
-            # Optional fusion with original retriever score
-            if self.cfg.use_score_fusion:
-                orig = hit.get(self.cfg.hit_orig_score_key)
-                if isinstance(orig, (int, float)):
-                    s_orig = float(orig)
-                    s_rr = float(sim)
-                    s_orig_n = self._normalize_scalar(s_orig, self.cfg.normalize)
-                    s_rr_n = self._normalize_scalar(s_rr, self.cfg.normalize)
-                    alpha = float(self.cfg.fusion_alpha)
-                    hit["fusion_score"] = alpha * s_orig_n + (1.0 - alpha) * s_rr_n
+            rr = float(sim)
+            hit["rerank_score"] = rr
+            tmp_hits.append(hit)
+
+            rr_vals.append(rr)
+
+            orig = hit.get(self.cfg.hit_orig_score_key)
+            orig_vals.append(float(orig) if isinstance(orig, (int, float)) else None)
+
+        # Helpers: batch minmax over list (ignores None)
+        def _minmax_norm(values: List[Optional[float]]) -> List[Optional[float]]:
+            xs = [v for v in values if v is not None]
+            if not xs:
+                return [None for _ in values]
+            mn = min(xs)
+            mx = max(xs)
+            if (mx - mn) < 1e-12:
+                return [0.5 if v is not None else None for v in values]
+            out: List[Optional[float]] = []
+            for v in values:
+                if v is None:
+                    out.append(None)
                 else:
-                    hit["fusion_score"] = float(sim)  # fallback: same as rerank_score
+                    out.append((v - mn) / (mx - mn))
+            return out
+
+        mode = self.cfg.normalize
+
+        # Normalize rerank and original scores according to mode
+        if mode == "minmax":
+            rr_n: List[float] = [0.0] * len(rr_vals)
+            rr_mn = min(rr_vals) if rr_vals else 0.0
+            rr_mx = max(rr_vals) if rr_vals else 1.0
+            if (rr_mx - rr_mn) < 1e-12:
+                rr_n = [0.5 for _ in rr_vals]
+            else:
+                rr_n = [(v - rr_mn) / (rr_mx - rr_mn) for v in rr_vals]
+
+            orig_n = _minmax_norm(orig_vals)
+        elif mode is None:
+            rr_n = rr_vals
+            orig_n = orig_vals
+        else:
+            # keep existing per-scalar behavior for non-minmax modes
+            rr_n = [self._normalize_scalar(v, mode) for v in rr_vals]
+            orig_n = [self._normalize_scalar(v, mode) if v is not None else None for v in orig_vals]
+
+        # Second pass: compute fusion_score (or fallback) and finalize hits_out
+        alpha = float(self.cfg.fusion_alpha)
+
+        for i, hit in enumerate(tmp_hits):
+            if self.cfg.use_score_fusion:
+                on = orig_n[i]
+                rn = float(rr_n[i])
+                if on is not None:
+                    hit["fusion_score"] = alpha * float(on) + (1.0 - alpha) * rn
+                else:
+                    hit["fusion_score"] = float(hit["rerank_score"])
             hits_out.append(hit)
+
 
         # 5) Final sort by 'fusion_score' (if enabled) else by 'rerank_score'
         key = ("fusion_score" if self.cfg.use_score_fusion else "rerank_score")
@@ -8932,7 +9298,7 @@ class ReRanker:
     def rerank_via_retriever(self,
                              query: str,
                              *,
-                             base_retriever,                 # intergraxRagRetriever
+                             base_retriever: RagRetriever,                 # intergraxRagRetriever
                              retriever_k: int = 30,
                              rerank_k: int = 10,
                              score_threshold: float = 0.0,
@@ -8964,15 +9330,20 @@ class ReRanker:
     def _embed_texts_batched(self, texts: List[str], batch_size: int) -> np.ndarray:
         # If you have a fast API that embeds a list of texts, prefer it.
         # Try .embed_texts; if unavailable, fall back to per-item embed_one.
-        if hasattr(self.em, "embed_texts"):
+        
+        try:
             V = self.em.embed_texts(texts)  # type: ignore[attr-defined]
             return np.asarray(V, dtype="float32")
+        except Exception as e:
+            if self.verbose:
+                logger.error(e)
+
         # fallback: small batches on embed_one
         vecs: List[np.ndarray] = []
         for i in range(0, len(texts), batch_size):
             part = texts[i:i+batch_size]
             for t in part:
-                vecs.append(self._embed_query_cached(t))
+                vecs.append(self._embed_query_no_cache(t))
         return np.vstack(vecs).astype("float32")
 
     @staticmethod
@@ -9654,8 +10025,8 @@ class VectorstoreManager:
 #   - package=intergrax
 #   - module_group=rag
 #   - file=windowed_answerer.py
-# LINES: 185
-# SHA256: 6dd3864cb639848d4690e5dd2c154b05a8c78dad482c1e032f55968d67c46bef
+# LINES: 242
+# SHA256: 8594e4986f82792900d37cc9d25ca8f720f4f836a8704503afc8abe89da976e5
 # SYMBOLS:
 #   - class WindowedAnswerer
 # ======================================================================
@@ -9667,9 +10038,11 @@ from __future__ import annotations
 
 
 import logging
-from typing import List, Dict, Tuple
+from typing import List, Dict, Optional, Tuple
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.rag.dual_retriever import DualRetriever
+from intergrax.rag.rag_answerer import AnswerSource, RagAnswerer
 
 logger = logging.getLogger("intergrax.windowed_answerer")
 
@@ -9678,7 +10051,12 @@ class WindowedAnswerer:
     """
     Windowed (map→reduce) layer on top of the base Answerer.
     """
-    def __init__(self, answerer, retriever, *, verbose: bool = False):
+    def __init__(
+            self, 
+            answerer: RagAnswerer, 
+            retriever: DualRetriever, 
+            *, 
+            verbose: bool = False):
         self.answerer = answerer
         self.retriever = retriever
         self.verbose = verbose
@@ -9721,13 +10099,31 @@ class WindowedAnswerer:
         Build messages with memory-awareness, without duplicating the system prompt.
         If the answerer has `_build_messages_memory_aware` and a memory store, use it.
         Otherwise, fall back to `_build_messages`.
-        """
-        use_memory = getattr(self.answerer, "memory", None) is not None
-        mem_aware = hasattr(self.answerer, "_build_messages_memory_aware")
+        """        
+        use_memory = self.answerer.memory is not None                
+        
+        if use_memory :            
+            history = list(self.answerer.memory.get_all())
+            if not history or history[-1].role != "user" or (history[-1].content or "") != (question or ""):
+                history.append(ChatMessage(role="user", content=question))
 
-        if use_memory and mem_aware:
-            # Memory-aware variant — inject context as a separate system message
-            return self.answerer._build_messages_memory_aware(context_text=context_text)
+            # Reuse RagAnswerer logic: insert system if missing + inject context before last user.
+            msgs: List[ChatMessage] = list(history)
+            has_system = any(m.role == "system" for m in msgs)
+            if not has_system:
+                msgs.insert(0, ChatMessage(role="system", content=self.answerer.cfg.system_instructions))
+
+            if context_text:
+                ctx_msg = ChatMessage(
+                    role="system",
+                    content=self.answerer.cfg.system_context_template.format(context=context_text),
+                )
+                if msgs and msgs[-1].role == "user":
+                    msgs = msgs[:-1] + [ctx_msg, msgs[-1]]
+                else:
+                    msgs.append(ctx_msg)
+
+            return msgs
         else:
             # No-memory variant — standard message construction
             return self.answerer._build_messages(
@@ -9742,23 +10138,42 @@ class WindowedAnswerer:
         *,
         top_k_total: int = 60,
         window_size: int = 12,
-        summarize_each: bool = False
+        summarize_each: bool = False,
+        summarize_final: bool = False,
+        map_max_tokens: Optional[int] = None,
+        reduce_max_tokens: Optional[int] = None,
+        source_preview_len: int = 64,
     ):
-        self.log.info("[Windowed] Asking: '%s' (top_k_total=%d, window=%d)", question, top_k_total, window_size)
+        if self.verbose:
+            self.log.info("[Windowed] Asking: '%s' (top_k_total=%d, window=%d)", question, top_k_total, window_size)
 
-        # If we have memory, record the user's question ONCE (to keep history consistent).
-        if getattr(self.answerer, "memory", None) is not None:
-            self.answerer.memory.add_message("user", question)
+        def _safe_tokens(x: Optional[int], default: int) -> int:
+            try:
+                v = int(x) if x is not None else int(default)
+                return v if v > 0 else int(default)
+            except Exception:
+                return int(default)
+
+        # # If we have memory, record the user's question ONCE (to keep history consistent).   
+        # if self.answerer.memory is not None:                         
+        #     self.answerer.memory.add_message(ChatMessage(role="user", content=question))
 
         # 1) Broad retrieval
         raw_hits = self.retriever.retrieve(question, top_k=top_k_total)
-        self.log.info("[Windowed] Retrieved %d candidates", len(raw_hits))
+
+        if self.verbose:
+            self.log.info("[Windowed] Retrieved %d candidates", len(raw_hits))
+
+        base_tokens = _safe_tokens(self.answerer.cfg.max_answer_tokens, 1024)
+
+        map_tokens = _safe_tokens(map_max_tokens, base_tokens)
+        reduce_tokens = _safe_tokens(reduce_max_tokens, base_tokens)
 
         if not raw_hits:
             msg = "No sufficiently relevant context was found to answer."
             # If we have memory, append an informational assistant reply.
-            if getattr(self.answerer, "memory", None) is not None:
-                self.answerer.memory.add_message("assistant", msg)
+            if self.answerer.memory is not None:   
+                self.answerer.memory.add_message(ChatMessage(role="assistant", content=msg))
             return {
                 "answer": msg,
                 "sources": [],
@@ -9768,9 +10183,12 @@ class WindowedAnswerer:
 
         # 2) Windows
         windows = [raw_hits[i:i + window_size] for i in range(0, len(raw_hits), window_size)]
-        self.log.info("[Windowed] Processing %d windows", len(windows))
 
-        partial_answers, collected_sources = [], []
+        if self.verbose:
+            self.log.info("[Windowed] Processing %d windows", len(windows))
+
+        partial_answers = []
+        collected_sources: List[AnswerSource] = []
 
         for wi, w in enumerate(windows, 1):
             ctx_text, used_hits = self._build_context_local(
@@ -9786,16 +10204,20 @@ class WindowedAnswerer:
             ans = self.answerer.llm.generate_messages(
                 msgs,
                 temperature=self.answerer.cfg.temperature,
-                max_tokens=self.answerer.cfg.max_answer_tokens,
+                max_tokens=map_tokens,
             )
 
             # 2c) (Optional) summarize per-window partial
             if summarize_each:
                 sum_msgs = [
-                    ChatMessage(role="system", content="You summarize answers without adding facts."),
+                    ChatMessage(role="system", content=self.answerer.cfg.summary_system_instruction),
                     ChatMessage(role="user", content=self.answerer.cfg.summary_prompt_template.format(answer=ans)),
                 ]
-                ans = self.answerer.llm.generate_messages(sum_msgs, temperature=0.0, max_tokens=512)
+                ans = self.answerer.llm.generate_messages(
+                    sum_msgs, 
+                    temperature=self.answerer.cfg.temperature,
+                    max_tokens=map_tokens,
+                )
 
             partial_answers.append(ans)
 
@@ -9805,37 +10227,43 @@ class WindowedAnswerer:
             )
 
         # 3) Reduce — synthesize final answer from partials
-        synthesis_ctx = "\n\n---\n\n".join(partial_answers)
+        synthesis_ctx = "\n\n".join(
+            [f"WINDOW {i}\n{txt}".strip() for i, txt in enumerate(partial_answers, start=1)]
+        )
         msgs_reduce = self._build_messages_for_context(question=question, context_text=synthesis_ctx)
         final_answer = self.answerer.llm.generate_messages(
             msgs_reduce,
             temperature=self.answerer.cfg.temperature,
-            max_tokens=self.answerer.cfg.max_answer_tokens,
+            max_tokens=reduce_tokens,
         )
 
         final_summary = None
-        if summarize_each:
+        if summarize_final:
             sum_msgs = [
-                ChatMessage(role="system", content="You summarize answers without adding facts."),
+                ChatMessage(role="system", content=self.answerer.cfg.summary_system_instruction),
                 ChatMessage(role="user", content=self.answerer.cfg.summary_prompt_template.format(answer=final_answer)),
             ]
-            final_summary = self.answerer.llm.generate_messages(sum_msgs, temperature=0.0, max_tokens=512)
+            final_summary = self.answerer.llm.generate_messages(
+                sum_msgs, 
+                temperature=self.answerer.cfg.temperature,
+                max_tokens=reduce_tokens,
+            )
 
         # 4) Deduplicate sources
         seen, dedup_sources = set(), []
         for s in collected_sources:
-            key = (s.source, s.page, getattr(s, "score", None), getattr(s, "preview", "")[:64])
+            key = (s.source, s.page, s.score, (s.preview or "")[:source_preview_len])
             if key in seen:
                 continue
             seen.add(key)
             dedup_sources.append(s)
 
-        # 5) If we have memory, append the final answer (and optional summary)
-        if getattr(self.answerer, "memory", None) is not None:
+        # 5) If we have memory, append the final answer (and optional summary)        
+        if self.answerer.memory is not None:
             content_to_save = final_answer
             if final_summary:
-                content_to_save += "\n\n" + final_summary
-            self.answerer.memory.add_message("assistant", content_to_save)
+                content_to_save += "\n\n" + final_summary            
+            self.answerer.memory.add_message(ChatMessage(role="assistant", content=content_to_save))
 
         self.log.info("[Windowed] Done (%d windows)", len(windows))
         return {
