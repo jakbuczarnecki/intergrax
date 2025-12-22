@@ -94,20 +94,62 @@ class DualRetriever:
         res = vs.query(query_embeddings=q_vec, top_k=top_k, where=where, include_embeddings=False)
         return self._normalize_hits(res)
 
-    @staticmethod
-    def _merge_where_with_parent(where: Optional[Dict[str, Any]], parent_id: Any) -> Optional[Dict[str, Any]]:
+    def _merge_where_with_parent(
+        self,
+        where: Optional[Dict[str, Any]],
+        parent_id: str,
+    ) -> Optional[Dict[str, Any]]:
         """
-        Returns a filter that ANDs the existing `where` with a parent_id condition.
-        If `where` has a conflicting parent_id, returns None (means: skip this expansion).
+        Merge user's `where` filter with a required `parent_id` constraint.
+
+        Supports both:
+        - flat dict (legacy) e.g. {"tenant": "x"}
+        - Chroma normalized AND form: {"$and":[{...},{...}]}
+
+        Returns None if filters conflict.
         """
+        parent_id = str(parent_id)
+
+        # No user filter -> just parent constraint
         if where is None:
-            return {"parent_id": parent_id}
-        # conflicting parent_id → no point in querying
-        if "parent_id" in where and where["parent_id"] != parent_id:
-            return None
-        merged = dict(where)
-        merged["parent_id"] = parent_id
-        return merged
+            return {"parent_id": {"$eq": parent_id}}
+
+        # Chroma normalized form
+        if isinstance(where, dict) and "$and" in where and isinstance(where.get("$and"), list):
+            and_list = list(where["$and"])
+
+            # Detect conflicting parent_id if already present in AND
+            for cond in and_list:
+                if not isinstance(cond, dict):
+                    continue
+                if "parent_id" in cond:
+                    existing = cond.get("parent_id")
+                    # existing may be {"$eq": "..."} or plain value
+                    if isinstance(existing, dict) and "$eq" in existing:
+                        if str(existing["$eq"]) != parent_id:
+                            return None
+                    elif existing is not None and str(existing) != parent_id:
+                        return None
+
+            # Append parent constraint
+            and_list.append({"parent_id": {"$eq": parent_id}})
+            return {"$and": and_list}
+
+        # Flat dict form
+        if isinstance(where, dict):
+            # If parent_id already exists and conflicts -> None
+            if "parent_id" in where:
+                existing = where.get("parent_id")
+                if existing is not None and str(existing) != parent_id:
+                    return None
+
+            merged = dict(where)
+            merged["parent_id"] = parent_id
+            return merged
+
+        # Unexpected type -> safest fallback: ignore user filter and enforce parent
+        return {"parent_id": {"$eq": parent_id}}
+
 
     def _expand_by_toc(self, question: str, where: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Returns local CHUNKS hits expanded based on the sections matched in TOC."""
@@ -120,8 +162,11 @@ class DualRetriever:
         expanded: List[Dict[str, Any]] = []
         for h in toc_hits:
             md = h.get("metadata", {}) or {}
-            parent = md.get("parent_id") or md.get("source_path") or md.get("source_name")
+            parent = md.get("parent_id")
             if not parent:
+                # No reliable join key between TOC and CHUNKS => cannot expand
+                if self.verbose:
+                    self.log.info("[DualRetriever] TOC hit without parent_id -> skipping TOC expansion for this item.")
                 continue
 
             where_local = self._merge_where_with_parent(where, parent)
