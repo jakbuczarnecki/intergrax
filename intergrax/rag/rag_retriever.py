@@ -190,7 +190,7 @@ class RagRetriever:
         - or falls back to per-item embed_one
         """
         # Preferred: vectorized method exists
-        if hasattr(self.em, "embed_texts") and callable(self.em.embed_texts):
+        if callable(self.em.embed_texts):
             try:
                 res = self.em.embed_texts(texts)  # may return ndarray OR (ndarray, ...)
                 # If it looks like a tuple/list, try to take first element as ndarray
@@ -236,8 +236,8 @@ class RagRetriever:
         prefetch_factor: int = 5,   # fetch a wider candidate pool from the vector DB
     ) -> List[Dict[str, Any]]:
         # Guard: empty store
-        try:
-            if hasattr(self.vs, "count") and int(self.vs.count() or 0) == 0:
+        try:            
+            if int(self.vs.count() or 0) == 0:
                 if self.verbose:
                     print("[intergraxRagRetriever] Vector store is empty.")
                 return []
@@ -482,8 +482,21 @@ class RagRetriever:
             diversified: List[Dict[str, Any]] = []
             for it in uniq:
                 md = it.get("metadata") or {}
-                parent = md.get("parent_id") or md.get("source") or md.get("source_path") or md.get("source_name") or it.get("id")
+                
+                parent = (
+                    md.get("parent_id")
+                    or md.get("source_path")
+                    or md.get("source")
+                    or md.get("source_name")
+                )
+
+                # If we cannot determine a stable parent, skip per-parent limiting for this item
+                if not parent:
+                    diversified.append(it)
+                    continue
+
                 parent = str(parent)
+
                 cnt = buckets.get(parent, 0)
                 if cnt < limit:
                     diversified.append(it)

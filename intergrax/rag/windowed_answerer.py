@@ -112,7 +112,15 @@ class WindowedAnswerer:
         reduce_max_tokens: Optional[int] = None,
         source_preview_len: int = 64,
     ):
-        self.log.info("[Windowed] Asking: '%s' (top_k_total=%d, window=%d)", question, top_k_total, window_size)
+        if self.verbose:
+            self.log.info("[Windowed] Asking: '%s' (top_k_total=%d, window=%d)", question, top_k_total, window_size)
+
+        def _safe_tokens(x: Optional[int], default: int) -> int:
+            try:
+                v = int(x) if x is not None else int(default)
+                return v if v > 0 else int(default)
+            except Exception:
+                return int(default)
 
         # # If we have memory, record the user's question ONCE (to keep history consistent).   
         # if self.answerer.memory is not None:                         
@@ -120,10 +128,14 @@ class WindowedAnswerer:
 
         # 1) Broad retrieval
         raw_hits = self.retriever.retrieve(question, top_k=top_k_total)
-        self.log.info("[Windowed] Retrieved %d candidates", len(raw_hits))
 
-        map_tokens = int(map_max_tokens) if map_max_tokens is not None else int(self.answerer.cfg.max_answer_tokens)
-        reduce_tokens = int(reduce_max_tokens) if reduce_max_tokens is not None else int(self.answerer.cfg.max_answer_tokens)
+        if self.verbose:
+            self.log.info("[Windowed] Retrieved %d candidates", len(raw_hits))
+
+        base_tokens = _safe_tokens(self.answerer.cfg.max_answer_tokens, 1024)
+
+        map_tokens = _safe_tokens(map_max_tokens, base_tokens)
+        reduce_tokens = _safe_tokens(reduce_max_tokens, base_tokens)
 
         if not raw_hits:
             msg = "No sufficiently relevant context was found to answer."
@@ -139,7 +151,9 @@ class WindowedAnswerer:
 
         # 2) Windows
         windows = [raw_hits[i:i + window_size] for i in range(0, len(raw_hits), window_size)]
-        self.log.info("[Windowed] Processing %d windows", len(windows))
+
+        if self.verbose:
+            self.log.info("[Windowed] Processing %d windows", len(windows))
 
         partial_answers = []
         collected_sources: List[AnswerSource] = []

@@ -7,11 +7,12 @@ from __future__ import annotations
 import time
 import json
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Protocol, Iterable, Literal, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters import LLMAdapter
+from intergrax.rag.rag_retriever import RagRetriever
 
 # Pydantic optionally (no hard runtime dependency)
 try:
@@ -34,7 +35,7 @@ class AnswererConfig:
     max_context_chars: int = 12000
 
     # LLM
-    temperature: float = 0.2
+    temperature: Optional[float] = None,
     max_answer_tokens: Optional[int] = None
 
     # Citations
@@ -77,7 +78,7 @@ class AnswerSource:
 class RagAnswerer:
     def __init__(
         self,
-        retriever: Any,
+        retriever: RagRetriever,
         llm: LLMAdapter,
         reranker: Optional[Any] = None,
         config: Optional[AnswererConfig] = None,
@@ -120,7 +121,8 @@ class RagAnswerer:
         if self.verbose:
             print(f"[intergraxRagAnswerer] Retrieve: top_k={tk}, min_score={ms}")
         t0 = time.perf_counter()
-        # ⬇️ remove unsupported score_threshold argument (we apply the threshold locally)
+
+        # remove unsupported score_threshold argument (we apply the threshold locally)
         hits_raw = self.retriever.retrieve(question=question, top_k=tk, where=where)
         t_retrieve = time.perf_counter() - t0
         hits = [self._normalize_hit(h) for h in hits_raw]
@@ -159,15 +161,12 @@ class RagAnswerer:
                 print(f"[intergraxRagAnswerer] Re-rank to top {self.cfg.re_rank_k}")
             t1 = time.perf_counter()
             rr_hits = None
+
             try:
-                if hasattr(self.reranker, "__call__"):
-                    rr_hits = self.reranker(question=question, candidates=hits, top_k=self.cfg.re_rank_k)
-                elif hasattr(self.reranker, "rerank_candidates"):
-                    rr_hits = self.reranker.rerank_candidates(question, hits, rerank_k=self.cfg.re_rank_k)
-                else:
-                    rr_hits = hits
+                rr_hits = self.reranker(question=question, candidates=hits, top_k=self.cfg.re_rank_k)
             except TypeError:
                 rr_hits = self.reranker(question, hits, self.cfg.re_rank_k)
+
             hits = [self._normalize_hit(h) for h in rr_hits]
             t_rerank = time.perf_counter() - t1
 
@@ -212,7 +211,7 @@ class RagAnswerer:
 
         # 6) (Optional) output_structure — like in intergraxToolsAgent
         output_structure_obj: Optional[BaseModel] = None
-        if (output_model is not None) and (not stream) and hasattr(self.llm, "generate_structured"):
+        if (output_model is not None) and (not stream):
             try:
                 # Reuse the same messages (which include the context) to force a schema matching output_model
                 output_structure_obj = self.llm.generate_structured(
@@ -222,7 +221,7 @@ class RagAnswerer:
                     max_tokens=self.cfg.max_answer_tokens,
                 )
                 # (Optional) write to memory as a JSON log
-                if self.memory is not None:
+                if self.memory is not None:                    
                     if hasattr(output_structure_obj, "model_dump"):
                         payload = output_structure_obj.model_dump()
                     elif hasattr(output_structure_obj, "dict"):
@@ -242,7 +241,11 @@ class RagAnswerer:
                 ChatMessage(role="user", content=self.cfg.summary_prompt_template.format(answer=answer)),
             ]
             try:
-                summary = self.llm.generate_messages(summary_msgs, temperature=0.0, max_tokens=512)
+                summary = self.llm.generate_messages(
+                    summary_msgs, 
+                    temperature=self.cfg.temperature, 
+                    max_tokens=self.cfg.max_answer_tokens
+                )                
             except Exception:
                 summary = None
 
@@ -384,46 +387,29 @@ class RagAnswerer:
         return out
 
     def _normalize_hit(self, h: Any) -> Dict[str, Any]:
-        # 1) dict
-        if isinstance(h, dict):
-            content = h.get("content") or h.get("text") or h.get("page_content") or ""
-            meta = h.get("metadata") or {}
-            score = h.get("similarity_score") or h.get("score")
-            return {"content": content, "metadata": meta, "similarity_score": score}
+        """
+        Contract (advanced RAG):
+        - Retriever returns a list of dict hits.
+        - Each hit must contain:
+            - content: str
+            - metadata: dict
+            - similarity_score: Optional[float]
+        """
+        if not isinstance(h, dict):
+            raise TypeError(f"RagAnswerer expects hit as dict, got: {type(h)}")
 
-        # 2) LangChain Document
-        try:
-            from langchain_core.documents import Document
-            if isinstance(h, Document):
-                return {
-                    "content": getattr(h, "page_content", "") or "",
-                    "metadata": dict(getattr(h, "metadata", {}) or {}),
-                    "similarity_score": None,
-                }
-        except Exception:
-            pass
+        content = (h.get("content") or h.get("text") or "").strip()
+        meta = h.get("metadata") or {}
+        score = h.get("similarity_score")
+        if score is None:
+            score = h.get("score")
 
-        # 3) DocHit (your internal shape: .doc, .score)
-        if hasattr(h, "doc") and hasattr(h, "score"):
-            doc = getattr(h, "doc")
-            meta = getattr(doc, "metadata", {}) if hasattr(doc, "metadata") else {}
-            content = getattr(doc, "page_content", None) or getattr(doc, "content", None) or ""
-            return {
-                "content": content,
-                "metadata": dict(meta or {}),
-                "similarity_score": float(getattr(h, "score", 0.0)),
-            }
+        return {
+            "content": content,
+            "metadata": dict(meta or {}),
+            "similarity_score": float(score) if isinstance(score, (int, float)) else None,
+            # preserve optional fields if present
+            "id": h.get("id"),
+            "distance": h.get("distance"),
+        }
 
-        # 4) tuple (Document, score)
-        if isinstance(h, (tuple, list)) and len(h) == 2:
-            doc, score = h
-            meta = getattr(doc, "metadata", {}) if hasattr(doc, "metadata") else {}
-            content = getattr(doc, "page_content", None) or getattr(doc, "content", None) or ""
-            return {
-                "content": content or "",
-                "metadata": dict(meta or {}),
-                "similarity_score": float(score),
-            }
-
-        # fallback
-        return {"content": str(h), "metadata": {}, "similarity_score": None}

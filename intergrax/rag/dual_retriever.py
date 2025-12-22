@@ -6,10 +6,10 @@ from __future__ import annotations
 from typing import List, Dict, Optional, Any
 import logging
 
-from langchain_core.documents import Document
 import numpy as np
-from .vectorstore_manager import VectorstoreManager
-from .embedding_manager import EmbeddingManager
+
+from intergrax.rag.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore_manager import VectorstoreManager
 
 logger = logging.getLogger("intergrax.dual_retriever")
 
@@ -28,13 +28,19 @@ class DualRetriever:
         embed_manager: Optional[EmbeddingManager] = None,
         k_chunks: int = 30,
         k_toc: int = 8,
+        max_toc_parents: int = 5,
+        toc_weight: float = 1.0, 
+        chunks_weight: float = 1.0,
         verbose: bool = False,
     ):
         self.vs_chunks = vs_chunks
+        self.max_toc_parents = int(max_toc_parents)
         self.vs_toc = vs_toc
         self.em = embed_manager  # if not provided, we will raise on first use
         self.k_chunks = int(k_chunks)
         self.k_toc = int(k_toc)
+        self.toc_weight = float(toc_weight)
+        self.chunks_weight = float(chunks_weight)
         self.verbose = verbose
         self.log = logger.getChild("retrieve")
         if self.verbose:
@@ -47,11 +53,15 @@ class DualRetriever:
             raise RuntimeError("intergraxDualRetriever needs an EmbeddingManager (embed_manager=...)")
         return self.em
 
-    def _normalize_hits(self, res: Dict[str, Any], *, provider: str) -> List[Dict[str, Any]]:
+    def _normalize_hits(self, res: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         intergraxVectorstoreManager.query() returns:
-          {"ids":[[...]], "scores":[[...]], "metadatas":[[...]], "documents":[[...]]}
-        (for Chroma: 'scores' are similarity in [0..1], because the manager converts distance->1-distance)
+        {"ids":[[.]], "scores":[[.]], "metadatas":[[.]], "documents":[[.]]}
+
+        Contract:
+        - scores are similarity in [0,1] for all providers
+        - VectorstoreManager is responsible for provider-specific conversions
+            (e.g., Chroma distance -> 1 - distance)
         """
         ids_b        = res.get("ids", [[]])
         scores_b     = res.get("scores", [[]])
@@ -70,33 +80,34 @@ class DualRetriever:
         hits: List[Dict[str, Any]] = []
         for i in range(n):
             md = dict(metadatas[i] or {})
-            txt = (documents[i] if (isinstance(documents, list) and i < len(documents)) else md.get("text", "")) or ""
-            raw = float(scores[i])
+            txt = (
+                documents[i]
+                if (isinstance(documents, list) and i < len(documents))
+                else md.get("text", "")
+            ) or ""
 
-            if provider == "chroma":
-                # Chroma returns distances (lower is better). Convert to similarity.
-                sim = 1.0 - raw
-                if sim < 0.0:
-                    sim = 0.0
-                if sim > 1.0:
-                    sim = 1.0
-                dist = raw
-            else:
-                # Other providers: treat as similarity (higher is better)
-                sim = raw
-                dist = None
+            sim = float(scores[i])
+            # Defensive clamp to contract range [0,1]
+            if sim < 0.0:
+                if self.verbose:
+                    self.log.info(f"[DualRetriever] similarity_score < 0 (clamped): {sim}")
+                sim = 0.0
+            elif sim > 1.0:
+                if self.verbose:
+                    self.log.info(f"[DualRetriever] similarity_score > 1 (clamped): {sim}")
+                sim = 1.0
 
             hits.append({
                 "id": str(ids[i]),
                 "content": str(txt),
                 "metadata": md,
-                "similarity_score": float(sim),
-                "distance": float(dist) if dist is not None else None,
+                "similarity_score": sim,
+                "distance": None,  # optional; we standardize on similarity_score
             })
 
-        # sort descending by similarity
         hits.sort(key=lambda h: h.get("similarity_score", 0.0), reverse=True)
         return hits
+
 
     def _query_vs(
         self,
@@ -121,7 +132,7 @@ class DualRetriever:
 
         res = vs.query(query_embeddings=Q, top_k=top_k, where=where, include_embeddings=False)
 
-        return self._normalize_hits(res, provider=vs.cfg.provider)
+        return self._normalize_hits(res)
 
     def _merge_where_with_parent(
         self,
@@ -186,27 +197,54 @@ class DualRetriever:
             return []
 
         toc_hits = self._query_vs(self.vs_toc, question, top_k=self.k_toc, where=where)
-        self.log.info("[DualRetriever] TOC hits: %d", len(toc_hits))
 
-        expanded: List[Dict[str, Any]] = []
+        if self.verbose:
+            self.log.info("[DualRetriever] TOC hits: %d", len(toc_hits))
+
+        # Collect unique parent ids (limit expansion cost)
+        parent_ids: List[str] = []
+        seen_parents = set()
+
         for h in toc_hits:
             md = h.get("metadata", {}) or {}
             parent = md.get("parent_id")
             if not parent:
-                # No reliable join key between TOC and CHUNKS => cannot expand
                 if self.verbose:
                     self.log.info("[DualRetriever] TOC hit without parent_id -> skipping TOC expansion for this item.")
                 continue
 
+            parent = str(parent)
+            if parent in seen_parents:
+                continue
+
+            # Check for filter collision early
             where_local = self._merge_where_with_parent(where, parent)
             if where_local is None:
-                # filter collision (e.g., where['parent_id'] differs from matched parent)
+                continue
+
+            seen_parents.add(parent)
+            parent_ids.append(parent)
+
+            if self.max_toc_parents > 0 and len(parent_ids) >= self.max_toc_parents:
+                break
+
+        expanded: List[Dict[str, Any]] = []
+        for parent in parent_ids:
+            where_local = self._merge_where_with_parent(where, parent)
+            if where_local is None:
                 continue
 
             local = self._query_vs(self.vs_chunks, question, top_k=self.k_chunks, where=where_local)
             expanded.extend(local)
 
-        self.log.info("[DualRetriever] Expanded via TOC to %d local hits", len(expanded))
+        if self.verbose:
+            self.log.info(
+                "[DualRetriever] Expanded via TOC (parents=%d, max=%d) -> %d local hits",
+                len(parent_ids),
+                self.max_toc_parents,
+                len(expanded),
+            )
+
         return expanded
 
     # --- public ---------------------------------------------------------
@@ -217,18 +255,44 @@ class DualRetriever:
         2) Expand context via TOC (if available) and search locally by parent_id (propagates `where`)
         3) Merge, dedupe and sort by similarity, then trim to top_k
         """
-        self.log.info("[DualRetriever] Query: '%s' (top_k=%d)", question, top_k)
+        if self.verbose:
+            self.log.info("[DualRetriever] Query: '%s' (top_k=%d)", question, top_k)
 
         base_k = max(int(top_k), self.k_chunks)
         base_hits = self._query_vs(self.vs_chunks, question, top_k=base_k, where=where)
-        self.log.info("[DualRetriever] Base CHUNKS hits: %d", len(base_hits))
-
         toc_expanded = self._expand_by_toc(question, where)
 
+        # Apply weights: keep base score for diagnostics, and scale similarity_score for merge ordering.
+        for h in base_hits:
+            base = float(h.get("similarity_score", 0.0))
+            h["base_similarity_score"] = base
+            h["similarity_score"] = base * self.chunks_weight
+
+        for h in toc_expanded:
+            base = float(h.get("similarity_score", 0.0))
+            h["base_similarity_score"] = base
+            h["similarity_score"] = base * self.toc_weight
+
+        if self.verbose:
+            self.log.info("[DualRetriever] Base CHUNKS hits: %d", len(base_hits))
+        
         # merge + dedupe
-        def _key(h: Dict[str, Any]):
+        def _key(h: Dict[str, Any]) -> str:
             m = h.get("metadata", {}) or {}
-            return (h.get("id"), m.get("chunk_id"), m.get("parent_id"))
+
+            hid = h.get("id")
+            if hid:
+                return f"id:{hid}"
+
+            chunk_id = m.get("chunk_id")
+            if chunk_id:
+                return f"chunk:{chunk_id}"
+
+            source = m.get("source") or m.get("file") or m.get("path") or "unknown_source"
+            page = m.get("page")
+            start = m.get("start_char")
+            end = m.get("end_char")
+            return f"loc:{source}|{page}|{start}|{end}"
 
         seen, merged = set(), []
         for h in (toc_expanded + base_hits):
@@ -240,5 +304,8 @@ class DualRetriever:
 
         merged.sort(key=lambda x: x.get("similarity_score", 0.0), reverse=True)
         out = merged[: int(top_k)]
-        self.log.info("[DualRetriever] Total merged: %d", len(out))
+
+        if self.verbose:
+            self.log.info("[DualRetriever] Total merged: %d", len(out))
+
         return out

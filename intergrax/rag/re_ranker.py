@@ -11,6 +11,7 @@ import numpy as np
 from langchain_core.documents import Document
 
 from intergrax.rag.embedding_manager import EmbeddingManager
+from intergrax.rag.rag_retriever import RagRetriever
 
 logger = logging.getLogger("intergrax.reranker")
 
@@ -122,10 +123,21 @@ class ReRanker:
         """
         if not candidates:
             return []
+        
+        # Filter out candidates with empty/whitespace content (stabilizes embeddings and scoring)
+        filtered: List[Dict[str, Any]] = []
+        for c in candidates:
+            txt = (c.get("content") or "").strip()
+            if not txt:
+                continue
+            filtered.append(c)
+
+        if not filtered:
+            return []
 
         # No query provided → return as-is (or sort by original score)
         if query is None or not str(query).strip():
-            hits_out = self._ensure_hit_dicts(candidates)
+            hits_out = self._ensure_hit_dicts(filtered)
 
             # propagate original score as rerank/fusion score for consistency
             for h in hits_out:
@@ -161,8 +173,8 @@ class ReRanker:
         texts: List[str] = []
         carriers: List[Tuple[int, Union[Hit, Document]]] = []
 
-        if isinstance(candidates[0], Document):
-            for i, d in enumerate(candidates):  # type: ignore[arg-type]
+        if isinstance(filtered[0], Document):
+            for i, d in enumerate(filtered):  # type: ignore[arg-type]
                 if not isinstance(d, Document):
                     continue
                 t = (d.page_content or "").strip()
@@ -172,7 +184,7 @@ class ReRanker:
                 carriers.append((i, d))
         else:
             # hits (dict)
-            for i, h in enumerate(candidates):  # type: ignore[arg-type]
+            for i, h in enumerate(filtered):  # type: ignore[arg-type]
                 if not isinstance(h, dict):
                     continue
                 # content → text → metadata['text']
@@ -187,7 +199,7 @@ class ReRanker:
                 carriers.append((i, h))
 
         if not texts:
-            return self._ensure_hit_dicts(candidates)
+            return self._ensure_hit_dicts(filtered)
 
         # 2) Embed query + documents (batched), L2-normalize
         q_vec = self._embed_query_cached(query)
@@ -292,7 +304,7 @@ class ReRanker:
     def rerank_via_retriever(self,
                              query: str,
                              *,
-                             base_retriever,                 # intergraxRagRetriever
+                             base_retriever: RagRetriever,                 # intergraxRagRetriever
                              retriever_k: int = 30,
                              rerank_k: int = 10,
                              score_threshold: float = 0.0,
@@ -324,9 +336,14 @@ class ReRanker:
     def _embed_texts_batched(self, texts: List[str], batch_size: int) -> np.ndarray:
         # If you have a fast API that embeds a list of texts, prefer it.
         # Try .embed_texts; if unavailable, fall back to per-item embed_one.
-        if hasattr(self.em, "embed_texts"):
+        
+        try:
             V = self.em.embed_texts(texts)  # type: ignore[attr-defined]
             return np.asarray(V, dtype="float32")
+        except Exception as e:
+            if self.verbose:
+                logger.error(e)
+
         # fallback: small batches on embed_one
         vecs: List[np.ndarray] = []
         for i in range(0, len(texts), batch_size):

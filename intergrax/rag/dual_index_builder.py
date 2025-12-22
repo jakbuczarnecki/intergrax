@@ -24,6 +24,7 @@ def build_dual_index(
     toc_min_level: int = 1,
     toc_max_level: int = 3,
     prefilter: Optional[Callable[[Document], bool]] = None,
+    skip_if_populated: bool = True,    
     verbose: bool = False,
 ):
     """
@@ -34,6 +35,24 @@ def build_dual_index(
     log = logger.getChild("build")
     if verbose:
         log.setLevel(logging.INFO)
+
+    def _safe_count(vs: VectorstoreManager) -> int:
+        try:
+            return int(vs.count() or 0)
+        except Exception:
+            return 0
+
+    if skip_if_populated:
+        chunks_count = _safe_count(vs_chunks)
+        toc_count = _safe_count(vs_toc) if vs_toc is not None else 0
+
+        if chunks_count > 0 or toc_count > 0:
+            log.warning(
+                "[DualIndex] skip_if_populated=True → skipping ingest "
+                "(CHUNKS=%d, TOC=%d).",
+                chunks_count, toc_count
+            )
+            return
 
     # sanity for level range
     if toc_min_level > toc_max_level:
@@ -134,5 +153,5 @@ def build_dual_index(
                 log.info("[DualIndex] TOC done")
         else:
             log.warning("[DualIndex] TOC enabled, but no DOCX headings matched the criteria.")
-
+    
     log.info("[DualIndex] Done.")
