@@ -7,6 +7,7 @@ from typing import List, Dict, Optional, Any
 import logging
 
 from langchain_core.documents import Document
+import numpy as np
 from .vectorstore_manager import VectorstoreManager
 from .embedding_manager import EmbeddingManager
 
@@ -46,7 +47,7 @@ class DualRetriever:
             raise RuntimeError("intergraxDualRetriever needs an EmbeddingManager (embed_manager=...)")
         return self.em
 
-    def _normalize_hits(self, res: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _normalize_hits(self, res: Dict[str, Any], *, provider: str) -> List[Dict[str, Any]]:
         """
         intergraxVectorstoreManager.query() returns:
           {"ids":[[...]], "scores":[[...]], "metadatas":[[...]], "documents":[[...]]}
@@ -70,13 +71,29 @@ class DualRetriever:
         for i in range(n):
             md = dict(metadatas[i] or {})
             txt = (documents[i] if (isinstance(documents, list) and i < len(documents)) else md.get("text", "")) or ""
+            raw = float(scores[i])
+
+            if provider == "chroma":
+                # Chroma returns distances (lower is better). Convert to similarity.
+                sim = 1.0 - raw
+                if sim < 0.0:
+                    sim = 0.0
+                if sim > 1.0:
+                    sim = 1.0
+                dist = raw
+            else:
+                # Other providers: treat as similarity (higher is better)
+                sim = raw
+                dist = None
+
             hits.append({
-                "id": ids[i],
+                "id": str(ids[i]),
                 "content": str(txt),
                 "metadata": md,
-                "similarity_score": float(scores[i]),
-                "distance": None,   # in Chroma converted; for other providers we use similarity_score anyway
+                "similarity_score": float(sim),
+                "distance": float(dist) if dist is not None else None,
             })
+
         # sort descending by similarity
         hits.sort(key=lambda h: h.get("similarity_score", 0.0), reverse=True)
         return hits
@@ -90,9 +107,21 @@ class DualRetriever:
         where: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         em = self._ensure_em()
-        q_vec = em.embed_one(query_text)  # 1xD (ndarray or list)
-        res = vs.query(query_embeddings=q_vec, top_k=top_k, where=where, include_embeddings=False)
-        return self._normalize_hits(res)
+        q_vec = em.embed_one(query_text)
+        # normalize to [[D]]
+        if isinstance(q_vec, np.ndarray):
+            if q_vec.ndim == 1:
+                Q = [q_vec.astype("float32").tolist()]
+            else:
+                Q = q_vec.astype("float32").tolist()
+        elif isinstance(q_vec, list):
+            Q = [q_vec] if (not q_vec or not isinstance(q_vec[0], list)) else q_vec
+        else:
+            Q = [[float(q_vec)]]
+
+        res = vs.query(query_embeddings=Q, top_k=top_k, where=where, include_embeddings=False)
+
+        return self._normalize_hits(res, provider=vs.cfg.provider)
 
     def _merge_where_with_parent(
         self,
