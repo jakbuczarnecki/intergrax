@@ -37,7 +37,7 @@ class RagRetriever:
       "content": str,
       "metadata": dict,
       "similarity_score": float,
-      "distance": float | None,
+      "distance": float,  # only for Chroma; omitted for other providers
       "rank": int,
       "embedding": Optional[List[float]]
     }
@@ -113,43 +113,71 @@ class RagRetriever:
         Maximal Marginal Relevance diversification.
 
         Args:
-            query_vec: (D,) array – query embedding.
-            cand_vecs: (N, D) array – candidate embeddings.
+            query_vec: (D,) array - query embedding.
+            cand_vecs: (N, D) array - candidate embeddings.
             k: number of items to select.
             lambda_mult: trade-off between relevance (to query) and diversity (to other items).
 
         Returns:
-            List of selected indices.
+            List of selected indices (indices in cand_vecs).
         """
-        if k <= 0 or cand_vecs.size == 0:
+        if k <= 0:
             return []
-        k = min(k, cand_vecs.shape[0])
 
-        def _unit(x):
-            n = np.linalg.norm(x, axis=-1, keepdims=True) + 1e-12
-            return x / n
+        # Ensure shapes + dtype
+        q_in = np.asarray(query_vec, dtype="float32").reshape(-1)          # (D,)
+        C_in = np.asarray(cand_vecs, dtype="float32")
+        if C_in.ndim != 2 or C_in.shape[0] == 0 or C_in.shape[1] == 0:
+            return []
 
-        q = _unit(query_vec)
-        C = _unit(cand_vecs)
+        k = min(int(k), int(C_in.shape[0]))
 
-        sim_q = (C @ q.reshape(-1, 1)).ravel()  # similarity to query
+        # Clamp lambda to [0, 1]
+        if not isinstance(lambda_mult, (int, float)):
+            lambda_mult = 0.5
+        lambda_mult = float(lambda_mult)
+        if lambda_mult < 0.0:
+            lambda_mult = 0.0
+        if lambda_mult > 1.0:
+            lambda_mult = 1.0
+
+        def _unit(x: np.ndarray) -> np.ndarray:
+            """
+            L2-normalize on the last axis.
+            Always returns float32 ndarray.
+            """
+            x = np.asarray(x, dtype="float32")
+            n = np.linalg.norm(x, axis=-1, keepdims=True).astype("float32") + np.float32(1e-12)
+            return (x / n).astype("float32")
+
+        q = _unit(q_in)     # (D,)
+        C = _unit(C_in)     # (N, D)
+
+        # Similarity to query for each candidate: (N,)
+        sim_q = (C @ q.reshape(-1, 1)).ravel()
+
         selected: List[int] = []
-        candidates = list(range(C.shape[0]))
+        candidates: List[int] = list(range(int(C.shape[0])))
 
         while len(selected) < k and candidates:
             if not selected:
-                # pick highest relevance first
-                best = int(np.argmax(sim_q[candidates]))
-                selected.append(candidates.pop(best))
+                # Pick highest relevance first
+                best_pos = int(np.argmax(sim_q[candidates]))
+                selected.append(candidates.pop(best_pos))
                 continue
-            # penalize redundancy relative to selected items
-            S = C[selected]                   # (m, D)
-            sim_div = C[candidates] @ S.T     # (c, m)
-            max_div = np.max(sim_div, axis=1)
-            mmr_score = lambda_mult * sim_q[candidates] - (1 - lambda_mult) * max_div
-            best = int(np.argmax(mmr_score))
-            selected.append(candidates.pop(best))
+
+            # Penalize redundancy relative to selected items
+            S = C[selected]               # (m, D)
+            cand_mat = C[candidates]      # (c, D)
+            sim_div = cand_mat @ S.T      # (c, m)
+            max_div = np.max(sim_div, axis=1)  # (c,)
+
+            mmr_score = (lambda_mult * sim_q[candidates]) - ((1.0 - lambda_mult) * max_div)
+            best_pos = int(np.argmax(mmr_score))
+            selected.append(candidates.pop(best_pos))
+
         return selected
+
     
 
     def _batch_embed_contents(self, texts: List[str]) -> np.ndarray:
@@ -162,7 +190,7 @@ class RagRetriever:
         - or falls back to per-item embed_one
         """
         # Preferred: vectorized method exists
-        if hasattr(self.em, "embed_texts") and callable(getattr(self.em, "embed_texts")):
+        if hasattr(self.em, "embed_texts") and callable(self.em.embed_texts):
             try:
                 res = self.em.embed_texts(texts)  # may return ndarray OR (ndarray, ...)
                 # If it looks like a tuple/list, try to take first element as ndarray
@@ -172,7 +200,7 @@ class RagRetriever:
                     vecs = res
                 # Normalize to ndarray
                 if isinstance(vecs, np.ndarray):
-                    return vecs
+                    return vecs.astype("float32")
                 if isinstance(vecs, list) and vecs and isinstance(vecs[0], (list, tuple, np.ndarray)):
                     return np.array(vecs, dtype="float32")
             except Exception:
@@ -208,10 +236,14 @@ class RagRetriever:
         prefetch_factor: int = 5,   # fetch a wider candidate pool from the vector DB
     ) -> List[Dict[str, Any]]:
         # Guard: empty store
-        if hasattr(self.vs, "count") and self.vs.count() == 0:
-            if self.verbose:
-                print("[intergraxRagRetriever] Vector store is empty.")
-            return []
+        try:
+            if hasattr(self.vs, "count") and int(self.vs.count() or 0) == 0:
+                if self.verbose:
+                    print("[intergraxRagRetriever] Vector store is empty.")
+                return []
+        except Exception:
+            # If count() is unsupported, ignore and continue
+            pass
 
         used_mmr = False
         used_reranker = False
@@ -266,10 +298,9 @@ class RagRetriever:
 
         # 4) Normalize scores → similarity in [0,1]
         sims = self._scores_to_similarity(raw_scores, provider)
-        distances = [1.0 - s for s in sims] if provider == "chroma" else [None] * len(sims)
 
         # Align lengths (do NOT clamp by emb_vecs length — embeddings may be absent)
-        n = min(len(ids), len(metadatas), len(sims), len(distances))
+        n = min(len(ids), len(metadatas), len(sims))
         docs_present = isinstance(documents, list) and any(documents)
         if docs_present:
             n = min(n, len(documents))
@@ -295,8 +326,15 @@ class RagRetriever:
                 "content": content,
                 "metadata": meta,
                 "similarity_score": float(sims[i]),
-                "distance": float(distances[i]) if provider == "chroma" else None,
             }
+
+            if provider == "chroma":
+                # raw_scores are distances for chroma
+                try:
+                    item["distance"] = float(raw_scores[i])
+                except Exception:
+                    item["distance"] = float(1.0 - sims[i])
+
             # Embeddings from provider (optional)
             if include_embeddings and i < len(emb_vecs) and emb_vecs[i] is not None:
                 item["embedding"] = emb_vecs[i]
@@ -357,11 +395,15 @@ class RagRetriever:
                         q = np.asarray(q_vec_1d, dtype="float32").reshape(-1)
                         C = np.vstack(emb_items).astype("float32")
 
-                        k_for_mmr = min(prefetch_k, len(emb_items))
+                        k_for_mmr = min(len(emb_items), prefetch_k)
                         order_local = self._mmr(q, C, k=k_for_mmr, lambda_mult=mmr_lambda)
 
                         if order_local:
-                            uniq = [uniq[emb_indices[i]] for i in order_local]
+                            selected_idxs = [emb_indices[i] for i in order_local]
+                            selected_set = set(selected_idxs)
+
+                            # Keep the MMR-selected items first, then append the remaining candidates
+                            uniq = [uniq[i] for i in selected_idxs] + [it for j, it in enumerate(uniq) if j not in selected_set]
                             used_mmr = True
                     else:
                         if self.verbose:
@@ -384,23 +426,11 @@ class RagRetriever:
             # Defensive fallback: return top_k by raw similarity from the original candidates
             uniq = sorted(cands, key=lambda x: x.get("similarity_score", 0.0), reverse=True)[:raw_top_k]
 
-        # 9) Per-parent limit AFTER MMR/threshold
-        limit = self.default_max_per_parent if max_per_parent is None else max_per_parent
-        if limit and limit > 0:
-            buckets: Dict[str, int] = {}
-            diversified: List[Dict[str, Any]] = []
-            for it in uniq:
-                parent = str(it["metadata"].get("parent_id", "unknown_parent"))
-                cnt = buckets.get(parent, 0)
-                if cnt < limit:
-                    diversified.append(it)
-                    buckets[parent] = cnt + 1
-            uniq = diversified or uniq
-
+       
         # Snapshot before rerank (for safe fallback)
         uniq_before_rerank = list(uniq)
 
-        # 10) Optional reranker (e.g., cross-encoder)
+        # 9a) Optional reranker (e.g., cross-encoder)
         if callable(reranker):
             try:
                 out = None
@@ -429,7 +459,38 @@ class RagRetriever:
                     print(f"[intergraxRagRetriever] Reranker error ignored: {e}")
                 uniq = uniq_before_rerank
 
-        # 11) Final sort, rank, and cap
+
+        # 9a.1) If reranker was used, sort by reranker-provided score before diversification/cap.
+        # Prefer fusion_score (if present), otherwise rerank_score.
+        if used_reranker:
+            def _rerank_key(x: Dict[str, Any]) -> float:
+                fs = x.get("fusion_score")
+                if isinstance(fs, (int, float)):
+                    return float(fs)
+                rs = x.get("rerank_score")
+                if isinstance(rs, (int, float)):
+                    return float(rs)
+                return 0.0
+
+            uniq.sort(key=_rerank_key, reverse=True)
+
+        
+        # 9b) Per-parent limit AFTER reranker (final diversification)
+        limit = self.default_max_per_parent if max_per_parent is None else max_per_parent
+        if limit and limit > 0:
+            buckets: Dict[str, int] = {}
+            diversified: List[Dict[str, Any]] = []
+            for it in uniq:
+                md = it.get("metadata") or {}
+                parent = md.get("parent_id") or md.get("source") or md.get("source_path") or md.get("source_name") or it.get("id")
+                parent = str(parent)
+                cnt = buckets.get(parent, 0)
+                if cnt < limit:
+                    diversified.append(it)
+                    buckets[parent] = cnt + 1
+            uniq = diversified or uniq
+        
+        # 10) Final sort, rank, and cap
         # IMPORTANT: do NOT destroy the order produced by MMR/reranker.
         if not used_mmr and not used_reranker:
             uniq.sort(key=lambda x: x.get("similarity_score", 0.0), reverse=True)
