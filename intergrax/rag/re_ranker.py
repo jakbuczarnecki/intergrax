@@ -10,6 +10,8 @@ import logging
 import numpy as np
 from langchain_core.documents import Document
 
+from intergrax.rag.embedding_manager import EmbeddingManager
+
 logger = logging.getLogger("intergrax.reranker")
 
 # Input types: hits from the retriever (dict) or raw LangChain Documents
@@ -50,7 +52,7 @@ class ReRanker:
     """
 
     def __init__(self,
-                 embedding_manager,  # intergraxEmbeddingManager
+                 embedding_manager: EmbeddingManager,
                  config: Optional[ReRankerConfig] = None,
                  *,
                  verbose: bool = False) -> None:
@@ -124,15 +126,36 @@ class ReRanker:
         # No query provided → return as-is (or sort by original score)
         if query is None or not str(query).strip():
             hits_out = self._ensure_hit_dicts(candidates)
+
+            # propagate original score as rerank/fusion score for consistency
+            for h in hits_out:
+                orig = h.get(self.cfg.hit_orig_score_key)
+                if isinstance(orig, (int, float)):
+                    h["rerank_score"] = float(orig)
+                    if self.cfg.use_score_fusion:
+                        h["fusion_score"] = float(orig)
+                else:
+                    # no original score → neutral fallback
+                    h["rerank_score"] = 0.0
+                    if self.cfg.use_score_fusion:
+                        h["fusion_score"] = 0.0
+
             # if original scores exist, sort by them
             if any(isinstance(h.get(self.cfg.hit_orig_score_key), (int, float)) for h in hits_out):
-                hits_out.sort(key=lambda x: float(x.get(self.cfg.hit_orig_score_key, 0.0)), reverse=True)
+                hits_out.sort(
+                    key=lambda x: float(x.get(self.cfg.hit_orig_score_key, 0.0)),
+                    reverse=True,
+                )
+
             if rerank_k is not None and rerank_k > 0:
                 hits_out = hits_out[: int(rerank_k)]
+
             # set rank_reranked for consistency
             for r, h in enumerate(hits_out, start=1):
                 h["rank_reranked"] = r
+
             return hits_out
+
 
         # 1) Prepare raw texts and "carry" structs referencing original objects
         texts: List[str] = []
@@ -177,22 +200,74 @@ class ReRanker:
 
         # 4) Build result hit dicts and compute rerank scores
         hits_out: List[Hit] = []
+
+        # First pass: build hits and collect raw scores
+        tmp_hits: List[Hit] = []
+        orig_vals: List[Optional[float]] = []
+        rr_vals: List[float] = []
+
         for (orig_idx, obj), sim in zip(carriers, sims):
             hit = self._to_hit(obj)
-            hit["rerank_score"] = float(sim)
-            # Optional fusion with original retriever score
-            if self.cfg.use_score_fusion:
-                orig = hit.get(self.cfg.hit_orig_score_key)
-                if isinstance(orig, (int, float)):
-                    s_orig = float(orig)
-                    s_rr = float(sim)
-                    s_orig_n = self._normalize_scalar(s_orig, self.cfg.normalize)
-                    s_rr_n = self._normalize_scalar(s_rr, self.cfg.normalize)
-                    alpha = float(self.cfg.fusion_alpha)
-                    hit["fusion_score"] = alpha * s_orig_n + (1.0 - alpha) * s_rr_n
+            rr = float(sim)
+            hit["rerank_score"] = rr
+            tmp_hits.append(hit)
+
+            rr_vals.append(rr)
+
+            orig = hit.get(self.cfg.hit_orig_score_key)
+            orig_vals.append(float(orig) if isinstance(orig, (int, float)) else None)
+
+        # Helpers: batch minmax over list (ignores None)
+        def _minmax_norm(values: List[Optional[float]]) -> List[Optional[float]]:
+            xs = [v for v in values if v is not None]
+            if not xs:
+                return [None for _ in values]
+            mn = min(xs)
+            mx = max(xs)
+            if (mx - mn) < 1e-12:
+                return [0.5 if v is not None else None for v in values]
+            out: List[Optional[float]] = []
+            for v in values:
+                if v is None:
+                    out.append(None)
                 else:
-                    hit["fusion_score"] = float(sim)  # fallback: same as rerank_score
+                    out.append((v - mn) / (mx - mn))
+            return out
+
+        mode = self.cfg.normalize
+
+        # Normalize rerank and original scores according to mode
+        if mode == "minmax":
+            rr_n: List[float] = [0.0] * len(rr_vals)
+            rr_mn = min(rr_vals) if rr_vals else 0.0
+            rr_mx = max(rr_vals) if rr_vals else 1.0
+            if (rr_mx - rr_mn) < 1e-12:
+                rr_n = [0.5 for _ in rr_vals]
+            else:
+                rr_n = [(v - rr_mn) / (rr_mx - rr_mn) for v in rr_vals]
+
+            orig_n = _minmax_norm(orig_vals)
+        elif mode is None:
+            rr_n = rr_vals
+            orig_n = orig_vals
+        else:
+            # keep existing per-scalar behavior for non-minmax modes
+            rr_n = [self._normalize_scalar(v, mode) for v in rr_vals]
+            orig_n = [self._normalize_scalar(v, mode) if v is not None else None for v in orig_vals]
+
+        # Second pass: compute fusion_score (or fallback) and finalize hits_out
+        alpha = float(self.cfg.fusion_alpha)
+
+        for i, hit in enumerate(tmp_hits):
+            if self.cfg.use_score_fusion:
+                on = orig_n[i]
+                rn = float(rr_n[i])
+                if on is not None:
+                    hit["fusion_score"] = alpha * float(on) + (1.0 - alpha) * rn
+                else:
+                    hit["fusion_score"] = float(hit["rerank_score"])
             hits_out.append(hit)
+
 
         # 5) Final sort by 'fusion_score' (if enabled) else by 'rerank_score'
         key = ("fusion_score" if self.cfg.use_score_fusion else "rerank_score")
@@ -257,7 +332,7 @@ class ReRanker:
         for i in range(0, len(texts), batch_size):
             part = texts[i:i+batch_size]
             for t in part:
-                vecs.append(self._embed_query_cached(t))
+                vecs.append(self._embed_query_no_cache(t))
         return np.vstack(vecs).astype("float32")
 
     @staticmethod
