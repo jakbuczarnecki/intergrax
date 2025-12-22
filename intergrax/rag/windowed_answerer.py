@@ -9,6 +9,8 @@ import logging
 from typing import List, Dict, Tuple
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.rag.dual_retriever import DualRetriever
+from intergrax.rag.rag_answerer import RagAnswerer
 
 logger = logging.getLogger("intergrax.windowed_answerer")
 
@@ -17,7 +19,12 @@ class WindowedAnswerer:
     """
     Windowed (map→reduce) layer on top of the base Answerer.
     """
-    def __init__(self, answerer, retriever, *, verbose: bool = False):
+    def __init__(
+            self, 
+            answerer: RagAnswerer, 
+            retriever: DualRetriever, 
+            *, 
+            verbose: bool = False):
         self.answerer = answerer
         self.retriever = retriever
         self.verbose = verbose
@@ -60,8 +67,8 @@ class WindowedAnswerer:
         Build messages with memory-awareness, without duplicating the system prompt.
         If the answerer has `_build_messages_memory_aware` and a memory store, use it.
         Otherwise, fall back to `_build_messages`.
-        """
-        use_memory = getattr(self.answerer, "memory", None) is not None
+        """        
+        use_memory = self.answerer.memory is not None        
         mem_aware = hasattr(self.answerer, "_build_messages_memory_aware")
 
         if use_memory and mem_aware:
@@ -85,9 +92,9 @@ class WindowedAnswerer:
     ):
         self.log.info("[Windowed] Asking: '%s' (top_k_total=%d, window=%d)", question, top_k_total, window_size)
 
-        # If we have memory, record the user's question ONCE (to keep history consistent).
-        if getattr(self.answerer, "memory", None) is not None:
-            self.answerer.memory.add_message("user", question)
+        # If we have memory, record the user's question ONCE (to keep history consistent).   
+        if self.answerer.memory is not None:                         
+            self.answerer.memory.add_message(ChatMessage(role="user", content=question))
 
         # 1) Broad retrieval
         raw_hits = self.retriever.retrieve(question, top_k=top_k_total)
@@ -96,8 +103,8 @@ class WindowedAnswerer:
         if not raw_hits:
             msg = "No sufficiently relevant context was found to answer."
             # If we have memory, append an informational assistant reply.
-            if getattr(self.answerer, "memory", None) is not None:
-                self.answerer.memory.add_message("assistant", msg)
+            if self.answerer.memory is not None:   
+                self.answerer.memory.add_message(ChatMessage(role="assistant", content=msg))
             return {
                 "answer": msg,
                 "sources": [],
@@ -169,12 +176,12 @@ class WindowedAnswerer:
             seen.add(key)
             dedup_sources.append(s)
 
-        # 5) If we have memory, append the final answer (and optional summary)
-        if getattr(self.answerer, "memory", None) is not None:
+        # 5) If we have memory, append the final answer (and optional summary)        
+        if self.answerer.memory is not None:
             content_to_save = final_answer
             if final_summary:
-                content_to_save += "\n\n" + final_summary
-            self.answerer.memory.add_message("assistant", content_to_save)
+                content_to_save += "\n\n" + final_summary            
+            self.answerer.memory.add_message(ChatMessage(role="assistant", content=content_to_save))
 
         self.log.info("[Windowed] Done (%d windows)", len(windows))
         return {
