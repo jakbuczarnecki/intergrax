@@ -5,15 +5,13 @@
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Optional, Sequence
-from copy import deepcopy
 import numpy as np
 
-from langchain_core.documents import Document
 from .vectorstore_manager import VectorstoreManager
 from .embedding_manager import EmbeddingManager
 
 # Optional reranker function type: accepts and returns a list of hits
-RerankerFn = Callable[[List[Dict[str, Any]]], List[Dict[str, Any]]]
+RerankerFn = Callable[..., List[Dict[str, Any]]]
 
 
 class RagRetriever:
@@ -340,17 +338,39 @@ class RagRetriever:
 
             if have_embs:
                 try:
-                    q = np.array(q_vec_1d, dtype="float32").reshape(-1)
-                    C = np.array([it["embedding"] for it in uniq], dtype="float32")
-                    k_for_mmr = min(prefetch_k, len(uniq))
-                    order = self._mmr(q, C, k=k_for_mmr, lambda_mult=mmr_lambda)
-                    if order:
-                        uniq = [uniq[i] for i in order]
-                        used_mmr = True
+                    # Safe coerce embeddings to 1D float32 and keep mapping to uniq indices
+                    emb_items: List[np.ndarray] = []
+                    emb_indices: List[int] = []
+
+                    for idx, it in enumerate(uniq):
+                        emb = it.get("embedding")
+                        if emb is None:
+                            continue
+                        try:
+                            v = np.asarray(emb, dtype="float32").reshape(-1)
+                            emb_items.append(v)
+                            emb_indices.append(idx)
+                        except Exception:
+                            continue
+
+                    if len(emb_items) >= 2:
+                        q = np.asarray(q_vec_1d, dtype="float32").reshape(-1)
+                        C = np.vstack(emb_items).astype("float32")
+
+                        k_for_mmr = min(prefetch_k, len(emb_items))
+                        order_local = self._mmr(q, C, k=k_for_mmr, lambda_mult=mmr_lambda)
+
+                        if order_local:
+                            uniq = [uniq[emb_indices[i]] for i in order_local]
+                            used_mmr = True
+                    else:
+                        if self.verbose:
+                            print("[intergraxRagRetriever] MMR skipped: not enough valid embeddings.")
                 except Exception as e:
                     if self.verbose:
                         print(f"[intergraxRagRetriever] MMR error ignored: {e}")
                     uniq = uniq_before_mmr  # safe fallback
+
 
             # If something went wrong and we ended up empty, revert safely
             if not uniq:
@@ -385,11 +405,15 @@ class RagRetriever:
             try:
                 out = None
                 try:
-                    # prefer new signature accepting query/top_k
-                    out = reranker(uniq, query=question, top_k=raw_top_k)
+                    # prefer signature compatible with intergrax ReRanker
+                    out = reranker(candidates=uniq, query=question, top_k=raw_top_k)  # type: ignore[call-arg]
                 except TypeError:
-                    # fallback: legacy rerankers that only take the list
-                    out = reranker(uniq)
+                    try:
+                        # fallback: rerankers that accept (hits, query=?, top_k=?)
+                        out = reranker(uniq, query=question, top_k=raw_top_k)  # type: ignore[call-arg]
+                    except TypeError:
+                        # legacy: rerankers that only take the list
+                        out = reranker(uniq)
 
                 if isinstance(out, list) and out:
                     uniq = out
@@ -431,6 +455,7 @@ class RagRetriever:
         use_mmr: bool = False,
         mmr_lambda: float = 0.5,
         reranker: Optional[RerankerFn] = None,
+        prefetch_factor: int = 5,
     ) -> List[List[Dict[str, Any]]]:
         """
         Run retrieval for multiple queries sequentially (simple loop-based batching).
@@ -450,6 +475,7 @@ class RagRetriever:
                 use_mmr=use_mmr,
                 mmr_lambda=mmr_lambda,
                 reranker=reranker,
+                prefetch_factor=prefetch_factor
             )
             out.append(hits)
         return out
