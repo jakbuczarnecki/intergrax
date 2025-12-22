@@ -215,6 +215,9 @@ class RagRetriever:
                 print("[intergraxRagRetriever] Vector store is empty.")
             return []
 
+        used_mmr = False
+        used_reranker = False
+
         # 1) Embed query → [[D]]
         q_vec_1d = self.em.embed_one(question)
         Q = self._as_query_batch(q_vec_1d)
@@ -246,17 +249,17 @@ class RagRetriever:
             res = _do_query(None)
 
         provider = self.vs.cfg.provider
-        ids_b    = res.get("ids", [[]])
-        scores_b = res.get("scores", [[]])    # Chroma: distances; others: similarity
-        metas_b  = res.get("metadatas", [[]])
-        docs_b   = res.get("documents", [[]])
-        embs_b   = res.get("embeddings", [[]]) if include_embeddings else [[]]
+        ids_b = res.get("ids", [[]])
+        scores_b = res.get("scores", [[]])  # Chroma: distances; others: similarity
+        metas_b = res.get("metadatas", [[]])
+        docs_b = res.get("documents", [[]])
+        embs_b = res.get("embeddings", [[]]) if include_embeddings else [[]]
 
-        ids        = ids_b[0] if ids_b else []
+        ids = ids_b[0] if ids_b else []
         raw_scores = scores_b[0] if scores_b else []
-        metadatas  = metas_b[0] if metas_b else []
-        documents  = docs_b[0] if docs_b else []
-        emb_vecs   = embs_b[0] if include_embeddings and embs_b else []
+        metadatas = metas_b[0] if metas_b else []
+        documents = docs_b[0] if docs_b else []
+        emb_vecs = embs_b[0] if include_embeddings and embs_b else []
 
         if not ids:
             if self.verbose:
@@ -308,10 +311,14 @@ class RagRetriever:
         seen_ids = set()
         uniq: List[Dict[str, Any]] = []
         for it in cands:
-            if it["id"] in seen_ids:
+            _id = it.get("id")
+            if _id in seen_ids:
                 continue
-            seen_ids.add(it["id"])
+            seen_ids.add(_id)
             uniq.append(it)
+
+        # Keep a defensive snapshot BEFORE MMR/rerank so we can fall back safely
+        uniq_before_mmr = list(uniq)
 
         # 7) Optional MMR: ensure we HAVE embeddings; if not, compute them on the fly
         if use_mmr:
@@ -320,10 +327,9 @@ class RagRetriever:
             if not have_embs:
                 try:
                     texts = [x["content"] for x in uniq]
-                    C = self._batch_embed_contents(texts)  # <- NEW helper
-                    # inject vectors into items
+                    C_list = self._batch_embed_contents(texts)  # helper assumed to exist
                     for i, x in enumerate(uniq):
-                        x["embedding"] = C[i]
+                        x["embedding"] = C_list[i]
                     have_embs = True
                     if self.verbose:
                         print("[intergraxRagRetriever] Computed candidate embeddings on-the-fly for MMR.")
@@ -333,14 +339,22 @@ class RagRetriever:
                         print(f"[intergraxRagRetriever] Could not compute embeddings on-the-fly; skipping MMR. Err: {e}")
 
             if have_embs:
-                q = np.array(q_vec_1d, dtype="float32").reshape(-1)
-                C = np.array([it["embedding"] for it in uniq], dtype="float32")
-                k_for_mmr = min(prefetch_k, len(uniq))
-                order = self._mmr(q, C, k=k_for_mmr, lambda_mult=mmr_lambda)
-                if order:
-                    uniq = [uniq[i] for i in order]
-                if not uniq:
-                    uniq = cands  # defensive fallback
+                try:
+                    q = np.array(q_vec_1d, dtype="float32").reshape(-1)
+                    C = np.array([it["embedding"] for it in uniq], dtype="float32")
+                    k_for_mmr = min(prefetch_k, len(uniq))
+                    order = self._mmr(q, C, k=k_for_mmr, lambda_mult=mmr_lambda)
+                    if order:
+                        uniq = [uniq[i] for i in order]
+                        used_mmr = True
+                except Exception as e:
+                    if self.verbose:
+                        print(f"[intergraxRagRetriever] MMR error ignored: {e}")
+                    uniq = uniq_before_mmr  # safe fallback
+
+            # If something went wrong and we ended up empty, revert safely
+            if not uniq:
+                uniq = uniq_before_mmr
 
         # 8) Now apply threshold
         if score_threshold > 0.0:
@@ -363,28 +377,43 @@ class RagRetriever:
                     buckets[parent] = cnt + 1
             uniq = diversified or uniq
 
+        # Snapshot before rerank (for safe fallback)
+        uniq_before_rerank = list(uniq)
+
         # 10) Optional reranker (e.g., cross-encoder)
         if callable(reranker):
             try:
-                # prefer new signature accepting query/top_k
+                out = None
                 try:
-                    uniq = reranker(uniq, query=question, top_k=raw_top_k)
+                    # prefer new signature accepting query/top_k
+                    out = reranker(uniq, query=question, top_k=raw_top_k)
                 except TypeError:
                     # fallback: legacy rerankers that only take the list
-                    uniq = reranker(uniq)
+                    out = reranker(uniq)
+
+                if isinstance(out, list) and out:
+                    uniq = out
+                    used_reranker = True
+                elif isinstance(out, list) and not out:
+                    # If reranker returns [], treat as "no-op" and fallback
+                    uniq = uniq_before_rerank
+                else:
+                    # Unexpected return type -> fallback
+                    uniq = uniq_before_rerank
             except Exception as e:
                 if self.verbose:
                     print(f"[intergraxRagRetriever] Reranker error ignored: {e}")
+                uniq = uniq_before_rerank
 
         # 11) Final sort, rank, and cap
-        uniq.sort(key=lambda x: x.get("similarity_score", 0.0), reverse=True)
+        # IMPORTANT: do NOT destroy the order produced by MMR/reranker.
+        if not used_mmr and not used_reranker:
+            uniq.sort(key=lambda x: x.get("similarity_score", 0.0), reverse=True)
+
         for r, it in enumerate(uniq, start=1):
             it["rank"] = r
 
         return uniq[:raw_top_k]
-
-
-
 
 
     # ------------------------------------------------------------------
