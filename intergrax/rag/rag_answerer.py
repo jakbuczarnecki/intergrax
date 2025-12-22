@@ -57,6 +57,10 @@ class AnswererConfig:
         "Summarize the answer below into no more than 6 bullet points. Keep it factual and do not introduce new content.\n\nANSWER:\n{answer}\n"
     )
 
+    summary_system_instruction: str = (
+        "You summarize answers without adding facts."
+    )
+
 
 @dataclass
 class AnswerSource:
