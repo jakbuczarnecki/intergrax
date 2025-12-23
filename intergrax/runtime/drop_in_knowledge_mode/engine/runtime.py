@@ -620,7 +620,6 @@ class DropInKnowledgeRuntime:
                 top_k=self._config.max_docs_per_query,
                 language=None,
                 top_n_fetch=None,
-                serialize=True,
             )
 
             if not web_docs:
