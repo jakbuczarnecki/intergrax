@@ -2,10 +2,11 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from typing import Sequence, Mapping, Any, List, Dict, Optional
+from typing import Sequence, List, Optional
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.websearch.schemas.web_document import WebDocument
+from intergrax.llm.messages import ChatMessage
+from intergrax.websearch.schemas.web_search_result import WebSearchResult
 
 
 class WebSearchContextBuilder:
@@ -44,95 +45,6 @@ class WebSearchContextBuilder:
         self.include_url = include_url
         self.source_label_prefix = source_label_prefix
 
-    # -------------------------------------------------------------------------
-    # Context building
-    # -------------------------------------------------------------------------
-
-    def build_context_from_documents(
-        self,
-        documents: Sequence[WebDocument],
-    ) -> str:
-        """
-        Builds a textual context string from WebDocument objects.
-
-        Each document is rendered as:
-
-          [Source N]
-          Title: ...
-          URL: ...
-          Snippet: ...
-          <document text>
-
-        Sections are separated by "\n\n---\n\n".
-        """
-        sections: List[str] = []
-        for idx, doc in enumerate(documents[: self.max_docs], start=1):
-            page = doc.page
-            hit = doc.hit
-
-            title = (page.title or hit.title or "").strip() or "(no title)"
-            url = (hit.url or "").strip()
-            snippet = (hit.snippet or "").strip()
-            text = (page.text or "").strip()
-
-            if self.max_chars_per_doc and len(text) > self.max_chars_per_doc:
-                text = text[: self.max_chars_per_doc]
-
-            header_lines: List[str] = []
-            header_lines.append(f"[{self.source_label_prefix} {idx}]")
-            header_lines.append(f"Title: {title}")
-            if self.include_url and url:
-                header_lines.append(f"URL: {url}")
-            if self.include_snippet and snippet:
-                header_lines.append(f"Snippet: {snippet}")
-            header_lines.append("")  # blank line before body
-
-            section = "\n".join(header_lines + [text])
-            sections.append(section)
-
-        return "\n\n---\n\n".join(sections)
-
-    def build_context_from_serialized(
-        self,
-        web_docs: Sequence[Mapping[str, Any]],
-    ) -> str:
-        """
-        Builds a textual context string from serialized web documents
-        (dicts produced by WebSearchExecutor with serialize=True).
-
-        Expected keys (optional but recommended):
-          - title
-          - url
-          - snippet
-          - text
-        """
-        sections: List[str] = []
-        for idx, doc in enumerate(web_docs[: self.max_docs], start=1):
-            title = str(doc.get("title") or "").strip() or "(no title)"
-            url = str(doc.get("url") or "").strip()
-            snippet = str(doc.get("snippet") or "").strip()
-            text = str(doc.get("text") or "").strip()
-
-            if self.max_chars_per_doc and len(text) > self.max_chars_per_doc:
-                text = text[: self.max_chars_per_doc]
-
-            header_lines: List[str] = []
-            header_lines.append(f"[{self.source_label_prefix} {idx}]")
-            header_lines.append(f"Title: {title}")
-            if self.include_url and url:
-                header_lines.append(f"URL: {url}")
-            if self.include_snippet and snippet:
-                header_lines.append(f"Snippet: {snippet}")
-            header_lines.append("")
-
-            section = "\n".join(header_lines + [text])
-            sections.append(section)
-
-        return "\n\n---\n\n".join(sections)
-
-    # -------------------------------------------------------------------------
-    # Messages for LLM – STRICT "sources-only" mode
-    # -------------------------------------------------------------------------
 
     def _build_system_prompt(self) -> str:
         """
@@ -179,25 +91,60 @@ class WebSearchContextBuilder:
             f"6) Add [{self.source_label_prefix} N] markers next to statements that come from specific sources.\n"
         )
 
-    def build_messages_from_serialized(
+    def _build_context_from_results(
+        self,
+        web_results: Sequence[WebSearchResult],
+    ) -> str:
+        """
+        Builds a textual context string from typed WebSearchResult objects.
+        """
+        sections: List[str] = []
+        for idx, doc in enumerate(web_results[: self.max_docs], start=1):
+            title = (doc.title or "").strip() or "(no title)"
+            url = (doc.url or "").strip()
+            snippet = (doc.snippet or "").strip() if doc.snippet else ""
+            text = (doc.text or "").strip()
+
+            if self.max_chars_per_doc and len(text) > self.max_chars_per_doc:
+                text = text[: self.max_chars_per_doc]
+
+            header_lines: List[str] = []
+            header_lines.append(f"[{self.source_label_prefix} {idx}]")
+            header_lines.append(f"Title: {title}")
+            if self.include_url and url:
+                header_lines.append(f"URL: {url}")
+            if self.include_snippet and snippet:
+                header_lines.append(f"Snippet: {snippet}")
+            header_lines.append("")
+
+            section = "\n".join(header_lines + [text])
+            sections.append(section)
+
+        return "\n\n---\n\n".join(sections)
+    
+
+    # -------------------------------------------------------------------------
+    # Messages for LLM – STRICT "sources-only" mode
+    # -------------------------------------------------------------------------    
+
+    def build_messages_from_results(
         self,
         user_question: str,
-        web_docs: Sequence[Mapping[str, Any]],
+        web_results: Sequence[WebSearchResult],
         answer_language: str = GLOBAL_SETTINGS.default_language,
         system_prompt_override: Optional[str] = None,
-    ) -> List[Dict[str, str]]:
+    ) -> List[ChatMessage]:
         """
         Builds a typical pair of chat messages (system + user) for chat-style LLMs
-        from serialized web documents.
+        from typed web search results.
 
         Returns:
-          list of messages in format:
-            [
-              {"role": "system", "content": "..."},
-              {"role": "user", "content": "..."}
-            ]
+        [
+            ChatMessage(role="system", content="..."),
+            ChatMessage(role="user", content="...")
+        ]
         """
-        context = self.build_context_from_serialized(web_docs)
+        context = self._build_context_from_results(web_results)
 
         system_prompt = system_prompt_override or self._build_system_prompt()
         user_prompt = self._build_user_prompt(
@@ -207,31 +154,7 @@ class WebSearchContextBuilder:
         )
 
         return [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
+            ChatMessage(role="system", content=system_prompt),
+            ChatMessage(role="user", content=user_prompt),
         ]
 
-    def build_messages_from_documents(
-        self,
-        user_question: str,
-        documents: Sequence[WebDocument],
-        answer_language: str = GLOBAL_SETTINGS.default_language,
-        system_prompt_override: Optional[str] = None,
-    ) -> List[Dict[str, str]]:
-        """
-        Same as 'build_messages_from_serialized', but takes WebDocument objects
-        instead of serialized dicts.
-        """
-        context = self.build_context_from_documents(documents)
-
-        system_prompt = system_prompt_override or self._build_system_prompt()
-        user_prompt = self._build_user_prompt(
-            user_question=user_question,
-            context=context,
-            answer_language=answer_language,
-        )
-
-        return [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ]

@@ -2,16 +2,19 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from typing import List, Dict, Any, Optional
+from __future__ import annotations
+
+from typing import List, Optional
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.websearch.cache.query_cache import InMemoryQueryCache, QueryCacheKey
 from intergrax.websearch.schemas.query_spec import QuerySpec
 from intergrax.websearch.schemas.web_document import WebDocument
 from intergrax.websearch.providers.base import WebSearchProvider
 from intergrax.websearch.providers.google_cse_provider import GoogleCSEProvider
 from intergrax.websearch.providers.bing_provider import BingWebProvider
 from intergrax.websearch.pipeline.search_and_read import SearchAndReadPipeline
-from intergrax.websearch.cache import InMemoryQueryCache, QueryCacheKey
+from intergrax.websearch.schemas.web_search_result import WebSearchResult
 
 
 class WebSearchExecutor:
@@ -120,9 +123,10 @@ class WebSearchExecutor:
         names = sorted(p.__class__.__name__ for p in providers)
         return "+".join(names)
 
-    def _serialize_web_document(self, doc: WebDocument) -> Dict[str, Any]:
+
+    def _serialize_web_document(self, doc: WebDocument) -> WebSearchResult:
         """
-        Converts a WebDocument into a dict suitable for LLM prompts and logging.
+        Converts a WebDocument into a list suitable for LLM prompts and logging.
         """
         page = doc.page
         hit = doc.hit
@@ -133,21 +137,23 @@ class WebSearchExecutor:
         else:
             text = full_text
 
-        return {
-            "provider": hit.provider,
-            "rank": hit.rank,
-            "source_rank": doc.source_rank,
-            "quality_score": doc.quality_score,
-            "title": page.title or hit.title,
-            "url": hit.url,
-            "snippet": hit.snippet,
-            "description": page.description,
-            "lang": page.lang,
-            "domain": hit.domain(),
-            "published_at": hit.published_at.isoformat() if hit.published_at else None,
-            "fetched_at": page.fetched_at.isoformat(),
-            "text": text,
-        }
+        return WebSearchResult(
+            provider=hit.provider,
+            rank=hit.rank,
+            source_rank=doc.source_rank,
+            quality_score=doc.quality_score,
+            title=(page.title or hit.title or ""),
+            url=hit.url,
+            snippet=hit.snippet,
+            description=page.description,
+            lang=page.lang,
+            domain=hit.domain(),
+            published_at=hit.published_at.isoformat() if hit.published_at else None,
+            fetched_at=page.fetched_at.isoformat(),
+            text=text,
+            document=doc,
+        )
+
 
     def build_query_spec(
         self,
@@ -179,14 +185,12 @@ class WebSearchExecutor:
         language: Optional[str] = None,
         safe_search: Optional[bool] = None,
         top_n_fetch: Optional[int] = None,
-        serialize: bool = True,
-    ) -> List[Any]:
+    ) -> List[WebSearchResult]:
         """
         Executes the full web search pipeline asynchronously.
 
         Returns:
-          - list of serialized dicts if serialize=True,
-          - list of WebDocument objects if serialize=False.
+          - list of WebDocument objects
 
         When a query cache is configured and active:
           - attempts to return cached serialized results when available and valid.
@@ -203,7 +207,7 @@ class WebSearchExecutor:
         final_top_n = top_n_fetch if top_n_fetch is not None else spec.top_k
 
         cache_key: Optional[QueryCacheKey] = None
-        if serialize and self._query_cache is not None:
+        if self._query_cache is not None:
             cache_key = QueryCacheKey(
                 query=spec.query,
                 top_k=final_top_n,
@@ -222,9 +226,6 @@ class WebSearchExecutor:
             top_n_fetch=final_top_n,
         )
 
-        if not serialize:
-            return docs
-
         serialized_docs = [self._serialize_web_document(d) for d in docs]
 
         if cache_key is not None and self._query_cache is not None:
@@ -241,14 +242,9 @@ class WebSearchExecutor:
         language: Optional[str] = None,
         safe_search: Optional[bool] = None,
         top_n_fetch: Optional[int] = None,
-        serialize: bool = True,
-    ) -> List[Any]:
+    ) -> List[WebSearchResult]:
         """
         Synchronous wrapper for environments without an existing event loop.
-
-        NOTE:
-          Do not use this method inside Jupyter or any environment with
-          a running event loop. In such cases, use 'search_async' instead.
         """
         import asyncio
 
@@ -261,6 +257,5 @@ class WebSearchExecutor:
                 language=language,
                 safe_search=safe_search,
                 top_n_fetch=top_n_fetch,
-                serialize=serialize,
             )
         )

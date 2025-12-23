@@ -5,10 +5,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Protocol, Any
+from typing import Dict, List, Protocol, Any, Optional
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+from intergrax.websearch.schemas.web_search_result import WebSearchResult
+from intergrax.websearch.service.websearch_config import WebSearchConfig
+from intergrax.websearch.service.websearch_context_generator import create_websearch_context_generator
+
+
 
 
 @dataclass
@@ -35,70 +40,67 @@ class WebSearchPromptBuilder(Protocol):
     - the exact wording of the system messages.
     """
 
-    def build_websearch_prompt(
+    async def build_websearch_prompt(
         self,
-        web_docs: List[Dict[str, Any]],
+        web_results: List[WebSearchResult],
+        *,
+        user_query: Optional[str] = None,
     ) -> WebSearchPromptBundle:
         ...
-    
+
 
 class DefaultWebSearchPromptBuilder(WebSearchPromptBuilder):
     """
     Default prompt builder for web search results in Drop-In Knowledge Mode.
 
     Responsibilities:
-    - Take a list of web documents (dict-like objects) returned by WebSearchExecutor.
-    - Build a single system-level message that lists titles, URLs and snippets.
-    - Provide basic debug info: number of docs and top URLs.
+    - Take a list of typed WebSearchResult returned by WebSearchExecutor.
+    - Delegate to websearch module context generator (strategy-based).
+    - Wrap the generated grounded context into a single system message.
+    - Provide debug info: number of docs, top URLs, strategy debug.
     """
 
     def __init__(self, config: RuntimeConfig) -> None:
         self._config = config
 
-    def build_websearch_prompt(
+    async def build_websearch_prompt(
         self,
-        web_docs: List[Dict[str, Any]],
+        web_results: List[WebSearchResult],
+        *,
+        user_query: Optional[str] = None,
     ) -> WebSearchPromptBundle:
         debug_info: Dict[str, Any] = {}
 
-        if not web_docs:
+        if not web_results:
             return WebSearchPromptBundle(
                 context_messages=[],
                 debug_info=debug_info,
             )
 
-        debug_info["num_docs"] = len(web_docs)
-        debug_info["top_urls"] = [
-            d.get("url") for d in web_docs[:3] if isinstance(d, dict)
-        ]
+        debug_info["num_docs"] = len(web_results)
+        debug_info["top_urls"] = [d.url for d in web_results[:3] if (d.url or "").strip()]
 
-        lines: List[str] = [
-            "The following web search results may be relevant. "
-            "Use them together with uploaded documents and chat history. "
-            "Treat them as external context, and never fabricate additional "
-            "facts that are not supported by these sources or your base knowledge."
-        ]
+        # Use dedicated websearch configuration if present; otherwise fallback.
+        cfg: Optional[WebSearchConfig] = self._config.websearch_config
+        if cfg is None:
+            # Fallback to previous behavior limits, but with safe defaults.
+            # Prefer an explicit WebSearchConfig default rather than re-implementing logic here.
+            cfg = WebSearchConfig()
 
-        max_docs = self._config.max_docs_per_query
+        gen = create_websearch_context_generator(cfg)
+        result = await gen.generate(web_results, user_query=user_query)
 
-        for idx, doc in enumerate(web_docs[:max_docs], start=1):
-            if not isinstance(doc, dict):
-                continue
-
-            title = doc.get("title") or "(no title)"
-            url = doc.get("url") or ""
-            snippet = doc.get("snippet") or doc.get("text") or ""
-
-            lines.append(f"\n[{idx}] {title}\nURL: {url}\nSnippet: {snippet}")
-
-        context_text = "\n".join(lines)
-
+        # IMPORTANT: context injection should be a system message
         context_messages = [
             ChatMessage(
-                role="user",
-                content=context_text,
+                role="system",
+                content=result.context_text,
             )
         ]
+
+        # Merge generator debug info into builder debug info
+        for k, v in result.debug_info.items():
+            debug_info[k] = v
 
         return WebSearchPromptBundle(
             context_messages=context_messages,

@@ -4,14 +4,14 @@
 
 from __future__ import annotations
 
-from typing import List, Dict, Any, Optional
+from typing import Optional
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.websearch.schemas.web_search_answer import WebSearchAnswer
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 from intergrax.websearch.context.websearch_context_builder import WebSearchContextBuilder
 from intergrax.llm_adapters import LLMAdapter
 
-from intergrax.llm.messages import ChatMessage
 
 
 class WebSearchAnswerer:
@@ -51,10 +51,10 @@ class WebSearchAnswerer:
         question: str,
         *,
         top_k: Optional[int] = None,
-        temperature: float = 0.2,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         system_prompt_override: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> WebSearchAnswer:
         """
         Full async flow:
           1) Web search,
@@ -66,34 +66,24 @@ class WebSearchAnswerer:
         instance-level system_prompt_override set in __init__.
 
         Returns:
-          {
-            "answer": str,
-            "messages": List[ChatMessage],
-            "web_docs": List[Dict[str, Any]]
-          }
+          WebSearchAnswer
         """
         # 1) Run web search (serialized dicts ready for context building)
-        web_docs = await self.executor.search_async(
+        web_results = await self.executor.search_async(
             query=question,
             top_k=top_k,
-            serialize=True,
         )
 
         # 2) Decide which system prompt to use
         effective_system_prompt = system_prompt_override or self.system_prompt_override
 
         # 3) Build LLM-ready messages (system + user)
-        msg_dicts = self.context_builder.build_messages_from_serialized(
+        messages = self.context_builder.build_messages_from_results(
             user_question=question,
-            web_docs=web_docs,
+            web_results=web_results,
             answer_language=self.answer_language,
             system_prompt_override=effective_system_prompt,
         )
-
-        messages: List[ChatMessage] = [
-            ChatMessage(role=m["role"], content=m["content"])
-            for m in msg_dicts
-        ]
 
         # 4) Call LLM via adapter
         answer_text = self.adapter.generate_messages(
@@ -102,21 +92,21 @@ class WebSearchAnswerer:
             max_tokens=max_tokens,
         )
 
-        return {
-            "answer": answer_text,
-            "messages": messages,
-            "web_docs": web_docs,
-        }
+        return WebSearchAnswer(
+            answer=answer_text,
+            messages=messages,
+            web_results=web_results,
+        )
 
     def answer_sync(
         self,
         question: str,
         *,
         top_k: Optional[int] = None,
-        temperature: float = 0.2,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         system_prompt_override: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> WebSearchAnswer:
         """
         Synchronous convenience wrapper for non-async environments.
 

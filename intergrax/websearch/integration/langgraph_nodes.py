@@ -126,7 +126,6 @@ class WebSearchNode:
             query=query,
             top_k=None,       # use executor defaults
             top_n_fetch=None, # use top_k
-            serialize=True,
         )
 
         state["websearch_docs"] = docs
