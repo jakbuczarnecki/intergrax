@@ -10,6 +10,7 @@ from intergrax.llm_adapters.base import LLMAdapter
 from intergrax.rag.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore_manager import VectorstoreManager
 from intergrax.tools.tools_agent import ToolsAgent
+from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
 
@@ -148,6 +149,8 @@ class RuntimeConfig:
     # Pre-configured executor capable of performing web search queries.
     # If None, web search is effectively unavailable.
     websearch_executor: Optional[WebSearchExecutor] = None
+
+    websearch_config: Optional[WebSearchConfig] = None
 
     # ------------------------------------------------------------------
     # TOOLS / AGENT EXECUTION

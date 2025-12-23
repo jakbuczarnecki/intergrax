@@ -2,6 +2,8 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+from __future__ import annotations
+
 from typing import List, Optional
 
 from intergrax.globals.settings import GLOBAL_SETTINGS

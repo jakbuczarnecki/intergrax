@@ -615,19 +615,39 @@ class DropInKnowledgeRuntime:
             return
 
         try:
-            web_docs = await self._websearch_executor.search_async(
+            web_results = await self._websearch_executor.search_async(
                 query=state.request.message,
                 top_k=self._config.max_docs_per_query,
                 language=None,
                 top_n_fetch=None,
             )
 
-            if not web_docs:
+            dbg = state.debug_trace.setdefault("websearch", {})
+
+            raw_preview = []
+            for d in (web_results or [])[:5]:
+                raw_preview.append(
+                    {
+                        "type": type(d).__name__,
+                        "title": d.title,
+                        "url": d.url,
+                        "snippet_len": len(d.snippet or ""),
+                        "text_len": len(d.text or ""),
+                    }
+                )
+
+            dbg["raw_results_preview"] = raw_preview
+
+            if not web_results:
                 return
 
             state.used_websearch = True
 
-            bundle = self._websearch_prompt_builder.build_websearch_prompt(web_docs)
+            bundle = await self._websearch_prompt_builder.build_websearch_prompt(
+                web_results=web_results,
+                user_query=state.request.message,
+            )
+
             context_messages = bundle.context_messages or []
             self._insert_context_before_last_user(state, context_messages)
             state.websearch_debug.update(bundle.debug_info or {})
@@ -638,7 +658,6 @@ class DropInKnowledgeRuntime:
                 if msg.content:
                     web_context_texts.append(msg.content)
 
-            dbg = state.debug_trace.setdefault("websearch", {})
             dbg["context_blocks_count"] = len(web_context_texts)
 
             # Preview only to avoid bloating trace
@@ -646,18 +665,21 @@ class DropInKnowledgeRuntime:
             dbg["context_preview"] = preview
             dbg["context_preview_chars"] = len(preview)
 
+            # Guardrail signal: did websearch produce any grounded evidence?
+            dbg["no_evidence"] = "No answer-relevant evidence extracted" in (preview or "")
+            state.websearch_debug["no_evidence"] = dbg["no_evidence"]
+
             # Optional: doc-level preview (titles/urls only)
             dbg["docs_preview"] = [
                 {
-                    "title": (d.get("title") if isinstance(d, dict) else None),
-                    "url": (d.get("url") if isinstance(d, dict) else None),
+                    "title": d.title,
+                    "url": d.url,
                 }
-                for d in (web_docs or [])[:5]
+                for d in (web_results or [])[:5]
             ]
 
         except Exception as exc:
             state.websearch_debug["error"] = str(exc)
-        
 
         # Trace web search step.
         self._trace(
@@ -669,8 +691,11 @@ class DropInKnowledgeRuntime:
                 "websearch_enabled": self._config.enable_websearch,
                 "used_websearch": state.used_websearch,
                 "has_error": "error" in (state.websearch_debug or {}),
+                "no_evidence": state.websearch_debug.get("no_evidence", False),
             },
         )
+
+        
 
     # ------------------------------------------------------------------
     # Step 7: Ensure current user message
