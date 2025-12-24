@@ -9,10 +9,10 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 from anthropic import Anthropic
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
+from intergrax.llm_adapters.base import ChatMessage, LLMAdapter
 
 
-class ClaudeChatAdapter(BaseLLMAdapter):
+class ClaudeChatAdapter(LLMAdapter):
     """
     Claude (Anthropic) adapter based on the official anthropic Python SDK.
 

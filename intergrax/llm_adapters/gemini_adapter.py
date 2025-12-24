@@ -11,10 +11,10 @@ from google import genai
 from google.genai import types
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
+from intergrax.llm_adapters.base import ChatMessage, LLMAdapter
 
 
-class GeminiChatAdapter(BaseLLMAdapter):
+class GeminiChatAdapter(LLMAdapter):
     """
     Gemini adapter based on the official Google Gen AI SDK (google-genai).
 

@@ -6,7 +6,7 @@ from mistralai import Mistral
 from mistralai.models import ChatCompletionResponse
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
+from intergrax.llm_adapters.base import ChatMessage, LLMAdapter
 
 
 # -----------------------------
@@ -24,7 +24,7 @@ class _MistralStreamChunk(Protocol):
     choices: List[_MistralStreamChoice]
 
 
-class MistralChatAdapter(BaseLLMAdapter):
+class MistralChatAdapter(LLMAdapter):
     """
     Mistral adapter based on the official Mistral Python SDK (mistralai).
 

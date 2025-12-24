@@ -17,7 +17,7 @@ import boto3
 from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
+from intergrax.llm_adapters.base import ChatMessage, LLMAdapter
 
 
 class BedrockModelFamily(str, Enum):
@@ -330,7 +330,7 @@ class BedrockAdapterConfig:
     family: BedrockModelFamily
 
 
-class BedrockChatAdapter(BaseLLMAdapter):
+class BedrockChatAdapter(LLMAdapter):
     """
     AWS Bedrock adapter using InvokeModel / InvokeModelWithResponseStream.
     Supports multiple model families by dispatching to native codecs.

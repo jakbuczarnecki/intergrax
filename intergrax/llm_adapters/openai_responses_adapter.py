@@ -10,17 +10,13 @@ from openai import Client
 from openai.types.responses import Response
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import (
-    BaseLLMAdapter,
+from intergrax.llm_adapters.base import (    
     ChatMessage,
-    _map_messages_to_openai,
-    _extract_json_object,
-    _model_json_schema,
-    _validate_with_model,
+    LLMAdapter,
 )
 
 
-class OpenAIChatResponsesAdapter(BaseLLMAdapter):
+class OpenAIChatResponsesAdapter(LLMAdapter):
     """
     OpenAI adapter based on the new Responses API.
 
@@ -138,7 +134,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         """
         Single-shot completion (non-streaming) using Responses API.
         """
-        mapped = _map_messages_to_openai(messages)
+        mapped = self._map_messages_to_openai(messages)
         input_items = self._messages_to_responses_input(mapped)
 
         payload: Dict[str, Any] = dict(
@@ -165,7 +161,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
 
         Yields incremental text deltas taken from the streaming events.
         """
-        mapped = _map_messages_to_openai(messages)
+        mapped = self._map_messages_to_openai(messages)
         input_items = self._messages_to_responses_input(mapped)
 
         payload: Dict[str, Any] = dict(
@@ -215,7 +211,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
               "finish_reason": str
             }
         """
-        mapped = _map_messages_to_openai(messages)
+        mapped = self._map_messages_to_openai(messages)
         input_items = self._messages_to_responses_input(mapped)
 
         payload: Dict[str, Any] = dict(
@@ -287,7 +283,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
 
         Returns an instance of `output_model` validated from the JSON payload.
         """
-        schema = _model_json_schema(output_model)
+        schema = self._model_json_schema(output_model)
 
         sys_extra = {
             "role": "system",
@@ -298,7 +294,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
             ),
         }
 
-        mapped = _map_messages_to_openai(messages)
+        mapped = self._map_messages_to_openai(messages)
         mapped = [sys_extra] + mapped
         input_items = self._messages_to_responses_input(mapped)
 
@@ -322,8 +318,34 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         response : Response = self.client.responses.create(**payload, **self.defaults)
 
         txt = self._collect_output_text(response)
-        json_str = _extract_json_object(txt) or txt.strip()
+        json_str = self._extract_json_object(txt) or txt.strip()
         if not json_str:
             raise ValueError("Model did not return valid JSON content for structured output.")
 
-        return _validate_with_model(output_model, json_str)
+        return self._validate_with_model(output_model, json_str)
+    
+
+    def _map_messages_to_openai(self, msgs: Sequence[ChatMessage]) -> List[Dict[str, Any]]:
+        """
+        Map internal ChatMessage objects to OpenAI-compatible message dicts.
+
+        Handles:
+        - role/content
+        - tool messages with tool_call_id/name
+        - assistant messages with tool_calls[]
+        """
+        out: List[Dict[str, Any]] = []
+        for m in msgs:
+            d: Dict[str, Any] = {"role": m.role, "content": m.content}
+
+            if m.role == "tool":
+                if getattr(m, "tool_call_id", None) is not None:
+                    d["tool_call_id"] = m.tool_call_id
+                if getattr(m, "name", None) is not None:
+                    d["name"] = m.name
+
+            if getattr(m, "tool_calls", None):
+                d["tool_calls"] = m.tool_calls
+
+            out.append(d)
+        return out

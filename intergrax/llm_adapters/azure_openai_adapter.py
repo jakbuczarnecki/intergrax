@@ -10,10 +10,10 @@ from openai import AzureOpenAI
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
+from intergrax.llm_adapters.base import ChatMessage, LLMAdapter
 
 
-class AzureOpenAIChatAdapter(BaseLLMAdapter):
+class AzureOpenAIChatAdapter(LLMAdapter):
     """
     Azure OpenAI adapter based on the official OpenAI Python SDK (AzureOpenAI).
 

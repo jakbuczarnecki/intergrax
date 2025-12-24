@@ -8,16 +8,13 @@ from typing import Any, Dict, Iterable, Optional, Sequence
 from langchain_ollama import ChatOllama
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import (
-    BaseLLMAdapter,
+from intergrax.llm_adapters.base import (    
     ChatMessage,
-    _extract_json_object,
-    _model_json_schema,
-    _validate_with_model,
+    LLMAdapter,
 )
 
 
-class LangChainOllamaAdapter(BaseLLMAdapter):
+class LangChainOllamaAdapter(LLMAdapter):
     """
     Adapter for Ollama models used via LangChain's ChatModel interface.
 
@@ -214,7 +211,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         Enforce returning a single JSON object conforming to the schema,
         using a strict JSON prompt and post-hoc validation.
         """
-        schema = _model_json_schema(output_model)
+        schema = self._model_json_schema(output_model)
 
         from langchain_core.messages import SystemMessage, HumanMessage
 
@@ -234,11 +231,11 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         res = self.chat.invoke(lc_msgs, **kwargs)
         txt = res.content or str(res)
 
-        json_str = _extract_json_object(txt) or txt.strip()
+        json_str = self._extract_json_object(txt) or txt.strip()
         if not json_str:
             raise ValueError("Model did not return JSON content for structured output (Ollama).")
 
-        return _validate_with_model(output_model, json_str)
+        return self._validate_with_model(output_model, json_str)
     
 
     def generate_with_tools(
