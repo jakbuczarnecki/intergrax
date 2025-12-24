@@ -70,36 +70,66 @@ class GeminiChatAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
-        system_text, convo = self._split_system(messages)
+        call = self.begin_call(run_id=run_id)
 
-        config = self._build_generation_config(
-            system_text=system_text,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        # Typical case: last message is user -> create chat with history and send last user message.
-        if convo and convo[-1].role == "user":
-            history = self._map_history(convo[:-1])
-            prompt = convo[-1].content or ""
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-            chat_session = self.client.chats.create(
-                model=self.model,
-                history=history,
-                config=config,
+            system_text, convo = self._split_system(messages)
+
+            config = self._build_generation_config(
+                system_text=system_text,
+                temperature=temperature,
+                max_tokens=max_tokens,
             )
-            response = chat_session.send_message(prompt)
-            return response.text or ""
 
-        # Fallback: use generate_content with full contents list (handles odd turn ordering).
-        contents = self._map_contents(convo)
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=contents,
-            config=config,
-        )
-        return response.text or ""
+            # Typical case: last message is user -> create chat with history and send last user message.
+            if convo and convo[-1].role == "user":
+                history = self._map_history(convo[:-1])
+                prompt = convo[-1].content or ""
+
+                chat_session = self.client.chats.create(
+                    model=self.model,
+                    history=history,
+                    config=config,
+                )
+                response = chat_session.send_message(prompt)
+                text = response.text or ""
+            else:
+                # Fallback: use generate_content with full contents list (handles odd turn ordering).
+                contents = self._map_contents(convo)
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=contents,
+                    config=config,
+                )
+                text = response.text or ""
+
+            out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+            success = True
+            return text
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     def stream_messages(
         self,
@@ -107,56 +137,67 @@ class GeminiChatAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        system_text, convo = self._split_system(messages)
+        call = self.begin_call(run_id=run_id)
 
-        config = self._build_generation_config(
-            system_text=system_text,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        if convo and convo[-1].role == "user":
-            history = self._map_history(convo[:-1])
-            prompt = convo[-1].content or ""
+        buf: List[str] = []
 
-            chat_session = self.client.chats.create(
-                model=self.model,
-                history=history,
-                config=config,
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
+
+            system_text, convo = self._split_system(messages)
+
+            config = self._build_generation_config(
+                system_text=system_text,
+                temperature=temperature,
+                max_tokens=max_tokens,
             )
 
-            for chunk in chat_session.send_message_stream(prompt):
-                txt = getattr(chunk, "text", None)
-                if txt:
-                    yield txt
-            return
+            if convo and convo[-1].role == "user":
+                history = self._map_history(convo[:-1])
+                prompt = convo[-1].content or ""
 
-        # Fallback streaming is not consistently exposed for generate_content across all configs.
-        # Keep behavior explicit and predictable.
-        raise NotImplementedError(
-            "GeminiChatAdapter.stream_messages requires the last message to be role='user'."
-        )
+                chat_session = self.client.chats.create(
+                    model=self.model,
+                    history=history,
+                    config=config,
+                )
 
-    # ------------------------------------------------------------------
-    # Tools / structured output (not wired)
-    # ------------------------------------------------------------------
+                for chunk in chat_session.send_message_stream(prompt):
+                    txt = chunk.text
+                    if txt:
+                        buf.append(txt)
+                        yield txt
 
-    def generate_with_tools(self, *a, **k):
-        raise NotImplementedError("Gemini tools are not wired in this adapter.")
+                out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+                success = True
+                return
 
-    def stream_with_tools(self, *a, **k):
-        raise NotImplementedError("Gemini tools are not wired in this adapter.")
+            # Keep behavior explicit and predictable (as you had).
+            raise NotImplementedError(
+                "GeminiChatAdapter.stream_messages requires the last message to be role='user'."
+            )
 
-    def generate_structured(
-        self,
-        messages: Sequence[ChatMessage],
-        output_model: type,
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-    ):
-        raise NotImplementedError("Structured output is not implemented for GeminiChatAdapter.")
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     # ------------------------------------------------------------------
     # Internals

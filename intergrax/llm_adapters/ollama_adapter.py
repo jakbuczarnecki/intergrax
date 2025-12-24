@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 import json
-from typing import Any, Dict, Iterable, Optional, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 from langchain_ollama import ChatOllama
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
@@ -166,11 +166,42 @@ class LangChainOllamaAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
-        lc_msgs = self._to_lc_messages(messages)
-        kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
-        res = self.chat.invoke(lc_msgs, **kwargs)
-        return res.content or str(res)
+        call = self.begin_call(run_id=run_id)
+
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
+
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
+
+            lc_msgs = self._to_lc_messages(messages)
+            kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
+            res = self.chat.invoke(lc_msgs, **kwargs)
+
+            text = res.content or str(res)
+            out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+
+            success = True
+            return text
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     def stream_messages(
         self,
@@ -178,18 +209,62 @@ class LangChainOllamaAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        lc_msgs = self._to_lc_messages(messages)
-        kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
+        call = self.begin_call(run_id=run_id)
+
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
         try:
-            for chunk in self.chat.stream(lc_msgs, **kwargs):
-                c = chunk.content
-                if c:
-                    yield c
-        except Exception:
-            # Fallback to single-shot call on any streaming error
-            yield self.generate_messages(messages, temperature=temperature, max_tokens=max_tokens)
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
+
+            lc_msgs = self._to_lc_messages(messages)
+            kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
+
+            buf: List[str] = []
+
+            try:
+                for chunk in self.chat.stream(lc_msgs, **kwargs):
+                    c = chunk.content
+                    if c:
+                        buf.append(c)
+                        yield c
+
+                # normal stream end
+                out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+                success = True
+                return
+
+            except Exception:
+                # Streaming failed -> fallback to single-shot (but DO NOT call self.generate_messages here)
+                res = self.chat.invoke(lc_msgs, **kwargs)
+                text = res.content or str(res)
+
+                # emit fallback full text as one chunk
+                if text:
+                    yield text
+
+                out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+                success = True
+                return
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     def supports_tools(self) -> bool:
         """
@@ -197,6 +272,7 @@ class LangChainOllamaAdapter(LLMAdapter):
         The agent should use a planner-style pattern instead.
         """
         return False
+
 
     # --- Structured output via prompt + validation ---
     def generate_structured(
@@ -206,49 +282,60 @@ class LangChainOllamaAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ):
-        """
-        Enforce returning a single JSON object conforming to the schema,
-        using a strict JSON prompt and post-hoc validation.
-        """
-        schema = self._model_json_schema(output_model)
+        call = self.begin_call(run_id=run_id)
 
-        from langchain_core.messages import SystemMessage, HumanMessage
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        lc_msgs = self._to_lc_messages(messages)
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-        strict = SystemMessage(
-            content=(
-                "Return ONLY a single JSON object that strictly conforms to the JSON Schema below. "
-                "Do not add any commentary, markdown, or backticks. "
-                "If a field is optional and unknown, omit it."
+            schema = self._model_json_schema(output_model)
+
+            from langchain_core.messages import SystemMessage, HumanMessage
+
+            lc_msgs = self._to_lc_messages(messages)
+
+            strict = SystemMessage(
+                content=(
+                    "Return ONLY a single JSON object that strictly conforms to the JSON Schema below. "
+                    "Do not add any commentary, markdown, or backticks. "
+                    "If a field is optional and unknown, omit it."
+                )
             )
-        )
-        schema_msg = HumanMessage(content=f"JSON_SCHEMA:\n{json.dumps(schema, ensure_ascii=False)}")
-        lc_msgs = [strict, schema_msg] + lc_msgs
+            schema_msg = HumanMessage(content=f"JSON_SCHEMA:\n{json.dumps(schema, ensure_ascii=False)}")
+            lc_msgs = [strict, schema_msg] + lc_msgs
 
-        kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
-        res = self.chat.invoke(lc_msgs, **kwargs)
-        txt = res.content or str(res)
+            kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
+            res = self.chat.invoke(lc_msgs, **kwargs)
+            txt = res.content or str(res)
 
-        json_str = self._extract_json_object(txt) or txt.strip()
-        if not json_str:
-            raise ValueError("Model did not return JSON content for structured output (Ollama).")
+            out_tok = int(self.estimate_tokens_for_text(txt, model_hint=self.model_name_for_token_estimation))
 
-        return self._validate_with_model(output_model, json_str)
+            json_str = self._extract_json_object(txt) or txt.strip()
+            if not json_str:
+                raise ValueError("Model did not return JSON content for structured output (Ollama).")
+
+            obj = self._validate_with_model(output_model, json_str)
+            success = True
+            return obj
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
     
-
-    def generate_with_tools(
-        self,
-        messages: Sequence[ChatMessage],
-        tools_schema,
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        tool_choice=None,
-    ):
-        raise NotImplementedError("Tools are not supported by LangChainOllamaAdapter.")
-
-    def stream_with_tools(self, *args, **kwargs):
-        raise NotImplementedError("Tools are not supported by LangChainOllamaAdapter.")
 

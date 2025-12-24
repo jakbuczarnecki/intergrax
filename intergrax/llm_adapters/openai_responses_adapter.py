@@ -6,8 +6,9 @@
 from __future__ import annotations
 import json
 from typing import Any, Dict, Iterable, Optional, Sequence, List
+from mistralai import Union
 from openai import Client
-from openai.types.responses import Response
+from openai.types.responses import Response, ResponseUsage
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.base import (    
@@ -130,24 +131,49 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
         """
         Single-shot completion (non-streaming) using Responses API.
         """
-        mapped = self._map_messages_to_openai(messages)
-        input_items = self._messages_to_responses_input(mapped)
 
-        payload: Dict[str, Any] = dict(
-            model=self.model,
-            input=input_items,
-            # temperature=temperature, - not applicable in openai responses
-        )
+        call = self.begin_call(run_id=run_id)
 
-        if max_tokens is not None:
-            payload["max_output_tokens"] = max_tokens
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        response = self.client.responses.create(**payload, **self.defaults)
-        return self._collect_output_text(response)
+        try:
+            mapped = self._map_messages_to_openai(messages)
+            input_items = self._messages_to_responses_input(mapped)
+
+            payload: Dict[str, Any] = dict(
+                model=self.model,
+                input=input_items,
+            )
+            if max_tokens is not None:
+                payload["max_output_tokens"] = max_tokens
+
+            response: Response = self.client.responses.create(**payload, **self.defaults)
+
+            usage = response.usage
+            if usage is not None:
+                in_tok = int(usage.input_tokens or 0)
+                out_tok = int(usage.output_tokens or 0)      
+
+            output_text = self._collect_output_text(response)
+            
+            success = True
+
+            return output_text
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+        finally:
+            self.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+
 
     def stream_messages(
         self,
@@ -155,32 +181,74 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
         """
         Streaming completion using Responses API.
 
         Yields incremental text deltas taken from the streaming events.
         """
-        mapped = self._map_messages_to_openai(messages)
-        input_items = self._messages_to_responses_input(mapped)
+        call = self.begin_call(run_id=run_id)
 
-        payload: Dict[str, Any] = dict(
-            model=self.model,
-            input=input_items,
-            # temperature=temperature, - not applicable in openai responses
-            stream=True,
-        )
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        if max_tokens is not None:
-            payload["max_output_tokens"] = max_tokens
+        # Fallback input tokens (streaming may not provide usage reliably)
+        try:
+            in_tok = int(self.count_messages_tokens(messages))
+        except Exception:
+            in_tok = 0
 
-        stream = self.client.responses.stream(**payload, **self.defaults)
-        for ev in stream:
-            # We are interested in "response.output_text.delta" events
-            if getattr(ev, "type", None) == "response.output_text.delta":
-                delta = getattr(ev, "delta", None)
-                if delta:
-                    yield delta
+        buf: List[str] = []
+
+        try:
+            mapped = self._map_messages_to_openai(messages)
+            input_items = self._messages_to_responses_input(mapped)
+
+            payload: Dict[str, Any] = dict(
+                model=self.model,
+                input=input_items,
+                stream=True,
+            )
+
+            if max_tokens is not None:
+                payload["max_output_tokens"] = max_tokens
+
+            with self.client.responses.stream(**payload, **self.defaults) as stream:
+                for ev in stream:
+                    # We are interested in "response.output_text.delta" events
+                    if ev.type == "response.output_text.delta":                                                                        
+                        delta = ev.delta
+                        if delta:
+                            # accumulate for token estimation on finish
+                            buf.append(delta)
+                            yield delta
+
+            # If we reached here, the stream finished naturally
+            # Estimate output tokens from the assembled text
+            try:
+                full_text = "".join(buf)
+                out_tok = int(self.estimate_tokens_for_text(full_text))
+            except Exception:
+                out_tok = 0
+
+            success = True
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
 
     # ---------------------------------------------------------------------
     # PUBLIC: Tools
@@ -192,14 +260,16 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         """
         return True
 
+
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema,
+        tools_schema: List[Dict[str, Any]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice=None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        run_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Generate a response with potential function/tool calls.
@@ -259,70 +329,127 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             "finish_reason": finish_reason,
         }
 
-    def stream_with_tools(self, *args, **kwargs):
+    def stream_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema: List[Dict[str, Any]],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        run_id: Optional[str] = None,
+    ) -> Iterable[Dict[str, Any]]:
         """
         Currently we do not stream tool calls.
         Fallback to a single non-streaming call for simplicity.
         """
-        yield self.generate_with_tools(*args, **kwargs)
+        yield self.generate_with_tools(
+            messages,
+            tools_schema,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            tool_choice=tool_choice,
+            run_id=run_id,
+        )
 
     # ---------------------------------------------------------------------
     # PUBLIC: Structured JSON output
     # ---------------------------------------------------------------------
 
-    def generate_structured(
+    def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        output_model: type,
+        tools_schema: List[Dict[str, Any]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-    ):
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        run_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
-        Use Responses API + JSON Schema to produce a validated structured output.
+        Generate a response with potential function/tool calls.
 
-        Returns an instance of `output_model` validated from the JSON payload.
+        Returns:
+            {
+            "content": str,
+            "tool_calls": [...],
+            "finish_reason": str
+            }
         """
-        schema = self._model_json_schema(output_model)
+        call = self.begin_call(run_id=run_id)
 
-        sys_extra = {
-            "role": "system",
-            "content": (
-                "Return ONLY a single JSON object that strictly conforms to this JSON Schema. "
-                "No prose, no markdown, no backticks. If a field is optional and unknown, omit it.\n"
-                f"JSON_SCHEMA: {json.dumps(schema, ensure_ascii=False)}"
-            ),
-        }
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        mapped = self._map_messages_to_openai(messages)
-        mapped = [sys_extra] + mapped
-        input_items = self._messages_to_responses_input(mapped)
+        try:
+            mapped = self._map_messages_to_openai(messages)
+            input_items = self._messages_to_responses_input(mapped)
 
-        payload: Dict[str, Any] = dict(
-            model=self.model,
-            input=input_items,
-            # temperature=temperature, - not applicable in openai responses
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": getattr(output_model, "__name__", "OutputModel"),
-                    "schema": schema,
-                    "strict": True,
-                },
-            },
-        )
+            payload: Dict[str, Any] = dict(
+                model=self.model,
+                input=input_items,
+                tools=tools_schema,
+            )
 
-        if max_tokens is not None:
-            payload["max_output_tokens"] = max_tokens
+            if tool_choice is not None:
+                payload["tool_choice"] = tool_choice
 
-        response : Response = self.client.responses.create(**payload, **self.defaults)
+            if max_tokens is not None:
+                payload["max_output_tokens"] = max_tokens
 
-        txt = self._collect_output_text(response)
-        json_str = self._extract_json_object(txt) or txt.strip()
-        if not json_str:
-            raise ValueError("Model did not return valid JSON content for structured output.")
+            response: Response = self.client.responses.create(**payload, **self.defaults)
 
-        return self._validate_with_model(output_model, json_str)
+            usage = response.usage
+            if usage is not None:
+                in_tok = int(usage.input_tokens or 0)
+                out_tok = int(usage.output_tokens or 0)
+
+            # Assistant text (if present)
+            content = self._collect_output_text(response)
+
+            # Extract tool calls in a format compatible with Chat Completions
+            native_tool_calls: List[Dict[str, Any]] = []
+            for item in response.output or []:
+                if item.type == "function_call":
+                    args = item.arguments
+                    if not isinstance(args, str):
+                        args = json.dumps(args, ensure_ascii=False)
+
+                    native_tool_calls.append(
+                        {
+                            "id": item.call_id,
+                            "type": "function",
+                            "function": {
+                                "name": item.name,
+                                "arguments": args,
+                            },
+                        }
+                    )
+
+            finish_reason = response.status or "completed"
+
+            success = True
+            return {
+                "content": content or "",
+                "tool_calls": native_tool_calls,
+                "finish_reason": finish_reason,
+            }
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
     
 
     def _map_messages_to_openai(self, msgs: Sequence[ChatMessage]) -> List[Dict[str, Any]]:
