@@ -28,7 +28,9 @@ import asyncio
 import json
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
+import uuid
 
+from intergrax.llm_adapters.base import LLMAdapter
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import FileSystemAttachmentResolver
@@ -179,7 +181,8 @@ class DropInKnowledgeRuntime:
          11. Persist assistant answer and build RuntimeAnswer with route info.
         """
         state = RuntimeState(request=request)
-
+        state.run_id = f"run_{uuid.uuid4().hex}"
+        
         # Initial trace entry for this request.
         self._trace(
             state,
@@ -190,6 +193,7 @@ class DropInKnowledgeRuntime:
                 "session_id": request.session_id,
                 "user_id": request.user_id,
                 "tenant_id": request.tenant_id or self._config.tenant_id,
+                "run_id": state.run_id,
             },
         )
 
@@ -342,11 +346,6 @@ class DropInKnowledgeRuntime:
         debug_trace: Dict[str, Any] = {
             "session_id": session.id,
             "user_id": session.user_id,
-            "config": {
-                "llm_label": self._config.llm_label,
-                "embedding_label": self._config.embedding_label,
-                "vectorstore_label": self._config.vectorstore_label,
-            },
         }
 
         if ingestion_results:
@@ -646,6 +645,7 @@ class DropInKnowledgeRuntime:
             bundle = await self._websearch_prompt_builder.build_websearch_prompt(
                 web_results=web_results,
                 user_query=state.request.message,
+                run_id=state.run_id,
             )
 
             context_messages = bundle.context_messages or []
@@ -778,6 +778,7 @@ class DropInKnowledgeRuntime:
                 stream=False,
                 tool_choice=None,
                 output_model=None,
+                run_id=state.run_id
             )
 
             state.tools_agent_answer = tools_result.get("answer", "") or None
@@ -899,6 +900,7 @@ class DropInKnowledgeRuntime:
 
             raw_answer = self._config.llm_adapter.generate_messages(
                 state.messages_for_llm,
+                run_id=state.run_id,
                 **generate_kwargs,
             )
 
@@ -1338,5 +1340,4 @@ class DropInKnowledgeRuntime:
         for m in msgs:
             state.messages_for_llm.insert(last_user_idx, m)
             last_user_idx += 1    
-
 

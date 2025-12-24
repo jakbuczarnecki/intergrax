@@ -91,11 +91,6 @@ class RuntimeConfig:
     # Vectorstore manager providing semantic search over stored chunks.
     vectorstore_manager: Optional[VectorstoreManager] = None
 
-    # Optional labels for observability/logging only.
-    llm_label: str = "default-llm"
-    embedding_label: str = "default-embedding"
-    vectorstore_label: str = "default-vectorstore"
-
     # ------------------------------------------------------------------
     # FEATURE FLAGS
     # ------------------------------------------------------------------

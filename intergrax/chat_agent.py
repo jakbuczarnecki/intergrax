@@ -11,7 +11,7 @@ import time
 # Your components
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters import LLMAdapter
+from intergrax.llm_adapters.base import LLMAdapter
 from intergrax.tools.tools_agent import ToolsAgent, ToolsAgentConfig
 from intergrax.tools.tools_base import ToolRegistry
 from intergrax.rag.rag_answerer import RagAnswerer

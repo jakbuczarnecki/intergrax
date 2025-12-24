@@ -30,6 +30,8 @@ class RuntimeState:
     # Input
     request: RuntimeRequest
 
+    run_id: str
+
     # Session and ingestion
     session: Optional[ChatSession] = None
     ingestion_results: List[IngestionResult] = field(default_factory=list)

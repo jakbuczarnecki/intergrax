@@ -49,4 +49,6 @@ class WebSearchConfig:
     chunk_chars: int = 1500
     max_chunks_total: int = 10
 
+    run_id: Optional[str] = None
+
     llm: WebSearchLLMConfig = field(default_factory=WebSearchLLMConfig)

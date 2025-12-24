@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters import LLMAdapter
+from intergrax.llm_adapters.base import LLMAdapter
 from intergrax.rag.rag_retriever import RagRetriever
 
 # Pydantic optionally (no hard runtime dependency)

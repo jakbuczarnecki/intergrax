@@ -6,9 +6,9 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional, Union, Type
 
+from intergrax.llm_adapters.base import LLMAdapter
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters import LLMAdapter
 from .tools_base import ToolRegistry, _limit_tool_output
 
 
@@ -207,6 +207,7 @@ class ToolsAgent:
         stream: bool = False,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         output_model: Optional[Type] = None,
+        run_id:Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         High-level tools orchestration entrypoint.
@@ -321,6 +322,7 @@ class ToolsAgent:
                         temperature=self.cfg.temperature,
                         max_tokens=self.cfg.max_answer_tokens,
                         tool_choice=effective_tool_choice,
+                        run_id=run_id
                     ):
                         chunks.append(ev)
                     result = chunks[-1] if chunks else {"content": "", "tool_calls": []}
@@ -331,6 +333,7 @@ class ToolsAgent:
                         temperature=self.cfg.temperature,
                         max_tokens=self.cfg.max_answer_tokens,
                         tool_choice=effective_tool_choice,
+                        run_id=run_id
                     )
 
                 content = result.get("content") or ""

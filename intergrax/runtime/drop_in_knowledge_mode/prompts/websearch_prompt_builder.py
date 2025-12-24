@@ -45,6 +45,7 @@ class WebSearchPromptBuilder(Protocol):
         web_results: List[WebSearchResult],
         *,
         user_query: Optional[str] = None,
+        run_id: Optional[str] = None,
     ) -> WebSearchPromptBundle:
         ...
 
@@ -68,6 +69,7 @@ class DefaultWebSearchPromptBuilder(WebSearchPromptBuilder):
         web_results: List[WebSearchResult],
         *,
         user_query: Optional[str] = None,
+        run_id: Optional[str] = None,
     ) -> WebSearchPromptBundle:
         debug_info: Dict[str, Any] = {}
 
@@ -86,6 +88,8 @@ class DefaultWebSearchPromptBuilder(WebSearchPromptBuilder):
             # Fallback to previous behavior limits, but with safe defaults.
             # Prefer an explicit WebSearchConfig default rather than re-implementing logic here.
             cfg = WebSearchConfig()
+
+        cfg.run_id = run_id
 
         gen = create_websearch_context_generator(cfg)
         result = await gen.generate(web_results, user_query=user_query)
