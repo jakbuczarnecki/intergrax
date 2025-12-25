@@ -135,9 +135,8 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
     ) -> str:
         """
         Single-shot completion (non-streaming) using Responses API.
-        """
-
-        call = self.begin_call(run_id=run_id)
+        """        
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -172,7 +171,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             err_type = type(e).__name__
             raise
         finally:
-            self.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
 
 
     def stream_messages(
@@ -188,7 +187,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 
         Yields incremental text deltas taken from the streaming events.
         """
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -241,7 +240,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -376,7 +375,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             "finish_reason": str
             }
         """
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -442,7 +441,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,

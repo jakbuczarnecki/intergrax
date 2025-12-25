@@ -77,7 +77,7 @@ class MistralChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> str:
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -114,7 +114,7 @@ class MistralChatAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -132,7 +132,7 @@ class MistralChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -172,7 +172,7 @@ class MistralChatAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,

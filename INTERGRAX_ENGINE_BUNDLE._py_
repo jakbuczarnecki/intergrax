@@ -36,7 +36,7 @@
 # - websearch/
 #
 # Files included: 126
-# Total lines: 22066
+# Total lines: 22677
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
@@ -67,14 +67,14 @@
 # - intergrax/llm/__init__.py | intergrax.llm | llm | 0 | e3b0c44298fc
 # - intergrax/llm/messages.py | intergrax.llm.messages | llm | 97 | 5d5feec8a7c4
 # - intergrax/llm_adapters/__init__.py | intergrax.llm_adapters | llm_adapters | 23 | 74db06f7fa80
-# - intergrax/llm_adapters/aws_bedrock_adapter.py | intergrax.llm_adapters.aws_bedrock_adapter | llm_adapters | 531 | 696a6ad49d1c
-# - intergrax/llm_adapters/azure_openai_adapter.py | intergrax.llm_adapters.azure_openai_adapter | llm_adapters | 231 | 63c9d63e3d2f
-# - intergrax/llm_adapters/base.py | intergrax.llm_adapters.base | llm_adapters | 287 | f35a9c0ba431
-# - intergrax/llm_adapters/claude_adapter.py | intergrax.llm_adapters.claude_adapter | llm_adapters | 168 | 9d6dd55aaab6
-# - intergrax/llm_adapters/gemini_adapter.py | intergrax.llm_adapters.gemini_adapter | llm_adapters | 238 | 422f6e3d5ba3
-# - intergrax/llm_adapters/mistral_adapter.py | intergrax.llm_adapters.mistral_adapter | llm_adapters | 219 | 891d85b76a75
-# - intergrax/llm_adapters/ollama_adapter.py | intergrax.llm_adapters.ollama_adapter | llm_adapters | 254 | ce87486ab3cf
-# - intergrax/llm_adapters/openai_responses_adapter.py | intergrax.llm_adapters.openai_responses_adapter | llm_adapters | 351 | 4e3e6cf6960f
+# - intergrax/llm_adapters/aws_bedrock_adapter.py | intergrax.llm_adapters.aws_bedrock_adapter | llm_adapters | 573 | 74fff8954fa1
+# - intergrax/llm_adapters/azure_openai_adapter.py | intergrax.llm_adapters.azure_openai_adapter | llm_adapters | 272 | dd3f5260ef19
+# - intergrax/llm_adapters/base.py | intergrax.llm_adapters.base | llm_adapters | 463 | aa000cc45357
+# - intergrax/llm_adapters/claude_adapter.py | intergrax.llm_adapters.claude_adapter | llm_adapters | 216 | 702ff8e8b18b
+# - intergrax/llm_adapters/gemini_adapter.py | intergrax.llm_adapters.gemini_adapter | llm_adapters | 279 | a61763105f2d
+# - intergrax/llm_adapters/mistral_adapter.py | intergrax.llm_adapters.mistral_adapter | llm_adapters | 259 | 4ae297976c9f
+# - intergrax/llm_adapters/ollama_adapter.py | intergrax.llm_adapters.ollama_adapter | llm_adapters | 341 | 09311f5d0f98
+# - intergrax/llm_adapters/openai_responses_adapter.py | intergrax.llm_adapters.openai_responses_adapter | llm_adapters | 478 | 99133f88b0ee
 # - intergrax/memory/__init__.py | intergrax.memory | memory | 0 | e3b0c44298fc
 # - intergrax/memory/conversational_memory.py | intergrax.memory.conversational_memory | memory | 123 | e5e9f9312647
 # - intergrax/memory/conversational_store.py | intergrax.memory.conversational_store | memory | 106 | 291f5ffa339e
@@ -98,24 +98,24 @@
 # - intergrax/rag/dual_index_builder.py | intergrax.rag.dual_index_builder | rag | 157 | 81ca53a93d14
 # - intergrax/rag/dual_retriever.py | intergrax.rag.dual_retriever | rag | 311 | 768f2857999c
 # - intergrax/rag/embedding_manager.py | intergrax.rag.embedding_manager | rag | 306 | f5e15925a7b8
-# - intergrax/rag/rag_answerer.py | intergrax.rag.rag_answerer | rag | 415 | 84c9cef5e754
+# - intergrax/rag/rag_answerer.py | intergrax.rag.rag_answerer | rag | 415 | c0ac7d3cd0af
 # - intergrax/rag/rag_retriever.py | intergrax.rag.rag_retriever | rag | 555 | 3143a9774ada
 # - intergrax/rag/re_ranker.py | intergrax.rag.re_ranker | rag | 399 | 710b3356e2cc
 # - intergrax/rag/vectorstore_manager.py | intergrax.rag.vectorstore_manager | rag | 610 | aa4d6c197b1b
 # - intergrax/rag/windowed_answerer.py | intergrax.rag.windowed_answerer | rag | 242 | 8594e4986f82
 # - intergrax/__init__.py | intergrax | root | 0 | e3b0c44298fc
-# - intergrax/chat_agent.py | intergrax.chat_agent | root | 592 | a346a03152df
+# - intergrax/chat_agent.py | intergrax.chat_agent | root | 592 | 8cc8c79d5170
 # - intergrax/logging.py | intergrax.logging | root | 12 | 3966fbef0c6b
 # - intergrax/system_prompts.py | intergrax.system_prompts | root | 84 | f66fdf33ac4c
 # - intergrax/runtime/__init__.py | intergrax.runtime | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/__init__.py | intergrax.runtime.drop_in_knowledge_mode | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 231 | 08f83507c8b5
+# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 226 | 9a8ce80a6886
 # - intergrax/runtime/drop_in_knowledge_mode/context/__init__.py | intergrax.runtime.drop_in_knowledge_mode.context | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/context/context_builder.py | intergrax.runtime.drop_in_knowledge_mode.context.context_builder | runtime | 485 | 2cca85dc5dcb
 # - intergrax/runtime/drop_in_knowledge_mode/context/engine_history_layer.py | intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer | runtime | 558 | f27bd61d0560
 # - intergrax/runtime/drop_in_knowledge_mode/engine/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1342 | 8de1c3ba1d1a
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 81 | 8fa21be600cb
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1343 | 539b2c5e172f
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 83 | 9e758e3c5a13
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py | intergrax.runtime.drop_in_knowledge_mode.ingestion | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/attachments.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments | runtime | 124 | f1f76309b50f
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/ingestion_service.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service | runtime | 322 | 2d1af899b85d
@@ -123,7 +123,7 @@
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/history_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder | runtime | 89 | 7a99ef869b92
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/rag_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder | runtime | 105 | 487e17f834e1
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/user_longterm_memory_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder | runtime | 117 | 8608ee04efaf
-# - intergrax/runtime/drop_in_knowledge_mode/prompts/websearch_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder | runtime | 108 | d36155e03f70
+# - intergrax/runtime/drop_in_knowledge_mode/prompts/websearch_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder | runtime | 112 | b51b50c3d26a
 # - intergrax/runtime/drop_in_knowledge_mode/reasoning/__init__.py | intergrax.runtime.drop_in_knowledge_mode.reasoning | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/reasoning/reasoning_layer.py | intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer | runtime | 163 | 7f704f315d6e
 # - intergrax/runtime/drop_in_knowledge_mode/responses/__init__.py | intergrax.runtime.drop_in_knowledge_mode.responses | runtime | 0 | e3b0c44298fc
@@ -151,7 +151,7 @@
 # - intergrax/supervisor/supervisor_prompts.py | intergrax.supervisor.supervisor_prompts | supervisor | 149 | 3dfe61f1124e
 # - intergrax/supervisor/supervisor_to_state_graph.py | intergrax.supervisor.supervisor_to_state_graph | supervisor | 242 | bef58f90d04d
 # - intergrax/tools/__init__.py | intergrax.tools | tools | 0 | e3b0c44298fc
-# - intergrax/tools/tools_agent.py | intergrax.tools.tools_agent | tools | 570 | 2a22c8cfca1e
+# - intergrax/tools/tools_agent.py | intergrax.tools.tools_agent | tools | 573 | b3e17cabaea3
 # - intergrax/tools/tools_base.py | intergrax.tools.tools_base | tools | 126 | ebe4be89b8a7
 # - intergrax/websearch/__init__.py | intergrax.websearch | websearch | 0 | e3b0c44298fc
 # - intergrax/websearch/cache/__init__.py | intergrax.websearch.cache | websearch | 0 | e3b0c44298fc
@@ -180,14 +180,14 @@
 # - intergrax/websearch/schemas/web_search_result.py | intergrax.websearch.schemas.web_search_result | websearch | 33 | 2f5728bfeed4
 # - intergrax/websearch/service/__init__.py | intergrax.websearch.service | websearch | 0 | e3b0c44298fc
 # - intergrax/websearch/service/websearch_answerer.py | intergrax.websearch.service.websearch_answerer | websearch | 127 | 822eb59fb2f8
-# - intergrax/websearch/service/websearch_config.py | intergrax.websearch.service.websearch_config | websearch | 52 | a6f5186b30be
-# - intergrax/websearch/service/websearch_context_generator.py | intergrax.websearch.service.websearch_context_generator | websearch | 327 | d37567bcedba
+# - intergrax/websearch/service/websearch_config.py | intergrax.websearch.service.websearch_config | websearch | 54 | 254c537de4e8
+# - intergrax/websearch/service/websearch_context_generator.py | intergrax.websearch.service.websearch_context_generator | websearch | 329 | 386c72c9789d
 # - intergrax/websearch/service/websearch_executor.py | intergrax.websearch.service.websearch_executor | websearch | 261 | 7d76035fe02f
 # - intergrax/websearch/utils/__init__.py | intergrax.websearch.utils | websearch | 0 | e3b0c44298fc
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 22066
+# TOTAL LINES: 22677
 # ======================================================================
 
 # ======================================================================
@@ -917,8 +917,8 @@ LLMAdapterRegistry.register(LLMProvider.AWS_BEDROCK, lambda **kw: BedrockChatAda
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=aws_bedrock_adapter.py
-# LINES: 531
-# SHA256: 696a6ad49d1c44de6ebed3d9a483a492b0b948b49b0dfd141a7e49f3d40fcf7f
+# LINES: 573
+# SHA256: 74fff8954fa1845c4b84c1ee131ed8b8eb5b185df99fab32a0b9234a1424fc2f
 # SYMBOLS:
 #   - class BedrockModelFamily
 #   - class BedrockNativeCodec
@@ -1325,31 +1325,59 @@ class BedrockChatAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
-        system_text, convo = self._split_system(messages)
+        call = self.begin_call(run_id=run_id)
 
-        codec = self._get_codec(self.config.family)
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        body = codec.build_body(
-            system_text=system_text,
-            convo=convo,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            defaults=self.defaults,
-            model_id=self.config.model_id,
-        )
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-        res = self.client.invoke_model(
-            modelId=self.config.model_id,
-            body=json.dumps(body).encode("utf-8"),
-            accept="application/json",
-            contentType="application/json",
-        )
+            system_text, convo = self._split_system(messages)
+            codec = self._get_codec(self.config.family)
 
-        raw = res["body"].read().decode("utf-8")
-        parsed = json.loads(raw)
+            body = codec.build_body(
+                system_text=system_text,
+                convo=convo,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                defaults=self.defaults,
+                model_id=self.config.model_id,
+            )
 
-        return codec.extract_text(parsed)
+            res = self.client.invoke_model(
+                modelId=self.config.model_id,
+                body=json.dumps(body).encode("utf-8"),
+                accept="application/json",
+                contentType="application/json",
+            )
+
+            raw = res["body"].read().decode("utf-8")
+            parsed = json.loads(raw)
+
+            text = codec.extract_text(parsed)
+            out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+
+            success = True
+            return text
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
 
     def stream_messages(
         self,
@@ -1357,57 +1385,71 @@ class BedrockChatAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        system_text, convo = self._split_system(messages)
+        call = self.begin_call(run_id=run_id)
 
-        codec = self._get_codec(self.config.family)
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        body = codec.build_body(
-            system_text=system_text,
-            convo=convo,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            defaults=self.defaults,
-            model_id=self.config.model_id,
-        )
+        buf: List[str] = []
 
-        res = self.client.invoke_model_with_response_stream(
-            modelId=self.config.model_id,
-            body=json.dumps(body).encode("utf-8"),
-            accept="application/json",
-            contentType="application/json",
-        )
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-        # Bedrock stream is an event stream, each event has event["chunk"]["bytes"].
-        stream = res["body"]
-        for event in stream:
-            chunk = event.get("chunk")
-            if not isinstance(chunk, dict):
-                continue
-            data = chunk.get("bytes")
-            if not data:
-                continue
+            system_text, convo = self._split_system(messages)
+            codec = self._get_codec(self.config.family)
 
-            payload = json.loads(data.decode("utf-8"))
-            text = codec.extract_stream_text(payload)
-            if text:
-                yield text
+            body = codec.build_body(
+                system_text=system_text,
+                convo=convo,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                defaults=self.defaults,
+                model_id=self.config.model_id,
+            )
 
-    # ------------------------------------------------------------------
-    # Tools / structured output (not wired)
-    # ------------------------------------------------------------------
+            res = self.client.invoke_model_with_response_stream(
+                modelId=self.config.model_id,
+                body=json.dumps(body).encode("utf-8"),
+                accept="application/json",
+                contentType="application/json",
+            )
 
-    def supports_tools(self) -> bool:
-        return False
+            stream = res["body"]
+            for event in stream:
+                chunk = event.get("chunk")
+                if not isinstance(chunk, dict):
+                    continue
+                data = chunk.get("bytes")
+                if not data:
+                    continue
 
-    def generate_with_tools(self, *a, **k):
-        raise NotImplementedError("Bedrock tools are not wired in this adapter.")
+                payload = json.loads(data.decode("utf-8"))
+                text = codec.extract_stream_text(payload)
+                if text:
+                    buf.append(text)
+                    yield text
 
-    def stream_with_tools(self, *a, **k):
-        raise NotImplementedError("Bedrock tools are not wired in this adapter.")
+            out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+            success = True
 
-    def generate_structured(self, *a, **k):
-        raise NotImplementedError("Structured output is not implemented for BedrockChatAdapter.")
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     # ------------------------------------------------------------------
     # Extensibility
@@ -1469,8 +1511,8 @@ class BedrockChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=azure_openai_adapter.py
-# LINES: 231
-# SHA256: 63c9d63e3d2f716637343796869d443bd291e22403ff025f8c197475d06831fc
+# LINES: 272
+# SHA256: dd3f5260ef19bbf5673f8517f0ae730cf8b30617687fde4c16de4e64ae4327c7
 # SYMBOLS:
 #   - class AzureOpenAIChatAdapter
 # ======================================================================
@@ -1555,24 +1597,56 @@ class AzureOpenAIChatAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
-        system_text, convo = self._split_system(messages)
+        call = self.begin_call(run_id=run_id)
 
-        payload = self._build_chat_params(
-            system_text=system_text,
-            convo=convo,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stream=False,
-        )
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        res: ChatCompletion = self.client.chat.completions.create(**payload)
+        try:
+            system_text, convo = self._split_system(messages)
 
-        if not res.choices:
-            return ""
+            payload = self._build_chat_params(
+                system_text=system_text,
+                convo=convo,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=False,
+            )
 
-        msg = res.choices[0].message
-        return msg.content or ""
+            res: ChatCompletion = self.client.chat.completions.create(**payload)
+
+            usage = res.usage
+            if usage is not None:
+                in_tok = int(usage.prompt_tokens or 0)
+                out_tok = int(usage.completion_tokens or 0)
+
+            if not res.choices:
+                success = True
+                return ""
+
+            msg = res.choices[0].message
+            text = msg.content or ""
+            success = True
+            return text
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     def stream_messages(
         self,
@@ -1580,54 +1654,63 @@ class AzureOpenAIChatAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        system_text, convo = self._split_system(messages)
+        call = self.begin_call(run_id=run_id)
 
-        payload = self._build_chat_params(
-            system_text=system_text,
-            convo=convo,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stream=True,
-        )
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        stream = self.client.chat.completions.create(**payload)
+        buf: List[str] = []
 
-        # The OpenAI SDK returns an iterator of typed ChatCompletionChunk.
-        for chunk in stream:
-            c: ChatCompletionChunk = chunk
-            if not c.choices:
-                continue
+        try:
+            # Streaming usually does not provide usage in chunks -> estimate input
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-            delta = c.choices[0].delta
-            if delta is None:
-                continue
+            system_text, convo = self._split_system(messages)
 
-            if delta.content:
-                yield delta.content
+            payload = self._build_chat_params(
+                system_text=system_text,
+                convo=convo,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True,
+            )
 
-    # ------------------------------------------------------------------
-    # Tools / structured output (not wired)
-    # ------------------------------------------------------------------
+            stream = self.client.chat.completions.create(**payload)
 
-    def supports_tools(self) -> bool:
-        return False
+            for chunk in stream:
+                c: ChatCompletionChunk = chunk
+                if not c.choices:
+                    continue
 
-    def generate_with_tools(self, *a, **k):
-        raise NotImplementedError("AzureOpenAI tools are not wired in this adapter.")
+                delta = c.choices[0].delta
+                if delta is None:
+                    continue
 
-    def stream_with_tools(self, *a, **k):
-        raise NotImplementedError("AzureOpenAI tools are not wired in this adapter.")
+                if delta.content:
+                    buf.append(delta.content)
+                    yield delta.content
 
-    def generate_structured(
-        self,
-        messages: Sequence[ChatMessage],
-        output_model: type,
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-    ):
-        raise NotImplementedError("Structured output is not implemented for AzureOpenAIChatAdapter.")
+            out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+            success = True
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     # ------------------------------------------------------------------
     # Internals
@@ -1714,10 +1797,12 @@ class AzureOpenAIChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=base.py
-# LINES: 287
-# SHA256: f35a9c0ba431e64c43938b19091469860ac910e4b01645ebbd944c9211b9457e
+# LINES: 463
+# SHA256: aa000cc453574dbc64a730a43685fdb3e3e049977f712672cc5ee244c8b7f8f2
 # SYMBOLS:
 #   - class LLMProvider
+#   - class LLMCallStats
+#   - class LLMRunStats
 #   - class LLMAdapter
 #   - class LLMAdapterRegistry
 # ======================================================================
@@ -1726,6 +1811,8 @@ class AzureOpenAIChatAdapter(LLMAdapter):
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from dataclasses import dataclass, field
+import time
 from enum import Enum
 from abc import ABC, abstractmethod
 from typing import Sequence, Iterable, Optional, Any, Dict, Union, List
@@ -1750,6 +1837,30 @@ class LLMProvider(str, Enum):
     AZURE_OPENAI = "azure_openai"
     AWS_BEDROCK = "aws_bedrock"
 
+
+@dataclass
+class LLMCallStats:
+    run_id: str
+    t0: float = field(default_factory=time.perf_counter)
+
+    # filled on end
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    duration_ms: int = 0
+
+    success: bool = True
+    error_type: Optional[str] = None
+
+
+@dataclass
+class LLMRunStats:
+    calls: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    duration_ms: int = 0
+    errors: int = 0
 
 # ============================================================
 # Universal interface (ABC)
@@ -1776,6 +1887,121 @@ class LLMAdapter(ABC):
     # Hint used by the generic token estimator (e.g. OpenAI model name).
     model_name_for_token_estimation: Optional[str] = None
 
+    def __init__(self) -> None:
+        self._run_stats: Dict[str, LLMRunStats] = {}
+    
+
+    def begin_call(self, run_id: Optional[str] = None) -> LLMCallStats:
+        """
+        Begin one LLM call (not the whole runtime.run()).
+
+        Returns a per-call context object, safe for nested/parallel use
+        because it is local to the caller.
+        """
+        rid = run_id or "general"
+        if rid not in self._run_stats:
+            self._run_stats[rid] = LLMRunStats()
+        return LLMCallStats(run_id=rid)
+
+
+    def end_call(
+        self,
+        call: LLMCallStats,
+        *,
+        input_tokens: int,
+        output_tokens: int,
+        success: bool = True,
+        error_type: Optional[str] = None,
+    ) -> None:
+        """
+        Finish one LLM call and aggregate into per-run stats.
+        """
+        dt_ms = int((time.perf_counter() - call.t0) * 1000)
+
+        call.input_tokens = int(input_tokens or 0)
+        call.output_tokens = int(output_tokens or 0)
+        call.total_tokens = call.input_tokens + call.output_tokens
+        call.duration_ms = dt_ms
+
+        call.success = bool(success)
+        call.error_type = error_type
+
+        st = self._run_stats.get(call.run_id)
+        if st is None:
+            st = LLMRunStats()
+            self._run_stats[call.run_id] = st
+
+        st.calls += 1
+        st.input_tokens += call.input_tokens
+        st.output_tokens += call.output_tokens
+        st.total_tokens += call.total_tokens
+        st.duration_ms += call.duration_ms
+
+        if not call.success:
+            st.errors += 1
+    
+    def get_run_stats(self, run_id: Optional[str] = None) -> Optional[LLMRunStats]:
+        """
+        Get aggregated stats for a given run_id.
+        Returns None if no stats exist for that run_id.
+        """
+        rid = run_id or "general"
+        return self._run_stats.get(rid)
+
+
+    def get_all_run_stats(self) -> Dict[str, LLMRunStats]:
+        """
+        Get a shallow copy of all aggregated run stats.
+        """
+        return dict(self._run_stats)
+
+
+    def reset_run_stats(self, run_id: Optional[str] = None) -> None:
+        """
+        Reset stats for a specific run_id (or 'general' if None).
+        """
+        rid = run_id or "general"
+        if rid in self._run_stats:
+            del self._run_stats[rid]
+
+
+    def reset_all_run_stats(self) -> None:
+        """
+        Reset all stored stats.
+        """
+        self._run_stats.clear()
+
+
+    def export_run_stats_dict(self, run_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Export aggregated stats to a JSON-serializable dict.
+        Helpful for debug_trace / logging.
+        """
+        rid = run_id or "general"
+        st = self._run_stats.get(rid)
+        if st is None:
+            return {
+                "run_id": rid,
+                "calls": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "total_tokens": 0,
+                "duration_ms": 0,
+                "errors": 0,
+            }
+
+        return {
+            "run_id": rid,
+            "calls": int(st.calls),
+            "input_tokens": int(st.input_tokens),
+            "output_tokens": int(st.output_tokens),
+            "total_tokens": int(st.total_tokens),
+            "duration_ms": int(st.duration_ms),
+            "errors": int(st.errors),
+        }
+
+
+
     @abstractmethod
     def generate_messages(
         self,
@@ -1783,8 +2009,10 @@ class LLMAdapter(ABC):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
         raise NotImplementedError
+
 
     def stream_messages(
         self,
@@ -1792,12 +2020,15 @@ class LLMAdapter(ABC):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
         raise NotImplementedError("Streaming is not supported by this adapter.")
+
 
     # ---- Tools (optional) ----
     def supports_tools(self) -> bool:
         return False
+
 
     def generate_with_tools(
         self,
@@ -1807,6 +2038,7 @@ class LLMAdapter(ABC):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        run_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         raise NotImplementedError("Tools are not supported by this adapter.")
 
@@ -1818,6 +2050,7 @@ class LLMAdapter(ABC):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[Dict[str, Any]]:
         raise NotImplementedError("Tools streaming is not supported by this adapter.")
 
@@ -1829,6 +2062,7 @@ class LLMAdapter(ABC):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ):
         raise NotImplementedError("Structured output is not supported by this adapter.")
 
@@ -1982,6 +2216,33 @@ class LLMAdapter(ABC):
         return len(enc.encode(joined))
 
 
+    def estimate_tokens_for_text(
+        self,
+        text: str,
+        model_hint: Optional[str] = None,
+    ) -> int:
+        """
+        Estimate token count for a plain text string.
+
+        Uses the same strategy as estimate_tokens_for_messages:
+        - tiktoken encoding_for_model(model_hint) if available
+        - else cl100k_base
+        - fallback heuristic if needed
+        """
+        if not text:
+            return 0
+
+        mh = model_hint or self.model_name_for_token_estimation
+        try:
+            if mh:
+                enc = tiktoken.encoding_for_model(mh)
+            else:
+                enc = tiktoken.get_encoding("cl100k_base")
+            return len(enc.encode(text))
+        except Exception:
+            return max(1, len(text) // 4)
+
+
 # ============================================================
 # Adapter registry
 # ============================================================
@@ -2017,8 +2278,8 @@ class LLMAdapterRegistry:
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=claude_adapter.py
-# LINES: 168
-# SHA256: 9d6dd55aaab64fc9dc7e4811536179c69084e3a6db272e54df9879c65314a2f1
+# LINES: 216
+# SHA256: 702ff8e8b18b0e5c3f68c157204d2d604e7789567931ebb8c819c2b3f3567307
 # SYMBOLS:
 #   - class ClaudeChatAdapter
 # ======================================================================
@@ -2074,37 +2335,67 @@ class ClaudeChatAdapter(LLMAdapter):
     def context_window_tokens(self) -> int:
         return self._context_window_tokens
 
+
     def generate_messages(
         self,
         messages: Sequence[ChatMessage],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
-        system_text, convo = self._split_system(messages)
-        payload_msgs = self._map_messages(convo)
+        call = self.begin_call(run_id=run_id)
 
-        temp = temperature if temperature is not None else self.defaults.get("temperature", None)
-        out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        # Claude requires max_tokens
-        if out_tokens is None:
-            out_tokens = 1024
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-        resp = self.client.messages.create(
-            model=self.model,
-            system=system_text or None,
-            messages=payload_msgs,
-            max_tokens=int(out_tokens),
-            temperature=float(temp) if temp is not None else None,
-        )
+            system_text, convo = self._split_system(messages)
+            payload_msgs = self._map_messages(convo)
 
-        # SDK returns content blocks; text is typically in resp.content[*].text
-        parts: List[str] = []
-        for block in (resp.content or []):            
-            if block.type == "text":
-                parts.append(block.text or "")
-        return "".join(parts)
+            temp = temperature if temperature is not None else self.defaults.get("temperature", None)
+            out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
+
+            # Claude requires max_tokens
+            if out_tokens is None:
+                out_tokens = 1024
+
+            resp = self.client.messages.create(
+                model=self.model,
+                system=system_text or None,
+                messages=payload_msgs,
+                max_tokens=int(out_tokens),
+                temperature=float(temp) if temp is not None else None,
+            )
+
+            parts: List[str] = []
+            for block in (resp.content or []):
+                if block.type == "text":
+                    parts.append(block.text or "")
+            text = "".join(parts)
+
+            out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+            success = True
+            return text
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     def stream_messages(
         self,
@@ -2112,49 +2403,67 @@ class ClaudeChatAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        system_text, convo = self._split_system(messages)
-        payload_msgs = self._map_messages(convo)
+        call = self.begin_call(run_id=run_id)
 
-        temp = temperature if temperature is not None else self.defaults.get("temperature", None)
-        out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
-        if out_tokens is None:
-            out_tokens = 1024
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        stream = self.client.messages.create(
-            model=self.model,
-            system=system_text or None,
-            messages=payload_msgs,
-            max_tokens=int(out_tokens),
-            temperature=float(temp) if temp is not None else None,
-            stream=True,
-        )
+        buf: List[str] = []
 
-        # Anthropic streaming emits SSE events; yield text deltas.
-        # Event types vary; the SDK exposes event.type (string).
-        for event in stream:
-            if event.type == "content_block_delta":
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
+
+            system_text, convo = self._split_system(messages)
+            payload_msgs = self._map_messages(convo)
+
+            temp = temperature if temperature is not None else self.defaults.get("temperature", None)
+            out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
+            if out_tokens is None:
+                out_tokens = 1024
+
+            stream = self.client.messages.create(
+                model=self.model,
+                system=system_text or None,
+                messages=payload_msgs,
+                max_tokens=int(out_tokens),
+                temperature=float(temp) if temp is not None else None,
+                stream=True,
+            )
+
+            for event in stream:
+                if event.type != "content_block_delta":
+                    continue
+
                 delta = event.delta
-                if getattr(delta, "type", None) == "text_delta":
-                    txt = delta.text or ""
-                    if txt:
-                        yield txt
+                if not hasattr(delta, "type") or delta.type != "text_delta":
+                    continue
 
-    # -------------------------
-    # Not wired (yet)
-    # -------------------------
+                txt = delta.text or ""
+                if txt:
+                    buf.append(txt)
+                    yield txt
 
-    def supports_tools(self) -> bool:
-        return False
+            out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+            success = True
 
-    def generate_with_tools(self, *a, **k):
-        raise NotImplementedError("Claude tools are not wired in this adapter.")
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
 
-    def stream_with_tools(self, *a, **k):
-        raise NotImplementedError("Claude tools are not wired in this adapter.")
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
 
-    def generate_structured(self, *a, **k):
-        raise NotImplementedError("Structured output is not implemented for ClaudeChatAdapter.")
+
 
     # -------------------------
     # Internals
@@ -2199,8 +2508,8 @@ class ClaudeChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=gemini_adapter.py
-# LINES: 238
-# SHA256: 422f6e3d5ba35f7a90b43976e41f3ec3591bcd38ae2e6f2160ac37028dcb54f3
+# LINES: 279
+# SHA256: a61763105f2d5af06f821979928fe83ba9402f6c195a4b48e785723ec1b567fc
 # SYMBOLS:
 #   - class GeminiChatAdapter
 # ======================================================================
@@ -2276,36 +2585,66 @@ class GeminiChatAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
-        system_text, convo = self._split_system(messages)
+        call = self.begin_call(run_id=run_id)
 
-        config = self._build_generation_config(
-            system_text=system_text,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        # Typical case: last message is user -> create chat with history and send last user message.
-        if convo and convo[-1].role == "user":
-            history = self._map_history(convo[:-1])
-            prompt = convo[-1].content or ""
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-            chat_session = self.client.chats.create(
-                model=self.model,
-                history=history,
-                config=config,
+            system_text, convo = self._split_system(messages)
+
+            config = self._build_generation_config(
+                system_text=system_text,
+                temperature=temperature,
+                max_tokens=max_tokens,
             )
-            response = chat_session.send_message(prompt)
-            return response.text or ""
 
-        # Fallback: use generate_content with full contents list (handles odd turn ordering).
-        contents = self._map_contents(convo)
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=contents,
-            config=config,
-        )
-        return response.text or ""
+            # Typical case: last message is user -> create chat with history and send last user message.
+            if convo and convo[-1].role == "user":
+                history = self._map_history(convo[:-1])
+                prompt = convo[-1].content or ""
+
+                chat_session = self.client.chats.create(
+                    model=self.model,
+                    history=history,
+                    config=config,
+                )
+                response = chat_session.send_message(prompt)
+                text = response.text or ""
+            else:
+                # Fallback: use generate_content with full contents list (handles odd turn ordering).
+                contents = self._map_contents(convo)
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=contents,
+                    config=config,
+                )
+                text = response.text or ""
+
+            out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+            success = True
+            return text
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     def stream_messages(
         self,
@@ -2313,56 +2652,67 @@ class GeminiChatAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        system_text, convo = self._split_system(messages)
+        call = self.begin_call(run_id=run_id)
 
-        config = self._build_generation_config(
-            system_text=system_text,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        if convo and convo[-1].role == "user":
-            history = self._map_history(convo[:-1])
-            prompt = convo[-1].content or ""
+        buf: List[str] = []
 
-            chat_session = self.client.chats.create(
-                model=self.model,
-                history=history,
-                config=config,
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
+
+            system_text, convo = self._split_system(messages)
+
+            config = self._build_generation_config(
+                system_text=system_text,
+                temperature=temperature,
+                max_tokens=max_tokens,
             )
 
-            for chunk in chat_session.send_message_stream(prompt):
-                txt = getattr(chunk, "text", None)
-                if txt:
-                    yield txt
-            return
+            if convo and convo[-1].role == "user":
+                history = self._map_history(convo[:-1])
+                prompt = convo[-1].content or ""
 
-        # Fallback streaming is not consistently exposed for generate_content across all configs.
-        # Keep behavior explicit and predictable.
-        raise NotImplementedError(
-            "GeminiChatAdapter.stream_messages requires the last message to be role='user'."
-        )
+                chat_session = self.client.chats.create(
+                    model=self.model,
+                    history=history,
+                    config=config,
+                )
 
-    # ------------------------------------------------------------------
-    # Tools / structured output (not wired)
-    # ------------------------------------------------------------------
+                for chunk in chat_session.send_message_stream(prompt):
+                    txt = chunk.text
+                    if txt:
+                        buf.append(txt)
+                        yield txt
 
-    def generate_with_tools(self, *a, **k):
-        raise NotImplementedError("Gemini tools are not wired in this adapter.")
+                out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+                success = True
+                return
 
-    def stream_with_tools(self, *a, **k):
-        raise NotImplementedError("Gemini tools are not wired in this adapter.")
+            # Keep behavior explicit and predictable (as you had).
+            raise NotImplementedError(
+                "GeminiChatAdapter.stream_messages requires the last message to be role='user'."
+            )
 
-    def generate_structured(
-        self,
-        messages: Sequence[ChatMessage],
-        output_model: type,
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-    ):
-        raise NotImplementedError("Structured output is not implemented for GeminiChatAdapter.")
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     # ------------------------------------------------------------------
     # Internals
@@ -2451,8 +2801,8 @@ class GeminiChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=mistral_adapter.py
-# LINES: 219
-# SHA256: 891d85b76a75d801dc01a3162681834678179ddbc0a2673dd15f6bf4a975fa50
+# LINES: 259
+# SHA256: 4ae297976c9f5b97d32770ce5d149dfcfba549fdccfb7a7439b05241c254899b
 # SYMBOLS:
 #   - class _MistralDelta
 #   - class _MistralStreamChoice
@@ -2536,24 +2886,54 @@ class MistralChatAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
-        system_text, convo = self._split_system(messages)
+        call = self.begin_call(run_id=run_id)
 
-        payload = self._build_chat_params(
-            system_text=system_text,
-            convo=convo,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stream=False,
-        )
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        res: ChatCompletionResponse = self.client.chat.complete(**payload)
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-        if not res.choices:
-            return ""
+            system_text, convo = self._split_system(messages)
 
-        # response_format={"type":"text"} -> content is expected to be plain text.
-        return res.choices[0].message.content or ""
+            payload = self._build_chat_params(
+                system_text=system_text,
+                convo=convo,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=False,
+            )
+
+            res: ChatCompletionResponse = self.client.chat.complete(**payload)
+
+            if not res.choices:
+                success = True
+                return ""
+
+            text = res.choices[0].message.content or ""
+            out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+
+            success = True
+            return text
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     def stream_messages(
         self,
@@ -2561,47 +2941,57 @@ class MistralChatAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        system_text, convo = self._split_system(messages)
+        call = self.begin_call(run_id=run_id)
 
-        payload = self._build_chat_params(
-            system_text=system_text,
-            convo=convo,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stream=True,
-        )
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        # The official SDK returns an iterator of stream chunks.
-        # We strongly type only the fields we actually use (choices[0].delta.content).
-        stream: Iterable[_MistralStreamChunk] = self.client.chat.complete(**payload)
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-        for chunk in stream:
-            if not chunk.choices:
-                continue
-            delta = chunk.choices[0].delta
-            if delta.content:
-                yield delta.content
+            system_text, convo = self._split_system(messages)
 
-    # ------------------------------------------------------------------
-    # Tools / structured output (not wired)
-    # ------------------------------------------------------------------
+            payload = self._build_chat_params(
+                system_text=system_text,
+                convo=convo,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True,
+            )
 
-    def generate_with_tools(self, *a, **k):
-        raise NotImplementedError("Mistral tools are not wired in this adapter.")
+            stream: Iterable[_MistralStreamChunk] = self.client.chat.complete(**payload)
 
-    def stream_with_tools(self, *a, **k):
-        raise NotImplementedError("Mistral tools are not wired in this adapter.")
+            buf: List[str] = []
 
-    def generate_structured(
-        self,
-        messages: Sequence[ChatMessage],
-        output_model: type,
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-    ):
-        raise NotImplementedError("Structured output is not implemented for MistralChatAdapter.")
+            for chunk in stream:
+                if not chunk.choices:
+                    continue
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    buf.append(delta.content)
+                    yield delta.content
+
+            out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+            success = True
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     # ------------------------------------------------------------------
     # Internals
@@ -2687,8 +3077,8 @@ class MistralChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=ollama_adapter.py
-# LINES: 254
-# SHA256: ce87486ab3cfcded630f50a0081489cd5b6f5016fd0f8cccc12d010a4be62ba4
+# LINES: 341
+# SHA256: 09311f5d0f982f0e2a3f5a06696bf187ec0df09bcb62d530936dcb5c570ae852
 # SYMBOLS:
 #   - class LangChainOllamaAdapter
 # ======================================================================
@@ -2698,7 +3088,7 @@ class MistralChatAdapter(LLMAdapter):
 
 from __future__ import annotations
 import json
-from typing import Any, Dict, Iterable, Optional, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 from langchain_ollama import ChatOllama
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
@@ -2860,11 +3250,42 @@ class LangChainOllamaAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
-        lc_msgs = self._to_lc_messages(messages)
-        kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
-        res = self.chat.invoke(lc_msgs, **kwargs)
-        return res.content or str(res)
+        call = self.begin_call(run_id=run_id)
+
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
+
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
+
+            lc_msgs = self._to_lc_messages(messages)
+            kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
+            res = self.chat.invoke(lc_msgs, **kwargs)
+
+            text = res.content or str(res)
+            out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+
+            success = True
+            return text
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     def stream_messages(
         self,
@@ -2872,18 +3293,62 @@ class LangChainOllamaAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        lc_msgs = self._to_lc_messages(messages)
-        kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
+        call = self.begin_call(run_id=run_id)
+
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
         try:
-            for chunk in self.chat.stream(lc_msgs, **kwargs):
-                c = chunk.content
-                if c:
-                    yield c
-        except Exception:
-            # Fallback to single-shot call on any streaming error
-            yield self.generate_messages(messages, temperature=temperature, max_tokens=max_tokens)
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
+
+            lc_msgs = self._to_lc_messages(messages)
+            kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
+
+            buf: List[str] = []
+
+            try:
+                for chunk in self.chat.stream(lc_msgs, **kwargs):
+                    c = chunk.content
+                    if c:
+                        buf.append(c)
+                        yield c
+
+                # normal stream end
+                out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+                success = True
+                return
+
+            except Exception:
+                # Streaming failed -> fallback to single-shot (but DO NOT call self.generate_messages here)
+                res = self.chat.invoke(lc_msgs, **kwargs)
+                text = res.content or str(res)
+
+                # emit fallback full text as one chunk
+                if text:
+                    yield text
+
+                out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+                success = True
+                return
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     def supports_tools(self) -> bool:
         """
@@ -2891,6 +3356,7 @@ class LangChainOllamaAdapter(LLMAdapter):
         The agent should use a planner-style pattern instead.
         """
         return False
+
 
     # --- Structured output via prompt + validation ---
     def generate_structured(
@@ -2900,51 +3366,62 @@ class LangChainOllamaAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ):
-        """
-        Enforce returning a single JSON object conforming to the schema,
-        using a strict JSON prompt and post-hoc validation.
-        """
-        schema = self._model_json_schema(output_model)
+        call = self.begin_call(run_id=run_id)
 
-        from langchain_core.messages import SystemMessage, HumanMessage
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        lc_msgs = self._to_lc_messages(messages)
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-        strict = SystemMessage(
-            content=(
-                "Return ONLY a single JSON object that strictly conforms to the JSON Schema below. "
-                "Do not add any commentary, markdown, or backticks. "
-                "If a field is optional and unknown, omit it."
+            schema = self._model_json_schema(output_model)
+
+            from langchain_core.messages import SystemMessage, HumanMessage
+
+            lc_msgs = self._to_lc_messages(messages)
+
+            strict = SystemMessage(
+                content=(
+                    "Return ONLY a single JSON object that strictly conforms to the JSON Schema below. "
+                    "Do not add any commentary, markdown, or backticks. "
+                    "If a field is optional and unknown, omit it."
+                )
             )
-        )
-        schema_msg = HumanMessage(content=f"JSON_SCHEMA:\n{json.dumps(schema, ensure_ascii=False)}")
-        lc_msgs = [strict, schema_msg] + lc_msgs
+            schema_msg = HumanMessage(content=f"JSON_SCHEMA:\n{json.dumps(schema, ensure_ascii=False)}")
+            lc_msgs = [strict, schema_msg] + lc_msgs
 
-        kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
-        res = self.chat.invoke(lc_msgs, **kwargs)
-        txt = res.content or str(res)
+            kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
+            res = self.chat.invoke(lc_msgs, **kwargs)
+            txt = res.content or str(res)
 
-        json_str = self._extract_json_object(txt) or txt.strip()
-        if not json_str:
-            raise ValueError("Model did not return JSON content for structured output (Ollama).")
+            out_tok = int(self.estimate_tokens_for_text(txt, model_hint=self.model_name_for_token_estimation))
 
-        return self._validate_with_model(output_model, json_str)
+            json_str = self._extract_json_object(txt) or txt.strip()
+            if not json_str:
+                raise ValueError("Model did not return JSON content for structured output (Ollama).")
+
+            obj = self._validate_with_model(output_model, json_str)
+            success = True
+            return obj
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
     
-
-    def generate_with_tools(
-        self,
-        messages: Sequence[ChatMessage],
-        tools_schema,
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        tool_choice=None,
-    ):
-        raise NotImplementedError("Tools are not supported by LangChainOllamaAdapter.")
-
-    def stream_with_tools(self, *args, **kwargs):
-        raise NotImplementedError("Tools are not supported by LangChainOllamaAdapter.")
 
 
 # ======================================================================
@@ -2955,8 +3432,8 @@ class LangChainOllamaAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=openai_responses_adapter.py
-# LINES: 351
-# SHA256: 4e3e6cf6960f34d8af33d9a3cb700641c8797507a39e2e1323fd0e63a9f7d534
+# LINES: 478
+# SHA256: 99133f88b0eeec5f53a466e221780fbfbca42ea65fa4bc5f7c0d4469ff198e79
 # SYMBOLS:
 #   - class OpenAIChatResponsesAdapter
 # ======================================================================
@@ -2968,8 +3445,9 @@ class LangChainOllamaAdapter(LLMAdapter):
 from __future__ import annotations
 import json
 from typing import Any, Dict, Iterable, Optional, Sequence, List
+from mistralai import Union
 from openai import Client
-from openai.types.responses import Response
+from openai.types.responses import Response, ResponseUsage
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.base import (    
@@ -3092,24 +3570,49 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
         """
         Single-shot completion (non-streaming) using Responses API.
         """
-        mapped = self._map_messages_to_openai(messages)
-        input_items = self._messages_to_responses_input(mapped)
 
-        payload: Dict[str, Any] = dict(
-            model=self.model,
-            input=input_items,
-            # temperature=temperature, - not applicable in openai responses
-        )
+        call = self.begin_call(run_id=run_id)
 
-        if max_tokens is not None:
-            payload["max_output_tokens"] = max_tokens
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        response = self.client.responses.create(**payload, **self.defaults)
-        return self._collect_output_text(response)
+        try:
+            mapped = self._map_messages_to_openai(messages)
+            input_items = self._messages_to_responses_input(mapped)
+
+            payload: Dict[str, Any] = dict(
+                model=self.model,
+                input=input_items,
+            )
+            if max_tokens is not None:
+                payload["max_output_tokens"] = max_tokens
+
+            response: Response = self.client.responses.create(**payload, **self.defaults)
+
+            usage = response.usage
+            if usage is not None:
+                in_tok = int(usage.input_tokens or 0)
+                out_tok = int(usage.output_tokens or 0)      
+
+            output_text = self._collect_output_text(response)
+            
+            success = True
+
+            return output_text
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+        finally:
+            self.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+
 
     def stream_messages(
         self,
@@ -3117,32 +3620,74 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
         """
         Streaming completion using Responses API.
 
         Yields incremental text deltas taken from the streaming events.
         """
-        mapped = self._map_messages_to_openai(messages)
-        input_items = self._messages_to_responses_input(mapped)
+        call = self.begin_call(run_id=run_id)
 
-        payload: Dict[str, Any] = dict(
-            model=self.model,
-            input=input_items,
-            # temperature=temperature, - not applicable in openai responses
-            stream=True,
-        )
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        if max_tokens is not None:
-            payload["max_output_tokens"] = max_tokens
+        # Fallback input tokens (streaming may not provide usage reliably)
+        try:
+            in_tok = int(self.count_messages_tokens(messages))
+        except Exception:
+            in_tok = 0
 
-        stream = self.client.responses.stream(**payload, **self.defaults)
-        for ev in stream:
-            # We are interested in "response.output_text.delta" events
-            if getattr(ev, "type", None) == "response.output_text.delta":
-                delta = getattr(ev, "delta", None)
-                if delta:
-                    yield delta
+        buf: List[str] = []
+
+        try:
+            mapped = self._map_messages_to_openai(messages)
+            input_items = self._messages_to_responses_input(mapped)
+
+            payload: Dict[str, Any] = dict(
+                model=self.model,
+                input=input_items,
+                stream=True,
+            )
+
+            if max_tokens is not None:
+                payload["max_output_tokens"] = max_tokens
+
+            with self.client.responses.stream(**payload, **self.defaults) as stream:
+                for ev in stream:
+                    # We are interested in "response.output_text.delta" events
+                    if ev.type == "response.output_text.delta":                                                                        
+                        delta = ev.delta
+                        if delta:
+                            # accumulate for token estimation on finish
+                            buf.append(delta)
+                            yield delta
+
+            # If we reached here, the stream finished naturally
+            # Estimate output tokens from the assembled text
+            try:
+                full_text = "".join(buf)
+                out_tok = int(self.estimate_tokens_for_text(full_text))
+            except Exception:
+                out_tok = 0
+
+            success = True
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
 
     # ---------------------------------------------------------------------
     # PUBLIC: Tools
@@ -3154,14 +3699,16 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         """
         return True
 
+
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema,
+        tools_schema: List[Dict[str, Any]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice=None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        run_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Generate a response with potential function/tool calls.
@@ -3221,70 +3768,127 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             "finish_reason": finish_reason,
         }
 
-    def stream_with_tools(self, *args, **kwargs):
+    def stream_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema: List[Dict[str, Any]],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        run_id: Optional[str] = None,
+    ) -> Iterable[Dict[str, Any]]:
         """
         Currently we do not stream tool calls.
         Fallback to a single non-streaming call for simplicity.
         """
-        yield self.generate_with_tools(*args, **kwargs)
+        yield self.generate_with_tools(
+            messages,
+            tools_schema,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            tool_choice=tool_choice,
+            run_id=run_id,
+        )
 
     # ---------------------------------------------------------------------
     # PUBLIC: Structured JSON output
     # ---------------------------------------------------------------------
 
-    def generate_structured(
+    def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        output_model: type,
+        tools_schema: List[Dict[str, Any]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-    ):
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        run_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
-        Use Responses API + JSON Schema to produce a validated structured output.
+        Generate a response with potential function/tool calls.
 
-        Returns an instance of `output_model` validated from the JSON payload.
+        Returns:
+            {
+            "content": str,
+            "tool_calls": [...],
+            "finish_reason": str
+            }
         """
-        schema = self._model_json_schema(output_model)
+        call = self.begin_call(run_id=run_id)
 
-        sys_extra = {
-            "role": "system",
-            "content": (
-                "Return ONLY a single JSON object that strictly conforms to this JSON Schema. "
-                "No prose, no markdown, no backticks. If a field is optional and unknown, omit it.\n"
-                f"JSON_SCHEMA: {json.dumps(schema, ensure_ascii=False)}"
-            ),
-        }
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        mapped = self._map_messages_to_openai(messages)
-        mapped = [sys_extra] + mapped
-        input_items = self._messages_to_responses_input(mapped)
+        try:
+            mapped = self._map_messages_to_openai(messages)
+            input_items = self._messages_to_responses_input(mapped)
 
-        payload: Dict[str, Any] = dict(
-            model=self.model,
-            input=input_items,
-            # temperature=temperature, - not applicable in openai responses
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": getattr(output_model, "__name__", "OutputModel"),
-                    "schema": schema,
-                    "strict": True,
-                },
-            },
-        )
+            payload: Dict[str, Any] = dict(
+                model=self.model,
+                input=input_items,
+                tools=tools_schema,
+            )
 
-        if max_tokens is not None:
-            payload["max_output_tokens"] = max_tokens
+            if tool_choice is not None:
+                payload["tool_choice"] = tool_choice
 
-        response : Response = self.client.responses.create(**payload, **self.defaults)
+            if max_tokens is not None:
+                payload["max_output_tokens"] = max_tokens
 
-        txt = self._collect_output_text(response)
-        json_str = self._extract_json_object(txt) or txt.strip()
-        if not json_str:
-            raise ValueError("Model did not return valid JSON content for structured output.")
+            response: Response = self.client.responses.create(**payload, **self.defaults)
 
-        return self._validate_with_model(output_model, json_str)
+            usage = response.usage
+            if usage is not None:
+                in_tok = int(usage.input_tokens or 0)
+                out_tok = int(usage.output_tokens or 0)
+
+            # Assistant text (if present)
+            content = self._collect_output_text(response)
+
+            # Extract tool calls in a format compatible with Chat Completions
+            native_tool_calls: List[Dict[str, Any]] = []
+            for item in response.output or []:
+                if item.type == "function_call":
+                    args = item.arguments
+                    if not isinstance(args, str):
+                        args = json.dumps(args, ensure_ascii=False)
+
+                    native_tool_calls.append(
+                        {
+                            "id": item.call_id,
+                            "type": "function",
+                            "function": {
+                                "name": item.name,
+                                "arguments": args,
+                            },
+                        }
+                    )
+
+            finish_reason = response.status or "completed"
+
+            success = True
+            return {
+                "content": content or "",
+                "tool_calls": native_tool_calls,
+                "finish_reason": finish_reason,
+            }
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
     
 
     def _map_messages_to_openai(self, msgs: Sequence[ChatMessage]) -> List[Dict[str, Any]]:
@@ -7918,7 +8522,7 @@ class EmbeddingManager:
 #   - module_group=rag
 #   - file=rag_answerer.py
 # LINES: 415
-# SHA256: 84c9cef5e75438e800fa7a7d68cc6943176fabcea8f2853bb6185aa92c895ec2
+# SHA256: c0ac7d3cd0afc0dbd376dbc1b0b964a753be46d421703310dae368eec1d15750
 # SYMBOLS:
 #   - class AnswererConfig
 #   - class AnswerSource
@@ -7937,7 +8541,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters import LLMAdapter
+from intergrax.llm_adapters.base import LLMAdapter
 from intergrax.rag.rag_retriever import RagRetriever
 
 # Pydantic optionally (no hard runtime dependency)
@@ -10228,7 +10832,7 @@ class WindowedAnswerer:
 #   - module_group=root
 #   - file=chat_agent.py
 # LINES: 592
-# SHA256: a346a03152dfb00d6ade5a5715c7fc0e43301b6661b33470066a133469e5114c
+# SHA256: 8cc8c79d5170ffbf8de2a75b62f36c1130974a5bc0ed3b9fd46feb5e993e674a
 # SYMBOLS:
 #   - class ChatRouterConfig
 #   - class RagComponent
@@ -10248,7 +10852,7 @@ import time
 # Your components
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters import LLMAdapter
+from intergrax.llm_adapters.base import LLMAdapter
 from intergrax.tools.tools_agent import ToolsAgent, ToolsAgentConfig
 from intergrax.tools.tools_base import ToolRegistry
 from intergrax.rag.rag_answerer import RagAnswerer
@@ -10990,8 +11594,8 @@ def default_rag_system_instruction():
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=config.py
-# LINES: 231
-# SHA256: 08f83507c8b510d55d59d00de5e326ea9929a4bb67f29bcd273ac73558a42a09
+# LINES: 226
+# SHA256: 9a8ce80a68868d7c624e14d509e76ea234af6a4379320a1e7611033f7ceb81a6
 # SYMBOLS:
 #   - class ToolsContextScope
 #   - class ReasoningMode
@@ -11090,11 +11694,6 @@ class RuntimeConfig:
 
     # Vectorstore manager providing semantic search over stored chunks.
     vectorstore_manager: Optional[VectorstoreManager] = None
-
-    # Optional labels for observability/logging only.
-    llm_label: str = "default-llm"
-    embedding_label: str = "default-embedding"
-    vectorstore_label: str = "default-vectorstore"
 
     # ------------------------------------------------------------------
     # FEATURE FLAGS
@@ -12342,8 +12941,8 @@ class HistoryLayer:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime.py
-# LINES: 1342
-# SHA256: 8de1c3ba1d1a5b0e0f591f3c760cddb7d0bc88fc38593a4e9a232b67379f3164
+# LINES: 1343
+# SHA256: 539b2c5e172f318dee395c43adace960418b9a3d2eb6038c271b5c51cca14be2
 # SYMBOLS:
 #   - class DropInKnowledgeRuntime
 # ======================================================================
@@ -12377,7 +12976,9 @@ import asyncio
 import json
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
+import uuid
 
+from intergrax.llm_adapters.base import LLMAdapter
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import FileSystemAttachmentResolver
@@ -12528,7 +13129,8 @@ class DropInKnowledgeRuntime:
          11. Persist assistant answer and build RuntimeAnswer with route info.
         """
         state = RuntimeState(request=request)
-
+        state.run_id = f"run_{uuid.uuid4().hex}"
+        
         # Initial trace entry for this request.
         self._trace(
             state,
@@ -12539,6 +13141,7 @@ class DropInKnowledgeRuntime:
                 "session_id": request.session_id,
                 "user_id": request.user_id,
                 "tenant_id": request.tenant_id or self._config.tenant_id,
+                "run_id": state.run_id,
             },
         )
 
@@ -12691,11 +13294,6 @@ class DropInKnowledgeRuntime:
         debug_trace: Dict[str, Any] = {
             "session_id": session.id,
             "user_id": session.user_id,
-            "config": {
-                "llm_label": self._config.llm_label,
-                "embedding_label": self._config.embedding_label,
-                "vectorstore_label": self._config.vectorstore_label,
-            },
         }
 
         if ingestion_results:
@@ -12995,6 +13593,7 @@ class DropInKnowledgeRuntime:
             bundle = await self._websearch_prompt_builder.build_websearch_prompt(
                 web_results=web_results,
                 user_query=state.request.message,
+                run_id=state.run_id,
             )
 
             context_messages = bundle.context_messages or []
@@ -13127,6 +13726,7 @@ class DropInKnowledgeRuntime:
                 stream=False,
                 tool_choice=None,
                 output_model=None,
+                run_id=state.run_id
             )
 
             state.tools_agent_answer = tools_result.get("answer", "") or None
@@ -13248,6 +13848,7 @@ class DropInKnowledgeRuntime:
 
             raw_answer = self._config.llm_adapter.generate_messages(
                 state.messages_for_llm,
+                run_id=state.run_id,
                 **generate_kwargs,
             )
 
@@ -13689,7 +14290,6 @@ class DropInKnowledgeRuntime:
             last_user_idx += 1    
 
 
-
 # ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state
@@ -13698,8 +14298,8 @@ class DropInKnowledgeRuntime:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime_state.py
-# LINES: 81
-# SHA256: 8fa21be600cb6178cb8b36ac1de011a25eb5c2ecb0b67b0294d0fc427fa90b56
+# LINES: 83
+# SHA256: 9e758e3c5a13ba53aa2e55f1322f11bb5a901642ff066dace4aa3b5fce597087
 # SYMBOLS:
 #   - class RuntimeState
 # ======================================================================
@@ -13734,6 +14334,8 @@ class RuntimeState:
 
     # Input
     request: RuntimeRequest
+
+    run_id: str
 
     # Session and ingestion
     session: Optional[ChatSession] = None
@@ -14658,8 +15260,8 @@ class DefaultUserLongTermMemoryPromptBuilder(UserLongTermMemoryPromptBuilder):
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=websearch_prompt_builder.py
-# LINES: 108
-# SHA256: d36155e03f70e658add60bac5e9a68dbff6d82c1a464380b53bdb2f9b872b4c2
+# LINES: 112
+# SHA256: b51b50c3d26a1ea36fdc242caa532be5890502e64437369cd9fdb0ac1700b85f
 # SYMBOLS:
 #   - class WebSearchPromptBundle
 #   - class WebSearchPromptBuilder
@@ -14712,6 +15314,7 @@ class WebSearchPromptBuilder(Protocol):
         web_results: List[WebSearchResult],
         *,
         user_query: Optional[str] = None,
+        run_id: Optional[str] = None,
     ) -> WebSearchPromptBundle:
         ...
 
@@ -14735,6 +15338,7 @@ class DefaultWebSearchPromptBuilder(WebSearchPromptBuilder):
         web_results: List[WebSearchResult],
         *,
         user_query: Optional[str] = None,
+        run_id: Optional[str] = None,
     ) -> WebSearchPromptBundle:
         debug_info: Dict[str, Any] = {}
 
@@ -14753,6 +15357,8 @@ class DefaultWebSearchPromptBuilder(WebSearchPromptBuilder):
             # Fallback to previous behavior limits, but with safe defaults.
             # Prefer an explicit WebSearchConfig default rather than re-implementing logic here.
             cfg = WebSearchConfig()
+
+        cfg.run_id = run_id
 
         gen = create_websearch_context_generator(cfg)
         result = await gen.generate(web_results, user_query=user_query)
@@ -19718,8 +20324,8 @@ def build_langgraph_from_plan(
 #   - package=intergrax
 #   - module_group=tools
 #   - file=tools_agent.py
-# LINES: 570
-# SHA256: 2a22c8cfca1e6169e9e5e2ffcfe2dc70ce5006681f2af37307c1949ad186dad8
+# LINES: 573
+# SHA256: b3e17cabaea3a660bb2a6c146fd9444a58d7bb7d67b050fd8b77ee8a1b1e3c86
 # SYMBOLS:
 #   - class ToolsAgentConfig
 #   - def _maybe_import_pydantic_base()
@@ -19735,9 +20341,9 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional, Union, Type
 
+from intergrax.llm_adapters.base import LLMAdapter
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters import LLMAdapter
 from .tools_base import ToolRegistry, _limit_tool_output
 
 
@@ -19936,6 +20542,7 @@ class ToolsAgent:
         stream: bool = False,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         output_model: Optional[Type] = None,
+        run_id:Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         High-level tools orchestration entrypoint.
@@ -20050,6 +20657,7 @@ class ToolsAgent:
                         temperature=self.cfg.temperature,
                         max_tokens=self.cfg.max_answer_tokens,
                         tool_choice=effective_tool_choice,
+                        run_id=run_id
                     ):
                         chunks.append(ev)
                     result = chunks[-1] if chunks else {"content": "", "tool_calls": []}
@@ -20060,6 +20668,7 @@ class ToolsAgent:
                         temperature=self.cfg.temperature,
                         max_tokens=self.cfg.max_answer_tokens,
                         tool_choice=effective_tool_choice,
+                        run_id=run_id
                     )
 
                 content = result.get("content") or ""
@@ -23303,8 +23912,8 @@ class WebSearchAnswerer:
 #   - package=intergrax
 #   - module_group=websearch
 #   - file=websearch_config.py
-# LINES: 52
-# SHA256: a6f5186b30beb32736797139d4c485532199c68a5de74c52fd35208dc1ded523
+# LINES: 54
+# SHA256: 254c537de4e87e3114b6303c54db25f6a63de63ca7b87fca628204935e098b40
 # SYMBOLS:
 #   - class WebSearchStrategyType
 #   - class WebSearchLLMConfig
@@ -23361,6 +23970,8 @@ class WebSearchConfig:
     chunk_chars: int = 1500
     max_chunks_total: int = 10
 
+    run_id: Optional[str] = None
+
     llm: WebSearchLLMConfig = field(default_factory=WebSearchLLMConfig)
 
 # ======================================================================
@@ -23371,8 +23982,8 @@ class WebSearchConfig:
 #   - package=intergrax
 #   - module_group=websearch
 #   - file=websearch_context_generator.py
-# LINES: 327
-# SHA256: d37567bcedba8f34c71f16b6fe60393179ac8e20f5a14c6cd56e46d7cded13ed
+# LINES: 329
+# SHA256: 386c72c9789dd7c8bafb1cfb8ac724101fde2b5bcdc4dc8d9c31027f2ed5671f
 # SYMBOLS:
 #   - class WebSearchContextResult
 #   - class WebSearchContextGenerator
@@ -23616,6 +24227,7 @@ class MapReduceContextGenerator:
             # call generate_messages(map_messages) without kwargs.
             map_text = self._cfg.llm.map_adapter.generate_messages(
                 map_messages,
+                run_id=self._cfg.run_id,
             )
             map_text = (map_text or "").strip()
             if not map_text or map_text == "NO_EVIDENCE":
@@ -23672,7 +24284,8 @@ class MapReduceContextGenerator:
         ]
 
         reduce_text = self._cfg.llm.reduce_adapter.generate_messages(
-            reduce_messages
+            reduce_messages,
+            run_id=self._cfg.run_id,
         )
         reduce_text = (reduce_text or "").strip()
 
