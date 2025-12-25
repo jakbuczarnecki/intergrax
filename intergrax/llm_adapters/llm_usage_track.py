@@ -3,7 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 import time
 
@@ -41,8 +41,12 @@ class LLMUsageTracker:
         Register an adapter used during this runtime run.
         Idempotent by label.
         """
+        if adapter is None:
+            return
+        
         if not label:
             label = adapter.id
+            
         if label not in self._adapters:
             self._adapters[label] = adapter
 
@@ -106,3 +110,32 @@ class LLMUsageTracker:
             agg.duration_ms += st.duration_ms
             agg.errors += st.errors
         return agg
+    
+    
+    def export(self) -> Dict[str, Any]:
+        """
+        Return an immutable snapshot of usage stats for the current run_id.
+        Safe to serialize (JSON) and store in debug traces/logs.
+        """
+        adapters_out: Dict[str, Any] = {}
+
+        for label, ad in self._adapters.items():
+            st = ad.usage.get_run_stats(self.run_id)
+            if st is None:
+                adapters_out[label] = {
+                    "calls": 0,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "total_tokens": 0,
+                    "duration_ms": 0,
+                    "errors": 0,
+                }
+            else:
+                adapters_out[label] = asdict(st)
+
+        total = self.total()
+        return {
+            "run_id": self.run_id,
+            "total": asdict(total),
+            "adapters": adapters_out,
+        }

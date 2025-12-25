@@ -7,6 +7,8 @@ from types import SimpleNamespace
 from typing import Any, Dict, List, Optional, Literal, Iterable, Callable
 import json, re, math
 
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
+
 from .supervisor_components import Component, ComponentContext, ComponentResult, PipelineState
 from .supervisor_prompts import SupervisorPromptPack, SupervisorPromptPack as _DefaultPack
 
@@ -45,7 +47,7 @@ class Plan:
 
 @dataclass
 class SupervisorConfig:
-    llm_adapter: Any
+    llm_adapter: LLMAdapter
     temperature: float = 0.1
     max_tokens: int = 1200
     heuristic_enable: bool = True
@@ -155,11 +157,11 @@ class IntergraxSupervisor:
             return None
 
     # --------- Public: plan ---------
-    def plan(self, query: str, meta: Optional[Dict[str, Any]] = None) -> Plan:
+    def plan(self, query: str, meta: Optional[Dict[str, Any]] = None,run_id: Optional[str] = None,) -> Plan:
         self.last_plan_meta = {}
         meta = meta or {}
         if self.cfg.planner_mode == "two_stage":
-            plan = self._llm_plan_two_stage(query)
+            plan = self._llm_plan_two_stage(query, run_id=run_id)
             if plan:
                 self.last_plan_meta.setdefault("source", "stepwise")
                 self.last_plan_meta["analysis"] = self.analyze_plan(plan)
@@ -183,13 +185,13 @@ class IntergraxSupervisor:
         return plan
 
     # --------- Two-stage: decompose -> per-step assign ---------
-    def _llm_plan_two_stage(self, query: str) -> Optional[Plan]:
+    def _llm_plan_two_stage(self, query: str,run_id: Optional[str] = None,) -> Optional[Plan]:
         decomp = self._llm_decompose(query)
         if not decomp:
             return None
         catalog_rows = self._render_catalog_rows()
         for s in decomp.steps:
-            self._assign_step_with_llm(s, catalog_rows)
+            self._assign_step_with_llm(s, catalog_rows, run_id=run_id)
         # recompute needs
         has_rag = any(x.method == "RAG" for x in decomp.steps)
         has_tools = any(x.method == "TOOL" for x in decomp.steps)
@@ -197,7 +199,7 @@ class IntergraxSupervisor:
         decomp.needs = {"rag": has_rag, "tools": has_tools, "general": has_general}
         return decomp
 
-    def _llm_decompose(self, query: str) -> Optional[Plan]:
+    def _llm_decompose(self, query: str, run_id: Optional[str] = None) -> Optional[Plan]:
         """
         Stage 1: get a clean step decomposition (no components bound).
         Strong JSON contract + retry if JSON parsing fails.
@@ -225,9 +227,9 @@ class IntergraxSupervisor:
                 call_kwargs["max_tokens"] = self.cfg.max_tokens
 
             try:
-                raw = self.llm.generate_messages(**call_kwargs)
+                raw = self.llm.generate_messages(run_id=run_id, **call_kwargs)
             except TypeError:
-                raw = self.llm.generate_messages(messages=messages)
+                raw = self.llm.generate_messages(run_id=run_id, messages=messages)
 
             raw_text = self._extract_text(raw)
             if self._debug:
@@ -237,7 +239,9 @@ class IntergraxSupervisor:
             if not data:
                 # one corrective nudge
                 corrective = "You must return ONLY valid JSON per schema, with double quotes and no trailing commas."
-                raw2 = self.llm.generate_messages(messages=[
+                raw2 = self.llm.generate_messages(
+                    run_id=run_id,
+                    messages=[
                     SimpleNamespace(role="system", content=sys),
                     SimpleNamespace(role="user", content=usr + "\n\n" + corrective),
                 ])
@@ -262,7 +266,7 @@ class IntergraxSupervisor:
             break
         return best
 
-    def _assign_step_with_llm(self, step: PlanStep, catalog_rows: List[Dict[str, Any]]) -> None:
+    def _assign_step_with_llm(self, step: PlanStep, catalog_rows: List[Dict[str, Any]], run_id: Optional[str] = None,) -> None:
         """
         Stage 2: assign METHOD+COMPONENT per step using the catalog.
         Uses self-consistency voting and a semantic fallback if the JSON is empty/low-scored.
@@ -311,9 +315,9 @@ class IntergraxSupervisor:
                 ]
                 # Slight non-zero temperature helps avoid 'empty JSON' pathologies
                 try:
-                    raw = self.llm.generate_messages(messages=msgs, temperature=self.cfg.assign_temperature)
+                    raw = self.llm.generate_messages(messages=msgs, run_id=run_id, temperature=self.cfg.assign_temperature)
                 except TypeError:
-                    raw = self.llm.generate_messages(messages=msgs)
+                    raw = self.llm.generate_messages(messages=msgs, run_id=run_id)
                 data = self._safe_json(self._extract_text(raw)) or {}
                 method = (str(data.get("method") or "GENERAL")).upper()
                 comp = data.get("component")
@@ -428,7 +432,7 @@ class IntergraxSupervisor:
         return None, 0.0, ""
 
     # --------- One-shot fallback ---------
-    def _llm_plan_one_shot(self, query: str, catalog_text: str) -> Optional[Plan]:
+    def _llm_plan_one_shot(self, query: str, catalog_text: str,run_id: Optional[str] = None,) -> Optional[Plan]:
         try:
             sys = (
                 self._prompts.plan_system
@@ -450,9 +454,9 @@ class IntergraxSupervisor:
                 call_kwargs["max_tokens"] = self.cfg.max_tokens
 
             try:
-                raw = self.llm.generate_messages(**call_kwargs)
+                raw = self.llm.generate_messages(run_id=run_id, **call_kwargs)
             except TypeError:
-                raw = self.llm.generate_messages(messages=messages)
+                raw = self.llm.generate_messages(messages=messages, run_id=run_id)
 
             raw_text = self._extract_text(raw)
             if self._debug:

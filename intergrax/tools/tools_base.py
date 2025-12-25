@@ -5,6 +5,8 @@
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
+from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+
 # --- Optional Pydantic (as before) ---
 try:
     from pydantic import BaseModel, ValidationError  # type: ignore
@@ -71,7 +73,10 @@ class ToolBase:
 
         return parameters
 
-    def run(self, **kwargs) -> Any:
+    def run(self, 
+            run_id:Optional[str] = None,
+            llm_usage_tracker: Optional[LLMUsageTracker] = None,
+            **kwargs) -> Any:
         """Each tool must override this method."""
         raise NotImplementedError
 

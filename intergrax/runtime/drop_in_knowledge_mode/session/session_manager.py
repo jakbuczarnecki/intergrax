@@ -205,6 +205,7 @@ class SessionManager:
         session_id: str,
         *,
         reason: Optional[SessionCloseReason] = None,
+        run_id: Optional[str] = None,
     ) -> None:
         """
         Mark a session as closed at the domain level and, if configured,
@@ -260,6 +261,7 @@ class SessionManager:
                         user_id=session.user_id,
                         session_id=session_id,
                         messages=messages,
+                        run_id=run_id,
                     )
                 )
 

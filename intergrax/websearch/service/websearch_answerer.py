@@ -54,6 +54,7 @@ class WebSearchAnswerer:
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         system_prompt_override: Optional[str] = None,
+        run_id: Optional[str] = None,
     ) -> WebSearchAnswer:
         """
         Full async flow:
@@ -90,6 +91,7 @@ class WebSearchAnswerer:
             messages,
             temperature=temperature,
             max_tokens=max_tokens,
+            run_id=run_id
         )
 
         return WebSearchAnswer(
@@ -106,6 +108,7 @@ class WebSearchAnswerer:
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         system_prompt_override: Optional[str] = None,
+        run_id: Optional[str] = None,
     ) -> WebSearchAnswer:
         """
         Synchronous convenience wrapper for non-async environments.
@@ -123,5 +126,6 @@ class WebSearchAnswerer:
                 temperature=temperature,
                 max_tokens=max_tokens,
                 system_prompt_override=system_prompt_override,
+                run_id=run_id,
             )
         )

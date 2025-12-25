@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
 from intergrax.runtime.drop_in_knowledge_mode.config import ReasoningMode
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
@@ -31,6 +32,8 @@ class RuntimeState:
     request: RuntimeRequest
 
     run_id: str
+
+    llm_usage_tracker: LLMUsageTracker
 
     # Session and ingestion
     session: Optional[ChatSession] = None
