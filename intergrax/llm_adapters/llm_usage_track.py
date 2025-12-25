@@ -60,23 +60,45 @@ class LLMUsageTracker:
         self.run_id = run_id
         self._adapters: Dict[str, LLMAdapter] = {}
 
-    def register_adapter(self, label: str, adapter: LLMAdapter) -> None:
+
+    def register_adapter(self, adapter: LLMAdapter, label: Optional[str]) -> None:
         """
         Register an adapter used during this runtime run.
         Idempotent by label.
         """
         if not label:
-            label = "unnamed"
+            label = adapter.id
         if label not in self._adapters:
             self._adapters[label] = adapter
+
+
+    def unregister_adapter(self, adapter: LLMAdapter) -> None:
+        """
+        Unregister an adapter from this runtime run.
+
+        Safe to call multiple times.
+        Does nothing if adapter is not registered.
+        """
+        to_remove = None
+
+        for label, a in self._adapters.items():
+            if a is adapter:
+                to_remove = label
+                break
+
+        if to_remove is not None:
+            del self._adapters[to_remove]
+            
+        
 
     def registered_labels(self) -> List[str]:
         return list(self._adapters.keys())
 
+
     def snapshot(self) -> List[LLMUsageSnapshot]:
         out: List[LLMUsageSnapshot] = []
         for label, ad in self._adapters.items():
-            st = ad.get_run_stats(self.run_id)
+            st = ad.usage.get_run_stats(self.run_id)
             provider = None
             try:
                 # Optional: if your adapters expose provider in a strict way, wire it here.
@@ -99,7 +121,7 @@ class LLMUsageTracker:
     def total(self) -> LLMRunStats:
         agg = LLMRunStats()
         for _, ad in self._adapters.items():
-            st = ad.get_run_stats(self.run_id)
+            st = ad.usage.get_run_stats(self.run_id)
             agg.calls += st.calls
             agg.input_tokens += st.input_tokens
             agg.output_tokens += st.output_tokens
