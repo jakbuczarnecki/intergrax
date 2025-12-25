@@ -9,19 +9,19 @@ from typing import Dict, Optional, Tuple, List
 
 # === Twoje komponenty ===
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import LLMProvider
+from intergrax.llm_adapters.llm_provider import LLMAdapterRegistry, LLMProvider
 from intergrax.rag.rag_answerer import (
     RagAnswerer,
     AnswererConfig,
     ChatMessage,
 )
-from intergrax.llm_adapters import LLMAdapterRegistry
+
 from intergrax.rag.rag_retriever import RagRetriever
 from intergrax.rag.vectorstore_manager import VectorstoreManager, VSConfig
 from intergrax.rag.documents_loader import DocumentsLoader
 from intergrax.rag.documents_splitter import DocumentsSplitter
 from intergrax.rag.re_ranker import ReRanker,ReRankerConfig
-from intergrax.rag.embedding_manager import EmbeddingManager  # ⬅️ embedder
+from intergrax.rag.embedding_manager import EmbeddingManager
 
 # === ustawienia środowiskowe / katalogi ===
 PERSIST_DIR = os.environ.get("CHROMA_DIR", "./chroma_db")

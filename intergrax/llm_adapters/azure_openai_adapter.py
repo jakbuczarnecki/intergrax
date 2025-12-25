@@ -10,7 +10,7 @@ from openai import AzureOpenAI
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
 
 
 class AzureOpenAIChatAdapter(LLMAdapter):

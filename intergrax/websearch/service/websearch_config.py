@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
-from intergrax.llm_adapters.base import LLMAdapter
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
 
 
 class WebSearchStrategyType(str, Enum):

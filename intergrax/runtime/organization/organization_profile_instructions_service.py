@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import LLMAdapter
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.organization.organization_profile import OrganizationProfile
 from intergrax.runtime.organization.organization_profile_manager import OrganizationProfileManager

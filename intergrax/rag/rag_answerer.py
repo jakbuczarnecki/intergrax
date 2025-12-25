@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters.base import LLMAdapter
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.rag.rag_retriever import RagRetriever
 
 # Pydantic optionally (no hard runtime dependency)
@@ -104,6 +104,7 @@ class RagAnswerer:
         summarize: bool = False,
         user_instruction: Optional[str] = None,
         output_model: Optional[Type[BaseModel]] = None,   # ← like in intergraxToolsAgent: additional structured output next to text
+        run_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Behavior identical to intergraxToolsAgent.run:
@@ -194,6 +195,7 @@ class RagAnswerer:
                 messages,
                 temperature=self.cfg.temperature,
                 max_tokens=self.cfg.max_answer_tokens,
+                run_id=run_id
             ):
                 parts.append(piece or "")
             answer = "".join(parts)
@@ -206,6 +208,7 @@ class RagAnswerer:
                 messages,
                 temperature=self.cfg.temperature,
                 max_tokens=self.cfg.max_answer_tokens,
+                run_id=run_id
             )
             t_llm = time.perf_counter() - t2
 
@@ -244,7 +247,8 @@ class RagAnswerer:
                 summary = self.llm.generate_messages(
                     summary_msgs, 
                     temperature=self.cfg.temperature, 
-                    max_tokens=self.cfg.max_answer_tokens
+                    max_tokens=self.cfg.max_answer_tokens,
+                    run_id=run_id
                 )                
             except Exception:
                 summary = None

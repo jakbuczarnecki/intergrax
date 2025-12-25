@@ -8,7 +8,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence
 from langchain_ollama import ChatOllama
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import (    
+from intergrax.llm_adapters.llm_adapter import (    
     ChatMessage,
     LLMAdapter,
 )

@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Sequence, Dict, Any
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import LLMAdapter
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage, MessageRole
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_memory import (

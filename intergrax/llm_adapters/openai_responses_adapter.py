@@ -11,7 +11,7 @@ from openai import Client
 from openai.types.responses import Response, ResponseUsage
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import (    
+from intergrax.llm_adapters.llm_adapter import (    
     ChatMessage,
     LLMAdapter,
 )

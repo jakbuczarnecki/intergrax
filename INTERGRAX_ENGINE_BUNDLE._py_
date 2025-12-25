@@ -35,20 +35,20 @@
 # - tools/
 # - websearch/
 #
-# Files included: 126
-# Total lines: 22677
+# Files included: 127
+# Total lines: 22801
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
 # ROOT: D:\Projekty\intergrax
 # PACKAGE: intergrax
-# FILES: 126
+# FILES: 127
 #
 # MODULE MAP (dynamic):
 # - chains/ (2 files)
 # - globals/ (2 files)
 # - llm/ (2 files)
-# - llm_adapters/ (9 files)
+# - llm_adapters/ (10 files)
 # - memory/ (9 files)
 # - multimedia/ (5 files)
 # - openai/ (3 files)
@@ -67,14 +67,15 @@
 # - intergrax/llm/__init__.py | intergrax.llm | llm | 0 | e3b0c44298fc
 # - intergrax/llm/messages.py | intergrax.llm.messages | llm | 97 | 5d5feec8a7c4
 # - intergrax/llm_adapters/__init__.py | intergrax.llm_adapters | llm_adapters | 23 | 74db06f7fa80
-# - intergrax/llm_adapters/aws_bedrock_adapter.py | intergrax.llm_adapters.aws_bedrock_adapter | llm_adapters | 573 | 74fff8954fa1
-# - intergrax/llm_adapters/azure_openai_adapter.py | intergrax.llm_adapters.azure_openai_adapter | llm_adapters | 272 | dd3f5260ef19
-# - intergrax/llm_adapters/base.py | intergrax.llm_adapters.base | llm_adapters | 463 | aa000cc45357
-# - intergrax/llm_adapters/claude_adapter.py | intergrax.llm_adapters.claude_adapter | llm_adapters | 216 | 702ff8e8b18b
-# - intergrax/llm_adapters/gemini_adapter.py | intergrax.llm_adapters.gemini_adapter | llm_adapters | 279 | a61763105f2d
-# - intergrax/llm_adapters/mistral_adapter.py | intergrax.llm_adapters.mistral_adapter | llm_adapters | 259 | 4ae297976c9f
-# - intergrax/llm_adapters/ollama_adapter.py | intergrax.llm_adapters.ollama_adapter | llm_adapters | 341 | 09311f5d0f98
-# - intergrax/llm_adapters/openai_responses_adapter.py | intergrax.llm_adapters.openai_responses_adapter | llm_adapters | 478 | 99133f88b0ee
+# - intergrax/llm_adapters/aws_bedrock_adapter.py | intergrax.llm_adapters.aws_bedrock_adapter | llm_adapters | 573 | 2ece5aa7669e
+# - intergrax/llm_adapters/azure_openai_adapter.py | intergrax.llm_adapters.azure_openai_adapter | llm_adapters | 272 | bd6c826b6ec1
+# - intergrax/llm_adapters/base.py | intergrax.llm_adapters.base | llm_adapters | 332 | 0954c583dced
+# - intergrax/llm_adapters/claude_adapter.py | intergrax.llm_adapters.claude_adapter | llm_adapters | 216 | 8cc56e29b419
+# - intergrax/llm_adapters/gemini_adapter.py | intergrax.llm_adapters.gemini_adapter | llm_adapters | 279 | 52a5ad04cf6f
+# - intergrax/llm_adapters/llm_usage_track.py | intergrax.llm_adapters.llm_usage_track | llm_adapters | 256 | 646680d259f8
+# - intergrax/llm_adapters/mistral_adapter.py | intergrax.llm_adapters.mistral_adapter | llm_adapters | 259 | 7b029d7d05ad
+# - intergrax/llm_adapters/ollama_adapter.py | intergrax.llm_adapters.ollama_adapter | llm_adapters | 341 | 9456fd0ec83d
+# - intergrax/llm_adapters/openai_responses_adapter.py | intergrax.llm_adapters.openai_responses_adapter | llm_adapters | 477 | 4e79b4c199b0
 # - intergrax/memory/__init__.py | intergrax.memory | memory | 0 | e3b0c44298fc
 # - intergrax/memory/conversational_memory.py | intergrax.memory.conversational_memory | memory | 123 | e5e9f9312647
 # - intergrax/memory/conversational_store.py | intergrax.memory.conversational_store | memory | 106 | 291f5ffa339e
@@ -187,7 +188,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 22677
+# TOTAL LINES: 22801
 # ======================================================================
 
 # ======================================================================
@@ -918,7 +919,7 @@ LLMAdapterRegistry.register(LLMProvider.AWS_BEDROCK, lambda **kw: BedrockChatAda
 #   - module_group=llm_adapters
 #   - file=aws_bedrock_adapter.py
 # LINES: 573
-# SHA256: 74fff8954fa1845c4b84c1ee131ed8b8eb5b185df99fab32a0b9234a1424fc2f
+# SHA256: 2ece5aa7669ec62472e3d95433d0f998ac7dd9d1d33197ce5de65bc865842ddb
 # SYMBOLS:
 #   - class BedrockModelFamily
 #   - class BedrockNativeCodec
@@ -1327,7 +1328,7 @@ class BedrockChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> str:
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -1370,7 +1371,7 @@ class BedrockChatAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -1387,7 +1388,7 @@ class BedrockChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -1441,7 +1442,7 @@ class BedrockChatAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -1512,7 +1513,7 @@ class BedrockChatAdapter(LLMAdapter):
 #   - module_group=llm_adapters
 #   - file=azure_openai_adapter.py
 # LINES: 272
-# SHA256: dd3f5260ef19bbf5673f8517f0ae730cf8b30617687fde4c16de4e64ae4327c7
+# SHA256: bd6c826b6ec1d98589d5756981d99a343cb523aef0a1359edff1d0f12268e11f
 # SYMBOLS:
 #   - class AzureOpenAIChatAdapter
 # ======================================================================
@@ -1599,7 +1600,7 @@ class AzureOpenAIChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> str:
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -1638,7 +1639,7 @@ class AzureOpenAIChatAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -1656,7 +1657,7 @@ class AzureOpenAIChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -1702,7 +1703,7 @@ class AzureOpenAIChatAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -1797,12 +1798,10 @@ class AzureOpenAIChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=base.py
-# LINES: 463
-# SHA256: aa000cc453574dbc64a730a43685fdb3e3e049977f712672cc5ee244c8b7f8f2
+# LINES: 332
+# SHA256: 0954c583dced375f218e70cc65689ddfad1374198af9e0853ee9255044dc8412
 # SYMBOLS:
 #   - class LLMProvider
-#   - class LLMCallStats
-#   - class LLMRunStats
 #   - class LLMAdapter
 #   - class LLMAdapterRegistry
 # ======================================================================
@@ -1819,12 +1818,14 @@ from typing import Sequence, Iterable, Optional, Any, Dict, Union, List
 import json
 import re
 from typing import Callable
+import uuid
 import tiktoken
 
 # if TYPE_CHECKING:
 #     from ..llm.conversational_memory import ChatMessage
 # else:
 #     ChatMessage = Any  # runtime stub
+from intergrax.llm_adapters.llm_usage_track import LLMAdapterUsageLog
 from intergrax.memory.conversational_memory import ChatMessage
 
 
@@ -1838,29 +1839,6 @@ class LLMProvider(str, Enum):
     AWS_BEDROCK = "aws_bedrock"
 
 
-@dataclass
-class LLMCallStats:
-    run_id: str
-    t0: float = field(default_factory=time.perf_counter)
-
-    # filled on end
-    input_tokens: int = 0
-    output_tokens: int = 0
-    total_tokens: int = 0
-    duration_ms: int = 0
-
-    success: bool = True
-    error_type: Optional[str] = None
-
-
-@dataclass
-class LLMRunStats:
-    calls: int = 0
-    input_tokens: int = 0
-    output_tokens: int = 0
-    total_tokens: int = 0
-    duration_ms: int = 0
-    errors: int = 0
 
 # ============================================================
 # Universal interface (ABC)
@@ -1887,120 +1865,10 @@ class LLMAdapter(ABC):
     # Hint used by the generic token estimator (e.g. OpenAI model name).
     model_name_for_token_estimation: Optional[str] = None
 
-    def __init__(self) -> None:
-        self._run_stats: Dict[str, LLMRunStats] = {}
+    def __init__(self) -> None:        
+        self.id = uuid.uuid4().hex
+        self.usage = LLMAdapterUsageLog()
     
-
-    def begin_call(self, run_id: Optional[str] = None) -> LLMCallStats:
-        """
-        Begin one LLM call (not the whole runtime.run()).
-
-        Returns a per-call context object, safe for nested/parallel use
-        because it is local to the caller.
-        """
-        rid = run_id or "general"
-        if rid not in self._run_stats:
-            self._run_stats[rid] = LLMRunStats()
-        return LLMCallStats(run_id=rid)
-
-
-    def end_call(
-        self,
-        call: LLMCallStats,
-        *,
-        input_tokens: int,
-        output_tokens: int,
-        success: bool = True,
-        error_type: Optional[str] = None,
-    ) -> None:
-        """
-        Finish one LLM call and aggregate into per-run stats.
-        """
-        dt_ms = int((time.perf_counter() - call.t0) * 1000)
-
-        call.input_tokens = int(input_tokens or 0)
-        call.output_tokens = int(output_tokens or 0)
-        call.total_tokens = call.input_tokens + call.output_tokens
-        call.duration_ms = dt_ms
-
-        call.success = bool(success)
-        call.error_type = error_type
-
-        st = self._run_stats.get(call.run_id)
-        if st is None:
-            st = LLMRunStats()
-            self._run_stats[call.run_id] = st
-
-        st.calls += 1
-        st.input_tokens += call.input_tokens
-        st.output_tokens += call.output_tokens
-        st.total_tokens += call.total_tokens
-        st.duration_ms += call.duration_ms
-
-        if not call.success:
-            st.errors += 1
-    
-    def get_run_stats(self, run_id: Optional[str] = None) -> Optional[LLMRunStats]:
-        """
-        Get aggregated stats for a given run_id.
-        Returns None if no stats exist for that run_id.
-        """
-        rid = run_id or "general"
-        return self._run_stats.get(rid)
-
-
-    def get_all_run_stats(self) -> Dict[str, LLMRunStats]:
-        """
-        Get a shallow copy of all aggregated run stats.
-        """
-        return dict(self._run_stats)
-
-
-    def reset_run_stats(self, run_id: Optional[str] = None) -> None:
-        """
-        Reset stats for a specific run_id (or 'general' if None).
-        """
-        rid = run_id or "general"
-        if rid in self._run_stats:
-            del self._run_stats[rid]
-
-
-    def reset_all_run_stats(self) -> None:
-        """
-        Reset all stored stats.
-        """
-        self._run_stats.clear()
-
-
-    def export_run_stats_dict(self, run_id: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Export aggregated stats to a JSON-serializable dict.
-        Helpful for debug_trace / logging.
-        """
-        rid = run_id or "general"
-        st = self._run_stats.get(rid)
-        if st is None:
-            return {
-                "run_id": rid,
-                "calls": 0,
-                "input_tokens": 0,
-                "output_tokens": 0,
-                "total_tokens": 0,
-                "duration_ms": 0,
-                "errors": 0,
-            }
-
-        return {
-            "run_id": rid,
-            "calls": int(st.calls),
-            "input_tokens": int(st.input_tokens),
-            "output_tokens": int(st.output_tokens),
-            "total_tokens": int(st.total_tokens),
-            "duration_ms": int(st.duration_ms),
-            "errors": int(st.errors),
-        }
-
-
 
     @abstractmethod
     def generate_messages(
@@ -2279,7 +2147,7 @@ class LLMAdapterRegistry:
 #   - module_group=llm_adapters
 #   - file=claude_adapter.py
 # LINES: 216
-# SHA256: 702ff8e8b18b0e5c3f68c157204d2d604e7789567931ebb8c819c2b3f3567307
+# SHA256: 8cc56e29b4193fa4925d079e83567fc1e571b3afb85e06ceb338fd8bd587280a
 # SYMBOLS:
 #   - class ClaudeChatAdapter
 # ======================================================================
@@ -2344,7 +2212,7 @@ class ClaudeChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> str:
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -2387,7 +2255,7 @@ class ClaudeChatAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -2405,7 +2273,7 @@ class ClaudeChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -2455,7 +2323,7 @@ class ClaudeChatAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -2509,7 +2377,7 @@ class ClaudeChatAdapter(LLMAdapter):
 #   - module_group=llm_adapters
 #   - file=gemini_adapter.py
 # LINES: 279
-# SHA256: a61763105f2d5af06f821979928fe83ba9402f6c195a4b48e785723ec1b567fc
+# SHA256: 52a5ad04cf6fce17ae6ca546cc1c08e18de8baec05d48df403f1e78269b41be7
 # SYMBOLS:
 #   - class GeminiChatAdapter
 # ======================================================================
@@ -2587,7 +2455,7 @@ class GeminiChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> str:
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -2636,7 +2504,7 @@ class GeminiChatAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -2654,7 +2522,7 @@ class GeminiChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -2704,7 +2572,7 @@ class GeminiChatAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -2794,6 +2662,280 @@ class GeminiChatAdapter(LLMAdapter):
         return types.ModelContent(parts=[part])
 
 # ======================================================================
+# FILE: intergrax/llm_adapters/llm_usage_track.py
+# MODULE: intergrax.llm_adapters.llm_usage_track
+# MODULE_GROUP: llm_adapters
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm_adapters
+#   - file=llm_usage_track.py
+# LINES: 256
+# SHA256: 646680d259f8fbb874e0d014fd16e8e2177827aded10e951ff590fa0730c97e1
+# SYMBOLS:
+#   - class LLMUsageSnapshot
+#   - class LLMCallStats
+#   - class LLMRunStats
+#   - class LLMUsageTracker
+#   - class LLMAdapterUsageLog
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+import time
+
+from intergrax.llm_adapters.base import LLMAdapter
+
+
+@dataclass
+class LLMUsageSnapshot:
+    """
+    One adapter snapshot for a given run_id.
+    """
+    adapter_label: str
+    provider: Optional[str]
+    model_hint: Optional[str]
+    stats: LLMRunStats
+
+
+@dataclass
+class LLMCallStats:
+    run_id: str
+    t0: float = field(default_factory=time.perf_counter)
+
+    # filled on end
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    duration_ms: int = 0
+
+    success: bool = True
+    error_type: Optional[str] = None
+
+
+@dataclass
+class LLMRunStats:
+    calls: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    duration_ms: int = 0
+    errors: int = 0
+    
+
+class LLMUsageTracker:
+    """
+    Aggregates usage across multiple adapters used during a single runtime.run().
+
+    Design goals:
+      - Engine does NOT count tokens itself.
+      - Each adapter counts its own tokens via begin_call/end_call.
+      - Tracker just collects snapshots and builds a summary.
+    """
+
+    def __init__(self, run_id: str) -> None:
+        self.run_id = run_id
+        self._adapters: Dict[str, LLMAdapter] = {}
+
+
+    def register_adapter(self, adapter: LLMAdapter, label: Optional[str]) -> None:
+        """
+        Register an adapter used during this runtime run.
+        Idempotent by label.
+        """
+        if not label:
+            label = adapter.id
+        if label not in self._adapters:
+            self._adapters[label] = adapter
+
+
+    def unregister_adapter(self, adapter: LLMAdapter) -> None:
+        """
+        Unregister an adapter from this runtime run.
+
+        Safe to call multiple times.
+        Does nothing if adapter is not registered.
+        """
+        to_remove = None
+
+        for label, a in self._adapters.items():
+            if a is adapter:
+                to_remove = label
+                break
+
+        if to_remove is not None:
+            del self._adapters[to_remove]
+            
+        
+
+    def registered_labels(self) -> List[str]:
+        return list(self._adapters.keys())
+
+
+    def snapshot(self) -> List[LLMUsageSnapshot]:
+        out: List[LLMUsageSnapshot] = []
+        for label, ad in self._adapters.items():
+            st = ad.usage.get_run_stats(self.run_id)
+            provider = None
+            try:
+                # Optional: if your adapters expose provider in a strict way, wire it here.
+                # Keep None if not guaranteed.
+                provider = None
+            except Exception:
+                provider = None
+
+            model_hint = ad.model_name_for_token_estimation
+            out.append(
+                LLMUsageSnapshot(
+                    adapter_label=label,
+                    provider=provider,
+                    model_hint=model_hint,
+                    stats=st,
+                )
+            )
+        return out
+
+    def total(self) -> LLMRunStats:
+        agg = LLMRunStats()
+        for _, ad in self._adapters.items():
+            st = ad.usage.get_run_stats(self.run_id)
+            agg.calls += st.calls
+            agg.input_tokens += st.input_tokens
+            agg.output_tokens += st.output_tokens
+            agg.total_tokens += st.total_tokens
+            agg.duration_ms += st.duration_ms
+            agg.errors += st.errors
+        return agg
+    
+    
+class LLMAdapterUsageLog:
+
+    def __init__(self) -> None:
+        self._run_stats: Dict[str, LLMRunStats] = {}
+
+
+    def begin_call(self, run_id: Optional[str] = None) -> LLMCallStats:
+        """
+        Begin one LLM call (not the whole runtime.run()).
+
+        Returns a per-call context object, safe for nested/parallel use
+        because it is local to the caller.
+        """
+        rid = run_id or "general"
+        if rid not in self._run_stats:
+            self._run_stats[rid] = LLMRunStats()
+        return LLMCallStats(run_id=rid)
+
+
+    def end_call(
+        self,
+        call: LLMCallStats,
+        *,
+        input_tokens: int,
+        output_tokens: int,
+        success: bool = True,
+        error_type: Optional[str] = None,
+    ) -> None:
+        """
+        Finish one LLM call and aggregate into per-run stats.
+        """
+        dt_ms = int((time.perf_counter() - call.t0) * 1000)
+
+        call.input_tokens = int(input_tokens or 0)
+        call.output_tokens = int(output_tokens or 0)
+        call.total_tokens = call.input_tokens + call.output_tokens
+        call.duration_ms = dt_ms
+
+        call.success = bool(success)
+        call.error_type = error_type
+
+        st = self._run_stats.get(call.run_id)
+        if st is None:
+            st = LLMRunStats()
+            self._run_stats[call.run_id] = st
+
+        st.calls += 1
+        st.input_tokens += call.input_tokens
+        st.output_tokens += call.output_tokens
+        st.total_tokens += call.total_tokens
+        st.duration_ms += call.duration_ms
+
+        if not call.success:
+            st.errors += 1
+    
+    def get_run_stats(self, run_id: Optional[str] = None) -> Optional[LLMRunStats]:
+        """
+        Get aggregated stats for a given run_id.
+        Returns None if no stats exist for that run_id.
+        """
+        rid = run_id or "general"
+        st = self._run_stats.get(rid)
+
+        if st is None:
+            return None
+        
+        return LLMRunStats(
+            calls=st.calls,
+            input_tokens=st.input_tokens,
+            output_tokens=st.output_tokens,
+            total_tokens=st.total_tokens,
+            duration_ms=st.duration_ms,
+            errors=st.errors,
+        )
+
+
+    def get_all_run_stats(self) -> Dict[str, LLMRunStats]:
+        """
+        Get a shallow copy of all aggregated run stats.
+        """
+        return dict(self._run_stats)
+
+
+    def reset_run_stats(self, run_id: Optional[str] = None) -> None:
+        """
+        Reset stats for a specific run_id (or 'general' if None).
+        """
+        if run_id is None:
+            self._run_stats.clear()
+            return
+        
+        rid = run_id or "general"
+        self._run_stats.pop(rid, None)
+
+
+
+    def export_run_stats_dict(self, run_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Export aggregated stats to a JSON-serializable dict.
+        Helpful for debug_trace / logging.
+        """
+        rid = run_id or "general"
+        st = self._run_stats.get(rid)
+        if st is None:
+            return {
+                "run_id": rid,
+                "calls": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "total_tokens": 0,
+                "duration_ms": 0,
+                "errors": 0,
+            }
+
+        return {
+            "run_id": rid,
+            "calls": int(st.calls),
+            "input_tokens": int(st.input_tokens),
+            "output_tokens": int(st.output_tokens),
+            "total_tokens": int(st.total_tokens),
+            "duration_ms": int(st.duration_ms),
+            "errors": int(st.errors),
+        }
+
+# ======================================================================
 # FILE: intergrax/llm_adapters/mistral_adapter.py
 # MODULE: intergrax.llm_adapters.mistral_adapter
 # MODULE_GROUP: llm_adapters
@@ -2802,7 +2944,7 @@ class GeminiChatAdapter(LLMAdapter):
 #   - module_group=llm_adapters
 #   - file=mistral_adapter.py
 # LINES: 259
-# SHA256: 4ae297976c9f5b97d32770ce5d149dfcfba549fdccfb7a7439b05241c254899b
+# SHA256: 7b029d7d05adeffbb31aa497a50cdbeff52f8c061dc434d592a33e38d2dec0ee
 # SYMBOLS:
 #   - class _MistralDelta
 #   - class _MistralStreamChoice
@@ -2888,7 +3030,7 @@ class MistralChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> str:
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -2925,7 +3067,7 @@ class MistralChatAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -2943,7 +3085,7 @@ class MistralChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -2983,7 +3125,7 @@ class MistralChatAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -3078,7 +3220,7 @@ class MistralChatAdapter(LLMAdapter):
 #   - module_group=llm_adapters
 #   - file=ollama_adapter.py
 # LINES: 341
-# SHA256: 09311f5d0f982f0e2a3f5a06696bf187ec0df09bcb62d530936dcb5c570ae852
+# SHA256: 9456fd0ec83d772c2b8161feedaec49a6ba4ba11498cde6b6e0be88e2afa5f20
 # SYMBOLS:
 #   - class LangChainOllamaAdapter
 # ======================================================================
@@ -3252,7 +3394,7 @@ class LangChainOllamaAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> str:
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -3277,7 +3419,7 @@ class LangChainOllamaAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -3295,7 +3437,7 @@ class LangChainOllamaAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -3340,7 +3482,7 @@ class LangChainOllamaAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -3368,7 +3510,7 @@ class LangChainOllamaAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ):
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -3413,7 +3555,7 @@ class LangChainOllamaAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -3432,8 +3574,8 @@ class LangChainOllamaAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=openai_responses_adapter.py
-# LINES: 478
-# SHA256: 99133f88b0eeec5f53a466e221780fbfbca42ea65fa4bc5f7c0d4469ff198e79
+# LINES: 477
+# SHA256: 4e79b4c199b0f141e96f580482fe0be59bef914fb30b579c1fd6649fbe36d26c
 # SYMBOLS:
 #   - class OpenAIChatResponsesAdapter
 # ======================================================================
@@ -3574,9 +3716,8 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
     ) -> str:
         """
         Single-shot completion (non-streaming) using Responses API.
-        """
-
-        call = self.begin_call(run_id=run_id)
+        """        
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -3611,7 +3752,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             err_type = type(e).__name__
             raise
         finally:
-            self.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
 
 
     def stream_messages(
@@ -3627,7 +3768,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 
         Yields incremental text deltas taken from the streaming events.
         """
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -3680,7 +3821,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
@@ -3815,7 +3956,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             "finish_reason": str
             }
         """
-        call = self.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id)
 
         in_tok = 0
         out_tok = 0
@@ -3881,7 +4022,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             raise
 
         finally:
-            self.end_call(
+            self.usage.end_call(
                 call,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
