@@ -9,10 +9,10 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 from anthropic import Anthropic
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
+from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
 
 
-class ClaudeChatAdapter(BaseLLMAdapter):
+class ClaudeChatAdapter(LLMAdapter):
     """
     Claude (Anthropic) adapter based on the official anthropic Python SDK.
 
@@ -50,37 +50,67 @@ class ClaudeChatAdapter(BaseLLMAdapter):
     def context_window_tokens(self) -> int:
         return self._context_window_tokens
 
+
     def generate_messages(
         self,
         messages: Sequence[ChatMessage],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
-        system_text, convo = self._split_system(messages)
-        payload_msgs = self._map_messages(convo)
+        call = self.usage.begin_call(run_id=run_id)
 
-        temp = temperature if temperature is not None else self.defaults.get("temperature", None)
-        out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        # Claude requires max_tokens
-        if out_tokens is None:
-            out_tokens = 1024
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-        resp = self.client.messages.create(
-            model=self.model,
-            system=system_text or None,
-            messages=payload_msgs,
-            max_tokens=int(out_tokens),
-            temperature=float(temp) if temp is not None else None,
-        )
+            system_text, convo = self._split_system(messages)
+            payload_msgs = self._map_messages(convo)
 
-        # SDK returns content blocks; text is typically in resp.content[*].text
-        parts: List[str] = []
-        for block in (resp.content or []):            
-            if block.type == "text":
-                parts.append(block.text or "")
-        return "".join(parts)
+            temp = temperature if temperature is not None else self.defaults.get("temperature", None)
+            out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
+
+            # Claude requires max_tokens
+            if out_tokens is None:
+                out_tokens = 1024
+
+            resp = self.client.messages.create(
+                model=self.model,
+                system=system_text or None,
+                messages=payload_msgs,
+                max_tokens=int(out_tokens),
+                temperature=float(temp) if temp is not None else None,
+            )
+
+            parts: List[str] = []
+            for block in (resp.content or []):
+                if block.type == "text":
+                    parts.append(block.text or "")
+            text = "".join(parts)
+
+            out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+            success = True
+            return text
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.usage.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     def stream_messages(
         self,
@@ -88,49 +118,67 @@ class ClaudeChatAdapter(BaseLLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        system_text, convo = self._split_system(messages)
-        payload_msgs = self._map_messages(convo)
+        call = self.usage.begin_call(run_id=run_id)
 
-        temp = temperature if temperature is not None else self.defaults.get("temperature", None)
-        out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
-        if out_tokens is None:
-            out_tokens = 1024
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        stream = self.client.messages.create(
-            model=self.model,
-            system=system_text or None,
-            messages=payload_msgs,
-            max_tokens=int(out_tokens),
-            temperature=float(temp) if temp is not None else None,
-            stream=True,
-        )
+        buf: List[str] = []
 
-        # Anthropic streaming emits SSE events; yield text deltas.
-        # Event types vary; the SDK exposes event.type (string).
-        for event in stream:
-            if event.type == "content_block_delta":
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
+
+            system_text, convo = self._split_system(messages)
+            payload_msgs = self._map_messages(convo)
+
+            temp = temperature if temperature is not None else self.defaults.get("temperature", None)
+            out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
+            if out_tokens is None:
+                out_tokens = 1024
+
+            stream = self.client.messages.create(
+                model=self.model,
+                system=system_text or None,
+                messages=payload_msgs,
+                max_tokens=int(out_tokens),
+                temperature=float(temp) if temp is not None else None,
+                stream=True,
+            )
+
+            for event in stream:
+                if event.type != "content_block_delta":
+                    continue
+
                 delta = event.delta
-                if getattr(delta, "type", None) == "text_delta":
-                    txt = delta.text or ""
-                    if txt:
-                        yield txt
+                if not hasattr(delta, "type") or delta.type != "text_delta":
+                    continue
 
-    # -------------------------
-    # Not wired (yet)
-    # -------------------------
+                txt = delta.text or ""
+                if txt:
+                    buf.append(txt)
+                    yield txt
 
-    def supports_tools(self) -> bool:
-        return False
+            out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+            success = True
 
-    def generate_with_tools(self, *a, **k):
-        raise NotImplementedError("Claude tools are not wired in this adapter.")
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
 
-    def stream_with_tools(self, *a, **k):
-        raise NotImplementedError("Claude tools are not wired in this adapter.")
+        finally:
+            self.usage.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
 
-    def generate_structured(self, *a, **k):
-        raise NotImplementedError("Structured output is not implemented for ClaudeChatAdapter.")
+
 
     # -------------------------
     # Internals

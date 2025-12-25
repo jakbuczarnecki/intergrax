@@ -230,6 +230,7 @@ class MapReduceContextGenerator:
             # call generate_messages(map_messages) without kwargs.
             map_text = self._cfg.llm.map_adapter.generate_messages(
                 map_messages,
+                run_id=self._cfg.run_id,
             )
             map_text = (map_text or "").strip()
             if not map_text or map_text == "NO_EVIDENCE":
@@ -286,7 +287,8 @@ class MapReduceContextGenerator:
         ]
 
         reduce_text = self._cfg.llm.reduce_adapter.generate_messages(
-            reduce_messages
+            reduce_messages,
+            run_id=self._cfg.run_id,
         )
         reduce_text = (reduce_text or "").strip()
 

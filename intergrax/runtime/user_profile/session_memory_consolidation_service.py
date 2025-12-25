@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Sequence, Dict, Any
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import LLMAdapter
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage, MessageRole
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_memory import (
@@ -111,6 +111,7 @@ class SessionMemoryConsolidationService:
         user_id: str,
         session_id: str,
         messages: Sequence[ChatMessage],
+        run_id: Optional[str] = None,
     ) -> List[UserProfileMemoryEntry]:
         """
         Extract long-term memory from a single session, store it in the
@@ -138,7 +139,7 @@ class SessionMemoryConsolidationService:
             session_id=session_id,
         )
 
-        llm_output = self._call_llm(prompt_text)
+        llm_output = self._call_llm(prompt_text, run_id=run_id)
         parsed = self._parse_llm_output(llm_output)
 
         if parsed is None:
@@ -168,6 +169,7 @@ class SessionMemoryConsolidationService:
             await self._instructions_service.build_and_save_system_instructions(
                 user_id=user_id,
                 force=self._config.force_regenerate_system_instructions,
+                run_id=run_id
             )
 
         return stored_entries
@@ -339,7 +341,10 @@ Conversation:
 """
 
 
-    def _call_llm(self, prompt_text: str) -> str:
+    def _call_llm(self, 
+            prompt_text: str,
+            run_id: Optional[str] = None,
+        ) -> str:
         """
         Call the underlying LLMAdapter.generate_messages with a simple
         system+user prompt.
@@ -362,6 +367,7 @@ Conversation:
             messages=messages,
             temperature=self._config.temperature,
             max_tokens=None,
+            run_id=run_id,
         )
 
     # -------------------------------------------------------------------------

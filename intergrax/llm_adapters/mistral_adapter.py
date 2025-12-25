@@ -6,7 +6,7 @@ from mistralai import Mistral
 from mistralai.models import ChatCompletionResponse
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
+from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
 
 
 # -----------------------------
@@ -24,7 +24,7 @@ class _MistralStreamChunk(Protocol):
     choices: List[_MistralStreamChoice]
 
 
-class MistralChatAdapter(BaseLLMAdapter):
+class MistralChatAdapter(LLMAdapter):
     """
     Mistral adapter based on the official Mistral Python SDK (mistralai).
 
@@ -75,24 +75,54 @@ class MistralChatAdapter(BaseLLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
-        system_text, convo = self._split_system(messages)
+        call = self.usage.begin_call(run_id=run_id)
 
-        payload = self._build_chat_params(
-            system_text=system_text,
-            convo=convo,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stream=False,
-        )
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        res: ChatCompletionResponse = self.client.chat.complete(**payload)
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-        if not res.choices:
-            return ""
+            system_text, convo = self._split_system(messages)
 
-        # response_format={"type":"text"} -> content is expected to be plain text.
-        return res.choices[0].message.content or ""
+            payload = self._build_chat_params(
+                system_text=system_text,
+                convo=convo,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=False,
+            )
+
+            res: ChatCompletionResponse = self.client.chat.complete(**payload)
+
+            if not res.choices:
+                success = True
+                return ""
+
+            text = res.choices[0].message.content or ""
+            out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+
+            success = True
+            return text
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.usage.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     def stream_messages(
         self,
@@ -100,47 +130,57 @@ class MistralChatAdapter(BaseLLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        system_text, convo = self._split_system(messages)
+        call = self.usage.begin_call(run_id=run_id)
 
-        payload = self._build_chat_params(
-            system_text=system_text,
-            convo=convo,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stream=True,
-        )
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        # The official SDK returns an iterator of stream chunks.
-        # We strongly type only the fields we actually use (choices[0].delta.content).
-        stream: Iterable[_MistralStreamChunk] = self.client.chat.complete(**payload)
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-        for chunk in stream:
-            if not chunk.choices:
-                continue
-            delta = chunk.choices[0].delta
-            if delta.content:
-                yield delta.content
+            system_text, convo = self._split_system(messages)
 
-    # ------------------------------------------------------------------
-    # Tools / structured output (not wired)
-    # ------------------------------------------------------------------
+            payload = self._build_chat_params(
+                system_text=system_text,
+                convo=convo,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True,
+            )
 
-    def generate_with_tools(self, *a, **k):
-        raise NotImplementedError("Mistral tools are not wired in this adapter.")
+            stream: Iterable[_MistralStreamChunk] = self.client.chat.complete(**payload)
 
-    def stream_with_tools(self, *a, **k):
-        raise NotImplementedError("Mistral tools are not wired in this adapter.")
+            buf: List[str] = []
 
-    def generate_structured(
-        self,
-        messages: Sequence[ChatMessage],
-        output_model: type,
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-    ):
-        raise NotImplementedError("Structured output is not implemented for MistralChatAdapter.")
+            for chunk in stream:
+                if not chunk.choices:
+                    continue
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    buf.append(delta.content)
+                    yield delta.content
+
+            out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+            success = True
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.usage.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     # ------------------------------------------------------------------
     # Internals

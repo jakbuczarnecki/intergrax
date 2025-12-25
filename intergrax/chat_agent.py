@@ -11,7 +11,7 @@ import time
 # Your components
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters import LLMAdapter
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.tools.tools_agent import ToolsAgent, ToolsAgentConfig
 from intergrax.tools.tools_base import ToolRegistry
 from intergrax.rag.rag_answerer import RagAnswerer
@@ -98,6 +98,7 @@ class ChatAgent:
         routing_context: Optional[str] = None,
         # tool usage policy
         tool_usage: Literal["auto", "required", "none"] = "auto",
+        run_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Stable result shape:
@@ -129,6 +130,7 @@ class ChatAgent:
             allowed_vectorstores=allowed_vectorstores,
             routing_context=routing_context,
             tools_enabled=tools_enabled,
+            run_id=run_id
         )
 
         # Enforce policy after router decision
@@ -154,6 +156,7 @@ class ChatAgent:
                 stream=stream,
                 summarize=summarize,
                 output_model=output_model,
+                run_id=run_id
             )
             result["route"] = "rag"
             result["stats"] = {**result.get("stats", {}), "router_s": round(time.perf_counter() - t0, 4)}
@@ -167,6 +170,7 @@ class ChatAgent:
                 stream=stream,
                 tool_choice=tool_choice or "auto",
                 tool_usage=tool_usage,  # pass policy to _do_tools
+                run_id=run_id,
             )
             result["route"] = "tools"
             result["stats"] = {**result.get("stats", {}), "router_s": round(time.perf_counter() - t0, 4)}
@@ -174,7 +178,13 @@ class ChatAgent:
             return result
 
         # general
-        result = self._do_general(question=question, output_model=output_model, stream=stream, summarize=summarize)
+        result = self._do_general(
+            question=question, 
+            output_model=output_model, 
+            stream=stream, 
+            summarize=summarize, 
+            run_id=run_id
+        )
         result["route"] = "general"
         result["stats"] = {**result.get("stats", {}), "router_s": round(time.perf_counter() - t0, 4)}
         result["rag_component"] = None
@@ -192,6 +202,7 @@ class ChatAgent:
         allowed_vectorstores: Optional[List[str]],
         routing_context: Optional[str],
         tools_enabled: bool,
+        run_id: Optional[str] = None
     ) -> tuple[Route, Optional[str]]:
         router_cfg = self.cfg.router
 
@@ -299,6 +310,7 @@ class ChatAgent:
                 msgs,
                 temperature=router_cfg.router_temperature,
                 max_tokens=router_cfg.router_max_tokens,
+                run_id=run_id
             ).strip()
 
             obj = json.loads(self._extract_json_block(raw))
@@ -366,6 +378,7 @@ class ChatAgent:
         stream: bool,
         tool_choice: Optional[Union[str, Dict[str, Any]]],
         tool_usage: Literal["auto", "required", "none"] = "auto",
+        run_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """TOOLS path with policy control (auto/required/none)."""
 
@@ -376,7 +389,7 @@ class ChatAgent:
                 print(msg)
             if tool_usage == "required":
                 raise RuntimeError(f"{msg} Tool usage policy = 'required'. Aborting.")
-            return self._do_general(question=question, output_model=output_model, stream=stream)
+            return self._do_general(question=question, output_model=output_model, stream=stream, run_id=run_id)
 
         # lazy init
         if self._tools_agent is None:
@@ -406,6 +419,7 @@ class ChatAgent:
                 stream=stream,
                 tool_choice=tool_choice,
                 output_model=output_model,
+                run_id=run_id
             )
 
             if self.memory and res.get("answer"):
@@ -419,7 +433,7 @@ class ChatAgent:
                 "messages": res.get("messages", []),
                 "output_structure": res.get("output_structure"),
                 "stats": {},
-                "rag_component": None,
+                "rag_component": None,                
             }
 
         except KeyError as e:
@@ -478,6 +492,7 @@ class ChatAgent:
         stream: bool,
         summarize: bool,
         output_model: Optional[Type],
+        run_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         rc = None
         if rag_name:
@@ -496,6 +511,7 @@ class ChatAgent:
             stream=stream,
             summarize=summarize,
             output_model=output_model,
+            run_id=run_id,
         )
 
         if self.memory and res.get("answer"):
@@ -519,6 +535,7 @@ class ChatAgent:
         output_model: Optional[Type],
         stream: bool,
         summarize: bool = False,
+        run_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         msgs: List[ChatMessage] = [ChatMessage(role="system", content="You are a helpful, concise assistant.")]
         if self.memory and self.cfg.pass_memory_to_general:
@@ -529,20 +546,30 @@ class ChatAgent:
         if stream:
             parts: List[str] = []
             for p in self.llm.stream_messages(
-                msgs, temperature=self.cfg.temperature, max_tokens=self.cfg.max_answer_tokens
+                msgs, 
+                temperature=self.cfg.temperature, 
+                max_tokens=self.cfg.max_answer_tokens,
+                run_id=run_id,
             ):
                 parts.append(p or "")
             answer = "".join(parts)
         else:
             answer = self.llm.generate_messages(
-                msgs, temperature=self.cfg.temperature, max_tokens=self.cfg.max_answer_tokens
+                msgs, 
+                temperature=self.cfg.temperature, 
+                max_tokens=self.cfg.max_answer_tokens,
+                run_id=run_id
             )
 
         output_obj = None
         if (output_model is not None) and (not stream) and hasattr(self.llm, "generate_structured"):
             try:
                 output_obj = self.llm.generate_structured(
-                    msgs, output_model, temperature=self.cfg.temperature, max_tokens=self.cfg.max_answer_tokens
+                    msgs, 
+                    output_model, 
+                    temperature=self.cfg.temperature, 
+                    max_tokens=self.cfg.max_answer_tokens,
+                    run_id=run_id,
                 )
             except Exception:
                 output_obj = None
@@ -554,7 +581,10 @@ class ChatAgent:
                     ChatMessage(role="system", content="Summarize briefly."),
                     ChatMessage(role="user", content=answer),
                 ]
-                summary_txt = self.llm.generate_messages(s_msgs, temperature=0.0, max_tokens=256)
+                summary_txt = self.llm.generate_messages(
+                    s_msgs, 
+                    max_tokens=256,
+                    run_id=run_id)
             except Exception:
                 summary_txt = None
 

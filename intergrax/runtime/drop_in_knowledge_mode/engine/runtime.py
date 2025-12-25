@@ -28,7 +28,10 @@ import asyncio
 import json
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
+import uuid
 
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import FileSystemAttachmentResolver
@@ -179,7 +182,26 @@ class DropInKnowledgeRuntime:
          11. Persist assistant answer and build RuntimeAnswer with route info.
         """
         state = RuntimeState(request=request)
+        state.run_id = f"run_{uuid.uuid4().hex}"
+        state.llm_usage_tracker = LLMUsageTracker(run_id=state.run_id)
 
+        state.llm_usage_tracker.register_adapter(self._config.llm_adapter, label="core_adapter")
+
+        ta = self._config.tools_agent
+        if ta is not None and ta.llm is not None:
+            state.llm_usage_tracker.register_adapter(ta.llm, label="tools_agent")
+
+        ws = self._config.websearch_config
+        if ws is not None and ws.llm is not None:
+            if ws.llm.map_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.map_adapter, label="web_map_adapter")
+            if ws.llm.reduce_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.reduce_adapter, label="web_reduce_adapter")
+            if ws.llm.rerank_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.rerank_adapter, label="web_rerank_adapter")
+
+        
+        
         # Initial trace entry for this request.
         self._trace(
             state,
@@ -190,6 +212,7 @@ class DropInKnowledgeRuntime:
                 "session_id": request.session_id,
                 "user_id": request.user_id,
                 "tenant_id": request.tenant_id or self._config.tenant_id,
+                "run_id": state.run_id,
             },
         )
 
@@ -241,8 +264,14 @@ class DropInKnowledgeRuntime:
                 "used_websearch": runtime_answer.route.used_websearch,
                 "used_tools": runtime_answer.route.used_tools,
                 "used_user_longterm_memory": runtime_answer.route.used_user_longterm_memory,
+                "run_id":state.run_id
             },
         )
+        
+        if state.llm_usage_tracker is not None:
+            runtime_answer.llm_usage_tracker = state.llm_usage_tracker
+            llm_usage_snapshot = state.llm_usage_tracker.export()
+            state.debug_trace["llm_usage"] = llm_usage_snapshot
 
         return runtime_answer
 
@@ -342,11 +371,6 @@ class DropInKnowledgeRuntime:
         debug_trace: Dict[str, Any] = {
             "session_id": session.id,
             "user_id": session.user_id,
-            "config": {
-                "llm_label": self._config.llm_label,
-                "embedding_label": self._config.embedding_label,
-                "vectorstore_label": self._config.vectorstore_label,
-            },
         }
 
         if ingestion_results:
@@ -646,6 +670,7 @@ class DropInKnowledgeRuntime:
             bundle = await self._websearch_prompt_builder.build_websearch_prompt(
                 web_results=web_results,
                 user_query=state.request.message,
+                run_id=state.run_id,
             )
 
             context_messages = bundle.context_messages or []
@@ -778,6 +803,8 @@ class DropInKnowledgeRuntime:
                 stream=False,
                 tool_choice=None,
                 output_model=None,
+                run_id=state.run_id,
+                llm_usage_tracker = state.llm_usage_tracker
             )
 
             state.tools_agent_answer = tools_result.get("answer", "") or None
@@ -899,6 +926,7 @@ class DropInKnowledgeRuntime:
 
             raw_answer = self._config.llm_adapter.generate_messages(
                 state.messages_for_llm,
+                run_id=state.run_id,
                 **generate_kwargs,
             )
 
@@ -1338,5 +1366,4 @@ class DropInKnowledgeRuntime:
         for m in msgs:
             state.messages_for_llm.insert(last_user_idx, m)
             last_user_idx += 1    
-
 

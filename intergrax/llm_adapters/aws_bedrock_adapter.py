@@ -17,7 +17,7 @@ import boto3
 from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
+from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
 
 
 class BedrockModelFamily(str, Enum):
@@ -330,7 +330,7 @@ class BedrockAdapterConfig:
     family: BedrockModelFamily
 
 
-class BedrockChatAdapter(BaseLLMAdapter):
+class BedrockChatAdapter(LLMAdapter):
     """
     AWS Bedrock adapter using InvokeModel / InvokeModelWithResponseStream.
     Supports multiple model families by dispatching to native codecs.
@@ -394,31 +394,59 @@ class BedrockChatAdapter(BaseLLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
-        system_text, convo = self._split_system(messages)
+        call = self.usage.begin_call(run_id=run_id)
 
-        codec = self._get_codec(self.config.family)
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        body = codec.build_body(
-            system_text=system_text,
-            convo=convo,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            defaults=self.defaults,
-            model_id=self.config.model_id,
-        )
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-        res = self.client.invoke_model(
-            modelId=self.config.model_id,
-            body=json.dumps(body).encode("utf-8"),
-            accept="application/json",
-            contentType="application/json",
-        )
+            system_text, convo = self._split_system(messages)
+            codec = self._get_codec(self.config.family)
 
-        raw = res["body"].read().decode("utf-8")
-        parsed = json.loads(raw)
+            body = codec.build_body(
+                system_text=system_text,
+                convo=convo,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                defaults=self.defaults,
+                model_id=self.config.model_id,
+            )
 
-        return codec.extract_text(parsed)
+            res = self.client.invoke_model(
+                modelId=self.config.model_id,
+                body=json.dumps(body).encode("utf-8"),
+                accept="application/json",
+                contentType="application/json",
+            )
+
+            raw = res["body"].read().decode("utf-8")
+            parsed = json.loads(raw)
+
+            text = codec.extract_text(parsed)
+            out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+
+            success = True
+            return text
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.usage.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
 
     def stream_messages(
         self,
@@ -426,57 +454,71 @@ class BedrockChatAdapter(BaseLLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        system_text, convo = self._split_system(messages)
+        call = self.usage.begin_call(run_id=run_id)
 
-        codec = self._get_codec(self.config.family)
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        body = codec.build_body(
-            system_text=system_text,
-            convo=convo,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            defaults=self.defaults,
-            model_id=self.config.model_id,
-        )
+        buf: List[str] = []
 
-        res = self.client.invoke_model_with_response_stream(
-            modelId=self.config.model_id,
-            body=json.dumps(body).encode("utf-8"),
-            accept="application/json",
-            contentType="application/json",
-        )
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-        # Bedrock stream is an event stream, each event has event["chunk"]["bytes"].
-        stream = res["body"]
-        for event in stream:
-            chunk = event.get("chunk")
-            if not isinstance(chunk, dict):
-                continue
-            data = chunk.get("bytes")
-            if not data:
-                continue
+            system_text, convo = self._split_system(messages)
+            codec = self._get_codec(self.config.family)
 
-            payload = json.loads(data.decode("utf-8"))
-            text = codec.extract_stream_text(payload)
-            if text:
-                yield text
+            body = codec.build_body(
+                system_text=system_text,
+                convo=convo,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                defaults=self.defaults,
+                model_id=self.config.model_id,
+            )
 
-    # ------------------------------------------------------------------
-    # Tools / structured output (not wired)
-    # ------------------------------------------------------------------
+            res = self.client.invoke_model_with_response_stream(
+                modelId=self.config.model_id,
+                body=json.dumps(body).encode("utf-8"),
+                accept="application/json",
+                contentType="application/json",
+            )
 
-    def supports_tools(self) -> bool:
-        return False
+            stream = res["body"]
+            for event in stream:
+                chunk = event.get("chunk")
+                if not isinstance(chunk, dict):
+                    continue
+                data = chunk.get("bytes")
+                if not data:
+                    continue
 
-    def generate_with_tools(self, *a, **k):
-        raise NotImplementedError("Bedrock tools are not wired in this adapter.")
+                payload = json.loads(data.decode("utf-8"))
+                text = codec.extract_stream_text(payload)
+                if text:
+                    buf.append(text)
+                    yield text
 
-    def stream_with_tools(self, *a, **k):
-        raise NotImplementedError("Bedrock tools are not wired in this adapter.")
+            out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+            success = True
 
-    def generate_structured(self, *a, **k):
-        raise NotImplementedError("Structured output is not implemented for BedrockChatAdapter.")
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.usage.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     # ------------------------------------------------------------------
     # Extensibility

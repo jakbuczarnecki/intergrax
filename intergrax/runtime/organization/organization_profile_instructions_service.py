@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import LLMAdapter
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.organization.organization_profile import OrganizationProfile
 from intergrax.runtime.organization.organization_profile_manager import OrganizationProfileManager
@@ -52,7 +52,7 @@ class OrganizationProfileInstructionsService:
         self,
         llm: LLMAdapter,
         manager: OrganizationProfileManager,
-        config: Optional[OrgProfileInstructionsConfig] = None,
+        config: Optional[OrgProfileInstructionsConfig] = None,        
     ) -> None:
         self._llm = llm
         self._manager = manager
@@ -63,6 +63,7 @@ class OrganizationProfileInstructionsService:
         organization_id: str,
         *,
         force: bool = False,
+        run_id: Optional[str] = None,
     ) -> str:
         """
         Generate and persist organization-level system instructions.
@@ -95,7 +96,7 @@ class OrganizationProfileInstructionsService:
             return profile.system_instructions
 
         prompt_text = self._build_prompt(profile)
-        raw_instructions = await self._call_llm(prompt_text)
+        raw_instructions = await self._call_llm(prompt_text, run_id=run_id)
 
         instructions = raw_instructions.strip()
         if len(instructions) > self._config.max_chars:
@@ -172,7 +173,11 @@ OUTPUT FORMAT:
 - Do NOT output JSON, XML or any machine-readable markup.
 """
 
-    async def _call_llm(self, prompt_text: str) -> str:
+    async def _call_llm(
+            self, 
+            prompt_text: str,
+            run_id: Optional[str] = None,
+        ) -> str:
         """
         Delegate generation to the underlying LLMAdapter.
 
@@ -195,4 +200,5 @@ OUTPUT FORMAT:
             messages,
             temperature=None,
             max_tokens=None,
+            run_id=run_id,
         )

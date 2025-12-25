@@ -6,9 +6,10 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional, Union, Type
 
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters import LLMAdapter
 from .tools_base import ToolRegistry, _limit_tool_output
 
 
@@ -118,11 +119,11 @@ class ToolsAgent:
 
         # Does the LLM support native tools (OpenAI) or a JSON planner (Ollama)?
         self._native_tools = False
-        if hasattr(self.llm, "supports_tools"):
-            try:
-                self._native_tools = bool(self.llm.supports_tools())
-            except Exception:
-                self._native_tools = False        
+        try:
+            self._native_tools = bool(self.llm.supports_tools())
+        except Exception:
+            self._native_tools = False  
+                  
         
     # ----- helpers -----
 
@@ -207,6 +208,8 @@ class ToolsAgent:
         stream: bool = False,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         output_model: Optional[Type] = None,
+        run_id:Optional[str] = None,
+        llm_usage_tracker: Optional[LLMUsageTracker] = None,
     ) -> Dict[str, Any]:
         """
         High-level tools orchestration entrypoint.
@@ -321,8 +324,10 @@ class ToolsAgent:
                         temperature=self.cfg.temperature,
                         max_tokens=self.cfg.max_answer_tokens,
                         tool_choice=effective_tool_choice,
+                        run_id=run_id
                     ):
                         chunks.append(ev)
+
                     result = chunks[-1] if chunks else {"content": "", "tool_calls": []}
                 else:
                     result = self.llm.generate_with_tools(
@@ -331,6 +336,7 @@ class ToolsAgent:
                         temperature=self.cfg.temperature,
                         max_tokens=self.cfg.max_answer_tokens,
                         tool_choice=effective_tool_choice,
+                        run_id=run_id
                     )
 
                 content = result.get("content") or ""
@@ -402,7 +408,10 @@ class ToolsAgent:
                         )
 
                     try:
-                        out = tool.run(**validated)  # full result
+                        out = tool.run(
+                            run_id=run_id, 
+                            llm_usage_tracker=llm_usage_tracker, 
+                            **validated)  # full result
                     except Exception as e:
                         out = f"[{name}] ERROR: {e}"
 
@@ -474,6 +483,7 @@ class ToolsAgent:
                 messages,
                 temperature=self.cfg.temperature,
                 max_tokens=self.cfg.max_answer_tokens,
+                run_id=run_id
             )
 
             plan_obj = None
@@ -524,7 +534,10 @@ class ToolsAgent:
                     )
 
                 try:
-                    out = tool.run(**validated)
+                    out = tool.run(
+                        run_id=run_id, 
+                        llm_usage_tracker=llm_usage_tracker, 
+                        **validated)
                 except Exception as e:
                     out = f"[{name}] ERROR: {e}"
 

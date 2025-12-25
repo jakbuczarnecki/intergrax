@@ -111,6 +111,7 @@ class WindowedAnswerer:
         map_max_tokens: Optional[int] = None,
         reduce_max_tokens: Optional[int] = None,
         source_preview_len: int = 64,
+        run_id: Optional[str] = None,
     ):
         if self.verbose:
             self.log.info("[Windowed] Asking: '%s' (top_k_total=%d, window=%d)", question, top_k_total, window_size)
@@ -173,6 +174,7 @@ class WindowedAnswerer:
                 msgs,
                 temperature=self.answerer.cfg.temperature,
                 max_tokens=map_tokens,
+                run_id=run_id
             )
 
             # 2c) (Optional) summarize per-window partial
@@ -185,6 +187,7 @@ class WindowedAnswerer:
                     sum_msgs, 
                     temperature=self.answerer.cfg.temperature,
                     max_tokens=map_tokens,
+                    run_id=run_id
                 )
 
             partial_answers.append(ans)
@@ -203,6 +206,7 @@ class WindowedAnswerer:
             msgs_reduce,
             temperature=self.answerer.cfg.temperature,
             max_tokens=reduce_tokens,
+            run_id=run_id,
         )
 
         final_summary = None
@@ -215,6 +219,7 @@ class WindowedAnswerer:
                 sum_msgs, 
                 temperature=self.answerer.cfg.temperature,
                 max_tokens=reduce_tokens,
+                run_id=run_id,
             )
 
         # 4) Deduplicate sources

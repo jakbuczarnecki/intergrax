@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
-from intergrax.llm_adapters.base import LLMAdapter
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
 
 
 class WebSearchStrategyType(str, Enum):
@@ -48,5 +48,7 @@ class WebSearchConfig:
     # chunking/rerank knobs
     chunk_chars: int = 1500
     max_chunks_total: int = 10
+
+    run_id: Optional[str] = None
 
     llm: WebSearchLLMConfig = field(default_factory=WebSearchLLMConfig)

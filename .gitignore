@@ -13,9 +13,16 @@ wheels/
 # Project
 notebooks/rag/video
 notebooks/rag/images
+notebooks/rag/docs
 notebooks/rag/chroma_db
+
+notebooks/multimedia/video
+notebooks/multimedia/images
+notebooks/multimedia/docs
+
 notebooks/drop_in_knowledge_mode/chroma_db
 notebooks/drop_in_knowledge_mode/data
 notebooks/drop_in_knowledge_mode/_artifacts
+
 documents/
 api/chat/rag_app.db

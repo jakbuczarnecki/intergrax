@@ -10,10 +10,10 @@ from openai import AzureOpenAI
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.base import BaseLLMAdapter, ChatMessage
+from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
 
 
-class AzureOpenAIChatAdapter(BaseLLMAdapter):
+class AzureOpenAIChatAdapter(LLMAdapter):
     """
     Azure OpenAI adapter based on the official OpenAI Python SDK (AzureOpenAI).
 
@@ -79,24 +79,56 @@ class AzureOpenAIChatAdapter(BaseLLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> str:
-        system_text, convo = self._split_system(messages)
+        call = self.usage.begin_call(run_id=run_id)
 
-        payload = self._build_chat_params(
-            system_text=system_text,
-            convo=convo,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stream=False,
-        )
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        res: ChatCompletion = self.client.chat.completions.create(**payload)
+        try:
+            system_text, convo = self._split_system(messages)
 
-        if not res.choices:
-            return ""
+            payload = self._build_chat_params(
+                system_text=system_text,
+                convo=convo,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=False,
+            )
 
-        msg = res.choices[0].message
-        return msg.content or ""
+            res: ChatCompletion = self.client.chat.completions.create(**payload)
+
+            usage = res.usage
+            if usage is not None:
+                in_tok = int(usage.prompt_tokens or 0)
+                out_tok = int(usage.completion_tokens or 0)
+
+            if not res.choices:
+                success = True
+                return ""
+
+            msg = res.choices[0].message
+            text = msg.content or ""
+            success = True
+            return text
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.usage.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     def stream_messages(
         self,
@@ -104,54 +136,63 @@ class AzureOpenAIChatAdapter(BaseLLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        system_text, convo = self._split_system(messages)
+        call = self.usage.begin_call(run_id=run_id)
 
-        payload = self._build_chat_params(
-            system_text=system_text,
-            convo=convo,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stream=True,
-        )
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
 
-        stream = self.client.chat.completions.create(**payload)
+        buf: List[str] = []
 
-        # The OpenAI SDK returns an iterator of typed ChatCompletionChunk.
-        for chunk in stream:
-            c: ChatCompletionChunk = chunk
-            if not c.choices:
-                continue
+        try:
+            # Streaming usually does not provide usage in chunks -> estimate input
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-            delta = c.choices[0].delta
-            if delta is None:
-                continue
+            system_text, convo = self._split_system(messages)
 
-            if delta.content:
-                yield delta.content
+            payload = self._build_chat_params(
+                system_text=system_text,
+                convo=convo,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True,
+            )
 
-    # ------------------------------------------------------------------
-    # Tools / structured output (not wired)
-    # ------------------------------------------------------------------
+            stream = self.client.chat.completions.create(**payload)
 
-    def supports_tools(self) -> bool:
-        return False
+            for chunk in stream:
+                c: ChatCompletionChunk = chunk
+                if not c.choices:
+                    continue
 
-    def generate_with_tools(self, *a, **k):
-        raise NotImplementedError("AzureOpenAI tools are not wired in this adapter.")
+                delta = c.choices[0].delta
+                if delta is None:
+                    continue
 
-    def stream_with_tools(self, *a, **k):
-        raise NotImplementedError("AzureOpenAI tools are not wired in this adapter.")
+                if delta.content:
+                    buf.append(delta.content)
+                    yield delta.content
 
-    def generate_structured(
-        self,
-        messages: Sequence[ChatMessage],
-        output_model: type,
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-    ):
-        raise NotImplementedError("Structured output is not implemented for AzureOpenAIChatAdapter.")
+            out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+            success = True
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            self.usage.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
+
+
 
     # ------------------------------------------------------------------
     # Internals

@@ -197,6 +197,7 @@ class HistoryLayer:
             raw_token_count=raw_token_count,
             strategy=strategy,
             history_budget_tokens=history_budget_tokens,
+            run_id=state.run_id,
         )
 
         state.base_history = compression_result.history
@@ -344,6 +345,7 @@ class HistoryLayer:
         raw_token_count: Optional[int],
         strategy: HistoryCompressionStrategy,
         history_budget_tokens: int,
+        run_id: Optional[str]=None,
     ) -> HistoryCompressionResult:
         """
         Apply the configured history compression strategy to the raw history
@@ -468,6 +470,7 @@ class HistoryLayer:
                 messages=older_messages,
                 max_summary_tokens=summary_max_tokens,
                 system_prompt=prompt_bundle.system_prompt,
+                run_id=run_id,
             )
 
             if summary_msg is None:
@@ -502,6 +505,7 @@ class HistoryLayer:
         messages: List[ChatMessage],
         max_summary_tokens: int,
         system_prompt: str,
+        run_id: Optional[str] = None,
     ) -> Optional[ChatMessage]:
         """
         Summarize a block of older conversation history into a single
@@ -536,7 +540,10 @@ class HistoryLayer:
             generate_kwargs["max_tokens"] = max_summary_tokens
 
         try:
-            raw = adapter.generate_messages(summary_prompt, **generate_kwargs)
+            raw = adapter.generate_messages(
+                summary_prompt, 
+                run_id=run_id,
+                **generate_kwargs)
         except Exception:
             # If summarization fails for any reason, we simply return None
             # and let the caller fall back to truncation.

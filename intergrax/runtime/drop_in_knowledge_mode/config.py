@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional, Literal
 
-from intergrax.llm_adapters.base import LLMAdapter
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.rag.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore_manager import VectorstoreManager
 from intergrax.tools.tools_agent import ToolsAgent
@@ -90,11 +90,6 @@ class RuntimeConfig:
 
     # Vectorstore manager providing semantic search over stored chunks.
     vectorstore_manager: Optional[VectorstoreManager] = None
-
-    # Optional labels for observability/logging only.
-    llm_label: str = "default-llm"
-    embedding_label: str = "default-embedding"
-    vectorstore_label: str = "default-vectorstore"
 
     # ------------------------------------------------------------------
     # FEATURE FLAGS
