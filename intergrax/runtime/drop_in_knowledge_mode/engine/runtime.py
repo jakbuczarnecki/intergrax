@@ -82,6 +82,17 @@ class LLMUsageRunRecord:
     user_id: str
     report: LLMUsageReport
 
+    def pretty(self) -> str:
+        lines: List[str] = []
+        lines.append(f"Run #{self.seq}")
+        lines.append(f"  ts_utc     : {self.ts_utc.isoformat()}")
+        lines.append(f"  run_id     : {self.run_id}")
+        lines.append(f"  session_id : {self.session_id}")
+        lines.append(f"  user_id    : {self.user_id}")
+        lines.append(self.report.pretty())        
+
+        return "\n".join(lines)
+
 
 class DropInKnowledgeRuntime:
     """
@@ -1403,6 +1414,15 @@ class DropInKnowledgeRuntime:
     async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
         async with self._llm_usage_lock:
             return list(self._llm_usage_runs)
+        
+    async def print_usage_runs(self):
+        runs = await self.get_llm_usage_runs()
+        print("runs:", len(runs))
+
+        for r in runs:
+            print("=" * 100)
+            print(r.pretty())
+
 
     async def clear_llm_usage_runs(self) -> None:
         async with self._llm_usage_lock:

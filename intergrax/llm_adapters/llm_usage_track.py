@@ -42,6 +42,41 @@ class LLMUsageReport:
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+    
+    def pretty(self) -> str:
+        lines: List[str] = []
+
+        t = self.total
+        lines.append(f"LLMUsageReport(run_id={self.run_id})")
+        lines.append("Total:")
+        lines.append(f"  calls        : {t.calls}")
+        lines.append(f"  input_tokens : {t.input_tokens}")
+        lines.append(f"  output_tokens: {t.output_tokens}")
+        lines.append(f"  total_tokens : {t.total_tokens}")
+        lines.append(f"  duration_ms  : {t.duration_ms}")
+        lines.append(f"  errors       : {t.errors}")
+
+        if self.by_provider_model:
+            lines.append("By provider/model:")
+            for key, st in self.by_provider_model.items():  # insertion order
+                lines.append(
+                    f"  - {key}: calls={st.calls} in={st.input_tokens} out={st.output_tokens} "
+                    f"total={st.total_tokens} ms={st.duration_ms} err={st.errors}"
+                )
+
+        if self.entries:
+            lines.append("Entries (registration order):")
+            for e in self.entries:  # registration order
+                st = e.stats
+                meta = e.meta
+                lines.append(f"  - {e.label} [{meta.provider}:{meta.model}] ({meta.adapter_type})")
+                lines.append(
+                    f"      calls={st.calls} in={st.input_tokens} out={st.output_tokens} "
+                    f"total={st.total_tokens} ms={st.duration_ms} err={st.errors} "
+                    f"instance_id={e.adapter_instance_id}"
+                )
+
+        return "\n".join(lines)
 
 
 class LLMUsageTracker:
