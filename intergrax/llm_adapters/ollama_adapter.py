@@ -97,6 +97,7 @@ class LangChainOllamaAdapter(LLMAdapter):
             )
 
         self.provider = LLMProvider.OLLAMA
+        self.model = self.chat.model
 
 
     @property

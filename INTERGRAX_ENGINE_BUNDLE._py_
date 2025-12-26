@@ -35,20 +35,20 @@
 # - tools/
 # - websearch/
 #
-# Files included: 128
-# Total lines: 22915
+# Files included: 129
+# Total lines: 23136
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
 # ROOT: D:\Projekty\intergrax
 # PACKAGE: intergrax
-# FILES: 128
+# FILES: 129
 #
 # MODULE MAP (dynamic):
 # - chains/ (2 files)
 # - globals/ (2 files)
 # - llm/ (2 files)
-# - llm_adapters/ (11 files)
+# - llm_adapters/ (12 files)
 # - memory/ (9 files)
 # - multimedia/ (5 files)
 # - openai/ (3 files)
@@ -67,16 +67,17 @@
 # - intergrax/llm/__init__.py | intergrax.llm | llm | 0 | e3b0c44298fc
 # - intergrax/llm/messages.py | intergrax.llm.messages | llm | 97 | 5d5feec8a7c4
 # - intergrax/llm_adapters/__init__.py | intergrax.llm_adapters | llm_adapters | 1 | 169eff6990ff
-# - intergrax/llm_adapters/aws_bedrock_adapter.py | intergrax.llm_adapters.aws_bedrock_adapter | llm_adapters | 573 | fb32f6afb9b0
-# - intergrax/llm_adapters/azure_openai_adapter.py | intergrax.llm_adapters.azure_openai_adapter | llm_adapters | 272 | ee8a65c94ea0
-# - intergrax/llm_adapters/claude_adapter.py | intergrax.llm_adapters.claude_adapter | llm_adapters | 216 | 214fffef34a5
-# - intergrax/llm_adapters/gemini_adapter.py | intergrax.llm_adapters.gemini_adapter | llm_adapters | 279 | 2ddf3dc914cc
-# - intergrax/llm_adapters/llm_adapter.py | intergrax.llm_adapters.llm_adapter | llm_adapters | 436 | 6f55fbd8377a
-# - intergrax/llm_adapters/llm_provider.py | intergrax.llm_adapters.llm_provider | llm_adapters | 60 | ea3c4c47d589
-# - intergrax/llm_adapters/llm_usage_track.py | intergrax.llm_adapters.llm_usage_track | llm_adapters | 112 | d930766bf13f
-# - intergrax/llm_adapters/mistral_adapter.py | intergrax.llm_adapters.mistral_adapter | llm_adapters | 259 | 07467439c203
-# - intergrax/llm_adapters/ollama_adapter.py | intergrax.llm_adapters.ollama_adapter | llm_adapters | 341 | 335a04938c79
-# - intergrax/llm_adapters/openai_responses_adapter.py | intergrax.llm_adapters.openai_responses_adapter | llm_adapters | 477 | 9f91f21a487a
+# - intergrax/llm_adapters/aws_bedrock_adapter.py | intergrax.llm_adapters.aws_bedrock_adapter | llm_adapters | 577 | fcb7a3069a78
+# - intergrax/llm_adapters/azure_openai_adapter.py | intergrax.llm_adapters.azure_openai_adapter | llm_adapters | 276 | 232b57d4b67e
+# - intergrax/llm_adapters/claude_adapter.py | intergrax.llm_adapters.claude_adapter | llm_adapters | 219 | 6abf3a728d48
+# - intergrax/llm_adapters/gemini_adapter.py | intergrax.llm_adapters.gemini_adapter | llm_adapters | 282 | 50e256a870c4
+# - intergrax/llm_adapters/llm_adapter.py | intergrax.llm_adapters.llm_adapter | llm_adapters | 440 | a6d217d79f39
+# - intergrax/llm_adapters/llm_provider.py | intergrax.llm_adapters.llm_provider | llm_adapters | 18 | c339b2c40574
+# - intergrax/llm_adapters/llm_provider_registry.py | intergrax.llm_adapters.llm_provider_registry | llm_adapters | 50 | 3e8fe294fa6b
+# - intergrax/llm_adapters/llm_usage_track.py | intergrax.llm_adapters.llm_usage_track | llm_adapters | 253 | 16eb701c636b
+# - intergrax/llm_adapters/mistral_adapter.py | intergrax.llm_adapters.mistral_adapter | llm_adapters | 262 | 8a9d192a2730
+# - intergrax/llm_adapters/ollama_adapter.py | intergrax.llm_adapters.ollama_adapter | llm_adapters | 345 | 5b7e5150535e
+# - intergrax/llm_adapters/openai_responses_adapter.py | intergrax.llm_adapters.openai_responses_adapter | llm_adapters | 480 | 1e58bbff815e
 # - intergrax/memory/__init__.py | intergrax.memory | memory | 0 | e3b0c44298fc
 # - intergrax/memory/conversational_memory.py | intergrax.memory.conversational_memory | memory | 123 | e5e9f9312647
 # - intergrax/memory/conversational_store.py | intergrax.memory.conversational_store | memory | 106 | 291f5ffa339e
@@ -95,11 +96,11 @@
 # - intergrax/openai/rag/__init__.py | intergrax.openai.rag | openai | 0 | e3b0c44298fc
 # - intergrax/openai/rag/rag_openai.py | intergrax.openai.rag.rag_openai | openai | 252 | 899401a17b6e
 # - intergrax/rag/__init__.py | intergrax.rag | rag | 0 | e3b0c44298fc
-# - intergrax/rag/documents_loader.py | intergrax.rag.documents_loader | rag | 1289 | 3eb3420b8e20
+# - intergrax/rag/documents_loader.py | intergrax.rag.documents_loader | rag | 1282 | aa44142ba37a
 # - intergrax/rag/documents_splitter.py | intergrax.rag.documents_splitter | rag | 351 | b6796ab15bd6
 # - intergrax/rag/dual_index_builder.py | intergrax.rag.dual_index_builder | rag | 157 | 81ca53a93d14
 # - intergrax/rag/dual_retriever.py | intergrax.rag.dual_retriever | rag | 311 | 768f2857999c
-# - intergrax/rag/embedding_manager.py | intergrax.rag.embedding_manager | rag | 306 | f5e15925a7b8
+# - intergrax/rag/embedding_manager.py | intergrax.rag.embedding_manager | rag | 306 | f269860162ca
 # - intergrax/rag/rag_answerer.py | intergrax.rag.rag_answerer | rag | 419 | c4926441c12b
 # - intergrax/rag/rag_retriever.py | intergrax.rag.rag_retriever | rag | 555 | 3143a9774ada
 # - intergrax/rag/re_ranker.py | intergrax.rag.re_ranker | rag | 399 | 710b3356e2cc
@@ -111,12 +112,12 @@
 # - intergrax/system_prompts.py | intergrax.system_prompts | root | 84 | f66fdf33ac4c
 # - intergrax/runtime/__init__.py | intergrax.runtime | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/__init__.py | intergrax.runtime.drop_in_knowledge_mode | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 226 | 81be232bf9ec
+# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 232 | 4daa614ca7e7
 # - intergrax/runtime/drop_in_knowledge_mode/context/__init__.py | intergrax.runtime.drop_in_knowledge_mode.context | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/context/context_builder.py | intergrax.runtime.drop_in_knowledge_mode.context.context_builder | runtime | 485 | 2cca85dc5dcb
 # - intergrax/runtime/drop_in_knowledge_mode/context/engine_history_layer.py | intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer | runtime | 565 | d4c1a0d530cd
 # - intergrax/runtime/drop_in_knowledge_mode/engine/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1366 | 917dcb55d125
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1411 | b00f7f3e5934
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 86 | 72a79b8668c0
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py | intergrax.runtime.drop_in_knowledge_mode.ingestion | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/attachments.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments | runtime | 124 | f1f76309b50f
@@ -129,7 +130,7 @@
 # - intergrax/runtime/drop_in_knowledge_mode/reasoning/__init__.py | intergrax.runtime.drop_in_knowledge_mode.reasoning | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/reasoning/reasoning_layer.py | intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer | runtime | 163 | 7f704f315d6e
 # - intergrax/runtime/drop_in_knowledge_mode/responses/__init__.py | intergrax.runtime.drop_in_knowledge_mode.responses | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/responses/response_schema.py | intergrax.runtime.drop_in_knowledge_mode.responses.response_schema | runtime | 182 | bc77a95bdf4f
+# - intergrax/runtime/drop_in_knowledge_mode/responses/response_schema.py | intergrax.runtime.drop_in_knowledge_mode.responses.response_schema | runtime | 182 | 0edf2ebbb1b9
 # - intergrax/runtime/drop_in_knowledge_mode/session/__init__.py | intergrax.runtime.drop_in_knowledge_mode.session | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/session/chat_session.py | intergrax.runtime.drop_in_knowledge_mode.session.chat_session | runtime | 145 | 3b849ae2b512
 # - intergrax/runtime/drop_in_knowledge_mode/session/in_memory_session_storage.py | intergrax.runtime.drop_in_knowledge_mode.session.in_memory_session_storage | runtime | 181 | 5d9d175f4412
@@ -189,7 +190,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 22915
+# TOTAL LINES: 23136
 # ======================================================================
 
 # ======================================================================
@@ -897,8 +898,8 @@ def append_chat_messages(
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=aws_bedrock_adapter.py
-# LINES: 573
-# SHA256: fb32f6afb9b02878b717c282e49067322b724892529dcd53eb5129109383fd70
+# LINES: 577
+# SHA256: fcb7a3069a78a297a1542567c40dcb188ce202c921db723df127c34a21bf2f5f
 # SYMBOLS:
 #   - class BedrockModelFamily
 #   - class BedrockNativeCodec
@@ -929,6 +930,7 @@ from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class BedrockModelFamily(str, Enum):
@@ -1291,6 +1293,9 @@ class BedrockChatAdapter(LLMAdapter):
         # Conservative default; you can refine per family if you want.
         self._context_window_tokens: int = self._estimate_context_window(self.config.model_id)
 
+        self.provider = LLMProvider.AWS_BEDROCK
+        self.model = resolved_model_id
+
     @property
     def context_window_tokens(self) -> int:
         return self._context_window_tokens
@@ -1491,8 +1496,8 @@ class BedrockChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=azure_openai_adapter.py
-# LINES: 272
-# SHA256: ee8a65c94ea0ab40d7f5e02eb840af0ec737ae51aaa3347fa73eddde68fcfa9a
+# LINES: 276
+# SHA256: 232b57d4b67e3173cea1d5eadadc579fbebd58fdce95ca9238985b4d1080d128
 # SYMBOLS:
 #   - class AzureOpenAIChatAdapter
 # ======================================================================
@@ -1509,6 +1514,7 @@ from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class AzureOpenAIChatAdapter(LLMAdapter):
@@ -1559,6 +1565,9 @@ class AzureOpenAIChatAdapter(LLMAdapter):
 
         self.defaults = defaults
         self._context_window_tokens: int = self._estimate_context_window(self.deployment)
+
+        self.provider = LLMProvider.AZURE_OPENAI
+        self.model = self.deployment
 
     @property
     def context_window_tokens(self) -> int:
@@ -1777,8 +1786,8 @@ class AzureOpenAIChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=claude_adapter.py
-# LINES: 216
-# SHA256: 214fffef34a5097e3670fef4a029411ebdb6f67ad059f144edaafbaec1ec47ec
+# LINES: 219
+# SHA256: 6abf3a728d487268c99d0556ac2a3358763c5df578783b876879338041f555ad
 # SYMBOLS:
 #   - class ClaudeChatAdapter
 # ======================================================================
@@ -1794,6 +1803,7 @@ from anthropic import Anthropic
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class ClaudeChatAdapter(LLMAdapter):
@@ -1829,6 +1839,8 @@ class ClaudeChatAdapter(LLMAdapter):
         self.defaults = defaults
         self.model_name_for_token_estimation: str = self.model
         self._context_window_tokens: int = self._CLAUDE_CONTEXT_WINDOWS.get(self.model, 32_000)
+
+        self.provider = LLMProvider.CLAUDE
 
     @property
     def context_window_tokens(self) -> int:
@@ -2007,8 +2019,8 @@ class ClaudeChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=gemini_adapter.py
-# LINES: 279
-# SHA256: 2ddf3dc914cc015d26ea16afd057e2168930001e363e046365f86b30be4acf93
+# LINES: 282
+# SHA256: 50e256a870c43b49ce7794b1a26aee24f0ba5bedc957f4430ff30b76f66eca7d
 # SYMBOLS:
 #   - class GeminiChatAdapter
 # ======================================================================
@@ -2026,6 +2038,7 @@ from google.genai import types
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class GeminiChatAdapter(LLMAdapter):
@@ -2066,6 +2079,8 @@ class GeminiChatAdapter(LLMAdapter):
         self.defaults = defaults
 
         self._context_window_tokens: int = self._estimate_gemini_context_window(self.model)
+
+        self.provider = LLMProvider.GEMINI
 
     @property
     def context_window_tokens(self) -> int:
@@ -2300,8 +2315,8 @@ class GeminiChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=llm_adapter.py
-# LINES: 436
-# SHA256: 6f55fbd8377ab9bc2748e870e2299128b2832ee51da9c725dd06d70cdbf0d086
+# LINES: 440
+# SHA256: a6d217d79f3901549e5a1cd6f1a936c2b62d7775b92328ec0b6dda0373955b50
 # SYMBOLS:
 #   - class LLMAdapter
 #   - class LLMAdapterUsageLog
@@ -2321,6 +2336,7 @@ import re
 import uuid
 import time
 import tiktoken
+from intergrax.llm_adapters.llm_provider import LLMProvider
 from intergrax.memory.conversational_memory import ChatMessage
 
 
@@ -2346,6 +2362,9 @@ class LLMAdapter(ABC):
       - tools
       - structured output
     """
+
+    provider: LLMProvider
+    model: str
 
     # Hint used by the generic token estimator (e.g. OpenAI model name).
     model_name_for_token_estimation: Optional[str] = None
@@ -2753,11 +2772,10 @@ class LLMRunStats:
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=llm_provider.py
-# LINES: 60
-# SHA256: ea3c4c47d5896aef7a9beff78d047e19abd66ed0c077a5353d955ebf5e780bfc
+# LINES: 18
+# SHA256: c339b2c40574c5dfa7297530b0318646244f1e27cc1895a8b03e09826533b761
 # SYMBOLS:
 #   - class LLMProvider
-#   - class LLMAdapterRegistry
 # ======================================================================
 # © Artur Czarnecki. All rights reserved.
 # Integrax framework – proprietary and confidential.
@@ -2765,16 +2783,7 @@ class LLMRunStats:
 
 from __future__ import annotations
 from enum import Enum
-from typing import Any, Callable, Dict, Union
 
-from intergrax.llm_adapters.aws_bedrock_adapter import BedrockChatAdapter
-from intergrax.llm_adapters.azure_openai_adapter import AzureOpenAIChatAdapter
-from intergrax.llm_adapters.claude_adapter import ClaudeChatAdapter
-from intergrax.llm_adapters.gemini_adapter import GeminiChatAdapter
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.mistral_adapter import MistralChatAdapter
-from intergrax.llm_adapters.ollama_adapter import LangChainOllamaAdapter
-from intergrax.llm_adapters.openai_responses_adapter import OpenAIChatResponsesAdapter
 
 class LLMProvider(str, Enum):
     OPENAI = "openai"
@@ -2785,6 +2794,37 @@ class LLMProvider(str, Enum):
     AZURE_OPENAI = "azure_openai"
     AWS_BEDROCK = "aws_bedrock"
 
+
+
+# ======================================================================
+# FILE: intergrax/llm_adapters/llm_provider_registry.py
+# MODULE: intergrax.llm_adapters.llm_provider_registry
+# MODULE_GROUP: llm_adapters
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm_adapters
+#   - file=llm_provider_registry.py
+# LINES: 50
+# SHA256: 3e8fe294fa6b6e555d12b156dae0a2d90b3fa1c23106a2549a7f4a97df74db17
+# SYMBOLS:
+#   - class LLMAdapterRegistry
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import Any, Callable, Dict, Union
+
+from intergrax.llm_adapters.aws_bedrock_adapter import BedrockChatAdapter
+from intergrax.llm_adapters.azure_openai_adapter import AzureOpenAIChatAdapter
+from intergrax.llm_adapters.claude_adapter import ClaudeChatAdapter
+from intergrax.llm_adapters.gemini_adapter import GeminiChatAdapter
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
+from intergrax.llm_adapters.mistral_adapter import MistralChatAdapter
+from intergrax.llm_adapters.ollama_adapter import LangChainOllamaAdapter
+from intergrax.llm_adapters.openai_responses_adapter import OpenAIChatResponsesAdapter
 
 class LLMAdapterRegistry:
     _factories: Dict[str, Any] = {}
@@ -2828,10 +2868,12 @@ LLMAdapterRegistry.register(LLMProvider.AWS_BEDROCK, lambda **kw: BedrockChatAda
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=llm_usage_track.py
-# LINES: 112
-# SHA256: d930766bf13ff445148b9f0f4c3d09041ddf02f3675f00c7ceb9110e4c679b2d
+# LINES: 253
+# SHA256: 16eb701c636bbfc42b474501645265f992f4a77aeb749f31514d8974dbfb674f
 # SYMBOLS:
-#   - class LLMUsageSnapshot
+#   - class LLMAdapterMeta
+#   - class LLMAdapterUsageEntry
+#   - class LLMUsageReport
 #   - class LLMUsageTracker
 # ======================================================================
 # © Artur Czarnecki. All rights reserved.
@@ -2839,23 +2881,46 @@ LLMAdapterRegistry.register(LLMProvider.AWS_BEDROCK, lambda **kw: BedrockChatAda
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 import time
 
 from intergrax.llm_adapters.llm_adapter import LLMAdapter, LLMRunStats
 
+from dataclasses import dataclass, asdict
+from typing import Any, Dict, List, Optional, Tuple
 
-@dataclass
-class LLMUsageSnapshot:
-    """
-    One adapter snapshot for a given run_id.
-    """
-    adapter_label: str
-    provider: Optional[str]
-    model_hint: Optional[str]
+
+@dataclass(frozen=True)
+class LLMAdapterMeta:
+    adapter_type: str
+    provider: str
+    model: str
+
+
+@dataclass(frozen=True)
+class LLMAdapterUsageEntry:
+    label: str
+    meta: LLMAdapterMeta
     stats: LLMRunStats
-    
+    adapter_instance_id: int
+
+
+@dataclass(frozen=True)
+class LLMUsageReport:
+    run_id: str
+    total: LLMRunStats
+    entries: List[LLMAdapterUsageEntry]
+
+    # Optional aggregation by (provider, model)
+    by_provider_model: Dict[str, LLMRunStats]
+
+    # Debug only: label -> instance_id
+    adapter_instance_ids: Dict[str, int]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
 
 class LLMUsageTracker:
     """
@@ -2910,42 +2975,160 @@ class LLMUsageTracker:
         return list(self._adapters.keys())
 
 
-    def snapshot(self) -> List[LLMUsageSnapshot]:
-        out: List[LLMUsageSnapshot] = []
-        for label, ad in self._adapters.items():
-            st = ad.usage.get_run_stats(self.run_id)
-            provider = None
-            try:
-                # Optional: if your adapters expose provider in a strict way, wire it here.
-                # Keep None if not guaranteed.
-                provider = None
-            except Exception:
-                provider = None
+    def build_report(self) -> LLMUsageReport:
+        entries: List[LLMAdapterUsageEntry] = []
 
-            model_hint = ad.model_name_for_token_estimation
-            out.append(
-                LLMUsageSnapshot(
-                    adapter_label=label,
-                    provider=provider,
-                    model_hint=model_hint,
+        adapter_instance_ids: Dict[str, int] = {}
+        for label, ad in (self._adapters or {}).items():
+            adapter_instance_ids[label] = id(ad) if ad is not None else 0
+
+        # Build per-label entries (including meta)
+        for label, ad in (self._adapters or {}).items():
+            if ad is None:
+                continue
+
+            meta = LLMAdapterMeta(
+                adapter_type=ad.__class__.__name__,
+                provider=ad.provider,
+                model=ad.model,
+            )
+
+            st = ad.usage.get_run_stats(self.run_id)
+            if st is None:
+                st = LLMRunStats()  # zakładam, że masz domyślne 0; jeśli nie, utwórz jawnie z zerami
+
+            entries.append(
+                LLMAdapterUsageEntry(
+                    label=label,
+                    meta=meta,
                     stats=st,
+                    adapter_instance_id=id(ad),
                 )
             )
-        return out
+
+        # Total (dedup by instance, jak masz już poprawione total())
+        total = self.total()
+
+        # Aggregate by provider:model (dedup by instance, żeby nie dublować aliasów labeli)
+        by_provider_model: Dict[str, LLMRunStats] = {}
+        seen_ids = set()
+        for e in entries:
+            if e.adapter_instance_id in seen_ids:
+                continue
+            seen_ids.add(e.adapter_instance_id)
+
+            key = f"{e.meta.provider}:{e.meta.model}"
+            agg = by_provider_model.get(key)
+            if agg is None:
+                by_provider_model[key] = LLMRunStats(
+                    calls=e.stats.calls,
+                    input_tokens=e.stats.input_tokens,
+                    output_tokens=e.stats.output_tokens,
+                    total_tokens=e.stats.total_tokens,
+                    duration_ms=e.stats.duration_ms,
+                    errors=e.stats.errors,
+                )
+            else:
+                agg.calls += e.stats.calls
+                agg.input_tokens += e.stats.input_tokens
+                agg.output_tokens += e.stats.output_tokens
+                agg.total_tokens += e.stats.total_tokens
+                agg.duration_ms += e.stats.duration_ms
+                agg.errors += e.stats.errors
+
+        return LLMUsageReport(
+            run_id=self.run_id,
+            total=total,
+            entries=entries,
+            by_provider_model=by_provider_model,
+            adapter_instance_ids=adapter_instance_ids,
+        )
+
+
+    def export(self) -> Dict[str, Any]:
+        return self.build_report().to_dict()
+
+
 
     def total(self) -> LLMRunStats:
         agg = LLMRunStats()
-        for _, ad in self._adapters.items():
+
+        seen_ids = set()
+        for _, ad in (self._adapters or {}).items():
+            if ad is None:
+                continue
+
+            ad_id = id(ad)
+            if ad_id in seen_ids:
+                continue
+            seen_ids.add(ad_id)
+
             st = ad.usage.get_run_stats(self.run_id)
             if st is None:
                 continue
+
             agg.calls += st.calls
             agg.input_tokens += st.input_tokens
             agg.output_tokens += st.output_tokens
             agg.total_tokens += st.total_tokens
             agg.duration_ms += st.duration_ms
             agg.errors += st.errors
+
         return agg
+
+    
+    
+    def export(self) -> Dict[str, Any]:
+        """
+        Return an immutable snapshot of usage stats for the current run_id.
+        Safe to serialize (JSON) and store in debug traces/logs.
+        """
+        adapters_out: Dict[str, Any] = {}
+
+        for label, ad in self._adapters.items():
+            meta = self._describe_adapter(ad)
+            st = ad.usage.get_run_stats(self.run_id)
+            if st is None:
+                adapters_out[label] = {
+                    **meta,
+                    "calls": 0,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "total_tokens": 0,
+                    "duration_ms": 0,
+                    "errors": 0,
+                }
+            else:
+                adapters_out[label] = {
+                    **meta,
+                    **asdict(st),
+                }
+
+        total = self.total()
+        
+        adapter_id_map = {}
+        for label, ad in (self._adapters or {}).items():
+            adapter_id_map[label] = id(ad) if ad is not None else None
+
+        return {
+        "run_id": self.run_id,
+        "total": asdict(total),
+        "adapters": adapters_out,
+        "adapter_instance_ids": adapter_id_map,  # debug only
+        }
+    
+
+    def _describe_adapter(self, ad: LLMAdapter) -> Dict[str, Any]:
+        """
+        Typed adapter metadata extraction.
+        Relies on LLMAdapter contract: provider, model, kind must exist.
+        """
+        return {
+            "adapter_type": ad.__class__.__name__,
+            "provider": ad.provider,
+            "model": ad.model,
+        }
+
 
 # ======================================================================
 # FILE: intergrax/llm_adapters/mistral_adapter.py
@@ -2955,8 +3138,8 @@ class LLMUsageTracker:
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=mistral_adapter.py
-# LINES: 259
-# SHA256: 07467439c20301f1d05cc8f0d038d95019b798a1f20448ba5d078341c7352307
+# LINES: 262
+# SHA256: 8a9d192a2730992c6bb17c234fe60d38ee3970bd890d85e8c0ad7af76a9b364c
 # SYMBOLS:
 #   - class _MistralDelta
 #   - class _MistralStreamChoice
@@ -2972,6 +3155,7 @@ from mistralai.models import ChatCompletionResponse
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 # -----------------------------
@@ -3022,6 +3206,8 @@ class MistralChatAdapter(LLMAdapter):
         self.defaults = defaults
 
         self._context_window_tokens: int = self._estimate_mistral_context_window(self.model)
+
+        self.provider = LLMProvider.MISTRAL
 
     @property
     def context_window_tokens(self) -> int:
@@ -3231,8 +3417,8 @@ class MistralChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=ollama_adapter.py
-# LINES: 341
-# SHA256: 335a04938c79b6e6c4d17e4792add9880c74c371560b5f891a5f0ecef9b346e8
+# LINES: 345
+# SHA256: 5b7e5150535e5ac72475bf5f8036ed51726e3ae11d861958e4eb30e321b3b28c
 # SYMBOLS:
 #   - class LangChainOllamaAdapter
 # ======================================================================
@@ -3250,6 +3436,7 @@ from intergrax.llm_adapters.llm_adapter import (
     ChatMessage,
     LLMAdapter,
 )
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class LangChainOllamaAdapter(LLMAdapter):
@@ -3332,6 +3519,9 @@ class LangChainOllamaAdapter(LLMAdapter):
             self._context_window_tokens = int(
                 self._estimate_ollama_context_window_from_model(self.chat.model)
             )
+
+        self.provider = LLMProvider.OLLAMA
+        self.model = self.chat.model
 
 
     @property
@@ -3586,8 +3776,8 @@ class LangChainOllamaAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=openai_responses_adapter.py
-# LINES: 477
-# SHA256: 9f91f21a487a8b2413995326946c1d39f6a5d4eafc31af84d1662b32d170176d
+# LINES: 480
+# SHA256: 1e58bbff815ec665badb911d307723b7441f699e3bee72e33a4077faa321b17e
 # SYMBOLS:
 #   - class OpenAIChatResponsesAdapter
 # ======================================================================
@@ -3608,6 +3798,7 @@ from intergrax.llm_adapters.llm_adapter import (
     ChatMessage,
     LLMAdapter,
 )
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class OpenAIChatResponsesAdapter(LLMAdapter):
@@ -3661,6 +3852,8 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         self.model_name_for_token_estimation = self.model
         self.defaults = defaults
         self._context_window_tokens: int = self._estimate_openai_context_window(self.model)
+
+        self.provider = LLMProvider.OPENAI
 
 
     @property
@@ -6182,8 +6375,8 @@ class IntergraxRagOpenAI:
 #   - package=intergrax
 #   - module_group=rag
 #   - file=documents_loader.py
-# LINES: 1289
-# SHA256: 3eb3420b8e2037daf16d0b169546cc722369a8b1f21421a14e42da2fbac21abc
+# LINES: 1282
+# SHA256: aa44142ba37a2acc137568669985eb64527498f0334e77ad76a3edb7e785e91a
 # SYMBOLS:
 #   - class DocumentsLoader
 #   - class DocxParagraphLoader
@@ -6204,12 +6397,11 @@ import json
 import docx
 import logging
 import os
-import io
-import base64
-import requests
 
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.ollama_adapter import LangChainOllamaAdapter
 from intergrax.multimedia.video_loader import (
     transcribe_to_vtt,
     extract_frames_and_metadata,
@@ -6219,11 +6411,6 @@ from intergrax.multimedia.audio_loader import (
     translate_audio
 )
 
-# LLM adaptery frameworka (model + provider w adapterze)
-from intergrax.llm_adapters import (
-    LLMAdapter,
-    LangChainOllamaAdapter,
-)
 
 from pathlib import Path
 
@@ -6235,7 +6422,6 @@ from typing import (
 
 from langchain_community.document_loaders import (
     Docx2txtLoader,
-    PyMuPDFLoader,
     TextLoader,
     UnstructuredHTMLLoader,
 )
@@ -8354,7 +8540,7 @@ class DualRetriever:
 #   - module_group=rag
 #   - file=embedding_manager.py
 # LINES: 306
-# SHA256: f5e15925a7b84f186887bb6942a1cfe2feb0fdf80c6d1e9a1962684162591d5c
+# SHA256: f269860162ca04e4f3212a06e08fb9d6eae345309e2290976109e03b24ad277f
 # SYMBOLS:
 #   - class EmbeddingStats
 #   - class EmbeddingManager
@@ -8367,7 +8553,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import List, Dict, Any, Tuple, Literal, Optional, Sequence, Union
+from typing import List, Tuple, Literal, Optional, Sequence, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -8380,7 +8566,7 @@ except Exception:
     SentenceTransformer = None
 
 from langchain_ollama import OllamaEmbeddings
-from langchain_openai import OpenAIEmbeddings   # <— NEW
+from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 
 logger = logging.getLogger(__name__)
@@ -11786,8 +11972,8 @@ def default_rag_system_instruction():
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=config.py
-# LINES: 226
-# SHA256: 81be232bf9ec3df06f5473565bfa57c30d75b682167207b73ba835772b946bcd
+# LINES: 232
+# SHA256: 4daa614ca7e7ec7687e03b20b27ae546de373e63ea14dd497c87c068ceadc998
 # SYMBOLS:
 #   - class ToolsContextScope
 #   - class ReasoningMode
@@ -11996,6 +12182,12 @@ class RuntimeConfig:
     # ------------------------------------------------------------------
 
     reasoning_config: Optional[ReasoningConfig] = None
+
+
+    # ------------------------------------------------------------------
+    # DIAGNOSTICS
+    # ------------------------------------------------------------------
+    enable_llm_usage_collection: bool = True
 
 
     @property
@@ -13140,9 +13332,10 @@ class HistoryLayer:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime.py
-# LINES: 1366
-# SHA256: 917dcb55d125a58870ab4180af6f90ef90927a78ceb182c396bf975e3f861c12
+# LINES: 1411
+# SHA256: b00f7f3e59343892a726e200c475ba0ea2cf2797b2612319549cdd6628ee6cac
 # SYMBOLS:
+#   - class LLMUsageRunRecord
 #   - class DropInKnowledgeRuntime
 # ======================================================================
 # © Artur Czarnecki. All rights reserved.
@@ -13172,16 +13365,15 @@ Refactored as a stateful pipeline:
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 import json
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 import uuid
 
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.llm_adapters.llm_usage_track import LLMUsageReport, LLMUsageTracker
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
-from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import FileSystemAttachmentResolver
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import AttachmentIngestionService, IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import (
     DefaultHistorySummaryPromptBuilder,
@@ -13219,6 +13411,16 @@ from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 # ----------------------------------------------------------------------
 # DropInKnowledgeRuntime
 # ----------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class LLMUsageRunRecord:
+    seq: int
+    ts_utc: datetime
+    run_id: str
+    session_id: str
+    user_id: str
+    report: LLMUsageReport
 
 
 class DropInKnowledgeRuntime:
@@ -13259,6 +13461,11 @@ class DropInKnowledgeRuntime:
 
         self._config = config
         self._config.validate()
+
+        self._llm_usage_run_seq = 0
+        self._llm_usage_runs: list[LLMUsageRunRecord] = []
+
+        self._llm_usage_lock = asyncio.Lock()
 
         self._session_manager = session_manager
 
@@ -13328,9 +13535,14 @@ class DropInKnowledgeRuntime:
          10. Core LLM call.
          11. Persist assistant answer and build RuntimeAnswer with route info.
         """
-        state = RuntimeState(request=request)
-        state.run_id = f"run_{uuid.uuid4().hex}"
-        state.llm_usage_tracker = LLMUsageTracker(run_id=state.run_id)
+
+        run_id = f"run_{uuid.uuid4().hex}"
+
+        state = RuntimeState(
+            request=request,
+            run_id=run_id,
+            llm_usage_tracker=LLMUsageTracker(run_id=run_id)
+        )        
 
         state.llm_usage_tracker.register_adapter(self._config.llm_adapter, label="core_adapter")
 
@@ -13414,8 +13626,24 @@ class DropInKnowledgeRuntime:
                 "run_id":state.run_id
             },
         )
+        
+        if state.llm_usage_tracker is not None:
+            runtime_answer.llm_usage_report = state.llm_usage_tracker.build_report()
+            llm_usage_snapshot = runtime_answer.llm_usage_report.to_dict()
+            state.debug_trace["llm_usage"] = llm_usage_snapshot
 
-        runtime_answer.llm_usage_tracker = state.llm_usage_tracker
+            if self._config.enable_llm_usage_collection and runtime_answer.llm_usage_report is not None:
+                async with self._llm_usage_lock:
+                    self._llm_usage_run_seq += 1
+                    rec = LLMUsageRunRecord(
+                        seq=self._llm_usage_run_seq,
+                        ts_utc=datetime.now(timezone.utc),
+                        run_id=state.run_id,
+                        session_id=request.session_id,
+                        user_id=request.user_id,
+                        report=runtime_answer.llm_usage_report,
+                    )
+                    self._llm_usage_runs.append(rec)
 
         return runtime_answer
 
@@ -14509,7 +14737,17 @@ class DropInKnowledgeRuntime:
 
         for m in msgs:
             state.messages_for_llm.insert(last_user_idx, m)
-            last_user_idx += 1    
+            last_user_idx += 1   
+
+
+    async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
+        async with self._llm_usage_lock:
+            return list(self._llm_usage_runs)
+
+    async def clear_llm_usage_runs(self) -> None:
+        async with self._llm_usage_lock:
+            self._llm_usage_runs.clear()
+            self._llm_usage_run_seq = 0 
 
 
 # ======================================================================
@@ -15822,7 +16060,7 @@ class ReasoningLayer:
 #   - module_group=runtime
 #   - file=response_schema.py
 # LINES: 182
-# SHA256: bc77a95bdf4f6c1c9531f14a6851548903d8d7fefe257db4bb5e89afaba6a62e
+# SHA256: 0edf2ebbb1b90e51e017a5d9b3de57ddb5cd7fb67f7594e34c1b181d3398ba3f
 # SYMBOLS:
 #   - class Citation
 #   - class RouteInfo
@@ -15853,7 +16091,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from intergrax.llm.messages import AttachmentRef
-from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.llm_adapters.llm_usage_track import LLMUsageReport
 
 
 @dataclass
@@ -16009,7 +16247,7 @@ class RuntimeAnswer:
     route: RouteInfo = field(default_factory=RouteInfo)
     tool_calls: List[ToolCallInfo] = field(default_factory=list)
     stats: RuntimeStats = field(default_factory=RuntimeStats)
-    llm_usage_tracker: Optional[LLMUsageTracker] = None
+    llm_usage_report: Optional[LLMUsageReport] = None
 
     # Optional raw model output or intermediate artifacts
     raw_model_output: Optional[Any] = None

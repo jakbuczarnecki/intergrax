@@ -25,16 +25,15 @@ Refactored as a stateful pipeline:
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 import json
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 import uuid
 
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.llm_adapters.llm_usage_track import LLMUsageReport, LLMUsageTracker
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
-from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import FileSystemAttachmentResolver
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import AttachmentIngestionService, IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import (
     DefaultHistorySummaryPromptBuilder,
@@ -72,6 +71,16 @@ from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 # ----------------------------------------------------------------------
 # DropInKnowledgeRuntime
 # ----------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class LLMUsageRunRecord:
+    seq: int
+    ts_utc: datetime
+    run_id: str
+    session_id: str
+    user_id: str
+    report: LLMUsageReport
 
 
 class DropInKnowledgeRuntime:
@@ -112,6 +121,11 @@ class DropInKnowledgeRuntime:
 
         self._config = config
         self._config.validate()
+
+        self._llm_usage_run_seq = 0
+        self._llm_usage_runs: list[LLMUsageRunRecord] = []
+
+        self._llm_usage_lock = asyncio.Lock()
 
         self._session_manager = session_manager
 
@@ -277,6 +291,19 @@ class DropInKnowledgeRuntime:
             runtime_answer.llm_usage_report = state.llm_usage_tracker.build_report()
             llm_usage_snapshot = runtime_answer.llm_usage_report.to_dict()
             state.debug_trace["llm_usage"] = llm_usage_snapshot
+
+            if self._config.enable_llm_usage_collection and runtime_answer.llm_usage_report is not None:
+                async with self._llm_usage_lock:
+                    self._llm_usage_run_seq += 1
+                    rec = LLMUsageRunRecord(
+                        seq=self._llm_usage_run_seq,
+                        ts_utc=datetime.now(timezone.utc),
+                        run_id=state.run_id,
+                        session_id=request.session_id,
+                        user_id=request.user_id,
+                        report=runtime_answer.llm_usage_report,
+                    )
+                    self._llm_usage_runs.append(rec)
 
         return runtime_answer
 
@@ -1370,5 +1397,15 @@ class DropInKnowledgeRuntime:
 
         for m in msgs:
             state.messages_for_llm.insert(last_user_idx, m)
-            last_user_idx += 1    
+            last_user_idx += 1   
+
+
+    async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
+        async with self._llm_usage_lock:
+            return list(self._llm_usage_runs)
+
+    async def clear_llm_usage_runs(self) -> None:
+        async with self._llm_usage_lock:
+            self._llm_usage_runs.clear()
+            self._llm_usage_run_seq = 0 
 

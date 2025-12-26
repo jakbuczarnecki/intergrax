@@ -382,6 +382,7 @@ class BedrockChatAdapter(LLMAdapter):
         self._context_window_tokens: int = self._estimate_context_window(self.config.model_id)
 
         self.provider = LLMProvider.AWS_BEDROCK
+        self.model = resolved_model_id
 
     @property
     def context_window_tokens(self) -> int:

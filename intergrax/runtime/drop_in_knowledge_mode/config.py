@@ -202,6 +202,12 @@ class RuntimeConfig:
     reasoning_config: Optional[ReasoningConfig] = None
 
 
+    # ------------------------------------------------------------------
+    # DIAGNOSTICS
+    # ------------------------------------------------------------------
+    enable_llm_usage_collection: bool = True
+
+
     @property
     def reasoning_mode(self) -> ReasoningMode:
         """

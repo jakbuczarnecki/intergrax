@@ -64,6 +64,7 @@ class AzureOpenAIChatAdapter(LLMAdapter):
         self._context_window_tokens: int = self._estimate_context_window(self.deployment)
 
         self.provider = LLMProvider.AZURE_OPENAI
+        self.model = self.deployment
 
     @property
     def context_window_tokens(self) -> int:
