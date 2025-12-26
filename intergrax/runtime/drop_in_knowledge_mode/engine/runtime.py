@@ -181,9 +181,14 @@ class DropInKnowledgeRuntime:
          10. Core LLM call.
          11. Persist assistant answer and build RuntimeAnswer with route info.
         """
-        state = RuntimeState(request=request)
-        state.run_id = f"run_{uuid.uuid4().hex}"
-        state.llm_usage_tracker = LLMUsageTracker(run_id=state.run_id)
+
+        run_id = f"run_{uuid.uuid4().hex}"
+
+        state = RuntimeState(
+            request=request,
+            run_id=run_id,
+            llm_usage_tracker=LLMUsageTracker(run_id=run_id)
+        )        
 
         state.llm_usage_tracker.register_adapter(self._config.llm_adapter, label="core_adapter")
 
@@ -269,8 +274,8 @@ class DropInKnowledgeRuntime:
         )
         
         if state.llm_usage_tracker is not None:
-            runtime_answer.llm_usage_tracker = state.llm_usage_tracker
-            llm_usage_snapshot = state.llm_usage_tracker.export()
+            runtime_answer.llm_usage_report = state.llm_usage_tracker.build_report()
+            llm_usage_snapshot = runtime_answer.llm_usage_report.to_dict()
             state.debug_trace["llm_usage"] = llm_usage_snapshot
 
         return runtime_answer

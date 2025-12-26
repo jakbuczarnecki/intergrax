@@ -11,6 +11,7 @@ import re
 import uuid
 import time
 import tiktoken
+from intergrax.llm_adapters.llm_provider import LLMProvider
 from intergrax.memory.conversational_memory import ChatMessage
 
 
@@ -36,6 +37,9 @@ class LLMAdapter(ABC):
       - tools
       - structured output
     """
+
+    provider: LLMProvider
+    model: str
 
     # Hint used by the generic token estimator (e.g. OpenAI model name).
     model_name_for_token_estimation: Optional[str] = None

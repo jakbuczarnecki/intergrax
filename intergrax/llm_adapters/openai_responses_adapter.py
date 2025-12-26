@@ -15,6 +15,7 @@ from intergrax.llm_adapters.llm_adapter import (
     ChatMessage,
     LLMAdapter,
 )
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class OpenAIChatResponsesAdapter(LLMAdapter):
@@ -68,6 +69,8 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         self.model_name_for_token_estimation = self.model
         self.defaults = defaults
         self._context_window_tokens: int = self._estimate_openai_context_window(self.model)
+
+        self.provider = LLMProvider.OPENAI
 
 
     @property

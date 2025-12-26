@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from intergrax.llm.messages import AttachmentRef
-from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.llm_adapters.llm_usage_track import LLMUsageReport
 
 
 @dataclass
@@ -175,7 +175,7 @@ class RuntimeAnswer:
     route: RouteInfo = field(default_factory=RouteInfo)
     tool_calls: List[ToolCallInfo] = field(default_factory=list)
     stats: RuntimeStats = field(default_factory=RuntimeStats)
-    llm_usage_tracker: Optional[LLMUsageTracker] = None
+    llm_usage_report: Optional[LLMUsageReport] = None
 
     # Optional raw model output or intermediate artifacts
     raw_model_output: Optional[Any] = None
