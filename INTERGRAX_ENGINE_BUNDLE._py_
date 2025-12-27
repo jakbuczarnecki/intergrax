@@ -36,7 +36,7 @@
 # - websearch/
 #
 # Files included: 129
-# Total lines: 23136
+# Total lines: 23497
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
@@ -74,7 +74,7 @@
 # - intergrax/llm_adapters/llm_adapter.py | intergrax.llm_adapters.llm_adapter | llm_adapters | 440 | a6d217d79f39
 # - intergrax/llm_adapters/llm_provider.py | intergrax.llm_adapters.llm_provider | llm_adapters | 18 | c339b2c40574
 # - intergrax/llm_adapters/llm_provider_registry.py | intergrax.llm_adapters.llm_provider_registry | llm_adapters | 50 | 3e8fe294fa6b
-# - intergrax/llm_adapters/llm_usage_track.py | intergrax.llm_adapters.llm_usage_track | llm_adapters | 253 | 16eb701c636b
+# - intergrax/llm_adapters/llm_usage_track.py | intergrax.llm_adapters.llm_usage_track | llm_adapters | 288 | c06c71de5128
 # - intergrax/llm_adapters/mistral_adapter.py | intergrax.llm_adapters.mistral_adapter | llm_adapters | 262 | 8a9d192a2730
 # - intergrax/llm_adapters/ollama_adapter.py | intergrax.llm_adapters.ollama_adapter | llm_adapters | 345 | 5b7e5150535e
 # - intergrax/llm_adapters/openai_responses_adapter.py | intergrax.llm_adapters.openai_responses_adapter | llm_adapters | 480 | 1e58bbff815e
@@ -117,11 +117,11 @@
 # - intergrax/runtime/drop_in_knowledge_mode/context/context_builder.py | intergrax.runtime.drop_in_knowledge_mode.context.context_builder | runtime | 485 | 2cca85dc5dcb
 # - intergrax/runtime/drop_in_knowledge_mode/context/engine_history_layer.py | intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer | runtime | 565 | d4c1a0d530cd
 # - intergrax/runtime/drop_in_knowledge_mode/engine/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1411 | b00f7f3e5934
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 86 | 72a79b8668c0
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1588 | 9fe503de8748
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 87 | 28dd2b5256cb
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py | intergrax.runtime.drop_in_knowledge_mode.ingestion | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/attachments.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments | runtime | 124 | f1f76309b50f
-# - intergrax/runtime/drop_in_knowledge_mode/ingestion/ingestion_service.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service | runtime | 322 | 2d1af899b85d
+# - intergrax/runtime/drop_in_knowledge_mode/ingestion/ingestion_service.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service | runtime | 470 | f85b4e1154a7
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/__init__.py | intergrax.runtime.drop_in_knowledge_mode.prompts | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/history_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder | runtime | 89 | 7a99ef869b92
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/rag_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder | runtime | 105 | 487e17f834e1
@@ -190,7 +190,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 23136
+# TOTAL LINES: 23497
 # ======================================================================
 
 # ======================================================================
@@ -2868,8 +2868,8 @@ LLMAdapterRegistry.register(LLMProvider.AWS_BEDROCK, lambda **kw: BedrockChatAda
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=llm_usage_track.py
-# LINES: 253
-# SHA256: 16eb701c636bbfc42b474501645265f992f4a77aeb749f31514d8974dbfb674f
+# LINES: 288
+# SHA256: c06c71de5128f0a1b2e277b001253137678f4ceb557011876676610689c33063
 # SYMBOLS:
 #   - class LLMAdapterMeta
 #   - class LLMAdapterUsageEntry
@@ -2920,6 +2920,41 @@ class LLMUsageReport:
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+    
+    def pretty(self) -> str:
+        lines: List[str] = []
+
+        t = self.total
+        lines.append(f"LLMUsageReport(run_id={self.run_id})")
+        lines.append("Total:")
+        lines.append(f"  calls        : {t.calls}")
+        lines.append(f"  input_tokens : {t.input_tokens}")
+        lines.append(f"  output_tokens: {t.output_tokens}")
+        lines.append(f"  total_tokens : {t.total_tokens}")
+        lines.append(f"  duration_ms  : {t.duration_ms}")
+        lines.append(f"  errors       : {t.errors}")
+
+        if self.by_provider_model:
+            lines.append("By provider/model:")
+            for key, st in self.by_provider_model.items():  # insertion order
+                lines.append(
+                    f"  - {key}: calls={st.calls} in={st.input_tokens} out={st.output_tokens} "
+                    f"total={st.total_tokens} ms={st.duration_ms} err={st.errors}"
+                )
+
+        if self.entries:
+            lines.append("Entries (registration order):")
+            for e in self.entries:  # registration order
+                st = e.stats
+                meta = e.meta
+                lines.append(f"  - {e.label} [{meta.provider}:{meta.model}] ({meta.adapter_type})")
+                lines.append(
+                    f"      calls={st.calls} in={st.input_tokens} out={st.output_tokens} "
+                    f"total={st.total_tokens} ms={st.duration_ms} err={st.errors} "
+                    f"instance_id={e.adapter_instance_id}"
+                )
+
+        return "\n".join(lines)
 
 
 class LLMUsageTracker:
@@ -13332,8 +13367,8 @@ class HistoryLayer:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime.py
-# LINES: 1411
-# SHA256: b00f7f3e59343892a726e200c475ba0ea2cf2797b2612319549cdd6628ee6cac
+# LINES: 1588
+# SHA256: 9fe503de874822c91e5c5bb7b31d96c867f5d3ad1fc8c47045c0d6603a95f9b7
 # SYMBOLS:
 #   - class LLMUsageRunRecord
 #   - class DropInKnowledgeRuntime
@@ -13421,6 +13456,17 @@ class LLMUsageRunRecord:
     session_id: str
     user_id: str
     report: LLMUsageReport
+
+    def pretty(self) -> str:
+        lines: List[str] = []
+        lines.append(f"Run #{self.seq}")
+        lines.append(f"  ts_utc     : {self.ts_utc.isoformat()}")
+        lines.append(f"  run_id     : {self.run_id}")
+        lines.append(f"  session_id : {self.session_id}")
+        lines.append(f"  user_id    : {self.user_id}")
+        lines.append(self.report.pretty())        
+
+        return "\n".join(lines)
 
 
 class DropInKnowledgeRuntime:
@@ -13575,40 +13621,43 @@ class DropInKnowledgeRuntime:
             },
         )
 
-        # 1. Session + ingestion
+        # Session + ingestion
         await self._step_session_and_ingest(state)
 
-        # 2. Memory layer (user/org)
+        # Memory layer (user/org)
         await self._step_memory_layer(state)
 
-        # 3. Build base history (load & preprocess)
+        # Build base history (load & preprocess)
         await self._step_build_base_history(state)
 
-        # 4. History layer (ContextBuilder / raw)
+        # History layer (ContextBuilder / raw)
         await self._step_history(state)
 
-        # 5. Instructions layer (final system prompt)
+        # Instructions layer (final system prompt)
         await self._step_instructions(state)
 
-        # 6. RAG
+        # RAG
         await self._step_rag(state)
 
-        # 7. User long-term memory
+        # User long-term memory
         await self._step_user_longterm_memory(state)
 
-        # 8. Web search
+        # Session attachments context (retrieval from ingestion vectorstore)
+        await self._step_ingested_attachments_context(state)
+
+        # Web search
         await self._step_websearch(state)
 
-        # 9. Ensure current user message
+        # Ensure current user message
         self._ensure_current_user_message(state)
 
-        # 10. Tools
+        # Tools
         await self._step_tools(state)
 
-        # 11. Core LLM
+        # Core LLM
         answer_text = self._step_core_llm(state)
 
-        # 12. Persist + RuntimeAnswer
+        # Persist + RuntimeAnswer
         runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
 
         # Final trace entry for this request.
@@ -13690,7 +13739,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 1: session + ingestion (no history)
+    # Step: session + ingestion (no history)
     # ------------------------------------------------------------------
 
     async def _step_session_and_ingest(self, state: RuntimeState) -> None:
@@ -13778,7 +13827,7 @@ class DropInKnowledgeRuntime:
         # NOTE: state.base_history is intentionally left empty here.
 
     # ------------------------------------------------------------------
-    # Step 2: memory layer (user/org context + profile instructions)
+    # Step: memory layer (user/org context + profile instructions)
     # ------------------------------------------------------------------
 
     async def _step_memory_layer(self, state: RuntimeState) -> None:
@@ -13853,14 +13902,14 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 3: build base history (load & preprocess)
+    # Step: build base history (load & preprocess)
     # ------------------------------------------------------------------
 
     async def _step_build_base_history(self, state: RuntimeState) -> None:
         await self._history_layer.build_base_history(state)
 
     # ------------------------------------------------------------------
-    # Step 4: history
+    # Step: history
     # ------------------------------------------------------------------
 
     async def _step_history(self, state: RuntimeState) -> None:
@@ -13916,7 +13965,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 5: RAG
+    # Step: RAG
     # ------------------------------------------------------------------
 
     async def _step_rag(self, state: RuntimeState) -> None:
@@ -13993,7 +14042,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 6: Web search
+    # Step: Web search
     # ------------------------------------------------------------------
 
     async def _step_websearch(self, state: RuntimeState) -> None:
@@ -14095,7 +14144,7 @@ class DropInKnowledgeRuntime:
         
 
     # ------------------------------------------------------------------
-    # Step 7: Ensure current user message
+    # Step: Ensure current user message
     # ------------------------------------------------------------------
 
     def _ensure_current_user_message(self, state: RuntimeState) -> None:
@@ -14119,7 +14168,7 @@ class DropInKnowledgeRuntime:
 
 
     # ------------------------------------------------------------------
-    # Step 8: Tools
+    # Step: Tools
     # ------------------------------------------------------------------
 
     async def _step_tools(self, state: RuntimeState) -> None:
@@ -14255,7 +14304,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 9: Core LLM
+    # Step: Core LLM
     # ------------------------------------------------------------------
 
     def _step_core_llm(self, state: RuntimeState) -> str:
@@ -14342,7 +14391,7 @@ class DropInKnowledgeRuntime:
             return f"[ERROR] LLM adapter failed: {e}"
 
     # ------------------------------------------------------------------
-    # Step 10: Persist answer & build RuntimeAnswer
+    # Step: Persist answer & build RuntimeAnswer
     # ------------------------------------------------------------------
 
     async def _step_persist_and_build_answer(
@@ -14387,6 +14436,8 @@ class DropInKnowledgeRuntime:
             strategy = "llm_with_rag_context_builder"
         elif state.used_websearch:
             strategy = "llm_with_websearch"
+        elif state.used_attachments_context:
+            strategy = "llm_with_session_attachments"
         elif state.ingestion_results:
             strategy = "llm_only_with_ingestion"
         else:
@@ -14399,7 +14450,10 @@ class DropInKnowledgeRuntime:
             used_user_profile=state.used_user_profile,
             used_user_longterm_memory=state.used_user_longterm_memory and self._config.enable_user_longterm_memory,
             strategy=strategy,
-            extra={},
+            extra={
+                "used_attachments_context": bool(state.used_attachments_context),
+                "attachments_chunks": int(state.debug_trace.get("attachments_chunks", 0) or 0),
+            },
         )
 
         # Token stats are still placeholders – can be wired from LLM adapter later.
@@ -14457,7 +14511,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 11: instructions (final system prompt)
+    # Step: instructions (final system prompt)
     # ------------------------------------------------------------------
 
     async def _step_instructions(self, state: RuntimeState) -> None:
@@ -14505,7 +14559,7 @@ class DropInKnowledgeRuntime:
 
 
     # ------------------------------------------------------------------
-    # Step 12: LongTerm memory RAG
+    # Step: LongTerm memory RAG
     # ------------------------------------------------------------------
     async def _step_user_longterm_memory(self, state: RuntimeState) -> None:
         state.used_user_longterm_memory = False
@@ -14590,6 +14644,99 @@ class DropInKnowledgeRuntime:
         )
 
 
+    # ------------------------------------------------------------------
+    # Step: session attachments context (retrieval from ingestion store)
+    # ------------------------------------------------------------------
+
+    async def _step_ingested_attachments_context(self, state: RuntimeState) -> None:
+        """
+        Retrieve relevant chunks from session-ingested attachments (AttachmentIngestionService)
+        and inject them into the LLM context.
+
+        Key requirements:
+          - Independent from enable_rag (must work even when enable_rag=False).
+          - Reuse existing retrieval components (EmbeddingManager + VectorstoreManager.query).
+          - Filter by session_id + user_id (+ tenant/workspace if available).
+          - Inject as context messages using _insert_context_before_last_user.
+        """
+        # Defaults
+        state.used_attachments_context = False
+        state.debug_trace.setdefault("attachments_chunks", 0)
+
+        if self._ingestion_service is None:
+            state.debug_trace["attachments"] = {"used": False, "reason": "ingestion_service_not_configured"}
+            return
+
+        session = state.session
+        if session is None:
+            state.debug_trace["attachments"] = {"used": False, "reason": "session_not_initialized"}
+            return
+
+        # Retrieval (no coupling to enable_rag)
+        res = await self._ingestion_service.search_session_attachments(
+            query=state.request.message,
+            session_id=session.id,
+            user_id=state.request.user_id,
+            tenant_id=session.tenant_id,
+            workspace_id=session.workspace_id,
+            top_k=6,
+            score_threshold=None,
+        )
+
+        dbg = (res or {}).get("debug") or {}
+        used = bool((res or {}).get("used"))
+        chunks = (res or {}).get("hits") or []
+
+        state.used_attachments_context = used and bool(chunks)
+        state.debug_trace["attachments"] = {
+            **dbg,
+            "used": bool(used and chunks),
+            "hits_count": len(chunks),
+        }
+        state.debug_trace["attachments_chunks"] = len(chunks)
+
+        if not state.used_attachments_context:
+            return
+
+        # Build a single system context message (same injection pattern as RAG).
+        attachments_context_text = self._format_rag_context(chunks)
+        if not attachments_context_text.strip():
+            # If somehow chunks exist but formatting is empty, treat as unused.
+            state.used_attachments_context = False
+            state.debug_trace["attachments"] = {
+                **dbg,
+                "used": False,
+                "reason": "empty_formatted_context",
+            }
+            state.debug_trace["attachments_chunks"] = 0
+            return
+
+        content = "SESSION ATTACHMENTS (retrieved):\n" + attachments_context_text
+
+        context_messages = [
+            ChatMessage(
+                role="system",
+                content=content,
+                created_at=datetime.now(timezone.utc).isoformat(),
+            )
+        ]
+
+        self._insert_context_before_last_user(state, context_messages)
+
+        # Provide compact textual form also for tools agent (same pattern as RAG).
+        state.tools_context_parts.append("SESSION ATTACHMENTS:\n" + attachments_context_text)
+
+        # Trace step
+        self._trace(
+            state,
+            component="engine",
+            step="attachments_context",
+            message="Session attachments retrieval executed and context injected.",
+            data={
+                "used_attachments_context": state.used_attachments_context,
+                "retrieved_chunks": len(chunks),
+            },
+        )
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -14743,11 +14890,76 @@ class DropInKnowledgeRuntime:
     async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
         async with self._llm_usage_lock:
             return list(self._llm_usage_runs)
+            
 
     async def clear_llm_usage_runs(self) -> None:
         async with self._llm_usage_lock:
             self._llm_usage_runs.clear()
             self._llm_usage_run_seq = 0 
+
+
+    async def print_usage_runs(self):
+        runs = await self.get_llm_usage_runs()
+        print("runs:", len(runs))
+
+        # Aggregate totals across all runs
+        total_calls = 0
+        total_in = 0
+        total_out = 0
+        total_tokens = 0
+        total_ms = 0
+        total_errors = 0
+
+        # Aggregate by provider/model string key
+        by_key = {}  # key -> dict(calls,in,out,total,ms,err)
+
+        for r in runs:
+            # r.total is expected to have these fields (as shown in pretty())
+            t = r.report.total
+            total_calls += int(t.calls or 0)
+            total_in += int(t.input_tokens or 0)
+            total_out += int(t.output_tokens or 0)
+            total_tokens += int(t.total_tokens or 0)
+            total_ms += int(t.duration_ms or 0)
+            total_errors += int(t.errors or 0)
+
+            # r.by_provider_model is expected to be iterable of items with key + stats
+            # (use exactly what your report object exposes; below assumes dict-like)
+            bpm = r.report.by_provider_model
+
+            for k, st in bpm.items():
+                agg = by_key.get(k)
+                if agg is None:
+                    agg = {"calls": 0, "in": 0, "out": 0, "total": 0, "ms": 0, "err": 0}
+                    by_key[k] = agg
+                agg["calls"] += int(st.calls or 0)
+                agg["in"] += int(st.input_tokens or 0)
+                agg["out"] += int(st.output_tokens or 0)
+                agg["total"] += int(st.total_tokens or 0)
+                agg["ms"] += int(st.duration_ms or 0)
+                agg["err"] += int(st.errors or 0)
+
+        if runs:
+            print("=" * 100)
+            print("ALL RUNS (aggregated)")
+            print(f"  calls        : {total_calls}")
+            print(f"  input_tokens : {total_in}")
+            print(f"  output_tokens: {total_out}")
+            print(f"  total_tokens : {total_tokens}")
+            print(f"  duration_ms  : {total_ms}")
+            print(f"  errors       : {total_errors}")
+
+            if by_key:
+                print("By provider/model (aggregated):")
+                for k, st in by_key.items():
+                    print(
+                        f"  - {k}: calls={st['calls']} in={st['in']} out={st['out']} "
+                        f"total={st['total']} ms={st['ms']} err={st['err']}"
+                    )
+
+        for r in runs:
+            print("=" * 100)
+            print(r.pretty())
 
 
 # ======================================================================
@@ -14758,8 +14970,8 @@ class DropInKnowledgeRuntime:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime_state.py
-# LINES: 86
-# SHA256: 72a79b8668c0239971d17afe75c3d49f82c31bdf85a53f14502f2ca8146502d7
+# LINES: 87
+# SHA256: 28dd2b5256cb91c456301719fad5320ab6e77adb2f55b500ed120fb637336a24
 # SYMBOLS:
 #   - class RuntimeState
 # ======================================================================
@@ -14803,6 +15015,7 @@ class RuntimeState:
     # Session and ingestion
     session: Optional[ChatSession] = None
     ingestion_results: List[IngestionResult] = field(default_factory=list)
+    used_attachments_context: bool = False
 
     # Conversation / context
     base_history: List[ChatMessage] = field(default_factory=list)
@@ -15012,8 +15225,8 @@ class FileSystemAttachmentResolver:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=ingestion_service.py
-# LINES: 322
-# SHA256: 2d1af899b85deb2fb5115e9a767d360896349dba99802d7a88b3d5da40c27bfa
+# LINES: 470
+# SHA256: f85b4e1154a7e1a580c573e7e6c55521cc1d8859fe5377a5dddbbef24a383404
 # SYMBOLS:
 #   - class IngestionResult
 #   - class AttachmentIngestionService
@@ -15053,6 +15266,7 @@ from intergrax.rag.documents_loader import DocumentsLoader
 from intergrax.rag.documents_splitter import DocumentsSplitter
 from intergrax.rag.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.runtime.drop_in_knowledge_mode.context.context_builder import RetrievedChunk
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import AttachmentResolver
 
 
@@ -15173,6 +15387,153 @@ class AttachmentIngestionService:
             results.append(result)
 
         return results
+
+    
+    async def search_session_attachments(
+        self,
+        *,
+        query: str,
+        session_id: str,
+        user_id: str,
+        tenant_id: Optional[str] = None,
+        workspace_id: Optional[str] = None,
+        top_k: int = 6,
+        score_threshold: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """
+        Retrieval over session attachments indexed by this ingestion service.
+
+        Contract:
+          - Uses ingestion embedding_manager to embed the user query
+          - Uses ingestion vectorstore_manager.query(query_embeddings, top_k, where=...)
+          - No getattr/hasattr or signature guessing
+        """
+        q = (query or "").strip()
+        if not q:
+            return {
+                "used": False,
+                "hits": [],
+                "scores": [],
+                "debug": {"reason": "empty_query"},
+            }
+
+        if self._vectorstore_manager is None:
+            return {
+                "used": False,
+                "hits": [],
+                "scores": [],
+                "debug": {"reason": "vectorstore_manager_not_configured"},
+            }
+
+        if self._embedding_manager is None:
+            return {
+                "used": False,
+                "hits": [],
+                "scores": [],
+                "debug": {"reason": "embedding_manager_not_configured"},
+            }
+
+        where: Dict[str, Any] = {
+            "session_id": session_id,
+            "user_id": user_id,
+        }
+        if tenant_id is not None:
+            where["tenant_id"] = tenant_id
+        if workspace_id is not None:
+            where["workspace_id"] = workspace_id
+
+        # 1) Embed the query using ingestion embedder.
+        # Expected EmbeddingManager API in Intergrax: embed_one / embed_query / embed
+        # Use the same call you use in ingestion indexing for chunks, but for single query string.
+        query_emb = self._embedding_manager.embed_one(q)        
+        if inspect.iscoroutine(query_emb):
+            query_emb = await query_emb
+
+        # 2) Vector search in ingestion vectorstore with strict session filters.
+        raw = self._vectorstore_manager.query(
+            query_embeddings=query_emb,
+            top_k=int(top_k),
+            where=where,
+            include_embeddings=False,
+        )
+        
+        # VectorstoreManager.query() returns a provider-normalized dict:
+        # {
+        #   "ids": List[List[str]],
+        #   "scores": List[List[float]],
+        #   "metadatas": List[List[dict]],
+        #   "documents": List[List[str]] | None
+        # }
+        if not isinstance(raw, dict):
+            return {
+                "used": False,
+                "hits": [],
+                "scores": [],
+                "debug": {"reason": "unexpected_vectorstore_result_type"},
+            }
+
+        ids_rows = raw.get("ids") or []
+        scores_rows = raw.get("scores") or []
+        metas_rows = raw.get("metadatas") or []
+        docs_rows = raw.get("documents") or []
+
+        # Batched outputs: take first row for a single query.
+        ids_row = ids_rows[0] if isinstance(ids_rows, list) and len(ids_rows) > 0 else []
+        scores_row = scores_rows[0] if isinstance(scores_rows, list) and len(scores_rows) > 0 else []
+        metas_row = metas_rows[0] if isinstance(metas_rows, list) and len(metas_rows) > 0 else []
+        docs_row = docs_rows[0] if isinstance(docs_rows, list) and len(docs_rows) > 0 else []
+
+        hits: List[RetrievedChunk] = []
+        scores: List[float] = []
+
+        n = min(len(docs_row), len(metas_row), len(scores_row), len(ids_row) if ids_row else 10**9)
+
+        for i in range(n):
+            text = (docs_row[i] or "").strip()
+            if not text:
+                continue
+
+            md = metas_row[i] or {}
+            sc = scores_row[i] if i < len(scores_row) else 0.0
+            scv = float(sc) if sc is not None else 0.0
+
+            # Optional: keep id in metadata for traceability
+            if ids_row and i < len(ids_row):
+                md = dict(md)
+                md["vector_id"] = ids_row[i]
+
+            chunk_id = ids_row[i] if (ids_row and i < len(ids_row)) else f"{session_id}:{i}"
+            hits.append(RetrievedChunk(chunk_id, text, md, scv))
+            scores.append(scv)
+
+        # Optional threshold filtering.
+        if score_threshold is not None and hits:
+            thr = float(score_threshold)
+            filt_hits: List[RetrievedChunk] = []
+            filt_scores: List[float] = []
+            for h, sc in zip(hits, scores):
+                if sc >= thr:
+                    filt_hits.append(h)
+                    filt_scores.append(sc)
+            hits = filt_hits
+            scores = filt_scores
+
+        used = bool(hits)
+
+        return {
+            "used": used,
+            "hits": hits,
+            "scores": scores,
+            "debug": {
+                "used": used,
+                "hits_count": len(hits),
+                "top_k": int(top_k),
+                "score_threshold": score_threshold,
+                "where": where,
+                "provider": getattr(self._vectorstore_manager, "provider", None),  # optional; can be removed
+            },
+        }
+
 
     # ------------------------------------------------------------------
     # Internal helpers

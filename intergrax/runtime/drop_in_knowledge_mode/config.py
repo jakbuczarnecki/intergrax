@@ -32,37 +32,6 @@ class ToolsContextScope(str, Enum):
     FULL = "full"
 
 
-class ReasoningMode(str, Enum):
-    """
-    Defines how the runtime should guide the model's reasoning process.
-    """
-
-    # Default behavior – no explicit reasoning instructions.
-    DIRECT = "direct"
-
-    # Model reasons step-by-step internally but does not reveal chain-of-thought.
-    COT_INTERNAL = "cot_internal"
-
-
-@dataclass
-class ReasoningConfig:
-    """
-    Configuration for reasoning / Chain-of-Thought behavior.
-
-    This config does NOT guarantee visibility of reasoning steps.
-    It only controls how the model is instructed to reason.
-    """
-
-    mode: ReasoningMode = ReasoningMode.DIRECT
-
-    # Reserved for future extensions (e.g. planning calls, JSON reasoning).
-    max_reasoning_tokens: Optional[int] = None
-
-    # Whether runtime should attempt to capture any reasoning metadata
-    # for debug/observability purposes (never exposed to end user).
-    capture_reasoning_trace: bool = False
-
-
 @dataclass
 class RuntimeConfig:
     """
@@ -195,30 +164,12 @@ class RuntimeConfig:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-    # ------------------------------------------------------------------
-    # REASONING / CHAIN-OF-THOUGHT
-    # ------------------------------------------------------------------
-
-    reasoning_config: Optional[ReasoningConfig] = None
-
 
     # ------------------------------------------------------------------
     # DIAGNOSTICS
     # ------------------------------------------------------------------
     enable_llm_usage_collection: bool = True
 
-
-    @property
-    def reasoning_mode(self) -> ReasoningMode:
-        """
-        Returns the active reasoning mode.
-        Defaults to DIRECT if no reasoning_config is provided.
-        """
-
-        if self.reasoning_config is None:
-            return ReasoningMode.DIRECT
-        
-        return self.reasoning_config.mode
     
 
     def validate(self) -> None:
