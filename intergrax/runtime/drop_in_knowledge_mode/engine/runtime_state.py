@@ -38,6 +38,7 @@ class RuntimeState:
     # Session and ingestion
     session: Optional[ChatSession] = None
     ingestion_results: List[IngestionResult] = field(default_factory=list)
+    used_attachments_context: bool = False
 
     # Conversation / context
     base_history: List[ChatMessage] = field(default_factory=list)
