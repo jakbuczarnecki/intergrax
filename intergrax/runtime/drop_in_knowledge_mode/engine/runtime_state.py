@@ -73,3 +73,10 @@ class RuntimeState:
 
     # Token accounting (filled in _step_build_base_history)
     history_token_count: Optional[int] = None
+
+    # Reasoning flags
+    cap_rag_available: bool = False
+    cap_user_ltm_available: bool = False
+    cap_attachments_available: bool = False
+    cap_websearch_available: bool = False
+    cap_tools_available: bool = False

@@ -35,14 +35,14 @@
 # - tools/
 # - websearch/
 #
-# Files included: 129
-# Total lines: 23497
+# Files included: 127
+# Total lines: 23250
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
 # ROOT: D:\Projekty\intergrax
 # PACKAGE: intergrax
-# FILES: 129
+# FILES: 127
 #
 # MODULE MAP (dynamic):
 # - chains/ (2 files)
@@ -54,7 +54,7 @@
 # - openai/ (3 files)
 # - rag/ (11 files)
 # - root/ (4 files)
-# - runtime/ (38 files)
+# - runtime/ (36 files)
 # - supervisor/ (5 files)
 # - tools/ (3 files)
 # - websearch/ (33 files)
@@ -112,13 +112,13 @@
 # - intergrax/system_prompts.py | intergrax.system_prompts | root | 84 | f66fdf33ac4c
 # - intergrax/runtime/__init__.py | intergrax.runtime | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/__init__.py | intergrax.runtime.drop_in_knowledge_mode | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 232 | 4daa614ca7e7
+# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 183 | de1a948673c4
 # - intergrax/runtime/drop_in_knowledge_mode/context/__init__.py | intergrax.runtime.drop_in_knowledge_mode.context | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/context/context_builder.py | intergrax.runtime.drop_in_knowledge_mode.context.context_builder | runtime | 485 | 2cca85dc5dcb
 # - intergrax/runtime/drop_in_knowledge_mode/context/engine_history_layer.py | intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer | runtime | 565 | d4c1a0d530cd
 # - intergrax/runtime/drop_in_knowledge_mode/engine/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1588 | 9fe503de8748
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 87 | 28dd2b5256cb
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1565 | f76e7713dcf7
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 75 | fe3749267a4f
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py | intergrax.runtime.drop_in_knowledge_mode.ingestion | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/attachments.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments | runtime | 124 | f1f76309b50f
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/ingestion_service.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service | runtime | 470 | f85b4e1154a7
@@ -127,8 +127,6 @@
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/rag_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder | runtime | 105 | 487e17f834e1
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/user_longterm_memory_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder | runtime | 117 | 8608ee04efaf
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/websearch_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder | runtime | 112 | b51b50c3d26a
-# - intergrax/runtime/drop_in_knowledge_mode/reasoning/__init__.py | intergrax.runtime.drop_in_knowledge_mode.reasoning | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/reasoning/reasoning_layer.py | intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer | runtime | 163 | 7f704f315d6e
 # - intergrax/runtime/drop_in_knowledge_mode/responses/__init__.py | intergrax.runtime.drop_in_knowledge_mode.responses | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/responses/response_schema.py | intergrax.runtime.drop_in_knowledge_mode.responses.response_schema | runtime | 182 | 0edf2ebbb1b9
 # - intergrax/runtime/drop_in_knowledge_mode/session/__init__.py | intergrax.runtime.drop_in_knowledge_mode.session | runtime | 0 | e3b0c44298fc
@@ -190,7 +188,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 23497
+# TOTAL LINES: 23250
 # ======================================================================
 
 # ======================================================================
@@ -12007,12 +12005,10 @@ def default_rag_system_instruction():
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=config.py
-# LINES: 232
-# SHA256: 4daa614ca7e7ec7687e03b20b27ae546de373e63ea14dd497c87c068ceadc998
+# LINES: 183
+# SHA256: de1a948673c49ce3a80f0cf460637b00738098a78db117e763158cd58f06a8f6
 # SYMBOLS:
 #   - class ToolsContextScope
-#   - class ReasoningMode
-#   - class ReasoningConfig
 #   - class RuntimeConfig
 # ======================================================================
 # © Artur Czarnecki. All rights reserved.
@@ -12047,37 +12043,6 @@ class ToolsContextScope(str, Enum):
     
     # Agent dostaje pełny kontekst tak jak LLM (historia + RAG + websearch).
     FULL = "full"
-
-
-class ReasoningMode(str, Enum):
-    """
-    Defines how the runtime should guide the model's reasoning process.
-    """
-
-    # Default behavior – no explicit reasoning instructions.
-    DIRECT = "direct"
-
-    # Model reasons step-by-step internally but does not reveal chain-of-thought.
-    COT_INTERNAL = "cot_internal"
-
-
-@dataclass
-class ReasoningConfig:
-    """
-    Configuration for reasoning / Chain-of-Thought behavior.
-
-    This config does NOT guarantee visibility of reasoning steps.
-    It only controls how the model is instructed to reason.
-    """
-
-    mode: ReasoningMode = ReasoningMode.DIRECT
-
-    # Reserved for future extensions (e.g. planning calls, JSON reasoning).
-    max_reasoning_tokens: Optional[int] = None
-
-    # Whether runtime should attempt to capture any reasoning metadata
-    # for debug/observability purposes (never exposed to end user).
-    capture_reasoning_trace: bool = False
 
 
 @dataclass
@@ -12212,30 +12177,12 @@ class RuntimeConfig:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-    # ------------------------------------------------------------------
-    # REASONING / CHAIN-OF-THOUGHT
-    # ------------------------------------------------------------------
-
-    reasoning_config: Optional[ReasoningConfig] = None
-
 
     # ------------------------------------------------------------------
     # DIAGNOSTICS
     # ------------------------------------------------------------------
     enable_llm_usage_collection: bool = True
 
-
-    @property
-    def reasoning_mode(self) -> ReasoningMode:
-        """
-        Returns the active reasoning mode.
-        Defaults to DIRECT if no reasoning_config is provided.
-        """
-
-        if self.reasoning_config is None:
-            return ReasoningMode.DIRECT
-        
-        return self.reasoning_config.mode
     
 
     def validate(self) -> None:
@@ -13367,8 +13314,8 @@ class HistoryLayer:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime.py
-# LINES: 1588
-# SHA256: 9fe503de874822c91e5c5bb7b31d96c867f5d3ad1fc8c47045c0d6603a95f9b7
+# LINES: 1565
+# SHA256: f76e7713dcf7726d3dd25bd5ff46d0b51df19c91227ae0ad92b5629122e95eca
 # SYMBOLS:
 #   - class LLMUsageRunRecord
 #   - class DropInKnowledgeRuntime
@@ -13419,7 +13366,6 @@ from intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder import 
     RagPromptBuilder,
 )
 from intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder import DefaultUserLongTermMemoryPromptBuilder, UserLongTermMemoryPromptBuilder
-from intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer import ReasoningLayer
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
     RuntimeRequest,
     RuntimeAnswer,
@@ -13555,10 +13501,6 @@ class DropInKnowledgeRuntime:
             session_manager=session_manager,
             history_prompt_builder=self._history_prompt_builder,
         )
-
-        self._reasoning_layer = ReasoningLayer(
-            config=config
-        )        
 
     # ------------------------------------------------------------------
     # Public API
@@ -14533,25 +14475,7 @@ class DropInKnowledgeRuntime:
         if not instructions_text:
             return
         
-        # Apply reasoning / CoT policy (no-op in DIRECT mode)
-        reasoning_result = self._reasoning_layer.apply_reasoning_to_instructions(
-            state=state,
-            base_system_instructions=instructions_text,
-        )
-
-        # Trace reasoning application
-        self._trace(
-            state,
-            component="reasoning",
-            step="apply_reasoning_to_instructions",
-            message="Reasoning policy applied to system instructions.",
-            data={
-                "mode": reasoning_result.mode.value,
-                "applied": reasoning_result.applied,
-            },
-        )
-
-        system_message = ChatMessage(role="system", content=reasoning_result.final_instructions)
+        system_message = ChatMessage(role="system", content=instructions_text)
 
         # `messages_for_llm` at this point should contain only history
         # (built by `_step_history`). We now prepend the system message.
@@ -14970,8 +14894,8 @@ class DropInKnowledgeRuntime:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime_state.py
-# LINES: 87
-# SHA256: 28dd2b5256cb91c456301719fad5320ab6e77adb2f55b500ed120fb637336a24
+# LINES: 75
+# SHA256: fe3749267a4f21e17bb220d0e46bc9b8323be534026162d70c01ce755132308b
 # SYMBOLS:
 #   - class RuntimeState
 # ======================================================================
@@ -14985,7 +14909,6 @@ from typing import Any, Dict, List, Optional
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
-from intergrax.runtime.drop_in_knowledge_mode.config import ReasoningMode
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
 from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
@@ -15051,17 +14974,6 @@ class RuntimeState:
 
     # Token accounting (filled in _step_build_base_history)
     history_token_count: Optional[int] = None
-
-    # ------------------------------------------------------------------
-    # REASONING / CHAIN-OF-THOUGHT
-    # ------------------------------------------------------------------
-
-    # Active reasoning mode for this request.
-    reasoning_mode: ReasoningMode = ReasoningMode.DIRECT
-
-    # Optional reasoning metadata captured during execution.
-    # This NEVER contains raw chain-of-thought text.
-    reasoning_trace: Optional[Dict[str, Any]] = None
 
 # ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py
@@ -16202,199 +16114,6 @@ class DefaultWebSearchPromptBuilder(WebSearchPromptBuilder):
         return WebSearchPromptBundle(
             context_messages=context_messages,
             debug_info=debug_info,
-        )
-
-# ======================================================================
-# FILE: intergrax/runtime/drop_in_knowledge_mode/reasoning/__init__.py
-# MODULE: intergrax.runtime.drop_in_knowledge_mode.reasoning
-# MODULE_GROUP: runtime
-# TAGS:
-#   - package=intergrax
-#   - module_group=runtime
-#   - file=__init__.py
-# LINES: 0
-# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-# SYMBOLS:
-#   - <none>
-# ======================================================================
-
-
-# ======================================================================
-# FILE: intergrax/runtime/drop_in_knowledge_mode/reasoning/reasoning_layer.py
-# MODULE: intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer
-# MODULE_GROUP: runtime
-# TAGS:
-#   - package=intergrax
-#   - module_group=runtime
-#   - file=reasoning_layer.py
-# LINES: 163
-# SHA256: 7f704f315d6e1687f75eb75f8f6b08981924203fc31cddc31a110eeb79bcdc9b
-# SYMBOLS:
-#   - class ReasoningApplyResult
-#   - class ReasoningLayer
-# ======================================================================
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
-
-from __future__ import annotations
-
-from dataclasses import dataclass
-from typing import Any, Dict, Optional
-
-from intergrax.runtime.drop_in_knowledge_mode.config import ReasoningConfig, ReasoningMode, RuntimeConfig
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
-
-
-@dataclass(frozen=True)
-class ReasoningApplyResult:
-    """
-    Result of applying reasoning policy to system instructions.
-    """
-
-    mode: ReasoningMode
-    applied: bool
-    final_instructions: str
-    extra: Dict[str, Any]
-
-
-class ReasoningLayer:
-    """
-    Reasoning / Chain-of-Thought layer for Drop-In Knowledge Runtime.
-
-    v1 responsibilities:
-      - Augment system instructions based on ReasoningMode.
-      - Never store or expose raw chain-of-thought content.
-      - Write lightweight observability info into RuntimeState.debug_trace.
-
-    v1 does NOT:
-      - Run separate planning calls.
-      - Change tools/websearch/RAG flow.
-      - Perform self-critique passes.
-    """
-
-    def __init__(self, config: RuntimeConfig) -> None:
-        self._config = config
-
-    def apply_reasoning_to_instructions(
-        self,
-        state: RuntimeState,
-        base_system_instructions: str,
-    ) -> ReasoningApplyResult:
-        """
-        Returns the final system instructions after applying the configured reasoning mode.
-        Updates RuntimeState.reasoning_mode and debug_trace["reasoning"].
-
-        Note: This method must be a no-op in DIRECT mode.
-        """
-
-        reasoning_config = self._get_reasoning_config()
-        mode = reasoning_config.mode
-
-        # Keep state consistent even if engine forgets to set it.
-        state.reasoning_mode = mode
-
-        if not base_system_instructions:
-            base_system_instructions = ""
-
-        if mode == ReasoningMode.DIRECT:
-            result = ReasoningApplyResult(
-                mode=mode,
-                applied=False,
-                final_instructions=base_system_instructions,
-                extra={"note": "DIRECT mode (no reasoning augmentation)."},
-            )
-            self._write_reasoning_debug(state, result)
-            return result
-
-        if mode == ReasoningMode.COT_INTERNAL:
-            augmentation = self._cot_internal_instructions()
-            final = self._join_instructions(base_system_instructions, augmentation)
-
-            result = ReasoningApplyResult(
-                mode=mode,
-                applied=True,
-                final_instructions=final,
-                extra={
-                    "note": "COT_INTERNAL mode (internal reasoning; do not reveal chain-of-thought).",
-                    "capture_reasoning_trace": bool(reasoning_config.capture_reasoning_trace),
-                },
-            )
-            self._write_reasoning_debug(state, result)
-            return result
-
-        # Forward-compatible default: treat unknown modes as DIRECT.
-        result = ReasoningApplyResult(
-            mode=ReasoningMode.DIRECT,
-            applied=False,
-            final_instructions=base_system_instructions,
-            extra={
-                "note": f"Unknown ReasoningMode '{mode}'. Fallback to DIRECT.",
-                "requested_mode": str(mode),
-            },
-        )
-        state.reasoning_mode = ReasoningMode.DIRECT
-        self._write_reasoning_debug(state, result)
-        return result
-
-    # -----------------------
-    # Internals
-    # -----------------------
-
-    def _get_reasoning_config(self) -> ReasoningConfig:
-        """
-        Normalizes missing config to a default ReasoningConfig(DIRECT).
-        """
-        if self._config.reasoning_config is None:
-            return ReasoningConfig(mode=ReasoningMode.DIRECT)
-        return self._config.reasoning_config
-
-    def _cot_internal_instructions(self) -> str:
-        """
-        A minimal, safe instruction block for internal step-by-step reasoning.
-
-        Important: We instruct the model to keep chain-of-thought private
-        and produce only the final answer to the user.
-        """
-        return (
-            "Reason internally step by step before answering.\n"
-            "Do not reveal your chain-of-thought, internal steps, or hidden reasoning.\n"
-            "Provide only the final answer, clearly and concisely.\n"
-            "If uncertainty exists, state it explicitly and explain what is missing."
-        )
-
-    def _join_instructions(self, base: str, addition: str) -> str:
-        base = (base or "").strip()
-        addition = (addition or "").strip()
-        if not base:
-            return addition
-        if not addition:
-            return base
-        return f"{base}\n\n{addition}"
-
-    def _write_reasoning_debug(self, state: RuntimeState, result: ReasoningApplyResult) -> None:
-        """
-        Writes reasoning metadata to state.debug_trace and (optionally) to state.reasoning_trace.
-        Never stores raw chain-of-thought.
-        """
-        if state.debug_trace is None:
-            state.debug_trace = {}
-
-        state.debug_trace["reasoning"] = {
-            "mode": result.mode.value,
-            "applied": result.applied,
-            "extra": result.extra,
-        }
-
-        # Optional lightweight per-request trace object (still without CoT content).
-        # This is reserved for future PLAN_EXECUTE / structured reasoning modes.
-        if state.reasoning_trace is None:
-            state.reasoning_trace = {}
-        state.reasoning_trace.update(
-            {
-                "mode": result.mode.value,
-                "applied": result.applied,
-            }
         )
 
 # ======================================================================
