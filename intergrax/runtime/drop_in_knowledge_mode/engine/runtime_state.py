@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
-from intergrax.runtime.drop_in_knowledge_mode.config import ReasoningMode
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
 from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
@@ -38,6 +37,7 @@ class RuntimeState:
     # Session and ingestion
     session: Optional[ChatSession] = None
     ingestion_results: List[IngestionResult] = field(default_factory=list)
+    used_attachments_context: bool = False
 
     # Conversation / context
     base_history: List[ChatMessage] = field(default_factory=list)
@@ -74,13 +74,9 @@ class RuntimeState:
     # Token accounting (filled in _step_build_base_history)
     history_token_count: Optional[int] = None
 
-    # ------------------------------------------------------------------
-    # REASONING / CHAIN-OF-THOUGHT
-    # ------------------------------------------------------------------
-
-    # Active reasoning mode for this request.
-    reasoning_mode: ReasoningMode = ReasoningMode.DIRECT
-
-    # Optional reasoning metadata captured during execution.
-    # This NEVER contains raw chain-of-thought text.
-    reasoning_trace: Optional[Dict[str, Any]] = None
+    # Reasoning flags
+    cap_rag_available: bool = False
+    cap_user_ltm_available: bool = False
+    cap_attachments_available: bool = False
+    cap_websearch_available: bool = False
+    cap_tools_available: bool = False

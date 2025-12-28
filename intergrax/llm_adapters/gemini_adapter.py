@@ -12,6 +12,7 @@ from google.genai import types
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class GeminiChatAdapter(LLMAdapter):
@@ -52,6 +53,8 @@ class GeminiChatAdapter(LLMAdapter):
         self.defaults = defaults
 
         self._context_window_tokens: int = self._estimate_gemini_context_window(self.model)
+
+        self.provider = LLMProvider.GEMINI
 
     @property
     def context_window_tokens(self) -> int:

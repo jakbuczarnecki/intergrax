@@ -9,12 +9,11 @@ import json
 import docx
 import logging
 import os
-import io
-import base64
-import requests
 
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.ollama_adapter import LangChainOllamaAdapter
 from intergrax.multimedia.video_loader import (
     transcribe_to_vtt,
     extract_frames_and_metadata,
@@ -24,11 +23,6 @@ from intergrax.multimedia.audio_loader import (
     translate_audio
 )
 
-# LLM adaptery frameworka (model + provider w adapterze)
-from intergrax.llm_adapters import (
-    LLMAdapter,
-    LangChainOllamaAdapter,
-)
 
 from pathlib import Path
 
@@ -40,7 +34,6 @@ from typing import (
 
 from langchain_community.document_loaders import (
     Docx2txtLoader,
-    PyMuPDFLoader,
     TextLoader,
     UnstructuredHTMLLoader,
 )

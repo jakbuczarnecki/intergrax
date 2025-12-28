@@ -7,6 +7,7 @@ from mistralai.models import ChatCompletionResponse
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 # -----------------------------
@@ -57,6 +58,8 @@ class MistralChatAdapter(LLMAdapter):
         self.defaults = defaults
 
         self._context_window_tokens: int = self._estimate_mistral_context_window(self.model)
+
+        self.provider = LLMProvider.MISTRAL
 
     @property
     def context_window_tokens(self) -> int:

@@ -12,6 +12,7 @@ from intergrax.llm_adapters.llm_adapter import (
     ChatMessage,
     LLMAdapter,
 )
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class LangChainOllamaAdapter(LLMAdapter):
@@ -94,6 +95,9 @@ class LangChainOllamaAdapter(LLMAdapter):
             self._context_window_tokens = int(
                 self._estimate_ollama_context_window_from_model(self.chat.model)
             )
+
+        self.provider = LLMProvider.OLLAMA
+        self.model = self.chat.model
 
 
     @property

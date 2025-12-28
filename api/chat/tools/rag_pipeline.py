@@ -9,7 +9,8 @@ from typing import Dict, Optional, Tuple, List
 
 # === Twoje komponenty ===
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters.llm_provider import LLMAdapterRegistry, LLMProvider
+from intergrax.llm_adapters.llm_provider import LLMProvider
+from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.rag.rag_answerer import (
     RagAnswerer,
     AnswererConfig,

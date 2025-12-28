@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import List, Dict, Any, Tuple, Literal, Optional, Sequence, Union
+from typing import List, Tuple, Literal, Optional, Sequence, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -19,7 +19,7 @@ except Exception:
     SentenceTransformer = None
 
 from langchain_ollama import OllamaEmbeddings
-from langchain_openai import OpenAIEmbeddings   # <— NEW
+from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 
 logger = logging.getLogger(__name__)

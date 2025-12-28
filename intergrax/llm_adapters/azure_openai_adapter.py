@@ -11,6 +11,7 @@ from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class AzureOpenAIChatAdapter(LLMAdapter):
@@ -61,6 +62,9 @@ class AzureOpenAIChatAdapter(LLMAdapter):
 
         self.defaults = defaults
         self._context_window_tokens: int = self._estimate_context_window(self.deployment)
+
+        self.provider = LLMProvider.AZURE_OPENAI
+        self.model = self.deployment
 
     @property
     def context_window_tokens(self) -> int:

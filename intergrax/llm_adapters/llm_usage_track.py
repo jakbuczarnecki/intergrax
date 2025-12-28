@@ -9,17 +9,75 @@ import time
 
 from intergrax.llm_adapters.llm_adapter import LLMAdapter, LLMRunStats
 
+from dataclasses import dataclass, asdict
+from typing import Any, Dict, List, Optional, Tuple
 
-@dataclass
-class LLMUsageSnapshot:
-    """
-    One adapter snapshot for a given run_id.
-    """
-    adapter_label: str
-    provider: Optional[str]
-    model_hint: Optional[str]
+
+@dataclass(frozen=True)
+class LLMAdapterMeta:
+    adapter_type: str
+    provider: str
+    model: str
+
+
+@dataclass(frozen=True)
+class LLMAdapterUsageEntry:
+    label: str
+    meta: LLMAdapterMeta
     stats: LLMRunStats
+    adapter_instance_id: int
+
+
+@dataclass(frozen=True)
+class LLMUsageReport:
+    run_id: str
+    total: LLMRunStats
+    entries: List[LLMAdapterUsageEntry]
+
+    # Optional aggregation by (provider, model)
+    by_provider_model: Dict[str, LLMRunStats]
+
+    # Debug only: label -> instance_id
+    adapter_instance_ids: Dict[str, int]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
     
+    def pretty(self) -> str:
+        lines: List[str] = []
+
+        t = self.total
+        lines.append(f"LLMUsageReport(run_id={self.run_id})")
+        lines.append("Total:")
+        lines.append(f"  calls        : {t.calls}")
+        lines.append(f"  input_tokens : {t.input_tokens}")
+        lines.append(f"  output_tokens: {t.output_tokens}")
+        lines.append(f"  total_tokens : {t.total_tokens}")
+        lines.append(f"  duration_ms  : {t.duration_ms}")
+        lines.append(f"  errors       : {t.errors}")
+
+        if self.by_provider_model:
+            lines.append("By provider/model:")
+            for key, st in self.by_provider_model.items():  # insertion order
+                lines.append(
+                    f"  - {key}: calls={st.calls} in={st.input_tokens} out={st.output_tokens} "
+                    f"total={st.total_tokens} ms={st.duration_ms} err={st.errors}"
+                )
+
+        if self.entries:
+            lines.append("Entries (registration order):")
+            for e in self.entries:  # registration order
+                st = e.stats
+                meta = e.meta
+                lines.append(f"  - {e.label} [{meta.provider}:{meta.model}] ({meta.adapter_type})")
+                lines.append(
+                    f"      calls={st.calls} in={st.input_tokens} out={st.output_tokens} "
+                    f"total={st.total_tokens} ms={st.duration_ms} err={st.errors} "
+                    f"instance_id={e.adapter_instance_id}"
+                )
+
+        return "\n".join(lines)
+
 
 class LLMUsageTracker:
     """
@@ -74,42 +132,107 @@ class LLMUsageTracker:
         return list(self._adapters.keys())
 
 
-    def snapshot(self) -> List[LLMUsageSnapshot]:
-        out: List[LLMUsageSnapshot] = []
-        for label, ad in self._adapters.items():
-            st = ad.usage.get_run_stats(self.run_id)
-            provider = None
-            try:
-                # Optional: if your adapters expose provider in a strict way, wire it here.
-                # Keep None if not guaranteed.
-                provider = None
-            except Exception:
-                provider = None
+    def build_report(self) -> LLMUsageReport:
+        entries: List[LLMAdapterUsageEntry] = []
 
-            model_hint = ad.model_name_for_token_estimation
-            out.append(
-                LLMUsageSnapshot(
-                    adapter_label=label,
-                    provider=provider,
-                    model_hint=model_hint,
+        adapter_instance_ids: Dict[str, int] = {}
+        for label, ad in (self._adapters or {}).items():
+            adapter_instance_ids[label] = id(ad) if ad is not None else 0
+
+        # Build per-label entries (including meta)
+        for label, ad in (self._adapters or {}).items():
+            if ad is None:
+                continue
+
+            meta = LLMAdapterMeta(
+                adapter_type=ad.__class__.__name__,
+                provider=ad.provider,
+                model=ad.model,
+            )
+
+            st = ad.usage.get_run_stats(self.run_id)
+            if st is None:
+                st = LLMRunStats()  # zakładam, że masz domyślne 0; jeśli nie, utwórz jawnie z zerami
+
+            entries.append(
+                LLMAdapterUsageEntry(
+                    label=label,
+                    meta=meta,
                     stats=st,
+                    adapter_instance_id=id(ad),
                 )
             )
-        return out
+
+        # Total (dedup by instance, jak masz już poprawione total())
+        total = self.total()
+
+        # Aggregate by provider:model (dedup by instance, żeby nie dublować aliasów labeli)
+        by_provider_model: Dict[str, LLMRunStats] = {}
+        seen_ids = set()
+        for e in entries:
+            if e.adapter_instance_id in seen_ids:
+                continue
+            seen_ids.add(e.adapter_instance_id)
+
+            key = f"{e.meta.provider}:{e.meta.model}"
+            agg = by_provider_model.get(key)
+            if agg is None:
+                by_provider_model[key] = LLMRunStats(
+                    calls=e.stats.calls,
+                    input_tokens=e.stats.input_tokens,
+                    output_tokens=e.stats.output_tokens,
+                    total_tokens=e.stats.total_tokens,
+                    duration_ms=e.stats.duration_ms,
+                    errors=e.stats.errors,
+                )
+            else:
+                agg.calls += e.stats.calls
+                agg.input_tokens += e.stats.input_tokens
+                agg.output_tokens += e.stats.output_tokens
+                agg.total_tokens += e.stats.total_tokens
+                agg.duration_ms += e.stats.duration_ms
+                agg.errors += e.stats.errors
+
+        return LLMUsageReport(
+            run_id=self.run_id,
+            total=total,
+            entries=entries,
+            by_provider_model=by_provider_model,
+            adapter_instance_ids=adapter_instance_ids,
+        )
+
+
+    def export(self) -> Dict[str, Any]:
+        return self.build_report().to_dict()
+
+
 
     def total(self) -> LLMRunStats:
         agg = LLMRunStats()
-        for _, ad in self._adapters.items():
+
+        seen_ids = set()
+        for _, ad in (self._adapters or {}).items():
+            if ad is None:
+                continue
+
+            ad_id = id(ad)
+            if ad_id in seen_ids:
+                continue
+            seen_ids.add(ad_id)
+
             st = ad.usage.get_run_stats(self.run_id)
             if st is None:
                 continue
+
             agg.calls += st.calls
             agg.input_tokens += st.input_tokens
             agg.output_tokens += st.output_tokens
             agg.total_tokens += st.total_tokens
             agg.duration_ms += st.duration_ms
             agg.errors += st.errors
+
         return agg
+
     
     
     def export(self) -> Dict[str, Any]:
@@ -120,9 +243,11 @@ class LLMUsageTracker:
         adapters_out: Dict[str, Any] = {}
 
         for label, ad in self._adapters.items():
+            meta = self._describe_adapter(ad)
             st = ad.usage.get_run_stats(self.run_id)
             if st is None:
                 adapters_out[label] = {
+                    **meta,
                     "calls": 0,
                     "input_tokens": 0,
                     "output_tokens": 0,
@@ -131,11 +256,33 @@ class LLMUsageTracker:
                     "errors": 0,
                 }
             else:
-                adapters_out[label] = asdict(st)
+                adapters_out[label] = {
+                    **meta,
+                    **asdict(st),
+                }
 
         total = self.total()
+        
+        adapter_id_map = {}
+        for label, ad in (self._adapters or {}).items():
+            adapter_id_map[label] = id(ad) if ad is not None else None
+
         return {
-            "run_id": self.run_id,
-            "total": asdict(total),
-            "adapters": adapters_out,
+        "run_id": self.run_id,
+        "total": asdict(total),
+        "adapters": adapters_out,
+        "adapter_instance_ids": adapter_id_map,  # debug only
         }
+    
+
+    def _describe_adapter(self, ad: LLMAdapter) -> Dict[str, Any]:
+        """
+        Typed adapter metadata extraction.
+        Relies on LLMAdapter contract: provider, model, kind must exist.
+        """
+        return {
+            "adapter_type": ad.__class__.__name__,
+            "provider": ad.provider,
+            "model": ad.model,
+        }
+

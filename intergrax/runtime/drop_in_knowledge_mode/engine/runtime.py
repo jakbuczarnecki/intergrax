@@ -25,16 +25,15 @@ Refactored as a stateful pipeline:
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 import json
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 import uuid
 
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
-from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
+from intergrax.llm_adapters.llm_usage_track import LLMUsageReport, LLMUsageTracker
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, StepPlanningStrategy, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
-from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import FileSystemAttachmentResolver
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import AttachmentIngestionService, IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import (
     DefaultHistorySummaryPromptBuilder,
@@ -45,7 +44,6 @@ from intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder import 
     RagPromptBuilder,
 )
 from intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder import DefaultUserLongTermMemoryPromptBuilder, UserLongTermMemoryPromptBuilder
-from intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer import ReasoningLayer
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
     RuntimeRequest,
     RuntimeAnswer,
@@ -72,6 +70,27 @@ from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 # ----------------------------------------------------------------------
 # DropInKnowledgeRuntime
 # ----------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class LLMUsageRunRecord:
+    seq: int
+    ts_utc: datetime
+    run_id: str
+    session_id: str
+    user_id: str
+    report: LLMUsageReport
+
+    def pretty(self) -> str:
+        lines: List[str] = []
+        lines.append(f"Run #{self.seq}")
+        lines.append(f"  ts_utc     : {self.ts_utc.isoformat()}")
+        lines.append(f"  run_id     : {self.run_id}")
+        lines.append(f"  session_id : {self.session_id}")
+        lines.append(f"  user_id    : {self.user_id}")
+        lines.append(self.report.pretty())        
+
+        return "\n".join(lines)
 
 
 class DropInKnowledgeRuntime:
@@ -112,6 +131,11 @@ class DropInKnowledgeRuntime:
 
         self._config = config
         self._config.validate()
+
+        self._llm_usage_run_seq = 0
+        self._llm_usage_runs: list[LLMUsageRunRecord] = []
+
+        self._llm_usage_lock = asyncio.Lock()
 
         self._session_manager = session_manager
 
@@ -156,10 +180,6 @@ class DropInKnowledgeRuntime:
             history_prompt_builder=self._history_prompt_builder,
         )
 
-        self._reasoning_layer = ReasoningLayer(
-            config=config
-        )        
-
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -167,41 +187,18 @@ class DropInKnowledgeRuntime:
     async def run(self, request: RuntimeRequest) -> RuntimeAnswer:
         """
         Main async entrypoint for the runtime.
-
-        Pipeline:
-          1. Session + ingestion + user message appended.
-          2. Memory layer (user/org profile memory, long-term memory facts).
-          3. Base history builder (load & preprocess conversation history).
-          4. History layer (conversation history for the LLM).
-          5. Instructions layer (final system prompt).
-          6. RAG layer (retrieval + RAG system/context messages).
-          7. Web search layer (optional).
-          8. Ensure current user message is present at the end of context.
-          9. Tools layer (planning + tool calls).
-         10. Core LLM call.
-         11. Persist assistant answer and build RuntimeAnswer with route info.
         """
-        state = RuntimeState(request=request)
-        state.run_id = f"run_{uuid.uuid4().hex}"
-        state.llm_usage_tracker = LLMUsageTracker(run_id=state.run_id)
 
-        state.llm_usage_tracker.register_adapter(self._config.llm_adapter, label="core_adapter")
+        run_id = f"run_{uuid.uuid4().hex}"
 
-        ta = self._config.tools_agent
-        if ta is not None and ta.llm is not None:
-            state.llm_usage_tracker.register_adapter(ta.llm, label="tools_agent")
-
-        ws = self._config.websearch_config
-        if ws is not None and ws.llm is not None:
-            if ws.llm.map_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.map_adapter, label="web_map_adapter")
-            if ws.llm.reduce_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.reduce_adapter, label="web_reduce_adapter")
-            if ws.llm.rerank_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.rerank_adapter, label="web_rerank_adapter")
-
+        state = RuntimeState(
+            request=request,
+            run_id=run_id,
+            llm_usage_tracker=LLMUsageTracker(run_id=run_id)
+        )        
         
-        
+        self.configure_llm_tracker(state)
+
         # Initial trace entry for this request.
         self._trace(
             state,
@@ -213,44 +210,22 @@ class DropInKnowledgeRuntime:
                 "user_id": request.user_id,
                 "tenant_id": request.tenant_id or self._config.tenant_id,
                 "run_id": state.run_id,
+                "step_planning_strategy": str(self._config.step_planning_strategy),
             },
         )
 
-        # 1. Session + ingestion
-        await self._step_session_and_ingest(state)
+        if self._config.step_planning_strategy == StepPlanningStrategy.OFF:
+            runtime_answer = await self._run_pipeline_no_planner(state=state)
+        
+        elif self._config.step_planning_strategy == StepPlanningStrategy.STATIC_PLAN:
+            runtime_answer = await self._run_pipeline_static_plan(state)
+        
+        elif self._config.step_planning_strategy == StepPlanningStrategy.DYNAMIC_LOOP:
+            runtime_answer = await self._run_pipeline_dynamic_loop(state)
 
-        # 2. Memory layer (user/org)
-        await self._step_memory_layer(state)
+        else:
+            raise ValueError(f"Unknown step_planning_strategy: {self._config.step_planning_strategy}")
 
-        # 3. Build base history (load & preprocess)
-        await self._step_build_base_history(state)
-
-        # 4. History layer (ContextBuilder / raw)
-        await self._step_history(state)
-
-        # 5. Instructions layer (final system prompt)
-        await self._step_instructions(state)
-
-        # 6. RAG
-        await self._step_rag(state)
-
-        # 7. User long-term memory
-        await self._step_user_longterm_memory(state)
-
-        # 8. Web search
-        await self._step_websearch(state)
-
-        # 9. Ensure current user message
-        self._ensure_current_user_message(state)
-
-        # 10. Tools
-        await self._step_tools(state)
-
-        # 11. Core LLM
-        answer_text = self._step_core_llm(state)
-
-        # 12. Persist + RuntimeAnswer
-        runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
 
         # Final trace entry for this request.
         self._trace(
@@ -268,12 +243,65 @@ class DropInKnowledgeRuntime:
             },
         )
         
-        if state.llm_usage_tracker is not None:
-            runtime_answer.llm_usage_tracker = state.llm_usage_tracker
-            llm_usage_snapshot = state.llm_usage_tracker.export()
-            state.debug_trace["llm_usage"] = llm_usage_snapshot
+        await self.finalize_llm_tracker(state, request, runtime_answer)
 
         return runtime_answer
+
+
+    async def _run_pipeline_no_planner(self, state: RuntimeState) -> RuntimeAnswer:
+        # Session + ingestion
+        await self._step_session_and_ingest(state)
+
+        # Memory layer (user/org)
+        await self._step_memory_layer(state)
+
+        # Build base history (load & preprocess)
+        await self._step_build_base_history(state)
+
+        # History layer (ContextBuilder / raw)
+        await self._step_history(state)
+
+        # Instructions layer (final system prompt)
+        await self._step_instructions(state)
+
+        # RAG
+        await self._step_rag(state)
+
+        # User long-term memory
+        await self._step_user_longterm_memory(state)
+
+        # Session attachments context (retrieval from ingestion vectorstore)
+        await self._step_ingested_attachments_context(state)
+
+        # Web search
+        await self._step_websearch(state)
+
+        # Ensure current user message
+        self._ensure_current_user_message(state)
+
+        # Tools
+        await self._step_tools(state)
+
+        # Core LLM
+        answer_text = self._step_core_llm(state)
+
+        # Persist + RuntimeAnswer
+        runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
+
+        return runtime_answer
+
+
+    async def _run_pipeline_static_plan(self, state: RuntimeState) -> RuntimeAnswer:
+        raise NotImplementedError(
+            "StepPlanningStrategy.STATIC_PLAN is configured, but step planner is not implemented in this session."
+        )
+
+    async def _run_pipeline_dynamic_loop(self, state: RuntimeState) -> RuntimeAnswer:
+        raise NotImplementedError(
+            "StepPlanningStrategy.DYNAMIC_LOOP is configured, but step planner is not implemented in this session."
+        )
+
+
 
     def run_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
         """
@@ -283,6 +311,51 @@ class DropInKnowledgeRuntime:
         such as simple scripts or some notebook setups.
         """
         return asyncio.run(self.run(request))
+    
+
+    def configure_llm_tracker(
+            self,
+            state: RuntimeState) -> None:     
+           
+        state.llm_usage_tracker.register_adapter(self._config.llm_adapter, label="core_adapter")
+
+        ta = self._config.tools_agent
+        if ta is not None and ta.llm is not None:
+            state.llm_usage_tracker.register_adapter(ta.llm, label="tools_agent")
+
+        ws = self._config.websearch_config
+        if ws is not None and ws.llm is not None:
+            if ws.llm.map_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.map_adapter, label="web_map_adapter")
+            if ws.llm.reduce_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.reduce_adapter, label="web_reduce_adapter")
+            if ws.llm.rerank_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.rerank_adapter, label="web_rerank_adapter")
+
+    
+    async def finalize_llm_tracker(
+            self,
+            state: RuntimeState,
+            request: RuntimeRequest,
+            runtime_answer: RuntimeAnswer) -> None:
+        if state.llm_usage_tracker is not None:
+            runtime_answer.llm_usage_report = state.llm_usage_tracker.build_report()
+            llm_usage_snapshot = runtime_answer.llm_usage_report.to_dict()
+            state.debug_trace["llm_usage"] = llm_usage_snapshot
+
+            if self._config.enable_llm_usage_collection and runtime_answer.llm_usage_report is not None:
+                async with self._llm_usage_lock:
+                    self._llm_usage_run_seq += 1
+                    rec = LLMUsageRunRecord(
+                        seq=self._llm_usage_run_seq,
+                        ts_utc=datetime.now(timezone.utc),
+                        run_id=state.run_id,
+                        session_id=request.session_id,
+                        user_id=request.user_id,
+                        report=runtime_answer.llm_usage_report,
+                    )
+                    self._llm_usage_runs.append(rec)
+
 
     def _trace(
         self,
@@ -318,7 +391,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 1: session + ingestion (no history)
+    # Step: session + ingestion (no history)
     # ------------------------------------------------------------------
 
     async def _step_session_and_ingest(self, state: RuntimeState) -> None:
@@ -406,7 +479,7 @@ class DropInKnowledgeRuntime:
         # NOTE: state.base_history is intentionally left empty here.
 
     # ------------------------------------------------------------------
-    # Step 2: memory layer (user/org context + profile instructions)
+    # Step: memory layer (user/org context + profile instructions)
     # ------------------------------------------------------------------
 
     async def _step_memory_layer(self, state: RuntimeState) -> None:
@@ -481,14 +554,14 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 3: build base history (load & preprocess)
+    # Step: build base history (load & preprocess)
     # ------------------------------------------------------------------
 
     async def _step_build_base_history(self, state: RuntimeState) -> None:
         await self._history_layer.build_base_history(state)
 
     # ------------------------------------------------------------------
-    # Step 4: history
+    # Step: history
     # ------------------------------------------------------------------
 
     async def _step_history(self, state: RuntimeState) -> None:
@@ -544,7 +617,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 5: RAG
+    # Step: RAG
     # ------------------------------------------------------------------
 
     async def _step_rag(self, state: RuntimeState) -> None:
@@ -621,7 +694,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 6: Web search
+    # Step: Web search
     # ------------------------------------------------------------------
 
     async def _step_websearch(self, state: RuntimeState) -> None:
@@ -723,7 +796,7 @@ class DropInKnowledgeRuntime:
         
 
     # ------------------------------------------------------------------
-    # Step 7: Ensure current user message
+    # Step: Ensure current user message
     # ------------------------------------------------------------------
 
     def _ensure_current_user_message(self, state: RuntimeState) -> None:
@@ -747,7 +820,7 @@ class DropInKnowledgeRuntime:
 
 
     # ------------------------------------------------------------------
-    # Step 8: Tools
+    # Step: Tools
     # ------------------------------------------------------------------
 
     async def _step_tools(self, state: RuntimeState) -> None:
@@ -883,7 +956,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 9: Core LLM
+    # Step: Core LLM
     # ------------------------------------------------------------------
 
     def _step_core_llm(self, state: RuntimeState) -> str:
@@ -970,7 +1043,7 @@ class DropInKnowledgeRuntime:
             return f"[ERROR] LLM adapter failed: {e}"
 
     # ------------------------------------------------------------------
-    # Step 10: Persist answer & build RuntimeAnswer
+    # Step: Persist answer & build RuntimeAnswer
     # ------------------------------------------------------------------
 
     async def _step_persist_and_build_answer(
@@ -1015,6 +1088,8 @@ class DropInKnowledgeRuntime:
             strategy = "llm_with_rag_context_builder"
         elif state.used_websearch:
             strategy = "llm_with_websearch"
+        elif state.used_attachments_context:
+            strategy = "llm_with_session_attachments"
         elif state.ingestion_results:
             strategy = "llm_only_with_ingestion"
         else:
@@ -1027,7 +1102,10 @@ class DropInKnowledgeRuntime:
             used_user_profile=state.used_user_profile,
             used_user_longterm_memory=state.used_user_longterm_memory and self._config.enable_user_longterm_memory,
             strategy=strategy,
-            extra={},
+            extra={
+                "used_attachments_context": bool(state.used_attachments_context),
+                "attachments_chunks": int(state.debug_trace.get("attachments_chunks", 0) or 0),
+            },
         )
 
         # Token stats are still placeholders – can be wired from LLM adapter later.
@@ -1085,7 +1163,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 11: instructions (final system prompt)
+    # Step: instructions (final system prompt)
     # ------------------------------------------------------------------
 
     async def _step_instructions(self, state: RuntimeState) -> None:
@@ -1107,25 +1185,7 @@ class DropInKnowledgeRuntime:
         if not instructions_text:
             return
         
-        # Apply reasoning / CoT policy (no-op in DIRECT mode)
-        reasoning_result = self._reasoning_layer.apply_reasoning_to_instructions(
-            state=state,
-            base_system_instructions=instructions_text,
-        )
-
-        # Trace reasoning application
-        self._trace(
-            state,
-            component="reasoning",
-            step="apply_reasoning_to_instructions",
-            message="Reasoning policy applied to system instructions.",
-            data={
-                "mode": reasoning_result.mode.value,
-                "applied": reasoning_result.applied,
-            },
-        )
-
-        system_message = ChatMessage(role="system", content=reasoning_result.final_instructions)
+        system_message = ChatMessage(role="system", content=instructions_text)
 
         # `messages_for_llm` at this point should contain only history
         # (built by `_step_history`). We now prepend the system message.
@@ -1133,7 +1193,7 @@ class DropInKnowledgeRuntime:
 
 
     # ------------------------------------------------------------------
-    # Step 12: LongTerm memory RAG
+    # Step: LongTerm memory RAG
     # ------------------------------------------------------------------
     async def _step_user_longterm_memory(self, state: RuntimeState) -> None:
         state.used_user_longterm_memory = False
@@ -1218,6 +1278,99 @@ class DropInKnowledgeRuntime:
         )
 
 
+    # ------------------------------------------------------------------
+    # Step: session attachments context (retrieval from ingestion store)
+    # ------------------------------------------------------------------
+
+    async def _step_ingested_attachments_context(self, state: RuntimeState) -> None:
+        """
+        Retrieve relevant chunks from session-ingested attachments (AttachmentIngestionService)
+        and inject them into the LLM context.
+
+        Key requirements:
+          - Independent from enable_rag (must work even when enable_rag=False).
+          - Reuse existing retrieval components (EmbeddingManager + VectorstoreManager.query).
+          - Filter by session_id + user_id (+ tenant/workspace if available).
+          - Inject as context messages using _insert_context_before_last_user.
+        """
+        # Defaults
+        state.used_attachments_context = False
+        state.debug_trace.setdefault("attachments_chunks", 0)
+
+        if self._ingestion_service is None:
+            state.debug_trace["attachments"] = {"used": False, "reason": "ingestion_service_not_configured"}
+            return
+
+        session = state.session
+        if session is None:
+            state.debug_trace["attachments"] = {"used": False, "reason": "session_not_initialized"}
+            return
+
+        # Retrieval (no coupling to enable_rag)
+        res = await self._ingestion_service.search_session_attachments(
+            query=state.request.message,
+            session_id=session.id,
+            user_id=state.request.user_id,
+            tenant_id=session.tenant_id,
+            workspace_id=session.workspace_id,
+            top_k=6,
+            score_threshold=None,
+        )
+
+        dbg = (res or {}).get("debug") or {}
+        used = bool((res or {}).get("used"))
+        chunks = (res or {}).get("hits") or []
+
+        state.used_attachments_context = used and bool(chunks)
+        state.debug_trace["attachments"] = {
+            **dbg,
+            "used": bool(used and chunks),
+            "hits_count": len(chunks),
+        }
+        state.debug_trace["attachments_chunks"] = len(chunks)
+
+        if not state.used_attachments_context:
+            return
+
+        # Build a single system context message (same injection pattern as RAG).
+        attachments_context_text = self._format_rag_context(chunks)
+        if not attachments_context_text.strip():
+            # If somehow chunks exist but formatting is empty, treat as unused.
+            state.used_attachments_context = False
+            state.debug_trace["attachments"] = {
+                **dbg,
+                "used": False,
+                "reason": "empty_formatted_context",
+            }
+            state.debug_trace["attachments_chunks"] = 0
+            return
+
+        content = "SESSION ATTACHMENTS (retrieved):\n" + attachments_context_text
+
+        context_messages = [
+            ChatMessage(
+                role="system",
+                content=content,
+                created_at=datetime.now(timezone.utc).isoformat(),
+            )
+        ]
+
+        self._insert_context_before_last_user(state, context_messages)
+
+        # Provide compact textual form also for tools agent (same pattern as RAG).
+        state.tools_context_parts.append("SESSION ATTACHMENTS:\n" + attachments_context_text)
+
+        # Trace step
+        self._trace(
+            state,
+            component="engine",
+            step="attachments_context",
+            message="Session attachments retrieval executed and context injected.",
+            data={
+                "used_attachments_context": state.used_attachments_context,
+                "retrieved_chunks": len(chunks),
+            },
+        )
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -1365,5 +1518,80 @@ class DropInKnowledgeRuntime:
 
         for m in msgs:
             state.messages_for_llm.insert(last_user_idx, m)
-            last_user_idx += 1    
+            last_user_idx += 1   
+
+
+    async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
+        async with self._llm_usage_lock:
+            return list(self._llm_usage_runs)
+            
+
+    async def clear_llm_usage_runs(self) -> None:
+        async with self._llm_usage_lock:
+            self._llm_usage_runs.clear()
+            self._llm_usage_run_seq = 0 
+
+
+    async def print_usage_runs(self):
+        runs = await self.get_llm_usage_runs()
+        print("runs:", len(runs))
+
+        # Aggregate totals across all runs
+        total_calls = 0
+        total_in = 0
+        total_out = 0
+        total_tokens = 0
+        total_ms = 0
+        total_errors = 0
+
+        # Aggregate by provider/model string key
+        by_key = {}  # key -> dict(calls,in,out,total,ms,err)
+
+        for r in runs:
+            # r.total is expected to have these fields (as shown in pretty())
+            t = r.report.total
+            total_calls += int(t.calls or 0)
+            total_in += int(t.input_tokens or 0)
+            total_out += int(t.output_tokens or 0)
+            total_tokens += int(t.total_tokens or 0)
+            total_ms += int(t.duration_ms or 0)
+            total_errors += int(t.errors or 0)
+
+            # r.by_provider_model is expected to be iterable of items with key + stats
+            # (use exactly what your report object exposes; below assumes dict-like)
+            bpm = r.report.by_provider_model
+
+            for k, st in bpm.items():
+                agg = by_key.get(k)
+                if agg is None:
+                    agg = {"calls": 0, "in": 0, "out": 0, "total": 0, "ms": 0, "err": 0}
+                    by_key[k] = agg
+                agg["calls"] += int(st.calls or 0)
+                agg["in"] += int(st.input_tokens or 0)
+                agg["out"] += int(st.output_tokens or 0)
+                agg["total"] += int(st.total_tokens or 0)
+                agg["ms"] += int(st.duration_ms or 0)
+                agg["err"] += int(st.errors or 0)
+
+        if runs:
+            print("=" * 100)
+            print("ALL RUNS (aggregated)")
+            print(f"  calls        : {total_calls}")
+            print(f"  input_tokens : {total_in}")
+            print(f"  output_tokens: {total_out}")
+            print(f"  total_tokens : {total_tokens}")
+            print(f"  duration_ms  : {total_ms}")
+            print(f"  errors       : {total_errors}")
+
+            if by_key:
+                print("By provider/model (aggregated):")
+                for k, st in by_key.items():
+                    print(
+                        f"  - {k}: calls={st['calls']} in={st['in']} out={st['out']} "
+                        f"total={st['total']} ms={st['ms']} err={st['err']}"
+                    )
+
+        for r in runs:
+            print("=" * 100)
+            print(r.pretty())
 

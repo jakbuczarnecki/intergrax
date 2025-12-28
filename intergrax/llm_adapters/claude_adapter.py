@@ -10,6 +10,7 @@ from anthropic import Anthropic
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class ClaudeChatAdapter(LLMAdapter):
@@ -45,6 +46,8 @@ class ClaudeChatAdapter(LLMAdapter):
         self.defaults = defaults
         self.model_name_for_token_estimation: str = self.model
         self._context_window_tokens: int = self._CLAUDE_CONTEXT_WINDOWS.get(self.model, 32_000)
+
+        self.provider = LLMProvider.CLAUDE
 
     @property
     def context_window_tokens(self) -> int:

@@ -22,45 +22,17 @@ ToolChoiceMode = Literal["off", "auto", "required"]
 
 
 class ToolsContextScope(str, Enum):
-    # Agent dostaje tylko aktualną wiadomość użytkownika.
     CURRENT_MESSAGE_ONLY = "current_message_only"
     
-    # Agent dostaje historię rozmowy (bez RAG/Websearch chunks).
     CONVERSATION = "conversation"
     
-    # Agent dostaje pełny kontekst tak jak LLM (historia + RAG + websearch).
     FULL = "full"
 
 
-class ReasoningMode(str, Enum):
-    """
-    Defines how the runtime should guide the model's reasoning process.
-    """
-
-    # Default behavior – no explicit reasoning instructions.
-    DIRECT = "direct"
-
-    # Model reasons step-by-step internally but does not reveal chain-of-thought.
-    COT_INTERNAL = "cot_internal"
-
-
-@dataclass
-class ReasoningConfig:
-    """
-    Configuration for reasoning / Chain-of-Thought behavior.
-
-    This config does NOT guarantee visibility of reasoning steps.
-    It only controls how the model is instructed to reason.
-    """
-
-    mode: ReasoningMode = ReasoningMode.DIRECT
-
-    # Reserved for future extensions (e.g. planning calls, JSON reasoning).
-    max_reasoning_tokens: Optional[int] = None
-
-    # Whether runtime should attempt to capture any reasoning metadata
-    # for debug/observability purposes (never exposed to end user).
-    capture_reasoning_trace: bool = False
+class StepPlanningStrategy(str, Enum):
+    OFF = "off"
+    STATIC_PLAN = "static_plan"
+    DYNAMIC_LOOP = "dynamic_loop"
 
 
 @dataclass
@@ -195,26 +167,22 @@ class RuntimeConfig:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+
     # ------------------------------------------------------------------
-    # REASONING / CHAIN-OF-THOUGHT
+    # DIAGNOSTICS
     # ------------------------------------------------------------------
+    enable_llm_usage_collection: bool = True
 
-    reasoning_config: Optional[ReasoningConfig] = None
 
-
-    @property
-    def reasoning_mode(self) -> ReasoningMode:
-        """
-        Returns the active reasoning mode.
-        Defaults to DIRECT if no reasoning_config is provided.
-        """
-
-        if self.reasoning_config is None:
-            return ReasoningMode.DIRECT
-        
-        return self.reasoning_config.mode
+    # ------------------------------------------------------------------
+    # PLANNING
+    # ------------------------------------------------------------------
+    step_planning_strategy: StepPlanningStrategy = StepPlanningStrategy.OFF
     
 
+    # ------------------------------------------------------------------
+    # VALIDATION
+    # ------------------------------------------------------------------
     def validate(self) -> None:
         """
         Validates config consistency. Keeps the runtime fail-fast and predictable.

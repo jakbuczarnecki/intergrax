@@ -35,26 +35,26 @@
 # - tools/
 # - websearch/
 #
-# Files included: 128
-# Total lines: 22915
+# Files included: 131
+# Total lines: 24518
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
 # ROOT: D:\Projekty\intergrax
 # PACKAGE: intergrax
-# FILES: 128
+# FILES: 131
 #
 # MODULE MAP (dynamic):
 # - chains/ (2 files)
 # - globals/ (2 files)
 # - llm/ (2 files)
-# - llm_adapters/ (11 files)
+# - llm_adapters/ (12 files)
 # - memory/ (9 files)
 # - multimedia/ (5 files)
 # - openai/ (3 files)
 # - rag/ (11 files)
 # - root/ (4 files)
-# - runtime/ (38 files)
+# - runtime/ (40 files)
 # - supervisor/ (5 files)
 # - tools/ (3 files)
 # - websearch/ (33 files)
@@ -67,16 +67,17 @@
 # - intergrax/llm/__init__.py | intergrax.llm | llm | 0 | e3b0c44298fc
 # - intergrax/llm/messages.py | intergrax.llm.messages | llm | 97 | 5d5feec8a7c4
 # - intergrax/llm_adapters/__init__.py | intergrax.llm_adapters | llm_adapters | 1 | 169eff6990ff
-# - intergrax/llm_adapters/aws_bedrock_adapter.py | intergrax.llm_adapters.aws_bedrock_adapter | llm_adapters | 573 | fb32f6afb9b0
-# - intergrax/llm_adapters/azure_openai_adapter.py | intergrax.llm_adapters.azure_openai_adapter | llm_adapters | 272 | ee8a65c94ea0
-# - intergrax/llm_adapters/claude_adapter.py | intergrax.llm_adapters.claude_adapter | llm_adapters | 216 | 214fffef34a5
-# - intergrax/llm_adapters/gemini_adapter.py | intergrax.llm_adapters.gemini_adapter | llm_adapters | 279 | 2ddf3dc914cc
-# - intergrax/llm_adapters/llm_adapter.py | intergrax.llm_adapters.llm_adapter | llm_adapters | 436 | 6f55fbd8377a
-# - intergrax/llm_adapters/llm_provider.py | intergrax.llm_adapters.llm_provider | llm_adapters | 60 | ea3c4c47d589
-# - intergrax/llm_adapters/llm_usage_track.py | intergrax.llm_adapters.llm_usage_track | llm_adapters | 112 | d930766bf13f
-# - intergrax/llm_adapters/mistral_adapter.py | intergrax.llm_adapters.mistral_adapter | llm_adapters | 259 | 07467439c203
-# - intergrax/llm_adapters/ollama_adapter.py | intergrax.llm_adapters.ollama_adapter | llm_adapters | 341 | 335a04938c79
-# - intergrax/llm_adapters/openai_responses_adapter.py | intergrax.llm_adapters.openai_responses_adapter | llm_adapters | 477 | 9f91f21a487a
+# - intergrax/llm_adapters/aws_bedrock_adapter.py | intergrax.llm_adapters.aws_bedrock_adapter | llm_adapters | 577 | fcb7a3069a78
+# - intergrax/llm_adapters/azure_openai_adapter.py | intergrax.llm_adapters.azure_openai_adapter | llm_adapters | 276 | 232b57d4b67e
+# - intergrax/llm_adapters/claude_adapter.py | intergrax.llm_adapters.claude_adapter | llm_adapters | 219 | 6abf3a728d48
+# - intergrax/llm_adapters/gemini_adapter.py | intergrax.llm_adapters.gemini_adapter | llm_adapters | 282 | 50e256a870c4
+# - intergrax/llm_adapters/llm_adapter.py | intergrax.llm_adapters.llm_adapter | llm_adapters | 440 | a6d217d79f39
+# - intergrax/llm_adapters/llm_provider.py | intergrax.llm_adapters.llm_provider | llm_adapters | 18 | c339b2c40574
+# - intergrax/llm_adapters/llm_provider_registry.py | intergrax.llm_adapters.llm_provider_registry | llm_adapters | 50 | 3e8fe294fa6b
+# - intergrax/llm_adapters/llm_usage_track.py | intergrax.llm_adapters.llm_usage_track | llm_adapters | 288 | c06c71de5128
+# - intergrax/llm_adapters/mistral_adapter.py | intergrax.llm_adapters.mistral_adapter | llm_adapters | 262 | 8a9d192a2730
+# - intergrax/llm_adapters/ollama_adapter.py | intergrax.llm_adapters.ollama_adapter | llm_adapters | 345 | 5b7e5150535e
+# - intergrax/llm_adapters/openai_responses_adapter.py | intergrax.llm_adapters.openai_responses_adapter | llm_adapters | 480 | 1e58bbff815e
 # - intergrax/memory/__init__.py | intergrax.memory | memory | 0 | e3b0c44298fc
 # - intergrax/memory/conversational_memory.py | intergrax.memory.conversational_memory | memory | 123 | e5e9f9312647
 # - intergrax/memory/conversational_store.py | intergrax.memory.conversational_store | memory | 106 | 291f5ffa339e
@@ -95,11 +96,11 @@
 # - intergrax/openai/rag/__init__.py | intergrax.openai.rag | openai | 0 | e3b0c44298fc
 # - intergrax/openai/rag/rag_openai.py | intergrax.openai.rag.rag_openai | openai | 252 | 899401a17b6e
 # - intergrax/rag/__init__.py | intergrax.rag | rag | 0 | e3b0c44298fc
-# - intergrax/rag/documents_loader.py | intergrax.rag.documents_loader | rag | 1289 | 3eb3420b8e20
+# - intergrax/rag/documents_loader.py | intergrax.rag.documents_loader | rag | 1282 | aa44142ba37a
 # - intergrax/rag/documents_splitter.py | intergrax.rag.documents_splitter | rag | 351 | b6796ab15bd6
 # - intergrax/rag/dual_index_builder.py | intergrax.rag.dual_index_builder | rag | 157 | 81ca53a93d14
 # - intergrax/rag/dual_retriever.py | intergrax.rag.dual_retriever | rag | 311 | 768f2857999c
-# - intergrax/rag/embedding_manager.py | intergrax.rag.embedding_manager | rag | 306 | f5e15925a7b8
+# - intergrax/rag/embedding_manager.py | intergrax.rag.embedding_manager | rag | 306 | f269860162ca
 # - intergrax/rag/rag_answerer.py | intergrax.rag.rag_answerer | rag | 419 | c4926441c12b
 # - intergrax/rag/rag_retriever.py | intergrax.rag.rag_retriever | rag | 555 | 3143a9774ada
 # - intergrax/rag/re_ranker.py | intergrax.rag.re_ranker | rag | 399 | 710b3356e2cc
@@ -111,25 +112,27 @@
 # - intergrax/system_prompts.py | intergrax.system_prompts | root | 84 | f66fdf33ac4c
 # - intergrax/runtime/__init__.py | intergrax.runtime | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/__init__.py | intergrax.runtime.drop_in_knowledge_mode | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 226 | 81be232bf9ec
+# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 194 | c72868be5156
 # - intergrax/runtime/drop_in_knowledge_mode/context/__init__.py | intergrax.runtime.drop_in_knowledge_mode.context | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/context/context_builder.py | intergrax.runtime.drop_in_knowledge_mode.context.context_builder | runtime | 485 | 2cca85dc5dcb
 # - intergrax/runtime/drop_in_knowledge_mode/context/engine_history_layer.py | intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer | runtime | 565 | d4c1a0d530cd
 # - intergrax/runtime/drop_in_knowledge_mode/engine/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1366 | 917dcb55d125
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 86 | 72a79b8668c0
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1597 | 1b5fa9d35009
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 82 | 214f86ba4a2f
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py | intergrax.runtime.drop_in_knowledge_mode.ingestion | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/attachments.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments | runtime | 124 | f1f76309b50f
-# - intergrax/runtime/drop_in_knowledge_mode/ingestion/ingestion_service.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service | runtime | 322 | 2d1af899b85d
+# - intergrax/runtime/drop_in_knowledge_mode/ingestion/ingestion_service.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service | runtime | 470 | f85b4e1154a7
+# - intergrax/runtime/drop_in_knowledge_mode/planning/__init__.py | intergrax.runtime.drop_in_knowledge_mode.planning | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/drop_in_knowledge_mode/planning/engine_planner.py | intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner | runtime | 407 | c6ddacbbb40c
+# - intergrax/runtime/drop_in_knowledge_mode/planning/step_planner.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_planner | runtime | 486 | c6dde8deb08a
+# - intergrax/runtime/drop_in_knowledge_mode/planning/stepplan_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models | runtime | 325 | 07426d1d4136
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/__init__.py | intergrax.runtime.drop_in_knowledge_mode.prompts | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/history_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder | runtime | 89 | 7a99ef869b92
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/rag_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder | runtime | 105 | 487e17f834e1
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/user_longterm_memory_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder | runtime | 117 | 8608ee04efaf
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/websearch_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder | runtime | 112 | b51b50c3d26a
-# - intergrax/runtime/drop_in_knowledge_mode/reasoning/__init__.py | intergrax.runtime.drop_in_knowledge_mode.reasoning | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/reasoning/reasoning_layer.py | intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer | runtime | 163 | 7f704f315d6e
 # - intergrax/runtime/drop_in_knowledge_mode/responses/__init__.py | intergrax.runtime.drop_in_knowledge_mode.responses | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/responses/response_schema.py | intergrax.runtime.drop_in_knowledge_mode.responses.response_schema | runtime | 182 | bc77a95bdf4f
+# - intergrax/runtime/drop_in_knowledge_mode/responses/response_schema.py | intergrax.runtime.drop_in_knowledge_mode.responses.response_schema | runtime | 182 | 0edf2ebbb1b9
 # - intergrax/runtime/drop_in_knowledge_mode/session/__init__.py | intergrax.runtime.drop_in_knowledge_mode.session | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/session/chat_session.py | intergrax.runtime.drop_in_knowledge_mode.session.chat_session | runtime | 145 | 3b849ae2b512
 # - intergrax/runtime/drop_in_knowledge_mode/session/in_memory_session_storage.py | intergrax.runtime.drop_in_knowledge_mode.session.in_memory_session_storage | runtime | 181 | 5d9d175f4412
@@ -189,7 +192,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 22915
+# TOTAL LINES: 24518
 # ======================================================================
 
 # ======================================================================
@@ -897,8 +900,8 @@ def append_chat_messages(
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=aws_bedrock_adapter.py
-# LINES: 573
-# SHA256: fb32f6afb9b02878b717c282e49067322b724892529dcd53eb5129109383fd70
+# LINES: 577
+# SHA256: fcb7a3069a78a297a1542567c40dcb188ce202c921db723df127c34a21bf2f5f
 # SYMBOLS:
 #   - class BedrockModelFamily
 #   - class BedrockNativeCodec
@@ -929,6 +932,7 @@ from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class BedrockModelFamily(str, Enum):
@@ -1291,6 +1295,9 @@ class BedrockChatAdapter(LLMAdapter):
         # Conservative default; you can refine per family if you want.
         self._context_window_tokens: int = self._estimate_context_window(self.config.model_id)
 
+        self.provider = LLMProvider.AWS_BEDROCK
+        self.model = resolved_model_id
+
     @property
     def context_window_tokens(self) -> int:
         return self._context_window_tokens
@@ -1491,8 +1498,8 @@ class BedrockChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=azure_openai_adapter.py
-# LINES: 272
-# SHA256: ee8a65c94ea0ab40d7f5e02eb840af0ec737ae51aaa3347fa73eddde68fcfa9a
+# LINES: 276
+# SHA256: 232b57d4b67e3173cea1d5eadadc579fbebd58fdce95ca9238985b4d1080d128
 # SYMBOLS:
 #   - class AzureOpenAIChatAdapter
 # ======================================================================
@@ -1509,6 +1516,7 @@ from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class AzureOpenAIChatAdapter(LLMAdapter):
@@ -1559,6 +1567,9 @@ class AzureOpenAIChatAdapter(LLMAdapter):
 
         self.defaults = defaults
         self._context_window_tokens: int = self._estimate_context_window(self.deployment)
+
+        self.provider = LLMProvider.AZURE_OPENAI
+        self.model = self.deployment
 
     @property
     def context_window_tokens(self) -> int:
@@ -1777,8 +1788,8 @@ class AzureOpenAIChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=claude_adapter.py
-# LINES: 216
-# SHA256: 214fffef34a5097e3670fef4a029411ebdb6f67ad059f144edaafbaec1ec47ec
+# LINES: 219
+# SHA256: 6abf3a728d487268c99d0556ac2a3358763c5df578783b876879338041f555ad
 # SYMBOLS:
 #   - class ClaudeChatAdapter
 # ======================================================================
@@ -1794,6 +1805,7 @@ from anthropic import Anthropic
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class ClaudeChatAdapter(LLMAdapter):
@@ -1829,6 +1841,8 @@ class ClaudeChatAdapter(LLMAdapter):
         self.defaults = defaults
         self.model_name_for_token_estimation: str = self.model
         self._context_window_tokens: int = self._CLAUDE_CONTEXT_WINDOWS.get(self.model, 32_000)
+
+        self.provider = LLMProvider.CLAUDE
 
     @property
     def context_window_tokens(self) -> int:
@@ -2007,8 +2021,8 @@ class ClaudeChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=gemini_adapter.py
-# LINES: 279
-# SHA256: 2ddf3dc914cc015d26ea16afd057e2168930001e363e046365f86b30be4acf93
+# LINES: 282
+# SHA256: 50e256a870c43b49ce7794b1a26aee24f0ba5bedc957f4430ff30b76f66eca7d
 # SYMBOLS:
 #   - class GeminiChatAdapter
 # ======================================================================
@@ -2026,6 +2040,7 @@ from google.genai import types
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class GeminiChatAdapter(LLMAdapter):
@@ -2066,6 +2081,8 @@ class GeminiChatAdapter(LLMAdapter):
         self.defaults = defaults
 
         self._context_window_tokens: int = self._estimate_gemini_context_window(self.model)
+
+        self.provider = LLMProvider.GEMINI
 
     @property
     def context_window_tokens(self) -> int:
@@ -2300,8 +2317,8 @@ class GeminiChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=llm_adapter.py
-# LINES: 436
-# SHA256: 6f55fbd8377ab9bc2748e870e2299128b2832ee51da9c725dd06d70cdbf0d086
+# LINES: 440
+# SHA256: a6d217d79f3901549e5a1cd6f1a936c2b62d7775b92328ec0b6dda0373955b50
 # SYMBOLS:
 #   - class LLMAdapter
 #   - class LLMAdapterUsageLog
@@ -2321,6 +2338,7 @@ import re
 import uuid
 import time
 import tiktoken
+from intergrax.llm_adapters.llm_provider import LLMProvider
 from intergrax.memory.conversational_memory import ChatMessage
 
 
@@ -2346,6 +2364,9 @@ class LLMAdapter(ABC):
       - tools
       - structured output
     """
+
+    provider: LLMProvider
+    model: str
 
     # Hint used by the generic token estimator (e.g. OpenAI model name).
     model_name_for_token_estimation: Optional[str] = None
@@ -2753,11 +2774,10 @@ class LLMRunStats:
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=llm_provider.py
-# LINES: 60
-# SHA256: ea3c4c47d5896aef7a9beff78d047e19abd66ed0c077a5353d955ebf5e780bfc
+# LINES: 18
+# SHA256: c339b2c40574c5dfa7297530b0318646244f1e27cc1895a8b03e09826533b761
 # SYMBOLS:
 #   - class LLMProvider
-#   - class LLMAdapterRegistry
 # ======================================================================
 # © Artur Czarnecki. All rights reserved.
 # Integrax framework – proprietary and confidential.
@@ -2765,16 +2785,7 @@ class LLMRunStats:
 
 from __future__ import annotations
 from enum import Enum
-from typing import Any, Callable, Dict, Union
 
-from intergrax.llm_adapters.aws_bedrock_adapter import BedrockChatAdapter
-from intergrax.llm_adapters.azure_openai_adapter import AzureOpenAIChatAdapter
-from intergrax.llm_adapters.claude_adapter import ClaudeChatAdapter
-from intergrax.llm_adapters.gemini_adapter import GeminiChatAdapter
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.mistral_adapter import MistralChatAdapter
-from intergrax.llm_adapters.ollama_adapter import LangChainOllamaAdapter
-from intergrax.llm_adapters.openai_responses_adapter import OpenAIChatResponsesAdapter
 
 class LLMProvider(str, Enum):
     OPENAI = "openai"
@@ -2785,6 +2796,37 @@ class LLMProvider(str, Enum):
     AZURE_OPENAI = "azure_openai"
     AWS_BEDROCK = "aws_bedrock"
 
+
+
+# ======================================================================
+# FILE: intergrax/llm_adapters/llm_provider_registry.py
+# MODULE: intergrax.llm_adapters.llm_provider_registry
+# MODULE_GROUP: llm_adapters
+# TAGS:
+#   - package=intergrax
+#   - module_group=llm_adapters
+#   - file=llm_provider_registry.py
+# LINES: 50
+# SHA256: 3e8fe294fa6b6e555d12b156dae0a2d90b3fa1c23106a2549a7f4a97df74db17
+# SYMBOLS:
+#   - class LLMAdapterRegistry
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import Any, Callable, Dict, Union
+
+from intergrax.llm_adapters.aws_bedrock_adapter import BedrockChatAdapter
+from intergrax.llm_adapters.azure_openai_adapter import AzureOpenAIChatAdapter
+from intergrax.llm_adapters.claude_adapter import ClaudeChatAdapter
+from intergrax.llm_adapters.gemini_adapter import GeminiChatAdapter
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
+from intergrax.llm_adapters.mistral_adapter import MistralChatAdapter
+from intergrax.llm_adapters.ollama_adapter import LangChainOllamaAdapter
+from intergrax.llm_adapters.openai_responses_adapter import OpenAIChatResponsesAdapter
 
 class LLMAdapterRegistry:
     _factories: Dict[str, Any] = {}
@@ -2828,10 +2870,12 @@ LLMAdapterRegistry.register(LLMProvider.AWS_BEDROCK, lambda **kw: BedrockChatAda
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=llm_usage_track.py
-# LINES: 112
-# SHA256: d930766bf13ff445148b9f0f4c3d09041ddf02f3675f00c7ceb9110e4c679b2d
+# LINES: 288
+# SHA256: c06c71de5128f0a1b2e277b001253137678f4ceb557011876676610689c33063
 # SYMBOLS:
-#   - class LLMUsageSnapshot
+#   - class LLMAdapterMeta
+#   - class LLMAdapterUsageEntry
+#   - class LLMUsageReport
 #   - class LLMUsageTracker
 # ======================================================================
 # © Artur Czarnecki. All rights reserved.
@@ -2839,23 +2883,81 @@ LLMAdapterRegistry.register(LLMProvider.AWS_BEDROCK, lambda **kw: BedrockChatAda
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 import time
 
 from intergrax.llm_adapters.llm_adapter import LLMAdapter, LLMRunStats
 
+from dataclasses import dataclass, asdict
+from typing import Any, Dict, List, Optional, Tuple
 
-@dataclass
-class LLMUsageSnapshot:
-    """
-    One adapter snapshot for a given run_id.
-    """
-    adapter_label: str
-    provider: Optional[str]
-    model_hint: Optional[str]
+
+@dataclass(frozen=True)
+class LLMAdapterMeta:
+    adapter_type: str
+    provider: str
+    model: str
+
+
+@dataclass(frozen=True)
+class LLMAdapterUsageEntry:
+    label: str
+    meta: LLMAdapterMeta
     stats: LLMRunStats
+    adapter_instance_id: int
+
+
+@dataclass(frozen=True)
+class LLMUsageReport:
+    run_id: str
+    total: LLMRunStats
+    entries: List[LLMAdapterUsageEntry]
+
+    # Optional aggregation by (provider, model)
+    by_provider_model: Dict[str, LLMRunStats]
+
+    # Debug only: label -> instance_id
+    adapter_instance_ids: Dict[str, int]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
     
+    def pretty(self) -> str:
+        lines: List[str] = []
+
+        t = self.total
+        lines.append(f"LLMUsageReport(run_id={self.run_id})")
+        lines.append("Total:")
+        lines.append(f"  calls        : {t.calls}")
+        lines.append(f"  input_tokens : {t.input_tokens}")
+        lines.append(f"  output_tokens: {t.output_tokens}")
+        lines.append(f"  total_tokens : {t.total_tokens}")
+        lines.append(f"  duration_ms  : {t.duration_ms}")
+        lines.append(f"  errors       : {t.errors}")
+
+        if self.by_provider_model:
+            lines.append("By provider/model:")
+            for key, st in self.by_provider_model.items():  # insertion order
+                lines.append(
+                    f"  - {key}: calls={st.calls} in={st.input_tokens} out={st.output_tokens} "
+                    f"total={st.total_tokens} ms={st.duration_ms} err={st.errors}"
+                )
+
+        if self.entries:
+            lines.append("Entries (registration order):")
+            for e in self.entries:  # registration order
+                st = e.stats
+                meta = e.meta
+                lines.append(f"  - {e.label} [{meta.provider}:{meta.model}] ({meta.adapter_type})")
+                lines.append(
+                    f"      calls={st.calls} in={st.input_tokens} out={st.output_tokens} "
+                    f"total={st.total_tokens} ms={st.duration_ms} err={st.errors} "
+                    f"instance_id={e.adapter_instance_id}"
+                )
+
+        return "\n".join(lines)
+
 
 class LLMUsageTracker:
     """
@@ -2910,42 +3012,160 @@ class LLMUsageTracker:
         return list(self._adapters.keys())
 
 
-    def snapshot(self) -> List[LLMUsageSnapshot]:
-        out: List[LLMUsageSnapshot] = []
-        for label, ad in self._adapters.items():
-            st = ad.usage.get_run_stats(self.run_id)
-            provider = None
-            try:
-                # Optional: if your adapters expose provider in a strict way, wire it here.
-                # Keep None if not guaranteed.
-                provider = None
-            except Exception:
-                provider = None
+    def build_report(self) -> LLMUsageReport:
+        entries: List[LLMAdapterUsageEntry] = []
 
-            model_hint = ad.model_name_for_token_estimation
-            out.append(
-                LLMUsageSnapshot(
-                    adapter_label=label,
-                    provider=provider,
-                    model_hint=model_hint,
+        adapter_instance_ids: Dict[str, int] = {}
+        for label, ad in (self._adapters or {}).items():
+            adapter_instance_ids[label] = id(ad) if ad is not None else 0
+
+        # Build per-label entries (including meta)
+        for label, ad in (self._adapters or {}).items():
+            if ad is None:
+                continue
+
+            meta = LLMAdapterMeta(
+                adapter_type=ad.__class__.__name__,
+                provider=ad.provider,
+                model=ad.model,
+            )
+
+            st = ad.usage.get_run_stats(self.run_id)
+            if st is None:
+                st = LLMRunStats()  # zakładam, że masz domyślne 0; jeśli nie, utwórz jawnie z zerami
+
+            entries.append(
+                LLMAdapterUsageEntry(
+                    label=label,
+                    meta=meta,
                     stats=st,
+                    adapter_instance_id=id(ad),
                 )
             )
-        return out
+
+        # Total (dedup by instance, jak masz już poprawione total())
+        total = self.total()
+
+        # Aggregate by provider:model (dedup by instance, żeby nie dublować aliasów labeli)
+        by_provider_model: Dict[str, LLMRunStats] = {}
+        seen_ids = set()
+        for e in entries:
+            if e.adapter_instance_id in seen_ids:
+                continue
+            seen_ids.add(e.adapter_instance_id)
+
+            key = f"{e.meta.provider}:{e.meta.model}"
+            agg = by_provider_model.get(key)
+            if agg is None:
+                by_provider_model[key] = LLMRunStats(
+                    calls=e.stats.calls,
+                    input_tokens=e.stats.input_tokens,
+                    output_tokens=e.stats.output_tokens,
+                    total_tokens=e.stats.total_tokens,
+                    duration_ms=e.stats.duration_ms,
+                    errors=e.stats.errors,
+                )
+            else:
+                agg.calls += e.stats.calls
+                agg.input_tokens += e.stats.input_tokens
+                agg.output_tokens += e.stats.output_tokens
+                agg.total_tokens += e.stats.total_tokens
+                agg.duration_ms += e.stats.duration_ms
+                agg.errors += e.stats.errors
+
+        return LLMUsageReport(
+            run_id=self.run_id,
+            total=total,
+            entries=entries,
+            by_provider_model=by_provider_model,
+            adapter_instance_ids=adapter_instance_ids,
+        )
+
+
+    def export(self) -> Dict[str, Any]:
+        return self.build_report().to_dict()
+
+
 
     def total(self) -> LLMRunStats:
         agg = LLMRunStats()
-        for _, ad in self._adapters.items():
+
+        seen_ids = set()
+        for _, ad in (self._adapters or {}).items():
+            if ad is None:
+                continue
+
+            ad_id = id(ad)
+            if ad_id in seen_ids:
+                continue
+            seen_ids.add(ad_id)
+
             st = ad.usage.get_run_stats(self.run_id)
             if st is None:
                 continue
+
             agg.calls += st.calls
             agg.input_tokens += st.input_tokens
             agg.output_tokens += st.output_tokens
             agg.total_tokens += st.total_tokens
             agg.duration_ms += st.duration_ms
             agg.errors += st.errors
+
         return agg
+
+    
+    
+    def export(self) -> Dict[str, Any]:
+        """
+        Return an immutable snapshot of usage stats for the current run_id.
+        Safe to serialize (JSON) and store in debug traces/logs.
+        """
+        adapters_out: Dict[str, Any] = {}
+
+        for label, ad in self._adapters.items():
+            meta = self._describe_adapter(ad)
+            st = ad.usage.get_run_stats(self.run_id)
+            if st is None:
+                adapters_out[label] = {
+                    **meta,
+                    "calls": 0,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "total_tokens": 0,
+                    "duration_ms": 0,
+                    "errors": 0,
+                }
+            else:
+                adapters_out[label] = {
+                    **meta,
+                    **asdict(st),
+                }
+
+        total = self.total()
+        
+        adapter_id_map = {}
+        for label, ad in (self._adapters or {}).items():
+            adapter_id_map[label] = id(ad) if ad is not None else None
+
+        return {
+        "run_id": self.run_id,
+        "total": asdict(total),
+        "adapters": adapters_out,
+        "adapter_instance_ids": adapter_id_map,  # debug only
+        }
+    
+
+    def _describe_adapter(self, ad: LLMAdapter) -> Dict[str, Any]:
+        """
+        Typed adapter metadata extraction.
+        Relies on LLMAdapter contract: provider, model, kind must exist.
+        """
+        return {
+            "adapter_type": ad.__class__.__name__,
+            "provider": ad.provider,
+            "model": ad.model,
+        }
+
 
 # ======================================================================
 # FILE: intergrax/llm_adapters/mistral_adapter.py
@@ -2955,8 +3175,8 @@ class LLMUsageTracker:
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=mistral_adapter.py
-# LINES: 259
-# SHA256: 07467439c20301f1d05cc8f0d038d95019b798a1f20448ba5d078341c7352307
+# LINES: 262
+# SHA256: 8a9d192a2730992c6bb17c234fe60d38ee3970bd890d85e8c0ad7af76a9b364c
 # SYMBOLS:
 #   - class _MistralDelta
 #   - class _MistralStreamChoice
@@ -2972,6 +3192,7 @@ from mistralai.models import ChatCompletionResponse
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 # -----------------------------
@@ -3022,6 +3243,8 @@ class MistralChatAdapter(LLMAdapter):
         self.defaults = defaults
 
         self._context_window_tokens: int = self._estimate_mistral_context_window(self.model)
+
+        self.provider = LLMProvider.MISTRAL
 
     @property
     def context_window_tokens(self) -> int:
@@ -3231,8 +3454,8 @@ class MistralChatAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=ollama_adapter.py
-# LINES: 341
-# SHA256: 335a04938c79b6e6c4d17e4792add9880c74c371560b5f891a5f0ecef9b346e8
+# LINES: 345
+# SHA256: 5b7e5150535e5ac72475bf5f8036ed51726e3ae11d861958e4eb30e321b3b28c
 # SYMBOLS:
 #   - class LangChainOllamaAdapter
 # ======================================================================
@@ -3250,6 +3473,7 @@ from intergrax.llm_adapters.llm_adapter import (
     ChatMessage,
     LLMAdapter,
 )
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class LangChainOllamaAdapter(LLMAdapter):
@@ -3332,6 +3556,9 @@ class LangChainOllamaAdapter(LLMAdapter):
             self._context_window_tokens = int(
                 self._estimate_ollama_context_window_from_model(self.chat.model)
             )
+
+        self.provider = LLMProvider.OLLAMA
+        self.model = self.chat.model
 
 
     @property
@@ -3586,8 +3813,8 @@ class LangChainOllamaAdapter(LLMAdapter):
 #   - package=intergrax
 #   - module_group=llm_adapters
 #   - file=openai_responses_adapter.py
-# LINES: 477
-# SHA256: 9f91f21a487a8b2413995326946c1d39f6a5d4eafc31af84d1662b32d170176d
+# LINES: 480
+# SHA256: 1e58bbff815ec665badb911d307723b7441f699e3bee72e33a4077faa321b17e
 # SYMBOLS:
 #   - class OpenAIChatResponsesAdapter
 # ======================================================================
@@ -3608,6 +3835,7 @@ from intergrax.llm_adapters.llm_adapter import (
     ChatMessage,
     LLMAdapter,
 )
+from intergrax.llm_adapters.llm_provider import LLMProvider
 
 
 class OpenAIChatResponsesAdapter(LLMAdapter):
@@ -3661,6 +3889,8 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         self.model_name_for_token_estimation = self.model
         self.defaults = defaults
         self._context_window_tokens: int = self._estimate_openai_context_window(self.model)
+
+        self.provider = LLMProvider.OPENAI
 
 
     @property
@@ -6182,8 +6412,8 @@ class IntergraxRagOpenAI:
 #   - package=intergrax
 #   - module_group=rag
 #   - file=documents_loader.py
-# LINES: 1289
-# SHA256: 3eb3420b8e2037daf16d0b169546cc722369a8b1f21421a14e42da2fbac21abc
+# LINES: 1282
+# SHA256: aa44142ba37a2acc137568669985eb64527498f0334e77ad76a3edb7e785e91a
 # SYMBOLS:
 #   - class DocumentsLoader
 #   - class DocxParagraphLoader
@@ -6204,12 +6434,11 @@ import json
 import docx
 import logging
 import os
-import io
-import base64
-import requests
 
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.ollama_adapter import LangChainOllamaAdapter
 from intergrax.multimedia.video_loader import (
     transcribe_to_vtt,
     extract_frames_and_metadata,
@@ -6219,11 +6448,6 @@ from intergrax.multimedia.audio_loader import (
     translate_audio
 )
 
-# LLM adaptery frameworka (model + provider w adapterze)
-from intergrax.llm_adapters import (
-    LLMAdapter,
-    LangChainOllamaAdapter,
-)
 
 from pathlib import Path
 
@@ -6235,7 +6459,6 @@ from typing import (
 
 from langchain_community.document_loaders import (
     Docx2txtLoader,
-    PyMuPDFLoader,
     TextLoader,
     UnstructuredHTMLLoader,
 )
@@ -8354,7 +8577,7 @@ class DualRetriever:
 #   - module_group=rag
 #   - file=embedding_manager.py
 # LINES: 306
-# SHA256: f5e15925a7b84f186887bb6942a1cfe2feb0fdf80c6d1e9a1962684162591d5c
+# SHA256: f269860162ca04e4f3212a06e08fb9d6eae345309e2290976109e03b24ad277f
 # SYMBOLS:
 #   - class EmbeddingStats
 #   - class EmbeddingManager
@@ -8367,7 +8590,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import List, Dict, Any, Tuple, Literal, Optional, Sequence, Union
+from typing import List, Tuple, Literal, Optional, Sequence, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -8380,7 +8603,7 @@ except Exception:
     SentenceTransformer = None
 
 from langchain_ollama import OllamaEmbeddings
-from langchain_openai import OpenAIEmbeddings   # <— NEW
+from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 
 logger = logging.getLogger(__name__)
@@ -11786,12 +12009,11 @@ def default_rag_system_instruction():
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=config.py
-# LINES: 226
-# SHA256: 81be232bf9ec3df06f5473565bfa57c30d75b682167207b73ba835772b946bcd
+# LINES: 194
+# SHA256: c72868be5156e55b4d0aa37f0306e391cf985e1e3aa8efad6771d302941e1d6b
 # SYMBOLS:
 #   - class ToolsContextScope
-#   - class ReasoningMode
-#   - class ReasoningConfig
+#   - class StepPlanningStrategy
 #   - class RuntimeConfig
 # ======================================================================
 # © Artur Czarnecki. All rights reserved.
@@ -11818,45 +12040,17 @@ ToolChoiceMode = Literal["off", "auto", "required"]
 
 
 class ToolsContextScope(str, Enum):
-    # Agent dostaje tylko aktualną wiadomość użytkownika.
     CURRENT_MESSAGE_ONLY = "current_message_only"
     
-    # Agent dostaje historię rozmowy (bez RAG/Websearch chunks).
     CONVERSATION = "conversation"
     
-    # Agent dostaje pełny kontekst tak jak LLM (historia + RAG + websearch).
     FULL = "full"
 
 
-class ReasoningMode(str, Enum):
-    """
-    Defines how the runtime should guide the model's reasoning process.
-    """
-
-    # Default behavior – no explicit reasoning instructions.
-    DIRECT = "direct"
-
-    # Model reasons step-by-step internally but does not reveal chain-of-thought.
-    COT_INTERNAL = "cot_internal"
-
-
-@dataclass
-class ReasoningConfig:
-    """
-    Configuration for reasoning / Chain-of-Thought behavior.
-
-    This config does NOT guarantee visibility of reasoning steps.
-    It only controls how the model is instructed to reason.
-    """
-
-    mode: ReasoningMode = ReasoningMode.DIRECT
-
-    # Reserved for future extensions (e.g. planning calls, JSON reasoning).
-    max_reasoning_tokens: Optional[int] = None
-
-    # Whether runtime should attempt to capture any reasoning metadata
-    # for debug/observability purposes (never exposed to end user).
-    capture_reasoning_trace: bool = False
+class StepPlanningStrategy(str, Enum):
+    OFF = "off"
+    STATIC_PLAN = "static_plan"
+    DYNAMIC_LOOP = "dynamic_loop"
 
 
 @dataclass
@@ -11991,26 +12185,22 @@ class RuntimeConfig:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+
     # ------------------------------------------------------------------
-    # REASONING / CHAIN-OF-THOUGHT
+    # DIAGNOSTICS
     # ------------------------------------------------------------------
+    enable_llm_usage_collection: bool = True
 
-    reasoning_config: Optional[ReasoningConfig] = None
 
-
-    @property
-    def reasoning_mode(self) -> ReasoningMode:
-        """
-        Returns the active reasoning mode.
-        Defaults to DIRECT if no reasoning_config is provided.
-        """
-
-        if self.reasoning_config is None:
-            return ReasoningMode.DIRECT
-        
-        return self.reasoning_config.mode
+    # ------------------------------------------------------------------
+    # PLANNING
+    # ------------------------------------------------------------------
+    step_planning_strategy: StepPlanningStrategy = StepPlanningStrategy.OFF
     
 
+    # ------------------------------------------------------------------
+    # VALIDATION
+    # ------------------------------------------------------------------
     def validate(self) -> None:
         """
         Validates config consistency. Keeps the runtime fail-fast and predictable.
@@ -13140,9 +13330,10 @@ class HistoryLayer:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime.py
-# LINES: 1366
-# SHA256: 917dcb55d125a58870ab4180af6f90ef90927a78ceb182c396bf975e3f861c12
+# LINES: 1597
+# SHA256: 1b5fa9d350099423c94b4d8ce26bcfeee50eb1b007572b2c7b5fd69eafa6427e
 # SYMBOLS:
+#   - class LLMUsageRunRecord
 #   - class DropInKnowledgeRuntime
 # ======================================================================
 # © Artur Czarnecki. All rights reserved.
@@ -13172,16 +13363,15 @@ Refactored as a stateful pipeline:
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 import json
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 import uuid
 
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
-from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
+from intergrax.llm_adapters.llm_usage_track import LLMUsageReport, LLMUsageTracker
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, StepPlanningStrategy, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
-from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import FileSystemAttachmentResolver
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import AttachmentIngestionService, IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import (
     DefaultHistorySummaryPromptBuilder,
@@ -13192,7 +13382,6 @@ from intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder import 
     RagPromptBuilder,
 )
 from intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder import DefaultUserLongTermMemoryPromptBuilder, UserLongTermMemoryPromptBuilder
-from intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer import ReasoningLayer
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
     RuntimeRequest,
     RuntimeAnswer,
@@ -13219,6 +13408,27 @@ from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 # ----------------------------------------------------------------------
 # DropInKnowledgeRuntime
 # ----------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class LLMUsageRunRecord:
+    seq: int
+    ts_utc: datetime
+    run_id: str
+    session_id: str
+    user_id: str
+    report: LLMUsageReport
+
+    def pretty(self) -> str:
+        lines: List[str] = []
+        lines.append(f"Run #{self.seq}")
+        lines.append(f"  ts_utc     : {self.ts_utc.isoformat()}")
+        lines.append(f"  run_id     : {self.run_id}")
+        lines.append(f"  session_id : {self.session_id}")
+        lines.append(f"  user_id    : {self.user_id}")
+        lines.append(self.report.pretty())        
+
+        return "\n".join(lines)
 
 
 class DropInKnowledgeRuntime:
@@ -13259,6 +13469,11 @@ class DropInKnowledgeRuntime:
 
         self._config = config
         self._config.validate()
+
+        self._llm_usage_run_seq = 0
+        self._llm_usage_runs: list[LLMUsageRunRecord] = []
+
+        self._llm_usage_lock = asyncio.Lock()
 
         self._session_manager = session_manager
 
@@ -13303,10 +13518,6 @@ class DropInKnowledgeRuntime:
             history_prompt_builder=self._history_prompt_builder,
         )
 
-        self._reasoning_layer = ReasoningLayer(
-            config=config
-        )        
-
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -13314,41 +13525,18 @@ class DropInKnowledgeRuntime:
     async def run(self, request: RuntimeRequest) -> RuntimeAnswer:
         """
         Main async entrypoint for the runtime.
-
-        Pipeline:
-          1. Session + ingestion + user message appended.
-          2. Memory layer (user/org profile memory, long-term memory facts).
-          3. Base history builder (load & preprocess conversation history).
-          4. History layer (conversation history for the LLM).
-          5. Instructions layer (final system prompt).
-          6. RAG layer (retrieval + RAG system/context messages).
-          7. Web search layer (optional).
-          8. Ensure current user message is present at the end of context.
-          9. Tools layer (planning + tool calls).
-         10. Core LLM call.
-         11. Persist assistant answer and build RuntimeAnswer with route info.
         """
-        state = RuntimeState(request=request)
-        state.run_id = f"run_{uuid.uuid4().hex}"
-        state.llm_usage_tracker = LLMUsageTracker(run_id=state.run_id)
 
-        state.llm_usage_tracker.register_adapter(self._config.llm_adapter, label="core_adapter")
+        run_id = f"run_{uuid.uuid4().hex}"
 
-        ta = self._config.tools_agent
-        if ta is not None and ta.llm is not None:
-            state.llm_usage_tracker.register_adapter(ta.llm, label="tools_agent")
-
-        ws = self._config.websearch_config
-        if ws is not None and ws.llm is not None:
-            if ws.llm.map_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.map_adapter, label="web_map_adapter")
-            if ws.llm.reduce_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.reduce_adapter, label="web_reduce_adapter")
-            if ws.llm.rerank_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.rerank_adapter, label="web_rerank_adapter")
-
+        state = RuntimeState(
+            request=request,
+            run_id=run_id,
+            llm_usage_tracker=LLMUsageTracker(run_id=run_id)
+        )        
         
-        
+        self.configure_llm_tracker(state)
+
         # Initial trace entry for this request.
         self._trace(
             state,
@@ -13360,44 +13548,22 @@ class DropInKnowledgeRuntime:
                 "user_id": request.user_id,
                 "tenant_id": request.tenant_id or self._config.tenant_id,
                 "run_id": state.run_id,
+                "step_planning_strategy": str(self._config.step_planning_strategy),
             },
         )
 
-        # 1. Session + ingestion
-        await self._step_session_and_ingest(state)
+        if self._config.step_planning_strategy == StepPlanningStrategy.OFF:
+            runtime_answer = await self._run_pipeline_no_planner(state=state)
+        
+        elif self._config.step_planning_strategy == StepPlanningStrategy.STATIC_PLAN:
+            runtime_answer = await self._run_pipeline_static_plan(state)
+        
+        elif self._config.step_planning_strategy == StepPlanningStrategy.DYNAMIC_LOOP:
+            runtime_answer = await self._run_pipeline_dynamic_loop(state)
 
-        # 2. Memory layer (user/org)
-        await self._step_memory_layer(state)
+        else:
+            raise ValueError(f"Unknown step_planning_strategy: {self._config.step_planning_strategy}")
 
-        # 3. Build base history (load & preprocess)
-        await self._step_build_base_history(state)
-
-        # 4. History layer (ContextBuilder / raw)
-        await self._step_history(state)
-
-        # 5. Instructions layer (final system prompt)
-        await self._step_instructions(state)
-
-        # 6. RAG
-        await self._step_rag(state)
-
-        # 7. User long-term memory
-        await self._step_user_longterm_memory(state)
-
-        # 8. Web search
-        await self._step_websearch(state)
-
-        # 9. Ensure current user message
-        self._ensure_current_user_message(state)
-
-        # 10. Tools
-        await self._step_tools(state)
-
-        # 11. Core LLM
-        answer_text = self._step_core_llm(state)
-
-        # 12. Persist + RuntimeAnswer
-        runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
 
         # Final trace entry for this request.
         self._trace(
@@ -13414,10 +13580,66 @@ class DropInKnowledgeRuntime:
                 "run_id":state.run_id
             },
         )
-
-        runtime_answer.llm_usage_tracker = state.llm_usage_tracker
+        
+        await self.finalize_llm_tracker(state, request, runtime_answer)
 
         return runtime_answer
+
+
+    async def _run_pipeline_no_planner(self, state: RuntimeState) -> RuntimeAnswer:
+        # Session + ingestion
+        await self._step_session_and_ingest(state)
+
+        # Memory layer (user/org)
+        await self._step_memory_layer(state)
+
+        # Build base history (load & preprocess)
+        await self._step_build_base_history(state)
+
+        # History layer (ContextBuilder / raw)
+        await self._step_history(state)
+
+        # Instructions layer (final system prompt)
+        await self._step_instructions(state)
+
+        # RAG
+        await self._step_rag(state)
+
+        # User long-term memory
+        await self._step_user_longterm_memory(state)
+
+        # Session attachments context (retrieval from ingestion vectorstore)
+        await self._step_ingested_attachments_context(state)
+
+        # Web search
+        await self._step_websearch(state)
+
+        # Ensure current user message
+        self._ensure_current_user_message(state)
+
+        # Tools
+        await self._step_tools(state)
+
+        # Core LLM
+        answer_text = self._step_core_llm(state)
+
+        # Persist + RuntimeAnswer
+        runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
+
+        return runtime_answer
+
+
+    async def _run_pipeline_static_plan(self, state: RuntimeState) -> RuntimeAnswer:
+        raise NotImplementedError(
+            "StepPlanningStrategy.STATIC_PLAN is configured, but step planner is not implemented in this session."
+        )
+
+    async def _run_pipeline_dynamic_loop(self, state: RuntimeState) -> RuntimeAnswer:
+        raise NotImplementedError(
+            "StepPlanningStrategy.DYNAMIC_LOOP is configured, but step planner is not implemented in this session."
+        )
+
+
 
     def run_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
         """
@@ -13427,6 +13649,51 @@ class DropInKnowledgeRuntime:
         such as simple scripts or some notebook setups.
         """
         return asyncio.run(self.run(request))
+    
+
+    def configure_llm_tracker(
+            self,
+            state: RuntimeState) -> None:     
+           
+        state.llm_usage_tracker.register_adapter(self._config.llm_adapter, label="core_adapter")
+
+        ta = self._config.tools_agent
+        if ta is not None and ta.llm is not None:
+            state.llm_usage_tracker.register_adapter(ta.llm, label="tools_agent")
+
+        ws = self._config.websearch_config
+        if ws is not None and ws.llm is not None:
+            if ws.llm.map_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.map_adapter, label="web_map_adapter")
+            if ws.llm.reduce_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.reduce_adapter, label="web_reduce_adapter")
+            if ws.llm.rerank_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.rerank_adapter, label="web_rerank_adapter")
+
+    
+    async def finalize_llm_tracker(
+            self,
+            state: RuntimeState,
+            request: RuntimeRequest,
+            runtime_answer: RuntimeAnswer) -> None:
+        if state.llm_usage_tracker is not None:
+            runtime_answer.llm_usage_report = state.llm_usage_tracker.build_report()
+            llm_usage_snapshot = runtime_answer.llm_usage_report.to_dict()
+            state.debug_trace["llm_usage"] = llm_usage_snapshot
+
+            if self._config.enable_llm_usage_collection and runtime_answer.llm_usage_report is not None:
+                async with self._llm_usage_lock:
+                    self._llm_usage_run_seq += 1
+                    rec = LLMUsageRunRecord(
+                        seq=self._llm_usage_run_seq,
+                        ts_utc=datetime.now(timezone.utc),
+                        run_id=state.run_id,
+                        session_id=request.session_id,
+                        user_id=request.user_id,
+                        report=runtime_answer.llm_usage_report,
+                    )
+                    self._llm_usage_runs.append(rec)
+
 
     def _trace(
         self,
@@ -13462,7 +13729,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 1: session + ingestion (no history)
+    # Step: session + ingestion (no history)
     # ------------------------------------------------------------------
 
     async def _step_session_and_ingest(self, state: RuntimeState) -> None:
@@ -13550,7 +13817,7 @@ class DropInKnowledgeRuntime:
         # NOTE: state.base_history is intentionally left empty here.
 
     # ------------------------------------------------------------------
-    # Step 2: memory layer (user/org context + profile instructions)
+    # Step: memory layer (user/org context + profile instructions)
     # ------------------------------------------------------------------
 
     async def _step_memory_layer(self, state: RuntimeState) -> None:
@@ -13625,14 +13892,14 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 3: build base history (load & preprocess)
+    # Step: build base history (load & preprocess)
     # ------------------------------------------------------------------
 
     async def _step_build_base_history(self, state: RuntimeState) -> None:
         await self._history_layer.build_base_history(state)
 
     # ------------------------------------------------------------------
-    # Step 4: history
+    # Step: history
     # ------------------------------------------------------------------
 
     async def _step_history(self, state: RuntimeState) -> None:
@@ -13688,7 +13955,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 5: RAG
+    # Step: RAG
     # ------------------------------------------------------------------
 
     async def _step_rag(self, state: RuntimeState) -> None:
@@ -13765,7 +14032,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 6: Web search
+    # Step: Web search
     # ------------------------------------------------------------------
 
     async def _step_websearch(self, state: RuntimeState) -> None:
@@ -13867,7 +14134,7 @@ class DropInKnowledgeRuntime:
         
 
     # ------------------------------------------------------------------
-    # Step 7: Ensure current user message
+    # Step: Ensure current user message
     # ------------------------------------------------------------------
 
     def _ensure_current_user_message(self, state: RuntimeState) -> None:
@@ -13891,7 +14158,7 @@ class DropInKnowledgeRuntime:
 
 
     # ------------------------------------------------------------------
-    # Step 8: Tools
+    # Step: Tools
     # ------------------------------------------------------------------
 
     async def _step_tools(self, state: RuntimeState) -> None:
@@ -14027,7 +14294,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 9: Core LLM
+    # Step: Core LLM
     # ------------------------------------------------------------------
 
     def _step_core_llm(self, state: RuntimeState) -> str:
@@ -14114,7 +14381,7 @@ class DropInKnowledgeRuntime:
             return f"[ERROR] LLM adapter failed: {e}"
 
     # ------------------------------------------------------------------
-    # Step 10: Persist answer & build RuntimeAnswer
+    # Step: Persist answer & build RuntimeAnswer
     # ------------------------------------------------------------------
 
     async def _step_persist_and_build_answer(
@@ -14159,6 +14426,8 @@ class DropInKnowledgeRuntime:
             strategy = "llm_with_rag_context_builder"
         elif state.used_websearch:
             strategy = "llm_with_websearch"
+        elif state.used_attachments_context:
+            strategy = "llm_with_session_attachments"
         elif state.ingestion_results:
             strategy = "llm_only_with_ingestion"
         else:
@@ -14171,7 +14440,10 @@ class DropInKnowledgeRuntime:
             used_user_profile=state.used_user_profile,
             used_user_longterm_memory=state.used_user_longterm_memory and self._config.enable_user_longterm_memory,
             strategy=strategy,
-            extra={},
+            extra={
+                "used_attachments_context": bool(state.used_attachments_context),
+                "attachments_chunks": int(state.debug_trace.get("attachments_chunks", 0) or 0),
+            },
         )
 
         # Token stats are still placeholders – can be wired from LLM adapter later.
@@ -14229,7 +14501,7 @@ class DropInKnowledgeRuntime:
         )
 
     # ------------------------------------------------------------------
-    # Step 11: instructions (final system prompt)
+    # Step: instructions (final system prompt)
     # ------------------------------------------------------------------
 
     async def _step_instructions(self, state: RuntimeState) -> None:
@@ -14251,25 +14523,7 @@ class DropInKnowledgeRuntime:
         if not instructions_text:
             return
         
-        # Apply reasoning / CoT policy (no-op in DIRECT mode)
-        reasoning_result = self._reasoning_layer.apply_reasoning_to_instructions(
-            state=state,
-            base_system_instructions=instructions_text,
-        )
-
-        # Trace reasoning application
-        self._trace(
-            state,
-            component="reasoning",
-            step="apply_reasoning_to_instructions",
-            message="Reasoning policy applied to system instructions.",
-            data={
-                "mode": reasoning_result.mode.value,
-                "applied": reasoning_result.applied,
-            },
-        )
-
-        system_message = ChatMessage(role="system", content=reasoning_result.final_instructions)
+        system_message = ChatMessage(role="system", content=instructions_text)
 
         # `messages_for_llm` at this point should contain only history
         # (built by `_step_history`). We now prepend the system message.
@@ -14277,7 +14531,7 @@ class DropInKnowledgeRuntime:
 
 
     # ------------------------------------------------------------------
-    # Step 12: LongTerm memory RAG
+    # Step: LongTerm memory RAG
     # ------------------------------------------------------------------
     async def _step_user_longterm_memory(self, state: RuntimeState) -> None:
         state.used_user_longterm_memory = False
@@ -14362,6 +14616,99 @@ class DropInKnowledgeRuntime:
         )
 
 
+    # ------------------------------------------------------------------
+    # Step: session attachments context (retrieval from ingestion store)
+    # ------------------------------------------------------------------
+
+    async def _step_ingested_attachments_context(self, state: RuntimeState) -> None:
+        """
+        Retrieve relevant chunks from session-ingested attachments (AttachmentIngestionService)
+        and inject them into the LLM context.
+
+        Key requirements:
+          - Independent from enable_rag (must work even when enable_rag=False).
+          - Reuse existing retrieval components (EmbeddingManager + VectorstoreManager.query).
+          - Filter by session_id + user_id (+ tenant/workspace if available).
+          - Inject as context messages using _insert_context_before_last_user.
+        """
+        # Defaults
+        state.used_attachments_context = False
+        state.debug_trace.setdefault("attachments_chunks", 0)
+
+        if self._ingestion_service is None:
+            state.debug_trace["attachments"] = {"used": False, "reason": "ingestion_service_not_configured"}
+            return
+
+        session = state.session
+        if session is None:
+            state.debug_trace["attachments"] = {"used": False, "reason": "session_not_initialized"}
+            return
+
+        # Retrieval (no coupling to enable_rag)
+        res = await self._ingestion_service.search_session_attachments(
+            query=state.request.message,
+            session_id=session.id,
+            user_id=state.request.user_id,
+            tenant_id=session.tenant_id,
+            workspace_id=session.workspace_id,
+            top_k=6,
+            score_threshold=None,
+        )
+
+        dbg = (res or {}).get("debug") or {}
+        used = bool((res or {}).get("used"))
+        chunks = (res or {}).get("hits") or []
+
+        state.used_attachments_context = used and bool(chunks)
+        state.debug_trace["attachments"] = {
+            **dbg,
+            "used": bool(used and chunks),
+            "hits_count": len(chunks),
+        }
+        state.debug_trace["attachments_chunks"] = len(chunks)
+
+        if not state.used_attachments_context:
+            return
+
+        # Build a single system context message (same injection pattern as RAG).
+        attachments_context_text = self._format_rag_context(chunks)
+        if not attachments_context_text.strip():
+            # If somehow chunks exist but formatting is empty, treat as unused.
+            state.used_attachments_context = False
+            state.debug_trace["attachments"] = {
+                **dbg,
+                "used": False,
+                "reason": "empty_formatted_context",
+            }
+            state.debug_trace["attachments_chunks"] = 0
+            return
+
+        content = "SESSION ATTACHMENTS (retrieved):\n" + attachments_context_text
+
+        context_messages = [
+            ChatMessage(
+                role="system",
+                content=content,
+                created_at=datetime.now(timezone.utc).isoformat(),
+            )
+        ]
+
+        self._insert_context_before_last_user(state, context_messages)
+
+        # Provide compact textual form also for tools agent (same pattern as RAG).
+        state.tools_context_parts.append("SESSION ATTACHMENTS:\n" + attachments_context_text)
+
+        # Trace step
+        self._trace(
+            state,
+            component="engine",
+            step="attachments_context",
+            message="Session attachments retrieval executed and context injected.",
+            data={
+                "used_attachments_context": state.used_attachments_context,
+                "retrieved_chunks": len(chunks),
+            },
+        )
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -14509,7 +14856,82 @@ class DropInKnowledgeRuntime:
 
         for m in msgs:
             state.messages_for_llm.insert(last_user_idx, m)
-            last_user_idx += 1    
+            last_user_idx += 1   
+
+
+    async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
+        async with self._llm_usage_lock:
+            return list(self._llm_usage_runs)
+            
+
+    async def clear_llm_usage_runs(self) -> None:
+        async with self._llm_usage_lock:
+            self._llm_usage_runs.clear()
+            self._llm_usage_run_seq = 0 
+
+
+    async def print_usage_runs(self):
+        runs = await self.get_llm_usage_runs()
+        print("runs:", len(runs))
+
+        # Aggregate totals across all runs
+        total_calls = 0
+        total_in = 0
+        total_out = 0
+        total_tokens = 0
+        total_ms = 0
+        total_errors = 0
+
+        # Aggregate by provider/model string key
+        by_key = {}  # key -> dict(calls,in,out,total,ms,err)
+
+        for r in runs:
+            # r.total is expected to have these fields (as shown in pretty())
+            t = r.report.total
+            total_calls += int(t.calls or 0)
+            total_in += int(t.input_tokens or 0)
+            total_out += int(t.output_tokens or 0)
+            total_tokens += int(t.total_tokens or 0)
+            total_ms += int(t.duration_ms or 0)
+            total_errors += int(t.errors or 0)
+
+            # r.by_provider_model is expected to be iterable of items with key + stats
+            # (use exactly what your report object exposes; below assumes dict-like)
+            bpm = r.report.by_provider_model
+
+            for k, st in bpm.items():
+                agg = by_key.get(k)
+                if agg is None:
+                    agg = {"calls": 0, "in": 0, "out": 0, "total": 0, "ms": 0, "err": 0}
+                    by_key[k] = agg
+                agg["calls"] += int(st.calls or 0)
+                agg["in"] += int(st.input_tokens or 0)
+                agg["out"] += int(st.output_tokens or 0)
+                agg["total"] += int(st.total_tokens or 0)
+                agg["ms"] += int(st.duration_ms or 0)
+                agg["err"] += int(st.errors or 0)
+
+        if runs:
+            print("=" * 100)
+            print("ALL RUNS (aggregated)")
+            print(f"  calls        : {total_calls}")
+            print(f"  input_tokens : {total_in}")
+            print(f"  output_tokens: {total_out}")
+            print(f"  total_tokens : {total_tokens}")
+            print(f"  duration_ms  : {total_ms}")
+            print(f"  errors       : {total_errors}")
+
+            if by_key:
+                print("By provider/model (aggregated):")
+                for k, st in by_key.items():
+                    print(
+                        f"  - {k}: calls={st['calls']} in={st['in']} out={st['out']} "
+                        f"total={st['total']} ms={st['ms']} err={st['err']}"
+                    )
+
+        for r in runs:
+            print("=" * 100)
+            print(r.pretty())
 
 
 # ======================================================================
@@ -14520,8 +14942,8 @@ class DropInKnowledgeRuntime:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime_state.py
-# LINES: 86
-# SHA256: 72a79b8668c0239971d17afe75c3d49f82c31bdf85a53f14502f2ca8146502d7
+# LINES: 82
+# SHA256: 214f86ba4a2f0200f1be9a84e77d464f757f6265350327c80d13f351ef574874
 # SYMBOLS:
 #   - class RuntimeState
 # ======================================================================
@@ -14535,7 +14957,6 @@ from typing import Any, Dict, List, Optional
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
-from intergrax.runtime.drop_in_knowledge_mode.config import ReasoningMode
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
 from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
@@ -14565,6 +14986,7 @@ class RuntimeState:
     # Session and ingestion
     session: Optional[ChatSession] = None
     ingestion_results: List[IngestionResult] = field(default_factory=list)
+    used_attachments_context: bool = False
 
     # Conversation / context
     base_history: List[ChatMessage] = field(default_factory=list)
@@ -14601,16 +15023,12 @@ class RuntimeState:
     # Token accounting (filled in _step_build_base_history)
     history_token_count: Optional[int] = None
 
-    # ------------------------------------------------------------------
-    # REASONING / CHAIN-OF-THOUGHT
-    # ------------------------------------------------------------------
-
-    # Active reasoning mode for this request.
-    reasoning_mode: ReasoningMode = ReasoningMode.DIRECT
-
-    # Optional reasoning metadata captured during execution.
-    # This NEVER contains raw chain-of-thought text.
-    reasoning_trace: Optional[Dict[str, Any]] = None
+    # Reasoning flags
+    cap_rag_available: bool = False
+    cap_user_ltm_available: bool = False
+    cap_attachments_available: bool = False
+    cap_websearch_available: bool = False
+    cap_tools_available: bool = False
 
 # ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py
@@ -14774,8 +15192,8 @@ class FileSystemAttachmentResolver:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=ingestion_service.py
-# LINES: 322
-# SHA256: 2d1af899b85deb2fb5115e9a767d360896349dba99802d7a88b3d5da40c27bfa
+# LINES: 470
+# SHA256: f85b4e1154a7e1a580c573e7e6c55521cc1d8859fe5377a5dddbbef24a383404
 # SYMBOLS:
 #   - class IngestionResult
 #   - class AttachmentIngestionService
@@ -14815,6 +15233,7 @@ from intergrax.rag.documents_loader import DocumentsLoader
 from intergrax.rag.documents_splitter import DocumentsSplitter
 from intergrax.rag.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.runtime.drop_in_knowledge_mode.context.context_builder import RetrievedChunk
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments import AttachmentResolver
 
 
@@ -14935,6 +15354,153 @@ class AttachmentIngestionService:
             results.append(result)
 
         return results
+
+    
+    async def search_session_attachments(
+        self,
+        *,
+        query: str,
+        session_id: str,
+        user_id: str,
+        tenant_id: Optional[str] = None,
+        workspace_id: Optional[str] = None,
+        top_k: int = 6,
+        score_threshold: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """
+        Retrieval over session attachments indexed by this ingestion service.
+
+        Contract:
+          - Uses ingestion embedding_manager to embed the user query
+          - Uses ingestion vectorstore_manager.query(query_embeddings, top_k, where=...)
+          - No getattr/hasattr or signature guessing
+        """
+        q = (query or "").strip()
+        if not q:
+            return {
+                "used": False,
+                "hits": [],
+                "scores": [],
+                "debug": {"reason": "empty_query"},
+            }
+
+        if self._vectorstore_manager is None:
+            return {
+                "used": False,
+                "hits": [],
+                "scores": [],
+                "debug": {"reason": "vectorstore_manager_not_configured"},
+            }
+
+        if self._embedding_manager is None:
+            return {
+                "used": False,
+                "hits": [],
+                "scores": [],
+                "debug": {"reason": "embedding_manager_not_configured"},
+            }
+
+        where: Dict[str, Any] = {
+            "session_id": session_id,
+            "user_id": user_id,
+        }
+        if tenant_id is not None:
+            where["tenant_id"] = tenant_id
+        if workspace_id is not None:
+            where["workspace_id"] = workspace_id
+
+        # 1) Embed the query using ingestion embedder.
+        # Expected EmbeddingManager API in Intergrax: embed_one / embed_query / embed
+        # Use the same call you use in ingestion indexing for chunks, but for single query string.
+        query_emb = self._embedding_manager.embed_one(q)        
+        if inspect.iscoroutine(query_emb):
+            query_emb = await query_emb
+
+        # 2) Vector search in ingestion vectorstore with strict session filters.
+        raw = self._vectorstore_manager.query(
+            query_embeddings=query_emb,
+            top_k=int(top_k),
+            where=where,
+            include_embeddings=False,
+        )
+        
+        # VectorstoreManager.query() returns a provider-normalized dict:
+        # {
+        #   "ids": List[List[str]],
+        #   "scores": List[List[float]],
+        #   "metadatas": List[List[dict]],
+        #   "documents": List[List[str]] | None
+        # }
+        if not isinstance(raw, dict):
+            return {
+                "used": False,
+                "hits": [],
+                "scores": [],
+                "debug": {"reason": "unexpected_vectorstore_result_type"},
+            }
+
+        ids_rows = raw.get("ids") or []
+        scores_rows = raw.get("scores") or []
+        metas_rows = raw.get("metadatas") or []
+        docs_rows = raw.get("documents") or []
+
+        # Batched outputs: take first row for a single query.
+        ids_row = ids_rows[0] if isinstance(ids_rows, list) and len(ids_rows) > 0 else []
+        scores_row = scores_rows[0] if isinstance(scores_rows, list) and len(scores_rows) > 0 else []
+        metas_row = metas_rows[0] if isinstance(metas_rows, list) and len(metas_rows) > 0 else []
+        docs_row = docs_rows[0] if isinstance(docs_rows, list) and len(docs_rows) > 0 else []
+
+        hits: List[RetrievedChunk] = []
+        scores: List[float] = []
+
+        n = min(len(docs_row), len(metas_row), len(scores_row), len(ids_row) if ids_row else 10**9)
+
+        for i in range(n):
+            text = (docs_row[i] or "").strip()
+            if not text:
+                continue
+
+            md = metas_row[i] or {}
+            sc = scores_row[i] if i < len(scores_row) else 0.0
+            scv = float(sc) if sc is not None else 0.0
+
+            # Optional: keep id in metadata for traceability
+            if ids_row and i < len(ids_row):
+                md = dict(md)
+                md["vector_id"] = ids_row[i]
+
+            chunk_id = ids_row[i] if (ids_row and i < len(ids_row)) else f"{session_id}:{i}"
+            hits.append(RetrievedChunk(chunk_id, text, md, scv))
+            scores.append(scv)
+
+        # Optional threshold filtering.
+        if score_threshold is not None and hits:
+            thr = float(score_threshold)
+            filt_hits: List[RetrievedChunk] = []
+            filt_scores: List[float] = []
+            for h, sc in zip(hits, scores):
+                if sc >= thr:
+                    filt_hits.append(h)
+                    filt_scores.append(sc)
+            hits = filt_hits
+            scores = filt_scores
+
+        used = bool(hits)
+
+        return {
+            "used": used,
+            "hits": hits,
+            "scores": scores,
+            "debug": {
+                "used": used,
+                "hits_count": len(hits),
+                "top_k": int(top_k),
+                "score_threshold": score_threshold,
+                "where": where,
+                "provider": getattr(self._vectorstore_manager, "provider", None),  # optional; can be removed
+            },
+        }
+
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -15102,6 +15668,1305 @@ class AttachmentIngestionService:
                 "workspace_id": workspace_id,
             },
         )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/planning/__init__.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.planning
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/planning/engine_planner.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=engine_planner.py
+# LINES: 407
+# SHA256: c6ddacbbb40c3a1c140128c9070b4df84c980ab87cb0924fd2ab1df0672310f9
+# SYMBOLS:
+#   - class PlanRetrieval
+#   - class PlanTools
+#   - class EnginePlan
+#   - class EnginePlanner
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+import inspect
+import json
+from dataclasses import dataclass, field
+import pprint
+from typing import Any, Dict, List, Optional
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
+
+
+# -----------------------------
+# Typed plan schema
+# -----------------------------
+
+@dataclass(frozen=True)
+class PlanRetrieval:
+    enabled: bool
+    top_k: int
+    max_chars: int
+
+@dataclass(frozen=True)
+class PlanTools:
+    enabled: bool
+    goal: str  # e.g. "none" | "execute_actions" | "compute" | "call_external_apis"
+    tool_choice_hint: Optional[str]  # e.g. "auto" / tool name (optional)
+
+@dataclass(frozen=False)
+class EnginePlan:
+    version: str
+    intent: str                 # short: "answer_question", "debug_code", "write_doc", ...
+    reasoning_summary: str       # high-level, no CoT
+    ask_clarifying_question: bool
+    clarifying_question: Optional[str]
+
+    use_rag: PlanRetrieval
+    use_user_longterm_memory: PlanRetrieval
+    use_attachments: PlanRetrieval
+    use_websearch: PlanRetrieval
+    use_tools: PlanTools
+
+    parallel_groups: List[List[str]]  # e.g. [["attachments","rag","websearch"],["tools"]]
+    final_answer_style: str           # e.g. "concise_technical", "step_by_step", "long_form"
+
+    debug: Dict[str, Any] = field(default_factory=dict)
+
+
+    def print_pretty(self):
+        pprint.pprint({
+        "version": self.version,
+        "intent": self.intent,
+        "reasoning_summary": self.reasoning_summary,
+        "ask_clarifying_question": self.ask_clarifying_question,
+        "clarifying_question": self.clarifying_question,
+        "use_rag": self.use_rag,
+        "use_user_longterm_memory": self.use_user_longterm_memory,
+        "use_attachments": self.use_attachments,
+        "use_websearch": self.use_websearch,
+        "use_tools": self.use_tools,
+        "parallel_groups": self.parallel_groups,
+        "final_answer_style": self.final_answer_style,
+        "debug": self.debug,
+    })
+
+
+class EnginePlanner:
+    """
+    LLM-based planner that outputs a typed EnginePlan.
+
+    IMPORTANT:
+    - No heuristics: the LLM decides based on PlannerInput + capabilities.
+    - Output must be JSON only (we parse & validate).
+    """
+
+    def __init__(self, *, llm_adapter: LLMAdapter) -> None:
+        self._llm = llm_adapter
+
+    async def plan(
+        self,
+        *,
+        req: RuntimeRequest,
+        state: RuntimeState,
+        config: RuntimeConfig,
+        run_id: Optional[str] = None,
+    ) -> EnginePlan:
+        messages = self._build_prompt(req=req, state=state, config=config)
+
+        raw = self._llm.generate_messages(messages, run_id=run_id)
+        if inspect.iscoroutine(raw):
+            raw = await raw
+        if not isinstance(raw, str):
+            raw = str(raw)
+
+        plan_json = self._extract_json_object(raw)
+        plan_dict = json.loads(plan_json)
+
+        plan = self._parse_plan(plan_dict)
+
+        # Minimal execution-safety validation (no heuristics)
+        self._validate_against_capabilities(plan=plan, state=state)
+
+        plan.debug = {
+            "planner_raw_len": len(raw),
+            "planner_raw_preview": raw[:400],
+            "planner_raw_tail_preview": raw[-400:],
+            "planner_json_len": len(plan_json),
+        }
+
+        return plan
+
+    def _validate_against_capabilities(self, *, plan: EnginePlan, state: RuntimeState) -> None:
+        if plan.use_rag.enabled and not state.cap_rag_available:
+            raise ValueError("Planner produced use_rag.enabled=true but RAG is not available.")
+        if plan.use_user_longterm_memory.enabled and not state.cap_user_ltm_available:
+            raise ValueError("Planner produced use_user_longterm_memory.enabled=true but user LTM is not available.")
+        if plan.use_attachments.enabled and not state.cap_attachments_available:
+            raise ValueError("Planner produced use_attachments.enabled=true but attachments retrieval is not available.")
+        if plan.use_websearch.enabled and not state.cap_websearch_available:
+            raise ValueError("Planner produced use_websearch.enabled=true but websearch is not available.")
+        if plan.use_tools.enabled and not state.cap_tools_available:
+            raise ValueError("Planner produced use_tools.enabled=true but tools are not available.")
+
+    # -----------------------------
+    # Prompting
+    # -----------------------------
+
+    def _build_prompt(
+        self,
+        *,
+        req: RuntimeRequest,
+        state: RuntimeState,
+        config: RuntimeConfig,  # kept for signature consistency (may be used later)
+    ) -> List[ChatMessage]:
+        # Schema with explicit defaults (anchors the model to safe defaults).
+        schema = {
+            "version": "1.0",
+            "intent": "string",
+            "reasoning_summary": "string (high-level, no chain-of-thought)",
+            "ask_clarifying_question": "boolean",
+            "clarifying_question": "string|null",
+
+            # Retrieval blocks: always present; default OFF
+            "use_rag": {"enabled": False, "top_k": 0, "max_chars": 0},
+            "use_user_longterm_memory": {"enabled": False, "top_k": 0, "max_chars": 0},
+            "use_attachments": {"enabled": False, "top_k": 0, "max_chars": 0},
+            "use_websearch": {"enabled": False, "top_k": 0, "max_chars": 0},
+
+            # Tools block: always present; default OFF
+            "use_tools": {"enabled": False, "goal": "", "tool_choice_hint": None},
+
+            # Execution hints
+            "parallel_groups": [],  # list[list[string]]
+            "final_answer_style": "string",
+        }
+
+        # Capabilities must be computed by runtime and stored in state (strong typing).
+        rag_av = bool(state.cap_rag_available)
+        user_ltm_av = bool(state.cap_user_ltm_available)
+        att_av = bool(state.cap_attachments_available)
+        web_av = bool(state.cap_websearch_available)
+        tools_av = bool(state.cap_tools_available)
+
+        sys_lines: List[str] = []
+        sys_lines.append("You are an execution planner for Intergrax Drop-In Knowledge Runtime.")
+        sys_lines.append("Your job: produce an execution plan in STRICT JSON matching the schema below.")
+        sys_lines.append("Return JSON only. No prose, no markdown, no comments.")
+        sys_lines.append("Do NOT include chain-of-thought. Provide only a short high-level reasoning_summary.")
+        sys_lines.append("Do NOT add extra keys that are not in the schema. Output must be a single JSON object.")
+        sys_lines.append("")
+
+        sys_lines.append("Capabilities (only plan steps that are available):")
+        sys_lines.append(f"- rag_available: {rag_av}")
+        sys_lines.append(f"- user_ltm_available: {user_ltm_av}")
+        sys_lines.append(f"- attachments_available: {att_av}")
+        sys_lines.append(f"- websearch_available: {web_av}")
+        sys_lines.append(f"- tools_available: {tools_av}")
+        sys_lines.append("")
+
+        sys_lines.append("Hard rules (MUST FOLLOW):")
+        sys_lines.append("- JSON typing rules:")
+        sys_lines.append("  - All integers must be JSON numbers (no quotes). Example: top_k: 5, max_chars: 1200.")
+        sys_lines.append("  - Always include all retrieval objects: use_rag, use_user_longterm_memory, use_attachments, use_websearch.")
+        sys_lines.append("  - For enabled=false, top_k and max_chars MUST be 0 (integers).")
+        sys_lines.append("  - For use_tools.enabled=false, still include goal as empty string and tool_choice_hint as null.")
+        sys_lines.append("- Capability gating:")
+        sys_lines.append("  - If a capability is false, you must set the corresponding use_* .enabled = false (and numeric fields to 0).")
+        sys_lines.append("- Clarifying mode:")
+        sys_lines.append("  - If ask_clarifying_question=true, then ALL use_* must be enabled=false and parallel_groups must be [].")
+        sys_lines.append("- parallel_groups validity:")
+        sys_lines.append("  - parallel_groups may contain only step names that are enabled=true in this plan.")
+        sys_lines.append("")
+
+        sys_lines.append("Retrieval policy (STRICT):")
+        sys_lines.append("- Default: all retrieval steps disabled.")
+        sys_lines.append("- Enable use_user_longterm_memory ONLY if the user query depends on user-specific context, prior decisions, preferences, or project-specific facts not present in the current message/history.")
+        sys_lines.append("- For generic programming questions or general explanations, set use_user_longterm_memory.enabled=false.")
+        sys_lines.append("- Enable use_rag/use_attachments ONLY if answering requires information from documents/attachments.")
+        sys_lines.append("- Enable use_websearch ONLY if answering requires up-to-date or niche info not safely known.")
+        sys_lines.append("- Retrieval steps must include conservative limits (top_k, max_chars) to avoid context overflow.")
+        sys_lines.append("")
+
+        sys_lines.append("Examples (MUST FOLLOW):")
+        sys_lines.append("- Q: 'Explain async retry strategy in Python' -> use_user_longterm_memory.enabled=false")
+        sys_lines.append("- Q: 'What is a mutex?' -> use_user_longterm_memory.enabled=false")
+        sys_lines.append("- Q: 'Given my preferences for concise technical answers, how should you respond?' -> use_user_longterm_memory.enabled=true")
+        sys_lines.append("- Q: 'Continue the Intergrax engine refactor we discussed earlier' -> use_user_longterm_memory.enabled=true")
+        sys_lines.append("")
+
+        sys_lines.append("Valid minimal example (JSON):")
+        sys_lines.append(json.dumps(
+            {
+                "version": "1.0",
+                "intent": "explain_async_retry_strategy",
+                "reasoning_summary": "Answer is based on general Python async patterns; no external sources needed.",
+                "ask_clarifying_question": False,
+                "clarifying_question": None,
+                "use_rag": {"enabled": False, "top_k": 0, "max_chars": 0},
+                "use_user_longterm_memory": {"enabled": False, "top_k": 0, "max_chars": 0},
+                "use_attachments": {"enabled": False, "top_k": 0, "max_chars": 0},
+                "use_websearch": {"enabled": False, "top_k": 0, "max_chars": 0},
+                "use_tools": {"enabled": False, "goal": "", "tool_choice_hint": None},
+                "parallel_groups": [],
+                "final_answer_style": "concise_technical",
+            },
+            ensure_ascii=False,
+        ))
+        sys_lines.append("")
+
+        sys_lines.append("JSON schema (output must match keys and types):")
+        sys_lines.append(json.dumps(schema, ensure_ascii=False))
+        sys_lines.append("")
+
+        # Request context
+        attachments = req.attachments or []
+        has_attachments = len(attachments) > 0
+
+        user_lines: List[str] = []
+        user_lines.append(f"session_id: {req.session_id}")
+        user_lines.append(f"user_id: {req.user_id}")
+        user_lines.append(f"has_attachments: {has_attachments}")
+        user_lines.append(f"attachments_count: {len(attachments)}")
+        user_lines.append("")
+
+        # Instructions (runtime-like): request overrides + optional profile fragments.
+        instr_parts: List[str] = []
+        if req.instructions:
+            instr_parts.append(req.instructions.strip())
+        if state.profile_user_instructions:
+            instr_parts.append(state.profile_user_instructions.strip())
+        if state.profile_org_instructions:
+            instr_parts.append(state.profile_org_instructions.strip())
+
+        if instr_parts:
+            user_lines.append("instructions (may affect style/policies):")
+            user_lines.append("\n\n".join(instr_parts))
+            user_lines.append("")
+
+        # User query
+        user_lines.append("user_query:")
+        user_lines.append((req.message or "").strip())
+        user_lines.append("")
+
+        # Recent messages
+        user_lines.append("recent_messages (most recent last):")
+        recent = state.base_history or []
+        for m in recent[-8:]:
+            content = (m.content or "").strip()
+            if len(content) > 400:
+                content = content[:400]
+            user_lines.append(f"- {m.role}: {content}")
+
+        return [
+            ChatMessage(role="system", content="\n".join(sys_lines)),
+            ChatMessage(role="user", content="\n".join(user_lines)),
+        ]
+
+
+    # -----------------------------
+    # Parsing & validation
+    # -----------------------------
+
+    def _extract_json_object(self, s: str) -> str:
+        """
+        Minimal safety: extract the first {...} block.
+        This is not a heuristic planner; it's just robust parsing for LLM outputs.
+        """
+        start = s.find("{")
+        end = s.rfind("}")
+        if start < 0 or end < 0 or end <= start:
+            raise ValueError("Planner did not return a JSON object.")
+        return s[start : end + 1]
+
+    def _req_str(self, d: Dict[str, Any], key: str) -> str:
+        v = d.get(key)
+        if not isinstance(v, str) or not v.strip():
+            raise ValueError(f"Invalid or missing string field: {key}")
+        return v.strip()
+
+    def _opt_str(self, d: Dict[str, Any], key: str) -> Optional[str]:
+        v = d.get(key)
+        if v is None:
+            return None
+        if not isinstance(v, str):
+            raise ValueError(f"Invalid optional string field: {key}")
+        vv = v.strip()
+        return vv if vv else None
+
+    def _req_bool(self, d: Dict[str, Any], key: str) -> bool:
+        v = d.get(key)
+        if not isinstance(v, bool):
+            raise ValueError(f"Invalid or missing boolean field: {key}")
+        return v
+
+    def _req_int(self, d: Dict[str, Any], key: str) -> int:
+        v = d.get(key)
+        if not isinstance(v, int):
+            raise ValueError(f"Invalid or missing int field: {key}")
+        return int(v)
+
+    def _parse_retrieval(self, d: Dict[str, Any], key: str) -> PlanRetrieval:
+        obj = d.get(key)
+        if not isinstance(obj, dict):
+            raise ValueError(f"Invalid or missing object field: {key}")
+        enabled = obj.get("enabled")
+        top_k = obj.get("top_k")
+        max_chars = obj.get("max_chars")
+        if not isinstance(enabled, bool) or not isinstance(top_k, int) or not isinstance(max_chars, int):
+            raise ValueError(f"Invalid retrieval config for: {key}")
+        # Ensure non-negative, but do not "auto-fix" anything beyond type safety.
+        if top_k < 0 or max_chars < 0:
+            raise ValueError(f"Invalid negative limits for: {key}")
+        return PlanRetrieval(enabled=enabled, top_k=top_k, max_chars=max_chars)
+
+    def _parse_tools(self, d: Dict[str, Any]) -> PlanTools:
+        obj = d.get("use_tools")
+        if not isinstance(obj, dict):
+            raise ValueError("Invalid or missing object field: use_tools")
+        enabled = obj.get("enabled")
+        goal = obj.get("goal")
+        tool_choice_hint = obj.get("tool_choice_hint")
+        if not isinstance(enabled, bool) or not isinstance(goal, str):
+            raise ValueError("Invalid tools config.")
+        tch: Optional[str]
+        if tool_choice_hint is None:
+            tch = None
+        elif isinstance(tool_choice_hint, str):
+            tch = tool_choice_hint.strip() or None
+        else:
+            raise ValueError("Invalid tool_choice_hint type.")
+        return PlanTools(enabled=enabled, goal=goal.strip(), tool_choice_hint=tch)
+
+    def _parse_parallel_groups(self, d: Dict[str, Any]) -> List[List[str]]:
+        pg = d.get("parallel_groups")
+        if not isinstance(pg, list):
+            raise ValueError("Invalid or missing parallel_groups.")
+        out: List[List[str]] = []
+        for group in pg:
+            if not isinstance(group, list):
+                raise ValueError("parallel_groups must be list[list[string]].")
+            gg: List[str] = []
+            for item in group:
+                if not isinstance(item, str) or not item.strip():
+                    raise ValueError("parallel_groups items must be non-empty strings.")
+                gg.append(item.strip())
+            out.append(gg)
+        return out
+
+    def _parse_plan(self, d: Dict[str, Any]) -> EnginePlan:
+        version = self._req_str(d, "version")
+        intent = self._req_str(d, "intent")
+        reasoning_summary = self._req_str(d, "reasoning_summary")
+
+        ask = self._req_bool(d, "ask_clarifying_question")
+        cq = self._opt_str(d, "clarifying_question")
+        if ask and not cq:
+            raise ValueError("ask_clarifying_question=true requires clarifying_question.")
+
+        use_rag = self._parse_retrieval(d, "use_rag")
+        use_user_ltm = self._parse_retrieval(d, "use_user_longterm_memory")
+        use_attachments = self._parse_retrieval(d, "use_attachments")
+        use_websearch = self._parse_retrieval(d, "use_websearch")
+        use_tools = self._parse_tools(d)
+
+        parallel_groups = self._parse_parallel_groups(d)
+        final_answer_style = self._req_str(d, "final_answer_style")
+
+        return EnginePlan(
+            version=version,
+            intent=intent,
+            reasoning_summary=reasoning_summary,
+            ask_clarifying_question=ask,
+            clarifying_question=cq,
+            use_rag=use_rag,
+            use_user_longterm_memory=use_user_ltm,
+            use_attachments=use_attachments,
+            use_websearch=use_websearch,
+            use_tools=use_tools,
+            parallel_groups=parallel_groups,
+            final_answer_style=final_answer_style,
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/planning/step_planner.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.step_planner
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=step_planner.py
+# LINES: 486
+# SHA256: c6dde8deb08a4665b320b2e26a12f0a0368ba5a6effd885d3203992b0b843a9f
+# SYMBOLS:
+#   - class StepPlannerConfig
+#   - class StepPlanner
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from typing import List, Optional, Tuple
+
+from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
+    # core models
+    ExecutionPlan,
+    ExecutionStep,
+    StepAction,
+    StepBudgets,
+    PlanBudgets,
+    StopConditions,
+    FailurePolicy,
+    VerifyCriterion,
+    # enums
+    WebSearchStrategy,
+    OutputFormat,
+    PlanMode,
+    # params models (names must match stepplan_models.py)
+    AskClarifyingParams,
+    LtmSearchParams,
+    AttachmentsRetrievalParams,
+    RagRetrievalParams,
+    WebSearchParams,
+    ToolsParams,
+    SynthesizeDraftParams,
+    VerifyAnswerParams,
+    FinalizeAnswerParams,
+)
+
+
+@dataclass(frozen=True)
+class StepPlannerConfig:
+    # Plan-level defaults
+    max_total_steps: int = 6
+    max_total_tool_calls: int = 10
+    max_total_web_queries: int = 5
+    max_total_chars_context: int = 12000
+    max_total_tokens_output: Optional[int] = None
+
+    # Step-level defaults
+    step_max_chars: int = 2000
+    step_top_k: int = 5
+
+    # Websearch
+    web_recency_days: int = 30
+    web_max_results: int = 5
+    web_strategy: WebSearchStrategy = WebSearchStrategy.HYBRID
+
+    # Verification defaults
+    verify_strict: bool = True
+
+    # Deterministic pruning priority if we exceed max_total_steps:
+    # remove in this order (lowest value first)
+    # tools -> web -> rag -> attachments -> ltm
+    prune_order: Tuple[str, ...] = ("tools", "web", "rag", "attachments", "ltm")
+
+
+class StepPlanner:
+    """
+    Deterministic (rule-based) step planner.
+
+    - No LLM usage.
+    - Produces a stable ExecutionPlan compatible with stepplan_models.py.
+    - Retrieval steps are always before SYNTHESIZE_DRAFT.
+    - Execute plans always end with FINALIZE_ANSWER.
+    """
+
+    def __init__(self, config: Optional[StepPlannerConfig] = None):
+        self._cfg = config or StepPlannerConfig()
+
+    def plan(
+        self,
+        user_message: str,
+        *,
+        # engine-level routing/gating (simple booleans)
+        enable_websearch: bool = False,
+        enable_rag: bool = False,
+        enable_tools: bool = False,
+        enable_attachments: bool = False,
+        enable_user_ltm: bool = False,
+        # optional hints
+        require_code_example: bool = False,
+        final_format: OutputFormat = OutputFormat.MARKDOWN,
+        plan_id: str = "stepplan-001",
+    ) -> ExecutionPlan:
+        msg = (user_message or "").strip()
+        if not msg:
+            return self._clarify("Empty user message. What should the assistant do?", plan_id=plan_id)
+
+        intent = self._make_intent(msg)
+
+        # Clarify ONLY if truly ambiguous (rare)
+        if self._is_ambiguous(msg):
+            return self._clarify(self._clarifying_question(msg), intent=intent, plan_id=plan_id)
+
+        # Build steps in deterministic order
+        steps: List[ExecutionStep] = []
+
+        # Retrieval (deterministic ordering)
+        if enable_user_ltm:
+            steps.append(self._step_user_ltm(query=self._ltm_query(msg)))
+
+        if enable_attachments:
+            steps.append(self._step_attachments(query=self._attachments_query(msg)))
+
+        if enable_rag:
+            steps.append(self._step_rag(query=self._rag_query(msg)))
+
+        if enable_websearch:
+            steps.append(self._step_websearch(query=self._web_query(msg)))
+
+        if enable_tools:
+            steps.append(self._step_tools(instructions="Use tools if needed."))
+
+        # Core execution tail
+        steps.append(
+            self._step_synthesize(
+                instructions=self._draft_instructions(msg),
+                must_include=self._must_include(msg),
+                avoid=[],
+            )
+        )
+        steps.append(
+            self._step_verify(
+                criteria=self._verify_criteria(require_code_example=require_code_example),
+                strict=self._cfg.verify_strict,
+            )
+        )
+        steps.append(
+            self._step_finalize(
+                instructions=self._final_instructions(msg),
+                fmt=final_format,
+            )
+        )
+
+        # Ensure depends_on chain is correct + stay within max_total_steps
+        steps = self._chain_and_prune(steps, max_steps=self._cfg.max_total_steps)
+
+        plan = ExecutionPlan(
+            plan_id=plan_id,
+            intent=intent,
+            mode=PlanMode.EXECUTE,
+            steps=steps,
+            budgets=PlanBudgets(
+                max_total_steps=self._cfg.max_total_steps,
+                max_total_tool_calls=self._cfg.max_total_tool_calls,
+                max_total_web_queries=self._cfg.max_total_web_queries,
+                max_total_chars_context=self._cfg.max_total_chars_context,
+                max_total_tokens_output=self._cfg.max_total_tokens_output,
+            ),
+            stop_conditions=StopConditions(
+                stop_on_clarifying_question_answered=True,
+                stop_on_verifier_pass=True,
+                stop_on_budget_exhausted=True,
+            ),
+            final_answer_style="concise_technical",
+            notes=None,
+        )
+        return plan
+
+    # -----------------------------
+    # Step factories (return ExecutionStep)
+    # NOTE: ExecutionStep.params is a dict; we pass model_dump() to match schema exactly.
+    # -----------------------------
+
+    def _step_user_ltm(self, *, query: str) -> ExecutionStep:
+        return ExecutionStep(
+            step_id="ltm",
+            action=StepAction.USE_USER_LONGTERM_MEMORY_SEARCH,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(
+                top_k=self._cfg.step_top_k,
+                max_chars=self._cfg.step_max_chars,
+                max_tool_calls=0,
+                max_web_queries=0,
+            ),
+            inputs={},
+            params=LtmSearchParams(
+                query=query,
+                top_k=self._cfg.step_top_k,
+                score_threshold=None,
+                include_debug=False,
+            ).model_dump(),
+            expected_output="User long-term memory hits",
+            rationale="Gather project/user context deterministically",
+            on_failure=FailurePolicy(policy="skip", max_retries=0, retry_backoff_ms=0, replan_reason=None),
+        )
+
+    def _step_attachments(self, *, query: str) -> ExecutionStep:
+        return ExecutionStep(
+            step_id="attachments",
+            action=StepAction.USE_ATTACHMENTS_RETRIEVAL,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(
+                top_k=self._cfg.step_top_k,
+                max_chars=self._cfg.step_max_chars,
+                max_tool_calls=0,
+                max_web_queries=0,
+            ),
+            inputs={},
+            params=AttachmentsRetrievalParams(query=query, top_k=self._cfg.step_top_k).model_dump(),
+            expected_output="Attachment retrieval hits",
+            rationale="Use session attachments as context",
+            on_failure=FailurePolicy(policy="skip", max_retries=0, retry_backoff_ms=0, replan_reason=None),
+        )
+
+    def _step_rag(self, *, query: str) -> ExecutionStep:
+        return ExecutionStep(
+            step_id="rag",
+            action=StepAction.USE_RAG_RETRIEVAL,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(
+                top_k=self._cfg.step_top_k,
+                max_chars=self._cfg.step_max_chars,
+                max_tool_calls=0,
+                max_web_queries=0,
+            ),
+            inputs={},
+            params=RagRetrievalParams(query=query, top_k=self._cfg.step_top_k).model_dump(),
+            expected_output="RAG hits",
+            rationale="Retrieve from configured RAG store",
+            on_failure=FailurePolicy(policy="skip", max_retries=0, retry_backoff_ms=0, replan_reason=None),
+        )
+
+    def _step_websearch(self, *, query: str) -> ExecutionStep:
+        return ExecutionStep(
+            step_id="web",
+            action=StepAction.USE_WEBSEARCH,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(
+                top_k=self._cfg.web_max_results,
+                max_chars=self._cfg.step_max_chars,
+                max_tool_calls=0,
+                max_web_queries=1,
+            ),
+            inputs={},
+            params=WebSearchParams(
+                query=query,
+                recency_days=self._cfg.web_recency_days,
+                max_results=self._cfg.web_max_results,
+                strategy=self._cfg.web_strategy,
+                domains_allowlist=None,
+            ).model_dump(),
+            expected_output="Web search results",
+            rationale="Freshness / external verification needed",
+            on_failure=FailurePolicy(policy="replan", max_retries=0, retry_backoff_ms=0, replan_reason="Websearch failed"),
+        )
+
+    def _step_tools(self, *, instructions: str) -> ExecutionStep:
+        # stepplan_models.ToolsParams has only: input: Dict[str, Any]
+        return ExecutionStep(
+            step_id="tools",
+            action=StepAction.USE_TOOLS,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(
+                top_k=0,
+                max_chars=self._cfg.step_max_chars,
+                max_tool_calls=1,
+                max_web_queries=0,
+            ),
+            inputs={},
+            params=ToolsParams(input={"instructions": instructions}).model_dump(),
+            expected_output="Tool outputs (if any)",
+            rationale="Optional tool usage",
+            on_failure=FailurePolicy(policy="skip", max_retries=0, retry_backoff_ms=0, replan_reason=None),
+        )
+
+    def _step_synthesize(
+        self,
+        *,
+        instructions: str,
+        must_include: List[str],
+        avoid: List[str],
+    ) -> ExecutionStep:
+        return ExecutionStep(
+            step_id="draft",
+            action=StepAction.SYNTHESIZE_DRAFT,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(
+                top_k=0,
+                max_chars=self._cfg.step_max_chars,
+                max_tool_calls=0,
+                max_web_queries=0,
+            ),
+            inputs={},
+            params=SynthesizeDraftParams(instructions=instructions, must_include=must_include, avoid=avoid).model_dump(),
+            expected_output="Draft answer text",
+            rationale="Generate a draft from gathered context",
+            on_failure=FailurePolicy(policy="retry", max_retries=1, retry_backoff_ms=0, replan_reason=None),
+        )
+
+    def _step_verify(self, *, criteria: List[VerifyCriterion], strict: bool) -> ExecutionStep:
+        # Schema requires at least one criterion; enforce deterministically
+        if not criteria:
+            criteria = [VerifyCriterion(id="non_empty", description="Answer is non-empty", severity="error")]
+
+        return ExecutionStep(
+            step_id="verify",
+            action=StepAction.VERIFY_ANSWER,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(top_k=0, max_chars=1000, max_tool_calls=0, max_web_queries=0),
+            inputs={},
+            params=VerifyAnswerParams(criteria=criteria, strict=strict).model_dump(),
+            expected_output="Verification pass/fail",
+            rationale="Guardrail check before final answer",
+            on_failure=FailurePolicy(policy="replan", max_retries=0, retry_backoff_ms=0, replan_reason="Verification failed"),
+        )
+
+    def _step_finalize(self, *, instructions: str, fmt: OutputFormat) -> ExecutionStep:
+        return ExecutionStep(
+            step_id="final",
+            action=StepAction.FINALIZE_ANSWER,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(top_k=0, max_chars=self._cfg.step_max_chars, max_tool_calls=0, max_web_queries=0),
+            inputs={},
+            params=FinalizeAnswerParams(instructions=instructions, format=fmt).model_dump(),
+            expected_output="Final assistant answer",
+            rationale="Finalize format and style",
+            on_failure=FailurePolicy(policy="fail", max_retries=0, retry_backoff_ms=0, replan_reason=None),
+        )
+
+    # -----------------------------
+    # Clarify plan
+    # -----------------------------
+
+    def _clarify(self, question: str, *, intent: str = "clarify", plan_id: str = "stepplan-001") -> ExecutionPlan:
+        steps = [
+            ExecutionStep(
+                step_id="clarify",
+                action=StepAction.ASK_CLARIFYING_QUESTION,
+                enabled=True,
+                depends_on=[],
+                budgets=StepBudgets(top_k=0, max_chars=200, max_tool_calls=0, max_web_queries=0),
+                inputs={},
+                params=AskClarifyingParams(question=question).model_dump(),
+                expected_output="User clarification",
+                rationale="Ambiguous request",
+                on_failure=FailurePolicy(policy="fail", max_retries=0, retry_backoff_ms=0, replan_reason=None),
+            )
+        ]
+        return ExecutionPlan(
+            plan_id=plan_id,
+            intent=intent,
+            mode=PlanMode.CLARIFY,
+            steps=steps,
+            budgets=PlanBudgets(
+                max_total_steps=1,
+                max_total_tool_calls=0,
+                max_total_web_queries=0,
+                max_total_chars_context=self._cfg.max_total_chars_context,
+                max_total_tokens_output=self._cfg.max_total_tokens_output,
+            ),
+            stop_conditions=StopConditions(
+                stop_on_clarifying_question_answered=True,
+                stop_on_verifier_pass=False,
+                stop_on_budget_exhausted=True,
+            ),
+            final_answer_style="concise_technical",
+            notes=None,
+        )
+
+    # -----------------------------
+    # Deterministic chaining + pruning
+    # -----------------------------
+
+    def _chain_and_prune(self, steps: List[ExecutionStep], *, max_steps: int) -> List[ExecutionStep]:
+        """
+        Ensures depends_on is a simple linear chain AND prunes optional retrieval steps
+        if we exceed max_steps (deterministic order).
+        """
+        # Prune if needed
+        if max_steps and len(steps) > max_steps:
+            steps = self._prune_to_budget(steps, max_steps=max_steps)
+
+        # Re-chain depends_on linearly (no forward refs)
+        prev_id: Optional[str] = None
+        for s in steps:
+            s.depends_on = [] if prev_id is None else [prev_id]
+            prev_id = s.step_id
+
+        return steps
+
+    def _prune_to_budget(self, steps: List[ExecutionStep], *, max_steps: int) -> List[ExecutionStep]:
+        """
+        Drops optional steps deterministically to fit the budget.
+        Never drops: draft/verify/final (must exist in execute mode).
+        """
+        core_ids = {"draft", "verify", "final"}
+        core = [s for s in steps if s.step_id in core_ids]
+        optional = [s for s in steps if s.step_id not in core_ids]
+
+        # If even core is too big (shouldn't happen), truncate from the left (but keep final step)
+        if len(core) > max_steps:
+            # keep last max_steps steps
+            core = core[-max_steps:]
+            return core
+
+        # We can keep at most (max_steps - len(core)) optional steps
+        keep_optional = max_steps - len(core)
+        if keep_optional <= 0:
+            return core
+
+        # Deterministic keep order: follow current build order, but prune by configured priority
+        # We remove by prune_order first, until it fits.
+        opt_by_id = {s.step_id: s for s in optional}
+        opt_ids_in_order = [s.step_id for s in optional]
+
+        # Remove until fits
+        while len(opt_ids_in_order) > keep_optional:
+            removed = False
+            for candidate in self._cfg.prune_order:
+                if candidate in opt_by_id and candidate in opt_ids_in_order:
+                    opt_ids_in_order.remove(candidate)
+                    removed = True
+                    break
+            if not removed:
+                # fallback: remove oldest optional
+                opt_ids_in_order.pop(0)
+
+        kept_optional_steps = [opt_by_id[sid] for sid in opt_ids_in_order if sid in opt_by_id]
+
+        # Preserve original overall order
+        kept_ids = set(s.step_id for s in core) | set(s.step_id for s in kept_optional_steps)
+        out = [s for s in steps if s.step_id in kept_ids]
+        return out
+
+    # -----------------------------
+    # Rules / heuristics (deterministic)
+    # -----------------------------
+
+    def _make_intent(self, msg: str) -> str:
+        s = re.sub(r"[^a-zA-Z0-9]+", "_", msg.strip().lower())
+        s = re.sub(r"_+", "_", s).strip("_")
+        return s[:64] or "intent"
+
+    def _is_ambiguous(self, msg: str) -> bool:
+        # Conservative: clarify only when truly ambiguous
+        short = len(msg) < 12
+        vague = bool(re.fullmatch(r"(help|assist|explain|what about this)\.?\s*", msg.strip().lower()))
+        return short or vague
+
+    def _clarifying_question(self, msg: str) -> str:
+        return "What exactly should the assistant produce (e.g., code, explanation, or a step-by-step plan), and what constraints apply?"
+
+    # Query builders
+    def _web_query(self, msg: str) -> str:
+        return msg
+
+    def _rag_query(self, msg: str) -> str:
+        return msg
+
+    def _ltm_query(self, msg: str) -> str:
+        return msg
+
+    def _attachments_query(self, msg: str) -> str:
+        return "Find relevant information in session attachments for: " + msg
+
+    # Draft/final instructions
+    def _draft_instructions(self, msg: str) -> str:
+        return msg
+
+    def _final_instructions(self, msg: str) -> str:
+        return msg
+
+    def _must_include(self, msg: str) -> List[str]:
+        return []
+
+    def _verify_criteria(self, *, require_code_example: bool) -> List[VerifyCriterion]:
+        crit = [VerifyCriterion(id="non_empty", description="Answer is non-empty", severity="error")]
+        if require_code_example:
+            crit.append(VerifyCriterion(id="has_code", description="Includes a code example", severity="error"))
+        return crit
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/planning/stepplan_models.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=stepplan_models.py
+# LINES: 325
+# SHA256: 07426d1d4136cd7ebf28193bf6d5d1d26186dfe3f57dc0e8bb26bb40639a3d4b
+# SYMBOLS:
+#   - class StepAction
+#   - class FailurePolicyKind
+#   - class WebSearchStrategy
+#   - class OutputFormat
+#   - class PlanMode
+#   - class FailurePolicy
+#   - class StepBudgets
+#   - class PlanBudgets
+#   - class StopConditions
+#   - class VerifyCriterion
+#   - class AskClarifyingParams
+#   - class LtmSearchParams
+#   - class AttachmentsRetrievalParams
+#   - class RagRetrievalParams
+#   - class WebSearchParams
+#   - class ToolsParams
+#   - class SynthesizeDraftParams
+#   - class VerifyAnswerParams
+#   - class FinalizeAnswerParams
+#   - class ExecutionStep
+#   - class ExecutionPlan
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+from enum import Enum
+from typing import Any, Dict, List, Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+
+# -----------------------------
+# Enums
+# -----------------------------
+
+class StepAction(str, Enum):
+    ASK_CLARIFYING_QUESTION = "ASK_CLARIFYING_QUESTION"
+    USE_USER_LONGTERM_MEMORY_SEARCH = "USE_USER_LONGTERM_MEMORY_SEARCH"
+    USE_ATTACHMENTS_RETRIEVAL = "USE_ATTACHMENTS_RETRIEVAL"
+    USE_RAG_RETRIEVAL = "USE_RAG_RETRIEVAL"
+    USE_WEBSEARCH = "USE_WEBSEARCH"
+    USE_TOOLS = "USE_TOOLS"
+    SYNTHESIZE_DRAFT = "SYNTHESIZE_DRAFT"
+    VERIFY_ANSWER = "VERIFY_ANSWER"
+    FINALIZE_ANSWER = "FINALIZE_ANSWER"
+
+
+class FailurePolicyKind(str, Enum):
+    FAIL = "fail"
+    SKIP = "skip"
+    RETRY = "retry"
+    REPLAN = "replan"
+
+
+class WebSearchStrategy(str, Enum):
+    SNIPPETS = "snippets"
+    OPEN_PAGES = "open_pages"
+    HYBRID = "hybrid"
+
+
+class OutputFormat(str, Enum):
+    PLAIN_TEXT = "plain_text"
+    MARKDOWN = "markdown"
+
+
+class PlanMode(str, Enum):
+    CLARIFY = "clarify"
+    EXECUTE = "execute"
+
+
+# -----------------------------
+# Shared small models
+# -----------------------------
+
+class FailurePolicy(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    policy: FailurePolicyKind
+    max_retries: int = Field(ge=0)
+    retry_backoff_ms: int = Field(ge=0)
+    replan_reason: Optional[str] = None
+
+
+class StepBudgets(BaseModel):
+    """
+    Step-level budgets.
+    HARD: Only these keys are allowed.
+    """
+    model_config = ConfigDict(extra="forbid")
+
+    top_k: int = Field(default=0, ge=0)
+    max_chars: int = Field(default=0, ge=0)
+    max_tool_calls: int = Field(default=0, ge=0)
+    max_web_queries: int = Field(default=0, ge=0)
+
+
+class PlanBudgets(BaseModel):
+    """
+    Plan-level budgets.
+    """
+    model_config = ConfigDict(extra="forbid")
+
+    max_total_steps: int = Field(default=6, ge=1)
+    max_total_tool_calls: int = Field(default=0, ge=0)
+    max_total_web_queries: int = Field(default=0, ge=0)
+    max_total_chars_context: int = Field(default=12000, ge=0)
+    max_total_tokens_output: Optional[int] = Field(default=None, ge=0)
+
+
+class StopConditions(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    stop_on_clarifying_question_answered: bool = True
+    stop_on_verifier_pass: bool = True
+    stop_on_budget_exhausted: bool = True
+
+
+class VerifyCriterion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    severity: Literal["error", "warn"]
+
+
+# -----------------------------
+# Params per action
+# -----------------------------
+
+class AskClarifyingParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question: str = Field(min_length=1)
+    # Optional UX helpers (allowed but not required)
+    choices: Optional[List[str]] = None
+    must_answer_to_continue: bool = True
+
+
+class LtmSearchParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    query: str = Field(min_length=1)
+    top_k: int = Field(default=3, ge=1)
+    score_threshold: Optional[float] = None
+    include_debug: bool = False
+
+
+class AttachmentsRetrievalParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    query: str = Field(min_length=1)
+    top_k: int = Field(default=5, ge=1)
+
+
+class RagRetrievalParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    query: str = Field(min_length=1)
+    top_k: int = Field(default=5, ge=1)
+
+
+class WebSearchParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    query: str = Field(min_length=1)
+    recency_days: Optional[int] = Field(default=None, ge=0)
+    max_results: int = Field(default=5, ge=1)
+    strategy: WebSearchStrategy = WebSearchStrategy.HYBRID
+    domains_allowlist: Optional[List[str]] = None
+
+
+class ToolsParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    input: Dict[str, Any] = Field(default_factory=dict)
+
+
+class SynthesizeDraftParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    instructions: str = Field(min_length=1)
+    must_include: List[str] = Field(default_factory=list)
+    avoid: List[str] = Field(default_factory=list)
+
+
+class VerifyAnswerParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    criteria: List[VerifyCriterion] = Field(min_length=1)
+    strict: bool = True
+
+
+class FinalizeAnswerParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    instructions: str = Field(min_length=1)
+    format: OutputFormat = OutputFormat.MARKDOWN
+
+
+# Mapping for deterministic validation
+_ACTION_TO_PARAMS_MODEL = {
+    StepAction.ASK_CLARIFYING_QUESTION: AskClarifyingParams,
+    StepAction.USE_USER_LONGTERM_MEMORY_SEARCH: LtmSearchParams,
+    StepAction.USE_ATTACHMENTS_RETRIEVAL: AttachmentsRetrievalParams,
+    StepAction.USE_RAG_RETRIEVAL: RagRetrievalParams,
+    StepAction.USE_WEBSEARCH: WebSearchParams,
+    StepAction.USE_TOOLS: ToolsParams,
+    StepAction.SYNTHESIZE_DRAFT: SynthesizeDraftParams,
+    StepAction.VERIFY_ANSWER: VerifyAnswerParams,
+    StepAction.FINALIZE_ANSWER: FinalizeAnswerParams,
+}
+
+
+_RETRIEVAL_OR_TOOLS_ACTIONS = {
+    StepAction.USE_USER_LONGTERM_MEMORY_SEARCH,
+    StepAction.USE_ATTACHMENTS_RETRIEVAL,
+    StepAction.USE_RAG_RETRIEVAL,
+    StepAction.USE_WEBSEARCH,
+    StepAction.USE_TOOLS,
+}
+
+
+# -----------------------------
+# Execution Step
+# -----------------------------
+
+class ExecutionStep(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    step_id: str = Field(min_length=1)
+    action: StepAction
+    enabled: bool = True
+    depends_on: List[str] = Field(default_factory=list)
+
+    budgets: StepBudgets = Field(default_factory=StepBudgets)
+    inputs: Dict[str, Any] = Field(default_factory=dict)
+
+    # NOTE: LLM returns dict; we validate and coerce into a typed params model in validator.
+    params: Dict[str, Any] = Field(default_factory=dict)
+
+    expected_output: str = Field(default="", max_length=5000)
+    rationale: str = Field(default="", max_length=5000)
+    on_failure: FailurePolicy = Field(default_factory=lambda: FailurePolicy(
+        policy=FailurePolicyKind.RETRY, max_retries=1, retry_backoff_ms=0, replan_reason=None
+    ))
+
+    @field_validator("depends_on", mode="before")
+    @classmethod
+    def _depends_on_to_list(cls, v: Any) -> List[str]:
+        if v is None:
+            return []
+        if isinstance(v, list):
+            return [str(x) for x in v]
+        # common LLM mistake: single string/int
+        return [str(v)]
+
+    @model_validator(mode="after")
+    def _validate_params_match_action(self) -> "ExecutionStep":
+        """
+        Validate 'params' dict shape by action and reject missing/extra keys.
+        """
+        model = _ACTION_TO_PARAMS_MODEL.get(self.action)
+        if model is None:
+            raise ValueError(f"Unsupported action: {self.action}")
+
+        # Validate and normalize params via corresponding params model
+        try:
+            parsed = model.model_validate(self.params)
+        except Exception as e:
+            raise ValueError(f"Invalid params for action={self.action}: {e}") from e
+
+        # Replace dict with normalized dict (still JSON-serializable)
+        self.params = parsed.model_dump()
+
+        return self
+
+
+# -----------------------------
+# Execution Plan
+# -----------------------------
+
+class ExecutionPlan(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    plan_id: str = Field(min_length=1)
+    intent: str = Field(min_length=1)
+    mode: PlanMode
+    steps: List[ExecutionStep] = Field(min_length=1)
+
+    budgets: PlanBudgets
+    stop_conditions: StopConditions
+    final_answer_style: str = Field(default="concise_technical", min_length=1)
+
+    notes: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _validate_plan(self) -> "ExecutionPlan":
+        # 1) Max steps budget
+        if self.budgets and self.budgets.max_total_steps:
+            if len(self.steps) > int(self.budgets.max_total_steps):
+                raise ValueError("Number of steps exceeds max_total_steps budget.")
+
+        # 2) Step ids must be unique
+        ids = [s.step_id for s in self.steps]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Duplicate step_id in steps.")
+
+        # 3) depends_on must reference existing step_ids and not create forward references
+        seen = set()
+        for s in self.steps:
+            for dep in s.depends_on:
+                if dep not in ids:
+                    raise ValueError(f"Step '{s.step_id}' depends_on unknown step_id '{dep}'.")
+                # forward dep check: dep must already be seen in traversal order
+                if dep not in seen:
+                    raise ValueError(f"Step '{s.step_id}' has forward/invalid dependency '{dep}'.")
+            seen.add(s.step_id)
+
+        # 4) Mode constraints
+        if self.mode == PlanMode.EXECUTE:
+            if self.steps[-1].action != StepAction.FINALIZE_ANSWER:
+                raise ValueError("Execute mode must end with FINALIZE_ANSWER.")
+        elif self.mode == PlanMode.CLARIFY:
+            if self.steps[0].action != StepAction.ASK_CLARIFYING_QUESTION:
+                raise ValueError("Clarify mode must start with ASK_CLARIFYING_QUESTION.")
+            # Clarify mode cannot include retrieval/tools steps
+            for s in self.steps:
+                if s.action in _RETRIEVAL_OR_TOOLS_ACTIONS:
+                    raise ValueError("Clarify mode cannot include retrieval/tools steps.")
+        else:
+            raise ValueError(f"Unsupported mode: {self.mode}")
+
+        # 5) Websearch ordering: if present, it must occur before first SYNTHESIZE_DRAFT
+        web_idx = None
+        first_draft_idx = None
+        for i, s in enumerate(self.steps):
+            if web_idx is None and s.action == StepAction.USE_WEBSEARCH:
+                web_idx = i
+            if first_draft_idx is None and s.action == StepAction.SYNTHESIZE_DRAFT:
+                first_draft_idx = i
+        if web_idx is not None and first_draft_idx is not None:
+            if web_idx > first_draft_idx:
+                raise ValueError("USE_WEBSEARCH must appear before the first SYNTHESIZE_DRAFT.")
+
+        return self
 
 # ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/prompts/__init__.py
@@ -15606,199 +17471,6 @@ class DefaultWebSearchPromptBuilder(WebSearchPromptBuilder):
         )
 
 # ======================================================================
-# FILE: intergrax/runtime/drop_in_knowledge_mode/reasoning/__init__.py
-# MODULE: intergrax.runtime.drop_in_knowledge_mode.reasoning
-# MODULE_GROUP: runtime
-# TAGS:
-#   - package=intergrax
-#   - module_group=runtime
-#   - file=__init__.py
-# LINES: 0
-# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-# SYMBOLS:
-#   - <none>
-# ======================================================================
-
-
-# ======================================================================
-# FILE: intergrax/runtime/drop_in_knowledge_mode/reasoning/reasoning_layer.py
-# MODULE: intergrax.runtime.drop_in_knowledge_mode.reasoning.reasoning_layer
-# MODULE_GROUP: runtime
-# TAGS:
-#   - package=intergrax
-#   - module_group=runtime
-#   - file=reasoning_layer.py
-# LINES: 163
-# SHA256: 7f704f315d6e1687f75eb75f8f6b08981924203fc31cddc31a110eeb79bcdc9b
-# SYMBOLS:
-#   - class ReasoningApplyResult
-#   - class ReasoningLayer
-# ======================================================================
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
-
-from __future__ import annotations
-
-from dataclasses import dataclass
-from typing import Any, Dict, Optional
-
-from intergrax.runtime.drop_in_knowledge_mode.config import ReasoningConfig, ReasoningMode, RuntimeConfig
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
-
-
-@dataclass(frozen=True)
-class ReasoningApplyResult:
-    """
-    Result of applying reasoning policy to system instructions.
-    """
-
-    mode: ReasoningMode
-    applied: bool
-    final_instructions: str
-    extra: Dict[str, Any]
-
-
-class ReasoningLayer:
-    """
-    Reasoning / Chain-of-Thought layer for Drop-In Knowledge Runtime.
-
-    v1 responsibilities:
-      - Augment system instructions based on ReasoningMode.
-      - Never store or expose raw chain-of-thought content.
-      - Write lightweight observability info into RuntimeState.debug_trace.
-
-    v1 does NOT:
-      - Run separate planning calls.
-      - Change tools/websearch/RAG flow.
-      - Perform self-critique passes.
-    """
-
-    def __init__(self, config: RuntimeConfig) -> None:
-        self._config = config
-
-    def apply_reasoning_to_instructions(
-        self,
-        state: RuntimeState,
-        base_system_instructions: str,
-    ) -> ReasoningApplyResult:
-        """
-        Returns the final system instructions after applying the configured reasoning mode.
-        Updates RuntimeState.reasoning_mode and debug_trace["reasoning"].
-
-        Note: This method must be a no-op in DIRECT mode.
-        """
-
-        reasoning_config = self._get_reasoning_config()
-        mode = reasoning_config.mode
-
-        # Keep state consistent even if engine forgets to set it.
-        state.reasoning_mode = mode
-
-        if not base_system_instructions:
-            base_system_instructions = ""
-
-        if mode == ReasoningMode.DIRECT:
-            result = ReasoningApplyResult(
-                mode=mode,
-                applied=False,
-                final_instructions=base_system_instructions,
-                extra={"note": "DIRECT mode (no reasoning augmentation)."},
-            )
-            self._write_reasoning_debug(state, result)
-            return result
-
-        if mode == ReasoningMode.COT_INTERNAL:
-            augmentation = self._cot_internal_instructions()
-            final = self._join_instructions(base_system_instructions, augmentation)
-
-            result = ReasoningApplyResult(
-                mode=mode,
-                applied=True,
-                final_instructions=final,
-                extra={
-                    "note": "COT_INTERNAL mode (internal reasoning; do not reveal chain-of-thought).",
-                    "capture_reasoning_trace": bool(reasoning_config.capture_reasoning_trace),
-                },
-            )
-            self._write_reasoning_debug(state, result)
-            return result
-
-        # Forward-compatible default: treat unknown modes as DIRECT.
-        result = ReasoningApplyResult(
-            mode=ReasoningMode.DIRECT,
-            applied=False,
-            final_instructions=base_system_instructions,
-            extra={
-                "note": f"Unknown ReasoningMode '{mode}'. Fallback to DIRECT.",
-                "requested_mode": str(mode),
-            },
-        )
-        state.reasoning_mode = ReasoningMode.DIRECT
-        self._write_reasoning_debug(state, result)
-        return result
-
-    # -----------------------
-    # Internals
-    # -----------------------
-
-    def _get_reasoning_config(self) -> ReasoningConfig:
-        """
-        Normalizes missing config to a default ReasoningConfig(DIRECT).
-        """
-        if self._config.reasoning_config is None:
-            return ReasoningConfig(mode=ReasoningMode.DIRECT)
-        return self._config.reasoning_config
-
-    def _cot_internal_instructions(self) -> str:
-        """
-        A minimal, safe instruction block for internal step-by-step reasoning.
-
-        Important: We instruct the model to keep chain-of-thought private
-        and produce only the final answer to the user.
-        """
-        return (
-            "Reason internally step by step before answering.\n"
-            "Do not reveal your chain-of-thought, internal steps, or hidden reasoning.\n"
-            "Provide only the final answer, clearly and concisely.\n"
-            "If uncertainty exists, state it explicitly and explain what is missing."
-        )
-
-    def _join_instructions(self, base: str, addition: str) -> str:
-        base = (base or "").strip()
-        addition = (addition or "").strip()
-        if not base:
-            return addition
-        if not addition:
-            return base
-        return f"{base}\n\n{addition}"
-
-    def _write_reasoning_debug(self, state: RuntimeState, result: ReasoningApplyResult) -> None:
-        """
-        Writes reasoning metadata to state.debug_trace and (optionally) to state.reasoning_trace.
-        Never stores raw chain-of-thought.
-        """
-        if state.debug_trace is None:
-            state.debug_trace = {}
-
-        state.debug_trace["reasoning"] = {
-            "mode": result.mode.value,
-            "applied": result.applied,
-            "extra": result.extra,
-        }
-
-        # Optional lightweight per-request trace object (still without CoT content).
-        # This is reserved for future PLAN_EXECUTE / structured reasoning modes.
-        if state.reasoning_trace is None:
-            state.reasoning_trace = {}
-        state.reasoning_trace.update(
-            {
-                "mode": result.mode.value,
-                "applied": result.applied,
-            }
-        )
-
-# ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/responses/__init__.py
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.responses
 # MODULE_GROUP: runtime
@@ -15822,7 +17494,7 @@ class ReasoningLayer:
 #   - module_group=runtime
 #   - file=response_schema.py
 # LINES: 182
-# SHA256: bc77a95bdf4f6c1c9531f14a6851548903d8d7fefe257db4bb5e89afaba6a62e
+# SHA256: 0edf2ebbb1b90e51e017a5d9b3de57ddb5cd7fb67f7594e34c1b181d3398ba3f
 # SYMBOLS:
 #   - class Citation
 #   - class RouteInfo
@@ -15853,7 +17525,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from intergrax.llm.messages import AttachmentRef
-from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.llm_adapters.llm_usage_track import LLMUsageReport
 
 
 @dataclass
@@ -16009,7 +17681,7 @@ class RuntimeAnswer:
     route: RouteInfo = field(default_factory=RouteInfo)
     tool_calls: List[ToolCallInfo] = field(default_factory=list)
     stats: RuntimeStats = field(default_factory=RuntimeStats)
-    llm_usage_tracker: Optional[LLMUsageTracker] = None
+    llm_usage_report: Optional[LLMUsageReport] = None
 
     # Optional raw model output or intermediate artifacts
     raw_model_output: Optional[Any] = None
