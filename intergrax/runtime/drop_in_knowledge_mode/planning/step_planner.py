@@ -1,486 +1,430 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# intergrax/runtime/drop_in_knowledge_mode/planning/step_planner.py
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import List, Optional
+import uuid
 
 from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
-    # core models
+    EngineHints,
     ExecutionPlan,
     ExecutionStep,
+    ExpectedOutputType,
+    FailurePolicy,
+    FailurePolicyKind,
+    OutputFormat,
+    PlanBudgets,
+    PlanIntent,
+    PlanMode,
+    RationaleType,
     StepAction,
     StepBudgets,
-    PlanBudgets,
+    StepId,
     StopConditions,
-    FailurePolicy,
     VerifyCriterion,
-    # enums
+    VerifySeverity,
     WebSearchStrategy,
-    OutputFormat,
-    PlanMode,
-    # params models (names must match stepplan_models.py)
-    AskClarifyingParams,
-    LtmSearchParams,
-    AttachmentsRetrievalParams,
-    RagRetrievalParams,
-    WebSearchParams,
-    ToolsParams,
-    SynthesizeDraftParams,
-    VerifyAnswerParams,
-    FinalizeAnswerParams,
 )
 
 
 @dataclass(frozen=True)
 class StepPlannerConfig:
-    # Plan-level defaults
+    """
+    Rule-based step planner configuration.
+    Keep it deterministic; no LLM prompting here.
+    """
+
+    # Output style
+    final_answer_style: str = "concise_technical"
+    final_format: OutputFormat = OutputFormat.MARKDOWN
+
+    # Default per-step budgets
+    step_max_chars: int = 2000
+
+    web_top_k: int = 5
+    web_max_results: int = 5
+    web_recency_days: int = 30
+    web_strategy: WebSearchStrategy = WebSearchStrategy.HYBRID
+
+    # Plan-level budgets
     max_total_steps: int = 6
-    max_total_tool_calls: int = 10
+    max_total_tool_calls: int = 0
     max_total_web_queries: int = 5
     max_total_chars_context: int = 12000
     max_total_tokens_output: Optional[int] = None
 
-    # Step-level defaults
-    step_max_chars: int = 2000
-    step_top_k: int = 5
-
-    # Websearch
-    web_recency_days: int = 30
-    web_max_results: int = 5
-    web_strategy: WebSearchStrategy = WebSearchStrategy.HYBRID
-
-    # Verification defaults
-    verify_strict: bool = True
-
-    # Deterministic pruning priority if we exceed max_total_steps:
-    # remove in this order (lowest value first)
-    # tools -> web -> rag -> attachments -> ltm
-    prune_order: Tuple[str, ...] = ("tools", "web", "rag", "attachments", "ltm")
-
 
 class StepPlanner:
     """
-    Deterministic (rule-based) step planner.
+    Deterministic planner that builds an ExecutionPlan from:
+      - user_message
+      - engine_hints (e.g. from engine_planner.py)
 
-    - No LLM usage.
-    - Produces a stable ExecutionPlan compatible with stepplan_models.py.
-    - Retrieval steps are always before SYNTHESIZE_DRAFT.
-    - Execute plans always end with FINALIZE_ANSWER.
+    Important: ExecutionStep.params MUST be a dict (per stepplan_models.ExecutionStep).
     """
 
-    def __init__(self, config: Optional[StepPlannerConfig] = None):
-        self._cfg = config or StepPlannerConfig()
+    def __init__(self, cfg: Optional[StepPlannerConfig] = None):
+        self._cfg = cfg or StepPlannerConfig()
 
-    def plan(
+    # -----------------------------
+    # Public API
+    # -----------------------------
+
+    def build_plan(
         self,
-        user_message: str,
         *,
-        # engine-level routing/gating (simple booleans)
-        enable_websearch: bool = False,
-        enable_rag: bool = False,
-        enable_tools: bool = False,
-        enable_attachments: bool = False,
-        enable_user_ltm: bool = False,
-        # optional hints
-        require_code_example: bool = False,
-        final_format: OutputFormat = OutputFormat.MARKDOWN,
-        plan_id: str = "stepplan-001",
+        user_message: str,
+        engine_hints: Optional[EngineHints] = None,
+        plan_id: Optional[str] = None,
     ) -> ExecutionPlan:
         msg = (user_message or "").strip()
+        hints = engine_hints or EngineHints()
+        pid = (plan_id or "stepplan-001").strip() or "stepplan-001"
+
+        # If no message -> clarify (hard deterministic)
         if not msg:
-            return self._clarify("Empty user message. What should the assistant do?", plan_id=plan_id)
+            return self._plan_clarify(msg, plan_id=pid)
 
-        intent = self._make_intent(msg)
+        # PRIMARY: upstream route decides.
+        intent = hints.intent or PlanIntent.GENERIC
 
-        # Clarify ONLY if truly ambiguous (rare)
-        if self._is_ambiguous(msg):
-            return self._clarify(self._clarifying_question(msg), intent=intent, plan_id=plan_id)
+        if intent == PlanIntent.CLARIFY:
+            return self._plan_clarify(msg, plan_id=pid)
 
-        # Build steps in deterministic order
-        steps: List[ExecutionStep] = []
+        if intent == PlanIntent.FRESHNESS:
+            # If upstream asked for freshness but websearch disabled -> degrade safely
+            if hints.enable_websearch:
+                return self._plan_freshness(msg, plan_id=pid)
+            return self._plan_generic(msg, plan_id=pid)
 
-        # Retrieval (deterministic ordering)
-        if enable_user_ltm:
-            steps.append(self._step_user_ltm(query=self._ltm_query(msg)))
+        if intent == PlanIntent.PROJECT_ARCHITECTURE:
+            if hints.enable_ltm:
+                return self._plan_project(msg, plan_id=pid)
+            return self._plan_generic(msg, plan_id=pid)
 
-        if enable_attachments:
-            steps.append(self._step_attachments(query=self._attachments_query(msg)))
+        # GENERIC default
+        return self._plan_generic(msg, plan_id=pid)
 
-        if enable_rag:
-            steps.append(self._step_rag(query=self._rag_query(msg)))
+    # -----------------------------
+    # Plan builders
+    # -----------------------------
 
-        if enable_websearch:
-            steps.append(self._step_websearch(query=self._web_query(msg)))
+    def _plan_generic(self, msg: str, *, plan_id: str) -> ExecutionPlan:
+        steps: List[ExecutionStep] = [
+            self._step_synthesize(step_id=StepId.DRAFT, depends_on=[], instructions=msg),
+            self._step_verify(depends_on=[StepId.DRAFT], criteria=self._default_verify_criteria(msg), strict=True),
+            self._step_finalize(depends_on=[StepId.VERIFY], instructions=msg),
+        ]
+        return self._wrap(plan_id=plan_id, intent=PlanIntent.GENERIC, mode=PlanMode.EXECUTE, steps=steps)
 
-        if enable_tools:
-            steps.append(self._step_tools(instructions="Use tools if needed."))
+    def _plan_freshness(self, msg: str, *, plan_id: str) -> ExecutionPlan:
+        steps: List[ExecutionStep] = [
+            self._step_websearch(step_id=StepId.WEBSEARCH, depends_on=[], query=self._web_query(msg, intent=PlanIntent.FRESHNESS)),
+            self._step_synthesize(step_id=StepId.DRAFT, depends_on=[StepId.WEBSEARCH], instructions=msg),
+            self._step_verify(depends_on=[StepId.DRAFT], criteria=self._default_verify_criteria(msg), strict=True),
+            self._step_finalize(depends_on=[StepId.VERIFY], instructions=msg),
+        ]
+        return self._wrap(plan_id=plan_id, intent=PlanIntent.FRESHNESS, mode=PlanMode.EXECUTE, steps=steps)
 
-        # Core execution tail
-        steps.append(
-            self._step_synthesize(
-                instructions=self._draft_instructions(msg),
-                must_include=self._must_include(msg),
-                avoid=[],
-            )
-        )
-        steps.append(
-            self._step_verify(
-                criteria=self._verify_criteria(require_code_example=require_code_example),
-                strict=self._cfg.verify_strict,
-            )
-        )
-        steps.append(
-            self._step_finalize(
-                instructions=self._final_instructions(msg),
-                fmt=final_format,
-            )
-        )
-
-        # Ensure depends_on chain is correct + stay within max_total_steps
-        steps = self._chain_and_prune(steps, max_steps=self._cfg.max_total_steps)
-
-        plan = ExecutionPlan(
+    def _plan_project(self, msg: str, *, plan_id: str) -> ExecutionPlan:
+        steps: List[ExecutionStep] = [
+            self._step_ltm(step_id=StepId.LTM_SEARCH, depends_on=[], query=self._ltm_query(msg, intent=PlanIntent.PROJECT_ARCHITECTURE)),
+            self._step_synthesize(step_id=StepId.DRAFT, depends_on=[StepId.LTM_SEARCH], instructions=msg),
+            self._step_verify(depends_on=[StepId.DRAFT], criteria=self._default_verify_criteria(msg), strict=True),
+            self._step_finalize(depends_on=[StepId.VERIFY], instructions=msg),
+        ]
+        return self._wrap(
             plan_id=plan_id,
-            intent=intent,
+            intent=PlanIntent.PROJECT_ARCHITECTURE,
             mode=PlanMode.EXECUTE,
             steps=steps,
-            budgets=PlanBudgets(
-                max_total_steps=self._cfg.max_total_steps,
-                max_total_tool_calls=self._cfg.max_total_tool_calls,
-                max_total_web_queries=self._cfg.max_total_web_queries,
-                max_total_chars_context=self._cfg.max_total_chars_context,
-                max_total_tokens_output=self._cfg.max_total_tokens_output,
-            ),
-            stop_conditions=StopConditions(
-                stop_on_clarifying_question_answered=True,
-                stop_on_verifier_pass=True,
-                stop_on_budget_exhausted=True,
-            ),
-            final_answer_style="concise_technical",
-            notes=None,
-        )
-        return plan
-
-    # -----------------------------
-    # Step factories (return ExecutionStep)
-    # NOTE: ExecutionStep.params is a dict; we pass model_dump() to match schema exactly.
-    # -----------------------------
-
-    def _step_user_ltm(self, *, query: str) -> ExecutionStep:
-        return ExecutionStep(
-            step_id="ltm",
-            action=StepAction.USE_USER_LONGTERM_MEMORY_SEARCH,
-            enabled=True,
-            depends_on=[],
-            budgets=StepBudgets(
-                top_k=self._cfg.step_top_k,
-                max_chars=self._cfg.step_max_chars,
-                max_tool_calls=0,
-                max_web_queries=0,
-            ),
-            inputs={},
-            params=LtmSearchParams(
-                query=query,
-                top_k=self._cfg.step_top_k,
-                score_threshold=None,
-                include_debug=False,
-            ).model_dump(),
-            expected_output="User long-term memory hits",
-            rationale="Gather project/user context deterministically",
-            on_failure=FailurePolicy(policy="skip", max_retries=0, retry_backoff_ms=0, replan_reason=None),
         )
 
-    def _step_attachments(self, *, query: str) -> ExecutionStep:
-        return ExecutionStep(
-            step_id="attachments",
-            action=StepAction.USE_ATTACHMENTS_RETRIEVAL,
-            enabled=True,
-            depends_on=[],
-            budgets=StepBudgets(
-                top_k=self._cfg.step_top_k,
-                max_chars=self._cfg.step_max_chars,
-                max_tool_calls=0,
-                max_web_queries=0,
-            ),
-            inputs={},
-            params=AttachmentsRetrievalParams(query=query, top_k=self._cfg.step_top_k).model_dump(),
-            expected_output="Attachment retrieval hits",
-            rationale="Use session attachments as context",
-            on_failure=FailurePolicy(policy="skip", max_retries=0, retry_backoff_ms=0, replan_reason=None),
-        )
-
-    def _step_rag(self, *, query: str) -> ExecutionStep:
-        return ExecutionStep(
-            step_id="rag",
-            action=StepAction.USE_RAG_RETRIEVAL,
-            enabled=True,
-            depends_on=[],
-            budgets=StepBudgets(
-                top_k=self._cfg.step_top_k,
-                max_chars=self._cfg.step_max_chars,
-                max_tool_calls=0,
-                max_web_queries=0,
-            ),
-            inputs={},
-            params=RagRetrievalParams(query=query, top_k=self._cfg.step_top_k).model_dump(),
-            expected_output="RAG hits",
-            rationale="Retrieve from configured RAG store",
-            on_failure=FailurePolicy(policy="skip", max_retries=0, retry_backoff_ms=0, replan_reason=None),
-        )
-
-    def _step_websearch(self, *, query: str) -> ExecutionStep:
-        return ExecutionStep(
-            step_id="web",
-            action=StepAction.USE_WEBSEARCH,
-            enabled=True,
-            depends_on=[],
-            budgets=StepBudgets(
-                top_k=self._cfg.web_max_results,
-                max_chars=self._cfg.step_max_chars,
-                max_tool_calls=0,
-                max_web_queries=1,
-            ),
-            inputs={},
-            params=WebSearchParams(
-                query=query,
-                recency_days=self._cfg.web_recency_days,
-                max_results=self._cfg.web_max_results,
-                strategy=self._cfg.web_strategy,
-                domains_allowlist=None,
-            ).model_dump(),
-            expected_output="Web search results",
-            rationale="Freshness / external verification needed",
-            on_failure=FailurePolicy(policy="replan", max_retries=0, retry_backoff_ms=0, replan_reason="Websearch failed"),
-        )
-
-    def _step_tools(self, *, instructions: str) -> ExecutionStep:
-        # stepplan_models.ToolsParams has only: input: Dict[str, Any]
-        return ExecutionStep(
-            step_id="tools",
-            action=StepAction.USE_TOOLS,
-            enabled=True,
-            depends_on=[],
-            budgets=StepBudgets(
-                top_k=0,
-                max_chars=self._cfg.step_max_chars,
-                max_tool_calls=1,
-                max_web_queries=0,
-            ),
-            inputs={},
-            params=ToolsParams(input={"instructions": instructions}).model_dump(),
-            expected_output="Tool outputs (if any)",
-            rationale="Optional tool usage",
-            on_failure=FailurePolicy(policy="skip", max_retries=0, retry_backoff_ms=0, replan_reason=None),
-        )
-
-    def _step_synthesize(
-        self,
-        *,
-        instructions: str,
-        must_include: List[str],
-        avoid: List[str],
-    ) -> ExecutionStep:
-        return ExecutionStep(
-            step_id="draft",
-            action=StepAction.SYNTHESIZE_DRAFT,
-            enabled=True,
-            depends_on=[],
-            budgets=StepBudgets(
-                top_k=0,
-                max_chars=self._cfg.step_max_chars,
-                max_tool_calls=0,
-                max_web_queries=0,
-            ),
-            inputs={},
-            params=SynthesizeDraftParams(instructions=instructions, must_include=must_include, avoid=avoid).model_dump(),
-            expected_output="Draft answer text",
-            rationale="Generate a draft from gathered context",
-            on_failure=FailurePolicy(policy="retry", max_retries=1, retry_backoff_ms=0, replan_reason=None),
-        )
-
-    def _step_verify(self, *, criteria: List[VerifyCriterion], strict: bool) -> ExecutionStep:
-        # Schema requires at least one criterion; enforce deterministically
-        if not criteria:
-            criteria = [VerifyCriterion(id="non_empty", description="Answer is non-empty", severity="error")]
-
-        return ExecutionStep(
-            step_id="verify",
-            action=StepAction.VERIFY_ANSWER,
-            enabled=True,
-            depends_on=[],
-            budgets=StepBudgets(top_k=0, max_chars=1000, max_tool_calls=0, max_web_queries=0),
-            inputs={},
-            params=VerifyAnswerParams(criteria=criteria, strict=strict).model_dump(),
-            expected_output="Verification pass/fail",
-            rationale="Guardrail check before final answer",
-            on_failure=FailurePolicy(policy="replan", max_retries=0, retry_backoff_ms=0, replan_reason="Verification failed"),
-        )
-
-    def _step_finalize(self, *, instructions: str, fmt: OutputFormat) -> ExecutionStep:
-        return ExecutionStep(
-            step_id="final",
-            action=StepAction.FINALIZE_ANSWER,
-            enabled=True,
-            depends_on=[],
-            budgets=StepBudgets(top_k=0, max_chars=self._cfg.step_max_chars, max_tool_calls=0, max_web_queries=0),
-            inputs={},
-            params=FinalizeAnswerParams(instructions=instructions, format=fmt).model_dump(),
-            expected_output="Final assistant answer",
-            rationale="Finalize format and style",
-            on_failure=FailurePolicy(policy="fail", max_retries=0, retry_backoff_ms=0, replan_reason=None),
-        )
-
-    # -----------------------------
-    # Clarify plan
-    # -----------------------------
-
-    def _clarify(self, question: str, *, intent: str = "clarify", plan_id: str = "stepplan-001") -> ExecutionPlan:
-        steps = [
-            ExecutionStep(
-                step_id="clarify",
-                action=StepAction.ASK_CLARIFYING_QUESTION,
-                enabled=True,
+    def _plan_clarify(self, msg: str, *, plan_id: str) -> ExecutionPlan:
+        steps: List[ExecutionStep] = [
+            self._step_clarify(
+                step_id=StepId.CLARIFY,
                 depends_on=[],
-                budgets=StepBudgets(top_k=0, max_chars=200, max_tool_calls=0, max_web_queries=0),
-                inputs={},
-                params=AskClarifyingParams(question=question).model_dump(),
-                expected_output="User clarification",
-                rationale="Ambiguous request",
-                on_failure=FailurePolicy(policy="fail", max_retries=0, retry_backoff_ms=0, replan_reason=None),
+                question=self._clarifying_question(msg),
             )
         ]
-        return ExecutionPlan(
+        return self._wrap(
             plan_id=plan_id,
-            intent=intent,
+            intent=PlanIntent.CLARIFY,
             mode=PlanMode.CLARIFY,
             steps=steps,
-            budgets=PlanBudgets(
-                max_total_steps=1,
-                max_total_tool_calls=0,
-                max_total_web_queries=0,
-                max_total_chars_context=self._cfg.max_total_chars_context,
-                max_total_tokens_output=self._cfg.max_total_tokens_output,
+        )
+    
+
+    def _plan_budgets(self) -> PlanBudgets:
+        """
+        Plan-level budgets. Deterministic defaults.
+        Keep these small and stable; engine/runtime can override if needed.
+        """
+        return PlanBudgets(
+            max_total_steps=self._cfg.max_total_steps,
+            max_total_tool_calls=self._cfg.max_total_tool_calls,
+            max_total_web_queries=self._cfg.max_total_web_queries,
+            max_total_chars_context=self._cfg.max_total_chars_context,
+            max_total_tokens_output=self._cfg.max_total_tokens_output,
+        )
+
+    def _stop_conditions(self, mode: PlanMode) -> StopConditions:
+        """
+        Stop conditions used by the executor.
+        """
+        return StopConditions(
+            stop_on_clarifying_question_answered=(mode == PlanMode.CLARIFY),
+            stop_on_verifier_pass=True,
+            stop_on_budget_exhausted=True,
+        )
+    
+    def _web_query(self, msg: str, *, intent: PlanIntent) -> str:
+        """
+        Deterministic web query builder.
+        IMPORTANT: routing decision (czy web w ogóle) nie jest tutaj.
+        Tu tylko budujemy query, jeśli upstream już zdecydował, że websearch jest potrzebny.
+        """
+        q = (msg or "").strip()
+        if not q:
+            return "OpenAI Responses API changes"
+
+        # Intent-specific normalization (no heuristics, just formatting)
+        if intent == PlanIntent.FRESHNESS:
+            # Keep it close to user text, but nudge toward changelog/release notes.
+            return f"{q} changelog release notes dates"
+
+        return q
+
+    def _ltm_query(self, msg: str, *, intent: PlanIntent) -> str:
+        """
+        Deterministic LTM query builder.
+        Again: no routing here; only build the query when LTM retrieval is already allowed.
+        """
+        q = (msg or "").strip()
+        if not q:
+            return "Intergrax architecture decisions"
+
+        if intent == PlanIntent.PROJECT_ARCHITECTURE:
+            # Keep stable prefix to improve retrieval consistency
+            return f"Intergrax architecture: {q}"
+
+        return q
+
+    # -----------------------------
+    # Step factories (IMPORTANT: params MUST be dict)
+    # -----------------------------
+
+    def _step_synthesize(self, *, step_id: StepId, depends_on: List[StepId], instructions: str) -> ExecutionStep:
+        return ExecutionStep(
+            step_id=step_id,
+            action=StepAction.SYNTHESIZE_DRAFT,
+            enabled=True,
+            depends_on=depends_on,
+            budgets=StepBudgets(top_k=0, max_chars=self._cfg.step_max_chars, max_tool_calls=0, max_web_queries=0),
+            inputs={},
+            params={
+                "instructions": instructions,
+                "must_include": [],
+                "avoid": [],
+            },
+            expected_output_type=ExpectedOutputType.DRAFT,
+            rationale_type=RationaleType.PRODUCE_DRAFT,
+            on_failure=FailurePolicy(
+                policy=FailurePolicyKind.RETRY,
+                max_retries=1,
+                retry_backoff_ms=0,
+                replan_reason=None,
             ),
-            stop_conditions=StopConditions(
-                stop_on_clarifying_question_answered=True,
-                stop_on_verifier_pass=False,
-                stop_on_budget_exhausted=True,
+        )
+
+    def _step_verify(
+        self,
+        *,
+        depends_on: List[StepId],
+        criteria: List[VerifyCriterion],
+        strict: bool,
+    ) -> ExecutionStep:
+        if not criteria:
+            criteria = [VerifyCriterion(id="non_empty", description="Answer is non-empty", severity=VerifySeverity.ERROR)]
+
+        return ExecutionStep(
+            step_id=StepId.VERIFY,
+            action=StepAction.VERIFY_ANSWER,
+            enabled=True,
+            depends_on=depends_on or [],
+            budgets=StepBudgets(top_k=0, max_chars=1000, max_tool_calls=0, max_web_queries=0),
+            inputs={},
+            params={
+                # ExecutionStep expects dict; models will validate/normalize.
+                "criteria": [c.model_dump() for c in criteria],
+                "strict": bool(strict),
+            },
+            expected_output_type=ExpectedOutputType.VERIFIED,            
+            rationale_type=RationaleType.VERIFY_QUALITY,
+            on_failure=FailurePolicy(
+                policy=FailurePolicyKind.REPLAN,
+                max_retries=0,
+                retry_backoff_ms=0,
+                replan_reason="Verification failed",
             ),
-            final_answer_style="concise_technical",
-            notes=None,
+        )
+
+    def _step_finalize(self, *, depends_on: List[StepId], instructions: str) -> ExecutionStep:
+        return ExecutionStep(
+            step_id=StepId.FINAL,
+            action=StepAction.FINALIZE_ANSWER,
+            enabled=True,
+            depends_on=depends_on,
+            budgets=StepBudgets(top_k=0, max_chars=self._cfg.step_max_chars, max_tool_calls=0, max_web_queries=0),
+            inputs={},
+            params={
+                "instructions": instructions,
+                "format": self._cfg.final_format.value,  # OutputFormat -> string for params model
+            },
+            expected_output_type=ExpectedOutputType.FINAL,
+            rationale_type=RationaleType.FINALIZE,
+            on_failure=FailurePolicy(
+                policy=FailurePolicyKind.FAIL,
+                max_retries=0,
+                retry_backoff_ms=0,
+                replan_reason=None,
+            ),
+        )
+
+    def _step_websearch(self, *, step_id: StepId, depends_on: List[StepId], query: str) -> ExecutionStep:
+        return ExecutionStep(
+            step_id=step_id,
+            action=StepAction.USE_WEBSEARCH,
+            enabled=True,
+            depends_on=depends_on,
+            budgets=StepBudgets(top_k=self._cfg.web_top_k, max_chars=5000, max_tool_calls=0, max_web_queries=1),
+            inputs={},
+            params={
+                "query": query,
+                "recency_days": int(self._cfg.web_recency_days),
+                "max_results": int(self._cfg.web_max_results),
+                "strategy": self._cfg.web_strategy.value,  # WebSearchStrategy -> string for params model
+                "domains_allowlist": None,
+            },
+            expected_output_type=ExpectedOutputType.SEARCH_RESULTS,
+            rationale_type=RationaleType.RETRIEVE_WEB,
+            on_failure=FailurePolicy(
+                policy=FailurePolicyKind.REPLAN,
+                max_retries=0,
+                retry_backoff_ms=0,
+                replan_reason="Web search failed",
+            ),
+        )
+
+    def _step_ltm(self, *, step_id: StepId, depends_on: List[StepId], query: str) -> ExecutionStep:
+        return ExecutionStep(
+            step_id=step_id,
+            action=StepAction.USE_USER_LONGTERM_MEMORY_SEARCH,
+            enabled=True,
+            depends_on=depends_on,
+            budgets=StepBudgets(top_k=5, max_chars=2000, max_tool_calls=0, max_web_queries=0),
+            inputs={},
+            params={
+                "query": query,
+                "top_k": 5,
+                "score_threshold": None,
+                "include_debug": False,
+            },
+            expected_output_type=ExpectedOutputType.LTM_RESULTS,
+            rationale_type=RationaleType.RETRIEVE_LTM,
+            on_failure=FailurePolicy(
+                policy=FailurePolicyKind.RETRY,
+                max_retries=1,
+                retry_backoff_ms=0,
+                replan_reason=None,
+            ),
+        )
+
+    def _step_clarify(self, *, step_id: StepId, depends_on: List[StepId], question: str) -> ExecutionStep:
+        # Clarify mode requires first step action ASK_CLARIFYING_QUESTION.
+        return ExecutionStep(
+            step_id=step_id,
+            action=StepAction.ASK_CLARIFYING_QUESTION,
+            enabled=True,
+            depends_on=depends_on,
+            budgets=StepBudgets(top_k=0, max_chars=300, max_tool_calls=0, max_web_queries=0),
+            inputs={},
+            params={
+                "question": question,
+                "choices": None,
+                "must_answer_to_continue": True,
+            },
+            expected_output_type=ExpectedOutputType.CLARIFYING_QUESTION,
+            rationale_type=RationaleType.ASK_CLARIFICATION,
+            on_failure=FailurePolicy(
+                policy=FailurePolicyKind.FAIL,
+                max_retries=0,
+                retry_backoff_ms=0,
+                replan_reason=None,
+            ),
         )
 
     # -----------------------------
-    # Deterministic chaining + pruning
+    # Wrapping helpers
     # -----------------------------
 
-    def _chain_and_prune(self, steps: List[ExecutionStep], *, max_steps: int) -> List[ExecutionStep]:
-        """
-        Ensures depends_on is a simple linear chain AND prunes optional retrieval steps
-        if we exceed max_steps (deterministic order).
-        """
-        # Prune if needed
-        if max_steps and len(steps) > max_steps:
-            steps = self._prune_to_budget(steps, max_steps=max_steps)
+    def _wrap(
+        self,
+        *,
+        intent: PlanIntent,
+        mode: PlanMode,
+        steps: List[ExecutionStep],
+        plan_id: Optional[str],
+    ) -> ExecutionPlan:
+        pid = plan_id or self._new_plan_id()
 
-        # Re-chain depends_on linearly (no forward refs)
-        prev_id: Optional[str] = None
-        for s in steps:
-            s.depends_on = [] if prev_id is None else [prev_id]
-            prev_id = s.step_id
+        # Validate steps count early
+        if len(steps) > self._cfg.max_total_steps:
+            raise ValueError(
+                f"StepPlanner bug: steps_count={len(steps)} exceeds max_total_steps={self._cfg.max_total_steps} "
+                f"for intent={intent.value}"
+            )
 
-        return steps
+        # Execute plans MUST end with FINALIZE_ANSWER
+        if mode == PlanMode.EXECUTE:
+            if not steps:
+                raise ValueError("StepPlanner bug: execute plan has no steps.")
+            if steps[-1].action != StepAction.FINALIZE_ANSWER:
+                raise ValueError(
+                    f"StepPlanner bug: execute plan must end with FINALIZE_ANSWER; "
+                    f"got last_action={steps[-1].action.value} for intent={intent.value}"
+                )
 
-    def _prune_to_budget(self, steps: List[ExecutionStep], *, max_steps: int) -> List[ExecutionStep]:
-        """
-        Drops optional steps deterministically to fit the budget.
-        Never drops: draft/verify/final (must exist in execute mode).
-        """
-        core_ids = {"draft", "verify", "final"}
-        core = [s for s in steps if s.step_id in core_ids]
-        optional = [s for s in steps if s.step_id not in core_ids]
+        return ExecutionPlan(
+            plan_id=pid,
+            intent=intent,
+            mode=mode,
+            steps=steps,
+            budgets=self._plan_budgets(),
+            stop_conditions=self._stop_conditions(mode),
+            final_answer_style=self._cfg.final_answer_style,
+            notes=None,
+        )
 
-        # If even core is too big (shouldn't happen), truncate from the left (but keep final step)
-        if len(core) > max_steps:
-            # keep last max_steps steps
-            core = core[-max_steps:]
-            return core
-
-        # We can keep at most (max_steps - len(core)) optional steps
-        keep_optional = max_steps - len(core)
-        if keep_optional <= 0:
-            return core
-
-        # Deterministic keep order: follow current build order, but prune by configured priority
-        # We remove by prune_order first, until it fits.
-        opt_by_id = {s.step_id: s for s in optional}
-        opt_ids_in_order = [s.step_id for s in optional]
-
-        # Remove until fits
-        while len(opt_ids_in_order) > keep_optional:
-            removed = False
-            for candidate in self._cfg.prune_order:
-                if candidate in opt_by_id and candidate in opt_ids_in_order:
-                    opt_ids_in_order.remove(candidate)
-                    removed = True
-                    break
-            if not removed:
-                # fallback: remove oldest optional
-                opt_ids_in_order.pop(0)
-
-        kept_optional_steps = [opt_by_id[sid] for sid in opt_ids_in_order if sid in opt_by_id]
-
-        # Preserve original overall order
-        kept_ids = set(s.step_id for s in core) | set(s.step_id for s in kept_optional_steps)
-        out = [s for s in steps if s.step_id in kept_ids]
-        return out
 
     # -----------------------------
-    # Rules / heuristics (deterministic)
+    # Classification rules (simple + deterministic)
     # -----------------------------
-
-    def _make_intent(self, msg: str) -> str:
-        s = re.sub(r"[^a-zA-Z0-9]+", "_", msg.strip().lower())
-        s = re.sub(r"_+", "_", s).strip("_")
-        return s[:64] or "intent"
-
-    def _is_ambiguous(self, msg: str) -> bool:
-        # Conservative: clarify only when truly ambiguous
-        short = len(msg) < 12
-        vague = bool(re.fullmatch(r"(help|assist|explain|what about this)\.?\s*", msg.strip().lower()))
-        return short or vague
 
     def _clarifying_question(self, msg: str) -> str:
-        return "What exactly should the assistant produce (e.g., code, explanation, or a step-by-step plan), and what constraints apply?"
+        return (
+            "What exactly should the planner decide or output in your case "
+            "(steps/actions/budgets), and what constraints must it follow?"
+        )
 
-    # Query builders
-    def _web_query(self, msg: str) -> str:
-        return msg
-
-    def _rag_query(self, msg: str) -> str:
-        return msg
-
-    def _ltm_query(self, msg: str) -> str:
-        return msg
-
-    def _attachments_query(self, msg: str) -> str:
-        return "Find relevant information in session attachments for: " + msg
-
-    # Draft/final instructions
-    def _draft_instructions(self, msg: str) -> str:
-        return msg
-
-    def _final_instructions(self, msg: str) -> str:
-        return msg
-
-    def _must_include(self, msg: str) -> List[str]:
-        return []
-
-    def _verify_criteria(self, *, require_code_example: bool) -> List[VerifyCriterion]:
-        crit = [VerifyCriterion(id="non_empty", description="Answer is non-empty", severity="error")]
-        if require_code_example:
-            crit.append(VerifyCriterion(id="has_code", description="Includes a code example", severity="error"))
-        return crit
+    def _default_verify_criteria(self, msg: str) -> List[VerifyCriterion]:        
+        return [
+            VerifyCriterion(id="non_empty", description="Final answer is non-empty", severity=VerifySeverity.ERROR),
+            VerifyCriterion(id="no_emojis", description="No emojis in technical output/code", severity=VerifySeverity.WARN),
+        ]
+    
+    def _new_plan_id(self):
+        return uuid.uuid4().hex
+    

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional
 
@@ -100,7 +101,7 @@ class VerifyCriterion(BaseModel):
 
     id: str = Field(min_length=1)
     description: str = Field(min_length=1)
-    severity: Literal["error", "warn"]
+    severity: VerifySeverity
 
 
 # -----------------------------
@@ -207,10 +208,10 @@ _RETRIEVAL_OR_TOOLS_ACTIONS = {
 class ExecutionStep(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    step_id: str = Field(min_length=1)
+    step_id: StepId
     action: StepAction
     enabled: bool = True
-    depends_on: List[str] = Field(default_factory=list)
+    depends_on: List[StepId]
 
     budgets: StepBudgets = Field(default_factory=StepBudgets)
     inputs: Dict[str, Any] = Field(default_factory=dict)
@@ -218,8 +219,9 @@ class ExecutionStep(BaseModel):
     # NOTE: LLM returns dict; we validate and coerce into a typed params model in validator.
     params: Dict[str, Any] = Field(default_factory=dict)
 
-    expected_output: str = Field(default="", max_length=5000)
-    rationale: str = Field(default="", max_length=5000)
+    expected_output_type: ExpectedOutputType
+    rationale_type: RationaleType
+
     on_failure: FailurePolicy = Field(default_factory=lambda: FailurePolicy(
         policy=FailurePolicyKind.RETRY, max_retries=1, retry_backoff_ms=0, replan_reason=None
     ))
@@ -229,10 +231,18 @@ class ExecutionStep(BaseModel):
     def _depends_on_to_list(cls, v: Any) -> List[str]:
         if v is None:
             return []
+
+        def to_str(x: Any) -> str:
+            # prefer Enum.value over str(EnumMember)
+            if isinstance(x, Enum):
+                return str(x.value)
+            return str(x)
+
         if isinstance(v, list):
-            return [str(x) for x in v]
-        # common LLM mistake: single string/int
-        return [str(v)]
+            return [to_str(x) for x in v]
+
+        # common mistake: single value instead of list
+        return [to_str(v)]
 
     @model_validator(mode="after")
     def _validate_params_match_action(self) -> "ExecutionStep":
@@ -263,7 +273,7 @@ class ExecutionPlan(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     plan_id: str = Field(min_length=1)
-    intent: str = Field(min_length=1)
+    intent: PlanIntent
     mode: PlanMode
     steps: List[ExecutionStep] = Field(min_length=1)
 
@@ -323,3 +333,61 @@ class ExecutionPlan(BaseModel):
                 raise ValueError("USE_WEBSEARCH must appear before the first SYNTHESIZE_DRAFT.")
 
         return self
+
+
+@dataclass(frozen=True)
+class EngineHints:
+    """
+    Engine-level decision output: what capabilities are available/required for this run.
+
+    Notes:
+    - This is NOT a plan. It's only gating + intent hints.
+    - StepPlanner must be deterministic given (user_message, hints).
+    """
+    enable_websearch: bool = False
+    enable_ltm: bool = False
+    enable_rag: bool = False
+    enable_tools: bool = False
+
+    # Routing decision from EnginePlanner
+    intent: Optional[PlanIntent] = None
+
+    # Optional debug
+    intent_reason: Optional[str] = None
+
+
+class StepId(str, Enum):
+    WEBSEARCH = "websearch"
+    LTM_SEARCH = "ltm_search"
+    DRAFT = "draft"
+    VERIFY = "verify"
+    FINAL = "final"
+    CLARIFY = "clarify"
+
+
+class PlanIntent(str, Enum):
+    GENERIC = "generic"
+    FRESHNESS = "freshness"
+    PROJECT_ARCHITECTURE = "project_architecture"
+    CLARIFY = "clarify"
+
+
+class ExpectedOutputType(str, Enum):
+    DRAFT = "draft"
+    VERIFIED = "verified"
+    FINAL = "final"
+    SEARCH_RESULTS = "search_results"
+    LTM_RESULTS = "ltm_results"
+    CLARIFYING_QUESTION = "clarifying_question"
+
+class RationaleType(str, Enum):
+    PRODUCE_DRAFT = "produce_draft"
+    VERIFY_QUALITY = "verify_quality"
+    FINALIZE = "finalize"
+    RETRIEVE_WEB = "retrieve_web"
+    RETRIEVE_LTM = "retrieve_ltm"
+    ASK_CLARIFICATION = "ask_clarification"
+
+class VerifySeverity(str, Enum):
+    ERROR = "error"
+    WARN = "warn"
