@@ -32,7 +32,7 @@ from typing import List, Optional, Dict, Any
 import uuid
 
 from intergrax.llm_adapters.llm_usage_track import LLMUsageReport, LLMUsageTracker
-from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, StepPlanningStrategy, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import AttachmentIngestionService, IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import (
@@ -187,19 +187,6 @@ class DropInKnowledgeRuntime:
     async def run(self, request: RuntimeRequest) -> RuntimeAnswer:
         """
         Main async entrypoint for the runtime.
-
-        Pipeline:
-          1. Session + ingestion + user message appended.
-          2. Memory layer (user/org profile memory, long-term memory facts).
-          3. Base history builder (load & preprocess conversation history).
-          4. History layer (conversation history for the LLM).
-          5. Instructions layer (final system prompt).
-          6. RAG layer (retrieval + RAG system/context messages).
-          7. Web search layer (optional).
-          8. Ensure current user message is present at the end of context.
-          9. Tools layer (planning + tool calls).
-         10. Core LLM call.
-         11. Persist assistant answer and build RuntimeAnswer with route info.
         """
 
         run_id = f"run_{uuid.uuid4().hex}"
@@ -209,24 +196,9 @@ class DropInKnowledgeRuntime:
             run_id=run_id,
             llm_usage_tracker=LLMUsageTracker(run_id=run_id)
         )        
-
-        state.llm_usage_tracker.register_adapter(self._config.llm_adapter, label="core_adapter")
-
-        ta = self._config.tools_agent
-        if ta is not None and ta.llm is not None:
-            state.llm_usage_tracker.register_adapter(ta.llm, label="tools_agent")
-
-        ws = self._config.websearch_config
-        if ws is not None and ws.llm is not None:
-            if ws.llm.map_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.map_adapter, label="web_map_adapter")
-            if ws.llm.reduce_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.reduce_adapter, label="web_reduce_adapter")
-            if ws.llm.rerank_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.rerank_adapter, label="web_rerank_adapter")
-
         
-        
+        self.configure_llm_tracker(state)
+
         # Initial trace entry for this request.
         self._trace(
             state,
@@ -238,9 +210,45 @@ class DropInKnowledgeRuntime:
                 "user_id": request.user_id,
                 "tenant_id": request.tenant_id or self._config.tenant_id,
                 "run_id": state.run_id,
+                "step_planning_strategy": str(self._config.step_planning_strategy),
             },
         )
 
+        if self._config.step_planning_strategy == StepPlanningStrategy.OFF:
+            runtime_answer = await self._run_pipeline_no_planner(state=state)
+        
+        elif self._config.step_planning_strategy == StepPlanningStrategy.STATIC_PLAN:
+            runtime_answer = await self._run_pipeline_static_plan(state)
+        
+        elif self._config.step_planning_strategy == StepPlanningStrategy.DYNAMIC_LOOP:
+            runtime_answer = await self._run_pipeline_dynamic_loop(state)
+
+        else:
+            raise ValueError(f"Unknown step_planning_strategy: {self._config.step_planning_strategy}")
+
+
+        # Final trace entry for this request.
+        self._trace(
+            state,
+            component="engine",
+            step="run_end",
+            message="DropInKnowledgeRuntime.run() finished.",
+            data={
+                "strategy": runtime_answer.route.strategy,
+                "used_rag": runtime_answer.route.used_rag,
+                "used_websearch": runtime_answer.route.used_websearch,
+                "used_tools": runtime_answer.route.used_tools,
+                "used_user_longterm_memory": runtime_answer.route.used_user_longterm_memory,
+                "run_id":state.run_id
+            },
+        )
+        
+        await self.finalize_llm_tracker(state, request, runtime_answer)
+
+        return runtime_answer
+
+
+    async def _run_pipeline_no_planner(self, state: RuntimeState) -> RuntimeAnswer:
         # Session + ingestion
         await self._step_session_and_ingest(state)
 
@@ -280,22 +288,56 @@ class DropInKnowledgeRuntime:
         # Persist + RuntimeAnswer
         runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
 
-        # Final trace entry for this request.
-        self._trace(
-            state,
-            component="engine",
-            step="run_end",
-            message="DropInKnowledgeRuntime.run() finished.",
-            data={
-                "strategy": runtime_answer.route.strategy,
-                "used_rag": runtime_answer.route.used_rag,
-                "used_websearch": runtime_answer.route.used_websearch,
-                "used_tools": runtime_answer.route.used_tools,
-                "used_user_longterm_memory": runtime_answer.route.used_user_longterm_memory,
-                "run_id":state.run_id
-            },
+        return runtime_answer
+
+
+    async def _run_pipeline_static_plan(self, state: RuntimeState) -> RuntimeAnswer:
+        raise NotImplementedError(
+            "StepPlanningStrategy.STATIC_PLAN is configured, but step planner is not implemented in this session."
         )
-        
+
+    async def _run_pipeline_dynamic_loop(self, state: RuntimeState) -> RuntimeAnswer:
+        raise NotImplementedError(
+            "StepPlanningStrategy.DYNAMIC_LOOP is configured, but step planner is not implemented in this session."
+        )
+
+
+
+    def run_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
+        """
+        Synchronous wrapper around `run()`.
+
+        Useful for environments where `await` is not easily available,
+        such as simple scripts or some notebook setups.
+        """
+        return asyncio.run(self.run(request))
+    
+
+    def configure_llm_tracker(
+            self,
+            state: RuntimeState) -> None:     
+           
+        state.llm_usage_tracker.register_adapter(self._config.llm_adapter, label="core_adapter")
+
+        ta = self._config.tools_agent
+        if ta is not None and ta.llm is not None:
+            state.llm_usage_tracker.register_adapter(ta.llm, label="tools_agent")
+
+        ws = self._config.websearch_config
+        if ws is not None and ws.llm is not None:
+            if ws.llm.map_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.map_adapter, label="web_map_adapter")
+            if ws.llm.reduce_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.reduce_adapter, label="web_reduce_adapter")
+            if ws.llm.rerank_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.rerank_adapter, label="web_rerank_adapter")
+
+    
+    async def finalize_llm_tracker(
+            self,
+            state: RuntimeState,
+            request: RuntimeRequest,
+            runtime_answer: RuntimeAnswer) -> None:
         if state.llm_usage_tracker is not None:
             runtime_answer.llm_usage_report = state.llm_usage_tracker.build_report()
             llm_usage_snapshot = runtime_answer.llm_usage_report.to_dict()
@@ -314,16 +356,6 @@ class DropInKnowledgeRuntime:
                     )
                     self._llm_usage_runs.append(rec)
 
-        return runtime_answer
-
-    def run_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
-        """
-        Synchronous wrapper around `run()`.
-
-        Useful for environments where `await` is not easily available,
-        such as simple scripts or some notebook setups.
-        """
-        return asyncio.run(self.run(request))
 
     def _trace(
         self,

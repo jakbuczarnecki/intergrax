@@ -22,14 +22,17 @@ ToolChoiceMode = Literal["off", "auto", "required"]
 
 
 class ToolsContextScope(str, Enum):
-    # Agent dostaje tylko aktualną wiadomość użytkownika.
     CURRENT_MESSAGE_ONLY = "current_message_only"
     
-    # Agent dostaje historię rozmowy (bez RAG/Websearch chunks).
     CONVERSATION = "conversation"
     
-    # Agent dostaje pełny kontekst tak jak LLM (historia + RAG + websearch).
     FULL = "full"
+
+
+class StepPlanningStrategy(str, Enum):
+    OFF = "off"
+    STATIC_PLAN = "static_plan"
+    DYNAMIC_LOOP = "dynamic_loop"
 
 
 @dataclass
@@ -170,8 +173,16 @@ class RuntimeConfig:
     # ------------------------------------------------------------------
     enable_llm_usage_collection: bool = True
 
+
+    # ------------------------------------------------------------------
+    # PLANNING
+    # ------------------------------------------------------------------
+    step_planning_strategy: StepPlanningStrategy = StepPlanningStrategy.OFF
     
 
+    # ------------------------------------------------------------------
+    # VALIDATION
+    # ------------------------------------------------------------------
     def validate(self) -> None:
         """
         Validates config consistency. Keeps the runtime fail-fast and predictable.
