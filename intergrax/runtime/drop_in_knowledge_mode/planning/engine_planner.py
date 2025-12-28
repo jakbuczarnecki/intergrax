@@ -6,6 +6,7 @@ from __future__ import annotations
 import inspect
 import json
 from dataclasses import dataclass, field
+import pprint
 from typing import Any, Dict, List, Optional
 
 from intergrax.llm.messages import ChatMessage
@@ -51,6 +52,24 @@ class EnginePlan:
     debug: Dict[str, Any] = field(default_factory=dict)
 
 
+    def print_pretty(self):
+        pprint.pprint({
+        "version": self.version,
+        "intent": self.intent,
+        "reasoning_summary": self.reasoning_summary,
+        "ask_clarifying_question": self.ask_clarifying_question,
+        "clarifying_question": self.clarifying_question,
+        "use_rag": self.use_rag,
+        "use_user_longterm_memory": self.use_user_longterm_memory,
+        "use_attachments": self.use_attachments,
+        "use_websearch": self.use_websearch,
+        "use_tools": self.use_tools,
+        "parallel_groups": self.parallel_groups,
+        "final_answer_style": self.final_answer_style,
+        "debug": self.debug,
+    })
+
+
 class EnginePlanner:
     """
     LLM-based planner that outputs a typed EnginePlan.
@@ -90,6 +109,7 @@ class EnginePlanner:
         plan.debug = {
             "planner_raw_len": len(raw),
             "planner_raw_preview": raw[:400],
+            "planner_raw_tail_preview": raw[-400:],
             "planner_json_len": len(plan_json),
         }
 
@@ -116,36 +136,45 @@ class EnginePlanner:
         *,
         req: RuntimeRequest,
         state: RuntimeState,
-        config: RuntimeConfig,
+        config: RuntimeConfig,  # kept for signature consistency (may be used later)
     ) -> List[ChatMessage]:
+        # Schema with explicit defaults (anchors the model to safe defaults).
         schema = {
             "version": "1.0",
             "intent": "string",
             "reasoning_summary": "string (high-level, no chain-of-thought)",
             "ask_clarifying_question": "boolean",
             "clarifying_question": "string|null",
-            "use_rag": {"enabled": "boolean", "top_k": "int", "max_chars": "int"},
-            "use_user_longterm_memory": {"enabled": "boolean", "top_k": "int", "max_chars": "int"},
-            "use_attachments": {"enabled": "boolean", "top_k": "int", "max_chars": "int"},
-            "use_websearch": {"enabled": "boolean", "top_k": "int", "max_chars": "int"},
-            "use_tools": {"enabled": "boolean", "goal": "string", "tool_choice_hint": "string|null"},
-            "parallel_groups": "list[list[string]]",
+
+            # Retrieval blocks: always present; default OFF
+            "use_rag": {"enabled": False, "top_k": 0, "max_chars": 0},
+            "use_user_longterm_memory": {"enabled": False, "top_k": 0, "max_chars": 0},
+            "use_attachments": {"enabled": False, "top_k": 0, "max_chars": 0},
+            "use_websearch": {"enabled": False, "top_k": 0, "max_chars": 0},
+
+            # Tools block: always present; default OFF
+            "use_tools": {"enabled": False, "goal": "", "tool_choice_hint": None},
+
+            # Execution hints
+            "parallel_groups": [],  # list[list[string]]
             "final_answer_style": "string",
         }
 
-        # Capabilities should be computed by runtime and stored in state (strong typing).
-        rag_av = state.cap_rag_available
-        user_ltm_av = state.cap_user_ltm_available
-        att_av = state.cap_attachments_available
-        web_av = state.cap_websearch_available
-        tools_av = state.cap_tools_available
+        # Capabilities must be computed by runtime and stored in state (strong typing).
+        rag_av = bool(state.cap_rag_available)
+        user_ltm_av = bool(state.cap_user_ltm_available)
+        att_av = bool(state.cap_attachments_available)
+        web_av = bool(state.cap_websearch_available)
+        tools_av = bool(state.cap_tools_available)
 
         sys_lines: List[str] = []
         sys_lines.append("You are an execution planner for Intergrax Drop-In Knowledge Runtime.")
-        sys_lines.append("Your job: produce an execution plan in STRICT JSON matching the schema.")
+        sys_lines.append("Your job: produce an execution plan in STRICT JSON matching the schema below.")
         sys_lines.append("Return JSON only. No prose, no markdown, no comments.")
         sys_lines.append("Do NOT include chain-of-thought. Provide only a short high-level reasoning_summary.")
+        sys_lines.append("Do NOT add extra keys that are not in the schema. Output must be a single JSON object.")
         sys_lines.append("")
+
         sys_lines.append("Capabilities (only plan steps that are available):")
         sys_lines.append(f"- rag_available: {rag_av}")
         sys_lines.append(f"- user_ltm_available: {user_ltm_av}")
@@ -153,14 +182,60 @@ class EnginePlanner:
         sys_lines.append(f"- websearch_available: {web_av}")
         sys_lines.append(f"- tools_available: {tools_av}")
         sys_lines.append("")
-        sys_lines.append("Important constraints:")
-        sys_lines.append("- Retrieval steps must include conservative limits (top_k, max_chars) to avoid context overflow.")
-        sys_lines.append("- If you need more info from the user, set ask_clarifying_question=true and provide clarifying_question.")
-        sys_lines.append("- If user asks to analyze an attached file but there are no attachments, ask a clarifying question.")
-        sys_lines.append("- If a capability is false, you must set the corresponding use_* .enabled = false.")
+
+        sys_lines.append("Hard rules (MUST FOLLOW):")
+        sys_lines.append("- JSON typing rules:")
+        sys_lines.append("  - All integers must be JSON numbers (no quotes). Example: top_k: 5, max_chars: 1200.")
+        sys_lines.append("  - Always include all retrieval objects: use_rag, use_user_longterm_memory, use_attachments, use_websearch.")
+        sys_lines.append("  - For enabled=false, top_k and max_chars MUST be 0 (integers).")
+        sys_lines.append("  - For use_tools.enabled=false, still include goal as empty string and tool_choice_hint as null.")
+        sys_lines.append("- Capability gating:")
+        sys_lines.append("  - If a capability is false, you must set the corresponding use_* .enabled = false (and numeric fields to 0).")
+        sys_lines.append("- Clarifying mode:")
+        sys_lines.append("  - If ask_clarifying_question=true, then ALL use_* must be enabled=false and parallel_groups must be [].")
+        sys_lines.append("- parallel_groups validity:")
+        sys_lines.append("  - parallel_groups may contain only step names that are enabled=true in this plan.")
         sys_lines.append("")
-        sys_lines.append("JSON schema:")
+
+        sys_lines.append("Retrieval policy (STRICT):")
+        sys_lines.append("- Default: all retrieval steps disabled.")
+        sys_lines.append("- Enable use_user_longterm_memory ONLY if the user query depends on user-specific context, prior decisions, preferences, or project-specific facts not present in the current message/history.")
+        sys_lines.append("- For generic programming questions or general explanations, set use_user_longterm_memory.enabled=false.")
+        sys_lines.append("- Enable use_rag/use_attachments ONLY if answering requires information from documents/attachments.")
+        sys_lines.append("- Enable use_websearch ONLY if answering requires up-to-date or niche info not safely known.")
+        sys_lines.append("- Retrieval steps must include conservative limits (top_k, max_chars) to avoid context overflow.")
+        sys_lines.append("")
+
+        sys_lines.append("Examples (MUST FOLLOW):")
+        sys_lines.append("- Q: 'Explain async retry strategy in Python' -> use_user_longterm_memory.enabled=false")
+        sys_lines.append("- Q: 'What is a mutex?' -> use_user_longterm_memory.enabled=false")
+        sys_lines.append("- Q: 'Given my preferences for concise technical answers, how should you respond?' -> use_user_longterm_memory.enabled=true")
+        sys_lines.append("- Q: 'Continue the Intergrax engine refactor we discussed earlier' -> use_user_longterm_memory.enabled=true")
+        sys_lines.append("")
+
+        sys_lines.append("Valid minimal example (JSON):")
+        sys_lines.append(json.dumps(
+            {
+                "version": "1.0",
+                "intent": "explain_async_retry_strategy",
+                "reasoning_summary": "Answer is based on general Python async patterns; no external sources needed.",
+                "ask_clarifying_question": False,
+                "clarifying_question": None,
+                "use_rag": {"enabled": False, "top_k": 0, "max_chars": 0},
+                "use_user_longterm_memory": {"enabled": False, "top_k": 0, "max_chars": 0},
+                "use_attachments": {"enabled": False, "top_k": 0, "max_chars": 0},
+                "use_websearch": {"enabled": False, "top_k": 0, "max_chars": 0},
+                "use_tools": {"enabled": False, "goal": "", "tool_choice_hint": None},
+                "parallel_groups": [],
+                "final_answer_style": "concise_technical",
+            },
+            ensure_ascii=False,
+        ))
+        sys_lines.append("")
+
+        sys_lines.append("JSON schema (output must match keys and types):")
         sys_lines.append(json.dumps(schema, ensure_ascii=False))
+        sys_lines.append("")
 
         # Request context
         attachments = req.attachments or []
@@ -173,9 +248,18 @@ class EnginePlanner:
         user_lines.append(f"attachments_count: {len(attachments)}")
         user_lines.append("")
 
-        if state.final_system_instructions:
-            user_lines.append("system_instructions (may affect style/policies):")
-            user_lines.append(state.final_system_instructions.strip())
+        # Instructions (runtime-like): request overrides + optional profile fragments.
+        instr_parts: List[str] = []
+        if req.instructions:
+            instr_parts.append(req.instructions.strip())
+        if state.profile_user_instructions:
+            instr_parts.append(state.profile_user_instructions.strip())
+        if state.profile_org_instructions:
+            instr_parts.append(state.profile_org_instructions.strip())
+
+        if instr_parts:
+            user_lines.append("instructions (may affect style/policies):")
+            user_lines.append("\n\n".join(instr_parts))
             user_lines.append("")
 
         # User query
@@ -196,6 +280,7 @@ class EnginePlanner:
             ChatMessage(role="system", content="\n".join(sys_lines)),
             ChatMessage(role="user", content="\n".join(user_lines)),
         ]
+
 
     # -----------------------------
     # Parsing & validation
