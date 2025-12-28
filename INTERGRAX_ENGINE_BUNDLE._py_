@@ -35,14 +35,14 @@
 # - tools/
 # - websearch/
 #
-# Files included: 127
-# Total lines: 23250
+# Files included: 131
+# Total lines: 24518
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
 # ROOT: D:\Projekty\intergrax
 # PACKAGE: intergrax
-# FILES: 127
+# FILES: 131
 #
 # MODULE MAP (dynamic):
 # - chains/ (2 files)
@@ -54,7 +54,7 @@
 # - openai/ (3 files)
 # - rag/ (11 files)
 # - root/ (4 files)
-# - runtime/ (36 files)
+# - runtime/ (40 files)
 # - supervisor/ (5 files)
 # - tools/ (3 files)
 # - websearch/ (33 files)
@@ -112,16 +112,20 @@
 # - intergrax/system_prompts.py | intergrax.system_prompts | root | 84 | f66fdf33ac4c
 # - intergrax/runtime/__init__.py | intergrax.runtime | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/__init__.py | intergrax.runtime.drop_in_knowledge_mode | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 183 | de1a948673c4
+# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 194 | c72868be5156
 # - intergrax/runtime/drop_in_knowledge_mode/context/__init__.py | intergrax.runtime.drop_in_knowledge_mode.context | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/context/context_builder.py | intergrax.runtime.drop_in_knowledge_mode.context.context_builder | runtime | 485 | 2cca85dc5dcb
 # - intergrax/runtime/drop_in_knowledge_mode/context/engine_history_layer.py | intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer | runtime | 565 | d4c1a0d530cd
 # - intergrax/runtime/drop_in_knowledge_mode/engine/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1565 | f76e7713dcf7
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 75 | fe3749267a4f
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1597 | 1b5fa9d35009
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 82 | 214f86ba4a2f
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py | intergrax.runtime.drop_in_knowledge_mode.ingestion | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/attachments.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments | runtime | 124 | f1f76309b50f
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/ingestion_service.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service | runtime | 470 | f85b4e1154a7
+# - intergrax/runtime/drop_in_knowledge_mode/planning/__init__.py | intergrax.runtime.drop_in_knowledge_mode.planning | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/drop_in_knowledge_mode/planning/engine_planner.py | intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner | runtime | 407 | c6ddacbbb40c
+# - intergrax/runtime/drop_in_knowledge_mode/planning/step_planner.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_planner | runtime | 486 | c6dde8deb08a
+# - intergrax/runtime/drop_in_knowledge_mode/planning/stepplan_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models | runtime | 325 | 07426d1d4136
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/__init__.py | intergrax.runtime.drop_in_knowledge_mode.prompts | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/history_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder | runtime | 89 | 7a99ef869b92
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/rag_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder | runtime | 105 | 487e17f834e1
@@ -188,7 +192,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 23250
+# TOTAL LINES: 24518
 # ======================================================================
 
 # ======================================================================
@@ -12005,10 +12009,11 @@ def default_rag_system_instruction():
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=config.py
-# LINES: 183
-# SHA256: de1a948673c49ce3a80f0cf460637b00738098a78db117e763158cd58f06a8f6
+# LINES: 194
+# SHA256: c72868be5156e55b4d0aa37f0306e391cf985e1e3aa8efad6771d302941e1d6b
 # SYMBOLS:
 #   - class ToolsContextScope
+#   - class StepPlanningStrategy
 #   - class RuntimeConfig
 # ======================================================================
 # © Artur Czarnecki. All rights reserved.
@@ -12035,14 +12040,17 @@ ToolChoiceMode = Literal["off", "auto", "required"]
 
 
 class ToolsContextScope(str, Enum):
-    # Agent dostaje tylko aktualną wiadomość użytkownika.
     CURRENT_MESSAGE_ONLY = "current_message_only"
     
-    # Agent dostaje historię rozmowy (bez RAG/Websearch chunks).
     CONVERSATION = "conversation"
     
-    # Agent dostaje pełny kontekst tak jak LLM (historia + RAG + websearch).
     FULL = "full"
+
+
+class StepPlanningStrategy(str, Enum):
+    OFF = "off"
+    STATIC_PLAN = "static_plan"
+    DYNAMIC_LOOP = "dynamic_loop"
 
 
 @dataclass
@@ -12183,8 +12191,16 @@ class RuntimeConfig:
     # ------------------------------------------------------------------
     enable_llm_usage_collection: bool = True
 
+
+    # ------------------------------------------------------------------
+    # PLANNING
+    # ------------------------------------------------------------------
+    step_planning_strategy: StepPlanningStrategy = StepPlanningStrategy.OFF
     
 
+    # ------------------------------------------------------------------
+    # VALIDATION
+    # ------------------------------------------------------------------
     def validate(self) -> None:
         """
         Validates config consistency. Keeps the runtime fail-fast and predictable.
@@ -13314,8 +13330,8 @@ class HistoryLayer:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime.py
-# LINES: 1565
-# SHA256: f76e7713dcf7726d3dd25bd5ff46d0b51df19c91227ae0ad92b5629122e95eca
+# LINES: 1597
+# SHA256: 1b5fa9d350099423c94b4d8ce26bcfeee50eb1b007572b2c7b5fd69eafa6427e
 # SYMBOLS:
 #   - class LLMUsageRunRecord
 #   - class DropInKnowledgeRuntime
@@ -13354,7 +13370,7 @@ from typing import List, Optional, Dict, Any
 import uuid
 
 from intergrax.llm_adapters.llm_usage_track import LLMUsageReport, LLMUsageTracker
-from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, ToolsContextScope
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, StepPlanningStrategy, ToolsContextScope
 from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import AttachmentIngestionService, IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import (
@@ -13509,19 +13525,6 @@ class DropInKnowledgeRuntime:
     async def run(self, request: RuntimeRequest) -> RuntimeAnswer:
         """
         Main async entrypoint for the runtime.
-
-        Pipeline:
-          1. Session + ingestion + user message appended.
-          2. Memory layer (user/org profile memory, long-term memory facts).
-          3. Base history builder (load & preprocess conversation history).
-          4. History layer (conversation history for the LLM).
-          5. Instructions layer (final system prompt).
-          6. RAG layer (retrieval + RAG system/context messages).
-          7. Web search layer (optional).
-          8. Ensure current user message is present at the end of context.
-          9. Tools layer (planning + tool calls).
-         10. Core LLM call.
-         11. Persist assistant answer and build RuntimeAnswer with route info.
         """
 
         run_id = f"run_{uuid.uuid4().hex}"
@@ -13531,24 +13534,9 @@ class DropInKnowledgeRuntime:
             run_id=run_id,
             llm_usage_tracker=LLMUsageTracker(run_id=run_id)
         )        
-
-        state.llm_usage_tracker.register_adapter(self._config.llm_adapter, label="core_adapter")
-
-        ta = self._config.tools_agent
-        if ta is not None and ta.llm is not None:
-            state.llm_usage_tracker.register_adapter(ta.llm, label="tools_agent")
-
-        ws = self._config.websearch_config
-        if ws is not None and ws.llm is not None:
-            if ws.llm.map_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.map_adapter, label="web_map_adapter")
-            if ws.llm.reduce_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.reduce_adapter, label="web_reduce_adapter")
-            if ws.llm.rerank_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.rerank_adapter, label="web_rerank_adapter")
-
         
-        
+        self.configure_llm_tracker(state)
+
         # Initial trace entry for this request.
         self._trace(
             state,
@@ -13560,9 +13548,45 @@ class DropInKnowledgeRuntime:
                 "user_id": request.user_id,
                 "tenant_id": request.tenant_id or self._config.tenant_id,
                 "run_id": state.run_id,
+                "step_planning_strategy": str(self._config.step_planning_strategy),
             },
         )
 
+        if self._config.step_planning_strategy == StepPlanningStrategy.OFF:
+            runtime_answer = await self._run_pipeline_no_planner(state=state)
+        
+        elif self._config.step_planning_strategy == StepPlanningStrategy.STATIC_PLAN:
+            runtime_answer = await self._run_pipeline_static_plan(state)
+        
+        elif self._config.step_planning_strategy == StepPlanningStrategy.DYNAMIC_LOOP:
+            runtime_answer = await self._run_pipeline_dynamic_loop(state)
+
+        else:
+            raise ValueError(f"Unknown step_planning_strategy: {self._config.step_planning_strategy}")
+
+
+        # Final trace entry for this request.
+        self._trace(
+            state,
+            component="engine",
+            step="run_end",
+            message="DropInKnowledgeRuntime.run() finished.",
+            data={
+                "strategy": runtime_answer.route.strategy,
+                "used_rag": runtime_answer.route.used_rag,
+                "used_websearch": runtime_answer.route.used_websearch,
+                "used_tools": runtime_answer.route.used_tools,
+                "used_user_longterm_memory": runtime_answer.route.used_user_longterm_memory,
+                "run_id":state.run_id
+            },
+        )
+        
+        await self.finalize_llm_tracker(state, request, runtime_answer)
+
+        return runtime_answer
+
+
+    async def _run_pipeline_no_planner(self, state: RuntimeState) -> RuntimeAnswer:
         # Session + ingestion
         await self._step_session_and_ingest(state)
 
@@ -13602,22 +13626,56 @@ class DropInKnowledgeRuntime:
         # Persist + RuntimeAnswer
         runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
 
-        # Final trace entry for this request.
-        self._trace(
-            state,
-            component="engine",
-            step="run_end",
-            message="DropInKnowledgeRuntime.run() finished.",
-            data={
-                "strategy": runtime_answer.route.strategy,
-                "used_rag": runtime_answer.route.used_rag,
-                "used_websearch": runtime_answer.route.used_websearch,
-                "used_tools": runtime_answer.route.used_tools,
-                "used_user_longterm_memory": runtime_answer.route.used_user_longterm_memory,
-                "run_id":state.run_id
-            },
+        return runtime_answer
+
+
+    async def _run_pipeline_static_plan(self, state: RuntimeState) -> RuntimeAnswer:
+        raise NotImplementedError(
+            "StepPlanningStrategy.STATIC_PLAN is configured, but step planner is not implemented in this session."
         )
-        
+
+    async def _run_pipeline_dynamic_loop(self, state: RuntimeState) -> RuntimeAnswer:
+        raise NotImplementedError(
+            "StepPlanningStrategy.DYNAMIC_LOOP is configured, but step planner is not implemented in this session."
+        )
+
+
+
+    def run_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
+        """
+        Synchronous wrapper around `run()`.
+
+        Useful for environments where `await` is not easily available,
+        such as simple scripts or some notebook setups.
+        """
+        return asyncio.run(self.run(request))
+    
+
+    def configure_llm_tracker(
+            self,
+            state: RuntimeState) -> None:     
+           
+        state.llm_usage_tracker.register_adapter(self._config.llm_adapter, label="core_adapter")
+
+        ta = self._config.tools_agent
+        if ta is not None and ta.llm is not None:
+            state.llm_usage_tracker.register_adapter(ta.llm, label="tools_agent")
+
+        ws = self._config.websearch_config
+        if ws is not None and ws.llm is not None:
+            if ws.llm.map_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.map_adapter, label="web_map_adapter")
+            if ws.llm.reduce_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.reduce_adapter, label="web_reduce_adapter")
+            if ws.llm.rerank_adapter is not None:
+                state.llm_usage_tracker.register_adapter(ws.llm.rerank_adapter, label="web_rerank_adapter")
+
+    
+    async def finalize_llm_tracker(
+            self,
+            state: RuntimeState,
+            request: RuntimeRequest,
+            runtime_answer: RuntimeAnswer) -> None:
         if state.llm_usage_tracker is not None:
             runtime_answer.llm_usage_report = state.llm_usage_tracker.build_report()
             llm_usage_snapshot = runtime_answer.llm_usage_report.to_dict()
@@ -13636,16 +13694,6 @@ class DropInKnowledgeRuntime:
                     )
                     self._llm_usage_runs.append(rec)
 
-        return runtime_answer
-
-    def run_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
-        """
-        Synchronous wrapper around `run()`.
-
-        Useful for environments where `await` is not easily available,
-        such as simple scripts or some notebook setups.
-        """
-        return asyncio.run(self.run(request))
 
     def _trace(
         self,
@@ -14894,8 +14942,8 @@ class DropInKnowledgeRuntime:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime_state.py
-# LINES: 75
-# SHA256: fe3749267a4f21e17bb220d0e46bc9b8323be534026162d70c01ce755132308b
+# LINES: 82
+# SHA256: 214f86ba4a2f0200f1be9a84e77d464f757f6265350327c80d13f351ef574874
 # SYMBOLS:
 #   - class RuntimeState
 # ======================================================================
@@ -14974,6 +15022,13 @@ class RuntimeState:
 
     # Token accounting (filled in _step_build_base_history)
     history_token_count: Optional[int] = None
+
+    # Reasoning flags
+    cap_rag_available: bool = False
+    cap_user_ltm_available: bool = False
+    cap_attachments_available: bool = False
+    cap_websearch_available: bool = False
+    cap_tools_available: bool = False
 
 # ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py
@@ -15613,6 +15668,1305 @@ class AttachmentIngestionService:
                 "workspace_id": workspace_id,
             },
         )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/planning/__init__.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.planning
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/planning/engine_planner.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=engine_planner.py
+# LINES: 407
+# SHA256: c6ddacbbb40c3a1c140128c9070b4df84c980ab87cb0924fd2ab1df0672310f9
+# SYMBOLS:
+#   - class PlanRetrieval
+#   - class PlanTools
+#   - class EnginePlan
+#   - class EnginePlanner
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+import inspect
+import json
+from dataclasses import dataclass, field
+import pprint
+from typing import Any, Dict, List, Optional
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
+
+
+# -----------------------------
+# Typed plan schema
+# -----------------------------
+
+@dataclass(frozen=True)
+class PlanRetrieval:
+    enabled: bool
+    top_k: int
+    max_chars: int
+
+@dataclass(frozen=True)
+class PlanTools:
+    enabled: bool
+    goal: str  # e.g. "none" | "execute_actions" | "compute" | "call_external_apis"
+    tool_choice_hint: Optional[str]  # e.g. "auto" / tool name (optional)
+
+@dataclass(frozen=False)
+class EnginePlan:
+    version: str
+    intent: str                 # short: "answer_question", "debug_code", "write_doc", ...
+    reasoning_summary: str       # high-level, no CoT
+    ask_clarifying_question: bool
+    clarifying_question: Optional[str]
+
+    use_rag: PlanRetrieval
+    use_user_longterm_memory: PlanRetrieval
+    use_attachments: PlanRetrieval
+    use_websearch: PlanRetrieval
+    use_tools: PlanTools
+
+    parallel_groups: List[List[str]]  # e.g. [["attachments","rag","websearch"],["tools"]]
+    final_answer_style: str           # e.g. "concise_technical", "step_by_step", "long_form"
+
+    debug: Dict[str, Any] = field(default_factory=dict)
+
+
+    def print_pretty(self):
+        pprint.pprint({
+        "version": self.version,
+        "intent": self.intent,
+        "reasoning_summary": self.reasoning_summary,
+        "ask_clarifying_question": self.ask_clarifying_question,
+        "clarifying_question": self.clarifying_question,
+        "use_rag": self.use_rag,
+        "use_user_longterm_memory": self.use_user_longterm_memory,
+        "use_attachments": self.use_attachments,
+        "use_websearch": self.use_websearch,
+        "use_tools": self.use_tools,
+        "parallel_groups": self.parallel_groups,
+        "final_answer_style": self.final_answer_style,
+        "debug": self.debug,
+    })
+
+
+class EnginePlanner:
+    """
+    LLM-based planner that outputs a typed EnginePlan.
+
+    IMPORTANT:
+    - No heuristics: the LLM decides based on PlannerInput + capabilities.
+    - Output must be JSON only (we parse & validate).
+    """
+
+    def __init__(self, *, llm_adapter: LLMAdapter) -> None:
+        self._llm = llm_adapter
+
+    async def plan(
+        self,
+        *,
+        req: RuntimeRequest,
+        state: RuntimeState,
+        config: RuntimeConfig,
+        run_id: Optional[str] = None,
+    ) -> EnginePlan:
+        messages = self._build_prompt(req=req, state=state, config=config)
+
+        raw = self._llm.generate_messages(messages, run_id=run_id)
+        if inspect.iscoroutine(raw):
+            raw = await raw
+        if not isinstance(raw, str):
+            raw = str(raw)
+
+        plan_json = self._extract_json_object(raw)
+        plan_dict = json.loads(plan_json)
+
+        plan = self._parse_plan(plan_dict)
+
+        # Minimal execution-safety validation (no heuristics)
+        self._validate_against_capabilities(plan=plan, state=state)
+
+        plan.debug = {
+            "planner_raw_len": len(raw),
+            "planner_raw_preview": raw[:400],
+            "planner_raw_tail_preview": raw[-400:],
+            "planner_json_len": len(plan_json),
+        }
+
+        return plan
+
+    def _validate_against_capabilities(self, *, plan: EnginePlan, state: RuntimeState) -> None:
+        if plan.use_rag.enabled and not state.cap_rag_available:
+            raise ValueError("Planner produced use_rag.enabled=true but RAG is not available.")
+        if plan.use_user_longterm_memory.enabled and not state.cap_user_ltm_available:
+            raise ValueError("Planner produced use_user_longterm_memory.enabled=true but user LTM is not available.")
+        if plan.use_attachments.enabled and not state.cap_attachments_available:
+            raise ValueError("Planner produced use_attachments.enabled=true but attachments retrieval is not available.")
+        if plan.use_websearch.enabled and not state.cap_websearch_available:
+            raise ValueError("Planner produced use_websearch.enabled=true but websearch is not available.")
+        if plan.use_tools.enabled and not state.cap_tools_available:
+            raise ValueError("Planner produced use_tools.enabled=true but tools are not available.")
+
+    # -----------------------------
+    # Prompting
+    # -----------------------------
+
+    def _build_prompt(
+        self,
+        *,
+        req: RuntimeRequest,
+        state: RuntimeState,
+        config: RuntimeConfig,  # kept for signature consistency (may be used later)
+    ) -> List[ChatMessage]:
+        # Schema with explicit defaults (anchors the model to safe defaults).
+        schema = {
+            "version": "1.0",
+            "intent": "string",
+            "reasoning_summary": "string (high-level, no chain-of-thought)",
+            "ask_clarifying_question": "boolean",
+            "clarifying_question": "string|null",
+
+            # Retrieval blocks: always present; default OFF
+            "use_rag": {"enabled": False, "top_k": 0, "max_chars": 0},
+            "use_user_longterm_memory": {"enabled": False, "top_k": 0, "max_chars": 0},
+            "use_attachments": {"enabled": False, "top_k": 0, "max_chars": 0},
+            "use_websearch": {"enabled": False, "top_k": 0, "max_chars": 0},
+
+            # Tools block: always present; default OFF
+            "use_tools": {"enabled": False, "goal": "", "tool_choice_hint": None},
+
+            # Execution hints
+            "parallel_groups": [],  # list[list[string]]
+            "final_answer_style": "string",
+        }
+
+        # Capabilities must be computed by runtime and stored in state (strong typing).
+        rag_av = bool(state.cap_rag_available)
+        user_ltm_av = bool(state.cap_user_ltm_available)
+        att_av = bool(state.cap_attachments_available)
+        web_av = bool(state.cap_websearch_available)
+        tools_av = bool(state.cap_tools_available)
+
+        sys_lines: List[str] = []
+        sys_lines.append("You are an execution planner for Intergrax Drop-In Knowledge Runtime.")
+        sys_lines.append("Your job: produce an execution plan in STRICT JSON matching the schema below.")
+        sys_lines.append("Return JSON only. No prose, no markdown, no comments.")
+        sys_lines.append("Do NOT include chain-of-thought. Provide only a short high-level reasoning_summary.")
+        sys_lines.append("Do NOT add extra keys that are not in the schema. Output must be a single JSON object.")
+        sys_lines.append("")
+
+        sys_lines.append("Capabilities (only plan steps that are available):")
+        sys_lines.append(f"- rag_available: {rag_av}")
+        sys_lines.append(f"- user_ltm_available: {user_ltm_av}")
+        sys_lines.append(f"- attachments_available: {att_av}")
+        sys_lines.append(f"- websearch_available: {web_av}")
+        sys_lines.append(f"- tools_available: {tools_av}")
+        sys_lines.append("")
+
+        sys_lines.append("Hard rules (MUST FOLLOW):")
+        sys_lines.append("- JSON typing rules:")
+        sys_lines.append("  - All integers must be JSON numbers (no quotes). Example: top_k: 5, max_chars: 1200.")
+        sys_lines.append("  - Always include all retrieval objects: use_rag, use_user_longterm_memory, use_attachments, use_websearch.")
+        sys_lines.append("  - For enabled=false, top_k and max_chars MUST be 0 (integers).")
+        sys_lines.append("  - For use_tools.enabled=false, still include goal as empty string and tool_choice_hint as null.")
+        sys_lines.append("- Capability gating:")
+        sys_lines.append("  - If a capability is false, you must set the corresponding use_* .enabled = false (and numeric fields to 0).")
+        sys_lines.append("- Clarifying mode:")
+        sys_lines.append("  - If ask_clarifying_question=true, then ALL use_* must be enabled=false and parallel_groups must be [].")
+        sys_lines.append("- parallel_groups validity:")
+        sys_lines.append("  - parallel_groups may contain only step names that are enabled=true in this plan.")
+        sys_lines.append("")
+
+        sys_lines.append("Retrieval policy (STRICT):")
+        sys_lines.append("- Default: all retrieval steps disabled.")
+        sys_lines.append("- Enable use_user_longterm_memory ONLY if the user query depends on user-specific context, prior decisions, preferences, or project-specific facts not present in the current message/history.")
+        sys_lines.append("- For generic programming questions or general explanations, set use_user_longterm_memory.enabled=false.")
+        sys_lines.append("- Enable use_rag/use_attachments ONLY if answering requires information from documents/attachments.")
+        sys_lines.append("- Enable use_websearch ONLY if answering requires up-to-date or niche info not safely known.")
+        sys_lines.append("- Retrieval steps must include conservative limits (top_k, max_chars) to avoid context overflow.")
+        sys_lines.append("")
+
+        sys_lines.append("Examples (MUST FOLLOW):")
+        sys_lines.append("- Q: 'Explain async retry strategy in Python' -> use_user_longterm_memory.enabled=false")
+        sys_lines.append("- Q: 'What is a mutex?' -> use_user_longterm_memory.enabled=false")
+        sys_lines.append("- Q: 'Given my preferences for concise technical answers, how should you respond?' -> use_user_longterm_memory.enabled=true")
+        sys_lines.append("- Q: 'Continue the Intergrax engine refactor we discussed earlier' -> use_user_longterm_memory.enabled=true")
+        sys_lines.append("")
+
+        sys_lines.append("Valid minimal example (JSON):")
+        sys_lines.append(json.dumps(
+            {
+                "version": "1.0",
+                "intent": "explain_async_retry_strategy",
+                "reasoning_summary": "Answer is based on general Python async patterns; no external sources needed.",
+                "ask_clarifying_question": False,
+                "clarifying_question": None,
+                "use_rag": {"enabled": False, "top_k": 0, "max_chars": 0},
+                "use_user_longterm_memory": {"enabled": False, "top_k": 0, "max_chars": 0},
+                "use_attachments": {"enabled": False, "top_k": 0, "max_chars": 0},
+                "use_websearch": {"enabled": False, "top_k": 0, "max_chars": 0},
+                "use_tools": {"enabled": False, "goal": "", "tool_choice_hint": None},
+                "parallel_groups": [],
+                "final_answer_style": "concise_technical",
+            },
+            ensure_ascii=False,
+        ))
+        sys_lines.append("")
+
+        sys_lines.append("JSON schema (output must match keys and types):")
+        sys_lines.append(json.dumps(schema, ensure_ascii=False))
+        sys_lines.append("")
+
+        # Request context
+        attachments = req.attachments or []
+        has_attachments = len(attachments) > 0
+
+        user_lines: List[str] = []
+        user_lines.append(f"session_id: {req.session_id}")
+        user_lines.append(f"user_id: {req.user_id}")
+        user_lines.append(f"has_attachments: {has_attachments}")
+        user_lines.append(f"attachments_count: {len(attachments)}")
+        user_lines.append("")
+
+        # Instructions (runtime-like): request overrides + optional profile fragments.
+        instr_parts: List[str] = []
+        if req.instructions:
+            instr_parts.append(req.instructions.strip())
+        if state.profile_user_instructions:
+            instr_parts.append(state.profile_user_instructions.strip())
+        if state.profile_org_instructions:
+            instr_parts.append(state.profile_org_instructions.strip())
+
+        if instr_parts:
+            user_lines.append("instructions (may affect style/policies):")
+            user_lines.append("\n\n".join(instr_parts))
+            user_lines.append("")
+
+        # User query
+        user_lines.append("user_query:")
+        user_lines.append((req.message or "").strip())
+        user_lines.append("")
+
+        # Recent messages
+        user_lines.append("recent_messages (most recent last):")
+        recent = state.base_history or []
+        for m in recent[-8:]:
+            content = (m.content or "").strip()
+            if len(content) > 400:
+                content = content[:400]
+            user_lines.append(f"- {m.role}: {content}")
+
+        return [
+            ChatMessage(role="system", content="\n".join(sys_lines)),
+            ChatMessage(role="user", content="\n".join(user_lines)),
+        ]
+
+
+    # -----------------------------
+    # Parsing & validation
+    # -----------------------------
+
+    def _extract_json_object(self, s: str) -> str:
+        """
+        Minimal safety: extract the first {...} block.
+        This is not a heuristic planner; it's just robust parsing for LLM outputs.
+        """
+        start = s.find("{")
+        end = s.rfind("}")
+        if start < 0 or end < 0 or end <= start:
+            raise ValueError("Planner did not return a JSON object.")
+        return s[start : end + 1]
+
+    def _req_str(self, d: Dict[str, Any], key: str) -> str:
+        v = d.get(key)
+        if not isinstance(v, str) or not v.strip():
+            raise ValueError(f"Invalid or missing string field: {key}")
+        return v.strip()
+
+    def _opt_str(self, d: Dict[str, Any], key: str) -> Optional[str]:
+        v = d.get(key)
+        if v is None:
+            return None
+        if not isinstance(v, str):
+            raise ValueError(f"Invalid optional string field: {key}")
+        vv = v.strip()
+        return vv if vv else None
+
+    def _req_bool(self, d: Dict[str, Any], key: str) -> bool:
+        v = d.get(key)
+        if not isinstance(v, bool):
+            raise ValueError(f"Invalid or missing boolean field: {key}")
+        return v
+
+    def _req_int(self, d: Dict[str, Any], key: str) -> int:
+        v = d.get(key)
+        if not isinstance(v, int):
+            raise ValueError(f"Invalid or missing int field: {key}")
+        return int(v)
+
+    def _parse_retrieval(self, d: Dict[str, Any], key: str) -> PlanRetrieval:
+        obj = d.get(key)
+        if not isinstance(obj, dict):
+            raise ValueError(f"Invalid or missing object field: {key}")
+        enabled = obj.get("enabled")
+        top_k = obj.get("top_k")
+        max_chars = obj.get("max_chars")
+        if not isinstance(enabled, bool) or not isinstance(top_k, int) or not isinstance(max_chars, int):
+            raise ValueError(f"Invalid retrieval config for: {key}")
+        # Ensure non-negative, but do not "auto-fix" anything beyond type safety.
+        if top_k < 0 or max_chars < 0:
+            raise ValueError(f"Invalid negative limits for: {key}")
+        return PlanRetrieval(enabled=enabled, top_k=top_k, max_chars=max_chars)
+
+    def _parse_tools(self, d: Dict[str, Any]) -> PlanTools:
+        obj = d.get("use_tools")
+        if not isinstance(obj, dict):
+            raise ValueError("Invalid or missing object field: use_tools")
+        enabled = obj.get("enabled")
+        goal = obj.get("goal")
+        tool_choice_hint = obj.get("tool_choice_hint")
+        if not isinstance(enabled, bool) or not isinstance(goal, str):
+            raise ValueError("Invalid tools config.")
+        tch: Optional[str]
+        if tool_choice_hint is None:
+            tch = None
+        elif isinstance(tool_choice_hint, str):
+            tch = tool_choice_hint.strip() or None
+        else:
+            raise ValueError("Invalid tool_choice_hint type.")
+        return PlanTools(enabled=enabled, goal=goal.strip(), tool_choice_hint=tch)
+
+    def _parse_parallel_groups(self, d: Dict[str, Any]) -> List[List[str]]:
+        pg = d.get("parallel_groups")
+        if not isinstance(pg, list):
+            raise ValueError("Invalid or missing parallel_groups.")
+        out: List[List[str]] = []
+        for group in pg:
+            if not isinstance(group, list):
+                raise ValueError("parallel_groups must be list[list[string]].")
+            gg: List[str] = []
+            for item in group:
+                if not isinstance(item, str) or not item.strip():
+                    raise ValueError("parallel_groups items must be non-empty strings.")
+                gg.append(item.strip())
+            out.append(gg)
+        return out
+
+    def _parse_plan(self, d: Dict[str, Any]) -> EnginePlan:
+        version = self._req_str(d, "version")
+        intent = self._req_str(d, "intent")
+        reasoning_summary = self._req_str(d, "reasoning_summary")
+
+        ask = self._req_bool(d, "ask_clarifying_question")
+        cq = self._opt_str(d, "clarifying_question")
+        if ask and not cq:
+            raise ValueError("ask_clarifying_question=true requires clarifying_question.")
+
+        use_rag = self._parse_retrieval(d, "use_rag")
+        use_user_ltm = self._parse_retrieval(d, "use_user_longterm_memory")
+        use_attachments = self._parse_retrieval(d, "use_attachments")
+        use_websearch = self._parse_retrieval(d, "use_websearch")
+        use_tools = self._parse_tools(d)
+
+        parallel_groups = self._parse_parallel_groups(d)
+        final_answer_style = self._req_str(d, "final_answer_style")
+
+        return EnginePlan(
+            version=version,
+            intent=intent,
+            reasoning_summary=reasoning_summary,
+            ask_clarifying_question=ask,
+            clarifying_question=cq,
+            use_rag=use_rag,
+            use_user_longterm_memory=use_user_ltm,
+            use_attachments=use_attachments,
+            use_websearch=use_websearch,
+            use_tools=use_tools,
+            parallel_groups=parallel_groups,
+            final_answer_style=final_answer_style,
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/planning/step_planner.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.step_planner
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=step_planner.py
+# LINES: 486
+# SHA256: c6dde8deb08a4665b320b2e26a12f0a0368ba5a6effd885d3203992b0b843a9f
+# SYMBOLS:
+#   - class StepPlannerConfig
+#   - class StepPlanner
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from typing import List, Optional, Tuple
+
+from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
+    # core models
+    ExecutionPlan,
+    ExecutionStep,
+    StepAction,
+    StepBudgets,
+    PlanBudgets,
+    StopConditions,
+    FailurePolicy,
+    VerifyCriterion,
+    # enums
+    WebSearchStrategy,
+    OutputFormat,
+    PlanMode,
+    # params models (names must match stepplan_models.py)
+    AskClarifyingParams,
+    LtmSearchParams,
+    AttachmentsRetrievalParams,
+    RagRetrievalParams,
+    WebSearchParams,
+    ToolsParams,
+    SynthesizeDraftParams,
+    VerifyAnswerParams,
+    FinalizeAnswerParams,
+)
+
+
+@dataclass(frozen=True)
+class StepPlannerConfig:
+    # Plan-level defaults
+    max_total_steps: int = 6
+    max_total_tool_calls: int = 10
+    max_total_web_queries: int = 5
+    max_total_chars_context: int = 12000
+    max_total_tokens_output: Optional[int] = None
+
+    # Step-level defaults
+    step_max_chars: int = 2000
+    step_top_k: int = 5
+
+    # Websearch
+    web_recency_days: int = 30
+    web_max_results: int = 5
+    web_strategy: WebSearchStrategy = WebSearchStrategy.HYBRID
+
+    # Verification defaults
+    verify_strict: bool = True
+
+    # Deterministic pruning priority if we exceed max_total_steps:
+    # remove in this order (lowest value first)
+    # tools -> web -> rag -> attachments -> ltm
+    prune_order: Tuple[str, ...] = ("tools", "web", "rag", "attachments", "ltm")
+
+
+class StepPlanner:
+    """
+    Deterministic (rule-based) step planner.
+
+    - No LLM usage.
+    - Produces a stable ExecutionPlan compatible with stepplan_models.py.
+    - Retrieval steps are always before SYNTHESIZE_DRAFT.
+    - Execute plans always end with FINALIZE_ANSWER.
+    """
+
+    def __init__(self, config: Optional[StepPlannerConfig] = None):
+        self._cfg = config or StepPlannerConfig()
+
+    def plan(
+        self,
+        user_message: str,
+        *,
+        # engine-level routing/gating (simple booleans)
+        enable_websearch: bool = False,
+        enable_rag: bool = False,
+        enable_tools: bool = False,
+        enable_attachments: bool = False,
+        enable_user_ltm: bool = False,
+        # optional hints
+        require_code_example: bool = False,
+        final_format: OutputFormat = OutputFormat.MARKDOWN,
+        plan_id: str = "stepplan-001",
+    ) -> ExecutionPlan:
+        msg = (user_message or "").strip()
+        if not msg:
+            return self._clarify("Empty user message. What should the assistant do?", plan_id=plan_id)
+
+        intent = self._make_intent(msg)
+
+        # Clarify ONLY if truly ambiguous (rare)
+        if self._is_ambiguous(msg):
+            return self._clarify(self._clarifying_question(msg), intent=intent, plan_id=plan_id)
+
+        # Build steps in deterministic order
+        steps: List[ExecutionStep] = []
+
+        # Retrieval (deterministic ordering)
+        if enable_user_ltm:
+            steps.append(self._step_user_ltm(query=self._ltm_query(msg)))
+
+        if enable_attachments:
+            steps.append(self._step_attachments(query=self._attachments_query(msg)))
+
+        if enable_rag:
+            steps.append(self._step_rag(query=self._rag_query(msg)))
+
+        if enable_websearch:
+            steps.append(self._step_websearch(query=self._web_query(msg)))
+
+        if enable_tools:
+            steps.append(self._step_tools(instructions="Use tools if needed."))
+
+        # Core execution tail
+        steps.append(
+            self._step_synthesize(
+                instructions=self._draft_instructions(msg),
+                must_include=self._must_include(msg),
+                avoid=[],
+            )
+        )
+        steps.append(
+            self._step_verify(
+                criteria=self._verify_criteria(require_code_example=require_code_example),
+                strict=self._cfg.verify_strict,
+            )
+        )
+        steps.append(
+            self._step_finalize(
+                instructions=self._final_instructions(msg),
+                fmt=final_format,
+            )
+        )
+
+        # Ensure depends_on chain is correct + stay within max_total_steps
+        steps = self._chain_and_prune(steps, max_steps=self._cfg.max_total_steps)
+
+        plan = ExecutionPlan(
+            plan_id=plan_id,
+            intent=intent,
+            mode=PlanMode.EXECUTE,
+            steps=steps,
+            budgets=PlanBudgets(
+                max_total_steps=self._cfg.max_total_steps,
+                max_total_tool_calls=self._cfg.max_total_tool_calls,
+                max_total_web_queries=self._cfg.max_total_web_queries,
+                max_total_chars_context=self._cfg.max_total_chars_context,
+                max_total_tokens_output=self._cfg.max_total_tokens_output,
+            ),
+            stop_conditions=StopConditions(
+                stop_on_clarifying_question_answered=True,
+                stop_on_verifier_pass=True,
+                stop_on_budget_exhausted=True,
+            ),
+            final_answer_style="concise_technical",
+            notes=None,
+        )
+        return plan
+
+    # -----------------------------
+    # Step factories (return ExecutionStep)
+    # NOTE: ExecutionStep.params is a dict; we pass model_dump() to match schema exactly.
+    # -----------------------------
+
+    def _step_user_ltm(self, *, query: str) -> ExecutionStep:
+        return ExecutionStep(
+            step_id="ltm",
+            action=StepAction.USE_USER_LONGTERM_MEMORY_SEARCH,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(
+                top_k=self._cfg.step_top_k,
+                max_chars=self._cfg.step_max_chars,
+                max_tool_calls=0,
+                max_web_queries=0,
+            ),
+            inputs={},
+            params=LtmSearchParams(
+                query=query,
+                top_k=self._cfg.step_top_k,
+                score_threshold=None,
+                include_debug=False,
+            ).model_dump(),
+            expected_output="User long-term memory hits",
+            rationale="Gather project/user context deterministically",
+            on_failure=FailurePolicy(policy="skip", max_retries=0, retry_backoff_ms=0, replan_reason=None),
+        )
+
+    def _step_attachments(self, *, query: str) -> ExecutionStep:
+        return ExecutionStep(
+            step_id="attachments",
+            action=StepAction.USE_ATTACHMENTS_RETRIEVAL,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(
+                top_k=self._cfg.step_top_k,
+                max_chars=self._cfg.step_max_chars,
+                max_tool_calls=0,
+                max_web_queries=0,
+            ),
+            inputs={},
+            params=AttachmentsRetrievalParams(query=query, top_k=self._cfg.step_top_k).model_dump(),
+            expected_output="Attachment retrieval hits",
+            rationale="Use session attachments as context",
+            on_failure=FailurePolicy(policy="skip", max_retries=0, retry_backoff_ms=0, replan_reason=None),
+        )
+
+    def _step_rag(self, *, query: str) -> ExecutionStep:
+        return ExecutionStep(
+            step_id="rag",
+            action=StepAction.USE_RAG_RETRIEVAL,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(
+                top_k=self._cfg.step_top_k,
+                max_chars=self._cfg.step_max_chars,
+                max_tool_calls=0,
+                max_web_queries=0,
+            ),
+            inputs={},
+            params=RagRetrievalParams(query=query, top_k=self._cfg.step_top_k).model_dump(),
+            expected_output="RAG hits",
+            rationale="Retrieve from configured RAG store",
+            on_failure=FailurePolicy(policy="skip", max_retries=0, retry_backoff_ms=0, replan_reason=None),
+        )
+
+    def _step_websearch(self, *, query: str) -> ExecutionStep:
+        return ExecutionStep(
+            step_id="web",
+            action=StepAction.USE_WEBSEARCH,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(
+                top_k=self._cfg.web_max_results,
+                max_chars=self._cfg.step_max_chars,
+                max_tool_calls=0,
+                max_web_queries=1,
+            ),
+            inputs={},
+            params=WebSearchParams(
+                query=query,
+                recency_days=self._cfg.web_recency_days,
+                max_results=self._cfg.web_max_results,
+                strategy=self._cfg.web_strategy,
+                domains_allowlist=None,
+            ).model_dump(),
+            expected_output="Web search results",
+            rationale="Freshness / external verification needed",
+            on_failure=FailurePolicy(policy="replan", max_retries=0, retry_backoff_ms=0, replan_reason="Websearch failed"),
+        )
+
+    def _step_tools(self, *, instructions: str) -> ExecutionStep:
+        # stepplan_models.ToolsParams has only: input: Dict[str, Any]
+        return ExecutionStep(
+            step_id="tools",
+            action=StepAction.USE_TOOLS,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(
+                top_k=0,
+                max_chars=self._cfg.step_max_chars,
+                max_tool_calls=1,
+                max_web_queries=0,
+            ),
+            inputs={},
+            params=ToolsParams(input={"instructions": instructions}).model_dump(),
+            expected_output="Tool outputs (if any)",
+            rationale="Optional tool usage",
+            on_failure=FailurePolicy(policy="skip", max_retries=0, retry_backoff_ms=0, replan_reason=None),
+        )
+
+    def _step_synthesize(
+        self,
+        *,
+        instructions: str,
+        must_include: List[str],
+        avoid: List[str],
+    ) -> ExecutionStep:
+        return ExecutionStep(
+            step_id="draft",
+            action=StepAction.SYNTHESIZE_DRAFT,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(
+                top_k=0,
+                max_chars=self._cfg.step_max_chars,
+                max_tool_calls=0,
+                max_web_queries=0,
+            ),
+            inputs={},
+            params=SynthesizeDraftParams(instructions=instructions, must_include=must_include, avoid=avoid).model_dump(),
+            expected_output="Draft answer text",
+            rationale="Generate a draft from gathered context",
+            on_failure=FailurePolicy(policy="retry", max_retries=1, retry_backoff_ms=0, replan_reason=None),
+        )
+
+    def _step_verify(self, *, criteria: List[VerifyCriterion], strict: bool) -> ExecutionStep:
+        # Schema requires at least one criterion; enforce deterministically
+        if not criteria:
+            criteria = [VerifyCriterion(id="non_empty", description="Answer is non-empty", severity="error")]
+
+        return ExecutionStep(
+            step_id="verify",
+            action=StepAction.VERIFY_ANSWER,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(top_k=0, max_chars=1000, max_tool_calls=0, max_web_queries=0),
+            inputs={},
+            params=VerifyAnswerParams(criteria=criteria, strict=strict).model_dump(),
+            expected_output="Verification pass/fail",
+            rationale="Guardrail check before final answer",
+            on_failure=FailurePolicy(policy="replan", max_retries=0, retry_backoff_ms=0, replan_reason="Verification failed"),
+        )
+
+    def _step_finalize(self, *, instructions: str, fmt: OutputFormat) -> ExecutionStep:
+        return ExecutionStep(
+            step_id="final",
+            action=StepAction.FINALIZE_ANSWER,
+            enabled=True,
+            depends_on=[],
+            budgets=StepBudgets(top_k=0, max_chars=self._cfg.step_max_chars, max_tool_calls=0, max_web_queries=0),
+            inputs={},
+            params=FinalizeAnswerParams(instructions=instructions, format=fmt).model_dump(),
+            expected_output="Final assistant answer",
+            rationale="Finalize format and style",
+            on_failure=FailurePolicy(policy="fail", max_retries=0, retry_backoff_ms=0, replan_reason=None),
+        )
+
+    # -----------------------------
+    # Clarify plan
+    # -----------------------------
+
+    def _clarify(self, question: str, *, intent: str = "clarify", plan_id: str = "stepplan-001") -> ExecutionPlan:
+        steps = [
+            ExecutionStep(
+                step_id="clarify",
+                action=StepAction.ASK_CLARIFYING_QUESTION,
+                enabled=True,
+                depends_on=[],
+                budgets=StepBudgets(top_k=0, max_chars=200, max_tool_calls=0, max_web_queries=0),
+                inputs={},
+                params=AskClarifyingParams(question=question).model_dump(),
+                expected_output="User clarification",
+                rationale="Ambiguous request",
+                on_failure=FailurePolicy(policy="fail", max_retries=0, retry_backoff_ms=0, replan_reason=None),
+            )
+        ]
+        return ExecutionPlan(
+            plan_id=plan_id,
+            intent=intent,
+            mode=PlanMode.CLARIFY,
+            steps=steps,
+            budgets=PlanBudgets(
+                max_total_steps=1,
+                max_total_tool_calls=0,
+                max_total_web_queries=0,
+                max_total_chars_context=self._cfg.max_total_chars_context,
+                max_total_tokens_output=self._cfg.max_total_tokens_output,
+            ),
+            stop_conditions=StopConditions(
+                stop_on_clarifying_question_answered=True,
+                stop_on_verifier_pass=False,
+                stop_on_budget_exhausted=True,
+            ),
+            final_answer_style="concise_technical",
+            notes=None,
+        )
+
+    # -----------------------------
+    # Deterministic chaining + pruning
+    # -----------------------------
+
+    def _chain_and_prune(self, steps: List[ExecutionStep], *, max_steps: int) -> List[ExecutionStep]:
+        """
+        Ensures depends_on is a simple linear chain AND prunes optional retrieval steps
+        if we exceed max_steps (deterministic order).
+        """
+        # Prune if needed
+        if max_steps and len(steps) > max_steps:
+            steps = self._prune_to_budget(steps, max_steps=max_steps)
+
+        # Re-chain depends_on linearly (no forward refs)
+        prev_id: Optional[str] = None
+        for s in steps:
+            s.depends_on = [] if prev_id is None else [prev_id]
+            prev_id = s.step_id
+
+        return steps
+
+    def _prune_to_budget(self, steps: List[ExecutionStep], *, max_steps: int) -> List[ExecutionStep]:
+        """
+        Drops optional steps deterministically to fit the budget.
+        Never drops: draft/verify/final (must exist in execute mode).
+        """
+        core_ids = {"draft", "verify", "final"}
+        core = [s for s in steps if s.step_id in core_ids]
+        optional = [s for s in steps if s.step_id not in core_ids]
+
+        # If even core is too big (shouldn't happen), truncate from the left (but keep final step)
+        if len(core) > max_steps:
+            # keep last max_steps steps
+            core = core[-max_steps:]
+            return core
+
+        # We can keep at most (max_steps - len(core)) optional steps
+        keep_optional = max_steps - len(core)
+        if keep_optional <= 0:
+            return core
+
+        # Deterministic keep order: follow current build order, but prune by configured priority
+        # We remove by prune_order first, until it fits.
+        opt_by_id = {s.step_id: s for s in optional}
+        opt_ids_in_order = [s.step_id for s in optional]
+
+        # Remove until fits
+        while len(opt_ids_in_order) > keep_optional:
+            removed = False
+            for candidate in self._cfg.prune_order:
+                if candidate in opt_by_id and candidate in opt_ids_in_order:
+                    opt_ids_in_order.remove(candidate)
+                    removed = True
+                    break
+            if not removed:
+                # fallback: remove oldest optional
+                opt_ids_in_order.pop(0)
+
+        kept_optional_steps = [opt_by_id[sid] for sid in opt_ids_in_order if sid in opt_by_id]
+
+        # Preserve original overall order
+        kept_ids = set(s.step_id for s in core) | set(s.step_id for s in kept_optional_steps)
+        out = [s for s in steps if s.step_id in kept_ids]
+        return out
+
+    # -----------------------------
+    # Rules / heuristics (deterministic)
+    # -----------------------------
+
+    def _make_intent(self, msg: str) -> str:
+        s = re.sub(r"[^a-zA-Z0-9]+", "_", msg.strip().lower())
+        s = re.sub(r"_+", "_", s).strip("_")
+        return s[:64] or "intent"
+
+    def _is_ambiguous(self, msg: str) -> bool:
+        # Conservative: clarify only when truly ambiguous
+        short = len(msg) < 12
+        vague = bool(re.fullmatch(r"(help|assist|explain|what about this)\.?\s*", msg.strip().lower()))
+        return short or vague
+
+    def _clarifying_question(self, msg: str) -> str:
+        return "What exactly should the assistant produce (e.g., code, explanation, or a step-by-step plan), and what constraints apply?"
+
+    # Query builders
+    def _web_query(self, msg: str) -> str:
+        return msg
+
+    def _rag_query(self, msg: str) -> str:
+        return msg
+
+    def _ltm_query(self, msg: str) -> str:
+        return msg
+
+    def _attachments_query(self, msg: str) -> str:
+        return "Find relevant information in session attachments for: " + msg
+
+    # Draft/final instructions
+    def _draft_instructions(self, msg: str) -> str:
+        return msg
+
+    def _final_instructions(self, msg: str) -> str:
+        return msg
+
+    def _must_include(self, msg: str) -> List[str]:
+        return []
+
+    def _verify_criteria(self, *, require_code_example: bool) -> List[VerifyCriterion]:
+        crit = [VerifyCriterion(id="non_empty", description="Answer is non-empty", severity="error")]
+        if require_code_example:
+            crit.append(VerifyCriterion(id="has_code", description="Includes a code example", severity="error"))
+        return crit
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/planning/stepplan_models.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=stepplan_models.py
+# LINES: 325
+# SHA256: 07426d1d4136cd7ebf28193bf6d5d1d26186dfe3f57dc0e8bb26bb40639a3d4b
+# SYMBOLS:
+#   - class StepAction
+#   - class FailurePolicyKind
+#   - class WebSearchStrategy
+#   - class OutputFormat
+#   - class PlanMode
+#   - class FailurePolicy
+#   - class StepBudgets
+#   - class PlanBudgets
+#   - class StopConditions
+#   - class VerifyCriterion
+#   - class AskClarifyingParams
+#   - class LtmSearchParams
+#   - class AttachmentsRetrievalParams
+#   - class RagRetrievalParams
+#   - class WebSearchParams
+#   - class ToolsParams
+#   - class SynthesizeDraftParams
+#   - class VerifyAnswerParams
+#   - class FinalizeAnswerParams
+#   - class ExecutionStep
+#   - class ExecutionPlan
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+from enum import Enum
+from typing import Any, Dict, List, Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+
+# -----------------------------
+# Enums
+# -----------------------------
+
+class StepAction(str, Enum):
+    ASK_CLARIFYING_QUESTION = "ASK_CLARIFYING_QUESTION"
+    USE_USER_LONGTERM_MEMORY_SEARCH = "USE_USER_LONGTERM_MEMORY_SEARCH"
+    USE_ATTACHMENTS_RETRIEVAL = "USE_ATTACHMENTS_RETRIEVAL"
+    USE_RAG_RETRIEVAL = "USE_RAG_RETRIEVAL"
+    USE_WEBSEARCH = "USE_WEBSEARCH"
+    USE_TOOLS = "USE_TOOLS"
+    SYNTHESIZE_DRAFT = "SYNTHESIZE_DRAFT"
+    VERIFY_ANSWER = "VERIFY_ANSWER"
+    FINALIZE_ANSWER = "FINALIZE_ANSWER"
+
+
+class FailurePolicyKind(str, Enum):
+    FAIL = "fail"
+    SKIP = "skip"
+    RETRY = "retry"
+    REPLAN = "replan"
+
+
+class WebSearchStrategy(str, Enum):
+    SNIPPETS = "snippets"
+    OPEN_PAGES = "open_pages"
+    HYBRID = "hybrid"
+
+
+class OutputFormat(str, Enum):
+    PLAIN_TEXT = "plain_text"
+    MARKDOWN = "markdown"
+
+
+class PlanMode(str, Enum):
+    CLARIFY = "clarify"
+    EXECUTE = "execute"
+
+
+# -----------------------------
+# Shared small models
+# -----------------------------
+
+class FailurePolicy(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    policy: FailurePolicyKind
+    max_retries: int = Field(ge=0)
+    retry_backoff_ms: int = Field(ge=0)
+    replan_reason: Optional[str] = None
+
+
+class StepBudgets(BaseModel):
+    """
+    Step-level budgets.
+    HARD: Only these keys are allowed.
+    """
+    model_config = ConfigDict(extra="forbid")
+
+    top_k: int = Field(default=0, ge=0)
+    max_chars: int = Field(default=0, ge=0)
+    max_tool_calls: int = Field(default=0, ge=0)
+    max_web_queries: int = Field(default=0, ge=0)
+
+
+class PlanBudgets(BaseModel):
+    """
+    Plan-level budgets.
+    """
+    model_config = ConfigDict(extra="forbid")
+
+    max_total_steps: int = Field(default=6, ge=1)
+    max_total_tool_calls: int = Field(default=0, ge=0)
+    max_total_web_queries: int = Field(default=0, ge=0)
+    max_total_chars_context: int = Field(default=12000, ge=0)
+    max_total_tokens_output: Optional[int] = Field(default=None, ge=0)
+
+
+class StopConditions(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    stop_on_clarifying_question_answered: bool = True
+    stop_on_verifier_pass: bool = True
+    stop_on_budget_exhausted: bool = True
+
+
+class VerifyCriterion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    severity: Literal["error", "warn"]
+
+
+# -----------------------------
+# Params per action
+# -----------------------------
+
+class AskClarifyingParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question: str = Field(min_length=1)
+    # Optional UX helpers (allowed but not required)
+    choices: Optional[List[str]] = None
+    must_answer_to_continue: bool = True
+
+
+class LtmSearchParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    query: str = Field(min_length=1)
+    top_k: int = Field(default=3, ge=1)
+    score_threshold: Optional[float] = None
+    include_debug: bool = False
+
+
+class AttachmentsRetrievalParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    query: str = Field(min_length=1)
+    top_k: int = Field(default=5, ge=1)
+
+
+class RagRetrievalParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    query: str = Field(min_length=1)
+    top_k: int = Field(default=5, ge=1)
+
+
+class WebSearchParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    query: str = Field(min_length=1)
+    recency_days: Optional[int] = Field(default=None, ge=0)
+    max_results: int = Field(default=5, ge=1)
+    strategy: WebSearchStrategy = WebSearchStrategy.HYBRID
+    domains_allowlist: Optional[List[str]] = None
+
+
+class ToolsParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    input: Dict[str, Any] = Field(default_factory=dict)
+
+
+class SynthesizeDraftParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    instructions: str = Field(min_length=1)
+    must_include: List[str] = Field(default_factory=list)
+    avoid: List[str] = Field(default_factory=list)
+
+
+class VerifyAnswerParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    criteria: List[VerifyCriterion] = Field(min_length=1)
+    strict: bool = True
+
+
+class FinalizeAnswerParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    instructions: str = Field(min_length=1)
+    format: OutputFormat = OutputFormat.MARKDOWN
+
+
+# Mapping for deterministic validation
+_ACTION_TO_PARAMS_MODEL = {
+    StepAction.ASK_CLARIFYING_QUESTION: AskClarifyingParams,
+    StepAction.USE_USER_LONGTERM_MEMORY_SEARCH: LtmSearchParams,
+    StepAction.USE_ATTACHMENTS_RETRIEVAL: AttachmentsRetrievalParams,
+    StepAction.USE_RAG_RETRIEVAL: RagRetrievalParams,
+    StepAction.USE_WEBSEARCH: WebSearchParams,
+    StepAction.USE_TOOLS: ToolsParams,
+    StepAction.SYNTHESIZE_DRAFT: SynthesizeDraftParams,
+    StepAction.VERIFY_ANSWER: VerifyAnswerParams,
+    StepAction.FINALIZE_ANSWER: FinalizeAnswerParams,
+}
+
+
+_RETRIEVAL_OR_TOOLS_ACTIONS = {
+    StepAction.USE_USER_LONGTERM_MEMORY_SEARCH,
+    StepAction.USE_ATTACHMENTS_RETRIEVAL,
+    StepAction.USE_RAG_RETRIEVAL,
+    StepAction.USE_WEBSEARCH,
+    StepAction.USE_TOOLS,
+}
+
+
+# -----------------------------
+# Execution Step
+# -----------------------------
+
+class ExecutionStep(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    step_id: str = Field(min_length=1)
+    action: StepAction
+    enabled: bool = True
+    depends_on: List[str] = Field(default_factory=list)
+
+    budgets: StepBudgets = Field(default_factory=StepBudgets)
+    inputs: Dict[str, Any] = Field(default_factory=dict)
+
+    # NOTE: LLM returns dict; we validate and coerce into a typed params model in validator.
+    params: Dict[str, Any] = Field(default_factory=dict)
+
+    expected_output: str = Field(default="", max_length=5000)
+    rationale: str = Field(default="", max_length=5000)
+    on_failure: FailurePolicy = Field(default_factory=lambda: FailurePolicy(
+        policy=FailurePolicyKind.RETRY, max_retries=1, retry_backoff_ms=0, replan_reason=None
+    ))
+
+    @field_validator("depends_on", mode="before")
+    @classmethod
+    def _depends_on_to_list(cls, v: Any) -> List[str]:
+        if v is None:
+            return []
+        if isinstance(v, list):
+            return [str(x) for x in v]
+        # common LLM mistake: single string/int
+        return [str(v)]
+
+    @model_validator(mode="after")
+    def _validate_params_match_action(self) -> "ExecutionStep":
+        """
+        Validate 'params' dict shape by action and reject missing/extra keys.
+        """
+        model = _ACTION_TO_PARAMS_MODEL.get(self.action)
+        if model is None:
+            raise ValueError(f"Unsupported action: {self.action}")
+
+        # Validate and normalize params via corresponding params model
+        try:
+            parsed = model.model_validate(self.params)
+        except Exception as e:
+            raise ValueError(f"Invalid params for action={self.action}: {e}") from e
+
+        # Replace dict with normalized dict (still JSON-serializable)
+        self.params = parsed.model_dump()
+
+        return self
+
+
+# -----------------------------
+# Execution Plan
+# -----------------------------
+
+class ExecutionPlan(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    plan_id: str = Field(min_length=1)
+    intent: str = Field(min_length=1)
+    mode: PlanMode
+    steps: List[ExecutionStep] = Field(min_length=1)
+
+    budgets: PlanBudgets
+    stop_conditions: StopConditions
+    final_answer_style: str = Field(default="concise_technical", min_length=1)
+
+    notes: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _validate_plan(self) -> "ExecutionPlan":
+        # 1) Max steps budget
+        if self.budgets and self.budgets.max_total_steps:
+            if len(self.steps) > int(self.budgets.max_total_steps):
+                raise ValueError("Number of steps exceeds max_total_steps budget.")
+
+        # 2) Step ids must be unique
+        ids = [s.step_id for s in self.steps]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Duplicate step_id in steps.")
+
+        # 3) depends_on must reference existing step_ids and not create forward references
+        seen = set()
+        for s in self.steps:
+            for dep in s.depends_on:
+                if dep not in ids:
+                    raise ValueError(f"Step '{s.step_id}' depends_on unknown step_id '{dep}'.")
+                # forward dep check: dep must already be seen in traversal order
+                if dep not in seen:
+                    raise ValueError(f"Step '{s.step_id}' has forward/invalid dependency '{dep}'.")
+            seen.add(s.step_id)
+
+        # 4) Mode constraints
+        if self.mode == PlanMode.EXECUTE:
+            if self.steps[-1].action != StepAction.FINALIZE_ANSWER:
+                raise ValueError("Execute mode must end with FINALIZE_ANSWER.")
+        elif self.mode == PlanMode.CLARIFY:
+            if self.steps[0].action != StepAction.ASK_CLARIFYING_QUESTION:
+                raise ValueError("Clarify mode must start with ASK_CLARIFYING_QUESTION.")
+            # Clarify mode cannot include retrieval/tools steps
+            for s in self.steps:
+                if s.action in _RETRIEVAL_OR_TOOLS_ACTIONS:
+                    raise ValueError("Clarify mode cannot include retrieval/tools steps.")
+        else:
+            raise ValueError(f"Unsupported mode: {self.mode}")
+
+        # 5) Websearch ordering: if present, it must occur before first SYNTHESIZE_DRAFT
+        web_idx = None
+        first_draft_idx = None
+        for i, s in enumerate(self.steps):
+            if web_idx is None and s.action == StepAction.USE_WEBSEARCH:
+                web_idx = i
+            if first_draft_idx is None and s.action == StepAction.SYNTHESIZE_DRAFT:
+                first_draft_idx = i
+        if web_idx is not None and first_draft_idx is not None:
+            if web_idx > first_draft_idx:
+                raise ValueError("USE_WEBSEARCH must appear before the first SYNTHESIZE_DRAFT.")
+
+        return self
 
 # ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/prompts/__init__.py

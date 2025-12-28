@@ -1,11 +1,5 @@
-# © Intergrax. All rights reserved.
-# execution_plan_schema.py
-#
-# Pydantic v2 schema for StepPlanner ExecutionPlan.
-# Goals:
-# - Strong typing + strict JSON contracts (extra="forbid")
-# - Deterministic validation rules (no heuristics, only contract rules)
-# - Prevent common LLM failure modes (wrong enums, extra keys, wrong ordering, wrong mode rules)
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
 
