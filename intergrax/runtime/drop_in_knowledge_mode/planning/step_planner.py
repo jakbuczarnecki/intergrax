@@ -1,4 +1,5 @@
-# intergrax/runtime/drop_in_knowledge_mode/planning/step_planner.py
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
 
@@ -6,6 +7,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 import uuid
 
+from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import EnginePlan
 from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
     EngineHints,
     ExecutionPlan,
@@ -70,6 +72,64 @@ class StepPlanner:
     # -----------------------------
     # Public API
     # -----------------------------
+
+    def build_plan_from_engine_plan(
+        self,
+        *,
+        user_message: str,
+        engine_plan: EnginePlan,
+        plan_id: Optional[str] = None,
+    ) -> ExecutionPlan:
+        """
+        Adapter entrypoint: EnginePlanner -> StepPlanner.
+
+        - Converts EnginePlan -> EngineHints
+        - Preserves clarifying_question from EnginePlan when intent == CLARIFY
+        """
+        if engine_plan is None:
+            raise ValueError("engine_plan is required")
+
+        msg = (user_message or "").strip()
+        pid = (plan_id or "stepplan-001").strip() or "stepplan-001"
+
+        hints = self._hints_from_engine_plan(engine_plan)
+
+        # Preserve upstream clarifying question if provided
+        if (hints.intent or PlanIntent.GENERIC) == PlanIntent.CLARIFY:
+            q = (engine_plan.clarifying_question or "").strip()
+            if not q:
+                q = self._clarifying_question(msg)
+            return self._plan_clarify_with_question(msg, plan_id=pid, question=q)
+
+        return self.build_plan(user_message=msg, engine_hints=hints, plan_id=pid)
+
+
+    def _hints_from_engine_plan(self, plan: EnginePlan) -> EngineHints:
+        return EngineHints(
+            enable_websearch=bool(plan.use_websearch),
+            enable_ltm=bool(plan.use_user_longterm_memory),
+            enable_rag=bool(plan.use_rag),
+            enable_tools=bool(plan.use_tools),
+            intent=plan.intent,
+            intent_reason=(plan.reasoning_summary or None),
+        )
+    
+
+    def _plan_clarify_with_question(self, msg: str, *, plan_id: str, question: str) -> ExecutionPlan:
+        steps: List[ExecutionStep] = [
+            self._step_clarify(
+                step_id=StepId.CLARIFY,
+                depends_on=[],
+                question=question,
+            )
+        ]
+        return self._wrap(
+            plan_id=plan_id,
+            intent=PlanIntent.CLARIFY,
+            mode=PlanMode.CLARIFY,
+            steps=steps,
+        )
+
 
     def build_plan(
         self,
