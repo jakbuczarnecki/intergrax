@@ -10,7 +10,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
-from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import DEFAULT_PLANNER_SYSTEM_PROMPT, EnginePlan, PlanIntent, PlannerPromptConfig
+from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import DEFAULT_PLANNER_SYSTEM_PROMPT, EngineNextStep, EnginePlan, PlanIntent, PlannerPromptConfig
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
 
 
@@ -140,6 +140,7 @@ class EnginePlanner:
             "required": [
                 "version",
                 "intent",
+                "next_step",
                 "reasoning_summary",
                 "ask_clarifying_question",
                 "clarifying_question",
@@ -153,6 +154,17 @@ class EnginePlanner:
                 "intent": {
                     "type": "string",
                     "enum": ["generic", "freshness", "project_architecture", "clarify"],
+                },
+                "next_step": {
+                    "type": "string",
+                    "enum": [
+                        "clarify",
+                        "websearch",
+                        "tools",
+                        "rag",
+                        "synthesize",
+                        "finalize",
+                    ],
                 },
                 "reasoning_summary": {"type": "string"},
                 "ask_clarifying_question": {"type": "boolean"},
@@ -174,9 +186,27 @@ class EnginePlanner:
         user_lines.append("CAPABILITIES (hard constraints):")
         user_lines.append(json.dumps(caps, ensure_ascii=False))
         user_lines.append("")
+
         user_lines.append("USER QUERY:")
         user_lines.append((req.message or "").strip())
         user_lines.append("")
+
+        # Minimal, explicit rules for next_step to reduce ambiguity.
+        user_lines.append("RULES FOR next_step:")
+        user_lines.append('- If intent == "clarify": next_step MUST be "clarify".')
+        user_lines.append('- If intent != "clarify": next_step MUST NOT be "clarify".')
+        user_lines.append('Clarify intent should be used ONLY when the user request is ambiguous or missing critical information.')
+        user_lines.append('Do NOT choose clarify if you can answer with a reasonable technical/general response without asking follow-ups.')
+        user_lines.append('Do NOT choose clarify for broad/open questions; answer them as GENERIC and use next_step="synthesize".')
+
+        user_lines.append('- Choose exactly one next_step for THIS iteration.')
+        user_lines.append('- Use "websearch" for freshness/external information.')
+        user_lines.append('- Use "rag" for internal documents or user long-term memory.')
+        user_lines.append('- Use "tools" only when tool execution is required.')
+        user_lines.append('- Use "synthesize" when you have enough information to draft an answer.')
+        user_lines.append('- Use "finalize" only when you can return the final answer now.')
+        user_lines.append("")
+
         user_lines.append("JSON SCHEMA:")
         user_lines.append(json.dumps(schema, ensure_ascii=False))
         user_lines.append("")
@@ -186,6 +216,7 @@ class EnginePlanner:
             ChatMessage(role="system", content=system_prompt),
             ChatMessage(role="user", content="\n".join(user_lines)),
         ]
+
 
 
 
@@ -209,7 +240,7 @@ class EnginePlanner:
         Parse strict JSON (as specified by _build_planner_messages) into EnginePlan.
 
         Expected keys:
-        version, intent, reasoning_summary, ask_clarifying_question, clarifying_question,
+        version, intent, next_step, reasoning_summary, ask_clarifying_question, clarifying_question,
         use_websearch, use_user_longterm_memory, use_rag, use_tools
         """
         js = self._extract_json_object(raw)
@@ -280,6 +311,14 @@ class EnginePlanner:
                 f"Invalid intent '{intent_raw}'. Allowed: generic|freshness|project_architecture|clarify."
             )
 
+        # next_step -> EngineNextStep (Enum)
+        next_step_raw = req_str("next_step").strip()
+        try:
+            next_step = EngineNextStep(next_step_raw)
+        except Exception:
+            # Tolerant: keep None and let fallback decide
+            next_step = None
+
         reasoning_summary = req_str("reasoning_summary").strip()
 
         ask_clarify = req_bool("ask_clarifying_question")
@@ -298,6 +337,7 @@ class EnginePlanner:
                 clar_q = "Could you clarify what you mean and what outcome you want?"
             # In clarify mode, retrieval is always off
             use_web = use_ltm = use_rag = use_tools = False
+            next_step = EngineNextStep.CLARIFY
         else:
             # Non-clarify must not ask clarifying question
             if ask_clarify:
@@ -306,8 +346,23 @@ class EnginePlanner:
                 if not clar_q:
                     clar_q = "Could you clarify what you mean and what outcome you want?"
                 use_web = use_ltm = use_rag = use_tools = False
+                next_step = EngineNextStep.CLARIFY
             else:
                 clar_q = None
+                # In non-clarify, next_step must not be clarify
+                if next_step == EngineNextStep.CLARIFY:
+                    next_step = None
+
+        # Deterministic fallback for next_step (never leave None for runtime loop)
+        if next_step is None:
+            if use_web:
+                next_step = EngineNextStep.WEBSEARCH
+            elif use_tools:
+                next_step = EngineNextStep.TOOLS
+            elif use_rag or use_ltm:
+                next_step = EngineNextStep.RAG
+            else:
+                next_step = EngineNextStep.SYNTHESIZE
 
         return EnginePlan(
             version=version,
@@ -315,6 +370,7 @@ class EnginePlanner:
             reasoning_summary=reasoning_summary,
             ask_clarifying_question=ask_clarify,
             clarifying_question=clar_q,
+            next_step=next_step,
             use_websearch=use_web,
             use_user_longterm_memory=use_ltm,
             use_rag=use_rag,
@@ -322,6 +378,8 @@ class EnginePlanner:
             debug={
                 "raw_json": data,
                 "planner_json_len": len(js),
+                "next_step_raw": next_step_raw,
             },
         )
+
 

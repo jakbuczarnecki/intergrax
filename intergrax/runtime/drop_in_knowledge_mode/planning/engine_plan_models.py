@@ -5,12 +5,21 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 import pprint
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Literal, Optional
 
 
 # -----------------------------
 # Typed plan schema
 # -----------------------------
+
+class EngineNextStep(str, Enum):
+    CLARIFY = "clarify"
+    WEBSEARCH = "websearch"
+    TOOLS = "tools"
+    RAG = "rag"
+    SYNTHESIZE = "synthesize"
+    FINALIZE = "finalize"
+    
 
 class PlanIntent(str, Enum):
     GENERIC = "generic"
@@ -30,6 +39,9 @@ class EnginePlan:
     # Clarify only
     ask_clarifying_question: bool = False
     clarifying_question: Optional[str] = None
+
+    # Next action (policy routing for this iteration)
+    next_step: Optional[EngineNextStep] = None
 
     # Soft preferences for this iteration (NOT hard constraints)
     use_websearch: bool = False
