@@ -17,6 +17,7 @@ from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
     FailurePolicyKind,
     OutputFormat,
     PlanBudgets,
+    PlanBuildMode,
     PlanIntent,
     PlanMode,
     RationaleType,
@@ -73,12 +74,13 @@ class StepPlanner:
     # Public API
     # -----------------------------
 
-    def build_plan_from_engine_plan(
+    def build_from_engine_plan(
         self,
         *,
         user_message: str,
         engine_plan: EnginePlan,
         plan_id: Optional[str] = None,
+        build_mode: PlanBuildMode = PlanBuildMode.STATIC,
     ) -> ExecutionPlan:
         """
         Adapter entrypoint: EnginePlanner -> StepPlanner.
@@ -101,7 +103,11 @@ class StepPlanner:
                 q = self._clarifying_question(msg)
             return self._plan_clarify_with_question(msg, plan_id=pid, question=q)
 
-        return self.build_plan(user_message=msg, engine_hints=hints, plan_id=pid)
+        return self.build_from_hints(
+            user_message=msg, 
+            engine_hints=hints, 
+            plan_id=pid,
+        )
 
 
     def _hints_from_engine_plan(self, plan: EnginePlan) -> EngineHints:
@@ -131,7 +137,7 @@ class StepPlanner:
         )
 
 
-    def build_plan(
+    def build_from_hints(
         self,
         *,
         user_message: str,

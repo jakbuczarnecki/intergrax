@@ -51,6 +51,12 @@ class PlanMode(str, Enum):
     EXECUTE = "execute"
 
 
+class PlanBuildMode(str, Enum):
+    STATIC = "static"
+    DYNAMIC = "dynamic"
+
+
+
 # -----------------------------
 # Shared small models
 # -----------------------------
