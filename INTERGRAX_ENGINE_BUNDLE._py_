@@ -35,14 +35,14 @@
 # - tools/
 # - websearch/
 #
-# Files included: 132
-# Total lines: 24626
+# Files included: 133
+# Total lines: 25105
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
 # ROOT: D:\Projekty\intergrax
 # PACKAGE: intergrax
-# FILES: 132
+# FILES: 133
 #
 # MODULE MAP (dynamic):
 # - chains/ (2 files)
@@ -54,7 +54,7 @@
 # - openai/ (3 files)
 # - rag/ (11 files)
 # - root/ (4 files)
-# - runtime/ (41 files)
+# - runtime/ (42 files)
 # - supervisor/ (5 files)
 # - tools/ (3 files)
 # - websearch/ (33 files)
@@ -125,8 +125,9 @@
 # - intergrax/runtime/drop_in_knowledge_mode/planning/__init__.py | intergrax.runtime.drop_in_knowledge_mode.planning | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/planning/engine_plan_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models | runtime | 123 | 1288af8b3f5a
 # - intergrax/runtime/drop_in_knowledge_mode/planning/engine_planner.py | intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner | runtime | 385 | b52a6588b3ad
-# - intergrax/runtime/drop_in_knowledge_mode/planning/step_planner.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_planner | runtime | 430 | f9777b29408c
-# - intergrax/runtime/drop_in_knowledge_mode/planning/stepplan_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models | runtime | 388 | c89a14855ad1
+# - intergrax/runtime/drop_in_knowledge_mode/planning/plan_builder_helper.py | intergrax.runtime.drop_in_knowledge_mode.planning.plan_builder_helper | runtime | 77 | e386380d18e4
+# - intergrax/runtime/drop_in_knowledge_mode/planning/step_planner.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_planner | runtime | 812 | 3bf6c207c236
+# - intergrax/runtime/drop_in_knowledge_mode/planning/stepplan_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models | runtime | 408 | e92b2b68b01a
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/__init__.py | intergrax.runtime.drop_in_knowledge_mode.prompts | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/history_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder | runtime | 89 | 7a99ef869b92
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/rag_prompt_builder.py | intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder | runtime | 105 | 487e17f834e1
@@ -193,7 +194,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 24626
+# TOTAL LINES: 25105
 # ======================================================================
 
 # ======================================================================
@@ -16225,6 +16226,97 @@ class EnginePlanner:
 
 
 # ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/planning/plan_builder_helper.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.plan_builder_helper
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=plan_builder_helper.py
+# LINES: 77
+# SHA256: e386380d18e438e1196a8888c5061ab4d9da72db845f94bc6171512f722269c5
+# SYMBOLS:
+#   - async def build_plan()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+from typing import Optional, List
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
+from intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner import EnginePlanner
+from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import EnginePlan
+
+
+async def build_plan(
+    *,
+    config: RuntimeConfig,
+    message: str,
+    user_id: str,
+    session_id: Optional[str] = None,
+    run_id: Optional[str] = None,
+    instructions: Optional[str] = None,
+    attachments: Optional[list] = None,
+    base_history: Optional[List[ChatMessage]] = None,
+    profile_user_instructions: Optional[str] = None,
+    profile_org_instructions: Optional[str] = None
+) -> EnginePlan:
+    """
+    Minimal helper:
+      EnginePlanner.plan() -> EnginePlan
+    """
+
+    inner_session_id = session_id or "plan_builder_helper_session"
+    inner_run_id = run_id or "plan_builder_helper_run_id"
+
+    planner = EnginePlanner(llm_adapter=config.llm_adapter)
+
+    # 1. Request
+    req = RuntimeRequest(
+        user_id=user_id,
+        session_id=inner_session_id,
+        message=message,
+        instructions=instructions,
+        attachments=attachments or [],
+    )
+
+    # 2. State
+    state = RuntimeState(
+        request=req,
+        run_id=inner_run_id,
+        llm_usage_tracker=LLMUsageTracker(run_id=inner_run_id),
+    )
+
+    state.llm_usage_tracker.register_adapter(config.llm_adapter, label="core_adapter")
+
+    state.base_history = base_history or []
+
+    state.profile_user_instructions = profile_user_instructions
+    state.profile_org_instructions = profile_org_instructions
+
+    state.cap_rag_available = config.enable_rag
+    state.cap_user_ltm_available = config.enable_user_longterm_memory
+    state.cap_attachments_available = bool(attachments and len(attachments)>0)
+    state.cap_websearch_available = config.enable_websearch
+    state.cap_tools_available = config.tools_mode != "off"
+
+    # 3. Engine plan
+    engine_plan = await planner.plan(
+        req=req,
+        state=state,
+        config=config,
+        run_id=inner_run_id,
+    )
+
+    return engine_plan
+
+# ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/planning/step_planner.py
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.step_planner
 # MODULE_GROUP: runtime
@@ -16232,20 +16324,22 @@ class EnginePlanner:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=step_planner.py
-# LINES: 430
-# SHA256: f9777b29408ca1cff90ce403e542bfb52f0adc6cbd2739fc4fc254f1816c191b
+# LINES: 812
+# SHA256: 3bf6c207c236e027cee48434369c059d76cd9af764141fb987b5d1e6453cb9d9
 # SYMBOLS:
 #   - class StepPlannerConfig
 #   - class StepPlanner
 # ======================================================================
-# intergrax/runtime/drop_in_knowledge_mode/planning/step_planner.py
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 import uuid
 
+from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import EngineNextStep, EnginePlan
 from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
     EngineHints,
     ExecutionPlan,
@@ -16255,6 +16349,7 @@ from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
     FailurePolicyKind,
     OutputFormat,
     PlanBudgets,
+    PlanBuildMode,
     PlanIntent,
     PlanMode,
     RationaleType,
@@ -16289,7 +16384,7 @@ class StepPlannerConfig:
 
     # Plan-level budgets
     max_total_steps: int = 6
-    max_total_tool_calls: int = 0
+    max_total_tool_calls: int = 3
     max_total_web_queries: int = 5
     max_total_chars_context: int = 12000
     max_total_tokens_output: Optional[int] = None
@@ -16311,7 +16406,174 @@ class StepPlanner:
     # Public API
     # -----------------------------
 
-    def build_plan(
+    def build_from_engine_plan(
+        self,
+        *,
+        user_message: str,
+        engine_plan: EnginePlan,
+        plan_id: Optional[str] = None,
+        build_mode: PlanBuildMode = PlanBuildMode.STATIC,
+    ) -> ExecutionPlan:
+        """
+        Adapter entrypoint: EnginePlanner -> StepPlanner.
+
+        STATIC:
+        - build full sequence using EngineHints (web/ltm/rag/tools -> draft -> verify -> finalize)
+
+        DYNAMIC:
+        - build a single-step plan based on engine_plan.next_step (ready for planning loop)
+        """
+        if engine_plan is None:
+            raise ValueError("engine_plan is required")
+
+        msg = (user_message or "").strip()
+        pid = (plan_id or self._new_plan_id()).strip() or self._new_plan_id()
+
+        hints = self._hints_from_engine_plan(engine_plan)
+        intent = hints.intent or PlanIntent.GENERIC
+
+        # Preserve upstream clarifying question if provided
+        if intent == PlanIntent.CLARIFY:
+            q = (engine_plan.clarifying_question or "").strip()
+            if not q:
+                q = self._clarifying_question(msg)
+            return self._plan_clarify_with_question(msg, plan_id=pid, question=q)
+
+        if build_mode == PlanBuildMode.STATIC:
+            return self.build_from_hints(
+                user_message=msg,
+                engine_hints=hints,
+                plan_id=pid,
+            )
+
+        # DYNAMIC: one-step plan based on engine_plan.next_step
+        ns = engine_plan.next_step
+        if ns is None:
+            # Fallback: if model didn't provide next_step, behave like STATIC
+            return self.build_from_hints(
+                user_message=msg,
+                engine_hints=hints,
+                plan_id=pid,
+            )
+
+        steps: List[ExecutionStep]
+
+        if ns == EngineNextStep.WEBSEARCH:
+            steps = [
+                self._step_websearch(
+                    step_id=StepId.WEBSEARCH,
+                    depends_on=[],
+                    query=self._web_query(msg, intent=intent),
+                )
+            ]
+
+        elif ns == EngineNextStep.TOOLS:
+            steps = [
+                self._step_tools(
+                    step_id=StepId.TOOLS,
+                    depends_on=[],
+                    tool_input={"query": msg, "intent": str(intent)},
+                    max_tool_calls=1,
+                )
+            ]
+
+        elif ns == EngineNextStep.RAG:
+            steps = [
+                self._step_rag_retrieval(
+                    query=msg,
+                    step_id=StepId.RAG,
+                    depends_on=[],
+                    top_k=6,
+                )
+            ]
+
+        elif ns == EngineNextStep.SYNTHESIZE:
+            # Use existing synth builder (do NOT call non-existent _step_synthesize_draft)
+            steps = [
+                self._step_synthesize(
+                    step_id=StepId.DRAFT,
+                    depends_on=[],
+                    instructions=msg,
+                )
+            ]
+
+        elif ns == EngineNextStep.FINALIZE:
+            # Use existing finalize builder (do NOT call non-existent _step_finalize_answer)
+            steps = [
+                self._step_finalize(
+                    depends_on=[],
+                    instructions=msg,
+                )
+            ]
+
+        else:
+            # ns == CLARIFY was handled above via intent == CLARIFY
+            # but keep a safe fallback:
+            steps = [
+                self._step_synthesize(
+                    step_id=StepId.DRAFT,
+                    depends_on=[],
+                    instructions=msg,
+                )
+            ]
+
+        # DYNAMIC plans do NOT have to end with FINALIZE_ANSWER.
+        return self._wrap(
+            intent=intent,
+            mode=PlanMode.ITERATE,
+            steps=steps,
+            plan_id=pid,
+            enforce_finalize=False,
+        )
+
+
+
+    def _hints_from_engine_plan(self, plan: EnginePlan) -> EngineHints:
+        return EngineHints(
+            enable_websearch=bool(plan.use_websearch),
+            enable_ltm=bool(plan.use_user_longterm_memory),
+            enable_rag=bool(plan.use_rag),
+            enable_tools=bool(plan.use_tools),
+            intent=plan.intent,
+            intent_reason=(plan.reasoning_summary or None),
+        )
+    
+
+    def _chain_pre_steps(self, steps: List[ExecutionStep]) -> List[ExecutionStep]:
+        """
+        Ensure deterministic sequential execution for pre-steps:
+        steps[0].depends_on stays as-is (expected empty),
+        steps[i].depends_on = [steps[i-1].step_id] for i>0.
+        """
+        if not steps:
+            return steps
+
+        # First step: enforce no deps (pre-steps start the chain)
+        steps[0].depends_on = []
+
+        for i in range(1, len(steps)):
+            steps[i].depends_on = [steps[i - 1].step_id]
+
+        return steps
+  
+
+    def _plan_clarify_with_question(self, msg: str, *, plan_id: str, question: str) -> ExecutionPlan:
+        steps: List[ExecutionStep] = [
+            self._step_clarify(
+                step_id=StepId.CLARIFY,
+                depends_on=[],
+                question=question,
+            )
+        ]
+        return self._wrap(
+            plan_id=plan_id,
+            intent=PlanIntent.CLARIFY,
+            mode=PlanMode.CLARIFY,
+            steps=steps,
+        )
+
+
+    def build_from_hints(
         self,
         *,
         user_message: str,
@@ -16335,51 +16597,168 @@ class StepPlanner:
         if intent == PlanIntent.FRESHNESS:
             # If upstream asked for freshness but websearch disabled -> degrade safely
             if hints.enable_websearch:
-                return self._plan_freshness(msg, plan_id=pid)
-            return self._plan_generic(msg, plan_id=pid)
+                return self._plan_freshness_with_hints(msg, plan_id=pid, hints=hints)
+            return self._plan_generic_with_hints(msg, plan_id=pid, hints=hints)
 
         if intent == PlanIntent.PROJECT_ARCHITECTURE:
             if hints.enable_ltm:
-                return self._plan_project(msg, plan_id=pid)
-            return self._plan_generic(msg, plan_id=pid)
+                return self._plan_project_with_hints(msg, plan_id=pid, hints=hints)
+            return self._plan_generic_with_hints(msg, plan_id=pid, hints=hints)
+
 
         # GENERIC default
-        return self._plan_generic(msg, plan_id=pid)
+        return self._plan_generic_with_hints(msg, plan_id=pid, hints=hints)
+
+
+    def _build_execute_tail(
+        self,
+        *,
+        msg: str,
+        depends_on: List[StepId],
+    ) -> List[ExecutionStep]:
+        """
+        Standard EXECUTE tail: DRAFT -> VERIFY -> FINAL.
+        `depends_on` defines what DRAFT depends on (can be empty).
+        """
+        steps: List[ExecutionStep] = [
+            self._step_synthesize(step_id=StepId.DRAFT, depends_on=depends_on, instructions=msg),
+            self._step_verify(depends_on=[StepId.DRAFT], criteria=self._default_verify_criteria(msg), strict=True),
+            self._step_finalize(depends_on=[StepId.VERIFY], instructions=msg),
+        ]
+        return steps
+
 
     # -----------------------------
     # Plan builders
     # -----------------------------
 
-    def _plan_generic(self, msg: str, *, plan_id: str) -> ExecutionPlan:
-        steps: List[ExecutionStep] = [
-            self._step_synthesize(step_id=StepId.DRAFT, depends_on=[], instructions=msg),
-            self._step_verify(depends_on=[StepId.DRAFT], criteria=self._default_verify_criteria(msg), strict=True),
-            self._step_finalize(depends_on=[StepId.VERIFY], instructions=msg),
-        ]
-        return self._wrap(plan_id=plan_id, intent=PlanIntent.GENERIC, mode=PlanMode.EXECUTE, steps=steps)
+    def _plan_freshness_with_hints(self, msg: str, *, plan_id: str, hints: EngineHints) -> ExecutionPlan:
+        pre_steps: List[ExecutionStep] = []
 
-    def _plan_freshness(self, msg: str, *, plan_id: str) -> ExecutionPlan:
-        steps: List[ExecutionStep] = [
-            self._step_websearch(step_id=StepId.WEBSEARCH, depends_on=[], query=self._web_query(msg, intent=PlanIntent.FRESHNESS)),
-            self._step_synthesize(step_id=StepId.DRAFT, depends_on=[StepId.WEBSEARCH], instructions=msg),
-            self._step_verify(depends_on=[StepId.DRAFT], criteria=self._default_verify_criteria(msg), strict=True),
-            self._step_finalize(depends_on=[StepId.VERIFY], instructions=msg),
-        ]
+        # 1) WEBSEARCH must be first for freshness (if enabled)
+        if hints.enable_websearch:
+            pre_steps.append(
+                self._step_websearch(
+                    step_id=StepId.WEBSEARCH,
+                    depends_on=[],
+                    query=self._web_query(msg, intent=PlanIntent.FRESHNESS),
+                )
+            )
+
+        # 2) Optional RAG (after websearch, before draft)
+        if hints.enable_rag:
+            pre_steps.append(
+                self._step_rag_retrieval(
+                    query=msg,
+                    step_id=StepId.RAG,
+                    depends_on=[],
+                    top_k=6,
+                )
+            )
+
+        # 3) Optional TOOLS
+        if hints.enable_tools:
+            pre_steps.append(
+                self._step_tools(
+                    step_id=StepId.TOOLS,
+                    depends_on=[],
+                    tool_input={"query": msg, "intent": str(PlanIntent.FRESHNESS)},
+                    max_tool_calls=1,
+                )
+            )
+
+        pre_steps = self._chain_pre_steps(pre_steps)
+        draft_deps = [pre_steps[-1].step_id] if pre_steps else []
+        steps = pre_steps + self._build_execute_tail(msg=msg, depends_on=draft_deps)
+
         return self._wrap(plan_id=plan_id, intent=PlanIntent.FRESHNESS, mode=PlanMode.EXECUTE, steps=steps)
 
+
+    def _plan_generic_with_hints(self, msg: str, *, plan_id: str, hints: EngineHints) -> ExecutionPlan:
+        pre_steps: List[ExecutionStep] = []
+
+        # Deterministic, conservative ordering for pre-draft:
+        # RAG -> TOOLS (web/ltm are handled by dedicated plans)
+        if hints.enable_rag:
+            pre_steps.append(
+                self._step_rag_retrieval(query=msg, step_id=StepId.RAG, depends_on=[], top_k=6)
+            )
+
+        if hints.enable_tools:
+            pre_steps.append(
+                self._step_tools(
+                    step_id=StepId.TOOLS,
+                    depends_on=[],
+                    tool_input={"query": msg, "intent": str(PlanIntent.GENERIC)},
+                    max_tool_calls=1,
+                )
+            )
+
+        pre_steps = self._chain_pre_steps(pre_steps)
+        draft_deps = [pre_steps[-1].step_id] if pre_steps else []
+        steps = pre_steps + self._build_execute_tail(msg=msg, depends_on=draft_deps)
+
+        return self._wrap(plan_id=plan_id, intent=PlanIntent.GENERIC, mode=PlanMode.EXECUTE, steps=steps)
+
+
+    def _plan_project_with_hints(self, msg: str, *, plan_id: str, hints: EngineHints) -> ExecutionPlan:
+        pre_steps: List[ExecutionStep] = []
+
+        # 1) LTM must be first for project architecture (if enabled)
+        if hints.enable_ltm:
+            pre_steps.append(
+                self._step_ltm(
+                    step_id=StepId.LTM_SEARCH,
+                    depends_on=[],
+                    query=self._ltm_query(msg, intent=PlanIntent.PROJECT_ARCHITECTURE),
+                )
+            )
+
+        # 2) Optional RAG
+        if hints.enable_rag:
+            pre_steps.append(
+                self._step_rag_retrieval(
+                    query=msg,
+                    step_id=StepId.RAG,
+                    depends_on=[],
+                    top_k=6,
+                )
+            )
+
+        # 3) Optional TOOLS
+        if hints.enable_tools:
+            pre_steps.append(
+                self._step_tools(
+                    step_id=StepId.TOOLS,
+                    depends_on=[],
+                    tool_input={"query": msg, "intent": str(PlanIntent.PROJECT_ARCHITECTURE)},
+                    max_tool_calls=1,
+                )
+            )
+
+        pre_steps = self._chain_pre_steps(pre_steps)
+        draft_deps = [pre_steps[-1].step_id] if pre_steps else []
+        steps = pre_steps + self._build_execute_tail(msg=msg, depends_on=draft_deps)
+
+        return self._wrap(plan_id=plan_id, intent=PlanIntent.PROJECT_ARCHITECTURE, mode=PlanMode.EXECUTE, steps=steps)
+
+
+    def _plan_generic(self, msg: str, *, plan_id: str) -> ExecutionPlan:
+        return self._plan_generic_with_hints(msg, plan_id=plan_id, hints=EngineHints())
+
+
+    def _plan_freshness(self, msg: str, *, plan_id: str) -> ExecutionPlan:
+        return self._plan_freshness_with_hints(msg, plan_id=plan_id, hints=EngineHints(enable_websearch=True, intent=PlanIntent.FRESHNESS))
+
+
     def _plan_project(self, msg: str, *, plan_id: str) -> ExecutionPlan:
-        steps: List[ExecutionStep] = [
-            self._step_ltm(step_id=StepId.LTM_SEARCH, depends_on=[], query=self._ltm_query(msg, intent=PlanIntent.PROJECT_ARCHITECTURE)),
-            self._step_synthesize(step_id=StepId.DRAFT, depends_on=[StepId.LTM_SEARCH], instructions=msg),
-            self._step_verify(depends_on=[StepId.DRAFT], criteria=self._default_verify_criteria(msg), strict=True),
-            self._step_finalize(depends_on=[StepId.VERIFY], instructions=msg),
-        ]
-        return self._wrap(
+        # Backward-compatible wrapper: "classic" project plan = LTM only.
+        return self._plan_project_with_hints(
+            msg,
             plan_id=plan_id,
-            intent=PlanIntent.PROJECT_ARCHITECTURE,
-            mode=PlanMode.EXECUTE,
-            steps=steps,
+            hints=EngineHints(enable_ltm=True, intent=PlanIntent.PROJECT_ARCHITECTURE),
         )
+
 
     def _plan_clarify(self, msg: str, *, plan_id: str) -> ExecutionPlan:
         steps: List[ExecutionStep] = [
@@ -16410,16 +16789,24 @@ class StepPlanner:
             max_total_tokens_output=self._cfg.max_total_tokens_output,
         )
 
+
     def _stop_conditions(self, mode: PlanMode) -> StopConditions:
-        """
-        Stop conditions used by the executor.
-        """
+        if mode == PlanMode.ITERATE:
+        # In iterative mode, we execute a single step and return to the planning loop.
+            return StopConditions(
+                max_iterations=1,
+                stop_on_verifier_pass=False,
+                stop_on_no_progress=True,
+            )
+
+        # EXECUTE (static full plan)
         return StopConditions(
-            stop_on_clarifying_question_answered=(mode == PlanMode.CLARIFY),
+            max_iterations=20,
             stop_on_verifier_pass=True,
-            stop_on_budget_exhausted=True,
+            stop_on_no_progress=True,
         )
-    
+
+
     def _web_query(self, msg: str, *, intent: PlanIntent) -> str:
         """
         Deterministic web query builder.
@@ -16436,6 +16823,7 @@ class StepPlanner:
             return f"{q} changelog release notes dates"
 
         return q
+
 
     def _ltm_query(self, msg: str, *, intent: PlanIntent) -> str:
         """
@@ -16605,6 +16993,88 @@ class StepPlanner:
                 replan_reason=None,
             ),
         )
+    
+    def _step_rag_retrieval(
+        self,
+        *,
+        query: str,
+        step_id: StepId = StepId.RAG,
+        depends_on: Optional[List[StepId]] = None,
+        top_k: int = 6,
+    ) -> ExecutionStep:
+        """
+        Retrieve context from RAG vectorstore (project / docs KB).
+        Output: ExpectedOutputType.RAG_RESULTS
+        """
+        q = (query or "").strip()
+        deps = depends_on or []
+
+        k = int(top_k) if int(top_k) > 0 else 6
+
+        return ExecutionStep(
+            step_id=step_id,
+            action=StepAction.USE_RAG_RETRIEVAL,
+            enabled=True,
+            depends_on=deps,
+            budgets=StepBudgets(top_k=k, max_chars=5000, max_tool_calls=0, max_web_queries=0),
+            inputs={},
+            params={
+                # Must match RagRetrievalParams exactly (extra=forbid): query + top_k only.
+                "query": q,
+                "top_k": k,
+            },
+            expected_output_type=ExpectedOutputType.RAG_RESULTS,
+            rationale_type=RationaleType.RETRIEVE_RAG,
+            on_failure=FailurePolicy(
+                policy=FailurePolicyKind.REPLAN,
+                max_retries=0,
+                retry_backoff_ms=0,
+                replan_reason="RAG retrieval failed",
+            ),
+        )
+
+    def _step_tools(
+        self,
+        *,
+        tool_input: Dict[str, Any],
+        step_id: StepId = StepId.TOOLS,
+        depends_on: Optional[List[StepId]] = None,
+        max_tool_calls: int = 1,
+    ) -> ExecutionStep:
+        """
+        Execute tool calling step via tools_agent.
+        Output: ExpectedOutputType.TOOLS_RESULTS
+        """
+        deps = depends_on or []
+
+        mtc = int(max_tool_calls) if int(max_tool_calls) > 0 else 1
+
+        return ExecutionStep(
+            step_id=step_id,
+            action=StepAction.USE_TOOLS,
+            enabled=True,
+            depends_on=deps,
+            budgets=StepBudgets(
+                top_k=0,
+                max_chars=5000,
+                max_tool_calls=mtc,
+                max_web_queries=0,
+            ),
+            inputs={},
+            params={
+                # Keep schema stable: executor/tools_agent will interpret this payload.
+                "input": tool_input or {},
+            },
+            expected_output_type=ExpectedOutputType.TOOLS_RESULTS,
+            rationale_type=RationaleType.RETRIEVE_TOOLS,
+            on_failure=FailurePolicy(
+                policy=FailurePolicyKind.REPLAN,
+                max_retries=0,
+                retry_backoff_ms=0,
+                replan_reason="Tools execution failed",
+            ),
+        )
+
 
     # -----------------------------
     # Wrapping helpers
@@ -16617,6 +17087,7 @@ class StepPlanner:
         mode: PlanMode,
         steps: List[ExecutionStep],
         plan_id: Optional[str],
+        enforce_finalize: bool = True,
     ) -> ExecutionPlan:
         pid = plan_id or self._new_plan_id()
 
@@ -16627,10 +17098,12 @@ class StepPlanner:
                 f"for intent={intent.value}"
             )
 
-        # Execute plans MUST end with FINALIZE_ANSWER
-        if mode == PlanMode.EXECUTE:
-            if not steps:
-                raise ValueError("StepPlanner bug: execute plan has no steps.")
+        # Execute plans must have at least one step.
+        if mode == PlanMode.EXECUTE and not steps:
+            raise ValueError("StepPlanner bug: execute plan has no steps.")
+
+        # Execute plans MUST end with FINALIZE_ANSWER only when we enforce completeness.
+        if mode == PlanMode.EXECUTE and enforce_finalize:
             if steps[-1].action != StepAction.FINALIZE_ANSWER:
                 raise ValueError(
                     f"StepPlanner bug: execute plan must end with FINALIZE_ANSWER; "
@@ -16647,6 +17120,7 @@ class StepPlanner:
             final_answer_style=self._cfg.final_answer_style,
             notes=None,
         )
+
 
 
     # -----------------------------
@@ -16677,14 +17151,19 @@ class StepPlanner:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=stepplan_models.py
-# LINES: 388
-# SHA256: c89a14855ad1479d505da942da23198817e44353387521eae9a95d875efdbbeb
+# LINES: 408
+# SHA256: e92b2b68b01ac1a07bb7311c15a43720ee1976da32e169e8ed74bfd36fc64687
 # SYMBOLS:
 #   - class StepAction
 #   - class FailurePolicyKind
 #   - class WebSearchStrategy
 #   - class OutputFormat
 #   - class PlanMode
+#   - class PlanBuildMode
+#   - class StepId
+#   - class ExpectedOutputType
+#   - class RationaleType
+#   - class VerifySeverity
 #   - class FailurePolicy
 #   - class StepBudgets
 #   - class PlanBudgets
@@ -16702,10 +17181,6 @@ class StepPlanner:
 #   - class ExecutionStep
 #   - class ExecutionPlan
 #   - class EngineHints
-#   - class StepId
-#   - class ExpectedOutputType
-#   - class RationaleType
-#   - class VerifySeverity
 # ======================================================================
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
@@ -16714,7 +17189,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -16758,6 +17233,50 @@ class OutputFormat(str, Enum):
 class PlanMode(str, Enum):
     CLARIFY = "clarify"
     EXECUTE = "execute"
+    ITERATE = "iterate"
+
+
+class PlanBuildMode(str, Enum):
+    STATIC = "static"
+    DYNAMIC = "dynamic"
+    
+    
+class StepId(str, Enum):
+    WEBSEARCH = "websearch"
+    LTM_SEARCH = "ltm_search"
+    RAG = "rag"
+    DRAFT = "draft"
+    VERIFY = "verify"
+    FINAL = "final"
+    CLARIFY = "clarify"
+    TOOLS = "tools"
+
+
+class ExpectedOutputType(str, Enum):
+    DRAFT = "draft"
+    VERIFIED = "verified"
+    FINAL = "final"
+    SEARCH_RESULTS = "search_results"
+    LTM_RESULTS = "ltm_results"
+    CLARIFYING_QUESTION = "clarifying_question"
+    RAG_RESULTS = "rag_results" 
+    TOOLS_RESULTS = "tools_results"
+
+
+class RationaleType(str, Enum):
+    PRODUCE_DRAFT = "produce_draft"
+    VERIFY_QUALITY = "verify_quality"
+    FINALIZE = "finalize"
+    RETRIEVE_WEB = "retrieve_web"
+    RETRIEVE_LTM = "retrieve_ltm"
+    ASK_CLARIFICATION = "ask_clarification"
+    RETRIEVE_RAG = "retrieve_rag"
+    RETRIEVE_TOOLS = "retrieve_tools" 
+
+
+class VerifySeverity(str, Enum):
+    ERROR = "error"
+    WARN = "warn"
 
 
 # -----------------------------
@@ -16939,24 +17458,22 @@ class ExecutionStep(BaseModel):
 
     @field_validator("depends_on", mode="before")
     @classmethod
-    def _depends_on_to_list(cls, v: Any) -> List[str]:
+    def _depends_on_to_list(cls, v: Any) -> List[StepId]:
         if v is None:
             return []
-
-        def to_str(x: Any) -> str:
-            # prefer Enum.value over str(EnumMember)
-            if isinstance(x, Enum):
-                return str(x.value)
-            return str(x)
-
         if isinstance(v, list):
-            return [to_str(x) for x in v]
-
-        # common mistake: single value instead of list
-        return [to_str(v)]
+            out: List[StepId] = []
+            for it in v:
+                if it is None:
+                    continue
+                # allow StepId or str
+                out.append(it if isinstance(it, StepId) else StepId(str(it)))
+            return out
+        # single item
+        return [v if isinstance(v, StepId) else StepId(str(v))]
 
     @model_validator(mode="after")
-    def _validate_params_match_action(self) -> "ExecutionStep":
+    def _validate_params_match_action(self) -> ExecutionStep:
         """
         Validate 'params' dict shape by action and reject missing/extra keys.
         """
@@ -17017,19 +17534,25 @@ class ExecutionPlan(BaseModel):
                     raise ValueError(f"Step '{s.step_id}' has forward/invalid dependency '{dep}'.")
             seen.add(s.step_id)
 
-        # 4) Mode constraints
+        # 4) Mode constraints        
         if self.mode == PlanMode.EXECUTE:
             if self.steps[-1].action != StepAction.FINALIZE_ANSWER:
                 raise ValueError("Execute mode must end with FINALIZE_ANSWER.")
+
+        elif self.mode == PlanMode.ITERATE:
+            # Iteration plans may contain 1+ steps and do NOT have to end with FINALIZE_ANSWER.
+            # They are intended for dynamic planning loops.
+            pass
+
         elif self.mode == PlanMode.CLARIFY:
             if self.steps[0].action != StepAction.ASK_CLARIFYING_QUESTION:
                 raise ValueError("Clarify mode must start with ASK_CLARIFYING_QUESTION.")
-            # Clarify mode cannot include retrieval/tools steps
             for s in self.steps:
                 if s.action in _RETRIEVAL_OR_TOOLS_ACTIONS:
                     raise ValueError("Clarify mode cannot include retrieval/tools steps.")
         else:
             raise ValueError(f"Unsupported mode: {self.mode}")
+
 
         # 5) Websearch ordering: if present, it must occur before first SYNTHESIZE_DRAFT
         web_idx = None
@@ -17067,34 +17590,6 @@ class EngineHints:
     intent_reason: Optional[str] = None
 
 
-class StepId(str, Enum):
-    WEBSEARCH = "websearch"
-    LTM_SEARCH = "ltm_search"
-    DRAFT = "draft"
-    VERIFY = "verify"
-    FINAL = "final"
-    CLARIFY = "clarify"
-
-
-class ExpectedOutputType(str, Enum):
-    DRAFT = "draft"
-    VERIFIED = "verified"
-    FINAL = "final"
-    SEARCH_RESULTS = "search_results"
-    LTM_RESULTS = "ltm_results"
-    CLARIFYING_QUESTION = "clarifying_question"
-
-class RationaleType(str, Enum):
-    PRODUCE_DRAFT = "produce_draft"
-    VERIFY_QUALITY = "verify_quality"
-    FINALIZE = "finalize"
-    RETRIEVE_WEB = "retrieve_web"
-    RETRIEVE_LTM = "retrieve_ltm"
-    ASK_CLARIFICATION = "ask_clarification"
-
-class VerifySeverity(str, Enum):
-    ERROR = "error"
-    WARN = "warn"
 
 # ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/prompts/__init__.py

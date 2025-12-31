@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -49,6 +49,50 @@ class OutputFormat(str, Enum):
 class PlanMode(str, Enum):
     CLARIFY = "clarify"
     EXECUTE = "execute"
+    ITERATE = "iterate"
+
+
+class PlanBuildMode(str, Enum):
+    STATIC = "static"
+    DYNAMIC = "dynamic"
+    
+    
+class StepId(str, Enum):
+    WEBSEARCH = "websearch"
+    LTM_SEARCH = "ltm_search"
+    RAG = "rag"
+    DRAFT = "draft"
+    VERIFY = "verify"
+    FINAL = "final"
+    CLARIFY = "clarify"
+    TOOLS = "tools"
+
+
+class ExpectedOutputType(str, Enum):
+    DRAFT = "draft"
+    VERIFIED = "verified"
+    FINAL = "final"
+    SEARCH_RESULTS = "search_results"
+    LTM_RESULTS = "ltm_results"
+    CLARIFYING_QUESTION = "clarifying_question"
+    RAG_RESULTS = "rag_results" 
+    TOOLS_RESULTS = "tools_results"
+
+
+class RationaleType(str, Enum):
+    PRODUCE_DRAFT = "produce_draft"
+    VERIFY_QUALITY = "verify_quality"
+    FINALIZE = "finalize"
+    RETRIEVE_WEB = "retrieve_web"
+    RETRIEVE_LTM = "retrieve_ltm"
+    ASK_CLARIFICATION = "ask_clarification"
+    RETRIEVE_RAG = "retrieve_rag"
+    RETRIEVE_TOOLS = "retrieve_tools" 
+
+
+class VerifySeverity(str, Enum):
+    ERROR = "error"
+    WARN = "warn"
 
 
 # -----------------------------
@@ -230,24 +274,22 @@ class ExecutionStep(BaseModel):
 
     @field_validator("depends_on", mode="before")
     @classmethod
-    def _depends_on_to_list(cls, v: Any) -> List[str]:
+    def _depends_on_to_list(cls, v: Any) -> List[StepId]:
         if v is None:
             return []
-
-        def to_str(x: Any) -> str:
-            # prefer Enum.value over str(EnumMember)
-            if isinstance(x, Enum):
-                return str(x.value)
-            return str(x)
-
         if isinstance(v, list):
-            return [to_str(x) for x in v]
-
-        # common mistake: single value instead of list
-        return [to_str(v)]
+            out: List[StepId] = []
+            for it in v:
+                if it is None:
+                    continue
+                # allow StepId or str
+                out.append(it if isinstance(it, StepId) else StepId(str(it)))
+            return out
+        # single item
+        return [v if isinstance(v, StepId) else StepId(str(v))]
 
     @model_validator(mode="after")
-    def _validate_params_match_action(self) -> "ExecutionStep":
+    def _validate_params_match_action(self) -> ExecutionStep:
         """
         Validate 'params' dict shape by action and reject missing/extra keys.
         """
@@ -308,19 +350,25 @@ class ExecutionPlan(BaseModel):
                     raise ValueError(f"Step '{s.step_id}' has forward/invalid dependency '{dep}'.")
             seen.add(s.step_id)
 
-        # 4) Mode constraints
+        # 4) Mode constraints        
         if self.mode == PlanMode.EXECUTE:
             if self.steps[-1].action != StepAction.FINALIZE_ANSWER:
                 raise ValueError("Execute mode must end with FINALIZE_ANSWER.")
+
+        elif self.mode == PlanMode.ITERATE:
+            # Iteration plans may contain 1+ steps and do NOT have to end with FINALIZE_ANSWER.
+            # They are intended for dynamic planning loops.
+            pass
+
         elif self.mode == PlanMode.CLARIFY:
             if self.steps[0].action != StepAction.ASK_CLARIFYING_QUESTION:
                 raise ValueError("Clarify mode must start with ASK_CLARIFYING_QUESTION.")
-            # Clarify mode cannot include retrieval/tools steps
             for s in self.steps:
                 if s.action in _RETRIEVAL_OR_TOOLS_ACTIONS:
                     raise ValueError("Clarify mode cannot include retrieval/tools steps.")
         else:
             raise ValueError(f"Unsupported mode: {self.mode}")
+
 
         # 5) Websearch ordering: if present, it must occur before first SYNTHESIZE_DRAFT
         web_idx = None
@@ -358,31 +406,3 @@ class EngineHints:
     intent_reason: Optional[str] = None
 
 
-class StepId(str, Enum):
-    WEBSEARCH = "websearch"
-    LTM_SEARCH = "ltm_search"
-    DRAFT = "draft"
-    VERIFY = "verify"
-    FINAL = "final"
-    CLARIFY = "clarify"
-
-
-class ExpectedOutputType(str, Enum):
-    DRAFT = "draft"
-    VERIFIED = "verified"
-    FINAL = "final"
-    SEARCH_RESULTS = "search_results"
-    LTM_RESULTS = "ltm_results"
-    CLARIFYING_QUESTION = "clarifying_question"
-
-class RationaleType(str, Enum):
-    PRODUCE_DRAFT = "produce_draft"
-    VERIFY_QUALITY = "verify_quality"
-    FINALIZE = "finalize"
-    RETRIEVE_WEB = "retrieve_web"
-    RETRIEVE_LTM = "retrieve_ltm"
-    ASK_CLARIFICATION = "ask_clarification"
-
-class VerifySeverity(str, Enum):
-    ERROR = "error"
-    WARN = "warn"
