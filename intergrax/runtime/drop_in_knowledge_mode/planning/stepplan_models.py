@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import PlanIntent
+
 
 # -----------------------------
 # Enums
@@ -362,13 +364,6 @@ class StepId(str, Enum):
     DRAFT = "draft"
     VERIFY = "verify"
     FINAL = "final"
-    CLARIFY = "clarify"
-
-
-class PlanIntent(str, Enum):
-    GENERIC = "generic"
-    FRESHNESS = "freshness"
-    PROJECT_ARCHITECTURE = "project_architecture"
     CLARIFY = "clarify"
 
 
