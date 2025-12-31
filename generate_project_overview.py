@@ -33,7 +33,9 @@ from typing import List, Optional, Sequence
 from tqdm.auto import tqdm
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.llm_adapters import LangChainOllamaAdapter
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.llm_provider import LLMProvider
+from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 
 
 @dataclass
@@ -73,7 +75,7 @@ class SimpleChatMessage:
 class ProjectStructureDocumenter:
     def __init__(
         self,
-        adapter: LangChainOllamaAdapter,
+        adapter: LLMAdapter,
         config: Optional[ProjectOverviewConfig] = None,
     ):
         self.adapter = adapter
@@ -220,13 +222,7 @@ CONTENT:
 # Standalone CLI usage
 # ================================
 if __name__ == "__main__":
-    from langchain_ollama import ChatOllama
-
-    adapter = LangChainOllamaAdapter(
-        chat=ChatOllama(
-            model=GLOBAL_SETTINGS.default_ollama_model
-        )
-    )
+    adapter = LLMAdapterRegistry.create(LLMProvider.OLLAMA)
 
     config = ProjectOverviewConfig(
         root_dir=Path(".").resolve(),
