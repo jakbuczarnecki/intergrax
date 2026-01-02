@@ -105,7 +105,13 @@ class StepPlanner:
             q = (engine_plan.clarifying_question or "").strip()
             if not q:
                 q = self._clarifying_question(msg)
-            return self._plan_clarify_with_question(msg, plan_id=pid, question=q)
+
+            if build_mode == PlanBuildMode.STATIC:
+                # STATIC must be an EXECUTE plan and end with FINAL
+                return self._plan_clarify_execute_with_question(msg, plan_id=pid, question=q)
+
+            # DYNAMIC must be ITERATE and can be single-step
+            return self._plan_clarify_iterate_with_question(msg, plan_id=pid, question=q)
 
         if build_mode == PlanBuildMode.STATIC:
             return self.build_from_hints(
@@ -113,7 +119,7 @@ class StepPlanner:
                 engine_hints=hints,
                 plan_id=pid,
             )
-
+        
         # DYNAMIC: one-step plan based on engine_plan.next_step
         ns = engine_plan.next_step
         if ns is None:
@@ -223,22 +229,33 @@ class StepPlanner:
             steps[i].depends_on = [steps[i - 1].step_id]
 
         return steps
-  
-
-    def _plan_clarify_with_question(self, msg: str, *, plan_id: str, question: str) -> ExecutionPlan:
+    
+    def _plan_clarify_execute_with_question(self, msg: str, *, plan_id: str, question: str) -> ExecutionPlan:
         steps: List[ExecutionStep] = [
-            self._step_clarify(
-                step_id=StepId.CLARIFY,
-                depends_on=[],
-                question=question,
-            )
+            self._step_clarify(step_id=StepId.CLARIFY, depends_on=[], question=question),
+            # FINAL ensures a consistent "output step" and keeps invariant "plan ends with FINAL"
+            self._step_finalize(depends_on=[StepId.CLARIFY], instructions=question),
         ]
         return self._wrap(
             plan_id=plan_id,
             intent=PlanIntent.CLARIFY,
-            mode=PlanMode.CLARIFY,
+            mode=PlanMode.EXECUTE,
             steps=steps,
+            enforce_finalize=True,
         )
+
+    def _plan_clarify_iterate_with_question(self, msg: str, *, plan_id: str, question: str) -> ExecutionPlan:
+        steps: List[ExecutionStep] = [
+            self._step_clarify(step_id=StepId.CLARIFY, depends_on=[], question=question),
+        ]
+        return self._wrap(
+            plan_id=plan_id,
+            intent=PlanIntent.CLARIFY,
+            mode=PlanMode.ITERATE,
+            steps=steps,
+            enforce_finalize=False,
+        )
+
 
 
     def build_from_hints(
@@ -429,19 +446,10 @@ class StepPlanner:
 
 
     def _plan_clarify(self, msg: str, *, plan_id: str) -> ExecutionPlan:
-        steps: List[ExecutionStep] = [
-            self._step_clarify(
-                step_id=StepId.CLARIFY,
-                depends_on=[],
-                question=self._clarifying_question(msg),
-            )
-        ]
-        return self._wrap(
-            plan_id=plan_id,
-            intent=PlanIntent.CLARIFY,
-            mode=PlanMode.CLARIFY,
-            steps=steps,
-        )
+        q = self._clarifying_question(msg)
+        return self._plan_clarify_execute_with_question(msg, plan_id=plan_id, question=q)
+
+
     
 
     def _plan_budgets(self) -> PlanBudgets:
