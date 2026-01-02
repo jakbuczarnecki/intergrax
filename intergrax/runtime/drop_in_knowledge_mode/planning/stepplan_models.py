@@ -137,6 +137,9 @@ class PlanBudgets(BaseModel):
 class StopConditions(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    max_iterations: int = 20
+    stop_on_no_progress: bool = True
+
     stop_on_clarifying_question_answered: bool = True
     stop_on_verifier_pass: bool = True
     stop_on_budget_exhausted: bool = True
