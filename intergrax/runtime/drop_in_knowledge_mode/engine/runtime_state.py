@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import IngestionResult
-from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
 
 
@@ -80,3 +80,11 @@ class RuntimeState:
     cap_attachments_available: bool = False
     cap_websearch_available: bool = False
     cap_tools_available: bool = False
+
+
+    # --- Core output (pipeline contract) ---
+    # Filled by CoreLLM step
+    raw_answer: Optional[str] = None
+
+    # Filled by Persist step (final runtime output)
+    runtime_answer: Optional[RuntimeAnswer] = None

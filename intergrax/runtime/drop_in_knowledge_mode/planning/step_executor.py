@@ -7,6 +7,7 @@ import asyncio
 from dataclasses import dataclass
 from typing import Any, Dict, Mapping, Optional
 
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
     ExecutionPlan,
     ExecutionStep,
@@ -31,11 +32,11 @@ from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models impo
 
 @dataclass
 class _DefaultExecContext(StepExecutionContext):
-    _state: Any
+    _state: RuntimeState
     _results: Dict[StepId, StepExecutionResult]
 
     @property
-    def state(self) -> Any:
+    def state(self) -> RuntimeState:
         return self._state
 
     @property
@@ -65,7 +66,7 @@ class StepExecutor:
         self._registry = registry
         self._cfg = cfg or StepExecutorConfig()
 
-    async def execute(self, *, plan: ExecutionPlan, state: Any) -> PlanExecutionReport:
+    async def execute(self, *, plan: ExecutionPlan, state: RuntimeState) -> PlanExecutionReport:
         results: Dict[StepId, StepExecutionResult] = {}
         ctx = _DefaultExecContext(_state=state, _results=results)
 

@@ -277,17 +277,20 @@ class DropInKnowledgeRuntime:
         await self._step_websearch(state)
 
         # Ensure current user message
-        self._ensure_current_user_message(state)
+        await self._ensure_current_user_message(state)
 
         # Tools
         await self._step_tools(state)
 
         # Core LLM
-        answer_text = self._step_core_llm(state)
+        await self._step_core_llm(state)
 
         # Persist + RuntimeAnswer
-        runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
+        await self._step_persist_and_build_answer(state)
 
+        runtime_answer = state.runtime_answer
+        if runtime_answer is None:
+            raise RuntimeError("Persist step did not set state.runtime_answer.")
         return runtime_answer
 
 
@@ -799,7 +802,7 @@ class DropInKnowledgeRuntime:
     # Step: Ensure current user message
     # ------------------------------------------------------------------
 
-    def _ensure_current_user_message(self, state: RuntimeState) -> None:
+    async def _ensure_current_user_message(self, state: RuntimeState) -> None:
         msg = (state.request.message or "").strip()
         if not msg:
             return
@@ -959,7 +962,7 @@ class DropInKnowledgeRuntime:
     # Step: Core LLM
     # ------------------------------------------------------------------
 
-    def _step_core_llm(self, state: RuntimeState) -> str:
+    async def _step_core_llm(self, state: RuntimeState) -> None:
         """
         Call the core LLM adapter and decide on the final answer text,
         possibly falling back to tools_agent_answer when needed.
@@ -978,7 +981,8 @@ class DropInKnowledgeRuntime:
                     "has_tools_agent_answer": True,
                 },
             )
-            return str(state.tools_agent_answer)
+            state.raw_answer =  str(state.tools_agent_answer)
+            return
 
         try:
             # Determine the per-request max output tokens, if any.
@@ -1016,7 +1020,7 @@ class DropInKnowledgeRuntime:
                 },
             )
             
-            return raw_answer
+            state.raw_answer = raw_answer
 
         except Exception as e:
             state.debug_trace["llm_error"] = str(e)
@@ -1034,13 +1038,14 @@ class DropInKnowledgeRuntime:
             )
 
             if state.tools_agent_answer:
-                return (
+                state.raw_answer = (
                     "[ERROR] LLM adapter failed, falling back to tools agent answer.\n"
                     f"Details: {e}\n\n"
                     f"{state.tools_agent_answer}"
                 )
+                return
 
-            return f"[ERROR] LLM adapter failed: {e}"
+            state.raw_answer = f"[ERROR] LLM adapter failed: {e}"
 
     # ------------------------------------------------------------------
     # Step: Persist answer & build RuntimeAnswer
@@ -1049,12 +1054,14 @@ class DropInKnowledgeRuntime:
     async def _step_persist_and_build_answer(
         self,
         state: RuntimeState,
-        answer_text: str,
-    ) -> RuntimeAnswer:
+    ) -> None:
         """
         Append assistant message to the session and build a RuntimeAnswer,
         including RouteInfo and RuntimeStats.
         """
+
+        answer_text = state.raw_answer
+
         # Fallback if answer is empty for any reason
         if not isinstance(answer_text, str) or not answer_text.strip():
             answer_text = (
@@ -1152,7 +1159,7 @@ class DropInKnowledgeRuntime:
             },
         )
 
-        return RuntimeAnswer(
+        state.runtime_answer = RuntimeAnswer(
             answer=answer_text,
             citations=[],
             route=route_info,
