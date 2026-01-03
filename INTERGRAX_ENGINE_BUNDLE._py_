@@ -35,14 +35,14 @@
 # - tools/
 # - websearch/
 #
-# Files included: 133
-# Total lines: 25310
+# Files included: 135
+# Total lines: 25735
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
 # ROOT: D:\Projekty\intergrax
 # PACKAGE: intergrax
-# FILES: 133
+# FILES: 135
 #
 # MODULE MAP (dynamic):
 # - chains/ (2 files)
@@ -54,7 +54,7 @@
 # - openai/ (3 files)
 # - rag/ (11 files)
 # - root/ (4 files)
-# - runtime/ (42 files)
+# - runtime/ (44 files)
 # - supervisor/ (5 files)
 # - tools/ (3 files)
 # - websearch/ (33 files)
@@ -123,9 +123,11 @@
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/attachments.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments | runtime | 124 | f1f76309b50f
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/ingestion_service.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service | runtime | 470 | f85b4e1154a7
 # - intergrax/runtime/drop_in_knowledge_mode/planning/__init__.py | intergrax.runtime.drop_in_knowledge_mode.planning | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/planning/engine_plan_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models | runtime | 317 | 917cd1f880f4
+# - intergrax/runtime/drop_in_knowledge_mode/planning/engine_plan_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models | runtime | 323 | 17f0b8c31ab4
 # - intergrax/runtime/drop_in_knowledge_mode/planning/engine_planner.py | intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner | runtime | 385 | b52a6588b3ad
 # - intergrax/runtime/drop_in_knowledge_mode/planning/plan_builder_helper.py | intergrax.runtime.drop_in_knowledge_mode.planning.plan_builder_helper | runtime | 77 | e386380d18e4
+# - intergrax/runtime/drop_in_knowledge_mode/planning/step_executor.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_executor | runtime | 279 | e4f3d52e076f
+# - intergrax/runtime/drop_in_knowledge_mode/planning/step_executor_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models | runtime | 140 | 936ad8e34fdf
 # - intergrax/runtime/drop_in_knowledge_mode/planning/step_planner.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_planner | runtime | 820 | 920e42eea374
 # - intergrax/runtime/drop_in_knowledge_mode/planning/stepplan_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models | runtime | 411 | ab165f6c4c46
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/__init__.py | intergrax.runtime.drop_in_knowledge_mode.prompts | runtime | 0 | e3b0c44298fc
@@ -194,7 +196,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 25310
+# TOTAL LINES: 25735
 # ======================================================================
 
 # ======================================================================
@@ -15694,8 +15696,8 @@ class AttachmentIngestionService:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=engine_plan_models.py
-# LINES: 317
-# SHA256: 917cd1f880f498ecc09246c6551832b1ec2946d38878e6937830a38a9bcc903d
+# LINES: 323
+# SHA256: 17f0b8c31ab45656bc9190afc89bf021e4e3b77c885f4d65251281722d8d9664
 # SYMBOLS:
 #   - class EngineNextStep
 #   - class PlanIntent
@@ -15994,7 +15996,13 @@ Capability selection (truthful, flexible):
   Set true when the answer requires:
   (A) non-websearch external actions/data sources handled by tools pipeline, OR
   (B) high-reliability deterministic transformation/validation where format correctness is critical.
-  Do NOT set use_tools=true merely because the user wants JSON; only do so if correctness/validation matters.
+
+Deterministic transformation rule (STRONG):
+- If the user provides structured input (JSON/CSV/XML/logs) AND asks to compute/transform it with exactness
+  (e.g., "exact", "only output", "sorted", "unique", "deduplicate", "extract fields", "parse", "transform"),
+  then set use_tools=true and next_step="tools" (unless tools capability is unavailable).
+- Treat "Only output the JSON array ..." + "sorted/unique/exact" as a decisive signal for tools.
+- Do NOT set use_tools=true for "please answer in JSON" if no transformation/validation is required.
 
 Websearch and Tools relationship:
 - Websearch is a separate pipeline from tools.
@@ -16509,6 +16517,464 @@ async def build_plan(
     )
 
     return engine_plan
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/planning/step_executor.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.step_executor
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=step_executor.py
+# LINES: 279
+# SHA256: e4f3d52e076f043c838a0e5337968e6b917ef3dd1f340648f526d6c886556520
+# SYMBOLS:
+#   - class _DefaultExecContext
+#   - class StepExecutor
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+import asyncio
+from dataclasses import dataclass
+from typing import Any, Dict, Mapping, Optional
+
+from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
+    ExecutionPlan,
+    ExecutionStep,
+    FailurePolicyKind,
+    StepAction,
+    StepId,
+)
+from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import (
+    PlanExecutionReport,
+    ReplanCode,
+    ReplanReason,
+    StepError,
+    StepErrorCode,
+    StepExecutionContext,
+    StepExecutionResult,
+    StepExecutorConfig,
+    StepHandlerRegistry,
+    StepReplanRequested,
+    StepStatus,
+)
+
+
+@dataclass
+class _DefaultExecContext(StepExecutionContext):
+    _state: Any
+    _results: Dict[StepId, StepExecutionResult]
+
+    @property
+    def state(self) -> Any:
+        return self._state
+
+    @property
+    def results(self) -> Mapping[StepId, StepExecutionResult]:
+        return self._results
+
+    def set_result(self, result: StepExecutionResult) -> None:
+        self._results[result.step_id] = result
+
+
+class StepExecutor:
+    """
+    Executes an ExecutionPlan deterministically.
+
+    The executor:
+      - does NOT know runtime internals,
+      - uses injected handlers (StepAction -> handler),
+      - maintains a StepId -> StepExecutionResult store for dependencies.
+    """
+
+    def __init__(
+        self,
+        *,
+        registry: StepHandlerRegistry,
+        cfg: Optional[StepExecutorConfig] = None,
+    ) -> None:
+        self._registry = registry
+        self._cfg = cfg or StepExecutorConfig()
+
+    async def execute(self, *, plan: ExecutionPlan, state: Any) -> PlanExecutionReport:
+        results: Dict[StepId, StepExecutionResult] = {}
+        ctx = _DefaultExecContext(_state=state, _results=results)
+
+        replan_reason: Optional[str] = None
+
+        for step in plan.steps:
+            if not step.enabled:
+                res = StepExecutionResult(
+                    step_id=step.step_id,
+                    action=step.action,
+                    status=StepStatus.SKIPPED,
+                    output=None,
+                    error=None,
+                    attempts=1,
+                )
+                ctx.set_result(res)
+                continue
+
+            # Dependency gate: if any dep FAILED/REPLAN -> propagate stop
+            if not self._deps_ok(step=step, results=results):
+                res = StepExecutionResult(
+                    step_id=step.step_id,
+                    action=step.action,
+                    status=StepStatus.SKIPPED,
+                    output=None,
+                    error=StepError(
+                        code=StepErrorCode.DEPENDENCY_FAILED,
+                        message="Skipped due to failed dependency.",
+                        details={"depends_on": [d.value for d in step.depends_on]},
+                    ),
+                    attempts=1,
+                )
+                ctx.set_result(res)
+                if self._cfg.fail_fast:
+                    break
+                continue
+
+            try:
+                res = await self._run_step_with_policy(step=step, ctx=ctx)
+                ctx.set_result(res)
+
+                if res.status in (StepStatus.FAILED, StepStatus.REPLAN_REQUESTED) and self._cfg.fail_fast:
+                    if res.status == StepStatus.REPLAN_REQUESTED:
+                        replan_reason = (res.error.message if res.error else None) or "replan_requested"
+                    break
+
+            except StepReplanRequested as e:
+                replan_reason = e.reason.value
+                res = StepExecutionResult(
+                    step_id=step.step_id,
+                    action=step.action,
+                    status=StepStatus.REPLAN_REQUESTED,
+                    output=None,
+                    error=StepError(
+                        code=StepErrorCode.REPLAN,
+                        message=e.reason.value,
+                        details={
+                            "replan_code": e.code.value,
+                            "replan_reason": e.reason.value,
+                            **(e.details or {}),
+                        },
+                    ),
+                    attempts=1,                    
+                )
+                ctx.set_result(res)
+                break
+
+
+        # Final output: last OK output if any (runtime can override this later)
+        final_output: Optional[Any] = None
+        final_step = next(
+            (s for s in reversed(plan.steps) if s.action == StepAction.FINALIZE_ANSWER),
+            None,
+        )
+        if final_step is not None:
+            r = results.get(final_step.step_id)
+            if r is not None and r.status == StepStatus.OK:
+                final_output = r.output
+
+        has_failed = any(r.status == StepStatus.FAILED for r in results.values())
+        has_replan = any(r.status == StepStatus.REPLAN_REQUESTED for r in results.values())
+        has_skipped_error = any(
+            (r.status == StepStatus.SKIPPED and r.error is not None) for r in results.values()
+        )
+
+        ok = (replan_reason is None) and (not has_failed) and (not has_replan) and (not has_skipped_error)
+
+        # If plan includes FINALIZE_ANSWER, require it to be OK for ok=True
+        final_step = next(
+            (s for s in reversed(plan.steps) if s.action == StepAction.FINALIZE_ANSWER),
+            None,
+        )
+        if ok and final_step is not None:
+            fr = results.get(final_step.step_id)
+            if fr is None or fr.status != StepStatus.OK:
+                ok = False
+
+
+        return PlanExecutionReport(
+            plan_id=plan.plan_id,
+            ok=ok,
+            step_results=results,
+            final_output=final_output,
+            replan_reason=replan_reason,
+        )
+
+    def _deps_ok(self, *, step: ExecutionStep, results: Mapping[StepId, StepExecutionResult]) -> bool:
+        for dep in step.depends_on:
+            r = results.get(dep)
+            if r is None:
+                raise RuntimeError(
+                    f"Missing dependency result: step={step.step_id.value} depends_on={dep.value}"
+                )
+            if r.status in (StepStatus.FAILED, StepStatus.REPLAN_REQUESTED):
+                return False
+        return True
+
+
+    async def _run_step_with_policy(self, *, step: ExecutionStep, ctx: StepExecutionContext) -> StepExecutionResult:
+        policy = step.on_failure.policy
+        max_retries = int(step.on_failure.max_retries)
+        backoff_ms = int(step.on_failure.retry_backoff_ms)
+
+        # attempts = 1 + retries, but hard capped
+        allowed_attempts = min(1 + max_retries, int(self._cfg.max_attempts_hard_cap))
+
+        last_err: Optional[StepError] = None
+
+        for attempt in range(1, allowed_attempts + 1):
+            try:
+                handler = self._registry.get(step.action)
+                res = await handler(step, ctx)
+
+                if res is None:
+                    raise RuntimeError("StepHandler returned None (expected StepExecutionResult).")
+
+                if res.step_id != step.step_id:
+                    raise RuntimeError(
+                        f"StepHandler returned mismatched step_id: got={res.step_id.value} expected={step.step_id.value}"
+                    )
+
+                if res.action != step.action:
+                    raise RuntimeError(
+                        f"StepHandler returned mismatched action: got={res.action.value} expected={step.action.value}"
+                    )
+
+                # normalize attempts
+                if res.attempts != attempt:
+                    res = StepExecutionResult(
+                        step_id=res.step_id,
+                        action=res.action,
+                        status=res.status,
+                        output=res.output,
+                        error=res.error,
+                        attempts=attempt,
+                    )
+                return res
+
+            except StepReplanRequested:
+                # bubble up; executor will record it
+                raise
+
+            except Exception as e:
+                last_err = StepError(
+                    code=StepErrorCode.HANDLER_EXCEPTION,
+                    message=str(e),
+                    details={"action": step.action.value, "step_id": step.step_id.value},
+                )
+
+                if attempt < allowed_attempts and policy == FailurePolicyKind.RETRY:
+                    if backoff_ms > 0:
+                        await asyncio.sleep(backoff_ms / 1000.0)
+                    continue
+
+                # terminal based on policy
+                if policy == FailurePolicyKind.SKIP:
+                    return StepExecutionResult(
+                        step_id=step.step_id,
+                        action=step.action,
+                        status=StepStatus.SKIPPED,
+                        output=None,
+                        error=last_err,
+                        attempts=attempt,
+                    )
+
+                if policy == FailurePolicyKind.REPLAN:
+                    raise StepReplanRequested(
+                        code=ReplanCode.STEP_POLICY_REPLAN,
+                        reason=ReplanReason.UNSPECIFIED,
+                        details={"step_id": step.step_id.value, "action": step.action.value}
+                    )
+
+                # default FAIL
+                return StepExecutionResult(
+                    step_id=step.step_id,
+                    action=step.action,
+                    status=StepStatus.FAILED,
+                    output=None,
+                    error=last_err,
+                    attempts=attempt,
+                )
+
+        # should never reach, but keep safe
+        return StepExecutionResult(
+            step_id=step.step_id,
+            action=step.action,
+            status=StepStatus.FAILED,
+            output=None,
+            error=last_err or StepError(code=StepErrorCode.UNKNOWN, message="Unknown failure"),
+            attempts=allowed_attempts,
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/planning/step_executor_models.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=step_executor_models.py
+# LINES: 140
+# SHA256: 936ad8e34fdf931c667644283ee1040a9bdb6d9296b7f8359be8fe5060f41375
+# SYMBOLS:
+#   - class StepStatus
+#   - class ReplanCode
+#   - class ReplanReason
+#   - class StepErrorCode
+#   - class StepError
+#   - class StepExecutionResult
+#   - class PlanExecutionReport
+#   - class StepReplanRequested
+#   - class StepExecutionContext
+#   - class StepExecutorConfig
+#   - class StepHandlerRegistry
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Awaitable, Callable, Dict, Mapping, Optional, Protocol
+
+from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
+    ExecutionStep,
+    StepAction,
+    StepId,
+)
+
+
+class StepStatus(str, Enum):
+    OK = "ok"
+    SKIPPED = "skipped"
+    FAILED = "failed"
+    REPLAN_REQUESTED = "replan_requested"
+    
+
+class ReplanCode(str, Enum):
+    VERIFICATION_FAILED = "verification_failed"
+    TOOL_SCHEMA_MISMATCH = "tool_schema_mismatch"
+    MISSING_CAPABILITY = "missing_capability"
+    PLANNER_INVARIANT_VIOLATION = "planner_invariant_violation"
+    STEP_POLICY_REPLAN = "step_policy_replan"
+    UNKNOWN = "unknown"
+
+
+class ReplanReason(str, Enum):
+    RETRY_EXHAUSTED = "retry_exhausted"
+    INVALID_OUTPUT = "invalid_output"
+    DEPENDENCY_FAILED = "dependency_failed"
+    USER_CONSTRAINT_VIOLATION = "user_constraint_violation"
+    INTERNAL_ERROR = "internal_error"
+    UNSPECIFIED = "unspecified"
+
+
+class StepErrorCode(str, Enum):
+    HANDLER_EXCEPTION = "handler_exception"
+    INVALID_HANDLER_RESULT = "invalid_handler_result"
+    DEPENDENCY_MISSING = "dependency_missing"
+    DEPENDENCY_FAILED = "dependency_failed"
+    RETRY_EXHAUSTED = "retry_exhausted"
+    REPLAN = "replan"
+    INTERNAL = "internal"
+    UNKNOWN = "unknown"
+
+
+
+@dataclass(frozen=True)
+class StepError:
+    code: StepErrorCode
+    message: str
+    details: Optional[Dict[str, Any]] = None
+
+
+@dataclass(frozen=True)
+class StepExecutionResult:
+    step_id: StepId
+    action: StepAction
+    status: StepStatus
+    output: Optional[Any] = None
+    error: Optional[StepError] = None
+    attempts: int = 1
+
+
+@dataclass(frozen=True)
+class PlanExecutionReport:
+    plan_id: str
+    ok: bool
+    step_results: Dict[StepId, StepExecutionResult]
+    final_output: Optional[Any] = None
+    replan_reason: Optional[str] = None
+
+
+class StepReplanRequested(RuntimeError):
+    def __init__(
+        self,
+        *,
+        code: ReplanCode,
+        reason: ReplanReason,
+        details: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        super().__init__(f"{code.value}: {reason.value}")
+        self.code = code
+        self.reason = reason
+        self.details = details
+
+
+
+class StepExecutionContext(Protocol):
+    """
+    Minimal contract executor needs from the host system (runtime/supervisor).
+    Keep it tiny and testable.
+
+    Notes:
+    - state is intentionally opaque to the executor; it's owned by runtime.
+    - results store can be used by handlers to read dependency outputs.
+    """
+    @property
+    def state(self) -> Any: ...
+
+    @property
+    def results(self) -> Mapping[StepId, StepExecutionResult]: ...
+
+    def set_result(self, result: StepExecutionResult) -> None: ...
+
+
+StepHandler = Callable[[ExecutionStep, StepExecutionContext], Awaitable[StepExecutionResult]]
+
+
+@dataclass(frozen=True)
+class StepExecutorConfig:
+    """
+    Executor-level behavior. Keep deterministic.
+    """
+    # Global hard cap safety (even if step says retry many times)
+    max_attempts_hard_cap: int = 3
+
+    # Whether to stop execution immediately on FAILED step (even if more steps exist)
+    fail_fast: bool = True
+
+
+@dataclass(frozen=True)
+class StepHandlerRegistry:
+    """
+    Explicit mapping StepAction -> handler.
+    This replaces getattr/reflection and makes wiring obvious and testable.
+    """
+    handlers: Dict[StepAction, StepHandler]
+
+    def get(self, action: StepAction) -> StepHandler:
+        h = self.handlers.get(action)
+        if h is None:
+            raise KeyError(f"No handler registered for action={action.value}")
+        return h
 
 # ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/planning/step_planner.py

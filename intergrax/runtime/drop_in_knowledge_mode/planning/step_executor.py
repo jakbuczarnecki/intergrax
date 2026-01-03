@@ -113,7 +113,6 @@ class StepExecutor:
                     break
 
             except StepReplanRequested as e:
-                replan_reason = e.reason.value
                 res = StepExecutionResult(
                     step_id=step.step_id,
                     action=step.action,
@@ -121,17 +120,17 @@ class StepExecutor:
                     output=None,
                     error=StepError(
                         code=StepErrorCode.REPLAN,
-                        message=e.reason.value,
+                        message=f"{e.code.value}: {e.reason.value}",
                         details={
                             "replan_code": e.code.value,
                             "replan_reason": e.reason.value,
-                            **(e.details or {}),
+                            "replan_details": e.details,
                         },
                     ),
-                    attempts=1,                    
+                    attempts=1,
                 )
                 ctx.set_result(res)
-                break
+                continue
 
 
         # Final output: last OK output if any (runtime can override this later)
@@ -254,7 +253,7 @@ class StepExecutor:
                 if policy == FailurePolicyKind.REPLAN:
                     raise StepReplanRequested(
                         code=ReplanCode.STEP_POLICY_REPLAN,
-                        reason=ReplanReason.UNSPECIFIED,
+                        reason=ReplanReason.INTERNAL_ERROR,
                         details={"step_id": step.step_id.value, "action": step.action.value}
                     )
 
