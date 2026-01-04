@@ -38,11 +38,11 @@ from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import Runtim
 
 
 # ----------------------------------------------------------------------
-# DropInKnowledgeRuntime
+# RuntimeEngine
 # ----------------------------------------------------------------------
 
 
-class DropInKnowledgeRuntime:
+class RuntimeEngine:
     """
     High-level conversational runtime for the Intergrax framework.
 
@@ -97,7 +97,7 @@ class DropInKnowledgeRuntime:
         state.trace_event(
             component="engine",
             step="run_start",
-            message="DropInKnowledgeRuntime.run() called.",
+            message="RuntimeEngine.run() called.",
             data={
                 "session_id": request.session_id,
                 "user_id": request.user_id,
@@ -115,7 +115,7 @@ class DropInKnowledgeRuntime:
             state.trace_event(
                 component="engine",
                 step="run_end",
-                message="DropInKnowledgeRuntime.run() finished.",
+                message="RuntimeEngine.run() finished.",
                 data={
                     "strategy": runtime_answer.route.strategy,
                     "used_rag": runtime_answer.route.used_rag,
@@ -139,17 +139,7 @@ class DropInKnowledgeRuntime:
                 state.trace_event(
                     component="engine",
                     step="run_abort",
-                    message="DropInKnowledgeRuntime.run() aborted before RuntimeAnswer was produced.",
+                    message="RuntimeEngine.run() aborted before RuntimeAnswer was produced.",
                     data={"run_id": state.run_id},
                 )
-
-
-    def run_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
-        """
-        Synchronous wrapper around `run()`.
-
-        Useful for environments where `await` is not easily available,
-        such as simple scripts or some notebook setups.
-        """
-        return asyncio.run(self.run(request))
     
