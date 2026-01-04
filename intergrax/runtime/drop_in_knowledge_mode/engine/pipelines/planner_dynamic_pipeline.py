@@ -11,7 +11,7 @@ from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import R
 
 class PlannerDynamicPipeline(RuntimePipeline):
 
-    async def run(self, state: RuntimeState) -> RuntimeAnswer:
+    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
         raise NotImplementedError(
             "StepPlanningStrategy.DYNAMIC_LOOP is configured, but step planner is not implemented."
         ) 

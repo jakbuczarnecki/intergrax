@@ -14,12 +14,50 @@ class RuntimePipeline(ABC):
     Shared implementation: execute_pipeline.
     """
     
+    async def run(self, state: RuntimeState) -> RuntimeAnswer:
+        """
+        Public entrypoint. Provides shared validation and invariants.
+        Subclasses must implement _inner_run().
+        """
+        self._validate_state(state)
+
+        runtime_answer = await self._inner_run(state)
+
+        if runtime_answer is None:
+            raise RuntimeError("Pipeline returned None RuntimeAnswer.")
+
+        # Hard invariant: Persist step (or equivalent) must set state.runtime_answer
+        if state.runtime_answer is None:
+            raise RuntimeError("Persist step did not set state.runtime_answer.")
+
+        # Prefer the actual object returned by inner_run, but enforce consistency with state
+        # (Optional) If you want to hard-enforce object identity:
+        # if runtime_answer is not state.runtime_answer: ...
+        self._assert_valid_answer(runtime_answer)
+
+        return runtime_answer
+
+    
     @abstractmethod
-    async def run(self, state: RuntimeState) -> RuntimeAnswer:        
-        ...
+    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
+        """
+        Pipeline-specific execution. Must produce and return RuntimeAnswer.
+        """
+        raise NotImplementedError
 
 
-    async def execute_pipeline(self, steps: list[RuntimeStep], state: RuntimeState) -> None:
+    def _validate_state(self, state: RuntimeState) -> None:
+        if state is None:
+            raise ValueError("state is None.")
+        if state.context is None:
+            raise ValueError("state.context is None.")
+        if state.request is None:
+            raise ValueError("state.request is None.")
+        if not state.run_id:
+            raise ValueError("state.run_id is missing.")
+        
+
+    async def _execute_pipeline(self, steps: list[RuntimeStep], state: RuntimeState) -> None:
         for step in steps:
             step_name = step.__class__.__name__
             state.trace_event(
@@ -46,3 +84,7 @@ class RuntimePipeline(ABC):
                 message="Step finished",
                 data={}
             )
+
+    def _assert_valid_answer(self, answer: RuntimeAnswer) -> None:
+        assert answer is not None, "Pipeline returned None answer"
+        assert answer.route is not None, "RuntimeAnswer has no route"

@@ -11,7 +11,7 @@ from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import R
 
 class PlannerStaticPipeline(RuntimePipeline):
 
-    async def run(self, state: RuntimeState) -> RuntimeAnswer:
+    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
         raise NotImplementedError(
             "StepPlanningStrategy.STATIC_PLAN is configured, but step planner is not implemented."
         )

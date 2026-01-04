@@ -24,7 +24,7 @@ from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import R
 
 class NoPlannerPipeline(RuntimePipeline):
 
-    async def run(self, state: RuntimeState) -> RuntimeAnswer:
+    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
         steps = [
             SessionAndIngestStep(),
             ProfileBasedMemoryStep(),
@@ -45,7 +45,7 @@ class NoPlannerPipeline(RuntimePipeline):
             PersistAndBuildAnswerStep(),
         ]
 
-        await self.execute_pipeline(steps, state)
+        await self._execute_pipeline(steps, state)
 
         runtime_answer = state.runtime_answer
         if runtime_answer is None:
