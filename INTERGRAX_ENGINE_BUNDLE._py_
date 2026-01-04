@@ -35,14 +35,14 @@
 # - tools/
 # - websearch/
 #
-# Files included: 135
-# Total lines: 25735
+# Files included: 152
+# Total lines: 26016
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
 # ROOT: D:\Projekty\intergrax
 # PACKAGE: intergrax
-# FILES: 135
+# FILES: 152
 #
 # MODULE MAP (dynamic):
 # - chains/ (2 files)
@@ -54,7 +54,7 @@
 # - openai/ (3 files)
 # - rag/ (11 files)
 # - root/ (4 files)
-# - runtime/ (44 files)
+# - runtime/ (61 files)
 # - supervisor/ (5 files)
 # - tools/ (3 files)
 # - websearch/ (33 files)
@@ -108,7 +108,7 @@
 # - intergrax/rag/windowed_answerer.py | intergrax.rag.windowed_answerer | rag | 247 | c9a5f457c9cb
 # - intergrax/__init__.py | intergrax | root | 0 | e3b0c44298fc
 # - intergrax/chat_agent.py | intergrax.chat_agent | root | 622 | 26c7445e300e
-# - intergrax/logging.py | intergrax.logging | root | 12 | 3966fbef0c6b
+# - intergrax/logging.py | intergrax.logging | root | 11 | 1f243cc8aa59
 # - intergrax/system_prompts.py | intergrax.system_prompts | root | 84 | f66fdf33ac4c
 # - intergrax/runtime/__init__.py | intergrax.runtime | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/__init__.py | intergrax.runtime.drop_in_knowledge_mode | runtime | 0 | e3b0c44298fc
@@ -117,8 +117,25 @@
 # - intergrax/runtime/drop_in_knowledge_mode/context/context_builder.py | intergrax.runtime.drop_in_knowledge_mode.context.context_builder | runtime | 485 | 2cca85dc5dcb
 # - intergrax/runtime/drop_in_knowledge_mode/context/engine_history_layer.py | intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer | runtime | 565 | d4c1a0d530cd
 # - intergrax/runtime/drop_in_knowledge_mode/engine/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 1597 | 1b5fa9d35009
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 82 | 214f86ba4a2f
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 226 | 56e0a5f041ca
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_context.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_context | runtime | 230 | 8c778f777561
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 171 | 97c512f6593d
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/build_base_history_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.build_base_history_step | runtime | 18 | 2be250632ec9
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/contract.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract | runtime | 11 | 98bef6402285
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/core_llm_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.core_llm_step | runtime | 95 | 473febe5e9b6
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/ensure_current_user_message_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ensure_current_user_message_step | runtime | 40 | 6871578778c5
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/history_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.history_step | runtime | 62 | 3614c40a16b9
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/ingested_attachments_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ingested_attachments_step | runtime | 104 | e2ea3f078924
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/instructions_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.instructions_step | runtime | 84 | 3de4e2340ab6
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/persist_and_build_answer_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.persist_and_build_answer_step | runtime | 134 | 9511313df01b
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/profile_based_memory_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.profile_based_memory_step | runtime | 83 | efc7a68b87a6
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/rag_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.rag_step | runtime | 93 | c079859fbe82
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/session_and_ingest_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.session_and_ingest_step | runtime | 117 | 3781275bf2fb
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/tools.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools | runtime | 96 | f6d2ff1e397b
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/tools_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools_step | runtime | 157 | f15f1281f0e3
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/user_longterm_memory_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.user_longterm_memory_step | runtime | 123 | 98b9a1ee076a
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/websearch_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.websearch_step | runtime | 117 | fbc460761d88
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py | intergrax.runtime.drop_in_knowledge_mode.ingestion | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/attachments.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments | runtime | 124 | f1f76309b50f
 # - intergrax/runtime/drop_in_knowledge_mode/ingestion/ingestion_service.py | intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service | runtime | 470 | f85b4e1154a7
@@ -126,7 +143,7 @@
 # - intergrax/runtime/drop_in_knowledge_mode/planning/engine_plan_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models | runtime | 323 | 17f0b8c31ab4
 # - intergrax/runtime/drop_in_knowledge_mode/planning/engine_planner.py | intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner | runtime | 385 | b52a6588b3ad
 # - intergrax/runtime/drop_in_knowledge_mode/planning/plan_builder_helper.py | intergrax.runtime.drop_in_knowledge_mode.planning.plan_builder_helper | runtime | 77 | e386380d18e4
-# - intergrax/runtime/drop_in_knowledge_mode/planning/step_executor.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_executor | runtime | 279 | e4f3d52e076f
+# - intergrax/runtime/drop_in_knowledge_mode/planning/step_executor.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_executor | runtime | 279 | 2cfa223c796d
 # - intergrax/runtime/drop_in_knowledge_mode/planning/step_executor_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models | runtime | 140 | 936ad8e34fdf
 # - intergrax/runtime/drop_in_knowledge_mode/planning/step_planner.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_planner | runtime | 820 | 920e42eea374
 # - intergrax/runtime/drop_in_knowledge_mode/planning/stepplan_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models | runtime | 411 | ab165f6c4c46
@@ -196,7 +213,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 25735
+# TOTAL LINES: 26016
 # ======================================================================
 
 # ======================================================================
@@ -11859,8 +11876,8 @@ class ChatAgent:
 #   - package=intergrax
 #   - module_group=root
 #   - file=logging.py
-# LINES: 12
-# SHA256: 3966fbef0c6b3cf32d50106a8b534a5f3520f3be5648d9badf77f562c3c5965e
+# LINES: 11
+# SHA256: 1f243cc8aa5924ea5fc63d4a0d9601e3754d9af6ab7717e8d73d7c4f86fbb61c
 # SYMBOLS:
 #   - <none>
 # ======================================================================
@@ -11870,11 +11887,10 @@ class ChatAgent:
 
 import logging
 
-# Ustawienia globalne loggera
 logging.basicConfig(
-    level=logging.INFO,  # pokazuj INFO i wyżej (DEBUG pokaże więcej)
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    force=True  # nadpisuje poprzednie konfiguracje
+    force=True
 )
 
 # ======================================================================
@@ -13334,10 +13350,9 @@ class HistoryLayer:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime.py
-# LINES: 1597
-# SHA256: 1b5fa9d350099423c94b4d8ce26bcfeee50eb1b007572b2c7b5fd69eafa6427e
+# LINES: 226
+# SHA256: 56e0a5f041ca33984bd443b36489632c3573a7af79b36bfa377edb9f8899fd0b
 # SYMBOLS:
-#   - class LLMUsageRunRecord
 #   - class DropInKnowledgeRuntime
 # ======================================================================
 # © Artur Czarnecki. All rights reserved.
@@ -13367,72 +13382,35 @@ Refactored as a stateful pipeline:
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
-import json
-from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any
 import uuid
 
-from intergrax.llm_adapters.llm_usage_track import LLMUsageReport, LLMUsageTracker
-from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig, StepPlanningStrategy, ToolsContextScope
-from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
-from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import AttachmentIngestionService, IngestionResult
-from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import (
-    DefaultHistorySummaryPromptBuilder,
-    HistorySummaryPromptBuilder,
-)
-from intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder import (
-    DefaultRagPromptBuilder,
-    RagPromptBuilder,
-)
-from intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder import DefaultUserLongTermMemoryPromptBuilder, UserLongTermMemoryPromptBuilder
+from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.runtime.drop_in_knowledge_mode.config import StepPlanningStrategy
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_context import RuntimeContext
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.build_base_history_step import BuildBaseHistoryStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.core_llm_step import CoreLLMStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ensure_current_user_message_step import EnsureCurrentUserMessageStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.history_step import HistoryStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ingested_attachments_step import IngestedAttachmentsStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.instructions_step import InstructionsStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.profile_based_memory_step import ProfileBasedMemoryStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.rag_step import RagStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.session_and_ingest_step import SessionAndIngestStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools_step import ToolsStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.user_longterm_memory_step import UserLongtermMemoryStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.websearch_step import WebsearchStep
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
     RuntimeRequest,
     RuntimeAnswer,
-    RouteInfo,
-    RuntimeStats,
-    ToolCallInfo,
 )
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
-
-from intergrax.llm.messages import ChatMessage
-
-from intergrax.runtime.drop_in_knowledge_mode.context.context_builder import (
-    ContextBuilder,
-    RetrievedChunk,
-)
-from intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder import (
-    DefaultWebSearchPromptBuilder,
-    WebSearchPromptBuilder,
-)
-from intergrax.runtime.drop_in_knowledge_mode.session.session_manager import SessionManager
-from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
 
 # ----------------------------------------------------------------------
 # DropInKnowledgeRuntime
 # ----------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class LLMUsageRunRecord:
-    seq: int
-    ts_utc: datetime
-    run_id: str
-    session_id: str
-    user_id: str
-    report: LLMUsageReport
-
-    def pretty(self) -> str:
-        lines: List[str] = []
-        lines.append(f"Run #{self.seq}")
-        lines.append(f"  ts_utc     : {self.ts_utc.isoformat()}")
-        lines.append(f"  run_id     : {self.run_id}")
-        lines.append(f"  session_id : {self.session_id}")
-        lines.append(f"  user_id    : {self.user_id}")
-        lines.append(self.report.pretty())        
-
-        return "\n".join(lines)
 
 
 class DropInKnowledgeRuntime:
@@ -13461,66 +13439,10 @@ class DropInKnowledgeRuntime:
 
     def __init__(
         self,
-        config: RuntimeConfig,
-        session_manager: SessionManager,
-        ingestion_service: Optional[AttachmentIngestionService] = None,
-        context_builder: Optional[ContextBuilder] = None,
-        rag_prompt_builder: Optional[RagPromptBuilder] = None,
-        user_longterm_memory_prompt_builder: Optional[UserLongTermMemoryPromptBuilder] = None,
-        websearch_prompt_builder: Optional[WebSearchPromptBuilder] = None,
-        history_prompt_builder: Optional[HistorySummaryPromptBuilder] = None,
+        context: RuntimeContext
     ) -> None:
+        self.context = context
 
-        self._config = config
-        self._config.validate()
-
-        self._llm_usage_run_seq = 0
-        self._llm_usage_runs: list[LLMUsageRunRecord] = []
-
-        self._llm_usage_lock = asyncio.Lock()
-
-        self._session_manager = session_manager
-
-        self._ingestion_service = ingestion_service
-
-        self._context_builder = context_builder
-        if self._context_builder is None and self._config.enable_rag:
-           self._context_builder = ContextBuilder(
-                config=config,
-                vectorstore_manager=config.vectorstore_manager,
-            )
-            
-
-        self._rag_prompt_builder: RagPromptBuilder = (
-            rag_prompt_builder or DefaultRagPromptBuilder(config)
-        )
-
-        self._user_longterm_memory_prompt_builder = (
-            user_longterm_memory_prompt_builder
-            or DefaultUserLongTermMemoryPromptBuilder(
-                max_entries=self._config.max_longterm_entries_per_query,
-                max_chars=int(self._config.max_longterm_tokens * 4),
-            )
-        )
-
-        self._websearch_executor: Optional[WebSearchExecutor] = None
-        if self._config.enable_websearch and self._config.websearch_executor:
-            # Use user-supplied executor instance
-            self._websearch_executor = self._config.websearch_executor
-
-        self._websearch_prompt_builder: Optional[WebSearchPromptBuilder] = (
-            websearch_prompt_builder or DefaultWebSearchPromptBuilder(config)
-        )
-
-        self._history_prompt_builder: HistorySummaryPromptBuilder = (
-            history_prompt_builder or DefaultHistorySummaryPromptBuilder(config)
-        )
-
-        self._history_layer = HistoryLayer(
-            config=config,
-            session_manager=session_manager,
-            history_prompt_builder=self._history_prompt_builder,
-        )
 
     # ------------------------------------------------------------------
     # Public API
@@ -13534,44 +13456,43 @@ class DropInKnowledgeRuntime:
         run_id = f"run_{uuid.uuid4().hex}"
 
         state = RuntimeState(
+            context=self.context,
             request=request,
             run_id=run_id,
             llm_usage_tracker=LLMUsageTracker(run_id=run_id)
         )        
         
-        self.configure_llm_tracker(state)
+        state.configure_llm_tracker()
 
         # Initial trace entry for this request.
-        self._trace(
-            state,
+        state.trace_event(
             component="engine",
             step="run_start",
             message="DropInKnowledgeRuntime.run() called.",
             data={
                 "session_id": request.session_id,
                 "user_id": request.user_id,
-                "tenant_id": request.tenant_id or self._config.tenant_id,
+                "tenant_id": request.tenant_id or self.context.config.tenant_id,
                 "run_id": state.run_id,
-                "step_planning_strategy": str(self._config.step_planning_strategy),
+                "step_planning_strategy": str(self.context.config.step_planning_strategy),
             },
         )
 
-        if self._config.step_planning_strategy == StepPlanningStrategy.OFF:
+        if self.context.config.step_planning_strategy == StepPlanningStrategy.OFF:
             runtime_answer = await self._run_pipeline_no_planner(state=state)
         
-        elif self._config.step_planning_strategy == StepPlanningStrategy.STATIC_PLAN:
+        elif self.context.config.step_planning_strategy == StepPlanningStrategy.STATIC_PLAN:
             runtime_answer = await self._run_pipeline_static_plan(state)
         
-        elif self._config.step_planning_strategy == StepPlanningStrategy.DYNAMIC_LOOP:
+        elif self.context.config.step_planning_strategy == StepPlanningStrategy.DYNAMIC_LOOP:
             runtime_answer = await self._run_pipeline_dynamic_loop(state)
 
         else:
-            raise ValueError(f"Unknown step_planning_strategy: {self._config.step_planning_strategy}")
+            raise ValueError(f"Unknown step_planning_strategy: {self.context.config.step_planning_strategy}")
 
 
         # Final trace entry for this request.
-        self._trace(
-            state,
+        state.trace_event(
             component="engine",
             step="run_end",
             message="DropInKnowledgeRuntime.run() finished.",
@@ -13585,51 +13506,38 @@ class DropInKnowledgeRuntime:
             },
         )
         
-        await self.finalize_llm_tracker(state, request, runtime_answer)
+        await state.finalize_llm_tracker(request, runtime_answer)
 
         return runtime_answer
 
 
     async def _run_pipeline_no_planner(self, state: RuntimeState) -> RuntimeAnswer:
-        # Session + ingestion
-        await self._step_session_and_ingest(state)
+        
+        pipeline = [
+            SessionAndIngestStep(),
+            ProfileBasedMemoryStep(),
+            BuildBaseHistoryStep(),
+            HistoryStep(),
+            InstructionsStep(),
 
-        # Memory layer (user/org)
-        await self._step_memory_layer(state)
+            RagStep(),
+            UserLongtermMemoryStep(),
+            IngestedAttachmentsStep(),
+            WebsearchStep(),
 
-        # Build base history (load & preprocess)
-        await self._step_build_base_history(state)
+            EnsureCurrentUserMessageStep(),
 
-        # History layer (ContextBuilder / raw)
-        await self._step_history(state)
+            ToolsStep(),
+            CoreLLMStep(),
+            PersistAndBuildAnswerStep(),
+        ]
 
-        # Instructions layer (final system prompt)
-        await self._step_instructions(state)
+        await self._execute_pipeline(pipeline, state)
 
-        # RAG
-        await self._step_rag(state)
-
-        # User long-term memory
-        await self._step_user_longterm_memory(state)
-
-        # Session attachments context (retrieval from ingestion vectorstore)
-        await self._step_ingested_attachments_context(state)
-
-        # Web search
-        await self._step_websearch(state)
-
-        # Ensure current user message
-        self._ensure_current_user_message(state)
-
-        # Tools
-        await self._step_tools(state)
-
-        # Core LLM
-        answer_text = self._step_core_llm(state)
-
-        # Persist + RuntimeAnswer
-        runtime_answer = await self._step_persist_and_build_answer(state, answer_text)
-
+        runtime_answer = state.runtime_answer
+        if runtime_answer is None:
+            raise RuntimeError("Persist step did not set state.runtime_answer.")
+        
         return runtime_answer
 
 
@@ -13642,7 +13550,26 @@ class DropInKnowledgeRuntime:
         raise NotImplementedError(
             "StepPlanningStrategy.DYNAMIC_LOOP is configured, but step planner is not implemented in this session."
         )
+    
 
+    async def _execute_pipeline(self, steps: list[RuntimeStep], state: RuntimeState) -> None:
+        for step in steps:
+            step_name = step.__class__.__name__
+            state.trace_event(
+                component="runtime",
+                step=step_name,
+                message="Step started",
+                data={}
+            )
+
+            await step.run(state)
+
+            state.trace_event(
+                component="runtime",
+                step=step_name,
+                message="Step finished",
+                data={}
+            )
 
 
     def run_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
@@ -13655,1223 +13582,104 @@ class DropInKnowledgeRuntime:
         return asyncio.run(self.run(request))
     
 
-    def configure_llm_tracker(
-            self,
-            state: RuntimeState) -> None:     
-           
-        state.llm_usage_tracker.register_adapter(self._config.llm_adapter, label="core_adapter")
-
-        ta = self._config.tools_agent
-        if ta is not None and ta.llm is not None:
-            state.llm_usage_tracker.register_adapter(ta.llm, label="tools_agent")
-
-        ws = self._config.websearch_config
-        if ws is not None and ws.llm is not None:
-            if ws.llm.map_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.map_adapter, label="web_map_adapter")
-            if ws.llm.reduce_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.reduce_adapter, label="web_reduce_adapter")
-            if ws.llm.rerank_adapter is not None:
-                state.llm_usage_tracker.register_adapter(ws.llm.rerank_adapter, label="web_rerank_adapter")
-
-    
-    async def finalize_llm_tracker(
-            self,
-            state: RuntimeState,
-            request: RuntimeRequest,
-            runtime_answer: RuntimeAnswer) -> None:
-        if state.llm_usage_tracker is not None:
-            runtime_answer.llm_usage_report = state.llm_usage_tracker.build_report()
-            llm_usage_snapshot = runtime_answer.llm_usage_report.to_dict()
-            state.debug_trace["llm_usage"] = llm_usage_snapshot
-
-            if self._config.enable_llm_usage_collection and runtime_answer.llm_usage_report is not None:
-                async with self._llm_usage_lock:
-                    self._llm_usage_run_seq += 1
-                    rec = LLMUsageRunRecord(
-                        seq=self._llm_usage_run_seq,
-                        ts_utc=datetime.now(timezone.utc),
-                        run_id=state.run_id,
-                        session_id=request.session_id,
-                        user_id=request.user_id,
-                        report=runtime_answer.llm_usage_report,
-                    )
-                    self._llm_usage_runs.append(rec)
-
-
-    def _trace(
-        self,
-        state: RuntimeState,
-        *,
-        component: str,
-        step: str,
-        message: str,
-        data: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        """
-        Append a single, structured diagnostic entry to the state's debug_trace.
-
-        This helper:
-          - ensures a consistent schema for all pipeline steps,
-          - does not introspect objects (no getattr / reflection),
-          - relies only on data explicitly provided by the caller.
-        """
-        if data is None:
-            data = {}
-
-        trace = state.debug_trace
-        steps = trace.setdefault("steps", [])
-
-        steps.append(
-            {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "component": component,
-                "step": step,
-                "message": message,
-                "data": data,
-            }
-        )
-
-    # ------------------------------------------------------------------
-    # Step: session + ingestion (no history)
-    # ------------------------------------------------------------------
-
-    async def _step_session_and_ingest(self, state: RuntimeState) -> None:
-        """
-        Load or create a session, ingest attachments (RAG), append the user
-        message and initialize debug_trace.
-
-        IMPORTANT:
-          - This step does NOT load conversation history.
-          - History is loaded and preprocessed in `_step_build_base_history`.
-        """
-        req = state.request
-
-        # 1. Load or create session
-        session = await self._session_manager.get_session(req.session_id)
-        if session is None:
-            session = await self._session_manager.create_session(
-                session_id=req.session_id,
-                user_id=req.user_id,
-                tenant_id=req.tenant_id or self._config.tenant_id,
-                workspace_id=req.workspace_id or self._config.workspace_id,
-                metadata=req.metadata,
-            )
-
-        # 1a. Ingest attachments into vector store (if any)
-        ingestion_results: List[IngestionResult] = []
-        if req.attachments:
-            if self._ingestion_service is None:
-                raise ValueError(
-                    "Attachments were provided but ingestion_service is not configured. "
-                    "Pass ingestion_service explicitly to control where attachments are indexed."
-                )
-    
-            ingestion_results = await self._ingestion_service.ingest_attachments_for_session(
-                attachments=req.attachments,
-                session_id=session.id,
-                user_id=req.user_id,
-                tenant_id=session.tenant_id,
-                workspace_id=session.workspace_id,
-            )
-
-        # 2. Append user message to session history
-        user_message = self._build_session_message_from_request(req)
-        await self._session_manager.append_message(session.id, user_message)
-
-        # Reload the session to ensure we have the latest metadata
-        session = await self._session_manager.get_session(session.id) or session
-
-        # Initialize debug trace – history will be attached later
-        debug_trace: Dict[str, Any] = {
-            "session_id": session.id,
-            "user_id": session.user_id,
-        }
-
-        if ingestion_results:
-            debug_trace["ingestion"] = [
-                {
-                    "attachment_id": r.attachment_id,
-                    "attachment_type": r.attachment_type,
-                    "num_chunks": r.num_chunks,
-                    "vector_ids_count": len(r.vector_ids),
-                    "metadata": r.metadata,
-                }
-                for r in ingestion_results
-            ]
-
-        # Trace session and ingestion step.
-        self._trace(
-            state,
-            component="engine",
-            step="session_and_ingest",
-            message="Session loaded/created and user message appended; attachments ingested.",
-            data={
-                "session_id": session.id,
-                "user_id": session.user_id,
-                "tenant_id": session.tenant_id,
-                "attachments_count": len(req.attachments or []),
-                "ingestion_results_count": len(ingestion_results),
-            },
-        )
-
-        state.session = session
-        state.ingestion_results = ingestion_results
-        state.debug_trace = debug_trace
-        # NOTE: state.base_history is intentionally left empty here.
-
-    # ------------------------------------------------------------------
-    # Step: memory layer (user/org context + profile instructions)
-    # ------------------------------------------------------------------
-
-    async def _step_memory_layer(self, state: RuntimeState) -> None:
-        """
-        Load profile-based instruction fragments for this request.
-
-        Rules:
-          - Use profile memory only if enabled in RuntimeConfig.
-          - Do NOT rebuild or cache anything here yet (this is step 1 only).
-          - Extract prebuilt 'system_prompt' strings from profile bundles.
-          - Store the resulting fragments in RuntimeState so the engine
-            can merge them into a system message later.
-        """
-        session = state.session
-        assert session is not None, "Session must exist before memory layer."
-
-        cfg = self._config
-
-        user_instr: Optional[str] = None
-        org_instr: Optional[str] = None
-
-        # 1) User profile memory (optional)
-        if cfg.enable_user_profile_memory:
-            user_instr_candidate = await self._session_manager.get_user_profile_instructions_for_session(
-                session=session
-            )
-            if isinstance(user_instr_candidate, str):
-                stripped = user_instr_candidate.strip()
-                if stripped:
-                    user_instr = stripped
-                    state.used_user_profile = True
-
-        # 2) Organization profile memory (optional)
-        if cfg.enable_org_profile_memory:
-            org_instr_candidate = await self._session_manager.get_org_profile_instructions_for_session(
-                session=session
-            )
-            if isinstance(org_instr_candidate, str):
-                stripped = org_instr_candidate.strip()
-                if stripped:
-                    org_instr = stripped
-                    # For now we reuse the same flag to indicate that some profile
-                    # (user or organization) has been used.
-                    state.used_user_profile = True
-
-        # 3) Store extracted profile instruction fragments in state
-        state.profile_user_instructions = user_instr
-        state.profile_org_instructions = org_instr
-
-
-        # 4) Debug info
-        state.debug_trace["memory_layer"] = {
-            "implemented": True,
-            "has_user_profile_instructions": bool(user_instr),
-            "has_org_profile_instructions": bool(org_instr),
-            "enable_user_profile_memory": cfg.enable_user_profile_memory,
-            "enable_org_profile_memory": cfg.enable_org_profile_memory,
-        }
-
-        # Trace memory layer step.
-        self._trace(
-            state,
-            component="engine",
-            step="memory_layer",
-            message="Profile-based instructions loaded for session.",
-            data={
-                "has_user_profile_instructions": bool(user_instr),
-                "has_org_profile_instructions": bool(org_instr),
-                "enable_user_profile_memory": cfg.enable_user_profile_memory,
-                "enable_org_profile_memory": cfg.enable_org_profile_memory,
-            },
-        )
-
-    # ------------------------------------------------------------------
-    # Step: build base history (load & preprocess)
-    # ------------------------------------------------------------------
-
-    async def _step_build_base_history(self, state: RuntimeState) -> None:
-        await self._history_layer.build_base_history(state)
-
-    # ------------------------------------------------------------------
-    # Step: history
-    # ------------------------------------------------------------------
-
-    async def _step_history(self, state: RuntimeState) -> None:
-        """
-        Build conversation history for the LLM.
-
-        This step is responsible only for selecting and shaping the
-        conversational context (previous user/assistant turns).
-
-        Retrieval (RAG) is handled separately in `_step_rag`.
-        """
-        session = state.session
-        assert session is not None, "Session must be set before history step."
-        req = state.request
-        base_history = state.base_history
-
-        if self._context_builder is not None:
-            # Delegate history shaping (truncation, system message stitching, etc.)
-            # to ContextBuilder, but do NOT inject RAG here.
-            built = await self._context_builder.build_context(
-                session=session,
-                request=req,
-                base_history=base_history,
-            )
-
-            # Keep the full result for the RAG step.
-            state.context_builder_result = built
-
-            history_messages = built.history_messages or []
-            state.messages_for_llm.extend(history_messages)
-            state.built_history_messages = history_messages
-            state.history_includes_current_user = True
-            state.debug_trace["history_length"] = len(history_messages)
-        else:
-            # Fall back to using the base_history as-is (no additional
-            # history layer beyond what ContextBuilder already produced).
-            state.messages_for_llm.extend(base_history)
-            state.built_history_messages = base_history
-            state.history_includes_current_user = True
-            state.debug_trace["history_length"] = len(base_history)
-
-        # Trace history building step.
-        self._trace(
-            state,
-            component="engine",
-            step="history",
-            message="Conversation history built for LLM.",
-            data={
-                "history_length": len(state.built_history_messages),
-                "base_history_length": len(state.base_history),
-                "history_includes_current_user": state.history_includes_current_user,
-            },
-        )
-
-    # ------------------------------------------------------------------
-    # Step: RAG
-    # ------------------------------------------------------------------
-
-    async def _step_rag(self, state: RuntimeState) -> None:
-        """
-        Build RAG layer (if configured) on top of the already constructed
-        conversation history.
-
-        This step:
-          - uses the result from ContextBuilder (if available),
-          - injects RAG system and context messages,
-          - prepares a compact text summary of retrieved chunks for tools.
-        """
-        # Default values in case RAG is disabled or no chunks are retrieved.
-        state.used_rag = False
-        state.debug_trace.setdefault("rag_chunks", 0)
-
-        # If RAG is globally disabled, do nothing.
-        if not self._config.enable_rag:
-            return
-        
-    
-        if self._context_builder is None:
-            raise RuntimeError("RAG enabled but ContextBuilder is not configured.")
-
-        built = state.context_builder_result
-
-        # In normal flow _step_history should have already called build_context
-        # and stored the result. As a fallback, we can call it here.
-        if built is None:
-            session = state.session
-            assert session is not None, "Session must be set before RAG step."
-            built = await self._context_builder.build_context(
-                session=session,
-                request=state.request,
-                base_history=state.base_history,
-            )
-            state.context_builder_result = built
-
-        rag_info = built.rag_debug_info or {}
-        state.debug_trace["rag"] = rag_info
-
-        retrieved_chunks = built.retrieved_chunks or []
-        state.used_rag = bool(rag_info.get("used", bool(retrieved_chunks)))
-
-        if not state.used_rag:
-            state.debug_trace["rag_chunks"] = 0
-            return
-
-        # RAG-specific prompt construction (context messages only)
-        bundle = self._rag_prompt_builder.build_rag_prompt(built)
-
-        # Additional context messages built from retrieved chunks
-        context_messages = bundle.context_messages or []
-        self._insert_context_before_last_user(state, context_messages)
-
-        # Compact textual form of RAG context for tools agent
-        rag_context_text = self._format_rag_context(retrieved_chunks)
-        if rag_context_text:
-            state.tools_context_parts.append("RAG CONTEXT:\n" + rag_context_text)
-
-        state.debug_trace["rag_chunks"] = len(retrieved_chunks)
-
-        # Trace RAG step.
-        self._trace(
-            state,
-            component="engine",
-            step="rag",
-            message="RAG step executed.",
-            data={
-                "rag_enabled": self._config.enable_rag,
-                "used_rag": state.used_rag,
-                "retrieved_chunks": len(retrieved_chunks),
-            },
-        )
-
-    # ------------------------------------------------------------------
-    # Step: Web search
-    # ------------------------------------------------------------------
-
-    async def _step_websearch(self, state: RuntimeState) -> None:
-        """
-        Run optional web search and inject results as context messages.
-        """
-        state.websearch_debug = {}
-        state.used_websearch = False
-
-        if (
-            not self._config.enable_websearch
-            or self._websearch_executor is None
-            or self._websearch_prompt_builder is None
-        ):
-            return
-
-        try:
-            web_results = await self._websearch_executor.search_async(
-                query=state.request.message,
-                top_k=self._config.max_docs_per_query,
-                language=None,
-                top_n_fetch=None,
-            )
-
-            dbg = state.debug_trace.setdefault("websearch", {})
-
-            raw_preview = []
-            for d in (web_results or [])[:5]:
-                raw_preview.append(
-                    {
-                        "type": type(d).__name__,
-                        "title": d.title,
-                        "url": d.url,
-                        "snippet_len": len(d.snippet or ""),
-                        "text_len": len(d.text or ""),
-                    }
-                )
-
-            dbg["raw_results_preview"] = raw_preview
-
-            if not web_results:
-                return
-
-            state.used_websearch = True
-
-            bundle = await self._websearch_prompt_builder.build_websearch_prompt(
-                web_results=web_results,
-                user_query=state.request.message,
-                run_id=state.run_id,
-            )
-
-            context_messages = bundle.context_messages or []
-            self._insert_context_before_last_user(state, context_messages)
-            state.websearch_debug.update(bundle.debug_info or {})
-
-            # Debug trace (no tools coupling)
-            web_context_texts: List[str] = []
-            for msg in context_messages:
-                if msg.content:
-                    web_context_texts.append(msg.content)
-
-            dbg["context_blocks_count"] = len(web_context_texts)
-
-            # Preview only to avoid bloating trace
-            preview = "\n\n".join(web_context_texts[:1])
-            dbg["context_preview"] = preview
-            dbg["context_preview_chars"] = len(preview)
-
-            # Guardrail signal: did websearch produce any grounded evidence?
-            dbg["no_evidence"] = "No answer-relevant evidence extracted" in (preview or "")
-            state.websearch_debug["no_evidence"] = dbg["no_evidence"]
-
-            # Optional: doc-level preview (titles/urls only)
-            dbg["docs_preview"] = [
-                {
-                    "title": d.title,
-                    "url": d.url,
-                }
-                for d in (web_results or [])[:5]
-            ]
-
-        except Exception as exc:
-            state.websearch_debug["error"] = str(exc)
-
-        # Trace web search step.
-        self._trace(
-            state,
-            component="engine",
-            step="websearch",
-            message="Web search step executed.",
-            data={
-                "websearch_enabled": self._config.enable_websearch,
-                "used_websearch": state.used_websearch,
-                "has_error": "error" in (state.websearch_debug or {}),
-                "no_evidence": state.websearch_debug.get("no_evidence", False),
-            },
-        )
-
-        
-
-    # ------------------------------------------------------------------
-    # Step: Ensure current user message
-    # ------------------------------------------------------------------
-
-    def _ensure_current_user_message(self, state: RuntimeState) -> None:
-        msg = (state.request.message or "").strip()
-        if not msg:
-            return
-
-        if not state.messages_for_llm:
-            state.messages_for_llm.append(ChatMessage(role="user", content=msg))
-            return
-
-        last = state.messages_for_llm[-1]
-        last_content = (last.content or "").strip()
-
-        # If the last message already equals the current user prompt, do nothing.
-        if last.role == "user" and last_content == msg:
-            return
-
-        # Otherwise append current user prompt to enforce user-last semantics.
-        state.messages_for_llm.append(ChatMessage(role="user", content=msg))
-
-
-    # ------------------------------------------------------------------
-    # Step: Tools
-    # ------------------------------------------------------------------
-
-    async def _step_tools(self, state: RuntimeState) -> None:
-        """
-        Run tools agent (planning + tool calls) if configured.
-
-        The tools result is:
-          - optionally used as the final answer (when tools_mode != "off"),
-          - appended as system context for the core LLM.
-        """
-        state.used_tools = False
-        state.tool_traces = []
-        state.tools_agent_answer = None
-
-        use_tools = (
-            self._config.tools_agent is not None
-            and self._config.tools_mode != "off"
-        )
-        if not use_tools:
-            return
-
-        tools_context = (
-            "\n\n".join(state.tools_context_parts).strip()
-            if state.tools_context_parts
-            else None
-        )
-
-        debug_tools: Dict[str, Any] = {
-            "mode": self._config.tools_mode,
-        }
-
-        try:
-            # Decide what to pass as input_data for the tools agent.
-            if self._config.tools_context_scope == ToolsContextScope.CURRENT_MESSAGE_ONLY:
-                agent_input = state.request.message
-
-            elif self._config.tools_context_scope == ToolsContextScope.CONVERSATION:
-                # Use history built by ContextBuilder if available,
-                # otherwise fall back to base_history.
-                if state.built_history_messages:
-                    agent_input = state.built_history_messages
-                else:
-                    agent_input = state.base_history
-
-            else:
-                # FULL_CONTEXT or any future scope:
-                # pass entire message list built so far.
-                agent_input = state.messages_for_llm
-
-            tools_result = self._config.tools_agent.run(
-                input_data=agent_input,
-                context=tools_context,
-                stream=False,
-                tool_choice=None,
-                output_model=None,
-                run_id=state.run_id,
-                llm_usage_tracker = state.llm_usage_tracker
-            )
-
-            state.tools_agent_answer = tools_result.get("answer", "") or None
-            state.tool_traces = tools_result.get("tool_traces") or []
-            state.used_tools = bool(state.tool_traces)
-
-            debug_tools["used_tools"] = state.used_tools
-            debug_tools["tool_traces"] = state.tool_traces
-            if state.tools_agent_answer:
-                debug_tools["agent_answer_preview"] = str(state.tools_agent_answer)[:200]
-            if self._config.tools_mode == "required" and not state.used_tools:
-                debug_tools["warning"] = (
-                    "tools_mode='required' but no tools were invoked by the tools_agent."
-                )
-
-            # Inject executed tool calls as system context for core LLM.
-            if state.tool_traces:
-                tool_lines: List[str] = []
-                for t in state.tool_traces:
-                    name = t.get("tool")
-                    args = t.get("args")
-                    output = t.get("output")
-
-                    tool_lines.append(f"Tool '{name}' was called.")
-                    if args is not None:
-                        try:
-                            args_str = json.dumps(args, ensure_ascii=False)
-                        except Exception:
-                            args_str = str(args)
-                        tool_lines.append(f"Arguments: {args_str}")
-
-                    if output is not None:
-                        if isinstance(output, (dict, list)):
-                            try:
-                                out_str = json.dumps(output, ensure_ascii=False)
-                            except Exception:
-                                out_str = str(output)
-                        else:
-                            out_str = str(output)
-                        tool_lines.append("Output:")
-                        tool_lines.append(out_str)
-
-                    tool_lines.append("")
-
-                tools_context_for_llm = "\n".join(tool_lines).strip()
-                if tools_context_for_llm:
-                    insert_at = len(state.messages_for_llm) - 1
-                    state.messages_for_llm.insert(
-                        insert_at,
-                        ChatMessage(
-                            role="system",
-                            content=(
-                                "The following tool calls have been executed. "
-                                "Use their results when answering the user.\n\n"
-                                + tools_context_for_llm
-                            ),
-                        ),
-                    )
-
-        except Exception as e:
-            debug_tools["tools_error"] = str(e)
-
-        state.debug_trace["tools"] = debug_tools
-
-        # Trace tools step.
-        self._trace(
-            state,
-            component="engine",
-            step="tools",
-            message="Tools agent step executed.",
-            data={
-                "tools_mode": self._config.tools_mode,
-                "used_tools": state.used_tools,
-                "tool_traces_count": len(state.tool_traces),
-            },
-        )
-
-    # ------------------------------------------------------------------
-    # Step: Core LLM
-    # ------------------------------------------------------------------
-
-    def _step_core_llm(self, state: RuntimeState) -> str:
-        """
-        Call the core LLM adapter and decide on the final answer text,
-        possibly falling back to tools_agent_answer when needed.
-        """
-        # If tools were used and we have an explicit agent answer, prefer it.
-        if state.used_tools and state.tools_agent_answer:
-            # Trace the fact that we are reusing the tools agent answer
-            # instead of calling the core LLM adapter.
-            self._trace(
-                state,
-                component="engine",
-                step="core_llm",
-                message="Using tools_agent_answer as the final answer.",
-                data={
-                    "used_tools_answer": True,
-                    "has_tools_agent_answer": True,
-                },
-            )
-            return str(state.tools_agent_answer)
-
-        try:
-            # Determine the per-request max output tokens, if any.
-            max_output_tokens = state.request.max_output_tokens
-
-            generate_kwargs: Dict[str, Any] = {}
-            if max_output_tokens is not None:
-                # Pass a max_tokens hint to the adapter. If the adapter ignores
-                # it or uses a different keyword, that should be handled inside
-                # the adapter implementation.
-                generate_kwargs["max_tokens"] = max_output_tokens
-
-            msgs = state.messages_for_llm
-            if not msgs or msgs[-1].role != "user":
-                raise Exception(
-                    f"Last message must be 'user' (got: {msgs[-1].role if msgs else 'None'})."
-                )
-
-            raw_answer = self._config.llm_adapter.generate_messages(
-                state.messages_for_llm,
-                run_id=state.run_id,
-                **generate_kwargs,
-            )
-
-            self._trace(
-                state,
-                component="engine",
-                step="core_llm",
-                message="Core LLM adapter returned answer.",
-                data={
-                    "used_tools_answer": False,
-                    "adapter_return_type": "str",
-                    "answer_len": len(raw_answer),
-                    "answer_is_empty": not bool(raw_answer),
-                },
-            )
-            
-            return raw_answer
-
-        except Exception as e:
-            state.debug_trace["llm_error"] = str(e)
-
-            # Trace the error and whether a tools_agent_answer fallback is available.
-            self._trace(
-                state,
-                component="engine",
-                step="core_llm_error",
-                message="Core LLM adapter failed; falling back if possible.",
-                data={
-                    "error": str(e),
-                    "has_tools_agent_answer": bool(state.tools_agent_answer),
-                },
-            )
-
-            if state.tools_agent_answer:
-                return (
-                    "[ERROR] LLM adapter failed, falling back to tools agent answer.\n"
-                    f"Details: {e}\n\n"
-                    f"{state.tools_agent_answer}"
-                )
-
-            return f"[ERROR] LLM adapter failed: {e}"
-
-    # ------------------------------------------------------------------
-    # Step: Persist answer & build RuntimeAnswer
-    # ------------------------------------------------------------------
-
-    async def _step_persist_and_build_answer(
-        self,
-        state: RuntimeState,
-        answer_text: str,
-    ) -> RuntimeAnswer:
-        """
-        Append assistant message to the session and build a RuntimeAnswer,
-        including RouteInfo and RuntimeStats.
-        """
-        # Fallback if answer is empty for any reason
-        if not isinstance(answer_text, str) or not answer_text.strip():
-            answer_text = (
-                str(state.tools_agent_answer)
-                if state.tools_agent_answer
-                else "[ERROR] Empty answer from runtime."
-            )
-
-        session = state.session
-        assert session is not None, "Session must be set before persistence."
-
-        assistant_message = ChatMessage(
-            role="assistant",
-            content=answer_text,
-            created_at=datetime.now(timezone.utc).isoformat(),
-        )
-        await self._session_manager.append_message(session.id, assistant_message)
-
-        # Strategy label
-        if state.used_rag and state.used_websearch and state.used_tools:
-            strategy = "llm_with_rag_websearch_and_tools"
-        elif state.used_rag and state.used_tools:
-            strategy = "llm_with_rag_and_tools"
-        elif state.used_websearch and state.used_tools:
-            strategy = "llm_with_websearch_and_tools"
-        elif state.used_tools:
-            strategy = "llm_with_tools"
-        elif state.used_rag and state.used_websearch:
-            strategy = "llm_with_rag_and_websearch"
-        elif state.used_rag:
-            strategy = "llm_with_rag_context_builder"
-        elif state.used_websearch:
-            strategy = "llm_with_websearch"
-        elif state.used_attachments_context:
-            strategy = "llm_with_session_attachments"
-        elif state.ingestion_results:
-            strategy = "llm_only_with_ingestion"
-        else:
-            strategy = "llm_only"
-
-        route_info = RouteInfo(
-            used_rag=state.used_rag and self._config.enable_rag,
-            used_websearch=state.used_websearch and self._config.enable_websearch,
-            used_tools=state.used_tools and self._config.tools_mode != "off",
-            used_user_profile=state.used_user_profile,
-            used_user_longterm_memory=state.used_user_longterm_memory and self._config.enable_user_longterm_memory,
-            strategy=strategy,
-            extra={
-                "used_attachments_context": bool(state.used_attachments_context),
-                "attachments_chunks": int(state.debug_trace.get("attachments_chunks", 0) or 0),
-            },
-        )
-
-        # Token stats are still placeholders – can be wired from LLM adapter later.
-        stats = RuntimeStats(
-            total_tokens=None,
-            input_tokens=None,
-            output_tokens=None,
-            rag_tokens=None,
-            websearch_tokens=None,
-            tool_tokens=None,
-            duration_ms=None,
-            extra={},
-        )
-
-        tool_calls_for_answer: List[ToolCallInfo] = []
-        for t in state.tool_traces:
-            tool_calls_for_answer.append(
-                ToolCallInfo(
-                    tool_name=t.get("tool") or "",
-                    arguments=t.get("args") or {},
-                    result_summary=(
-                        t.get("output_preview")
-                        if isinstance(t.get("output_preview"), str)
-                        else None
-                    ),
-                    success=not bool(t.get("error")),
-                    error_message=t.get("error"),
-                    extra={"raw_trace": t},
-                )
-            )
-
-        # Trace persistence and answer building step.
-        self._trace(
-            state,
-            component="engine",
-            step="persist_and_build_answer",
-            message="Assistant answer persisted and RuntimeAnswer built.",
-            data={
-                "session_id": session.id,
-                "strategy": strategy,
-                "used_rag": state.used_rag,
-                "used_websearch": state.used_websearch,
-                "used_tools": state.used_tools,
-            },
-        )
-
-        return RuntimeAnswer(
-            answer=answer_text,
-            citations=[],
-            route=route_info,
-            tool_calls=tool_calls_for_answer,
-            stats=stats,
-            raw_model_output=None,
-            debug_trace=state.debug_trace,
-        )
-
-    # ------------------------------------------------------------------
-    # Step: instructions (final system prompt)
-    # ------------------------------------------------------------------
-
-    async def _step_instructions(self, state: RuntimeState) -> None:
-        """
-        Inject the final instructions as the first `system` message in the
-        LLM prompt, if any instructions exist.
-
-        This uses `_build_final_instructions` to combine:
-          - per-request instructions,
-          - user profile instructions,
-          - organization profile instructions.
-
-        It MUST be called AFTER the history step, so that:
-          - history can be freely trimmed/summarized,
-          - instructions are always the first system message,
-          - instructions are never persisted in SessionStore.
-        """
-        instructions_text = await self._build_final_instructions(state)
-        if not instructions_text:
-            return
-        
-        system_message = ChatMessage(role="system", content=instructions_text)
-
-        # `messages_for_llm` at this point should contain only history
-        # (built by `_step_history`). We now prepend the system message.
-        state.messages_for_llm = [system_message] + state.messages_for_llm
-
-
-    # ------------------------------------------------------------------
-    # Step: LongTerm memory RAG
-    # ------------------------------------------------------------------
-    async def _step_user_longterm_memory(self, state: RuntimeState) -> None:
-        state.used_user_longterm_memory = False
-        state.debug_trace.setdefault("user_longterm_memory_hits", 0)
-
-        if not self._config.enable_user_longterm_memory:
-            return
-
-        built = state.user_longterm_memory_result
-
-        if built is None:
-            session = state.session
-            assert session is not None, "Session must be set before user long-term memory step."
-
-            query = (state.request.message or "").strip()
-            if not query:
-                state.debug_trace["user_longterm_memory"] = {
-                    "enabled": True,
-                    "used": False,
-                    "reason": "empty_query",
-                }
-                state.debug_trace["user_longterm_memory_hits"] = 0
-                return
-
-            built = await self._session_manager.search_user_longterm_memory(
-                user_id=session.user_id,
-                query=query,
-                top_k=self._config.max_longterm_entries_per_query,
-                score_threshold=self._config.longterm_score_threshold,
-            )
-            state.user_longterm_memory_result = built
-
-        built = built or {}
-        ltm_info = built.get("debug") or {}
-        hits = built.get("hits") or []
-
-        state.debug_trace["user_longterm_memory"] = ltm_info
-        state.used_user_longterm_memory = bool(ltm_info.get("used", bool(hits)))
-
-        if not state.used_user_longterm_memory:
-            state.debug_trace["user_longterm_memory_hits"] = 0
-            return
-
-        bundle = self._user_longterm_memory_prompt_builder.build_user_longterm_memory_prompt(hits)
-        context_messages = bundle.context_messages or []
-        self._insert_context_before_last_user(state, context_messages)
-
-        # Debug trace (no tools coupling)
-        ltm_context_texts: List[str] = []
-        for msg in context_messages:
-            if msg.content:
-                ltm_context_texts.append(msg.content)
-
-        dbg = state.debug_trace.setdefault("user_longterm_memory", {})
-        # Preview only (avoid bloating trace)
-        dbg["context_blocks_count"] = len(ltm_context_texts)
-        dbg["context_preview"] = "\n\n".join(ltm_context_texts[:2])  # first 1-2 blocks is enough
-        dbg["context_preview_chars"] = len(dbg["context_preview"])
-
-        dbg["hits_preview"] = [
-            {
-                "entry_id": h.entry_id,
-                "title": getattr(h, "title", None),
-                "kind": getattr(getattr(h, "kind", None), "value", getattr(h, "kind", None)),
-                "deleted": bool(getattr(h, "deleted", False)),
-            }
-            for h in hits[:5]
-        ]
-
-        state.debug_trace["user_longterm_memory_hits"] = len(hits)
-
-        self._trace(
-            state,
-            component="engine",
-            step="user_longterm_memory",
-            message="User long-term memory step executed.",
-            data={
-                "ltm_enabled": self._config.enable_user_longterm_memory,
-                "used_user_longterm_memory": state.used_user_longterm_memory,
-                "hits": len(hits),
-            },
-        )
-
-
-    # ------------------------------------------------------------------
-    # Step: session attachments context (retrieval from ingestion store)
-    # ------------------------------------------------------------------
-
-    async def _step_ingested_attachments_context(self, state: RuntimeState) -> None:
-        """
-        Retrieve relevant chunks from session-ingested attachments (AttachmentIngestionService)
-        and inject them into the LLM context.
-
-        Key requirements:
-          - Independent from enable_rag (must work even when enable_rag=False).
-          - Reuse existing retrieval components (EmbeddingManager + VectorstoreManager.query).
-          - Filter by session_id + user_id (+ tenant/workspace if available).
-          - Inject as context messages using _insert_context_before_last_user.
-        """
-        # Defaults
-        state.used_attachments_context = False
-        state.debug_trace.setdefault("attachments_chunks", 0)
-
-        if self._ingestion_service is None:
-            state.debug_trace["attachments"] = {"used": False, "reason": "ingestion_service_not_configured"}
-            return
-
-        session = state.session
-        if session is None:
-            state.debug_trace["attachments"] = {"used": False, "reason": "session_not_initialized"}
-            return
-
-        # Retrieval (no coupling to enable_rag)
-        res = await self._ingestion_service.search_session_attachments(
-            query=state.request.message,
-            session_id=session.id,
-            user_id=state.request.user_id,
-            tenant_id=session.tenant_id,
-            workspace_id=session.workspace_id,
-            top_k=6,
-            score_threshold=None,
-        )
-
-        dbg = (res or {}).get("debug") or {}
-        used = bool((res or {}).get("used"))
-        chunks = (res or {}).get("hits") or []
-
-        state.used_attachments_context = used and bool(chunks)
-        state.debug_trace["attachments"] = {
-            **dbg,
-            "used": bool(used and chunks),
-            "hits_count": len(chunks),
-        }
-        state.debug_trace["attachments_chunks"] = len(chunks)
-
-        if not state.used_attachments_context:
-            return
-
-        # Build a single system context message (same injection pattern as RAG).
-        attachments_context_text = self._format_rag_context(chunks)
-        if not attachments_context_text.strip():
-            # If somehow chunks exist but formatting is empty, treat as unused.
-            state.used_attachments_context = False
-            state.debug_trace["attachments"] = {
-                **dbg,
-                "used": False,
-                "reason": "empty_formatted_context",
-            }
-            state.debug_trace["attachments_chunks"] = 0
-            return
-
-        content = "SESSION ATTACHMENTS (retrieved):\n" + attachments_context_text
-
-        context_messages = [
-            ChatMessage(
-                role="system",
-                content=content,
-                created_at=datetime.now(timezone.utc).isoformat(),
-            )
-        ]
-
-        self._insert_context_before_last_user(state, context_messages)
-
-        # Provide compact textual form also for tools agent (same pattern as RAG).
-        state.tools_context_parts.append("SESSION ATTACHMENTS:\n" + attachments_context_text)
-
-        # Trace step
-        self._trace(
-            state,
-            component="engine",
-            step="attachments_context",
-            message="Session attachments retrieval executed and context injected.",
-            data={
-                "used_attachments_context": state.used_attachments_context,
-                "retrieved_chunks": len(chunks),
-            },
-        )
-
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
-
-    def _format_rag_context(self, chunks: List[RetrievedChunk]) -> str:
-        """
-        Build a compact, model-friendly text block from retrieved chunks.
-
-        Design goals:
-        - Provide enough semantic context.
-        - Avoid internal markers ([CTX ...], scores, ids) that the model could
-          copy into the final answer.
-        - Keep format simple and natural.
-        """
-        if not chunks:
-            return ""
-
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_context.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_context
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=runtime_context.py
+# LINES: 230
+# SHA256: 8c778f777561e959185612ed3b52136df96ae936dba1b251a646546ba645bab8
+# SYMBOLS:
+#   - class LLMUsageRunRecord
+#   - class RuntimeContext
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+import asyncio
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import List, Optional
+from intergrax.llm_adapters.llm_usage_track import LLMUsageReport
+from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+from intergrax.runtime.drop_in_knowledge_mode.context.context_builder import ContextBuilder
+from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
+from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import AttachmentIngestionService
+from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import DefaultHistorySummaryPromptBuilder, HistorySummaryPromptBuilder
+from intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder import DefaultRagPromptBuilder, RagPromptBuilder
+from intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder import DefaultUserLongTermMemoryPromptBuilder, UserLongTermMemoryPromptBuilder
+from intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder import DefaultWebSearchPromptBuilder, WebSearchPromptBuilder
+from intergrax.runtime.drop_in_knowledge_mode.session.session_manager import SessionManager
+from intergrax.websearch.service.websearch_executor import WebSearchExecutor
+
+
+@dataclass(frozen=True)
+class LLMUsageRunRecord:
+    seq: int
+    ts_utc: datetime
+    run_id: str
+    session_id: str
+    user_id: str
+    report: LLMUsageReport
+
+    def pretty(self) -> str:
         lines: List[str] = []
-        for ch in chunks:
-            source_name = (
-                ch.metadata.get("source_name")
-                or ch.metadata.get("attachment_id")
-                or "document"
-            )
-            lines.append(f"Source: {source_name}")
-            lines.append("Excerpt:")
-            lines.append(ch.text)
-            lines.append("")  # blank line separator
+        lines.append(f"Run #{self.seq}")
+        lines.append(f"  ts_utc     : {self.ts_utc.isoformat()}")
+        lines.append(f"  run_id     : {self.run_id}")
+        lines.append(f"  session_id : {self.session_id}")
+        lines.append(f"  user_id    : {self.user_id}")
+        lines.append(self.report.pretty())        
 
         return "\n".join(lines)
 
-    def _build_session_message_from_request(
-        self,
-        request: RuntimeRequest,
-    ) -> ChatMessage:
-        """
-        Construct a ChatMessage from a RuntimeRequest to be stored in the session.
+@dataclass(frozen=False)
+class RuntimeContext:
+    """
+    Per-runtime context: resolved dependencies + configuration.
 
-        Attachments from `request.attachments` are represented at the request level
-        and can be linked via metadata if needed.
-        """
-        return ChatMessage(
-            role="user",
-            content=request.message,
-            created_at=datetime.now(timezone.utc).isoformat(),
-        )
+    This object is intended to be:
+    - configuration & dependencies are stable; diagnostics mutate
+    - reusable in tests (build() can create the same defaults as Runtime.__init__)
+    - passed to steps: step.run(state, ctx)
 
-    async def _build_final_instructions(self, state: RuntimeState) -> Optional[str]:
-        """
-        Build the final instructions string for the current request/session.
+    IMPORTANT:
+    - per-request flags/results belong to RuntimeState, not here.
+    """
 
-        Sources:
-          1) User-provided instructions from RuntimeRequest (if any).
-          2) Profile-based user instructions prepared by _step_memory_layer.
-          3) Profile-based organization instructions prepared by _step_memory_layer.
+    config: RuntimeConfig
+    session_manager: SessionManager
 
-        The result is a single, short, LLM-ready text that can be used
-        as a `system` message at the top of the prompt.
+    ingestion_service: Optional[AttachmentIngestionService]
+    context_builder: Optional[ContextBuilder]
 
-        This method:
-          - does NOT touch SessionStore,
-          - does NOT modify history,
-          - only consolidates instruction fragments already present in the state.
-        """
-        parts: List[str] = []
-        sources = {
-            "request": False,
-            "user_profile": False,
-            "organization_profile": False,
-        }
+    rag_prompt_builder: RagPromptBuilder
+    user_longterm_memory_prompt_builder: UserLongTermMemoryPromptBuilder
 
-        # 1) User-provided instructions (per-request, ChatGPT/Gemini-style)
-        if isinstance(state.request.instructions, str):
-            user_instr = state.request.instructions.strip()
-            if user_instr:
-                parts.append(user_instr)
-                sources["request"] = True
+    websearch_executor: Optional[WebSearchExecutor]
+    websearch_prompt_builder: Optional[WebSearchPromptBuilder]
 
-        # 2) User profile instructions prepared by the memory layer
-        if isinstance(state.profile_user_instructions, str):
-            profile_user = state.profile_user_instructions.strip()
-            if profile_user:
-                parts.append(profile_user)
-                sources["user_profile"] = True
+    history_prompt_builder: HistorySummaryPromptBuilder
+    history_layer: HistoryLayer
 
-        # 3) Organization profile instructions prepared by the memory layer
-        if isinstance(state.profile_org_instructions, str):
-            profile_org = state.profile_org_instructions.strip()
-            if profile_org:
-                parts.append(profile_org)
-                sources["organization_profile"] = True
-
-        if not parts:
-            state.debug_trace["instructions"] = {
-                "has_instructions": False,
-                "sources": sources,
-            }
-            return None
-
-        # Simple concatenation for now; can be replaced with more structured
-        # formatting (sections, headings) in the future.
-        final_text = "\n\n".join(parts)
-
-        state.debug_trace["instructions"] = {
-            "has_instructions": True,
-            "sources": sources,
-        }
-
-        return final_text
-    
-
-    def _format_longterm_memory_context(self, entries: List[Any]) -> str:
-        """
-        Format user long-term memory entries into a compact, prompt-ready text block.
-        Keeps engine independent from retrieval details (no embeddings/vectorstore here).
-        """
-        lines: List[str] = []
-        for e in entries:
-            entry_id = getattr(e, "entry_id", None)
-            content = (getattr(e, "content", "") or "").strip()
-            if not content:
-                continue
-            prefix = f"[LTM:{entry_id}] " if entry_id is not None else "[LTM] "
-            lines.append(prefix + content)
-
-        return "\n".join(lines).strip()
-    
-
-    def _insert_context_before_last_user(self, state: RuntimeState, msgs: List[ChatMessage]) -> None:
-        if not msgs:
-            return
-
-        # find last user message in current assembled prompt
-        last_user_idx = None
-        for i in range(len(state.messages_for_llm) - 1, -1, -1):
-            if state.messages_for_llm[i].role == "user":
-                last_user_idx = i
-                break
-
-        if last_user_idx is None:
-            # no user in prompt yet -> append (rare, but safe)
-            state.messages_for_llm.extend(msgs)
-            return
-
-        for m in msgs:
-            state.messages_for_llm.insert(last_user_idx, m)
-            last_user_idx += 1   
+    llm_usage_run_seq: int = 0
+    llm_usage_runs: List[LLMUsageRunRecord] = field(default_factory=list)
+    llm_usage_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
     async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
-        async with self._llm_usage_lock:
-            return list(self._llm_usage_runs)
+        async with self.llm_usage_lock:
+            return list(self.llm_usage_runs)
             
 
     async def clear_llm_usage_runs(self) -> None:
-        async with self._llm_usage_lock:
-            self._llm_usage_runs.clear()
-            self._llm_usage_run_seq = 0 
+        async with self.llm_usage_lock:
+            self.llm_usage_runs.clear()
+            self.llm_usage_run_seq = 0 
 
 
     async def print_usage_runs(self):
@@ -14938,6 +13746,87 @@ class DropInKnowledgeRuntime:
             print(r.pretty())
 
 
+    @classmethod
+    def build(
+        cls,
+        *,
+        config: RuntimeConfig,
+        session_manager: SessionManager,
+        ingestion_service: Optional[AttachmentIngestionService] = None,
+        context_builder: Optional[ContextBuilder] = None,
+        rag_prompt_builder: Optional[RagPromptBuilder] = None,
+        user_longterm_memory_prompt_builder: Optional[UserLongTermMemoryPromptBuilder] = None,
+        websearch_prompt_builder: Optional[WebSearchPromptBuilder] = None,
+        history_prompt_builder: Optional[HistorySummaryPromptBuilder] = None,
+    ) -> "RuntimeContext":
+        """
+        Build a fully-resolved RuntimeContext using the same resolution rules as Runtime.__init__:
+
+        - config.validate()
+        - context_builder defaults to ContextBuilder(...) when enable_rag and not provided
+        - prompt builders default to their Default* implementations
+        - websearch_executor resolved from config if enabled and provided
+        - history_layer constructed using resolved history_prompt_builder
+        """
+        config.validate()
+
+        # Resolve ContextBuilder (RAG)
+        resolved_context_builder = context_builder
+        if resolved_context_builder is None and config.enable_rag:
+            resolved_context_builder = ContextBuilder(
+                config=config,
+                vectorstore_manager=config.vectorstore_manager,
+            )
+
+        # Resolve RAG prompt builder
+        resolved_rag_prompt_builder: RagPromptBuilder = (
+            rag_prompt_builder or DefaultRagPromptBuilder(config)
+        )
+
+        # Resolve user long-term memory prompt builder
+        resolved_user_ltm_prompt_builder: UserLongTermMemoryPromptBuilder = (
+            user_longterm_memory_prompt_builder
+            or DefaultUserLongTermMemoryPromptBuilder(
+                max_entries=config.max_longterm_entries_per_query,
+                max_chars=int(config.max_longterm_tokens * 4),
+            )
+        )
+
+        # Resolve websearch executor (from config)
+        resolved_websearch_executor: Optional[WebSearchExecutor] = None
+        if config.enable_websearch and config.websearch_executor:
+            resolved_websearch_executor = config.websearch_executor
+
+        # Resolve websearch prompt builder
+        resolved_websearch_prompt_builder: Optional[WebSearchPromptBuilder] = (
+            websearch_prompt_builder or DefaultWebSearchPromptBuilder(config)
+        )
+
+        # Resolve history prompt builder
+        resolved_history_prompt_builder: HistorySummaryPromptBuilder = (
+            history_prompt_builder or DefaultHistorySummaryPromptBuilder(config)
+        )
+
+        # Build HistoryLayer using resolved builder
+        resolved_history_layer = HistoryLayer(
+            config=config,
+            session_manager=session_manager,
+            history_prompt_builder=resolved_history_prompt_builder,
+        )
+
+        return cls(
+            config=config,
+            session_manager=session_manager,
+            ingestion_service=ingestion_service,
+            context_builder=resolved_context_builder,
+            rag_prompt_builder=resolved_rag_prompt_builder,
+            user_longterm_memory_prompt_builder=resolved_user_ltm_prompt_builder,
+            websearch_executor=resolved_websearch_executor,
+            websearch_prompt_builder=resolved_websearch_prompt_builder,
+            history_prompt_builder=resolved_history_prompt_builder,
+            history_layer=resolved_history_layer,            
+        )
+
 # ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state
@@ -14946,8 +13835,8 @@ class DropInKnowledgeRuntime:
 #   - package=intergrax
 #   - module_group=runtime
 #   - file=runtime_state.py
-# LINES: 82
-# SHA256: 214f86ba4a2f0200f1be9a84e77d464f757f6265350327c80d13f351ef574874
+# LINES: 171
+# SHA256: 97c512f6593d49737fa782cad13a54c17161f9f9f2cc3188f802d556b1613f59
 # SYMBOLS:
 #   - class RuntimeState
 # ======================================================================
@@ -14957,12 +13846,15 @@ class DropInKnowledgeRuntime:
 
 from __future__ import annotations
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.runtime.drop_in_knowledge_mode.context.context_builder import BuiltContext
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_context import LLMUsageRunRecord, RuntimeContext
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import IngestionResult
-from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
 
 
@@ -14979,6 +13871,9 @@ class RuntimeState:
       - tools traces and agent answer,
       - full debug_trace for observability & diagnostics.
     """
+
+    # Context
+    context: RuntimeContext
 
     # Input
     request: RuntimeRequest
@@ -15000,7 +13895,7 @@ class RuntimeState:
     history_includes_current_user: bool = False
 
     # ContextBuilder intermediate result (history + retrieved chunks)
-    context_builder_result: Optional[Any] = None
+    context_builder_result: Optional[BuiltContext] = None
 
     # Long-term memory retrieval intermediate result (retrieved entries + context messages)
     user_longterm_memory_result: Optional[Any] = None
@@ -15033,6 +13928,1651 @@ class RuntimeState:
     cap_attachments_available: bool = False
     cap_websearch_available: bool = False
     cap_tools_available: bool = False
+
+
+    # --- Core output (pipeline contract) ---
+    # Filled by CoreLLM step
+    raw_answer: Optional[str] = None
+
+    # Filled by Persist step (final runtime output)
+    runtime_answer: Optional[RuntimeAnswer] = None
+
+
+    def trace_event(
+        self,
+        *,
+        component: str,
+        step: str,
+        message: str,
+        data: Optional[Dict[str, Any]] = None,
+        level: str = "info",
+    ) -> None:
+        """
+        Append-only event log, stored under debug_trace["events"].
+        """
+        evt = {
+            "ts_utc": datetime.now(timezone.utc).isoformat(),
+            "level": level,
+            "component": component,
+            "step": step,
+            "message": message,
+            "data": data or {},
+        }
+        self.debug_trace.setdefault("events", []).append(evt)
+
+
+    def set_debug_section(self, key: str, value: Dict[str, Any]) -> None:
+        """
+        Structured debug snapshot (non-event) for a given step.
+        """
+        self.debug_trace[key] = value
+
+
+    def set_debug_value(self, key: str, value: Any) -> None:
+        self.debug_trace[key] = value
+
+
+    def configure_llm_tracker(self) -> None:     
+
+        if self.llm_usage_tracker is None:
+            return
+           
+        self.llm_usage_tracker.register_adapter(self.context.config.llm_adapter, label="core_adapter")
+
+        ta = self.context.config.tools_agent
+        if ta is not None and ta.llm is not None:
+            self.llm_usage_tracker.register_adapter(ta.llm, label="tools_agent")
+
+        ws = self.context.config.websearch_config
+        if ws is not None and ws.llm is not None:
+            if ws.llm.map_adapter is not None:
+                self.llm_usage_tracker.register_adapter(ws.llm.map_adapter, label="web_map_adapter")
+            if ws.llm.reduce_adapter is not None:
+                self.llm_usage_tracker.register_adapter(ws.llm.reduce_adapter, label="web_reduce_adapter")
+            if ws.llm.rerank_adapter is not None:
+                self.llm_usage_tracker.register_adapter(ws.llm.rerank_adapter, label="web_rerank_adapter")
+
+    
+    async def finalize_llm_tracker(self, request: RuntimeRequest, runtime_answer: RuntimeAnswer) -> None:
+        if self.llm_usage_tracker is not None:
+            runtime_answer.llm_usage_report = self.llm_usage_tracker.build_report()
+            llm_usage_snapshot = runtime_answer.llm_usage_report.to_dict()
+            self.set_debug_value("llm_usage", llm_usage_snapshot)
+
+            if self.context.config.enable_llm_usage_collection and runtime_answer.llm_usage_report is not None:
+                async with self.context.llm_usage_lock:
+                    self.context.llm_usage_run_seq += 1
+                    rec = LLMUsageRunRecord(
+                        seq=self.context.llm_usage_run_seq,
+                        ts_utc=datetime.now(timezone.utc),
+                        run_id=self.run_id,
+                        session_id=request.session_id,
+                        user_id=request.user_id,
+                        report=runtime_answer.llm_usage_report,
+                    )
+                    self.context.llm_usage_runs.append(rec)
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/__init__.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/build_base_history_step.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.build_base_history_step
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=build_base_history_step.py
+# LINES: 18
+# SHA256: 2be250632ec9f7725e354938c5793d75c686c39d24c7850a4791c40138903fa7
+# SYMBOLS:
+#   - class BuildBaseHistoryStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+
+
+class BuildBaseHistoryStep(RuntimeStep):
+    """
+    Build base history for the session (project/user/system seed history),
+    using HistoryLayer.
+    """
+
+    async def run(self, state: RuntimeState) -> None:
+        await state.context.history_layer.build_base_history(state)
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/contract.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=contract.py
+# LINES: 11
+# SHA256: 98bef6402285705d65d61ac03cf47265e424beec53c8c50af373806a6bb6414f
+# SYMBOLS:
+#   - class RuntimeStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import Protocol
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+
+class RuntimeStep(Protocol):
+    async def run(self, state: RuntimeState) -> None:        
+        ...
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/core_llm_step.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.core_llm_step
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=core_llm_step.py
+# LINES: 95
+# SHA256: 473febe5e9b6f200d34f66417fe52eb4951c2ba96cb911957f22ed0cb1ab9d6b
+# SYMBOLS:
+#   - class CoreLLMStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Any, Dict
+
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+
+
+class CoreLLMStep(RuntimeStep):
+    """
+    Call the core LLM adapter and decide on the final answer text,
+    possibly falling back to tools_agent_answer when needed.
+    """
+
+    async def run(self, state: RuntimeState) -> None:
+        # If tools were used and we have an explicit agent answer, prefer it.
+        if state.used_tools and state.tools_agent_answer:
+            # Trace the fact that we are reusing the tools agent answer
+            # instead of calling the core LLM adapter.
+            state.trace_event(
+                component="engine",
+                step="core_llm",
+                message="Using tools_agent_answer as the final answer.",
+                data={
+                    "used_tools_answer": True,
+                    "has_tools_agent_answer": True,
+                },
+            )
+            state.raw_answer =  str(state.tools_agent_answer)
+            return
+
+        try:
+            # Determine the per-request max output tokens, if any.
+            max_output_tokens = state.request.max_output_tokens
+
+            generate_kwargs: Dict[str, Any] = {}
+            if max_output_tokens is not None:
+                # Pass a max_tokens hint to the adapter. If the adapter ignores
+                # it or uses a different keyword, that should be handled inside
+                # the adapter implementation.
+                generate_kwargs["max_tokens"] = max_output_tokens
+
+            msgs = state.messages_for_llm
+            if not msgs or msgs[-1].role != "user":
+                raise Exception(
+                    f"Last message must be 'user' (got: {msgs[-1].role if msgs else 'None'})."
+                )
+
+            raw_answer = state.context.config.llm_adapter.generate_messages(
+                state.messages_for_llm,
+                run_id=state.run_id,
+                **generate_kwargs,
+            )
+
+            state.trace_event(
+                component="engine",
+                step="core_llm",
+                message="Core LLM adapter returned answer.",
+                data={
+                    "used_tools_answer": False,
+                    "adapter_return_type": "str",
+                    "answer_len": len(raw_answer),
+                    "answer_is_empty": not bool(raw_answer),
+                },
+            )
+            
+            state.raw_answer = raw_answer
+
+        except Exception as e:
+            state.set_debug_value("llm_error", str(e))
+
+            # Trace the error and whether a tools_agent_answer fallback is available.
+            state.trace_event(
+                component="engine",
+                step="core_llm_error",
+                message="Core LLM adapter failed; falling back if possible.",
+                data={
+                    "error": str(e),
+                    "has_tools_agent_answer": bool(state.tools_agent_answer),
+                },
+            )
+
+            if state.tools_agent_answer:
+                state.raw_answer = (
+                    "[ERROR] LLM adapter failed, falling back to tools agent answer.\n"
+                    f"Details: {e}\n\n"
+                    f"{state.tools_agent_answer}"
+                )
+                return
+
+            state.raw_answer = f"[ERROR] LLM adapter failed: {e}"
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/ensure_current_user_message_step.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ensure_current_user_message_step
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=ensure_current_user_message_step.py
+# LINES: 40
+# SHA256: 6871578778c5900334d83aaba825be0b1092e82391a4c980b4386258c47b3cae
+# SYMBOLS:
+#   - class EnsureCurrentUserMessageStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+
+
+class EnsureCurrentUserMessageStep(RuntimeStep):
+    """
+    Ensure the current user message is present as the last prompt message.
+
+    Rules:
+      - If request.message is empty -> no-op.
+      - If messages_for_llm is empty -> add user message.
+      - If last message is the same user message -> no-op.
+      - Otherwise append user message to enforce user-last semantics.
+    """
+
+    async def run(self, state: RuntimeState) -> None:
+        msg = (state.request.message or "").strip()
+        if not msg:
+            return
+
+        if not state.messages_for_llm:
+            state.messages_for_llm.append(ChatMessage(role="user", content=msg))
+            return
+
+        last = state.messages_for_llm[-1]
+        last_content = (last.content or "").strip()
+
+        # If the last message already equals the current user prompt, do nothing.
+        if last.role == "user" and last_content == msg:
+            return
+
+        # Otherwise append current user prompt to enforce user-last semantics.
+        state.messages_for_llm.append(ChatMessage(role="user", content=msg))
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/history_step.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.history_step
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=history_step.py
+# LINES: 62
+# SHA256: 3614c40a16b9c2ba46f66bcac63ff345c7819e4ddd67a713784ae043cd46e5e0
+# SYMBOLS:
+#   - class HistoryStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+
+
+class HistoryStep(RuntimeStep):
+    """
+    Build conversation history for the LLM.
+
+    This step is responsible only for selecting and shaping the
+    conversational context (previous user/assistant turns).
+
+    Retrieval (RAG) is handled separately in `RagStep`.
+    """
+
+    async def run(self, state: RuntimeState) -> None:
+        session = state.session
+        assert session is not None, "Session must be set before history step."
+        req = state.request
+        base_history = state.base_history
+
+        if state.context.context_builder is not None:
+            # Delegate history shaping (truncation, system message stitching, etc.)
+            # to ContextBuilder, but do NOT inject RAG here.
+            built = await state.context.context_builder.build_context(
+                session=session,
+                request=req,
+                base_history=base_history,
+            )
+
+            # Keep the full result for the RAG step.
+            state.context_builder_result = built
+
+            history_messages = built.history_messages or []
+            state.messages_for_llm.extend(history_messages)
+            state.built_history_messages = history_messages
+            state.history_includes_current_user = True
+            state.set_debug_value("history_length", len(history_messages))
+        else:
+            # Fall back to using the base_history as-is (no additional
+            # history layer beyond what ContextBuilder already produced).
+            state.messages_for_llm.extend(base_history)
+            state.built_history_messages = base_history
+            state.history_includes_current_user = True
+            state.set_debug_value("history_length", len(base_history))
+
+        # Trace history building step.
+        state.trace_event(
+            component="engine",
+            step="history",
+            message="Conversation history built for LLM.",
+            data={
+                "history_length": len(state.built_history_messages),
+                "base_history_length": len(state.base_history),
+                "history_includes_current_user": state.history_includes_current_user,
+            },
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/ingested_attachments_step.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ingested_attachments_step
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=ingested_attachments_step.py
+# LINES: 104
+# SHA256: e2ea3f0789242c839d3d4e560e7a035aea6facdaa55f469517f9b826f19d98b8
+# SYMBOLS:
+#   - class IngestedAttachmentsStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools import format_rag_context, insert_context_before_last_user
+
+
+class IngestedAttachmentsStep(RuntimeStep):
+    """
+    Retrieve relevant chunks from session-ingested attachments (AttachmentIngestionService)
+    and inject them into the LLM context.
+
+    Key requirements:
+        - Independent from enable_rag (must work even when enable_rag=False).
+        - Reuse existing retrieval components (EmbeddingManager + VectorstoreManager.query).
+        - Filter by session_id + user_id (+ tenant/workspace if available).
+        - Inject as context messages using _insert_context_before_last_user.
+    """
+
+    async def run(self, state: RuntimeState) -> None:
+        # Defaults
+        state.used_attachments_context = False
+        state.set_debug_value("attachments_chunks", 0)
+
+        if state.context.ingestion_service is None:
+            state.set_debug_section("attachments", {"used": False, "reason": "ingestion_service_not_configured"})
+            return
+
+        session = state.session
+        if session is None:
+            state.set_debug_section("attachments", {"used": False, "reason": "session_not_initialized"})
+            return
+
+        # Retrieval (no coupling to enable_rag)
+        res = await state.context.ingestion_service.search_session_attachments(
+            query=state.request.message,
+            session_id=session.id,
+            user_id=state.request.user_id,
+            tenant_id=session.tenant_id,
+            workspace_id=session.workspace_id,
+            top_k=6,
+            score_threshold=None,
+        )
+
+        dbg = (res or {}).get("debug") or {}
+        used = bool((res or {}).get("used"))
+        chunks = (res or {}).get("hits") or []
+
+        state.used_attachments_context = used and bool(chunks)
+        state.set_debug_section("attachments", {
+            **dbg,
+            "used": bool(used and chunks),
+            "hits_count": len(chunks),
+        })
+        state.set_debug_value("attachments_chunks", len(chunks))
+
+        if not state.used_attachments_context:
+            return
+
+        # Build a single system context message (same injection pattern as RAG).
+        attachments_context_text = format_rag_context(chunks)
+        if not attachments_context_text.strip():
+            # If somehow chunks exist but formatting is empty, treat as unused.
+            state.used_attachments_context = False
+            state.set_debug_section("attachments", {
+                **dbg,
+                "used": False,
+                "reason": "empty_formatted_context",
+            })
+            state.set_debug_value("attachments_chunks", 0)
+            return
+
+        content = "SESSION ATTACHMENTS (retrieved):\n" + attachments_context_text
+
+        context_messages = [
+            ChatMessage(
+                role="system",
+                content=content,
+                created_at=datetime.now(timezone.utc).isoformat(),
+            )
+        ]
+
+        insert_context_before_last_user(state, context_messages)
+
+        # Provide compact textual form also for tools agent (same pattern as RAG).
+        state.tools_context_parts.append("SESSION ATTACHMENTS:\n" + attachments_context_text)
+
+        # Trace step
+        state.trace_event(
+            component="engine",
+            step="attachments_context",
+            message="Session attachments retrieval executed and context injected.",
+            data={
+                "used_attachments_context": state.used_attachments_context,
+                "retrieved_chunks": len(chunks),
+            },
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/instructions_step.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.instructions_step
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=instructions_step.py
+# LINES: 84
+# SHA256: 3de4e2340ab607471234082f22f85fb03397cfd840655013d7acc264ec3ce2a0
+# SYMBOLS:
+#   - class InstructionsStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Dict, List, Optional
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+
+
+class InstructionsStep(RuntimeStep):
+    """
+    Inject the final instructions as the first `system` message in the LLM prompt,
+    if any instructions exist.
+
+    Combines:
+      1) per-request instructions (RuntimeRequest.instructions),
+      2) user profile instructions (state.profile_user_instructions),
+      3) organization profile instructions (state.profile_org_instructions).
+
+    Must be called AFTER history step to ensure:
+      - instructions are always the first system message,
+      - instructions are never persisted in SessionStore,
+      - history can be trimmed/summarized freely before injection.
+    """
+
+    async def run(self, state: RuntimeState) -> None:
+        instructions_text = self._build_final_instructions(state)
+        if not instructions_text:
+            return
+
+        system_message = ChatMessage(role="system", content=instructions_text)
+
+        # `messages_for_llm` at this point should contain only history
+        # (built by HistoryStep). We now prepend the system message.
+        state.messages_for_llm = [system_message] + state.messages_for_llm
+
+    def _build_final_instructions(self, state: RuntimeState) -> Optional[str]:
+        parts: List[str] = []
+        sources: Dict[str, bool] = {
+            "request": False,
+            "user_profile": False,
+            "organization_profile": False,
+        }
+
+        # 1) User-provided instructions (per-request, ChatGPT/Gemini-style)
+        if isinstance(state.request.instructions, str):
+            user_instr = state.request.instructions.strip()
+            if user_instr:
+                parts.append(user_instr)
+                sources["request"] = True
+
+        # 2) User profile instructions prepared by the memory layer
+        if isinstance(state.profile_user_instructions, str):
+            profile_user = state.profile_user_instructions.strip()
+            if profile_user:
+                parts.append(profile_user)
+                sources["user_profile"] = True
+
+        # 3) Organization profile instructions prepared by the memory layer
+        if isinstance(state.profile_org_instructions, str):
+            profile_org = state.profile_org_instructions.strip()
+            if profile_org:
+                parts.append(profile_org)
+                sources["organization_profile"] = True
+
+        if not parts:
+            state.set_debug_section("instructions", {
+                "has_instructions": False,
+                "sources": sources,
+            })
+            return None
+
+        final_text = "\n\n".join(parts)
+
+        state.set_debug_section("instructions", {
+            "has_instructions": True,
+            "sources": sources,
+        })
+
+        return final_text
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/persist_and_build_answer_step.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.persist_and_build_answer_step
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=persist_and_build_answer_step.py
+# LINES: 134
+# SHA256: 9511313df01b7be5f8ee646cc50c7fc0f76271a83024a20ddb19064774b4adf0
+# SYMBOLS:
+#   - class PersistAndBuildAnswerStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import List
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
+    RuntimeAnswer,
+    RouteInfo,
+    RuntimeStats,
+    ToolCallInfo,
+)
+
+
+class PersistAndBuildAnswerStep(RuntimeStep):
+    """
+    Persist assistant message into the session and build RuntimeAnswer
+    including RouteInfo and RuntimeStats.
+    """
+
+    async def run(self, state: RuntimeState) -> None:
+        answer_text = state.raw_answer
+
+        # Fallback if answer is empty for any reason
+        if not isinstance(answer_text, str) or not answer_text.strip():
+            answer_text = (
+                str(state.tools_agent_answer)
+                if state.tools_agent_answer
+                else "[ERROR] Empty answer from runtime."
+            )
+
+        session = state.session
+        assert session is not None, "Session must be set before persistence."
+
+        assistant_message = ChatMessage(
+            role="assistant",
+            content=answer_text,
+            created_at=datetime.now(timezone.utc).isoformat(),
+        )
+        await state.context.session_manager.append_message(session.id, assistant_message)
+
+        # Strategy label
+        if state.used_rag and state.used_websearch and state.used_tools:
+            strategy = "llm_with_rag_websearch_and_tools"
+        elif state.used_rag and state.used_tools:
+            strategy = "llm_with_rag_and_tools"
+        elif state.used_websearch and state.used_tools:
+            strategy = "llm_with_websearch_and_tools"
+        elif state.used_tools:
+            strategy = "llm_with_tools"
+        elif state.used_rag and state.used_websearch:
+            strategy = "llm_with_rag_and_websearch"
+        elif state.used_rag:
+            strategy = "llm_with_rag_context_builder"
+        elif state.used_websearch:
+            strategy = "llm_with_websearch"
+        elif state.used_attachments_context:
+            strategy = "llm_with_session_attachments"
+        elif state.ingestion_results:
+            strategy = "llm_only_with_ingestion"
+        else:
+            strategy = "llm_only"
+
+        route_info = RouteInfo(
+            used_rag=state.used_rag and state.context.config.enable_rag,
+            used_websearch=state.used_websearch and state.context.config.enable_websearch,
+            used_tools=state.used_tools and state.context.config.tools_mode != "off",
+            used_user_profile=state.used_user_profile,
+            used_user_longterm_memory=state.used_user_longterm_memory and state.context.config.enable_user_longterm_memory,
+            strategy=strategy,
+            extra={
+                "used_attachments_context": bool(state.used_attachments_context),
+                "attachments_chunks": int(state.debug_trace.get("attachments_chunks", 0) or 0),
+            },
+        )
+
+        # Token stats are still placeholders – can be wired from LLM adapter later.
+        stats = RuntimeStats(
+            total_tokens=None,
+            input_tokens=None,
+            output_tokens=None,
+            rag_tokens=None,
+            websearch_tokens=None,
+            tool_tokens=None,
+            duration_ms=None,
+            extra={},
+        )
+
+        tool_calls_for_answer: List[ToolCallInfo] = []
+        for t in state.tool_traces:
+            tool_calls_for_answer.append(
+                ToolCallInfo(
+                    tool_name=t.get("tool") or "",
+                    arguments=t.get("args") or {},
+                    result_summary=(
+                        t.get("output_preview")
+                        if isinstance(t.get("output_preview"), str)
+                        else None
+                    ),
+                    success=not bool(t.get("error")),
+                    error_message=t.get("error"),
+                    extra={"raw_trace": t},
+                )
+            )
+
+        # Trace persistence and answer building step.
+        state.trace_event(
+            component="engine",
+            step="persist_and_build_answer",
+            message="Assistant answer persisted and RuntimeAnswer built.",
+            data={
+                "session_id": session.id,
+                "strategy": strategy,
+                "used_rag": state.used_rag,
+                "used_websearch": state.used_websearch,
+                "used_tools": state.used_tools,
+            },
+        )
+
+        state.runtime_answer = RuntimeAnswer(
+            answer=answer_text,
+            citations=[],
+            route=route_info,
+            tool_calls=tool_calls_for_answer,
+            stats=stats,
+            raw_model_output=None,
+            debug_trace=state.debug_trace,
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/profile_based_memory_step.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.profile_based_memory_step
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=profile_based_memory_step.py
+# LINES: 83
+# SHA256: efc7a68b87a66308b1dc76d80eb8b1de83c3e1b0b006a36b7a13c663643d1f73
+# SYMBOLS:
+#   - class ProfileBasedMemoryStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Optional
+
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+
+
+class ProfileBasedMemoryStep(RuntimeStep):
+    """
+    Load profile-based instruction fragments for this request.
+
+    Rules:
+        - Use profile memory only if enabled in RuntimeConfig.
+        - Do NOT rebuild or cache anything here yet (this is step 1 only).
+        - Extract prebuilt 'system_prompt' strings from profile bundles.
+        - Store the resulting fragments in RuntimeState so the engine
+        can merge them into a system message later.
+    """
+
+    async def run(self, state: RuntimeState) -> None:
+        session = state.session
+        assert session is not None, "Session must exist before memory layer."
+
+        cfg = state.context.config
+
+        user_instr: Optional[str] = None
+        org_instr: Optional[str] = None
+
+        # 1) User profile memory (optional)
+        if cfg.enable_user_profile_memory:
+            user_instr_candidate = await state.context.session_manager.get_user_profile_instructions_for_session(
+                session=session
+            )
+            if isinstance(user_instr_candidate, str):
+                stripped = user_instr_candidate.strip()
+                if stripped:
+                    user_instr = stripped
+                    state.used_user_profile = True
+
+        # 2) Organization profile memory (optional)
+        if cfg.enable_org_profile_memory:
+            org_instr_candidate = await state.context.session_manager.get_org_profile_instructions_for_session(
+                session=session
+            )
+            if isinstance(org_instr_candidate, str):
+                stripped = org_instr_candidate.strip()
+                if stripped:
+                    org_instr = stripped
+                    # For now we reuse the same flag to indicate that some profile
+                    # (user or organization) has been used.
+                    state.used_user_profile = True
+
+        # 3) Store extracted profile instruction fragments in state
+        state.profile_user_instructions = user_instr
+        state.profile_org_instructions = org_instr
+
+
+        # 4) Debug info
+        state.set_debug_section("memory_layer", {
+            "implemented": True,
+            "has_user_profile_instructions": bool(user_instr),
+            "has_org_profile_instructions": bool(org_instr),
+            "enable_user_profile_memory": cfg.enable_user_profile_memory,
+            "enable_org_profile_memory": cfg.enable_org_profile_memory,
+        })
+
+        # Trace memory layer step.
+        state.trace_event(
+            component="engine",
+            step="memory_layer",
+            message="Profile-based instructions loaded for session.",
+            data={
+                "has_user_profile_instructions": bool(user_instr),
+                "has_org_profile_instructions": bool(org_instr),
+                "enable_user_profile_memory": cfg.enable_user_profile_memory,
+                "enable_org_profile_memory": cfg.enable_org_profile_memory,
+            },
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/rag_step.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.rag_step
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=rag_step.py
+# LINES: 93
+# SHA256: c079859fbe8230b688c95afa540ef33a1c0f0d2a434c61a1e18e1f82a5a640ad
+# SYMBOLS:
+#   - class RagStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools import format_rag_context, insert_context_before_last_user
+
+
+class RagStep(RuntimeStep):
+    """
+    Build RAG layer (if configured) on top of the already constructed conversation history.
+
+    Responsibilities:
+      - ensure ContextBuilder result exists (fallback build_context if missing),
+      - use RagPromptBuilder to build context messages from retrieved chunks,
+      - inject RAG context messages before the last user message,
+      - prepare compact RAG text for tools agent (state.tools_context_parts),
+      - set debug fields + trace event.
+    """
+
+    async def run(self, state: RuntimeState) -> None:
+        # Defaults
+        state.used_rag = False
+        state.set_debug_value("rag_chunks", 0)
+
+        ctx = state.context
+
+        # RAG disabled => no-op
+        if not ctx.config.enable_rag:
+            return
+
+        if ctx.context_builder is None:
+            raise RuntimeError("RAG enabled but ContextBuilder is not configured.")
+
+        # Prefer result from HistoryStep (normal flow)
+        built = state.context_builder_result
+
+        # Fallback: build here (should be rare)
+        if built is None:
+            session = state.session
+            assert session is not None, "Session must be set before RAG step."
+
+            built = await ctx.context_builder.build_context(
+                session=session,
+                request=state.request,
+                base_history=state.base_history,
+            )
+            state.context_builder_result = built
+
+        rag_info = built.rag_debug_info or {}
+        state.set_debug_value("rag", rag_info)
+
+        retrieved_chunks = built.retrieved_chunks or []
+        state.used_rag = bool(rag_info.get("used", bool(retrieved_chunks)))
+
+        if not state.used_rag:
+            state.set_debug_value("rag_chunks", 0)
+            return
+
+        if ctx.rag_prompt_builder is None:
+            raise RuntimeError("RAG enabled but rag_prompt_builder is not configured.")
+
+        # Build RAG prompt bundle (context messages only)
+        bundle = ctx.rag_prompt_builder.build_rag_prompt(built)
+        context_messages = bundle.context_messages or []
+
+        # Inject context before last user message
+        if context_messages:
+            insert_context_before_last_user(state, context_messages)
+
+        # Compact textual form of RAG context for tools agent
+        rag_context_text = format_rag_context(retrieved_chunks)
+        if rag_context_text:
+            state.tools_context_parts.append("RAG CONTEXT:\n" + rag_context_text)
+
+        state.set_debug_value("rag_chunks", len(retrieved_chunks))
+
+        # Trace
+        state.trace_event(
+            component="engine",
+            step="rag",
+            message="RAG context built and injected.",
+            data={
+                "rag_enabled": ctx.config.enable_rag,
+                "used_rag": state.used_rag,
+                "retrieved_chunks": len(retrieved_chunks),
+                "context_messages": len(context_messages),
+            },
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/session_and_ingest_step.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.session_and_ingest_step
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=session_and_ingest_step.py
+# LINES: 117
+# SHA256: 3781275bf2fb77787c95e2da8879d86b33cbca52045febf76a898b1302d3644f
+# SYMBOLS:
+#   - class SessionAndIngestStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any, Dict, List
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import IngestionResult
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
+
+
+class SessionAndIngestStep(RuntimeStep):
+    """
+    Load or create a session, ingest attachments (RAG), append the user
+    message and initialize debug_trace.
+
+    IMPORTANT:
+        - This step does NOT load conversation history.
+        - History is loaded and preprocessed in `_step_build_base_history`.
+    """
+
+    async def run(self, state: RuntimeState) -> None:
+        req = state.request
+
+        # 1. Load or create session
+        session = await state.context.session_manager.get_session(req.session_id)
+        if session is None:
+            session = await state.context.session_manager.create_session(
+                session_id=req.session_id,
+                user_id=req.user_id,
+                tenant_id=req.tenant_id or state.context.config.tenant_id,
+                workspace_id=req.workspace_id or state.context.config.workspace_id,
+                metadata=req.metadata,
+            )
+
+        # 1a. Ingest attachments into vector store (if any)
+        ingestion_results: List[IngestionResult] = []
+        if req.attachments:
+            if state.context.ingestion_service is None:
+                raise ValueError(
+                    "Attachments were provided but ingestion_service is not configured. "
+                    "Pass ingestion_service explicitly to control where attachments are indexed."
+                )
+    
+            ingestion_results = await state.context.ingestion_service.ingest_attachments_for_session(
+                attachments=req.attachments,
+                session_id=session.id,
+                user_id=req.user_id,
+                tenant_id=session.tenant_id,
+                workspace_id=session.workspace_id,
+            )
+
+        # 2. Append user message to session history
+        user_message = self._build_session_message_from_request(req)
+        await state.context.session_manager.append_message(session.id, user_message)
+
+        # Reload the session to ensure we have the latest metadata
+        session = await state.context.session_manager.get_session(session.id) or session
+
+        # Initialize debug trace – history will be attached later
+        debug_trace: Dict[str, Any] = {
+            "session_id": session.id,
+            "user_id": session.user_id,
+        }
+
+        if ingestion_results:
+            debug_trace["ingestion"] = [
+                {
+                    "attachment_id": r.attachment_id,
+                    "attachment_type": r.attachment_type,
+                    "num_chunks": r.num_chunks,
+                    "vector_ids_count": len(r.vector_ids),
+                    "metadata": r.metadata,
+                }
+                for r in ingestion_results
+            ]
+
+        # Trace session and ingestion step.
+        state.trace_event(
+            component="engine",
+            step="session_and_ingest",
+            message="Session loaded/created and user message appended; attachments ingested.",
+            data={
+                "session_id": session.id,
+                "user_id": session.user_id,
+                "tenant_id": session.tenant_id,
+                "attachments_count": len(req.attachments or []),
+                "ingestion_results_count": len(ingestion_results),
+            },
+        )
+
+        state.session = session
+        state.ingestion_results = ingestion_results
+        state.debug_trace = debug_trace
+        # NOTE: state.base_history is intentionally left empty here.
+
+
+    def _build_session_message_from_request(
+        self,
+        request: RuntimeRequest,
+    ) -> ChatMessage:
+        """
+        Construct a ChatMessage from a RuntimeRequest to be stored in the session.
+
+        Attachments from `request.attachments` are represented at the request level
+        and can be linked via metadata if needed.
+        """
+        return ChatMessage(
+            role="user",
+            content=request.message,
+            created_at=datetime.now(timezone.utc).isoformat(),
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/tools.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=tools.py
+# LINES: 96
+# SHA256: f6d2ff1e397b1bf9c6fa0f068e9cd61d78e97fdc3948a783fd9b850d7b250e4d
+# SYMBOLS:
+#   - def insert_context_before_last_user()
+#   - def format_rag_context()
+#   - def _chunk_text()
+#   - def _chunk_meta()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import Any, Iterable, List, Optional
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+
+
+def insert_context_before_last_user(        
+        state: RuntimeState,
+        context_messages: List[ChatMessage],
+    ) -> None:
+        """
+        Insert context messages right before the last user message.
+        If no user message exists, append to the end.
+        """
+        if not context_messages:
+            return
+
+        msgs = state.messages_for_llm
+        last_user_idx: Optional[int] = None
+
+        for i in range(len(msgs) - 1, -1, -1):
+            if msgs[i].role == "user":
+                last_user_idx = i
+                break
+
+        if last_user_idx is None:
+            msgs.extend(context_messages)
+        else:
+            state.messages_for_llm = msgs[:last_user_idx] + context_messages + msgs[last_user_idx:]
+
+
+def format_rag_context(chunks: Iterable[Any], *, max_chars: int = 4000) -> str:
+    """
+    Best-effort compact formatter that is resilient to different chunk shapes.
+    """
+    lines: List[str] = []
+    total = 0
+
+    for idx, ch in enumerate(chunks, start=1):
+        text = _chunk_text(ch)
+        meta = _chunk_meta(ch)
+
+        header_parts: List[str] = [f"[{idx}]"]
+        src = meta.get("source") or meta.get("url") or meta.get("doc_id") or meta.get("file")
+        if src:
+            header_parts.append(str(src))
+        page = meta.get("page") or meta.get("page_number")
+        if page is not None:
+            header_parts.append(f"p={page}")
+
+        header = " ".join(header_parts)
+        block = header + "\n" + (text.strip() if text else "").strip()
+
+        if not block.strip():
+            continue
+
+        # Enforce cap
+        if total + len(block) + 2 > max_chars:
+            remaining = max_chars - total
+            if remaining > 80:
+                lines.append(block[:remaining].rstrip() + "…")
+            break
+
+        lines.append(block)
+        total += len(block) + 2
+
+    return "\n\n".join(lines).strip()
+
+
+def _chunk_text(ch: Any) -> str:
+    for attr in ("text", "content", "page_content", "chunk", "value"):
+        v = getattr(ch, attr, None)
+        if isinstance(v, str) and v.strip():
+            return v
+    if isinstance(ch, dict):
+        for k in ("text", "content", "page_content", "chunk", "value"):
+            v = ch.get(k)
+            if isinstance(v, str) and v.strip():
+                return v
+    return ""
+
+
+def _chunk_meta(ch: Any) -> dict:
+    meta = getattr(ch, "metadata", None)
+    if isinstance(meta, dict):
+        return meta
+    if isinstance(ch, dict):
+        m = ch.get("metadata")
+        if isinstance(m, dict):
+            return m
+    return {}
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/tools_step.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools_step
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=tools_step.py
+# LINES: 157
+# SHA256: f15f1281f0e327ebd79e1c776208423ee32b545e4ce4fc49a74e57b48dfcd675
+# SYMBOLS:
+#   - class ToolsStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+import json
+from typing import Any, Dict, List
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.config import ToolsContextScope
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+
+
+class ToolsStep(RuntimeStep):
+    """
+    Run tools agent (planning + tool calls) if configured.
+
+    Output is stored in RuntimeState:
+      - state.used_tools
+      - state.tool_traces
+      - state.tools_agent_answer
+
+    Core LLM step may decide to reuse tools_agent_answer.
+    """
+
+    async def run(self, state: RuntimeState) -> None:
+        """
+        Run tools agent (planning + tool calls) if configured.
+
+        The tools result is:
+          - optionally used as the final answer (when tools_mode != "off"),
+          - appended as system context for the core LLM.
+        """
+        state.used_tools = False
+        state.tool_traces = []
+        state.tools_agent_answer = None
+
+        use_tools = (
+            state.context.config.tools_agent is not None
+            and state.context.config.tools_mode != "off"
+        )
+        if not use_tools:
+            return
+
+        tools_context = (
+            "\n\n".join(state.tools_context_parts).strip()
+            if state.tools_context_parts
+            else None
+        )
+
+        debug_tools: Dict[str, Any] = {
+            "mode": state.context.config.tools_mode,
+        }
+
+        try:
+            # Decide what to pass as input_data for the tools agent.
+            if state.context.config.tools_context_scope == ToolsContextScope.CURRENT_MESSAGE_ONLY:
+                agent_input = state.request.message
+
+            elif state.context.config.tools_context_scope == ToolsContextScope.CONVERSATION:
+                # Use history built by ContextBuilder if available,
+                # otherwise fall back to base_history.
+                if state.built_history_messages:
+                    agent_input = state.built_history_messages
+                else:
+                    agent_input = state.base_history
+
+            else:
+                # FULL_CONTEXT or any future scope:
+                # pass entire message list built so far.
+                agent_input = state.messages_for_llm
+
+            tools_result = state.context.config.tools_agent.run(
+                input_data=agent_input,
+                context=tools_context,
+                stream=False,
+                tool_choice=None,
+                output_model=None,
+                run_id=state.run_id,
+                llm_usage_tracker = state.llm_usage_tracker
+            )
+
+            state.tools_agent_answer = tools_result.get("answer", "") or None
+            state.tool_traces = tools_result.get("tool_traces") or []
+            state.used_tools = bool(state.tool_traces)
+
+            debug_tools["used_tools"] = state.used_tools
+            debug_tools["tool_traces"] = state.tool_traces
+            if state.tools_agent_answer:
+                debug_tools["agent_answer_preview"] = str(state.tools_agent_answer)[:200]
+            if state.context.config.tools_mode == "required" and not state.used_tools:
+                debug_tools["warning"] = (
+                    "tools_mode='required' but no tools were invoked by the tools_agent."
+                )
+
+            # Inject executed tool calls as system context for core LLM.
+            if state.tool_traces:
+                tool_lines: List[str] = []
+                for t in state.tool_traces:
+                    name = t.get("tool")
+                    args = t.get("args")
+                    output = t.get("output")
+
+                    tool_lines.append(f"Tool '{name}' was called.")
+                    if args is not None:
+                        try:
+                            args_str = json.dumps(args, ensure_ascii=False)
+                        except Exception:
+                            args_str = str(args)
+                        tool_lines.append(f"Arguments: {args_str}")
+
+                    if output is not None:
+                        if isinstance(output, (dict, list)):
+                            try:
+                                out_str = json.dumps(output, ensure_ascii=False)
+                            except Exception:
+                                out_str = str(output)
+                        else:
+                            out_str = str(output)
+                        tool_lines.append("Output:")
+                        tool_lines.append(out_str)
+
+                    tool_lines.append("")
+
+                tools_context_for_llm = "\n".join(tool_lines).strip()
+                if tools_context_for_llm:
+                    insert_at = len(state.messages_for_llm) - 1
+                    state.messages_for_llm.insert(
+                        insert_at,
+                        ChatMessage(
+                            role="system",
+                            content=(
+                                "The following tool calls have been executed. "
+                                "Use their results when answering the user.\n\n"
+                                + tools_context_for_llm
+                            ),
+                        ),
+                    )
+
+        except Exception as e:
+            debug_tools["tools_error"] = str(e)
+
+        state.set_debug_section("tools",  debug_tools)
+
+        # Trace tools step.
+        state.trace_event(
+            component="engine",
+            step="tools",
+            message="Tools agent step executed.",
+            data={
+                "tools_mode": state.context.config.tools_mode,
+                "used_tools": state.used_tools,
+                "tool_traces_count": len(state.tool_traces),
+            },
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/user_longterm_memory_step.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.user_longterm_memory_step
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=user_longterm_memory_step.py
+# LINES: 123
+# SHA256: 98b9a1ee076aa43b0f8b39cf78b2e6469917e4b83abf76ee08a51116b9ab1d99
+# SYMBOLS:
+#   - class UserLongtermMemoryStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import List
+
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools import (
+    insert_context_before_last_user,
+)
+
+
+class UserLongtermMemoryStep(RuntimeStep):
+    """
+    Retrieve user long-term memory (LTM) and inject as context messages.
+
+    - Uses state.user_longterm_memory_result cache if available.
+    - Uses state.context.session_manager.search_user_longterm_memory(...) for retrieval.
+    - Uses state.context.user_longterm_memory_prompt_builder.build_user_longterm_memory_prompt(hits)
+      to create context messages.
+    """
+
+    async def run(self, state: RuntimeState) -> None:
+        state.used_user_longterm_memory = False
+        state.set_debug_value("user_longterm_memory_hits", 0)
+
+        # Create a single debug section early and only mutate it later.
+        state.set_debug_section("user_longterm_memory", {
+            "enabled": bool(state.context.config.enable_user_longterm_memory),
+            "used": False,
+            "reason": None,
+            "hits": 0,
+            "retrieval_debug": {},
+            "context_blocks_count": 0,
+            "context_preview": "",
+            "context_preview_chars": 0,
+            "hits_preview": [],
+        })
+        dbg = state.debug_trace["user_longterm_memory"]
+
+        if not state.context.config.enable_user_longterm_memory:
+            dbg["reason"] = "disabled"
+            return
+
+        built = state.user_longterm_memory_result
+
+        if built is None:
+            session = state.session
+            assert session is not None, "Session must be set before user long-term memory step."
+
+            query = (state.request.message or "").strip()
+            if not query:
+                dbg["reason"] = "empty_query"
+                dbg["used"] = False
+                dbg["hits"] = 0
+                state.set_debug_value("user_longterm_memory_hits", 0)
+                return
+
+            built = await state.context.session_manager.search_user_longterm_memory(
+                user_id=session.user_id,
+                query=query,
+                top_k=state.context.config.max_longterm_entries_per_query,
+                score_threshold=state.context.config.longterm_score_threshold,
+            )
+            state.user_longterm_memory_result = built
+
+        built = built or {}
+        ltm_info = built.get("debug") or {}
+        hits = built.get("hits") or []
+
+        # Keep retrieval debug inside the same section
+        dbg["retrieval_debug"] = ltm_info
+
+        state.used_user_longterm_memory = bool(ltm_info.get("used", bool(hits)))
+        dbg["used"] = state.used_user_longterm_memory
+        dbg["hits"] = len(hits)
+
+        if not state.used_user_longterm_memory:
+            dbg["reason"] = ltm_info.get("reason") or "no_hits_or_not_used"
+            state.set_debug_value("user_longterm_memory_hits", 0)
+            return
+
+        bundle = state.context.user_longterm_memory_prompt_builder.build_user_longterm_memory_prompt(hits)
+        context_messages = bundle.context_messages or []
+        insert_context_before_last_user(state, context_messages)
+
+        # Debug trace (no tools coupling)
+        ltm_context_texts: List[str] = []
+        for msg in context_messages:
+            if msg.content:
+                ltm_context_texts.append(msg.content)
+
+        dbg["context_blocks_count"] = len(ltm_context_texts)
+
+        preview = "\n\n".join(ltm_context_texts[:2])  # first 1-2 blocks is enough
+        dbg["context_preview"] = preview
+        dbg["context_preview_chars"] = len(preview)
+
+        dbg["hits_preview"] = [
+            {
+                "entry_id": h.entry_id,
+                "title": getattr(h, "title", None),
+                "kind": getattr(getattr(h, "kind", None), "value", getattr(h, "kind", None)),
+                "deleted": bool(getattr(h, "deleted", False)),
+            }
+            for h in hits[:5]
+        ]
+
+        state.set_debug_value("user_longterm_memory_hits", len(hits))
+
+        state.trace_event(
+            component="engine",
+            step="user_longterm_memory",
+            message="User long-term memory step executed.",
+            data={
+                "ltm_enabled": state.context.config.enable_user_longterm_memory,
+                "used_user_longterm_memory": state.used_user_longterm_memory,
+                "hits": len(hits),
+            },
+        )
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/websearch_step.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.websearch_step
+# MODULE_GROUP: runtime
+# TAGS:
+#   - package=intergrax
+#   - module_group=runtime
+#   - file=websearch_step.py
+# LINES: 117
+# SHA256: fbc460761d883c3d0bf58a81bcf7ec18fe1cfff8f8fd7af959da2f017be52904
+# SYMBOLS:
+#   - class WebsearchStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from typing import Any, List
+
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools import insert_context_before_last_user
+
+
+class WebsearchStep(RuntimeStep):
+    """
+    Execute websearch (if configured) and inject web context into the LLM prompt.
+
+    Responsibilities:
+      - run websearch agent/executor using state.messages_for_llm and tools context
+      - build web context messages with websearch_prompt_builder
+      - inject web context messages before the last user message
+      - append compact web context text into state.tools_context_parts (for tools agent)
+      - debug + trace
+    """
+
+    async def run(self, state: RuntimeState) -> None:
+        state.websearch_debug = {}
+        state.used_websearch = False
+
+        if (
+            not state.context.config.enable_websearch
+            or state.context.websearch_executor is None
+            or state.context.websearch_prompt_builder is None
+        ):
+            return
+
+        try:
+            web_results = await state.context.websearch_executor.search_async(
+                query=state.request.message,
+                top_k=state.context.config.max_docs_per_query,
+                language=None,
+                top_n_fetch=None,
+            )
+
+            state.set_debug_section("websearch", {})
+            dbg = state.debug_trace["websearch"]
+
+            raw_preview = []
+            for d in (web_results or [])[:5]:
+                raw_preview.append(
+                    {
+                        "type": type(d).__name__,
+                        "title": d.title,
+                        "url": d.url,
+                        "snippet_len": len(d.snippet or ""),
+                        "text_len": len(d.text or ""),
+                    }
+                )
+
+            dbg["raw_results_preview"] = raw_preview
+
+            if not web_results:
+                return
+
+            state.used_websearch = True
+
+            bundle = await state.context.websearch_prompt_builder.build_websearch_prompt(
+                web_results=web_results,
+                user_query=state.request.message,
+                run_id=state.run_id,
+            )
+
+            context_messages = bundle.context_messages or []
+            insert_context_before_last_user(state, context_messages)
+            state.websearch_debug.update(bundle.debug_info or {})
+
+            # Debug trace (no tools coupling)
+            web_context_texts: List[str] = []
+            for msg in context_messages:
+                if msg.content:
+                    web_context_texts.append(msg.content)
+
+            dbg["context_blocks_count"] = len(web_context_texts)
+
+            # Preview only to avoid bloating trace
+            preview = "\n\n".join(web_context_texts[:1])
+            dbg["context_preview"] = preview
+            dbg["context_preview_chars"] = len(preview)
+
+            # Guardrail signal: did websearch produce any grounded evidence?
+            dbg["no_evidence"] = "No answer-relevant evidence extracted" in (preview or "")
+            state.websearch_debug["no_evidence"] = dbg["no_evidence"]
+
+            # Optional: doc-level preview (titles/urls only)
+            dbg["docs_preview"] = [
+                {
+                    "title": d.title,
+                    "url": d.url,
+                }
+                for d in (web_results or [])[:5]
+            ]
+
+        except Exception as exc:
+            state.websearch_debug["error"] = str(exc)
+
+        # Trace web search step.
+        state.trace_event(
+            component="engine",
+            step="websearch",
+            message="Web search step executed.",
+            data={
+                "websearch_enabled": state.context.config.enable_websearch,
+                "used_websearch": state.used_websearch,
+                "has_error": "error" in (state.websearch_debug or {}),
+                "no_evidence": state.websearch_debug.get("no_evidence", False),
+            },
+        )
 
 # ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/ingestion/__init__.py
@@ -16527,7 +17067,7 @@ async def build_plan(
 #   - module_group=runtime
 #   - file=step_executor.py
 # LINES: 279
-# SHA256: e4f3d52e076f043c838a0e5337968e6b917ef3dd1f340648f526d6c886556520
+# SHA256: 2cfa223c796d8548b4df7bc7add0fb435a3ea7ff8927aa9ef36099aedd9c0d2f
 # SYMBOLS:
 #   - class _DefaultExecContext
 #   - class StepExecutor
@@ -16541,6 +17081,7 @@ import asyncio
 from dataclasses import dataclass
 from typing import Any, Dict, Mapping, Optional
 
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
     ExecutionPlan,
     ExecutionStep,
@@ -16565,11 +17106,11 @@ from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models impo
 
 @dataclass
 class _DefaultExecContext(StepExecutionContext):
-    _state: Any
+    _state: RuntimeState
     _results: Dict[StepId, StepExecutionResult]
 
     @property
-    def state(self) -> Any:
+    def state(self) -> RuntimeState:
         return self._state
 
     @property
@@ -16599,7 +17140,7 @@ class StepExecutor:
         self._registry = registry
         self._cfg = cfg or StepExecutorConfig()
 
-    async def execute(self, *, plan: ExecutionPlan, state: Any) -> PlanExecutionReport:
+    async def execute(self, *, plan: ExecutionPlan, state: RuntimeState) -> PlanExecutionReport:
         results: Dict[StepId, StepExecutionResult] = {}
         ctx = _DefaultExecContext(_state=state, _results=results)
 
@@ -16647,7 +17188,6 @@ class StepExecutor:
                     break
 
             except StepReplanRequested as e:
-                replan_reason = e.reason.value
                 res = StepExecutionResult(
                     step_id=step.step_id,
                     action=step.action,
@@ -16655,17 +17195,17 @@ class StepExecutor:
                     output=None,
                     error=StepError(
                         code=StepErrorCode.REPLAN,
-                        message=e.reason.value,
+                        message=f"{e.code.value}: {e.reason.value}",
                         details={
                             "replan_code": e.code.value,
                             "replan_reason": e.reason.value,
-                            **(e.details or {}),
+                            "replan_details": e.details,
                         },
                     ),
-                    attempts=1,                    
+                    attempts=1,
                 )
                 ctx.set_result(res)
-                break
+                continue
 
 
         # Final output: last OK output if any (runtime can override this later)
@@ -16788,7 +17328,7 @@ class StepExecutor:
                 if policy == FailurePolicyKind.REPLAN:
                     raise StepReplanRequested(
                         code=ReplanCode.STEP_POLICY_REPLAN,
-                        reason=ReplanReason.UNSPECIFIED,
+                        reason=ReplanReason.INTERNAL_ERROR,
                         details={"step_id": step.step_id.value, "action": step.action.value}
                     )
 
