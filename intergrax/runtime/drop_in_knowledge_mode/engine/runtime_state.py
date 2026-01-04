@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.runtime.drop_in_knowledge_mode.context.context_builder import BuiltContext
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_context import LLMUsageRunRecord, RuntimeContext
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeAnswer, RuntimeRequest
@@ -52,7 +53,7 @@ class RuntimeState:
     history_includes_current_user: bool = False
 
     # ContextBuilder intermediate result (history + retrieved chunks)
-    context_builder_result: Optional[Any] = None
+    context_builder_result: Optional[BuiltContext] = None
 
     # Long-term memory retrieval intermediate result (retrieved entries + context messages)
     user_longterm_memory_result: Optional[Any] = None
