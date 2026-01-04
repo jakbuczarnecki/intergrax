@@ -4,9 +4,8 @@
 
 import logging
 
-# Ustawienia globalne loggera
 logging.basicConfig(
-    level=logging.INFO,  # pokazuj INFO i wyżej (DEBUG pokaże więcej)
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    force=True  # nadpisuje poprzednie konfiguracje
+    force=True
 )
