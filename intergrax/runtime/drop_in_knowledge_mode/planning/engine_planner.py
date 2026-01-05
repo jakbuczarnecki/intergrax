@@ -10,7 +10,8 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
-from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import DEFAULT_PLANNER_SYSTEM_PROMPT, EngineNextStep, EnginePlan, PlanIntent, PlannerPromptConfig
+from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import DEFAULT_PLANNER_FALLBACK_CLARIFY_QUESTION, DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT, DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT, DEFAULT_PLANNER_SYSTEM_PROMPT, EngineNextStep, EnginePlan, PlanIntent, PlannerPromptConfig
+from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import ReplanContext
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
 
 
@@ -35,22 +36,27 @@ class EnginePlanner:
         config: RuntimeConfig,
         prompt_config: Optional[PlannerPromptConfig] = None,
         run_id: Optional[str] = None,
+        replan_ctx: Optional[ReplanContext] = None,
     ) -> EnginePlan:
+        
         messages = self._build_planner_messages(
             req=req, 
             state=state, 
             config=config,
             prompt_config=prompt_config,
+            replan_ctx=replan_ctx,
         )
 
         raw = self._llm.generate_messages(messages, run_id=run_id)
+
         if inspect.iscoroutine(raw):
             raw = await raw
+
         if not isinstance(raw, str):
             raw = str(raw)
 
         # Single source of truth: parsing extracts JSON and loads it
-        plan = self._parse_plan(raw)
+        plan = self._parse_plan(raw, prompt_config=prompt_config)
 
         # Capability clamp
         plan = self._validate_against_capabilities(plan=plan, state=state)
@@ -76,6 +82,21 @@ class EnginePlanner:
         Only disables flags that are not available in the current runtime.
         """
 
+        # Snapshot BEFORE clamp (what the model proposed)
+        before = {
+            "use_websearch": bool(plan.use_websearch),
+            "use_user_longterm_memory": bool(plan.use_user_longterm_memory),
+            "use_rag": bool(plan.use_rag),
+            "use_tools": bool(plan.use_tools),
+        }
+
+        available = {
+            "websearch": bool(state.cap_websearch_available),
+            "user_ltm": bool(state.cap_user_ltm_available),
+            "rag": bool(state.cap_rag_available),
+            "tools": bool(state.cap_tools_available),
+        }
+
         if plan.use_websearch and not state.cap_websearch_available:
             plan.use_websearch = False
 
@@ -88,19 +109,22 @@ class EnginePlanner:
         if plan.use_tools and not state.cap_tools_available:
             plan.use_tools = False
 
+        # Snapshot AFTER clamp (what runtime will actually allow)
+        after = {
+            "use_websearch": bool(plan.use_websearch),
+            "use_user_longterm_memory": bool(plan.use_user_longterm_memory),
+            "use_rag": bool(plan.use_rag),
+            "use_tools": bool(plan.use_tools),
+        }
+
         # Optional: record clamp info for debugging
         if plan.debug is None:
             plan.debug = {}
 
         plan.debug["capability_clamp"] = {
-            "websearch_available": state.cap_websearch_available,
-            "user_ltm_available": state.cap_user_ltm_available,
-            "rag_available": state.cap_rag_available,
-            "tools_available": state.cap_tools_available,
-            "use_websearch": plan.use_websearch,
-            "use_user_longterm_memory": plan.use_user_longterm_memory,
-            "use_rag": plan.use_rag,
-            "use_tools": plan.use_tools,
+            "before": before,
+            "available": available,
+            "after": after,
         }
 
         return plan
@@ -116,6 +140,7 @@ class EnginePlanner:
         state: RuntimeState,
         config: RuntimeConfig,
         prompt_config: Optional[PlannerPromptConfig] = None,
+        replan_ctx: Optional[ReplanContext] = None,
     ) -> List[ChatMessage]:
         """
         Build minimal, low-variance planner messages.
@@ -130,7 +155,7 @@ class EnginePlanner:
             "user_ltm_available": state.cap_user_ltm_available,
             "rag_available": state.cap_rag_available,
             "tools_available": state.cap_tools_available,
-            "attachments_present": req.attachments and len(req.attachments or []) > 0,
+            "attachments_present": bool(req.attachments and len(req.attachments or []) > 0),
         }
 
         # Strict JSON schema (minimal surface area, no extra keys).
@@ -157,14 +182,7 @@ class EnginePlanner:
                 },
                 "next_step": {
                     "type": "string",
-                    "enum": [
-                        "clarify",
-                        "websearch",
-                        "tools",
-                        "rag",
-                        "synthesize",
-                        "finalize",
-                    ],
+                    "enum": ["clarify", "websearch", "tools", "rag", "synthesize", "finalize"],
                 },
                 "reasoning_summary": {"type": "string"},
                 "ask_clarifying_question": {"type": "boolean"},
@@ -176,35 +194,46 @@ class EnginePlanner:
             },
         }
 
+        # Main system prompt (customizable)
         system_prompt = DEFAULT_PLANNER_SYSTEM_PROMPT
-
         if prompt_config is not None and prompt_config.system_prompt:
             system_prompt = prompt_config.system_prompt.strip()
+
+        # Optional replanning system prompt (customizable)
+        replan_system_msg: Optional[ChatMessage] = None
+        if replan_ctx is not None:
+            replan_template = DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT
+            if prompt_config is not None and prompt_config.replan_system_prompt:
+                replan_template = prompt_config.replan_system_prompt.strip()
+
+            replan_json = json.dumps(
+                replan_ctx.to_prompt_dict(),
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+
+            # Template MUST contain {replan_json}
+            replan_text = replan_template.format(replan_json=replan_json)
+            replan_system_msg = ChatMessage(role="system", content=replan_text)
+
+        # next_step rules prompt (customizable)
+        next_step_rules_prompt = DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT
+        if prompt_config is not None and prompt_config.next_step_rules_prompt:
+            next_step_rules_prompt = prompt_config.next_step_rules_prompt.strip()
 
         # User message: provide only needed context + schema.
         user_lines: List[str] = []
         user_lines.append("CAPABILITIES (hard constraints):")
-        user_lines.append(json.dumps(caps, ensure_ascii=False))
+        user_lines.append(json.dumps(caps, ensure_ascii=False, sort_keys=True))
         user_lines.append("")
 
         user_lines.append("USER QUERY:")
         user_lines.append((req.message or "").strip())
         user_lines.append("")
 
-        # Minimal, explicit rules for next_step to reduce ambiguity.
-        user_lines.append("RULES FOR next_step:")
-        user_lines.append('- If intent == "clarify": next_step MUST be "clarify".')
-        user_lines.append('- If intent != "clarify": next_step MUST NOT be "clarify".')
-        user_lines.append('Clarify intent should be used ONLY when the user request is ambiguous or missing critical information.')
-        user_lines.append('Do NOT choose clarify if you can answer with a reasonable technical/general response without asking follow-ups.')
-        user_lines.append('Do NOT choose clarify for broad/open questions; answer them as GENERIC and use next_step="synthesize".')
-
-        user_lines.append('- Choose exactly one next_step for THIS iteration.')
-        user_lines.append('- Use "websearch" for freshness/external information.')
-        user_lines.append('- Use "rag" for internal documents or user long-term memory.')
-        user_lines.append('- Use "tools" only when tool execution is required.')
-        user_lines.append('- Use "synthesize" when you have enough information to draft an answer.')
-        user_lines.append('- Use "finalize" only when you can return the final answer now.')
+        # Rules for next_step (from template / config)
+        user_lines.append(next_step_rules_prompt)
         user_lines.append("")
 
         user_lines.append("JSON SCHEMA:")
@@ -212,11 +241,11 @@ class EnginePlanner:
         user_lines.append("")
         user_lines.append("OUTPUT JSON:")
 
-        return [
-            ChatMessage(role="system", content=system_prompt),
-            ChatMessage(role="user", content="\n".join(user_lines)),
-        ]
-
+        msgs: List[ChatMessage] = [ChatMessage(role="system", content=system_prompt)]
+        if replan_system_msg is not None:
+            msgs.append(replan_system_msg)
+        msgs.append(ChatMessage(role="user", content="\n".join(user_lines)))
+        return msgs
 
 
 
@@ -235,7 +264,7 @@ class EnginePlanner:
             raise ValueError("Planner did not return a JSON object.")
         return s[start : end + 1]
 
-    def _parse_plan(self, raw: str) -> EnginePlan:
+    def _parse_plan(self, raw: str, *, prompt_config: Optional[PlannerPromptConfig]) -> EnginePlan:
         """
         Parse strict JSON (as specified by _build_planner_messages) into EnginePlan.
 
@@ -334,7 +363,7 @@ class EnginePlanner:
             ask_clarify = True
             if not clar_q:
                 # If missing, force a safe generic clarifier.
-                clar_q = "Could you clarify what you mean and what outcome you want?"
+                clar_q = self._fallback_clarify_question(prompt_config)
             # In clarify mode, retrieval is always off
             use_web = use_ltm = use_rag = use_tools = False
             next_step = EngineNextStep.CLARIFY
@@ -344,9 +373,10 @@ class EnginePlanner:
                 # If model set it true incorrectly, force clarify intent
                 intent = PlanIntent.CLARIFY
                 if not clar_q:
-                    clar_q = "Could you clarify what you mean and what outcome you want?"
+                    clar_q = self._fallback_clarify_question(prompt_config)
                 use_web = use_ltm = use_rag = use_tools = False
                 next_step = EngineNextStep.CLARIFY
+                reasoning_summary = "clarify_required"
             else:
                 clar_q = None
                 # In non-clarify, next_step must not be clarify
@@ -383,3 +413,8 @@ class EnginePlanner:
         )
 
 
+    def _fallback_clarify_question(self, prompt_config: Optional[PlannerPromptConfig]) -> str:
+        q = DEFAULT_PLANNER_FALLBACK_CLARIFY_QUESTION
+        if prompt_config is not None and prompt_config.fallback_clarify_question:
+            q = prompt_config.fallback_clarify_question.strip()
+        return q

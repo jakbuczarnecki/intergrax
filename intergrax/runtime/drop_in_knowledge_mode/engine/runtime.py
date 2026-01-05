@@ -24,26 +24,11 @@ Refactored as a stateful pipeline:
 
 from __future__ import annotations
 
-import asyncio
 import uuid
 
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
-from intergrax.runtime.drop_in_knowledge_mode.config import StepPlanningStrategy
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_context import RuntimeContext
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.build_base_history_step import BuildBaseHistoryStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.core_llm_step import CoreLLMStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ensure_current_user_message_step import EnsureCurrentUserMessageStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.history_step import HistoryStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ingested_attachments_step import IngestedAttachmentsStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.instructions_step import InstructionsStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.profile_based_memory_step import ProfileBasedMemoryStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.rag_step import RagStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.session_and_ingest_step import SessionAndIngestStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools_step import ToolsStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.user_longterm_memory_step import UserLongtermMemoryStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.websearch_step import WebsearchStep
+from intergrax.runtime.drop_in_knowledge_mode.pipelines.pipeline_factory import PipelineFactory
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
     RuntimeRequest,
     RuntimeAnswer,
@@ -52,11 +37,11 @@ from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import Runtim
 
 
 # ----------------------------------------------------------------------
-# DropInKnowledgeRuntime
+# RuntimeEngine
 # ----------------------------------------------------------------------
 
 
-class DropInKnowledgeRuntime:
+class RuntimeEngine:
     """
     High-level conversational runtime for the Intergrax framework.
 
@@ -111,7 +96,7 @@ class DropInKnowledgeRuntime:
         state.trace_event(
             component="engine",
             step="run_start",
-            message="DropInKnowledgeRuntime.run() called.",
+            message="RuntimeEngine.run() called.",
             data={
                 "session_id": request.session_id,
                 "user_id": request.user_id,
@@ -120,107 +105,40 @@ class DropInKnowledgeRuntime:
                 "step_planning_strategy": str(self.context.config.step_planning_strategy),
             },
         )
-
-        if self.context.config.step_planning_strategy == StepPlanningStrategy.OFF:
-            runtime_answer = await self._run_pipeline_no_planner(state=state)
         
-        elif self.context.config.step_planning_strategy == StepPlanningStrategy.STATIC_PLAN:
-            runtime_answer = await self._run_pipeline_static_plan(state)
-        
-        elif self.context.config.step_planning_strategy == StepPlanningStrategy.DYNAMIC_LOOP:
-            runtime_answer = await self._run_pipeline_dynamic_loop(state)
+        try:
+            pipeline = PipelineFactory.build_pipeline(state=state)
+            runtime_answer = await pipeline.run(state=state)
 
-        else:
-            raise ValueError(f"Unknown step_planning_strategy: {self.context.config.step_planning_strategy}")
-
-
-        # Final trace entry for this request.
-        state.trace_event(
-            component="engine",
-            step="run_end",
-            message="DropInKnowledgeRuntime.run() finished.",
-            data={
-                "strategy": runtime_answer.route.strategy,
-                "used_rag": runtime_answer.route.used_rag,
-                "used_websearch": runtime_answer.route.used_websearch,
-                "used_tools": runtime_answer.route.used_tools,
-                "used_user_longterm_memory": runtime_answer.route.used_user_longterm_memory,
-                "run_id":state.run_id
-            },
-        )
-        
-        await state.finalize_llm_tracker(request, runtime_answer)
-
-        return runtime_answer
-
-
-    async def _run_pipeline_no_planner(self, state: RuntimeState) -> RuntimeAnswer:
-        
-        pipeline = [
-            SessionAndIngestStep(),
-            ProfileBasedMemoryStep(),
-            BuildBaseHistoryStep(),
-            HistoryStep(),
-            InstructionsStep(),
-
-            RagStep(),
-            UserLongtermMemoryStep(),
-            IngestedAttachmentsStep(),
-            WebsearchStep(),
-
-            EnsureCurrentUserMessageStep(),
-
-            ToolsStep(),
-            CoreLLMStep(),
-            PersistAndBuildAnswerStep(),
-        ]
-
-        await self._execute_pipeline(pipeline, state)
-
-        runtime_answer = state.runtime_answer
-        if runtime_answer is None:
-            raise RuntimeError("Persist step did not set state.runtime_answer.")
-        
-        return runtime_answer
-
-
-    async def _run_pipeline_static_plan(self, state: RuntimeState) -> RuntimeAnswer:
-        raise NotImplementedError(
-            "StepPlanningStrategy.STATIC_PLAN is configured, but step planner is not implemented in this session."
-        )
-
-    async def _run_pipeline_dynamic_loop(self, state: RuntimeState) -> RuntimeAnswer:
-        raise NotImplementedError(
-            "StepPlanningStrategy.DYNAMIC_LOOP is configured, but step planner is not implemented in this session."
-        )
-    
-
-    async def _execute_pipeline(self, steps: list[RuntimeStep], state: RuntimeState) -> None:
-        for step in steps:
-            step_name = step.__class__.__name__
+            # Final trace entry for this request.
             state.trace_event(
-                component="runtime",
-                step=step_name,
-                message="Step started",
-                data={}
+                component="engine",
+                step="run_end",
+                message="RuntimeEngine.run() finished.",
+                data={
+                    "strategy": runtime_answer.route.strategy,
+                    "used_rag": runtime_answer.route.used_rag,
+                    "used_websearch": runtime_answer.route.used_websearch,
+                    "used_tools": runtime_answer.route.used_tools,
+                    "used_user_longterm_memory": runtime_answer.route.used_user_longterm_memory,
+                    "run_id":state.run_id
+                },
             )
+            
+            await state.finalize_llm_tracker(request, runtime_answer)
 
-            await step.run(state)
-
-            state.trace_event(
-                component="runtime",
-                step=step_name,
-                message="Step finished",
-                data={}
-            )
-
-
-    def run_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
-        """
-        Synchronous wrapper around `run()`.
-
-        Useful for environments where `await` is not easily available,
-        such as simple scripts or some notebook setups.
-        """
-        return asyncio.run(self.run(request))
+            return runtime_answer
+        
+        finally:
+            # finalize even on exceptions; only if we have an answer
+            if runtime_answer is not None:
+                await state.finalize_llm_tracker(request, runtime_answer)
+            else:
+                # Optional: trace that run aborted before producing answer
+                state.trace_event(
+                    component="engine",
+                    step="run_abort",
+                    message="RuntimeEngine.run() aborted before RuntimeAnswer was produced.",
+                    data={"run_id": state.run_id},
+                )
     

@@ -196,7 +196,7 @@ The runtime must be **modular and configurable**:
 Developers should be able to:
 
 ```python
-runtime = DropInKnowledgeRuntime(
+runtime = RuntimeEngine(
     config=RuntimeConfig(
         enable_rag=True,
         enable_websearch=False,

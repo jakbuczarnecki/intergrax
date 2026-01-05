@@ -100,18 +100,15 @@ class StepPlanner:
         hints = self._hints_from_engine_plan(engine_plan)
         intent = hints.intent or PlanIntent.GENERIC
 
-        # Preserve upstream clarifying question if provided
+        # Preserve upstream clarifying question if provided.
+        # CLARIFY is always an EXECUTE plan that stops via HITL (no FINALIZE required),
+        # regardless of STATIC/DYNAMIC build_mode.
         if intent == PlanIntent.CLARIFY:
             q = (engine_plan.clarifying_question or "").strip()
             if not q:
                 q = self._clarifying_question(msg)
 
-            if build_mode == PlanBuildMode.STATIC:
-                # STATIC must be an EXECUTE plan and end with FINAL
-                return self._plan_clarify_execute_with_question(msg, plan_id=pid, question=q)
-
-            # DYNAMIC must be ITERATE and can be single-step
-            return self._plan_clarify_iterate_with_question(msg, plan_id=pid, question=q)
+            return self._plan_clarify_execute_with_question(msg, plan_id=pid, question=q)
 
         if build_mode == PlanBuildMode.STATIC:
             return self.build_from_hints(
@@ -119,7 +116,7 @@ class StepPlanner:
                 engine_hints=hints,
                 plan_id=pid,
             )
-        
+
         # DYNAMIC: one-step plan based on engine_plan.next_step
         ns = engine_plan.next_step
         if ns is None:
@@ -162,7 +159,6 @@ class StepPlanner:
             ]
 
         elif ns == EngineNextStep.SYNTHESIZE:
-            # Use existing synth builder (do NOT call non-existent _step_synthesize_draft)
             steps = [
                 self._step_synthesize(
                     step_id=StepId.DRAFT,
@@ -172,7 +168,6 @@ class StepPlanner:
             ]
 
         elif ns == EngineNextStep.FINALIZE:
-            # Use existing finalize builder (do NOT call non-existent _step_finalize_answer)
             steps = [
                 self._step_finalize(
                     depends_on=[],
@@ -181,8 +176,7 @@ class StepPlanner:
             ]
 
         else:
-            # ns == CLARIFY was handled above via intent == CLARIFY
-            # but keep a safe fallback:
+            # ns == CLARIFY is handled above via intent == CLARIFY
             steps = [
                 self._step_synthesize(
                     step_id=StepId.DRAFT,
@@ -199,6 +193,7 @@ class StepPlanner:
             plan_id=pid,
             enforce_finalize=False,
         )
+
 
 
 
@@ -233,25 +228,11 @@ class StepPlanner:
     def _plan_clarify_execute_with_question(self, msg: str, *, plan_id: str, question: str) -> ExecutionPlan:
         steps: List[ExecutionStep] = [
             self._step_clarify(step_id=StepId.CLARIFY, depends_on=[], question=question),
-            # FINAL ensures a consistent "output step" and keeps invariant "plan ends with FINAL"
-            self._step_finalize(depends_on=[StepId.CLARIFY], instructions=question),
         ]
         return self._wrap(
             plan_id=plan_id,
             intent=PlanIntent.CLARIFY,
             mode=PlanMode.EXECUTE,
-            steps=steps,
-            enforce_finalize=True,
-        )
-
-    def _plan_clarify_iterate_with_question(self, msg: str, *, plan_id: str, question: str) -> ExecutionPlan:
-        steps: List[ExecutionStep] = [
-            self._step_clarify(step_id=StepId.CLARIFY, depends_on=[], question=question),
-        ]
-        return self._wrap(
-            plan_id=plan_id,
-            intent=PlanIntent.CLARIFY,
-            mode=PlanMode.ITERATE,
             steps=steps,
             enforce_finalize=False,
         )
@@ -659,6 +640,7 @@ class StepPlanner:
                 "question": question,
                 "choices": None,
                 "must_answer_to_continue": True,
+                "context_key": "clarify.user_input",
             },
             expected_output_type=ExpectedOutputType.CLARIFYING_QUESTION,
             rationale_type=RationaleType.ASK_CLARIFICATION,
