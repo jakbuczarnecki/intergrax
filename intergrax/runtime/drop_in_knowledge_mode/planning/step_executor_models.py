@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Awaitable, Callable, Dict, Mapping, Optional, Protocol, Sequence
+from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Protocol, Sequence
 
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
@@ -66,10 +66,113 @@ class UserInputRequest:
     question: str
     must_answer_to_continue: bool = True
 
-    # Optional metadata (safe defaults, useful later)
+    # Optional metadata
     context_key: Optional[str] = None
     origin_step_id: Optional[StepId] = None
-    
+
+@dataclass(frozen=True)
+class ReplanFailedStep:
+    step_id: str
+    action: str
+    error_code: Optional[str]
+    error_message: Optional[str]
+
+
+@dataclass(frozen=True)
+class ReplanContext:
+    """
+    Production-grade structured feedback for EnginePlanner replanning.
+
+    This object is derived from PlanExecutionReport and MUST be safe to serialize.
+    It should contain only stable, low-volume diagnostic signals (no large outputs).
+    """
+    attempt: int
+    last_plan_id: str
+    replan_reason: str
+    executed_order: List[str]
+    failed_steps: List[ReplanFailedStep]
+    skipped_with_error_steps: List[ReplanFailedStep]
+
+    @staticmethod
+    def from_report(*, report: PlanExecutionReport, attempt: int, last_plan_id: str) -> ReplanContext:
+        reason = (report.replan_reason or "").strip() or "replan_requested"
+
+        executed_order = [sid.value if hasattr(sid, "value") else str(sid) for sid in (report.executed_order or [])]
+
+        failed_steps: List[ReplanFailedStep] = []
+        skipped_with_error: List[ReplanFailedStep] = []
+
+        for r in (report.step_results or {}).values():
+            # Status enums may have .value; keep it stable for serialization.
+            status = r.status.value if hasattr(r.status, "value") else str(r.status)
+
+            err_code = None
+            err_msg = None
+            if r.error is not None:
+                err_code = r.error.code.value if hasattr(r.error.code, "value") else str(r.error.code)
+                err_msg = r.error.message
+
+            step_id = r.step_id.value if hasattr(r.step_id, "value") else str(r.step_id)
+            action = r.action.value if hasattr(r.action, "value") else str(r.action)
+
+            if status == "FAILED":
+                failed_steps.append(
+                    ReplanFailedStep(
+                        step_id=step_id,
+                        action=action,
+                        error_code=err_code,
+                        error_message=err_msg,
+                    )
+                )
+
+            if status == "SKIPPED" and r.error is not None:
+                skipped_with_error.append(
+                    ReplanFailedStep(
+                        step_id=step_id,
+                        action=action,
+                        error_code=err_code,
+                        error_message=err_msg,
+                    )
+                )
+
+        return ReplanContext(
+            attempt=attempt,
+            last_plan_id=last_plan_id,
+            replan_reason=reason,
+            executed_order=executed_order,
+            failed_steps=failed_steps,
+            skipped_with_error_steps=skipped_with_error,
+        )
+
+    def to_prompt_dict(self) -> Dict[str, Any]:
+        """
+        Stable JSON-ish representation for prompts.
+        """
+        return {
+            "attempt": self.attempt,
+            "last_plan_id": self.last_plan_id,
+            "replan_reason": self.replan_reason,
+            "executed_order": self.executed_order,
+            "failed_steps": [
+                {
+                    "step_id": s.step_id,
+                    "action": s.action,
+                    "error_code": s.error_code,
+                    "error_message": s.error_message,
+                }
+                for s in self.failed_steps
+            ],
+            "skipped_with_error_steps": [
+                {
+                    "step_id": s.step_id,
+                    "action": s.action,
+                    "error_code": s.error_code,
+                    "error_message": s.error_message,
+                }
+                for s in self.skipped_with_error_steps
+            ],
+        }
+
 
 @dataclass(frozen=True)
 class StepError:

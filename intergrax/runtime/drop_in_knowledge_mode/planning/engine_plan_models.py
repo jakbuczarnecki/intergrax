@@ -4,6 +4,9 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
+from hashlib import sha256
+import hashlib
+import json
 import pprint
 from typing import Any, Dict, Literal, Optional
 
@@ -51,6 +54,33 @@ class EnginePlan:
 
     debug: Dict[str, Any] = field(default_factory=dict)
 
+    def fingerprint(self) -> str:
+      """
+      Stable fingerprint of the *decision* part of EnginePlan.
+      Excludes trace/debug and free-form reasoning to avoid false differences.
+      """
+      def _enum(v: Any) -> Any:
+          return v.value if hasattr(v, "value") else v
+
+      # Normalize clarify_question: strip and collapse whitespace
+      cq: Optional[str] = self.clarifying_question
+      if cq is not None:
+          cq = " ".join(cq.strip().split()) or None
+
+      payload: Dict[str, Any] = {
+          "version": self.version,
+          "intent": _enum(self.intent),
+          "ask_clarifying_question": bool(self.ask_clarifying_question),
+          "clarifying_question": cq,
+          "next_step": _enum(self.next_step) if self.next_step is not None else None,
+          "use_websearch": bool(self.use_websearch),
+          "use_user_longterm_memory": bool(self.use_user_longterm_memory),
+          "use_rag": bool(self.use_rag),
+          "use_tools": bool(self.use_tools),
+      }
+
+      raw = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+      return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     def print_pretty(self) -> None:
         pprint.pprint({

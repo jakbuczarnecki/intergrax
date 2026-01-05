@@ -88,22 +88,23 @@ class StepExecutor:
         results: Dict[StepId, StepExecutionResult] = {}
         ordered: List[StepExecutionResult] = []
         ctx = _DefaultExecContext(_state=state, _results=results, _ordered=ordered)
-        
+
         step_order: List[StepId] = [s.step_id for s in plan.steps]
         executed_order: List[StepId] = []
 
         replan_reason: Optional[str] = None
 
-        stop_reason: PlanStopReason = PlanStopReason.COMPLETED
+        # IMPORTANT: do not default to COMPLETED; normalize at the end.
+        stop_reason: Optional[PlanStopReason] = None
         user_input_request: Optional[UserInputRequest] = None
 
         plan_started_dt = datetime.now(timezone.utc)
         plan_started_at = plan_started_dt.isoformat()
-        
+
         sequence: int = 0
 
         for step in plan.steps:
-            ctx.set_current_step(step)            
+            ctx.set_current_step(step)
 
             sequence += 1
             step_started_dt = datetime.now(timezone.utc)
@@ -184,26 +185,27 @@ class StepExecutor:
 
                     # HITL: stop plan execution if a clarifying question is requested
                     if step.action == StepAction.ASK_CLARIFYING_QUESTION and final_res.status == StepStatus.OK:
-                        params = step.params if isinstance(step.params, dict) else {}
-                        q = str(params.get("question") or "").strip()
-                        if not q and isinstance(final_res.output, dict):
-                            q = str(final_res.output.get("question") or "").strip()
+                        params = step.params or {}
 
+                        q = (params.get("question") or "").strip()
                         if not q:
-                            q = "Could you clarify what you mean and what outcome you want?"
+                            raise RuntimeError("ASK_CLARIFYING_QUESTION: missing/empty params['question'].")
 
                         must = bool(params.get("must_answer_to_continue", True))
+
+                        # use context_key from params (contract), fallback to previous behavior
+                        ctx_key = (params.get("context_key") or "").strip()
+                        if not ctx_key:
+                            ctx_key = f"{plan.plan_id}:{step.step_id.value}"
 
                         stop_reason = PlanStopReason.NEEDS_USER_INPUT
                         user_input_request = UserInputRequest(
                             question=q,
                             must_answer_to_continue=must,
                             origin_step_id=step.step_id,
-                            context_key=f"{plan.plan_id}:{step.step_id.value}",
+                            context_key=ctx_key,
                         )
-
-                        # Do not continue executing the remaining steps in this plan.
-                        break                    
+                        break
 
                     if final_res.status in (StepStatus.FAILED, StepStatus.REPLAN_REQUESTED) and self._cfg.fail_fast:
                         break
@@ -236,12 +238,11 @@ class StepExecutor:
 
                     if replan_reason is None:
                         replan_reason = res.error.message if res.error else "replan_requested"
-                        
+
                     continue
 
             finally:
                 ctx.set_current_step(None)
-
 
         # Final output: last OK output if any (runtime can override this later)
         final_output: Optional[Any] = None
@@ -260,9 +261,8 @@ class StepExecutor:
             (r.status == StepStatus.SKIPPED and r.error is not None) for r in results.values()
         )
 
+        # Compute ok first (as you had), but we will normalize stop_reason and re-apply ok semantics.
         ok = (replan_reason is None) and (not has_failed) and (not has_replan) and (not has_skipped_error)
-        if stop_reason != PlanStopReason.COMPLETED:
-            ok = False
 
         # If plan includes FINALIZE_ANSWER, require it to be OK for ok=True
         final_step = next(
@@ -273,6 +273,21 @@ class StepExecutor:
             fr = results.get(final_step.step_id)
             if fr is None or fr.status != StepStatus.OK:
                 ok = False
+
+        # ---------------------------------------------------------------------
+        # Final stop_reason normalization (always set for non-HITL outcomes)
+        # ---------------------------------------------------------------------
+        if stop_reason is None:
+            if replan_reason is not None or has_replan:
+                stop_reason = PlanStopReason.REPLAN_REQUIRED
+            elif has_failed or has_skipped_error:
+                stop_reason = PlanStopReason.FAILED
+            else:
+                stop_reason = PlanStopReason.COMPLETED
+
+        # Ensure ok flag matches stop_reason semantics
+        if stop_reason != PlanStopReason.COMPLETED:
+            ok = False
 
         plan_ended_dt = datetime.now(timezone.utc)
         plan_ended_at = plan_ended_dt.isoformat()
@@ -292,6 +307,7 @@ class StepExecutor:
             ended_at_utc=plan_ended_at,
             duration_ms=plan_duration_ms,
         )
+
 
     def _deps_ok(self, *, step: ExecutionStep, results: Mapping[StepId, StepExecutionResult]) -> bool:
         for dep in step.depends_on:
