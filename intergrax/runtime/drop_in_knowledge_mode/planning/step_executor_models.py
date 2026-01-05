@@ -59,7 +59,7 @@ class StepError:
     details: Optional[Dict[str, Any]] = None
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class StepExecutionResult:
     step_id: StepId
     action: StepAction

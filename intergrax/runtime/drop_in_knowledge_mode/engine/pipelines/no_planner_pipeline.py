@@ -10,7 +10,7 @@ from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.build_base_hi
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.core_llm_step import CoreLLMStep
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ensure_current_user_message_step import EnsureCurrentUserMessageStep
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.history_step import HistoryStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ingested_attachments_step import IngestedAttachmentsStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.retrieve_attachments_step import RetrieveAttachmentsStep
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.instructions_step import InstructionsStep
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.profile_based_memory_step import ProfileBasedMemoryStep
@@ -37,7 +37,7 @@ class NoPlannerPipeline(RuntimePipeline):
 
             RagStep(),
             UserLongtermMemoryStep(),
-            IngestedAttachmentsStep(),
+            RetrieveAttachmentsStep(),
             WebsearchStep(),
 
             ToolsStep(),

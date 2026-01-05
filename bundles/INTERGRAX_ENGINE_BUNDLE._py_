@@ -2,12 +2,13 @@
 # LLM INSTRUCTIONS
 # ======================================================================
 # This file is an auto-generated, complete source code bundle of the Intergrax framework.
-# It contains all Python modules from the package directory:
-#   - Package root: intergrax/
+#
+# Bundle scope:
+#   - package=intergrax/
 #   - Project root: D:\Projekty\intergrax
 #
 # IMPORTANT RULES FOR THE MODEL:
-# 1) Treat THIS file as the single source of truth for Intergrax.
+# 1) Treat THIS file as the single source of truth for the included scope.
 # 2) Do NOT assume any missing code exists elsewhere.
 # 3) When proposing changes, always reference the exact FILE and MODULE headers below.
 # 4) Prefer edits that preserve existing architecture, naming, and conventions.
@@ -35,14 +36,14 @@
 # - tools/
 # - websearch/
 #
-# Files included: 152
-# Total lines: 26016
+# Files included: 159
+# Total lines: 26478
 # ======================================================================
 
 # INTERGRAX ENGINE BUNDLE (auto-generated)
 # ROOT: D:\Projekty\intergrax
-# PACKAGE: intergrax
-# FILES: 152
+# SCOPE: package=intergrax/
+# FILES: 159
 #
 # MODULE MAP (dynamic):
 # - chains/ (2 files)
@@ -54,7 +55,7 @@
 # - openai/ (3 files)
 # - rag/ (11 files)
 # - root/ (4 files)
-# - runtime/ (61 files)
+# - runtime/ (68 files)
 # - supervisor/ (5 files)
 # - tools/ (3 files)
 # - websearch/ (33 files)
@@ -112,12 +113,18 @@
 # - intergrax/system_prompts.py | intergrax.system_prompts | root | 84 | f66fdf33ac4c
 # - intergrax/runtime/__init__.py | intergrax.runtime | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/__init__.py | intergrax.runtime.drop_in_knowledge_mode | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 194 | c72868be5156
+# - intergrax/runtime/drop_in_knowledge_mode/config.py | intergrax.runtime.drop_in_knowledge_mode.config | runtime | 203 | caf6c2dfe986
 # - intergrax/runtime/drop_in_knowledge_mode/context/__init__.py | intergrax.runtime.drop_in_knowledge_mode.context | runtime | 0 | e3b0c44298fc
 # - intergrax/runtime/drop_in_knowledge_mode/context/context_builder.py | intergrax.runtime.drop_in_knowledge_mode.context.context_builder | runtime | 485 | 2cca85dc5dcb
 # - intergrax/runtime/drop_in_knowledge_mode/context/engine_history_layer.py | intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer | runtime | 565 | d4c1a0d530cd
 # - intergrax/runtime/drop_in_knowledge_mode/engine/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine | runtime | 0 | e3b0c44298fc
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 226 | 56e0a5f041ca
+# - intergrax/runtime/drop_in_knowledge_mode/engine/pipelines/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine.pipelines | runtime | 0 | e3b0c44298fc
+# - intergrax/runtime/drop_in_knowledge_mode/engine/pipelines/contract.py | intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.contract | runtime | 90 | ecdf2240c085
+# - intergrax/runtime/drop_in_knowledge_mode/engine/pipelines/no_planner_pipeline.py | intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.no_planner_pipeline | runtime | 55 | 55af7c238de2
+# - intergrax/runtime/drop_in_knowledge_mode/engine/pipelines/pipeline_factory.py | intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.pipeline_factory | runtime | 60 | c64139f8be94
+# - intergrax/runtime/drop_in_knowledge_mode/engine/pipelines/planner_dynamic_pipeline.py | intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.planner_dynamic_pipeline | runtime | 18 | 7f1bc8b3779d
+# - intergrax/runtime/drop_in_knowledge_mode/engine/pipelines/planner_static_pipeline.py | intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.planner_static_pipeline | runtime | 82 | 2bf2a082521a
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime | runtime | 145 | 66c268d64f6f
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_context.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_context | runtime | 230 | 8c778f777561
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_state.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state | runtime | 171 | 97c512f6593d
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/__init__.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps | runtime | 0 | e3b0c44298fc
@@ -126,11 +133,11 @@
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/core_llm_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.core_llm_step | runtime | 95 | 473febe5e9b6
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/ensure_current_user_message_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ensure_current_user_message_step | runtime | 40 | 6871578778c5
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/history_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.history_step | runtime | 62 | 3614c40a16b9
-# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/ingested_attachments_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ingested_attachments_step | runtime | 104 | e2ea3f078924
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/instructions_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.instructions_step | runtime | 84 | 3de4e2340ab6
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/persist_and_build_answer_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.persist_and_build_answer_step | runtime | 134 | 9511313df01b
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/profile_based_memory_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.profile_based_memory_step | runtime | 83 | efc7a68b87a6
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/rag_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.rag_step | runtime | 93 | c079859fbe82
+# - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/retrieve_attachments_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.retrieve_attachments_step | runtime | 104 | e58c576f2ca5
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/session_and_ingest_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.session_and_ingest_step | runtime | 117 | 3781275bf2fb
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/tools.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools | runtime | 96 | f6d2ff1e397b
 # - intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/tools_step.py | intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools_step | runtime | 157 | f15f1281f0e3
@@ -143,8 +150,9 @@
 # - intergrax/runtime/drop_in_knowledge_mode/planning/engine_plan_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models | runtime | 323 | 17f0b8c31ab4
 # - intergrax/runtime/drop_in_knowledge_mode/planning/engine_planner.py | intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner | runtime | 385 | b52a6588b3ad
 # - intergrax/runtime/drop_in_knowledge_mode/planning/plan_builder_helper.py | intergrax.runtime.drop_in_knowledge_mode.planning.plan_builder_helper | runtime | 77 | e386380d18e4
-# - intergrax/runtime/drop_in_knowledge_mode/planning/step_executor.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_executor | runtime | 279 | 2cfa223c796d
-# - intergrax/runtime/drop_in_knowledge_mode/planning/step_executor_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models | runtime | 140 | 936ad8e34fdf
+# - intergrax/runtime/drop_in_knowledge_mode/planning/runtime_step_handlers.py | intergrax.runtime.drop_in_knowledge_mode.planning.runtime_step_handlers | runtime | 136 | 3fc4960f4dc0
+# - intergrax/runtime/drop_in_knowledge_mode/planning/step_executor.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_executor | runtime | 352 | b07fcb4b4aaf
+# - intergrax/runtime/drop_in_knowledge_mode/planning/step_executor_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models | runtime | 160 | c06fb5917829
 # - intergrax/runtime/drop_in_knowledge_mode/planning/step_planner.py | intergrax.runtime.drop_in_knowledge_mode.planning.step_planner | runtime | 820 | 920e42eea374
 # - intergrax/runtime/drop_in_knowledge_mode/planning/stepplan_models.py | intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models | runtime | 411 | ab165f6c4c46
 # - intergrax/runtime/drop_in_knowledge_mode/prompts/__init__.py | intergrax.runtime.drop_in_knowledge_mode.prompts | runtime | 0 | e3b0c44298fc
@@ -213,7 +221,7 @@
 # - intergrax/websearch/utils/dedupe.py | intergrax.websearch.utils.dedupe | websearch | 44 | 5cdd0083ed7d
 # - intergrax/websearch/utils/rate_limit.py | intergrax.websearch.utils.rate_limit | websearch | 101 | 35c20ff62398
 #
-# TOTAL LINES: 26016
+# TOTAL LINES: 26478
 # ======================================================================
 
 # ======================================================================
@@ -221,7 +229,7 @@
 # MODULE: intergrax.chains
 # MODULE_GROUP: chains
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=chains
 #   - file=__init__.py
 # LINES: 0
@@ -236,7 +244,7 @@
 # MODULE: intergrax.chains.langchain_qa_chain
 # MODULE_GROUP: chains
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=chains
 #   - file=langchain_qa_chain.py
 # LINES: 374
@@ -628,7 +636,7 @@ class LangChainQAChain:
 # MODULE: intergrax.globals
 # MODULE_GROUP: globals
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=globals
 #   - file=__init__.py
 # LINES: 0
@@ -643,7 +651,7 @@ class LangChainQAChain:
 # MODULE: intergrax.globals.settings
 # MODULE_GROUP: globals
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=globals
 #   - file=settings.py
 # LINES: 118
@@ -775,7 +783,7 @@ GLOBAL_SETTINGS = GlobalSettings()
 # MODULE: intergrax.llm
 # MODULE_GROUP: llm
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=llm
 #   - file=__init__.py
 # LINES: 0
@@ -790,7 +798,7 @@ GLOBAL_SETTINGS = GlobalSettings()
 # MODULE: intergrax.llm.messages
 # MODULE_GROUP: llm
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=llm
 #   - file=messages.py
 # LINES: 97
@@ -903,7 +911,7 @@ def append_chat_messages(
 # MODULE: intergrax.llm_adapters
 # MODULE_GROUP: llm_adapters
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=llm_adapters
 #   - file=__init__.py
 # LINES: 1
@@ -918,7 +926,7 @@ def append_chat_messages(
 # MODULE: intergrax.llm_adapters.aws_bedrock_adapter
 # MODULE_GROUP: llm_adapters
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=llm_adapters
 #   - file=aws_bedrock_adapter.py
 # LINES: 577
@@ -1516,7 +1524,7 @@ class BedrockChatAdapter(LLMAdapter):
 # MODULE: intergrax.llm_adapters.azure_openai_adapter
 # MODULE_GROUP: llm_adapters
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=llm_adapters
 #   - file=azure_openai_adapter.py
 # LINES: 276
@@ -1806,7 +1814,7 @@ class AzureOpenAIChatAdapter(LLMAdapter):
 # MODULE: intergrax.llm_adapters.claude_adapter
 # MODULE_GROUP: llm_adapters
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=llm_adapters
 #   - file=claude_adapter.py
 # LINES: 219
@@ -2039,7 +2047,7 @@ class ClaudeChatAdapter(LLMAdapter):
 # MODULE: intergrax.llm_adapters.gemini_adapter
 # MODULE_GROUP: llm_adapters
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=llm_adapters
 #   - file=gemini_adapter.py
 # LINES: 282
@@ -2335,7 +2343,7 @@ class GeminiChatAdapter(LLMAdapter):
 # MODULE: intergrax.llm_adapters.llm_adapter
 # MODULE_GROUP: llm_adapters
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=llm_adapters
 #   - file=llm_adapter.py
 # LINES: 440
@@ -2792,7 +2800,7 @@ class LLMRunStats:
 # MODULE: intergrax.llm_adapters.llm_provider
 # MODULE_GROUP: llm_adapters
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=llm_adapters
 #   - file=llm_provider.py
 # LINES: 18
@@ -2824,7 +2832,7 @@ class LLMProvider(str, Enum):
 # MODULE: intergrax.llm_adapters.llm_provider_registry
 # MODULE_GROUP: llm_adapters
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=llm_adapters
 #   - file=llm_provider_registry.py
 # LINES: 50
@@ -2888,7 +2896,7 @@ LLMAdapterRegistry.register(LLMProvider.AWS_BEDROCK, lambda **kw: BedrockChatAda
 # MODULE: intergrax.llm_adapters.llm_usage_track
 # MODULE_GROUP: llm_adapters
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=llm_adapters
 #   - file=llm_usage_track.py
 # LINES: 288
@@ -3193,7 +3201,7 @@ class LLMUsageTracker:
 # MODULE: intergrax.llm_adapters.mistral_adapter
 # MODULE_GROUP: llm_adapters
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=llm_adapters
 #   - file=mistral_adapter.py
 # LINES: 262
@@ -3472,7 +3480,7 @@ class MistralChatAdapter(LLMAdapter):
 # MODULE: intergrax.llm_adapters.ollama_adapter
 # MODULE_GROUP: llm_adapters
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=llm_adapters
 #   - file=ollama_adapter.py
 # LINES: 345
@@ -3831,7 +3839,7 @@ class LangChainOllamaAdapter(LLMAdapter):
 # MODULE: intergrax.llm_adapters.openai_responses_adapter
 # MODULE_GROUP: llm_adapters
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=llm_adapters
 #   - file=openai_responses_adapter.py
 # LINES: 480
@@ -4325,7 +4333,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 # MODULE: intergrax.memory
 # MODULE_GROUP: memory
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=memory
 #   - file=__init__.py
 # LINES: 0
@@ -4340,7 +4348,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 # MODULE: intergrax.memory.conversational_memory
 # MODULE_GROUP: memory
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=memory
 #   - file=conversational_memory.py
 # LINES: 123
@@ -4477,7 +4485,7 @@ class ConversationalMemory:
 # MODULE: intergrax.memory.conversational_store
 # MODULE_GROUP: memory
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=memory
 #   - file=conversational_store.py
 # LINES: 106
@@ -4597,7 +4605,7 @@ class ConversationalMemoryStore(Protocol):
 # MODULE: intergrax.memory.stores
 # MODULE_GROUP: memory
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=memory
 #   - file=__init__.py
 # LINES: 0
@@ -4612,7 +4620,7 @@ class ConversationalMemoryStore(Protocol):
 # MODULE: intergrax.memory.stores.in_memory_conversational_store
 # MODULE_GROUP: memory
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=memory
 #   - file=in_memory_conversational_store.py
 # LINES: 95
@@ -4721,7 +4729,7 @@ class InMemoryConversationalMemoryStore(ConversationalMemoryStore):
 # MODULE: intergrax.memory.stores.in_memory_user_profile_store
 # MODULE_GROUP: memory
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=memory
 #   - file=in_memory_user_profile_store.py
 # LINES: 59
@@ -4794,7 +4802,7 @@ class InMemoryUserProfileStore(UserProfileStore):
 # MODULE: intergrax.memory.user_profile_manager
 # MODULE_GROUP: memory
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=memory
 #   - file=user_profile_manager.py
 # LINES: 542
@@ -5350,7 +5358,7 @@ class UserProfileManager:
 # MODULE: intergrax.memory.user_profile_memory
 # MODULE_GROUP: memory
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=memory
 #   - file=user_profile_memory.py
 # LINES: 168
@@ -5537,7 +5545,7 @@ class UserProfile:
 # MODULE: intergrax.memory.user_profile_store
 # MODULE_GROUP: memory
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=memory
 #   - file=user_profile_store.py
 # LINES: 52
@@ -5603,7 +5611,7 @@ class UserProfileStore(Protocol):
 # MODULE: intergrax.multimedia
 # MODULE_GROUP: multimedia
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=multimedia
 #   - file=__init__.py
 # LINES: 0
@@ -5618,7 +5626,7 @@ class UserProfileStore(Protocol):
 # MODULE: intergrax.multimedia.audio_loader
 # MODULE_GROUP: multimedia
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=multimedia
 #   - file=audio_loader.py
 # LINES: 49
@@ -5682,7 +5690,7 @@ def translate_audio(audio_path:str, model:str="medium", language:str=GLOBAL_SETT
 # MODULE: intergrax.multimedia.images_loader
 # MODULE_GROUP: multimedia
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=multimedia
 #   - file=images_loader.py
 # LINES: 23
@@ -5719,7 +5727,7 @@ def transcribe_image(prompt:str, image_path: str, model:str = "llava-llama3:late
 # MODULE: intergrax.multimedia.ipynb_display
 # MODULE_GROUP: multimedia
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=multimedia
 #   - file=ipynb_display.py
 # LINES: 130
@@ -5867,7 +5875,7 @@ def display_video_jump(*, path: str | Path, start_s: float,
 # MODULE: intergrax.multimedia.video_loader
 # MODULE_GROUP: multimedia
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=multimedia
 #   - file=video_loader.py
 # LINES: 235
@@ -6119,7 +6127,7 @@ def extract_frames_from_video(
 # MODULE: intergrax.openai
 # MODULE_GROUP: openai
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=openai
 #   - file=__init__.py
 # LINES: 0
@@ -6134,7 +6142,7 @@ def extract_frames_from_video(
 # MODULE: intergrax.openai.rag
 # MODULE_GROUP: openai
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=openai
 #   - file=__init__.py
 # LINES: 0
@@ -6149,7 +6157,7 @@ def extract_frames_from_video(
 # MODULE: intergrax.openai.rag.rag_openai
 # MODULE_GROUP: openai
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=openai
 #   - file=rag_openai.py
 # LINES: 252
@@ -6415,7 +6423,7 @@ class IntergraxRagOpenAI:
 # MODULE: intergrax.rag
 # MODULE_GROUP: rag
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=rag
 #   - file=__init__.py
 # LINES: 0
@@ -6430,7 +6438,7 @@ class IntergraxRagOpenAI:
 # MODULE: intergrax.rag.documents_loader
 # MODULE_GROUP: rag
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=rag
 #   - file=documents_loader.py
 # LINES: 1282
@@ -7732,7 +7740,7 @@ class AudioSmartLoader:
 # MODULE: intergrax.rag.documents_splitter
 # MODULE_GROUP: rag
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=rag
 #   - file=documents_splitter.py
 # LINES: 351
@@ -8098,7 +8106,7 @@ class DocumentsSplitter:
 # MODULE: intergrax.rag.dual_index_builder
 # MODULE_GROUP: rag
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=rag
 #   - file=dual_index_builder.py
 # LINES: 157
@@ -8269,7 +8277,7 @@ def build_dual_index(
 # MODULE: intergrax.rag.dual_retriever
 # MODULE_GROUP: rag
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=rag
 #   - file=dual_retriever.py
 # LINES: 311
@@ -8594,7 +8602,7 @@ class DualRetriever:
 # MODULE: intergrax.rag.embedding_manager
 # MODULE_GROUP: rag
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=rag
 #   - file=embedding_manager.py
 # LINES: 306
@@ -8915,7 +8923,7 @@ class EmbeddingManager:
 # MODULE: intergrax.rag.rag_answerer
 # MODULE_GROUP: rag
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=rag
 #   - file=rag_answerer.py
 # LINES: 419
@@ -9350,7 +9358,7 @@ class RagAnswerer:
 # MODULE: intergrax.rag.rag_retriever
 # MODULE_GROUP: rag
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=rag
 #   - file=rag_retriever.py
 # LINES: 555
@@ -9919,7 +9927,7 @@ class RagRetriever:
 # MODULE: intergrax.rag.re_ranker
 # MODULE_GROUP: rag
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=rag
 #   - file=re_ranker.py
 # LINES: 399
@@ -10333,7 +10341,7 @@ class ReRanker:
 # MODULE: intergrax.rag.vectorstore_manager
 # MODULE_GROUP: rag
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=rag
 #   - file=vectorstore_manager.py
 # LINES: 610
@@ -10958,7 +10966,7 @@ class VectorstoreManager:
 # MODULE: intergrax.rag.windowed_answerer
 # MODULE_GROUP: rag
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=rag
 #   - file=windowed_answerer.py
 # LINES: 247
@@ -11219,7 +11227,7 @@ class WindowedAnswerer:
 # MODULE: intergrax
 # MODULE_GROUP: root
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=root
 #   - file=__init__.py
 # LINES: 0
@@ -11234,7 +11242,7 @@ class WindowedAnswerer:
 # MODULE: intergrax.chat_agent
 # MODULE_GROUP: root
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=root
 #   - file=chat_agent.py
 # LINES: 622
@@ -11873,7 +11881,7 @@ class ChatAgent:
 # MODULE: intergrax.logging
 # MODULE_GROUP: root
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=root
 #   - file=logging.py
 # LINES: 11
@@ -11898,7 +11906,7 @@ logging.basicConfig(
 # MODULE: intergrax.system_prompts
 # MODULE_GROUP: root
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=root
 #   - file=system_prompts.py
 # LINES: 84
@@ -11996,7 +12004,7 @@ def default_rag_system_instruction():
 # MODULE: intergrax.runtime
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=__init__.py
 # LINES: 0
@@ -12011,7 +12019,7 @@ def default_rag_system_instruction():
 # MODULE: intergrax.runtime.drop_in_knowledge_mode
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=__init__.py
 # LINES: 0
@@ -12026,11 +12034,11 @@ def default_rag_system_instruction():
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.config
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=config.py
-# LINES: 194
-# SHA256: c72868be5156e55b4d0aa37f0306e391cf985e1e3aa8efad6771d302941e1d6b
+# LINES: 203
+# SHA256: caf6c2dfe98650bbaf97efc1e88bfea325d41a052dec26a15dcbe124bbc162ed
 # SYMBOLS:
 #   - class ToolsContextScope
 #   - class StepPlanningStrategy
@@ -12047,6 +12055,9 @@ from typing import Any, Dict, Optional, Literal
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.rag.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import PlannerPromptConfig
+from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import StepExecutorConfig
+from intergrax.runtime.drop_in_knowledge_mode.planning.step_planner import StepPlannerConfig
 from intergrax.tools.tools_agent import ToolsAgent
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
@@ -12216,7 +12227,13 @@ class RuntimeConfig:
     # PLANNING
     # ------------------------------------------------------------------
     step_planning_strategy: StepPlanningStrategy = StepPlanningStrategy.OFF
+
+    step_planner_cfg: Optional[StepPlannerConfig]
+
+    step_executor_cfg: Optional[StepExecutorConfig]
     
+    planner_prompt_config: Optional[PlannerPromptConfig]
+
 
     # ------------------------------------------------------------------
     # VALIDATION
@@ -12236,7 +12253,7 @@ class RuntimeConfig:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.context
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=__init__.py
 # LINES: 0
@@ -12251,7 +12268,7 @@ class RuntimeConfig:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.context.context_builder
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=context_builder.py
 # LINES: 485
@@ -12752,7 +12769,7 @@ class ContextBuilder:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=engine_history_layer.py
 # LINES: 565
@@ -13332,7 +13349,7 @@ class HistoryLayer:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=__init__.py
 # LINES: 0
@@ -13343,17 +13360,407 @@ class HistoryLayer:
 
 
 # ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/pipelines/__init__.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.pipelines
+# MODULE_GROUP: runtime
+# TAGS:
+#   - scope=package=intergrax/
+#   - module_group=runtime
+#   - file=__init__.py
+# LINES: 0
+# SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# SYMBOLS:
+#   - <none>
+# ======================================================================
+
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/pipelines/contract.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.contract
+# MODULE_GROUP: runtime
+# TAGS:
+#   - scope=package=intergrax/
+#   - module_group=runtime
+#   - file=contract.py
+# LINES: 90
+# SHA256: ecdf2240c085fc5cb484d885dafe150155ef4e9fc69b5b53dfb160221833b470
+# SYMBOLS:
+#   - class RuntimePipeline
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeAnswer
+
+class RuntimePipeline(ABC):
+    """
+    Lightweight base class for pipeline runners.
+    Shared implementation: execute_pipeline.
+    """
+    
+    async def run(self, state: RuntimeState) -> RuntimeAnswer:
+        """
+        Public entrypoint. Provides shared validation and invariants.
+        Subclasses must implement _inner_run().
+        """
+        self._validate_state(state)
+
+        runtime_answer = await self._inner_run(state)
+
+        if runtime_answer is None:
+            raise RuntimeError("Pipeline returned None RuntimeAnswer.")
+
+        # Hard invariant: Persist step (or equivalent) must set state.runtime_answer
+        if state.runtime_answer is None:
+            raise RuntimeError("Persist step did not set state.runtime_answer.")
+
+        # Prefer the actual object returned by inner_run, but enforce consistency with state
+        # (Optional) If you want to hard-enforce object identity:
+        # if runtime_answer is not state.runtime_answer: ...
+        self._assert_valid_answer(runtime_answer)
+
+        return runtime_answer
+
+    
+    @abstractmethod
+    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
+        """
+        Pipeline-specific execution. Must produce and return RuntimeAnswer.
+        """
+        raise NotImplementedError
+
+
+    def _validate_state(self, state: RuntimeState) -> None:
+        if state is None:
+            raise ValueError("state is None.")
+        if state.context is None:
+            raise ValueError("state.context is None.")
+        if state.request is None:
+            raise ValueError("state.request is None.")
+        if not state.run_id:
+            raise ValueError("state.run_id is missing.")
+        
+
+    async def _execute_pipeline(self, steps: list[RuntimeStep], state: RuntimeState) -> None:
+        for step in steps:
+            step_name = step.__class__.__name__
+            state.trace_event(
+                component="runtime",
+                step=step_name,
+                message="Step started",
+                data={}
+            )
+
+            try:
+                await step.run(state)
+            except Exception as e:
+                state.trace_event(
+                    component="pipeline",
+                    step=step_name,
+                    message="Step failed",
+                    data={"error": repr(e)},
+                )
+                raise
+
+            state.trace_event(
+                component="runtime",
+                step=step_name,
+                message="Step finished",
+                data={}
+            )
+
+    def _assert_valid_answer(self, answer: RuntimeAnswer) -> None:
+        assert answer is not None, "Pipeline returned None answer"
+        assert answer.route is not None, "RuntimeAnswer has no route"
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/pipelines/no_planner_pipeline.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.no_planner_pipeline
+# MODULE_GROUP: runtime
+# TAGS:
+#   - scope=package=intergrax/
+#   - module_group=runtime
+#   - file=no_planner_pipeline.py
+# LINES: 55
+# SHA256: 55af7c238de2034de583a55cd6b60e396d1380eb9a5a3b2999a24f1550c031e2
+# SYMBOLS:
+#   - class NoPlannerPipeline
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.contract import RuntimePipeline
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.build_base_history_step import BuildBaseHistoryStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.core_llm_step import CoreLLMStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ensure_current_user_message_step import EnsureCurrentUserMessageStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.history_step import HistoryStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.retrieve_attachments_step import RetrieveAttachmentsStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.instructions_step import InstructionsStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.profile_based_memory_step import ProfileBasedMemoryStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.rag_step import RagStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.session_and_ingest_step import SessionAndIngestStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools_step import ToolsStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.user_longterm_memory_step import UserLongtermMemoryStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.websearch_step import WebsearchStep
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeAnswer
+
+
+class NoPlannerPipeline(RuntimePipeline):
+
+    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
+        steps = [
+            SessionAndIngestStep(),
+            ProfileBasedMemoryStep(),
+            BuildBaseHistoryStep(),
+            HistoryStep(),
+            InstructionsStep(),
+
+            # Must exist before any step that injects context "before last user".
+            EnsureCurrentUserMessageStep(),
+
+            RagStep(),
+            UserLongtermMemoryStep(),
+            RetrieveAttachmentsStep(),
+            WebsearchStep(),
+
+            ToolsStep(),
+            CoreLLMStep(),
+            PersistAndBuildAnswerStep(),
+        ]
+
+        await self._execute_pipeline(steps, state)
+
+        runtime_answer = state.runtime_answer
+        if runtime_answer is None:
+            raise RuntimeError("Persist step did not set state.runtime_answer.")
+        
+        return runtime_answer
+    
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/pipelines/pipeline_factory.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.pipeline_factory
+# MODULE_GROUP: runtime
+# TAGS:
+#   - scope=package=intergrax/
+#   - module_group=runtime
+#   - file=pipeline_factory.py
+# LINES: 60
+# SHA256: c64139f8be94be39cb1f659433708ac271e339864536414c2598274cdbf56252
+# SYMBOLS:
+#   - class PipelineFactory
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from typing import Callable, Dict
+
+from intergrax.runtime.drop_in_knowledge_mode.config import StepPlanningStrategy
+from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.contract import RuntimePipeline
+from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.no_planner_pipeline import NoPlannerPipeline
+from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.planner_dynamic_pipeline import PlannerDynamicPipeline
+from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.planner_static_pipeline import PlannerStaticPipeline
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.core_llm_step import CoreLLMStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.retrieve_attachments_step import RetrieveAttachmentsStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.rag_step import RagStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools_step import ToolsStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.user_longterm_memory_step import UserLongtermMemoryStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.websearch_step import WebsearchStep
+from intergrax.runtime.drop_in_knowledge_mode.planning.runtime_step_handlers import RuntimeStep, build_runtime_step_registry
+from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import StepHandlerRegistry
+from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import StepAction
+
+
+class PipelineFactory:
+
+    @classmethod
+    def build_pipeline(cls, state: RuntimeState) -> RuntimePipeline:
+
+        if state.context.config.step_planning_strategy == StepPlanningStrategy.OFF:
+            return NoPlannerPipeline()
+        
+        if state.context.config.step_planning_strategy == StepPlanningStrategy.STATIC_PLAN:
+            return PlannerStaticPipeline()
+        
+        if state.context.config.step_planning_strategy == StepPlanningStrategy.DYNAMIC_LOOP:
+            return PlannerDynamicPipeline()
+        
+        raise ValueError(f"Unknown step_planning_strategy: {state.context.config.step_planning_strategy}")
+    
+
+    @classmethod
+    def build_default_planning_step_registry(cls) -> StepHandlerRegistry:
+        """
+        Default registry for StepExecutor planning actions (STATIC/DYNAMIC).
+        This registry is explicit and production-safe (no reflection).
+        """
+        bindings: Dict[StepAction, Callable[[], RuntimeStep]] = {
+            StepAction.USE_WEBSEARCH: lambda: WebsearchStep(),
+            StepAction.USE_TOOLS: lambda: ToolsStep(),
+            StepAction.USE_RAG_RETRIEVAL: lambda: RagStep(),
+            StepAction.USE_ATTACHMENTS_RETRIEVAL: lambda: RetrieveAttachmentsStep(),
+            StepAction.USE_USER_LONGTERM_MEMORY_SEARCH: lambda: UserLongtermMemoryStep(),
+            StepAction.SYNTHESIZE_DRAFT: lambda: CoreLLMStep(),
+            StepAction.VERIFY_ANSWER: lambda: CoreLLMStep(),
+            StepAction.FINALIZE_ANSWER: lambda: PersistAndBuildAnswerStep(),            
+        }
+
+        return build_runtime_step_registry(bindings=bindings)
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/pipelines/planner_dynamic_pipeline.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.planner_dynamic_pipeline
+# MODULE_GROUP: runtime
+# TAGS:
+#   - scope=package=intergrax/
+#   - module_group=runtime
+#   - file=planner_dynamic_pipeline.py
+# LINES: 18
+# SHA256: 7f1bc8b3779d12038916765c45489fe199e9b48f1bd847edebec57efd8feaa05
+# SYMBOLS:
+#   - class PlannerDynamicPipeline
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.contract import RuntimePipeline
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeAnswer
+
+
+class PlannerDynamicPipeline(RuntimePipeline):
+
+    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
+        raise NotImplementedError(
+            "StepPlanningStrategy.DYNAMIC_LOOP is configured, but step planner is not implemented."
+        ) 
+    
+
+# ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/pipelines/planner_static_pipeline.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.planner_static_pipeline
+# MODULE_GROUP: runtime
+# TAGS:
+#   - scope=package=intergrax/
+#   - module_group=runtime
+#   - file=planner_static_pipeline.py
+# LINES: 82
+# SHA256: 2bf2a082521ac6311a0264c42d87042634e797c08b6f57ef2e4b43f5231fda10
+# SYMBOLS:
+#   - class PlannerStaticPipeline
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.contract import RuntimePipeline
+from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.pipeline_factory import PipelineFactory
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner import EnginePlanner
+from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import PlanExecutionReport
+from intergrax.runtime.drop_in_knowledge_mode.planning.step_planner import StepPlanner
+from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import PlanBuildMode
+from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor import StepExecutor
+from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeAnswer
+
+# Setup steps (outside planner)
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.session_and_ingest_step import SessionAndIngestStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.profile_based_memory_step import ProfileBasedMemoryStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.build_base_history_step import BuildBaseHistoryStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.history_step import HistoryStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.instructions_step import InstructionsStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ensure_current_user_message_step import EnsureCurrentUserMessageStep
+
+
+class PlannerStaticPipeline(RuntimePipeline):
+    """
+    STATIC plan pipeline:
+      - deterministic setup outside planner (no LLM planning)
+      - EnginePlanner -> StepPlanner(STATIC) -> StepExecutor(registry)
+      - runtime_answer MUST be produced by FINALIZE_ANSWER handler (PersistAndBuildAnswerStep)
+    """
+
+    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
+        # 1) Deterministic setup outside planner
+        setup_steps = [
+            SessionAndIngestStep(),
+            ProfileBasedMemoryStep(),
+            BuildBaseHistoryStep(),
+            HistoryStep(),
+            InstructionsStep(),
+            EnsureCurrentUserMessageStep(),
+        ]
+        await self._execute_pipeline(setup_steps, state)
+
+        # 2) Build components
+        ctx = state.context
+        cfg = ctx.config
+        req = state.request
+
+        if cfg.llm_adapter is None:
+            raise RuntimeError("PlannerStaticPipeline: config.llm_adapter is required for EnginePlanner.")
+
+        engine_planner = EnginePlanner(llm_adapter=cfg.llm_adapter)
+        step_planner = StepPlanner(cfg.step_planner_cfg)
+
+        registry = PipelineFactory.build_default_planning_step_registry()
+        step_executor = StepExecutor(registry=registry, cfg=cfg.step_executor_cfg)
+
+        # 3) Engine plan (LLM)
+        engine_plan = await engine_planner.plan(
+            req=req,
+            state=state,
+            config=cfg,
+            prompt_config=cfg.planner_prompt_config,
+            run_id=state.run_id,
+        )
+
+        # 4) Step plan (deterministic) + execute
+        exec_plan = step_planner.build_from_engine_plan(
+            user_message=req.message or "",
+            engine_plan=engine_plan,
+            plan_id=f"static-{state.run_id}",
+            build_mode=PlanBuildMode.STATIC,
+        )
+
+        executed_plan: PlanExecutionReport = await step_executor.execute(plan=exec_plan, state=state)
+
+        # 5) Enforce invariant: FINALIZE step must set runtime_answer
+        if state.runtime_answer is None:
+            raise RuntimeError("PlannerStaticPipeline: runtime_answer is not set. FINALIZE_ANSWER step failed or missing.")
+
+        return state.runtime_answer
+
+# ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime.py
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=runtime.py
-# LINES: 226
-# SHA256: 56e0a5f041ca33984bd443b36489632c3573a7af79b36bfa377edb9f8899fd0b
+# LINES: 145
+# SHA256: 66c268d64f6f4b0fe24027c9e84a3bf7b3730583845e47325984ca5aac498fd1
 # SYMBOLS:
-#   - class DropInKnowledgeRuntime
+#   - class RuntimeEngine
 # ======================================================================
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
@@ -13385,22 +13792,8 @@ import asyncio
 import uuid
 
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
-from intergrax.runtime.drop_in_knowledge_mode.config import StepPlanningStrategy
+from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.pipeline_factory import PipelineFactory
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_context import RuntimeContext
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.build_base_history_step import BuildBaseHistoryStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.core_llm_step import CoreLLMStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ensure_current_user_message_step import EnsureCurrentUserMessageStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.history_step import HistoryStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ingested_attachments_step import IngestedAttachmentsStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.instructions_step import InstructionsStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.profile_based_memory_step import ProfileBasedMemoryStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.rag_step import RagStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.session_and_ingest_step import SessionAndIngestStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools_step import ToolsStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.user_longterm_memory_step import UserLongtermMemoryStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.websearch_step import WebsearchStep
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
     RuntimeRequest,
     RuntimeAnswer,
@@ -13409,11 +13802,11 @@ from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import Runtim
 
 
 # ----------------------------------------------------------------------
-# DropInKnowledgeRuntime
+# RuntimeEngine
 # ----------------------------------------------------------------------
 
 
-class DropInKnowledgeRuntime:
+class RuntimeEngine:
     """
     High-level conversational runtime for the Intergrax framework.
 
@@ -13468,7 +13861,7 @@ class DropInKnowledgeRuntime:
         state.trace_event(
             component="engine",
             step="run_start",
-            message="DropInKnowledgeRuntime.run() called.",
+            message="RuntimeEngine.run() called.",
             data={
                 "session_id": request.session_id,
                 "user_id": request.user_id,
@@ -13477,109 +13870,42 @@ class DropInKnowledgeRuntime:
                 "step_planning_strategy": str(self.context.config.step_planning_strategy),
             },
         )
-
-        if self.context.config.step_planning_strategy == StepPlanningStrategy.OFF:
-            runtime_answer = await self._run_pipeline_no_planner(state=state)
         
-        elif self.context.config.step_planning_strategy == StepPlanningStrategy.STATIC_PLAN:
-            runtime_answer = await self._run_pipeline_static_plan(state)
-        
-        elif self.context.config.step_planning_strategy == StepPlanningStrategy.DYNAMIC_LOOP:
-            runtime_answer = await self._run_pipeline_dynamic_loop(state)
+        try:
+            pipeline = PipelineFactory.build_pipeline(state=state)
+            runtime_answer = await pipeline.run(state=state)
 
-        else:
-            raise ValueError(f"Unknown step_planning_strategy: {self.context.config.step_planning_strategy}")
-
-
-        # Final trace entry for this request.
-        state.trace_event(
-            component="engine",
-            step="run_end",
-            message="DropInKnowledgeRuntime.run() finished.",
-            data={
-                "strategy": runtime_answer.route.strategy,
-                "used_rag": runtime_answer.route.used_rag,
-                "used_websearch": runtime_answer.route.used_websearch,
-                "used_tools": runtime_answer.route.used_tools,
-                "used_user_longterm_memory": runtime_answer.route.used_user_longterm_memory,
-                "run_id":state.run_id
-            },
-        )
-        
-        await state.finalize_llm_tracker(request, runtime_answer)
-
-        return runtime_answer
-
-
-    async def _run_pipeline_no_planner(self, state: RuntimeState) -> RuntimeAnswer:
-        
-        pipeline = [
-            SessionAndIngestStep(),
-            ProfileBasedMemoryStep(),
-            BuildBaseHistoryStep(),
-            HistoryStep(),
-            InstructionsStep(),
-
-            RagStep(),
-            UserLongtermMemoryStep(),
-            IngestedAttachmentsStep(),
-            WebsearchStep(),
-
-            EnsureCurrentUserMessageStep(),
-
-            ToolsStep(),
-            CoreLLMStep(),
-            PersistAndBuildAnswerStep(),
-        ]
-
-        await self._execute_pipeline(pipeline, state)
-
-        runtime_answer = state.runtime_answer
-        if runtime_answer is None:
-            raise RuntimeError("Persist step did not set state.runtime_answer.")
-        
-        return runtime_answer
-
-
-    async def _run_pipeline_static_plan(self, state: RuntimeState) -> RuntimeAnswer:
-        raise NotImplementedError(
-            "StepPlanningStrategy.STATIC_PLAN is configured, but step planner is not implemented in this session."
-        )
-
-    async def _run_pipeline_dynamic_loop(self, state: RuntimeState) -> RuntimeAnswer:
-        raise NotImplementedError(
-            "StepPlanningStrategy.DYNAMIC_LOOP is configured, but step planner is not implemented in this session."
-        )
-    
-
-    async def _execute_pipeline(self, steps: list[RuntimeStep], state: RuntimeState) -> None:
-        for step in steps:
-            step_name = step.__class__.__name__
+            # Final trace entry for this request.
             state.trace_event(
-                component="runtime",
-                step=step_name,
-                message="Step started",
-                data={}
+                component="engine",
+                step="run_end",
+                message="RuntimeEngine.run() finished.",
+                data={
+                    "strategy": runtime_answer.route.strategy,
+                    "used_rag": runtime_answer.route.used_rag,
+                    "used_websearch": runtime_answer.route.used_websearch,
+                    "used_tools": runtime_answer.route.used_tools,
+                    "used_user_longterm_memory": runtime_answer.route.used_user_longterm_memory,
+                    "run_id":state.run_id
+                },
             )
+            
+            await state.finalize_llm_tracker(request, runtime_answer)
 
-            await step.run(state)
-
-            state.trace_event(
-                component="runtime",
-                step=step_name,
-                message="Step finished",
-                data={}
-            )
-
-
-    def run_sync(self, request: RuntimeRequest) -> RuntimeAnswer:
-        """
-        Synchronous wrapper around `run()`.
-
-        Useful for environments where `await` is not easily available,
-        such as simple scripts or some notebook setups.
-        """
-        return asyncio.run(self.run(request))
+            return runtime_answer
+        
+        finally:
+            # finalize even on exceptions; only if we have an answer
+            if runtime_answer is not None:
+                await state.finalize_llm_tracker(request, runtime_answer)
+            else:
+                # Optional: trace that run aborted before producing answer
+                state.trace_event(
+                    component="engine",
+                    step="run_abort",
+                    message="RuntimeEngine.run() aborted before RuntimeAnswer was produced.",
+                    data={"run_id": state.run_id},
+                )
     
 
 # ======================================================================
@@ -13587,7 +13913,7 @@ class DropInKnowledgeRuntime:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_context
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=runtime_context.py
 # LINES: 230
@@ -13832,7 +14158,7 @@ class RuntimeContext:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=runtime_state.py
 # LINES: 171
@@ -14017,7 +14343,7 @@ class RuntimeState:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=__init__.py
 # LINES: 0
@@ -14032,7 +14358,7 @@ class RuntimeState:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.build_base_history_step
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=build_base_history_step.py
 # LINES: 18
@@ -14064,7 +14390,7 @@ class BuildBaseHistoryStep(RuntimeStep):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=contract.py
 # LINES: 11
@@ -14089,7 +14415,7 @@ class RuntimeStep(Protocol):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.core_llm_step
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=core_llm_step.py
 # LINES: 95
@@ -14198,7 +14524,7 @@ class CoreLLMStep(RuntimeStep):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ensure_current_user_message_step
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=ensure_current_user_message_step.py
 # LINES: 40
@@ -14252,7 +14578,7 @@ class EnsureCurrentUserMessageStep(RuntimeStep):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.history_step
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=history_step.py
 # LINES: 62
@@ -14324,129 +14650,11 @@ class HistoryStep(RuntimeStep):
         )
 
 # ======================================================================
-# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/ingested_attachments_step.py
-# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ingested_attachments_step
-# MODULE_GROUP: runtime
-# TAGS:
-#   - package=intergrax
-#   - module_group=runtime
-#   - file=ingested_attachments_step.py
-# LINES: 104
-# SHA256: e2ea3f0789242c839d3d4e560e7a035aea6facdaa55f469517f9b826f19d98b8
-# SYMBOLS:
-#   - class IngestedAttachmentsStep
-# ======================================================================
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
-
-from __future__ import annotations
-
-from datetime import datetime, timezone
-
-from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools import format_rag_context, insert_context_before_last_user
-
-
-class IngestedAttachmentsStep(RuntimeStep):
-    """
-    Retrieve relevant chunks from session-ingested attachments (AttachmentIngestionService)
-    and inject them into the LLM context.
-
-    Key requirements:
-        - Independent from enable_rag (must work even when enable_rag=False).
-        - Reuse existing retrieval components (EmbeddingManager + VectorstoreManager.query).
-        - Filter by session_id + user_id (+ tenant/workspace if available).
-        - Inject as context messages using _insert_context_before_last_user.
-    """
-
-    async def run(self, state: RuntimeState) -> None:
-        # Defaults
-        state.used_attachments_context = False
-        state.set_debug_value("attachments_chunks", 0)
-
-        if state.context.ingestion_service is None:
-            state.set_debug_section("attachments", {"used": False, "reason": "ingestion_service_not_configured"})
-            return
-
-        session = state.session
-        if session is None:
-            state.set_debug_section("attachments", {"used": False, "reason": "session_not_initialized"})
-            return
-
-        # Retrieval (no coupling to enable_rag)
-        res = await state.context.ingestion_service.search_session_attachments(
-            query=state.request.message,
-            session_id=session.id,
-            user_id=state.request.user_id,
-            tenant_id=session.tenant_id,
-            workspace_id=session.workspace_id,
-            top_k=6,
-            score_threshold=None,
-        )
-
-        dbg = (res or {}).get("debug") or {}
-        used = bool((res or {}).get("used"))
-        chunks = (res or {}).get("hits") or []
-
-        state.used_attachments_context = used and bool(chunks)
-        state.set_debug_section("attachments", {
-            **dbg,
-            "used": bool(used and chunks),
-            "hits_count": len(chunks),
-        })
-        state.set_debug_value("attachments_chunks", len(chunks))
-
-        if not state.used_attachments_context:
-            return
-
-        # Build a single system context message (same injection pattern as RAG).
-        attachments_context_text = format_rag_context(chunks)
-        if not attachments_context_text.strip():
-            # If somehow chunks exist but formatting is empty, treat as unused.
-            state.used_attachments_context = False
-            state.set_debug_section("attachments", {
-                **dbg,
-                "used": False,
-                "reason": "empty_formatted_context",
-            })
-            state.set_debug_value("attachments_chunks", 0)
-            return
-
-        content = "SESSION ATTACHMENTS (retrieved):\n" + attachments_context_text
-
-        context_messages = [
-            ChatMessage(
-                role="system",
-                content=content,
-                created_at=datetime.now(timezone.utc).isoformat(),
-            )
-        ]
-
-        insert_context_before_last_user(state, context_messages)
-
-        # Provide compact textual form also for tools agent (same pattern as RAG).
-        state.tools_context_parts.append("SESSION ATTACHMENTS:\n" + attachments_context_text)
-
-        # Trace step
-        state.trace_event(
-            component="engine",
-            step="attachments_context",
-            message="Session attachments retrieval executed and context injected.",
-            data={
-                "used_attachments_context": state.used_attachments_context,
-                "retrieved_chunks": len(chunks),
-            },
-        )
-
-# ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/instructions_step.py
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.instructions_step
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=instructions_step.py
 # LINES: 84
@@ -14544,7 +14752,7 @@ class InstructionsStep(RuntimeStep):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.persist_and_build_answer_step
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=persist_and_build_answer_step.py
 # LINES: 134
@@ -14692,7 +14900,7 @@ class PersistAndBuildAnswerStep(RuntimeStep):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.profile_based_memory_step
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=profile_based_memory_step.py
 # LINES: 83
@@ -14789,7 +14997,7 @@ class ProfileBasedMemoryStep(RuntimeStep):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.rag_step
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=rag_step.py
 # LINES: 93
@@ -14892,11 +15100,129 @@ class RagStep(RuntimeStep):
         )
 
 # ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/retrieve_attachments_step.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.retrieve_attachments_step
+# MODULE_GROUP: runtime
+# TAGS:
+#   - scope=package=intergrax/
+#   - module_group=runtime
+#   - file=retrieve_attachments_step.py
+# LINES: 104
+# SHA256: e58c576f2ca52169ad624613c534f4f487bd2f703e1f56aaeedddcda5b2a202a
+# SYMBOLS:
+#   - class RetrieveAttachmentsStep
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools import format_rag_context, insert_context_before_last_user
+
+
+class RetrieveAttachmentsStep(RuntimeStep):
+    """
+    Retrieve relevant chunks from session-ingested attachments (AttachmentIngestionService)
+    and inject them into the LLM context.
+
+    Key requirements:
+        - Independent from enable_rag (must work even when enable_rag=False).
+        - Reuse existing retrieval components (EmbeddingManager + VectorstoreManager.query).
+        - Filter by session_id + user_id (+ tenant/workspace if available).
+        - Inject as context messages using _insert_context_before_last_user.
+    """
+
+    async def run(self, state: RuntimeState) -> None:
+        # Defaults
+        state.used_attachments_context = False
+        state.set_debug_value("attachments_chunks", 0)
+
+        if state.context.ingestion_service is None:
+            state.set_debug_section("attachments", {"used": False, "reason": "ingestion_service_not_configured"})
+            return
+
+        session = state.session
+        if session is None:
+            state.set_debug_section("attachments", {"used": False, "reason": "session_not_initialized"})
+            return
+
+        # Retrieval (no coupling to enable_rag)
+        res = await state.context.ingestion_service.search_session_attachments(
+            query=state.request.message,
+            session_id=session.id,
+            user_id=state.request.user_id,
+            tenant_id=session.tenant_id,
+            workspace_id=session.workspace_id,
+            top_k=6,
+            score_threshold=None,
+        )
+
+        dbg = (res or {}).get("debug") or {}
+        used = bool((res or {}).get("used"))
+        chunks = (res or {}).get("hits") or []
+
+        state.used_attachments_context = used and bool(chunks)
+        state.set_debug_section("attachments", {
+            **dbg,
+            "used": bool(used and chunks),
+            "hits_count": len(chunks),
+        })
+        state.set_debug_value("attachments_chunks", len(chunks))
+
+        if not state.used_attachments_context:
+            return
+
+        # Build a single system context message (same injection pattern as RAG).
+        attachments_context_text = format_rag_context(chunks)
+        if not attachments_context_text.strip():
+            # If somehow chunks exist but formatting is empty, treat as unused.
+            state.used_attachments_context = False
+            state.set_debug_section("attachments", {
+                **dbg,
+                "used": False,
+                "reason": "empty_formatted_context",
+            })
+            state.set_debug_value("attachments_chunks", 0)
+            return
+
+        content = "SESSION ATTACHMENTS (retrieved):\n" + attachments_context_text
+
+        context_messages = [
+            ChatMessage(
+                role="system",
+                content=content,
+                created_at=datetime.now(timezone.utc).isoformat(),
+            )
+        ]
+
+        insert_context_before_last_user(state, context_messages)
+
+        # Provide compact textual form also for tools agent (same pattern as RAG).
+        state.tools_context_parts.append("SESSION ATTACHMENTS:\n" + attachments_context_text)
+
+        # Trace step
+        state.trace_event(
+            component="engine",
+            step="attachments_context",
+            message="Session attachments retrieval executed and context injected.",
+            data={
+                "used_attachments_context": state.used_attachments_context,
+                "retrieved_chunks": len(chunks),
+            },
+        )
+
+# ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/engine/runtime_steps/session_and_ingest_step.py
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.session_and_ingest_step
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=session_and_ingest_step.py
 # LINES: 117
@@ -15027,7 +15353,7 @@ class SessionAndIngestStep(RuntimeStep):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=tools.py
 # LINES: 96
@@ -15140,7 +15466,7 @@ def _chunk_meta(ch: Any) -> dict:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools_step
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=tools_step.py
 # LINES: 157
@@ -15311,7 +15637,7 @@ class ToolsStep(RuntimeStep):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.user_longterm_memory_step
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=user_longterm_memory_step.py
 # LINES: 123
@@ -15448,7 +15774,7 @@ class UserLongtermMemoryStep(RuntimeStep):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.websearch_step
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=websearch_step.py
 # LINES: 117
@@ -15579,7 +15905,7 @@ class WebsearchStep(RuntimeStep):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.ingestion
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=__init__.py
 # LINES: 0
@@ -15594,7 +15920,7 @@ class WebsearchStep(RuntimeStep):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.ingestion.attachments
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=attachments.py
 # LINES: 124
@@ -15733,7 +16059,7 @@ class FileSystemAttachmentResolver:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=ingestion_service.py
 # LINES: 470
@@ -16218,7 +16544,7 @@ class AttachmentIngestionService:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.planning
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=__init__.py
 # LINES: 0
@@ -16233,7 +16559,7 @@ class AttachmentIngestionService:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=engine_plan_models.py
 # LINES: 323
@@ -16573,7 +16899,7 @@ In reasoning_summary (short):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=engine_planner.py
 # LINES: 385
@@ -16972,7 +17298,7 @@ class EnginePlanner:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.plan_builder_helper
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=plan_builder_helper.py
 # LINES: 77
@@ -17059,15 +17385,171 @@ async def build_plan(
     return engine_plan
 
 # ======================================================================
+# FILE: intergrax/runtime/drop_in_knowledge_mode/planning/runtime_step_handlers.py
+# MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.runtime_step_handlers
+# MODULE_GROUP: runtime
+# TAGS:
+#   - scope=package=intergrax/
+#   - module_group=runtime
+#   - file=runtime_step_handlers.py
+# LINES: 136
+# SHA256: 3fc4960f4dc0b36dbcae6c863cecc4063863f604042ea01f874ad7574d409ee1
+# SYMBOLS:
+#   - class RuntimeStep
+#   - def _now_iso()
+#   - def _ok_result()
+#   - def _failed_result()
+#   - class RuntimeStepBinding
+#   - def make_runtime_step_handler()
+#   - def build_runtime_step_registry()
+# ======================================================================
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Awaitable, Callable, Dict, Optional
+
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import ExecutionStep, StepAction, StepId
+from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import (
+    StepError,
+    StepErrorCode,
+    StepExecutionContext,
+    StepExecutionResult,
+    StepHandler,
+    StepHandlerRegistry,
+    StepStatus,
+)
+
+# Your existing RuntimeStep protocol
+from typing import Protocol
+
+
+class RuntimeStep(Protocol):
+    async def run(self, state: RuntimeState) -> None:
+        ...
+
+
+# -----------------------------
+# Result helpers (minimal + deterministic)
+# -----------------------------
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _ok_result(*, step: ExecutionStep, attempts: int = 1) -> StepExecutionResult:
+    # Executor overwrites telemetry anyway (sequence/timestamps/duration) when it wraps results,
+    # but StepExecutionResult requires these fields, so provide deterministic placeholders.
+    ts = _now_iso()
+    return StepExecutionResult(
+        step_id=step.step_id,
+        action=step.action,
+        status=StepStatus.OK,
+        sequence=0,
+        started_at_utc=ts,
+        ended_at_utc=ts,
+        duration_ms=0,
+        validated_params=None,
+        output=None,
+        meta=None,
+        error=None,
+        attempts=attempts,
+    )
+
+
+def _failed_result(*, step: ExecutionStep, message: str, details: Optional[dict] = None, attempts: int = 1) -> StepExecutionResult:
+    ts = _now_iso()
+    return StepExecutionResult(
+        step_id=step.step_id,
+        action=step.action,
+        status=StepStatus.FAILED,
+        sequence=0,
+        started_at_utc=ts,
+        ended_at_utc=ts,
+        duration_ms=0,
+        validated_params=None,
+        output=None,
+        meta=None,
+        error=StepError(
+            code=StepErrorCode.HANDLER_EXCEPTION,
+            message=message,
+            details=details,
+        ),
+        attempts=attempts,
+    )
+
+
+# -----------------------------
+# RuntimeStep -> StepHandler adapter
+# -----------------------------
+
+@dataclass(frozen=True)
+class RuntimeStepBinding:
+    """
+    One explicit binding:
+      StepAction -> factory that returns a RuntimeStep instance
+    """
+    action: StepAction
+    factory: Callable[[], RuntimeStep]
+
+
+def make_runtime_step_handler(*, action: StepAction, factory: Callable[[], RuntimeStep]) -> StepHandler:
+    """
+    Adapter: ExecutionStep + ctx -> executes RuntimeStep.run(state)
+    """
+    async def _handler(step: ExecutionStep, ctx: StepExecutionContext) -> StepExecutionResult:
+        # Defensive: executor already validates action/step_id consistency, but keep it tight.
+        if step.action != action:
+            return _failed_result(
+                step=step,
+                message="Handler called with unexpected action.",
+                details={"expected": action.value, "got": step.action.value},
+            )
+
+        # Instantiate step (fresh instance to keep handlers stateless by default)
+        runtime_step = factory()
+
+        # Run
+        try:
+            await runtime_step.run(ctx.state)
+            return _ok_result(step=step, attempts=1)
+        except Exception as e:
+            return _failed_result(
+                step=step,
+                message=f"RuntimeStep exception: {type(e).__name__}: {e}",
+                details={"step_id": step.step_id.value, "action": step.action.value},
+                attempts=1,
+            )
+
+    return _handler
+
+
+def build_runtime_step_registry(*, bindings: Dict[StepAction, Callable[[], RuntimeStep]]) -> StepHandlerRegistry:
+    """
+    Explicit, strongly-typed mapping StepAction -> handler.
+
+    bindings: Dict[StepAction, factory()]
+    """
+    handlers: Dict[StepAction, StepHandler] = {}
+    for action, factory in bindings.items():
+        handlers[action] = make_runtime_step_handler(action=action, factory=factory)
+
+    return StepHandlerRegistry(handlers=handlers)
+
+# ======================================================================
 # FILE: intergrax/runtime/drop_in_knowledge_mode/planning/step_executor.py
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.step_executor
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=step_executor.py
-# LINES: 279
-# SHA256: 2cfa223c796d8548b4df7bc7add0fb435a3ea7ff8927aa9ef36099aedd9c0d2f
+# LINES: 352
+# SHA256: b07fcb4b4aaf9da5dfc8d4b9d5acdbd1dba69224552d065fbf258ba569026ac7
 # SYMBOLS:
 #   - class _DefaultExecContext
 #   - class StepExecutor
@@ -17079,7 +17561,8 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from typing import Any, Dict, Mapping, Optional
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Mapping, Optional
 
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
@@ -17108,17 +17591,31 @@ from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models impo
 class _DefaultExecContext(StepExecutionContext):
     _state: RuntimeState
     _results: Dict[StepId, StepExecutionResult]
+    _ordered: List[StepExecutionResult]
+    _current_step: Optional[ExecutionStep] = None
 
     @property
     def state(self) -> RuntimeState:
         return self._state
 
     @property
+    def current_step(self) -> Optional[ExecutionStep]:
+        return self._current_step
+
+    def set_current_step(self, step: Optional[ExecutionStep]) -> None:
+        self._current_step = step
+
+    @property
     def results(self) -> Mapping[StepId, StepExecutionResult]:
         return self._results
 
+    @property
+    def ordered_results(self) -> List[StepExecutionResult]:
+        return self._ordered
+
     def set_result(self, result: StepExecutionResult) -> None:
         self._results[result.step_id] = result
+        self._ordered.append(result)
 
 
 class StepExecutor:
@@ -17140,72 +17637,130 @@ class StepExecutor:
         self._registry = registry
         self._cfg = cfg or StepExecutorConfig()
 
+
     async def execute(self, *, plan: ExecutionPlan, state: RuntimeState) -> PlanExecutionReport:
         results: Dict[StepId, StepExecutionResult] = {}
-        ctx = _DefaultExecContext(_state=state, _results=results)
+        ordered: List[StepExecutionResult] = []
+        ctx = _DefaultExecContext(_state=state, _results=results, _ordered=ordered)
+        
+        step_order: List[StepId] = [s.step_id for s in plan.steps]
+        executed_order: List[StepId] = []
 
         replan_reason: Optional[str] = None
+        plan_started_dt = datetime.now(timezone.utc)
+        plan_started_at = plan_started_dt.isoformat()
+        sequence: int = 0
 
         for step in plan.steps:
-            if not step.enabled:
-                res = StepExecutionResult(
-                    step_id=step.step_id,
-                    action=step.action,
-                    status=StepStatus.SKIPPED,
-                    output=None,
-                    error=None,
-                    attempts=1,
-                )
-                ctx.set_result(res)
-                continue
+            ctx.set_current_step(step)
+            executed_order.append(step.step_id)
 
-            # Dependency gate: if any dep FAILED/REPLAN -> propagate stop
-            if not self._deps_ok(step=step, results=results):
-                res = StepExecutionResult(
-                    step_id=step.step_id,
-                    action=step.action,
-                    status=StepStatus.SKIPPED,
-                    output=None,
-                    error=StepError(
-                        code=StepErrorCode.DEPENDENCY_FAILED,
-                        message="Skipped due to failed dependency.",
-                        details={"depends_on": [d.value for d in step.depends_on]},
-                    ),
-                    attempts=1,
-                )
-                ctx.set_result(res)
-                if self._cfg.fail_fast:
-                    break
-                continue
+            sequence += 1
+            step_started_dt = datetime.now(timezone.utc)
+            step_started_at = step_started_dt.isoformat()
 
             try:
-                res = await self._run_step_with_policy(step=step, ctx=ctx)
-                ctx.set_result(res)
+                if not step.enabled:
+                    step_ended_dt = datetime.now(timezone.utc)
+                    res = StepExecutionResult(
+                        step_id=step.step_id,
+                        action=step.action,
+                        status=StepStatus.SKIPPED,
+                        sequence=sequence,
+                        started_at_utc=step_started_at,
+                        ended_at_utc=step_ended_dt.isoformat(),
+                        duration_ms=int((step_ended_dt - step_started_dt).total_seconds() * 1000),
+                        validated_params=None,
+                        output=None,
+                        meta=None,
+                        error=None,
+                        attempts=1,
+                    )
+                    ctx.set_result(res)
+                    continue
 
-                if res.status in (StepStatus.FAILED, StepStatus.REPLAN_REQUESTED) and self._cfg.fail_fast:
-                    if res.status == StepStatus.REPLAN_REQUESTED:
-                        replan_reason = (res.error.message if res.error else None) or "replan_requested"
-                    break
+                # Dependency gate: if any dep FAILED/REPLAN -> propagate stop
+                if not self._deps_ok(step=step, results=results):
+                    step_ended_dt = datetime.now(timezone.utc)
+                    res = StepExecutionResult(
+                        step_id=step.step_id,
+                        action=step.action,
+                        status=StepStatus.SKIPPED,
+                        sequence=sequence,
+                        started_at_utc=step_started_at,
+                        ended_at_utc=step_ended_dt.isoformat(),
+                        duration_ms=int((step_ended_dt - step_started_dt).total_seconds() * 1000),
+                        validated_params=None,
+                        output=None,
+                        meta=None,
+                        error=StepError(
+                            code=StepErrorCode.DEPENDENCY_FAILED,
+                            message="Skipped due to failed dependency.",
+                            details={"depends_on": [d.value for d in step.depends_on]},
+                        ),
+                        attempts=1,
+                    )
+                    ctx.set_result(res)
+                    if self._cfg.fail_fast:
+                        break
+                    continue
 
-            except StepReplanRequested as e:
-                res = StepExecutionResult(
-                    step_id=step.step_id,
-                    action=step.action,
-                    status=StepStatus.REPLAN_REQUESTED,
-                    output=None,
-                    error=StepError(
-                        code=StepErrorCode.REPLAN,
-                        message=f"{e.code.value}: {e.reason.value}",
-                        details={
-                            "replan_code": e.code.value,
-                            "replan_reason": e.reason.value,
-                            "replan_details": e.details,
-                        },
-                    ),
-                    attempts=1,
-                )
-                ctx.set_result(res)
-                continue
+                try:
+                    res = await self._run_step_with_policy(step=step, ctx=ctx)
+
+                    step_ended_dt = datetime.now(timezone.utc)
+
+                    final_res = StepExecutionResult(
+                        step_id=res.step_id,
+                        action=res.action,
+                        status=res.status,
+                        sequence=sequence,
+                        started_at_utc=step_started_at,
+                        ended_at_utc=step_ended_dt.isoformat(),
+                        duration_ms=int((step_ended_dt - step_started_dt).total_seconds() * 1000),
+                        validated_params=res.validated_params,
+                        output=res.output,
+                        meta=res.meta,
+                        error=res.error,
+                        attempts=res.attempts,
+                    )
+
+                    ctx.set_result(final_res)
+
+                    if final_res.status in (StepStatus.FAILED, StepStatus.REPLAN_REQUESTED) and self._cfg.fail_fast:
+                        if final_res.status == StepStatus.REPLAN_REQUESTED:
+                            replan_reason = (final_res.error.message if final_res.error else None) or "replan_requested"
+                        break
+
+                except StepReplanRequested as e:
+                    step_ended_dt = datetime.now(timezone.utc)
+                    res = StepExecutionResult(
+                        step_id=step.step_id,
+                        action=step.action,
+                        status=StepStatus.REPLAN_REQUESTED,
+                        sequence=sequence,
+                        started_at_utc=step_started_at,
+                        ended_at_utc=step_ended_dt.isoformat(),
+                        duration_ms=int((step_ended_dt - step_started_dt).total_seconds() * 1000),
+                        validated_params=None,
+                        output=None,
+                        meta=None,
+                        error=StepError(
+                            code=StepErrorCode.REPLAN,
+                            message=f"{e.code.value}: {e.reason.value}",
+                            details={
+                                "replan_code": e.code.value,
+                                "replan_reason": e.reason.value,
+                                "replan_details": e.details,
+                            },
+                        ),
+                        attempts=1,
+                    )
+                    ctx.set_result(res)
+                    continue
+
+            finally:
+                ctx.set_current_step(None)
 
 
         # Final output: last OK output if any (runtime can override this later)
@@ -17237,6 +17792,9 @@ class StepExecutor:
             if fr is None or fr.status != StepStatus.OK:
                 ok = False
 
+        plan_ended_dt = datetime.now(timezone.utc)
+        plan_ended_at = plan_ended_dt.isoformat()
+        plan_duration_ms = int((plan_ended_dt - plan_started_dt).total_seconds() * 1000)
 
         return PlanExecutionReport(
             plan_id=plan.plan_id,
@@ -17244,6 +17802,11 @@ class StepExecutor:
             step_results=results,
             final_output=final_output,
             replan_reason=replan_reason,
+            step_order=step_order,
+            executed_order=executed_order,
+            started_at_utc=plan_started_at,
+            ended_at_utc=plan_ended_at,
+            duration_ms=plan_duration_ms,
         )
 
     def _deps_ok(self, *, step: ExecutionStep, results: Mapping[StepId, StepExecutionResult]) -> bool:
@@ -17287,15 +17850,7 @@ class StepExecutor:
                     )
 
                 # normalize attempts
-                if res.attempts != attempt:
-                    res = StepExecutionResult(
-                        step_id=res.step_id,
-                        action=res.action,
-                        status=res.status,
-                        output=res.output,
-                        error=res.error,
-                        attempts=attempt,
-                    )
+                res.attempts = attempt
                 return res
 
             except StepReplanRequested:
@@ -17357,11 +17912,11 @@ class StepExecutor:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=step_executor_models.py
-# LINES: 140
-# SHA256: 936ad8e34fdf931c667644283ee1040a9bdb6d9296b7f8359be8fe5060f41375
+# LINES: 160
+# SHA256: c06fb5917829f1ad7a826114830b86ad9d8d98b0adad3aebaa8514e7f7366dd3
 # SYMBOLS:
 #   - class StepStatus
 #   - class ReplanCode
@@ -17382,8 +17937,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Awaitable, Callable, Dict, Mapping, Optional, Protocol
+from typing import Any, Awaitable, Callable, Dict, Mapping, Optional, Protocol, Sequence
 
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
     ExecutionStep,
     StepAction,
@@ -17435,12 +17991,23 @@ class StepError:
     details: Optional[Dict[str, Any]] = None
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class StepExecutionResult:
     step_id: StepId
     action: StepAction
     status: StepStatus
+
+    # --- new: production telemetry ---
+    sequence: int
+    started_at_utc: str
+    ended_at_utc: str
+    duration_ms: int
+
+    # --- new: structured data for audit/debug ---
+    validated_params: Optional[Dict[str, Any]] = None
     output: Optional[Any] = None
+    meta: Optional[Dict[str, Any]] = None
+
     error: Optional[StepError] = None
     attempts: int = 1
 
@@ -17449,9 +18016,17 @@ class StepExecutionResult:
 class PlanExecutionReport:
     plan_id: str
     ok: bool
+
     step_results: Dict[StepId, StepExecutionResult]
     final_output: Optional[Any] = None
     replan_reason: Optional[str] = None
+
+    started_at_utc: str = ""
+    ended_at_utc: str = ""
+    duration_ms: int = 0
+
+    step_order: Optional[list[StepId]] = None
+    executed_order: Optional[list[StepId]] = None
 
 
 class StepReplanRequested(RuntimeError):
@@ -17470,19 +18045,19 @@ class StepReplanRequested(RuntimeError):
 
 
 class StepExecutionContext(Protocol):
-    """
-    Minimal contract executor needs from the host system (runtime/supervisor).
-    Keep it tiny and testable.
-
-    Notes:
-    - state is intentionally opaque to the executor; it's owned by runtime.
-    - results store can be used by handlers to read dependency outputs.
-    """
     @property
-    def state(self) -> Any: ...
+    def state(self) -> RuntimeState: ...
+
+    @property
+    def current_step(self) -> Optional[ExecutionStep]: ...
 
     @property
     def results(self) -> Mapping[StepId, StepExecutionResult]: ...
+
+    @property
+    def ordered_results(self) -> Sequence[StepExecutionResult]: ...
+
+    def set_current_step(self, step: Optional[ExecutionStep]) -> None: ...
 
     def set_result(self, result: StepExecutionResult) -> None: ...
 
@@ -17521,7 +18096,7 @@ class StepHandlerRegistry:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.step_planner
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=step_planner.py
 # LINES: 820
@@ -18356,7 +18931,7 @@ class StepPlanner:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=stepplan_models.py
 # LINES: 411
@@ -18807,7 +19382,7 @@ class EngineHints:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.prompts
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=__init__.py
 # LINES: 0
@@ -18822,7 +19397,7 @@ class EngineHints:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=history_prompt_builder.py
 # LINES: 89
@@ -18927,7 +19502,7 @@ class DefaultHistorySummaryPromptBuilder(HistorySummaryPromptBuilder):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.prompts.rag_prompt_builder
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=rag_prompt_builder.py
 # LINES: 105
@@ -19048,7 +19623,7 @@ class DefaultRagPromptBuilder(RagPromptBuilder):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.prompts.user_longterm_memory_prompt_builder
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=user_longterm_memory_prompt_builder.py
 # LINES: 117
@@ -19181,7 +19756,7 @@ class DefaultUserLongTermMemoryPromptBuilder(UserLongTermMemoryPromptBuilder):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.prompts.websearch_prompt_builder
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=websearch_prompt_builder.py
 # LINES: 112
@@ -19309,7 +19884,7 @@ class DefaultWebSearchPromptBuilder(WebSearchPromptBuilder):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.responses
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=__init__.py
 # LINES: 0
@@ -19324,7 +19899,7 @@ class DefaultWebSearchPromptBuilder(WebSearchPromptBuilder):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.responses.response_schema
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=response_schema.py
 # LINES: 182
@@ -19526,7 +20101,7 @@ class RuntimeAnswer:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.session
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=__init__.py
 # LINES: 0
@@ -19541,7 +20116,7 @@ class RuntimeAnswer:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.session.chat_session
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=chat_session.py
 # LINES: 145
@@ -19702,7 +20277,7 @@ class ChatSession:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.session.in_memory_session_storage
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=in_memory_session_storage.py
 # LINES: 181
@@ -19897,7 +20472,7 @@ class InMemorySessionStorage(SessionStorage):
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.session.session_manager
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=session_manager.py
 # LINES: 651
@@ -20563,7 +21138,7 @@ class SessionManager:
 # MODULE: intergrax.runtime.drop_in_knowledge_mode.session.session_storage
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=session_storage.py
 # LINES: 129
@@ -20706,7 +21281,7 @@ class SessionStorage(Protocol):
 # MODULE: intergrax.runtime.organization
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=__init__.py
 # LINES: 0
@@ -20721,7 +21296,7 @@ class SessionStorage(Protocol):
 # MODULE: intergrax.runtime.organization.organization_profile
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=organization_profile.py
 # LINES: 132
@@ -20869,7 +21444,7 @@ class OrganizationProfile:
 # MODULE: intergrax.runtime.organization.organization_profile_instructions_service
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=organization_profile_instructions_service.py
 # LINES: 204
@@ -21088,7 +21663,7 @@ OUTPUT FORMAT:
 # MODULE: intergrax.runtime.organization.organization_profile_manager
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=organization_profile_manager.py
 # LINES: 223
@@ -21325,7 +21900,7 @@ class OrganizationProfileManager:
 # MODULE: intergrax.runtime.organization.organization_profile_store
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=organization_profile_store.py
 # LINES: 55
@@ -21394,7 +21969,7 @@ class OrganizationProfileStore(Protocol):
 # MODULE: intergrax.runtime.organization.stores
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=__init__.py
 # LINES: 0
@@ -21409,7 +21984,7 @@ class OrganizationProfileStore(Protocol):
 # MODULE: intergrax.runtime.organization.stores.in_memory_organization_profile_store
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=in_memory_organization_profile_store.py
 # LINES: 59
@@ -21482,7 +22057,7 @@ class InMemoryOrganizationProfileStore(OrganizationProfileStore):
 # MODULE: intergrax.runtime.user_profile
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=__init__.py
 # LINES: 0
@@ -21497,7 +22072,7 @@ class InMemoryOrganizationProfileStore(OrganizationProfileStore):
 # MODULE: intergrax.runtime.user_profile.session_memory_consolidation_service
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=session_memory_consolidation_service.py
 # LINES: 514
@@ -22026,7 +22601,7 @@ Conversation:
 # MODULE: intergrax.runtime.user_profile.user_profile_debug_service
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=user_profile_debug_service.py
 # LINES: 194
@@ -22234,7 +22809,7 @@ class UserProfileDebugService:
 # MODULE: intergrax.runtime.user_profile.user_profile_debug_snapshot
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=user_profile_debug_snapshot.py
 # LINES: 167
@@ -22417,7 +22992,7 @@ class UserProfileDebugSnapshot:
 # MODULE: intergrax.runtime.user_profile.user_profile_instructions_service
 # MODULE_GROUP: runtime
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=runtime
 #   - file=user_profile_instructions_service.py
 # LINES: 229
@@ -22661,7 +23236,7 @@ OUTPUT FORMAT:
 # MODULE: intergrax.supervisor
 # MODULE_GROUP: supervisor
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=supervisor
 #   - file=__init__.py
 # LINES: 0
@@ -22676,7 +23251,7 @@ OUTPUT FORMAT:
 # MODULE: intergrax.supervisor.supervisor
 # MODULE_GROUP: supervisor
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=supervisor
 #   - file=supervisor.py
 # LINES: 858
@@ -23551,7 +24126,7 @@ class IntergraxSupervisor:
 # MODULE: intergrax.supervisor.supervisor_components
 # MODULE_GROUP: supervisor
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=supervisor
 #   - file=supervisor_components.py
 # LINES: 65
@@ -23634,7 +24209,7 @@ def component(name: str, description: str, use_when: str = "", examples: Optiona
 # MODULE: intergrax.supervisor.supervisor_prompts
 # MODULE_GROUP: supervisor
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=supervisor
 #   - file=supervisor_prompts.py
 # LINES: 149
@@ -23797,7 +24372,7 @@ class SupervisorPromptPack:
 # MODULE: intergrax.supervisor.supervisor_to_state_graph
 # MODULE_GROUP: supervisor
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=supervisor
 #   - file=supervisor_to_state_graph.py
 # LINES: 242
@@ -24062,7 +24637,7 @@ def build_langgraph_from_plan(
 # MODULE: intergrax.tools
 # MODULE_GROUP: tools
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=tools
 #   - file=__init__.py
 # LINES: 0
@@ -24077,7 +24652,7 @@ def build_langgraph_from_plan(
 # MODULE: intergrax.tools.tools_agent
 # MODULE_GROUP: tools
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=tools
 #   - file=tools_agent.py
 # LINES: 583
@@ -24678,7 +25253,7 @@ class ToolsAgent:
 # MODULE: intergrax.tools.tools_base
 # MODULE_GROUP: tools
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=tools
 #   - file=tools_base.py
 # LINES: 131
@@ -24825,7 +25400,7 @@ class ToolRegistry:
 # MODULE: intergrax.websearch
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=__init__.py
 # LINES: 0
@@ -24840,7 +25415,7 @@ class ToolRegistry:
 # MODULE: intergrax.websearch.cache
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=__init__.py
 # LINES: 0
@@ -24855,7 +25430,7 @@ class ToolRegistry:
 # MODULE: intergrax.websearch.cache.query_cache
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=query_cache.py
 # LINES: 152
@@ -25024,7 +25599,7 @@ class InMemoryQueryCache:
 # MODULE: intergrax.websearch.context
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=__init__.py
 # LINES: 0
@@ -25039,7 +25614,7 @@ class InMemoryQueryCache:
 # MODULE: intergrax.websearch.context.websearch_context_builder
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=websearch_context_builder.py
 # LINES: 160
@@ -25213,7 +25788,7 @@ class WebSearchContextBuilder:
 # MODULE: intergrax.websearch.fetcher
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=__init__.py
 # LINES: 0
@@ -25228,7 +25803,7 @@ class WebSearchContextBuilder:
 # MODULE: intergrax.websearch.fetcher.extractor
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=extractor.py
 # LINES: 224
@@ -25469,7 +26044,7 @@ def _attach_extraction_metadata(
 # MODULE: intergrax.websearch.fetcher.http_fetcher
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=http_fetcher.py
 # LINES: 76
@@ -25559,7 +26134,7 @@ async def fetch_page(
 # MODULE: intergrax.websearch.integration
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=__init__.py
 # LINES: 0
@@ -25574,7 +26149,7 @@ async def fetch_page(
 # MODULE: intergrax.websearch.integration.langgraph_nodes
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=langgraph_nodes.py
 # LINES: 169
@@ -25761,7 +26336,7 @@ async def websearch_node_async(state: WebSearchState) -> WebSearchState:
 # MODULE: intergrax.websearch.pipeline
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=__init__.py
 # LINES: 0
@@ -25776,7 +26351,7 @@ async def websearch_node_async(state: WebSearchState) -> WebSearchState:
 # MODULE: intergrax.websearch.pipeline.search_and_read
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=search_and_read.py
 # LINES: 211
@@ -26001,7 +26576,7 @@ class SearchAndReadPipeline:
 # MODULE: intergrax.websearch.providers
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=__init__.py
 # LINES: 0
@@ -26016,7 +26591,7 @@ class SearchAndReadPipeline:
 # MODULE: intergrax.websearch.providers.base
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=base.py
 # LINES: 60
@@ -26090,7 +26665,7 @@ class WebSearchProvider(ABC):
 # MODULE: intergrax.websearch.providers.bing_provider
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=bing_provider.py
 # LINES: 135
@@ -26239,7 +26814,7 @@ class BingWebProvider(WebSearchProvider):
 # MODULE: intergrax.websearch.providers.google_cse_provider
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=google_cse_provider.py
 # LINES: 169
@@ -26422,7 +26997,7 @@ class GoogleCSEProvider(WebSearchProvider):
 # MODULE: intergrax.websearch.providers.google_places_provider
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=google_places_provider.py
 # LINES: 323
@@ -26759,7 +27334,7 @@ class GooglePlacesProvider(WebSearchProvider):
 # MODULE: intergrax.websearch.providers.reddit_search_provider
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=reddit_search_provider.py
 # LINES: 340
@@ -27113,7 +27688,7 @@ class RedditAPIProvider(WebSearchProvider):
 # MODULE: intergrax.websearch.schemas
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=__init__.py
 # LINES: 0
@@ -27128,7 +27703,7 @@ class RedditAPIProvider(WebSearchProvider):
 # MODULE: intergrax.websearch.schemas.page_content
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=page_content.py
 # LINES: 73
@@ -27215,7 +27790,7 @@ class PageContent:
 # MODULE: intergrax.websearch.schemas.query_spec
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=query_spec.py
 # LINES: 50
@@ -27279,7 +27854,7 @@ class QuerySpec:
 # MODULE: intergrax.websearch.schemas.search_hit
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=search_hit.py
 # LINES: 74
@@ -27367,7 +27942,7 @@ class SearchHit:
 # MODULE: intergrax.websearch.schemas.web_document
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=web_document.py
 # LINES: 57
@@ -27438,7 +28013,7 @@ class WebDocument:
 # MODULE: intergrax.websearch.schemas.web_search_answer
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=web_search_answer.py
 # LINES: 25
@@ -27477,7 +28052,7 @@ class WebSearchAnswer:
 # MODULE: intergrax.websearch.schemas.web_search_result
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=web_search_result.py
 # LINES: 33
@@ -27524,7 +28099,7 @@ class WebSearchResult:
 # MODULE: intergrax.websearch.service
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=__init__.py
 # LINES: 0
@@ -27539,7 +28114,7 @@ class WebSearchResult:
 # MODULE: intergrax.websearch.service.websearch_answerer
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=websearch_answerer.py
 # LINES: 131
@@ -27684,7 +28259,7 @@ class WebSearchAnswerer:
 # MODULE: intergrax.websearch.service.websearch_config
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=websearch_config.py
 # LINES: 54
@@ -27754,7 +28329,7 @@ class WebSearchConfig:
 # MODULE: intergrax.websearch.service.websearch_context_generator
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=websearch_context_generator.py
 # LINES: 329
@@ -28105,7 +28680,7 @@ def _truncate_to_token_budget(s: str, budget_tokens: int) -> Tuple[str, int]:
 # MODULE: intergrax.websearch.service.websearch_executor
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=websearch_executor.py
 # LINES: 261
@@ -28380,7 +28955,7 @@ class WebSearchExecutor:
 # MODULE: intergrax.websearch.utils
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=__init__.py
 # LINES: 0
@@ -28395,7 +28970,7 @@ class WebSearchExecutor:
 # MODULE: intergrax.websearch.utils.dedupe
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=dedupe.py
 # LINES: 44
@@ -28454,7 +29029,7 @@ def simple_dedupe_key(text: Optional[str]) -> str:
 # MODULE: intergrax.websearch.utils.rate_limit
 # MODULE_GROUP: websearch
 # TAGS:
-#   - package=intergrax
+#   - scope=package=intergrax/
 #   - module_group=websearch
 #   - file=rate_limit.py
 # LINES: 101

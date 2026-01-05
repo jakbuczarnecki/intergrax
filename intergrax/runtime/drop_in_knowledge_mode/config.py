@@ -9,6 +9,9 @@ from typing import Any, Dict, Optional, Literal
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.rag.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import PlannerPromptConfig
+from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import StepExecutorConfig
+from intergrax.runtime.drop_in_knowledge_mode.planning.step_planner import StepPlannerConfig
 from intergrax.tools.tools_agent import ToolsAgent
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
@@ -178,7 +181,13 @@ class RuntimeConfig:
     # PLANNING
     # ------------------------------------------------------------------
     step_planning_strategy: StepPlanningStrategy = StepPlanningStrategy.OFF
+
+    step_planner_cfg: Optional[StepPlannerConfig]
+
+    step_executor_cfg: Optional[StepExecutorConfig]
     
+    planner_prompt_config: Optional[PlannerPromptConfig]
+
 
     # ------------------------------------------------------------------
     # VALIDATION

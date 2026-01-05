@@ -294,15 +294,7 @@ class StepExecutor:
                     )
 
                 # normalize attempts
-                if res.attempts != attempt:
-                    res = StepExecutionResult(
-                        step_id=res.step_id,
-                        action=res.action,
-                        status=res.status,
-                        output=res.output,
-                        error=res.error,
-                        attempts=attempt,
-                    )
+                res.attempts = attempt
                 return res
 
             except StepReplanRequested:

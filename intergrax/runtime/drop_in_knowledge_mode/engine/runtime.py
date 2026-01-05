@@ -108,7 +108,7 @@ class RuntimeEngine:
         )
         
         try:
-            pipeline = PipelineFactory.create(state=state)
+            pipeline = PipelineFactory.build_pipeline(state=state)
             runtime_answer = await pipeline.run(state=state)
 
             # Final trace entry for this request.

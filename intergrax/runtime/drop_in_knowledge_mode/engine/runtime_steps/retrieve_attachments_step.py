@@ -12,7 +12,7 @@ from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract impo
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools import format_rag_context, insert_context_before_last_user
 
 
-class IngestedAttachmentsStep(RuntimeStep):
+class RetrieveAttachmentsStep(RuntimeStep):
     """
     Retrieve relevant chunks from session-ingested attachments (AttachmentIngestionService)
     and inject them into the LLM context.

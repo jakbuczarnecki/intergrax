@@ -9,8 +9,9 @@ import hashlib
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
+BUNDLES_DIR_NAME = "bundles"
 
 EXCLUDE_DIRS = {
     ".git",
@@ -31,6 +32,16 @@ EXCLUDE_DIRS = {
 }
 
 PY_EXT = ".py"
+
+
+# ----------------------------------------------------------------------
+# NEW: define extra module bundles here
+# keys  -> output file name (without extension handling; we'll append ". _py" style exactly)
+# values-> folder path relative to project root
+# ----------------------------------------------------------------------
+EXTRA_BUNDLES: Dict[str, str] = {
+    "runtime": r"intergrax\runtime\drop_in_knowledge_mode",
+}
 
 
 @dataclass(frozen=True)
@@ -68,9 +79,12 @@ def is_excluded_path(path: Path) -> bool:
     return any(p in EXCLUDE_DIRS for p in parts)
 
 
-def collect_python_files(package_dir: Path) -> List[Path]:
+def collect_python_files(root_dir: Path) -> List[Path]:
+    """
+    Collect all .py files under root_dir (recursive) while respecting EXCLUDE_DIRS.
+    """
     files: List[Path] = []
-    for dirpath, dirnames, filenames in os.walk(package_dir):
+    for dirpath, dirnames, filenames in os.walk(root_dir):
         dirpath_p = Path(dirpath)
 
         # Prune excluded dirs
@@ -126,7 +140,6 @@ def module_group_from_rel(rel_path: str) -> str:
     return "root"
 
 
-
 def extract_symbols(py_text: str) -> List[str]:
     try:
         tree = ast.parse(py_text)
@@ -144,7 +157,7 @@ def extract_symbols(py_text: str) -> List[str]:
     return symbols
 
 
-def build_llm_header(project_root: Path, package_dir_name: str, metas: List[FileMeta]) -> str:
+def build_llm_header(project_root: Path, bundle_scope: str, metas: List[FileMeta]) -> str:
     """
     Build a top-of-file instruction block for LLMs.
     This goes into the generated bundle file.
@@ -157,12 +170,13 @@ def build_llm_header(project_root: Path, package_dir_name: str, metas: List[File
     header.append("# LLM INSTRUCTIONS\n")
     header.append("# ======================================================================\n")
     header.append("# This file is an auto-generated, complete source code bundle of the Intergrax framework.\n")
-    header.append("# It contains all Python modules from the package directory:\n")
-    header.append(f"#   - Package root: {package_dir_name}/\n")
+    header.append("#\n")
+    header.append("# Bundle scope:\n")
+    header.append(f"#   - {bundle_scope}\n")
     header.append(f"#   - Project root: {project_root}\n")
     header.append("#\n")
     header.append("# IMPORTANT RULES FOR THE MODEL:\n")
-    header.append("# 1) Treat THIS file as the single source of truth for Intergrax.\n")
+    header.append("# 1) Treat THIS file as the single source of truth for the included scope.\n")
     header.append("# 2) Do NOT assume any missing code exists elsewhere.\n")
     header.append("# 3) When proposing changes, always reference the exact FILE and MODULE headers below.\n")
     header.append("# 4) Prefer edits that preserve existing architecture, naming, and conventions.\n")
@@ -185,21 +199,12 @@ def build_llm_header(project_root: Path, package_dir_name: str, metas: List[File
     return "".join(header)
 
 
-def build_bundle(
+def _build_metas_from_paths(
+    *,
     project_root: Path,
-    package_dir_name: str,
-    out_path: Path,
-    max_mb: int = 25,
-    include_symbols: bool = True,
+    paths: List[Path],
+    include_symbols: bool,
 ) -> List[FileMeta]:
-    project_root = project_root.resolve()
-    package_dir = (project_root / package_dir_name).resolve()
-
-    if not package_dir.exists() or not package_dir.is_dir():
-        raise SystemExit(f"Package dir not found: {package_dir}")
-
-    paths = collect_python_files(package_dir)
-
     metas: List[FileMeta] = []
     for p in paths:
         rel = to_rel(project_root, p)
@@ -220,17 +225,49 @@ def build_bundle(
     # - group by first-level folder under intergrax/
     # - then sort by relative path
     metas.sort(key=lambda m: (m.module_group.lower(), m.rel_path.lower()))
+    return metas
 
-    max_chars = None if max_mb <= 0 else max_mb * 1024 * 1024
+
+def build_bundle_from_paths(
+    *,
+    project_root: Path,
+    out_path: Path,
+    paths: List[Path],
+    bundle_title: str,
+    bundle_scope: str,
+    max_mb: int = 25,
+    include_symbols: bool = True,
+) -> List[FileMeta]:
+    """
+    Generate a bundle from a pre-selected list of .py file paths.
+    Paths MUST be absolute or project_root-relative (we resolve anyway).
+    """
+    project_root = project_root.resolve()
+
+    resolved_paths: List[Path] = []
+    for p in paths:
+        rp = p
+        if not rp.is_absolute():
+            rp = (project_root / rp).resolve()
+        resolved_paths.append(rp)
+
+    # Filter out non-existing (fail fast for safety)
+    for p in resolved_paths:
+        if not p.exists() or not p.is_file():
+            raise SystemExit(f"File not found: {p}")
+
+    metas = _build_metas_from_paths(project_root=project_root, paths=resolved_paths, include_symbols=include_symbols)
+
+    max_chars: Optional[int] = None if max_mb <= 0 else max_mb * 1024 * 1024
     parts: List[str] = []
 
     # LLM instruction header (top of file)
-    parts.append(build_llm_header(project_root, package_dir_name, metas))
+    parts.append(build_llm_header(project_root, bundle_scope, metas))
 
     # Bundle header + maps
-    parts.append("# INTERGRAX ENGINE BUNDLE (auto-generated)\n")
+    parts.append(f"# {bundle_title} (auto-generated)\n")
     parts.append(f"# ROOT: {project_root}\n")
-    parts.append(f"# PACKAGE: {package_dir_name}\n")
+    parts.append(f"# SCOPE: {bundle_scope}\n")
     parts.append(f"# FILES: {len(metas)}\n")
     parts.append("#\n")
 
@@ -249,9 +286,7 @@ def build_bundle(
     total_lines = 0
     for m in metas:
         total_lines += m.lines
-        parts.append(
-            f"# - {m.rel_path} | {m.module_name} | {m.module_group} | {m.lines} | {m.sha256[:12]}\n"
-        )
+        parts.append(f"# - {m.rel_path} | {m.module_name} | {m.module_group} | {m.lines} | {m.sha256[:12]}\n")
     parts.append(f"#\n# TOTAL LINES: {total_lines}\n")
     parts.append("# ======================================================================\n\n")
 
@@ -265,7 +300,7 @@ def build_bundle(
         header.append(f"# MODULE: {m.module_name}\n")
         header.append(f"# MODULE_GROUP: {m.module_group}\n")
         header.append("# TAGS:\n")
-        header.append(f"#   - package={package_dir_name}\n")
+        header.append(f"#   - scope={bundle_scope}\n")
         header.append(f"#   - module_group={m.module_group}\n")
         header.append(f"#   - file={Path(m.rel_path).name}\n")
         header.append(f"# LINES: {m.lines}\n")
@@ -300,6 +335,73 @@ def build_bundle(
     return metas
 
 
+def build_bundle(
+    project_root: Path,
+    package_dir_name: str,
+    out_path: Path,
+    max_mb: int = 25,
+    include_symbols: bool = True,
+) -> List[FileMeta]:
+    """
+    Original behavior: bundle the whole package directory (e.g. intergrax/).
+    """
+    project_root = project_root.resolve()
+    package_dir = (project_root / package_dir_name).resolve()
+
+    if not package_dir.exists() or not package_dir.is_dir():
+        raise SystemExit(f"Package dir not found: {package_dir}")
+
+    paths = collect_python_files(package_dir)
+
+    return build_bundle_from_paths(
+        project_root=project_root,
+        out_path=out_path,
+        paths=paths,
+        bundle_title="INTERGRAX ENGINE BUNDLE",
+        bundle_scope=f"package={package_dir_name}/",
+        max_mb=max_mb,
+        include_symbols=include_symbols,
+    )
+
+
+def build_extra_bundles(
+    *,
+    project_root: Path,
+    bundles: Dict[str, str],
+    bundles_dir: Path,
+    max_mb: int = 25,
+    include_symbols: bool = True,
+) -> None:
+    """
+    Generate additional bundles based on a dict:
+      key   -> output filename stem (we will generate: <key>._py)
+      value -> folder path relative to project_root
+    """
+    project_root = project_root.resolve()
+
+    for out_name, rel_folder in bundles.items():
+        folder = (project_root / Path(rel_folder)).resolve()
+        if not folder.exists() or not folder.is_dir():
+            raise SystemExit(f"Extra bundle folder not found: {folder} (key={out_name})")
+
+        paths = collect_python_files(folder)
+
+        # Output file exactly as requested: "<name>._py"
+        out_path = bundles_dir / f"{out_name}._py"
+
+        build_bundle_from_paths(
+            project_root=project_root,
+            out_path=out_path,
+            paths=paths,
+            bundle_title=f"INTERGRAX MODULE BUNDLE: {out_name}",
+            bundle_scope=f"folder={to_rel(project_root, folder)}/",
+            max_mb=max_mb,
+            include_symbols=include_symbols,
+        )
+
+        print(f"Module bundle created: {out_path.name}  (files={len(paths)})")
+
+
 def main() -> None:
     # No-args version:
     # - script is placed in project root (same directory as LICENSE.txt)
@@ -309,16 +411,28 @@ def main() -> None:
     package_dir_name = "intergrax"
     out_file_name = "INTERGRAX_ENGINE_BUNDLE._py_"
 
+    bundles_dir = script_dir / BUNDLES_DIR_NAME
+    bundles_dir.mkdir(parents=True, exist_ok=True)
+
     metas = build_bundle(
         project_root=script_dir,
         package_dir_name=package_dir_name,
-        out_path=script_dir / out_file_name,
+        out_path=bundles_dir / out_file_name,
         max_mb=25,
         include_symbols=True,
     )
 
-    print(f"Bundle created: {out_file_name}")
+    print(f"Bundle created: {bundles_dir / out_file_name}")
     print(f"Files included: {len(metas)}")
+
+    if EXTRA_BUNDLES:
+        build_extra_bundles(
+            project_root=script_dir,
+            bundles=EXTRA_BUNDLES,
+            bundles_dir=bundles_dir,   # <<< przekazujemy katalog
+            max_mb=25,
+            include_symbols=True,
+        )
 
 
 if __name__ == "__main__":

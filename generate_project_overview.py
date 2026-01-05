@@ -32,7 +32,6 @@ from typing import List, Optional, Sequence
 
 from tqdm.auto import tqdm
 
-from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
