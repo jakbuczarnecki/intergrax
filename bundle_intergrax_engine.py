@@ -334,36 +334,6 @@ def build_bundle_from_paths(
 
     return metas
 
-
-def build_bundle(
-    project_root: Path,
-    package_dir_name: str,
-    out_path: Path,
-    max_mb: int = 25,
-    include_symbols: bool = True,
-) -> List[FileMeta]:
-    """
-    Original behavior: bundle the whole package directory (e.g. intergrax/).
-    """
-    project_root = project_root.resolve()
-    package_dir = (project_root / package_dir_name).resolve()
-
-    if not package_dir.exists() or not package_dir.is_dir():
-        raise SystemExit(f"Package dir not found: {package_dir}")
-
-    paths = collect_python_files(package_dir)
-
-    return build_bundle_from_paths(
-        project_root=project_root,
-        out_path=out_path,
-        paths=paths,
-        bundle_title="INTERGRAX ENGINE BUNDLE",
-        bundle_scope=f"package={package_dir_name}/",
-        max_mb=max_mb,
-        include_symbols=include_symbols,
-    )
-
-
 def build_extra_bundles(
     *,
     project_root: Path,
@@ -408,28 +378,14 @@ def main() -> None:
     # - output is created next to this script (project root)
     script_dir = Path(__file__).resolve().parent
 
-    package_dir_name = "intergrax"
-    out_file_name = "INTERGRAX_ENGINE_BUNDLE._py_"
-
     bundles_dir = script_dir / BUNDLES_DIR_NAME
     bundles_dir.mkdir(parents=True, exist_ok=True)
-
-    metas = build_bundle(
-        project_root=script_dir,
-        package_dir_name=package_dir_name,
-        out_path=bundles_dir / out_file_name,
-        max_mb=25,
-        include_symbols=True,
-    )
-
-    print(f"Bundle created: {bundles_dir / out_file_name}")
-    print(f"Files included: {len(metas)}")
 
     if EXTRA_BUNDLES:
         build_extra_bundles(
             project_root=script_dir,
             bundles=EXTRA_BUNDLES,
-            bundles_dir=bundles_dir,   # <<< przekazujemy katalog
+            bundles_dir=bundles_dir,
             max_mb=25,
             include_symbols=True,
         )
