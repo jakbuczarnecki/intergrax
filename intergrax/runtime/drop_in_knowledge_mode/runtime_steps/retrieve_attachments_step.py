@@ -8,8 +8,8 @@ from datetime import datetime, timezone
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.contract import RuntimeStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.tools import format_rag_context, insert_context_before_last_user
+from intergrax.runtime.drop_in_knowledge_mode.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.tools import format_rag_context, insert_context_before_last_user
 
 
 class RetrieveAttachmentsStep(RuntimeStep):

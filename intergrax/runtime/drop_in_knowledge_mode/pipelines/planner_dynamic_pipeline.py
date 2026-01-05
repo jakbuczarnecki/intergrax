@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.contract import RuntimePipeline
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.pipelines.contract import RuntimePipeline
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeAnswer
 
 

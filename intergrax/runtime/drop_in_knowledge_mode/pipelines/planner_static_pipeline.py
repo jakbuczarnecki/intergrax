@@ -3,23 +3,21 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.contract import RuntimePipeline
-from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.pipeline_factory import PipelineFactory
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.pipelines.contract import RuntimePipeline
+from intergrax.runtime.drop_in_knowledge_mode.pipelines.pipeline_factory import PipelineFactory
 from intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner import EnginePlanner
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import PlanExecutionReport
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_planner import StepPlanner
 from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import PlanBuildMode
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor import StepExecutor
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeAnswer
-
-# Setup steps (outside planner)
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.session_and_ingest_step import SessionAndIngestStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.profile_based_memory_step import ProfileBasedMemoryStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.build_base_history_step import BuildBaseHistoryStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.history_step import HistoryStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.instructions_step import InstructionsStep
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_steps.ensure_current_user_message_step import EnsureCurrentUserMessageStep
+from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.build_base_history_step import BuildBaseHistoryStep
+from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.ensure_current_user_message_step import EnsureCurrentUserMessageStep
+from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.history_step import HistoryStep
+from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.instructions_step import InstructionsStep
+from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.profile_based_memory_step import ProfileBasedMemoryStep
+from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.session_and_ingest_step import SessionAndIngestStep
 
 
 class PlannerStaticPipeline(RuntimePipeline):
