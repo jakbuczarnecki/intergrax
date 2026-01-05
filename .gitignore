@@ -27,4 +27,4 @@ notebooks/drop_in_knowledge_mode/_artifacts
 documents/
 api/chat/rag_app.db
 
-bundles/
+/bundles/
