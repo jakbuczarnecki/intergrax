@@ -18,6 +18,7 @@ from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
 )
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import (
     PlanExecutionReport,
+    PlanStopReason,
     ReplanCode,
     ReplanReason,
     StepError,
@@ -28,6 +29,7 @@ from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models impo
     StepHandlerRegistry,
     StepReplanRequested,
     StepStatus,
+    UserInputRequest,
 )
 
 
@@ -91,13 +93,17 @@ class StepExecutor:
         executed_order: List[StepId] = []
 
         replan_reason: Optional[str] = None
+
+        stop_reason: PlanStopReason = PlanStopReason.COMPLETED
+        user_input_request: Optional[UserInputRequest] = None
+
         plan_started_dt = datetime.now(timezone.utc)
         plan_started_at = plan_started_dt.isoformat()
+        
         sequence: int = 0
 
         for step in plan.steps:
-            ctx.set_current_step(step)
-            executed_order.append(step.step_id)
+            ctx.set_current_step(step)            
 
             sequence += 1
             step_started_dt = datetime.now(timezone.utc)
@@ -150,6 +156,7 @@ class StepExecutor:
                     continue
 
                 try:
+                    executed_order.append(step.step_id)
                     res = await self._run_step_with_policy(step=step, ctx=ctx)
 
                     step_ended_dt = datetime.now(timezone.utc)
@@ -171,9 +178,34 @@ class StepExecutor:
 
                     ctx.set_result(final_res)
 
+                    # If any step requests replan, remember the first reason (even if fail_fast=False)
+                    if final_res.status == StepStatus.REPLAN_REQUESTED and replan_reason is None:
+                        replan_reason = (final_res.error.message if final_res.error else None) or "replan_requested"
+
+                    # HITL: stop plan execution if a clarifying question is requested
+                    if step.action == StepAction.ASK_CLARIFYING_QUESTION and final_res.status == StepStatus.OK:
+                        params = step.params if isinstance(step.params, dict) else {}
+                        q = str(params.get("question") or "").strip()
+                        if not q and isinstance(final_res.output, dict):
+                            q = str(final_res.output.get("question") or "").strip()
+
+                        if not q:
+                            q = "Could you clarify what you mean and what outcome you want?"
+
+                        must = bool(params.get("must_answer_to_continue", True))
+
+                        stop_reason = PlanStopReason.NEEDS_USER_INPUT
+                        user_input_request = UserInputRequest(
+                            question=q,
+                            must_answer_to_continue=must,
+                            origin_step_id=step.step_id,
+                            context_key=f"{plan.plan_id}:{step.step_id.value}",
+                        )
+
+                        # Do not continue executing the remaining steps in this plan.
+                        break                    
+
                     if final_res.status in (StepStatus.FAILED, StepStatus.REPLAN_REQUESTED) and self._cfg.fail_fast:
-                        if final_res.status == StepStatus.REPLAN_REQUESTED:
-                            replan_reason = (final_res.error.message if final_res.error else None) or "replan_requested"
                         break
 
                 except StepReplanRequested as e:
@@ -201,6 +233,10 @@ class StepExecutor:
                         attempts=1,
                     )
                     ctx.set_result(res)
+
+                    if replan_reason is None:
+                        replan_reason = res.error.message if res.error else "replan_requested"
+                        
                     continue
 
             finally:
@@ -225,6 +261,8 @@ class StepExecutor:
         )
 
         ok = (replan_reason is None) and (not has_failed) and (not has_replan) and (not has_skipped_error)
+        if stop_reason != PlanStopReason.COMPLETED:
+            ok = False
 
         # If plan includes FINALIZE_ANSWER, require it to be OK for ok=True
         final_step = next(
@@ -243,6 +281,8 @@ class StepExecutor:
         return PlanExecutionReport(
             plan_id=plan.plan_id,
             ok=ok,
+            stop_reason=stop_reason,
+            user_input_request=user_input_request,
             step_results=results,
             final_output=final_output,
             replan_reason=replan_reason,

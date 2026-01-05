@@ -51,6 +51,25 @@ class StepErrorCode(str, Enum):
     UNKNOWN = "unknown"
 
 
+class PlanStopReason(str, Enum):
+    COMPLETED = "completed"
+    NEEDS_USER_INPUT = "needs_user_input"
+    REPLAN_REQUIRED = "replan_required"
+    FAILED = "failed"
+
+
+@dataclass(frozen=True)
+class UserInputRequest:
+    """
+    Human-in-the-loop request emitted by a plan step (e.g. ASK_CLARIFYING_QUESTION).
+    """
+    question: str
+    must_answer_to_continue: bool = True
+
+    # Optional metadata (safe defaults, useful later)
+    context_key: Optional[str] = None
+    origin_step_id: Optional[StepId] = None
+    
 
 @dataclass(frozen=True)
 class StepError:
@@ -89,12 +108,17 @@ class PlanExecutionReport:
     final_output: Optional[Any] = None
     replan_reason: Optional[str] = None
 
+
+    stop_reason: PlanStopReason = PlanStopReason.COMPLETED
+    user_input_request: Optional[UserInputRequest] = None
+
     started_at_utc: str = ""
     ended_at_utc: str = ""
     duration_ms: int = 0
 
     step_order: Optional[list[StepId]] = None
     executed_order: Optional[list[StepId]] = None
+
 
 
 class StepReplanRequested(RuntimeError):
