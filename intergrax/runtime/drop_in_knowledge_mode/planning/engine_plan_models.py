@@ -101,6 +101,9 @@ class EnginePlan:
 class PlannerPromptConfig:
     version: str = "default"
     system_prompt: Optional[str] = None
+    replan_system_prompt: Optional[str] = None
+    next_step_rules_prompt: Optional[str] = None
+    fallback_clarify_question: Optional[str] = None
 
 
 BASE_PLANNER_SYSTEM_PROMPT = """You are EnginePlanner for Intergrax Drop-In Knowledge Runtime.
@@ -351,3 +354,38 @@ In reasoning_summary (short):
 - State why the intent was chosen and which capability is needed first.
 - If both websearch and tools are likely needed, mention the expected sequence in one short phrase.
 """
+
+
+DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT: str = """
+REPLAN FEEDBACK (structured JSON):
+{replan_json}
+
+REPLAN RULES:
+- Do NOT repeat the same invalid plan.
+- If a dependency was missing, add the producer step before the consumer.
+- If a step output was invalid/missing, adjust the plan to produce it.
+- If the only safe action is to ask the user, set intent='clarify' and provide clarifying_question.
+- Keep the output JSON strictly within the schema (no extra keys).
+""".strip()
+
+
+DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT: str = """
+RULES FOR next_step:
+- If intent == "clarify": next_step MUST be "clarify".
+- If intent != "clarify": next_step MUST NOT be "clarify".
+Clarify intent should be used ONLY when the user request is ambiguous or missing critical information.
+Do NOT choose clarify if you can answer with a reasonable technical/general response without asking follow-ups.
+Do NOT choose clarify for broad/open questions; answer them as GENERIC and use next_step="synthesize".
+
+- Choose exactly one next_step for THIS iteration.
+- Use "websearch" for freshness/external information.
+- Use "rag" for internal documents or user long-term memory.
+- Use "tools" only when tool execution is required.
+- Use "synthesize" when you have enough information to draft an answer.
+- Use "finalize" only when you can return the final answer now.
+""".strip()
+
+
+DEFAULT_PLANNER_FALLBACK_CLARIFY_QUESTION: str = (
+    "Could you clarify what you mean and what outcome you want?"
+)
