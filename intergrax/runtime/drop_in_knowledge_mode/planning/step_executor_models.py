@@ -5,8 +5,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Awaitable, Callable, Dict, Mapping, Optional, Protocol
+from typing import Any, Awaitable, Callable, Dict, Mapping, Optional, Protocol, Sequence
 
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
     ExecutionStep,
     StepAction,
@@ -63,7 +64,18 @@ class StepExecutionResult:
     step_id: StepId
     action: StepAction
     status: StepStatus
+
+    # --- new: production telemetry ---
+    sequence: int
+    started_at_utc: str
+    ended_at_utc: str
+    duration_ms: int
+
+    # --- new: structured data for audit/debug ---
+    validated_params: Optional[Dict[str, Any]] = None
     output: Optional[Any] = None
+    meta: Optional[Dict[str, Any]] = None
+
     error: Optional[StepError] = None
     attempts: int = 1
 
@@ -72,9 +84,17 @@ class StepExecutionResult:
 class PlanExecutionReport:
     plan_id: str
     ok: bool
+
     step_results: Dict[StepId, StepExecutionResult]
     final_output: Optional[Any] = None
     replan_reason: Optional[str] = None
+
+    started_at_utc: str = ""
+    ended_at_utc: str = ""
+    duration_ms: int = 0
+
+    step_order: Optional[list[StepId]] = None
+    executed_order: Optional[list[StepId]] = None
 
 
 class StepReplanRequested(RuntimeError):
@@ -93,19 +113,19 @@ class StepReplanRequested(RuntimeError):
 
 
 class StepExecutionContext(Protocol):
-    """
-    Minimal contract executor needs from the host system (runtime/supervisor).
-    Keep it tiny and testable.
-
-    Notes:
-    - state is intentionally opaque to the executor; it's owned by runtime.
-    - results store can be used by handlers to read dependency outputs.
-    """
     @property
-    def state(self) -> Any: ...
+    def state(self) -> RuntimeState: ...
+
+    @property
+    def current_step(self) -> Optional[ExecutionStep]: ...
 
     @property
     def results(self) -> Mapping[StepId, StepExecutionResult]: ...
+
+    @property
+    def ordered_results(self) -> Sequence[StepExecutionResult]: ...
+
+    def set_current_step(self, step: Optional[ExecutionStep]) -> None: ...
 
     def set_result(self, result: StepExecutionResult) -> None: ...
 

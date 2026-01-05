@@ -10,20 +10,21 @@ from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.no_planner_pipeli
 from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.planner_dynamic_pipeline import PlannerDynamicPipeline
 from intergrax.runtime.drop_in_knowledge_mode.engine.pipelines.planner_static_pipeline import PlannerStaticPipeline
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_context import RuntimeContext
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 
 
 class PipelineFactory:
 
     @classmethod
-    def create(cls, context: RuntimeContext) -> RuntimePipeline:
-        
-        if context.config.step_planning_strategy == StepPlanningStrategy.OFF:
+    def create(cls, state: RuntimeState) -> RuntimePipeline:
+
+        if state.context.config.step_planning_strategy == StepPlanningStrategy.OFF:
             return NoPlannerPipeline()
         
-        if context.config.step_planning_strategy == StepPlanningStrategy.STATIC_PLAN:
+        if state.context.config.step_planning_strategy == StepPlanningStrategy.STATIC_PLAN:
             return PlannerStaticPipeline()
         
-        if context.config.step_planning_strategy == StepPlanningStrategy.DYNAMIC_LOOP:
+        if state.context.config.step_planning_strategy == StepPlanningStrategy.DYNAMIC_LOOP:
             return PlannerDynamicPipeline()
         
-        raise ValueError(f"Unknown step_planning_strategy: {context.config.step_planning_strategy}")
+        raise ValueError(f"Unknown step_planning_strategy: {state.context.config.step_planning_strategy}")
