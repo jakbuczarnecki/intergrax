@@ -2,12 +2,10 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
-from typing import Optional
 
 
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.pipelines.contract import RuntimePipeline
-from intergrax.runtime.drop_in_knowledge_mode.pipelines.pipeline_factory import PipelineFactory
 from intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner import EnginePlanner
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_planner import StepPlanner
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor import StepExecutor
@@ -67,7 +65,7 @@ class PlannerStaticPipeline(RuntimePipeline):
         engine_planner = EnginePlanner(llm_adapter=cfg.llm_adapter)
         step_planner = StepPlanner(cfg.step_planner_cfg)
 
-        registry = PipelineFactory.build_default_planning_step_registry()
+        registry = self.build_default_planning_step_registry()
         step_executor = StepExecutor(registry=registry, cfg=cfg.step_executor_cfg)
 
         # ---------------------------------------------------------------------

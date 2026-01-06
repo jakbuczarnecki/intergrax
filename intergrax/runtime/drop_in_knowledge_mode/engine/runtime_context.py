@@ -54,19 +54,19 @@ class RuntimeContext:
     """
 
     config: RuntimeConfig
-    session_manager: SessionManager
+    session_manager: Optional[SessionManager] = None
 
-    ingestion_service: Optional[AttachmentIngestionService]
-    context_builder: Optional[ContextBuilder]
+    ingestion_service: Optional[AttachmentIngestionService] = None
+    context_builder: Optional[ContextBuilder] = None
 
-    rag_prompt_builder: RagPromptBuilder
-    user_longterm_memory_prompt_builder: UserLongTermMemoryPromptBuilder
+    rag_prompt_builder: Optional[RagPromptBuilder] = None
+    user_longterm_memory_prompt_builder: Optional[UserLongTermMemoryPromptBuilder] = None
 
-    websearch_executor: Optional[WebSearchExecutor]
-    websearch_prompt_builder: Optional[WebSearchPromptBuilder]
+    websearch_executor: Optional[WebSearchExecutor] = None
+    websearch_prompt_builder: Optional[WebSearchPromptBuilder] = None
 
-    history_prompt_builder: HistorySummaryPromptBuilder
-    history_layer: HistoryLayer
+    history_prompt_builder: Optional[HistorySummaryPromptBuilder] = None
+    history_layer: Optional[HistoryLayer] = None
 
     llm_usage_run_seq: int = 0
     llm_usage_runs: List[LLMUsageRunRecord] = field(default_factory=list)

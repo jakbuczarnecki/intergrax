@@ -6,8 +6,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Protocol, Sequence
+from typing import TYPE_CHECKING
 
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+if TYPE_CHECKING:
+    from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+    
 from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import (
     ExecutionStep,
     StepAction,

@@ -182,11 +182,11 @@ class RuntimeConfig:
     # ------------------------------------------------------------------
     step_planning_strategy: StepPlanningStrategy = StepPlanningStrategy.OFF
 
-    step_planner_cfg: Optional[StepPlannerConfig]
+    step_planner_cfg: Optional[StepPlannerConfig] = None
 
-    step_executor_cfg: Optional[StepExecutorConfig]
+    step_executor_cfg: Optional[StepExecutorConfig] = None
     
-    planner_prompt_config: Optional[PlannerPromptConfig]
+    planner_prompt_config: Optional[PlannerPromptConfig] = None
 
 
     # ------------------------------------------------------------------

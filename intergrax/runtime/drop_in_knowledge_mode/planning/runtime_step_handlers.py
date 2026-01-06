@@ -5,10 +5,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Awaitable, Callable, Dict, Optional
+from typing import Callable, Dict, Optional
 
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
-from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import ExecutionStep, StepAction, StepId
+from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import ExecutionStep, StepAction
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import (
     StepError,
     StepErrorCode,
