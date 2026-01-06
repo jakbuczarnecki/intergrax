@@ -5,7 +5,7 @@
 """
 Core runtime engine for Drop-In Knowledge Mode.
 
-This module defines the `DropInKnowledgeRuntime` class, which:
+This module defines the `RuntimeEngine` class, which:
   - loads or creates chat sessions,
   - appends user messages,
   - builds a conversation history for the LLM,

@@ -331,6 +331,9 @@ class StepExecutor:
 
         last_err: Optional[StepError] = None
 
+        def _placeholder_ts() -> str:
+            return datetime.now(timezone.utc).isoformat()
+
         for attempt in range(1, allowed_attempts + 1):
             try:
                 handler = self._registry.get(step.action)
@@ -371,11 +374,20 @@ class StepExecutor:
 
                 # terminal based on policy
                 if policy == FailurePolicyKind.SKIP:
+                    ts = _placeholder_ts()
                     return StepExecutionResult(
                         step_id=step.step_id,
                         action=step.action,
                         status=StepStatus.SKIPPED,
+
+                        sequence=0,
+                        started_at_utc=ts,
+                        ended_at_utc=ts,
+                        duration_ms=0,
+
+                        validated_params=None,
                         output=None,
+                        meta=None,
                         error=last_err,
                         attempts=attempt,
                     )
@@ -388,21 +400,40 @@ class StepExecutor:
                     )
 
                 # default FAIL
+                ts = _placeholder_ts()
                 return StepExecutionResult(
                     step_id=step.step_id,
                     action=step.action,
                     status=StepStatus.FAILED,
+
+                    sequence=0,
+                    started_at_utc=ts,
+                    ended_at_utc=ts,
+                    duration_ms=0,
+
+                    validated_params=None,
                     output=None,
+                    meta=None,
                     error=last_err,
                     attempts=attempt,
                 )
 
         # should never reach, but keep safe
+        ts = _placeholder_ts()
         return StepExecutionResult(
             step_id=step.step_id,
             action=step.action,
             status=StepStatus.FAILED,
+
+            sequence=0,
+            started_at_utc=ts,
+            ended_at_utc=ts,
+            duration_ms=0,
+
+            validated_params=None,
             output=None,
+            meta=None,
             error=last_err or StepError(code=StepErrorCode.UNKNOWN, message="Unknown failure"),
             attempts=allowed_attempts,
         )
+

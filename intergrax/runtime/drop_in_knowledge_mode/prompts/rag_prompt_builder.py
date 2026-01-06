@@ -30,7 +30,7 @@ class RagPromptBuilder(Protocol):
     Strategy interface for building the RAG-related part of the prompt.
 
     You can provide a custom implementation and pass it to
-    DropInKnowledgeRuntime to fully control:
+    RuntimeEngine to fully control:
 
     - the exact system prompt text,
     - how retrieved chunks are formatted and injected as messages.

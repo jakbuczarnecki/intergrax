@@ -87,34 +87,6 @@ class RuntimePipeline(ABC):
             raise ValueError("state.run_id is missing.")
         
 
-    async def _execute_pipeline(self, steps: list[RuntimeStep], state: RuntimeState) -> None:
-        for step in steps:
-            step_name = step.__class__.__name__
-            state.trace_event(
-                component="runtime",
-                step=step_name,
-                message="Step started",
-                data={}
-            )
-
-            try:
-                await step.run(state)
-            except Exception as e:
-                state.trace_event(
-                    component="pipeline",
-                    step=step_name,
-                    message="Step failed",
-                    data={"error": repr(e)},
-                )
-                raise
-
-            state.trace_event(
-                component="runtime",
-                step=step_name,
-                message="Step finished",
-                data={}
-            )
-
     def _assert_valid_answer(self, answer: RuntimeAnswer) -> None:
         assert answer is not None, "Pipeline returned None answer"
         assert answer.route is not None, "RuntimeAnswer has no route"

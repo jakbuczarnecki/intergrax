@@ -60,7 +60,6 @@ class PlanStopReason(str, Enum):
     REPLAN_REQUIRED = "replan_required"
     FAILED = "failed"
 
-
 @dataclass(frozen=True)
 class UserInputRequest:
     """
@@ -106,37 +105,30 @@ class ReplanContext:
         skipped_with_error: List[ReplanFailedStep] = []
 
         for r in (report.step_results or {}).values():
-            # Status enums may have .value; keep it stable for serialization.
-            status = r.status.value if hasattr(r.status, "value") else str(r.status)
+            if not isinstance(r.status, StepStatus):
+                raise TypeError(
+                    "StepReport.status must be StepStatus. "
+                    f"Got {type(r.status).__name__}: {r.status!r}"
+                )
 
-            err_code = None
-            err_msg = None
-            if r.error is not None:
-                err_code = r.error.code.value if hasattr(r.error.code, "value") else str(r.error.code)
-                err_msg = r.error.message
-
-            step_id = r.step_id.value if hasattr(r.step_id, "value") else str(r.step_id)
-            action = r.action.value if hasattr(r.action, "value") else str(r.action)
-
-            if status == "FAILED":
+            if r.status == StepStatus.FAILED:
                 failed_steps.append(
                     ReplanFailedStep(
-                        step_id=step_id,
-                        action=action,
-                        error_code=err_code,
-                        error_message=err_msg,
+                        step_id=r.step_id,
+                        action=r.step_id.value,
+                        error_code=r.error.code if r.error else None,
+                        error_message=r.error.message if r.error else None,
                     )
                 )
 
-            if status == "SKIPPED" and r.error is not None:
+            if r.status == StepStatus.SKIPPED and r.error is not None:
                 skipped_with_error.append(
                     ReplanFailedStep(
-                        step_id=step_id,
-                        action=action,
-                        error_code=err_code,
-                        error_message=err_msg,
-                    )
-                )
+                        step_id=r.step_id,
+                        action=r.step_id.value,
+                        error_code=r.error.code if r.error else None,
+                        error_message=r.error.message if r.error else None,
+                    ))
 
         return ReplanContext(
             attempt=attempt,

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import inspect
 import json
 from typing import List, Optional
@@ -38,10 +39,77 @@ class EnginePlanner:
         run_id: Optional[str] = None,
         replan_ctx: Optional[ReplanContext] = None,
     ) -> EnginePlan:
-        
+
+        # ---------------------------------------------------------------------
+        # Deterministic override (production feature):
+        # - replay a captured plan
+        # - run planning without LLM (offline / incident mode)
+        # ---------------------------------------------------------------------
+        forced_plan = None
+        if prompt_config is not None:
+            forced_plan = prompt_config.forced_plan
+
+        if forced_plan is not None:
+            raw = json.dumps(forced_plan, ensure_ascii=False)
+
+            forced_json = json.dumps(
+                forced_plan,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+
+            # Single source of truth: parsing extracts JSON and loads it
+            plan = self._parse_plan(raw, prompt_config=prompt_config)
+
+            # Capability clamp (keep semantics consistent with LLM-based planning)
+            plan = self._validate_against_capabilities(plan=plan, state=state)
+
+            # Merge debug (do not overwrite parser debug)
+            if plan.debug is None:
+                plan.debug = {}
+
+            replan_json = None
+            if replan_ctx is not None:
+                # NOTE: keep this aligned with how _build_planner_messages injects replan ctx
+                replan_json = self._serialize_replan_ctx(replan_ctx)
+                if replan_json is None:
+                    # defensive; logically should never happen here because replan_ctx is not None
+                    replan_json = "{}"
+
+            plan.debug.update(
+                {
+                    "planner_forced_plan_used": True,
+                    "planner_forced_plan_json_len": len(forced_json),
+                    "planner_forced_plan_hash": hashlib.sha256(forced_json.encode("utf-8")).hexdigest()[:16],
+                    "planner_replan_ctx_present": replan_ctx is not None,
+                    "planner_replan_ctx_hash": (
+                        hashlib.sha256(replan_json.encode("utf-8")).hexdigest()[:16]
+                        if replan_json
+                        else None
+                    ),
+                }
+            )
+
+            state.trace_event(
+                component="planner",
+                step="engine_planner",
+                message="Engine plan produced (forced_plan override).",
+                data={
+                    "intent": plan.intent.value,
+                    "next_step": plan.next_step.value if plan.next_step is not None else None,
+                    "debug": plan.debug,
+                },
+            )
+
+            return plan
+
+        # ---------------------------------------------------------------------
+        # Normal LLM planning flow
+        # ---------------------------------------------------------------------
         messages = self._build_planner_messages(
-            req=req, 
-            state=state, 
+            req=req,
+            state=state,
             config=config,
             prompt_config=prompt_config,
             replan_ctx=replan_ctx,
@@ -133,6 +201,22 @@ class EnginePlanner:
     # Prompting
     # -----------------------------
 
+    def _serialize_replan_ctx(self, replan_ctx: Optional[ReplanContext]) -> Optional[str]:
+        """
+        Single source of truth for how ReplanContext is serialized for prompts/debug.
+        Must stay aligned with prompt injection semantics.
+        """
+        if replan_ctx is None:
+            return None
+
+        return json.dumps(
+            replan_ctx.to_prompt_dict(),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+
+
     def _build_planner_messages(
         self,
         *,
@@ -206,11 +290,20 @@ class EnginePlanner:
             if prompt_config is not None and prompt_config.replan_system_prompt:
                 replan_template = prompt_config.replan_system_prompt.strip()
 
-            replan_json = json.dumps(
-                replan_ctx.to_prompt_dict(),
-                ensure_ascii=False,
-                sort_keys=True,
-                separators=(",", ":"),
+            replan_json = self._serialize_replan_ctx(replan_ctx)
+
+            replan_hash = hashlib.sha256(replan_json.encode("utf-8")).hexdigest()[:16]
+
+            state.trace_event(
+                component="planner",
+                step="engine_planner",
+                message="Replan context injected into planner prompt.",
+                data={
+                    "has_replan_ctx": True,
+                    "replan_reason": (replan_ctx.replan_reason or "").strip() or None,
+                    "replan_hash": replan_hash,
+                    "replan_json_len": len(replan_json),
+                },
             )
 
             # Template MUST contain {replan_json}

@@ -54,7 +54,7 @@ class RuntimeContext:
     """
 
     config: RuntimeConfig
-    session_manager: Optional[SessionManager] = None
+    session_manager: SessionManager
 
     ingestion_service: Optional[AttachmentIngestionService] = None
     context_builder: Optional[ContextBuilder] = None
