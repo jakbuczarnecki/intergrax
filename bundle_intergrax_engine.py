@@ -41,6 +41,18 @@ PY_EXT = ".py"
 # ----------------------------------------------------------------------
 EXTRA_BUNDLES: Dict[str, str] = {
     "ENGINE_RUNTIME_BUNDLE": r"intergrax\runtime\drop_in_knowledge_mode",
+    "LLM": r"intergrax\llm",
+    "LLM_ADAPTERS": r"intergrax\llm_adapters",
+    "MEMORY": r"intergrax\memory",
+    "MULTIMEDIA": r"intergrax\multimedia",
+    "RAG": r"intergrax\rag",
+    "SUPERVISOR": r"intergrax\supervisor",
+    "TOOLS": r"intergrax\tools",
+    "WEBSEARCH": r"intergrax\websearch",
+
+    "FULL_BUNDLE": r"intergrax",
+    
+    "NOTEBOOKS": r"notebooks",    
 }
 
 

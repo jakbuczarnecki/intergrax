@@ -105,6 +105,20 @@ class PlannerPromptConfig:
     next_step_rules_prompt: Optional[str] = None
     fallback_clarify_question: Optional[str] = None
 
+    # Optional deterministic override:
+    # - allows replaying a captured plan
+    # - allows running the planner without LLM (e.g. offline / incident mode)
+    forced_plan: Optional[Dict[str, Any]] = None
+
+    def __post_init__(self) -> None:
+        if self.forced_plan is not None:
+            if not isinstance(self.forced_plan, dict):
+                raise TypeError("forced_plan must be a dict")
+            try:
+                json.dumps(self.forced_plan)
+            except Exception as e:
+                raise TypeError(f"forced_plan must be JSON-serializable: {e}") from e
+
 
 BASE_PLANNER_SYSTEM_PROMPT = """You are EnginePlanner for Intergrax Drop-In Knowledge Runtime.
 Return a SINGLE JSON object only. No prose. No markdown. No comments.

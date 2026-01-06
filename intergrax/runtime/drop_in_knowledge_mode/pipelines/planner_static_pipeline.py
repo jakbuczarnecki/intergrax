@@ -2,12 +2,10 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
-from typing import Optional
 
 
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.pipelines.contract import RuntimePipeline
-from intergrax.runtime.drop_in_knowledge_mode.pipelines.pipeline_factory import PipelineFactory
 from intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner import EnginePlanner
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_planner import StepPlanner
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor import StepExecutor
@@ -16,11 +14,13 @@ from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models impo
 
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeAnswer
 from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.build_base_history_step import BuildBaseHistoryStep
+from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.contract import RuntimeStepRunner
 from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.ensure_current_user_message_step import EnsureCurrentUserMessageStep
 from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.history_step import HistoryStep
 from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.instructions_step import InstructionsStep
 from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.profile_based_memory_step import ProfileBasedMemoryStep
 from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.session_and_ingest_step import SessionAndIngestStep
+from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.setup_steps_tool import SETUP_STEPS
 
 
 class PlannerStaticPipeline(RuntimePipeline):
@@ -50,16 +50,8 @@ class PlannerStaticPipeline(RuntimePipeline):
 
         # ---------------------------------------------------------------------
         # 1) Deterministic setup outside planner (same category as NoPlannerPipeline setup)
-        # ---------------------------------------------------------------------
-        setup_steps = [
-            SessionAndIngestStep(),
-            ProfileBasedMemoryStep(),
-            BuildBaseHistoryStep(),
-            HistoryStep(),
-            InstructionsStep(),
-            EnsureCurrentUserMessageStep(),
-        ]
-        await self._execute_pipeline(setup_steps, state)
+        # ---------------------------------------------------------------------        
+        await RuntimeStepRunner.execute_pipeline(SETUP_STEPS, state)
 
         # ---------------------------------------------------------------------
         # 2) Build components from config/state (no new protocols/classes)
@@ -67,7 +59,7 @@ class PlannerStaticPipeline(RuntimePipeline):
         engine_planner = EnginePlanner(llm_adapter=cfg.llm_adapter)
         step_planner = StepPlanner(cfg.step_planner_cfg)
 
-        registry = PipelineFactory.build_default_planning_step_registry()
+        registry = self.build_default_planning_step_registry()
         step_executor = StepExecutor(registry=registry, cfg=cfg.step_executor_cfg)
 
         # ---------------------------------------------------------------------

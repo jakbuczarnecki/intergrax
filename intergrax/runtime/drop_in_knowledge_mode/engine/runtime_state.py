@@ -38,7 +38,7 @@ class RuntimeState:
 
     run_id: str
 
-    llm_usage_tracker: LLMUsageTracker
+    llm_usage_tracker: Optional[LLMUsageTracker] = None
 
     # Session and ingestion
     session: Optional[ChatSession] = None
@@ -133,7 +133,7 @@ class RuntimeState:
     def configure_llm_tracker(self) -> None:     
 
         if self.llm_usage_tracker is None:
-            return
+           self.llm_usage_tracker = LLMUsageTracker(run_id=self.run_id)            
            
         self.llm_usage_tracker.register_adapter(self.context.config.llm_adapter, label="core_adapter")
 

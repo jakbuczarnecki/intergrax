@@ -35,7 +35,7 @@ class HistorySummaryPromptBuilder(Protocol):
     of the prompt.
 
     You can provide a custom implementation and pass it to
-    DropInKnowledgeRuntime to fully control:
+    RuntimeEngine to fully control:
 
     - the exact system prompt text used when summarizing older history,
     - how the request / strategy / message splits influence that prompt.

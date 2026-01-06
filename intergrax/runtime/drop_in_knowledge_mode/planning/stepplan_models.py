@@ -165,6 +165,8 @@ class AskClarifyingParams(BaseModel):
     choices: Optional[List[str]] = None
     must_answer_to_continue: bool = True
 
+    context_key: Optional[str] = None
+
 
 class LtmSearchParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -355,6 +357,15 @@ class ExecutionPlan(BaseModel):
 
         # 4) Mode constraints        
         if self.mode == PlanMode.EXECUTE:
+            # Exception: a clarify-only plan may intentionally end without FINALIZE_ANSWER,
+            # because it stops with NEEDS_USER_INPUT.
+            if self.steps and self.steps[0].action == StepAction.ASK_CLARIFYING_QUESTION:
+                # Optional: enforce that clarify-only plans contain no retrieval/tools steps.
+                for s in self.steps:
+                    if s.action in _RETRIEVAL_OR_TOOLS_ACTIONS:
+                        raise ValueError("Clarify-only execute plan cannot include retrieval/tools steps.")
+                return self
+
             if self.steps[-1].action != StepAction.FINALIZE_ANSWER:
                 raise ValueError("Execute mode must end with FINALIZE_ANSWER.")
 

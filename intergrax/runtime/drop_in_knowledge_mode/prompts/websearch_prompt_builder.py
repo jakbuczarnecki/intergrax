@@ -33,7 +33,7 @@ class WebSearchPromptBuilder(Protocol):
     Strategy interface for building the web search part of the prompt.
 
     You can provide a custom implementation and pass it to
-    DropInKnowledgeRuntime to fully control:
+    RuntimeEngine to fully control:
 
     - how web documents are summarized,
     - how many results are injected,
