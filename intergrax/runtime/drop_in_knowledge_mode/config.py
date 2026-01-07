@@ -10,7 +10,7 @@ from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.rag.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore_manager import VectorstoreManager
 from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import PlannerPromptConfig
-from intergrax.runtime.drop_in_knowledge_mode.planning.plan_loop_controller import PlanLoopPolicy
+from intergrax.runtime.drop_in_knowledge_mode.planning.plan_loop_models import PlanLoopPolicy
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import StepExecutorConfig
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_planner import StepPlannerConfig
 from intergrax.tools.tools_agent import ToolsAgent

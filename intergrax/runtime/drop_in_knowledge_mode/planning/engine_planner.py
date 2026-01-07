@@ -50,10 +50,17 @@ class EnginePlanner:
             forced_plan = prompt_config.forced_plan
 
         if forced_plan is not None:
-            raw = json.dumps(forced_plan, ensure_ascii=False)
+            if isinstance(forced_plan, EnginePlan):
+                forced_plan_dict = forced_plan.to_planner_dict()
+            elif isinstance(forced_plan, dict):
+                forced_plan_dict = forced_plan
+            else:
+                raise TypeError("forced_plan must be EnginePlan or dict")
+
+            raw = json.dumps(forced_plan_dict, ensure_ascii=False)
 
             forced_json = json.dumps(
-                forced_plan,
+                forced_plan_dict,
                 ensure_ascii=False,
                 sort_keys=True,
                 separators=(",", ":"),
