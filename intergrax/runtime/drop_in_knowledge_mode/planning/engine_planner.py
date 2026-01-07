@@ -5,13 +5,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import List, Optional
+from typing import Optional
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import DEFAULT_PLANNER_FALLBACK_CLARIFY_QUESTION, DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT, DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT, DEFAULT_PLANNER_SYSTEM_PROMPT, EngineNextStep, EnginePlan, PlanIntent, PlannerPromptConfig
-from intergrax.runtime.drop_in_knowledge_mode.planning.plan_sources import LLMPlanSource, PlanSource, PlanSourceMeta
+from intergrax.runtime.drop_in_knowledge_mode.planning.plan_sources import LLMPlanSource, PlanRequest, PlanSource, PlanSourceMeta
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import ReplanContext
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
 
@@ -72,6 +72,8 @@ class EnginePlanner:
                 forced_plan_dict = forced_plan
             else:
                 raise TypeError("forced_plan must be EnginePlan or dict")
+            
+            meta_forced = PlanSourceMeta(source_kind="forced", source_detail="prompt_config.forced_plan")
 
             forced_json = json.dumps(
                 forced_plan_dict,
@@ -82,7 +84,7 @@ class EnginePlanner:
 
             plan = self._safe_parse_plan(
                 raw=forced_json,
-                meta=PlanSourceMeta(source_kind="forced", source_detail="prompt_config.forced_plan"),
+                meta=meta_forced,
                 prompt_config=prompt_config,
                 state=state,
             )
@@ -92,41 +94,20 @@ class EnginePlanner:
             if plan.debug is None:
                 plan.debug = {}
 
-            replan_json = self._serialize_replan_ctx(replan_ctx)
+            forced_hash = hashlib.sha256(forced_json.encode("utf-8")).hexdigest()[:16]
 
             plan.debug.update(
-                {
-                    "planner_forced_plan_used": True,
-                    "planner_source_kind": "forced",
-                    "planner_source_detail": "prompt_config.forced_plan",
-
-                    "planner_replan_ctx_present": replan_ctx is not None,
-                    "planner_replan_ctx_hash": (
-                        hashlib.sha256(replan_json.encode("utf-8")).hexdigest()[:16]
-                        if replan_json
-                        else None
-                    ),
-
-                    "planner_raw_len": len(forced_json),
-
-                    "planner_raw_preview": forced_json[: self._RAW_PREVIEW_LIMIT],
-                    "planner_raw_tail_preview": forced_json[-self._RAW_TAIL_PREVIEW_LIMIT :],
-
-                    "planner_forced_plan_json_len": len(forced_json),
-                    "planner_forced_plan_hash": hashlib.sha256(forced_json.encode("utf-8")).hexdigest()[:16],
-                }
+                self._build_planner_debug(
+                    raw_text=forced_json,                    
+                    meta=meta_forced,
+                    forced_plan_json_len=len(forced_json),
+                    forced_plan_hash=forced_hash,
+                    replan_ctx=replan_ctx,
+                    raw_hash16=None,
+                )
             )
 
-            state.trace_event(
-                component="planner",
-                step="engine_planner",
-                message="Engine plan forced (deterministic override).",
-                data={
-                    "intent": plan.intent.value,
-                    "next_step": plan.next_step.value if plan.next_step is not None else None,
-                    "debug": plan.debug,
-                },
-            )
+            self._trace_plan_produced(state=state, plan=plan)
 
             return plan
 
@@ -142,38 +123,26 @@ class EnginePlanner:
         )
 
         try:
-            raw, meta = await self._plan_source.generate_plan_raw(
+            req_ps = PlanRequest(
                 llm_adapter=self._llm_adapter,
                 messages=messages,
                 run_id=run_id,
+                replan_ctx=replan_ctx,
             )
+
+            res = await self._plan_source.generate_plan_raw(req=req_ps)
+            raw = res.raw
+            meta = res.meta
         except Exception as e:
             # production: trace with source type and error
-            state.trace_event(
-                component="planner",
-                step="engine_planner",
-                message="PlanSource failed while generating raw plan.",
-                data={
-                    "plan_source_type": type(self._plan_source).__name__,
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                },
-            )
+            self._trace_plansource_failed(state=state, error=e)
             raise RuntimeError(
                 f"PlanSource failed: {type(self._plan_source).__name__}: {type(e).__name__}: {e}"
             ) from e
         
         if not isinstance(raw, str):
             # This should never happen; PlanSource contract violation
-            state.trace_event(
-                component="planner",
-                step="engine_planner",
-                message="PlanSource contract violation: raw plan is not a string.",
-                data={
-                    "plan_source_type": type(self._plan_source).__name__,
-                    "raw_type": type(raw).__name__,
-                },
-            )
+            self._trace_plansource_contract_violation(state=state, raw=raw)
             raise TypeError(
                 f"PlanSource contract violation: expected str raw plan, got {type(raw).__name__}"
             )
@@ -198,37 +167,18 @@ class EnginePlanner:
         if plan.debug is None:
             plan.debug = {}
 
-        replan_json = self._serialize_replan_ctx(replan_ctx)
-
         plan.debug.update(
-            {
-                "planner_forced_plan_used": False,
-                "planner_source_kind": getattr(meta, "source_kind", None),
-                "planner_source_detail": getattr(meta, "source_detail", None),
-
-                "planner_replan_ctx_present": replan_ctx is not None,
-                "planner_replan_ctx_hash": (
-                    hashlib.sha256(replan_json.encode("utf-8")).hexdigest()[:16]
-                    if replan_json
-                    else None
-                ),
-
-                "planner_raw_len": len(raw),
-                "planner_raw_preview": raw[: self._RAW_PREVIEW_LIMIT],
-                "planner_raw_tail_preview": raw[-self._RAW_TAIL_PREVIEW_LIMIT :],
-            }
+            self._build_planner_debug(
+                raw_text=raw,
+                meta=meta,
+                forced_plan_json_len=None,
+                forced_plan_hash=None,
+                replan_ctx=replan_ctx,
+                raw_hash16=res.raw_hash16,
+            )
         )
 
-        state.trace_event(
-            component="planner",
-            step="engine_planner",
-            message="Engine plan produced.",
-            data={
-                "intent": plan.intent.value,
-                "next_step": plan.next_step.value if plan.next_step is not None else None,
-                "debug": plan.debug,
-            },
-        )
+        self._trace_plan_produced(state=state, plan=plan)
 
         return plan
     
@@ -238,31 +188,100 @@ class EnginePlanner:
         *,
         raw: str,
         meta: Optional[PlanSourceMeta],
-        prompt_config: PlannerPromptConfig,
+        prompt_config: Optional[PlannerPromptConfig],
         state: RuntimeState,
     ) -> EnginePlan:
         try:
             return self._parse_plan(raw, prompt_config=prompt_config)
-        except Exception as e:
-            raw_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
-            state.trace_event(
-                component="planner",
-                step="engine_planner",
-                message="Failed to parse raw plan.",
-                data={
-                    "planner_source_kind": getattr(meta, "source_kind", None),
-                    "planner_source_detail": getattr(meta, "source_detail", None),
-                    "raw_len": len(raw),
-                    "raw_hash": raw_hash,
-                    "raw_preview": raw[: self._RAW_PREVIEW_LIMIT],
-                    "raw_tail_preview": raw[-self._RAW_TAIL_PREVIEW_LIMIT :],
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                },
-            )
+        except Exception as e:            
+            self._trace_parse_failed(state=state, meta=meta, raw=raw, error=e)
             raise
-    
 
+    def _build_planner_debug(
+        self,
+        *,
+        raw_text: str,
+        meta: Optional[PlanSourceMeta],
+        forced_plan_json_len: Optional[int],
+        forced_plan_hash: Optional[str],
+        replan_ctx: Optional[ReplanContext],
+        raw_hash16: Optional[str]
+    ) -> dict:
+        raw_hash = raw_hash16 or hashlib.sha256(raw_text.encode("utf-8")).hexdigest()[:16]
+        replan_json = self._serialize_replan_ctx(replan_ctx)
+        replan_hash = (
+            hashlib.sha256(replan_json.encode("utf-8")).hexdigest()[:16]
+            if replan_json
+            else None
+        )
+
+        return {
+            "planner_forced_plan_used": forced_plan_hash is not None,
+            "planner_source_kind": meta.source_kind if meta else None,
+            "planner_source_detail": meta.source_detail if meta else None,
+
+            "planner_replan_ctx_present": replan_ctx is not None,
+            "planner_replan_ctx_hash": replan_hash,
+
+            "planner_raw_len": len(raw_text),
+            "planner_raw_hash": raw_hash,
+            "planner_raw_preview": raw_text[: self._RAW_PREVIEW_LIMIT],
+            "planner_raw_tail_preview": raw_text[-self._RAW_TAIL_PREVIEW_LIMIT :],
+
+            "planner_forced_plan_json_len": forced_plan_json_len,
+            "planner_forced_plan_hash": forced_plan_hash,
+        }
+
+    def _trace_plan_produced(
+        self,
+        *,
+        state: RuntimeState,
+        plan: EnginePlan,
+    ) -> None:
+        state.trace_event(
+            component="planner",
+            step="engine_planner",
+            message="Engine plan produced.",
+            data={
+                "intent": plan.intent.value,
+                "next_step": plan.next_step.value if plan.next_step is not None else None,
+                "debug": plan.debug or {},
+            },
+        )
+
+    def _trace_plansource_failed(
+        self,
+        *,
+        state: RuntimeState,
+        error: Exception,
+    ) -> None:
+        state.trace_event(
+            component="planner",
+            step="engine_planner",
+            message="PlanSource failed while generating raw plan.",
+            data={
+                "plan_source_type": type(self._plan_source).__name__,
+                "error_type": type(error).__name__,
+                "error_message": str(error),
+            },
+        )
+
+    def _trace_plansource_contract_violation(
+        self,
+        *,
+        state: RuntimeState,
+        raw: object,
+    ) -> None:
+        state.trace_event(
+            component="planner",
+            step="engine_planner",
+            message="PlanSource contract violation: raw plan is not a string.",
+            data={
+                "plan_source_type": type(self._plan_source).__name__,
+                "raw_type": type(raw).__name__,
+            },
+        )
+    
     def _validate_against_capabilities(self, *, plan: EnginePlan, state: RuntimeState) -> EnginePlan:
         """
         Hard capability clamp. No heuristics, no intent changes.
@@ -316,6 +335,33 @@ class EnginePlanner:
 
         return plan
 
+    def _trace_parse_failed(
+        self,
+        *,
+        state: RuntimeState,
+        meta: Optional[PlanSourceMeta],
+        raw: str,
+        error: Exception,
+    ) -> None:
+        raw_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+        state.trace_event(
+            component="planner",
+            step="engine_planner",
+            message="Failed to parse raw plan.",
+            data={
+                "planner_source_kind": getattr(meta, "source_kind", None) if meta else None,
+                "planner_source_detail": getattr(meta, "source_detail", None) if meta else None,
+                "raw_len": len(raw),
+                "raw_hash": raw_hash,
+                "raw_preview": raw[: self._RAW_PREVIEW_LIMIT],
+                "raw_tail_preview": raw[-self._RAW_TAIL_PREVIEW_LIMIT :],
+                "error_type": type(error).__name__,
+                "error_message": str(error),
+            },
+        )
+
+
     # -----------------------------
     # Prompting
     # -----------------------------
@@ -344,7 +390,7 @@ class EnginePlanner:
         config: RuntimeConfig,
         prompt_config: Optional[PlannerPromptConfig] = None,
         replan_ctx: Optional[ReplanContext] = None,
-    ) -> List[ChatMessage]:
+    ) -> list[ChatMessage]:
         """
         Build minimal, low-variance planner messages.
 
@@ -435,7 +481,7 @@ class EnginePlanner:
             next_step_rules_prompt = prompt_config.next_step_rules_prompt.strip()
 
         # User message: provide only needed context + schema.
-        user_lines: List[str] = []
+        user_lines: list[str] = []
         user_lines.append("CAPABILITIES (hard constraints):")
         user_lines.append(json.dumps(caps, ensure_ascii=False, sort_keys=True))
         user_lines.append("")
@@ -453,7 +499,7 @@ class EnginePlanner:
         user_lines.append("")
         user_lines.append("OUTPUT JSON:")
 
-        msgs: List[ChatMessage] = [ChatMessage(role="system", content=system_prompt)]
+        msgs: list[ChatMessage] = [ChatMessage(role="system", content=system_prompt)]
         if replan_system_msg is not None:
             msgs.append(replan_system_msg)
         msgs.append(ChatMessage(role="user", content="\n".join(user_lines)))
