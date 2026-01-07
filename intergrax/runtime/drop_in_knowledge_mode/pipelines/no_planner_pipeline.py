@@ -25,9 +25,6 @@ class NoPlannerPipeline(RuntimePipeline):
         steps = [
             *SETUP_STEPS,
 
-            # Must exist before any step that injects context "before last user".
-            EnsureCurrentUserMessageStep(),
-
             RagStep(),
             UserLongtermMemoryStep(),
             RetrieveAttachmentsStep(),
