@@ -26,10 +26,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from intergrax.rag.vectorstore_manager import VectorstoreManager
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+if TYPE_CHECKING:
+    from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
 from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
 
@@ -89,7 +91,7 @@ class ContextBuilder:
 
     def __init__(
         self,
-        config: RuntimeConfig,
+        config: "RuntimeConfig",
         vectorstore_manager: VectorstoreManager,
         *,
         collection_name: Optional[str] = None,

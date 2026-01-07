@@ -6,8 +6,10 @@ import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Optional
+from typing import TYPE_CHECKING
 from intergrax.llm_adapters.llm_usage_track import LLMUsageReport
-from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+if TYPE_CHECKING:
+    from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
 from intergrax.runtime.drop_in_knowledge_mode.context.context_builder import ContextBuilder
 from intergrax.runtime.drop_in_knowledge_mode.context.engine_history_layer import HistoryLayer
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import AttachmentIngestionService
@@ -53,7 +55,7 @@ class RuntimeContext:
     - per-request flags/results belong to RuntimeState, not here.
     """
 
-    config: RuntimeConfig
+    config: "RuntimeConfig"
     session_manager: SessionManager
 
     ingestion_service: Optional[AttachmentIngestionService] = None
@@ -152,7 +154,7 @@ class RuntimeContext:
     def build(
         cls,
         *,
-        config: RuntimeConfig,
+        config: "RuntimeConfig",
         session_manager: SessionManager,
         ingestion_service: Optional[AttachmentIngestionService] = None,
         context_builder: Optional[ContextBuilder] = None,
