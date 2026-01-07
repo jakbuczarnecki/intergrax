@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import hashlib
-import inspect
 import json
 from typing import List, Optional
 from intergrax.llm.messages import ChatMessage
@@ -12,6 +11,7 @@ from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import DEFAULT_PLANNER_FALLBACK_CLARIFY_QUESTION, DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT, DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT, DEFAULT_PLANNER_SYSTEM_PROMPT, EngineNextStep, EnginePlan, PlanIntent, PlannerPromptConfig
+from intergrax.runtime.drop_in_knowledge_mode.planning.plan_sources import LLMPlanSource, PlanSource, PlanSourceMeta
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import ReplanContext
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
 
@@ -26,8 +26,24 @@ class EnginePlanner:
     - Output must be JSON only (we parse & validate).
     """
 
-    def __init__(self, *, llm_adapter: LLMAdapter) -> None:
-        self._llm = llm_adapter
+    _RAW_PREVIEW_LIMIT = 200
+    _RAW_TAIL_PREVIEW_LIMIT = 200
+
+    def __init__(
+        self,
+        *,
+        llm_adapter: LLMAdapter,
+        plan_source: Optional[PlanSource] = None,
+    ) -> None:
+        self._llm_adapter = llm_adapter
+        self._plan_source: PlanSource = plan_source or LLMPlanSource()
+
+        # Fail-fast contract (ABC)
+        if not isinstance(self._plan_source, PlanSource):
+            raise TypeError(
+                f"plan_source must be a PlanSource, got: {type(self._plan_source).__name__}"
+            )
+        
 
     async def plan(
         self,
@@ -57,8 +73,6 @@ class EnginePlanner:
             else:
                 raise TypeError("forced_plan must be EnginePlan or dict")
 
-            raw = json.dumps(forced_plan_dict, ensure_ascii=False)
-
             forced_json = json.dumps(
                 forced_plan_dict,
                 ensure_ascii=False,
@@ -66,42 +80,47 @@ class EnginePlanner:
                 separators=(",", ":"),
             )
 
-            # Single source of truth: parsing extracts JSON and loads it
-            plan = self._parse_plan(raw, prompt_config=prompt_config)
-
+            plan = self._safe_parse_plan(
+                raw=forced_json,
+                meta=PlanSourceMeta(source_kind="forced", source_detail="prompt_config.forced_plan"),
+                prompt_config=prompt_config,
+                state=state,
+            )
             # Capability clamp (keep semantics consistent with LLM-based planning)
             plan = self._validate_against_capabilities(plan=plan, state=state)
 
-            # Merge debug (do not overwrite parser debug)
             if plan.debug is None:
                 plan.debug = {}
 
-            replan_json = None
-            if replan_ctx is not None:
-                # NOTE: keep this aligned with how _build_planner_messages injects replan ctx
-                replan_json = self._serialize_replan_ctx(replan_ctx)
-                if replan_json is None:
-                    # defensive; logically should never happen here because replan_ctx is not None
-                    replan_json = "{}"
+            replan_json = self._serialize_replan_ctx(replan_ctx)
 
             plan.debug.update(
                 {
                     "planner_forced_plan_used": True,
-                    "planner_forced_plan_json_len": len(forced_json),
-                    "planner_forced_plan_hash": hashlib.sha256(forced_json.encode("utf-8")).hexdigest()[:16],
+                    "planner_source_kind": "forced",
+                    "planner_source_detail": "prompt_config.forced_plan",
+
                     "planner_replan_ctx_present": replan_ctx is not None,
                     "planner_replan_ctx_hash": (
                         hashlib.sha256(replan_json.encode("utf-8")).hexdigest()[:16]
                         if replan_json
                         else None
                     ),
+
+                    "planner_raw_len": len(forced_json),
+
+                    "planner_raw_preview": forced_json[: self._RAW_PREVIEW_LIMIT],
+                    "planner_raw_tail_preview": forced_json[-self._RAW_TAIL_PREVIEW_LIMIT :],
+
+                    "planner_forced_plan_json_len": len(forced_json),
+                    "planner_forced_plan_hash": hashlib.sha256(forced_json.encode("utf-8")).hexdigest()[:16],
                 }
             )
 
             state.trace_event(
                 component="planner",
                 step="engine_planner",
-                message="Engine plan produced (forced_plan override).",
+                message="Engine plan forced (deterministic override).",
                 data={
                     "intent": plan.intent.value,
                     "next_step": plan.next_step.value if plan.next_step is not None else None,
@@ -122,16 +141,55 @@ class EnginePlanner:
             replan_ctx=replan_ctx,
         )
 
-        raw = self._llm.generate_messages(messages, run_id=run_id)
-
-        if inspect.iscoroutine(raw):
-            raw = await raw
-
+        try:
+            raw, meta = await self._plan_source.generate_plan_raw(
+                llm_adapter=self._llm_adapter,
+                messages=messages,
+                run_id=run_id,
+            )
+        except Exception as e:
+            # production: trace with source type and error
+            state.trace_event(
+                component="planner",
+                step="engine_planner",
+                message="PlanSource failed while generating raw plan.",
+                data={
+                    "plan_source_type": type(self._plan_source).__name__,
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+            )
+            raise RuntimeError(
+                f"PlanSource failed: {type(self._plan_source).__name__}: {type(e).__name__}: {e}"
+            ) from e
+        
         if not isinstance(raw, str):
-            raw = str(raw)
+            # This should never happen; PlanSource contract violation
+            state.trace_event(
+                component="planner",
+                step="engine_planner",
+                message="PlanSource contract violation: raw plan is not a string.",
+                data={
+                    "plan_source_type": type(self._plan_source).__name__,
+                    "raw_type": type(raw).__name__,
+                },
+            )
+            raise TypeError(
+                f"PlanSource contract violation: expected str raw plan, got {type(raw).__name__}"
+            )
+
+        if meta is None:
+            # allow meta to be optional, but normalize it
+            meta = PlanSourceMeta(source_kind="unknown", source_detail=type(self._plan_source).__name__)
+
 
         # Single source of truth: parsing extracts JSON and loads it
-        plan = self._parse_plan(raw, prompt_config=prompt_config)
+        plan = self._safe_parse_plan(
+            raw=raw,
+            meta=meta,
+            prompt_config=prompt_config,
+            state=state,
+        )
 
         # Capability clamp
         plan = self._validate_against_capabilities(plan=plan, state=state)
@@ -140,15 +198,69 @@ class EnginePlanner:
         if plan.debug is None:
             plan.debug = {}
 
+        replan_json = self._serialize_replan_ctx(replan_ctx)
+
         plan.debug.update(
             {
+                "planner_forced_plan_used": False,
+                "planner_source_kind": getattr(meta, "source_kind", None),
+                "planner_source_detail": getattr(meta, "source_detail", None),
+
+                "planner_replan_ctx_present": replan_ctx is not None,
+                "planner_replan_ctx_hash": (
+                    hashlib.sha256(replan_json.encode("utf-8")).hexdigest()[:16]
+                    if replan_json
+                    else None
+                ),
+
                 "planner_raw_len": len(raw),
-                "planner_raw_preview": raw[:400],
-                "planner_raw_tail_preview": raw[-400:],
+                "planner_raw_preview": raw[: self._RAW_PREVIEW_LIMIT],
+                "planner_raw_tail_preview": raw[-self._RAW_TAIL_PREVIEW_LIMIT :],
             }
         )
 
+        state.trace_event(
+            component="planner",
+            step="engine_planner",
+            message="Engine plan produced.",
+            data={
+                "intent": plan.intent.value,
+                "next_step": plan.next_step.value if plan.next_step is not None else None,
+                "debug": plan.debug,
+            },
+        )
+
         return plan
+    
+
+    def _safe_parse_plan(
+        self,
+        *,
+        raw: str,
+        meta: Optional[PlanSourceMeta],
+        prompt_config: PlannerPromptConfig,
+        state: RuntimeState,
+    ) -> EnginePlan:
+        try:
+            return self._parse_plan(raw, prompt_config=prompt_config)
+        except Exception as e:
+            raw_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+            state.trace_event(
+                component="planner",
+                step="engine_planner",
+                message="Failed to parse raw plan.",
+                data={
+                    "planner_source_kind": getattr(meta, "source_kind", None),
+                    "planner_source_detail": getattr(meta, "source_detail", None),
+                    "raw_len": len(raw),
+                    "raw_hash": raw_hash,
+                    "raw_preview": raw[: self._RAW_PREVIEW_LIMIT],
+                    "raw_tail_preview": raw[-self._RAW_TAIL_PREVIEW_LIMIT :],
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+            )
+            raise
     
 
     def _validate_against_capabilities(self, *, plan: EnginePlan, state: RuntimeState) -> EnginePlan:
@@ -506,7 +618,7 @@ class EnginePlanner:
             use_rag=use_rag,
             use_tools=use_tools,
             debug={
-                "raw_json": data,
+                "raw_json_shape": self._json_shape(data),
                 "planner_json_len": len(js),
                 "next_step_raw": next_step_raw,
             },
@@ -518,3 +630,24 @@ class EnginePlanner:
         if prompt_config is not None and prompt_config.fallback_clarify_question:
             q = prompt_config.fallback_clarify_question.strip()
         return q
+    
+
+    def _json_shape(self, obj: object) -> dict:
+        """
+        Return a lightweight structural summary of a JSON-like object.
+        No values, only types and key presence. Production-safe for traces.
+        """
+        if isinstance(obj, dict):
+            # Keep only a small subset of keys to avoid large traces
+            keys = sorted(list(obj.keys()))
+            return {
+                "type": "object",
+                "keys_count": len(keys),
+                "keys_preview": keys[:30],
+            }
+        if isinstance(obj, list):
+            return {
+                "type": "array",
+                "len": len(obj),
+            }
+        return {"type": type(obj).__name__}
