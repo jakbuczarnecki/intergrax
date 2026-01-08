@@ -136,7 +136,7 @@ class StepExecutor:
                     res = StepExecutionResult(
                         step_id=step.step_id,
                         action=step.action,
-                        status=StepStatus.SKIPPED,
+                        status=StepStatus.SKIPPED_WITH_ERROR,
                         sequence=sequence,
                         started_at_utc=step_started_at,
                         ended_at_utc=step_ended_dt.isoformat(),

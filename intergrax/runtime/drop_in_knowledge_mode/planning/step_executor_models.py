@@ -23,6 +23,7 @@ class StepStatus(str, Enum):
     SKIPPED = "skipped"
     FAILED = "failed"
     REPLAN_REQUESTED = "replan_requested"
+    SKIPPED_WITH_ERROR = "skipped_with_error"
     
 
 class ReplanCode(str, Enum):
