@@ -3,8 +3,9 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-
 import logging
+
+from intergrax.logging import IntergraxLogging
 from dataclasses import dataclass
 from typing import List, Tuple, Literal, Optional, Sequence, Union
 
@@ -22,9 +23,9 @@ from langchain_ollama import OllamaEmbeddings
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 
-logger = logging.getLogger(__name__)
+logger = IntergraxLogging.get_logger(__name__, component="rag")
 
-PROVIDERS = Literal["ollama", "hg", "openai"]  # <— NEW: openai
+PROVIDERS = Literal["ollama", "hg", "openai"]
 
 
 @dataclass(frozen=True)
@@ -65,7 +66,6 @@ class EmbeddingManager:
         # OpenAI settings: use default env variables (OPENAI_API_KEY, OPENAI_BASE, etc.)
         # nothing to pass here — model and key are handled by `langchain_openai.OpenAIEmbeddings`
         retries: int = 1,
-        verbose: bool = True,
     ) -> None:        
         self.provider: PROVIDERS = provider or "ollama"
         self.model_name = model_name or self._default_model_for(self.provider)
@@ -80,7 +80,6 @@ class EmbeddingManager:
         self._assume_ollama_dim = int(assume_ollama_dim)
 
         self.retries = max(0, int(retries))
-        self.verbose = verbose
 
         self.model: Optional[Union[SentenceTransformer, OllamaEmbeddings, OpenAIEmbeddings]] = None # type: ignore
         self.embed_dim: Optional[int] = None
@@ -102,7 +101,7 @@ class EmbeddingManager:
 
     def _load_model(self) -> None:
         try:
-            if self.verbose:
+            if logger.isEnabledFor(logging.DEBUG):                    
                 logger.info("[intergraxEmbeddingManager] Loading model '%s' (provider=%s)",
                             self.model_name, self.provider)
 
@@ -143,7 +142,7 @@ class EmbeddingManager:
             else:
                 raise ValueError(f"Unsupported provider: {self.provider}")
 
-            if self.verbose:
+            if logger.isEnabledFor(logging.DEBUG):                    
                 logger.info("[intergraxEmbeddingManager] Loaded. Embedding dim = %s", self.embed_dim)
 
         except Exception as e:
@@ -184,7 +183,7 @@ class EmbeddingManager:
         if self.model is None:
             raise RuntimeError("Model is not loaded.")
 
-        if self.verbose:
+        if logger.isEnabledFor(logging.DEBUG):                    
             logger.info("[intergraxEmbeddingManager] Embedding %d texts...", len(texts))
 
         attempts = self.retries + 1
@@ -196,7 +195,7 @@ class EmbeddingManager:
                     vecs = self.model.encode(
                         list(texts),
                         batch_size=self.hf_batch_size,
-                        show_progress_bar=self.verbose,
+                        show_progress_bar=False,
                         convert_to_numpy=True,
                         normalize_embeddings=self.hf_normalize_inside,
                     )

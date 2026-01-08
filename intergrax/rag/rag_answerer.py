@@ -4,11 +4,13 @@
 
 from __future__ import annotations
 
+import logging
 import time
 import json
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, Type
 
+from intergrax.logging import IntergraxLogging
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
@@ -21,6 +23,8 @@ except Exception:
     class BaseModel:  # fallback
         pass
 
+
+logger = IntergraxLogging.get_logger(__name__, component="rag")
 
 # =========================
 # Configuration & data models
@@ -81,16 +85,14 @@ class RagAnswerer:
         retriever: RagRetriever,
         llm: LLMAdapter,
         reranker: Optional[Any] = None,
-        config: Optional[AnswererConfig] = None,
-        verbose: bool = False,
+        config: Optional[AnswererConfig] = None,        
         *,
         memory: Optional[ConversationalMemory] = None,
     ):
         self.retriever = retriever
         self.llm = llm
         self.reranker = reranker
-        self.cfg = config or AnswererConfig()
-        self.verbose = verbose
+        self.cfg = config or AnswererConfig()        
         self.memory = memory
 
     # ---------- Public API ----------
@@ -119,8 +121,8 @@ class RagAnswerer:
         ms = self.cfg.min_score
 
         # 1) Retrieval
-        if self.verbose:
-            print(f"[intergraxRagAnswerer] Retrieve: top_k={tk}, min_score={ms}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"[intergraxRagAnswerer] Retrieve: top_k={tk}, min_score={ms}")
         t0 = time.perf_counter()
 
         # remove unsupported score_threshold argument (we apply the threshold locally)
@@ -158,8 +160,8 @@ class RagAnswerer:
         # 2) (Optional) Re-rank
         t_rerank = 0.0
         if self.reranker and (self.cfg.re_rank_k or 0) > 0:
-            if self.verbose:
-                print(f"[intergraxRagAnswerer] Re-rank to top {self.cfg.re_rank_k}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"[intergraxRagAnswerer] Re-rank to top {self.cfg.re_rank_k}")
             t1 = time.perf_counter()
             rr_hits = None
 
@@ -181,14 +183,14 @@ class RagAnswerer:
         else:
             messages = self._build_messages(question, context_text, user_instruction=user_instruction)
 
-        if self.verbose:
-            print(f"[intergraxRagAnswerer] Sending message to LLM: {messages}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"[intergraxRagAnswerer] Sending message to LLM: {messages}")
 
         # 5) LLM — always generate TEXT (answer)
         t_llm = 0.0
         if stream:
-            if self.verbose:
-                print("[intergraxRagAnswerer] Streaming answer...")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("[intergraxRagAnswerer] Streaming answer...")
             t2 = time.perf_counter()
             parts: List[str] = []
             for piece in self.llm.stream_messages(
@@ -201,8 +203,8 @@ class RagAnswerer:
             answer = "".join(parts)
             t_llm = time.perf_counter() - t2
         else:
-            if self.verbose:
-                print("[intergraxRagAnswerer] Generating answer...")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("[intergraxRagAnswerer] Generating answer...")
             t2 = time.perf_counter()
             answer = self.llm.generate_messages(
                 messages,

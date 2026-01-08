@@ -108,9 +108,8 @@ class AttachmentIngestionService:
         self._vectorstore_manager = vectorstore_manager
 
         # Use provided loader/splitter or fall back to default instances.
-        self._loader = loader or DocumentsLoader(verbose=False)
-        self._splitter = splitter or DocumentsSplitter(
-            verbose=False,
+        self._loader = loader or DocumentsLoader()
+        self._splitter = splitter or DocumentsSplitter(            
             default_chunk_size=1000,
             default_chunk_overlap=100,
         )

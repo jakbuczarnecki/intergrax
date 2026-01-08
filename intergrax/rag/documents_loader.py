@@ -6,8 +6,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-import docx
 import logging
+import docx
+from intergrax.logging import IntergraxLogging
 import os
 
 
@@ -75,7 +76,7 @@ except Exception:
     pytesseract = None
 
 
-logger = logging.getLogger(__name__)
+logger = IntergraxLogging.get_logger(__name__, component="rag")
 
 MetadataFn = Callable[[Document, Path], Optional[Dict]]
 
@@ -89,7 +90,6 @@ class DocumentsLoader:
     def __init__(
         self,
         *,
-        verbose: bool = False,
         file_patterns: Iterable[str] = ("**/*",),  # include files without extension too
         extensions_map: Optional[Mapping[str, Callable[[str], object]]] = None,
         exclude_globs: Optional[Iterable[str]] = None,
@@ -121,7 +121,6 @@ class DocumentsLoader:
         image_caption_llm: Optional[LLMAdapter] = None, 
         image_both_joiner: str = "\n\n---\n\n",
     ):
-        self._verbose = verbose
         self._file_patterns = tuple(file_patterns)
         self._exclude_globs = tuple(exclude_globs or ())
         self._follow_symlinks = follow_symlinks
@@ -315,8 +314,13 @@ class DocumentsLoader:
             try:
                 size_mb = file_path.stat().st_size / (1024 * 1024)
                 if size_mb > self._max_file_size_mb:
-                    if self._verbose:
-                        logger.warning("[intergraxDocumentsLoader] Skipping large file (%.1f MB): %s", size_mb, file_path)
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(
+                            "[intergraxDocumentsLoader] Skipping large file (%.1f MB): %s",
+                            size_mb,
+                            file_path,
+                            extra={"data": {"size_mb": float(size_mb)}},
+                        )
                     return False
             except OSError as e:
                 logger.warning("[intergraxDocumentsLoader] Could not stat file %s: %s", file_path, e)
@@ -424,8 +428,9 @@ class DocumentsLoader:
         Scans a directory according to file_patterns/exclusions/limits and
         delegates each file to load_document(...).
         """
-        if self._verbose:
-            logger.info("[intergraxDocumentsLoader] Loading documents from %s", directory_path)
+
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("[intergraxDocumentsLoader] Loading documents from %s", directory_path)
 
         docs: List[Document] = []
         root = Path(directory_path).resolve()
@@ -462,13 +467,15 @@ class DocumentsLoader:
 
         # File count limit
         if self._max_files is not None and len(candidate_files) > self._max_files:
-            if self._verbose:
-                logger.warning(
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
                     "[intergraxDocumentsLoader] Too many files (%d). Truncating to %d.",
                     len(candidate_files),
                     self._max_files,
+                    extra={"data": {"total": len(candidate_files), "limit": self._max_files}},
                 )
             candidate_files = candidate_files[: self._max_files]
+
 
         # Progress bar + delegation to single-file loader
         with tqdm(
@@ -476,7 +483,7 @@ class DocumentsLoader:
             unit="file",
             leave=False,
             total=len(candidate_files),
-            disable=not self._verbose,
+            disable=not logger.isEnabledFor(logging.DEBUG),
         ) as pbar:
             for file in candidate_files:
                 try:
@@ -492,8 +499,12 @@ class DocumentsLoader:
                 finally:
                     pbar.update(1)
 
-        if self._verbose:
-            logger.info("[intergraxDocumentsLoader] Done. Loaded documents: %d", len(docs))
+        logger.debug(
+            "[intergraxDocumentsLoader] Done. Loaded documents: %d",
+            len(docs),
+            extra={"data": {"loaded": len(docs)}},
+        )
+
 
         return docs
 

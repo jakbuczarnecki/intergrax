@@ -4,14 +4,14 @@
 
 from __future__ import annotations
 from typing import List, Dict, Optional, Any
-import logging
-
 import numpy as np
-
 from intergrax.rag.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore_manager import VectorstoreManager
+import logging
+from intergrax.logging import IntergraxLogging
 
-logger = logging.getLogger("intergrax.dual_retriever")
+logger = IntergraxLogging.get_logger(__name__, component="rag")
+
 
 
 class DualRetriever:
@@ -31,7 +31,6 @@ class DualRetriever:
         max_toc_parents: int = 5,
         toc_weight: float = 1.0, 
         chunks_weight: float = 1.0,
-        verbose: bool = False,
     ):
         self.vs_chunks = vs_chunks
         self.max_toc_parents = int(max_toc_parents)
@@ -40,11 +39,7 @@ class DualRetriever:
         self.k_chunks = int(k_chunks)
         self.k_toc = int(k_toc)
         self.toc_weight = float(toc_weight)
-        self.chunks_weight = float(chunks_weight)
-        self.verbose = verbose
-        self.log = logger.getChild("retrieve")
-        if self.verbose:
-            self.log.setLevel(logging.INFO)
+        self.chunks_weight = float(chunks_weight)        
 
     # --- helpers --------------------------------------------------------
 
@@ -89,12 +84,20 @@ class DualRetriever:
             sim = float(scores[i])
             # Defensive clamp to contract range [0,1]
             if sim < 0.0:
-                if self.verbose:
-                    self.log.info(f"[DualRetriever] similarity_score < 0 (clamped): {sim}")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(
+                        "[DualRetriever] similarity_score < 0 (clamped): %.4f",
+                        sim,
+                        extra={"data": {"similarity_score": float(sim), "clamped_to": 0.0}},
+                    )
                 sim = 0.0
             elif sim > 1.0:
-                if self.verbose:
-                    self.log.info(f"[DualRetriever] similarity_score > 1 (clamped): {sim}")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(
+                        "[DualRetriever] similarity_score > 1 (clamped): %.4f",
+                        sim,
+                        extra={"data": {"similarity_score": float(sim), "clamped_to": 1.0}},
+                    )
                 sim = 1.0
 
             hits.append({
@@ -198,8 +201,13 @@ class DualRetriever:
 
         toc_hits = self._query_vs(self.vs_toc, question, top_k=self.k_toc, where=where)
 
-        if self.verbose:
-            self.log.info("[DualRetriever] TOC hits: %d", len(toc_hits))
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "[DualRetriever] TOC hits: %d",
+                len(toc_hits),
+                extra={"data": {"toc_hits": len(toc_hits)}},
+            )
+
 
         # Collect unique parent ids (limit expansion cost)
         parent_ids: List[str] = []
@@ -209,8 +217,7 @@ class DualRetriever:
             md = h.get("metadata", {}) or {}
             parent = md.get("parent_id")
             if not parent:
-                if self.verbose:
-                    self.log.info("[DualRetriever] TOC hit without parent_id -> skipping TOC expansion for this item.")
+                logger.debug("[DualRetriever] TOC hit without parent_id -> skipping TOC expansion for this item.")
                 continue
 
             parent = str(parent)
@@ -237,13 +244,21 @@ class DualRetriever:
             local = self._query_vs(self.vs_chunks, question, top_k=self.k_chunks, where=where_local)
             expanded.extend(local)
 
-        if self.verbose:
-            self.log.info(
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
                 "[DualRetriever] Expanded via TOC (parents=%d, max=%d) -> %d local hits",
                 len(parent_ids),
                 self.max_toc_parents,
                 len(expanded),
+                extra={
+                    "data": {
+                        "parents": len(parent_ids),
+                        "max_parents": self.max_toc_parents,
+                        "expanded": len(expanded),
+                    }
+                },
             )
+
 
         return expanded
 
@@ -255,8 +270,14 @@ class DualRetriever:
         2) Expand context via TOC (if available) and search locally by parent_id (propagates `where`)
         3) Merge, dedupe and sort by similarity, then trim to top_k
         """
-        if self.verbose:
-            self.log.info("[DualRetriever] Query: '%s' (top_k=%d)", question, top_k)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "[DualRetriever] Query: '%s' (top_k=%d)",
+                question,
+                top_k,
+                extra={"data": {"top_k": top_k}},
+            )
+
 
         base_k = max(int(top_k), self.k_chunks)
         base_hits = self._query_vs(self.vs_chunks, question, top_k=base_k, where=where)
@@ -273,8 +294,13 @@ class DualRetriever:
             h["base_similarity_score"] = base
             h["similarity_score"] = base * self.toc_weight
 
-        if self.verbose:
-            self.log.info("[DualRetriever] Base CHUNKS hits: %d", len(base_hits))
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "[DualRetriever] Base CHUNKS hits: %d",
+                len(base_hits),
+                extra={"data": {"base_hits": len(base_hits)}},
+            )
+
         
         # merge + dedupe
         def _key(h: Dict[str, Any]) -> str:
@@ -305,7 +331,11 @@ class DualRetriever:
         merged.sort(key=lambda x: x.get("similarity_score", 0.0), reverse=True)
         out = merged[: int(top_k)]
 
-        if self.verbose:
-            self.log.info("[DualRetriever] Total merged: %d", len(out))
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "[DualRetriever] Total merged: %d",
+                len(out),
+                extra={"data": {"total_merged": len(out)}},
+            )
 
         return out

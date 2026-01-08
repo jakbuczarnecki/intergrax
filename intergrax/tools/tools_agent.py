@@ -4,13 +4,17 @@
 
 from __future__ import annotations
 import json
+import logging
 from typing import Any, Dict, List, Optional, Union, Type
 
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.logging import IntergraxLogging
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
-from .tools_base import ToolRegistry, _limit_tool_output
+from intergrax.tools.tools_base import ToolRegistry, _limit_tool_output
+
+logger = IntergraxLogging.get_logger(__name__, component="rag")
 
 
 PLANNER_PROMPT = (
@@ -108,14 +112,12 @@ class ToolsAgent:
         tools: ToolRegistry,
         *,
         memory: Optional[ConversationalMemory] = None,
-        config: Optional[ToolsAgentConfig] = None,
-        verbose: bool = False,
+        config: Optional[ToolsAgentConfig] = None,        
     ):
         self.llm = llm
         self.tools = tools
         self.memory = memory
-        self.cfg = config or ToolsAgentConfig()
-        self.verbose = verbose
+        self.cfg = config or ToolsAgentConfig()        
 
         # Does the LLM support native tools (OpenAI) or a JSON planner (Ollama)?
         self._native_tools = False
@@ -308,8 +310,8 @@ class ToolsAgent:
 
             while iterations < self.cfg.max_tool_iters:
                 iterations += 1
-                if self.verbose:
-                    print(f"[intergraxToolsAgent] Iteration {iterations} (native tools)")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"[intergraxToolsAgent] Iteration {iterations} (native tools)")
 
                 messages = self._prune_messages_for_openai(messages)
 
@@ -402,8 +404,8 @@ class ToolsAgent:
                         }
                     last_call_fp = fp
 
-                    if self.verbose:
-                        print(
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(
                             f"[intergraxToolsAgent] Calling tool: {name}({validated})"
                         )
 
@@ -476,8 +478,8 @@ class ToolsAgent:
 
         while iterations < self.cfg.max_tool_iters:
             iterations += 1
-            if self.verbose:
-                print(f"[intergraxToolsAgent] Iteration {iterations} (planner)")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"[intergraxToolsAgent] Iteration {iterations} (planner)")
 
             plan_text = self.llm.generate_messages(
                 messages,
@@ -528,8 +530,8 @@ class ToolsAgent:
                 tool = self.tools.get(name)
                 validated = tool.validate_args(args)
 
-                if self.verbose:
-                    print(
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(
                         f"[intergraxToolsAgent] Calling tool: {name}({validated})"
                     )
 
