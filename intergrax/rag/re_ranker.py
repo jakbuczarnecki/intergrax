@@ -3,17 +3,18 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+import logging
+from typing import Any, Dict, List, Optional, Tuple, Union
 from dataclasses import dataclass
 from functools import lru_cache
-import logging
 import numpy as np
 from langchain_core.documents import Document
 
+from intergrax.logging import IntergraxLogging
 from intergrax.rag.embedding_manager import EmbeddingManager
 from intergrax.rag.rag_retriever import RagRetriever
 
-logger = logging.getLogger("intergrax.reranker")
+logger = IntergraxLogging.get_logger(__name__, component="rag")
 
 # Input types: hits from the retriever (dict) or raw LangChain Documents
 Hit = Dict[str, Any]
@@ -54,15 +55,9 @@ class ReRanker:
 
     def __init__(self,
                  embedding_manager: EmbeddingManager,
-                 config: Optional[ReRankerConfig] = None,
-                 *,
-                 verbose: bool = False) -> None:
+                 config: Optional[ReRankerConfig] = None) -> None:
         self.em = embedding_manager
         self.cfg = config or ReRankerConfig()
-        self.verbose = verbose
-        self.log = logger.getChild("core")
-        if self.verbose:
-            self.log.setLevel(logging.INFO)
 
         # ensure alpha in [0,1]
         if self.cfg.fusion_alpha is not None:
@@ -291,10 +286,10 @@ class ReRanker:
         for r, h in enumerate(hits_out, start=1):
             h["rank_reranked"] = r
 
-        if self.verbose and hits_out:
+        if logger.isEnabledFor(logging.DEBUG) and hits_out:
             top = hits_out[0]
             dbg = top.get(key, top.get("rerank_score", 0.0))
-            self.log.info("[intergraxReRanker] Top1 %s=%.4f  (text≈ %s...)", key, float(dbg),
+            logger.info("[intergraxReRanker] Top1 %s=%.4f  (text≈ %s...)", key, float(dbg),
                           str(top.get("content",""))[:120].replace("\n"," "))
 
         return hits_out
@@ -312,8 +307,10 @@ class ReRanker:
         """
         Convenience: recall with retriever (broad), then re-rank here.
         """
-        if self.verbose:
-            self.log.info("[intergraxReRanker] Recall: top_k=%d, thr=%.4f", retriever_k, score_threshold)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("[intergraxReRanker] Recall: top_k=%d, thr=%.4f", retriever_k, score_threshold)
+
+
         base_hits = base_retriever.retrieve(
             question=query,
             top_k=retriever_k,
@@ -341,8 +338,7 @@ class ReRanker:
             V = self.em.embed_texts(texts)  # type: ignore[attr-defined]
             return np.asarray(V, dtype="float32")
         except Exception as e:
-            if self.verbose:
-                logger.error(e)
+            logger.exception("[intergraxReRanker] Failed to embed texts: %s", e)
 
         # fallback: small batches on embed_one
         vecs: List[np.ndarray] = []

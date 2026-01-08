@@ -4,15 +4,19 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence
 import numpy as np
 
-from .vectorstore_manager import VectorstoreManager
-from .embedding_manager import EmbeddingManager
+from intergrax.logging import IntergraxLogging
+from intergrax.rag.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore_manager import VectorstoreManager
+
 
 # Optional reranker function type: accepts and returns a list of hits
 RerankerFn = Callable[..., List[Dict[str, Any]]]
 
+logger = IntergraxLogging.get_logger(__name__, component="rag")
 
 class RagRetriever:
     """
@@ -49,13 +53,11 @@ class RagRetriever:
         vector_store: VectorstoreManager,
         embedding_manager: EmbeddingManager,
         *,
-        verbose: bool = False,
         default_max_per_parent: Optional[int] = 2,
         chroma_auto_where_normalize: bool = True,
     ):
         self.vs = vector_store
         self.em = embedding_manager
-        self.verbose = verbose
         self.default_max_per_parent = default_max_per_parent
         self.chroma_auto_where_normalize = chroma_auto_where_normalize
 
@@ -238,8 +240,8 @@ class RagRetriever:
         # Guard: empty store
         try:            
             if int(self.vs.count() or 0) == 0:
-                if self.verbose:
-                    print("[intergraxRagRetriever] Vector store is empty.")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug("[intergraxRagRetriever] Vector store is empty.")
                 return []
         except Exception:
             # If count() is unsupported, ignore and continue
@@ -270,12 +272,12 @@ class RagRetriever:
         # Try normalized → flat → none
         res = _do_query(norm_where)
         if (not res.get("ids") or not res["ids"][0]) and where and self.vs.cfg.provider == "chroma":
-            if self.verbose:
-                print("[Retriever] No hits with normalized where → retrying with flat where…")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("[Retriever] No hits with normalized where → retrying with flat where…")
             res = _do_query(where)
         if (not res.get("ids") or not res["ids"][0]) and self.vs.cfg.provider == "chroma":
-            if self.verbose:
-                print("[Retriever] Still no hits → retrying with no filter (diagnostic)…")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("[Retriever] Still no hits → retrying with no filter (diagnostic)…")
             res = _do_query(None)
 
         provider = self.vs.cfg.provider
@@ -292,8 +294,8 @@ class RagRetriever:
         emb_vecs = embs_b[0] if include_embeddings and embs_b else []
 
         if not ids:
-            if self.verbose:
-                print("[intergraxRagRetriever] No results from vector store.")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("[intergraxRagRetriever] No results from vector store.")
             return []
 
         # 4) Normalize scores → similarity in [0,1]
@@ -305,8 +307,8 @@ class RagRetriever:
         if docs_present:
             n = min(n, len(documents))
 
-        if self.verbose:
-            print(
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
                 f"[Retriever] raw candidates: {n}, "
                 f"min_sim={min(sims[:n] or [0]):.3f}, max_sim={max(sims[:n] or [0]):.3f}, "
                 f"threshold={score_threshold:.3f}, prefetch_k={prefetch_k}"
@@ -367,12 +369,11 @@ class RagRetriever:
                     for i, x in enumerate(uniq):
                         x["embedding"] = C_list[i]
                     have_embs = True
-                    if self.verbose:
-                        print("[intergraxRagRetriever] Computed candidate embeddings on-the-fly for MMR.")
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug("[intergraxRagRetriever] Computed candidate embeddings on-the-fly for MMR.")
                 except Exception as e:
                     have_embs = False
-                    if self.verbose:
-                        print(f"[intergraxRagRetriever] Could not compute embeddings on-the-fly; skipping MMR. Err: {e}")
+                    logger.exception(f"[intergraxRagRetriever] Could not compute embeddings on-the-fly; skipping MMR.", e)
 
             if have_embs:
                 try:
@@ -406,11 +407,10 @@ class RagRetriever:
                             uniq = [uniq[i] for i in selected_idxs] + [it for j, it in enumerate(uniq) if j not in selected_set]
                             used_mmr = True
                     else:
-                        if self.verbose:
-                            print("[intergraxRagRetriever] MMR skipped: not enough valid embeddings.")
+                        if logger.isEnabledFor(logging.DEBUG):
+                            logger.debug("[intergraxRagRetriever] MMR skipped: not enough valid embeddings.")
                 except Exception as e:
-                    if self.verbose:
-                        print(f"[intergraxRagRetriever] MMR error ignored: {e}")
+                    logger.exception("[intergraxRagRetriever] MMR error ignored.", e)
                     uniq = uniq_before_mmr  # safe fallback
 
 
@@ -455,8 +455,7 @@ class RagRetriever:
                     # Unexpected return type -> fallback
                     uniq = uniq_before_rerank
             except Exception as e:
-                if self.verbose:
-                    print(f"[intergraxRagRetriever] Reranker error ignored: {e}")
+                logger.exceptiont("[intergraxRagRetriever] Reranker error ignored.", e)
                 uniq = uniq_before_rerank
 
 

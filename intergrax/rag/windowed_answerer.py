@@ -9,10 +9,11 @@ import logging
 from typing import List, Dict, Optional, Tuple
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.logging import IntergraxLogging
 from intergrax.rag.dual_retriever import DualRetriever
 from intergrax.rag.rag_answerer import AnswerSource, RagAnswerer
 
-logger = logging.getLogger("intergrax.windowed_answerer")
+logger = IntergraxLogging.get_logger(__name__, component="rag")
 
 
 class WindowedAnswerer:
@@ -22,15 +23,9 @@ class WindowedAnswerer:
     def __init__(
             self, 
             answerer: RagAnswerer, 
-            retriever: DualRetriever, 
-            *, 
-            verbose: bool = False):
+            retriever: DualRetriever):
         self.answerer = answerer
         self.retriever = retriever
-        self.verbose = verbose
-        self.log = logger.getChild("window")
-        if self.verbose:
-            self.log.setLevel(logging.INFO)
 
     def _build_context_local(
         self,
@@ -113,8 +108,14 @@ class WindowedAnswerer:
         source_preview_len: int = 64,
         run_id: Optional[str] = None,
     ):
-        if self.verbose:
-            self.log.info("[Windowed] Asking: '%s' (top_k_total=%d, window=%d)", question, top_k_total, window_size)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "[Windowed] Asking: '%s' (top_k_total=%d, window=%d)",
+                question,
+                top_k_total,
+                window_size,
+            )
+
 
         def _safe_tokens(x: Optional[int], default: int) -> int:
             try:
@@ -130,8 +131,9 @@ class WindowedAnswerer:
         # 1) Broad retrieval
         raw_hits = self.retriever.retrieve(question, top_k=top_k_total)
 
-        if self.verbose:
-            self.log.info("[Windowed] Retrieved %d candidates", len(raw_hits))
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("[Windowed] Retrieved %d candidates", len(raw_hits))
+
 
         base_tokens = _safe_tokens(self.answerer.cfg.max_answer_tokens, 1024)
 
@@ -153,8 +155,9 @@ class WindowedAnswerer:
         # 2) Windows
         windows = [raw_hits[i:i + window_size] for i in range(0, len(raw_hits), window_size)]
 
-        if self.verbose:
-            self.log.info("[Windowed] Processing %d windows", len(windows))
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("[Windowed] Processing %d windows", len(windows))
+
 
         partial_answers = []
         collected_sources: List[AnswerSource] = []
@@ -164,7 +167,14 @@ class WindowedAnswerer:
                 w,
                 max_chars=self.answerer.cfg.max_context_chars
             )
-            self.log.info("[Windowed] Window %d/%d: %d hits", wi, len(windows), len(used_hits))
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    "[Windowed] Window %d/%d: %d hits",
+                    wi,
+                    len(windows),
+                    len(used_hits),
+                )
+
 
             # 2a) Build MESSAGES (memory-aware if available)
             msgs = self._build_messages_for_context(question=question, context_text=ctx_text)
@@ -238,7 +248,8 @@ class WindowedAnswerer:
                 content_to_save += "\n\n" + final_summary            
             self.answerer.memory.add_message(ChatMessage(role="assistant", content=content_to_save))
 
-        self.log.info("[Windowed] Done (%d windows)", len(windows))
+        logger.info("[Windowed] Done (%d windows)", len(windows))
+
         return {
             "answer": final_answer,
             "sources": dedup_sources,

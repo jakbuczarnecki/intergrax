@@ -17,6 +17,9 @@ from intergrax.rag.re_ranker import ReRanker
 
 from operator import itemgetter
 
+from intergrax.logging import IntergraxLogging
+
+logger = IntergraxLogging.get_logger(__name__, component="rag")
 
 # How to use:
 # 1) You already have:
@@ -58,7 +61,6 @@ from operator import itemgetter
 #     llm=llm,
 #     reranker=reranker,   # or None
 #     config=cfg,
-#     verbose=True,
 # )
 
 # 5) Call
@@ -198,13 +200,11 @@ class LangChainQAChain:
         llm,  # any LangChain LLM (e.g., ChatOllama, ChatOpenAI, etc.)
         reranker: Optional[ReRanker] = None,
         config: Optional[ChainConfig] = None,
-        verbose: bool = True,
     ):
         self.retriever = retriever
         self.llm = llm
         self.reranker = reranker
         self.cfg = config or ChainConfig()
-        self.verbose = verbose
 
         # Default prompt builder
         if self.cfg.prompt_builder is None:
@@ -250,9 +250,8 @@ class LangChainQAChain:
                 "where": inp.get("where") if inp.get("where") is not None else self.cfg.where,
                 "top_k": self.cfg.top_k,
                 "min_score": self.cfg.min_score,
-            }
-            if self.verbose:
-                print(f"[intergraxChain] Q='{payload['question']}' | top_k={payload['top_k']} | min_score={payload['min_score']}")
+            }            
+            logger.debug(f"[intergraxChain] Q='{payload['question']}' | top_k={payload['top_k']} | min_score={payload['min_score']}")
             return payload
 
         # 2) retrieve
@@ -263,17 +262,15 @@ class LangChainQAChain:
                 score_threshold=payload["min_score"],
                 where=payload["where"],
             )
-            payload["raw_hits"] = hits
-            if self.verbose:
-                print(f"[intergraxChain] Retrieved {len(hits)} hits")
+            payload["raw_hits"] = hits            
+            logger.debug(f"[intergraxChain] Retrieved {len(hits)} hits")
             return payload
 
         # 3) rerank (optional)
         def rerank_stage(payload: Dict[str, Any]) -> Dict[str, Any]:
             hits = payload.get("raw_hits", [])
-            if self.cfg.use_rerank and self.reranker and hits:
-                if self.verbose:
-                    print(f"[intergraxChain] Reranking to top {self.cfg.rerank_k}")
+            if self.cfg.use_rerank and self.reranker and hits:                
+                logger.debug(f"[intergraxChain] Reranking to top {self.cfg.rerank_k}")
                 payload["raw_hits"] = self.reranker.rerank_candidates(
                     query=payload["question"],
                     candidates=hits,

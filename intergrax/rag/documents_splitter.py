@@ -12,8 +12,9 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from intergrax.logging import IntergraxLogging
 
-logger = logging.getLogger(__name__)
+logger = IntergraxLogging.get_logger(__name__, component="rag")
 
 # signature: (chunk_doc, chunk_index, chunk_total) -> dict | None
 ChunkMetadataFn = Callable[[Document, int, int], Optional[Dict[str, Any]]]
@@ -27,7 +28,6 @@ class DocumentsSplitter:
     def __init__(
         self,
         *,
-        verbose: bool = False,
         default_chunk_size: int = 1000,
         default_chunk_overlap: int = 100,
         default_separators: Sequence[str] = ("\n\n", "\n", " ", ""),
@@ -43,7 +43,6 @@ class DocumentsSplitter:
         Implements 'semantic atom' policy: if a doc is already a small semantic unit
         (paragraph/row/page/image), do not split it further.
         """
-        self.verbose = verbose
         self.default_chunk_size = int(default_chunk_size)
         self.default_chunk_overlap = int(default_chunk_overlap)
         self.default_separators = tuple(default_separators)
@@ -160,11 +159,10 @@ class DocumentsSplitter:
 
         # Optional hard cap
         if self.max_chunks_per_doc is not None and len(chunks) > self.max_chunks_per_doc:
-            if self.verbose:
-                logger.warning(
-                    "[intergraxDocumentsSplitter] Cap reached: %d > %d (source=%s)",
-                    len(chunks), self.max_chunks_per_doc, source_name or parent_id or "unknown",
-                )
+            logger.debug(
+                "[intergraxDocumentsSplitter] Cap reached: %d > %d (source=%s)",
+                len(chunks), self.max_chunks_per_doc, source_name or parent_id or "unknown",
+            )
             chunks = chunks[: self.max_chunks_per_doc]
 
         chunk_total = len(chunks)
@@ -211,9 +209,8 @@ class DocumentsSplitter:
                             if k in {"chunk_id", "chunk_index", "chunk_total", "parent_id"}:
                                 continue  # protect core ids
                             meta.setdefault(k, v)
-                except Exception as e:
-                    if self.verbose:
-                        logger.exception("[intergraxDocumentsSplitter] Metadata callback error: %s", e)
+                except Exception as e:                    
+                    logger.exception("[intergraxDocumentsSplitter] Metadata callback error: %s", e)
 
             c.metadata = meta
             finalized.append(c)
@@ -246,8 +243,7 @@ class DocumentsSplitter:
           - Otherwise, use RecursiveCharacterTextSplitter.
         """
         if not documents:
-            if self.verbose:
-                logger.info("[intergraxDocumentsSplitter] Empty document list.")
+            logger.debug("[intergraxDocumentsSplitter] Empty document list.")
             return []
 
         eff_chunk_size = int(chunk_size or self.default_chunk_size)
@@ -289,10 +285,16 @@ class DocumentsSplitter:
                 )
                 all_chunks.extend(finalized)
 
-                if self.verbose:
+                if logger.isEnabledFor(logging.DEBUG):
                     src = source_name or f"doc_{i}"
-                    logger.info("[intergraxDocumentsSplitter] %d/%d -> '%s': semantic-atom (1 chunk)",
-                                i + 1, total_inputs, src)
+                    logger.debug(
+                        "[intergraxDocumentsSplitter] %d/%d -> '%s': semantic-atom (1 chunk)",
+                        i + 1,
+                        total_inputs,
+                        src,
+                        extra={"data": {"index": i + 1, "total": total_inputs, "source": src}},
+                    )
+
                 continue
 
             # === 1) Standard split path ===
@@ -324,20 +326,49 @@ class DocumentsSplitter:
             )
             all_chunks.extend(finalized)
 
-            if self.verbose:
+            if logger.isEnabledFor(logging.DEBUG):
                 src = source_name or f"doc_{i}"
-                logger.info(
+                logger.debug(
                     "[intergraxDocumentsSplitter] %d/%d -> '%s': %d chunks",
-                    i + 1, total_inputs, src, len(finalized)
+                    i + 1,
+                    total_inputs,
+                    src,
+                    len(finalized),
+                    extra={
+                        "data": {
+                            "index": i + 1,
+                            "total": total_inputs,
+                            "source": src,
+                            "chunks": len(finalized),
+                        }
+                    },
                 )
 
-        if self.verbose:
-            logger.info("[intergraxDocumentsSplitter] Split %d documents into %d chunks",
-                        len(documents), len(all_chunks))
+
+        if logger.isEnabledFor(logging.DEBUG):
+            total_docs = len(documents)
+            total_chunks = len(all_chunks)
+
+            logger.debug(
+                "[intergraxDocumentsSplitter] Split %d documents into %d chunks",
+                total_docs,
+                total_chunks,
+                extra={"data": {"documents": total_docs, "chunks": total_chunks}},
+            )
+
             if all_chunks:
                 ex = all_chunks[0]
-                logger.info("[intergraxDocumentsSplitter] Example chunk: %s ...", ex.page_content[:300])
-                logger.info("[intergraxDocumentsSplitter] Example metadata: %s", ex.metadata)
+                preview = ex.page_content[:300] if ex.page_content else ""
+                logger.debug(
+                    "[intergraxDocumentsSplitter] Example chunk: %s ...",
+                    preview.replace("\n", " "),
+                )
+                logger.debug(
+                    "[intergraxDocumentsSplitter] Example metadata: %s",
+                    ex.metadata,
+                    extra={"data": {"metadata": ex.metadata}},
+                )
+
 
         return all_chunks
 

@@ -4,13 +4,15 @@
 
 from __future__ import annotations
 import logging
+from intergrax.logging import IntergraxLogging
 import math
 from typing import List, Dict, Callable, Optional
 from langchain_core.documents import Document
-from .vectorstore_manager import VectorstoreManager
-from .embedding_manager import EmbeddingManager
 
-logger = logging.getLogger("intergrax.dual_index_builder")
+from intergrax.rag.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore_manager import VectorstoreManager
+
+logger = IntergraxLogging.get_logger(__name__, component="rag")
 
 
 def build_dual_index(
@@ -24,17 +26,13 @@ def build_dual_index(
     toc_min_level: int = 1,
     toc_max_level: int = 3,
     prefilter: Optional[Callable[[Document], bool]] = None,
-    skip_if_populated: bool = True,    
-    verbose: bool = False,
+    skip_if_populated: bool = True,        
 ):
     """
     Builds two vector indexes: primary (CHUNKS) and auxiliary (TOC).
     - CHUNKS: all chunks/documents after splitting.
     - TOC: only DOCX headings within levels [toc_min_level, toc_max_level].
     """
-    log = logger.getChild("build")
-    if verbose:
-        log.setLevel(logging.INFO)
 
     def _safe_count(vs: VectorstoreManager) -> int:
         try:
@@ -47,7 +45,7 @@ def build_dual_index(
         toc_count = _safe_count(vs_toc) if vs_toc is not None else 0
 
         if chunks_count > 0 or toc_count > 0:
-            log.warning(
+            logger.warning(
                 "[DualIndex] skip_if_populated=True → skipping ingest "
                 "(CHUNKS=%d, TOC=%d).",
                 chunks_count, toc_count
@@ -59,7 +57,7 @@ def build_dual_index(
         toc_min_level, toc_max_level = toc_max_level, toc_min_level
 
     total = len(docs)
-    log.info("[DualIndex] Start (input=%d)", total)
+    logger.info("[DualIndex] Start (input=%d)", total)
 
     chunk_docs: List[Document] = []
     toc_docs: List[Document] = []
@@ -102,7 +100,7 @@ def build_dual_index(
                 # shorten heading content to a reasonable length (e.g., 512 chars)
                 toc_docs.append(Document(page_content=text[:512], metadata=md))
 
-    log.info("[DualIndex] Prepared: chunks=%d, toc=%d", len(chunk_docs), len(toc_docs))
+    logger.info("[DualIndex] Prepared: chunks=%d, toc=%d", len(chunk_docs), len(toc_docs))
 
     # --- CHUNKS ---
     if chunk_docs:
@@ -118,15 +116,15 @@ def build_dual_index(
                 embeddings=X_chunks[i:j],
                 batch_size=batch_size,
             )
-            if verbose:
-                log.info(
+            if logger.isEnabledFor(logging.DEBUG):                    
+                logger.info(
                     "[DualIndex] CHUNKS batch %d/%d inserted (%d items)",
                     (i // batch_size) + 1, total_batches, j - i
                 )
         try:
-            log.info("[DualIndex] CHUNKS done (count now ~%d)", vs_chunks.count())
+            logger.info("[DualIndex] CHUNKS done (count now ~%d)", vs_chunks.count())
         except Exception:
-            log.info("[DualIndex] CHUNKS done")
+            logger.info("[DualIndex] CHUNKS done")
 
     # --- TOC ---
     if vs_toc is not None:
@@ -142,16 +140,16 @@ def build_dual_index(
                     embeddings=X_toc[i:j],
                     batch_size=batch_size,
                 )
-                if verbose:
-                    log.info(
+                if logger.isEnabledFor(logging.DEBUG):                    
+                    logger.info(
                         "[DualIndex] TOC batch %d/%d inserted (%d items)",
                         (i // batch_size) + 1, total_batches, j - i
                     )
             try:
-                log.info("[DualIndex] TOC done (count now ~%d)", vs_toc.count())
+                logger.info("[DualIndex] TOC done (count now ~%d)", vs_toc.count())
             except Exception:
-                log.info("[DualIndex] TOC done")
+                logger.info("[DualIndex] TOC done")
         else:
-            log.warning("[DualIndex] TOC enabled, but no DOCX headings matched the criteria.")
+            logger.warning("[DualIndex] TOC enabled, but no DOCX headings matched the criteria.")
     
-    log.info("[DualIndex] Done.")
+    logger.info("[DualIndex] Done.")

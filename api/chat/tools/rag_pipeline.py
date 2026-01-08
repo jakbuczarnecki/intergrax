@@ -49,7 +49,7 @@ def _get_vectorstore() -> VectorstoreManager:
             metric="cosine",
             chroma_persist_directory=PERSIST_DIR,
         )
-        _vectorstore = VectorstoreManager(config=cfg, verbose=True)
+        _vectorstore = VectorstoreManager(config=cfg)
     return _vectorstore
 
 
@@ -68,8 +68,8 @@ def _get_retriever() -> RagRetriever:
     if _retriever is None:
         _retriever = RagRetriever(
             vector_store=_get_vectorstore(),
-            embedding_manager=_get_embedder(), 
-            verbose=True)
+            embedding_manager=_get_embedder(),
+        )
     return _retriever
 
 
@@ -84,7 +84,6 @@ def _get_reranker() -> ReRanker:
                 normalize="minmax",
                 doc_batch_size=256
             ),
-            verbose=False
         )
     return _reranker
 
@@ -231,7 +230,6 @@ def get_answerer(model_name: Optional[str] = None) -> RagAnswerer:
         llm=llm,
         reranker=_get_reranker(),  
         config=cfg,
-        verbose=True,
     )
 
     _answerers[name] = answerer

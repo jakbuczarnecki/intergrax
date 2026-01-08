@@ -47,7 +47,6 @@ class ChatAgentConfig:
     temperature: float = 0.2
     max_answer_tokens: Optional[int] = None
     router: ChatRouterConfig = field(default_factory=ChatRouterConfig)
-    verbose: bool = False
     pass_memory_to_general: bool = True
 
 class ChatAgent:
@@ -73,7 +72,6 @@ class ChatAgent:
         self.llm = llm
         self.memory = memory
         self.cfg = config or ChatAgentConfig()
-        self.verbose = bool(self.cfg.verbose)
 
         self._tools_registry = tools
         self._tools_agent: Optional[ToolsAgent] = None
@@ -143,9 +141,6 @@ class ChatAgent:
             if not self._tools_registry or len(self._tools_registry.list()) == 0:
                 raise RuntimeError("No tools registered. Tool usage policy = 'required'. Aborting.")
             route, rag_name = "tools", None
-
-        if self.verbose:
-            print(f"[intergraxChatAgent] ROUTE={route} RAG={rag_name or '-'}")
 
         # 2) execution
         if route == "rag":
@@ -332,8 +327,6 @@ class ChatAgent:
             return route, rag_name
 
         except Exception:
-            if self.verbose:
-                print(f"[intergraxChatAgent][router] fallback (raw='{raw[:200]}')")
             if allowed_vectorstores:
                 return "rag", self._choose_rag_name_default(allowed_vectorstores)
             return "general", None
@@ -385,8 +378,6 @@ class ChatAgent:
         # no tools → react per policy
         if not self._tools_registry or len(self._tools_registry.list()) == 0:
             msg = "[intergraxChatAgent][tools] No tools registered."
-            if self.verbose:
-                print(msg)
             if tool_usage == "required":
                 raise RuntimeError(f"{msg} Tool usage policy = 'required'. Aborting.")
             return self._do_general(question=question, output_model=output_model, stream=stream, run_id=run_id)
@@ -398,7 +389,6 @@ class ChatAgent:
                 tools=self._tools_registry,
                 memory=self.memory,
                 config=self._tools_config,
-                verbose=self.verbose,
             )
 
         # temporary tools filter
@@ -443,9 +433,6 @@ class ChatAgent:
             if "Unknown tool:" in msg:
                 missing = msg.split("Unknown tool:", 1)[1].strip().strip("'").strip()
 
-            if self.verbose:
-                print(f"[intergraxChatAgent][tools] Missing tool → {missing or '<?>'}")
-
             if tool_usage == "required":
                 # hard stop (per policy)
                 raise RuntimeError(f"Tool '{missing or 'unknown'}' required by LLM is not registered.")
@@ -463,9 +450,6 @@ class ChatAgent:
 
         except Exception as e:
             # other tool runtime errors
-            if self.verbose:
-                print(f"[intergraxChatAgent][tools] Tool runtime error: {e}")
-
             if tool_usage == "required":
                 raise RuntimeError(f"Tool execution failed under 'required' policy: {e}")
 

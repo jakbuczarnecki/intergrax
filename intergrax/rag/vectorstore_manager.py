@@ -4,10 +4,11 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Literal, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Sequence, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -16,6 +17,8 @@ from langchain_core.documents import Document
 # --- ChromaDB ---
 import chromadb
 from chromadb.config import Settings as ChromaSettings
+
+from intergrax.logging import IntergraxLogging
 
 # --- Qdrant ---
 try:
@@ -47,6 +50,9 @@ except ImportError:
 
 VectorProvider = Literal["chroma", "qdrant", "pinecone"]
 Metric = Literal["cosine", "dot", "euclidean"]
+
+
+logger = IntergraxLogging.get_logger(__name__, component="rag")
 
 
 @dataclass
@@ -90,9 +96,8 @@ class VectorstoreManager:
     # ------------------------------
     # Construction
     # ------------------------------
-    def __init__(self, config: VSConfig, *, verbose: bool = True) -> None:
+    def __init__(self, config: VSConfig) -> None:
         self.cfg = config
-        self.verbose = verbose
 
         self.provider: VectorProvider = config.provider
         self.collection_name = config.collection_name
@@ -118,14 +123,22 @@ class VectorstoreManager:
             else:
                 raise ValueError(f"Unsupported provider: {self.provider}")
 
-            if self.verbose:
-                print(f"[intergraxVectorstoreManager] Initialized provider={self.provider}, collection={self.collection_name}")
-                # count() may create indexes lazily (pinecone/qdrant) – that's fine.
-                print(f"[intergraxVectorstoreManager] Existing count: {self.count()}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    "[intergraxVectorstoreManager] Initialized provider=%s, collection=%s",
+                    self.provider,
+                    self.collection_name,
+                )
+                logger.debug(
+                    "[intergraxVectorstoreManager] Existing count: %d",
+                    self.count(),
+                )
+
 
         except Exception as e:
-            print(f"[intergraxVectorstoreManager] Error initializing vector store: {e}")
+            logger.exception("[intergraxVectorstoreManager] Error initializing vector store: %s", e)
             raise
+
 
     def _init_chroma(self) -> None:
         # Create Chroma client (persistent or in-memory)
@@ -312,8 +325,8 @@ class VectorstoreManager:
         - Qdrant/Pinecone collections/indexes are created lazily on the first call when `dim` is known.
         """
         if len(documents) == 0:
-            if self.verbose:
-                print("[intergraxVectorstoreManager] No documents to add.")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("[intergraxVectorstoreManager] No documents to add.")
             return
 
         X = self._to_list_of_lists(embeddings)
@@ -331,8 +344,14 @@ class VectorstoreManager:
             raise ValueError("Embeddings appear empty/corrupt; cannot infer dimension.")
         self._dim = self._dim or first_dim
 
-        if self.verbose:
-            print(f"[intergraxVectorstoreManager] Upserting {n} items (dim={self._dim}) to provider={self.provider}...")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "[intergraxVectorstoreManager] Upserting %d items (dim=%s) to provider=%s",
+                n,
+                self._dim,
+                self.provider,
+            )
+
 
         # Perform batched upsert
         for start in range(0, n, batch_size):
@@ -360,8 +379,12 @@ class VectorstoreManager:
             else:
                 raise ValueError(f"Unsupported provider: {self.provider}")
 
-        if self.verbose:
-            print(f"[intergraxVectorstoreManager] Upsert complete. New count: {self.count()}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "[intergraxVectorstoreManager] Upsert complete. New count: %d",
+                self.count(),
+            )
+
 
     # --- Provider-specific upsert implementations ---
     def _upsert_chroma(
