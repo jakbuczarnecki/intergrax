@@ -7,10 +7,11 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import hashlib
 import json
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any, Dict, Mapping, Optional, Sequence
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import EngineNextStep, PlanIntent
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import ReplanContext
 
 
@@ -38,44 +39,83 @@ class PlanSourceResult:
 @dataclass(frozen=True)
 class PlanSpec:
     """
-    A serializable plan representation for scripted/replay sources.
-    Keeps plan_sources.py decoupled from EnginePlan and avoids unions in public APIs.
-    """
-    json_obj: Optional[Mapping[str, Any]] = None
-    raw_json: Optional[str] = None
+    Strongly-typed plan spec for scripted/replay sources.
 
+    Production goals:
+    - No loose dict/JSON blobs in tests.
+    - Contract is aligned with engine_plan_models enums (single source of truth).
+    - Canonical JSON serialization for stable hashing/traces.
+    """
+
+    version: str
+    intent: PlanIntent
+    next_step: EngineNextStep
+
+    # Debug / trace only
+    reasoning_summary: str = ""
+
+    # Clarify only
+    ask_clarifying_question: bool = False
+    clarifying_question: Optional[str] = None
+
+    # Controls for pipeline decisions
+    use_websearch: bool = False
+    use_user_longterm_memory: bool = False
+    use_rag: bool = False
+    use_tools: bool = False
+
+    # Optional forward-compatible debug payload (must be JSON-serializable)
+    debug: Optional[Dict[str, Any]] = None
 
     def __post_init__(self) -> None:
-        if (self.json_obj is None) == (self.raw_json is None):
-            # both None or both set -> invalid
-            raise ValueError("PlanSpec requires exactly one of: json_obj or raw_json.")
+        # Clarify contract: keep it strict to prevent invalid scripted plans.
+        if self.next_step == EngineNextStep.CLARIFY:
+            if not self.ask_clarifying_question:
+                raise ValueError(
+                    "PlanSpec invalid: next_step=CLARIFY requires ask_clarifying_question=True."
+                )
+            cq = (self.clarifying_question or "").strip()
+            if not cq:
+                raise ValueError(
+                    "PlanSpec invalid: ask_clarifying_question=True but clarifying_question is empty."
+                )
+        else:
+            if self.ask_clarifying_question:
+                raise ValueError(
+                    "PlanSpec invalid: ask_clarifying_question=True requires next_step=CLARIFY."
+                )
+            # Enforce cleanliness: do not allow stray text question.
+            if self.clarifying_question is not None and self.clarifying_question.strip():
+                raise ValueError(
+                    "PlanSpec invalid: clarifying_question provided but ask_clarifying_question=False."
+                )
 
+    def to_json_obj(self) -> Dict[str, Any]:
+        obj: Dict[str, Any] = {
+            "version": self.version,
+            "intent": self.intent.value,
+            "next_step": self.next_step.value,
+            "reasoning_summary": self.reasoning_summary,
+            "ask_clarifying_question": bool(self.ask_clarifying_question),
+            "clarifying_question": self.clarifying_question,
+            "use_websearch": bool(self.use_websearch),
+            "use_user_longterm_memory": bool(self.use_user_longterm_memory),
+            "use_rag": bool(self.use_rag),
+            "use_tools": bool(self.use_tools),
+        }
+        if self.debug is not None:
+            obj["debug"] = self.debug
+        return obj
 
     def to_raw_json(self) -> str:
-        if self.raw_json is not None:
-            raw = self.raw_json.strip()
-
-            try:
-                obj = json.loads(raw)
-            except Exception as e:
-                raise ValueError(f"PlanSpec.raw_json must be valid JSON: {e}") from e
-
-            if not isinstance(obj, dict):
-                raise ValueError("PlanSpec.raw_json must be a JSON object (dict).")
-
-            # Optionally re-canonicalize to ensure stable hashing/traces:
-            return json.dumps(obj, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
-
-        if self.json_obj is None:
-            raise ValueError("PlanSpec must have either raw_json or json_obj.")
-
         # Canonical JSON for stable hashing and consistent traces
         return json.dumps(
-            self.json_obj,
+            self.to_json_obj(),
             ensure_ascii=False,
             separators=(",", ":"),
             sort_keys=True,
         )
+
 
 
 
