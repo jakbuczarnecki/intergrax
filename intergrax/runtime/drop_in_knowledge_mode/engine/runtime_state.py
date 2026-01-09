@@ -74,7 +74,24 @@ class RuntimeState:
     tool_traces: List[Dict[str, Any]] = field(default_factory=list)
 
     # Debug / diagnostics
-    debug_trace: Dict[str, Any] = field(default_factory=dict)
+    _debug_trace: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def debug_trace(self) -> Dict[str, Any]:
+        """
+        Read-only access to debug trace.
+        Steps must NOT replace the entire structure.
+        Use trace_event() and set_debug_section() instead.
+        """
+        return self._debug_trace
+
+    @debug_trace.setter
+    def debug_trace(self, _: Dict[str, Any]) -> None:
+        raise RuntimeError(
+            "RuntimeState.debug_trace is read-only. "
+            "Use trace_event(), set_debug_section(), or update_debug_root()."
+        )
+
     websearch_debug: Dict[str, Any] = field(default_factory=dict)
 
     # Token accounting (filled in _step_build_base_history)
@@ -116,18 +133,18 @@ class RuntimeState:
             "message": message,
             "data": data or {},
         }
-        self.debug_trace.setdefault("events", []).append(evt)
+        self._debug_trace.setdefault("events", []).append(evt)
 
 
     def set_debug_section(self, key: str, value: Dict[str, Any]) -> None:
         """
         Structured debug snapshot (non-event) for a given step.
         """
-        self.debug_trace[key] = value
+        self._debug_trace[key] = value
 
 
     def set_debug_value(self, key: str, value: Any) -> None:
-        self.debug_trace[key] = value
+        self._debug_trace[key] = value
 
 
     def configure_llm_tracker(self) -> None:     
@@ -151,21 +168,48 @@ class RuntimeState:
                 self.llm_usage_tracker.register_adapter(ws.llm.rerank_adapter, label="web_rerank_adapter")
 
     
-    async def finalize_llm_tracker(self, request: RuntimeRequest, runtime_answer: RuntimeAnswer) -> None:
-        if self.llm_usage_tracker is not None:
-            runtime_answer.llm_usage_report = self.llm_usage_tracker.build_report()
-            llm_usage_snapshot = runtime_answer.llm_usage_report.to_dict()
-            self.set_debug_value("llm_usage", llm_usage_snapshot)
+    async def finalize_llm_tracker(
+        self,
+        request: RuntimeRequest,
+        runtime_answer: RuntimeAnswer | None,
+    ) -> None:
+        if self.llm_usage_tracker is None:
+            return
 
-            if self.context.config.enable_llm_usage_collection and runtime_answer.llm_usage_report is not None:
-                async with self.context.llm_usage_lock:
-                    self.context.llm_usage_run_seq += 1
-                    rec = LLMUsageRunRecord(
-                        seq=self.context.llm_usage_run_seq,
-                        ts_utc=datetime.now(timezone.utc),
-                        run_id=self.run_id,
-                        session_id=request.session_id,
-                        user_id=request.user_id,
-                        report=runtime_answer.llm_usage_report,
-                    )
-                    self.context.llm_usage_runs.append(rec)
+        report = self.llm_usage_tracker.build_report()
+        llm_usage_snapshot = report.to_dict()
+
+        # Always persist snapshot into debug trace, even if run aborted.
+        self.set_debug_value("llm_usage", llm_usage_snapshot)
+
+        # If the run aborted before producing RuntimeAnswer, do not raise and do not collect runs.
+        if runtime_answer is None:
+            self.trace_event(
+                component="engine",
+                step="llm_usage_finalize",
+                level="warning",
+                message="LLM usage finalized without RuntimeAnswer (run aborted).",
+                data={
+                    "run_id": self.run_id,
+                    "session_id": request.session_id,
+                    "user_id": request.user_id,
+                },
+            )
+            return
+
+        # Attach report to the answer for API consumers.
+        runtime_answer.llm_usage_report = report
+
+        # Optional: store run record for analytics/monitoring
+        if self.context.config.enable_llm_usage_collection and runtime_answer.llm_usage_report is not None:
+            async with self.context.llm_usage_lock:
+                self.context.llm_usage_run_seq += 1
+                rec = LLMUsageRunRecord(
+                    seq=self.context.llm_usage_run_seq,
+                    ts_utc=datetime.now(timezone.utc),
+                    run_id=self.run_id,
+                    session_id=request.session_id,
+                    user_id=request.user_id,
+                    report=runtime_answer.llm_usage_report,
+                )
+                self.context.llm_usage_runs.append(rec)

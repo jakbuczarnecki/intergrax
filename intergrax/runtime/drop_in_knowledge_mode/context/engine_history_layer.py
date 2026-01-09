@@ -120,10 +120,15 @@ class HistoryLayer:
             )
 
             state.base_history = compression_result.history
-            state.debug_trace["base_history_length"] = len(compression_result.history)
-            state.debug_trace["history_tokens"] = self._build_history_debug_trace(
-                requested_strategy=strategy,
-                compression_result=compression_result,
+            state.set_debug_section(
+                "history",
+                {
+                    "base_history_length": len(compression_result.history),
+                    "history_tokens": self._build_history_debug_trace(
+                        requested_strategy=strategy,
+                        compression_result=compression_result,
+                    ),
+                },
             )
             return
 
@@ -174,10 +179,16 @@ class HistoryLayer:
             )
 
             state.base_history = compression_result.history
-            state.debug_trace["base_history_length"] = len(compression_result.history)
-            state.debug_trace["history_tokens"] = self._build_history_debug_trace(
-                requested_strategy=strategy,
-                compression_result=compression_result,
+
+            state.set_debug_section(
+                "history",
+                {
+                    "base_history_length": len(compression_result.history),
+                    "history_tokens": self._build_history_debug_trace(
+                        requested_strategy=strategy,
+                        compression_result=compression_result,
+                    ),
+                },
             )
             return
 
@@ -205,11 +216,16 @@ class HistoryLayer:
         state.base_history = compression_result.history
 
         # 6. Update debug trace with history-related info and token stats.
-        state.debug_trace["base_history_length"] = len(compression_result.history)
-        state.debug_trace["history_tokens"] = self._build_history_debug_trace(
-            requested_strategy=strategy,
-            compression_result=compression_result,
-        )
+        state.set_debug_section(
+                "history",
+                {
+                    "base_history_length": len(compression_result.history),
+                    "history_tokens": self._build_history_debug_trace(
+                        requested_strategy=strategy,
+                        compression_result=compression_result,
+                    ),
+                },
+            )
 
 
     async def _build_chat_history(self, session: ChatSession) -> List[ChatMessage]:

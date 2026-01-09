@@ -87,9 +87,9 @@ class RuntimeEngine:
             context=self.context,
             request=request,
             run_id=run_id,
-            llm_usage_tracker=LLMUsageTracker(run_id=run_id)
-        )        
-        
+            llm_usage_tracker=LLMUsageTracker(run_id=run_id),
+        )
+
         state.configure_llm_tracker()
 
         # Initial trace entry for this request.
@@ -105,10 +105,12 @@ class RuntimeEngine:
                 "step_planning_strategy": str(self.context.config.step_planning_strategy),
             },
         )
-        
+
+        runtime_answer: RuntimeAnswer | None = None
+
         try:
             pipeline = PipelineFactory.build_pipeline(state=state)
-            runtime_answer = await pipeline.run(state=state)
+            runtime_answer = await pipeline.run(state=state)           
 
             # Final trace entry for this request.
             state.trace_event(
@@ -121,24 +123,28 @@ class RuntimeEngine:
                     "used_websearch": runtime_answer.route.used_websearch,
                     "used_tools": runtime_answer.route.used_tools,
                     "used_user_longterm_memory": runtime_answer.route.used_user_longterm_memory,
-                    "run_id":state.run_id
+                    "run_id": state.run_id,
                 },
             )
-            
-            await state.finalize_llm_tracker(request, runtime_answer)
 
             return runtime_answer
-        
+
         finally:
-            # finalize even on exceptions; only if we have an answer
-            if runtime_answer is not None:
-                await state.finalize_llm_tracker(request, runtime_answer)
-            else:
-                # Optional: trace that run aborted before producing answer
+            await state.finalize_llm_tracker(
+                request=request,
+                runtime_answer=runtime_answer,
+            )
+
+            if runtime_answer is None:
                 state.trace_event(
                     component="engine",
                     step="run_abort",
                     message="RuntimeEngine.run() aborted before RuntimeAnswer was produced.",
                     data={"run_id": state.run_id},
                 )
+
+             # Attach debug trace to the returned answer (runtime-level diagnostics).
+            if runtime_answer is not None:
+                runtime_answer.debug_trace = state.debug_trace
+
     
