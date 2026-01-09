@@ -144,6 +144,7 @@ class RuntimeEngine:
                 )
 
              # Attach debug trace to the returned answer (runtime-level diagnostics).
-            runtime_answer.debug_trace = state.debug_trace
+            if runtime_answer is not None:
+                runtime_answer.debug_trace = state.debug_trace
 
     
