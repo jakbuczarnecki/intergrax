@@ -20,6 +20,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 from intergrax.llm.messages import AttachmentRef
 from intergrax.llm_adapters.llm_usage_track import LLMUsageReport
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceEvent
 
 
 @dataclass
@@ -179,4 +180,4 @@ class RuntimeAnswer:
 
     # Optional raw model output or intermediate artifacts
     raw_model_output: Optional[Any] = None
-    debug_trace: Dict[str, Any] = field(default_factory=dict)
+    trace_events: List[TraceEvent] = field(default_factory=list)

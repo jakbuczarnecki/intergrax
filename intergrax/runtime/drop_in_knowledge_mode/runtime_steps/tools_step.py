@@ -5,26 +5,17 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.config import ToolsContextScope
-from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState, ToolCallTrace
 from intergrax.runtime.drop_in_knowledge_mode.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.tracing.tools.tools_summary import ToolsSummaryDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceLevel
 
 
 class ToolsStep(RuntimeStep):
-    """
-    Run tools agent (planning + tool calls) if configured.
-
-    Output is stored in RuntimeState:
-      - state.used_tools
-      - state.tool_traces
-      - state.tools_agent_answer
-
-    Core LLM step may decide to reuse tools_agent_answer.
-    """
-
     async def run(self, state: RuntimeState) -> None:
         """
         Run tools agent (planning + tool calls) if configured.
@@ -44,15 +35,78 @@ class ToolsStep(RuntimeStep):
         if not use_tools:
             return
 
+        tools_mode = state.context.config.tools_mode
+
         tools_context = (
             "\n\n".join(state.tools_context_parts).strip()
             if state.tools_context_parts
             else None
         )
 
-        debug_tools: Dict[str, Any] = {
-            "mode": state.context.config.tools_mode,
-        }
+        warning: Optional[str] = None
+        error_type: Optional[str] = None
+        error_message: Optional[str] = None
+
+        def _make_output_preview(raw: Any, *, limit: int = 400) -> Optional[str]:
+            if raw is None:
+                return None
+            if isinstance(raw, str):
+                s = raw
+            else:
+                try:
+                    s = json.dumps(raw, ensure_ascii=False)
+                except Exception:
+                    s = str(raw)
+            s = s.strip()
+            if not s:
+                return None
+            return s[:limit]
+
+        def _normalize_tool_traces(raw_traces: Any) -> List[ToolCallTrace]:
+            if not isinstance(raw_traces, list):
+                return []
+
+            out: List[ToolCallTrace] = []
+            for item in raw_traces:
+                if not isinstance(item, dict):
+                    continue
+
+                tool_name = item.get("tool") or ""
+                if not isinstance(tool_name, str):
+                    tool_name = str(tool_name)
+
+                args = item.get("args")
+                arguments: Dict[str, Any] = args if isinstance(args, dict) else {}
+
+                err = item.get("error")
+                error_msg: Optional[str]
+                if err is None:
+                    error_msg = None
+                elif isinstance(err, str):
+                    error_msg = err
+                else:
+                    error_msg = str(err)
+
+                success = not bool(error_msg)
+
+                # Prefer explicit output_preview if tools agent provides it; otherwise derive from output.
+                op = item.get("output_preview")
+                if isinstance(op, str) and op.strip():
+                    output_preview = op.strip()[:400]
+                else:
+                    output_preview = _make_output_preview(item.get("output"))
+
+                out.append(
+                    ToolCallTrace(
+                        tool_name=tool_name,
+                        arguments=arguments,
+                        output_preview=output_preview,
+                        success=success,
+                        error_message=error_msg,
+                        raw_trace=item,
+                    )
+                )
+            return out
 
         try:
             # Decide what to pass as input_data for the tools agent.
@@ -60,16 +114,12 @@ class ToolsStep(RuntimeStep):
                 agent_input = state.request.message
 
             elif state.context.config.tools_context_scope == ToolsContextScope.CONVERSATION:
-                # Use history built by ContextBuilder if available,
-                # otherwise fall back to base_history.
                 if state.built_history_messages:
                     agent_input = state.built_history_messages
                 else:
                     agent_input = state.base_history
 
             else:
-                # FULL_CONTEXT or any future scope:
-                # pass entire message list built so far.
                 agent_input = state.messages_for_llm
 
             tools_result = state.context.config.tools_agent.run(
@@ -79,48 +129,49 @@ class ToolsStep(RuntimeStep):
                 tool_choice=None,
                 output_model=None,
                 run_id=state.run_id,
-                llm_usage_tracker = state.llm_usage_tracker
+                llm_usage_tracker=state.llm_usage_tracker,
             )
 
+            if not isinstance(tools_result, dict):
+                tools_result = {}
+
             state.tools_agent_answer = tools_result.get("answer", "") or None
-            state.tool_traces = tools_result.get("tool_traces") or []
+
+            raw_traces = tools_result.get("tool_traces")
+            state.tool_traces = _normalize_tool_traces(raw_traces)
             state.used_tools = bool(state.tool_traces)
 
-            debug_tools["used_tools"] = state.used_tools
-            debug_tools["tool_traces"] = state.tool_traces
-            if state.tools_agent_answer:
-                debug_tools["agent_answer_preview"] = str(state.tools_agent_answer)[:200]
-            if state.context.config.tools_mode == "required" and not state.used_tools:
-                debug_tools["warning"] = (
-                    "tools_mode='required' but no tools were invoked by the tools_agent."
-                )
+            if tools_mode == "required" and not state.used_tools:
+                warning = "tools_mode='required' but no tools were invoked by the tools_agent."
 
             # Inject executed tool calls as system context for core LLM.
             if state.tool_traces:
                 tool_lines: List[str] = []
                 for t in state.tool_traces:
-                    name = t.get("tool")
-                    args = t.get("args")
-                    output = t.get("output")
+                    tool_lines.append(f"Tool '{t.tool_name}' was called.")
 
-                    tool_lines.append(f"Tool '{name}' was called.")
-                    if args is not None:
+                    if t.arguments:
                         try:
-                            args_str = json.dumps(args, ensure_ascii=False)
+                            args_str = json.dumps(t.arguments, ensure_ascii=False)
                         except Exception:
-                            args_str = str(args)
+                            args_str = str(t.arguments)
                         tool_lines.append(f"Arguments: {args_str}")
 
-                    if output is not None:
-                        if isinstance(output, (dict, list)):
+                    raw_output = t.raw_trace.get("output") if isinstance(t.raw_trace, dict) else None
+                    if raw_output is not None:
+                        if isinstance(raw_output, (dict, list)):
                             try:
-                                out_str = json.dumps(output, ensure_ascii=False)
+                                out_str = json.dumps(raw_output, ensure_ascii=False)
                             except Exception:
-                                out_str = str(output)
+                                out_str = str(raw_output)
                         else:
-                            out_str = str(output)
+                            out_str = str(raw_output)
                         tool_lines.append("Output:")
                         tool_lines.append(out_str)
+
+                    if t.error_message:
+                        tool_lines.append("Error:")
+                        tool_lines.append(t.error_message)
 
                     tool_lines.append("")
 
@@ -140,18 +191,23 @@ class ToolsStep(RuntimeStep):
                     )
 
         except Exception as e:
-            debug_tools["tools_error"] = str(e)
+            error_type = type(e).__name__
+            error_message = str(e)
 
-        state.set_debug_section("tools",  debug_tools)
+        tool_names = sorted({t.tool_name for t in state.tool_traces if t.tool_name})
 
-        # Trace tools step.
         state.trace_event(
             component="engine",
             step="tools",
             message="Tools agent step executed.",
-            data={
-                "tools_mode": state.context.config.tools_mode,
-                "used_tools": state.used_tools,
-                "tool_traces_count": len(state.tool_traces),
-            },
+            level=TraceLevel.ERROR if error_type else TraceLevel.INFO,
+            payload=ToolsSummaryDiagV1(
+                tools_mode=tools_mode,
+                used_tools=state.used_tools,
+                tool_calls_count=len(state.tool_traces),
+                tool_names=tool_names,
+                warning=warning,
+                error_type=error_type,
+                error_message=error_message,
+            ),
         )

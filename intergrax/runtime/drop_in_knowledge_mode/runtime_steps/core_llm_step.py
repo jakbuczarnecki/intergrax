@@ -8,6 +8,10 @@ from typing import Any, Dict
 
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.tracing.adapters.core_llm_adapter_failed import CoreLLMAdapterFailedDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.adapters.core_llm_adapter_returned import CoreLLMAdapterReturnedDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.adapters.core_llm_used_tools_agent_answer import CoreLLMUsedToolsAgentAnswerDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceLevel
 
 
 class CoreLLMStep(RuntimeStep):
@@ -19,18 +23,17 @@ class CoreLLMStep(RuntimeStep):
     async def run(self, state: RuntimeState) -> None:
         # If tools were used and we have an explicit agent answer, prefer it.
         if state.used_tools and state.tools_agent_answer:
-            # Trace the fact that we are reusing the tools agent answer
-            # instead of calling the core LLM adapter.
             state.trace_event(
                 component="engine",
                 step="core_llm",
                 message="Using tools_agent_answer as the final answer.",
-                data={
-                    "used_tools_answer": True,
-                    "has_tools_agent_answer": True,
-                },
+                level=TraceLevel.INFO,
+                payload=CoreLLMUsedToolsAgentAnswerDiagV1(
+                    used_tools_answer=True,
+                    has_tools_agent_answer=True,
+                ),
             )
-            state.raw_answer =  str(state.tools_agent_answer)
+            state.raw_answer = str(state.tools_agent_answer)
             return
 
         try:
@@ -39,9 +42,6 @@ class CoreLLMStep(RuntimeStep):
 
             generate_kwargs: Dict[str, Any] = {}
             if max_output_tokens is not None:
-                # Pass a max_tokens hint to the adapter. If the adapter ignores
-                # it or uses a different keyword, that should be handled inside
-                # the adapter implementation.
                 generate_kwargs["max_tokens"] = max_output_tokens
 
             msgs = state.messages_for_llm
@@ -51,7 +51,7 @@ class CoreLLMStep(RuntimeStep):
                 )
 
             raw_answer = state.context.config.llm_adapter.generate_messages(
-                state.messages_for_llm,
+                msgs,
                 run_id=state.run_id,
                 **generate_kwargs,
             )
@@ -60,28 +60,29 @@ class CoreLLMStep(RuntimeStep):
                 component="engine",
                 step="core_llm",
                 message="Core LLM adapter returned answer.",
-                data={
-                    "used_tools_answer": False,
-                    "adapter_return_type": "str",
-                    "answer_len": len(raw_answer),
-                    "answer_is_empty": not bool(raw_answer),
-                },
+                level=TraceLevel.INFO,
+                payload=CoreLLMAdapterReturnedDiagV1(
+                    used_tools_answer=False,
+                    adapter_return_type="str",
+                    answer_len=len(raw_answer),
+                    answer_is_empty=not bool(raw_answer),
+                ),
             )
-            
+
             state.raw_answer = raw_answer
 
         except Exception as e:
-            state.set_debug_value("llm_error", str(e))
-
             # Trace the error and whether a tools_agent_answer fallback is available.
             state.trace_event(
                 component="engine",
                 step="core_llm_error",
                 message="Core LLM adapter failed; falling back if possible.",
-                data={
-                    "error": str(e),
-                    "has_tools_agent_answer": bool(state.tools_agent_answer),
-                },
+                level=TraceLevel.ERROR,
+                payload=CoreLLMAdapterFailedDiagV1(
+                    error_type=type(e).__name__,
+                    error_message=str(e),
+                    has_tools_agent_answer=bool(state.tools_agent_answer),
+                ),
             )
 
             if state.tools_agent_answer:

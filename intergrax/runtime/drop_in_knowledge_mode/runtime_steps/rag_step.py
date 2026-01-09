@@ -8,6 +8,8 @@ from __future__ import annotations
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.tools import format_rag_context, insert_context_before_last_user
+from intergrax.runtime.drop_in_knowledge_mode.tracing.rag.rag_summary import RagSummaryDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceLevel
 
 
 class RagStep(RuntimeStep):
@@ -25,12 +27,24 @@ class RagStep(RuntimeStep):
     async def run(self, state: RuntimeState) -> None:
         # Defaults
         state.used_rag = False
-        state.set_debug_value("rag_chunks", 0)
 
         ctx = state.context
 
-        # RAG disabled => no-op
+        # RAG disabled => no-op (still trace summary for baseline observability)
         if not ctx.config.enable_rag:
+            state.trace_event(
+                component="engine",
+                step="rag",
+                message="RAG disabled; skipping.",
+                level=TraceLevel.INFO,
+                payload=RagSummaryDiagV1(
+                    rag_enabled=False,
+                    used_rag=False,
+                    chunks_count=0,
+                    context_messages_count=0,
+                    warning=None,
+                ),
+            )
             return
 
         if ctx.context_builder is None:
@@ -52,13 +66,24 @@ class RagStep(RuntimeStep):
             state.context_builder_result = built
 
         rag_info = built.rag_debug_info or {}
-        state.set_debug_value("rag", rag_info)
 
         retrieved_chunks = built.retrieved_chunks or []
         state.used_rag = bool(rag_info.get("used", bool(retrieved_chunks)))
 
         if not state.used_rag:
-            state.set_debug_value("rag_chunks", 0)
+            state.trace_event(
+                component="engine",
+                step="rag",
+                message="RAG enabled but not used (no retrieved context).",
+                level=TraceLevel.INFO,
+                payload=RagSummaryDiagV1(
+                    rag_enabled=True,
+                    used_rag=False,
+                    chunks_count=0,
+                    context_messages_count=0,
+                    warning=None,
+                ),
+            )
             return
 
         if ctx.rag_prompt_builder is None:
@@ -77,17 +102,17 @@ class RagStep(RuntimeStep):
         if rag_context_text:
             state.tools_context_parts.append("RAG CONTEXT:\n" + rag_context_text)
 
-        state.set_debug_value("rag_chunks", len(retrieved_chunks))
-
-        # Trace
+        # Trace summary
         state.trace_event(
             component="engine",
             step="rag",
             message="RAG context built and injected.",
-            data={
-                "rag_enabled": ctx.config.enable_rag,
-                "used_rag": state.used_rag,
-                "retrieved_chunks": len(retrieved_chunks),
-                "context_messages": len(context_messages),
-            },
+            level=TraceLevel.INFO,
+            payload=RagSummaryDiagV1(
+                rag_enabled=True,
+                used_rag=True,
+                chunks_count=len(retrieved_chunks),
+                context_messages_count=len(context_messages),
+                warning=None,
+            ),
         )

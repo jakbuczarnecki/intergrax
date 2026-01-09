@@ -10,7 +10,7 @@ from intergrax.runtime.drop_in_knowledge_mode.planning.runtime_step_handlers imp
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import StepHandlerRegistry
 from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import StepAction
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeAnswer
-from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.NoOpRuntimeStep import NoOpRuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.noop_runtime_step import NoOpRuntimeStep
 from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.core_llm_step import CoreLLMStep
 from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
 from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.rag_step import RagStep

@@ -67,7 +67,7 @@ class BuiltContext:
       the list it receives from the engine.
     - retrieved_chunks: RAG context (can be serialized into prompt).
     - rag_debug_info: structured debug trace to be surfaced in
-      RuntimeAnswer.debug_trace["rag"].
+      RuntimeAnswer.trace_events.
     """
     history_messages: List[ChatMessage]
     retrieved_chunks: List[RetrievedChunk]
@@ -140,7 +140,7 @@ class ContextBuilder:
             retrieved_chunks, rag_debug_info = self._retrieve_for_session(session, request)
         else:
             # No RAG for this request – keep debug info explicit so it is easy
-            # to see in RuntimeAnswer.debug_trace why RAG was skipped.
+            # to see in RuntimeAnswer.trace_events why RAG was skipped.
             retrieved_chunks = []
             rag_debug_info = {
                 "enabled": bool(self._config.enable_rag),

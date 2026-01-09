@@ -9,6 +9,8 @@ from typing import Any, List
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.tools import insert_context_before_last_user
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceLevel
+from intergrax.runtime.drop_in_knowledge_mode.tracing.websearch.websearch_summary import WebsearchSummaryDiagV1
 
 
 class WebsearchStep(RuntimeStep):
@@ -24,45 +26,80 @@ class WebsearchStep(RuntimeStep):
     """
 
     async def run(self, state: RuntimeState) -> None:
-        state.websearch_debug = {}
         state.used_websearch = False
 
-        if (
-            not state.context.config.enable_websearch
-            or state.context.websearch_executor is None
-            or state.context.websearch_prompt_builder is None
-        ):
+        cfg = state.context.config
+        enabled = bool(cfg.enable_websearch)
+
+        configured = (
+            state.context.websearch_executor is not None
+            and state.context.websearch_prompt_builder is not None
+        )
+
+        # Summary defaults
+        used_websearch = False
+        results_count = 0
+        context_blocks_count = 0
+        no_evidence = False
+        error_type = None
+        error_message = None
+        context_preview = ""
+        context_preview_chars = 0
+
+        if not enabled or not configured:
+            state.trace_event(
+                component="engine",
+                step="websearch",
+                message="Web search skipped (disabled or not configured).",
+                level=TraceLevel.INFO,
+                payload=WebsearchSummaryDiagV1(
+                    enabled=enabled,
+                    configured=configured,
+                    used_websearch=False,
+                    results_count=0,
+                    context_blocks_count=0,
+                    no_evidence=False,
+                    error_type=None,
+                    error_message=None,
+                    context_preview_chars=0,
+                    context_preview="",
+                ),
+            )
             return
 
         try:
             web_results = await state.context.websearch_executor.search_async(
                 query=state.request.message,
-                top_k=state.context.config.max_docs_per_query,
+                top_k=cfg.max_docs_per_query,
                 language=None,
                 top_n_fetch=None,
             )
 
-            state.set_debug_section("websearch", {})
-            dbg = state.debug_trace["websearch"]
-
-            raw_preview = []
-            for d in (web_results or [])[:5]:
-                raw_preview.append(
-                    {
-                        "type": type(d).__name__,
-                        "title": d.title,
-                        "url": d.url,
-                        "snippet_len": len(d.snippet or ""),
-                        "text_len": len(d.text or ""),
-                    }
-                )
-
-            dbg["raw_results_preview"] = raw_preview
-
+            results_count = len(web_results or [])
             if not web_results:
+                # enabled+configured but no results
+                state.trace_event(
+                    component="engine",
+                    step="websearch",
+                    message="Web search executed (no results).",
+                    level=TraceLevel.INFO,
+                    payload=WebsearchSummaryDiagV1(
+                        enabled=True,
+                        configured=True,
+                        used_websearch=False,
+                        results_count=0,
+                        context_blocks_count=0,
+                        no_evidence=False,
+                        error_type=None,
+                        error_message=None,
+                        context_preview_chars=0,
+                        context_preview="",
+                    ),
+                )
                 return
 
             state.used_websearch = True
+            used_websearch = True
 
             bundle = await state.context.websearch_prompt_builder.build_websearch_prompt(
                 web_results=web_results,
@@ -72,46 +109,43 @@ class WebsearchStep(RuntimeStep):
 
             context_messages = bundle.context_messages or []
             insert_context_before_last_user(state, context_messages)
-            state.websearch_debug.update(bundle.debug_info or {})
 
-            # Debug trace (no tools coupling)
-            web_context_texts: List[str] = []
+            # Build preview (first block only)
+            web_context_texts: list[str] = []
             for msg in context_messages:
                 if msg.content:
                     web_context_texts.append(msg.content)
 
-            dbg["context_blocks_count"] = len(web_context_texts)
+            context_blocks_count = len(web_context_texts)
 
-            # Preview only to avoid bloating trace
             preview = "\n\n".join(web_context_texts[:1])
-            dbg["context_preview"] = preview
-            dbg["context_preview_chars"] = len(preview)
+            PREVIEW_LIMIT = 300
+            context_preview = preview[:PREVIEW_LIMIT]
+            context_preview_chars = len(context_preview)
 
             # Guardrail signal: did websearch produce any grounded evidence?
-            dbg["no_evidence"] = "No answer-relevant evidence extracted" in (preview or "")
-            state.websearch_debug["no_evidence"] = dbg["no_evidence"]
-
-            # Optional: doc-level preview (titles/urls only)
-            dbg["docs_preview"] = [
-                {
-                    "title": d.title,
-                    "url": d.url,
-                }
-                for d in (web_results or [])[:5]
-            ]
+            no_evidence = "No answer-relevant evidence extracted" in (context_preview or "")
 
         except Exception as exc:
-            state.websearch_debug["error"] = str(exc)
+            error_type = type(exc).__name__
+            error_message = str(exc)
 
-        # Trace web search step.
+        # Trace web search step summary
         state.trace_event(
             component="engine",
             step="websearch",
             message="Web search step executed.",
-            data={
-                "websearch_enabled": state.context.config.enable_websearch,
-                "used_websearch": state.used_websearch,
-                "has_error": "error" in (state.websearch_debug or {}),
-                "no_evidence": state.websearch_debug.get("no_evidence", False),
-            },
+            level=TraceLevel.ERROR if error_type else TraceLevel.INFO,
+            payload=WebsearchSummaryDiagV1(
+                enabled=enabled,
+                configured=configured,
+                used_websearch=used_websearch if error_type is None else False,
+                results_count=results_count,
+                context_blocks_count=context_blocks_count,
+                no_evidence=no_evidence,
+                error_type=error_type,
+                error_message=error_message,
+                context_preview_chars=context_preview_chars,
+                context_preview=context_preview,
+            ),
         )

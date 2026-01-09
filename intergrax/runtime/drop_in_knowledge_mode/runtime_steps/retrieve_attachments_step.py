@@ -10,6 +10,8 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.tools import format_rag_context, insert_context_before_last_user
+from intergrax.runtime.drop_in_knowledge_mode.tracing.attachments.attachments_context_summary import AttachmentsContextSummaryDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceLevel
 
 
 class RetrieveAttachmentsStep(RuntimeStep):
@@ -27,41 +29,105 @@ class RetrieveAttachmentsStep(RuntimeStep):
     async def run(self, state: RuntimeState) -> None:
         # Defaults
         state.used_attachments_context = False
-        state.set_debug_value("attachments_chunks", 0)
+        state.attachments_chunks_count = 0
 
-        if state.context.ingestion_service is None:
-            state.set_debug_section("attachments", {"used": False, "reason": "ingestion_service_not_configured"})
-            return
+        TOP_K = 6
 
+        configured = state.context.ingestion_service is not None
         session = state.session
-        if session is None:
-            state.set_debug_section("attachments", {"used": False, "reason": "session_not_initialized"})
+        has_session = session is not None
+
+        if not configured:
+            state.trace_event(
+                component="engine",
+                step="attachments_context",
+                message="Session attachments retrieval skipped (ingestion_service not configured).",
+                level=TraceLevel.INFO,
+                payload=AttachmentsContextSummaryDiagV1(
+                    configured=False,
+                    has_session=has_session,
+                    used_attachments_context=False,
+                    hits_count=0,
+                    top_k=TOP_K,
+                    reason="ingestion_service_not_configured",
+                    error_type=None,
+                    error_message=None,
+                ),
+            )
             return
 
-        # Retrieval (no coupling to enable_rag)
-        res = await state.context.ingestion_service.search_session_attachments(
-            query=state.request.message,
-            session_id=session.id,
-            user_id=state.request.user_id,
-            tenant_id=session.tenant_id,
-            workspace_id=session.workspace_id,
-            top_k=6,
-            score_threshold=None,
-        )
+        if session is None:
+            state.trace_event(
+                component="engine",
+                step="attachments_context",
+                message="Session attachments retrieval skipped (session not initialized).",
+                level=TraceLevel.INFO,
+                payload=AttachmentsContextSummaryDiagV1(
+                    configured=True,
+                    has_session=False,
+                    used_attachments_context=False,
+                    hits_count=0,
+                    top_k=TOP_K,
+                    reason="session_not_initialized",
+                    error_type=None,
+                    error_message=None,
+                ),
+            )
+            return
 
-        dbg = (res or {}).get("debug") or {}
-        used = bool((res or {}).get("used"))
+        try:
+            # Retrieval (no coupling to enable_rag)
+            res = await state.context.ingestion_service.search_session_attachments(
+                query=state.request.message,
+                session_id=session.id,
+                user_id=state.request.user_id,
+                tenant_id=session.tenant_id,
+                workspace_id=session.workspace_id,
+                top_k=TOP_K,
+                score_threshold=None,
+            )
+        except Exception as e:
+            state.trace_event(
+                component="engine",
+                step="attachments_context",
+                message="Session attachments retrieval failed.",
+                level=TraceLevel.ERROR,
+                payload=AttachmentsContextSummaryDiagV1(
+                    configured=True,
+                    has_session=True,
+                    used_attachments_context=False,
+                    hits_count=0,
+                    top_k=TOP_K,
+                    reason="search_failed",
+                    error_type=type(e).__name__,
+                    error_message=str(e),
+                ),
+            )
+            raise
+
+        used_flag = bool((res or {}).get("used"))
         chunks = (res or {}).get("hits") or []
 
-        state.used_attachments_context = used and bool(chunks)
-        state.set_debug_section("attachments", {
-            **dbg,
-            "used": bool(used and chunks),
-            "hits_count": len(chunks),
-        })
-        state.set_debug_value("attachments_chunks", len(chunks))
+        state.used_attachments_context = bool(used_flag and chunks)
+        state.attachments_chunks_count = int(len(chunks))
 
         if not state.used_attachments_context:
+            state.trace_event(
+                component="engine",
+                step="attachments_context",
+                message="Session attachments retrieval executed (no context used).",
+                level=TraceLevel.INFO,
+                payload=AttachmentsContextSummaryDiagV1(
+                    configured=True,
+                    has_session=True,
+                    used_attachments_context=False,
+                    hits_count=len(chunks),
+                    top_k=TOP_K,
+                    reason="no_hits_or_not_used",
+                    error_type=None,
+                    error_message=None,
+                ),
+            )
             return
 
         # Build a single system context message (same injection pattern as RAG).
@@ -69,12 +135,24 @@ class RetrieveAttachmentsStep(RuntimeStep):
         if not attachments_context_text.strip():
             # If somehow chunks exist but formatting is empty, treat as unused.
             state.used_attachments_context = False
-            state.set_debug_section("attachments", {
-                **dbg,
-                "used": False,
-                "reason": "empty_formatted_context",
-            })
-            state.set_debug_value("attachments_chunks", 0)
+            state.attachments_chunks_count = 0
+
+            state.trace_event(
+                component="engine",
+                step="attachments_context",
+                message="Session attachments retrieved but formatted context is empty; treating as unused.",
+                level=TraceLevel.INFO,
+                payload=AttachmentsContextSummaryDiagV1(
+                    configured=True,
+                    has_session=True,
+                    used_attachments_context=False,
+                    hits_count=len(chunks),
+                    top_k=TOP_K,
+                    reason="empty_formatted_context",
+                    error_type=None,
+                    error_message=None,
+                ),
+            )
             return
 
         content = "SESSION ATTACHMENTS (retrieved):\n" + attachments_context_text
@@ -92,13 +170,20 @@ class RetrieveAttachmentsStep(RuntimeStep):
         # Provide compact textual form also for tools agent (same pattern as RAG).
         state.tools_context_parts.append("SESSION ATTACHMENTS:\n" + attachments_context_text)
 
-        # Trace step
+        # Trace step summary
         state.trace_event(
             component="engine",
             step="attachments_context",
             message="Session attachments retrieval executed and context injected.",
-            data={
-                "used_attachments_context": state.used_attachments_context,
-                "retrieved_chunks": len(chunks),
-            },
+            level=TraceLevel.INFO,
+            payload=AttachmentsContextSummaryDiagV1(
+                configured=True,
+                has_session=True,
+                used_attachments_context=True,
+                hits_count=len(chunks),
+                top_k=TOP_K,
+                reason=None,
+                error_type=None,
+                error_message=None,
+            ),
         )

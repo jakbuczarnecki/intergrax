@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
+from intergrax.runtime.drop_in_knowledge_mode.tracing.history.history_summary import HistorySummaryDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceLevel
 if TYPE_CHECKING:
     from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.prompts.history_prompt_builder import HistorySummaryPromptBuilder
@@ -120,15 +122,16 @@ class HistoryLayer:
             )
 
             state.base_history = compression_result.history
-            state.set_debug_section(
-                "history",
-                {
-                    "base_history_length": len(compression_result.history),
-                    "history_tokens": self._build_history_debug_trace(
-                        requested_strategy=strategy,
-                        compression_result=compression_result,
-                    ),
-                },
+            state.trace_event(
+                component="engine",
+                step="history",
+                message="History compression summary.",
+                level=TraceLevel.INFO,
+                payload=HistorySummaryDiagV1(
+                    base_history_length=int(compression_result.raw_history_messages),
+                    history_length=int(len(compression_result.history)),
+                    history_tokens=compression_result.raw_history_tokens,
+                ),
             )
             return
 
@@ -180,15 +183,16 @@ class HistoryLayer:
 
             state.base_history = compression_result.history
 
-            state.set_debug_section(
-                "history",
-                {
-                    "base_history_length": len(compression_result.history),
-                    "history_tokens": self._build_history_debug_trace(
-                        requested_strategy=strategy,
-                        compression_result=compression_result,
-                    ),
-                },
+            state.trace_event(
+                component="engine",
+                step="history",
+                message="History compression summary.",
+                level=TraceLevel.INFO,
+                payload=HistorySummaryDiagV1(
+                    base_history_length=int(compression_result.raw_history_messages),
+                    history_length=int(len(compression_result.history)),
+                    history_tokens=compression_result.raw_history_tokens,
+                ),
             )
             return
 
@@ -216,15 +220,17 @@ class HistoryLayer:
         state.base_history = compression_result.history
 
         # 6. Update debug trace with history-related info and token stats.
-        state.set_debug_section(
-                "history",
-                {
-                    "base_history_length": len(compression_result.history),
-                    "history_tokens": self._build_history_debug_trace(
-                        requested_strategy=strategy,
-                        compression_result=compression_result,
-                    ),
-                },
+        
+        state.trace_event(
+                component="engine",
+                step="history",
+                message="History compression summary.",
+                level=TraceLevel.INFO,
+                payload=HistorySummaryDiagV1(
+                    base_history_length=int(compression_result.raw_history_messages),
+                    history_length=int(len(compression_result.history)),
+                    history_tokens=compression_result.raw_history_tokens,
+                ),
             )
 
 
