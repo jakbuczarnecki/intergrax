@@ -96,7 +96,8 @@ class SessionAndIngestStep(RuntimeStep):
 
         state.session = session
         state.ingestion_results = ingestion_results
-        state.debug_trace = debug_trace
+        state.set_debug_section("session_and_ingest", debug_trace)
+
         # NOTE: state.base_history is intentionally left empty here.
 
 

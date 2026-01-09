@@ -130,5 +130,4 @@ class PersistAndBuildAnswerStep(RuntimeStep):
             tool_calls=tool_calls_for_answer,
             stats=stats,
             raw_model_output=None,
-            debug_trace=state.debug_trace,
         )

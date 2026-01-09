@@ -74,7 +74,24 @@ class RuntimeState:
     tool_traces: List[Dict[str, Any]] = field(default_factory=list)
 
     # Debug / diagnostics
-    debug_trace: Dict[str, Any] = field(default_factory=dict)
+    _debug_trace: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def debug_trace(self) -> Dict[str, Any]:
+        """
+        Read-only access to debug trace.
+        Steps must NOT replace the entire structure.
+        Use trace_event() and set_debug_section() instead.
+        """
+        return self._debug_trace
+
+    @debug_trace.setter
+    def debug_trace(self, _: Dict[str, Any]) -> None:
+        raise RuntimeError(
+            "RuntimeState.debug_trace is read-only. "
+            "Use trace_event(), set_debug_section(), or update_debug_root()."
+        )
+
     websearch_debug: Dict[str, Any] = field(default_factory=dict)
 
     # Token accounting (filled in _step_build_base_history)
@@ -116,18 +133,18 @@ class RuntimeState:
             "message": message,
             "data": data or {},
         }
-        self.debug_trace.setdefault("events", []).append(evt)
+        self._debug_trace.setdefault("events", []).append(evt)
 
 
     def set_debug_section(self, key: str, value: Dict[str, Any]) -> None:
         """
         Structured debug snapshot (non-event) for a given step.
         """
-        self.debug_trace[key] = value
+        self._debug_trace[key] = value
 
 
     def set_debug_value(self, key: str, value: Any) -> None:
-        self.debug_trace[key] = value
+        self._debug_trace[key] = value
 
 
     def configure_llm_tracker(self) -> None:     
