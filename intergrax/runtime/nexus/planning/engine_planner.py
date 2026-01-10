@@ -14,9 +14,11 @@ from intergrax.runtime.nexus.planning.engine_plan_models import DEFAULT_PLANNER_
 from intergrax.runtime.nexus.planning.plan_sources import LLMPlanSource, PlanRequest, PlanSource, PlanSourceMeta
 from intergrax.runtime.nexus.planning.step_executor_models import ReplanContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.tracing.plan.capability_clamp import PlannerCapabilityClampDiagV1
 from intergrax.runtime.nexus.tracing.plan.engine_plan_produced import PlannerEnginePlanProducedDiagV1
 from intergrax.runtime.nexus.tracing.plan.plan_source_contract_violation import PlannerPlanSourceContractViolationDiagV1
 from intergrax.runtime.nexus.tracing.plan.plan_source_failed import PlannerPlanSourceFailedDiagV1
+from intergrax.runtime.nexus.tracing.plan.planner_build_debug import PlannerBuildDebugDiagV1
 from intergrax.runtime.nexus.tracing.plan.raw_plan_parse_failed import PlannerRawPlanParseFailedDiagV1
 from intergrax.runtime.nexus.tracing.plan.replan_context_injected import PlannerReplanContextInjectedDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
@@ -68,6 +70,8 @@ class EnginePlanner:
         # - run planning without LLM (offline / incident mode)
         # ---------------------------------------------------------------------
         forced_plan = None
+        planner_build_debug: Optional[PlannerBuildDebugDiagV1] = None
+
         if prompt_config is not None:
             forced_plan = prompt_config.forced_plan
 
@@ -78,8 +82,11 @@ class EnginePlanner:
                 forced_plan_dict = forced_plan
             else:
                 raise TypeError("forced_plan must be EnginePlan or dict")
-            
-            meta_forced = PlanSourceMeta(source_kind="forced", source_detail="prompt_config.forced_plan")
+
+            meta_forced = PlanSourceMeta(
+                source_kind="forced",
+                source_detail="prompt_config.forced_plan",
+            )
 
             forced_json = json.dumps(
                 forced_plan_dict,
@@ -94,27 +101,26 @@ class EnginePlanner:
                 prompt_config=prompt_config,
                 state=state,
             )
+
             # Capability clamp (keep semantics consistent with LLM-based planning)
             plan = self._validate_against_capabilities(plan=plan, state=state)
 
-            if plan.debug is None:
-                plan.debug = {}
-
             forced_hash = hashlib.sha256(forced_json.encode("utf-8")).hexdigest()[:16]
 
-            plan.debug.update(
-                self._build_planner_debug(
-                    raw_text=forced_json,                    
-                    meta=meta_forced,
-                    forced_plan_json_len=len(forced_json),
-                    forced_plan_hash=forced_hash,
-                    replan_ctx=replan_ctx,
-                    raw_hash16=None,
-                )
+            planner_build_debug = self._build_planner_debug(
+                raw_text=forced_json,
+                meta=meta_forced,  # FIX: was meta (undefined/wrong)
+                forced_plan_json_len=len(forced_json),
+                forced_plan_hash=forced_hash,
+                replan_ctx=replan_ctx,
+                raw_hash16=None,
             )
 
-            self._trace_plan_produced(state=state, plan=plan)
-
+            self._trace_plan_produced(
+                state=state,
+                plan=plan,
+                planner_build_debug=planner_build_debug,
+            )
             return plan
 
         # ---------------------------------------------------------------------
@@ -145,7 +151,7 @@ class EnginePlanner:
             raise RuntimeError(
                 f"PlanSource failed: {type(self._plan_source).__name__}: {type(e).__name__}: {e}"
             ) from e
-        
+
         if not isinstance(raw, str):
             # This should never happen; PlanSource contract violation
             self._trace_plansource_contract_violation(state=state, raw=raw)
@@ -157,8 +163,6 @@ class EnginePlanner:
             # allow meta to be optional, but normalize it
             meta = PlanSourceMeta(source_kind="unknown", source_detail=type(self._plan_source).__name__)
 
-
-        # Single source of truth: parsing extracts JSON and loads it
         plan = self._safe_parse_plan(
             raw=raw,
             meta=meta,
@@ -166,27 +170,25 @@ class EnginePlanner:
             state=state,
         )
 
-        # Capability clamp
         plan = self._validate_against_capabilities(plan=plan, state=state)
 
-        # Merge debug (do not overwrite parser debug)
-        if plan.debug is None:
-            plan.debug = {}
-
-        plan.debug.update(
-            self._build_planner_debug(
-                raw_text=raw,
-                meta=meta,
-                forced_plan_json_len=None,
-                forced_plan_hash=None,
-                replan_ctx=replan_ctx,
-                raw_hash16=res.raw_hash16,
-            )
+        planner_build_debug = self._build_planner_debug(
+            raw_text=raw,
+            meta=meta,
+            forced_plan_json_len=None,
+            forced_plan_hash=None,
+            replan_ctx=replan_ctx,
+            raw_hash16=res.raw_hash16,
         )
 
-        self._trace_plan_produced(state=state, plan=plan)
+        self._trace_plan_produced(
+            state=state,
+            plan=plan,
+            planner_build_debug=planner_build_debug,
+        )
 
         return plan
+
     
 
     def _safe_parse_plan(
@@ -211,8 +213,8 @@ class EnginePlanner:
         forced_plan_json_len: Optional[int],
         forced_plan_hash: Optional[str],
         replan_ctx: Optional[ReplanContext],
-        raw_hash16: Optional[str]
-    ) -> dict:
+        raw_hash16: Optional[str] = None,
+    ) -> PlannerBuildDebugDiagV1:
         raw_hash = raw_hash16 or hashlib.sha256(raw_text.encode("utf-8")).hexdigest()[:16]
         replan_json = self._serialize_replan_ctx(replan_ctx)
         replan_hash = (
@@ -221,40 +223,53 @@ class EnginePlanner:
             else None
         )
 
-        return {
-            "planner_forced_plan_used": forced_plan_hash is not None,
-            "planner_source_kind": meta.source_kind if meta else None,
-            "planner_source_detail": meta.source_detail if meta else None,
+        return PlannerBuildDebugDiagV1(
+            planner_forced_plan_used=(forced_plan_hash is not None),
+            planner_source_kind=(meta.source_kind if meta else None),
+            planner_source_detail=(meta.source_detail if meta else None),
 
-            "planner_replan_ctx_present": replan_ctx is not None,
-            "planner_replan_ctx_hash": replan_hash,
+            planner_replan_ctx_present=(replan_ctx is not None),
+            planner_replan_ctx_hash=replan_hash,
 
-            "planner_raw_len": len(raw_text),
-            "planner_raw_hash": raw_hash,
-            "planner_raw_preview": raw_text[: self._RAW_PREVIEW_LIMIT],
-            "planner_raw_tail_preview": raw_text[-self._RAW_TAIL_PREVIEW_LIMIT :],
+            planner_raw_len=len(raw_text),
+            planner_raw_hash=raw_hash,
+            planner_raw_preview=raw_text[: self._RAW_PREVIEW_LIMIT],
+            planner_raw_tail_preview=raw_text[-self._RAW_TAIL_PREVIEW_LIMIT :],
 
-            "planner_forced_plan_json_len": forced_plan_json_len,
-            "planner_forced_plan_hash": forced_plan_hash,
-        }
+            planner_forced_plan_json_len=forced_plan_json_len,
+            planner_forced_plan_hash=forced_plan_hash,
+        )
+
 
     def _trace_plan_produced(
         self,
         *,
         state: RuntimeState,
         plan: EnginePlan,
+        planner_build_debug: Optional[PlannerBuildDebugDiagV1] = None,
     ) -> None:
+        # Existing "plan produced" trace (bez dict debug)
         state.trace_event(
             component="planner",
-            step="engine_planner",
-            message="Engine plan produced.",
+            step="plan",
+            message="Planner produced engine plan.",
             level=TraceLevel.INFO,
             payload=PlannerEnginePlanProducedDiagV1(
                 intent=plan.intent.value,
-                next_step=plan.next_step.value if plan.next_step is not None else None,
-                debug=plan.debug or {},
+                next_step=plan.next_step.value if plan.next_step is not None else None,                
             ),
         )
+
+        # Separate typed debug trace (recommended)
+        if planner_build_debug is not None:
+            state.trace_event(
+                component="planner",
+                step="plan",
+                message="Planner build debug.",
+                level=TraceLevel.DEBUG,
+                payload=planner_build_debug,
+            )
+
 
     
     def _trace_plansource_failed(
@@ -298,20 +313,15 @@ class EnginePlanner:
         Only disables flags that are not available in the current runtime.
         """
 
-        # Snapshot BEFORE clamp (what the model proposed)
-        before = {
-            "use_websearch": bool(plan.use_websearch),
-            "use_user_longterm_memory": bool(plan.use_user_longterm_memory),
-            "use_rag": bool(plan.use_rag),
-            "use_tools": bool(plan.use_tools),
-        }
+        before_use_web = bool(plan.use_websearch)
+        before_use_ltm = bool(plan.use_user_longterm_memory)
+        before_use_rag = bool(plan.use_rag)
+        before_use_tools = bool(plan.use_tools)
 
-        available = {
-            "websearch": bool(state.cap_websearch_available),
-            "user_ltm": bool(state.cap_user_ltm_available),
-            "rag": bool(state.cap_rag_available),
-            "tools": bool(state.cap_tools_available),
-        }
+        available_web = bool(state.cap_websearch_available)
+        available_ltm = bool(state.cap_user_ltm_available)
+        available_rag = bool(state.cap_rag_available)
+        available_tools = bool(state.cap_tools_available)
 
         if plan.use_websearch and not state.cap_websearch_available:
             plan.use_websearch = False
@@ -325,25 +335,37 @@ class EnginePlanner:
         if plan.use_tools and not state.cap_tools_available:
             plan.use_tools = False
 
-        # Snapshot AFTER clamp (what runtime will actually allow)
-        after = {
-            "use_websearch": bool(plan.use_websearch),
-            "use_user_longterm_memory": bool(plan.use_user_longterm_memory),
-            "use_rag": bool(plan.use_rag),
-            "use_tools": bool(plan.use_tools),
-        }
+        after_use_web = bool(plan.use_websearch)
+        after_use_ltm = bool(plan.use_user_longterm_memory)
+        after_use_rag = bool(plan.use_rag)
+        after_use_tools = bool(plan.use_tools)
 
-        # Optional: record clamp info for debugging
-        if plan.debug is None:
-            plan.debug = {}
+        # Emit typed clamp diagnostics (no dicts, no plan.debug)
+        state.trace_event(
+            component="planner",
+            step="capability_clamp",
+            message="Planner capability clamp applied.",
+            level=TraceLevel.DEBUG,
+            payload=PlannerCapabilityClampDiagV1(
+                before_use_websearch=before_use_web,
+                before_use_user_longterm_memory=before_use_ltm,
+                before_use_rag=before_use_rag,
+                before_use_tools=before_use_tools,
 
-        plan.debug["capability_clamp"] = {
-            "before": before,
-            "available": available,
-            "after": after,
-        }
+                available_websearch=available_web,
+                available_user_ltm=available_ltm,
+                available_rag=available_rag,
+                available_tools=available_tools,
+
+                after_use_websearch=after_use_web,
+                after_use_user_longterm_memory=after_use_ltm,
+                after_use_rag=after_use_rag,
+                after_use_tools=after_use_tools,
+            ),
+        )
 
         return plan
+
 
     def _trace_parse_failed(
         self,
@@ -534,6 +556,7 @@ class EnginePlanner:
             raise ValueError("Planner did not return a JSON object.")
         return s[start : end + 1]
 
+    
     def _parse_plan(self, raw: str, *, prompt_config: Optional[PlannerPromptConfig]) -> EnginePlan:
         """
         Parse strict JSON (as specified by _build_planner_messages) into EnginePlan.
@@ -675,11 +698,6 @@ class EnginePlanner:
             use_user_longterm_memory=use_ltm,
             use_rag=use_rag,
             use_tools=use_tools,
-            debug={
-                "raw_json_shape": self._json_shape(data),
-                "planner_json_len": len(js),
-                "next_step_raw": next_step_raw,
-            },
         )
 
 

@@ -52,8 +52,6 @@ class EnginePlan:
     use_rag: bool = False
     use_tools: bool = False
 
-    debug: Dict[str, Any] = field(default_factory=dict)
-
     def fingerprint(self) -> str:
       """
       Stable fingerprint of the *decision* part of EnginePlan.
@@ -93,7 +91,6 @@ class EnginePlan:
             "use_user_longterm_memory": self.use_user_longterm_memory,
             "use_rag": self.use_rag,
             "use_tools": self.use_tools,
-            "debug": self.debug,
         })
 
     def to_planner_dict(self) -> Dict[str, Any]:

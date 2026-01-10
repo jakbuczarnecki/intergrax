@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Dict, Optional
 
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
@@ -18,7 +18,6 @@ class PlannerEnginePlanProducedDiagV1(DiagnosticPayload):
 
     intent: str
     next_step: Optional[str]
-    debug: Mapping[str, Any]
 
     @property
     def schema_id(self) -> str:
@@ -29,5 +28,4 @@ class PlannerEnginePlanProducedDiagV1(DiagnosticPayload):
         return {
             "intent": self.intent,
             "next_step": self.next_step,
-            "debug": dict(self.debug) if self.debug is not None else {},
         }
