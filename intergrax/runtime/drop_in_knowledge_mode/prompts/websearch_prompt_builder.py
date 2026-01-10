@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Protocol, Any, Optional
+from typing import List, Protocol, Optional
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.config import RuntimeConfig
@@ -22,10 +22,10 @@ class WebSearchPromptBundle:
     Container for prompt elements related to web search:
 
     - context_messages: system-level messages injecting web search results.
-    - debug_info: structured metadata for debug traces (URLs, counts, errors).
     """
     context_messages: List[ChatMessage]
-    debug_info: Dict[str, Any]
+    no_evidence: bool
+    sources_count: int
 
 
 class WebSearchPromptBuilder(Protocol):
@@ -71,16 +71,12 @@ class DefaultWebSearchPromptBuilder(WebSearchPromptBuilder):
         user_query: Optional[str] = None,
         run_id: Optional[str] = None,
     ) -> WebSearchPromptBundle:
-        debug_info: Dict[str, Any] = {}
-
         if not web_results:
             return WebSearchPromptBundle(
                 context_messages=[],
-                debug_info=debug_info,
+                no_evidence=True,
+                sources_count=0,
             )
-
-        debug_info["num_docs"] = len(web_results)
-        debug_info["top_urls"] = [d.url for d in web_results[:3] if (d.url or "").strip()]
 
         # Use dedicated websearch configuration if present; otherwise fallback.
         cfg: Optional[WebSearchConfig] = self._config.websearch_config
@@ -94,19 +90,20 @@ class DefaultWebSearchPromptBuilder(WebSearchPromptBuilder):
         gen = create_websearch_context_generator(cfg)
         result = await gen.generate(web_results, user_query=user_query)
 
-        # IMPORTANT: context injection should be a system message
+        context_text = (result.context_text or "").strip()
+
         context_messages = [
             ChatMessage(
                 role="system",
-                content=result.context_text,
+                content=context_text,
             )
-        ]
+        ] if context_text else []
 
-        # Merge generator debug info into builder debug info
-        for k, v in result.debug_info.items():
-            debug_info[k] = v
+        no_evidence = not bool(context_text)
+        sources_count = sum(1 for r in web_results if (r.url or "").strip())
 
         return WebSearchPromptBundle(
             context_messages=context_messages,
-            debug_info=debug_info,
+            no_evidence=no_evidence,
+            sources_count=sources_count
         )

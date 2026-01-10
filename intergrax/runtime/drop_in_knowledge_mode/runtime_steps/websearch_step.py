@@ -4,13 +4,13 @@
 
 from __future__ import annotations
 
-from typing import Any, List
-
+from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.drop_in_knowledge_mode.runtime_steps.tools import insert_context_before_last_user
 from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceLevel
 from intergrax.runtime.drop_in_knowledge_mode.tracing.websearch.websearch_summary import WebsearchSummaryDiagV1
+from intergrax.websearch.schemas.web_search_result import WebSearchResult
 
 
 class WebsearchStep(RuntimeStep):
@@ -46,6 +46,9 @@ class WebsearchStep(RuntimeStep):
         context_preview = ""
         context_preview_chars = 0
 
+        PREVIEW_LIMIT = 300
+        ERROR_LIMIT = 500
+
         if not enabled or not configured:
             state.trace_event(
                 component="engine",
@@ -67,6 +70,9 @@ class WebsearchStep(RuntimeStep):
             )
             return
 
+        web_results: list[WebSearchResult] = []
+        context_messages: list[ChatMessage] = []
+
         try:
             web_results = await state.context.websearch_executor.search_async(
                 query=state.request.message,
@@ -77,7 +83,9 @@ class WebsearchStep(RuntimeStep):
 
             results_count = len(web_results or [])
             if not web_results:
-                # enabled+configured but no results
+                # enabled+configured but no results -> no evidence
+                no_evidence = True
+
                 state.trace_event(
                     component="engine",
                     step="websearch",
@@ -89,7 +97,7 @@ class WebsearchStep(RuntimeStep):
                         used_websearch=False,
                         results_count=0,
                         context_blocks_count=0,
-                        no_evidence=False,
+                        no_evidence=True,
                         error_type=None,
                         error_message=None,
                         context_preview_chars=0,
@@ -98,39 +106,43 @@ class WebsearchStep(RuntimeStep):
                 )
                 return
 
-            state.used_websearch = True
-            used_websearch = True
-
             bundle = await state.context.websearch_prompt_builder.build_websearch_prompt(
                 web_results=web_results,
                 user_query=state.request.message,
                 run_id=state.run_id,
             )
 
-            context_messages = bundle.context_messages or []
-            insert_context_before_last_user(state, context_messages)
+            no_evidence = bool(bundle.no_evidence) or (bundle.sources_count==0)
 
-            # Build preview (first block only)
+            if context_blocks_count ==0:
+                no_evidence = True
+
+            context_messages = bundle.context_messages or []
+            if context_messages:
+                insert_context_before_last_user(state, context_messages)
+                state.used_websearch = True
+                used_websearch = True
+
+            # Preview (first block only; limited)
             web_context_texts: list[str] = []
             for msg in context_messages:
                 if msg.content:
                     web_context_texts.append(msg.content)
 
             context_blocks_count = len(web_context_texts)
+            if context_blocks_count == 0:
+                no_evidence = True
 
-            preview = "\n\n".join(web_context_texts[:1])
-            PREVIEW_LIMIT = 300
-            context_preview = preview[:PREVIEW_LIMIT]
-            context_preview_chars = len(context_preview)
-
-            # Guardrail signal: did websearch produce any grounded evidence?
-            no_evidence = "No answer-relevant evidence extracted" in (context_preview or "")
+            if web_context_texts:
+                preview = web_context_texts[0]
+                context_preview = (preview or "")[:PREVIEW_LIMIT]
+                context_preview_chars = len(context_preview)
 
         except Exception as exc:
             error_type = type(exc).__name__
-            error_message = str(exc)
+            error_message = str(exc)[:ERROR_LIMIT]
 
-        # Trace web search step summary
+        # Trace web search step summary (single final summary)
         state.trace_event(
             component="engine",
             step="websearch",
@@ -149,3 +161,4 @@ class WebsearchStep(RuntimeStep):
                 context_preview=context_preview,
             ),
         )
+
