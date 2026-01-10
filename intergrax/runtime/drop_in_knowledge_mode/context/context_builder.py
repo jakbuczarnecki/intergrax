@@ -60,18 +60,18 @@ class BuiltContext:
     """
     Result of ContextBuilder.build_context(...).
 
-    This object is consumed by the runtime engine and prompt builders:
-    - system_prompt: RAG-related system message for the LLM.
+    This object is consumed by the runtime engine and prompt builders.
     - history_messages: conversation history built by the runtime / SessionStore.
       ContextBuilder does not build or trim history; it only passes through
       the list it receives from the engine.
     - retrieved_chunks: RAG context (can be serialized into prompt).
-    - rag_debug_info: structured debug trace to be surfaced in
-      RuntimeAnswer.trace_events.
+    - rag_used: whether RAG context should be considered "used" (i.e., non-empty chunks).
+    - rag_reason: decision/reason string (stable, non-dict contract).
     """
     history_messages: List[ChatMessage]
     retrieved_chunks: List[RetrievedChunk]
-    rag_debug_info: Dict[str, Any]
+    rag_used: bool
+    rag_reason: str
 
 
 class ContextBuilder:
@@ -136,27 +136,25 @@ class ContextBuilder:
         # 1. Decide whether we should use RAG for this request
         use_rag, rag_reason = self._should_use_rag(session, request)
 
+        retrieved_chunks: List[RetrievedChunk] = []
+        retrieval_reason: Optional[str] = None
+
         if use_rag:
-            retrieved_chunks, rag_debug_info = self._retrieve_for_session(session, request)
+            retrieved_chunks, retrieval_reason = self._retrieve_for_session(session, request)
+            if retrieval_reason:
+                rag_reason = retrieval_reason
+            elif not retrieved_chunks:
+                rag_reason = "no_hits"
         else:
-            # No RAG for this request – keep debug info explicit so it is easy
-            # to see in RuntimeAnswer.trace_events why RAG was skipped.
             retrieved_chunks = []
-            rag_debug_info = {
-                "enabled": bool(self._config.enable_rag),
-                "used": False,
-                "reason": rag_reason,
-                "hits_count": 0,
-                "where_filter": {},
-                "top_k": int(self._config.max_docs_per_query),
-                "score_threshold": self._config.rag_score_threshold,
-                "hits": [],
-            }
+
+        rag_used = bool(retrieved_chunks)
 
         return BuiltContext(
             history_messages=list(base_history or []),
             retrieved_chunks=retrieved_chunks,
-            rag_debug_info=rag_debug_info,
+            rag_used=rag_used,
+            rag_reason=rag_reason,
         )
 
 
@@ -193,22 +191,13 @@ class ContextBuilder:
         self,
         session: ChatSession,
         request: RuntimeRequest,
-    ) -> Tuple[List[RetrievedChunk], Dict[str, Any]]:
+    ) -> Tuple[List[RetrievedChunk], Optional[str]]:
         """
         Perform a vector store query for this session.
-
-        Strategy:
-        - Build a logical `where` filter using:
-            * session_id
-            * user_id
-            * tenant_id
-            * workspace_id
-          (optionally you can extend this in the future with additional
-           filters derived from request.metadata or attachments).
-        - Use `request.message` as the query text.
-        - Compute query embeddings via the configured embedding manager.
-        - Call `IntergraxVectorstoreManager.query(...)` with `query_embeddings`.
+        Returns: (retrieved_chunks, retrieval_reason).
+        retrieval_reason is None when retrieval was attempted successfully.
         """
+
         # 1) Build the logical `where` based on session and request metadata        
         query_text = request.message
         query_text = str(query_text or "")
@@ -247,16 +236,7 @@ class ContextBuilder:
         embedding_manager = self._config.embedding_manager
         if embedding_manager is None:
             # Without an embedding manager we cannot perform semantic search.
-            # We return an empty result with a clear diagnostic reason.
-            return [], {
-                "enabled": self._config.enable_rag,
-                "used": False,
-                "reason": "no_embedding_manager_in_config",
-                "where_filter": where,
-                "top_k": max_docs,
-                "score_threshold": score_threshold,
-                "hits": [],
-            }
+            return [], "no_embedding_manager_in_config"
 
         # 3) Compute query embeddings using IntergraxEmbeddingManager API
         # Preferred path: single-text embedding
@@ -268,7 +248,7 @@ class ContextBuilder:
 
         # Normalize embeddings shape for vector store:
         # - numpy array: ensure 2D
-        # - plain list: wrap 1D into batch-of-1
+        # - plain list: wrap 1D into batch-of-1        
         if hasattr(query_embeddings, "ndim"):
             try:
                 if query_embeddings.ndim == 1:
@@ -301,33 +281,8 @@ class ContextBuilder:
                     filtered_chunks.append(ch)
             retrieved_chunks = filtered_chunks
 
-        # 6) Build RAG debug info (backend-agnostic view)
-        rag_used = bool(retrieved_chunks)
-
-        rag_debug_info: Dict[str, Any] = {
-            "enabled": bool(self._config.enable_rag),
-            "used": rag_used,
-            "hits_count": len(retrieved_chunks or []),
-            "where_filter": where,
-            "top_k": max_docs,
-            "score_threshold": score_threshold,
-        }
-
-        # Only store full hit metadata if something was actually retrieved
-        if rag_used:
-            rag_debug_info["hits"] = [
-                {
-                    "id": ch.id,
-                    "score": round(ch.score, 4),
-                    "metadata": ch.metadata,
-                    "preview": ch.text[:200],
-                }
-                for ch in retrieved_chunks
-            ]
-        else:
-            rag_debug_info["hits"] = []
-
-        return retrieved_chunks, rag_debug_info
+        # 6) Build RAG debug info (backend-agnostic view)            
+        return retrieved_chunks, None
 
 
     def _build_backend_where(self, where: Dict[str, Any]) -> Optional[Dict[str, Any]]:

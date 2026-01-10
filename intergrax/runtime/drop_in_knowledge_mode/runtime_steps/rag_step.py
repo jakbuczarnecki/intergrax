@@ -65,10 +65,9 @@ class RagStep(RuntimeStep):
             )
             state.context_builder_result = built
 
-        rag_info = built.rag_debug_info or {}
-
         retrieved_chunks = built.retrieved_chunks or []
-        state.used_rag = bool(rag_info.get("used", bool(retrieved_chunks)))
+        state.used_rag = built.rag_used
+        rag_reason = built.rag_reason
 
         if not state.used_rag:
             state.trace_event(
@@ -81,7 +80,7 @@ class RagStep(RuntimeStep):
                     used_rag=False,
                     chunks_count=0,
                     context_messages_count=0,
-                    warning=None,
+                    warning=rag_reason,
                 ),
             )
             return
