@@ -8,6 +8,8 @@ from typing import Optional
 
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.tracing.memory.profile_base_memory_summary import ProfileBasedMemorySummaryDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceLevel
 
 
 class ProfileBasedMemoryStep(RuntimeStep):
@@ -33,8 +35,10 @@ class ProfileBasedMemoryStep(RuntimeStep):
 
         # 1) User profile memory (optional)
         if cfg.enable_user_profile_memory:
-            user_instr_candidate = await state.context.session_manager.get_user_profile_instructions_for_session(
-                session=session
+            user_instr_candidate = (
+                await state.context.session_manager.get_user_profile_instructions_for_session(
+                    session=session
+                )
             )
             if isinstance(user_instr_candidate, str):
                 stripped = user_instr_candidate.strip()
@@ -44,8 +48,10 @@ class ProfileBasedMemoryStep(RuntimeStep):
 
         # 2) Organization profile memory (optional)
         if cfg.enable_org_profile_memory:
-            org_instr_candidate = await state.context.session_manager.get_org_profile_instructions_for_session(
-                session=session
+            org_instr_candidate = (
+                await state.context.session_manager.get_org_profile_instructions_for_session(
+                    session=session
+                )
             )
             if isinstance(org_instr_candidate, str):
                 stripped = org_instr_candidate.strip()
@@ -59,25 +65,16 @@ class ProfileBasedMemoryStep(RuntimeStep):
         state.profile_user_instructions = user_instr
         state.profile_org_instructions = org_instr
 
-
-        # 4) Debug info
-        state.set_debug_section("memory_layer", {
-            "implemented": True,
-            "has_user_profile_instructions": bool(user_instr),
-            "has_org_profile_instructions": bool(org_instr),
-            "enable_user_profile_memory": cfg.enable_user_profile_memory,
-            "enable_org_profile_memory": cfg.enable_org_profile_memory,
-        })
-
-        # Trace memory layer step.
+        # 4) Trace memory layer step (typed payload).
         state.trace_event(
             component="engine",
             step="memory_layer",
             message="Profile-based instructions loaded for session.",
-            data={
-                "has_user_profile_instructions": bool(user_instr),
-                "has_org_profile_instructions": bool(org_instr),
-                "enable_user_profile_memory": cfg.enable_user_profile_memory,
-                "enable_org_profile_memory": cfg.enable_org_profile_memory,
-            },
+            level=TraceLevel.INFO,
+            payload=ProfileBasedMemorySummaryDiagV1(
+                has_user_profile_instructions=bool(user_instr),
+                has_org_profile_instructions=bool(org_instr),
+                enable_user_profile_memory=cfg.enable_user_profile_memory,
+                enable_org_profile_memory=cfg.enable_org_profile_memory,
+            ),
         )

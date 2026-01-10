@@ -14,6 +14,9 @@ from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_context import LLMU
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.drop_in_knowledge_mode.session.chat_session import ChatSession
+from intergrax.runtime.drop_in_knowledge_mode.tracing.adapters.llm_usage_finalize import LLMUsageFinalizeDiag
+from intergrax.runtime.drop_in_knowledge_mode.tracing.adapters.llm_usage_snapshot import LLMUsageSnapshotDiag
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import DiagnosticPayload, ToolCallTrace, TraceComponent, TraceEvent, TraceLevel, utc_now_iso
 
 
 @dataclass
@@ -44,6 +47,7 @@ class RuntimeState:
     session: Optional[ChatSession] = None
     ingestion_results: List[IngestionResult] = field(default_factory=list)
     used_attachments_context: bool = False
+    attachments_chunks_count: int = 0
 
     # Conversation / context
     base_history: List[ChatMessage] = field(default_factory=list)
@@ -71,28 +75,14 @@ class RuntimeState:
 
     # Tools
     tools_agent_answer: Optional[str] = None
-    tool_traces: List[Dict[str, Any]] = field(default_factory=list)
 
-    # Debug / diagnostics
-    _debug_trace: Dict[str, Any] = field(default_factory=dict)
+    # Typed tool call traces (production runtime artifact).
+    tool_traces: List[ToolCallTrace] = field(default_factory=list)
 
-    @property
-    def debug_trace(self) -> Dict[str, Any]:
-        """
-        Read-only access to debug trace.
-        Steps must NOT replace the entire structure.
-        Use trace_event() and set_debug_section() instead.
-        """
-        return self._debug_trace
 
-    @debug_trace.setter
-    def debug_trace(self, _: Dict[str, Any]) -> None:
-        raise RuntimeError(
-            "RuntimeState.debug_trace is read-only. "
-            "Use trace_event(), set_debug_section(), or update_debug_root()."
-        )
-
-    websearch_debug: Dict[str, Any] = field(default_factory=dict)
+    # Production trace (append-only structured events)
+    trace_events: List[TraceEvent] = field(default_factory=list)
+    _trace_seq: int = field(default=0, init=False, repr=False)
 
     # Token accounting (filled in _step_build_base_history)
     history_token_count: Optional[int] = None
@@ -119,32 +109,51 @@ class RuntimeState:
         component: str,
         step: str,
         message: str,
-        data: Optional[Dict[str, Any]] = None,
-        level: str = "info",
+        level: TraceLevel = TraceLevel.INFO,
+        payload: Optional[DiagnosticPayload] = None,
     ) -> None:
         """
-        Append-only event log, stored under debug_trace["events"].
+        Production-grade append-only structured tracing.
+
+        Rules:
+        - Single source of truth: RuntimeState.trace_events
+        - Payload MUST be a typed DiagnosticPayload (no dicts)
+        - Schema metadata is always captured when payload is present
         """
-        evt = {
-            "ts_utc": datetime.now(timezone.utc).isoformat(),
-            "level": level,
-            "component": component,
-            "step": step,
-            "message": message,
-            "data": data or {},
-        }
-        self._debug_trace.setdefault("events", []).append(evt)
+        if not self.run_id:
+            raise RuntimeError("RuntimeState.run_id must be provided (got empty).")
 
+        comp = TraceComponent(component)
 
-    def set_debug_section(self, key: str, value: Dict[str, Any]) -> None:
-        """
-        Structured debug snapshot (non-event) for a given step.
-        """
-        self._debug_trace[key] = value
+        # Strictly increasing sequence within this run
+        self._trace_seq += 1
 
+        payload_schema_id: Optional[str] = None
+        payload_schema_version: Optional[int] = None
+        payload_dict: Optional[Dict[str, Any]] = None
 
-    def set_debug_value(self, key: str, value: Any) -> None:
-        self._debug_trace[key] = value
+        if payload is not None:
+            payload_schema_id = payload.schema_id
+            payload_schema_version = payload.schema_version
+            payload_dict = payload.to_dict()
+
+        evt = TraceEvent(
+            event_id=TraceEvent.new_id(),
+            run_id=self.run_id,
+            seq=self._trace_seq,
+            ts_utc=utc_now_iso(),
+            level=level,
+            component=comp,
+            step=step,
+            message=message,
+            payload_schema_id=payload_schema_id,
+            payload_schema_version=payload_schema_version,
+            payload=payload_dict,
+            tags={},
+        )
+
+        self.trace_events.append(evt)
+
 
 
     def configure_llm_tracker(self) -> None:     
@@ -154,18 +163,18 @@ class RuntimeState:
            
         self.llm_usage_tracker.register_adapter(self.context.config.llm_adapter, label="core_adapter")
 
-        ta = self.context.config.tools_agent
-        if ta is not None and ta.llm is not None:
-            self.llm_usage_tracker.register_adapter(ta.llm, label="tools_agent")
+        tool_agent = self.context.config.tools_agent
+        if tool_agent is not None and tool_agent.llm is not None:
+            self.llm_usage_tracker.register_adapter(tool_agent.llm, label="tools_agent")
 
-        ws = self.context.config.websearch_config
-        if ws is not None and ws.llm is not None:
-            if ws.llm.map_adapter is not None:
-                self.llm_usage_tracker.register_adapter(ws.llm.map_adapter, label="web_map_adapter")
-            if ws.llm.reduce_adapter is not None:
-                self.llm_usage_tracker.register_adapter(ws.llm.reduce_adapter, label="web_reduce_adapter")
-            if ws.llm.rerank_adapter is not None:
-                self.llm_usage_tracker.register_adapter(ws.llm.rerank_adapter, label="web_rerank_adapter")
+        websearch_config = self.context.config.websearch_config
+        if websearch_config is not None and websearch_config.llm is not None:
+            if websearch_config.llm.map_adapter is not None:
+                self.llm_usage_tracker.register_adapter(websearch_config.llm.map_adapter, label="web_map_adapter")
+            if websearch_config.llm.reduce_adapter is not None:
+                self.llm_usage_tracker.register_adapter(websearch_config.llm.reduce_adapter, label="web_reduce_adapter")
+            if websearch_config.llm.rerank_adapter is not None:
+                self.llm_usage_tracker.register_adapter(websearch_config.llm.rerank_adapter, label="web_rerank_adapter")
 
     
     async def finalize_llm_tracker(
@@ -177,23 +186,42 @@ class RuntimeState:
             return
 
         report = self.llm_usage_tracker.build_report()
-        llm_usage_snapshot = report.to_dict()
+        total = report.total  # LLMRunStats
 
-        # Always persist snapshot into debug trace, even if run aborted.
-        self.set_debug_value("llm_usage", llm_usage_snapshot)
+        llm_usage_snapshot = LLMUsageSnapshotDiag(
+            run_id=report.run_id,
+            calls=total.calls,
+            input_tokens=total.input_tokens,
+            output_tokens=total.output_tokens,
+            total_tokens=total.total_tokens,
+            duration_ms=total.duration_ms,
+            errors=total.errors,
+            adapters_registered=len(report.entries),
+            provider_model_groups=len(report.by_provider_model),
+        )
+
+        # Always persist snapshot into structured trace, even if run aborted.
+        self.trace_event(
+            component="engine",
+            step="llm_usage_snapshot",
+            level=TraceLevel.INFO,
+            message="LLM usage snapshot captured.",
+            payload=llm_usage_snapshot,
+        )
 
         # If the run aborted before producing RuntimeAnswer, do not raise and do not collect runs.
         if runtime_answer is None:
             self.trace_event(
                 component="engine",
                 step="llm_usage_finalize",
-                level="warning",
+                level=TraceLevel.WARNING,
                 message="LLM usage finalized without RuntimeAnswer (run aborted).",
-                data={
-                    "run_id": self.run_id,
-                    "session_id": request.session_id,
-                    "user_id": request.user_id,
-                },
+                payload=LLMUsageFinalizeDiag(
+                    run_id=self.run_id,
+                    session_id=request.session_id,
+                    user_id=request.user_id,
+                    aborted=True,
+                ),
             )
             return
 
@@ -213,3 +241,5 @@ class RuntimeState:
                     report=runtime_answer.llm_usage_report,
                 )
                 self.context.llm_usage_runs.append(rec)
+
+

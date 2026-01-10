@@ -1,5 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
 
 
 
@@ -64,7 +65,6 @@ class LoggingConfig:
     enabled: bool = True
     level: int = logging.INFO
     enable_console: bool = True
-    enable_runtime_events: bool = True
 
 
 @dataclass(frozen=True)
@@ -192,47 +192,6 @@ class _ConsoleFormatter(logging.Formatter):
         return line
 
 
-class _RuntimeStateEventHandler(logging.Handler):
-    """
-    Writes LogRecord into RuntimeState.trace_event if runtime state is present.
-    Respects global enabled switch.
-    """
-    def emit(self, record: logging.LogRecord) -> None:
-        if not _is_enabled():
-            return
-
-        state = _runtime_state_var.get()
-        if state is None:
-            return
-
-        try:
-            d = record.__dict__
-
-            payload_data = d.get(_KEY_DATA)
-            if isinstance(payload_data, dict):
-                data_dict: Dict[str, Any] = payload_data
-            elif payload_data is None:
-                data_dict = {}
-            else:
-                data_dict = {"value": payload_data}
-
-            component = cast(str, d.get(_KEY_COMPONENT, "-"))
-            step = cast(str, d.get(_KEY_STEP, "-"))
-            message = record.getMessage()
-            level = record.levelname.lower()
-
-            state.trace_event(
-                component=component,
-                step=step,
-                message=message,
-                data=data_dict,
-                level=level,
-            )
-        except Exception:
-            # Logging must never break application execution.
-            return
-
-
 class _ComponentLoggerAdapter(logging.LoggerAdapter):
     """
     Adapter that enforces ig_component for all records produced by this logger instance.
@@ -286,11 +245,6 @@ def _configure_logging(*, force_reconfigure: bool = False) -> None:
         sh.setLevel(cfg.level)
         sh.setFormatter(_ConsoleFormatter())
         root.addHandler(sh)
-
-    if cfg.enable_runtime_events:
-        eh = _RuntimeStateEventHandler()
-        eh.setLevel(cfg.level)
-        root.addHandler(eh)
 
     _configured_var.set(True)
 
@@ -355,7 +309,6 @@ class IntergraxLogging:
         enabled: bool = True,
         level: int = logging.INFO,
         enable_console: bool = True,
-        enable_runtime_events: bool = True,
         force_reconfigure: bool = False,
     ) -> None:
         """
@@ -372,7 +325,6 @@ class IntergraxLogging:
                 enabled=enabled,
                 level=level,
                 enable_console=enable_console,
-                enable_runtime_events=enable_runtime_events,
             )
         )
         _configure_logging(force_reconfigure=force_reconfigure)

@@ -20,6 +20,14 @@ from intergrax.runtime.drop_in_knowledge_mode.planning.stepplan_models import Pl
 from intergrax.runtime.drop_in_knowledge_mode.planning.engine_planner import EnginePlanner
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_planner import StepPlanner
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor import StepExecutor
+from intergrax.runtime.drop_in_knowledge_mode.tracing.plan.dynamic_engine_plan_produced import PlannerDynamicEnginePlanProducedDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.plan.execution_requested_replan import PlannerExecutionRequestedReplanDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.plan.iteration_completed_continue import PlannerIterationCompletedContinueDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.plan.planning_iteration_started import PlannerPlanningIterationStartedDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.plan.static_engine_plan_produced import PlannerStaticEnginePlanProducedDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.plan.static_execution_requested_replan import PlannerStaticExecutionRequestedReplanDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.plan.static_planning_iteration_started import PlannerStaticPlanningIterationStartedDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceLevel
 
 
 
@@ -131,13 +139,14 @@ class PlanLoopController:
                 component="planner",
                 step="plan_loop_dynamic",
                 message="Planning iteration started.",
-                data={
-                    "iterations_used": iterations_used,
-                    "same_plan_repeats": same_plan_repeats,
-                    "has_replan_ctx": replan_ctx is not None,
-                    "replan_reason": (replan_ctx.replan_reason or "").strip() if replan_ctx is not None else None,
-                    "replan_attempt": (replan_ctx.attempt if replan_ctx is not None else None),
-                },
+                level=TraceLevel.INFO,
+                payload=PlannerPlanningIterationStartedDiagV1(
+                    iterations_used=iterations_used,
+                    same_plan_repeats=same_plan_repeats,
+                    has_replan_ctx=replan_ctx is not None,
+                    replan_reason=(replan_ctx.replan_reason or "").strip() if replan_ctx is not None else None,
+                    replan_attempt=(replan_ctx.attempt if replan_ctx is not None else None),
+                ),
             )
 
             engine_plan: EnginePlan = await self._engine_planner.plan(
@@ -152,26 +161,28 @@ class PlanLoopController:
             current_fp = engine_plan.fingerprint()
             plan_dbg = engine_plan.debug or {}
 
+            
             state.trace_event(
                 component="planner",
                 step="plan_loop_dynamic",
                 message="Engine plan produced.",
-                data={
-                    "fingerprint": current_fp,
-                    "intent": engine_plan.intent.value,
-                    "next_step": engine_plan.next_step.value if engine_plan.next_step is not None else None,
-                    "ask_clarifying_question": engine_plan.ask_clarifying_question,
-                    "use_websearch": engine_plan.use_websearch,
-                    "use_user_longterm_memory": engine_plan.use_user_longterm_memory,
-                    "use_rag": engine_plan.use_rag,
-                    "use_tools": engine_plan.use_tools,
-                    "same_plan_repeats": same_plan_repeats,
-                    "capability_clamp": plan_dbg.get("capability_clamp"),
-                    "planner_forced_plan_used": plan_dbg.get("planner_forced_plan_used"),
-                    "planner_forced_plan_hash": plan_dbg.get("planner_forced_plan_hash"),
-                    "planner_replan_ctx_present": plan_dbg.get("planner_replan_ctx_present"),
-                    "planner_replan_ctx_hash": plan_dbg.get("planner_replan_ctx_hash"),
-                },
+                level=TraceLevel.INFO,
+                payload=PlannerDynamicEnginePlanProducedDiagV1(
+                    fingerprint=current_fp,
+                    intent=engine_plan.intent.value,
+                    next_step=engine_plan.next_step.value if engine_plan.next_step is not None else None,
+                    ask_clarifying_question=engine_plan.ask_clarifying_question,
+                    use_websearch=engine_plan.use_websearch,
+                    use_user_longterm_memory=engine_plan.use_user_longterm_memory,
+                    use_rag=engine_plan.use_rag,
+                    use_tools=engine_plan.use_tools,
+                    same_plan_repeats=same_plan_repeats,
+                    capability_clamp=plan_dbg.get("capability_clamp"),
+                    planner_forced_plan_used=plan_dbg.get("planner_forced_plan_used"),
+                    planner_forced_plan_hash=plan_dbg.get("planner_forced_plan_hash"),
+                    planner_replan_ctx_present=plan_dbg.get("planner_replan_ctx_present"),
+                    planner_replan_ctx_hash=plan_dbg.get("planner_replan_ctx_hash"),
+                ),
             )
 
             if last_engine_plan_fingerprint == current_fp:
@@ -270,11 +281,12 @@ class PlanLoopController:
                     component="planner",
                     step="plan_loop_dynamic",
                     message="Execution requested replan.",
-                    data={
-                        "iterations_used": iterations_used,
-                        "replan_reason": report.replan_reason,
-                        "last_plan_id": exec_plan.plan_id,
-                    },
+                    level=TraceLevel.INFO,
+                    payload=PlannerExecutionRequestedReplanDiagV1(
+                        iterations_used=iterations_used,
+                        replan_reason=report.replan_reason,
+                        last_plan_id=exec_plan.plan_id,
+                    ),
                 )
 
                 continue
@@ -317,11 +329,12 @@ class PlanLoopController:
                 component="planner",
                 step="plan_loop_dynamic",
                 message="Iteration completed; continuing to next dynamic step.",
-                data={
-                    "iterations_used": iterations_used,
-                    "last_plan_id": exec_plan.plan_id,
-                    "replan_attempt": replan_ctx.attempt,
-                },
+                level=TraceLevel.INFO,
+                payload=PlannerIterationCompletedContinueDiagV1(
+                    iterations_used=iterations_used,
+                    last_plan_id=exec_plan.plan_id,
+                    replan_attempt=replan_ctx.attempt,
+                ),
             )
 
             continue
@@ -352,12 +365,13 @@ class PlanLoopController:
                 component="planner",
                 step="plan_loop_static",
                 message="Planning iteration started.",
-                data={
-                    "replans_used": replans_used,
-                    "same_plan_repeats": same_plan_repeats,
-                    "has_replan_ctx": replan_ctx is not None,
-                    "replan_reason": (replan_ctx.replan_reason or "").strip() if replan_ctx is not None else None,
-                },
+                level=TraceLevel.INFO,
+                payload=PlannerStaticPlanningIterationStartedDiagV1(
+                    replans_used=replans_used,
+                    same_plan_repeats=same_plan_repeats,
+                    has_replan_ctx=replan_ctx is not None,
+                    replan_reason=(replan_ctx.replan_reason or "").strip() if replan_ctx is not None else None,
+                ),
             )
 
             engine_plan: EnginePlan = await self._engine_planner.plan(
@@ -380,23 +394,23 @@ class PlanLoopController:
                 component="planner",
                 step="plan_loop_static",
                 message="Engine plan produced.",
-                data={
-                    "fingerprint": current_fp,
-                    "intent": engine_plan.intent.value,
-                    "next_step": engine_plan.next_step.value if engine_plan.next_step is not None else None,
-                    "ask_clarifying_question": engine_plan.ask_clarifying_question,
-                    "use_websearch": engine_plan.use_websearch,
-                    "use_user_longterm_memory": engine_plan.use_user_longterm_memory,
-                    "use_rag": engine_plan.use_rag,
-                    "use_tools": engine_plan.use_tools,
-                    "same_plan_repeats": same_plan_repeats,
-                    "capability_clamp": plan_dbg.get("capability_clamp"),
-                    # New: deterministic override / replan injection visibility
-                    "planner_forced_plan_used": plan_dbg.get("planner_forced_plan_used"),
-                    "planner_forced_plan_hash": plan_dbg.get("planner_forced_plan_hash"),
-                    "planner_replan_ctx_present": plan_dbg.get("planner_replan_ctx_present"),
-                    "planner_replan_ctx_hash": plan_dbg.get("planner_replan_ctx_hash"),
-                },
+                level=TraceLevel.INFO,
+                payload=PlannerStaticEnginePlanProducedDiagV1(
+                    fingerprint=current_fp,
+                    intent=engine_plan.intent.value,
+                    next_step=engine_plan.next_step.value if engine_plan.next_step is not None else None,
+                    ask_clarifying_question=engine_plan.ask_clarifying_question,
+                    use_websearch=engine_plan.use_websearch,
+                    use_user_longterm_memory=engine_plan.use_user_longterm_memory,
+                    use_rag=engine_plan.use_rag,
+                    use_tools=engine_plan.use_tools,
+                    same_plan_repeats=same_plan_repeats,
+                    capability_clamp=plan_dbg.get("capability_clamp"),
+                    planner_forced_plan_used=plan_dbg.get("planner_forced_plan_used"),
+                    planner_forced_plan_hash=plan_dbg.get("planner_forced_plan_hash"),
+                    planner_replan_ctx_present=plan_dbg.get("planner_replan_ctx_present"),
+                    planner_replan_ctx_hash=plan_dbg.get("planner_replan_ctx_hash"),
+                ),
             )
 
             if last_engine_plan_fingerprint == current_fp:
@@ -484,11 +498,12 @@ class PlanLoopController:
                     component="planner",
                     step="plan_loop_static",
                     message="Execution requested replan.",
-                    data={
-                        "replans_used": replans_used,
-                        "replan_reason": report.replan_reason,
-                        "last_plan_id": exec_plan.plan_id,
-                    },
+                    level=TraceLevel.INFO,
+                    payload=PlannerStaticExecutionRequestedReplanDiagV1(
+                        replans_used=replans_used,
+                        replan_reason=report.replan_reason,
+                        last_plan_id=exec_plan.plan_id,
+                    ),
                 )
 
                 continue

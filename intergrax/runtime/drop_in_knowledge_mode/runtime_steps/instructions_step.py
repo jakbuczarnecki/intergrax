@@ -9,6 +9,8 @@ from typing import Dict, List, Optional
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
 from intergrax.runtime.drop_in_knowledge_mode.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.drop_in_knowledge_mode.tracing.runtime.instructions_summary import InstructionsSummaryDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceLevel
 
 
 class InstructionsStep(RuntimeStep):
@@ -40,45 +42,59 @@ class InstructionsStep(RuntimeStep):
 
     def _build_final_instructions(self, state: RuntimeState) -> Optional[str]:
         parts: List[str] = []
-        sources: Dict[str, bool] = {
-            "request": False,
-            "user_profile": False,
-            "organization_profile": False,
-        }
+        source_request = False
+        source_user_profile = False
+        source_org_profile = False
 
         # 1) User-provided instructions (per-request, ChatGPT/Gemini-style)
         if isinstance(state.request.instructions, str):
             user_instr = state.request.instructions.strip()
             if user_instr:
                 parts.append(user_instr)
-                sources["request"] = True
+                source_request = True
 
         # 2) User profile instructions prepared by the memory layer
         if isinstance(state.profile_user_instructions, str):
             profile_user = state.profile_user_instructions.strip()
             if profile_user:
                 parts.append(profile_user)
-                sources["user_profile"] = True
+                source_user_profile = True
 
         # 3) Organization profile instructions prepared by the memory layer
         if isinstance(state.profile_org_instructions, str):
             profile_org = state.profile_org_instructions.strip()
             if profile_org:
                 parts.append(profile_org)
-                sources["organization_profile"] = True
+                source_org_profile = True
 
         if not parts:
-            state.set_debug_section("instructions", {
-                "has_instructions": False,
-                "sources": sources,
-            })
+            state.trace_event(
+                component="engine",
+                step="instructions",
+                message="Instructions resolved (none).",
+                level=TraceLevel.INFO,
+                payload=InstructionsSummaryDiagV1(
+                    has_instructions=False,
+                    source_request=source_request,
+                    source_user_profile=source_user_profile,
+                    source_org_profile=source_org_profile,
+                ),
+            )
             return None
 
         final_text = "\n\n".join(parts)
 
-        state.set_debug_section("instructions", {
-            "has_instructions": True,
-            "sources": sources,
-        })
+        state.trace_event(
+            component="engine",
+            step="instructions",
+            message="Instructions resolved.",
+            level=TraceLevel.INFO,
+            payload=InstructionsSummaryDiagV1(
+                has_instructions=True,
+                source_request=source_request,
+                source_user_profile=source_user_profile,
+                source_org_profile=source_org_profile,
+            ),
+        )
 
         return final_text

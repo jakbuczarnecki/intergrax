@@ -34,6 +34,10 @@ from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
     RuntimeAnswer,
 )
 from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import RuntimeState
+from intergrax.runtime.drop_in_knowledge_mode.tracing.runtime.runtime_run_abort import RuntimeRunAbortDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.runtime.runtime_run_end import RuntimeRunEndDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.runtime.runtime_run_start import RuntimeRunStartDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceLevel
 
 
 # ----------------------------------------------------------------------
@@ -96,14 +100,15 @@ class RuntimeEngine:
         state.trace_event(
             component="engine",
             step="run_start",
+            level=TraceLevel.INFO,
             message="RuntimeEngine.run() called.",
-            data={
-                "session_id": request.session_id,
-                "user_id": request.user_id,
-                "tenant_id": request.tenant_id or self.context.config.tenant_id,
-                "run_id": state.run_id,
-                "step_planning_strategy": str(self.context.config.step_planning_strategy),
-            },
+            payload=RuntimeRunStartDiagV1(
+                session_id=request.session_id,
+                user_id=request.user_id,
+                tenant_id=(request.tenant_id or self.context.config.tenant_id),
+                run_id=state.run_id,
+                step_planning_strategy=str(self.context.config.step_planning_strategy),
+            ),
         )
 
         runtime_answer: RuntimeAnswer | None = None
@@ -116,15 +121,16 @@ class RuntimeEngine:
             state.trace_event(
                 component="engine",
                 step="run_end",
+                level=TraceLevel.INFO,
                 message="RuntimeEngine.run() finished.",
-                data={
-                    "strategy": runtime_answer.route.strategy,
-                    "used_rag": runtime_answer.route.used_rag,
-                    "used_websearch": runtime_answer.route.used_websearch,
-                    "used_tools": runtime_answer.route.used_tools,
-                    "used_user_longterm_memory": runtime_answer.route.used_user_longterm_memory,
-                    "run_id": state.run_id,
-                },
+                payload=RuntimeRunEndDiagV1(
+                    strategy=runtime_answer.route.strategy,
+                    used_rag=runtime_answer.route.used_rag,
+                    used_websearch=runtime_answer.route.used_websearch,
+                    used_tools=runtime_answer.route.used_tools,
+                    used_user_longterm_memory=runtime_answer.route.used_user_longterm_memory,
+                    run_id=state.run_id,
+                ),
             )
 
             return runtime_answer
@@ -135,16 +141,16 @@ class RuntimeEngine:
                 runtime_answer=runtime_answer,
             )
 
-            if runtime_answer is None:
-                state.trace_event(
-                    component="engine",
-                    step="run_abort",
-                    message="RuntimeEngine.run() aborted before RuntimeAnswer was produced.",
-                    data={"run_id": state.run_id},
-                )
+            state.trace_event(
+                component="engine",
+                step="run_abort",
+                level=TraceLevel.WARNING,
+                message="RuntimeEngine.run() aborted before RuntimeAnswer was produced.",
+                payload=RuntimeRunAbortDiagV1(run_id=state.run_id),
+            )
 
              # Attach debug trace to the returned answer (runtime-level diagnostics).
             if runtime_answer is not None:
-                runtime_answer.debug_trace = state.debug_trace
+                runtime_answer.trace_events = state.trace_events
 
     

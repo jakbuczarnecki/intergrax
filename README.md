@@ -5,8 +5,16 @@
 ---
 
 ## Overview
-**Intergrax** is a modular framework designed to accelerate the creation of intelligent business systems powered by Large Language Models (LLMs), retrieval pipelines, and autonomous agents.  
-It provides a complete ecosystem for **AI-driven reasoning, automation, and knowledge management**, enabling developers and organizations to design complex workflows and decision-support systems using composable components.
+**Intergrax** is an enterprise-grade modular framework meticulously engineered to accelerate the delivery of high-stakes, intelligent business systems. By harmonizing state-of-the-art Large Language Models (LLMs) with professional retrieval pipelines and autonomous reasoning agents, Intergrax bridges the gap between raw AI capabilities and production-ready reliability.
+
+It provides a robust, end-to-end ecosystem for deterministic AI-driven reasoning, multi-layered automation, and cognitive knowledge management. Built on a foundation of composable, decoupled components, Intergrax empowers architects to design complex, stateful workflows and mission-critical decision-support systems that are as scalable as they are intelligent.
+
+**Why Intergrax?**
+Architectural Precision: Moving beyond simple prompts into structured, multi-step Chain-of-Thought orchestration.
+
+Operational Control: Integrated Human-In-The-Loop (HITL) and real-time state persistence for auditable AI behavior.
+
+Production Velocity: Pre-built modules for RAG, multimedia processing, and tool execution (MCP) to turn R&D into ROI in record time.
 
 Intergrax combines:
 - A **core AI framework** with RAG, Agents, Supervisor, and MCP integration.
@@ -59,16 +67,39 @@ Each module can operate standalone or be embedded into custom business solutions
 
 ## Architecture Overview
 
-User / Client
-│
-▼
-FastAPI Layer ───► Agents / Tools (MCP)
-│ │
-▼ ▼
-Supervisor / Planner ──► Intergrax Components
-│ │
-▼ ▼
-RAG + LLM + Memory ──► Vectorstores / Knowledge / Web Sources
+User / Client Interface (API / Streamlit)
+          │
+          ▼
+    ┌─────────────────────────────────────────────────────────┐
+    │       FastAPI Delivery Layer (REST / WebSocket)         │
+    └───────────┬─────────────────────────────────────────────┘
+                │
+                ▼
+    ┌─────────────────────────────────────────────────────────┐
+    │  Supervisor & Engine Planner (Intent Decomposition)     │
+    │  [Chain-of-Thought] ◄───► [Stateful Runtime Engine]     │
+    └───────────┬─────────────────────────────────────────────┘
+                │
+          ┌─────┴─────┬───────────────────┐
+          │           │                   │
+          ▼           ▼                   ▼
+    ┌───────────┐ ┌───────────┐ ┌─────────────────────────┐
+    │ RAG Layer │ │ Tool Hub  │ │ Multimedia / Vision     │
+    │ (Hybrid)  │ │ (MCP/SDK) │ │ (OCR/Speech/Image)      │
+    └─────┬─────┘ └─────┬─────┘ └─────────┬───────────────┘
+          │           │                   │
+          └─────┬─────┴───────────────────┘
+                │
+                ▼
+    ┌─────────────────────────────────────────────────────────┐
+    │      LLM Adapters (Multi-Provider Abstraction)          │
+    │     [OpenAI | Anthropic | Gemini | Ollama | Bedrock]    │
+    └──────────────────────────┬──────────────────────────────┘
+                               │
+                               ▼
+    ┌─────────────────────────────────────────────────────────┐
+    │     Persistent Layer (Vectorstores / Redis / DB)        │
+    └─────────────────────────────────────────────────────────┘
 
 - **Flexible:** Each layer is independently replaceable or extendable.  
 - **Composable:** Components can be combined to form domain-specific applications.  
@@ -87,17 +118,39 @@ The long-term goal is to provide:
 ---
 
 ## Repository Structure
-intergrax/
-├── rag/ # Retrieval and summarization components
-├── llm_adapters/ # LLM adapters and reasoning utilities
-├── supervisor/ # Multi-agent orchestration and planning
-├── tools/ # Tool registry and MCP integrations
-├── api/ # FastAPI backend and routers
-├── web/ # Web search and online information retrieval
-└── roadmap/ # Development roadmap and milestones
+- **intergrax**
+- **supervisor**        # Multi-agent orchestration, intent planning, and state management
+- **runtime**           # Core execution engine & Stateful Pipelines (CoT & HITL)
+- **llm_adapters**      # Unified interface for Multi-LLM support (OpenAI, Anthropic, Ollama, etc.)
+- **rag**               # Advanced RAG (Retrieval-Augmented Generation) & document indexing
+- **tools**             # Extensible Tool Registry & Model Context Protocol (MCP)
+- **multimedia**        # Vision and Audio processing (OCR, Whisper, etc.)
+- **api**               # Enterprise-ready FastAPI backend
+- **applications**      # Reference implementations (UX Audit Agent, Financial Analysis)
 
+## Advanced Architectural Patterns
 
-Each submodule is documented in the `/docs/roadmap/` directory.
+- **Recursive Reasoning & Chain-of-Thought (CoT)** 
+The supervisor/ and runtime/ modules implement structured reasoning. Instead of a single LLM call, Intergrax breaks down user queries into a logical graph of thoughts:
+`Intent Decomposition`: The EnginePlanner analyzes the request and generates a sequence of sub-tasks.
+`Reasoning Loops`: Each step is validated against the current RuntimeState before proceeding to the next node.
+
+- **Human-In-The-Loop (HITL)**
+Intergrax is built for high-stakes business environments where full autonomy might be risky. The runtime/ engine supports:
+`Interruptible Pipelines`: Execution can be paused at critical checkpoints (e.g., before executing a financial transaction or a data-destructive tool).
+`State Persistence`: Sessions are stored, allowing a human operator to review the "Agent's Thinking" and provide manual feedback or approval to resume the flow.
+
+- **Enterprise Tooling & MCP**
+The tools/ module is more than just a function library; it’s a robust execution environment:
+`Model Context Protocol (MCP)`: Standardized integration for external data sources and services.
+`Safety Constraints`: Built-in compliance checkers (e.g., ComplianceChecker in ux_audit_agent) ensure that tool outputs align with corporate policies.
+
+- **Observability & Traceability**
+Every reasoning step generates a TraceEvent. This allows developers to:
+`Reconstruct` the Chain-of-Thought for debugging.
+`Monitor` Token Usage & Costs per specific sub-task.
+`Audit` the decision-making process for compliance purposes.
+
 
 ---
 
@@ -109,7 +162,6 @@ Each notebook corresponds to a specific capability or automation pattern and ser
 
 ---
 
-## Repository Structure
 
 ## Status and Development
 Intergrax is under **active development** as part of the intergrax ecosystem.  

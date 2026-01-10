@@ -12,6 +12,8 @@ from intergrax.runtime.drop_in_knowledge_mode.engine.runtime_state import Runtim
 from intergrax.runtime.drop_in_knowledge_mode.ingestion.ingestion_service import IngestionResult
 from intergrax.runtime.drop_in_knowledge_mode.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
+from intergrax.runtime.drop_in_knowledge_mode.tracing.session.session_and_ingest_summary import SessionAndIngestSummaryDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceLevel
 
 
 class SessionAndIngestStep(RuntimeStep):
@@ -62,43 +64,35 @@ class SessionAndIngestStep(RuntimeStep):
         # Reload the session to ensure we have the latest metadata
         session = await state.context.session_manager.get_session(session.id) or session
 
-        # Initialize debug trace – history will be attached later
-        debug_trace: Dict[str, Any] = {
-            "session_id": session.id,
-            "user_id": session.user_id,
-        }
-
+        ingestion_preview: List[Dict[str, Any]] = []
         if ingestion_results:
-            debug_trace["ingestion"] = [
-                {
-                    "attachment_id": r.attachment_id,
-                    "attachment_type": r.attachment_type,
-                    "num_chunks": r.num_chunks,
-                    "vector_ids_count": len(r.vector_ids),
-                    "metadata": r.metadata,
-                }
-                for r in ingestion_results
-            ]
+            for r in ingestion_results[:2]:
+                ingestion_preview.append(
+                    {
+                        "attachment_id": r.attachment_id,
+                        "attachment_type": r.attachment_type,
+                        "num_chunks": r.num_chunks,
+                        "vector_ids_count": len(r.vector_ids),
+                    }
+                )
 
-        # Trace session and ingestion step.
         state.trace_event(
             component="engine",
             step="session_and_ingest",
             message="Session loaded/created and user message appended; attachments ingested.",
-            data={
-                "session_id": session.id,
-                "user_id": session.user_id,
-                "tenant_id": session.tenant_id,
-                "attachments_count": len(req.attachments or []),
-                "ingestion_results_count": len(ingestion_results),
-            },
+            level=TraceLevel.INFO,
+            payload=SessionAndIngestSummaryDiagV1(
+                session_id=session.id,
+                user_id=session.user_id,
+                tenant_id=session.tenant_id,
+                attachments_count=len(req.attachments or []),
+                ingestion_results_count=len(ingestion_results),
+                ingestion_preview=ingestion_preview,
+            ),
         )
 
         state.session = session
         state.ingestion_results = ingestion_results
-        state.set_debug_section("session_and_ingest", debug_trace)
-
-        # NOTE: state.base_history is intentionally left empty here.
 
 
     def _build_session_message_from_request(

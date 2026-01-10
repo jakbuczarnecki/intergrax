@@ -16,6 +16,8 @@ from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import (
     RuntimeStats,
     ToolCallInfo,
 )
+from intergrax.runtime.drop_in_knowledge_mode.tracing.runtime.persist_and_build_answer_summary import PersistAndBuildAnswerSummaryDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceLevel
 
 
 class PersistAndBuildAnswerStep(RuntimeStep):
@@ -67,16 +69,25 @@ class PersistAndBuildAnswerStep(RuntimeStep):
         else:
             strategy = "llm_only"
 
+        # attachments_chunks: source of truth should be RuntimeState (set by RetrieveAttachmentsStep).
+        # Keep this robust during transition: if the field isn't present yet, fall back to 0.
+        try:
+            attachments_chunks = int(state.attachments_chunks_count)
+        except Exception:
+            attachments_chunks = 0
+
         route_info = RouteInfo(
             used_rag=state.used_rag and state.context.config.enable_rag,
             used_websearch=state.used_websearch and state.context.config.enable_websearch,
             used_tools=state.used_tools and state.context.config.tools_mode != "off",
             used_user_profile=state.used_user_profile,
-            used_user_longterm_memory=state.used_user_longterm_memory and state.context.config.enable_user_longterm_memory,
+            used_user_longterm_memory=(
+                state.used_user_longterm_memory and state.context.config.enable_user_longterm_memory
+            ),
             strategy=strategy,
             extra={
                 "used_attachments_context": bool(state.used_attachments_context),
-                "attachments_chunks": int(state.debug_trace.get("attachments_chunks", 0) or 0),
+                "attachments_chunks": attachments_chunks,
             },
         )
 
@@ -96,31 +107,28 @@ class PersistAndBuildAnswerStep(RuntimeStep):
         for t in state.tool_traces:
             tool_calls_for_answer.append(
                 ToolCallInfo(
-                    tool_name=t.get("tool") or "",
-                    arguments=t.get("args") or {},
-                    result_summary=(
-                        t.get("output_preview")
-                        if isinstance(t.get("output_preview"), str)
-                        else None
-                    ),
-                    success=not bool(t.get("error")),
-                    error_message=t.get("error"),
-                    extra={"raw_trace": t},
+                    tool_name=t.tool_name,
+                    arguments=t.arguments,
+                    result_summary=t.output_preview,
+                    success=t.success,
+                    error_message=t.error_message,
+                    extra={"raw_trace": t.raw_trace},
                 )
             )
 
-        # Trace persistence and answer building step.
+        # Trace persistence and answer building step (typed payload).
         state.trace_event(
             component="engine",
             step="persist_and_build_answer",
             message="Assistant answer persisted and RuntimeAnswer built.",
-            data={
-                "session_id": session.id,
-                "strategy": strategy,
-                "used_rag": state.used_rag,
-                "used_websearch": state.used_websearch,
-                "used_tools": state.used_tools,
-            },
+            level=TraceLevel.INFO,
+            payload=PersistAndBuildAnswerSummaryDiagV1(
+                session_id=session.id,
+                strategy=strategy,
+                used_rag=state.used_rag,
+                used_websearch=state.used_websearch,
+                used_tools=state.used_tools,
+            ),
         )
 
         state.runtime_answer = RuntimeAnswer(

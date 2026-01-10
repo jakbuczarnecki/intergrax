@@ -14,6 +14,12 @@ from intergrax.runtime.drop_in_knowledge_mode.planning.engine_plan_models import
 from intergrax.runtime.drop_in_knowledge_mode.planning.plan_sources import LLMPlanSource, PlanRequest, PlanSource, PlanSourceMeta
 from intergrax.runtime.drop_in_knowledge_mode.planning.step_executor_models import ReplanContext
 from intergrax.runtime.drop_in_knowledge_mode.responses.response_schema import RuntimeRequest
+from intergrax.runtime.drop_in_knowledge_mode.tracing.plan.engine_plan_produced import PlannerEnginePlanProducedDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.plan.plan_source_contract_violation import PlannerPlanSourceContractViolationDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.plan.plan_source_failed import PlannerPlanSourceFailedDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.plan.raw_plan_parse_failed import PlannerRawPlanParseFailedDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.plan.replan_context_injected import PlannerReplanContextInjectedDiagV1
+from intergrax.runtime.drop_in_knowledge_mode.tracing.trace_models import TraceLevel
 
 
 
@@ -242,13 +248,15 @@ class EnginePlanner:
             component="planner",
             step="engine_planner",
             message="Engine plan produced.",
-            data={
-                "intent": plan.intent.value,
-                "next_step": plan.next_step.value if plan.next_step is not None else None,
-                "debug": plan.debug or {},
-            },
+            level=TraceLevel.INFO,
+            payload=PlannerEnginePlanProducedDiagV1(
+                intent=plan.intent.value,
+                next_step=plan.next_step.value if plan.next_step is not None else None,
+                debug=plan.debug or {},
+            ),
         )
 
+    
     def _trace_plansource_failed(
         self,
         *,
@@ -259,11 +267,12 @@ class EnginePlanner:
             component="planner",
             step="engine_planner",
             message="PlanSource failed while generating raw plan.",
-            data={
-                "plan_source_type": type(self._plan_source).__name__,
-                "error_type": type(error).__name__,
-                "error_message": str(error),
-            },
+            level=TraceLevel.ERROR,
+            payload=PlannerPlanSourceFailedDiagV1(
+                plan_source_type=type(self._plan_source).__name__,
+                error_type=type(error).__name__,
+                error_message=str(error),
+            ),
         )
 
     def _trace_plansource_contract_violation(
@@ -276,10 +285,11 @@ class EnginePlanner:
             component="planner",
             step="engine_planner",
             message="PlanSource contract violation: raw plan is not a string.",
-            data={
-                "plan_source_type": type(self._plan_source).__name__,
-                "raw_type": type(raw).__name__,
-            },
+            level=TraceLevel.ERROR,
+            payload=PlannerPlanSourceContractViolationDiagV1(
+                plan_source_type=type(self._plan_source).__name__,
+                raw_type=type(raw).__name__,
+            ),
         )
     
     def _validate_against_capabilities(self, *, plan: EnginePlan, state: RuntimeState) -> EnginePlan:
@@ -349,16 +359,17 @@ class EnginePlanner:
             component="planner",
             step="engine_planner",
             message="Failed to parse raw plan.",
-            data={
-                "planner_source_kind": getattr(meta, "source_kind", None) if meta else None,
-                "planner_source_detail": getattr(meta, "source_detail", None) if meta else None,
-                "raw_len": len(raw),
-                "raw_hash": raw_hash,
-                "raw_preview": raw[: self._RAW_PREVIEW_LIMIT],
-                "raw_tail_preview": raw[-self._RAW_TAIL_PREVIEW_LIMIT :],
-                "error_type": type(error).__name__,
-                "error_message": str(error),
-            },
+            level=TraceLevel.ERROR,
+            payload=PlannerRawPlanParseFailedDiagV1(
+                planner_source_kind=(meta.source_kind if meta is not None else None),
+                planner_source_detail=(meta.source_detail if meta is not None else None),
+                raw_len=len(raw),
+                raw_hash=raw_hash,
+                raw_preview=raw[: self._RAW_PREVIEW_LIMIT],
+                raw_tail_preview=raw[-self._RAW_TAIL_PREVIEW_LIMIT :],
+                error_type=type(error).__name__,
+                error_message=str(error),
+            ),
         )
 
 
@@ -463,12 +474,13 @@ class EnginePlanner:
                 component="planner",
                 step="engine_planner",
                 message="Replan context injected into planner prompt.",
-                data={
-                    "has_replan_ctx": True,
-                    "replan_reason": (replan_ctx.replan_reason or "").strip() or None,
-                    "replan_hash": replan_hash,
-                    "replan_json_len": len(replan_json),
-                },
+                level=TraceLevel.INFO,
+                payload=PlannerReplanContextInjectedDiagV1(
+                    has_replan_ctx=True,
+                    replan_reason=(replan_ctx.replan_reason or "").strip() or None,
+                    replan_hash=replan_hash,
+                    replan_json_len=len(replan_json),
+                ),
             )
 
             # Template MUST contain {replan_json}
