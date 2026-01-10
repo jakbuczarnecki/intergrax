@@ -67,39 +67,25 @@ Each module can operate standalone or be embedded into custom business solutions
 
 ## Architecture Overview
 
-User / Client Interface (API / Streamlit)
-          │
-          ▼
-    ┌─────────────────────────────────────────────────────────┐
-    │       FastAPI Delivery Layer (REST / WebSocket)         │
-    └───────────┬─────────────────────────────────────────────┘
-                │
-                ▼
-    ┌─────────────────────────────────────────────────────────┐
-    │  Supervisor & Engine Planner (Intent Decomposition)     │
-    │  [Chain-of-Thought] ◄───► [Stateful Runtime Engine]     │
-    └───────────┬─────────────────────────────────────────────┘
-                │
-          ┌─────┴─────┬───────────────────┐
-          │           │                   │
-          ▼           ▼                   ▼
-    ┌───────────┐ ┌───────────┐ ┌─────────────────────────┐
-    │ RAG Layer │ │ Tool Hub  │ │ Multimedia / Vision     │
-    │ (Hybrid)  │ │ (MCP/SDK) │ │ (OCR/Speech/Image)      │
-    └─────┬─────┘ └─────┬─────┘ └─────────┬───────────────┘
-          │           │                   │
-          └─────┬─────┴───────────────────┘
-                │
-                ▼
-    ┌─────────────────────────────────────────────────────────┐
-    │      LLM Adapters (Multi-Provider Abstraction)          │
-    │     [OpenAI | Anthropic | Gemini | Ollama | Bedrock]    │
-    └──────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-    ┌─────────────────────────────────────────────────────────┐
-    │     Persistent Layer (Vectorstores / Redis / DB)        │
-    └─────────────────────────────────────────────────────────┘
+graph TD
+    User([User / Client Interface]) --> API[FastAPI Delivery Layer]
+    API --> Planner[Supervisor & Engine Planner]
+    
+    subgraph Reasoning ["Core Reasoning Loop"]
+        Planner <--> Engine[Stateful Runtime Engine]
+    end
+
+    Planner --> RAG[RAG Layer]
+    Planner --> Tools[Tool Hub MCP]
+    Planner --> Multi[Multimedia / Vision]
+
+    RAG --> LLM[LLM Adapters]
+    Tools --> LLM
+    Multi --> LLM
+
+    LLM --> Storage[(Persistent Layer)]
+
+    style Reasoning fill:#f9f,stroke:#333,stroke-width:2px
 
 - **Flexible:** Each layer is independently replaceable or extendable.  
 - **Composable:** Components can be combined to form domain-specific applications.  
