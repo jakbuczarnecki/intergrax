@@ -1,0 +1,96 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from typing import Callable, Dict
+from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep, build_runtime_step_registry, make_runtime_step_handler
+from intergrax.runtime.nexus.planning.step_executor_models import StepHandlerRegistry
+from intergrax.runtime.nexus.planning.stepplan_models import StepAction
+from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer
+from intergrax.runtime.nexus.runtime_steps.noop_runtime_step import NoOpRuntimeStep
+from intergrax.runtime.nexus.runtime_steps.core_llm_step import CoreLLMStep
+from intergrax.runtime.nexus.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
+from intergrax.runtime.nexus.runtime_steps.rag_step import RagStep
+from intergrax.runtime.nexus.runtime_steps.retrieve_attachments_step import RetrieveAttachmentsStep
+from intergrax.runtime.nexus.runtime_steps.tools_step import ToolsStep
+from intergrax.runtime.nexus.runtime_steps.user_longterm_memory_step import UserLongtermMemoryStep
+from intergrax.runtime.nexus.runtime_steps.websearch_step import WebsearchStep
+
+class RuntimePipeline(ABC):
+    """
+    Lightweight base class for pipeline runners.
+    Shared implementation: execute_pipeline.
+    """
+    
+    async def run(self, state: RuntimeState) -> RuntimeAnswer:
+        """
+        Public entrypoint. Provides shared validation and invariants.
+        Subclasses must implement _inner_run().
+        """
+        self._validate_state(state)
+
+        runtime_answer = await self._inner_run(state)
+
+        if runtime_answer is None:
+            raise RuntimeError("Pipeline returned None RuntimeAnswer.")
+
+        # Hard invariant: Persist step (or equivalent) must set state.runtime_answer
+        if state.runtime_answer is None:
+            raise RuntimeError("Persist step did not set state.runtime_answer.")
+
+        # Prefer the actual object returned by inner_run, but enforce consistency with state
+        # (Optional) If you want to hard-enforce object identity:
+        # if runtime_answer is not state.runtime_answer: ...
+        self._assert_valid_answer(runtime_answer)
+
+        return runtime_answer
+
+    
+    @abstractmethod
+    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
+        """
+        Pipeline-specific execution. Must produce and return RuntimeAnswer.
+        """
+        raise NotImplementedError
+        
+
+
+    @classmethod
+    def build_default_planning_step_registry(cls) -> StepHandlerRegistry:
+        """
+        Default registry for StepExecutor planning actions (STATIC/DYNAMIC).
+        This registry is explicit and production-safe (no reflection).
+        """
+        bindings: Dict[StepAction, Callable[[], RuntimeStep]] = {
+            StepAction.ASK_CLARIFYING_QUESTION: lambda: NoOpRuntimeStep(),
+
+            StepAction.USE_WEBSEARCH: lambda: WebsearchStep(),
+            StepAction.USE_TOOLS: lambda: ToolsStep(),
+            StepAction.USE_RAG_RETRIEVAL: lambda: RagStep(),
+            StepAction.USE_ATTACHMENTS_RETRIEVAL: lambda: RetrieveAttachmentsStep(),
+            StepAction.USE_USER_LONGTERM_MEMORY_SEARCH: lambda: UserLongtermMemoryStep(),
+            StepAction.SYNTHESIZE_DRAFT: lambda: CoreLLMStep(),
+            StepAction.VERIFY_ANSWER: lambda: CoreLLMStep(),
+            StepAction.FINALIZE_ANSWER: lambda: PersistAndBuildAnswerStep(),            
+        }
+
+        return build_runtime_step_registry(bindings=bindings)
+
+
+    def _validate_state(self, state: RuntimeState) -> None:
+        if state is None:
+            raise ValueError("state is None.")
+        if state.context is None:
+            raise ValueError("state.context is None.")
+        if state.request is None:
+            raise ValueError("state.request is None.")
+        if not state.run_id:
+            raise ValueError("state.run_id is missing.")
+        
+
+    def _assert_valid_answer(self, answer: RuntimeAnswer) -> None:
+        assert answer is not None, "Pipeline returned None answer"
+        assert answer.route is not None, "RuntimeAnswer has no route"

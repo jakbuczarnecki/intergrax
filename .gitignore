@@ -20,9 +20,9 @@ notebooks/multimedia/video
 notebooks/multimedia/images
 notebooks/multimedia/docs
 
-notebooks/drop_in_knowledge_mode/chroma_db
-notebooks/drop_in_knowledge_mode/data
-notebooks/drop_in_knowledge_mode/_artifacts
+notebooks/nexus/chroma_db
+notebooks/nexus/data
+notebooks/nexus/_artifacts
 
 documents/
 api/chat/rag_app.db
