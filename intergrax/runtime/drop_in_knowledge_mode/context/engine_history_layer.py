@@ -245,30 +245,6 @@ class HistoryLayer:
         return await self._session_manager.get_history(session_id=session.id)
 
 
-    def _build_history_debug_trace(
-            self,
-            *,
-            requested_strategy: HistoryCompressionStrategy,
-            compression_result: HistoryCompressionResult,
-        ) -> dict:
-            """
-            Build a unified debug trace dictionary for history compression.
-            Ensures that all call paths (OFF, no-token, no-budget, full compression)
-            produce the exact same set of keys.
-            """
-            return {
-                "raw_history_messages": compression_result.raw_history_messages,
-                "raw_history_tokens": compression_result.raw_history_tokens,
-                "history_budget_tokens": compression_result.history_budget_tokens,
-                "strategy_requested": requested_strategy.value,
-                "strategy_effective": compression_result.effective_strategy.value,
-                "truncated": compression_result.truncated,
-                "summary_used": compression_result.summary_used,
-                "summary_tokens_budget": compression_result.summary_tokens_budget,
-                "tail_tokens_budget": compression_result.tail_tokens_budget,
-            }
-    
-
     def _count_tokens_for_messages(self, messages: List[ChatMessage]) -> Optional[int]:
         """
         Best-effort token counting for a list of ChatMessage objects.
