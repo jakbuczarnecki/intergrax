@@ -127,7 +127,7 @@ class UserPreferences:
 
     # Project / domain context (high-level)
     default_project_context: Optional[str] = None
-    # e.g. "Building Intergrax Drop-In Knowledge Runtime and Mooff ERP platform"
+    # e.g. "Building Intergrax nexus Runtime and Mooff ERP platform"
 
     # Arbitrary extra preferences to keep this extensible
     extra: Dict[str, Any] = field(default_factory=dict)

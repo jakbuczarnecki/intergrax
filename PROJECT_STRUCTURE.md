@@ -85,63 +85,63 @@ This document was generated automatically by the Intergrax Project Structure Doc
 - `intergrax\rag\vectorstore_manager.py`
 - `intergrax\rag\windowed_answerer.py`
 - `intergrax\runtime\__init__.py`
-- `intergrax\runtime\drop_in_knowledge_mode\__init__.py`
-- `intergrax\runtime\drop_in_knowledge_mode\config.py`
-- `intergrax\runtime\drop_in_knowledge_mode\context\__init__.py`
-- `intergrax\runtime\drop_in_knowledge_mode\context\context_builder.py`
-- `intergrax\runtime\drop_in_knowledge_mode\context\engine_history_layer.py`
-- `intergrax\runtime\drop_in_knowledge_mode\engine\__init__.py`
-- `intergrax\runtime\drop_in_knowledge_mode\engine\runtime.py`
-- `intergrax\runtime\drop_in_knowledge_mode\engine\runtime_context.py`
-- `intergrax\runtime\drop_in_knowledge_mode\engine\runtime_state.py`
-- `intergrax\runtime\drop_in_knowledge_mode\ingestion\__init__.py`
-- `intergrax\runtime\drop_in_knowledge_mode\ingestion\attachments.py`
-- `intergrax\runtime\drop_in_knowledge_mode\ingestion\ingestion_service.py`
-- `intergrax\runtime\drop_in_knowledge_mode\pipelines\__init__.py`
-- `intergrax\runtime\drop_in_knowledge_mode\pipelines\contract.py`
-- `intergrax\runtime\drop_in_knowledge_mode\pipelines\no_planner_pipeline.py`
-- `intergrax\runtime\drop_in_knowledge_mode\pipelines\pipeline_factory.py`
-- `intergrax\runtime\drop_in_knowledge_mode\pipelines\planner_dynamic_pipeline.py`
-- `intergrax\runtime\drop_in_knowledge_mode\pipelines\planner_static_pipeline.py`
-- `intergrax\runtime\drop_in_knowledge_mode\planning\__init__.py`
-- `intergrax\runtime\drop_in_knowledge_mode\planning\engine_plan_models.py`
-- `intergrax\runtime\drop_in_knowledge_mode\planning\engine_planner.py`
-- `intergrax\runtime\drop_in_knowledge_mode\planning\plan_builder_helper.py`
-- `intergrax\runtime\drop_in_knowledge_mode\planning\plan_loop_controller.py`
-- `intergrax\runtime\drop_in_knowledge_mode\planning\runtime_step_handlers.py`
-- `intergrax\runtime\drop_in_knowledge_mode\planning\step_executor.py`
-- `intergrax\runtime\drop_in_knowledge_mode\planning\step_executor_models.py`
-- `intergrax\runtime\drop_in_knowledge_mode\planning\step_planner.py`
-- `intergrax\runtime\drop_in_knowledge_mode\planning\stepplan_models.py`
-- `intergrax\runtime\drop_in_knowledge_mode\prompts\__init__.py`
-- `intergrax\runtime\drop_in_knowledge_mode\prompts\history_prompt_builder.py`
-- `intergrax\runtime\drop_in_knowledge_mode\prompts\rag_prompt_builder.py`
-- `intergrax\runtime\drop_in_knowledge_mode\prompts\user_longterm_memory_prompt_builder.py`
-- `intergrax\runtime\drop_in_knowledge_mode\prompts\websearch_prompt_builder.py`
-- `intergrax\runtime\drop_in_knowledge_mode\responses\__init__.py`
-- `intergrax\runtime\drop_in_knowledge_mode\responses\response_schema.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\__init__.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\build_base_history_step.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\contract.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\core_llm_step.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\ensure_current_user_message_step.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\history_step.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\instructions_step.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\persist_and_build_answer_step.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\profile_based_memory_step.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\rag_step.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\retrieve_attachments_step.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\session_and_ingest_step.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\setup_steps_tool.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\tools.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\tools_step.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\user_longterm_memory_step.py`
-- `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\websearch_step.py`
-- `intergrax\runtime\drop_in_knowledge_mode\session\__init__.py`
-- `intergrax\runtime\drop_in_knowledge_mode\session\chat_session.py`
-- `intergrax\runtime\drop_in_knowledge_mode\session\in_memory_session_storage.py`
-- `intergrax\runtime\drop_in_knowledge_mode\session\session_manager.py`
-- `intergrax\runtime\drop_in_knowledge_mode\session\session_storage.py`
+- `intergrax\runtime\nexus\__init__.py`
+- `intergrax\runtime\nexus\config.py`
+- `intergrax\runtime\nexus\context\__init__.py`
+- `intergrax\runtime\nexus\context\context_builder.py`
+- `intergrax\runtime\nexus\context\engine_history_layer.py`
+- `intergrax\runtime\nexus\engine\__init__.py`
+- `intergrax\runtime\nexus\engine\runtime.py`
+- `intergrax\runtime\nexus\engine\runtime_context.py`
+- `intergrax\runtime\nexus\engine\runtime_state.py`
+- `intergrax\runtime\nexus\ingestion\__init__.py`
+- `intergrax\runtime\nexus\ingestion\attachments.py`
+- `intergrax\runtime\nexus\ingestion\ingestion_service.py`
+- `intergrax\runtime\nexus\pipelines\__init__.py`
+- `intergrax\runtime\nexus\pipelines\contract.py`
+- `intergrax\runtime\nexus\pipelines\no_planner_pipeline.py`
+- `intergrax\runtime\nexus\pipelines\pipeline_factory.py`
+- `intergrax\runtime\nexus\pipelines\planner_dynamic_pipeline.py`
+- `intergrax\runtime\nexus\pipelines\planner_static_pipeline.py`
+- `intergrax\runtime\nexus\planning\__init__.py`
+- `intergrax\runtime\nexus\planning\engine_plan_models.py`
+- `intergrax\runtime\nexus\planning\engine_planner.py`
+- `intergrax\runtime\nexus\planning\plan_builder_helper.py`
+- `intergrax\runtime\nexus\planning\plan_loop_controller.py`
+- `intergrax\runtime\nexus\planning\runtime_step_handlers.py`
+- `intergrax\runtime\nexus\planning\step_executor.py`
+- `intergrax\runtime\nexus\planning\step_executor_models.py`
+- `intergrax\runtime\nexus\planning\step_planner.py`
+- `intergrax\runtime\nexus\planning\stepplan_models.py`
+- `intergrax\runtime\nexus\prompts\__init__.py`
+- `intergrax\runtime\nexus\prompts\history_prompt_builder.py`
+- `intergrax\runtime\nexus\prompts\rag_prompt_builder.py`
+- `intergrax\runtime\nexus\prompts\user_longterm_memory_prompt_builder.py`
+- `intergrax\runtime\nexus\prompts\websearch_prompt_builder.py`
+- `intergrax\runtime\nexus\responses\__init__.py`
+- `intergrax\runtime\nexus\responses\response_schema.py`
+- `intergrax\runtime\nexus\runtime_steps\__init__.py`
+- `intergrax\runtime\nexus\runtime_steps\build_base_history_step.py`
+- `intergrax\runtime\nexus\runtime_steps\contract.py`
+- `intergrax\runtime\nexus\runtime_steps\core_llm_step.py`
+- `intergrax\runtime\nexus\runtime_steps\ensure_current_user_message_step.py`
+- `intergrax\runtime\nexus\runtime_steps\history_step.py`
+- `intergrax\runtime\nexus\runtime_steps\instructions_step.py`
+- `intergrax\runtime\nexus\runtime_steps\persist_and_build_answer_step.py`
+- `intergrax\runtime\nexus\runtime_steps\profile_based_memory_step.py`
+- `intergrax\runtime\nexus\runtime_steps\rag_step.py`
+- `intergrax\runtime\nexus\runtime_steps\retrieve_attachments_step.py`
+- `intergrax\runtime\nexus\runtime_steps\session_and_ingest_step.py`
+- `intergrax\runtime\nexus\runtime_steps\setup_steps_tool.py`
+- `intergrax\runtime\nexus\runtime_steps\tools.py`
+- `intergrax\runtime\nexus\runtime_steps\tools_step.py`
+- `intergrax\runtime\nexus\runtime_steps\user_longterm_memory_step.py`
+- `intergrax\runtime\nexus\runtime_steps\websearch_step.py`
+- `intergrax\runtime\nexus\session\__init__.py`
+- `intergrax\runtime\nexus\session\chat_session.py`
+- `intergrax\runtime\nexus\session\in_memory_session_storage.py`
+- `intergrax\runtime\nexus\session\session_manager.py`
+- `intergrax\runtime\nexus\session\session_storage.py`
 - `intergrax\runtime\organization\__init__.py`
 - `intergrax\runtime\organization\organization_profile.py`
 - `intergrax\runtime\organization\organization_profile_instructions_service.py`
@@ -198,23 +198,23 @@ This document was generated automatically by the Intergrax Project Structure Doc
 - `intergrax\websearch\utils\rate_limit.py`
 - `main.py`
 - `mcp\__init__.py`
-- `notebooks\drop_in_knowledge_mode\01_basic_memory_demo.ipynb`
-- `notebooks\drop_in_knowledge_mode\02_attachments_ingestion_demo.ipynb`
-- `notebooks\drop_in_knowledge_mode\03_rag_context_builder_demo.ipynb`
-- `notebooks\drop_in_knowledge_mode\04_websearch_context_demo.ipynb`
-- `notebooks\drop_in_knowledge_mode\05_tools_context_demo.ipynb`
-- `notebooks\drop_in_knowledge_mode\06_session_memory_roundtrip_demo.ipynb`
-- `notebooks\drop_in_knowledge_mode\07_user_profile_instructions_baseline.ipynb`
-- `notebooks\drop_in_knowledge_mode\08_user_profile_instructions_generation.ipynb`
-- `notebooks\drop_in_knowledge_mode\09_long_term_memory_consolidation.ipynb`
-- `notebooks\drop_in_knowledge_mode\10_e2e_user_longterm_memory.ipynb`
-- `notebooks\drop_in_knowledge_mode\11_chatgpt_like_e2e.ipynb`
-- `notebooks\drop_in_knowledge_mode\12a_engine_planner.ipynb`
-- `notebooks\drop_in_knowledge_mode\12b_engine_planner.ipynb`
-- `notebooks\drop_in_knowledge_mode\13a_engine_step_planner.ipynb`
-- `notebooks\drop_in_knowledge_mode\13b_engine_step_planner.ipynb`
-- `notebooks\drop_in_knowledge_mode\14_engine_planner_executor.ipynb`
-- `notebooks\drop_in_knowledge_mode\15_plan_loop_controller.ipynb`
+- `notebooks\nexus\01_basic_memory_demo.ipynb`
+- `notebooks\nexus\02_attachments_ingestion_demo.ipynb`
+- `notebooks\nexus\03_rag_context_builder_demo.ipynb`
+- `notebooks\nexus\04_websearch_context_demo.ipynb`
+- `notebooks\nexus\05_tools_context_demo.ipynb`
+- `notebooks\nexus\06_session_memory_roundtrip_demo.ipynb`
+- `notebooks\nexus\07_user_profile_instructions_baseline.ipynb`
+- `notebooks\nexus\08_user_profile_instructions_generation.ipynb`
+- `notebooks\nexus\09_long_term_memory_consolidation.ipynb`
+- `notebooks\nexus\10_e2e_user_longterm_memory.ipynb`
+- `notebooks\nexus\11_chatgpt_like_e2e.ipynb`
+- `notebooks\nexus\12a_engine_planner.ipynb`
+- `notebooks\nexus\12b_engine_planner.ipynb`
+- `notebooks\nexus\13a_engine_step_planner.ipynb`
+- `notebooks\nexus\13b_engine_step_planner.ipynb`
+- `notebooks\nexus\14_engine_planner_executor.ipynb`
+- `notebooks\nexus\15_plan_loop_controller.ipynb`
 - `notebooks\langgraph\hybrid_multi_source_rag_langgraph.ipynb`
 - `notebooks\langgraph\simple_llm_langgraph.ipynb`
 - `notebooks\langgraph\simple_web_research_langgraph.ipynb`
@@ -1228,7 +1228,7 @@ Key Responsibilities:
 * Sets up the framework's configuration
 * Defines the entry points for the application
 
-### `intergrax\runtime\drop_in_knowledge_mode\__init__.py`
+### `intergrax\runtime\nexus\__init__.py`
 
 **DESCRIPTION:** 
 This module initializes and sets up the knowledge mode in Intergrax, allowing for drop-in integration of external knowledge.
@@ -1240,9 +1240,9 @@ This module initializes and sets up the knowledge mode in Intergrax, allowing fo
 - Sets up external knowledge integration
 - Defines required dependencies and imports
 
-### `intergrax\runtime\drop_in_knowledge_mode\config.py`
+### `intergrax\runtime\nexus\config.py`
 
-**Description:** This file defines the configuration for the Intergrax framework's Drop-In Knowledge Runtime, specifying how it interacts with various components such as LLM adapters, RAG (Retrieval-Augmented Generation) backend, web search, and tools agents.
+**Description:** This file defines the configuration for the Intergrax framework's nexus Runtime, specifying how it interacts with various components such as LLM adapters, RAG (Retrieval-Augmented Generation) backend, web search, and tools agents.
 
 **Domain:** Configuration & Settings
 
@@ -1258,20 +1258,20 @@ This module initializes and sets up the knowledge mode in Intergrax, allowing fo
 * Defines tools agent responsible for planning tool calls, invoking tools, and merging results into the final answer
 * Specifies high-level policy defining whether tools may or must be used
 
-### `intergrax\runtime\drop_in_knowledge_mode\context\__init__.py`
+### `intergrax\runtime\nexus\context\__init__.py`
 
-Description: This file initializes the context for drop-in knowledge mode in Intergrax's runtime.
+Description: This file initializes the context for nexus mode in Intergrax's runtime.
 
 Domain: RAG logic
 
 Key Responsibilities:
-• Initializes the context for drop-in knowledge mode.
+• Initializes the context for nexus mode.
 • Sets up necessary variables and data structures for knowledge retrieval.
-• Provides a foundation for executing drop-in knowledge queries.
+• Provides a foundation for executing nexus queries.
 
-### `intergrax\runtime\drop_in_knowledge_mode\context\context_builder.py`
+### `intergrax\runtime\nexus\context\context_builder.py`
 
-Description: This module provides a context builder for Drop-In Knowledge Mode, responsible for deciding whether to use RAG and retrieving relevant document chunks from the vector store.
+Description: This module provides a context builder for nexus Mode, responsible for deciding whether to use RAG and retrieving relevant document chunks from the vector store.
 
 Domain: Context Builder/RAG Logic
 
@@ -1280,11 +1280,11 @@ Key Responsibilities:
 - Retrieve relevant document chunks from the vector store using session/user/tenant/workspace metadata
 - Provide a RAG-specific system prompt, retrieved chunks, and debug metadata for observability
 
-### `intergrax\runtime\drop_in_knowledge_mode\context\engine_history_layer.py`
+### `intergrax\runtime\nexus\context\engine_history_layer.py`
 
 Description: This module provides a history compression layer that preprocesses conversation history for the Intergrax framework.
 
-Domain: Drop-in Knowledge Mode
+Domain: nexus Mode
 
 Key Responsibilities:
 
@@ -1294,9 +1294,9 @@ Key Responsibilities:
 * Resolving per-request settings and computing a token budget for history
 * Updating RuntimeState with base_history and debug info
 
-### `intergrax\runtime\drop_in_knowledge_mode\engine\__init__.py`
+### `intergrax\runtime\nexus\engine\__init__.py`
 
-Description: This is the entry point for the drop-in knowledge mode engine, responsible for initializing and setting up the necessary components.
+Description: This is the entry point for the nexus mode engine, responsible for initializing and setting up the necessary components.
 
 Domain: RAG (Reformulated Attention-based Generator) logic
 
@@ -1305,9 +1305,9 @@ Key Responsibilities:
 - Sets up the knowledge retrieval mechanism
 - Defines the interface for injecting custom knowledge sources
 
-### `intergrax\runtime\drop_in_knowledge_mode\engine\runtime.py`
+### `intergrax\runtime\nexus\engine\runtime.py`
 
-**Description:** This module serves as the core runtime engine for Drop-In Knowledge Mode, providing a high-level conversational interface using Intergrax components.
+**Description:** This module serves as the core runtime engine for nexus Mode, providing a high-level conversational interface using Intergrax components.
 
 **Domain:** LLM (Large Language Model) adapters and RAG logic
 
@@ -1318,9 +1318,9 @@ Key Responsibilities:
 * Calls the main LLM adapter with the enriched context to produce the final answer
 * Returns a `RuntimeAnswer` object with the final answer text and metadata
 
-This file appears to be a key component of the Intergrax framework, providing the core functionality for Drop-In Knowledge Mode.
+This file appears to be a key component of the Intergrax framework, providing the core functionality for nexus Mode.
 
-### `intergrax\runtime\drop_in_knowledge_mode\engine\runtime_context.py`
+### `intergrax\runtime\nexus\engine\runtime_context.py`
 
 **Description:** This module defines the RuntimeContext class, which encapsulates per-runtime context data and configuration for Intergrax.
 
@@ -1335,11 +1335,11 @@ This file appears to be a key component of the Intergrax framework, providing th
 
 This file appears to be a crucial component of the Intergrax framework, providing essential functionality for runtime context management.
 
-### `intergrax\runtime\drop_in_knowledge_mode\engine\runtime_state.py`
+### `intergrax\runtime\nexus\engine\runtime_state.py`
 
-**Description:** This module defines the `RuntimeState` class, which serves as a mutable state object passed through the runtime pipeline of Intergrax's drop-in knowledge mode. It aggregates various metadata and results from different subsystems.
+**Description:** This module defines the `RuntimeState` class, which serves as a mutable state object passed through the runtime pipeline of Intergrax's nexus mode. It aggregates various metadata and results from different subsystems.
 
-**Domain:** RAG logic and data ingestion (within the context of the Drop-In Knowledge Mode)
+**Domain:** RAG logic and data ingestion (within the context of the nexus Mode)
 
 **Key Responsibilities:**
 
@@ -1350,9 +1350,9 @@ This file appears to be a crucial component of the Intergrax framework, providin
 
 **Notes:** The file appears to be a core component of the Intergrax framework, and its functionality is essential for managing runtime state and tracking LLM usage.
 
-### `intergrax\runtime\drop_in_knowledge_mode\ingestion\__init__.py`
+### `intergrax\runtime\nexus\ingestion\__init__.py`
 
-Description: The `__init__.py` file is the entry point for the drop-in knowledge mode ingestion module, responsible for initializing and configuring the ingestion process.
+Description: The `__init__.py` file is the entry point for the nexus mode ingestion module, responsible for initializing and configuring the ingestion process.
 
 Domain: Data Ingestion
 
@@ -1361,9 +1361,9 @@ Key Responsibilities:
 - Configures ingestion settings
 - Sets up data processing pipelines
 
-### `intergrax\runtime\drop_in_knowledge_mode\ingestion\attachments.py`
+### `intergrax\runtime\nexus\ingestion\attachments.py`
 
-**Description:** This module provides utility functions for resolving attachments in Drop-In Knowledge Mode, decoupling attachment storage from the RAG pipeline's consumption.
+**Description:** This module provides utility functions for resolving attachments in nexus Mode, decoupling attachment storage from the RAG pipeline's consumption.
 
 **Domain:** Data Ingestion (Attachments)
 
@@ -1372,9 +1372,9 @@ Key Responsibilities:
 * Implements the `FileSystemAttachmentResolver` class for resolving local filesystem-based URIs.
 * Provides basic resolution functionality for local files and folders.
 
-### `intergrax\runtime\drop_in_knowledge_mode\ingestion\ingestion_service.py`
+### `intergrax\runtime\nexus\ingestion\ingestion_service.py`
 
-**Description:** This module provides a high-level service for ingesting attachments into the Intergrax framework's Drop-In Knowledge Mode, allowing for efficient embedding and storage of documents.
+**Description:** This module provides a high-level service for ingesting attachments into the Intergrax framework's nexus Mode, allowing for efficient embedding and storage of documents.
 
 **Domain:** Data Ingestion
 
@@ -1386,19 +1386,19 @@ Key Responsibilities:
 * Return structured IngestionResult objects for each attachment
 * Expose public API for ingesting attachments and searching session attachments
 
-### `intergrax\runtime\drop_in_knowledge_mode\pipelines\__init__.py`
+### `intergrax\runtime\nexus\pipelines\__init__.py`
 
-Description: This is an initialization file for the drop-in knowledge mode pipelines within the Intergrax runtime.
+Description: This is an initialization file for the nexus mode pipelines within the Intergrax runtime.
 
 Domain: RAG logic
 
 Key Responsibilities:
-• Initializes pipeline components and configurations for drop-in knowledge mode.
+• Initializes pipeline components and configurations for nexus mode.
 • Sets up necessary connections and dependencies between pipeline stages.
 
-### `intergrax\runtime\drop_in_knowledge_mode\pipelines\contract.py`
+### `intergrax\runtime\nexus\pipelines\contract.py`
 
-**Description:** This module defines a lightweight base class for pipeline runners in the Intergrax framework's drop-in knowledge mode. It provides shared implementation and utilities for executing pipelines.
+**Description:** This module defines a lightweight base class for pipeline runners in the Intergrax framework's nexus mode. It provides shared implementation and utilities for executing pipelines.
 
 **Domain:** LLM adapters / Runtime Pipeline
 
@@ -1411,9 +1411,9 @@ Key Responsibilities:
 
 **Notes:** This file appears to be production-safe and well-maintained, with clear documentation and a structured implementation.
 
-### `intergrax\runtime\drop_in_knowledge_mode\pipelines\no_planner_pipeline.py`
+### `intergrax\runtime\nexus\pipelines\no_planner_pipeline.py`
 
-Description: This module defines the NoPlannerPipeline class that serves as a drop-in knowledge mode pipeline for Intergrax, responsible for executing a series of runtime steps to generate an answer.
+Description: This module defines the NoPlannerPipeline class that serves as a nexus mode pipeline for Intergrax, responsible for executing a series of runtime steps to generate an answer.
 
 Domain: RAG logic
 
@@ -1422,7 +1422,7 @@ Key Responsibilities:
 - Specifies a sequence of runtime steps ( SETUP_STEPS, EnsureCurrentUserMessageStep, RagStep, UserLongtermMemoryStep, RetrieveAttachmentsStep, WebsearchStep, ToolsStep, CoreLLMStep, PersistAndBuildAnswerStep ) to be executed in order
 - Executes the pipeline using RuntimeStepRunner and returns the generated answer as a RuntimeAnswer object
 
-### `intergrax\runtime\drop_in_knowledge_mode\pipelines\pipeline_factory.py`
+### `intergrax\runtime\nexus\pipelines\pipeline_factory.py`
 
 **Description:** This module, `pipeline_factory.py`, is responsible for creating pipelines for knowledge mode execution in the Intergrax framework. It utilizes a step planning strategy to determine which pipeline type to instantiate.
 
@@ -1435,9 +1435,9 @@ Key Responsibilities:
 * Builds and returns a default registry for StepExecutor planning actions in static/dynamic modes
 * Includes explicit, production-safe bindings for various StepAction types to RuntimeStep instances
 
-### `intergrax\runtime\drop_in_knowledge_mode\pipelines\planner_dynamic_pipeline.py`
+### `intergrax\runtime\nexus\pipelines\planner_dynamic_pipeline.py`
 
-Description: This module implements a dynamic pipeline for the drop-in knowledge mode in the Intergrax framework.
+Description: This module implements a dynamic pipeline for the nexus mode in the Intergrax framework.
 
 Domain: RAG logic
 
@@ -1445,7 +1445,7 @@ Key Responsibilities:
 - Defines a PlannerDynamicPipeline class that extends RuntimePipeline.
 - Includes an inner_run method, which is currently unimplemented and raises a NotImplementedError.
 
-### `intergrax\runtime\drop_in_knowledge_mode\pipelines\planner_static_pipeline.py`
+### `intergrax\runtime\nexus\pipelines\planner_static_pipeline.py`
 
 **Description:** This module defines a static plan pipeline for the Intergrax framework, which involves deterministic setup outside planner and minimal replanning loop.
 
@@ -1459,7 +1459,7 @@ Key Responsibilities:
 * Plans and executes with minimal replanning loop (STATIC)
 * Interprets stop_reason and returns runtime answer accordingly
 
-### `intergrax\runtime\drop_in_knowledge_mode\planning\__init__.py`
+### `intergrax\runtime\nexus\planning\__init__.py`
 
 DESCRIPTION: This module is responsible for initializing and configuring the knowledge mode planning system in Intergrax.
 
@@ -1470,9 +1470,9 @@ KEY RESPONSIBILITIES:
 - Configures planning parameters and settings.
 - Sets up the planning engine for execution.
 
-### `intergrax\runtime\drop_in_knowledge_mode\planning\engine_plan_models.py`
+### `intergrax\runtime\nexus\planning\engine_plan_models.py`
 
-Description: This module defines data structures and functionality for planning in the Intergrax framework, specifically for the Drop-In Knowledge Runtime.
+Description: This module defines data structures and functionality for planning in the Intergrax framework, specifically for the nexus Runtime.
 
 Domain: Engine Planning
 
@@ -1483,7 +1483,7 @@ Key Responsibilities:
 - Defines `PlannerPromptConfig` data class to configure planner prompts with version, system prompt, replan system prompt, next step rules prompt, and fallback clarify question.
 - Includes default system prompts for the planner.
 
-### `intergrax\runtime\drop_in_knowledge_mode\planning\engine_planner.py`
+### `intergrax\runtime\nexus\planning\engine_planner.py`
 
 **Description:** This module provides an LLM-based planner that outputs a typed `EnginePlan`. The planner takes in various inputs, including the LLM adapter, runtime state, and configuration, to generate a plan based on the model's output.
 
@@ -1498,9 +1498,9 @@ Key Responsibilities:
 
 The file appears to be stable and production-ready.
 
-### `intergrax\runtime\drop_in_knowledge_mode\planning\plan_builder_helper.py`
+### `intergrax\runtime\nexus\planning\plan_builder_helper.py`
 
-**Description:** This module provides a helper function for building plans in drop-in knowledge mode, utilizing the EnginePlanner to create an EnginePlan object.
+**Description:** This module provides a helper function for building plans in nexus mode, utilizing the EnginePlanner to create an EnginePlan object.
 
 **Domain:** RAG logic / Planning
 
@@ -1511,7 +1511,7 @@ The file appears to be stable and production-ready.
 - Calls EnginePlanner.plan() to generate an EnginePlan object
 - Returns the generated EnginePlan
 
-### `intergrax\runtime\drop_in_knowledge_mode\planning\plan_loop_controller.py`
+### `intergrax\runtime\nexus\planning\plan_loop_controller.py`
 
 **Description:** This module implements a production-grade plan execution controller for the Intergrax framework, handling bounded replanning with structured feedback and escalation strategy when stuck.
 
@@ -1526,7 +1526,7 @@ The file appears to be stable and production-ready.
 
 **Note:** The file appears to be a key component of the Intergrax framework's planning module, implementing a critical functionality for production-grade performance.
 
-### `intergrax\runtime\drop_in_knowledge_mode\planning\runtime_step_handlers.py`
+### `intergrax\runtime\nexus\planning\runtime_step_handlers.py`
 
 **Description:** This module provides utilities and adapters for integrating `RuntimeStep` instances with the step execution framework.
 
@@ -1539,7 +1539,7 @@ The file appears to be stable and production-ready.
 * Implementing the `make_runtime_step_handler` function, which adapts a RuntimeStep instance into a StepHandler by executing its `run` method with the provided state.
 * Creating a `build_runtime_step_registry` function that takes a dictionary of bindings between StepActions and factories, and returns a StepHandlerRegistry object.
 
-### `intergrax\runtime\drop_in_knowledge_mode\planning\step_executor.py`
+### `intergrax\runtime\nexus\planning\step_executor.py`
 
 **Description:** This file defines a class `StepExecutor` responsible for executing an `ExecutionPlan` deterministically by using injected handlers and maintaining a store of step execution results.
 
@@ -1552,7 +1552,7 @@ The file appears to be stable and production-ready.
 * Maintains a store of step execution results for dependency resolution
 * Stops plan execution if a clarifying question is requested or if a failure policy is triggered
 
-### `intergrax\runtime\drop_in_knowledge_mode\planning\step_executor_models.py`
+### `intergrax\runtime\nexus\planning\step_executor_models.py`
 
 **Description:** This module contains data structures and classes for planning in Intergrax, focusing on replanning, step execution, and error handling.
 
@@ -1565,7 +1565,7 @@ The file appears to be stable and production-ready.
 - Establish protocols for step executor configurations and context execution.
 - Introduce exceptions for step replan requests.
 
-### `intergrax\runtime\drop_in_knowledge_mode\planning\step_planner.py`
+### `intergrax\runtime\nexus\planning\step_planner.py`
 
 **Description:** 
 The step planner module provides a deterministic planning mechanism to build an execution plan from user input and engine hints. It supports various modes, including static and dynamic planning.
@@ -1584,7 +1584,7 @@ The step planner module provides a deterministic planning mechanism to build an 
 
 **Note:** The module appears to be a key component of the Intergrax framework's planning mechanism and is likely intended for production use.
 
-### `intergrax\runtime\drop_in_knowledge_mode\planning\stepplan_models.py`
+### `intergrax\runtime\nexus\planning\stepplan_models.py`
 
 **Description:** This module defines a set of shared models and enums for planning steps in the Intergrax framework. These models represent parameters and budgets associated with various actions that can be taken during the planning process.
 
@@ -1612,20 +1612,20 @@ The step planner module provides a deterministic planning mechanism to build an 
 * Establish mappings between step actions and their corresponding parameter models.
 * Define the ExecutionStep model, which represents a single planning step with associated properties (step ID, action, enabled status, dependencies, budgets, inputs, expected output type, rationale type, and on-failure policy).
 
-### `intergrax\runtime\drop_in_knowledge_mode\prompts\__init__.py`
+### `intergrax\runtime\nexus\prompts\__init__.py`
 
-Description: This file initializes the drop-in knowledge mode prompts for Intergrax runtime.
+Description: This file initializes the nexus mode prompts for Intergrax runtime.
 
 Domain: LLM adapters
 
 Key Responsibilities:
-• Initializes prompt definitions for drop-in knowledge mode
+• Initializes prompt definitions for nexus mode
 • Provides a standardized way to generate and manage knowledge-based prompts
 • Integrates with other Intergrax components to enable seamless knowledge acquisition
 
-### `intergrax\runtime\drop_in_knowledge_mode\prompts\history_prompt_builder.py`
+### `intergrax\runtime\nexus\prompts\history_prompt_builder.py`
 
-**Description:** This module provides functionality for building history-summary-related prompts in Intergrax's Drop-In Knowledge Mode.
+**Description:** This module provides functionality for building history-summary-related prompts in Intergrax's nexus Mode.
 
 **Domain:** RAG logic
 
@@ -1635,9 +1635,9 @@ Key Responsibilities:
 * Offers a default implementation (`DefaultHistorySummaryPromptBuilder`) that generates a safe, generic system prompt for summarizing older conversation turns.
 * Allows customization of the prompt through extension or modification of the `HistorySummaryPromptBuilder` protocol.
 
-### `intergrax\runtime\drop_in_knowledge_mode\prompts\rag_prompt_builder.py`
+### `intergrax\runtime\nexus\prompts\rag_prompt_builder.py`
 
-**Description:** This module provides a framework for building RAG-related prompts in the Intergrax drop-in knowledge mode.
+**Description:** This module provides a framework for building RAG-related prompts in the Intergrax nexus mode.
 
 **Domain:** LLM adapters/RAG logic
 
@@ -1650,7 +1650,7 @@ Key Responsibilities:
 
 Note: The file appears to be a self-contained module with a clear purpose and functionality, indicating it is not experimental or auxiliary.
 
-### `intergrax\runtime\drop_in_knowledge_mode\prompts\user_longterm_memory_prompt_builder.py`
+### `intergrax\runtime\nexus\prompts\user_longterm_memory_prompt_builder.py`
 
 **Description:** This module provides a prompt builder for injecting user long-term memory into large language models (LLMs) during knowledge retrieval in Intergrax.
 
@@ -1661,9 +1661,9 @@ Note: The file appears to be a self-contained module with a clear purpose and fu
 - Provides a default deterministic prompt builder with customizable output strategies.
 - Handles filtering, limiting, and formatting of long-term memory entries for safe and compact injection into LLMs.
 
-### `intergrax\runtime\drop_in_knowledge_mode\prompts\websearch_prompt_builder.py`
+### `intergrax\runtime\nexus\prompts\websearch_prompt_builder.py`
 
-**Description:** This module provides a prompt builder for web search results in Drop-In Knowledge Mode.
+**Description:** This module provides a prompt builder for web search results in nexus Mode.
 
 **Domain:** LLM adapters / RAG logic
 
@@ -1673,9 +1673,9 @@ Note: The file appears to be a self-contained module with a clear purpose and fu
 * Defines a default implementation (`DefaultWebSearchPromptBuilder`) that delegates to a websearch module context generator
 * Builds a `WebSearchPromptBundle` containing system messages and debug information from web search results
 
-### `intergrax\runtime\drop_in_knowledge_mode\responses\__init__.py`
+### `intergrax\runtime\nexus\responses\__init__.py`
 
-Description: The __init__.py file in the responses directory of the drop-in knowledge mode is a package initializer for Python, responsible for setting up the necessary imports and configurations.
+Description: The __init__.py file in the responses directory of the nexus mode is a package initializer for Python, responsible for setting up the necessary imports and configurations.
 
 Domain: RAG logic
 
@@ -1684,9 +1684,9 @@ Key Responsibilities:
 - Defines the interface for generating responses in knowledge mode
 - Sets up the configuration and environment for response generation
 
-### `intergrax\runtime\drop_in_knowledge_mode\responses\response_schema.py`
+### `intergrax\runtime\nexus\responses\response_schema.py`
 
-**Description:** This module defines data models for the Drop-In Knowledge Mode runtime in Intergrax, which provides a high-level contract between applications and the RuntimeEngine. These dataclasses expose citations, routing information, tool calls, and basic statistics while hiding low-level implementation details.
+**Description:** This module defines data models for the nexus Mode runtime in Intergrax, which provides a high-level contract between applications and the RuntimeEngine. These dataclasses expose citations, routing information, tool calls, and basic statistics while hiding low-level implementation details.
 
 **Domain:** LLM adapters/RAG logic
 
@@ -1703,30 +1703,30 @@ Key Responsibilities:
 * Define an enumeration for history compression strategies:
 	+ `HistoryCompressionStrategy`: Strategy for compressing conversation history before sending it to the LLM.
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\__init__.py`
+### `intergrax\runtime\nexus\runtime_steps\__init__.py`
 
 Description: This module defines the initialization steps for Intergrax's knowledge graph when operating in drop-in mode.
 
-Domain: Drop-In Knowledge Mode
+Domain: nexus Mode
 
 Key Responsibilities:
 - Initializes the knowledge graph and related components
 - Defines the setup process for drop-in operations
 - Provides a hook for custom initialization routines
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\build_base_history_step.py`
+### `intergrax\runtime\nexus\runtime_steps\build_base_history_step.py`
 
 Description: This module implements a runtime step responsible for building a base history in the Intergrax framework.
 
-Domain: Drop-in Knowledge Mode, Runtime Steps
+Domain: nexus Mode, Runtime Steps
 
 Key Responsibilities:
 - Builds base history using HistoryLayer
 - Utilizes RuntimeState and HistoryLayer context to construct session (project/user/system seed) history
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\contract.py`
+### `intergrax\runtime\nexus\runtime_steps\contract.py`
 
-Description: This module defines the contract for runtime steps in Intergrax's drop-in knowledge mode and provides a runner class to execute these steps.
+Description: This module defines the contract for runtime steps in Intergrax's nexus mode and provides a runner class to execute these steps.
 
 Domain: Runtime Pipeline Execution
 
@@ -1735,7 +1735,7 @@ Key Responsibilities:
 - Implements `RuntimeStepRunner` to execute a list of steps asynchronously.
 - Tracing events for each step execution.
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\core_llm_step.py`
+### `intergrax\runtime\nexus\runtime_steps\core_llm_step.py`
 
 **Description:** This module provides the CoreLLMStep class, responsible for interacting with the core LLM (Large Language Model) adapter and generating a final answer.
 
@@ -1747,7 +1747,7 @@ Key Responsibilities:
 * Falls back to tools_agent_answer if available or fails to get a response from the LLM adapter
 * Traces events and errors during the execution process
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\ensure_current_user_message_step.py`
+### `intergrax\runtime\nexus\runtime_steps\ensure_current_user_message_step.py`
 
 **Description:** This module implements a runtime step for ensuring the current user's message is present as the last prompt message in the knowledge mode of the Intergrax framework.
 
@@ -1760,9 +1760,9 @@ Key Responsibilities:
 * If the list of messages for the LLM is empty, adds the current user's message
 * Maintains user-last semantics by appending the current user's message to the end of the list of messages
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\history_step.py`
+### `intergrax\runtime\nexus\runtime_steps\history_step.py`
 
-**Description:** This module, `HistoryStep`, is responsible for building conversation history for the Language Model (LLM) in Intergrax's drop-in knowledge mode. It selects and shapes the conversational context from previous user and assistant turns.
+**Description:** This module, `HistoryStep`, is responsible for building conversation history for the Language Model (LLM) in Intergrax's nexus mode. It selects and shapes the conversational context from previous user and assistant turns.
 
 **Domain:** RAG logic / Conversation History Management
 
@@ -1774,11 +1774,11 @@ Key Responsibilities:
 * Handle base history as-is in case of no additional history layer
 * Trace history building step for debugging purposes
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\instructions_step.py`
+### `intergrax\runtime\nexus\runtime_steps\instructions_step.py`
 
 **Description:** This module is responsible for injecting the final instructions into the LLM prompt as a system message, combining per-request instructions, user profile instructions, and organization profile instructions.
 
-**Domain:** Drop-in Knowledge Mode
+**Domain:** nexus Mode
 
 **Key Responsibilities:**
 
@@ -1788,11 +1788,11 @@ Key Responsibilities:
 * Prepends the system message to the messages for the LLM
 * Trims/summarizes history before injection (must be called AFTER HistoryStep)
 
-Note: This file appears to be a critical component of the drop-in knowledge mode functionality, and its code is well-structured and documented. There are no indications that this file is experimental, auxiliary, legacy, or incomplete.
+Note: This file appears to be a critical component of the nexus mode functionality, and its code is well-structured and documented. There are no indications that this file is experimental, auxiliary, legacy, or incomplete.
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\persist_and_build_answer_step.py`
+### `intergrax\runtime\nexus\runtime_steps\persist_and_build_answer_step.py`
 
-**Description:** This module implements a step in the Intergrax framework's drop-in knowledge mode, responsible for persisting the assistant's message into the session and building a RuntimeAnswer object.
+**Description:** This module implements a step in the Intergrax framework's nexus mode, responsible for persisting the assistant's message into the session and building a RuntimeAnswer object.
 
 **Domain:** LLM adapters
 
@@ -1803,7 +1803,7 @@ Note: This file appears to be a critical component of the drop-in knowledge mode
 * Determine the strategy label based on used components (RAG, websearch, tools)
 * Handle tool calls for answer construction
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\profile_based_memory_step.py`
+### `intergrax\runtime\nexus\runtime_steps\profile_based_memory_step.py`
 
 Description: This module defines a step in the Intergrax framework's knowledge mode, responsible for loading profile-based instruction fragments for a given request.
 
@@ -1816,7 +1816,7 @@ Key Responsibilities:
 - Set debug information about the memory layer step
 - Record a trace event to indicate that the memory layer has been processed
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\rag_step.py`
+### `intergrax\runtime\nexus\runtime_steps\rag_step.py`
 
 Description: This module defines a runtime step for building the Retrieval-Augmented Generator (RAG) layer in the Intergrax framework.
 
@@ -1829,11 +1829,11 @@ Key Responsibilities:
 - Prepare compact RAG text for tools agent (state.tools_context_parts)
 - Set debug fields and trace event
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\retrieve_attachments_step.py`
+### `intergrax\runtime\nexus\runtime_steps\retrieve_attachments_step.py`
 
 Description: This module provides a runtime step for retrieving relevant chunks from session-ingested attachments and injecting them into the LLM context.
 
-Domain: RAG logic / drop-in knowledge mode
+Domain: RAG logic / nexus mode
 
 Key Responsibilities:
 - Retrieve relevant chunks from session-ingested attachments using the ingestion service.
@@ -1841,13 +1841,13 @@ Key Responsibilities:
 - Provide a textual form of the injected context for tools agents.
 - Record the execution of this step in the trace event log.
 
-Note: This file appears to be part of an experimental or advanced feature (drop-in knowledge mode) and is not marked as legacy or incomplete.
+Note: This file appears to be part of an experimental or advanced feature (nexus mode) and is not marked as legacy or incomplete.
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\session_and_ingest_step.py`
+### `intergrax\runtime\nexus\runtime_steps\session_and_ingest_step.py`
 
 **Description:** This module defines a runtime step in the Intergrax framework that loads or creates a session, ingests attachments (RAG), and appends user messages to the session history.
 
-**Domain:** Drop-in Knowledge Mode
+**Domain:** nexus Mode
 
 **Key Responsibilities:**
 * Load or create a session based on the provided session ID
@@ -1856,7 +1856,7 @@ Note: This file appears to be part of an experimental or advanced feature (drop-
 * Initialize debug trace with session and ingestion metadata
 * Update the runtime state with ingested results and debug trace
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\setup_steps_tool.py`
+### `intergrax\runtime\nexus\runtime_steps\setup_steps_tool.py`
 
 Description: This module defines a collection of setup steps that can be executed in knowledge mode, encapsulating the necessary initialization and configuration for a successful run.
 
@@ -1867,7 +1867,7 @@ Key Responsibilities:
 - Ensures current user message is set up correctly
 - Builds base history step to initialize relevant data structures
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\tools.py`
+### `intergrax\runtime\nexus\runtime_steps\tools.py`
 
 **Description:** This module provides tools for handling knowledge mode in the Intergrax framework, including inserting context messages and formatting RAG (Retriever-Generator) context.
 
@@ -1884,7 +1884,7 @@ Key Responsibilities:
 
 **Note:** The code appears to be a part of the main Intergrax framework, with no signs of being experimental, auxiliary, or legacy.
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\tools_step.py`
+### `intergrax\runtime\nexus\runtime_steps\tools_step.py`
 
 **Description:** This module provides a runtime step for the Intergrax framework, allowing tools to be executed and their results integrated into the conversation. The tools agent can be configured to run in different modes.
 
@@ -1902,7 +1902,7 @@ Key Responsibilities:
 
 The file appears to be part of the main Intergrax framework implementation, and its functionality seems complete.
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\user_longterm_memory_step.py`
+### `intergrax\runtime\nexus\runtime_steps\user_longterm_memory_step.py`
 
 **Description:** This module implements a runtime step for the Intergrax framework, specifically handling user long-term memory retrieval and injection as context messages.
 
@@ -1915,9 +1915,9 @@ The file appears to be part of the main Intergrax framework implementation, and 
 * Manages debug tracing and logging for LTM-related events
 * Supports configuration options for enabling/disabling LTM and customizing retrieval parameters
 
-### `intergrax\runtime\drop_in_knowledge_mode\runtime_steps\websearch_step.py`
+### `intergrax\runtime\nexus\runtime_steps\websearch_step.py`
 
-**Description:** This module provides a runtime step for executing web search and injecting its context into the LLM prompt, as part of the Intergrax framework's drop-in knowledge mode.
+**Description:** This module provides a runtime step for executing web search and injecting its context into the LLM prompt, as part of the Intergrax framework's nexus mode.
 
 **Domain:** RAG logic (Runtime Agents and Generators)
 
@@ -1929,7 +1929,7 @@ The file appears to be part of the main Intergrax framework implementation, and 
 * Append compact web context text into state.tools_context_parts (for tools agent)
 * Debug and tracing
 
-### `intergrax\runtime\drop_in_knowledge_mode\session\__init__.py`
+### `intergrax\runtime\nexus\session\__init__.py`
 
 Description: Initializes a knowledge session for Intergrax's drop-in mode, managing the flow of external knowledge into the system.
 
@@ -1940,7 +1940,7 @@ Key Responsibilities:
 - Sets up event listeners for knowledge injection and processing
 - Establishes connections to relevant components (e.g., knowledge bases)
 
-### `intergrax\runtime\drop_in_knowledge_mode\session\chat_session.py`
+### `intergrax\runtime\nexus\session\chat_session.py`
 
 **Description:** This module defines a domain model for chat sessions within the Intergrax framework, encapsulating session metadata and state.
 
@@ -1961,7 +1961,7 @@ Key Responsibilities:
 
 This module appears to be part of the Intergrax framework's core logic, likely used in conjunction with other components for managing chat sessions.
 
-### `intergrax\runtime\drop_in_knowledge_mode\session\in_memory_session_storage.py`
+### `intergrax\runtime\nexus\session\in_memory_session_storage.py`
 
 **Description:** This module provides an in-memory implementation of SessionStorage for storing and retrieving chat session metadata and conversation history.
 
@@ -1976,7 +1976,7 @@ This module appears to be part of the Intergrax framework's core logic, likely u
 
 **Note:** This implementation is suitable for development, testing, or single-process setups but not intended for production use in distributed environments.
 
-### `intergrax\runtime\drop_in_knowledge_mode\session\session_manager.py`
+### `intergrax\runtime\nexus\session\session_manager.py`
 
 Description: This module implements the high-level management of chat sessions, including creation, persistence, retrieval, and closure. It provides a stable API for the runtime engine and integrates with profile managers to expose system instructions per session.
 
@@ -1989,7 +1989,7 @@ Key Responsibilities:
 - Optionally trigger long-term user memory consolidation for a session.
 - Retrieve and store chat session metadata, including history, creation, and closure events.
 
-### `intergrax\runtime\drop_in_knowledge_mode\session\session_storage.py`
+### `intergrax\runtime\nexus\session\session_storage.py`
 
 **Description:** This module defines a low-level storage interface for chat sessions and conversation histories, providing operations for persisting and loading session metadata and conversation data.
 
@@ -2745,9 +2745,9 @@ KEY RESPONSIBILITIES:
 • Sets up the application configuration and dependencies.
 • Defines the main entry points for the framework.
 
-### `notebooks\drop_in_knowledge_mode\01_basic_memory_demo.ipynb`
+### `notebooks\nexus\01_basic_memory_demo.ipynb`
 
-Description: This Jupyter notebook provides a basic sanity-check demo for the Drop-In Knowledge Mode runtime in the Intergrax framework.
+Description: This Jupyter notebook provides a basic sanity-check demo for the nexus Mode runtime in the Intergrax framework.
 
 Domain: LLM adapters and Runtime Engine logic
 
@@ -2757,9 +2757,9 @@ Key Responsibilities:
 - Builds conversation history from SessionStore
 - Returns a RuntimeAnswer object
 
-### `notebooks\drop_in_knowledge_mode\02_attachments_ingestion_demo.ipynb`
+### `notebooks\nexus\02_attachments_ingestion_demo.ipynb`
 
-**Description:** This notebook demonstrates the Intergrax framework's Drop-In Knowledge Mode runtime, specifically how it works with sessions and basic conversational memory, accepts attachments via `AttachmentRef`, and ingests them using the `AttachmentIngestionService`.
+**Description:** This notebook demonstrates the Intergrax framework's nexus Mode runtime, specifically how it works with sessions and basic conversational memory, accepts attachments via `AttachmentRef`, and ingests them using the `AttachmentIngestionService`.
 
 **Domain:** LLM (Language Model) adapters, RAG (Retrieval-Augmented Generation) logic, data ingestion.
 
@@ -2772,9 +2772,9 @@ Key Responsibilities:
 * Demonstrates attachment ingestion using the `AttachmentIngestionService`
 * Prepares an `AttachmentRef` for a local project document and simulates its ingestion
 
-### `notebooks\drop_in_knowledge_mode\03_rag_context_builder_demo.ipynb`
+### `notebooks\nexus\03_rag_context_builder_demo.ipynb`
 
-**Description:** This Jupyter notebook demonstrates the usage of the `ContextBuilder` in Drop-In Knowledge Mode, showcasing how to build context for a single user question using RAG retrieval from the vector store. The notebook also initializes various components required for testing the `ContextBuilder`.
+**Description:** This Jupyter notebook demonstrates the usage of the `ContextBuilder` in nexus Mode, showcasing how to build context for a single user question using RAG retrieval from the vector store. The notebook also initializes various components required for testing the `ContextBuilder`.
 
 **Domain:** RAG logic
 
@@ -2788,34 +2788,34 @@ Key Responsibilities:
 
 **Note:** This notebook appears to be a demo or tutorial file, focusing on showcasing specific functionality rather than serving as a production-ready code snippet.
 
-### `notebooks\drop_in_knowledge_mode\04_websearch_context_demo.ipynb`
+### `notebooks\nexus\04_websearch_context_demo.ipynb`
 
 Description: This notebook demonstrates how to use the Intergrax framework's RuntimeEngine with session-based chat, optional RAG (attachments ingested into a vector store), and live web search via WebSearchExecutor to achieve a "ChatGPT-like" experience with browsing.
 
-Domain: drop-in knowledge mode
+Domain: nexus mode
 
 Key Responsibilities:
 - Initializes the core configuration for web search.
 - Configures the LLM adapter, embeddings, vector store, runtime config, session manager, and web search executor.
 - Demonstrates how to create a fresh chat session and interactively test the web search functionality using the RuntimeEngine's ask method.
 
-### `notebooks\drop_in_knowledge_mode\05_tools_context_demo.ipynb`
+### `notebooks\nexus\05_tools_context_demo.ipynb`
 
-Description: This notebook demonstrates how to use the Drop-In Knowledge Runtime with a tools orchestration layer, on top of conversational memory, RAG (attachments ingested into a vector store), and live web search context.
+Description: This notebook demonstrates how to use the nexus Runtime with a tools orchestration layer, on top of conversational memory, RAG (attachments ingested into a vector store), and live web search context.
 
 Domain: LLM adapters & Tools integration
 
 Key Responsibilities:
 - Initialize the Python path for importing the `intergrax` package.
 - Load environment variables (API keys, etc.).
-- Import core building blocks used by the Drop-In Knowledge Runtime.
+- Import core building blocks used by the nexus Runtime.
 - Define tools using the Intergrax tools framework (ToolBase & ToolRegistry, IntergraxToolsAgent, ToolsAgentConfig, IntergraxConversationalMemory).
 - Register demo tools (WeatherTool, CalcTool) and create an IntergraxToolsAgent instance.
 - Attach this agent to RuntimeConfig.tools_agent for orchestration in a ChatGPT-like flow.
 
-### `notebooks\drop_in_knowledge_mode\06_session_memory_roundtrip_demo.ipynb`
+### `notebooks\nexus\06_session_memory_roundtrip_demo.ipynb`
 
-**Description:** This Jupyter notebook demonstrates the functionality of Intergrax's drop-in knowledge mode, specifically focusing on session and memory roundtrip capabilities. It creates a new session, reuses an existing one, persists and loads conversation history, and produces a consistent debug trace.
+**Description:** This Jupyter notebook demonstrates the functionality of Intergrax's nexus mode, specifically focusing on session and memory roundtrip capabilities. It creates a new session, reuses an existing one, persists and loads conversation history, and produces a consistent debug trace.
 
 **Domain:** LLM adapters, RAG logic, data ingestion, agents
 
@@ -2829,11 +2829,11 @@ Key Responsibilities:
 
 Note: This notebook appears to be a demonstration or test case rather than an experimental or auxiliary file. The code is well-structured and follows established patterns within the Intergrax framework.
 
-### `notebooks\drop_in_knowledge_mode\07_user_profile_instructions_baseline.ipynb`
+### `notebooks\nexus\07_user_profile_instructions_baseline.ipynb`
 
 **Description:** This Jupyter notebook demonstrates the Intergrax framework's user profile instructions baseline functionality. It introduces a minimal, production-ready memory flow for injecting user-level system instructions into runtime prompts.
 
-**Domain:** LLM adapters / Drop-In Knowledge Mode / Runtime Engine
+**Domain:** LLM adapters / nexus Mode / Runtime Engine
 
 **Key Responsibilities:**
 
@@ -2843,7 +2843,7 @@ Note: This notebook appears to be a demonstration or test case rather than an ex
 
 This notebook appears to be production-ready and part of a larger framework for managing user profiles and injecting instructions into runtime prompts.
 
-### `notebooks\drop_in_knowledge_mode\08_user_profile_instructions_generation.ipynb`
+### `notebooks\nexus\08_user_profile_instructions_generation.ipynb`
 
 **Description:** This notebook demonstrates a production-safe, explicit mechanism for generating user profile instructions using an LLM (Large Language Model), based on conversation history and existing user profile. The goal is to separate instruction generation from usage.
 
@@ -2856,7 +2856,7 @@ This notebook appears to be production-ready and part of a larger framework for 
 * Demonstrate the notebook-local generation service, which takes history and existing instructions as input and generates new instructions using the LLM
 * Persist the generated instructions to the user profile and mark the session as requiring refresh
 
-### `notebooks\drop_in_knowledge_mode\09_long_term_memory_consolidation.ipynb`
+### `notebooks\nexus\09_long_term_memory_consolidation.ipynb`
 
 Description: This Jupyter notebook tests the production-critical "long-term memory via consolidation" behavior in the Intergrax framework. It validates the correct execution of this mechanism by simulating a conversation, running consolidation, and checking invariants.
 
@@ -2868,7 +2868,7 @@ Key Responsibilities:
 - Runs consolidation service using the simulated history to populate user profile's memory entries
 - Validates production-critical invariants after consolidation (e.g., number of messages, memory entry counts)
 
-### `notebooks\drop_in_knowledge_mode\10_e2e_user_longterm_memory.ipynb`
+### `notebooks\nexus\10_e2e_user_longterm_memory.ipynb`
 
 Description: This notebook validates the engine-integrated user long-term memory path end-to-end, covering persistence, modifications, semantic retrieval, and engine injection.
 
@@ -2880,9 +2880,9 @@ Key Responsibilities:
 - Create RuntimeEngine instance with the configured context and session manager.
 - Perform STEP 1: Seed LTM entries + search using UserProfileManager.
 
-### `notebooks\drop_in_knowledge_mode\11_chatgpt_like_e2e.ipynb`
+### `notebooks\nexus\11_chatgpt_like_e2e.ipynb`
 
-Description: This notebook serves as an integration/behavior test for the Drop-In Knowledge Runtime, mimicking a real ChatGPT usage pattern. It exercises various aspects of the runtime's functionality.
+Description: This notebook serves as an integration/behavior test for the nexus Runtime, mimicking a real ChatGPT usage pattern. It exercises various aspects of the runtime's functionality.
 
 Domain: LLM adapters, RAG logic, data ingestion, agents, configuration, utility modules
 
@@ -2897,7 +2897,7 @@ Key Responsibilities:
 
 Note: This notebook appears to be a test suite for the Intergrax framework, specifically designed to exercise various aspects of its functionality. It is not experimental, auxiliary, or legacy code, and appears to be in a stable state.
 
-### `notebooks\drop_in_knowledge_mode\12a_engine_planner.ipynb`
+### `notebooks\nexus\12a_engine_planner.ipynb`
 
 Description: This notebook is a test environment for the Intergrax Engine Planner, allowing isolated testing and iterative improvement of the planner without impacting the runtime execution pipeline.
 
@@ -2910,15 +2910,15 @@ Key Responsibilities:
 - Refine the planner prompt, plan schema, and validation rules iteratively
 - Improve the planner safely without impacting runtime behavior
 
-### `notebooks\drop_in_knowledge_mode\12b_engine_planner.ipynb`
+### `notebooks\nexus\12b_engine_planner.ipynb`
 
-**Description:** This notebook provides a set of utilities for testing the Intergrax framework's drop-in knowledge mode planner, including test case definitions and helper functions for building planner requests and states.
+**Description:** This notebook provides a set of utilities for testing the Intergrax framework's nexus mode planner, including test case definitions and helper functions for building planner requests and states.
 
 **Domain:** LLM adapters/RAG logic
 
 **Key Responsibilities:**
 
-* Define test cases for the drop-in knowledge mode planner
+* Define test cases for the nexus mode planner
 * Provide helper functions for building planner requests and states
 * Utilize Intergrax framework components such as `LLMAdapterRegistry`, `RuntimeConfig`, and `EnginePlanner`
 * Include experimental code to simulate memory-layer instruction fragments (currently set to None)
@@ -2926,7 +2926,7 @@ Key Responsibilities:
 
 **Note:** The file appears to be a collection of test utilities and does not seem to be experimental, auxiliary, legacy, or incomplete. However, the simulation of memory-layer instruction fragments is currently disabled.
 
-### `notebooks\drop_in_knowledge_mode\13a_engine_step_planner.ipynb`
+### `notebooks\nexus\13a_engine_step_planner.ipynb`
 
 Description: This notebook provides an example of using the Intergrax framework to plan and execute tasks, specifically demonstrating the integration between the LLM-based EnginePlanner and the deterministic StepPlanner.
 
@@ -2941,7 +2941,7 @@ Key Responsibilities:
  
 Note: The notebook appears to be a comprehensive example rather than experimental or auxiliary code. It is designed to demonstrate the capabilities and integration of various Intergrax components.
 
-### `notebooks\drop_in_knowledge_mode\13b_engine_step_planner.ipynb`
+### `notebooks\nexus\13b_engine_step_planner.ipynb`
 
 **Description:**
 This Jupyter notebook is a testbed for the StepPlanner module in Intergrax, which plans and executes tasks using LLM-driven planning. It validates the behavior of StepPlanner without executing any tools.
@@ -2959,7 +2959,7 @@ This Jupyter notebook is a testbed for the StepPlanner module in Intergrax, whic
 
 Note: This file appears to be a test notebook for the StepPlanner module, and is not experimental or auxiliary.
 
-### `notebooks\drop_in_knowledge_mode\14_engine_planner_executor.ipynb`
+### `notebooks\nexus\14_engine_planner_executor.ipynb`
 
 **Description:** This is a Jupyter notebook that validates the StepExecutor's behavior in isolation, testing its sequential execution, dependencies, retry policies, controlled replan, handler contract enforcement, and final output selection.
 
@@ -2974,9 +2974,9 @@ Note: This file appears to be a test notebook for the StepPlanner module, and is
 
 Note: This file appears to be an implementation of unit tests for the StepExecutor component within the Intergrax framework. The code is written in Python and uses Jupyter Notebook cells to define and execute test cases.
 
-### `notebooks\drop_in_knowledge_mode\15_plan_loop_controller.ipynb`
+### `notebooks\nexus\15_plan_loop_controller.ipynb`
 
-Description: This Jupyter notebook defines a test suite for the PlanLoopController, a key component of the Intergrax framework that orchestrates planning and execution loops in Drop-In Knowledge Runtime mode.
+Description: This Jupyter notebook defines a test suite for the PlanLoopController, a key component of the Intergrax framework that orchestrates planning and execution loops in nexus Runtime mode.
 
 Domain: LLM adapters, RAG logic, data ingestion, agents, configuration, utility modules (notebook testing)
 

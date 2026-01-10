@@ -40,7 +40,7 @@ PY_EXT = ".py"
 # values-> folder path relative to project root
 # ----------------------------------------------------------------------
 EXTRA_BUNDLES: Dict[str, str] = {
-    "ENGINE_RUNTIME_BUNDLE": r"intergrax\runtime\drop_in_knowledge_mode",
+    "ENGINE_RUNTIME_BUNDLE": r"intergrax\runtime\nexus",
     "LLM": r"intergrax\llm",
     "LLM_ADAPTERS": r"intergrax\llm_adapters",
     "MEMORY": r"intergrax\memory",
