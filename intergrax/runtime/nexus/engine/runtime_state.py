@@ -30,7 +30,7 @@ class RuntimeState:
       - conversation history and model-ready messages,
       - flags indicating which subsystems were used (RAG, websearch, tools, memory),
       - tools traces and agent answer,
-      - full debug_trace for observability & diagnostics.
+      - full trace for observability & diagnostics.
     """
 
     # Context

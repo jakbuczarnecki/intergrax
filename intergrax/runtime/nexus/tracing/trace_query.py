@@ -19,7 +19,6 @@ class TraceQuery:
 
     Goals:
     - typed-first access (payload instances, not dicts)
-    - no assumptions about debug_trace dict structure
     - small, stable API for notebooks/tests/diagnostics
     """
 
