@@ -19,7 +19,7 @@ Developers should prefer using this runtime over low-level components in most ca
 ## 2. Core Principles
 
 1. **High-level, low-friction API**  
-   - One main entrypoint (e.g. `RuntimeEngine.ask()`).
+   - One main entrypoint (e.g. `RuntimeEngine.run()`).
    - Hide complexity of RAG, tools, web search, memory, and attachments.
    - Easy to plug into FastAPI, Streamlit, FastMCP, CLI, etc.
 
