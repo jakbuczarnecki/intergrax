@@ -5,3 +5,30 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+addopts = [
+  "-ra",
+  "--strict-markers",
+  "--strict-config",
+]
+
+markers = [
+  "unit: Fast deterministic unit tests (no network, no filesystem side effects).",
+  "integration: Deterministic component/integration tests (no network; runtime-level wiring).",
+  "network: Tests requiring real external services (LLM APIs, websearch, tools). Not for PR CI.",
+  "e2e: End-to-end flows (very few; production-like).",
+]
+
+filterwarnings = [
+  # Keep deprecations visible by default (we'll tighten later)
+  "default::DeprecationWarning",
+  "default::PendingDeprecationWarning",
+
+  # Silence known noisy SWIG deprecations seen on Windows (PyMuPDF/fitz and similar).
+  "ignore:builtin type SwigPyPacked has no __module__ attribute:DeprecationWarning",
+  "ignore:builtin type SwigPyObject has no __module__ attribute:DeprecationWarning",
+  "ignore:builtin type swigvarlink has no __module__ attribute:DeprecationWarning",
+]
