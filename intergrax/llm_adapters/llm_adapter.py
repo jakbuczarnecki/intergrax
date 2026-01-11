@@ -389,7 +389,7 @@ class LLMAdapterUsageLog:
     def export_run_stats_dict(self, run_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Export aggregated stats to a JSON-serializable dict.
-        Helpful for debug_trace / logging.
+        Helpful for trace / logging.
         """
         rid = run_id or "general"
         st = self._run_stats.get(rid)

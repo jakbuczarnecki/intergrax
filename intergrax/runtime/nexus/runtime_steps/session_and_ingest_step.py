@@ -19,7 +19,7 @@ from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLe
 class SessionAndIngestStep(RuntimeStep):
     """
     Load or create a session, ingest attachments (RAG), append the user
-    message and initialize debug_trace.
+    message and initialize trace.
 
     IMPORTANT:
         - This step does NOT load conversation history.

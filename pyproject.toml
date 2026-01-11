@@ -1,13 +1,14 @@
 [project]
 name = "Intergrax-ai"
 version = "0.1.0"
-description = "Add your description here"
+description = "Intergrax is a modular AI runtime and orchestration framework for building deterministic, enterprise-grade AI agents, pipelines, and knowledge-driven systems. It provides a typed execution engine, planning and loop controllers, memory and RAG integration, and production-ready diagnostics for safe and observable AI applications."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
 
 addopts = [
   "-ra",
@@ -20,6 +21,7 @@ markers = [
   "integration: Deterministic component/integration tests (no network; runtime-level wiring).",
   "network: Tests requiring real external services (LLM APIs, websearch, tools). Not for PR CI.",
   "e2e: End-to-end flows (very few; production-like).",
+  "asyncio: Async tests using pytest-asyncio.",
 ]
 
 filterwarnings = [
