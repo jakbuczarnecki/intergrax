@@ -26,16 +26,9 @@ class PlannerStaticEnginePlanProducedDiagV1(DiagnosticPayload):
 
     same_plan_repeats: int
 
-    capability_clamp: Optional[str]
 
-    planner_forced_plan_used: Optional[bool]
-    planner_forced_plan_hash: Optional[str]
-
-    planner_replan_ctx_present: Optional[bool]
-    planner_replan_ctx_hash: Optional[str]
-
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.planner.static_engine_plan_produced"
 
     def to_dict(self) -> Dict[str, Any]:
@@ -49,9 +42,4 @@ class PlannerStaticEnginePlanProducedDiagV1(DiagnosticPayload):
             "use_rag": self.use_rag,
             "use_tools": self.use_tools,
             "same_plan_repeats": self.same_plan_repeats,
-            "capability_clamp": self.capability_clamp,
-            "planner_forced_plan_used": self.planner_forced_plan_used,
-            "planner_forced_plan_hash": self.planner_forced_plan_hash,
-            "planner_replan_ctx_present": self.planner_replan_ctx_present,
-            "planner_replan_ctx_hash": self.planner_replan_ctx_hash,
         }

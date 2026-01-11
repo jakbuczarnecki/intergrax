@@ -11,16 +11,16 @@ from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 
 @dataclass(frozen=True)
-class CoreLLMUsedToolsAgentAnswerDiagV1(DiagnosticPayload):
-    used_tools_answer: bool
-    has_tools_agent_answer: bool
+class SessionConsolidationDiagV1(DiagnosticPayload):
+    entries_count: int
+    entry_types: Dict[str, int]
 
     @classmethod
     def schema_id(cls) -> str:
-        return "intergrax.diag.engine.core_llm.used_tools_agent_answer"
+        return "intergrax.diag.nexus.session.consolidation"
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "used_tools_answer": self.used_tools_answer,
-            "has_tools_agent_answer": self.has_tools_agent_answer,
+            "entries_count": int(self.entries_count),
+            "entry_types": dict(self.entry_types),
         }

@@ -24,8 +24,8 @@ class AttachmentsContextSummaryDiagV1(DiagnosticPayload):
     error_type: Optional[str]
     error_message: Optional[str]
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.attachments.summary"
 
     def to_dict(self) -> Dict[str, Any]:

@@ -7,7 +7,7 @@ from __future__ import annotations
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.tracing.history.history_summary import HistorySummaryDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
 class HistoryStep(RuntimeStep):
@@ -46,7 +46,7 @@ class HistoryStep(RuntimeStep):
 
         # Trace history building step (summary).
         state.trace_event(
-            component="engine",
+            component=TraceComponent.ENGINE,
             step="history",
             message="Conversation history built for LLM.",
             level=TraceLevel.INFO,

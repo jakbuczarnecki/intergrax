@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, TYPE_CHECKING
 from datetime import datetime, timezone
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm.messages import ChatMessage
 from intergrax.memory.user_profile_manager import UserProfileManager
+from intergrax.runtime.nexus.session.session_message_append_result import SessionMessageAppendResult
+from intergrax.runtime.nexus.tracing.session.session_consolidation_diag import SessionConsolidationDiagV1
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+if TYPE_CHECKING:
+    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.session.chat_session import (
     ChatSession,
     SessionCloseReason,
@@ -54,15 +59,9 @@ class SessionManager:
         *,
         user_profile_manager: Optional[UserProfileManager] = None,
         organization_profile_manager: Optional[OrganizationProfileManager] = None,
-        session_memory_consolidation_service: Optional[
-            SessionMemoryConsolidationService
-        ] = None,
-        user_turns_consolidation_interval: Optional[
-            int
-        ] = GLOBAL_SETTINGS.default_user_turns_consolidation_interval,
-        consolidation_cooldown_seconds: Optional[
-            int
-        ] = GLOBAL_SETTINGS.default_consolidation_cooldown_seconds,
+        session_memory_consolidation_service: Optional[SessionMemoryConsolidationService] = None,
+        user_turns_consolidation_interval: Optional[int] = GLOBAL_SETTINGS.default_user_turns_consolidation_interval,
+        consolidation_cooldown_seconds: Optional[int] = GLOBAL_SETTINGS.default_consolidation_cooldown_seconds,
     ) -> None:
         """
         Initialize a new SessionManager instance.
@@ -206,6 +205,7 @@ class SessionManager:
         *,
         reason: Optional[SessionCloseReason] = None,
         run_id: Optional[str] = None,
+        trace_state: Optional[RuntimeState] = None,
     ) -> None:
         """
         Mark a session as closed at the domain level and, if configured,
@@ -265,16 +265,21 @@ class SessionManager:
                     )
                 )
 
-                debug_info = self._build_consolidation_debug_info(stored_entries)
+                diag = self._build_consolidation_diag(stored_entries)
 
-                # Mark that this session has been consolidated as part of close_session.
+                if trace_state is not None:
+                    trace_state.trace_event(
+                        component=TraceComponent.ENGINE,
+                        step="SessionManager.close_session",
+                        message="Session consolidated",
+                        level=TraceLevel.DEBUG,
+                        payload=diag,
+                    )
+
                 await self._mark_session_consolidated(
                     session,
                     reason=SessionConsolidationReason.CLOSE_SESSION,
-                    # Store the final user_turns value to indicate at which
-                    # point the last consolidation happened.
                     turn=session.user_turns,
-                    debug_info=debug_info,
                 )
 
     async def list_sessions_for_user(
@@ -296,7 +301,7 @@ class SessionManager:
         self,
         session_id: str,
         message: ChatMessage,
-    ) -> ChatMessage:
+    ) -> SessionMessageAppendResult:
         """
         Append a single message to the conversation history of a session.
 
@@ -313,6 +318,9 @@ class SessionManager:
             consolidation hooks) at the manager level, while the storage
             remains responsible only for persisting sessions and their history.
         """
+
+        consolidation_diag: Optional[SessionConsolidationDiagV1] = None
+
         # Try to load the session so we can apply domain-level updates
         # (user_turns counter, timestamps, etc.).
         session = await self._storage.get_session(session_id)
@@ -356,7 +364,7 @@ class SessionManager:
                         )
 
                         # Build a small debug payload based on the stored entries.
-                        debug_info = self._build_consolidation_debug_info(
+                        consolidation_diag = self._build_consolidation_diag(
                             stored_entries
                         )
 
@@ -365,12 +373,15 @@ class SessionManager:
                             session,
                             reason=SessionConsolidationReason.MID_SESSION,
                             turn=user_turns,
-                            debug_info=debug_info,
                         )
 
         # Delegate message persistence to the storage backend. The storage
         # may apply its own retention/trimming logic (FIFO, max_messages, etc.).
-        return await self._storage.append_message(session_id, message)
+        stored_message = await self._storage.append_message(session_id, message)
+        return SessionMessageAppendResult(
+            message=stored_message,
+            consolidation_diag=consolidation_diag,
+        )
 
     async def get_history_for_session(
         self,
@@ -540,9 +551,9 @@ class SessionManager:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _build_consolidation_debug_info(
+    def _build_consolidation_diag(
         entries: Sequence[Any],
-    ) -> Dict[str, Any]:
+    ) -> SessionConsolidationDiagV1:
         """
         Build a lightweight debug payload describing the outcome of a
         consolidation run.
@@ -568,10 +579,10 @@ class SessionManager:
             key = str(entry_type)
             type_counts[key] = type_counts.get(key, 0) + 1
 
-        return {
-            "entries_count": total,
-            "entry_types": type_counts,
-        }
+        return SessionConsolidationDiagV1(
+            entries_count=total,
+            entry_types=type_counts,
+        )
 
     async def _mark_session_consolidated(
         self,
@@ -579,7 +590,6 @@ class SessionManager:
         *,
         reason: SessionConsolidationReason,
         turn: Optional[int] = None,
-        debug_info: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Mark the given session as having been consolidated into long-term
@@ -613,9 +623,6 @@ class SessionManager:
 
         if turn is not None:
             session.last_consolidated_turn = int(turn)
-
-        if debug_info is not None:
-            session.last_consolidation_debug = debug_info
 
         # Persist the updated consolidation metadata (and refresh modification
         # timestamp via save_session()).

@@ -41,18 +41,19 @@ class DiagnosticPayload(ABC):
     - to_dict(): MUST return JSON-serializable dict
     """
 
-    @property
+    @classmethod
     @abstractmethod
-    def schema_id(self) -> str:
+    def schema_id(cls) -> str:
         raise NotImplementedError
 
-    @property
-    def schema_version(self) -> int:
+    @classmethod
+    def schema_version(cls) -> int:
         return 1
 
     @abstractmethod
     def to_dict(self) -> Dict[str, Any]:
         raise NotImplementedError
+
 
 
 def utc_now_iso() -> str:
@@ -71,15 +72,49 @@ class TraceEvent:
     step: str
     message: str
 
-    payload_schema_id: Optional[str] = None
-    payload_schema_version: Optional[int] = None
-    payload: Optional[Dict[str, Any]] = None
+    payload: Optional[DiagnosticPayload] = None
 
     tags: Dict[str, Any] = field(default_factory=dict)
 
     @staticmethod
     def new_id() -> str:
         return str(uuid.uuid4())
+    
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        JSON-safe serialization for notebooks/tests/log export.
+
+        Notes:
+        - Enums are serialized to their `.value`.
+        - payload is exported as:
+            - payload_schema_id / payload_schema_version computed from payload classmethods
+            - payload = payload.to_dict()
+        - tags is kept as-is (must be JSON-safe by convention).
+        """
+        payload_schema_id: Optional[str] = None
+        payload_schema_version: Optional[int] = None
+        payload_dict: Optional[Dict[str, Any]] = None
+
+        if self.payload is not None:
+            payload_schema_id = self.payload.__class__.schema_id()
+            payload_schema_version = self.payload.__class__.schema_version()
+            payload_dict = self.payload.to_dict()
+
+        return {
+            "event_id": self.event_id,
+            "run_id": self.run_id,
+            "seq": self.seq,
+            "ts_utc": self.ts_utc,
+            "level": self.level.value,
+            "component": self.component.value,
+            "step": self.step,
+            "message": self.message,
+            "payload_schema_id": payload_schema_id,
+            "payload_schema_version": payload_schema_version,
+            "payload": payload_dict,
+            "tags": self.tags,
+        }
     
 
 @dataclass(frozen=True)

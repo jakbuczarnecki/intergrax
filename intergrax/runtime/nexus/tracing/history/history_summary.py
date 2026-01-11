@@ -17,8 +17,8 @@ class HistorySummaryDiagV1(DiagnosticPayload):
     history_includes_current_user: bool
     history_tokens: Optional[int]
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.history.summary"
 
     def to_dict(self) -> Dict[str, Any]:

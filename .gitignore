@@ -29,4 +29,8 @@ api/chat/rag_app.db
 
 /bundles/
 
+# Documents
 TODO.txt
+
+# Tests results cache
+.pytest_cache/

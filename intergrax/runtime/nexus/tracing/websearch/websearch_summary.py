@@ -28,8 +28,8 @@ class WebsearchSummaryDiagV1(DiagnosticPayload):
     context_preview_chars: int
     context_preview: str  # limited
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.websearch.summary"
 
     def to_dict(self) -> Dict[str, Any]:

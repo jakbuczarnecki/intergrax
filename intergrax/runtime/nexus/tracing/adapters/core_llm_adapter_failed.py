@@ -16,8 +16,8 @@ class CoreLLMAdapterFailedDiagV1(DiagnosticPayload):
     error_message: str
     has_tools_agent_answer: bool
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.engine.core_llm.adapter_failed"
 
     def to_dict(self) -> Dict[str, Any]:

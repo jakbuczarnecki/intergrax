@@ -18,8 +18,8 @@ class PlannerPlanningIterationStartedDiagV1(DiagnosticPayload):
     replan_reason: Optional[str]
     replan_attempt: Optional[int]
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.planner.planning_iteration_started"
 
     def to_dict(self) -> Dict[str, Any]:

@@ -18,8 +18,8 @@ class ProfileBasedMemorySummaryDiagV1(DiagnosticPayload):
     enable_user_profile_memory: bool
     enable_org_profile_memory: bool
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.memory_layer.profile_based.summary"
 
     def to_dict(self) -> Dict[str, Any]:

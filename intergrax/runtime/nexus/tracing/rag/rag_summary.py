@@ -18,8 +18,8 @@ class RagSummaryDiagV1(DiagnosticPayload):
     context_messages_count: int
     warning: Optional[str]
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.rag.summary"
 
     def to_dict(self) -> Dict[str, Any]:

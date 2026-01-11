@@ -12,13 +12,18 @@ from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 @dataclass(frozen=True)
 class LLMUsageFinalizeDiag(DiagnosticPayload):
-    schema_id: str = "intergrax.diag.llm_usage_finalize"
-    schema_version: int = 1
-
     run_id: str = ""
     session_id: str = ""
     user_id: str = ""
     aborted: bool = False
+
+    @classmethod
+    def schema_id(cls) -> str:
+        return "intergrax.diag.llm_usage_finalize"
+
+    @classmethod
+    def schema_version(cls) -> int:
+        return 1
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -27,3 +32,4 @@ class LLMUsageFinalizeDiag(DiagnosticPayload):
             "user_id": self.user_id,
             "aborted": self.aborted,
         }
+

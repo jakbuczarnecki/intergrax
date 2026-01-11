@@ -12,8 +12,8 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.ingestion.ingestion_service import IngestionResult
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.nexus.tracing.session.session_and_ingest_summary import SessionAndIngestSummaryDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.session.session_and_ingest_summary import IngestionPreviewItemV1, SessionAndIngestSummaryDiagV1
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
 class SessionAndIngestStep(RuntimeStep):
@@ -59,25 +59,38 @@ class SessionAndIngestStep(RuntimeStep):
 
         # 2. Append user message to session history
         user_message = self._build_session_message_from_request(req)
-        await state.context.session_manager.append_message(session.id, user_message)
+        append_res = await state.context.session_manager.append_message(
+            session.id,
+            user_message,
+        )
+
+        if append_res.consolidation_diag is not None:
+            state.trace_event(
+                component=TraceComponent.RUNTIME,
+                step="SessionAndIngestStep",
+                message="Session consolidated (mid-session)",
+                level=TraceLevel.DEBUG,
+                payload=append_res.consolidation_diag,
+            )
 
         # Reload the session to ensure we have the latest metadata
         session = await state.context.session_manager.get_session(session.id) or session
 
-        ingestion_preview: List[Dict[str, Any]] = []
+        ingestion_preview: List[IngestionPreviewItemV1] = []
         if ingestion_results:
             for r in ingestion_results[:2]:
                 ingestion_preview.append(
-                    {
-                        "attachment_id": r.attachment_id,
-                        "attachment_type": r.attachment_type,
-                        "num_chunks": r.num_chunks,
-                        "vector_ids_count": len(r.vector_ids),
-                    }
+                    IngestionPreviewItemV1(
+                        attachment_id=r.attachment_id,
+                        attachment_type=r.attachment_type,
+                        num_chunks=r.num_chunks,
+                        vector_ids_count=len(r.vector_ids),
+                    )
                 )
 
+
         state.trace_event(
-            component="engine",
+            component=TraceComponent.ENGINE,
             step="session_and_ingest",
             message="Session loaded/created and user message appended; attachments ingested.",
             level=TraceLevel.INFO,

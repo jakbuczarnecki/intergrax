@@ -41,6 +41,8 @@ PY_EXT = ".py"
 # ----------------------------------------------------------------------
 EXTRA_BUNDLES: Dict[str, str] = {
     "ENGINE_RUNTIME_BUNDLE": r"intergrax\runtime\nexus",
+    "ENGINE_RUNTIME_TRACING_BUNDLE": r"intergrax\runtime\nexus\tracing",
+
     "LLM": r"intergrax\llm",
     "LLM_ADAPTERS": r"intergrax\llm_adapters",
     "MEMORY": r"intergrax\memory",
@@ -52,7 +54,9 @@ EXTRA_BUNDLES: Dict[str, str] = {
 
     "FULL_BUNDLE": r"intergrax",
     
-    "NOTEBOOKS": r"notebooks",    
+    "NOTEBOOKS": r"notebooks",
+
+    "TESTS": r"tests",
 }
 
 

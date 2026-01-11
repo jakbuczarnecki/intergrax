@@ -18,8 +18,8 @@ class PersistAndBuildAnswerSummaryDiagV1(DiagnosticPayload):
     used_websearch: bool
     used_tools: bool
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.engine.persist_and_build_answer.summary"
 
     def to_dict(self) -> Dict[str, Any]:

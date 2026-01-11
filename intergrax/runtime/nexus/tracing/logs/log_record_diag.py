@@ -12,9 +12,6 @@ from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 @dataclass(frozen=True)
 class LogRecordDiagV1(DiagnosticPayload):
-    schema_id: str = "intergrax.diag.log_record"
-    schema_version: int = 1
-
     logger_name: str = ""
     pathname: str = ""
     lineno: int = 0
@@ -28,6 +25,14 @@ class LogRecordDiagV1(DiagnosticPayload):
         if self.data is None:
             object.__setattr__(self, "data", {})
 
+    @classmethod
+    def schema_id(cls) -> str:
+        return "intergrax.diag.log_record"
+
+    @classmethod
+    def schema_version(cls) -> int:
+        return 1
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "logger_name": self.logger_name,
@@ -37,3 +42,4 @@ class LogRecordDiagV1(DiagnosticPayload):
             "levelname": self.levelname,
             "data": self.data,
         }
+

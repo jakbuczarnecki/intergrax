@@ -8,7 +8,7 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tracing.steps.step_failed import RuntimeStepFailedDiagV1
 from intergrax.runtime.nexus.tracing.steps.step_finished import RuntimeStepFinishedDiagV1
 from intergrax.runtime.nexus.tracing.steps.step_started import RuntimeStepStartedDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 class RuntimeStep(Protocol):
     async def run(self, state: RuntimeState) -> None:        
@@ -22,7 +22,7 @@ class RuntimeStepRunner:
             step_name = step.__class__.__name__
 
             state.trace_event(
-                component="runtime",
+                component=TraceComponent.RUNTIME,
                 step=step_name,
                 message="Step started",
                 level=TraceLevel.INFO,
@@ -33,7 +33,7 @@ class RuntimeStepRunner:
                 await step.run(state)
             except Exception as e:
                 state.trace_event(
-                    component="pipeline",
+                    component=TraceComponent.PIPELINE,
                     step=step_name,
                     message="Step failed",
                     level=TraceLevel.ERROR,
@@ -47,7 +47,7 @@ class RuntimeStepRunner:
                 raise
 
             state.trace_event(
-                component="runtime",
+                component=TraceComponent.RUNTIME,
                 step=step_name,
                 message="Step finished",
                 level=TraceLevel.INFO,

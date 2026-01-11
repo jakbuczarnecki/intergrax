@@ -17,8 +17,8 @@ class RuntimeStepFailedDiagV1(DiagnosticPayload):
     error_message: str
     error_repr: Optional[str]
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.runtime.step_failed"
 
     def to_dict(self) -> Dict[str, Any]:
