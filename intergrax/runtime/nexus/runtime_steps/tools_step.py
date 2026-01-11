@@ -12,7 +12,7 @@ from intergrax.runtime.nexus.config import ToolsContextScope
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.tracing.tools.tools_summary import ToolsSummaryDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
 class ToolsStep(RuntimeStep):
@@ -197,7 +197,7 @@ class ToolsStep(RuntimeStep):
         tool_names = sorted({t.tool_name for t in state.tool_traces if t.tool_name})
 
         state.trace_event(
-            component="engine",
+            component=TraceComponent.ENGINE,
             step="tools",
             message="Tools agent step executed.",
             level=TraceLevel.ERROR if error_type else TraceLevel.INFO,

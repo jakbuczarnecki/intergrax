@@ -16,8 +16,8 @@ class PlannerIterationCompletedContinueDiagV1(DiagnosticPayload):
     last_plan_id: str
     replan_attempt: int
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.planner.iteration_completed_continue"
 
     def to_dict(self) -> Dict[str, Any]:

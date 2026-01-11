@@ -17,8 +17,8 @@ class CoreLLMAdapterReturnedDiagV1(DiagnosticPayload):
     answer_len: int
     answer_is_empty: bool
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.engine.core_llm.adapter_returned"
 
     def to_dict(self) -> Dict[str, Any]:

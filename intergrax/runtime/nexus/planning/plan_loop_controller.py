@@ -23,11 +23,12 @@ from intergrax.runtime.nexus.planning.step_executor import StepExecutor
 from intergrax.runtime.nexus.tracing.plan.dynamic_engine_plan_produced import PlannerDynamicEnginePlanProducedDiagV1
 from intergrax.runtime.nexus.tracing.plan.execution_requested_replan import PlannerExecutionRequestedReplanDiagV1
 from intergrax.runtime.nexus.tracing.plan.iteration_completed_continue import PlannerIterationCompletedContinueDiagV1
+from intergrax.runtime.nexus.tracing.plan.planner_build_debug import PlannerBuildDebugDiagV1
 from intergrax.runtime.nexus.tracing.plan.planning_iteration_started import PlannerPlanningIterationStartedDiagV1
 from intergrax.runtime.nexus.tracing.plan.static_engine_plan_produced import PlannerStaticEnginePlanProducedDiagV1
 from intergrax.runtime.nexus.tracing.plan.static_execution_requested_replan import PlannerStaticExecutionRequestedReplanDiagV1
 from intergrax.runtime.nexus.tracing.plan.static_planning_iteration_started import PlannerStaticPlanningIterationStartedDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
 
@@ -136,7 +137,7 @@ class PlanLoopController:
             req = state.request
 
             state.trace_event(
-                component="planner",
+                component=TraceComponent.PLANNER,
                 step="plan_loop_dynamic",
                 message="Planning iteration started.",
                 level=TraceLevel.INFO,
@@ -159,11 +160,9 @@ class PlanLoopController:
             )
 
             current_fp = engine_plan.fingerprint()
-            plan_dbg = engine_plan.debug or {}
 
-            
             state.trace_event(
-                component="planner",
+                component=TraceComponent.PLANNER,
                 step="plan_loop_dynamic",
                 message="Engine plan produced.",
                 level=TraceLevel.INFO,
@@ -177,11 +176,6 @@ class PlanLoopController:
                     use_rag=engine_plan.use_rag,
                     use_tools=engine_plan.use_tools,
                     same_plan_repeats=same_plan_repeats,
-                    capability_clamp=plan_dbg.get("capability_clamp"),
-                    planner_forced_plan_used=plan_dbg.get("planner_forced_plan_used"),
-                    planner_forced_plan_hash=plan_dbg.get("planner_forced_plan_hash"),
-                    planner_replan_ctx_present=plan_dbg.get("planner_replan_ctx_present"),
-                    planner_replan_ctx_hash=plan_dbg.get("planner_replan_ctx_hash"),
                 ),
             )
 
@@ -278,7 +272,7 @@ class PlanLoopController:
                 state.runtime_answer = None
 
                 state.trace_event(
-                    component="planner",
+                    component=TraceComponent.PLANNER,
                     step="plan_loop_dynamic",
                     message="Execution requested replan.",
                     level=TraceLevel.INFO,
@@ -326,7 +320,7 @@ class PlanLoopController:
             )
 
             state.trace_event(
-                component="planner",
+                component=TraceComponent.PLANNER,
                 step="plan_loop_dynamic",
                 message="Iteration completed; continuing to next dynamic step.",
                 level=TraceLevel.INFO,
@@ -362,7 +356,7 @@ class PlanLoopController:
             req = state.request
 
             state.trace_event(
-                component="planner",
+                component=TraceComponent.PLANNER,
                 step="plan_loop_static",
                 message="Planning iteration started.",
                 level=TraceLevel.INFO,
@@ -386,12 +380,8 @@ class PlanLoopController:
             # Fingerprint must be stable.
             current_fp = engine_plan.fingerprint()
 
-            # Extract planner debug info (may be None)
-            plan_dbg = engine_plan.debug or {}
-
-            # Production-grade trace: make forced_plan usage observable in tests/logs
             state.trace_event(
-                component="planner",
+                component=TraceComponent.PLANNER,
                 step="plan_loop_static",
                 message="Engine plan produced.",
                 level=TraceLevel.INFO,
@@ -405,11 +395,6 @@ class PlanLoopController:
                     use_rag=engine_plan.use_rag,
                     use_tools=engine_plan.use_tools,
                     same_plan_repeats=same_plan_repeats,
-                    capability_clamp=plan_dbg.get("capability_clamp"),
-                    planner_forced_plan_used=plan_dbg.get("planner_forced_plan_used"),
-                    planner_forced_plan_hash=plan_dbg.get("planner_forced_plan_hash"),
-                    planner_replan_ctx_present=plan_dbg.get("planner_replan_ctx_present"),
-                    planner_replan_ctx_hash=plan_dbg.get("planner_replan_ctx_hash"),
                 ),
             )
 
@@ -495,7 +480,7 @@ class PlanLoopController:
                 state.runtime_answer = None
 
                 state.trace_event(
-                    component="planner",
+                    component=TraceComponent.PLANNER,
                     step="plan_loop_static",
                     message="Execution requested replan.",
                     level=TraceLevel.INFO,

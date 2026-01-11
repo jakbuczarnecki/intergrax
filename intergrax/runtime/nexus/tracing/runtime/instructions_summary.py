@@ -17,8 +17,8 @@ class InstructionsSummaryDiagV1(DiagnosticPayload):
     source_user_profile: bool
     source_org_profile: bool
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.instructions.summary"
 
     def to_dict(self) -> Dict[str, Any]:

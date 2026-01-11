@@ -17,8 +17,8 @@ class PlannerStaticPlanningIterationStartedDiagV1(DiagnosticPayload):
     has_replan_ctx: bool
     replan_reason: Optional[str]
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.planner.static_planning_iteration_started"
 
     def to_dict(self) -> Dict[str, Any]:

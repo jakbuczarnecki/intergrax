@@ -12,10 +12,15 @@ from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 @dataclass(frozen=True)
 class RuntimeRunAbortDiagV1(DiagnosticPayload):
-    schema_id: str = "intergrax.diag.runtime.run_abort"
-    schema_version: int = 1
-
     run_id: str = ""
+
+    @classmethod
+    def schema_id(cls) -> str:
+        return "intergrax.diag.runtime.run_abort"
+
+    @classmethod
+    def schema_version(cls) -> int:
+        return 1
 
     def to_dict(self) -> Dict[str, Any]:
         return {"run_id": self.run_id}

@@ -21,7 +21,7 @@ from intergrax.runtime.nexus.tracing.plan.plan_source_failed import PlannerPlanS
 from intergrax.runtime.nexus.tracing.plan.planner_build_debug import PlannerBuildDebugDiagV1
 from intergrax.runtime.nexus.tracing.plan.raw_plan_parse_failed import PlannerRawPlanParseFailedDiagV1
 from intergrax.runtime.nexus.tracing.plan.replan_context_injected import PlannerReplanContextInjectedDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
 
@@ -250,7 +250,7 @@ class EnginePlanner:
     ) -> None:
         # Existing "plan produced" trace (bez dict debug)
         state.trace_event(
-            component="planner",
+            component=TraceComponent.PLANNER,
             step="plan",
             message="Planner produced engine plan.",
             level=TraceLevel.INFO,
@@ -263,7 +263,7 @@ class EnginePlanner:
         # Separate typed debug trace (recommended)
         if planner_build_debug is not None:
             state.trace_event(
-                component="planner",
+                component=TraceComponent.PLANNER,
                 step="plan",
                 message="Planner build debug.",
                 level=TraceLevel.DEBUG,
@@ -279,7 +279,7 @@ class EnginePlanner:
         error: Exception,
     ) -> None:
         state.trace_event(
-            component="planner",
+            component=TraceComponent.PLANNER,
             step="engine_planner",
             message="PlanSource failed while generating raw plan.",
             level=TraceLevel.ERROR,
@@ -297,7 +297,7 @@ class EnginePlanner:
         raw: object,
     ) -> None:
         state.trace_event(
-            component="planner",
+            component=TraceComponent.PLANNER,
             step="engine_planner",
             message="PlanSource contract violation: raw plan is not a string.",
             level=TraceLevel.ERROR,
@@ -342,7 +342,7 @@ class EnginePlanner:
 
         # Emit typed clamp diagnostics (no dicts, no plan.debug)
         state.trace_event(
-            component="planner",
+            component=TraceComponent.PLANNER,
             step="capability_clamp",
             message="Planner capability clamp applied.",
             level=TraceLevel.DEBUG,
@@ -378,7 +378,7 @@ class EnginePlanner:
         raw_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
         state.trace_event(
-            component="planner",
+            component=TraceComponent.PLANNER,
             step="engine_planner",
             message="Failed to parse raw plan.",
             level=TraceLevel.ERROR,
@@ -493,7 +493,7 @@ class EnginePlanner:
             replan_hash = hashlib.sha256(replan_json.encode("utf-8")).hexdigest()[:16]
 
             state.trace_event(
-                component="planner",
+                component=TraceComponent.PLANNER,
                 step="engine_planner",
                 message="Replan context injected into planner prompt.",
                 level=TraceLevel.INFO,

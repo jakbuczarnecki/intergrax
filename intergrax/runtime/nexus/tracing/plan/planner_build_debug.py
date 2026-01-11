@@ -27,8 +27,8 @@ class PlannerBuildDebugDiagV1(DiagnosticPayload):
     planner_forced_plan_json_len: Optional[int]
     planner_forced_plan_hash: Optional[str]
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.planner.build_debug"
 
     def to_dict(self) -> Dict[str, Any]:

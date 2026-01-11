@@ -9,7 +9,7 @@ from typing import Optional
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.tracing.memory.profile_base_memory_summary import ProfileBasedMemorySummaryDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
 class ProfileBasedMemoryStep(RuntimeStep):
@@ -67,7 +67,7 @@ class ProfileBasedMemoryStep(RuntimeStep):
 
         # 4) Trace memory layer step (typed payload).
         state.trace_event(
-            component="engine",
+            component=TraceComponent.ENGINE,
             step="memory_layer",
             message="Profile-based instructions loaded for session.",
             level=TraceLevel.INFO,

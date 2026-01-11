@@ -17,8 +17,8 @@ class PlannerReplanContextInjectedDiagV1(DiagnosticPayload):
     replan_hash: str
     replan_json_len: int
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.planner.replan_context_injected"
 
     def to_dict(self) -> Dict[str, Any]:

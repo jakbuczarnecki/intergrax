@@ -12,14 +12,19 @@ from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 @dataclass(frozen=True)
 class RuntimeRunStartDiagV1(DiagnosticPayload):
-    schema_id: str = "intergrax.diag.runtime.run_start"
-    schema_version: int = 1
-
     session_id: str = ""
     user_id: str = ""
     tenant_id: str = ""
     run_id: str = ""
     step_planning_strategy: str = ""
+
+    @classmethod
+    def schema_id(cls) -> str:
+        return "intergrax.diag.runtime.run_start"
+
+    @classmethod
+    def schema_version(cls) -> int:
+        return 1
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -29,3 +34,4 @@ class RuntimeRunStartDiagV1(DiagnosticPayload):
             "run_id": self.run_id,
             "step_planning_strategy": self.step_planning_strategy,
         }
+

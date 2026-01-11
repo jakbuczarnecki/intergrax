@@ -178,14 +178,39 @@ class GeminiChatAdapter(LLMAdapter):
                         buf.append(txt)
                         yield txt
 
-                out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+                out_tok = int(
+                    self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation)
+                )
                 success = True
                 return
 
-            # Keep behavior explicit and predictable (as you had).
-            raise NotImplementedError(
-                "GeminiChatAdapter.stream_messages requires the last message to be role='user'."
+            # Production-grade fallback: stream via generate_content_stream using full contents list.
+            # This mirrors generate_messages() fallback behavior and avoids hard failure on "odd turn ordering".
+            contents = self._map_contents(convo)
+
+            # google-genai supports streaming on models via generate_content_stream (SDK-dependent).
+            stream_fn = getattr(self.client.models, "generate_content_stream", None)
+            if stream_fn is None:
+                raise RuntimeError(
+                    "GeminiChatAdapter.stream_messages fallback requires google-genai "
+                    "Client.models.generate_content_stream, but it is not available in this SDK version."
+                )
+
+            for chunk in stream_fn(
+                model=self.model,
+                contents=contents,
+                config=config,
+            ):
+                txt = getattr(chunk, "text", None)
+                if txt:
+                    buf.append(txt)
+                    yield txt
+
+            out_tok = int(
+                self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation)
             )
+            success = True
+            return
 
         except Exception as e:
             err_type = type(e).__name__

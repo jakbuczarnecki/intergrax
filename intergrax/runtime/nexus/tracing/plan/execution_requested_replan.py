@@ -16,8 +16,8 @@ class PlannerExecutionRequestedReplanDiagV1(DiagnosticPayload):
     replan_reason: Optional[str]
     last_plan_id: str
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.planner.execution_requested_replan"
 
     def to_dict(self) -> Dict[str, Any]:

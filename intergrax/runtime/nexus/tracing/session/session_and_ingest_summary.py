@@ -20,10 +20,10 @@ class SessionAndIngestSummaryDiagV1(DiagnosticPayload):
     ingestion_results_count: int
 
     # Keep this small and stable (optional)
-    ingestion_preview: List[Dict[str, Any]]
+    ingestion_preview: List[IngestionPreviewItemV1]
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.session_and_ingest.summary"
 
     def to_dict(self) -> Dict[str, Any]:
@@ -33,5 +33,20 @@ class SessionAndIngestSummaryDiagV1(DiagnosticPayload):
             "tenant_id": self.tenant_id,
             "attachments_count": self.attachments_count,
             "ingestion_results_count": self.ingestion_results_count,
-            "ingestion_preview": list(self.ingestion_preview),
+            "ingestion_preview": [p.to_dict() for p in self.ingestion_preview],
+        }
+
+@dataclass(frozen=True)
+class IngestionPreviewItemV1:
+    attachment_id: str
+    attachment_type: str
+    num_chunks: int
+    vector_ids_count: int
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "attachment_id": self.attachment_id,
+            "attachment_type": self.attachment_type,
+            "num_chunks": int(self.num_chunks),
+            "vector_ids_count": int(self.vector_ids_count),
         }

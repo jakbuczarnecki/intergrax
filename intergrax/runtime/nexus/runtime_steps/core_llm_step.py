@@ -11,7 +11,7 @@ from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.tracing.adapters.core_llm_adapter_failed import CoreLLMAdapterFailedDiagV1
 from intergrax.runtime.nexus.tracing.adapters.core_llm_adapter_returned import CoreLLMAdapterReturnedDiagV1
 from intergrax.runtime.nexus.tracing.adapters.core_llm_used_tools_agent_answer import CoreLLMUsedToolsAgentAnswerDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
 class CoreLLMStep(RuntimeStep):
@@ -24,7 +24,7 @@ class CoreLLMStep(RuntimeStep):
         # If tools were used and we have an explicit agent answer, prefer it.
         if state.used_tools and state.tools_agent_answer:
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="core_llm",
                 message="Using tools_agent_answer as the final answer.",
                 level=TraceLevel.INFO,
@@ -46,9 +46,26 @@ class CoreLLMStep(RuntimeStep):
 
             msgs = state.messages_for_llm
             if not msgs or msgs[-1].role != "user":
-                raise Exception(
-                    f"Last message must be 'user' (got: {msgs[-1].role if msgs else 'None'})."
+                last_role = msgs[-1].role if msgs else None
+                roles_tail = [m.role for m in msgs[-8:]] if msgs else []
+
+                # Production-grade: emit trace event BEFORE raising, so incidents are diagnosable even if exception is swallowed upstream.
+                state.trace_event(
+                    level=TraceLevel.ERROR,
+                    component=TraceComponent.RUNTIME,
+                    step="CoreLLMStep",
+                    message=(
+                        "Runtime invariant violated: messages_for_llm must end with a 'user' message. "
+                        f"got_last_role={last_role!r}, messages_count={len(msgs) if msgs else 0}, roles_tail={roles_tail!r}"
+                    ),
+                    payload=None,
                 )
+
+                raise ValueError(
+                    "Runtime invariant violated: messages_for_llm must end with a 'user' message. "
+                    f"got_last_role={last_role!r}, messages_count={len(msgs) if msgs else 0}, roles_tail={roles_tail!r}"
+                )
+
 
             raw_answer = state.context.config.llm_adapter.generate_messages(
                 msgs,
@@ -57,7 +74,7 @@ class CoreLLMStep(RuntimeStep):
             )
 
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="core_llm",
                 message="Core LLM adapter returned answer.",
                 level=TraceLevel.INFO,
@@ -74,7 +91,7 @@ class CoreLLMStep(RuntimeStep):
         except Exception as e:
             # Trace the error and whether a tools_agent_answer fallback is available.
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="core_llm_error",
                 message="Core LLM adapter failed; falling back if possible.",
                 level=TraceLevel.ERROR,

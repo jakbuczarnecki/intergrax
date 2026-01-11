@@ -12,15 +12,20 @@ from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 @dataclass(frozen=True)
 class RuntimeRunEndDiagV1(DiagnosticPayload):
-    schema_id: str = "intergrax.diag.runtime.run_end"
-    schema_version: int = 1
-
     strategy: str = ""
     used_rag: bool = False
     used_websearch: bool = False
     used_tools: bool = False
     used_user_longterm_memory: bool = False
     run_id: str = ""
+
+    @classmethod
+    def schema_id(cls) -> str:
+        return "intergrax.diag.runtime.run_end"
+
+    @classmethod
+    def schema_version(cls) -> int:
+        return 1
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -31,3 +36,4 @@ class RuntimeRunEndDiagV1(DiagnosticPayload):
             "used_user_longterm_memory": self.used_user_longterm_memory,
             "run_id": self.run_id,
         }
+

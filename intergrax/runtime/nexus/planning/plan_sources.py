@@ -13,6 +13,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.planning.engine_plan_models import EngineNextStep, PlanIntent
 from intergrax.runtime.nexus.planning.step_executor_models import ReplanContext
+from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 
 @dataclass(frozen=True)
@@ -63,9 +64,8 @@ class PlanSpec:
     use_user_longterm_memory: bool = False
     use_rag: bool = False
     use_tools: bool = False
-
-    # Optional forward-compatible debug payload (must be JSON-serializable)
-    debug: Optional[Dict[str, Any]] = None
+    
+    debug: Optional[DiagnosticPayload] = None
 
     def __post_init__(self) -> None:
         # Clarify contract: keep it strict to prevent invalid scripted plans.
@@ -104,7 +104,7 @@ class PlanSpec:
             "use_tools": bool(self.use_tools),
         }
         if self.debug is not None:
-            obj["debug"] = self.debug
+            obj["debug"] = self.debug.to_dict()
         return obj
 
     def to_raw_json(self) -> str:

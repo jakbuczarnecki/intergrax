@@ -8,7 +8,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.runtime_steps.tools import insert_context_before_last_user
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.runtime.nexus.tracing.websearch.websearch_summary import WebsearchSummaryDiagV1
 from intergrax.websearch.schemas.web_search_result import WebSearchResult
 
@@ -51,7 +51,7 @@ class WebsearchStep(RuntimeStep):
 
         if not enabled or not configured:
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="websearch",
                 message="Web search skipped (disabled or not configured).",
                 level=TraceLevel.INFO,
@@ -87,7 +87,7 @@ class WebsearchStep(RuntimeStep):
                 no_evidence = True
 
                 state.trace_event(
-                    component="engine",
+                    component=TraceComponent.ENGINE,
                     step="websearch",
                     message="Web search executed (no results).",
                     level=TraceLevel.INFO,
@@ -144,7 +144,7 @@ class WebsearchStep(RuntimeStep):
 
         # Trace web search step summary (single final summary)
         state.trace_event(
-            component="engine",
+            component=TraceComponent.ENGINE,
             step="websearch",
             message="Web search step executed.",
             level=TraceLevel.ERROR if error_type else TraceLevel.INFO,

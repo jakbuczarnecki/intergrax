@@ -78,16 +78,15 @@ class ChatSession:
     attachments: List[AttachmentRef] = field(default_factory=list)
 
     # Core domain state (typed)
-    status: SessionStatus = SessionStatus.OPEN  # "open" / "closed" – można kiedyś zamienić na Enum
+    status: SessionStatus = SessionStatus.OPEN
     closed_reason: Optional[SessionCloseReason] = None
 
     user_turns: int = 0
 
     # Consolidation-related state
     last_consolidated_at: Optional[datetime] = None
-    last_consolidated_reason: Optional[str] = None  # wartości z SessionConsolidationReason.value
+    last_consolidated_reason: Optional[str] = None  # value from SessionConsolidationReason.value
     last_consolidated_turn: Optional[int] = None
-    last_consolidation_debug: Optional[Dict[str, Any]] = None
 
     # Per-session instructions snapshot + refresh flag
     user_profile_instructions: Optional[str] = None

@@ -19,8 +19,8 @@ class PlannerEnginePlanProducedDiagV1(DiagnosticPayload):
     intent: str
     next_step: Optional[str]
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.planner.engine_plan_produced"
 
     def to_dict(self) -> Dict[str, Any]:

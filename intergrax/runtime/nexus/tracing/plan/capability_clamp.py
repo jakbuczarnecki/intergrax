@@ -27,8 +27,8 @@ class PlannerCapabilityClampDiagV1(DiagnosticPayload):
     after_use_rag: bool
     after_use_tools: bool
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.planner.capability_clamp"
 
     def to_dict(self) -> Dict[str, Any]:

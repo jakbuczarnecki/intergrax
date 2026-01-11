@@ -106,36 +106,19 @@ class RuntimeState:
     def trace_event(
         self,
         *,
-        component: str,
+        component: TraceComponent,
         step: str,
         message: str,
         level: TraceLevel = TraceLevel.INFO,
         payload: Optional[DiagnosticPayload] = None,
     ) -> None:
-        """
-        Production-grade append-only structured tracing.
-
-        Rules:
-        - Single source of truth: RuntimeState.trace_events
-        - Payload MUST be a typed DiagnosticPayload (no dicts)
-        - Schema metadata is always captured when payload is present
-        """
         if not self.run_id:
             raise RuntimeError("RuntimeState.run_id must be provided (got empty).")
 
-        comp = TraceComponent(component)
+        if payload is not None and not isinstance(payload, DiagnosticPayload):
+            raise TypeError(f"payload must be DiagnosticPayload (got {type(payload).__name__}).")
 
-        # Strictly increasing sequence within this run
         self._trace_seq += 1
-
-        payload_schema_id: Optional[str] = None
-        payload_schema_version: Optional[int] = None
-        payload_dict: Optional[Dict[str, Any]] = None
-
-        if payload is not None:
-            payload_schema_id = payload.schema_id
-            payload_schema_version = payload.schema_version
-            payload_dict = payload.to_dict()
 
         evt = TraceEvent(
             event_id=TraceEvent.new_id(),
@@ -143,16 +126,14 @@ class RuntimeState:
             seq=self._trace_seq,
             ts_utc=utc_now_iso(),
             level=level,
-            component=comp,
+            component=component,
             step=step,
             message=message,
-            payload_schema_id=payload_schema_id,
-            payload_schema_version=payload_schema_version,
-            payload=payload_dict,
+            payload=payload,
             tags={},
         )
-
         self.trace_events.append(evt)
+
 
 
 
@@ -202,7 +183,7 @@ class RuntimeState:
 
         # Always persist snapshot into structured trace, even if run aborted.
         self.trace_event(
-            component="engine",
+            component=TraceComponent.ENGINE,
             step="llm_usage_snapshot",
             level=TraceLevel.INFO,
             message="LLM usage snapshot captured.",
@@ -212,7 +193,7 @@ class RuntimeState:
         # If the run aborted before producing RuntimeAnswer, do not raise and do not collect runs.
         if runtime_answer is None:
             self.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="llm_usage_finalize",
                 level=TraceLevel.WARNING,
                 message="LLM usage finalized without RuntimeAnswer (run aborted).",

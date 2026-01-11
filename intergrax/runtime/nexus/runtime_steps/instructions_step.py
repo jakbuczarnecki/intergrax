@@ -10,7 +10,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.tracing.runtime.instructions_summary import InstructionsSummaryDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
 class InstructionsStep(RuntimeStep):
@@ -69,7 +69,7 @@ class InstructionsStep(RuntimeStep):
 
         if not parts:
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="instructions",
                 message="Instructions resolved (none).",
                 level=TraceLevel.INFO,
@@ -85,7 +85,7 @@ class InstructionsStep(RuntimeStep):
         final_text = "\n\n".join(parts)
 
         state.trace_event(
-            component="engine",
+            component=TraceComponent.ENGINE,
             step="instructions",
             message="Instructions resolved.",
             level=TraceLevel.INFO,

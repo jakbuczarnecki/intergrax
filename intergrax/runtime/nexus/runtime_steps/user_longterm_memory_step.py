@@ -9,7 +9,7 @@ from typing import List, Optional
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.runtime_steps.tools import insert_context_before_last_user
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.runtime.nexus.tracing.memory.user_longterm_memory_summary import UserLongtermMemorySummaryDiagV1
 
 
@@ -40,7 +40,7 @@ class UserLongtermMemoryStep(RuntimeStep):
         if not enabled:
             reason = "disabled"
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="user_longterm_memory",
                 message="User long-term memory disabled; skipping.",
                 level=TraceLevel.INFO,
@@ -67,7 +67,7 @@ class UserLongtermMemoryStep(RuntimeStep):
             if not query:
                 reason = "empty_query"
                 state.trace_event(
-                    component="engine",
+                    component=TraceComponent.ENGINE,
                     step="user_longterm_memory",
                     message="User long-term memory skipped (empty query).",
                     level=TraceLevel.INFO,
@@ -102,7 +102,7 @@ class UserLongtermMemoryStep(RuntimeStep):
         if not state.used_user_longterm_memory:
             reason = (ltm_info.get("reason") or "no_hits_or_not_used") if enabled else "disabled"
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="user_longterm_memory",
                 message="User long-term memory executed but not used.",
                 level=TraceLevel.INFO,
@@ -138,7 +138,7 @@ class UserLongtermMemoryStep(RuntimeStep):
         context_preview_chars = len(context_preview)
 
         state.trace_event(
-            component="engine",
+            component=TraceComponent.ENGINE,
             step="user_longterm_memory",
             message="User long-term memory step executed.",
             level=TraceLevel.INFO,

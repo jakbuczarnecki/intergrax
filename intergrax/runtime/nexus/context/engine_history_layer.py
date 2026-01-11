@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.tracing.history.history_summary import HistorySummaryDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.prompts.history_prompt_builder import HistorySummaryPromptBuilder
@@ -123,7 +123,7 @@ class HistoryLayer:
 
             state.base_history = compression_result.history
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="history",
                 message="History compression summary.",
                 level=TraceLevel.INFO,
@@ -184,7 +184,7 @@ class HistoryLayer:
             state.base_history = compression_result.history
 
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="history",
                 message="History compression summary.",
                 level=TraceLevel.INFO,
@@ -222,7 +222,7 @@ class HistoryLayer:
         # 6. Update debug trace with history-related info and token stats.
         
         state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="history",
                 message="History compression summary.",
                 level=TraceLevel.INFO,

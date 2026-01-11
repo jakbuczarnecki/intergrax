@@ -9,7 +9,7 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.runtime_steps.tools import format_rag_context, insert_context_before_last_user
 from intergrax.runtime.nexus.tracing.rag.rag_summary import RagSummaryDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
 class RagStep(RuntimeStep):
@@ -33,7 +33,7 @@ class RagStep(RuntimeStep):
         # RAG disabled => no-op (still trace summary for baseline observability)
         if not ctx.config.enable_rag:
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="rag",
                 message="RAG disabled; skipping.",
                 level=TraceLevel.INFO,
@@ -71,7 +71,7 @@ class RagStep(RuntimeStep):
 
         if not state.used_rag:
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="rag",
                 message="RAG enabled but not used (no retrieved context).",
                 level=TraceLevel.INFO,
@@ -103,7 +103,7 @@ class RagStep(RuntimeStep):
 
         # Trace summary
         state.trace_event(
-            component="engine",
+            component=TraceComponent.ENGINE,
             step="rag",
             message="RAG context built and injected.",
             level=TraceLevel.INFO,

@@ -37,7 +37,7 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_abort import RuntimeRunAbortDiagV1
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_end import RuntimeRunEndDiagV1
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_start import RuntimeRunStartDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
 # ----------------------------------------------------------------------
@@ -98,7 +98,7 @@ class RuntimeEngine:
 
         # Initial trace entry for this request.
         state.trace_event(
-            component="engine",
+            component=TraceComponent.ENGINE,
             step="run_start",
             level=TraceLevel.INFO,
             message="RuntimeEngine.run() called.",
@@ -119,7 +119,7 @@ class RuntimeEngine:
 
             # Final trace entry for this request.
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="run_end",
                 level=TraceLevel.INFO,
                 message="RuntimeEngine.run() finished.",
@@ -142,7 +142,7 @@ class RuntimeEngine:
             )
 
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="run_abort",
                 level=TraceLevel.WARNING,
                 message="RuntimeEngine.run() aborted before RuntimeAnswer was produced.",

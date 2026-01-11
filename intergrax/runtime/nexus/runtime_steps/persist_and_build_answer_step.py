@@ -17,7 +17,7 @@ from intergrax.runtime.nexus.responses.response_schema import (
     ToolCallInfo,
 )
 from intergrax.runtime.nexus.tracing.runtime.persist_and_build_answer_summary import PersistAndBuildAnswerSummaryDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
 class PersistAndBuildAnswerStep(RuntimeStep):
@@ -45,7 +45,20 @@ class PersistAndBuildAnswerStep(RuntimeStep):
             content=answer_text,
             created_at=datetime.now(timezone.utc).isoformat(),
         )
-        await state.context.session_manager.append_message(session.id, assistant_message)
+        
+        append_res = await state.context.session_manager.append_message(
+            session.id,
+            assistant_message,
+        )
+
+        if append_res.consolidation_diag is not None:
+            state.trace_event(
+                component=TraceComponent.RUNTIME,
+                step="PersistAndBuildAnswerStep",
+                message="Session consolidated (mid-session)",
+                level=TraceLevel.DEBUG,
+                payload=append_res.consolidation_diag,
+            )
 
         # Strategy label
         if state.used_rag and state.used_websearch and state.used_tools:
@@ -118,7 +131,7 @@ class PersistAndBuildAnswerStep(RuntimeStep):
 
         # Trace persistence and answer building step (typed payload).
         state.trace_event(
-            component="engine",
+            component=TraceComponent.ENGINE,
             step="persist_and_build_answer",
             message="Assistant answer persisted and RuntimeAnswer built.",
             level=TraceLevel.INFO,

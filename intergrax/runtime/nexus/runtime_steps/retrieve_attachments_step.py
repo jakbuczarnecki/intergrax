@@ -11,7 +11,7 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.runtime_steps.tools import format_rag_context, insert_context_before_last_user
 from intergrax.runtime.nexus.tracing.attachments.attachments_context_summary import AttachmentsContextSummaryDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
 class RetrieveAttachmentsStep(RuntimeStep):
@@ -39,7 +39,7 @@ class RetrieveAttachmentsStep(RuntimeStep):
 
         if not configured:
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="attachments_context",
                 message="Session attachments retrieval skipped (ingestion_service not configured).",
                 level=TraceLevel.INFO,
@@ -58,7 +58,7 @@ class RetrieveAttachmentsStep(RuntimeStep):
 
         if session is None:
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="attachments_context",
                 message="Session attachments retrieval skipped (session not initialized).",
                 level=TraceLevel.INFO,
@@ -88,7 +88,7 @@ class RetrieveAttachmentsStep(RuntimeStep):
             )
         except Exception as e:
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="attachments_context",
                 message="Session attachments retrieval failed.",
                 level=TraceLevel.ERROR,
@@ -113,7 +113,7 @@ class RetrieveAttachmentsStep(RuntimeStep):
 
         if not state.used_attachments_context:
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="attachments_context",
                 message="Session attachments retrieval executed (no context used).",
                 level=TraceLevel.INFO,
@@ -138,7 +138,7 @@ class RetrieveAttachmentsStep(RuntimeStep):
             state.attachments_chunks_count = 0
 
             state.trace_event(
-                component="engine",
+                component=TraceComponent.ENGINE,
                 step="attachments_context",
                 message="Session attachments retrieved but formatted context is empty; treating as unused.",
                 level=TraceLevel.INFO,
@@ -172,7 +172,7 @@ class RetrieveAttachmentsStep(RuntimeStep):
 
         # Trace step summary
         state.trace_event(
-            component="engine",
+            component=TraceComponent.ENGINE,
             step="attachments_context",
             message="Session attachments retrieval executed and context injected.",
             level=TraceLevel.INFO,

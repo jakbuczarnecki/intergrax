@@ -14,8 +14,8 @@ from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 class RuntimeStepFinishedDiagV1(DiagnosticPayload):
     step_name: str
 
-    @property
-    def schema_id(self) -> str:
+    @classmethod
+    def schema_id(cls) -> str:
         return "intergrax.diag.runtime.step_finished"
 
     def to_dict(self) -> Dict[str, Any]:
