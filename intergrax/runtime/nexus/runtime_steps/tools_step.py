@@ -5,10 +5,11 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.nexus.config import ToolsContextScope
+if TYPE_CHECKING:
+    from intergrax.runtime.nexus.config import ToolsContextScope
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.tracing.tools.tools_summary import ToolsSummaryDiagV1

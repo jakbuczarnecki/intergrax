@@ -9,9 +9,11 @@ from typing import Optional, Sequence
 
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.nexus.config import RuntimeConfig, StepPlanningStrategy
+from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
+from intergrax.runtime.nexus.pipelines.no_planner_pipeline import NoPlannerPipeline
 from intergrax.runtime.nexus.planning.engine_plan_models import PlannerPromptConfig
 from intergrax.runtime.nexus.planning.plan_loop_models import PlanLoopPolicy
 from intergrax.runtime.nexus.planning.plan_sources import PlanSpec, ScriptedPlanSource
@@ -72,7 +74,7 @@ def build_in_memory_session_manager() -> SessionManager:
 
 def build_runtime_config_deterministic(
     *,
-    step_planning_strategy: StepPlanningStrategy,
+    pipeline: RuntimePipeline | None = None,
     plan_specs: Sequence[PlanSpec],
     llm_text: str = "OK",
     plan_loop_policy: Optional[PlanLoopPolicy] = None,
@@ -94,12 +96,16 @@ def build_runtime_config_deterministic(
         websearch_executor=None,
         websearch_config=None,
         tools_agent=None,
-        step_planning_strategy=step_planning_strategy,
+        pipeline=pipeline if pipeline is not None else NoPlannerPipeline(),
         step_planner_cfg=StepPlannerConfig(),
         step_executor_cfg=StepExecutorConfig(),
         planner_prompt_config=PlannerPromptConfig(),
         plan_loop_policy=plan_loop_policy or PlanLoopPolicy(),
         plan_source=ScriptedPlanSource(plans=plan_specs),
+        enable_rag=False,
+        enable_websearch=False,
+        enable_org_profile_memory=False,
+        tools_mode="off"        
     )
 
     # If RuntimeConfig exposes validate(), keep it enabled (enterprise style).

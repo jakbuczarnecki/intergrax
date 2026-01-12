@@ -7,6 +7,9 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from intergrax.runtime.nexus.pipelines.planner_dynamic_pipeline import PlannerDynamicPipeline
+from intergrax.runtime.nexus.pipelines.planner_static_pipeline import PlannerStaticPipeline
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -15,8 +18,6 @@ if str(ROOT) not in sys.path:
 import pytest
 
 from tests._support.builder import DeterministicRuntimeHarness, build_engine_harness, build_in_memory_session_manager, build_runtime_config_deterministic
-
-from intergrax.runtime.nexus.config import StepPlanningStrategy
 from intergrax.runtime.nexus.planning.engine_plan_models import EngineNextStep, PlanIntent
 from intergrax.runtime.nexus.planning.plan_sources import PlanSpec
 
@@ -47,7 +48,7 @@ def harness_static(session_manager_in_memory) -> DeterministicRuntimeHarness:
     ]
 
     cfg = build_runtime_config_deterministic(
-        step_planning_strategy=StepPlanningStrategy.STATIC_PLAN,
+        pipeline= PlannerStaticPipeline(),
         plan_specs=plans,
         llm_text="OK",
     )
@@ -87,7 +88,7 @@ def harness_dynamic(session_manager_in_memory) -> DeterministicRuntimeHarness:
     ]
 
     cfg = build_runtime_config_deterministic(
-        step_planning_strategy=StepPlanningStrategy.DYNAMIC_LOOP,
+        pipeline= PlannerDynamicPipeline(),
         plan_specs=plans,
         llm_text="OK",
     )

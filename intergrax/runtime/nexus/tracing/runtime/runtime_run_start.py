@@ -16,7 +16,8 @@ class RuntimeRunStartDiagV1(DiagnosticPayload):
     user_id: str = ""
     tenant_id: str = ""
     run_id: str = ""
-    step_planning_strategy: str = ""
+
+    pipeline_name: str = ""
 
     @classmethod
     def schema_id(cls) -> str:
@@ -32,6 +33,6 @@ class RuntimeRunStartDiagV1(DiagnosticPayload):
             "user_id": self.user_id,
             "tenant_id": self.tenant_id,
             "run_id": self.run_id,
-            "step_planning_strategy": self.step_planning_strategy,
+            "pipeline_name": self.pipeline_name,
         }
 

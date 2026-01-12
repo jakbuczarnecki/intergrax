@@ -5,10 +5,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Protocol, Optional
+from typing import List, Protocol, Optional, TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.nexus.config import RuntimeConfig
+if TYPE_CHECKING:
+    from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.websearch.schemas.web_search_result import WebSearchResult
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_context_generator import create_websearch_context_generator
