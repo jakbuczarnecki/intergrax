@@ -14,6 +14,7 @@ from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tracing.session.session_and_ingest_summary import IngestionPreviewItemV1, SessionAndIngestSummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+from intergrax.utils.time_provider import SystemTimeProvider
 
 
 class SessionAndIngestStep(RuntimeStep):
@@ -121,5 +122,5 @@ class SessionAndIngestStep(RuntimeStep):
         return ChatMessage(
             role="user",
             content=request.message,
-            created_at=datetime.now(timezone.utc).isoformat(),
+            created_at=SystemTimeProvider.utc_now().isoformat(),
         )

@@ -36,6 +36,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, Mapping, Optional, Protocol, cast
 
+from intergrax.utils.time_provider import SystemTimeProvider
+
 
 __all__ = ["IntergraxLogging"]
 
@@ -172,7 +174,7 @@ class _ConsoleFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         d = record.__dict__
 
-        ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] + "Z"
+        ts = SystemTimeProvider.utc_now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] + "Z"
         level = record.levelname
 
         component = cast(str, d.get(_KEY_COMPONENT, "-"))

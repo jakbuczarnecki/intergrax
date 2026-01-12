@@ -22,6 +22,8 @@ from intergrax.runtime.nexus.planning.step_executor_models import (
 # Your existing RuntimeStep protocol
 from typing import Protocol
 
+from intergrax.utils.time_provider import SystemTimeProvider
+
 
 class RuntimeStep(Protocol):
     async def run(self, state: RuntimeState) -> None:
@@ -33,7 +35,7 @@ class RuntimeStep(Protocol):
 # -----------------------------
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return SystemTimeProvider.utc_now().isoformat()
 
 
 def _ok_result(*, step: ExecutionStep, attempts: int = 1) -> StepExecutionResult:

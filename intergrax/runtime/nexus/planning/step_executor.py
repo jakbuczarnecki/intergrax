@@ -31,6 +31,7 @@ from intergrax.runtime.nexus.planning.step_executor_models import (
     StepStatus,
     UserInputRequest,
 )
+from intergrax.utils.time_provider import SystemTimeProvider
 
 
 @dataclass
@@ -98,7 +99,7 @@ class StepExecutor:
         stop_reason: Optional[PlanStopReason] = None
         user_input_request: Optional[UserInputRequest] = None
 
-        plan_started_dt = datetime.now(timezone.utc)
+        plan_started_dt = SystemTimeProvider.utc_now()
         plan_started_at = plan_started_dt.isoformat()
 
         sequence: int = 0
@@ -107,12 +108,12 @@ class StepExecutor:
             ctx.set_current_step(step)
 
             sequence += 1
-            step_started_dt = datetime.now(timezone.utc)
+            step_started_dt = SystemTimeProvider.utc_now()
             step_started_at = step_started_dt.isoformat()
 
             try:
                 if not step.enabled:
-                    step_ended_dt = datetime.now(timezone.utc)
+                    step_ended_dt = SystemTimeProvider.utc_now()
                     res = StepExecutionResult(
                         step_id=step.step_id,
                         action=step.action,
@@ -132,7 +133,7 @@ class StepExecutor:
 
                 # Dependency gate: if any dep FAILED/REPLAN -> propagate stop
                 if not self._deps_ok(step=step, results=results):
-                    step_ended_dt = datetime.now(timezone.utc)
+                    step_ended_dt = SystemTimeProvider.utc_now()
                     res = StepExecutionResult(
                         step_id=step.step_id,
                         action=step.action,
@@ -160,7 +161,7 @@ class StepExecutor:
                     executed_order.append(step.step_id)
                     res = await self._run_step_with_policy(step=step, ctx=ctx)
 
-                    step_ended_dt = datetime.now(timezone.utc)
+                    step_ended_dt = SystemTimeProvider.utc_now()
 
                     final_res = StepExecutionResult(
                         step_id=res.step_id,
@@ -211,7 +212,7 @@ class StepExecutor:
                         break
 
                 except StepReplanRequested as e:
-                    step_ended_dt = datetime.now(timezone.utc)
+                    step_ended_dt = SystemTimeProvider.utc_now()
                     res = StepExecutionResult(
                         step_id=step.step_id,
                         action=step.action,
@@ -289,7 +290,7 @@ class StepExecutor:
         if stop_reason != PlanStopReason.COMPLETED:
             ok = False
 
-        plan_ended_dt = datetime.now(timezone.utc)
+        plan_ended_dt = SystemTimeProvider.utc_now()
         plan_ended_at = plan_ended_dt.isoformat()
         plan_duration_ms = int((plan_ended_dt - plan_started_dt).total_seconds() * 1000)
 
@@ -332,7 +333,7 @@ class StepExecutor:
         last_err: Optional[StepError] = None
 
         def _placeholder_ts() -> str:
-            return datetime.now(timezone.utc).isoformat()
+            return SystemTimeProvider.utc_now().isoformat()
 
         for attempt in range(1, allowed_attempts + 1):
             try:

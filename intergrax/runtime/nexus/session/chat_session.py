@@ -10,6 +10,8 @@ from typing import Any, Dict, List, Optional
 from intergrax.llm.messages import AttachmentRef
 from enum import Enum
 
+from intergrax.utils.time_provider import SystemTimeProvider
+
 
 class SessionStatus(str, Enum):
     """
@@ -71,8 +73,8 @@ class ChatSession:
     workspace_id: Optional[str] = None  # workspace/project/context within a tenant
 
     # Timestamps for auditing and retention policies.
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: SystemTimeProvider.utc_now())
+    updated_at: datetime = field(default_factory=lambda: SystemTimeProvider.utc_now())
 
     # Optional per-session attachments (not tied directly to a single message).
     attachments: List[AttachmentRef] = field(default_factory=list)
@@ -108,7 +110,7 @@ class ChatSession:
         mutating the session, but this method itself does not persist
         anything.
         """
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = SystemTimeProvider.utc_now()
 
     @property
     def is_closed(self) -> bool:

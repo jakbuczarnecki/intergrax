@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Literal, Optional
 import uuid
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.utils.time_provider import SystemTimeProvider
 
 
 # ---------------------------------------------------------------------------
@@ -69,7 +70,7 @@ class UserProfileMemoryEntry:
     # You can also store datetime and convert in the store layer;
     # here we keep string for easier serialization.
     created_at: str = field(
-        default_factory=lambda: datetime.utcnow().isoformat()
+        default_factory=lambda: SystemTimeProvider.utc_now().isoformat()
     )
 
     # Additional, less frequently queried metadata.

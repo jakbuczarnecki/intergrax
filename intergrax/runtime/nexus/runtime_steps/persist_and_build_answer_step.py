@@ -18,6 +18,7 @@ from intergrax.runtime.nexus.responses.response_schema import (
 )
 from intergrax.runtime.nexus.tracing.runtime.persist_and_build_answer_summary import PersistAndBuildAnswerSummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+from intergrax.utils.time_provider import SystemTimeProvider
 
 
 class PersistAndBuildAnswerStep(RuntimeStep):
@@ -43,7 +44,7 @@ class PersistAndBuildAnswerStep(RuntimeStep):
         assistant_message = ChatMessage(
             role="assistant",
             content=answer_text,
-            created_at=datetime.now(timezone.utc).isoformat(),
+            created_at=SystemTimeProvider.utc_now().isoformat(),
         )
         
         append_res = await state.context.session_manager.append_message(
