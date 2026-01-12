@@ -17,6 +17,7 @@ from intergrax.runtime.nexus.session.chat_session import ChatSession
 from intergrax.runtime.nexus.tracing.adapters.llm_usage_finalize import LLMUsageFinalizeDiag
 from intergrax.runtime.nexus.tracing.adapters.llm_usage_snapshot import LLMUsageSnapshotDiag
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload, ToolCallTrace, TraceComponent, TraceEvent, TraceLevel, utc_now_iso
+from intergrax.utils.time_provider import SystemTimeProvider
 
 
 @dataclass
@@ -215,7 +216,7 @@ class RuntimeState:
                 self.context.llm_usage_run_seq += 1
                 rec = LLMUsageRunRecord(
                     seq=self.context.llm_usage_run_seq,
-                    ts_utc=datetime.now(timezone.utc),
+                    ts_utc=SystemTimeProvider.utc_now(),
                     run_id=self.run_id,
                     session_id=request.session_id,
                     user_id=request.user_id,

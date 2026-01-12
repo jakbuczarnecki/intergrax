@@ -12,6 +12,7 @@ from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.runtime_steps.tools import format_rag_context, insert_context_before_last_user
 from intergrax.runtime.nexus.tracing.attachments.attachments_context_summary import AttachmentsContextSummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+from intergrax.utils.time_provider import SystemTimeProvider
 
 
 class RetrieveAttachmentsStep(RuntimeStep):
@@ -161,7 +162,7 @@ class RetrieveAttachmentsStep(RuntimeStep):
             ChatMessage(
                 role="system",
                 content=content,
-                created_at=datetime.now(timezone.utc).isoformat(),
+                created_at=SystemTimeProvider.utc_now().isoformat(),
             )
         ]
 

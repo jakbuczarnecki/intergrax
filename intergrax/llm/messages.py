@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional
 import uuid
+
+from intergrax.utils.time_provider import SystemTimeProvider
 
 MessageRole = Literal["system", "user", "assistant", "tool"]
 
@@ -44,7 +46,7 @@ class ChatMessage:
     entry_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     deleted: bool = False
     modified: bool = False    
-    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = field(default_factory=lambda: SystemTimeProvider.utc_now().isoformat())
     tool_call_id: Optional[str] = None
     name: Optional[str] = None
     tool_calls: Optional[List[dict]] = None

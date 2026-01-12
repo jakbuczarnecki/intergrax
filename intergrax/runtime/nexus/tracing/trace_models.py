@@ -11,6 +11,8 @@ from enum import Enum
 from typing import Any, Dict, Optional
 import uuid
 
+from intergrax.utils.time_provider import SystemTimeProvider
+
 
 class TraceLevel(str, Enum):
     DEBUG = "debug"
@@ -57,7 +59,7 @@ class DiagnosticPayload(ABC):
 
 
 def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return SystemTimeProvider.utc_now().isoformat()
 
 
 @dataclass(frozen=True)

@@ -10,6 +10,7 @@ from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.runtime.nexus.session.session_message_append_result import SessionMessageAppendResult
 from intergrax.runtime.nexus.tracing.session.session_consolidation_diag import SessionConsolidationDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+from intergrax.utils.time_provider import SystemTimeProvider
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.session.chat_session import (
@@ -610,7 +611,7 @@ class SessionManager:
         # When using typed fields we keep the timestamp as a proper datetime
         # object in UTC. If string serialization is needed (e.g. for DB),
         # the storage backend is responsible for that conversion.
-        now_utc = datetime.now(timezone.utc)
+        now_utc = SystemTimeProvider.utc_now()
 
         session.last_consolidated_at = now_utc
         session.last_consolidated_reason = reason.value
@@ -652,7 +653,7 @@ class SessionManager:
         if last_dt.tzinfo is None:
             last_dt = last_dt.replace(tzinfo=timezone.utc)
 
-        now = datetime.now(timezone.utc)
+        now = SystemTimeProvider.utc_now()
         elapsed_seconds = (now - last_dt).total_seconds()
 
         return elapsed_seconds >= cooldown
