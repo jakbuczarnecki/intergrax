@@ -107,7 +107,7 @@ class RuntimeEngine:
                 user_id=request.user_id,
                 tenant_id=(request.tenant_id or self.context.config.tenant_id),
                 run_id=state.run_id,
-                step_planning_strategy=str(self.context.config.step_planning_strategy),
+                pipeline_name=pipeline.__class__.__name__ if pipeline is not None else "None",
             ),
         )
 

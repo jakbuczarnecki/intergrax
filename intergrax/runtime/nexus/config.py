@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional, Literal
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.rag.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.planning.engine_plan_models import PlannerPromptConfig
 from intergrax.runtime.nexus.planning.plan_loop_models import PlanLoopPolicy
 from intergrax.runtime.nexus.planning.plan_sources import PlanSource
@@ -32,12 +33,6 @@ class ToolsContextScope(str, Enum):
     CONVERSATION = "conversation"
     
     FULL = "full"
-
-
-class StepPlanningStrategy(str, Enum):
-    OFF = "off"
-    STATIC_PLAN = "static_plan"
-    DYNAMIC_LOOP = "dynamic_loop"
 
 
 @dataclass
@@ -182,7 +177,10 @@ class RuntimeConfig:
     # ------------------------------------------------------------------
     # PLANNING
     # ------------------------------------------------------------------
-    step_planning_strategy: StepPlanningStrategy = StepPlanningStrategy.OFF
+
+    # Optional explicit pipeline instance.
+    # If provided, Runtime will run it.
+    pipeline: Optional[RuntimePipeline] = None
 
     step_planner_cfg: Optional[StepPlannerConfig] = None
 
@@ -202,6 +200,10 @@ class RuntimeConfig:
         """
         Validates config consistency. Keeps the runtime fail-fast and predictable.
         """
+
+        if self.pipeline is not None and not isinstance(self.pipeline, RuntimePipeline):
+            raise TypeError("pipeline must be an instance of RuntimePipeline.")
+        
         if self.enable_rag:
             if self.embedding_manager is None or self.vectorstore_manager is None:
                 raise ValueError(

@@ -9,7 +9,8 @@ from typing import Any, Dict, List, Optional
 from typing import TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.nexus.config import RuntimeConfig
+if TYPE_CHECKING:
+    from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.tracing.history.history_summary import HistorySummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 if TYPE_CHECKING:

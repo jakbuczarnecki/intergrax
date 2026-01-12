@@ -345,7 +345,7 @@ class LLMAdapterUsageLog:
         if not call.success:
             st.errors += 1
     
-    def get_run_stats(self, run_id: Optional[str] = None) -> Optional[LLMRunStats]:
+    def get_run_stats(self, run_id: Optional[str] = None) -> LLMRunStats:
         """
         Get aggregated stats for a given run_id.
         Returns None if no stats exist for that run_id.
@@ -354,7 +354,14 @@ class LLMAdapterUsageLog:
         st = self._run_stats.get(rid)
 
         if st is None:
-            return None
+            return LLMRunStats(
+                calls=0,
+                input_tokens=0,
+                output_tokens=0,
+                total_tokens=0,
+                duration_ms=0,
+                errors=0,
+            )
         
         return LLMRunStats(
             calls=st.calls,
