@@ -397,25 +397,34 @@ class RagAnswerer:
         Contract (advanced RAG):
         - Retriever returns a list of dict hits.
         - Each hit must contain:
-            - content: str
-            - metadata: dict
-            - similarity_score: Optional[float]
+            - content or text: str
+            - metadata: dict (optional)
+            - similarity_score or score: Optional[float]
+        Top-level source/page fields are normalized into metadata for consistency.
         """
         if not isinstance(h, dict):
             raise TypeError(f"RagAnswerer expects hit as dict, got: {type(h)}")
 
         content = (h.get("content") or h.get("text") or "").strip()
-        meta = h.get("metadata") or {}
+
+        meta = dict(h.get("metadata") or {})
+        # normalize top-level fields into metadata
+        if "source" in h and "source" not in meta:
+            meta["source"] = h.get("source")
+        if "page" in h and "page" not in meta:
+            meta["page"] = h.get("page")
+
         score = h.get("similarity_score")
         if score is None:
             score = h.get("score")
 
         return {
             "content": content,
-            "metadata": dict(meta or {}),
+            "metadata": meta,
             "similarity_score": float(score) if isinstance(score, (int, float)) else None,
             # preserve optional fields if present
             "id": h.get("id"),
             "distance": h.get("distance"),
         }
+
 

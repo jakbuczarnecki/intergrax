@@ -33,6 +33,8 @@ class FakeLLMAdapter(LLMAdapter):
     - still exercises CoreLLMStep / finalization path
     """
 
+    provider = "fake"
+
     def __init__(self, *, fixed_text: str = "OK") -> None:
         super().__init__()
         self._fixed_text = fixed_text
@@ -47,7 +49,17 @@ class FakeLLMAdapter(LLMAdapter):
     ) -> str:
         # Deterministic response for tests.
         # Keep it simple: do NOT depend on message content.
-        return self._fixed_text
+        call = self.usage.begin_call(run_id=run_id)
+        try:
+            return self._fixed_text
+        finally:
+            # Tokens are fake here; that's fine for tests.
+            self.usage.end_call(
+                call,
+                input_tokens=0,
+                output_tokens=len(self._fixed_text),
+                success=True,
+            )
 
     def context_window_tokens(self) -> int:
         # Large enough for tests; avoids truncation logic influencing results.

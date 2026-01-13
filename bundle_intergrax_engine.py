@@ -43,8 +43,8 @@ SOURCE_EXTS = (PY_EXT, IPYNB_EXT)
 # values-> folder path relative to project root
 # ----------------------------------------------------------------------
 EXTRA_BUNDLES: Dict[str, str] = {
-    "ENGINE_RUNTIME_BUNDLE": r"intergrax\runtime\nexus",
-    "ENGINE_RUNTIME_TRACING_BUNDLE": r"intergrax\runtime\nexus\tracing",
+    "NEXUS_FULL_BUNDLE": r"intergrax\runtime\nexus",
+    "NEXUS_TRACING_BUNDLE": r"intergrax\runtime\nexus\tracing",
     "LLM": r"intergrax\llm",
     "LLM_ADAPTERS": r"intergrax\llm_adapters",
     "MEMORY": r"intergrax\memory",
@@ -53,7 +53,7 @@ EXTRA_BUNDLES: Dict[str, str] = {
     "SUPERVISOR": r"intergrax\supervisor",
     "TOOLS": r"intergrax\tools",
     "WEBSEARCH": r"intergrax\websearch",
-    "FULL_BUNDLE": r"intergrax",
+    "INTERGRAX_FULL_BUNDLE": r"intergrax",
     "NOTEBOOKS": r"notebooks",
     "TESTS": r"tests",
 }

@@ -23,6 +23,8 @@ Intergrax combines:
 
 The framework is being developed as part of the **Intergrax Platform**, a long-term initiative to digitalize enterprise operations, enhance collaboration, and integrate AI-powered reasoning into daily business processes.
 
+**More information about Roadmap**: `docs/ROADMAP.md`
+
 ---
 
 ## Key Capabilities

@@ -45,6 +45,14 @@ class LLMAdapter(ABC):
     model_name_for_token_estimation: Optional[str] = None
 
     def __init__(self) -> None:        
+        provider = self.provider
+
+        if isinstance(provider, LLMProvider):
+            provider = provider.value
+
+        if not isinstance(provider, str) or not provider.strip():
+            raise ValueError(f"{self.__class__.__name__}.provider must be a non-empty string")
+
         self.id = uuid.uuid4().hex
         self.usage = LLMAdapterUsageLog()
     

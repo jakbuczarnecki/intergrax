@@ -122,3 +122,36 @@ def test_unknown_run_id_returns_zero_stats() -> None:
     assert stats.errors == 0
     assert stats.total_tokens == 0
     assert stats.duration_ms == 0
+
+
+def test_get_run_stats_returns_snapshot_not_internal_state() -> None:
+    """
+    get_run_stats() must return a snapshot of stats, not a live reference.
+
+    Mutating the returned object must NOT affect internal aggregated state.
+    This protects usage telemetry from accidental external mutation.
+    """
+    usage = LLMAdapterUsageLog()
+    run_id = "run-001"
+
+    call = usage.begin_call(run_id=run_id)
+    usage.end_call(call, input_tokens=4, output_tokens=6, success=True, error_type=None)
+
+    stats = usage.get_run_stats(run_id)
+
+    # Sanity check
+    assert stats.calls == 1
+    assert stats.total_tokens == 10
+
+    # Mutate returned stats intentionally
+    stats.calls = 999
+    stats.input_tokens = 999
+    stats.duration_ms = 999999
+
+    # Fetch stats again – must be unchanged
+    stats_after = usage.get_run_stats(run_id)
+
+    assert stats_after.calls == 1
+    assert stats_after.input_tokens == 4
+    assert stats_after.output_tokens == 6
+    assert stats_after.total_tokens == 10
