@@ -34,6 +34,7 @@ from intergrax.runtime.nexus.responses.response_schema import (
     RuntimeAnswer,
 )
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.tracing.persistence_models import RunMetadata
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_abort import RuntimeRunAbortDiagV1
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_end import RuntimeRunEndDiagV1
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_start import RuntimeRunStartDiagV1
@@ -96,6 +97,8 @@ class RuntimeEngine:
 
         state.configure_llm_tracker()
 
+        pipeline = PipelineFactory.build_pipeline(state=state)
+
         # Initial trace entry for this request.
         state.trace_event(
             component=TraceComponent.ENGINE,
@@ -114,7 +117,7 @@ class RuntimeEngine:
         runtime_answer: RuntimeAnswer | None = None
 
         try:
-            pipeline = PipelineFactory.build_pipeline(state=state)
+            
             runtime_answer = await pipeline.run(state=state)           
 
             # Final trace entry for this request.
@@ -152,5 +155,18 @@ class RuntimeEngine:
              # Attach debug trace to the returned answer (runtime-level diagnostics).
             if runtime_answer is not None:
                 runtime_answer.trace_events = state.trace_events
+                runtime_answer.run_id = run_id
+
+            writer = self.context.trace_writer
+            if writer is not None:
+                metadata = RunMetadata(
+                    run_id=state.run_id,
+                    session_id=request.session_id,
+                    user_id=request.user_id,
+                    tenant_id=(request.tenant_id or self.context.config.tenant_id),
+                    started_at_utc=state.started_at_utc,
+                )
+                writer.finalize_run(state.run_id, metadata)
+
 
     

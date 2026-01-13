@@ -172,6 +172,7 @@ class RuntimeAnswer:
     """
 
     answer: str
+    run_id: Optional[str] = None
     citations: List[Citation] = field(default_factory=list)
     route: RouteInfo = field(default_factory=RouteInfo)
     tool_calls: List[ToolCallInfo] = field(default_factory=list)

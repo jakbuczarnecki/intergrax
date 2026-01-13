@@ -53,6 +53,7 @@ class HistoryStep(RuntimeStep):
             payload=HistorySummaryDiagV1(
                 base_history_length=len(state.base_history),
                 history_length=len(state.built_history_messages),
-                history_includes_current_user=state.history_includes_current_user,
+                history_includes_current_user=state.history_includes_current_user,                
+                history_tokens=state.history_token_count,
             ),
         )

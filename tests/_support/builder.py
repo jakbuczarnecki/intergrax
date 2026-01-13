@@ -14,7 +14,7 @@ from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.pipelines.no_planner_pipeline import NoPlannerPipeline
-from intergrax.runtime.nexus.planning.engine_plan_models import PlannerPromptConfig
+from intergrax.runtime.nexus.planning.engine_plan_models import EngineNextStep, PlanIntent, PlannerPromptConfig
 from intergrax.runtime.nexus.planning.plan_loop_models import PlanLoopPolicy
 from intergrax.runtime.nexus.planning.plan_sources import PlanSpec, ScriptedPlanSource
 from intergrax.runtime.nexus.planning.step_executor_models import StepExecutorConfig
@@ -34,6 +34,13 @@ class FakeLLMAdapter(LLMAdapter):
     """
 
     provider = "fake"
+    model = "fake"
+
+    @property
+    def context_window_tokens(self) -> int:
+        # Large enough for tests; avoids truncation logic influencing results.
+        return 128_000
+
 
     def __init__(self, *, fixed_text: str = "OK") -> None:
         super().__init__()
@@ -61,10 +68,6 @@ class FakeLLMAdapter(LLMAdapter):
                 success=True,
             )
 
-    def context_window_tokens(self) -> int:
-        # Large enough for tests; avoids truncation logic influencing results.
-        return 128_000
-
 
 @dataclass(frozen=True)
 class DeterministicRuntimeHarness:
@@ -87,7 +90,7 @@ def build_in_memory_session_manager() -> SessionManager:
 def build_runtime_config_deterministic(
     *,
     pipeline: RuntimePipeline | None = None,
-    plan_specs: Sequence[PlanSpec],
+    plan_specs: Optional[Sequence[PlanSpec]] = None,
     llm_text: str = "OK",
     plan_loop_policy: Optional[PlanLoopPolicy] = None,
 ) -> RuntimeConfig:
@@ -98,6 +101,24 @@ def build_runtime_config_deterministic(
     - required planner/step configs present (fail-fast validations pass)
     """
     llm = FakeLLMAdapter(fixed_text=llm_text)
+
+    if plan_specs is None:
+        plan_specs = [
+            PlanSpec(
+                version="1",
+                intent=PlanIntent.GENERIC,
+                next_step=EngineNextStep.FINALIZE,
+                reasoning_summary="test: minimal plan spec for deterministic harness",
+                ask_clarifying_question=False,
+                clarifying_question=None,
+                use_websearch=False,
+                use_user_longterm_memory=False,
+                use_rag=False,
+                use_tools=False,
+                debug=None,
+            )
+        ]
+    
 
     cfg = RuntimeConfig(
         llm_adapter=llm,
