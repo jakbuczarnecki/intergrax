@@ -124,3 +124,19 @@ def test_create_forwards_kwargs_to_factory(_restore_registry_state: Dict[str, An
     out = LLMAdapterRegistry.create(provider, x=1, y="a")
     assert out == "ok"
     assert captured == {"x": 1, "y": "a"}
+
+
+def test_normalize_provider_rejects_non_string_and_non_enum(_restore_registry_state: Dict[str, Any]) -> None:
+    """
+    Non-string and non-enum provider values must be rejected explicitly.
+
+    This prevents obscure runtime errors and mis-registrations like "None" or "42".
+    """
+    with pytest.raises((TypeError, ValueError)):
+        LLMAdapterRegistry._normalize_provider(None)  # type: ignore[arg-type]
+
+    with pytest.raises((TypeError, ValueError)):
+        LLMAdapterRegistry._normalize_provider(42)  # type: ignore[arg-type]
+
+    with pytest.raises((TypeError, ValueError)):
+        LLMAdapterRegistry._normalize_provider(object())  # type: ignore[arg-type]

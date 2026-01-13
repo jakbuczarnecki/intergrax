@@ -33,6 +33,8 @@ class _DummyAdapter(LLMAdapter):
     Minimal concrete adapter for testing non-public helper behavior.
     """
 
+    provider = "fake"
+
     @property
     def context_window_tokens(self) -> int:
         return 1

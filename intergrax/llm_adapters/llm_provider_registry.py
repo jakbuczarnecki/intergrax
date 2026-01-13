@@ -21,11 +21,16 @@ class LLMAdapterRegistry:
     @staticmethod
     def _normalize_provider(provider: Union[str, LLMProvider]) -> str:
         if isinstance(provider, LLMProvider):
-            return provider.value
-        p = str(provider).strip().lower()
-        if not p:
+            key = provider.value
+        elif isinstance(provider, str):
+            key = provider.strip()
+        else:
+            raise TypeError(f"provider must be str or LLMProvider, got {type(provider)!r}")
+
+        if not key:
             raise ValueError("provider must not be empty")
-        return p
+
+        return key.lower()
 
     @classmethod
     def register(cls, provider: Union[str, LLMProvider], factory: Callable[..., LLMAdapter]) -> None:
