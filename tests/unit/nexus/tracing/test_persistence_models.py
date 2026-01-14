@@ -105,4 +105,6 @@ async def test_runtime_finalizes_run_metadata() -> None:
 
     assert run.metadata.run_id == answer.run_id
     assert run.metadata.session_id == "sess-1"
-    assert run.metadata.user_id == "user-1"
+    assert run.metadata.user_id == "user-1"    
+    assert run.metadata.tenant_id in ("test-tenant", "", "tenant-1")
+    assert run.metadata.started_at_utc != ""
