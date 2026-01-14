@@ -1,63 +1,58 @@
 Intergrax Roadmap
 
-Last updated: 2026-01-12
+Last updated: 2026-01-14
 
 This is a living engineering roadmap / TODO list.
 It reflects current development priorities and may change frequently.
 
 Legend:
-
 [P0] — Production blockers (must-have before first E2E agent)
-
 [P1] — Required for stable productization
-
 [P2] — Important but not blocking first real use
-
 [P3] — Nice-to-have / future
 
 DONE
-
 [DONE] Logging — global settings and global contracts — simplify logging
 [DONE] Diagnostics and tracing — in runtime and RuntimeState — replace dictionaries with typed structures
 
 🟥 Production foundations (P0 — must be done before first E2E agent)
-
-[P0] Trace events — implement persistent trace event storage (databases, files, system logs)
-[P0] Runtime — implement run persistence and replay (ability to reconstruct a run from trace + artifacts)
+[P0] Run record — implement persistent run record (trace + artifacts + cost + metadata)
+[P0] Trace events — implement persistent trace event storage (DB, files, system logs)
+[P0] Artifacts — implement persistent artifact store and reference linking from trace
+[P0] Runtime — implement run replay and inspection (ability to reconstruct a run from trace + artifacts)
 [P0] Runtime — implement idempotency and safe retry for tool calls with side effects
+[P0] Runtime loop — implement timeout, retry, fallback and escalation policies
+[P0] Human-in-the-loop — implement base HITL escalation and clarification mechanism
 [P0] Budget control — create architecture for defining and enforcing budget policies (tokens, time, tool calls, replans)
 [P0] Budget control — implement cost tracking and attach it to run_id and trace
 [P0] Prompting — move all prompts into a structured prompt registry with versioning and pinning
 [P0] Prompting — add prompt hashing, metadata and migration strategy
 [P0] Sessions — implement production storage adapters for sessions and user profiles (DB-backed)
 [P0] Organization profiles — implement production storage and isolation per organization
+[P0] Security — implement PII redaction and multi-tenant isolation for logs, memory, artifacts and vector stores
 [P0] Tooling — implement a formal tool/skill contract (input/output schema, error taxonomy, permissions)
 [P0] Tooling — implement permission scopes and auditing for tool usage
-[P0] Guardrails — implement a new guardrails layer for the engine (policy, safety, output validation)
-[P0] Runtime loop — implement timeout, retry, fallback and escalation policies
-[P0] Human-in-the-loop — implement base HITL escalation and clarification mechanism
-[P0] Eval — implement an evaluation harness for agent quality, regressions and cost tracking
 [P0] Error handling — define error taxonomy and map error types to retry/fallback/escalation strategies
-[P0] Security — implement PII redaction and multi-tenant isolation for logs, memory and vector stores
+[P0] Guardrails — implement minimal hard gates (output validation, tool gating, pii-safe logging)
+[P0] Eval — implement an evaluation harness for agent quality, regressions and cost tracking
+[P0] Tests — minimal unit and integration test coverage for all P0 foundations
 
 🟧 Productization & stability (P1)
-
 [P1] Tests — convert notebooks into production-grade unit and integration tests
 [P1] Runtime — create lifecycle events to notify users about reasoning and pipelines, and allow interruption when needed
 [P1] Memory improvement — implement mechanisms for improving reasoning while history profiles grow (summaries, compression)
 [P1] LLM Adapters — change generate_messages to return a custom object instead of a raw string
 [P1] LLM Adapters — implement full-usage stream_messages
-[P1] EnginePlan — replace debug dictionaries with strongly typed structures
 [P1] Runtime loop — handle long user questions by splitting them into manageable parts
-[P1] Runtime loop — remove the strategy flag and replace it with a configuration-based pipeline selection mechanism
+[P1] Runtime loop — replace strategy flags with configuration-based pipeline selection
 [P1] Skills — implement a skill mechanism similar to Claude
 [P1] Pipelines — refactor pipeline architecture for customization (e.g. LangGraph-style), allow custom reasoning blocks
 [P1] MCP — create foundations for MCP configurations for backend services
 [P1] API / FastAPI — create foundations for API / FastAPI configurations
 [P1] Logging — attach logger to other system components
+[P1] Guardrails — extended policy and safety layer (advanced validators, classifiers, moderation)
 
 🟨 Agents & product demos (P1–P2)
-
 [P1] Agent — design and implement a company profile agent (first E2E product)
 [P1] Agent — design and implement an IT headhunter agent
 [P2] Agent — create a virtual company team with a supervisor and inter-agent communication
@@ -66,7 +61,6 @@ DONE
 [P2] Agent / Tool — Text-to-SQL
 
 🟦 Integrations & external systems (P2)
-
 [P2] Integrations — Google Docs
 [P2] Integrations — Google Drive
 [P2] Integrations — Google Sheets
@@ -77,7 +71,6 @@ DONE
 [P2] Integrations — other useful and well-known APIs
 
 🟩 Advanced capabilities (P3)
-
 [P3] Cloud — create mechanisms for cloud computing integrations (Azure, AWS, etc.)
 [P3] Voice agent — create an example voice chatbot
 [P3] Large data handling — scalable reasoning over large datasets (source code, corpora)

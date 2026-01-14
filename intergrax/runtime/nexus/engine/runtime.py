@@ -41,6 +41,7 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tracing.persistence_models import RunError, RunMetadata, RunStats
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_abort import RuntimeRunAbortDiagV1
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_end import RuntimeRunEndDiagV1
+from intergrax.runtime.nexus.tracing.runtime.runtime_run_retry import RuntimeRunRetryDiagV1
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_start import RuntimeRunStartDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
@@ -121,78 +122,101 @@ class RuntimeEngine:
 
         runtime_answer: RuntimeAnswer | None = None
         run_error: RunError | None = None
+        max_retries = int(state.context.config.max_run_retries)
+        attempt = 0
 
-        try:
-            
-            runtime_answer = await self._run_with_timeout(pipeline=pipeline, state=state)       
+        while True:
+            try:
+                
+                runtime_answer = await self._run_with_timeout(pipeline=pipeline, state=state)       
 
-            # Final trace entry for this request.
-            state.trace_event(
-                component=TraceComponent.ENGINE,
-                step="run_end",
-                level=TraceLevel.INFO,
-                message="RuntimeEngine.run() finished.",
-                payload=RuntimeRunEndDiagV1(
-                    strategy=runtime_answer.route.strategy,
-                    used_rag=runtime_answer.route.used_rag,
-                    used_websearch=runtime_answer.route.used_websearch,
-                    used_tools=runtime_answer.route.used_tools,
-                    used_user_longterm_memory=runtime_answer.route.used_user_longterm_memory,
-                    run_id=state.run_id,
-                ),
-            )
-
-            return runtime_answer
-        
-        except Exception as ex:
-            run_error = RunError(
-                error_type=ErrorClassifier.classify(ex),
-                message=str(ex),
-            )
-            raise
-
-        finally:
-            await state.finalize_llm_tracker(
-                request=request,
-                runtime_answer=runtime_answer,
-            )
-
-            if runtime_answer is None:
+                # Final trace entry for this request.
                 state.trace_event(
                     component=TraceComponent.ENGINE,
-                    step="run_abort",
-                    level=TraceLevel.WARNING,
-                    message="RuntimeEngine.run() aborted before RuntimeAnswer was produced.",
-                    payload=RuntimeRunAbortDiagV1(run_id=state.run_id),
-                )
-
-             # Attach debug trace to the returned answer (runtime-level diagnostics).
-            if runtime_answer is not None:
-                runtime_answer.trace_events = state.trace_events
-                runtime_answer.run_id = run_id
-
-            duration_ms = int((time.perf_counter() - start_perf) * 1000)
-            if duration_ms < 0:
-                duration_ms = 0
-            
-            llm_usage = state.llm_usage_tracker.export()
-
-            writer = self.context.trace_writer
-
-            if writer is not None:
-                metadata = RunMetadata(
-                    run_id=state.run_id,
-                    session_id=request.session_id,
-                    user_id=request.user_id,
-                    tenant_id=(request.tenant_id or self.context.config.tenant_id),
-                    started_at_utc=state.started_at_utc,
-                    stats=RunStats(
-                        duration_ms=duration_ms,
-                        llm_usage=llm_usage
+                    step="run_end",
+                    level=TraceLevel.INFO,
+                    message="RuntimeEngine.run() finished.",
+                    payload=RuntimeRunEndDiagV1(
+                        strategy=runtime_answer.route.strategy,
+                        used_rag=runtime_answer.route.used_rag,
+                        used_websearch=runtime_answer.route.used_websearch,
+                        used_tools=runtime_answer.route.used_tools,
+                        used_user_longterm_memory=runtime_answer.route.used_user_longterm_memory,
+                        run_id=state.run_id,
                     ),
-                    error=run_error,
                 )
-                writer.finalize_run(state.run_id, metadata)
+
+                return runtime_answer
+            
+            except Exception as ex:
+                error_code = ErrorClassifier.classify(ex)
+
+                retryable = error_code in state.context.config.retry_run_on
+                if retryable and attempt < max_retries:
+                    attempt += 1
+                    state.trace_event(
+                        component=TraceComponent.ENGINE,
+                        step="run_retry",
+                        level=TraceLevel.WARNING,
+                        message="RuntimeEngine.run() retrying after failure.",
+                        payload=RuntimeRunRetryDiagV1(
+                            run_id=state.run_id,
+                            attempt=attempt,
+                            max_retries=max_retries,
+                            error_code=error_code,
+                        ),
+                    )
+                    continue
+
+                # Final failure (no retries left or not retryable) -> persist error.
+                run_error = RunError(
+                    error_type=error_code,
+                    message=str(ex),
+                )
+                raise
+
+            finally:
+                await state.finalize_llm_tracker(
+                    request=request,
+                    runtime_answer=runtime_answer,
+                )
+
+                if runtime_answer is None:
+                    state.trace_event(
+                        component=TraceComponent.ENGINE,
+                        step="run_abort",
+                        level=TraceLevel.WARNING,
+                        message="RuntimeEngine.run() aborted before RuntimeAnswer was produced.",
+                        payload=RuntimeRunAbortDiagV1(run_id=state.run_id),
+                    )
+
+                # Attach debug trace to the returned answer (runtime-level diagnostics).
+                if runtime_answer is not None:
+                    runtime_answer.trace_events = state.trace_events
+                    runtime_answer.run_id = run_id
+
+                duration_ms = int((time.perf_counter() - start_perf) * 1000)
+                if duration_ms < 0:
+                    duration_ms = 0
+                
+                llm_usage = state.llm_usage_tracker.export()
+
+                writer = self.context.trace_writer
+
+                if writer is not None:
+                    metadata = RunMetadata(
+                        run_id=state.run_id,
+                        session_id=request.session_id,
+                        user_id=request.user_id,
+                        tenant_id=(request.tenant_id or self.context.config.tenant_id),
+                        started_at_utc=state.started_at_utc,
+                        stats=RunStats(
+                            duration_ms=duration_ms,
+                            llm_usage=llm_usage
+                        ),
+                        error=run_error,
+                    )
+                    writer.finalize_run(state.run_id, metadata)
 
 
     async def _run_with_timeout(

@@ -4,11 +4,12 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional, Literal
+from typing import Any, Dict, FrozenSet, Optional, Literal
 
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.rag.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.planning.engine_plan_models import PlannerPromptConfig
 from intergrax.runtime.nexus.planning.plan_loop_models import PlanLoopPolicy
@@ -201,6 +202,14 @@ class RuntimeConfig:
     # If set, the entire pipeline execution is cancelled after this duration.
     runtime_timeout_ms: Optional[int] = None
 
+    # Run-level retry (safety net). Defaults to OFF.
+    max_run_retries: int = 0
+
+    retry_run_on: FrozenSet[RuntimeErrorCode] = field(
+        default_factory=lambda: frozenset(
+            {RuntimeErrorCode.LLM_ERROR, RuntimeErrorCode.TOOL_ERROR}
+        )
+    )
 
     # ------------------------------------------------------------------
     # VALIDATION
@@ -215,6 +224,20 @@ class RuntimeConfig:
                 raise TypeError("runtime_timeout_ms must be an int or None.")
             if self.runtime_timeout_ms<=0:
                 raise ValueError("runtime_timeout_ms must be > 0 when provided.")
+            
+        
+        if not isinstance(self.max_run_retries, int):
+            raise TypeError("max_run_retries must be an int.")
+        if self.max_run_retries < 0:
+            raise ValueError("max_run_retries must be >= 0.")
+
+        if not isinstance(self.retry_run_on, frozenset):
+            raise TypeError("retry_run_on must be a frozenset[RuntimeErrorCode].")
+
+        for code in self.retry_run_on:
+            if not isinstance(code, RuntimeErrorCode):
+                raise TypeError("retry_run_on must contain RuntimeErrorCode items only.")
+
 
         if self.pipeline is not None and not isinstance(self.pipeline, RuntimePipeline):
             raise TypeError("pipeline must be an instance of RuntimePipeline.")
