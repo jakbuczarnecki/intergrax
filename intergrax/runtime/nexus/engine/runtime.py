@@ -24,6 +24,7 @@ Refactored as a stateful pipeline:
 
 from __future__ import annotations
 
+import time
 import uuid
 
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
@@ -34,7 +35,7 @@ from intergrax.runtime.nexus.responses.response_schema import (
     RuntimeAnswer,
 )
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.tracing.persistence_models import RunMetadata
+from intergrax.runtime.nexus.tracing.persistence_models import RunMetadata, RunStats
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_abort import RuntimeRunAbortDiagV1
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_end import RuntimeRunEndDiagV1
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_start import RuntimeRunStartDiagV1
@@ -87,6 +88,7 @@ class RuntimeEngine:
         """
 
         run_id = f"run_{uuid.uuid4().hex}"
+        start_perf = time.perf_counter()
 
         state = RuntimeState(
             context=self.context,
@@ -157,7 +159,14 @@ class RuntimeEngine:
                 runtime_answer.trace_events = state.trace_events
                 runtime_answer.run_id = run_id
 
+            duration_ms = int((time.perf_counter() - start_perf) * 1000)
+            if duration_ms < 0:
+                duration_ms = 0
+            
+            llm_usage = state.llm_usage_tracker.export()
+
             writer = self.context.trace_writer
+
             if writer is not None:
                 metadata = RunMetadata(
                     run_id=state.run_id,
@@ -165,6 +174,10 @@ class RuntimeEngine:
                     user_id=request.user_id,
                     tenant_id=(request.tenant_id or self.context.config.tenant_id),
                     started_at_utc=state.started_at_utc,
+                    stats=RunStats(
+                        duration_ms=duration_ms,
+                        llm_usage=llm_usage
+                    )
                 )
                 writer.finalize_run(state.run_id, metadata)
 

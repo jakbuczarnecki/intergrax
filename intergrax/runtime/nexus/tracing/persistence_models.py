@@ -53,6 +53,13 @@ class RunMetadata:
     user_id: str
     tenant_id: str
     started_at_utc: str
+    stats: RunStats
+
+
+@dataclass(frozen=True)
+class RunStats:
+    duration_ms: int
+    llm_usage: Dict[str, Any]
 
 
 @dataclass(frozen=True)

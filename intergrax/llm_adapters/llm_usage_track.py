@@ -152,7 +152,7 @@ class LLMUsageTracker:
 
             st = ad.usage.get_run_stats(self.run_id)
             if st is None:
-                st = LLMRunStats()  # zakładam, że masz domyślne 0; jeśli nie, utwórz jawnie z zerami
+                st = LLMRunStats()
 
             entries.append(
                 LLMAdapterUsageEntry(
@@ -163,10 +163,10 @@ class LLMUsageTracker:
                 )
             )
 
-        # Total (dedup by instance, jak masz już poprawione total())
+        # Total (dedup by instance)
         total = self.total()
 
-        # Aggregate by provider:model (dedup by instance, żeby nie dublować aliasów labeli)
+        # Aggregate by provider:model (dedup by instance)
         by_provider_model: Dict[str, LLMRunStats] = {}
         seen_ids = set()
         for e in entries:
@@ -233,48 +233,7 @@ class LLMUsageTracker:
 
         return agg
 
-    
-    
-    def export(self) -> Dict[str, Any]:
-        """
-        Return an immutable snapshot of usage stats for the current run_id.
-        Safe to serialize (JSON) and store in debug traces/logs.
-        """
-        adapters_out: Dict[str, Any] = {}
-
-        for label, ad in self._adapters.items():
-            meta = self._describe_adapter(ad)
-            st = ad.usage.get_run_stats(self.run_id)
-            if st is None:
-                adapters_out[label] = {
-                    **meta,
-                    "calls": 0,
-                    "input_tokens": 0,
-                    "output_tokens": 0,
-                    "total_tokens": 0,
-                    "duration_ms": 0,
-                    "errors": 0,
-                }
-            else:
-                adapters_out[label] = {
-                    **meta,
-                    **asdict(st),
-                }
-
-        total = self.total()
         
-        adapter_id_map = {}
-        for label, ad in (self._adapters or {}).items():
-            adapter_id_map[label] = id(ad) if ad is not None else None
-
-        return {
-        "run_id": self.run_id,
-        "total": asdict(total),
-        "adapters": adapters_out,
-        "adapter_instance_ids": adapter_id_map,  # debug only
-        }
-    
-
     def _describe_adapter(self, ad: LLMAdapter) -> Dict[str, Any]:
         """
         Typed adapter metadata extraction.
