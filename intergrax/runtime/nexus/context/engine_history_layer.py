@@ -132,6 +132,7 @@ class HistoryLayer:
                     base_history_length=int(compression_result.raw_history_messages),
                     history_length=int(len(compression_result.history)),
                     history_tokens=compression_result.raw_history_tokens,
+                    history_includes_current_user=False,
                 ),
             )
             return
@@ -193,6 +194,7 @@ class HistoryLayer:
                     base_history_length=int(compression_result.raw_history_messages),
                     history_length=int(len(compression_result.history)),
                     history_tokens=compression_result.raw_history_tokens,
+                    history_includes_current_user=False,
                 ),
             )
             return
@@ -231,6 +233,7 @@ class HistoryLayer:
                     base_history_length=int(compression_result.raw_history_messages),
                     history_length=int(len(compression_result.history)),
                     history_tokens=compression_result.raw_history_tokens,
+                    history_includes_current_user=False,
                 ),
             )
 

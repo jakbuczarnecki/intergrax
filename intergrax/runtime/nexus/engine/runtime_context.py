@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import List, Optional
 from typing import TYPE_CHECKING
 from intergrax.llm_adapters.llm_usage_track import LLMUsageReport
+from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_builder import ContextBuilder
@@ -73,6 +74,8 @@ class RuntimeContext:
     llm_usage_run_seq: int = 0
     llm_usage_runs: List[LLMUsageRunRecord] = field(default_factory=list)
     llm_usage_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+
+    trace_writer: Optional[RunTraceWriter] = None
 
 
     async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:

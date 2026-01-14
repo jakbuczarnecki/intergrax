@@ -41,6 +41,8 @@ class RuntimeState:
 
     run_id: str
 
+    started_at_utc: str = SystemTimeProvider.utc_now().isoformat()
+
     llm_usage_tracker: Optional[LLMUsageTracker] = None
 
     # Session and ingestion
@@ -134,7 +136,9 @@ class RuntimeState:
         )
         self.trace_events.append(evt)
 
-
+        writer = self.context.trace_writer
+        if writer is not None:
+            writer.append_event(evt)
 
 
     def configure_llm_tracker(self) -> None:     
