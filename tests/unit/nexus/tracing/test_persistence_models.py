@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+import asyncio
 
 import pytest
 from dataclasses import dataclass
@@ -165,3 +166,40 @@ async def test_runtime_persists_error_metadata_on_exception(monkeypatch) -> None
 
 def test_error_classifier_validation() -> None:
     assert ErrorClassifier.classify(ValueError("x")) == RuntimeErrorCode.VALIDATION_ERROR
+
+
+class _SleepingPipeline(RuntimePipeline):
+    async def _inner_run(self, state):
+        await asyncio.sleep(0.05)
+        raise AssertionError("Pipeline should have timed out before producing an answer.")
+
+
+@pytest.mark.asyncio
+async def test_runtime_persists_timeout_error(monkeypatch) -> None:
+    cfg = build_runtime_config_deterministic()
+    cfg.runtime_timeout_ms = 1
+
+    harness = build_engine_harness(cfg=cfg)
+    store = InMemoryRunTraceStore()
+    harness.engine.context.trace_writer = store
+
+    def _fake_build_pipeline(*, state):
+        return _SleepingPipeline()
+
+    monkeypatch.setattr(PipelineFactory, "build_pipeline", _fake_build_pipeline)
+
+    request = RuntimeRequest(
+        user_id="user-1",
+        session_id="sess-1",
+        message="hello",
+    )
+
+    with pytest.raises(asyncio.TimeoutError):
+        await harness.engine.run(request)
+
+    assert len(store._metadata_by_run) == 1
+    run_id = next(iter(store._metadata_by_run.keys()))
+    run = store.read_run(run_id)
+
+    assert run.metadata.error is not None
+    assert run.metadata.error.error_type == RuntimeErrorCode.TIMEOUT

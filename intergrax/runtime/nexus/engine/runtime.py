@@ -24,12 +24,14 @@ Refactored as a stateful pipeline:
 
 from __future__ import annotations
 
+import asyncio
 import time
 import uuid
 
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.errors.classifier import ErrorClassifier
+from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.pipelines.pipeline_factory import PipelineFactory
 from intergrax.runtime.nexus.responses.response_schema import (
     RuntimeRequest,
@@ -122,7 +124,7 @@ class RuntimeEngine:
 
         try:
             
-            runtime_answer = await pipeline.run(state=state)           
+            runtime_answer = await self._run_with_timeout(pipeline=pipeline, state=state)       
 
             # Final trace entry for this request.
             state.trace_event(
@@ -193,4 +195,13 @@ class RuntimeEngine:
                 writer.finalize_run(state.run_id, metadata)
 
 
-    
+    async def _run_with_timeout(
+            self,
+            *,
+            pipeline: RuntimePipeline,
+            state: RuntimeState,
+    )->RuntimeAnswer:
+        timeout_ms = state.context.config.runtime_timeout_ms
+        if timeout_ms is None:
+            return await pipeline.run(state=state)
+        return await asyncio.wait_for(pipeline.run(state=state), timeout=timeout_ms/1000.0)

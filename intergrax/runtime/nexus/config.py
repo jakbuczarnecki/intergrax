@@ -194,12 +194,27 @@ class RuntimeConfig:
 
 
     # ------------------------------------------------------------------
+    # RUNTIME POLICIES
+    # ------------------------------------------------------------------
+
+    # Hard timeout for a single runtime.run() execution.
+    # If set, the entire pipeline execution is cancelled after this duration.
+    runtime_timeout_ms: Optional[int] = None
+
+
+    # ------------------------------------------------------------------
     # VALIDATION
     # ------------------------------------------------------------------
     def validate(self) -> None:
         """
         Validates config consistency. Keeps the runtime fail-fast and predictable.
         """
+
+        if self.runtime_timeout_ms is not None:
+            if not isinstance(self.runtime_timeout_ms, int):
+                raise TypeError("runtime_timeout_ms must be an int or None.")
+            if self.runtime_timeout_ms<=0:
+                raise ValueError("runtime_timeout_ms must be > 0 when provided.")
 
         if self.pipeline is not None and not isinstance(self.pipeline, RuntimePipeline):
             raise TypeError("pipeline must be an instance of RuntimePipeline.")
