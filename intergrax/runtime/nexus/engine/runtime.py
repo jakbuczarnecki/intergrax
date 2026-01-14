@@ -29,6 +29,7 @@ import uuid
 
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.errors.classifier import ErrorClassifier
 from intergrax.runtime.nexus.pipelines.pipeline_factory import PipelineFactory
 from intergrax.runtime.nexus.responses.response_schema import (
     RuntimeRequest,
@@ -143,7 +144,7 @@ class RuntimeEngine:
         
         except Exception as ex:
             run_error = RunError(
-                error_type=ex.__class__.__name__,
+                error_type=ErrorClassifier.classify(ex),
                 message=str(ex),
             )
             raise

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Protocol
+from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
 
 
@@ -62,7 +63,7 @@ class RunStats:
 
 @dataclass(frozen=True)
 class RunError:
-    error_type: str
+    error_type: RuntimeErrorCode
     message: str
 
 

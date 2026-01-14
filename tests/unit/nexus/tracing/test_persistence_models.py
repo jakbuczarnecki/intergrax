@@ -11,6 +11,8 @@ from typing import Any, Dict
 from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.errors.classifier import ErrorClassifier
+from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.pipelines.pipeline_factory import PipelineFactory
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
@@ -157,5 +159,9 @@ async def test_runtime_persists_error_metadata_on_exception(monkeypatch) -> None
     run = store.read_run(run_id)
 
     assert run.metadata.error is not None
-    assert run.metadata.error.error_type == "RuntimeError"
+    assert run.metadata.error.error_type == RuntimeErrorCode.INTERNAL_ERROR
     assert "boom" in run.metadata.error.message
+
+
+def test_error_classifier_validation() -> None:
+    assert ErrorClassifier.classify(ValueError("x")) == RuntimeErrorCode.VALIDATION_ERROR
