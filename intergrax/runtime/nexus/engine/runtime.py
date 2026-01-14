@@ -35,7 +35,7 @@ from intergrax.runtime.nexus.responses.response_schema import (
     RuntimeAnswer,
 )
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.tracing.persistence_models import RunMetadata, RunStats
+from intergrax.runtime.nexus.tracing.persistence_models import RunError, RunMetadata, RunStats
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_abort import RuntimeRunAbortDiagV1
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_end import RuntimeRunEndDiagV1
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_start import RuntimeRunStartDiagV1
@@ -117,6 +117,7 @@ class RuntimeEngine:
         )
 
         runtime_answer: RuntimeAnswer | None = None
+        run_error: RunError | None = None
 
         try:
             
@@ -139,6 +140,13 @@ class RuntimeEngine:
             )
 
             return runtime_answer
+        
+        except Exception as ex:
+            run_error = RunError(
+                error_type=ex.__class__.__name__,
+                message=str(ex),
+            )
+            raise
 
         finally:
             await state.finalize_llm_tracker(
@@ -146,13 +154,14 @@ class RuntimeEngine:
                 runtime_answer=runtime_answer,
             )
 
-            state.trace_event(
-                component=TraceComponent.ENGINE,
-                step="run_abort",
-                level=TraceLevel.WARNING,
-                message="RuntimeEngine.run() aborted before RuntimeAnswer was produced.",
-                payload=RuntimeRunAbortDiagV1(run_id=state.run_id),
-            )
+            if runtime_answer is None:
+                state.trace_event(
+                    component=TraceComponent.ENGINE,
+                    step="run_abort",
+                    level=TraceLevel.WARNING,
+                    message="RuntimeEngine.run() aborted before RuntimeAnswer was produced.",
+                    payload=RuntimeRunAbortDiagV1(run_id=state.run_id),
+                )
 
              # Attach debug trace to the returned answer (runtime-level diagnostics).
             if runtime_answer is not None:
@@ -177,7 +186,8 @@ class RuntimeEngine:
                     stats=RunStats(
                         duration_ms=duration_ms,
                         llm_usage=llm_usage
-                    )
+                    ),
+                    error=run_error,
                 )
                 writer.finalize_run(state.run_id, metadata)
 

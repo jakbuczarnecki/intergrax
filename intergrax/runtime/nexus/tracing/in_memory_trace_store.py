@@ -42,16 +42,11 @@ class InMemoryRunTraceStore(RunTraceWriter, RunTraceReader):
         if run_id not in self._events_by_run:
             raise KeyError(f"Run '{run_id}' not found in trace store")
 
-        metadata = self._metadata_by_run.get(
-            run_id,
-            RunMetadata(
-                run_id=run_id,
-                session_id="",
-                user_id="",
-                tenant_id="",
-                started_at_utc="",
-            ),
-        )
+        metadata = self._metadata_by_run.get(run_id)
+        if metadata is None:
+            raise KeyError(
+                f"Run '{run_id}' metadata not found in trace store. Did you forget to call finalize_run()?"                
+            )
 
         return PersistedRun(
             metadata=metadata,

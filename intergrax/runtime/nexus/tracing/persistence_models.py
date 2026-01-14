@@ -5,10 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Protocol
-
-from requests_cache import Optional
-
+from typing import Any, Dict, List, Optional, Protocol
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
 
 
@@ -54,12 +51,19 @@ class RunMetadata:
     tenant_id: str
     started_at_utc: str
     stats: RunStats
+    error: Optional[RunError]=None
 
 
 @dataclass(frozen=True)
 class RunStats:
     duration_ms: int
     llm_usage: Dict[str, Any]
+
+
+@dataclass(frozen=True)
+class RunError:
+    error_type: str
+    message: str
 
 
 @dataclass(frozen=True)

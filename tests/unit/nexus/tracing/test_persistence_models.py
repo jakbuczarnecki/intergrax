@@ -10,9 +10,12 @@ from typing import Any, Dict
 
 from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
+from intergrax.runtime.nexus.pipelines.pipeline_factory import PipelineFactory
+from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
-from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, RunMetadata
+from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, RunMetadata, RunStats
 from intergrax.runtime.nexus.tracing.trace_models import (
     DiagnosticPayload,
     TraceComponent,
@@ -34,6 +37,11 @@ class _DummyDiag(DiagnosticPayload):
 
     def to_dict(self) -> Dict[str, Any]:
         return {"value": self.value}
+
+
+class _FailingPipeline(RuntimePipeline):
+    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
+        raise RuntimeError("boom")
 
 
 def test_trace_event_to_dict_serializes_payload_schema_and_dict() -> None:
@@ -75,6 +83,10 @@ def test_persisted_run_holds_metadata_and_serialized_events() -> None:
         user_id="user-1",
         tenant_id="tenant-1",
         started_at_utc="2026-01-01T00:00:00Z",
+        stats=RunStats(
+            duration_ms=0,
+            llm_usage={},
+        )
     )
 
     run = PersistedRun(metadata=meta, events=[])
@@ -108,3 +120,42 @@ async def test_runtime_finalizes_run_metadata() -> None:
     assert run.metadata.user_id == "user-1"    
     assert run.metadata.tenant_id in ("test-tenant", "", "tenant-1")
     assert run.metadata.started_at_utc != ""
+
+    # ensure run_abort is not emitted on success
+    steps = [e.step for e in run.events]
+    assert "run_abort" not in steps
+
+
+
+@pytest.mark.asyncio
+async def test_runtime_persists_error_metadata_on_exception(monkeypatch) -> None:
+    cfg = build_runtime_config_deterministic()
+    harness = build_engine_harness(cfg=cfg)
+    store = InMemoryRunTraceStore()
+    harness.engine.context.trace_writer = store
+
+    def _fake_build_pipeline(*, state):
+        return _FailingPipeline()
+
+    monkeypatch.setattr(PipelineFactory, "build_pipeline", _fake_build_pipeline)
+
+    request = RuntimeRequest(
+        user_id="user-1",
+        session_id="sess-1",
+        message="hello",
+    )
+
+    with pytest.raises(RuntimeError):
+        await harness.engine.run(request)
+
+    # We don't have RuntimeAnswer, so we must locate run_id by reading store content.
+    # InMemoryRunTraceStore already keys by run_id; use its internal API only via reader methods:
+    # Here we assert that exactly one run was finalized.
+    assert len(store._metadata_by_run) == 1  # if you prefer, expose a public method later (separate change)
+
+    run_id = next(iter(store._metadata_by_run.keys()))
+    run = store.read_run(run_id)
+
+    assert run.metadata.error is not None
+    assert run.metadata.error.error_type == "RuntimeError"
+    assert "boom" in run.metadata.error.message
