@@ -29,6 +29,7 @@ import time
 import uuid
 
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.runtime.nexus.budget.budget_enforcer import BudgetEnforcer, BudgetExceededError
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.errors.classifier import ErrorClassifier
 from intergrax.runtime.nexus.messages.runtime_message_service import RuntimeMessageService
@@ -107,6 +108,13 @@ class RuntimeEngine:
 
         state.configure_llm_tracker()
 
+        budget_enforcer: BudgetEnforcer | None = None
+        if self.context.config.run_budget is not None and self.context.config.budget_policy is not None:
+            budget_enforcer = BudgetEnforcer(
+                budget=self.context.config.run_budget,
+                policy=self.context.config.budget_policy,
+            )
+
         pipeline = PipelineFactory.build_pipeline(state=state)
 
         # Initial trace entry for this request.
@@ -134,6 +142,50 @@ class RuntimeEngine:
                 
                 runtime_answer = await self._run_with_timeout(pipeline=pipeline, state=state)       
 
+                # --- Budget enforcement: max_llm_calls ---
+                if state.llm_usage_tracker is not None:
+                    report = state.llm_usage_tracker.build_report()
+                    total_calls = report.total.calls
+
+                    if budget_enforcer is not None and state.llm_usage_tracker is not None:
+                        report = state.llm_usage_tracker.build_report()
+                        total_calls = report.total.calls
+
+                        budget_enforcer.check_llm_calls(
+                            run_id=state.run_id,
+                            llm_calls=total_calls,
+                            state=state,
+                        )
+
+                        
+                # --- Budget enforcement: max_tool_calls ---
+                if budget_enforcer is not None:
+                    budget_enforcer.check_tool_calls(
+                        run_id=state.run_id,
+                        tool_calls=len(state.tool_traces),
+                        state=state,
+                    )
+
+                # --- Budget enforcement: max_total_tokens ---
+                if budget_enforcer is not None and state.llm_usage_tracker is not None:
+                    report = state.llm_usage_tracker.build_report()
+                    total_tokens = report.total.total_tokens
+
+                    budget_enforcer.check_total_tokens(
+                        run_id=state.run_id,
+                        total_tokens=total_tokens,
+                        state=state,
+                    )
+
+                # --- Budget enforcement: max_wall_time_seconds ---
+                if budget_enforcer is not None:
+                    elapsed = time.perf_counter() - start_perf
+                    budget_enforcer.check_wall_time(
+                        run_id=state.run_id,
+                        elapsed_seconds=elapsed,
+                        state=state,
+                    )
+
                 # Final trace entry for this request.
                 state.trace_event(
                     component=TraceComponent.ENGINE,
@@ -154,6 +206,33 @@ class RuntimeEngine:
             
             except PolicyAbortError as exc:
                 # Policy escalation (HITL) — not a system error, no retries.
+                state.trace_event(
+                    component=TraceComponent.POLICY,
+                    step="hitl_escalation",
+                    level=TraceLevel.WARNING,
+                    message=str(exc),
+                )
+
+                message = (
+                    state.context.config.hitl_default_message
+                    or self._message_service.build_message(
+                        stop_reason=StopReason.NEEDS_USER_INPUT,
+                        state=state,
+                        error=exc,
+                    )
+                )
+
+                runtime_answer = RuntimeAnswer(
+                    run_id=run_id,
+                    answer=message,
+                    stop_reason=StopReason.NEEDS_USER_INPUT,
+                )
+
+                return runtime_answer
+            
+            except BudgetExceededError as exc:
+                # Budget exceeded is a controlled policy decision (same category as HITL),
+                # not a system error and must not trigger retries.
                 state.trace_event(
                     component=TraceComponent.POLICY,
                     step="hitl_escalation",
