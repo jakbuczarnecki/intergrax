@@ -44,3 +44,29 @@ class BudgetEnforcer:
 
         if self._policy.enforcement_mode is BudgetEnforcementMode.ABORT:
             raise BudgetExceededError(f"Budget exceeded: max_llm_calls ({llm_calls} > {limit})")
+
+
+    def check_tool_calls(self, *, run_id: str, tool_calls: int, state: RuntimeState) -> None:
+        limit = self._budget.max_tool_calls
+        if limit is None:
+            return
+        if tool_calls <= limit:
+            return
+
+        state.trace_event(
+            component=TraceComponent.POLICY,
+            step="budget_exceeded",
+            level=TraceLevel.ERROR,
+            message="Budget exceeded: max_tool_calls",
+            payload=BudgetExceededDiagV1(
+                run_id=run_id,
+                budget_name="max_tool_calls",
+                limit=limit,
+                actual=tool_calls,
+                enforcement_mode=self._policy.enforcement_mode.value,
+            ),
+        )
+
+        if self._policy.enforcement_mode is BudgetEnforcementMode.ABORT:
+            raise BudgetExceededError(f"Budget exceeded: max_tool_calls ({tool_calls} > {limit})")
+

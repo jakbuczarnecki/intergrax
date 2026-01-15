@@ -157,6 +157,15 @@ class RuntimeEngine:
                             state=state,
                         )
 
+                        
+                # --- Budget enforcement: max_tool_calls ---
+                if budget_enforcer is not None:
+                    budget_enforcer.check_tool_calls(
+                        run_id=state.run_id,
+                        tool_calls=len(state.tool_traces),
+                        state=state,
+                    )
+
                 # Final trace entry for this request.
                 state.trace_event(
                     component=TraceComponent.ENGINE,
