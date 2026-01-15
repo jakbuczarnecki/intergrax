@@ -23,15 +23,16 @@ DONE
 [DONE] Error handling — typed error taxonomy and mapping to retry policies
 [DONE] Runtime loop — implement timeout enforcement and fallback strategies
 [DONE] Human-in-the-loop — implement base HITL escalation and clarification mechanism
+[DONE] Budget control — create architecture for defining and enforcing budget policies (tokens, time, tool calls, replans)
 
 [PARTIAL] Tests — unit and integration coverage for runtime, trace, retry and cost
+[PARTIAL] Tests — minimal unit and integration test coverage for all P0 foundations
 
 🟥 Production foundations (P0 — must be done before first E2E agent)
 
 [P0] Artifacts — implement persistent artifact store and reference linking from trace
 [P0] Runtime — implement run replay and inspection (ability to reconstruct a run from trace + artifacts)
 [P0] Runtime — implement idempotency and safe retry for tool calls with side effects
-[P0] Budget control — create architecture for defining and enforcing budget policies (tokens, time, tool calls, replans)
 [P0] Prompting — move all prompts into a structured prompt registry with versioning and pinning
 [P0] Prompting — add prompt hashing, metadata and migration strategy
 [P0] Sessions — implement production storage adapters for sessions and user profiles (DB-backed)
@@ -41,7 +42,6 @@ DONE
 [P0] Tooling — implement permission scopes and auditing for tool usage
 [P0] Guardrails — implement minimal hard gates (output validation, tool gating, pii-safe logging)
 [P0] Eval — implement an evaluation harness for agent quality, regressions and cost tracking
-[P0] Tests — minimal unit and integration test coverage for all P0 foundations
 
 🟧 Productization & stability (P1)
 
