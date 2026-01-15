@@ -8,6 +8,7 @@ import json
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.config import ToolsContextScope
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
@@ -17,6 +18,10 @@ from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLe
 
 
 class ToolsStep(RuntimeStep):
+
+    def execution_kind(self) -> ExecutionKind | None:
+        return ExecutionKind.TOOL
+
     async def run(self, state: RuntimeState) -> None:
         """
         Run tools agent (planning + tool calls) if configured.

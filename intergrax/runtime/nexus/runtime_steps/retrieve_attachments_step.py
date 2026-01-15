@@ -4,11 +4,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.runtime_steps.tools import format_rag_context, insert_context_before_last_user
 from intergrax.runtime.nexus.tracing.attachments.attachments_context_summary import AttachmentsContextSummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
@@ -26,6 +26,9 @@ class RetrieveAttachmentsStep(RuntimeStep):
         - Filter by session_id + user_id (+ tenant/workspace if available).
         - Inject as context messages using _insert_context_before_last_user.
     """
+
+    def execution_kind(self) -> ExecutionKind:
+        return ExecutionKind.RETRIEVAL
 
     async def run(self, state: RuntimeState) -> None:
         # Defaults

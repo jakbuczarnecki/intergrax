@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Awaitable, Callable, TypeVar
+from typing import Awaitable, Callable, Optional, TypeVar
 
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
@@ -36,11 +36,21 @@ class PolicyEnforcer:
     async def execute(
         self,
         *,
-        kind: ExecutionKind,
+        kind: Optional[ExecutionKind],
         op_name: str,
         fn: Callable[[], Awaitable[T]],
         state: RuntimeState,
     ) -> T:
+        
+        if kind is None:
+            state.trace_event(
+                component=TraceComponent.POLICY,
+                step=op_name,
+                level=TraceLevel.DEBUG,
+                message="Policy enforcement skipped (execution_kind=None).",
+            )
+            return await fn()
+
         timeout = self._timeout_for(kind)
         max_attempts = self._policies.retry.max_attempts
 

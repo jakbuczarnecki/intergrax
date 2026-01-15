@@ -4,13 +4,13 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import List
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.ingestion.ingestion_service import IngestionResult
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tracing.session.session_and_ingest_summary import IngestionPreviewItemV1, SessionAndIngestSummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
@@ -26,6 +26,9 @@ class SessionAndIngestStep(RuntimeStep):
         - This step does NOT load conversation history.
         - History is loaded and preprocessed in `_step_build_base_history`.
     """
+
+    def execution_kind(self) -> ExecutionKind | None:
+        return ExecutionKind.STORAGE
 
     async def run(self, state: RuntimeState) -> None:
         req = state.request

@@ -1,6 +1,6 @@
 Intergrax Roadmap
 
-Last updated: 2026-01-14
+Last updated: 2026-01-15
 
 This is a living engineering roadmap / TODO list.
 It reflects current development priorities and may change frequently.
@@ -21,6 +21,8 @@ DONE
 [DONE] Runtime loop — retry and escalation at run level
 [DONE] Budget control — LLM cost tracking per run (usage + stats)
 [DONE] Error handling — typed error taxonomy and mapping to retry policies
+[DONE] Runtime loop — implement timeout enforcement and fallback strategies
+[DONE] Human-in-the-loop — implement base HITL escalation and clarification mechanism
 
 [PARTIAL] Tests — unit and integration coverage for runtime, trace, retry and cost
 
@@ -29,8 +31,6 @@ DONE
 [P0] Artifacts — implement persistent artifact store and reference linking from trace
 [P0] Runtime — implement run replay and inspection (ability to reconstruct a run from trace + artifacts)
 [P0] Runtime — implement idempotency and safe retry for tool calls with side effects
-[P0] Runtime loop — implement timeout enforcement and fallback strategies
-[P0] Human-in-the-loop — implement base HITL escalation and clarification mechanism
 [P0] Budget control — create architecture for defining and enforcing budget policies (tokens, time, tool calls, replans)
 [P0] Prompting — move all prompts into a structured prompt registry with versioning and pinning
 [P0] Prompting — add prompt hashing, metadata and migration strategy

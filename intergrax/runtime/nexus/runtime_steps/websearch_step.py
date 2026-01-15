@@ -7,6 +7,7 @@ from __future__ import annotations
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.runtime_steps.tools import insert_context_before_last_user
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.runtime.nexus.tracing.websearch.websearch_summary import WebsearchSummaryDiagV1
@@ -24,6 +25,10 @@ class WebsearchStep(RuntimeStep):
       - append compact web context text into state.tools_context_parts (for tools agent)
       - debug + trace
     """
+
+    def execution_kind(self) -> ExecutionKind | None:
+        return ExecutionKind.RETRIEVAL
+
 
     async def run(self, state: RuntimeState) -> None:
         state.used_websearch = False

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 
 
 class NoOpRuntimeStep(RuntimeStep):
@@ -22,6 +23,9 @@ class NoOpRuntimeStep(RuntimeStep):
       handle the corresponding stop reason (e.g. NEEDS_USER_INPUT)
     - avoid side effects on RuntimeState
     """
+
+    def execution_kind(self) -> ExecutionKind | None:
+      return None
 
     async def run(self, state: RuntimeState) -> None:
         return

@@ -8,6 +8,7 @@ from typing import Any, Dict
 
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.tracing.adapters.core_llm_adapter_failed import CoreLLMAdapterFailedDiagV1
 from intergrax.runtime.nexus.tracing.adapters.core_llm_adapter_returned import CoreLLMAdapterReturnedDiagV1
 from intergrax.runtime.nexus.tracing.adapters.core_llm_used_tools_agent_answer import CoreLLMUsedToolsAgentAnswerDiagV1
@@ -19,6 +20,9 @@ class CoreLLMStep(RuntimeStep):
     Call the core LLM adapter and decide on the final answer text,
     possibly falling back to tools_agent_answer when needed.
     """
+
+    def execution_kind(self) -> ExecutionKind | None:
+        return ExecutionKind.LLM
 
     async def run(self, state: RuntimeState) -> None:
         # If tools were used and we have an explicit agent answer, prefer it.

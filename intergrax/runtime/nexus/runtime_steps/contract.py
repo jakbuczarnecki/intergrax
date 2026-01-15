@@ -3,7 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from typing import Protocol
+from typing import Optional, Protocol
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.policies.policy_enforcer import PolicyAbortError, PolicyEnforcer
 from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind, RuntimePolicies
@@ -16,10 +16,12 @@ class RuntimeStep(Protocol):
     async def run(self, state: RuntimeState) -> None:
         ...
 
-    def execution_kind(self) -> ExecutionKind:
+    def execution_kind(self) -> Optional[ExecutionKind]:
         """
         Execution category used by runtime policies (timeouts/retry/fallback).
-        This is not a planning/semantic identifier.
+
+        Return None for steps that are pure in-process logic and should not be
+        policy-enforced (no external I/O, no side effects, no cost).
         """
         ...
         

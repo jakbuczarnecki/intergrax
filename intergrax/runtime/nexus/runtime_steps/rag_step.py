@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.runtime_steps.tools import format_rag_context, insert_context_before_last_user
 from intergrax.runtime.nexus.tracing.rag.rag_summary import RagSummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
@@ -23,6 +24,10 @@ class RagStep(RuntimeStep):
       - prepare compact RAG text for tools agent (state.tools_context_parts),
       - set debug fields + trace event.
     """
+
+    def execution_kind(self) -> ExecutionKind | None:
+        return ExecutionKind.RETRIEVAL
+
 
     async def run(self, state: RuntimeState) -> None:
         # Defaults
