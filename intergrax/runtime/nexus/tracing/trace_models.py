@@ -26,6 +26,7 @@ class TraceComponent(str, Enum):
     ENGINE = "engine"
     PIPELINE = "pipeline"
     STEP = "step"
+    POLICY = "policy"
     TOOLS = "tools"
     WEBSEARCH = "websearch"
     RAG = "rag"

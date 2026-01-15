@@ -4,10 +4,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Callable, Dict, Optional
 
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.stepplan_models import ExecutionStep, StepAction
 from intergrax.runtime.nexus.planning.step_executor_models import (
     StepError,
@@ -20,14 +18,9 @@ from intergrax.runtime.nexus.planning.step_executor_models import (
 )
 
 # Your existing RuntimeStep protocol
-from typing import Protocol
 
+from intergrax.runtime.nexus.runtime_steps.contract import RuntimeStep
 from intergrax.utils.time_provider import SystemTimeProvider
-
-
-class RuntimeStep(Protocol):
-    async def run(self, state: RuntimeState) -> None:
-        ...
 
 
 # -----------------------------
