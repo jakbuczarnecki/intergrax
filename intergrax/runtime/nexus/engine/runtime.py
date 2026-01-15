@@ -31,11 +31,14 @@ import uuid
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.errors.classifier import ErrorClassifier
+from intergrax.runtime.nexus.messages.runtime_message_service import RuntimeMessageService
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.pipelines.pipeline_factory import PipelineFactory
+from intergrax.runtime.nexus.policies.policy_enforcer import PolicyAbortError
 from intergrax.runtime.nexus.responses.response_schema import (
     RuntimeRequest,
     RuntimeAnswer,
+    StopReason,
 )
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tracing.persistence_models import RunError, RunMetadata, RunStats
@@ -80,6 +83,7 @@ class RuntimeEngine:
         context: RuntimeContext
     ) -> None:
         self.context = context
+        self._message_service = RuntimeMessageService()
 
 
     # ------------------------------------------------------------------
@@ -144,6 +148,32 @@ class RuntimeEngine:
                         used_user_longterm_memory=runtime_answer.route.used_user_longterm_memory,
                         run_id=state.run_id,
                     ),
+                )
+
+                return runtime_answer
+            
+            except PolicyAbortError as exc:
+                # Policy escalation (HITL) — not a system error, no retries.
+                state.trace_event(
+                    component=TraceComponent.POLICY,
+                    step="hitl_escalation",
+                    level=TraceLevel.WARNING,
+                    message=str(exc),
+                )
+
+                message = (
+                    state.context.config.hitl_default_message
+                    or self._message_service.build_message(
+                        stop_reason=StopReason.NEEDS_USER_INPUT,
+                        state=state,
+                        error=exc,
+                    )
+                )
+
+                runtime_answer = RuntimeAnswer(
+                    run_id=run_id,
+                    answer=message,
+                    stop_reason=StopReason.NEEDS_USER_INPUT,
                 )
 
                 return runtime_answer

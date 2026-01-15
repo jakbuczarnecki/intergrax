@@ -4,12 +4,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import List
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.responses.response_schema import (
     RuntimeAnswer,
     RouteInfo,
@@ -26,6 +26,9 @@ class PersistAndBuildAnswerStep(RuntimeStep):
     Persist assistant message into the session and build RuntimeAnswer
     including RouteInfo and RuntimeStats.
     """
+
+    def execution_kind(self) -> ExecutionKind | None:
+        return ExecutionKind.STORAGE
 
     async def run(self, state: RuntimeState) -> None:
         answer_text = state.raw_answer

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 
 
 class BuildBaseHistoryStep(RuntimeStep):
@@ -13,6 +14,9 @@ class BuildBaseHistoryStep(RuntimeStep):
     Build base history for the session (project/user/system seed history),
     using HistoryLayer.
     """
+
+    def execution_kind(self) -> ExecutionKind | None:
+        return None
 
     async def run(self, state: RuntimeState) -> None:
         await state.context.history_layer.build_base_history(state)

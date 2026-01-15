@@ -7,6 +7,7 @@ from __future__ import annotations
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 
 
 class EnsureCurrentUserMessageStep(RuntimeStep):
@@ -19,6 +20,9 @@ class EnsureCurrentUserMessageStep(RuntimeStep):
       - If last message is the same user message -> no-op.
       - Otherwise append user message to enforce user-last semantics.
     """
+
+    def execution_kind(self) -> ExecutionKind | None:
+        return None
 
     async def run(self, state: RuntimeState) -> None:
         msg = (state.request.message or "").strip()

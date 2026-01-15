@@ -8,6 +8,7 @@ from typing import Optional
 
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.tracing.memory.profile_base_memory_summary import ProfileBasedMemorySummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
@@ -23,6 +24,9 @@ class ProfileBasedMemoryStep(RuntimeStep):
         - Store the resulting fragments in RuntimeState so the engine
         can merge them into a system message later.
     """
+
+    def execution_kind(self) -> ExecutionKind | None:
+        return ExecutionKind.STORAGE
 
     async def run(self, state: RuntimeState) -> None:
         session = state.session

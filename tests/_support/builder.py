@@ -12,6 +12,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.pipelines.no_planner_pipeline import NoPlannerPipeline
 from intergrax.runtime.nexus.planning.engine_plan_models import EngineNextStep, PlanIntent, PlannerPromptConfig
@@ -19,6 +20,7 @@ from intergrax.runtime.nexus.planning.plan_loop_models import PlanLoopPolicy
 from intergrax.runtime.nexus.planning.plan_sources import PlanSpec, ScriptedPlanSource
 from intergrax.runtime.nexus.planning.step_executor_models import StepExecutorConfig
 from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 
@@ -168,3 +170,52 @@ def build_engine_harness(
 
     engine = RuntimeEngine(context=ctx)
     return DeterministicRuntimeHarness(engine=engine, config=cfg, session_manager=sm)
+
+
+def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
+    """
+    Minimal RuntimeState builder for unit tests that only need tracing.
+    No engine, no pipeline, no planner — just state + trace_event support.
+    """
+
+    request = RuntimeRequest(
+        user_id="test-user",
+        session_id="test-session",
+        message="test",
+    )
+
+    cfg = RuntimeConfig(
+        llm_adapter=None,
+        embedding_manager=None,
+        vectorstore_manager=None,
+        tenant_id="test-tenant",
+        workspace_id="test-workspace",
+        websearch_executor=None,
+        websearch_config=None,
+        tools_agent=None,
+        pipeline=None,
+        step_planner_cfg=None,
+        step_executor_cfg=None,
+        planner_prompt_config=None,
+        plan_loop_policy=None,
+        plan_source=None,
+        enable_rag=False,
+        enable_websearch=False,
+        enable_org_profile_memory=False,
+        tools_mode="off",
+    )
+
+    sm = SessionManager(storage=InMemorySessionStorage())
+
+    ctx = RuntimeContext.build(
+        config=cfg,
+        session_manager=sm,
+        ingestion_service=None,
+        context_builder=None,
+        rag_prompt_builder=None,
+        user_longterm_memory_prompt_builder=None,
+        websearch_prompt_builder=None,
+        history_prompt_builder=None,
+    )
+
+    return RuntimeState(context=ctx, run_id=run_id, request=request)

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.tracing.history.history_summary import HistorySummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
@@ -19,6 +20,9 @@ class HistoryStep(RuntimeStep):
 
     Retrieval (RAG) is handled separately in `RagStep`.
     """
+
+    def execution_kind(self) -> ExecutionKind | None:
+        return None
 
     async def run(self, state: RuntimeState) -> None:
         session = state.session

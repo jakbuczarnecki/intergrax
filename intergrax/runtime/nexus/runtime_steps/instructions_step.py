@@ -4,11 +4,12 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.tracing.runtime.instructions_summary import InstructionsSummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
@@ -28,6 +29,9 @@ class InstructionsStep(RuntimeStep):
       - instructions are never persisted in SessionStore,
       - history can be trimmed/summarized freely before injection.
     """
+
+    def execution_kind(self) -> ExecutionKind | None:
+        return None
 
     async def run(self, state: RuntimeState) -> None:
         instructions_text = self._build_final_instructions(state)

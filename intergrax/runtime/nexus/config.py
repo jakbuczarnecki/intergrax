@@ -16,6 +16,7 @@ from intergrax.runtime.nexus.planning.plan_loop_models import PlanLoopPolicy
 from intergrax.runtime.nexus.planning.plan_sources import PlanSource
 from intergrax.runtime.nexus.planning.step_executor_models import StepExecutorConfig
 from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
+from intergrax.runtime.nexus.policies.runtime_policies import RuntimePolicies
 from intergrax.tools.tools_agent import ToolsAgent
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
@@ -210,6 +211,11 @@ class RuntimeConfig:
             {RuntimeErrorCode.LLM_ERROR, RuntimeErrorCode.TOOL_ERROR}
         )
     )
+
+    runtime_policies: RuntimePolicies = RuntimePolicies()
+
+    hitl_default_message: Optional[str] = None
+
 
     # ------------------------------------------------------------------
     # VALIDATION
