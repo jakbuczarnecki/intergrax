@@ -97,3 +97,28 @@ class BudgetEnforcer:
                 f"Budget exceeded: max_total_tokens ({total_tokens} > {limit})"
             )
 
+    def check_wall_time(self, *, run_id: str, elapsed_seconds: float, state: RuntimeState) -> None:
+        limit = self._budget.max_wall_time_seconds
+        if limit is None:
+            return
+        if elapsed_seconds <= limit:
+            return
+
+        state.trace_event(
+            component=TraceComponent.POLICY,
+            step="budget_exceeded",
+            level=TraceLevel.ERROR,
+            message="Budget exceeded: max_wall_time_seconds",
+            payload=BudgetExceededDiagV1(
+                run_id=run_id,
+                budget_name="max_wall_time_seconds",
+                limit=limit,
+                actual=elapsed_seconds,
+                enforcement_mode=self._policy.enforcement_mode.value,
+            ),
+        )
+
+        if self._policy.enforcement_mode is BudgetEnforcementMode.ABORT:
+            raise BudgetExceededError(
+                f"Budget exceeded: max_wall_time_seconds ({elapsed_seconds:.3f} > {limit})"
+            )

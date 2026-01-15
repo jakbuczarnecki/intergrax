@@ -177,6 +177,15 @@ class RuntimeEngine:
                         state=state,
                     )
 
+                # --- Budget enforcement: max_wall_time_seconds ---
+                if budget_enforcer is not None:
+                    elapsed = time.perf_counter() - start_perf
+                    budget_enforcer.check_wall_time(
+                        run_id=state.run_id,
+                        elapsed_seconds=elapsed,
+                        state=state,
+                    )
+
                 # Final trace entry for this request.
                 state.trace_event(
                     component=TraceComponent.ENGINE,
