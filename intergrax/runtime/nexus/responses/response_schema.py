@@ -115,8 +115,15 @@ class HistoryCompressionStrategy(Enum):
     TRUNCATE_OLDEST = "truncate_oldest"
     SUMMARIZE_OLDEST = "summarize_oldest"
     HYBRID = "hybrid"
-    
 
+
+class StopReason(Enum):
+    COMPLETED = "completed"
+    NEEDS_USER_INPUT = "needs_user_input"
+    ABORTED = "aborted"
+    ERROR = "error"
+
+    
 @dataclass
 class RuntimeRequest:
     """
@@ -172,6 +179,7 @@ class RuntimeAnswer:
     """
 
     answer: str
+    stop_reason: StopReason = StopReason.COMPLETED
     run_id: Optional[str] = None
     citations: List[Citation] = field(default_factory=list)
     route: RouteInfo = field(default_factory=RouteInfo)

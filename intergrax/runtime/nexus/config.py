@@ -214,6 +214,8 @@ class RuntimeConfig:
 
     runtime_policies: RuntimePolicies = RuntimePolicies()
 
+    hitl_default_message: Optional[str] = None
+
 
     # ------------------------------------------------------------------
     # VALIDATION
