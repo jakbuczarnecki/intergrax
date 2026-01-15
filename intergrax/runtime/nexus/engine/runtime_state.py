@@ -225,6 +225,6 @@ class RuntimeState:
                     user_id=request.user_id,
                     report=runtime_answer.llm_usage_report,
                 )
-                self.context.llm_usage_runs.append(rec)
+                self.context.llm_usage_runs.append(rec)                
 
 

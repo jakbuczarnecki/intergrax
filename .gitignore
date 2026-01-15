@@ -31,6 +31,7 @@ api/chat/rag_app.db
 
 # Documents
 TODO.txt
+LLM_INSTRUCTIONS.txt
 
 # Tests results cache
 .pytest_cache/

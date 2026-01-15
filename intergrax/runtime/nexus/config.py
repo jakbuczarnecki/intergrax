@@ -9,6 +9,7 @@ from typing import Any, Dict, FrozenSet, Optional, Literal
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.rag.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.runtime.nexus.budget.budget_models import BudgetPolicy, RunBudget
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.planning.engine_plan_models import PlannerPromptConfig
@@ -218,6 +219,14 @@ class RuntimeConfig:
 
 
     # ------------------------------------------------------------------
+    # BUDGET CONTROL
+    # ------------------------------------------------------------------
+
+    run_budget: Optional[RunBudget] = None
+    budget_policy: Optional[BudgetPolicy] = None
+    
+
+    # ------------------------------------------------------------------
     # VALIDATION
     # ------------------------------------------------------------------
     def validate(self) -> None:
@@ -253,3 +262,15 @@ class RuntimeConfig:
                 raise ValueError(
                     "enable_rag=True requires embedding_manager and vectorstore_manager."
                 )
+            
+        if self.run_budget is not None:
+            if not isinstance(self.run_budget, RunBudget):
+                raise TypeError("run_budget must be RunBudget or None.")
+            self.run_budget.validate()
+
+            if self.budget_policy is None:
+                raise ValueError("budget_policy must be provided when run_budget is set.")
+
+        if self.budget_policy is not None:
+            if not isinstance(self.budget_policy, BudgetPolicy):
+                raise TypeError("budget_policy must be BudgetPolicy or None.")

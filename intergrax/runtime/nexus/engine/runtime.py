@@ -29,6 +29,7 @@ import time
 import uuid
 
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.runtime.nexus.budget.budget_enforcer import BudgetEnforcer
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.errors.classifier import ErrorClassifier
 from intergrax.runtime.nexus.messages.runtime_message_service import RuntimeMessageService
@@ -107,6 +108,11 @@ class RuntimeEngine:
 
         state.configure_llm_tracker()
 
+        budget_enforcer = BudgetEnforcer(
+            budget=self.context.config.run_budget,
+            policy=self.context.config.budget_policy,
+        )
+
         pipeline = PipelineFactory.build_pipeline(state=state)
 
         # Initial trace entry for this request.
@@ -133,6 +139,17 @@ class RuntimeEngine:
             try:
                 
                 runtime_answer = await self._run_with_timeout(pipeline=pipeline, state=state)       
+
+                # --- Budget enforcement: max_llm_calls ---
+                if state.llm_usage_tracker is not None:
+                    report = state.llm_usage_tracker.build_report()
+                    total_calls = report.total.calls
+
+                    budget_enforcer.check_llm_calls(
+                        run_id=state.run_id,
+                        llm_calls=total_calls,
+                        state=state,
+                    )
 
                 # Final trace entry for this request.
                 state.trace_event(
