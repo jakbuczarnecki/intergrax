@@ -166,6 +166,17 @@ class RuntimeEngine:
                         state=state,
                     )
 
+                # --- Budget enforcement: max_total_tokens ---
+                if budget_enforcer is not None and state.llm_usage_tracker is not None:
+                    report = state.llm_usage_tracker.build_report()
+                    total_tokens = report.total.total_tokens
+
+                    budget_enforcer.check_total_tokens(
+                        run_id=state.run_id,
+                        total_tokens=total_tokens,
+                        state=state,
+                    )
+
                 # Final trace entry for this request.
                 state.trace_event(
                     component=TraceComponent.ENGINE,

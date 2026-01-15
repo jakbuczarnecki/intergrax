@@ -70,3 +70,30 @@ class BudgetEnforcer:
         if self._policy.enforcement_mode is BudgetEnforcementMode.ABORT:
             raise BudgetExceededError(f"Budget exceeded: max_tool_calls ({tool_calls} > {limit})")
 
+
+    def check_total_tokens(self, *, run_id: str, total_tokens: int, state: RuntimeState) -> None:
+        limit = self._budget.max_total_tokens
+        if limit is None:
+            return
+        if total_tokens <= limit:
+            return
+
+        state.trace_event(
+            component=TraceComponent.POLICY,
+            step="budget_exceeded",
+            level=TraceLevel.ERROR,
+            message="Budget exceeded: max_total_tokens",
+            payload=BudgetExceededDiagV1(
+                run_id=run_id,
+                budget_name="max_total_tokens",
+                limit=limit,
+                actual=total_tokens,
+                enforcement_mode=self._policy.enforcement_mode.value,
+            ),
+        )
+
+        if self._policy.enforcement_mode is BudgetEnforcementMode.ABORT:
+            raise BudgetExceededError(
+                f"Budget exceeded: max_total_tokens ({total_tokens} > {limit})"
+            )
+
