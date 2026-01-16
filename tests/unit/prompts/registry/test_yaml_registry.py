@@ -15,9 +15,10 @@ def _make_prompt(p: Path, version: int) -> None:
 id: test
 version: {version}
 
-content:
-  system: "s"
-  user_template: "u"
+locales:
+  en:
+    content:
+       system: "s"
 
 meta:
   model_family: gpt-4

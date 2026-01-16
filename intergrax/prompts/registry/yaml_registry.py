@@ -10,8 +10,6 @@ from typing import Dict, Optional
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.prompts.schema.prompt_schema import (
     LocalizedContent,
-    LocalizedPromptDocument,
-    PromptDocument,
 )
 from intergrax.prompts.storage.yaml_loader import YamlPromptLoader
 from intergrax.prompts.storage.models import LoadedPrompt, PromptNotFound
@@ -107,9 +105,8 @@ class YamlPromptRegistry:
         2) GLOBAL_SETTINGS.default_language
         3) fallback to 'en'
 
-        Document handling:
-        - If document is LocalizedPromptDocument -> select from locales.
-        - If document is PromptDocument (non-localized) -> treat as 'en' single variant.
+        Contract:
+        - Registry operates on LocalizedPromptDocument artifacts.
         """
 
         loaded = self.resolve(prompt_id, pin=pin)
@@ -121,31 +118,18 @@ class YamlPromptRegistry:
         else:
             lang = "en"
 
-        if isinstance(doc, LocalizedPromptDocument):
-            locales = doc.locales
+        locales = doc.locales
 
-            if lang in locales:
-                return locales[lang]
+        if lang in locales:
+            return locales[lang]
 
-            if "en" in locales:
-                return locales["en"]
+        if "en" in locales:
+            return locales["en"]
 
-            raise PromptNotFound(
-                f"No locale '{lang}' and no 'en' fallback for prompt '{prompt_id}'"
-            )
-
-        if isinstance(doc, PromptDocument):
-            # Non-localized prompts are treated as a single EN variant.
-            return LocalizedContent(
-                system=doc.content.system,
-                developer=doc.content.developer,
-                user_template=doc.content.user_template,
-            )
-
-        # If loader returns an unknown type, this is a hard contract violation.
         raise PromptNotFound(
-            f"Unsupported prompt document type for '{prompt_id}': {type(doc).__name__}"
+            f"No locale '{lang}' and no 'en' fallback for prompt '{prompt_id}'"
         )
+
 
     # ---------------------------------------------------------------------
 

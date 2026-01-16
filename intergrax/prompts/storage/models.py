@@ -5,9 +5,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict
 
-from intergrax.prompts.schema.prompt_schema import PromptDocument
+from intergrax.prompts.schema.prompt_schema import LocalizedPromptDocument
 
 
 @dataclass(frozen=True)
@@ -15,7 +14,7 @@ class LoadedPrompt:
     """
     Prompt loaded from storage with calculated hash.
     """
-    document: PromptDocument
+    document: LocalizedPromptDocument
     content_hash: str
 
 

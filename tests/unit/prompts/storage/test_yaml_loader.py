@@ -12,28 +12,27 @@ from intergrax.prompts.storage.models import PromptValidationError
 def test_loader_parses_minimal_document(tmp_path: Path) -> None:
     p = tmp_path / "p.yaml"
 
-    p.write_text(
-        """
+    p.write_text("""
 id: test
 version: 1
-
-content:
-  system: "hello"
-  user_template: "u"
-
+locales:
+  en:
+    content:
+      system: "hello"
+      developer: null
+      user_template: "u"
 meta:
-  model_family: gpt-4
-  output_schema_id: x
-  tags: [a, b]
-        """,
-        encoding="utf-8",
-    )
+  model_family: "gpt-4"
+  output_schema_id: "x"
+  tags: ["a","b"]
+""")
+
 
     doc = YamlPromptLoader().load(p)
 
     assert doc.document.id == "test"
     assert doc.document.version == 1
-    assert doc.document.content.system == "hello"
+    assert doc.document.locales['en'].system == "hello"
     assert "a" in doc.document.meta.tags
 
 

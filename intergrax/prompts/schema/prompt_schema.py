@@ -9,18 +9,6 @@ from typing import Dict, FrozenSet, Optional
 
 
 @dataclass(frozen=True)
-class PromptContent:
-    """
-    Language model message templates.
-
-    Separation reflects OpenAI/Anthropic message model.
-    """
-    system: str
-    developer: Optional[str]
-    user_template: Optional[str]
-
-
-@dataclass(frozen=True)
 class PromptMeta:
     """
     Metadata required for safe and reproducible usage.
@@ -30,17 +18,6 @@ class PromptMeta:
     tags: FrozenSet[str]
     description: Optional[str]
 
-
-@dataclass(frozen=True)
-class PromptDocument:
-    """
-    Full prompt definition loaded from YAML.
-    This is a product artifact, not code.
-    """
-    id: str
-    version: int
-    content: PromptContent
-    meta: PromptMeta
 
 
 @dataclass(frozen=True)
