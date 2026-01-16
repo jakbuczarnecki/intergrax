@@ -5,9 +5,11 @@
 import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 from typing import List, Optional
 from typing import TYPE_CHECKING
 from intergrax.llm_adapters.llm_usage_track import LLMUsageReport
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.config import RuntimeConfig
@@ -77,6 +79,7 @@ class RuntimeContext:
 
     trace_writer: Optional[RunTraceWriter] = None
 
+    prompt_registry: Optional[YamlPromptRegistry] = None
 
     async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
         async with self.llm_usage_lock:
@@ -165,6 +168,7 @@ class RuntimeContext:
         user_longterm_memory_prompt_builder: Optional[UserLongTermMemoryPromptBuilder] = None,
         websearch_prompt_builder: Optional[WebSearchPromptBuilder] = None,
         history_prompt_builder: Optional[HistorySummaryPromptBuilder] = None,
+        prompt_registry: Optional[YamlPromptRegistry] = None,
     ) -> "RuntimeContext":
         """
         Build a fully-resolved RuntimeContext using the same resolution rules as Runtime.__init__:
@@ -176,6 +180,13 @@ class RuntimeContext:
         - history_layer constructed using resolved history_prompt_builder
         """
         config.validate()
+
+        if prompt_registry is None:
+            # Default production registry
+            prompt_registry = YamlPromptRegistry(
+                catalog_dir=Path("intergrax/prompts/catalog")
+            )
+            prompt_registry.load_all()
 
         # Resolve ContextBuilder (RAG)
         resolved_context_builder = context_builder
@@ -210,9 +221,20 @@ class RuntimeContext:
         )
 
         # Resolve history prompt builder
-        resolved_history_prompt_builder: HistorySummaryPromptBuilder = (
-            history_prompt_builder or DefaultHistorySummaryPromptBuilder(config)
-        )
+        if history_prompt_builder is not None:
+            resolved_history_prompt_builder = history_prompt_builder
+        else:
+            # We create default builder only if registry is available
+            if prompt_registry is None:
+                raise ValueError(
+                    "prompt_registry must be provided when using "
+                    "DefaultHistorySummaryPromptBuilder"
+                )
+
+            resolved_history_prompt_builder = DefaultHistorySummaryPromptBuilder(
+                config=config,
+                prompt_registry=prompt_registry,
+            )
 
         # Build HistoryLayer using resolved builder
         resolved_history_layer = HistoryLayer(
@@ -232,4 +254,5 @@ class RuntimeContext:
             websearch_prompt_builder=resolved_websearch_prompt_builder,
             history_prompt_builder=resolved_history_prompt_builder,
             history_layer=resolved_history_layer,            
+            prompt_registry=prompt_registry,
         )
