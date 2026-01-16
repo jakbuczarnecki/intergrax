@@ -198,7 +198,10 @@ class RuntimeContext:
 
         # Resolve RAG prompt builder
         resolved_rag_prompt_builder: RagPromptBuilder = (
-            rag_prompt_builder or DefaultRagPromptBuilder(config)
+            rag_prompt_builder or DefaultRagPromptBuilder(
+                config=config,
+                prompt_registry=prompt_registry,
+            )
         )
 
         # Resolve user long-term memory prompt builder
@@ -221,20 +224,13 @@ class RuntimeContext:
         )
 
         # Resolve history prompt builder
-        if history_prompt_builder is not None:
-            resolved_history_prompt_builder = history_prompt_builder
-        else:
-            # We create default builder only if registry is available
-            if prompt_registry is None:
-                raise ValueError(
-                    "prompt_registry must be provided when using "
-                    "DefaultHistorySummaryPromptBuilder"
-                )
-
-            resolved_history_prompt_builder = DefaultHistorySummaryPromptBuilder(
+        resolved_history_prompt_builder : HistorySummaryPromptBuilder = (
+            history_prompt_builder or DefaultHistorySummaryPromptBuilder(
                 config=config,
                 prompt_registry=prompt_registry,
             )
+        )
+        
 
         # Build HistoryLayer using resolved builder
         resolved_history_layer = HistoryLayer(

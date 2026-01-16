@@ -1,0 +1,19 @@
+id: rag_context
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        The following excerpts were retrieved from the user's documents. 
+        Use them as factual context when answering the user's question.
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: rag.context.v1
+  tags:
+    - rag
+    - retrieval
+  description: Instruction injected before retrieved chunks to ground the model in factual document context.
