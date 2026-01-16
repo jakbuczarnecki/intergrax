@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import FrozenSet, Optional
+from typing import Dict, FrozenSet, Optional
 
 
 @dataclass(frozen=True)
@@ -40,4 +40,25 @@ class PromptDocument:
     id: str
     version: int
     content: PromptContent
+    meta: PromptMeta
+
+
+@dataclass(frozen=True)
+class LocalizedContent:
+    """
+    Single language variant of a prompt.
+    """
+    system: str
+    developer: Optional[str]
+    user_template: Optional[str]
+
+
+@dataclass(frozen=True)
+class LocalizedPromptDocument:
+    """
+    Prompt document containing multiple locales.
+    """
+    id: str
+    version: int
+    locales: Dict[str, LocalizedContent]
     meta: PromptMeta

@@ -7,6 +7,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, Optional
 
+from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.prompts.schema.prompt_schema import (
+    LocalizedContent,
+    LocalizedPromptDocument,
+    PromptDocument,
+)
 from intergrax.prompts.storage.yaml_loader import YamlPromptLoader
 from intergrax.prompts.storage.models import LoadedPrompt, PromptNotFound
 from intergrax.prompts.registry.pin_config import PromptPinConfig
@@ -31,27 +37,28 @@ class YamlPromptRegistry:
     def load_all(self) -> None:
         """
         Scan catalog directory and load all prompt versions.
-        Structure expected:
+
+        Expected structure:
 
         catalog/
           prompt_id/
             1.yaml
             2.yaml
-            stable.yaml  -> contains {"stable": 2}
+            stable.yaml  -> { stable: 2 }
         """
         for prompt_dir in self._catalog_dir.iterdir():
             if not prompt_dir.is_dir():
                 continue
 
-            pid = prompt_dir.name
-            self._cache[pid] = {}
+            prompt_id = prompt_dir.name
+            self._cache[prompt_id] = {}
 
             for f in prompt_dir.glob("*.yaml"):
                 if f.name == "stable.yaml":
                     continue
 
-                lp = self._loader.load(f)
-                self._cache[pid][lp.document.version] = lp
+                loaded = self._loader.load(f)
+                self._cache[prompt_id][loaded.document.version] = loaded
 
     # ---------------------------------------------------------------------
 
@@ -60,6 +67,10 @@ class YamlPromptRegistry:
         prompt_id: str,
         pin: Optional[PromptPinConfig] = None,
     ) -> LoadedPrompt:
+        """
+        Resolve prompt version (pin -> stable).
+        Does NOT handle localization.
+        """
 
         if prompt_id not in self._cache:
             raise PromptNotFound(prompt_id)
@@ -67,19 +78,73 @@ class YamlPromptRegistry:
         versions = self._cache[prompt_id]
 
         # 1. Pinned version
-        if pin:
-            v = pin.get(prompt_id)
-            if v is not None and v in versions:
-                return versions[v]
+        if pin is not None:
+            pinned_version = pin.get(prompt_id)
+            if pinned_version is not None and pinned_version in versions:
+                return versions[pinned_version]
 
         # 2. Stable version
-        stable = self._read_stable(prompt_id)
-        if stable in versions:
-            return versions[stable]
+        stable_version = self._read_stable(prompt_id)
+        if stable_version in versions:
+            return versions[stable_version]
 
         # 3. Safety: no implicit latest
+        raise PromptNotFound(f"No resolvable version for '{prompt_id}'")
+
+    # ---------------------------------------------------------------------
+
+    def resolve_localized(
+        self,
+        prompt_id: str,
+        language: Optional[str] = None,
+        pin: Optional[PromptPinConfig] = None,
+    ) -> LocalizedContent:
+        """
+        Resolve prompt and return localized content.
+
+        Language resolution order:
+        1) explicit `language`
+        2) GLOBAL_SETTINGS.default_language
+        3) fallback to 'en'
+
+        Document handling:
+        - If document is LocalizedPromptDocument -> select from locales.
+        - If document is PromptDocument (non-localized) -> treat as 'en' single variant.
+        """
+
+        loaded = self.resolve(prompt_id, pin=pin)
+        doc = loaded.document
+
+        lang = language or GLOBAL_SETTINGS.default_language
+        if lang:
+            lang = lang.lower()
+        else:
+            lang = "en"
+
+        if isinstance(doc, LocalizedPromptDocument):
+            locales = doc.locales
+
+            if lang in locales:
+                return locales[lang]
+
+            if "en" in locales:
+                return locales["en"]
+
+            raise PromptNotFound(
+                f"No locale '{lang}' and no 'en' fallback for prompt '{prompt_id}'"
+            )
+
+        if isinstance(doc, PromptDocument):
+            # Non-localized prompts are treated as a single EN variant.
+            return LocalizedContent(
+                system=doc.content.system,
+                developer=doc.content.developer,
+                user_template=doc.content.user_template,
+            )
+
+        # If loader returns an unknown type, this is a hard contract violation.
         raise PromptNotFound(
-            f"No resolvable version for '{prompt_id}'"
+            f"Unsupported prompt document type for '{prompt_id}': {type(doc).__name__}"
         )
 
     # ---------------------------------------------------------------------
@@ -88,16 +153,13 @@ class YamlPromptRegistry:
         path = self._catalog_dir / prompt_id / "stable.yaml"
 
         if not path.exists():
-            raise PromptNotFound(
-                f"Missing stable.yaml for '{prompt_id}'"
-            )
+            raise PromptNotFound(f"Missing stable.yaml for '{prompt_id}'")
 
+        # NOTE: _read_yaml is an internal loader method, but we keep usage local.
         data = self._loader._read_yaml(path)
 
-        v = data.get("stable")
-        if not isinstance(v, int):
-            raise PromptNotFound(
-                f"Invalid stable.yaml for '{prompt_id}'"
-            )
+        version = data.get("stable")
+        if not isinstance(version, int):
+            raise PromptNotFound(f"Invalid stable.yaml for '{prompt_id}'")
 
-        return v
+        return version

@@ -11,6 +11,8 @@ from typing import Any, Dict
 import yaml
 
 from intergrax.prompts.schema.prompt_schema import (
+    LocalizedContent,
+    LocalizedPromptDocument,
     PromptContent,
     PromptDocument,
     PromptMeta,
@@ -36,7 +38,7 @@ class YamlPromptLoader:
             raise PromptParseError(str(e)) from e
 
         # Validation errors must NOT be wrapped
-        doc = self._parse_document(raw)
+        doc = self._parse_localized_document(raw)
 
         try:
             h = self._compute_hash(doc)
@@ -59,36 +61,81 @@ class YamlPromptLoader:
 
     # ---------------------------------------------------------------------
 
-    def _parse_document(self, data: Dict[str, Any]) -> PromptDocument:
-        try:
-            pid = str(data["id"])
-            version = int(data["version"])
+    # def _parse_document(self, data: Dict[str, Any]) -> PromptDocument:
+    #     try:
+    #         pid = str(data["id"])
+    #         version = int(data["version"])
 
-            content = data["content"]
-            meta = data["meta"]
+    #         content = data["content"]
+    #         meta = data["meta"]
 
-            return PromptDocument(
-                id=pid,
-                version=version,
-                content=PromptContent(
-                    system=str(content["system"]),
-                    developer=self._opt_str(content.get("developer")),
-                    user_template=self._opt_str(
-                        content.get("user_template")
-                    ),
-                ),
-                meta=PromptMeta(
-                    model_family=str(meta["model_family"]),
-                    output_schema_id=str(meta["output_schema_id"]),
-                    tags=frozenset(str(t) for t in meta.get("tags", [])),
-                    description=self._opt_str(meta.get("description")),
+    #         return PromptDocument(
+    #             id=pid,
+    #             version=version,
+    #             content=PromptContent(
+    #                 system=str(content["system"]),
+    #                 developer=self._opt_str(content.get("developer")),
+    #                 user_template=self._opt_str(
+    #                     content.get("user_template")
+    #                 ),
+    #             ),
+    #             meta=PromptMeta(
+    #                 model_family=str(meta["model_family"]),
+    #                 output_schema_id=str(meta["output_schema_id"]),
+    #                 tags=frozenset(str(t) for t in meta.get("tags", [])),
+    #                 description=self._opt_str(meta.get("description")),
+    #             ),
+    #         )
+
+    #     except KeyError as e:
+    #         raise PromptValidationError(
+    #             f"Missing required field: {e}"
+    #         ) from e
+        
+        
+    def _parse_localized_document(
+        self, data: Dict[str, Any]
+    ) -> LocalizedPromptDocument:
+
+        pid = str(data["id"])
+        version = int(data["version"])
+
+        locales_raw = data.get("locales")
+        if not isinstance(locales_raw, dict):
+            raise PromptValidationError(
+                "Field 'locales' must be mapping"
+            )
+
+        locales: Dict[str, LocalizedContent] = {}
+
+        for lang, content in locales_raw.items():
+            if not isinstance(content, dict):
+                raise PromptValidationError(
+                    f"Invalid locale '{lang}' structure"
+                )
+
+            locales[str(lang)] = LocalizedContent(
+                system=str(content["system"]),
+                developer=self._opt_str(content.get("developer")),
+                user_template=self._opt_str(
+                    content.get("user_template")
                 ),
             )
 
-        except KeyError as e:
-            raise PromptValidationError(
-                f"Missing required field: {e}"
-            ) from e
+        meta = data["meta"]
+
+        return LocalizedPromptDocument(
+            id=pid,
+            version=version,
+            locales=locales,
+            meta=PromptMeta(
+                model_family=str(meta["model_family"]),
+                output_schema_id=str(meta["output_schema_id"]),
+                tags=frozenset(str(t) for t in meta.get("tags", [])),
+                description=self._opt_str(meta.get("description")),
+            ),
+        )
+
 
     # ---------------------------------------------------------------------
 

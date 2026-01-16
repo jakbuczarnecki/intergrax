@@ -1,0 +1,20 @@
+id: history_summary
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        You are a summarization assistant.
+        Summarize the following conversation history into a short, factual bullet list that preserves key decisions, key facts, and open questions.
+        Do not invent new facts. Do not change the meaning.
+        Keep the summary compact and information-dense.
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: history.summary.v1
+  tags:
+    - history_summary
+  description: Summarizes older conversation history into a compact factual summary.
