@@ -8,8 +8,11 @@ from dataclasses import dataclass
 from typing import List, Protocol, TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
+
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.config import RuntimeConfig
+
 from intergrax.runtime.nexus.responses.response_schema import (
     RuntimeRequest,
     HistoryCompressionStrategy,
@@ -58,14 +61,18 @@ class DefaultHistorySummaryPromptBuilder(HistorySummaryPromptBuilder):
     Default prompt builder for history summarization in nexus Mode.
 
     Responsibilities:
-    - Provide a safe, generic system prompt for summarizing older
-      conversation turns into an information-dense summary.
-    - Ignore request / strategy / messages for now (but the signature
-      allows future, more advanced implementations).
+    - Provide system prompt loaded from Prompt Registry.
+    - Respect localization and pinning handled by registry.
+    - Keep interface stable regardless of prompt source.
     """
 
-    def __init__(self, config: RuntimeConfig) -> None:
+    def __init__(
+        self,
+        config: RuntimeConfig,
+        prompt_registry: YamlPromptRegistry,
+    ) -> None:
         self._config = config
+        self._prompt_registry = prompt_registry
 
     def build_history_summary_prompt(
         self,
@@ -75,16 +82,19 @@ class DefaultHistorySummaryPromptBuilder(HistorySummaryPromptBuilder):
         older_messages: List[ChatMessage],
         tail_messages: List[ChatMessage],
     ) -> HistorySummaryPromptBundle:
-        # For now we return a static, default prompt. Later we can use
-        # fields from `request` or `config` (e.g. domain, language,
-        # user preferences) to customize the text.
-        system_prompt = (
-            "You are a summarization assistant.\n"
-            "Summarize the following conversation history into a short, "
-            "factual bullet list that preserves key decisions, key facts, "
-            "and open questions.\n"
-            "Do not invent new facts. Do not change the meaning.\n"
-            "Keep the summary compact and information-dense."
+        """
+        Build prompt bundle using prompt registry.
+
+        Current implementation ignores request/strategy/messages,
+        but keeps signature for future advanced customization.
+        """
+
+        localized = self._prompt_registry.resolve_localized(
+            prompt_id="history_summary",
         )
 
-        return HistorySummaryPromptBundle(system_prompt=system_prompt)
+        # We use only system part for now, but content may contain
+        # developer/user_template in the future.
+        return HistorySummaryPromptBundle(
+            system_prompt=localized.system
+        )

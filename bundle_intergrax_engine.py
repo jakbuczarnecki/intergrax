@@ -50,6 +50,7 @@ EXTRA_BUNDLES: Dict[str, str] = {
     "MEMORY": r"intergrax\memory",
     "MULTIMEDIA": r"intergrax\multimedia",
     "RAG": r"intergrax\rag",
+    "PROMPTS": r"intergrax\prompts",
     "SUPERVISOR": r"intergrax\supervisor",
     "TOOLS": r"intergrax\tools",
     "WEBSEARCH": r"intergrax\websearch",

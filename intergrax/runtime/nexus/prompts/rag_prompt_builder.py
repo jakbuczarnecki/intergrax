@@ -10,6 +10,7 @@ from typing import List, Protocol, TYPE_CHECKING
 from intergrax.llm.messages import ChatMessage
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.context.context_builder import (
     RetrievedChunk,
     BuiltContext,
@@ -46,25 +47,36 @@ class DefaultRagPromptBuilder(RagPromptBuilder):
     Default prompt builder for nexus Mode.
 
     Responsibilities:
-    - Inject retrieved chunks into system-level context messages.
-    - Global system instructions are owned by the runtime.
+    - Inject retrieved chunks into context messages.
+    - System instructions are loaded from Prompt Registry.
     """
 
-    def __init__(self, config: RuntimeConfig) -> None:
+    def __init__(
+        self,
+        config: RuntimeConfig,
+        prompt_registry: YamlPromptRegistry,
+    ) -> None:
         self._config = config
+        self._prompt_registry = prompt_registry
+
 
     def build_rag_prompt(self, built: BuiltContext) -> RagPromptBundle:
         context_messages: List[ChatMessage] = []
 
         if built.retrieved_chunks:
-            rag_context_text = self._format_rag_context(built.retrieved_chunks)
+            localized = self._prompt_registry.resolve_localized(
+                prompt_id="rag_context",
+            )
+
+            rag_context_text = self._format_rag_context(
+                built.retrieved_chunks
+            )
+
             context_messages.append(
                 ChatMessage(
                     role="user",
                     content=(
-                        "The following excerpts were retrieved from the user's "
-                        "documents. Use them as factual context when answering "
-                        "the user's question.\n\n"
+                        f"{localized.system}\n\n"
                         f"{rag_context_text}"
                     ),
                 )
