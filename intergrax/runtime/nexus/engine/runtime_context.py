@@ -183,10 +183,7 @@ class RuntimeContext:
 
         if prompt_registry is None:
             # Default production registry
-            prompt_registry = YamlPromptRegistry(
-                catalog_dir=Path("intergrax/prompts/catalog")
-            )
-            prompt_registry.load_all()
+            prompt_registry = YamlPromptRegistry.create_default(load=True)
 
         # Resolve ContextBuilder (RAG)
         resolved_context_builder = context_builder
@@ -210,6 +207,7 @@ class RuntimeContext:
             or DefaultUserLongTermMemoryPromptBuilder(
                 max_entries=config.max_longterm_entries_per_query,
                 max_chars=int(config.max_longterm_tokens * 4),
+                prompt_registry=prompt_registry,
             )
         )
 

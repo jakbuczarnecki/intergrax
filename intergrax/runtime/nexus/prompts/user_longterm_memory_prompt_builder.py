@@ -9,6 +9,7 @@ from typing import List, Protocol, Optional
 
 from intergrax.llm.messages import ChatMessage, MessageRole
 from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 
 
 @dataclass
@@ -52,13 +53,15 @@ class DefaultUserLongTermMemoryPromptBuilder(UserLongTermMemoryPromptBuilder):
 
     def __init__(
         self,
+        prompt_registry: YamlPromptRegistry,
+        *,
         max_entries: int = 12,
         max_chars: int = 3000,
-        title: str = "USER LONG-TERM MEMORY",
     ) -> None:
+        self._prompt_registry = prompt_registry
         self._max_entries = max_entries
         self._max_chars = max_chars
-        self._title = title
+
 
     def build_user_longterm_memory_prompt(
         self,
@@ -76,10 +79,12 @@ class DefaultUserLongTermMemoryPromptBuilder(UserLongTermMemoryPromptBuilder):
         entries = entries[: self._max_entries]
 
         lines: List[str] = []
-        lines.append(f"{self._title} (retrieved)")
-        lines.append("Use these as factual user memory only if relevant to the question.")
-        lines.append("If not relevant, ignore them.")
-        lines.append("")
+        
+        localized = self._prompt_registry.resolve_localized(
+            prompt_id="user_longterm_memory"
+        )
+
+        lines.append(localized.system)
 
         # Build bullet list with traceable IDs.
         for e in entries:

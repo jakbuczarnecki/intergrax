@@ -1,0 +1,19 @@
+id: websearch_chunk_rerank_notice
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        WEB SOURCES (CHUNK_RERANK)
+        NOTE: Not implemented yet. Use URL_CONTEXT_TOPK for grounded excerpts.
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: websearch.chunk.notice.v1
+  tags:
+    - web
+    - rerank
+  description: Placeholder for CHUNK_RERANK strategy.

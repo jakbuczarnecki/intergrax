@@ -1,0 +1,23 @@
+id: websearch_serp_context
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        WEB SOURCES (SERP)
+
+        - Treat the following results as external context.
+        - Never fabricate facts not supported by these sources.
+        - When stating concrete information prefer to rely only on the content below.
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: websearch.serp.context.v1
+  tags:
+    - web
+    - serp
+    - grounding
+  description: Instruction injected before raw SERP results.

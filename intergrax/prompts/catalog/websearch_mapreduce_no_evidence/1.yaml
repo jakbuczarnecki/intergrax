@@ -1,0 +1,19 @@
+id: websearch_mapreduce_no_evidence
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        WEB SOURCES (MAP_REDUCE)
+        No answer-relevant evidence extracted from the fetched pages.
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: websearch.mapreduce.noevidence.v1
+  tags:
+    - web
+    - mapreduce
+  description: Message returned when MAP finds nothing.

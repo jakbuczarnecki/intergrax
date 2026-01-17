@@ -1,0 +1,27 @@
+id: websearch_map_system
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        You extract grounded facts from a web page excerpt.
+        Rules:
+        - Use ONLY the provided PAGE_EXCERPT.
+        - If there is no answer-relevant evidence, output exactly: NO_EVIDENCE
+        - Otherwise output 5-10 bullet points.
+        - Each bullet must be a single factual claim.
+        - Keep bullets short and information-dense.
+        - Do NOT add commentary, disclaimers, or additional sections.
+        - Do NOT hallucinate.
+        - Each bullet MUST end with: (Source: <URL>)
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: websearch.map.system.v1
+  tags:
+    - web
+    - map
+  description: MAP phase system prompt.

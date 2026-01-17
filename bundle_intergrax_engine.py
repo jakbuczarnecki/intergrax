@@ -1,5 +1,5 @@
 # © Artur Czarnecki. All rights reserved.
-# Integrax framework – proprietary and confidential.
+# Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Optional
 
 BUNDLES_DIR_NAME = "bundles"
 
@@ -32,10 +32,28 @@ EXCLUDE_DIRS = {
     ".eggs",
 }
 
-PY_EXT = ".py"
-IPYNB_EXT = ".ipynb"
-SOURCE_EXTS = (PY_EXT, IPYNB_EXT)
+# =============================================================================
+# Source type registry (edit here)
+# =============================================================================
+# Register extensions (lowercase, including the dot) and optional renderers.
+# - Renderer takes a file Path and returns normalized text to embed into bundle.
+# - Use None for plain text files (read_text + newline normalization).
+SourceRenderer = Callable[[Path], str]
 
+# Keep symbol extraction only for "python-like" sources.
+SYMBOL_EXTS = {".py", ".ipynb"}
+
+# You can extend this freely: add ".yaml", ".yml", ".toml", ".md", ".txt", etc.
+# For most textual formats, renderer=None is enough.
+SOURCE_HANDLERS: Dict[str, Optional[SourceRenderer]] = {
+    ".py": None,       # plain text
+    ".ipynb": None,    # will be set to _render_ipynb_to_text after function is defined
+    ".yaml": None,
+    ".yml": None,
+}
+
+# Derived set used by scanning/validation (do not edit)
+SOURCE_EXTS = tuple(sorted(SOURCE_HANDLERS.keys()))
 
 # ----------------------------------------------------------------------
 # define extra module bundles here
@@ -154,7 +172,6 @@ def _render_ipynb_to_text(path: Path) -> str:
         parts.append("# ----------------------------------------------------------------------\n")
 
         if cell_type == "markdown":
-            # Preserve as comments so it doesn't break python parsing elsewhere.
             if src_text.strip():
                 for line in src_text.split("\n"):
                     parts.append(f"# {line}\n")
@@ -163,7 +180,6 @@ def _render_ipynb_to_text(path: Path) -> str:
             parts.append("\n")
         elif cell_type == "code":
             if src_text.strip():
-                # Ensure code ends with newline
                 if not src_text.endswith("\n"):
                     src_text += "\n"
                 parts.append(src_text)
@@ -171,7 +187,6 @@ def _render_ipynb_to_text(path: Path) -> str:
                 parts.append("# <empty code>\n")
             parts.append("\n")
         else:
-            # Unknown cell type: still preserve content safely
             if src_text.strip():
                 for line in src_text.split("\n"):
                     parts.append(f"# {line}\n")
@@ -185,14 +200,20 @@ def _render_ipynb_to_text(path: Path) -> str:
     return out
 
 
+# Bind ipynb renderer in the registry (no hardcoded ifs elsewhere)
+SOURCE_HANDLERS[".ipynb"] = _render_ipynb_to_text
+
+
 def read_source_for_bundle(path: Path) -> str:
     """
-    Unified reader:
-    - .py -> raw text
-    - .ipynb -> rendered text
+    Unified reader based on SOURCE_HANDLERS registry.
+    - If a renderer is registered for a suffix -> use it.
+    - Otherwise -> read_text + normalize newlines.
     """
-    if path.suffix.lower() == IPYNB_EXT:
-        return _render_ipynb_to_text(path)
+    suffix = path.suffix.lower()
+    renderer = SOURCE_HANDLERS.get(suffix)
+    if renderer is not None:
+        return _normalize_newlines(renderer(path))
     return _normalize_newlines(read_text(path))
 
 
@@ -207,12 +228,12 @@ def is_excluded_path(path: Path) -> bool:
 
 def _is_source_filename(fn: str) -> bool:
     fn_l = fn.lower()
-    return fn_l.endswith(PY_EXT) or fn_l.endswith(IPYNB_EXT)
+    return any(fn_l.endswith(ext) for ext in SOURCE_EXTS)
 
 
 def collect_source_files(root_dir: Path) -> List[Path]:
     """
-    Collect all .py and .ipynb files under root_dir (recursive) while respecting EXCLUDE_DIRS.
+    Collect all registered source files under root_dir (recursive) while respecting EXCLUDE_DIRS.
     """
     files: List[Path] = []
     for dirpath, dirnames, filenames in os.walk(root_dir):
@@ -245,15 +266,15 @@ def to_rel(project_root: Path, path: Path) -> str:
 
 
 def to_module_name(rel_path: str) -> str:
-    # For .py: strip extension and map to import path.
-    if rel_path.endswith(PY_EXT):
-        p = rel_path[: -len(PY_EXT)].replace("/", ".")
+    """
+    For .py: strip extension and map to python import path.
+    For everything else: use a stable pseudo-module that includes extension.
+    """
+    if rel_path.endswith(".py"):
+        p = rel_path[: -len(".py")].replace("/", ".")
         if p.endswith(".__init__"):
             p = p[: -len(".__init__")]
         return p
-
-    # For .ipynb (or other): keep extension in name by default (stable + unambiguous).
-    # If you want notebook "imports" later, you can change this mapping.
     return rel_path.replace("/", ".")
 
 
@@ -272,10 +293,8 @@ def module_group_from_rel(rel_path: str) -> str:
 
     top = parts[0]
     if top == "intergrax":
-        # Example: ["intergrax", "chat_agent.py"]
-        if len(parts) == 2 and parts[1].endswith(PY_EXT):
+        if len(parts) == 2 and parts[1].endswith(".py"):
             return "root"
-        # Example: ["intergrax", "runtime", "engine.py"]
         if len(parts) >= 2:
             return parts[1] or "root"
         return "root"
@@ -283,12 +302,11 @@ def module_group_from_rel(rel_path: str) -> str:
     if top in {"notebooks", "tests"}:
         return top
 
-    # Default: group by top-level folder if present, else root
     return top or "root"
 
 
 # =============================================================================
-# Symbol extraction (py + ipynb(code))
+# Symbol extraction (python-like only)
 # =============================================================================
 
 def _strip_ipython_magics(code: str) -> str:
@@ -310,7 +328,6 @@ def _strip_ipython_magics(code: str) -> str:
 
 
 def extract_symbols(py_like_text: str) -> List[str]:
-    # Attempt to parse; if fails, return marker.
     try:
         tree = ast.parse(py_like_text)
     except SyntaxError:
@@ -329,13 +346,14 @@ def extract_symbols(py_like_text: str) -> List[str]:
 
 def extract_symbols_for_file(path: Path, rendered_text: str) -> List[str]:
     """
-    - .py: parse raw file text
-    - .ipynb: parse only code segments (rendered output already contains markdown as comments,
-      but it may still include non-python headers; we do best-effort by stripping magics and
-      ignoring comment-only lines is fine for AST.
+    Extract symbols only for extensions listed in SYMBOL_EXTS.
     """
+    suffix = path.suffix.lower()
+    if suffix not in SYMBOL_EXTS:
+        return []
+
     txt = rendered_text
-    if path.suffix.lower() == IPYNB_EXT:
+    if suffix == ".ipynb":
         txt = _strip_ipython_magics(txt)
     return extract_symbols(txt)
 
@@ -345,10 +363,6 @@ def extract_symbols_for_file(path: Path, rendered_text: str) -> List[str]:
 # =============================================================================
 
 def build_llm_header(project_root: Path, bundle_scope: str, metas: List[FileMeta]) -> str:
-    """
-    Build a top-of-file instruction block for LLMs.
-    This goes into the generated bundle file.
-    """
     module_groups = sorted({m.module_group for m in metas}, key=lambda s: s.lower())
     lines_total = sum(m.lines for m in metas)
 
@@ -409,9 +423,6 @@ def _build_metas_from_paths(
             )
         )
 
-    # Automatic ordering (dynamic):
-    # - group by module_group
-    # - then sort by relative path
     metas.sort(key=lambda m: (m.module_group.lower(), m.rel_path.lower()))
     return metas
 
@@ -428,41 +439,35 @@ def build_bundle_from_paths(
 ) -> List[FileMeta]:
     """
     Generate a bundle from a pre-selected list of source file paths.
-    Supported: .py, .ipynb
+    Supported: extensions registered in SOURCE_HANDLERS.
     Paths MUST be absolute or project_root-relative (we resolve anyway).
     """
     project_root = project_root.resolve()
 
     resolved_paths: List[Path] = []
     for p in paths:
-        rp = p
-        if not rp.is_absolute():
-            rp = (project_root / rp).resolve()
+        rp = p if p.is_absolute() else (project_root / p).resolve()
         resolved_paths.append(rp)
 
-    # Filter out non-existing (fail fast for safety)
     for p in resolved_paths:
         if not p.exists() or not p.is_file():
             raise SystemExit(f"File not found: {p}")
-        if p.suffix.lower() not in {PY_EXT, IPYNB_EXT}:
-            raise SystemExit(f"Unsupported file type: {p}")
+        if p.suffix.lower() not in SOURCE_HANDLERS:
+            raise SystemExit(f"Unsupported file type: {p.suffix} (file={p})")
 
     metas = _build_metas_from_paths(project_root=project_root, paths=resolved_paths, include_symbols=include_symbols)
 
     max_chars: Optional[int] = None if max_mb <= 0 else max_mb * 1024 * 1024
     parts: List[str] = []
 
-    # LLM instruction header (top of file)
     parts.append(build_llm_header(project_root, bundle_scope, metas))
 
-    # Bundle header + maps
     parts.append(f"# {bundle_title} (auto-generated)\n")
     parts.append(f"# ROOT: {project_root}\n")
     parts.append(f"# SCOPE: {bundle_scope}\n")
     parts.append(f"# FILES: {len(metas)}\n")
     parts.append("#\n")
 
-    # Module map (dynamic)
     module_map: Dict[str, List[FileMeta]] = {}
     for m in metas:
         module_map.setdefault(m.module_group, []).append(m)
@@ -472,7 +477,6 @@ def build_bundle_from_paths(
         parts.append(f"# - {group}/ ({len(module_map[group])} files)\n")
     parts.append("#\n")
 
-    # Index
     parts.append("# INDEX (path | module | module_group | lines | sha256[0:12]):\n")
     total_lines = 0
     for m in metas:
@@ -483,7 +487,6 @@ def build_bundle_from_paths(
 
     total_chars = sum(len(s) for s in parts)
 
-    # File blocks
     for m in metas:
         abs_path = (project_root / Path(m.rel_path)).resolve()
 
@@ -540,7 +543,7 @@ def build_extra_bundles(
     Generate additional bundles based on a dict:
       key   -> output filename stem (we will generate: <key>._py)
       value -> folder path relative to project_root
-    Supported files: .py, .ipynb
+    Supported files: extensions registered in SOURCE_HANDLERS.
     """
     project_root = project_root.resolve()
 
@@ -551,7 +554,6 @@ def build_extra_bundles(
 
         paths = collect_source_files(folder)
 
-        # Output file exactly as requested: "<name>._py"
         out_path = bundles_dir / f"{out_name}._py"
 
         build_bundle_from_paths(
@@ -568,9 +570,6 @@ def build_extra_bundles(
 
 
 def main() -> None:
-    # No-args version:
-    # - script is placed in project root (same directory as LICENSE.txt)
-    # - output is created next to this script (project root)
     script_dir = Path(__file__).resolve().parent
 
     bundles_dir = script_dir / BUNDLES_DIR_NAME
