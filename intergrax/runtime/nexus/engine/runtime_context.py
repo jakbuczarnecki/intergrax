@@ -210,6 +210,7 @@ class RuntimeContext:
             or DefaultUserLongTermMemoryPromptBuilder(
                 max_entries=config.max_longterm_entries_per_query,
                 max_chars=int(config.max_longterm_tokens * 4),
+                prompt_registry=prompt_registry,
             )
         )
 
