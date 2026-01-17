@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Protocol, Tuple
 from intergrax.memory.conversational_memory import ChatMessage
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.websearch.schemas.web_search_result import WebSearchResult
 from intergrax.websearch.service.websearch_config import WebSearchConfig, WebSearchStrategyType
 
@@ -26,21 +27,35 @@ class WebSearchContextGenerator(Protocol):
         ...
 
 
-def create_websearch_context_generator(cfg: WebSearchConfig) -> WebSearchContextGenerator:
+def create_websearch_context_generator(
+    cfg: WebSearchConfig,
+    *,
+    prompt_registry: Optional[YamlPromptRegistry] = None,
+) -> WebSearchContextGenerator:
+    
+    registry = prompt_registry or YamlPromptRegistry.create_default(load=True)
+
     if cfg.strategy == WebSearchStrategyType.SERP_ONLY:
-        return SerpOnlyContextGenerator(cfg)
+        return SerpOnlyContextGenerator(cfg, registry)
     if cfg.strategy == WebSearchStrategyType.URL_CONTEXT_TOPK:
-        return UrlContextTopKContextGenerator(cfg)
+        return UrlContextTopKContextGenerator(cfg, registry)
     if cfg.strategy == WebSearchStrategyType.CHUNK_RERANK:
-        return ChunkRerankContextGenerator(cfg)
+        return ChunkRerankContextGenerator(cfg, registry)
     if cfg.strategy == WebSearchStrategyType.MAP_REDUCE:
-        return MapReduceContextGenerator(cfg)
-    return SerpOnlyContextGenerator(cfg)
+        return MapReduceContextGenerator(cfg, registry)
+
+    return SerpOnlyContextGenerator(cfg, registry)
+
 
 
 class SerpOnlyContextGenerator:
-    def __init__(self, cfg: WebSearchConfig) -> None:
+    def __init__(
+            self, 
+            cfg: WebSearchConfig, 
+            prompt_registry: YamlPromptRegistry,
+    ) -> None:
         self._cfg = cfg
+        self._prompt_registry = prompt_registry
 
     async def generate(
         self,
@@ -57,11 +72,11 @@ class SerpOnlyContextGenerator:
         debug["used_docs"] = len(used)
         debug["top_urls"] = [d.url for d in used[:3] if (d.url or "").strip()]
 
-        lines: List[str] = [
-            "WEB SOURCES (SERP)\n"
-            "- Treat as external context.\n"
-            "- Never fabricate facts not supported by sources.\n"
-        ]
+        localized = self._prompt_registry.resolve_localized(
+            prompt_id="websearch_serp_context"
+        )
+
+        lines: List[str] = [localized.system]
 
         for idx, doc in enumerate(used, start=1):
             title = (doc.title or "").strip() or "(no title)"
@@ -73,8 +88,13 @@ class SerpOnlyContextGenerator:
 
 
 class UrlContextTopKContextGenerator:
-    def __init__(self, cfg: WebSearchConfig) -> None:
+    def __init__(
+        self,
+        cfg: WebSearchConfig,
+        prompt_registry: YamlPromptRegistry,
+    ) -> None:
         self._cfg = cfg
+        self._prompt_registry = prompt_registry
 
     async def generate(
         self,
@@ -97,11 +117,12 @@ class UrlContextTopKContextGenerator:
         injected = 0
         usage: List[Dict[str, Any]] = []
 
-        lines: List[str] = [
-            "WEB SOURCES (GROUNDED EXCERPTS)\n"
-            "- Prefer facts supported by these excerpts.\n"
-            "- Cite URLs when stating concrete facts.\n"
-        ]
+        lines: List[str] = []
+        localized = self._prompt_registry.resolve_localized(
+            prompt_id="websearch_grounded_context"
+        )
+
+        lines: List[str] = [localized.system]
 
         for idx, doc in enumerate(used, start=1):
             if remaining <= 0:
@@ -137,8 +158,13 @@ class UrlContextTopKContextGenerator:
 
 
 class ChunkRerankContextGenerator:
-    def __init__(self, cfg: WebSearchConfig) -> None:
+    def __init__(
+        self,
+        cfg: WebSearchConfig,
+        prompt_registry: YamlPromptRegistry,
+    ) -> None:
         self._cfg = cfg
+        self._prompt_registry = prompt_registry
 
     async def generate(
         self,
@@ -146,18 +172,24 @@ class ChunkRerankContextGenerator:
         *,
         user_query: Optional[str],
     ) -> WebSearchContextResult:
+        localized = self._prompt_registry.resolve_localized(
+            prompt_id="websearch_chunk_rerank_notice"
+        )
+
         return WebSearchContextResult(
-            context_text=(
-                "WEB SOURCES (CHUNK_RERANK)\n"
-                "NOTE: Not implemented yet. Use URL_CONTEXT_TOPK for grounded excerpts.\n"
-            ),
+            context_text=localized.system,
             debug_info={"strategy": "CHUNK_RERANK", "executed": False},
         )
 
 
 class MapReduceContextGenerator:
-    def __init__(self, cfg: WebSearchConfig) -> None:
+    def __init__(
+        self,
+        cfg: WebSearchConfig,
+        prompt_registry: YamlPromptRegistry,
+    ) -> None:
         self._cfg = cfg
+        self._prompt_registry = prompt_registry
 
     async def generate(
         self,
@@ -165,8 +197,15 @@ class MapReduceContextGenerator:
         *,
         user_query: Optional[str],
     ) -> WebSearchContextResult:
-        if self._cfg.llm.map_adapter is None or self._cfg.llm.reduce_adapter is None:
-            raise ValueError("MAP_REDUCE requires WebSearchConfig.llm.map_adapter and llm.reduce_adapter.")
+
+        if (
+            self._cfg.llm.map_adapter is None
+            or self._cfg.llm.reduce_adapter is None
+        ):
+            raise ValueError(
+                "MAP_REDUCE requires WebSearchConfig.llm.map_adapter "
+                "and llm.reduce_adapter."
+            )
 
         q = (user_query or "").strip()
         if not q:
@@ -179,26 +218,21 @@ class MapReduceContextGenerator:
 
         used = web_docs[: self._cfg.max_docs]
         debug["used_docs"] = len(used)
-        debug["top_urls"] = [d.url for d in used[:3] if (d.url or "").strip()]
+        debug["top_urls"] = [
+            d.url for d in used[:3] if (d.url or "").strip()
+        ]
 
-        # -------------------------
-        # MAP: per-URL fact cards
-        # -------------------------
+        # ==========================================================
+        # MAP PHASE
+        # ==========================================================
+
         fact_cards: List[str] = []
         map_usage: List[Dict[str, Any]] = []
 
-        map_system = (
-            "You extract grounded facts from a web page excerpt.\n"
-            "Rules:\n"
-            "- Use ONLY the provided PAGE_EXCERPT.\n"
-            "- If there is no answer-relevant evidence, output exactly: NO_EVIDENCE\n"
-            "- Otherwise output 5-10 bullet points.\n"
-            "- Each bullet must be a single factual claim.\n"
-            "- Keep bullets short and information-dense.\n"
-            "- Do NOT add commentary, disclaimers, or additional sections.\n"
-            "- Do NOT hallucinate.\n"
-            "- Each bullet MUST end with: (Source: <URL>)\n"
-        )
+        # --- system prompt from registry ---
+        map_system = self._prompt_registry.resolve_localized(
+            prompt_id="websearch_map_system"
+        ).system
 
         for idx, doc in enumerate(used, start=1):
             title = (doc.title or "").strip() or "(no title)"
@@ -210,7 +244,10 @@ class MapReduceContextGenerator:
             if not raw:
                 continue
 
-            excerpt, excerpt_tokens = _truncate_to_token_budget(raw, self._cfg.token_budget_per_doc)
+            excerpt, excerpt_tokens = _truncate_to_token_budget(
+                raw,
+                self._cfg.token_budget_per_doc,
+            )
             if not excerpt:
                 continue
 
@@ -226,12 +263,11 @@ class MapReduceContextGenerator:
                 ChatMessage(role="user", content=map_user),
             ]
 
-            # If you don't have temperature/max_tokens fields in cfg.llm yet,
-            # call generate_messages(map_messages) without kwargs.
             map_text = self._cfg.llm.map_adapter.generate_messages(
                 map_messages,
                 run_id=self._cfg.run_id,
             )
+
             map_text = (map_text or "").strip()
             if not map_text or map_text == "NO_EVIDENCE":
                 continue
@@ -248,32 +284,27 @@ class MapReduceContextGenerator:
         debug["map_cards_count"] = len(fact_cards)
         debug["map_usage"] = map_usage
 
+        # --- no evidence branch from registry ---
         if not fact_cards:
             debug["executed"] = True
             debug["reduce_skipped_reason"] = "no_fact_cards"
+
+            no_evidence_text = self._prompt_registry.resolve_localized(
+                prompt_id="websearch_mapreduce_no_evidence"
+            ).system
+
             return WebSearchContextResult(
-                context_text=(
-                    "WEB SOURCES (MAP_REDUCE)\n"
-                    "No answer-relevant evidence extracted from the fetched pages.\n"
-                ),
+                context_text=no_evidence_text,
                 debug_info=debug,
             )
 
-        # -------------------------
-        # REDUCE: synthesis
-        # -------------------------
-        reduce_system = (
-            "You synthesize grounded context from multiple FACT CARDS.\n"
-            "Rules:\n"
-            "- Use ONLY facts present in FACT_CARDS.\n"
-            "- Preserve citations by keeping the [index] markers.\n"
-            "- If facts conflict, mention the conflict.\n"
-            "- Output format:\n"
-            "GROUNDED_CONTEXT:\n"
-            "- bullet list of consolidated facts with [index] citations\n"
-            "SOURCES:\n"
-            "- list of unique Source URLs found in fact cards\n"
-        )
+        # ==========================================================
+        # REDUCE PHASE
+        # ==========================================================
+
+        reduce_system = self._prompt_registry.resolve_localized(
+            prompt_id="websearch_reduce_system"
+        ).system
 
         reduce_user = (
             f"QUESTION:\n{q}\n\n"
@@ -290,19 +321,24 @@ class MapReduceContextGenerator:
             reduce_messages,
             run_id=self._cfg.run_id,
         )
+
         reduce_text = (reduce_text or "").strip()
 
         debug["executed"] = True
         debug["reduce_chars"] = len(reduce_text)
 
-        context_text = (
-            "WEB SOURCES (MAP_REDUCE GROUNDED)\n"
-            "- The following context was synthesized from fetched pages.\n"
-            "- Cite sources using [index] markers and URLs.\n\n"
-            + reduce_text
+        # --- final header from registry ---
+        header = self._prompt_registry.resolve_localized(
+            prompt_id="websearch_mapreduce_final_header"
+        ).system
+
+        context_text = f"{header}\n\n{reduce_text}"
+
+        return WebSearchContextResult(
+            context_text=context_text,
+            debug_info=debug,
         )
 
-        return WebSearchContextResult(context_text=context_text, debug_info=debug)
 
 
 

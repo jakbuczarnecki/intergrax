@@ -1,0 +1,27 @@
+id: websearch_reduce_system
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        You synthesize grounded context from multiple FACT CARDS.
+        Rules:
+        - Use ONLY facts present in FACT_CARDS.
+        - Preserve citations by keeping the [index] markers.
+        - If facts conflict, mention the conflict.
+        - Output format:
+        GROUNDED_CONTEXT:
+        - bullet list of consolidated facts with [index] citations
+        SOURCES:
+        - list of unique Source URLs found in fact cards
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: websearch.reduce.system.v1
+  tags:
+    - web
+    - reduce
+  description: REDUCE phase system prompt.

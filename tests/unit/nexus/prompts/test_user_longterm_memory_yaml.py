@@ -26,10 +26,7 @@ def test_user_longterm_memory_yaml_can_be_loaded(tmp_path: Path) -> None:
     """
 
     # Arrange
-    catalog = Path("intergrax/prompts/catalog")
-    registry = YamlPromptRegistry(catalog_dir=catalog)
-
-    registry.load_all()
+    registry = YamlPromptRegistry.create_default(load=True)
 
     # Act
     content = registry.resolve_localized(

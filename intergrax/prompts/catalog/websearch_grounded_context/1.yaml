@@ -1,0 +1,21 @@
+id: websearch_grounded_context
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        WEB SOURCES (GROUNDED EXCERPTS)
+
+        - Prefer facts supported by these excerpts.
+        - Cite URLs when stating concrete facts.
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: websearch.grounded.context.v1
+  tags:
+    - web
+    - grounded
+  description: Instructions for URL_CONTEXT_TOPK mode.

@@ -147,3 +147,22 @@ class YamlPromptRegistry:
             raise PromptNotFound(f"Invalid stable.yaml for '{prompt_id}'")
 
         return version
+    
+
+    @classmethod
+    def create_default(
+        cls, 
+        path: Optional[str] = None, 
+        load:bool = True
+    )-> YamlPromptRegistry:
+
+        target_path = path or "intergrax/prompts/catalog"
+
+        prompt_registry = YamlPromptRegistry(
+                catalog_dir=Path(target_path)
+            )
+        
+        if load:
+            prompt_registry.load_all()
+        
+        return prompt_registry

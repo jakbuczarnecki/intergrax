@@ -31,9 +31,8 @@ def test_history_summary_prompt_builder_uses_yaml_registry() -> None:
     - builder returns HistorySummaryPromptBundle
     """
 
-    # Arrange
-    catalog = Path("intergrax/prompts/catalog")
-    registry = YamlPromptRegistry(catalog_dir=catalog)
+    # Arrange    
+    registry = YamlPromptRegistry.create_default(load=True)
     
     registry.load_all()
 

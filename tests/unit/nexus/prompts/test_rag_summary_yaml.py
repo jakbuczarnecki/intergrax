@@ -30,8 +30,7 @@ def test_rag_prompt_builder_with_no_chunks_returns_empty_context() -> None:
     """
 
     # Arrange
-    catalog = Path("intergrax/prompts/catalog")
-    registry = YamlPromptRegistry(catalog_dir=catalog)
+    registry = YamlPromptRegistry.create_default(load=True)
 
     registry.load_all()
 
@@ -64,9 +63,7 @@ def test_rag_prompt_builder_injects_yaml_system_prompt_and_chunks() -> None:
     """
 
     # Arrange
-    catalog = Path("intergrax/prompts/catalog")
-    registry = YamlPromptRegistry(catalog_dir=catalog)
-    registry.load_all()
+    registry = YamlPromptRegistry.create_default(load=True)
 
     builder = DefaultRagPromptBuilder(
         config=None,
