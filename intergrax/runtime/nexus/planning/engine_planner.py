@@ -477,14 +477,14 @@ class EnginePlanner:
         }
 
         # Main system prompt (customizable)
-        system_prompt = DEFAULT_PLANNER_SYSTEM_PROMPT
+        system_prompt = DEFAULT_PLANNER_SYSTEM_PROMPT()
         if prompt_config is not None and prompt_config.system_prompt:
             system_prompt = prompt_config.system_prompt.strip()
 
         # Optional replanning system prompt (customizable)
         replan_system_msg: Optional[ChatMessage] = None
         if replan_ctx is not None:
-            replan_template = DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT
+            replan_template = DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT()
             if prompt_config is not None and prompt_config.replan_system_prompt:
                 replan_template = prompt_config.replan_system_prompt.strip()
 
@@ -510,7 +510,7 @@ class EnginePlanner:
             replan_system_msg = ChatMessage(role="system", content=replan_text)
 
         # next_step rules prompt (customizable)
-        next_step_rules_prompt = DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT
+        next_step_rules_prompt = DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT()
         if prompt_config is not None and prompt_config.next_step_rules_prompt:
             next_step_rules_prompt = prompt_config.next_step_rules_prompt.strip()
 
@@ -702,7 +702,7 @@ class EnginePlanner:
 
 
     def _fallback_clarify_question(self, prompt_config: Optional[PlannerPromptConfig]) -> str:
-        q = DEFAULT_PLANNER_FALLBACK_CLARIFY_QUESTION
+        q = DEFAULT_PLANNER_FALLBACK_CLARIFY_QUESTION()
         if prompt_config is not None and prompt_config.fallback_clarify_question:
             q = prompt_config.fallback_clarify_question.strip()
         return q
