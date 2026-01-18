@@ -1,0 +1,30 @@
+id: planner_next_step_rule
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        RULES FOR next_step:
+        - If intent == "clarify": next_step MUST be "clarify".
+        - If intent != "clarify": next_step MUST NOT be "clarify".
+        Clarify intent should be used ONLY when the user request is ambiguous or missing critical information.
+        Do NOT choose clarify if you can answer with a reasonable technical/general response without asking follow-ups.
+        Do NOT choose clarify for broad/open questions; answer them as GENERIC and use next_step="synthesize".
+
+        - Choose exactly one next_step for THIS iteration.
+        - Use "websearch" for freshness/external information.
+        - Use "rag" for internal documents or user long-term memory.
+        - Use "tools" only when tool execution is required.
+        - Use "synthesize" when you have enough information to draft an answer.
+        - Use "finalize" only when you can return the final answer now.
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: planner.next_step.v1
+  tags:
+    - planner
+    - next step
+  description: System instruction used when planner must do next step.

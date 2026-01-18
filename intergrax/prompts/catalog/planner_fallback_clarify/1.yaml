@@ -1,0 +1,19 @@
+id: planner_fallback_clarify
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        Could you clarify what you mean and what outcome you want?
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: planner.fallback.clarify.v1
+  tags:
+    - planner
+    - fallback
+    - clarify
+  description: System instruction used when user must clarify a question.

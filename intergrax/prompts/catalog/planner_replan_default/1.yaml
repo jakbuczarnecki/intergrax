@@ -1,0 +1,26 @@
+id: planner_replan_default
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        REPLAN RULES:
+        - Do NOT repeat the same invalid plan.
+        - If a dependency was missing, add the producer step before the consumer.
+        - If a step output was invalid/missing, adjust the plan to produce it.
+        - If the only safe action is to ask the user, set intent='clarify' and provide clarifying_question.
+        - Keep the output JSON strictly within the schema (no extra keys).
+      developer: null
+
+      user_template: |
+        REPLAN FEEDBACK (structured JSON):
+        {replan_json}
+
+meta:
+  model_family: generic
+  output_schema_id: planner.replan.v1
+  tags:
+    - planner
+    - replan
+  description: System instruction used when planner must replan based on feedback.

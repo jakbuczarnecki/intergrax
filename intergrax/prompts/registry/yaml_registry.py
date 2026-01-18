@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import threading
 from typing import Dict, Optional
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
@@ -20,6 +21,9 @@ class YamlPromptRegistry:
     """
     Production registry backed by YAML catalog.
     """
+
+    _default_instance : Dict[Path, "YamlPromptRegistry"] = {}
+    _default_lock = threading.Lock()
 
     def __init__(
         self,
@@ -156,13 +160,25 @@ class YamlPromptRegistry:
         load:bool = True
     )-> YamlPromptRegistry:
 
-        target_path = path or "intergrax/prompts/catalog"
+        target_path = Path(path or "intergrax/prompts/catalog")
 
-        prompt_registry = YamlPromptRegistry(
-                catalog_dir=Path(target_path)
-            )
+        if target_path in cls._default_instance:
+            return cls._default_instance[target_path]
+
+        with cls._default_lock:
+            instance = cls(catalog_dir=target_path)
+
+            if load:
+                instance.load_all()
+
+            cls._default_instance[target_path] = instance
+
+            return instance
         
-        if load:
-            prompt_registry.load_all()
-        
-        return prompt_registry
+
+    @classmethod
+    def reset_defaults(cls, path: Optional[str] = None) -> None:
+        if path is None:
+            cls._default_instance.clear()
+        else:
+            cls._default_instance.pop(Path(path), None)
