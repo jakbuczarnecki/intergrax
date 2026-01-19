@@ -214,10 +214,11 @@ def get_answerer(model_name: Optional[str] = None) -> RagAnswerer:
         top_k=10,
         min_score=0.15,
         use_history=True,
-        re_rank_k=5,             # włącz rerank (jeśli podałeś reranker)
+        re_rank_k=5,
         max_context_chars=12000,
-        history_turns=1,         # dołącz 1 poprzednie Q/A do promptu    
+        history_turns=1,
     )
+    cfg.ensure_prompts()
     cfg.system_prompt = _default_system_prompt()
     cfg.user_prompt_template = _default_user_prompt()
 

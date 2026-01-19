@@ -1,0 +1,19 @@
+id: rag_answerer_user_question
+version: 1
+
+locales:
+  en:
+    content:
+      system: null
+      developer: null
+      user_template: |
+        Question:
+        {question}
+
+meta:
+  model_family: generic
+  output_schema_id: rag.answerer.user_question.v1
+  tags:
+    - rag
+    - question
+  description: 

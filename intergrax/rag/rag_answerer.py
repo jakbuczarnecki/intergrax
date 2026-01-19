@@ -14,6 +14,7 @@ from intergrax.logging import IntergraxLogging
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.rag.rag_retriever import RagRetriever
 
 # Pydantic optionally (no hard runtime dependency)
@@ -29,6 +30,7 @@ logger = IntergraxLogging.get_logger(__name__, component="rag")
 # =========================
 # Configuration & data models
 # =========================
+
 
 @dataclass
 class AnswererConfig:
@@ -49,22 +51,46 @@ class AnswererConfig:
     meta_page_keys: Tuple[str, ...] = ("page", "page_number", "page_index", "page_no")
 
     # Prompts
-    system_instructions: str = (
-        "You are a factual, precise assistant. Base your answer ONLY on the provided context if present.\n"
-        "If the answer is not in the context, say you don't know.\n"
-        "Answer in user's language, concise but complete. If useful, cite sources like [source|page]."
-    )
-    system_context_template: str = "Context for this session:\n{context}"
-    user_question_template: str = "Question:\n{question}"
-    user_instruction_template: str = "{instruction}"
+    system_instructions: str = ""
+    system_context_template: str = ""
+    user_question_template: str = ""
+    user_instruction_template: str = ""
+    summary_prompt_template: str = ""
+    summary_system_instruction: str = ""
 
-    summary_prompt_template: str = (
-        "Summarize the answer below into no more than 6 bullet points. Keep it factual and do not introduce new content.\n\nANSWER:\n{answer}\n"
-    )
 
-    summary_system_instruction: str = (
-        "You summarize answers without adding facts."
-    )
+    def ensure_prompts(self) -> None:
+        """
+        Fill missing prompt fields from YAML registry.
+        Does NOT override explicitly provided values.
+        """
+
+        registry = YamlPromptRegistry.create_default(load=True)
+
+        def system(id_: str) -> str:
+            return (registry.resolve_localized(id_).system or "").rstrip("\n")
+
+        def user(id_: str) -> str:
+            return (registry.resolve_localized(id_).user_template or "").rstrip("\n")
+
+        if not self.system_instructions:
+            self.system_instructions = system("rag_answerer_system")
+
+        if not self.system_context_template:
+            self.system_context_template = user("rag_answerer_context")
+
+        if not self.user_question_template:
+            self.user_question_template = user("rag_answerer_user_question")
+
+        if not self.user_instruction_template:
+            self.user_instruction_template = user("rag_answerer_user_instruction")
+
+        if not self.summary_prompt_template:
+            self.summary_prompt_template = system("rag_answerer_summary_prompt")
+
+        if not self.summary_system_instruction:
+            self.summary_system_instruction = system("rag_answerer_summary_system")
+
 
 
 @dataclass
@@ -92,7 +118,8 @@ class RagAnswerer:
         self.retriever = retriever
         self.llm = llm
         self.reranker = reranker
-        self.cfg = config or AnswererConfig()        
+        self.cfg = config or AnswererConfig()
+        self.cfg.ensure_prompts()
         self.memory = memory
 
     # ---------- Public API ----------

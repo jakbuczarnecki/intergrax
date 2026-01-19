@@ -1,0 +1,20 @@
+id: rag_answerer_user_instruction
+version: 1
+
+locales:
+  en:
+    content:
+      system: null
+      developer: null
+      user_template: |
+        Instruction:
+        {instruction}
+
+meta:
+  model_family: generic
+  output_schema_id: rag.answerer.user_instruction.v1
+  tags:
+    - rag
+    - instruction
+    - user
+  description: 

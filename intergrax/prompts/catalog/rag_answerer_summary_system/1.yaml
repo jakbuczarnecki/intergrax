@@ -1,0 +1,18 @@
+id: rag_answerer_summary_system
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        You summarize answers without adding facts.
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: rag.answerer.summary_system.v1
+  tags:
+    - rag
+    - summary
+  description: 
