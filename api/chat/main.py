@@ -6,8 +6,8 @@ import shutil
 import uuid
 import os
 import logging
-from fastapi import FastAPI, WebSocket, HTTPException, UploadFile, File
-from .tools.pydantic_models import QueryInput, QueryResponse, DocumentInfo, DeleteFileRequest, ModelName
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from .tools.pydantic_models import QueryInput, QueryResponse, DocumentInfo, DeleteFileRequest
 from .tools.db_utils import insert_application_logs, get_chat_history, get_all_documents, delete_document_record, insert_document_record
 from .tools.chroma_utils import index_document_to_chroma, delete_doc_from_chroma
 from .tools.rag_pipeline import get_answerer,set_history

@@ -12,8 +12,7 @@ DB_NAME = "rag_app.db"
 
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME, detect_types=sqlite3.PARSE_DECLTYPES)
-    conn.row_factory = sqlite3.Row
-    # Stabilniejszy zapis przy wielu requestach
+    conn.row_factory = sqlite3.Row    
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA foreign_keys=ON;")
     return conn
@@ -23,16 +22,14 @@ def get_db_connection():
 def create_schema():
     conn = get_db_connection()
     cur = conn.cursor()
-
-    # Sesje (opcjonalne – możesz pominąć i używać tylko messages)
+    
     cur.execute("""
         CREATE TABLE IF NOT EXISTS sessions (
             session_id TEXT PRIMARY KEY,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-
-    # Wiadomości z rolą (ChatGPT style)
+    
     cur.execute("""
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,8 +43,7 @@ def create_schema():
     """)
     cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_session_created ON messages(session_id, created_at)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_session_role ON messages(session_id, role)")
-
-    # Pliki (rozszerzone metadane)
+    
     cur.execute("""
         CREATE TABLE IF NOT EXISTS document_store (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,28 +61,21 @@ def create_schema():
     conn.commit()
     conn.close()
 
-def migrate_from_legacy_application_logs():
-    """
-    Migruje ze starej tabeli application_logs (jeśli istnieje) do messages.
-    Każdy wiersz -> 2 wiadomości: user + assistant (zachowując model i czas).
-    """
+def migrate_from_legacy_application_logs():    
     conn = get_db_connection()
     cur = conn.cursor()
-
-    # sprawdź czy stara tabela istnieje
+    
     cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='application_logs'")
     if cur.fetchone() is None:
         conn.close()
-        return  # brak starej tabeli – nic do migracji
-
-    # pobierz stare rekordy
+        return
+    
     rows = cur.execute("""
         SELECT session_id, user_query, gpt_response, model, created_at
         FROM application_logs
         ORDER BY created_at
     """).fetchall()
-
-    # migruj: ensure sessions
+    
     for r in rows:
         sid = r["session_id"]
         if not sid:
@@ -106,9 +95,6 @@ def migrate_from_legacy_application_logs():
                 INSERT INTO messages(session_id, role, content, model, created_at)
                 VALUES (?, 'assistant', ?, ?, ?)
             """, (sid, r["gpt_response"], r["model"], r["created_at"]))
-
-    # można zachować starą tabelę lub usunąć:
-    # cur.execute("DROP TABLE application_logs")
 
     conn.commit()
     conn.close()
@@ -137,9 +123,6 @@ def insert_message(session_id: str, role: str, content: str, model: Optional[str
     conn.close()
 
 def get_messages(session_id: str, limit: Optional[int] = None) -> List[Dict]:
-    """
-    Zwraca listę wiadomości (dict) w kolejności chronologicznej.
-    """
     conn = get_db_connection()
     cur = conn.cursor()
     # if limit:
@@ -168,10 +151,6 @@ def get_messages(session_id: str, limit: Optional[int] = None) -> List[Dict]:
     return out
 
 def get_history_pairs(session_id: str, turns: int = 1) -> List[Tuple[str,str]]:
-    """
-    Zwraca ostatnie N par (user_text, assistant_text) w porządku chronologicznym.
-    Pomocnicze do zasilania answerera.
-    """
     msgs = get_messages(session_id)
     pairs: List[Tuple[str,str]] = []
     buf_user: Optional[str] = None
@@ -222,23 +201,16 @@ def get_all_documents() -> List[Dict]:
     conn.close()
     return docs
 
-# --------- Backward-compat entry points (opcjonalnie) ---------
 
 def create_application_logs():
-    # Utrzymane dla zgodności — teraz tylko tworzy nowy schemat.
     create_schema()
 
 def insert_application_logs(session_id, user_query, gpt_response, model):
-    # Nowy zapis jako 2 wiadomości
     ensure_session(session_id)
     insert_message(session_id, "user", user_query, model=None)
     insert_message(session_id, "assistant", gpt_response, model=model)
 
 def get_chat_history(session_id):
-    """
-    Zachowuje poprzedni kontrakt (lista dict z 'role' i 'content'),
-    ale role mapujemy już na 'user'/'assistant'.
-    """
     msgs = get_messages(session_id)
     out = []
     for m in msgs:

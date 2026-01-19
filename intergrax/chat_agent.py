@@ -12,11 +12,53 @@ import time
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.tools.tools_agent import ToolsAgent, ToolsAgentConfig
 from intergrax.tools.tools_base import ToolRegistry
 from intergrax.rag.rag_answerer import RagAnswerer
 
 Route = Literal["rag", "tools", "general"]
+
+
+def default_chat_router_system(
+        tools_enabled: bool,
+        tools_count: int,
+        router_cfg: ChatRouterConfig,
+        routing_context: Optional[str],
+    ) -> str:
+
+        registry = YamlPromptRegistry.create_default(load=True)
+
+        template = (registry.resolve_localized("chat_router").system or "").rstrip("\n")
+
+        txt = template.format(
+            tools_state="ENABLED" if tools_enabled else "DISABLED",
+            tools_count=tools_count,
+            tools_description=router_cfg.tools_description,
+            general_description=router_cfg.general_description,
+        )
+
+        if routing_context:
+            txt += f"\nContext: {routing_context}"
+
+        return txt
+    
+    
+def default_chat_router_user(
+    question: str,
+    rag_catalog_txt: str,
+    tools_catalog_txt: str,
+) -> str:
+    registry = YamlPromptRegistry.create_default(load=True)
+
+    template = (registry.resolve_localized("chat_router_user").user_template or "").rstrip("\n")
+
+    return template.format(
+        question=question,
+        rag_catalog_txt=rag_catalog_txt,
+        tools_catalog_txt=tools_catalog_txt,
+    )
+
 
 @dataclass
 class ChatRouterConfig:
@@ -239,59 +281,22 @@ class ChatAgent:
                 tool_options = []
 
         # ---- Router prompt ----
-        sys_txt = (
-            "You are a strict routing model responsible for choosing how to answer a user's query.\n"
-            "Available routes:\n"
-            "- RAG: use a vector-store retriever for company documents, policies, or structured internal knowledge.\n"
-            f"- TOOLS: ({'ENABLED' if tools_enabled else 'DISABLED'}; AVAILABLE={len(tool_options) if tools_available else 0}) "
-            f"use an agent equipped with specific function tools (e.g., calculations, weather lookup, external API calls). {router_cfg.tools_description}\n"
-            f"- GENERAL: respond directly using only your own knowledge and reasoning. {router_cfg.general_description}\n\n"
-            "Choose TOOLS only if at least one of the available tools is clearly relevant to the user's question.\n"
-            "Your output must be a strict JSON object: {\"route\": \"RAG\"|\"TOOLS\"|\"GENERAL\", \"rag_component\": string|null}."
+        # ---- Router prompt (from YAML) ----
+        sys_txt = default_chat_router_system(
+            tools_enabled=tools_enabled,
+            tools_count=len(tool_options) if tools_available else 0,
+            router_cfg=router_cfg,
+            routing_context=routing_context,
         )
-        if routing_context:
-            sys_txt += f"\nContext: {routing_context}"
+
 
         rag_catalog_txt = json.dumps(rag_options, ensure_ascii=False, indent=2)
         tools_catalog_txt = json.dumps(tool_options, ensure_ascii=False, indent=2)
 
-        # ---- Few-shot examples to bias the model ----
-        examples = [
-            {
-                "q": "What is the weather in Warsaw?",
-                "explanation": "A weather-related question. The available tool get_weather is relevant -> TOOLS.",
-                "out": {"route": "TOOLS", "rag_component": None},
-            },
-            {
-                "q": "Calculate 25,000 net + 23% VAT.",
-                "explanation": "A numerical or tax calculation -> TOOLS if a calculator-like tool exists.",
-                "out": {"route": "TOOLS", "rag_component": None},
-            },
-            {
-                "q": "What is intergrax's privacy policy?",
-                "explanation": "A company policy or documentation request -> RAG (use intergrax_docs).",
-                "out": {"route": "RAG", "rag_component": "intergrax_docs"},
-            },
-            {
-                "q": "Tell me in general what intergrax is.",
-                "explanation": "A general question not tied to any vector store or tool -> GENERAL.",
-                "out": {"route": "GENERAL", "rag_component": None},
-            },
-        ]
-        ex_txt = json.dumps(examples, ensure_ascii=False, indent=2)
-
-        usr_txt = (
-            "Decide which route should handle the following user query.\n\n"
-            f"User query:\n{question}\n\n"
-            f"RAG components:\n{rag_catalog_txt}\n\n"
-            f"Available tools:\n{tools_catalog_txt}\n\n"
-            "Routing rules:\n"
-            "- If the question refers to company documentation, policies, or terms -> use RAG.\n"
-            "- If the question asks for an operation that a listed tool can perform (e.g., weather, calculations, API lookup) -> use TOOLS.\n"
-            "- Only choose TOOLS if at least one available tool is relevant to the question.\n"
-            "- Otherwise, choose GENERAL.\n\n"
-            f"Reference examples:\n{ex_txt}\n\n"
-            "Output STRICT JSON ONLY, for example: {\"route\":\"RAG\",\"rag_component\":\"intergrax_docs\"}"
+        usr_txt = default_chat_router_user(
+            question=question,
+            rag_catalog_txt=rag_catalog_txt,
+            tools_catalog_txt=tools_catalog_txt,
         )
 
         msgs = [

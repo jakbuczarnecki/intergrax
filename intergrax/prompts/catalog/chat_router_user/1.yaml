@@ -1,0 +1,61 @@
+id: chat_router_user
+version: 1
+
+locales:
+  en:
+    content:
+      system: null
+      developer: null
+      user_template: |
+        Decide which route should handle the following user query.
+
+        User query:
+        {question}
+
+        RAG components:
+        {rag_catalog_txt}
+
+        Available tools:
+        {tools_catalog_txt}
+
+        Routing rules:
+        - If the question refers to company documentation, policies, or terms -> use RAG.
+        - If the question asks for an operation that a listed tool can perform (e.g., weather, calculations, API lookup) -> use TOOLS.
+        - Only choose TOOLS if at least one available tool is relevant to the question.
+        - Otherwise, choose GENERAL.
+        
+        Reference examples:
+        [
+          {{
+            "q": "What is the weather in Warsaw?",
+            "explanation": "A weather-related question. The available tool get_weather is relevant -> TOOLS.",
+            "out": {{"route": "TOOLS", "rag_component": null}}
+          }},
+          {{
+            "q": "Calculate 25,000 net + 23% VAT.",
+            "explanation": "A numerical or tax calculation -> TOOLS if a calculator-like tool exists.",
+            "out": {{"route": "TOOLS", "rag_component": null}}
+          }},
+          {{
+            "q": "What is intergrax's privacy policy?",
+            "explanation": "A company policy or documentation request -> RAG (use intergrax_docs).",
+            "out": {{"route": "RAG", "rag_component": "intergrax_docs"}}
+          }},
+          {{
+            "q": "Tell me in general what intergrax is.",
+            "explanation": "A general question not tied to any vector store or tool -> GENERAL.",
+            "out": {{"route": "GENERAL", "rag_component": null}}
+          }}
+        ]
+
+        Output STRICT JSON ONLY, for example: {{"route":"RAG","rag_component":"intergrax_docs"}}
+
+
+meta:
+  model_family: generic
+  output_schema_id: chat_agent.router_user.v1
+  tags:
+    - router
+    - chat
+    - user
+  description: 

@@ -79,6 +79,7 @@ locales:
 
 meta:
   model_family: generic
+  output_schema_id: rag.pipeline.v1
   tags:
     - rag
     - pipeline
