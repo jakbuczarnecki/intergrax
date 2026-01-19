@@ -11,6 +11,7 @@ from typing import Dict, Optional, Tuple, List
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.rag.rag_answerer import (
     RagAnswerer,
     AnswererConfig,
@@ -88,117 +89,15 @@ def _get_reranker() -> ReRanker:
     return _reranker
 
 
-def _build_llm_adapter(model_name: str):
-    return LLMAdapterRegistry.create(LLMProvider.OLLAMA)
+def _load_rag_pipeline_prompts() -> tuple[str, str]:
+    registry = YamlPromptRegistry.create_default(load=True)
 
+    localized = registry.resolve_localized("rag_pipeline")
 
-def _default_user_prompt() -> str:
-    return """
-        You are a Knowledge Assistant. Your only valid source of information is the content retrieved through the `file_search` tool (vector store).  
-        You are not allowed to use general world knowledge, external reasoning, or invent facts not present in the indexed documents.
+    system = (localized.system or "").rstrip("\n")
+    user = (localized.user_template or "").rstrip("\n")
 
-        Goal
-
-        Answer the user's question strictly and only based on the retrieved documents from the knowledge base.
-
-        Your responses must be accurate, detailed, and well-structured, including clear references to the original source material.
-
-        Procedure (Step-by-Step)
-
-        1. Understand the question.  
-           If the question contains multiple requests, break it down and address each part.
-
-        2. Retrieve relevant context.  
-           Use `file_search`, gather sufficient matches.  
-           If needed, run multiple phrased searches to increase coverage.
-
-        3. Validate consistency.  
-           Compare fragments from different sources.  
-           If inconsistencies appear, explicitly highlight them and provide interpretations — each supported by references.
-
-        4. Respond.  
-           Provide a short conclusion followed by a detailed explanation based strictly on the retrieved excerpts.
-
-        5. Cite.  
-           Always attach source references (file name + location such as page number/section when available).  
-           When quoting exact sentences, mark them as quotations with a source.
-
-        Citation Rules
-
-        After each key claim, append a reference in parentheses, e.g.:
-        (Source: 'filename.ext', page '12') or (Source: 'System_Overview.pdf', section '2.3').
-
-        For longer responses, add a final section titled “Sources” listing all referenced documents.
-
-        Use exact quotations only when necessary and keep them concise.
-
-        Boundaries and Uncertainty
-
-        If the documents do not contain enough information to answer fully, clearly state:
-        “Based on the available documents, I cannot give a definitive answer to X.”
-
-        Then:
-        - Identify what information is missing (e.g., relevant section or expected document type).
-        - Suggest specific keywords the user may search for or recommend uploading additional files.
-
-        Do not rely on outside knowledge. Do not speculate.  
-        If you synthesize a conclusion, label it as: “Inference based on available documents.”
-
-        Writing Style
-
-        - Start with a short 2-4 sentence summary containing the core response.
-        - Follow with a structured explanation using bullet points or headings.
-        - Use precise terminology — avoid vague or generic language.
-
-        If the question relates to a procedure, algorithm, or requirements:
-        provide a checklist or pseudo-process.
-
-        If the question relates to numbers, thresholds, or measurable values:
-        provide exact values from the documents with citations.
-
-        Recommended Output Format
-
-        Summary  
-        Detailed Explanation (with inline references)  
-        Sources (list)
-
-        Restrictions (Critical)
-
-        - Do NOT use information that cannot be found in the documents.
-        - Do NOT refer to common knowledge, assumptions, or external memory.
-        - Do NOT hide uncertainty — explicitly acknowledge when information is missing.
-
-        Optional Example References
-
-        “...according to the definition of the process (Source: 'Process_Specification_A.pdf', p. 12)...”
-
-        “...non-functional requirements include availability of 99.9%  
-        (Source: 'SystemRequirements.docx', section 3.2)...”
-
-        >> Most Important Rule <<
-        Always answer with maximum accuracy and depth based only on the knowledge-base documents.  
-        Expand the explanation using as many relevant details as possible.  
-        The user must feel they are interacting with an assistant deeply specialized in Intergrax with full command of its documentation.
-
-        Context:
-        {context}
-
-        {history_block}
-
-        User Question: {question}
-        """
-
-
-def _default_system_prompt() -> str:
-    return """
-        You are a Knowledge Assistant. Your only valid source of information is the content retrieved through the `file_search` tool (vector store).  
-        You are not allowed to use external knowledge or invent missing information.
-
-        >> Most Important Rule <<
-        Always answer with maximum precision and depth based strictly on the knowledge-base documents.  
-        Expand the explanation clearly and thoroughly.  
-        The user must feel they are interacting with an assistant specializing in Intergrax.
-            """
+    return system, user
 
 
 def get_answerer(model_name: Optional[str] = None) -> RagAnswerer:
@@ -207,7 +106,7 @@ def get_answerer(model_name: Optional[str] = None) -> RagAnswerer:
     if name in _answerers:
         return _answerers[name]
 
-    llm = _build_llm_adapter(name)
+    llm = LLMAdapterRegistry.create(LLMProvider.OLLAMA)
 
     # create answerer configuration
     cfg = AnswererConfig(
@@ -218,9 +117,12 @@ def get_answerer(model_name: Optional[str] = None) -> RagAnswerer:
         max_context_chars=12000,
         history_turns=1,
     )
+    
     cfg.ensure_prompts()
-    cfg.system_prompt = _default_system_prompt()
-    cfg.user_prompt_template = _default_user_prompt()
+
+    system_p, user_p = _load_rag_pipeline_prompts()
+    cfg.system_prompt = system_p
+    cfg.user_prompt_template = user_p
 
     # cfg.user_prompt_template=prompts.context_prompt_template().replace("{query}", "{question}")
 
