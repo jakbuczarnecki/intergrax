@@ -12,36 +12,42 @@ from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
 from intergrax.logging import IntergraxLogging
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.tools.tools_base import ToolRegistry, _limit_tool_output
 
 logger = IntergraxLogging.get_logger(__name__, component="rag")
 
 
-PLANNER_PROMPT = (
-                    "You do not have native tool-calling.\n"
-                    "At each step, reply ONLY with strict JSON:\n"
-                    '{\"call_tool\": {\"name\": \"<tool_name>\", \"arguments\": {...}}} '
-                    'or {\"final_answer\": \"<text>\"}.\n'
-                    "Use the declared TOOLS catalog to choose function name and arguments.\n"
-                    "If tool result is insufficient, you may call another tool.\n"
-                    "Never include commentary outside JSON."
-                )
+def PLANNER_PROMPT() -> str:
+    registry = YamlPromptRegistry.create_default(load=True)
+    return registry.resolve_localized("tools_agent_planner").system
 
-SYSTEM_PROMPT = (
-        "You are a capable assistant. Use tools when helpful. "
-        "If you call a tool, do not fabricate results—wait for tool outputs."
-    )
 
-SYSTEM_CONTEXT_TEMPLATE = "Session context:\n{context}"
+def SYSTEM_PROMPT() -> str:
+    registry = YamlPromptRegistry.create_default(load=True)
+    return registry.resolve_localized("tools_agent_system").system
+
+
+def SYSTEM_CONTEXT_TEMPLATE() -> str:
+    """
+    Returns legacy-compatible template containing `{context}` placeholder.
+    Formatting is done later via `.format(context=...)`.
+    """
+    registry = YamlPromptRegistry.create_default(load=True)
+
+    localized = registry.resolve_localized("tools_agent_context")
+    return localized.user_template or ""
+
+
 
 
 class ToolsAgentConfig:
     temperature: float = 0.2
     max_answer_tokens: Optional[int] = None
     max_tool_iters: int = 6
-    system_instructions: str = SYSTEM_PROMPT
-    system_context_template: str = SYSTEM_CONTEXT_TEMPLATE
-    planner_instructions : str = PLANNER_PROMPT
+    system_instructions: str = SYSTEM_PROMPT()
+    system_context_template: str = SYSTEM_CONTEXT_TEMPLATE()
+    planner_instructions : str = PLANNER_PROMPT()
 
 
 def _maybe_import_pydantic_base() -> Optional[type]:

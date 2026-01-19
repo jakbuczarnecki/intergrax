@@ -5,13 +5,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 # LangChain
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnableMap, RunnableSequence
 from langchain_core.output_parsers import StrOutputParser
 
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.rag.rag_retriever import RagRetriever
 from intergrax.rag.re_ranker import ReRanker
 
@@ -111,19 +112,32 @@ class ChainConfig:
     return_traces: bool = True
 
 
-def _default_prompt_builder(question: str, context: str, hits: List[Dict[str, Any]]) -> str:
-    """Simple, strict QA prompt using only context."""
-    return (
-        "You are a careful, factual assistant.\n"
-        "Answer ONLY using the information from CONTEXT below.\n"
-        "If the answer is not in the context, say you don't know.\n"
-        "Use the language of the question.\n\n"
-        "CONTEXT:\n"
-        f"{context}\n\n"
-        "QUESTION:\n"
-        f"{question}\n\n"
-        "FINAL ANSWER:"
-    )
+def _default_prompt_builder(question: str, context: str, hits: Optional[List[Dict[str, Any]]] = None,) -> str:
+    # """Simple, strict QA prompt using only context."""
+    # return (
+    #     "You are a careful, factual assistant.\n"
+    #     "Answer ONLY using the information from CONTEXT below.\n"
+    #     "If the answer is not in the context, say you don't know.\n"
+    #     "Use the language of the question.\n\n"
+    #     "CONTEXT:\n"
+    #     f"{context}\n\n"
+    #     "QUESTION:\n"
+    #     f"{question}\n\n"
+    #     "FINAL ANSWER:"
+    # )
+    """
+    Build QA prompt using YAML Prompt Registry.
+    """
+
+    registry = YamlPromptRegistry.create_default(load=True)
+
+    localized = registry.resolve_localized(prompt_id="langchain_qa")
+
+    user = localized.user_template
+    user = user.replace("{{context}}", context)
+    user = user.replace("{{question}}", question)
+
+    return f"{localized.system}\n\n{user}"
 
 
 def _build_context(hits: List[Dict[str, Any]], max_chars: int) -> Tuple[str, List[Dict[str, Any]]]:

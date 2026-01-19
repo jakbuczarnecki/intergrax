@@ -1,0 +1,19 @@
+id: tools_agent_context
+version: 1
+
+locales:
+  en:
+    content:
+      system: null
+      developer: null
+      user_template: |
+        Session context:
+        {context}
+
+meta:
+  model_family: generic
+  output_schema_id: tools.agent.context.v1
+  tags:
+    - tools
+    - context
+  description: EXACT migration of legacy SYSTEM_CONTEXT_TEMPLATE from tools_agent.py

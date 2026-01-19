@@ -1,0 +1,19 @@
+id: rag_answerer_context
+version: 1
+
+locales:
+  en:
+    content:
+      system: null
+      developer: null
+      user_template: |
+        Context for this session:
+        {context}
+
+meta:
+  model_family: generic
+  output_schema_id: rag.answerer.context.v1
+  tags:
+    - rag
+    - context
+  description: 

@@ -9,8 +9,7 @@ from .rag_pipeline import load_and_split_documents,index_document_to_vectorstore
 def load_and_split_documents(file_path: str) -> List[Document]:
     return load_and_split_documents(file_path)
 
-def index_document_to_chroma(file_path: str, file_id: int) -> bool:
-    # wpinamy RAG ingest i dopisujemy file_id w metadanych (robi to pipeline)
+def index_document_to_chroma(file_path: str, file_id: int) -> bool:    
     return index_document_to_vectorstore(file_path, file_id)
 
 def delete_doc_from_chroma(file_id: int) -> bool:

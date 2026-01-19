@@ -1,0 +1,20 @@
+id: rag_answerer_summary_prompt
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        Summarize the answer below into no more than 6 bullet points. Keep it factual and do not introduce new content.
+        ANSWER:
+        {answer}
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: rag.aswerer.summary.v1
+  tags:
+    - rag
+    - summary
+  description: 

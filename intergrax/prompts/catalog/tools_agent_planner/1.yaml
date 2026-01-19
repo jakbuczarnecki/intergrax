@@ -1,0 +1,23 @@
+id: tools_agent_planner
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        You do not have native tool-calling.
+        At each step, reply ONLY with strict JSON:
+        {"call_tool": {"name": "<tool_name>", "arguments": {...}}} or {"final_answer": "<text>"}.
+        Use the declared TOOLS catalog to choose function name and arguments.
+        If tool result is insufficient, you may call another tool.
+        Never include commentary outside JSON.
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: tools.agent.planner.v1
+  tags:
+    - tools
+    - planner
+  description: JSON-only planner instruction for ToolsAgent.
