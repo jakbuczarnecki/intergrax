@@ -15,9 +15,7 @@ locales:
         Do not speculate.
 
         Use concise language.
-
       developer: null
-
       user_template: |
         CONTEXT:
         {{context}}
