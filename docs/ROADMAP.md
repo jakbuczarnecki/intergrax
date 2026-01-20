@@ -1,6 +1,6 @@
 Intergrax Roadmap
 
-Last updated: 2026-01-15
+Last updated: 2026-01-20
 
 This is a living engineering roadmap / TODO list.
 It reflects current development priorities and may change frequently.
@@ -24,6 +24,10 @@ DONE
 [DONE] Runtime loop — implement timeout enforcement and fallback strategies
 [DONE] Human-in-the-loop — implement base HITL escalation and clarification mechanism
 [DONE] Budget control — create architecture for defining and enforcing budget policies (tokens, time, tool calls, replans)
+[DONE] Prompting — all LLM instructions migrated to YAML prompt registry (no hard-coded prompts)
+[DONE] Prompting — versioning, pinning and metadata for prompts implemented
+[DONE] Prompting — prompts moved outside source code with nested folder support and backward-compatible lookup
+
 
 [PARTIAL] Tests — unit and integration coverage for runtime, trace, retry and cost
 [PARTIAL] Tests — minimal unit and integration test coverage for all P0 foundations
@@ -33,8 +37,6 @@ DONE
 [P0] Artifacts — implement persistent artifact store and reference linking from trace
 [P0] Runtime — implement run replay and inspection (ability to reconstruct a run from trace + artifacts)
 [P0] Runtime — implement idempotency and safe retry for tool calls with side effects
-[P0] Prompting — move all prompts into a structured prompt registry with versioning and pinning
-[P0] Prompting — add prompt hashing, metadata and migration strategy
 [P0] Sessions — implement production storage adapters for sessions and user profiles (DB-backed)
 [P0] Organization profiles — implement production storage and isolation per organization
 [P0] Security — implement PII redaction and multi-tenant isolation for logs, memory, artifacts and vector stores

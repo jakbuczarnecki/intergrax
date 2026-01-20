@@ -48,8 +48,12 @@ class YamlPromptRegistry:
             2.yaml
             stable.yaml  -> { stable: 2 }
         """
-        for prompt_dir in self._catalog_dir.iterdir():
+        for prompt_dir in self._catalog_dir.rglob("*"):
             if not prompt_dir.is_dir():
+                continue
+
+            # Folder is a prompt only if it contains yaml versions
+            if not any(prompt_dir.glob("*.yaml")):
                 continue
 
             prompt_id = prompt_dir.name
@@ -138,7 +142,8 @@ class YamlPromptRegistry:
     # ---------------------------------------------------------------------
 
     def _read_stable(self, prompt_id: str) -> int:
-        path = self._catalog_dir / prompt_id / "stable.yaml"
+        prompt_dir = self._find_prompt_dir(prompt_id)
+        path = prompt_dir / "stable.yaml"
 
         if not path.exists():
             raise PromptNotFound(f"Missing stable.yaml for '{prompt_id}'")
@@ -153,6 +158,19 @@ class YamlPromptRegistry:
         return version
     
 
+    def _find_prompt_dir(self, prompt_id: str) -> Path:
+        """
+        Find prompt directory recursively by its name.
+
+        Allows nested structure without requiring dotted identifiers.
+        """
+        for p in self._catalog_dir.rglob(prompt_id):
+            if p.is_dir():
+                return p
+
+        raise PromptNotFound(prompt_id)
+
+
     @classmethod
     def create_default(
         cls, 
@@ -160,7 +178,7 @@ class YamlPromptRegistry:
         load:bool = True
     )-> YamlPromptRegistry:
 
-        target_path = Path(path or "intergrax/prompts/catalog")
+        target_path = Path(path or "prompts/")
 
         if target_path in cls._default_instance:
             return cls._default_instance[target_path]

@@ -1,0 +1,21 @@
+id: chat_router_tool
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        TOOLS: TOOLS provide live, actionable operations such as calculations, summaries of numeric data, or calling external services/APIs.
+
+        GENERAL: GENERAL uses the base LLM without external tools or vector stores.
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: chat_agent.router_tool.v1
+  tags:
+    - router
+    - chat
+    - tool
+  description: 

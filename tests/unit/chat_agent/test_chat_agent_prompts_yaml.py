@@ -46,6 +46,7 @@ def test_chat_router_system_prompt_formatting() -> None:
         tools_description="TOOLS_DESC",
         general_description="GENERAL_DESC",
     )
+    cfg.ensure_prompts()
 
     txt = default_chat_router_system(
         tools_enabled=True,
@@ -68,6 +69,7 @@ def test_chat_router_system_prompt_disabled_tools() -> None:
         tools_description="T",
         general_description="G",
     )
+    cfg.ensure_prompts()
 
     txt = default_chat_router_system(
         tools_enabled=False,

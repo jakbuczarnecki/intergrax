@@ -68,13 +68,14 @@ EXTRA_BUNDLES: Dict[str, str] = {
     "MEMORY": r"intergrax\memory",
     "MULTIMEDIA": r"intergrax\multimedia",
     "RAG": r"intergrax\rag",
-    "PROMPTS": r"intergrax\prompts",
+    "PROMPTS_ENGINE": r"intergrax\prompts",
     "SUPERVISOR": r"intergrax\supervisor",
     "TOOLS": r"intergrax\tools",
     "WEBSEARCH": r"intergrax\websearch",
     "INTERGRAX_FULL_BUNDLE": r"intergrax",
     "NOTEBOOKS": r"notebooks",
     "TESTS": r"tests",
+    "PROMPTS": r"prompts",
 }
 
 
