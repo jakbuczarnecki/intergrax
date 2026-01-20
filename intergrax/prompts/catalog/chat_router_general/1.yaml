@@ -1,0 +1,19 @@
+id: chat_router_general
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        GENERAL uses the base LLM without external tools or vector stores.
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: chat_agent.router_general.v1
+  tags:
+    - router
+    - chat
+    - general
+  description: 

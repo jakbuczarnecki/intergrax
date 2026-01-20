@@ -66,14 +66,26 @@ class ChatRouterConfig:
     use_llm_router: bool = True
     router_max_tokens: int = 256
     router_temperature: float = 0.0
-    tools_description: str = (
-        "TOOLS provide live, actionable operations such as calculations, "
-        "summaries of numeric data, or calling external services/APIs."
-    )
-    general_description: str = (
-        "GENERAL uses the base LLM without external tools or vector stores."
-    )
+    tools_description: str = ""
+    general_description: str = ""
     allow_override: bool = True
+
+    def ensure_prompts(self) -> None:
+        """
+        Ensure router descriptions are loaded from YAML prompt registry.
+        """
+
+        registry = YamlPromptRegistry.create_default(load=True)
+
+        def system(id_: str) -> str:
+            return (registry.resolve_localized(id_).system or "").rstrip("\n")
+
+        if not self.general_description:
+            self.general_description = system("chat_router_general")
+
+        if not self.tools_description:
+            self.tools_description = system("chat_router_tool")
+
 
 @dataclass
 class RagComponent:
