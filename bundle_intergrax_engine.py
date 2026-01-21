@@ -76,6 +76,7 @@ EXTRA_BUNDLES: Dict[str, str] = {
     "NOTEBOOKS": r"notebooks",
     "TESTS": r"tests",
     "PROMPTS": r"prompts",
+    "FASTAPI_CORE":r"intergrax\fastapi_core"
 }
 
 
