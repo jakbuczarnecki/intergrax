@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from pathlib import Path
 from yt_dlp import YoutubeDL
-import whisper
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 
@@ -43,6 +42,7 @@ def yt_download_audio(youtube_url: str, out_dir: str | Path, audio_format: str =
 
 
 def translate_audio(audio_path:str, model:str="medium", language:str=GLOBAL_SETTINGS.default_language):
+    import whisper
     model = whisper.load_model("medium")
     options = dict(task="translate", best_of=1, language=language)
     results = model.transcribe(str(audio_path), **options)

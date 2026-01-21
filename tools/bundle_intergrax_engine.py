@@ -571,15 +571,29 @@ def build_extra_bundles(
         print(f"Module bundle created: {out_path.name}  (files={len(paths)})")
 
 
+def find_project_root(start: Path) -> Path:
+    """
+    Walk up the directory tree to find project root
+    (identified by pyproject.toml).
+    """
+    current = start
+    while current != current.parent:
+        if (current / "pyproject.toml").exists():
+            return current
+        current = current.parent
+    raise RuntimeError("Project root not found (pyproject.toml missing)")
+
+
 def main() -> None:
     script_dir = Path(__file__).resolve().parent
+    project_root = find_project_root(script_dir)
 
-    bundles_dir = script_dir / BUNDLES_DIR_NAME
+    bundles_dir = project_root / BUNDLES_DIR_NAME
     bundles_dir.mkdir(parents=True, exist_ok=True)
 
     if EXTRA_BUNDLES:
         build_extra_bundles(
-            project_root=script_dir,
+            project_root=project_root,
             bundles=EXTRA_BUNDLES,
             bundles_dir=bundles_dir,
             max_mb=25,

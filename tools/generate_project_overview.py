@@ -28,9 +28,28 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+import sys
 from typing import List, Optional, Sequence
 
 from tqdm.auto import tqdm
+
+
+def find_project_root(start: Path) -> Path:
+    """
+    Walk up the directory tree to find project root (identified by pyproject.toml).
+    """
+    current = start.resolve()
+    while current != current.parent:
+        if (current / "pyproject.toml").exists():
+            return current
+        current = current.parent
+    raise RuntimeError("Project root not found (pyproject.toml missing)")
+
+PROJECT_ROOT = find_project_root(Path(__file__).resolve().parent)
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+
 
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.llm_provider import LLMProvider
@@ -39,8 +58,14 @@ from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 
 @dataclass
 class ProjectOverviewConfig:
-    root_dir: Path = field(default_factory=lambda: Path(".").resolve())
-    output_md: Path = field(default_factory=lambda: Path("PROJECT_STRUCTURE.md"))
+    root_dir: Path = field(
+        default_factory=lambda: find_project_root(Path(__file__).resolve().parent)
+    )
+    output_md: Path = field(
+        default_factory=lambda: find_project_root(Path(__file__).resolve().parent) / "PROJECT_STRUCTURE.md"
+    )
+
+
     include_exts: Sequence[str] = field(default_factory=lambda: [".py", ".ipynb"])
     exclude_dirs: Sequence[str] = field(
         default_factory=lambda: [
@@ -223,9 +248,12 @@ CONTENT:
 if __name__ == "__main__":
     adapter = LLMAdapterRegistry.create(LLMProvider.OLLAMA)
 
+    script_dir = Path(__file__).resolve().parent
+    project_root = find_project_root(script_dir)
+
     config = ProjectOverviewConfig(
-        root_dir=Path(".").resolve(),
-        output_md=Path("PROJECT_STRUCTURE.md"),
+        root_dir=project_root,
+        output_md=project_root / "PROJECT_STRUCTURE.md",
         max_chars_per_file=8000,
         model_max_tokens=1024,
     )

@@ -49,7 +49,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                             "request_id": ctx.request_id,
                             "path": ctx.path,
                             "method": ctx.method,
-                            "status_code": getattr(response, "status_code", None),
+                            "status_code": response.status_code,
                             "latency_ms": elapsed_ms,
                         }
                     },

@@ -61,3 +61,34 @@ def get_request_context(request: Request) -> RequestContext:
 
     return context
 
+
+def update_request_context(
+    request: Request,
+    *,
+    tenant_id: Optional[str],
+    user_id: Optional[str],
+) -> RequestContext:
+    """
+    Update RequestContext with identity information.
+
+    A new RequestContext instance is created and replaces
+    the existing one on request.state.
+
+    Rationale:
+    - Keep RequestContext immutable.
+    - Allow progressive enrichment during request processing.
+    """
+    current = get_request_context(request)
+
+    updated = RequestContext(
+        request_id=current.request_id,
+        path=current.path,
+        method=current.method,
+        tenant_id=tenant_id,
+        user_id=user_id,
+    )
+
+    request.state.context = updated
+    return updated
+
+
