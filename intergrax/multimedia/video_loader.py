@@ -6,8 +6,6 @@ from __future__ import annotations
 from pathlib import Path
 from yt_dlp import YoutubeDL
 from typing import Optional
-import whisper
-import webvtt
 from tqdm.auto import tqdm
 import cv2
 import os
@@ -65,6 +63,8 @@ def transcribe_to_vtt(
         return f"{h:02d}:{m:02d}:{sec:06.3f}"
 
     if not output_vtt_path.exists():
+        import webvtt
+        import whisper
         model = whisper.load_model(model_size)
         result = model.transcribe(str(input_media_path), language=language)
 
@@ -85,6 +85,8 @@ def extract_frames_and_metadata(
     path_to_save_metadatas :str,
     save_metadata:bool=True
 ):
+    
+    import webvtt
 
     def time_str_to_ms(time_str: str) -> int:
         time_str = time_str.strip().replace(',', '.')

@@ -3,8 +3,104 @@ name = "Intergrax-ai"
 version = "0.1.0"
 description = "Intergrax is a modular AI runtime and orchestration framework for building deterministic, enterprise-grade AI agents, pipelines, and knowledge-driven systems. It provides a typed execution engine, planning and loop controllers, memory and RAG integration, and production-ready diagnostics for safe and observable AI applications."
 readme = "README.md"
-requires-python = ">=3.12"
-dependencies = []
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  # -----------------
+  # Runtime / Server
+  # -----------------
+  "torch==2.2.2",
+  "fastapi>=0.115",
+  "starlette>=0.41",
+  "httpx>=0.27",
+  "pydantic>=2.7",
+  "python-dotenv>=1.0",
+  "PyYAML>=6.0",
+  "tqdm>=4.66",
+
+  # -----------------
+  # LLM providers
+  # -----------------
+  "openai>=1.0",
+  "anthropic>=0.25",
+  "mistralai>=0.4",
+  "ollama>=0.1",
+  "tiktoken>=0.7",
+  "boto3>=1.34",
+  "botocore>=1.34",
+  "mypy-boto3-bedrock-runtime>=1.34",
+  "google-genai>=0.3",
+
+  # -----------------
+  # Orchestration
+  # -----------------
+  "langchain>=0.3",
+  "langchain-core>=0.3",
+  "langchain-community>=0.3",
+  "langchain-openai>=0.3",
+  "langchain-ollama>=0.2",
+  "langchain-text-splitters>=0.3",
+  "langgraph>=0.0.40",
+
+  # -----------------
+  # RAG / Vector DBs
+  # -----------------
+  "chromadb>=0.5",
+  "qdrant-client>=1.9",
+  "pinecone>=3.0",
+  "sentence-transformers>=3.0",
+
+  # -----------------
+  # Data / parsing
+  # -----------------
+  "numpy==1.26.4",
+  "pandas==2.0.3",
+  "beautifulsoup4>=4.12",
+  "trafilatura>=1.8",
+  "python-docx>=1.1",
+  "openpyxl>=3.1",
+  "xlrd>=2.0",
+  "pytesseract>=0.3",
+  "pillow>=11.0",
+  "PyMuPDF>=1.23",
+  "requests-cache>=1.2",
+
+  # -----------------
+  # Media / ingestion
+  # -----------------
+  "whisper>=1.1",
+  "yt-dlp>=2024.0",
+  "webvtt-py>=0.4",
+  "opencv-python-headless==4.9.0.80",
+
+
+  # -----------------
+  # UI
+  # -----------------
+  "streamlit>=1.39",    
+]
+
+[tool.uv]
+environments = ["sys_platform == 'win32'"]
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.4",
+  "pytest-asyncio",
+  "ruff",
+  "pyright",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

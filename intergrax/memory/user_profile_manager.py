@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 from typing import Optional, Dict, Any, List, Union
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 from intergrax.memory.user_profile_memory import (
     UserProfile,

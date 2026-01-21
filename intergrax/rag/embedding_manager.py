@@ -7,7 +7,7 @@ import logging
 
 from intergrax.logging import IntergraxLogging
 from dataclasses import dataclass
-from typing import List, Tuple, Literal, Optional, Sequence, Union
+from typing import TYPE_CHECKING, List, Tuple, Literal, Optional, Sequence, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -19,8 +19,12 @@ try:
 except Exception:
     SentenceTransformer = None
 
-from langchain_ollama import OllamaEmbeddings
-from langchain_openai import OpenAIEmbeddings
+if TYPE_CHECKING:
+    from langchain_ollama import OllamaEmbeddings
+
+if TYPE_CHECKING:
+    from langchain_openai import OpenAIEmbeddings
+
 from langchain_core.documents import Document
 
 logger = IntergraxLogging.get_logger(__name__, component="rag")
