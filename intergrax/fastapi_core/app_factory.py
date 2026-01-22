@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
+from intergrax.fastapi_core.auth.api_key import ApiKeyAuthenticator
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.fastapi_core.errors.handlers import global_exception_handler
 from intergrax.fastapi_core.middleware.request_context import RequestContextMiddleware
@@ -36,5 +37,9 @@ def create_app(config: ApiConfig) -> FastAPI:
     app.add_middleware(RequestContextMiddleware)
     app.add_exception_handler(Exception, global_exception_handler)
     app.include_router(health_router)
+
+    if config.api_key_config is not None:
+        authenticator = ApiKeyAuthenticator(config=config.api_key_config)
+        app.dependency_overrides[ApiKeyAuthenticator] = lambda: authenticator
 
     return app
