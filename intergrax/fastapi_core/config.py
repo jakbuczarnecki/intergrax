@@ -9,6 +9,7 @@ from enum import Enum
 from typing import FrozenSet, Optional
 
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
+from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
 
 
 class ApiEnvironment(str, Enum):
@@ -43,6 +44,8 @@ class ApiConfig:
     enable_structured_logging: bool = True
 
     api_key_config: Optional[ApiKeyConfig] = None
+
+    rate_limit_policy: Optional[RateLimitPolicy] = None
 
 
     def validate(self) -> None:
