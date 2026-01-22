@@ -8,14 +8,18 @@ import uuid
 from typing import Dict
 
 from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
+from intergrax.fastapi_core.runs.store_base import RunStore
 
 
 
-class InMemoryRunStore:
+class InMemoryRunStore(RunStore):
     """
-    Temporary in-memory run store.
+    In-memory RunStore implementation.
 
-    This will be replaced by persistent storage / runtime integration.
+    Intended for:
+    - development
+    - tests
+    - dry-run mode
     """
 
     def __init__(self) -> None:

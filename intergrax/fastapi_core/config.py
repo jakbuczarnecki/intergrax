@@ -10,6 +10,7 @@ from typing import FrozenSet, Optional
 
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
+from intergrax.fastapi_core.runs.store_base import RunStore
 
 
 class ApiEnvironment(str, Enum):
@@ -46,6 +47,8 @@ class ApiConfig:
     api_key_config: Optional[ApiKeyConfig] = None
 
     rate_limit_policy: Optional[RateLimitPolicy] = None
+
+    run_store: Optional[RunStore] = None
 
 
     def validate(self) -> None:

@@ -13,6 +13,8 @@ from intergrax.fastapi_core.middleware.request_context import RequestContextMidd
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
 from intergrax.fastapi_core.routers.health import health_router
 from intergrax.fastapi_core.runs.router import runs_router
+from intergrax.fastapi_core.runs.store_base import RunStore
+from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
 
 
 
@@ -52,5 +54,10 @@ def create_app(config: ApiConfig) -> FastAPI:
         app.dependency_overrides[RateLimitPolicy] = (
             lambda: config.rate_limit_policy
         )        
+
+    run_store = config.run_store if config.run_store is not None else InMemoryRunStore()
+    app.dependency_overrides[RunStore] = (
+        lambda: run_store
+    )
 
     return app
