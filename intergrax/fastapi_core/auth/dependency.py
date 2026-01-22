@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from typing import Iterable
 
 from fastapi import Depends, HTTPException, Request, status
 
@@ -50,3 +51,44 @@ def require_auth(auth: AuthContext = Depends(get_auth_context)) -> AuthContext:
         )
 
     return auth
+
+
+def require_scope(required_scope: str):
+    """
+    Dependency enforcing presence of a specific scope.
+
+    Usage:
+        Depends(require_scope("runs:create"))
+    """
+
+    def _dependency(auth: AuthContext = Depends(require_auth)) -> AuthContext:
+        if require_scope not in auth.scopes:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Missing required scope: {require_scope}"
+            )
+        return auth
+    
+    return _dependency
+
+
+def require_any_scope(required_scopes: Iterable[str]):
+    """
+    Dependency enforcing presence of at least one required scope.
+
+    Usage:
+        Depends(require_any_scope(["runs:read", "runs:write"]))
+    """
+
+    required = set(required_scopes)
+
+    def _dependency(auth: AuthContext = Depends(require_auth)) -> AuthContext:
+        if not required.intersection(auth.scopes):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Missing required scope (any of): {sorted(required)}",
+            )
+        return auth
+
+    return _dependency
+

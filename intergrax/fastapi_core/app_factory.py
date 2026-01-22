@@ -12,6 +12,7 @@ from intergrax.fastapi_core.errors.handlers import global_exception_handler
 from intergrax.fastapi_core.middleware.request_context import RequestContextMiddleware
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
 from intergrax.fastapi_core.routers.health import health_router
+from intergrax.fastapi_core.runs.router import runs_router
 
 
 
@@ -37,7 +38,9 @@ def create_app(config: ApiConfig) -> FastAPI:
 
     app.add_middleware(RequestContextMiddleware)
     app.add_exception_handler(Exception, global_exception_handler)
+
     app.include_router(health_router)
+    app.include_router(runs_router)
 
     if config.api_key_config is not None:
         authenticator = ApiKeyAuthenticator(config=config.api_key_config)
