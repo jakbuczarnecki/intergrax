@@ -6,7 +6,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import FrozenSet
+from typing import FrozenSet, Optional
+
+from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
+from intergrax.fastapi_core.auth.provider import AuthProvider
+from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
+from intergrax.fastapi_core.runs.store_base import RunStore
 
 
 class ApiEnvironment(str, Enum):
@@ -39,6 +44,15 @@ class ApiConfig:
 
     # Observability toggles (actual logging middleware comes in follow-up step)
     enable_structured_logging: bool = True
+
+    api_key_config: Optional[ApiKeyConfig] = None
+
+    rate_limit_policy: Optional[RateLimitPolicy] = None
+
+    run_store: Optional[RunStore] = None
+
+    auth_provider: Optional[AuthProvider] = None
+
 
     def validate(self) -> None:
         """

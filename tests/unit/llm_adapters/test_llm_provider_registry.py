@@ -10,7 +10,8 @@ These tests define the behavioral contract for adapter registration and creation
 - invalid providers fail fast,
 - register() overwrites existing factories explicitly,
 - create() raises a clear error for unknown providers,
-- create() forwards kwargs to the underlying factory.
+- create() forwards kwargs to the underlying factory,
+- factories must return a valid LLMAdapter instance.
 
 Why this matters:
 LLMAdapterRegistry is a central wiring mechanism. Regressions here can break
@@ -19,10 +20,12 @@ adapter resolution across the system in subtle, hard-to-debug ways.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Iterator
+from typing import Any, Callable, Dict, Iterator, Sequence, Optional
 
 import pytest
 
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 
@@ -30,8 +33,42 @@ from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 pytestmark = pytest.mark.unit
 
 
-_Factory = Callable[..., Any]
+_Factory = Callable[..., LLMAdapter]
 
+
+# ---------------------------------------------------------------------------
+# Minimal test adapter
+# ---------------------------------------------------------------------------
+
+class _TestAdapter(LLMAdapter):
+    """
+    Minimal concrete LLMAdapter used for registry contract tests.
+    """
+
+    provider = "unit-test"
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__()
+        self.kwargs = dict(kwargs)
+
+    @property
+    def context_window_tokens(self) -> int:
+        return 1
+
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
+    ) -> str:
+        return "ok"
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
 @pytest.fixture()
 def _restore_registry_state() -> Iterator[Dict[str, _Factory]]:
@@ -48,12 +85,16 @@ def _restore_registry_state() -> Iterator[Dict[str, _Factory]]:
         LLMAdapterRegistry._factories = snapshot
 
 
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+
 def test_normalize_provider_accepts_enum_values(_restore_registry_state: Dict[str, Any]) -> None:
     """
     Enum providers must normalize to their canonical string values.
     """
     key = LLMAdapterRegistry._normalize_provider(LLMProvider.OPENAI)
-    assert key == str(LLMProvider.OPENAI.value)
+    assert key == LLMProvider.OPENAI.value
 
 
 def test_normalize_provider_strips_and_lowercases(_restore_registry_state: Dict[str, Any]) -> None:
@@ -76,23 +117,34 @@ def test_normalize_provider_rejects_empty(_restore_registry_state: Dict[str, Any
 
 def test_register_overwrites_existing_factory(_restore_registry_state: Dict[str, Any]) -> None:
     """
-    register() must overwrite an existing factory for the same normalized provider key.
-
-    This is an explicit contract: latest registration wins.
+    register() must NOT silently overwrite existing factories.
+    Overwrite is only allowed when override=True is explicitly provided.
     """
     provider = "unit-test-provider"
 
-    def factory_v1(**kwargs: Any) -> str:
-        return "v1"
+    def factory_v1(**kwargs: Any) -> LLMAdapter:
+        return _TestAdapter(version="v1")
 
-    def factory_v2(**kwargs: Any) -> str:
-        return "v2"
+    def factory_v2(**kwargs: Any) -> LLMAdapter:
+        return _TestAdapter(version="v2")
 
-    LLMAdapterRegistry.register(provider, factory_v1)  # type: ignore[arg-type]
-    assert LLMAdapterRegistry.create(provider) == "v1"  # type: ignore[call-arg]
+    # First registration works
+    LLMAdapterRegistry.register(provider, factory_v1)
+    out1 = LLMAdapterRegistry.create(provider)
+    assert isinstance(out1, _TestAdapter)
+    assert out1.kwargs["version"] == "v1"
 
-    LLMAdapterRegistry.register(provider, factory_v2)  # type: ignore[arg-type]
-    assert LLMAdapterRegistry.create(provider) == "v2"  # type: ignore[call-arg]
+    # Second registration WITHOUT override must fail
+    with pytest.raises(ValueError) as exc:
+        LLMAdapterRegistry.register(provider, factory_v2)
+
+    assert "already registered" in str(exc.value)
+
+    # Explicit override must succeed
+    LLMAdapterRegistry.register(provider, factory_v2, override=True)
+    out2 = LLMAdapterRegistry.create(provider)
+    assert isinstance(out2, _TestAdapter)
+    assert out2.kwargs["version"] == "v2"
 
 
 def test_create_raises_for_unregistered_provider(_restore_registry_state: Dict[str, Any]) -> None:
@@ -113,24 +165,19 @@ def test_create_forwards_kwargs_to_factory(_restore_registry_state: Dict[str, An
     """
     provider = "unit-test-kwargs"
 
-    captured: Dict[str, Any] = {}
+    def factory(**kwargs: Any) -> LLMAdapter:
+        return _TestAdapter(**kwargs)
 
-    def factory(**kwargs: Any) -> str:
-        captured.update(kwargs)
-        return "ok"
-
-    LLMAdapterRegistry.register(provider, factory)  # type: ignore[arg-type]
+    LLMAdapterRegistry.register(provider, factory)
 
     out = LLMAdapterRegistry.create(provider, x=1, y="a")
-    assert out == "ok"
-    assert captured == {"x": 1, "y": "a"}
+    assert isinstance(out, _TestAdapter)
+    assert out.kwargs == {"x": 1, "y": "a"}
 
 
 def test_normalize_provider_rejects_non_string_and_non_enum(_restore_registry_state: Dict[str, Any]) -> None:
     """
     Non-string and non-enum provider values must be rejected explicitly.
-
-    This prevents obscure runtime errors and mis-registrations like "None" or "42".
     """
     with pytest.raises((TypeError, ValueError)):
         LLMAdapterRegistry._normalize_provider(None)  # type: ignore[arg-type]
