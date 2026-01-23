@@ -16,7 +16,7 @@ from intergrax.llm_adapters.ollama_adapter import LangChainOllamaAdapter
 from intergrax.llm_adapters.openai_responses_adapter import OpenAIChatResponsesAdapter
 
 class LLMAdapterRegistry:
-    _factories: Dict[str, Any] = {}
+    _factories: Dict[str, Callable[..., LLMAdapter]] = {}
 
     @staticmethod
     def _normalize_provider(provider: Union[str, LLMProvider]) -> str:
@@ -33,16 +33,35 @@ class LLMAdapterRegistry:
         return key.lower()
 
     @classmethod
-    def register(cls, provider: Union[str, LLMProvider], factory: Callable[..., LLMAdapter]) -> None:
+    def register(
+        cls,
+        provider: Union[str, LLMProvider],
+        factory: Callable[..., LLMAdapter],
+        *,
+        override: bool = False,
+    ) -> None:
         key = cls._normalize_provider(provider)
+        if key in cls._factories and not override:
+            raise ValueError(f"LLM adapter already registered for provider='{key}'")
         cls._factories[key] = factory
 
     @classmethod
     def create(cls, provider: Union[str, LLMProvider], **kwargs) -> LLMAdapter:
         key = cls._normalize_provider(provider)
+
         if key not in cls._factories:
             raise ValueError(f"LLM adapter not registered for provider='{key}'")
-        return cls._factories[key](**kwargs)
+
+        adapter = cls._factories[key](**kwargs)
+
+        if not isinstance(adapter, LLMAdapter):
+            raise TypeError(
+                f"Factory for provider='{key}' returned invalid type "
+                f"{type(adapter)!r}, expected LLMAdapter"
+            )
+
+        adapter.validate()
+        return adapter
 
 
 # Default adapter registrations

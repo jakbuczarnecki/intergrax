@@ -8,34 +8,27 @@ from typing import Iterable
 from fastapi import Depends, HTTPException, Request, status
 
 from intergrax.fastapi_core.auth.context import AuthContext
-from intergrax.fastapi_core.auth.resolver import DEFAULT_AUTH_RESOLVER
-from intergrax.fastapi_core.context import update_request_context
+from intergrax.fastapi_core.context import get_request_context
 
 
 def get_auth_context(request: Request) -> AuthContext:
     """
-    Resolve authentication context for the current request.
+    Retrieve resolved AuthContext from RequestContext.
 
-    Skeleton implementation:
-    - No token validation.
-    - Identity is not authenticated.
-    - Wiring to RequestContext is performed.
+    Notes:
+    - AuthContext is resolved once in middleware.
+    - This function must not perform authentication.
+    - Fail-fast if RequestContext is missing or malformed.
     """
-    auth = AuthContext(
-        is_authenticated=False,
-        tenant_id=None,
-        user_id=None,
-        scopes=(),
-    )
+    ctx = get_request_context(request)
 
-    # Wire identity into RequestContext (even if None)
-    update_request_context(
-        request,
-        tenant_id=auth.tenant_id,
-        user_id=auth.user_id,
-    )
+    if ctx.auth is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
 
-    return auth
+    return ctx.auth
 
 
 
@@ -92,25 +85,3 @@ def require_any_scope(required_scopes: Iterable[str]):
         return auth
 
     return _dependency
-
-
-def get_auth_context(request: Request) -> AuthContext:
-    raw_credential = DEFAULT_AUTH_RESOLVER.resolve(request)
-
-    is_authenticated = raw_credential is not None
-
-    auth = AuthContext(
-        is_authenticated=is_authenticated,
-        tenant_id=None,
-        user_id=None,
-        scopes=(),
-    )
-
-    update_request_context(
-        request,
-        tenant_id=auth.tenant_id,
-        user_id=auth.user_id,
-    )
-
-    return auth
-

@@ -65,8 +65,9 @@ def test_adapter_with_empty_provider_is_rejected() -> None:
     class EmptyProviderAdapter(_MinimalValidAdapter):
         provider = ""
 
+    adapter = EmptyProviderAdapter()
     with pytest.raises(ValueError):
-        EmptyProviderAdapter()
+        adapter.validate()
 
 
 def test_adapter_with_none_provider_is_rejected() -> None:
@@ -77,5 +78,7 @@ def test_adapter_with_none_provider_is_rejected() -> None:
     class NoneProviderAdapter(_MinimalValidAdapter):
         provider = None  # type: ignore[assignment]
 
+    adapter = NoneProviderAdapter()
+
     with pytest.raises(ValueError):
-        NoneProviderAdapter()
+        adapter.validate()

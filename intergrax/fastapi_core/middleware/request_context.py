@@ -11,6 +11,7 @@ from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
+from intergrax.fastapi_core.auth.provider import AuthProvider
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.protocol import ApiHeaders
 from intergrax.logging import IntergraxLogging
@@ -28,8 +29,8 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
     - Propagate X-Request-ID to the response.
 
     Notes:
-    - No logging here.
-    - No auth, tenant, or user extraction here (added later).
+    - Auth is resolved here via the configured AuthProvider.
+    - No request logging here beyond setting IntergraxLogging context.
     """
 
     REQUEST_ID_HEADER = ApiHeaders.REQUEST_ID
@@ -37,12 +38,16 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         request_id: str = self._get_or_create_request_id(request)
 
+        auth_provider: AuthProvider = request.app.state.auth_provider
+        auth = auth_provider.authenticate(request)
+
         context = RequestContext(
             request_id=request_id,
             path=request.url.path,
             method=request.method,
-            tenant_id=None,
-            user_id=None,
+            tenant_id=auth.tenant_id if auth else None,
+            user_id=auth.user_id if auth else None,
+            auth=auth,
         )
 
         # Attach context to request state (single source of truth)
@@ -50,7 +55,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
 
         IntergraxLogging.set_context(
             component="api",
-            request_id=context.request_id,
+            run_id=context.request_id,
             tenant_id=context.tenant_id,
             user_id=context.user_id,
         )

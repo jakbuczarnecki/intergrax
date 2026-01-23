@@ -48,6 +48,13 @@ class LLMAdapter(ABC):
         self.id = uuid.uuid4().hex
         self.usage = LLMAdapterUsageLog()
     
+    
+    def validate(self) -> None:
+        provider = getattr(self, "provider", None)
+        if not isinstance(provider, str) or not provider.strip():
+            raise ValueError(
+                f"{self.__class__.__name__}.provider must be a non-empty string"
+            )
 
     @abstractmethod
     def generate_messages(

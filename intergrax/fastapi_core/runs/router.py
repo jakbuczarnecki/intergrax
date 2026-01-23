@@ -6,12 +6,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from intergrax.fastapi_core import rate_limit
+from intergrax.fastapi_core.rate_limit.dependency import rate_limit
 from intergrax.fastapi_core.auth.dependency import require_scope
 from intergrax.fastapi_core.rate_limit.keys import RateLimitKey
 from intergrax.fastapi_core.runs.models import CreateRunRequest, RunResponse
 from intergrax.fastapi_core.runs.store_base import RunStore
-from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
 
 runs_router = APIRouter(prefix="/runs", tags=["runs"])
 

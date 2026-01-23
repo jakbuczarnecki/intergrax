@@ -9,6 +9,8 @@ from typing import Optional
 
 from fastapi import Request
 
+from intergrax.fastapi_core.auth.context import AuthContext
+
 
 @dataclass(frozen=True)
 class RequestContext:
@@ -30,6 +32,7 @@ class RequestContext:
     method: str
     tenant_id: Optional[str]
     user_id: Optional[str]
+    auth: Optional[AuthContext]
 
 
 def get_request_context(request: Request) -> RequestContext:
@@ -86,6 +89,7 @@ def update_request_context(
         method=current.method,
         tenant_id=tenant_id,
         user_id=user_id,
+        auth=current.auth,
     )
 
     request.state.context = updated
