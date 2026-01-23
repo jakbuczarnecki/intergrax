@@ -10,6 +10,7 @@ from typing import Mapping, Optional
 from fastapi import Depends, HTTPException, Request, status
 from intergrax.fastapi_core.auth.context import AuthContext
 from intergrax.fastapi_core.context import update_request_context
+from intergrax.fastapi_core.protocol import ApiHeaders
 
 @dataclass(frozen=True)
 class ApiKeyIdentity:
@@ -37,8 +38,6 @@ class ApiKeyAuthenticator:
     Resolve AuthContext from X-API-Key header.
     """
 
-    HEADER_NAME: str = "X-API-Key"
-
     def __init__(self, config: ApiKeyConfig) -> None:
         self._config = config
 
@@ -53,7 +52,7 @@ def get_auth_context_from_api_key(
     """
     Resolve AuthContext using API key authentication.
     """
-    api_key = request.headers.get(ApiKeyAuthenticator.HEADER_NAME)
+    api_key = request.headers.get(ApiHeaders.API_KEY)
 
     if not api_key:
         return AuthContext(

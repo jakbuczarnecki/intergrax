@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from typing import Callable
 
 from fastapi import Depends, HTTPException, Request, status
 
@@ -19,14 +20,14 @@ class NoOpRateLimitPolicy(RateLimitPolicy):
     Used as a safe skeleton implementation.
     """
 
-    def allow(self, key: RateLimitKey) -> bool:
+    def allow(self, key: RateLimitKey, identity: str) -> bool:
         return True
 
 
 def rate_limit(
     key: RateLimitKey,
     policy: RateLimitPolicy = Depends(),
-) -> None:
+) -> Callable[[Request], None]:
     """
     FastAPI dependency enforcing rate limiting.
     """

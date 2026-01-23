@@ -18,7 +18,7 @@ class RateLimitPolicy(ABC):
     """
 
     @abstractmethod
-    def allow(self, key: RateLimitKey) -> bool:
+    def allow(self, key: RateLimitKey, identity: str) -> bool:
         """
         Return True if request is allowed, False otherwise.
         """

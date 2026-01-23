@@ -12,6 +12,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from intergrax.fastapi_core.context import RequestContext
+from intergrax.fastapi_core.protocol import ApiHeaders
 from intergrax.logging import IntergraxLogging
 
 
@@ -31,7 +32,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
     - No auth, tenant, or user extraction here (added later).
     """
 
-    REQUEST_ID_HEADER: str = "X-Request-ID"
+    REQUEST_ID_HEADER = ApiHeaders.REQUEST_ID
 
     async def dispatch(self, request: Request, call_next) -> Response:
         request_id: str = self._get_or_create_request_id(request)

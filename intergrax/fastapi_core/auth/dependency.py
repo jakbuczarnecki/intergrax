@@ -8,6 +8,7 @@ from typing import Iterable
 from fastapi import Depends, HTTPException, Request, status
 
 from intergrax.fastapi_core.auth.context import AuthContext
+from intergrax.fastapi_core.auth.resolver import DEFAULT_AUTH_RESOLVER
 from intergrax.fastapi_core.context import update_request_context
 
 
@@ -91,4 +92,25 @@ def require_any_scope(required_scopes: Iterable[str]):
         return auth
 
     return _dependency
+
+
+def get_auth_context(request: Request) -> AuthContext:
+    raw_credential = DEFAULT_AUTH_RESOLVER.resolve(request)
+
+    is_authenticated = raw_credential is not None
+
+    auth = AuthContext(
+        is_authenticated=is_authenticated,
+        tenant_id=None,
+        user_id=None,
+        scopes=(),
+    )
+
+    update_request_context(
+        request,
+        tenant_id=auth.tenant_id,
+        user_id=auth.user_id,
+    )
+
+    return auth
 
