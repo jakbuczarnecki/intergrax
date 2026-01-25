@@ -1,9 +1,10 @@
 Intergrax Roadmap
 
-Last updated: 2026-01-20
+Last updated: 2026-01-24
 
 This is a living engineering roadmap / TODO list.
 It reflects current development priorities and may change frequently.
+
 
 Legend:
 [P0] — Production blockers (must-have before first E2E agent)
@@ -33,7 +34,6 @@ DONE
 [PARTIAL] Tests — minimal unit and integration test coverage for all P0 foundations
 
 🟥 Production foundations (P0 — must be done before first E2E agent)
-
 [P0] Artifacts — implement persistent artifact store and reference linking from trace
 [P0] Runtime — implement run replay and inspection (ability to reconstruct a run from trace + artifacts)
 [P0] Runtime — implement idempotency and safe retry for tool calls with side effects
@@ -46,7 +46,6 @@ DONE
 [P0] Eval — implement an evaluation harness for agent quality, regressions and cost tracking
 
 🟧 Productization & stability (P1)
-
 [P1] Tests — convert notebooks into production-grade unit and integration tests
 [P1] Runtime — create lifecycle events to notify users about reasoning and pipelines, and allow interruption when needed
 [P1] Memory improvement — implement mechanisms for improving reasoning while history profiles grow (summaries, compression)
@@ -61,8 +60,17 @@ DONE
 [P1] Logging — attach logger to other system components
 [P1] Guardrails — extended policy and safety layer (advanced validators, classifiers, moderation)
 
-🟨 Agents & product demos (P1–P2)
+🟦 Agent Factory (P1 — foundations for building specialized, product-grade agents)
+[P1] Agent Factory — define a first-class “Agent Pipeline” concept (specialized pipeline = product agent behavior), with strict typed contracts and invariants (run -> RuntimeAnswer)
+[P1] Agent Factory — introduce a typed AgentSpec/AgentProfile (agent identity, purpose, pipeline selection, tool scopes, budget policy, memory/RAG sources, output contract)
+[P1] Agent Factory — implement prompt packs per pipeline phase (router/planner/step_decision/tool_use/critic/finalizer) using YAML prompt registry (versioned + pinned), with per-agent overrides
+[P1] Agent Factory — create a pipeline base toolkit (reusable building blocks) for specialized pipelines (phase runner, stop conditions, clarification gates, progress checks), without restricting custom implementations
+[P1] Agent Factory — implement per-agent tool permission scopes and auditing integration (agent -> allowed tools + allowed data sources), enforced by runtime policies
+[P1] Agent Factory — implement per-agent memory/RAG/web configuration (which sources are available, retrieval limits, redaction rules), provided via typed context/facades (no raw dicts)
+[P1] Agent Factory — add contract tests for pipelines/agents (behavioral invariants: tool gating, clarification behavior, output schema, stop reasons, budget limits)
+[P1] Agent Factory — create an agent catalog/registry (discoverability, versioning, rollout strategy), enabling selection by config and safe upgrades/rollbacks
 
+🟨 Agents & product demos (P1–P2)
 [P1] Agent — design and implement a company profile agent (first E2E product)
 [P1] Agent — design and implement an IT headhunter agent
 [P2] Agent — create a virtual company team with a supervisor and inter-agent communication
@@ -71,7 +79,6 @@ DONE
 [P2] Agent / Tool — Text-to-SQL
 
 🟦 Integrations & external systems (P2)
-
 [P2] Integrations — Google Docs
 [P2] Integrations — Google Drive
 [P2] Integrations — Google Sheets
@@ -82,7 +89,6 @@ DONE
 [P2] Integrations — other useful and well-known APIs
 
 🟩 Advanced capabilities (P3)
-
 [P3] Cloud — create mechanisms for cloud computing integrations (Azure, AWS, etc.)
 [P3] Voice agent — create an example voice chatbot
 [P3] Large data handling — scalable reasoning over large datasets (source code, corpora)
