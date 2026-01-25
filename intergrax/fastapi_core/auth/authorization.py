@@ -25,5 +25,5 @@ class AuthRequired:
     ) -> None:
         auth = context.auth
 
-        if not auth.is_authenticated:
+        if auth is None or not auth.is_authenticated:
             raise NotAuthenticatedError()
