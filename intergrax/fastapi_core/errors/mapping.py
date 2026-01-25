@@ -8,7 +8,7 @@ from typing import Tuple
 
 from fastapi import HTTPException, status
 
-from intergrax.fastapi_core.errors.auth import NotAuthenticatedError
+from intergrax.fastapi_core.errors.auth import MissingScopeError, NotAuthenticatedError
 from intergrax.fastapi_core.errors.error_types import ApiErrorType
 
 
@@ -22,6 +22,9 @@ def map_exception_to_api_error(exc: Exception) -> Tuple[ApiErrorType, int, str]:
 
     if isinstance(exc, NotAuthenticatedError):
         return ApiErrorType.UNAUTHORIZED, status.HTTP_401_UNAUTHORIZED, ""
+    
+    if isinstance(exc, MissingScopeError):
+        return ApiErrorType.FORBIDDEN, status.HTTP_403_FORBIDDEN, ""
 
     if isinstance(exc, HTTPException):
         if exc.status_code == status.HTTP_400_BAD_REQUEST:
