@@ -7,7 +7,8 @@ from typing import Callable
 
 from fastapi import Depends, HTTPException, Request, status
 
-from intergrax.fastapi_core.context import get_request_context
+from intergrax.fastapi_core.context import RequestContext, get_request_context
+from intergrax.fastapi_core.rate_limit.errors import RateLimitExceededError
 from intergrax.fastapi_core.rate_limit.keys import RateLimitKey
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
 
@@ -22,6 +23,27 @@ class NoOpRateLimitPolicy(RateLimitPolicy):
 
     def allow(self, key: RateLimitKey, identity: str) -> bool:
         return True
+    
+    
+class RateLimitRequired:
+    """
+    FastAPI dependency enforcing rate limiting using RateLimitPolicy.
+
+    Notes:
+    - Policy is injected via DI (create_app).
+    - This dependency only enforces the decision.
+    """
+
+    def __call__(
+        self,
+        policy: RateLimitPolicy = Depends(),
+        context: RequestContext = Depends(get_request_context),
+    ) -> None:
+        allowed: bool = policy.allow(context)
+
+        if not allowed:
+            raise RateLimitExceededError()
+        
 
 
 def rate_limit(

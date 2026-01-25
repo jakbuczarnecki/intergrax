@@ -25,4 +25,4 @@ class ApiErrorType(str, Enum):
 
     RATE_LIMITED = "rate_limited"
 
-    INTERNAL_ERROR = "internal_error"
+    INTERNAL_ERROR = "internal_error"    
