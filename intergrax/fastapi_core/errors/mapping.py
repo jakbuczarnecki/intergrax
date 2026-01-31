@@ -9,6 +9,7 @@ from typing import Tuple
 from fastapi import HTTPException, status
 
 from intergrax.fastapi_core.errors.auth import MissingScopeError, NotAuthenticatedError
+from intergrax.fastapi_core.errors.budget import BudgetExceededError
 from intergrax.fastapi_core.errors.error_types import ApiErrorType
 from intergrax.fastapi_core.rate_limit.errors import RateLimitExceededError
 
@@ -20,6 +21,9 @@ def map_exception_to_api_error(exc: Exception) -> Tuple[ApiErrorType, int, str]:
     - HTTP status code,
     - safe, client-facing message.
     """
+
+    if isinstance(exc, BudgetExceededError):
+        return ApiErrorType.RATE_LIMITED, status.HTTP_429_TOO_MANY_REQUESTS, ""
 
     if isinstance(exc, NotAuthenticatedError):
         return ApiErrorType.UNAUTHORIZED, status.HTTP_401_UNAUTHORIZED, ""

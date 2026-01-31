@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
-
+from fastapi import APIRouter, Body, Depends, HTTPException, status
+from intergrax.fastapi_core.budget.dependency import require_budget
 from intergrax.fastapi_core.rate_limit.dependency import rate_limit
 from intergrax.fastapi_core.auth.dependency import require_scope
 from intergrax.fastapi_core.rate_limit.keys import RateLimitKey
@@ -17,10 +17,11 @@ runs_router = APIRouter(prefix="/runs", tags=["runs"])
 
 @runs_router.post("", response_model=RunResponse, status_code=status.HTTP_201_CREATED,)
 def create_run(
+    request: CreateRunRequest = Body(...),
     store: RunStore = Depends(),
     _: None = Depends(rate_limit(RateLimitKey.TENANT)),
     __=Depends(require_scope("runs:create")),
-    ___: CreateRunRequest | None = None,
+    ___=Depends(require_budget()),
 ) -> RunResponse:
     return store.create()
 

@@ -56,7 +56,7 @@ def require_scope(required_scope: str):
     """
 
     def _dependency(auth: AuthContext = Depends(require_auth)) -> AuthContext:
-        if require_scope not in auth.scopes:
+        if required_scope not in auth.scopes:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Missing required scope: {require_scope}"

@@ -47,13 +47,14 @@ class RateLimitRequired:
 
 
 def rate_limit(
-    key: RateLimitKey,
-    policy: RateLimitPolicy = Depends(),
+    key: RateLimitKey,    
 ) -> Callable[[Request], None]:
     """
     FastAPI dependency enforcing rate limiting.
     """
-    def _dependency(request: Request) -> None:
+    def _dependency(
+            request: Request,
+            policy: RateLimitPolicy = Depends(RateLimitPolicy),) -> None:
         ctx = get_request_context(request)
 
         if key == RateLimitKey.TENANT:

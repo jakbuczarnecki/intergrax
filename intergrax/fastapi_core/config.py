@@ -54,6 +54,7 @@ class ApiConfig:
     auth_provider: Optional[AuthProvider] = None
 
 
+
     def validate(self) -> None:
         """
         Validate config invariants. Must be called by create_app() (fail-fast).
