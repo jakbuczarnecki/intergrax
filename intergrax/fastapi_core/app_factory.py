@@ -13,6 +13,7 @@ from intergrax.fastapi_core.auth.providers.no_auth import NoAuthProvider
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.fastapi_core.errors.handlers import global_exception_handler
 from intergrax.fastapi_core.middleware.request_context import RequestContextMiddleware
+from intergrax.fastapi_core.rate_limit.dependency import NoOpRateLimitPolicy
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
 from intergrax.fastapi_core.routers.health import health_router
 from intergrax.fastapi_core.runs.router import runs_router
@@ -50,9 +51,10 @@ def create_app(config: ApiConfig) -> FastAPI:
 
     # --- Rate limiting ---
     if config.rate_limit_policy is not None:
-        app.dependency_overrides[RateLimitPolicy] = (
-            lambda: config.rate_limit_policy
-        )
+        rate_limit_policy = config.rate_limit_policy
+    else:
+        rate_limit_policy = NoOpRateLimitPolicy()
+    app.dependency_overrides[RateLimitPolicy] = lambda: rate_limit_policy
 
     # --- Run store ---
     run_store = (
@@ -61,6 +63,7 @@ def create_app(config: ApiConfig) -> FastAPI:
         else InMemoryRunStore()
     )
     app.dependency_overrides[RunStore] = lambda: run_store
+
 
     # --- Auth provider wiring ---
     auth_providers: list[AuthProvider] = []

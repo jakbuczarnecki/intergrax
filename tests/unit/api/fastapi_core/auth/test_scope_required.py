@@ -1,5 +1,3 @@
-# FILE: tests/unit/api/fastapi_core/auth/test_scope_required.py
-
 from __future__ import annotations
 
 import pytest
