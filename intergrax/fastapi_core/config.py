@@ -10,7 +10,9 @@ from typing import FrozenSet, Optional
 
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.auth.provider import AuthProvider
+from intergrax.fastapi_core.execution.adapter import ExecutionAdapter
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
+from intergrax.fastapi_core.runs.service import RunService
 from intergrax.fastapi_core.runs.store_base import RunStore
 
 
@@ -53,7 +55,9 @@ class ApiConfig:
 
     auth_provider: Optional[AuthProvider] = None
 
+    run_service: Optional[RunService] = None
 
+    execution_adapter: Optional[ExecutionAdapter] = None
 
     def validate(self) -> None:
         """
@@ -67,6 +71,13 @@ class ApiConfig:
         # Keep a conservative invariant: "/v1" style prefixes only
         if self.api_prefix == "":
             raise ValueError("ApiConfig.api_prefix must not be empty.")
+        
+
+        if self.run_service is not None and self.execution_adapter is not None:
+            raise ValueError(
+                "Invalid ApiConfig: provide either run_service OR execution_adapter (not both). "
+                "If you pass run_service, it must own execution orchestration."
+            )
 
         # Security hardening: in prod we expect explicit host policy in real deployments,
         # but do not enforce it yet (no breaking constraints in MVP-1).

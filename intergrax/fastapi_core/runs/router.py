@@ -4,53 +4,50 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, status
 from intergrax.fastapi_core.budget.dependency import require_budget
 from intergrax.fastapi_core.rate_limit.dependency import rate_limit
 from intergrax.fastapi_core.auth.dependency import require_scope
 from intergrax.fastapi_core.rate_limit.keys import RateLimitKey
 from intergrax.fastapi_core.runs.models import CreateRunRequest, RunResponse
-from intergrax.fastapi_core.runs.store_base import RunStore
+from intergrax.fastapi_core.runs.service import RunService
 
 runs_router = APIRouter(prefix="/runs", tags=["runs"])
 
 
 @runs_router.post("", response_model=RunResponse, status_code=status.HTTP_201_CREATED,)
 def create_run(
-    request: CreateRunRequest = Body(...),
-    store: RunStore = Depends(),
+    background_tasks: BackgroundTasks,
+    request: CreateRunRequest = Body(...),    
+    service: RunService = Depends(),    
     _: None = Depends(rate_limit(RateLimitKey.TENANT)),
     __=Depends(require_scope("runs:create")),
     ___=Depends(require_budget()),
 ) -> RunResponse:
-    return store.create()
+    return service.create_run(request, background_tasks)
+
 
 
 @runs_router.get("/{run_id}", response_model=RunResponse,)
-def get_run(    
+def get_run(
     run_id: str,
-    store: RunStore = Depends(),
+    service: RunService = Depends(),
     __=Depends(require_scope("runs:read")),
 ) -> RunResponse:
     try:
-        return store.get(run_id)
+        return service.get_run(run_id)
     except KeyError:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Run not found",
-        )
+        raise HTTPException(status_code=404, detail="Run not found")
+
 
 
 @runs_router.post("/{run_id}/cancel",response_model=RunResponse,)
 def cancel_run(
     run_id: str,
-    store: RunStore = Depends(),
+    service: RunService = Depends(),
     __=Depends(require_scope("runs:cancel")),
 ) -> RunResponse:
     try:
-        return store.cancel(run_id)
+        return service.cancel_run(run_id)
     except KeyError:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Run not found",
-        )
+        raise HTTPException(status_code=404, detail="Run not found")

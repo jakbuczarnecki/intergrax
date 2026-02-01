@@ -12,11 +12,14 @@ from intergrax.fastapi_core.auth.providers.compose.provider import CompositeAuth
 from intergrax.fastapi_core.auth.providers.no_auth import NoAuthProvider
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.fastapi_core.errors.handlers import global_exception_handler
+from intergrax.fastapi_core.execution.default_adapter import DefaultExecutionAdapter
 from intergrax.fastapi_core.middleware.request_context import RequestContextMiddleware
 from intergrax.fastapi_core.rate_limit.dependency import NoOpRateLimitPolicy
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
 from intergrax.fastapi_core.routers.health import health_router
+from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.router import runs_router
+from intergrax.fastapi_core.runs.service import RunService
 from intergrax.fastapi_core.runs.store_base import RunStore
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
 
@@ -64,6 +67,23 @@ def create_app(config: ApiConfig) -> FastAPI:
     )
     app.dependency_overrides[RunStore] = lambda: run_store
 
+    # --- Run service ---
+    if config.run_service is not None:
+        run_service = config.run_service
+    else:
+        execution_adapter = (
+            config.execution_adapter
+            if config.execution_adapter is not None
+            else DefaultExecutionAdapter()
+        )
+
+        run_service = DefaultRunService(
+            run_store,
+            execution_adapter,
+        )
+
+    app.dependency_overrides[RunService] = lambda: run_service
+        
 
     # --- Auth provider wiring ---
     auth_providers: list[AuthProvider] = []

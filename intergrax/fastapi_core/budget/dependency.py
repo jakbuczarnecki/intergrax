@@ -1,3 +1,7 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
 from fastapi import Depends
 
 from intergrax.fastapi_core.budget.policy import BudgetPolicy
