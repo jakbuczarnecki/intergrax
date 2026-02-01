@@ -10,6 +10,7 @@ from typing import FrozenSet, Optional
 
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.auth.provider import AuthProvider
+from intergrax.fastapi_core.execution.adapter import ExecutionAdapter
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
 from intergrax.fastapi_core.runs.service import RunService
 from intergrax.fastapi_core.runs.store_base import RunStore
@@ -56,6 +57,7 @@ class ApiConfig:
 
     run_service: Optional[RunService] = None
 
+    execution_adapter: Optional[ExecutionAdapter] = None
 
     def validate(self) -> None:
         """
