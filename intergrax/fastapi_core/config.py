@@ -71,6 +71,13 @@ class ApiConfig:
         # Keep a conservative invariant: "/v1" style prefixes only
         if self.api_prefix == "":
             raise ValueError("ApiConfig.api_prefix must not be empty.")
+        
+
+        if self.run_service is not None and self.execution_adapter is not None:
+            raise ValueError(
+                "Invalid ApiConfig: provide either run_service OR execution_adapter (not both). "
+                "If you pass run_service, it must own execution orchestration."
+            )
 
         # Security hardening: in prod we expect explicit host policy in real deployments,
         # but do not enforce it yet (no breaking constraints in MVP-1).
