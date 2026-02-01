@@ -17,9 +17,9 @@ runs_router = APIRouter(prefix="/runs", tags=["runs"])
 
 @runs_router.post("", response_model=RunResponse, status_code=status.HTTP_201_CREATED,)
 def create_run(
-    request: CreateRunRequest = Body(...),
-    service: RunService = Depends(),
-    background_tasks: BackgroundTasks = Depends(),
+    background_tasks: BackgroundTasks,
+    request: CreateRunRequest = Body(...),    
+    service: RunService = Depends(),    
     _: None = Depends(rate_limit(RateLimitKey.TENANT)),
     __=Depends(require_scope("runs:create")),
     ___=Depends(require_budget()),

@@ -8,7 +8,7 @@ from intergrax.fastapi_core.budget.policy import BudgetPolicy
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.errors.error_types import ApiErrorType
-from intergrax.fastapi_core.runs.models import RunResponse
+from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 from intergrax.fastapi_core.runs.store_base import RunStore
 
 
@@ -36,6 +36,12 @@ class DummyRunStore(RunStore):
 
     def cancel(self, run_id: str) -> RunResponse:
         raise AssertionError("Not part of this test")
+    
+    def update_status(self, run_id: str, status: RunStatus) -> RunResponse:
+        run = RunResponse(run_id=run_id, status=status)
+        self._runs[run_id] = run
+        return run
+
 
 
 def test_budget_policy_blocks_create_run() -> None:

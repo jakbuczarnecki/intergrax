@@ -54,7 +54,7 @@ class ApiConfig:
 
     auth_provider: Optional[AuthProvider] = None
 
-    run_service = Optional[RunService] = None
+    run_service: Optional[RunService] = None
 
 
     def validate(self) -> None:
