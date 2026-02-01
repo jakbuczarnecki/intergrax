@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, status
 from intergrax.fastapi_core.budget.dependency import require_budget
 from intergrax.fastapi_core.rate_limit.dependency import rate_limit
 from intergrax.fastapi_core.auth.dependency import require_scope
@@ -19,11 +19,12 @@ runs_router = APIRouter(prefix="/runs", tags=["runs"])
 def create_run(
     request: CreateRunRequest = Body(...),
     service: RunService = Depends(),
+    background_tasks: BackgroundTasks = Depends(),
     _: None = Depends(rate_limit(RateLimitKey.TENANT)),
     __=Depends(require_scope("runs:create")),
     ___=Depends(require_budget()),
 ) -> RunResponse:
-    return service.create_run(request)
+    return service.create_run(request, background_tasks)
 
 
 

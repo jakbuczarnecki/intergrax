@@ -11,6 +11,7 @@ from typing import FrozenSet, Optional
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.auth.provider import AuthProvider
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
+from intergrax.fastapi_core.runs.service import RunService
 from intergrax.fastapi_core.runs.store_base import RunStore
 
 
@@ -53,6 +54,7 @@ class ApiConfig:
 
     auth_provider: Optional[AuthProvider] = None
 
+    run_service = Optional[RunService] = None
 
 
     def validate(self) -> None:

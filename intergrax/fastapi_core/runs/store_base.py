@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from intergrax.fastapi_core.runs.models import RunResponse
+from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 
 
 class RunStore(ABC):
@@ -26,4 +26,8 @@ class RunStore(ABC):
 
     @abstractmethod
     def cancel(self, run_id: str) -> RunResponse:
+        raise NotImplementedError
+    
+    @abstractmethod
+    def update_status(self, run_id: str, status: RunStatus) -> RunResponse:
         raise NotImplementedError

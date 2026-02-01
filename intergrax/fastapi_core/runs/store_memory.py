@@ -39,3 +39,10 @@ class InMemoryRunStore(RunStore):
         canceled = RunResponse(run_id=run.run_id, status=RunStatus.CANCELED)
         self._runs[run_id] = canceled
         return canceled
+    
+    def update_status(self, run_id: str, status: RunStatus) -> RunResponse:
+        run = self._runs[run_id]
+        updated = RunResponse(run_id=run.run_id, status=status)
+        self._runs[run_id] = updated
+        return updated
+
