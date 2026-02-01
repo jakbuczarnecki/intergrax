@@ -16,7 +16,9 @@ from intergrax.fastapi_core.middleware.request_context import RequestContextMidd
 from intergrax.fastapi_core.rate_limit.dependency import NoOpRateLimitPolicy
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
 from intergrax.fastapi_core.routers.health import health_router
+from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.router import runs_router
+from intergrax.fastapi_core.runs.service import RunService
 from intergrax.fastapi_core.runs.store_base import RunStore
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
 
@@ -63,6 +65,13 @@ def create_app(config: ApiConfig) -> FastAPI:
         else InMemoryRunStore()
     )
     app.dependency_overrides[RunStore] = lambda: run_store
+
+    run_service = (
+        config.run_service
+        if config.run_service is not None
+        else DefaultRunService(run_store)
+    )
+    app.dependency_overrides[RunService] = lambda: run_service
 
 
     # --- Auth provider wiring ---
