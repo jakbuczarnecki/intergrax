@@ -6,20 +6,16 @@ from __future__ import annotations
 
 from intergrax.fastapi_core.execution.adapter import ExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
+from intergrax.fastapi_core.execution.worker_contract import ExecutionWorker
 
 
-class DefaultExecutionAdapter(ExecutionAdapter):
-    """
-    Default no-op execution adapter.
-
-    - Used when no real execution engine is configured
-    - Dispatches nothing
-    - Does NOT mutate RunStore
-    """
+class InProcessExecutionAdapter(ExecutionAdapter):
+    def __init__(self, worker: ExecutionWorker) -> None:
+        self._worker = worker
 
     async def start_execution(self, request: ExecutionRequest) -> None:
-        # Intentionally no-op
-        return
-    
+        # In-process, synchronous execution
+        self._worker.execute(request)
+
     def shutdown(self, wait: bool = True) -> None:
         return

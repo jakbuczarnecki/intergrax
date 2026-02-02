@@ -10,6 +10,7 @@ from typing import FrozenSet, Optional
 
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.auth.provider import AuthProvider
+from intergrax.fastapi_core.budget.policy import BudgetPolicy
 from intergrax.fastapi_core.execution.adapter import ExecutionAdapter
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
 from intergrax.fastapi_core.runs.service import RunService
@@ -50,6 +51,8 @@ class ApiConfig:
     api_key_config: Optional[ApiKeyConfig] = None
 
     rate_limit_policy: Optional[RateLimitPolicy] = None
+
+    budget_policy: Optional[BudgetPolicy] = None
 
     run_store: Optional[RunStore] = None
 

@@ -28,10 +28,13 @@ class DummyRunStore(RunStore):
         self._runs[run_id] = run
         return run
 
+class NoOpExecutionAdapter:
+    async def start_execution(self, request):
+        return
 
 def test_cancel_completed_run_is_blocked_by_state_machine() -> None:
     store = DummyRunStore()
-    service = DefaultRunService(store)
+    service = DefaultRunService(store, execution_adapter=NoOpExecutionAdapter())
 
     ctx = RequestContext(
         request_id="req1",

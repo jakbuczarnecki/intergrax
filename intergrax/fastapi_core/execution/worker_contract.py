@@ -31,7 +31,6 @@ class ExecutionWorker:
         self._store.update_status(run_id, RunStatus.RUNNING)
 
         try:
-            # --- real execution goes here ---
             # use request.input_payload / request.config
 
             current = self._store.get(run_id)

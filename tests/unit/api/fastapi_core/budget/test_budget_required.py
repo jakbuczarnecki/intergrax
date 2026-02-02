@@ -23,7 +23,7 @@ class AllowAllAuthProvider(AuthProvider):
             is_authenticated=True,
             tenant_id="t1",
             user_id="u1",
-            scopes=("runs:create",),
+            scopes=("*",),
         )
 
 

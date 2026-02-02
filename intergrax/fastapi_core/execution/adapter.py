@@ -23,3 +23,12 @@ class ExecutionAdapter(Protocol):
         - Must NOT update run status
         """
         ...
+
+    def shutdown(self, wait: bool = True) -> None:
+        """
+        Gracefully shutdown execution resources.
+
+        Must be idempotent.
+        Must NOT raise.
+        """
+        ...
