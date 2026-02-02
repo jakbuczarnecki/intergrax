@@ -33,3 +33,6 @@ class RunResponse:
     run_id: str
     status: RunStatus
     result: Optional[Dict[str, Any]] = None
+    error_type: Optional[str] = None
+    error_message: Optional[str] = None
+

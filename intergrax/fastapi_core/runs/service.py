@@ -28,3 +28,17 @@ class RunService(Protocol):
 
     def cancel_run(self, run_id: str) -> RunResponse:
         ...
+
+    def mark_completed(self, run_id: str) -> None: 
+        ...
+    
+    def mark_failed(
+        self,
+        run_id: str,
+        error_type: str,
+        error_message: str,
+    ) -> None: 
+        ...
+
+    def mark_running(self, run_id: str) -> None: 
+        ...

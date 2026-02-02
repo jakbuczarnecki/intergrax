@@ -5,8 +5,7 @@ from fastapi import BackgroundTasks
 
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.execution.inprocess_adapter import InProcessExecutionAdapter
-from intergrax.fastapi_core.execution.models import ExecutionRequest
-from intergrax.fastapi_core.execution.worker_contract import ExecutionWorker
+from intergrax.fastapi_core.execution.simple_worker import SimpleExecutionWorker
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import RunStatus
 
@@ -34,10 +33,10 @@ class DummyRunStore:
 
 def test_execution_pipeline_inprocess() -> None:
     store = DummyRunStore()
-    worker = ExecutionWorker(store)
-    adapter = InProcessExecutionAdapter(worker)
-
-    service = DefaultRunService(store=store, execution_adapter=adapter)
+    worker = SimpleExecutionWorker()
+    service = DefaultRunService(store, execution_adapter=None)
+    adapter = InProcessExecutionAdapter(worker, run_service=service)
+    service._execution_adapter = adapter
 
     context = RequestContext(
         request_id="req-1",

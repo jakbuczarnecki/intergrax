@@ -61,36 +61,42 @@ class DefaultRunService(RunService):
         return run
 
 
-
-    # def _execute_run(self, run_id: str) -> None:
-    #     """
-    #     Background execution simulation.
-
-    #     IMPORTANT:
-    #     - No direct object mutation
-    #     - All lifecycle changes go through RunStore
-    #     - All transitions are validated by RunStateMachine
-    #     """
-    #     current = self._store.get(run_id)
-    #     RunStateMachine.validate_transition(current.status, RunStatus.RUNNING)
-    #     self._store.update_status(run_id, RunStatus.RUNNING)
-
-    #     try:
-    #         # Placeholder for real execution
-
-    #         current = self._store.get(run_id)
-    #         RunStateMachine.validate_transition(current.status, RunStatus.COMPLETED)
-    #         self._store.update_status(run_id, RunStatus.COMPLETED)
-
-    #     except Exception:
-    #         current = self._store.get(run_id)
-    #         RunStateMachine.validate_transition(current.status, RunStatus.FAILED)
-    #         self._store.update_status(run_id, RunStatus.FAILED)
-
     def get_run(self, run_id: str) -> RunResponse:
         return self._store.get(run_id)
+
 
     def cancel_run(self, run_id: str) -> RunResponse:
         current = self._store.get(run_id)
         RunStateMachine.validate_transition(current.status, RunStatus.CANCELED)
         return self._store.update_status(run_id, RunStatus.CANCELED)
+
+
+    def mark_completed(self, run_id: str) -> None:
+        current = self._store.get(run_id)
+        RunStateMachine.validate_transition(current.status, RunStatus.COMPLETED)
+        self._store.update_status(run_id, RunStatus.COMPLETED)
+
+
+    def mark_failed(
+        self,
+        run_id: str,
+        error_type: str,
+        error_message: str,
+    ) -> None:
+        current = self._store.get(run_id)
+
+        RunStateMachine.validate_transition(current.status, RunStatus.FAILED)
+
+        # P0: error info stored directly on run model
+        self._store.update_status(
+            run_id,
+            RunStatus.FAILED,
+            error_type=error_type,
+            error_message=error_message,
+        )
+
+
+    def mark_running(self, run_id: str) -> None:
+        current = self._store.get(run_id)
+        RunStateMachine.validate_transition(current.status, RunStatus.RUNNING)
+        self._store.update_status(run_id, RunStatus.RUNNING)

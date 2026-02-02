@@ -37,10 +37,21 @@ class DummyRunStore(RunStore):
     def cancel(self, run_id: str) -> RunResponse:
         raise AssertionError("Not part of this test")
     
-    def update_status(self, run_id: str, status: RunStatus) -> RunResponse:
-        run = RunResponse(run_id=run_id, status=status)
-        self._runs[run_id] = run
-        return run
+    def update_status(
+        self,
+        run_id: str,
+        status: RunStatus,
+        *,
+        error_type: str | None = None,
+        error_message: str | None = None,
+    ) -> RunResponse:
+        return RunResponse(
+            run_id=run_id,
+            status=status,
+            error_type=error_type,
+            error_message=error_message,
+        )
+
 
 
 
