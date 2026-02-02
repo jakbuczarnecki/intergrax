@@ -77,12 +77,21 @@ class RuntimeRunStore(RunStore):
 
         return canceled
     
-    def update_status(self, run_id: str, status: RunStatus) -> RunResponse:
+    def update_status(
+        self,
+        run_id: str,
+        status: RunStatus,
+        *,
+        error_type: str | None = None,
+        error_message: str | None = None,
+    ) -> RunResponse:
         run = self._runs[run_id]
 
         updated = RunResponse(
             run_id=run.run_id,
             status=status,
+            error_type=error_type,
+            error_message=error_message,
         )
         self._runs[run_id] = updated
 
@@ -91,11 +100,13 @@ class RuntimeRunStore(RunStore):
             extra={
                 "run_id": run_id,
                 "status": status.value,
+                "error_type": error_type,
                 "mode": "dry-run",
             },
         )
 
         return updated
+
 
 
     # ------------------------------------------------------------------

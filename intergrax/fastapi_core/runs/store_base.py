@@ -29,5 +29,12 @@ class RunStore(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    def update_status(self, run_id: str, status: RunStatus) -> RunResponse:
+    def update_status(
+        self,
+        run_id: str,
+        status: RunStatus,
+        *,
+        error_type: str | None = None,
+        error_message: str | None = None,
+    ) -> RunResponse:
         raise NotImplementedError

@@ -23,10 +23,23 @@ class DummyRunStore(RunStore):
     def cancel(self, run_id: str) -> RunResponse:
         raise AssertionError("Should not reach store.cancel() if transition invalid")
 
-    def update_status(self, run_id: str, status: RunStatus) -> RunResponse:
-        run = RunResponse(run_id=run_id, status=status)
+    def update_status(
+        self,
+        run_id: str,
+        status: RunStatus,
+        *,
+        error_type: str | None = None,
+        error_message: str | None = None,
+    ) -> RunResponse:
+        run = RunResponse(
+            run_id=run_id,
+            status=status,
+            error_type=error_type,
+            error_message=error_message,
+        )
         self._runs[run_id] = run
         return run
+
 
 class NoOpExecutionAdapter:
     async def start_execution(self, request):
