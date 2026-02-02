@@ -82,6 +82,11 @@ def create_app(config: ApiConfig) -> FastAPI:
             execution_adapter,
         )
 
+        app.add_event_handler(
+            "shutdown",
+            lambda: execution_adapter.shutdown(wait=True)
+        )
+
     app.dependency_overrides[RunService] = lambda: run_service
         
 

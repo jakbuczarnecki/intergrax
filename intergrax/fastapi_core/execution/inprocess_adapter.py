@@ -16,3 +16,6 @@ class InProcessExecutionAdapter(ExecutionAdapter):
     async def start_execution(self, request: ExecutionRequest) -> None:
         # In-process, synchronous execution
         self._worker.execute(request)
+
+    def shutdown(self, wait: bool = True) -> None:
+        return

@@ -20,3 +20,6 @@ class DefaultExecutionAdapter(ExecutionAdapter):
     async def start_execution(self, request: ExecutionRequest) -> None:
         # Intentionally no-op
         return
+    
+    def shutdown(self, wait: bool = True) -> None:
+        return

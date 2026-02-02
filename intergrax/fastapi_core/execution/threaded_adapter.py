@@ -17,10 +17,21 @@ class ThreadedExecutionAdapter(ExecutionAdapter):
         self,
         worker: ExecutionWorker,
         executor: Optional[ThreadPoolExecutor] = None,
+        max_workers: int = 4,
     ) -> None:
         self._worker = worker
-        self._executor = executor or ThreadPoolExecutor(max_workers=4)
+
+        if executor is None:
+            self._executor = ThreadPoolExecutor(max_workers=max_workers)
+            self._owns_executor = True
+        else:
+            self._executor = executor
+            self._owns_executor = False
 
     async def start_execution(self, request: ExecutionRequest) -> None:
-        # Dispatch execution to a background thread
         self._executor.submit(self._worker.execute, request)
+
+    def shutdown(self, wait: bool = True) -> None:
+        if self._owns_executor:
+            self._executor.shutdown(wait=wait)
+
