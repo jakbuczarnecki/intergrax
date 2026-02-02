@@ -10,6 +10,8 @@ from intergrax.fastapi_core.auth.provider import AuthProvider
 from intergrax.fastapi_core.auth.providers.api_key.provider import ApiKeyAuthProvider
 from intergrax.fastapi_core.auth.providers.compose.provider import CompositeAuthProvider
 from intergrax.fastapi_core.auth.providers.no_auth import NoAuthProvider
+from intergrax.fastapi_core.budget.noop_policy import NoOpBudgetPolicy
+from intergrax.fastapi_core.budget.policy import BudgetPolicy
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.fastapi_core.errors.handlers import global_exception_handler
 from intergrax.fastapi_core.execution.default_adapter import DefaultExecutionAdapter
@@ -58,6 +60,15 @@ def create_app(config: ApiConfig) -> FastAPI:
     else:
         rate_limit_policy = NoOpRateLimitPolicy()
     app.dependency_overrides[RateLimitPolicy] = lambda: rate_limit_policy
+
+    # --- Budget policy ---
+    if config.budget_policy is not None:
+        budget_policy = config.budget_policy
+    else:
+        budget_policy = NoOpBudgetPolicy()
+
+    app.dependency_overrides[BudgetPolicy] = lambda: budget_policy
+
 
     # --- Run store ---
     run_store = (
@@ -109,7 +120,7 @@ def create_app(config: ApiConfig) -> FastAPI:
         auth_provider = CompositeAuthProvider(auth_providers)
 
     app.state.auth_provider = auth_provider
-
+    app.dependency_overrides[AuthProvider] = lambda: auth_provider
 
     return app
 

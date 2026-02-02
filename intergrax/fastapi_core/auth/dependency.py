@@ -56,10 +56,13 @@ def require_scope(required_scope: str):
     """
 
     def _dependency(auth: AuthContext = Depends(require_auth)) -> AuthContext:
+        if "*" in auth.scopes:
+            return auth
+        
         if required_scope not in auth.scopes:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Missing required scope: {require_scope}"
+                detail=f"Missing required scope: {required_scope}"
             )
         return auth
     
@@ -77,6 +80,9 @@ def require_any_scope(required_scopes: Iterable[str]):
     required = set(required_scopes)
 
     def _dependency(auth: AuthContext = Depends(require_auth)) -> AuthContext:
+        if "*" in auth.scopes:
+            return auth
+        
         if not required.intersection(auth.scopes):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
