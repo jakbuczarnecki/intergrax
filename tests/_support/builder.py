@@ -6,8 +6,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Optional, Sequence
-
-from intergrax.fastapi_core.runs.models import RunStatus
+from datetime import datetime
+from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
+from intergrax.fastapi_core.runs.store_base import RunStore
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -222,21 +223,49 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
     return RuntimeState(context=ctx, run_id=run_id, request=request)
 
 
-class DummyRunStore:
+class DummyRunStore(RunStore):
     def __init__(self) -> None:
-        self._runs = {}
+        self._runs: dict[str, RunResponse] = {}
 
-    def create(self):
+    def create(self) -> RunResponse:
         run_id = "r1"
-        run = type("Run", (), {"run_id": run_id, "status": RunStatus.PENDING})
+        run = RunResponse(
+            run_id=run_id,
+            status=RunStatus.PENDING,
+        )
         self._runs[run_id] = run
         return run
 
-    def get(self, run_id: str):
+    def get(self, run_id: str) -> RunResponse:
         return self._runs[run_id]
 
-    def update_status(self, run_id: str, status: RunStatus):
+    def cancel(self, run_id: str) -> RunResponse:
+        raise AssertionError("Should not reach store.cancel() if transition invalid")
+
+    def update_status(
+        self,
+        run_id: str,
+        status: RunStatus,
+        *,
+        error_type: str | None = None,
+        error_message: str | None = None,
+        started_at: datetime | None = None,
+        finished_at: datetime | None = None,
+        duration_ms: int | None = None,
+        result_payload: dict | None = None,
+    ) -> RunResponse:
         current = self._runs[run_id]
-        updated = type("Run", (), {"run_id": current.run_id, "status": status})
+
+        updated = RunResponse(
+            run_id=current.run_id,
+            status=status,
+            error_type=error_type if error_type is not None else current.error_type,
+            error_message=error_message if error_message is not None else current.error_message,
+            started_at=started_at if started_at is not None else current.started_at,
+            finished_at=finished_at if finished_at is not None else current.finished_at,
+            duration_ms=duration_ms if duration_ms is not None else current.duration_ms,
+            result_payload=result_payload if result_payload is not None else current.result_payload,
+        )
+
         self._runs[run_id] = updated
         return updated
