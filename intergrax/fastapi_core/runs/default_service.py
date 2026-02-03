@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from fastapi import BackgroundTasks
-
+from datetime import datetime
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.execution.adapter import CancellableExecutionAdapter, ExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
@@ -13,6 +13,7 @@ from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 from intergrax.fastapi_core.runs.store_base import RunStore
 from intergrax.fastapi_core.runs.service import RunService
 from intergrax.fastapi_core.runs.state_machine import RunStateMachine
+from intergrax.utils.time_provider import SystemTimeProvider
 
 
 class DefaultRunService(RunService):
@@ -79,7 +80,19 @@ class DefaultRunService(RunService):
     def mark_completed(self, run_id: str) -> None:
         current = self._store.get(run_id)
         RunStateMachine.validate_transition(current.status, RunStatus.COMPLETED)
-        self._store.update_status(run_id, RunStatus.COMPLETED)
+
+        finished = SystemTimeProvider.utc_now()
+
+        duration = None
+        if current.started_at:
+            duration = int((finished - current.started_at).total_seconds() * 1000)
+
+        self._store.update_status(
+            run_id,
+            RunStatus.COMPLETED,
+            finished_at=finished,
+            duration_ms=duration,
+        )
 
 
     def mark_failed(
@@ -89,15 +102,21 @@ class DefaultRunService(RunService):
         error_message: str,
     ) -> None:
         current = self._store.get(run_id)
-
         RunStateMachine.validate_transition(current.status, RunStatus.FAILED)
 
-        # P0: error info stored directly on run model
+        finished = SystemTimeProvider.utc_now()
+
+        duration = None
+        if current.started_at:
+            duration = int((finished - current.started_at).total_seconds() * 1000)
+
         self._store.update_status(
             run_id,
             RunStatus.FAILED,
             error_type=error_type,
             error_message=error_message,
+            finished_at=finished,
+            duration_ms=duration,
         )
 
 
@@ -105,3 +124,9 @@ class DefaultRunService(RunService):
         current = self._store.get(run_id)
         RunStateMachine.validate_transition(current.status, RunStatus.RUNNING)
         self._store.update_status(run_id, RunStatus.RUNNING)
+        
+        self._store.update_status(
+            run_id,
+            RunStatus.RUNNING,
+            started_at=SystemTimeProvider.utc_now(),
+        )

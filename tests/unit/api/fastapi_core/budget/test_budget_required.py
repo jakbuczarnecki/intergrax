@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from fastapi import Request
+from datetime import datetime
 
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.auth.context import AuthContext
@@ -44,13 +45,22 @@ class DummyRunStore(RunStore):
         *,
         error_type: str | None = None,
         error_message: str | None = None,
+        started_at: datetime | None = None,
+        finished_at: datetime | None = None,
+        duration_ms: int | None = None,
+        result_payload: dict | None = None,
     ) -> RunResponse:
         return RunResponse(
             run_id=run_id,
             status=status,
             error_type=error_type,
             error_message=error_message,
+            started_at=started_at,
+            finished_at=finished_at,
+            duration_ms=duration_ms,
+            result_payload=result_payload,
         )
+
 
 
 

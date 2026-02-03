@@ -41,3 +41,8 @@ def test_execution_pipeline_inprocess() -> None:
 
     assert run.status == RunStatus.PENDING
     assert final.status == RunStatus.COMPLETED
+
+    assert final.started_at is not None
+    assert final.finished_at is not None
+    assert final.duration_ms is not None
+    assert final.duration_ms >= 0

@@ -1,6 +1,6 @@
 from fastapi import BackgroundTasks
 import pytest
-
+from datetime import datetime
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
@@ -30,15 +30,26 @@ class DummyRunStore(RunStore):
         *,
         error_type: str | None = None,
         error_message: str | None = None,
+        started_at: datetime | None = None,
+        finished_at: datetime | None = None,
+        duration_ms: int | None = None,
+        result_payload: dict | None = None,
     ) -> RunResponse:
-        run = RunResponse(
-            run_id=run_id,
+        current = self._runs[run_id]
+
+        updated = RunResponse(
+            run_id=current.run_id,
             status=status,
-            error_type=error_type,
-            error_message=error_message,
+            error_type=error_type or current.error_type,
+            error_message=error_message or current.error_message,
+            started_at=started_at or current.started_at,
+            finished_at=finished_at or current.finished_at,
+            duration_ms=duration_ms or current.duration_ms,
+            result_payload=result_payload or current.result_payload,
         )
-        self._runs[run_id] = run
-        return run
+
+        self._runs[run_id] = updated
+        return updated
 
 
 class NoOpExecutionAdapter:
