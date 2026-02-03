@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from typing import Optional
 
 from fastapi import BackgroundTasks
 from datetime import datetime
@@ -77,7 +78,7 @@ class DefaultRunService(RunService):
         return response
 
 
-    def mark_completed(self, run_id: str) -> None:
+    def mark_completed(self, run_id: str, result_payload: Optional[dict] = None) -> None:
         current = self._store.get(run_id)
         RunStateMachine.validate_transition(current.status, RunStatus.COMPLETED)
 
@@ -92,6 +93,7 @@ class DefaultRunService(RunService):
             RunStatus.COMPLETED,
             finished_at=finished,
             duration_ms=duration,
+            result_payload=result_payload,
         )
 
 

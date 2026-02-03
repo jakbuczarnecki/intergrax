@@ -67,8 +67,8 @@ class ThreadedExecutionAdapter(CancellableExecutionAdapter):
 
         def _run() -> None:
             try:
-                self._worker.execute(request)
-                self._run_service.mark_completed(run_id)
+                result_payload = self._worker.execute(request)
+                self._run_service.mark_completed(run_id, result_payload=result_payload)
             except Exception as exc:
                 self._run_service.mark_failed(
                     run_id=run_id,

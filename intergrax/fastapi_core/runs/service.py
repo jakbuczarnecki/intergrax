@@ -2,7 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from typing import Protocol
+from typing import Optional, Protocol
 
 from fastapi import BackgroundTasks
 
@@ -29,7 +29,7 @@ class RunService(Protocol):
     def cancel_run(self, run_id: str) -> RunResponse:
         ...
 
-    def mark_completed(self, run_id: str) -> None: 
+    def mark_completed(self, run_id: str, result_payload: Optional[dict] = None) -> None: 
         ...
     
     def mark_failed(
