@@ -7,13 +7,13 @@ from __future__ import annotations
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Optional
 
-from intergrax.fastapi_core.execution.adapter import ExecutionAdapter
+from intergrax.fastapi_core.execution.adapter import CancellableExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.fastapi_core.execution.worker_contract import CancellableExecutionWorker, ExecutionWorker
 from intergrax.fastapi_core.runs.service import RunService
 
 
-class ThreadedExecutionAdapter(ExecutionAdapter):
+class ThreadedExecutionAdapter(CancellableExecutionAdapter):
 
     def __init__(
         self,

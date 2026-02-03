@@ -7,7 +7,7 @@ from __future__ import annotations
 from fastapi import BackgroundTasks
 
 from intergrax.fastapi_core.context import RequestContext
-from intergrax.fastapi_core.execution.adapter import ExecutionAdapter
+from intergrax.fastapi_core.execution.adapter import CancellableExecutionAdapter, ExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 from intergrax.fastapi_core.runs.store_base import RunStore
@@ -68,7 +68,12 @@ class DefaultRunService(RunService):
     def cancel_run(self, run_id: str) -> RunResponse:
         current = self._store.get(run_id)
         RunStateMachine.validate_transition(current.status, RunStatus.CANCELED)
-        return self._store.update_status(run_id, RunStatus.CANCELED)
+        response = self._store.update_status(run_id, RunStatus.CANCELED)
+
+        if isinstance(self._execution_adapter, CancellableExecutionAdapter):
+            self._execution_adapter.cancel_execution(run_id)
+
+        return response
 
 
     def mark_completed(self, run_id: str) -> None:
