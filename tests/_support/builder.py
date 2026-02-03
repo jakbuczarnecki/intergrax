@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
+from intergrax.fastapi_core.runs.models import RunStatus
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -219,3 +220,23 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
     )
 
     return RuntimeState(context=ctx, run_id=run_id, request=request)
+
+
+class DummyRunStore:
+    def __init__(self) -> None:
+        self._runs = {}
+
+    def create(self):
+        run_id = "r1"
+        run = type("Run", (), {"run_id": run_id, "status": RunStatus.PENDING})
+        self._runs[run_id] = run
+        return run
+
+    def get(self, run_id: str):
+        return self._runs[run_id]
+
+    def update_status(self, run_id: str, status: RunStatus):
+        current = self._runs[run_id]
+        updated = type("Run", (), {"run_id": current.run_id, "status": status})
+        self._runs[run_id] = updated
+        return updated
