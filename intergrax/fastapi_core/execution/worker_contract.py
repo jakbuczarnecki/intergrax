@@ -3,7 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from typing import Protocol
+from typing import Optional, Protocol, runtime_checkable
 
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 
@@ -18,4 +18,9 @@ class ExecutionWorker(Protocol):
     - does NOT manage lifecycle
     """
 
-    def execute(self, request: ExecutionRequest) -> None: ...
+    def execute(self, request: ExecutionRequest) -> Optional[dict]: ...
+
+
+@runtime_checkable
+class CancellableExecutionWorker(ExecutionWorker, Protocol):
+    def cancel(self, run_id: str) -> None: ...

@@ -5,7 +5,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-
+from typing import Optional
+from datetime import datetime
 from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 
 
@@ -34,7 +35,11 @@ class RunStore(ABC):
         run_id: str,
         status: RunStatus,
         *,
-        error_type: str | None = None,
-        error_message: str | None = None,
+        error_type: Optional[str] = None,
+        error_message: Optional[str] = None,
+        started_at: Optional[datetime] = None,
+        finished_at: Optional[datetime] = None,
+        duration_ms: Optional[int] = None,
+        result_payload: Optional[dict] = None,
     ) -> RunResponse:
         raise NotImplementedError

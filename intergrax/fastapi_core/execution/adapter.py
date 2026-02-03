@@ -2,7 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 
@@ -32,3 +32,7 @@ class ExecutionAdapter(Protocol):
         Must NOT raise.
         """
         ...
+
+@runtime_checkable
+class CancellableExecutionAdapter(ExecutionAdapter, Protocol):
+    def cancel_execution(self, run_id: str) -> None: ...

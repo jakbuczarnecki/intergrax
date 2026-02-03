@@ -1,52 +1,60 @@
 import asyncio
-from typing import Dict
-from uuid import uuid4
-
 from fastapi import BackgroundTasks
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.execution.adapter import ExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
-from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
+from intergrax.fastapi_core.runs.models import RunStatus
 from intergrax.fastapi_core.runs.service import RunService
-from intergrax.fastapi_core.runs.store_base import RunStore
+from tests._support.builder import DummyRunStore
 
-class DummyRunStore(RunStore):
-    def __init__(self) -> None:
-        self._runs: Dict[str, RunResponse] = {}
 
-    def create(self) -> RunResponse:
-        run_id = uuid4().hex
-        run = RunResponse(
-            run_id=run_id,
-            status=RunStatus.PENDING,
-        )
-        self._runs[run_id] = run
-        return run
+# class DummyRunStore(RunStore):
+#     def __init__(self) -> None:
+#         self._runs: Dict[str, RunResponse] = {}
 
-    def get(self, run_id: str) -> RunResponse:
-        return self._runs[run_id]
-    
-    def cancel(self, run_id: str) -> RunResponse:
-        raise AssertionError("Should not reach store.cancel() if transition invalid")
+#     def create(self) -> RunResponse:
+#         run_id = uuid4().hex
+#         run = RunResponse(
+#             run_id=run_id,
+#             status=RunStatus.PENDING,
+#         )
+#         self._runs[run_id] = run
+#         return run
 
-    def update_status(
-        self,
-        run_id: str,
-        status: RunStatus,
-        *,
-        error_type: str | None = None,
-        error_message: str | None = None,
-    ) -> RunResponse:
-        current = self._runs[run_id]
-        updated = RunResponse(
-            run_id=current.run_id,
-            status=status,
-            error_type=error_type,
-            error_message=error_message,
-        )
-        self._runs[run_id] = updated
-        return updated
+#     def get(self, run_id: str) -> RunResponse:
+#         return self._runs[run_id]
+
+#     def cancel(self, run_id: str) -> RunResponse:
+#         raise AssertionError("Should not reach store.cancel() if transition invalid")
+
+#     def update_status(
+#         self,
+#         run_id: str,
+#         status: RunStatus,
+#         *,
+#         error_type: str | None = None,
+#         error_message: str | None = None,
+#         started_at: datetime | None = None,
+#         finished_at: datetime | None = None,
+#         duration_ms: int | None = None,
+#         result_payload: dict | None = None,
+#     ) -> RunResponse:
+#         current = self._runs[run_id]
+
+#         updated = RunResponse(
+#             run_id=current.run_id,
+#             status=status,
+#             error_type=error_type or current.error_type,
+#             error_message=error_message or current.error_message,
+#             started_at=started_at or current.started_at,
+#             finished_at=finished_at or current.finished_at,
+#             duration_ms=duration_ms or current.duration_ms,
+#             result_payload=result_payload or current.result_payload,
+#         )
+
+#         self._runs[run_id] = updated
+#         return updated
 
     
 

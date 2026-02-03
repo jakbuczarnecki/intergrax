@@ -8,27 +8,7 @@ from intergrax.fastapi_core.execution.inprocess_adapter import InProcessExecutio
 from intergrax.fastapi_core.execution.simple_worker import SimpleExecutionWorker
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import RunStatus
-
-
-# Minimal in-memory store for this test
-class DummyRunStore:
-    def __init__(self) -> None:
-        self._runs = {}
-
-    def create(self):
-        run_id = "r1"
-        run = type("Run", (), {"run_id": run_id, "status": RunStatus.PENDING})
-        self._runs[run_id] = run
-        return run
-
-    def get(self, run_id: str):
-        return self._runs[run_id]
-
-    def update_status(self, run_id: str, status: RunStatus):
-        current = self._runs[run_id]
-        updated = type("Run", (), {"run_id": current.run_id, "status": status})
-        self._runs[run_id] = updated
-        return updated
+from tests._support.builder import DummyRunStore
 
 
 def test_execution_pipeline_inprocess() -> None:
@@ -61,3 +41,8 @@ def test_execution_pipeline_inprocess() -> None:
 
     assert run.status == RunStatus.PENDING
     assert final.status == RunStatus.COMPLETED
+
+    assert final.started_at is not None
+    assert final.finished_at is not None
+    assert final.duration_ms is not None
+    assert final.duration_ms >= 0

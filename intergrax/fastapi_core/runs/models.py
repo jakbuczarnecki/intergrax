@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, Optional
 
@@ -35,4 +36,7 @@ class RunResponse:
     result: Optional[Dict[str, Any]] = None
     error_type: Optional[str] = None
     error_message: Optional[str] = None
-
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
+    duration_ms: Optional[int] = None
+    result_payload: Optional[dict] = None
