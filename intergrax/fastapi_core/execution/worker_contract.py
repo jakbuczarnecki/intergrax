@@ -19,3 +19,7 @@ class ExecutionWorker(Protocol):
     """
 
     def execute(self, request: ExecutionRequest) -> None: ...
+
+
+class CancellableExecutionWorker(ExecutionWorker, Protocol):
+    def cancel(self, run_id: str) -> None: ...
