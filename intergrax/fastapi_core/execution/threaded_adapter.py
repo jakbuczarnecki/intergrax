@@ -13,9 +13,9 @@ from typing import Optional
 
 from intergrax.fastapi_core.execution.adapter import CancellableExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
+from intergrax.fastapi_core.execution.policies import ExecutionPolicy
 from intergrax.fastapi_core.execution.worker_contract import (
     CancellableExecutionWorker,
-    ExecutionWorker,
 )
 from intergrax.fastapi_core.runs.models import RunStatus
 from intergrax.fastapi_core.runs.service import RunService
@@ -31,15 +31,21 @@ class ThreadedExecutionAdapter(CancellableExecutionAdapter):
 
     def __init__(
         self,
-        worker: ExecutionWorker,
+        worker: CancellableExecutionWorker,
         run_service: RunService,
+        policy: Optional[ExecutionPolicy] = None,
         executor: Optional[ThreadPoolExecutor] = None,
         max_workers: int = 4,
-        timeout_seconds: int = 300,
     ) -> None:
+        
+        if not isinstance(worker, CancellableExecutionWorker):
+            raise TypeError(
+                "ThreadedExecutionAdapter requires a CancellableExecutionWorker."
+            )
+
         self._worker = worker
         self._run_service = run_service
-        self._timeout_seconds = timeout_seconds
+        self._policy = policy or ExecutionPolicy.default()
 
         self._lock = threading.Lock()
         self._futures: dict[str, Future[object]] = {}
@@ -109,7 +115,7 @@ class ThreadedExecutionAdapter(CancellableExecutionAdapter):
 
         def _run() -> None:
             attempt = 0
-            max_retries = 2
+            max_retries = self._policy.max_retries
 
             try:
                 while True:
@@ -187,7 +193,8 @@ class ThreadedExecutionAdapter(CancellableExecutionAdapter):
 
         with self._lock:
             self._futures[run_id] = future
-            self._deadlines[run_id] = time.monotonic() + float(self._timeout_seconds)
+            self._deadlines[run_id] = time.monotonic() + float(self._policy.timeout_seconds)
+
 
     # ------------------------------------------------------------------
 
