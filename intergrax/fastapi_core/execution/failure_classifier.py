@@ -1,25 +1,30 @@
-# FILE: intergrax/fastapi_core/execution/failure_classifier.py
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
 
-from typing import Type
+
 from intergrax.fastapi_core.execution.failures import FailureCategory
+from typing import Dict, Type
+from concurrent.futures import CancelledError
 
 
 class FailureClassifier:
     """
-    Maps exceptions to runtime failure categories.
+    Registry-based exception classifier.
     """
 
+    def __init__(
+        self,
+        mapping: Dict[Type[BaseException], FailureCategory] | None = None,
+    ) -> None:
+        self._mapping = mapping or {
+            CancelledError: FailureCategory.CANCELED,
+            TimeoutError: FailureCategory.TIMEOUT,
+            ConnectionError: FailureCategory.RETRYABLE,
+        }
+
     def classify(self, exc: BaseException) -> FailureCategory:
-        from concurrent.futures import CancelledError
-
-        if isinstance(exc, CancelledError):
-            return FailureCategory.CANCELED
-
-        if isinstance(exc, TimeoutError):
-            return FailureCategory.TIMEOUT
-
-        # retryable examples (network, transient)
-        if isinstance(exc, ConnectionError):
-            return FailureCategory.RETRYABLE
-
+        for exc_type, category in self._mapping.items():
+            if isinstance(exc, exc_type):
+                return category
         return FailureCategory.TERMINAL

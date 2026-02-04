@@ -12,6 +12,7 @@ from concurrent.futures import CancelledError, Future, ThreadPoolExecutor
 from typing import Optional
 
 from intergrax.fastapi_core.execution.adapter import CancellableExecutionAdapter
+from intergrax.fastapi_core.execution.capabilities import ExecutionCapabilities
 from intergrax.fastapi_core.execution.decision_engine import ExecutionDecisionEngine
 from intergrax.fastapi_core.execution.decisions import ExecutionDecision
 from intergrax.fastapi_core.execution.failure_classifier import FailureClassifier
@@ -54,6 +55,11 @@ class ThreadedExecutionAdapter(CancellableExecutionAdapter):
         self._failure_classifier = FailureClassifier()
         self._decision_engine = ExecutionDecisionEngine()
 
+        self._capabilities = ExecutionCapabilities(
+            supports_retry=True,
+            supports_timeout=True,
+            supports_cancel=True,
+        )
 
         self._lock = threading.Lock()
         self._futures: dict[str, Future[object]] = {}
@@ -115,6 +121,10 @@ class ThreadedExecutionAdapter(CancellableExecutionAdapter):
 
     # ------------------------------------------------------------------
 
+    @property
+    def capabilities(self) -> ExecutionCapabilities:
+        return self._capabilities
+
     async def start_execution(self, request: ExecutionRequest) -> None:                
         run_id = request.run_id
 
@@ -123,7 +133,7 @@ class ThreadedExecutionAdapter(CancellableExecutionAdapter):
 
         def _run() -> None:
             attempt = 0
-            
+
             try:
                 while True:
                     if not self._is_running(run_id):
