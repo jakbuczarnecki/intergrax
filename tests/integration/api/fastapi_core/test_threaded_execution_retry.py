@@ -12,11 +12,21 @@ from typing import Tuple
 import pytest
 
 from intergrax.fastapi_core.execution.models import ExecutionRequest
-from intergrax.fastapi_core.execution.threaded_adapter import ThreadedExecutionAdapter
-from intergrax.fastapi_core.execution.worker_contract import ExecutionWorker
+from intergrax.fastapi_core.execution.adapters.threaded_adapter import ThreadedExecutionAdapter
+from intergrax.fastapi_core.execution.policies import ExecutionPolicy
+from intergrax.fastapi_core.execution.worker_contract import CancellableExecutionWorker, ExecutionWorker
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
+
+
+class NoOpCancellableWorker(CancellableExecutionWorker):
+
+    def execute(self, request):
+        return
+
+    def cancel(self, run_id: str) -> None:
+        pass
 
 
 def build_request(run_id: str) -> ExecutionRequest:
@@ -54,10 +64,12 @@ def runtime() -> Tuple[ThreadedExecutionAdapter, DefaultRunService, InMemoryRunS
     """
     store = InMemoryRunStore()
 
+    worker = NoOpCancellableWorker()
+
     adapter = ThreadedExecutionAdapter(
-        worker=None,  # injected in test
-        run_service=None,
-        timeout_seconds=10,
+        worker=worker,
+        run_service=None,  # injected later
+        policy=ExecutionPolicy(max_retries=2, timeout_seconds=10),
     )
 
     run_service = DefaultRunService(
@@ -171,7 +183,10 @@ async def test_timeout_during_retry(runtime) -> None:
     worker = SlowWorker()
     adapter._worker = worker
 
-    adapter._timeout_seconds = 1
+    adapter._policy = ExecutionPolicy(
+        max_retries=2,
+        timeout_seconds=1,
+    )
 
     request = build_request(str(uuid.uuid4()))
 

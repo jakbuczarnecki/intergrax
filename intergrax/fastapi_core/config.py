@@ -11,7 +11,7 @@ from typing import FrozenSet, Optional
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.auth.provider import AuthProvider
 from intergrax.fastapi_core.budget.policy import BudgetPolicy
-from intergrax.fastapi_core.execution.adapter import ExecutionAdapter
+from intergrax.fastapi_core.execution.adapters.adapter import ExecutionAdapter
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
 from intergrax.fastapi_core.runs.service import RunService
 from intergrax.fastapi_core.runs.store_base import RunStore

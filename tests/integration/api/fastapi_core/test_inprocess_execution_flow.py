@@ -4,8 +4,8 @@ import asyncio
 from fastapi import BackgroundTasks
 
 from intergrax.fastapi_core.context import RequestContext
-from intergrax.fastapi_core.execution.inprocess_adapter import InProcessExecutionAdapter
-from intergrax.fastapi_core.execution.simple_worker import SimpleExecutionWorker
+from intergrax.fastapi_core.execution.adapters.inprocess_adapter import InProcessExecutionAdapter
+from intergrax.fastapi_core.execution.adapters.simple_worker import SimpleExecutionWorker
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import RunStatus
 from tests._support.builder import DummyRunStore

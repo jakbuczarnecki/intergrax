@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import BackgroundTasks
 
 from intergrax.fastapi_core.context import RequestContext
-from intergrax.fastapi_core.execution.inprocess_adapter import InProcessExecutionAdapter
+from intergrax.fastapi_core.execution.adapters.inprocess_adapter import InProcessExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.fastapi_core.execution.worker_contract import ExecutionWorker
 from intergrax.fastapi_core.runs.default_service import DefaultRunService

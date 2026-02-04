@@ -8,7 +8,7 @@ from typing import Optional
 from fastapi import BackgroundTasks
 from datetime import datetime
 from intergrax.fastapi_core.context import RequestContext
-from intergrax.fastapi_core.execution.adapter import CancellableExecutionAdapter, ExecutionAdapter
+from intergrax.fastapi_core.execution.adapters.adapter import CancellableExecutionAdapter, ExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 from intergrax.fastapi_core.runs.store_base import RunStore

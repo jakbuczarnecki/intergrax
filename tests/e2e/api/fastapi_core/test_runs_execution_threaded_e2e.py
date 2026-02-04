@@ -5,8 +5,8 @@ from fastapi.testclient import TestClient
 
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
-from intergrax.fastapi_core.execution.simple_worker import SimpleExecutionWorker
-from intergrax.fastapi_core.execution.threaded_adapter import ThreadedExecutionAdapter
+from intergrax.fastapi_core.execution.adapters.simple_worker import SimpleExecutionWorker
+from intergrax.fastapi_core.execution.adapters.threaded_adapter import ThreadedExecutionAdapter
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import RunStatus
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
