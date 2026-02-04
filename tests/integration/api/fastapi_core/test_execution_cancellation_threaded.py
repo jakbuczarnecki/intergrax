@@ -1,7 +1,7 @@
 import time
 from threading import Event
 
-from intergrax.fastapi_core.execution.worker_contract import ExecutionWorker
+from intergrax.fastapi_core.execution.worker_contract import CancellableExecutionWorker
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.fastapi_core.execution.threaded_adapter import ThreadedExecutionAdapter
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
@@ -9,7 +9,7 @@ from intergrax.fastapi_core.runs.models import RunStatus
 from tests._support.builder import DummyRunStore
 
 
-class BlockingWorker(ExecutionWorker):
+class BlockingWorker(CancellableExecutionWorker):
     def __init__(self) -> None:
         self._stop = Event()
 
@@ -19,6 +19,9 @@ class BlockingWorker(ExecutionWorker):
             time.sleep(0.01)
 
     def stop(self) -> None:
+        self._stop.set()
+
+    def cancel(self, run_id: str) -> None:
         self._stop.set()
 
 
