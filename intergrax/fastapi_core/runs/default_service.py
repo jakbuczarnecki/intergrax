@@ -125,7 +125,6 @@ class DefaultRunService(RunService):
     def mark_running(self, run_id: str) -> None:
         current = self._store.get(run_id)
         RunStateMachine.validate_transition(current.status, RunStatus.RUNNING)
-        self._store.update_status(run_id, RunStatus.RUNNING)
         
         self._store.update_status(
             run_id,

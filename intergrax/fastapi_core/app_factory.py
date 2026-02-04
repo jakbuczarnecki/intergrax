@@ -93,10 +93,22 @@ def create_app(config: ApiConfig) -> FastAPI:
             execution_adapter,
         )
 
+    # Always register shutdown for explicitly provided execution_adapter
+    # (critical for tests and advanced DI setups).
+    if config.execution_adapter is not None:
         app.add_event_handler(
             "shutdown",
-            lambda: execution_adapter.shutdown(wait=True)
+            lambda: config.execution_adapter.shutdown(wait=False),
         )
+    else:
+        # If adapter was created implicitly above, it is referenced by run_service wiring
+        # and must be shut down as well.
+        if config.run_service is None:
+            app.add_event_handler(
+                "shutdown",
+                lambda: execution_adapter.shutdown(wait=False),  # type: ignore[name-defined]
+            )
+
 
     app.dependency_overrides[RunService] = lambda: run_service
         
