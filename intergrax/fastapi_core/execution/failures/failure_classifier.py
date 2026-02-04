@@ -3,9 +3,10 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 
-from intergrax.fastapi_core.execution.failures import FailureCategory
 from typing import Dict, Type
 from concurrent.futures import CancelledError
+
+from intergrax.fastapi_core.execution.failures.failures import FailureCategory
 
 
 class FailureClassifier:
@@ -21,6 +22,7 @@ class FailureClassifier:
             CancelledError: FailureCategory.CANCELED,
             TimeoutError: FailureCategory.TIMEOUT,
             ConnectionError: FailureCategory.RETRYABLE,
+            RuntimeError: FailureCategory.RETRYABLE,
         }
 
     def classify(self, exc: BaseException) -> FailureCategory:

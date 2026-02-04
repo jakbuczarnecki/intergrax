@@ -7,6 +7,7 @@ from typing import Optional, Protocol
 from fastapi import BackgroundTasks
 
 from intergrax.fastapi_core.context import RequestContext
+from intergrax.fastapi_core.execution.decisions.decision_record import ExecutionDecisionRecord
 from intergrax.fastapi_core.runs.models import RunResponse
 
 
@@ -42,3 +43,11 @@ class RunService(Protocol):
 
     def mark_running(self, run_id: str) -> None: 
         ...
+
+
+    def record_execution_decision(self, record: ExecutionDecisionRecord) -> None:
+        """
+        Hook for governance tracing.
+        Default implementation is no-op.
+        """
+        pass

@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.fastapi_core.execution.adapter import ExecutionAdapter
+from intergrax.fastapi_core.execution.adapters.adapter import ExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 
 

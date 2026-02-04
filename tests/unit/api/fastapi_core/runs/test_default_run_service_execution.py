@@ -1,7 +1,7 @@
 import asyncio
 from fastapi import BackgroundTasks
 from intergrax.fastapi_core.context import RequestContext
-from intergrax.fastapi_core.execution.adapter import ExecutionAdapter
+from intergrax.fastapi_core.execution.adapters.adapter import ExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import RunStatus

@@ -4,13 +4,16 @@ import asyncio
 import pytest
 
 from intergrax.fastapi_core.execution.models import ExecutionRequest
-from intergrax.fastapi_core.execution.threaded_adapter import ThreadedExecutionAdapter
-from intergrax.fastapi_core.execution.worker_contract import ExecutionWorker
+from intergrax.fastapi_core.execution.adapters.threaded_adapter import ThreadedExecutionAdapter
+from intergrax.fastapi_core.execution.worker_contract import CancellableExecutionWorker
 from intergrax.fastapi_core.runs.service import RunService
 
 
-class DummyWorker(ExecutionWorker):
+class DummyWorker(CancellableExecutionWorker):
     def execute(self, request: ExecutionRequest) -> None:
+        return
+    
+    def cancel(self, run_id: str) -> None:
         return
 
 

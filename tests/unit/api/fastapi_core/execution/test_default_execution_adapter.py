@@ -1,4 +1,4 @@
-from intergrax.fastapi_core.execution.default_adapter import DefaultExecutionAdapter
+from intergrax.fastapi_core.execution.adapters.default_adapter import DefaultExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 
 import pytest

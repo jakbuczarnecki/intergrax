@@ -11,12 +11,13 @@ import weakref
 from concurrent.futures import CancelledError, Future, ThreadPoolExecutor
 from typing import Optional
 
-from intergrax.fastapi_core.execution.adapter import CancellableExecutionAdapter
+from intergrax.fastapi_core.execution.adapters.adapter import CancellableExecutionAdapter
 from intergrax.fastapi_core.execution.capabilities import ExecutionCapabilities
-from intergrax.fastapi_core.execution.decision_engine import ExecutionDecisionEngine
-from intergrax.fastapi_core.execution.decisions import ExecutionDecision
-from intergrax.fastapi_core.execution.failure_classifier import FailureClassifier
-from intergrax.fastapi_core.execution.failures import FailureCategory
+from intergrax.fastapi_core.execution.decisions.decision_engine import ExecutionDecisionEngine
+from intergrax.fastapi_core.execution.decisions.decision_record import ExecutionDecisionRecord
+from intergrax.fastapi_core.execution.decisions.decisions import ExecutionDecision
+from intergrax.fastapi_core.execution.failures.failure_classifier import FailureClassifier
+from intergrax.fastapi_core.execution.failures.failures import FailureCategory
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.fastapi_core.execution.policies import ExecutionPolicy
 from intergrax.fastapi_core.execution.worker_contract import (
@@ -162,6 +163,16 @@ class ThreadedExecutionAdapter(CancellableExecutionAdapter):
                             policy=self._policy,
                         )
 
+                        self._run_service.record_execution_decision(
+                            ExecutionDecisionRecord(
+                                run_id=run_id,
+                                category=category,
+                                decision=decision,
+                                attempt=attempt,
+                                message=str(exc),
+                            )
+                        )
+
                         if decision == ExecutionDecision.RETRY:
                             attempt += 1
                             continue
@@ -247,11 +258,6 @@ class ThreadedExecutionAdapter(CancellableExecutionAdapter):
 
 
     def _handle_timeout(self, run_id: str) -> None:
-        """
-        Timeout is terminal, but must be idempotent:
-        - do not raise
-        - do not attempt illegal transitions
-        """
         with self._lock:
             future = self._futures.pop(run_id, None)
             self._deadlines.pop(run_id, None)
@@ -262,18 +268,29 @@ class ThreadedExecutionAdapter(CancellableExecutionAdapter):
         if isinstance(self._worker, CancellableExecutionWorker):
             self._worker.cancel(run_id)
         elif hasattr(self._worker, "stop"):
-            self._worker.stop()        
+            self._worker.stop()
 
         try:
             if self._is_running(run_id):
+
+                self._run_service.record_execution_decision(
+                    ExecutionDecisionRecord(
+                        run_id=run_id,
+                        category=FailureCategory.TIMEOUT,
+                        decision=ExecutionDecision.FAIL,
+                        attempt=0,
+                        message="Execution exceeded allowed time",
+                    )
+                )
+
                 self._run_service.mark_failed(
                     run_id=run_id,
                     error_type=FailureCategory.TIMEOUT.value,
                     error_message="Execution exceeded allowed time",
                 )
         except Exception:
-            # Watchdog must never crash the process / tests.
             pass
+
 
     def _is_running(self, run_id: str) -> bool:
         try:

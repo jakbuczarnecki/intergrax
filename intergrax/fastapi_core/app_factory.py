@@ -14,7 +14,7 @@ from intergrax.fastapi_core.budget.noop_policy import NoOpBudgetPolicy
 from intergrax.fastapi_core.budget.policy import BudgetPolicy
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.fastapi_core.errors.handlers import global_exception_handler
-from intergrax.fastapi_core.execution.default_adapter import DefaultExecutionAdapter
+from intergrax.fastapi_core.execution.adapters.default_adapter import DefaultExecutionAdapter
 from intergrax.fastapi_core.middleware.request_context import RequestContextMiddleware
 from intergrax.fastapi_core.rate_limit.dependency import NoOpRateLimitPolicy
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
