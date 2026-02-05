@@ -10,7 +10,7 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Tuple
 
 BUNDLES_DIR_NAME = "bundles"
 
@@ -31,6 +31,8 @@ EXCLUDE_DIRS = {
     "node_modules",
     ".eggs",
 }
+
+BUNDLE_SCHEMA_VERSION = 2
 
 # =============================================================================
 # Source type registry (edit here)
@@ -57,7 +59,7 @@ SOURCE_EXTS = tuple(sorted(SOURCE_HANDLERS.keys()))
 
 # ----------------------------------------------------------------------
 # define extra module bundles here
-# keys  -> output file name (without extension handling; we'll append ". _py" style exactly)
+# keys  -> output file name stem (we append "._py" exactly)
 # values-> folder path relative to project root
 # ----------------------------------------------------------------------
 EXTRA_BUNDLES: Dict[str, str] = {
@@ -76,7 +78,7 @@ EXTRA_BUNDLES: Dict[str, str] = {
     "NOTEBOOKS": r"notebooks",
     "TESTS": r"tests",
     "PROMPTS": r"prompts",
-    "FASTAPI_CORE":r"intergrax\fastapi_core"
+    "FASTAPI_CORE": r"intergrax\fastapi_core",
 }
 
 
@@ -88,7 +90,8 @@ class FileMeta:
     sha256: str
     lines: int
     chars: int
-    symbols: List[str]
+    symbols: List[str]          # global-unique ids, best-effort (python-like only)
+    imports: List[str]          # import modules, best-effort (python-like only)
 
 
 # =============================================================================
@@ -282,7 +285,7 @@ def to_module_name(rel_path: str) -> str:
 
 def module_group_from_rel(rel_path: str) -> str:
     """
-    Grouping rules:
+    Grouping rules (structure-only, no architectural meaning):
     - intergrax/<subfolder>/...   -> module_group = <subfolder>
     - intergrax/<file>.py         -> module_group = "root"
     - notebooks/...               -> module_group = "notebooks"
@@ -308,7 +311,7 @@ def module_group_from_rel(rel_path: str) -> str:
 
 
 # =============================================================================
-# Symbol extraction (python-like only)
+# Symbol + import extraction (python-like only)
 # =============================================================================
 
 def _strip_ipython_magics(code: str) -> str:
@@ -329,35 +332,231 @@ def _strip_ipython_magics(code: str) -> str:
     return "\n".join(cleaned)
 
 
-def extract_symbols(py_like_text: str) -> List[str]:
+def _ast_parse_best_effort(py_like_text: str) -> Optional[ast.AST]:
     try:
-        tree = ast.parse(py_like_text)
+        return ast.parse(py_like_text)
     except SyntaxError:
-        return ["<syntax-error: unable to parse symbols>"]
+        return None
+
+
+def extract_symbols(py_like_text: str, module_name: str) -> List[str]:
+    tree = _ast_parse_best_effort(py_like_text)
+    if tree is None:
+        return [f"{module_name}:<syntax-error>"]
 
     symbols: List[str] = []
     for node in tree.body:
         if isinstance(node, ast.ClassDef):
-            symbols.append(f"class {node.name}")
+            symbols.append(f"{module_name}:{node.name}")
         elif isinstance(node, ast.AsyncFunctionDef):
-            symbols.append(f"async def {node.name}()")
+            symbols.append(f"{module_name}:{node.name}")
         elif isinstance(node, ast.FunctionDef):
-            symbols.append(f"def {node.name}()")
+            symbols.append(f"{module_name}:{node.name}")
     return symbols
 
 
-def extract_symbols_for_file(path: Path, rendered_text: str) -> List[str]:
+def extract_imports(py_like_text: str) -> List[str]:
+    tree = _ast_parse_best_effort(py_like_text)
+    if tree is None:
+        return []
+
+    imports: List[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name:
+                    imports.append(str(alias.name))
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                imports.append(str(node.module))
+    # deterministic output
+    return sorted(set(imports), key=lambda s: s.lower())
+
+
+def extract_symbols_and_imports_for_file(path: Path, rendered_text: str, module_name: str) -> Tuple[List[str], List[str]]:
     """
-    Extract symbols only for extensions listed in SYMBOL_EXTS.
+    Extract symbols/imports only for extensions listed in SYMBOL_EXTS.
     """
     suffix = path.suffix.lower()
     if suffix not in SYMBOL_EXTS:
-        return []
+        return ([], [])
 
     txt = rendered_text
     if suffix == ".ipynb":
         txt = _strip_ipython_magics(txt)
-    return extract_symbols(txt)
+
+    syms = extract_symbols(txt, module_name=module_name)
+    imps = extract_imports(txt)
+    return (syms, imps)
+
+
+# =============================================================================
+# Structural map builders (no hardcoded architecture)
+# =============================================================================
+
+def build_folder_tree(metas: List[FileMeta]) -> str:
+    """
+    Build a structural folder tree as JSON:
+    - dict for directories
+    - null for files (leaf)
+    """
+    tree: dict = {}
+    for m in metas:
+        parts = m.rel_path.split("/")
+        cursor = tree
+        for p in parts[:-1]:
+            cursor = cursor.setdefault(p, {})
+        cursor.setdefault(parts[-1], None)
+    return json.dumps(tree, indent=2)
+
+
+def build_global_symbol_table(metas: List[FileMeta]) -> str:
+    table: List[dict] = []
+    for m in metas:
+        for s in m.symbols:
+            table.append(
+                {
+                    "symbol": s,
+                    "file": m.rel_path,
+                    "module": m.module_name,
+                    "module_group": m.module_group,
+                }
+            )
+    return json.dumps(table, indent=2)
+
+
+def build_dependency_graph(metas: List[FileMeta]) -> str:
+    graph: Dict[str, List[str]] = {}
+    for m in metas:
+        graph[m.module_name] = m.imports
+    return json.dumps(graph, indent=2)
+
+
+# =============================================================================
+# LLM Instructions content (separate file)
+# =============================================================================
+
+def build_llm_instructions_text(*, bundle_filename: str, bundle_scope: str) -> str:
+    """
+    Generate an English instruction file that the user can paste into chat,
+    while requiring responses in Polish.
+    """
+    text = f"""# Intergrax Bundle Reading Instructions (LLM)
+
+Bundle file: {bundle_filename}
+Scope: {bundle_scope}
+
+These instructions are a strict operating procedure for analyzing and modifying Intergrax code using the attached bundle.
+The bundle is the single source of truth for everything in scope.
+
+Response language requirement:
+- Provide all answers in Polish (PL).
+- Keep code comments in English (EN).
+
+## 0) Scope Gate (mandatory)
+- Before proposing any patch, list ALL files that would be edited/added/removed.
+- If any required file is OUTSIDE the attached bundle scope (or not present in the bundle), STOP.
+- Request the missing file(s) or a wider-scope bundle. Do not guess.
+
+## 1) Zero-hallucination rule (mandatory)
+- Do not invent paths, modules, classes, functions, or signatures.
+- If a symbol is not found in the bundle, explicitly say so and request the missing file or a wider-scope bundle.
+- Never rely on memory or generic patterns; always verify against the bundle.
+
+## 2) Verification-first workflow (mandatory)
+Before proposing any integration or patch, do a 'Verification Pass' where you list:
+- Exact FILE path(s) to edit (from headers).
+- Exact MODULE name(s) (from headers).
+- Existing class/protocol/function signatures copied from the bundle (verbatim, short).
+- The minimal delta you will apply.
+
+Only after the Verification Pass, provide the patch.
+
+## 3) Exact Signature Quote (mandatory)
+- When quoting a class/protocol/function signature, copy it verbatim from the bundle:
+  - include parameter names, defaults, and types as shown in the code
+  - do not paraphrase signatures
+
+## 4) How to navigate the bundle
+Each file in the bundle is preceded by a header:
+- FILE: <relative path>
+- MODULE: <import path>
+- MODULE_GROUP: <structural grouping>
+- LINES, SHA256
+- SYMBOLS (best-effort)
+- IMPORTS (best-effort)
+
+Additionally, the bundle contains global machine-readable sections:
+- STRUCTURAL MAP (folder tree JSON)
+- GLOBAL SYMBOL TABLE (JSON)
+- DEPENDENCY GRAPH (JSON)
+
+Use these in this order:
+1) GLOBAL SYMBOL TABLE: locate the definition of a symbol.
+2) FILE headers: confirm exact path/module and read the real code.
+3) DEPENDENCY GRAPH: understand import relationships (context only).
+4) STRUCTURAL MAP: understand folder structure and naming conventions.
+
+## 5) Few-shot examples
+
+### Example A: find a class definition
+Task: "Where is TraceEvent defined?"
+
+Procedure:
+1) Search GLOBAL SYMBOL TABLE for "TraceEvent" (symbol ends with ":TraceEvent").
+2) Take the returned 'file' path and open that FILE section in the bundle.
+3) Confirm the class signature directly in that code.
+
+Output style:
+- "TraceEvent is defined in file: <path>. Signature: <short snippet>."
+
+### Example B: add a new field safely
+Task: "Add artifact_refs to TraceEvent"
+
+Procedure:
+1) Verification Pass:
+   - Identify TraceEvent file and current dataclass fields.
+   - Identify any serializer/persistence model that converts TraceEvent to/from a stored form.
+2) Apply minimal change with backward-compatible defaults.
+3) Update serialization and tests if present.
+
+Output style:
+- Provide precise file edits only for verified locations.
+
+## 6) No-contract-drift rule (mandatory)
+- Do not change runtime semantics unless explicitly requested.
+- Prefer backward-compatible additions:
+  - default values
+  - optional fields
+  - preserving existing call sites
+
+## 7) Serialization Gate (mandatory)
+If the change impacts a persisted/serialized model:
+- You must identify ALL code paths that serialize/deserialize it (e.g., SerializedXxx mappers, stores, codecs).
+- You must update them in the same patch.
+- If you cannot find those paths within the current bundle scope, STOP and request a wider-scope bundle.
+
+## 8) Patch format requirement
+When proposing a patch:
+- Group by file.
+- For each file:
+  - show the exact file path
+  - show only the changed blocks (not the entire file)
+  - explain briefly why the change is necessary
+
+## 9) Reasoned Decision Summary (mandatory, no chain-of-thought disclosure)
+- Do NOT provide chain-of-thought or hidden reasoning.
+- Provide a short "Reasoned Decision Summary" (2-6 bullet points) explaining the key evidence from the bundle
+  that justifies the change (paths, signatures, contracts).
+
+### Important:
+ - Do not introduce new dynamic structures or loose dict contracts unless they already exist in the bundle. Prefer existing typed models.
+ - Before implementing logic, confirm which module group/file is responsible (runtime / storage / adapters / etc.) based on existing patterns in the bundle.
+
+End of instructions.
+"""
+    return text
+
 
 
 # =============================================================================
@@ -370,9 +569,12 @@ def build_llm_header(project_root: Path, bundle_scope: str, metas: List[FileMeta
 
     header: List[str] = []
     header.append("# ======================================================================\n")
-    header.append("# LLM INSTRUCTIONS\n")
+    header.append("# LLM INSTRUCTIONS (embedded)\n")
     header.append("# ======================================================================\n")
     header.append("# This file is an auto-generated, complete source code bundle of the Intergrax framework.\n")
+    header.append("#\n")
+    header.append("# BUNDLE_SCHEMA_VERSION:\n")
+    header.append(f"#   - {BUNDLE_SCHEMA_VERSION}\n")
     header.append("#\n")
     header.append("# Bundle scope:\n")
     header.append(f"#   - {bundle_scope}\n")
@@ -381,18 +583,15 @@ def build_llm_header(project_root: Path, bundle_scope: str, metas: List[FileMeta
     header.append("# IMPORTANT RULES FOR THE MODEL:\n")
     header.append("# 1) Treat THIS file as the single source of truth for the included scope.\n")
     header.append("# 2) Do NOT assume any missing code exists elsewhere.\n")
-    header.append("# 3) When proposing changes, always reference the exact FILE and MODULE headers below.\n")
-    header.append("# 4) Prefer edits that preserve existing architecture, naming, and conventions.\n")
+    header.append("# 3) Do NOT invent paths/classes/methods. Verify everything against the bundle.\n")
+    header.append("# 4) When proposing changes, always reference the exact FILE and MODULE headers below.\n")
+    header.append("# 5) Prefer minimal, backward-compatible edits.\n")
     header.append("#\n")
     header.append("# How to navigate this bundle:\n")
-    header.append("# - Use the MODULE MAP and INDEX to find modules.\n")
-    header.append("# - Each original file is included below with a header:\n")
-    header.append("#     FILE: <relative path>\n")
-    header.append("#     MODULE: <python import path or stable pseudo-module for non-.py>\n")
-    header.append("#     MODULE_GROUP: <first folder under intergrax/ or a known top-level folder>\n")
-    header.append("#     SYMBOLS: <top-level classes/functions (best-effort)>\n")
+    header.append("# - Use the STRUCTURAL MAP and GLOBAL SYMBOL TABLE.\n")
+    header.append("# - Each original file is included below with a header.\n")
     header.append("#\n")
-    header.append("# Included module groups (dynamic):\n")
+    header.append("# Included module groups (structural):\n")
     for g in module_groups:
         header.append(f"# - {g}/\n")
     header.append("#\n")
@@ -411,17 +610,24 @@ def _build_metas_from_paths(
     metas: List[FileMeta] = []
     for p in paths:
         rel = to_rel(project_root, p)
+        module_name = to_module_name(rel)
         txt = read_source_for_bundle(p)
+
+        if include_symbols:
+            syms, imps = extract_symbols_and_imports_for_file(p, txt, module_name=module_name)
+        else:
+            syms, imps = ([], [])
 
         metas.append(
             FileMeta(
                 rel_path=rel,
-                module_name=to_module_name(rel),
+                module_name=module_name,
                 module_group=module_group_from_rel(rel),
                 sha256=sha256_text(txt),
                 lines=count_lines(txt),
                 chars=len(txt),
-                symbols=extract_symbols_for_file(p, txt) if include_symbols else [],
+                symbols=syms,
+                imports=imps,
             )
         )
 
@@ -438,6 +644,7 @@ def build_bundle_from_paths(
     bundle_scope: str,
     max_mb: int = 25,
     include_symbols: bool = True,
+    write_instructions_file: bool = True,
 ) -> List[FileMeta]:
     """
     Generate a bundle from a pre-selected list of source file paths.
@@ -474,7 +681,7 @@ def build_bundle_from_paths(
     for m in metas:
         module_map.setdefault(m.module_group, []).append(m)
 
-    parts.append("# MODULE MAP (dynamic):\n")
+    parts.append("# MODULE MAP (structural):\n")
     for group in sorted(module_map.keys(), key=lambda s: s.lower()):
         parts.append(f"# - {group}/ ({len(module_map[group])} files)\n")
     parts.append("#\n")
@@ -483,9 +690,28 @@ def build_bundle_from_paths(
     total_lines = 0
     for m in metas:
         total_lines += m.lines
-        parts.append(f"# - {m.rel_path} | {m.module_name} | {m.module_group} | {m.lines} | {m.sha256[:12]}\n")
+        parts.append(f"# - {m.rel_path} | {m.module_name} |z| {m.module_group} | {m.lines} | {m.sha256[:12]}\n")
     parts.append(f"#\n# TOTAL LINES: {total_lines}\n")
     parts.append("# ======================================================================\n\n")
+
+    # Global machine-readable sections
+    parts.append("# ======================================================================\n")
+    parts.append("# STRUCTURAL MAP (folder tree JSON)\n")
+    parts.append("# ======================================================================\n")
+    parts.append(build_folder_tree(metas))
+    parts.append("\n\n")
+
+    parts.append("# ======================================================================\n")
+    parts.append("# GLOBAL SYMBOL TABLE (JSON)\n")
+    parts.append("# ======================================================================\n")
+    parts.append(build_global_symbol_table(metas))
+    parts.append("\n\n")
+
+    parts.append("# ======================================================================\n")
+    parts.append("# DEPENDENCY GRAPH (module -> imports, JSON)\n")
+    parts.append("# ======================================================================\n")
+    parts.append(build_dependency_graph(metas))
+    parts.append("\n\n")
 
     total_chars = sum(len(s) for s in parts)
 
@@ -502,14 +728,24 @@ def build_bundle_from_paths(
         header.append(f"#   - module_group={m.module_group}\n")
         header.append(f"#   - file={Path(m.rel_path).name}\n")
         header.append(f"# LINES: {m.lines}\n")
+        header.append(f"# CHARS: {m.chars}\n")
         header.append(f"# SHA256: {m.sha256}\n")
+
         if include_symbols:
-            header.append("# SYMBOLS:\n")
+            header.append("# SYMBOLS (global-unique, best-effort):\n")
             if m.symbols:
                 for s in m.symbols:
                     header.append(f"#   - {s}\n")
             else:
                 header.append("#   - <none>\n")
+
+            header.append("# IMPORTS (best-effort):\n")
+            if m.imports:
+                for imp in m.imports:
+                    header.append(f"#   - {imp}\n")
+            else:
+                header.append("#   - <none>\n")
+
         header.append("# ======================================================================\n")
 
         body = read_source_for_bundle(abs_path)
@@ -530,6 +766,11 @@ def build_bundle_from_paths(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("".join(parts), encoding="utf-8")
 
+    if write_instructions_file:
+        instr_path = out_path.parent / f"{out_path.stem}_INSTRUCTIONS.md"
+        instr_text = build_llm_instructions_text(bundle_filename=out_path.name, bundle_scope=bundle_scope)
+        instr_path.write_text(instr_text, encoding="utf-8")
+
     return metas
 
 
@@ -540,6 +781,7 @@ def build_extra_bundles(
     bundles_dir: Path,
     max_mb: int = 25,
     include_symbols: bool = True,
+    write_instructions_file: bool = True,
 ) -> None:
     """
     Generate additional bundles based on a dict:
@@ -566,9 +808,13 @@ def build_extra_bundles(
             bundle_scope=f"folder={to_rel(project_root, folder)}/",
             max_mb=max_mb,
             include_symbols=include_symbols,
+            write_instructions_file=write_instructions_file,
         )
 
+        instr_name = f"{out_path.stem}_INSTRUCTIONS.md"
         print(f"Module bundle created: {out_path.name}  (files={len(paths)})")
+        if write_instructions_file:
+            print(f"Instructions created:  {instr_name}")
 
 
 def find_project_root(start: Path) -> Path:
@@ -598,6 +844,7 @@ def main() -> None:
             bundles_dir=bundles_dir,
             max_mb=25,
             include_symbols=True,
+            write_instructions_file=True,
         )
 
 

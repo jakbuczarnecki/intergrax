@@ -11,6 +11,7 @@ from enum import Enum
 from typing import Any, Dict, Optional
 import uuid
 
+from intergrax.runtime.nexus.artifacts.models import ArtifactRef
 from intergrax.utils.time_provider import SystemTimeProvider
 
 
@@ -78,6 +79,8 @@ class TraceEvent:
     payload: Optional[DiagnosticPayload] = None
 
     tags: Dict[str, Any] = field(default_factory=dict)
+
+    artifact_refs: tuple[ArtifactRef, ...] = ()
 
     @staticmethod
     def new_id() -> str:
