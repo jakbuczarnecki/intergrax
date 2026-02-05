@@ -107,6 +107,15 @@ class TraceEvent:
             payload_schema_version = self.payload.__class__.schema_version()
             payload_dict = self.payload.to_dict()
 
+        artifact_refs = [
+            {
+                "artifact_id": r.artifact_id,
+                "kind": r.kind,
+                "size_bytes": r.size_bytes,
+            }
+            for r in self.artifact_refs
+        ]
+
         return {
             "event_id": self.event_id,
             "run_id": self.run_id,
@@ -120,6 +129,7 @@ class TraceEvent:
             "payload_schema_version": payload_schema_version,
             "payload": payload_dict,
             "tags": self.tags,
+            "artifact_refs": artifact_refs,
         }
     
 
