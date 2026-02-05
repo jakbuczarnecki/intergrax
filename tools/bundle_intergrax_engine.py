@@ -32,8 +32,8 @@ EXCLUDE_DIRS = {
     ".eggs",
 }
 
-# Bump schema version because we add STRUCTURE.json + COID index
-BUNDLE_SCHEMA_VERSION = 3
+# Schema v4: STRUCTURE.json is now a true lightweight index (no graphs, no per-file code_objects duplication).
+BUNDLE_SCHEMA_VERSION = 4
 
 # =============================================================================
 # Source type registry (edit here)
@@ -82,9 +82,8 @@ EXTRA_BUNDLES: Dict[str, str] = {
     "FASTAPI_CORE": r"intergrax\fastapi_core",
 }
 
-
 # =============================================================================
-# Typed metadata (extended)
+# Typed metadata
 # =============================================================================
 
 @dataclass(frozen=True)
@@ -108,27 +107,11 @@ class FileMeta:
     sha256: str
     lines: int
     chars: int
-    symbols: List[str]                 # global-unique ids, best-effort (python-like only)
-    imports: List[str]                 # import modules, best-effort (python-like only)
 
-    # New: execution/usage indices (python-like only)
-    creates: List[str]                 # called names (best-effort)
-    calls: List[str]                   # attribute calls + name calls (best-effort)
-    type_usages: List[str]             # ast.Name identifiers (best-effort)
-
-    # New: stable code object references (python-like only)
-    code_objects: List[CodeObjectMeta]  # contains COID per class/function/method
-
-
-@dataclass
-class FileAstIndex:
-    rel_path: str
-    module: str
-    imports: List[str]
-    creates: List[str]
-    calls: List[str]
-    type_usages: List[str]
-    code_objects: List[CodeObjectMeta]
+    # python-like only (best-effort)
+    symbols: List[str]                  # class/function symbols only (module:Name)
+    imports: List[str]                  # import modules
+    code_objects: List[CodeObjectMeta]  # COID per class/function/method
 
 
 # =============================================================================
@@ -178,7 +161,6 @@ def _as_list(x: object) -> List[str]:
 
 
 def _normalize_newlines(s: str) -> str:
-    # Keep output deterministic
     return s.replace("\r\n", "\n").replace("\r", "\n")
 
 
@@ -242,15 +224,13 @@ def _render_ipynb_to_text(path: Path) -> str:
     return out
 
 
-# Bind ipynb renderer in the registry (no hardcoded ifs elsewhere)
+# Bind ipynb renderer in the registry
 SOURCE_HANDLERS[".ipynb"] = _render_ipynb_to_text
 
 
 def read_source_for_bundle(path: Path) -> str:
     """
     Unified reader based on SOURCE_HANDLERS registry.
-    - If a renderer is registered for a suffix -> use it.
-    - Otherwise -> read_text + normalize newlines.
     """
     suffix = path.suffix.lower()
     renderer = SOURCE_HANDLERS.get(suffix)
@@ -322,12 +302,7 @@ def to_module_name(rel_path: str) -> str:
 
 def module_group_from_rel(rel_path: str) -> str:
     """
-    Grouping rules (structure-only, no architectural meaning):
-    - intergrax/<subfolder>/...   -> module_group = <subfolder>
-    - intergrax/<file>.py         -> module_group = "root"
-    - notebooks/...               -> module_group = "notebooks"
-    - tests/...                   -> module_group = "tests"
-    - otherwise                   -> first top-level folder or "root"
+    Grouping rules (structure-only, no architectural meaning).
     """
     parts = rel_path.split("/")
     if not parts:
@@ -348,13 +323,12 @@ def module_group_from_rel(rel_path: str) -> str:
 
 
 # =============================================================================
-# Python-like analysis: symbols, imports, call graph, COID
+# Python-like analysis: symbols, imports, COID (single AST pass)
 # =============================================================================
 
 def _strip_ipython_magics(code: str) -> str:
     """
     Best-effort cleanup so ast.parse doesn't fail on notebook magics.
-    - Remove lines starting with %, !, or containing cell magics like %%time.
     """
     cleaned: List[str] = []
     for line in _normalize_newlines(code).split("\n"):
@@ -389,154 +363,16 @@ def _compute_coid(module_name: str, qualified_name: str, kind: str, node: ast.AS
     return hashlib.sha256(raw.encode("utf-8", errors="ignore")).hexdigest()
 
 
-def extract_symbols(py_like_text: str, module_name: str) -> List[str]:
-    tree = _ast_parse_best_effort(py_like_text)
-    if tree is None:
-        return [f"{module_name}:<syntax-error>"]
-
-    symbols: List[str] = []
-    for node in tree.body:
-        if isinstance(node, ast.ClassDef):
-            symbols.append(f"{module_name}:{node.name}")
-        elif isinstance(node, ast.AsyncFunctionDef):
-            symbols.append(f"{module_name}:{node.name}")
-        elif isinstance(node, ast.FunctionDef):
-            symbols.append(f"{module_name}:{node.name}")
-    return symbols
-
-
-def extract_imports(py_like_text: str) -> List[str]:
-    tree = _ast_parse_best_effort(py_like_text)
-    if tree is None:
-        return []
-
-    imports: List[str] = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                if alias.name:
-                    imports.append(str(alias.name))
-        elif isinstance(node, ast.ImportFrom):
-            if node.module:
-                imports.append(str(node.module))
-    return sorted(set(imports), key=lambda s: s.lower())
-
-
-def extract_call_and_usage_indices(py_like_text: str) -> Tuple[List[str], List[str], List[str]]:
+def _extract_python_like_metadata(path: Path, rendered_text: str, module_name: str) -> Tuple[List[str], List[str], List[CodeObjectMeta]]:
     """
-    Best-effort indices to locate behavior without searching raw text.
-    - creates: calls where func is ast.Name (often constructors or factory functions)
-    - calls: both name calls and attribute calls
-    - type_usages: all ast.Name identifiers (noisy but useful as an index)
+    Single AST pass:
+    - symbols: class/function (module:Name)
+    - imports: best-effort import modules list
+    - code_objects: class/function/method with COID
     """
-    tree = _ast_parse_best_effort(py_like_text)
-    if tree is None:
+    suffix = path.suffix.lower()
+    if suffix not in SYMBOL_EXTS:
         return ([], [], [])
-
-    creates: List[str] = []
-    calls: List[str] = []
-    type_usages: List[str] = []
-
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call):
-            if isinstance(node.func, ast.Name):
-                creates.append(node.func.id)
-                calls.append(node.func.id)
-            elif isinstance(node.func, ast.Attribute):
-                calls.append(node.func.attr)
-        elif isinstance(node, ast.Name):
-            type_usages.append(node.id)
-
-    return (
-        sorted(set(creates), key=lambda s: s.lower()),
-        sorted(set(calls), key=lambda s: s.lower()),
-        sorted(set(type_usages), key=lambda s: s.lower()),
-    )
-
-
-def extract_code_objects(py_like_text: str, module_name: str) -> List[CodeObjectMeta]:
-    """
-    Extract classes, functions and methods with stable COID.
-    Also includes lineno/end_lineno if available (best-effort).
-    """
-    tree = _ast_parse_best_effort(py_like_text)
-    if tree is None:
-        return []
-
-    objs: List[CodeObjectMeta] = []
-
-    for node in tree.body:
-        if isinstance(node, ast.ClassDef):
-            sym = f"{module_name}:{node.name}"
-            coid = _compute_coid(module_name, node.name, "class", node)
-            objs.append(
-                CodeObjectMeta(
-                    symbol=sym,
-                    kind="class",
-                    coid=coid,
-                    lineno=getattr(node, "lineno", None),
-                    end_lineno=getattr(node, "end_lineno", None),
-                )
-            )
-
-            for sub in node.body:
-                if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    qn = f"{node.name}.{sub.name}"
-                    sym_m = f"{module_name}:{qn}"
-                    coid_m = _compute_coid(module_name, qn, "method", sub)
-                    objs.append(
-                        CodeObjectMeta(
-                            symbol=sym_m,
-                            kind="method",
-                            coid=coid_m,
-                            lineno=getattr(sub, "lineno", None),
-                            end_lineno=getattr(sub, "end_lineno", None),
-                        )
-                    )
-
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            sym = f"{module_name}:{node.name}"
-            coid = _compute_coid(module_name, node.name, "function", node)
-            objs.append(
-                CodeObjectMeta(
-                    symbol=sym,
-                    kind="function",
-                    coid=coid,
-                    lineno=getattr(node, "lineno", None),
-                    end_lineno=getattr(node, "end_lineno", None),
-                )
-            )
-
-    # Deterministic ordering
-    objs.sort(key=lambda o: (o.symbol.lower(), o.kind.lower(), o.coid))
-    return objs
-
-
-def extract_symbols_and_imports_for_file(path: Path, rendered_text: str, module_name: str) -> Tuple[List[str], List[str]]:
-    """
-    Extract symbols/imports only for extensions listed in SYMBOL_EXTS.
-    """
-    suffix = path.suffix.lower()
-    if suffix not in SYMBOL_EXTS:
-        return ([], [])
-
-    txt = rendered_text
-    if suffix == ".ipynb":
-        txt = _strip_ipython_magics(txt)
-
-    syms = extract_symbols(txt, module_name=module_name)
-    imps = extract_imports(txt)
-    return (syms, imps)
-
-
-def extract_extended_python_like_metadata(path: Path, rendered_text: str, module_name: str):
-    """
-    Single AST pass → all advanced indices.
-    This is the *only* source of truth for code_objects and COID.
-    """
-    suffix = path.suffix.lower()
-    if suffix not in SYMBOL_EXTS:
-        return ([], [], [], [])
 
     txt = rendered_text
     if suffix == ".ipynb":
@@ -544,19 +380,31 @@ def extract_extended_python_like_metadata(path: Path, rendered_text: str, module
 
     tree = _ast_parse_best_effort(txt)
     if tree is None:
-        return ([], [], [], [])
+        # Keep deterministic fallback for symbols
+        return ([f"{module_name}:<syntax-error>"], [], [])
 
-    creates: List[str] = []
-    calls: List[str] = []
-    type_usages: List[str] = []
+    symbols: List[str] = []
+    imports: List[str] = []
     code_objects: List[CodeObjectMeta] = []
 
     class Visitor(ast.NodeVisitor):
+        def visit_Import(self, node: ast.Import) -> None:
+            for alias in node.names:
+                if alias.name:
+                    imports.append(str(alias.name))
+            self.generic_visit(node)
 
-        def visit_ClassDef(self, node: ast.ClassDef):
+        def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+            if node.module:
+                imports.append(str(node.module))
+            self.generic_visit(node)
+
+        def visit_ClassDef(self, node: ast.ClassDef) -> None:
+            # class object
             sym = f"{module_name}:{node.name}"
-            coid = _compute_coid(module_name, node.name, "class", node)
+            symbols.append(sym)
 
+            coid = _compute_coid(module_name, node.name, "class", node)
             code_objects.append(
                 CodeObjectMeta(
                     symbol=sym,
@@ -567,13 +415,12 @@ def extract_extended_python_like_metadata(path: Path, rendered_text: str, module
                 )
             )
 
-            # detect constructor calls inside this class
+            # methods
             for sub in node.body:
                 if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     qn = f"{node.name}.{sub.name}"
                     sym_m = f"{module_name}:{qn}"
                     coid_m = _compute_coid(module_name, qn, "method", sub)
-
                     code_objects.append(
                         CodeObjectMeta(
                             symbol=sym_m,
@@ -586,10 +433,11 @@ def extract_extended_python_like_metadata(path: Path, rendered_text: str, module
 
             self.generic_visit(node)
 
-        def visit_FunctionDef(self, node: ast.FunctionDef):
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
             sym = f"{module_name}:{node.name}"
-            coid = _compute_coid(module_name, node.name, "function", node)
+            symbols.append(sym)
 
+            coid = _compute_coid(module_name, node.name, "function", node)
             code_objects.append(
                 CodeObjectMeta(
                     symbol=sym,
@@ -602,166 +450,58 @@ def extract_extended_python_like_metadata(path: Path, rendered_text: str, module
 
             self.generic_visit(node)
 
-        def visit_Call(self, node: ast.Call):
-            # CALLS
-            if isinstance(node.func, ast.Name):
-                calls.append(node.func.id)
-            elif isinstance(node.func, ast.Attribute):
-                calls.append(node.func.attr)
+        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+            sym = f"{module_name}:{node.name}"
+            symbols.append(sym)
 
-            # CREATES = ClassName(...)
-            if isinstance(node.func, ast.Name) and node.func.id[0].isupper():
-                creates.append(node.func.id)
+            coid = _compute_coid(module_name, node.name, "function", node)
+            code_objects.append(
+                CodeObjectMeta(
+                    symbol=sym,
+                    kind="function",
+                    coid=coid,
+                    lineno=getattr(node, "lineno", None),
+                    end_lineno=getattr(node, "end_lineno", None),
+                )
+            )
 
             self.generic_visit(node)
 
-        def visit_Name(self, node: ast.Name):
-            type_usages.append(node.id)
-
     Visitor().visit(tree)
 
-    return (
-        sorted(set(creates), key=lambda s: s.lower()),
-        sorted(set(calls), key=lambda s: s.lower()),
-        sorted(set(type_usages), key=lambda s: s.lower()),
-        code_objects,
-    )
+    # Deduplicate + deterministic order
+    symbols = sorted(set(symbols), key=lambda s: s.lower())
+    imports = sorted(set(imports), key=lambda s: s.lower())
+    code_objects.sort(key=lambda o: (o.symbol.lower(), o.kind.lower(), o.coid))
+    return (symbols, imports, code_objects)
 
 
 # =============================================================================
-# Structural map builders (no hardcoded architecture)
+# STRUCTURE.json (true lightweight index)
 # =============================================================================
 
-def build_folder_tree(metas: List[FileMeta]) -> str:
+def build_structure_index(
+    *,
+    bundle_filename: str,
+    bundle_scope: str,
+    project_root: Path,
+    metas: List[FileMeta],
+) -> dict:
     """
-    Build a structural folder tree as JSON:
-    - dict for directories
-    - null for files (leaf)
+    ULTRA-LIGHT STRUCTURE INDEX.
+
+    Purpose:
+    - Navigation only
+    - No symbols
+    - No COID
+    - No stats
+    - No duplication of bundle semantics
     """
-    tree: dict = {}
-    for m in metas:
-        parts = m.rel_path.split("/")
-        cursor = tree
-        for p in parts[:-1]:
-            cursor = cursor.setdefault(p, {})
-        cursor.setdefault(parts[-1], None)
-    return json.dumps(tree, indent=2)
 
-
-def build_global_symbol_table(metas: List[FileMeta]) -> str:
-    """
-    Global symbol table for quick 'definition' lookup.
-    Includes:
-    - class/function symbols from `symbols`
-    - plus method symbols from `code_objects` (kind=method)
-    """
-    table: List[dict] = []
-    for m in metas:
-        for s in m.symbols:
-            table.append(
-                {
-                    "symbol": s,
-                    "file": m.rel_path,
-                    "module": m.module_name,
-                    "module_group": m.module_group,
-                }
-            )
-
-        for obj in m.code_objects:
-            # methods were not included in old `symbols` list; add them here
-            if obj.kind == "method":
-                table.append(
-                    {
-                        "symbol": obj.symbol,
-                        "file": m.rel_path,
-                        "module": m.module_name,
-                        "module_group": m.module_group,
-                    }
-                )
-
-    return json.dumps(table, indent=2)
-
-
-def build_dependency_graph(metas: List[FileMeta]) -> str:
-    graph: Dict[str, List[str]] = {}
-    for m in metas:
-        graph[m.module_name] = m.imports
-    return json.dumps(graph, indent=2)
-
-
-def build_call_graph(metas: List[FileMeta]) -> str:
-    """
-    module -> {creates,calls}
-    """
-    graph: Dict[str, Dict[str, List[str]]] = {}
-    for m in metas:
-        graph[m.module_name] = {
-            "creates": m.creates,
-            "calls": m.calls,
-        }
-    return json.dumps(graph, indent=2)
-
-
-def build_type_usage_graph(metas: List[FileMeta]) -> str:
-    """
-    module -> type_usages (noisy but useful)
-    """
-    graph: Dict[str, List[str]] = {}
-    for m in metas:
-        graph[m.module_name] = m.type_usages
-    return json.dumps(graph, indent=2)
-
-
-# =============================================================================
-# STRUCTURE.json (separate file)
-# =============================================================================
-
-def build_structure_index(*, bundle_filename: str, bundle_scope: str, project_root: Path, metas: List[FileMeta]) -> dict:
-    """
-    Structure index is the machine-readable index to avoid raw-text searching.
-    Contains:
-    - bundle metadata
-    - files table
-    - global COID registry: coid -> symbol/file/module/kind/lineno/end_lineno
-    - per-module indices: creates/calls/type_usages and code_objects list
-    """
-    coid_index: Dict[str, dict] = {}
-    files_index: Dict[str, dict] = {}
+    modules_index: Dict[str, str] = {}
 
     for m in metas:
-        files_index[m.module_name] = {
-            "file": m.rel_path,
-            "module_group": m.module_group,
-            "sha256": m.sha256,
-            "lines": m.lines,
-            "chars": m.chars,
-            "imports": m.imports,
-            "creates": m.creates,
-            "calls": m.calls,
-            "type_usages": m.type_usages,
-            "code_objects": [
-                {
-                    "symbol": o.symbol,
-                    "kind": o.kind,
-                    "coid": o.coid,
-                    "lineno": o.lineno,
-                    "end_lineno": o.end_lineno,
-                }
-                for o in m.code_objects
-            ],
-        }
-
-        for o in m.code_objects:
-            coid_index[o.coid] = {
-                "symbol": o.symbol,
-                "kind": o.kind,
-                "file": m.rel_path,
-                "module": m.module_name,
-                "module_group": m.module_group,
-                "lineno": o.lineno,
-                "end_lineno": o.end_lineno,
-                "file_sha256": m.sha256,
-            }
+        modules_index[m.module_name] = m.rel_path
 
     return {
         "schema_version": BUNDLE_SCHEMA_VERSION,
@@ -770,9 +510,9 @@ def build_structure_index(*, bundle_filename: str, bundle_scope: str, project_ro
             "scope": bundle_scope,
             "project_root": str(project_root),
         },
-        "files": files_index,
-        "coid_index": coid_index,
+        "modules": modules_index,
     }
+
 
 
 # =============================================================================
@@ -790,132 +530,154 @@ Bundle file: {bundle_filename}
 Structure file: {structure_filename}
 Scope: {bundle_scope}
 
-These instructions are a strict operating procedure for analyzing and modifying Intergrax code using the attached files.
-The bundle is the single source of truth for code content. The structure file is the single source of truth for indexing.
+These instructions define a deterministic, safety-critical procedure for analyzing and modifying Intergrax code.
+Deviation from this procedure is considered a failure.
+
+The bundle is the single source of truth for code content.
+The structure file is the single source of truth for indexing.
 
 Response language requirement:
 - Provide all answers in Polish (PL).
 - Keep code comments in English (EN).
 
-## 0) Inputs and their roles (mandatory)
-You receive three files:
-1) Bundle (code): {bundle_filename}
-2) Structure index (machine-readable): {structure_filename}
-3) Instructions (this file)
+=====================================================================
+0) OPERATING MODEL (MANDATORY)
+=====================================================================
 
-Rules:
-- Use the structure index FIRST to locate symbols, call sites, and code object IDs (COID).
-- Use the bundle SECOND to read the exact source and confirm signatures.
-- Never search by “guessing” paths or symbols.
+You operate strictly as a code-referencing system.
 
-## 1) Scope Gate (mandatory)
-- Before proposing any patch, list ALL files that would be edited/added/removed.
-- If any required file is OUTSIDE the attached bundle scope (or not present in the bundle), STOP.
-- Request the missing file(s) or a wider-scope bundle. Do not guess.
+Allowed knowledge sources:
+1) Structure index ({structure_filename})
+2) Bundle ({bundle_filename})
 
-## 2) Zero-hallucination rule (mandatory)
-- Do not invent paths, modules, classes, functions, or signatures.
-- If a symbol is not found in the structure index or bundle, explicitly say so and request the missing file or a wider-scope bundle.
-- Never rely on memory or generic patterns; always verify against the provided files.
+Anything not explicitly present there is UNKNOWN.
 
-## 3) Verification-first workflow (mandatory)
-Before proposing any integration or patch, do a 'Verification Pass' where you list:
-- Exact FILE path(s) to edit (from bundle headers or structure index).
-- Exact MODULE name(s) (from bundle headers or structure index).
-- Existing class/protocol/function signatures copied from the bundle (verbatim, short).
-- Relevant COID(s) from the structure index (stable references).
-- The minimal delta you will apply.
+If any step cannot be completed using only these two files → STOP.
 
-Only after the Verification Pass, provide the patch.
+=====================================================================
+1) SCOPE GATE (HARD STOP)
+=====================================================================
 
-## 4) Exact Signature Quote (mandatory)
-- When quoting a class/protocol/function signature, copy it verbatim from the bundle:
-  - include parameter names, defaults, and types as shown in the code
-  - do not paraphrase signatures
+Before proposing any patch you MUST list:
+- ALL files to be modified
+- ALL files to be read for context
 
-## 5) How to use the structure index (mandatory)
-The structure index contains:
-- files[module] with: file path, imports, creates, calls, type_usages, and code_objects
-- coid_index[coid] with: symbol, kind, file, module, and optional lineno/end_lineno
+If ANY file is outside bundle scope or missing:
+→ STOP immediately
+→ Request missing bundle
 
-Use it for:
-- locating "where is X created?" via files[*].creates
-- locating "who calls method Y?" via files[*].calls
-- locating "where is type Z used?" via files[*].type_usages
-- stable code references via COID (coid_index)
+No assumptions allowed.
 
-Important:
-- Prefer COID references in your analysis and patch plan.
-- COID is stable across formatting and line changes (AST-based).
+=====================================================================
+2) ZERO-HALLUCINATION RULE (HARD STOP)
+=====================================================================
 
-## 6) How to navigate the bundle (mandatory)
-Each file in the bundle is preceded by a header:
-- FILE: <relative path>
-- MODULE: <import path>
-- MODULE_GROUP: <structural grouping>
-- LINES, SHA256
-- SYMBOLS (best-effort)
-- IMPORTS (best-effort)
-- CODE_OBJECTS (COID) (best-effort, python-like only)
+You MUST NOT:
+- invent variable names
+- invent parameters
+- invent method signatures
+- rewrite signatures in your own format
+- "simplify" code for explanation
 
-Use:
-1) Structure index to locate file/module/COID
-2) Bundle header to confirm exact file/module and read real code
+If exact code cannot be located verbatim → STOP.
 
-## 7) Few-shot examples
+=====================================================================
+3) DETERMINISTIC WORKFLOW (FIXED ORDER)
+=====================================================================
 
-### Example A: locate where TraceEvent is created
-Task: "Where is TraceEvent constructed in runtime?"
+You MUST follow these steps in order:
 
-Procedure:
-1) In {structure_filename}, search files[*].creates for "TraceEvent".
-2) List matching modules and their file paths.
-3) Pick the most relevant runtime module based on scope.
-4) Open that file section in the bundle and confirm the call site context.
+STEP 1 — STRUCTURE LOOKUP
+Use structure index ONLY to locate:
+- file
+- module
+- COID(s)
 
-Output style (Polish):
-- "TraceEvent jest tworzony w module X (plik Y). Potwierdzone w kodzie w sekcji FILE: Y."
+STEP 2 — VERBATIM SOURCE EXTRACTION
+Open bundle and copy exact source fragment.
 
-### Example B: use COID for stable reference
-Task: "Patch TraceEvent.to_dict"
+STEP 3 — VERIFICATION PASS
+List:
+- FILE
+- MODULE
+- COID
+- VERBATIM SOURCE BLOCK
 
-Procedure:
-1) Find COID in coid_index where symbol ends with ":TraceEvent.to_dict".
-2) Use that COID in your Verification Pass.
-3) Open the exact file section in the bundle and apply the minimal patch.
+STEP 4 — ONLY AFTER THAT → PATCH
 
-Output style (Polish):
-- "Modyfikujemy COID=<...> (symbol=..., plik=...)."
+Skipping any step = invalid response.
 
-## 8) No-contract-drift rule (mandatory)
-- Do not change runtime semantics unless explicitly requested.
-- Prefer backward-compatible additions:
-  - default values
-  - optional fields
-  - preserving existing call sites
+=====================================================================
+4) VERBATIM SOURCE GATE (CRITICAL)
+=====================================================================
 
-## 9) Serialization Gate (mandatory)
-If the change impacts a persisted/serialized model:
-- You must identify ALL code paths that serialize/deserialize it (e.g., SerializedXxx mappers, stores, codecs).
-- You must update them in the same patch.
-- If you cannot find those paths within the current bundle scope, STOP and request a wider-scope bundle.
+Before ANY modification proposal you MUST include VERBATIM SOURCE copied from bundle (not paraphrased).
 
-## 10) Patch format requirement
-When proposing a patch:
-- Group by file.
-- For each file:
-  - show the exact file path
-  - show only the changed blocks (not the entire file)
-  - explain briefly why the change is necessary
+Must include:
+- full function/method signature
+- exact parameter names
+- local variable names
 
-## 11) Reasoned Decision Summary (mandatory, no chain-of-thought disclosure)
-- Do NOT provide chain-of-thought or hidden reasoning.
-- Provide a short "Reasoned Decision Summary" (2-6 bullet points) explaining the key evidence from the bundle/structure index
-  that justifies the change (paths, signatures, COIDs, contracts).
+If signature differs by one parameter → INVALID.
 
-### Important:
- - Do not introduce new dynamic structures or loose dict contracts unless they already exist in the bundle. Prefer existing typed models.
- - Before implementing logic, confirm which module group/file is responsible (runtime / storage / adapters / etc.) based on existing patterns in the bundle.
+If VERBATIM block is missing → STOP.
+
+=====================================================================
+5) SIGNATURE LOCK RULE
+=====================================================================
+
+Signatures are immutable references.
+
+You may not:
+- reorder parameters
+- rename parameters
+- change type annotations
+- omit default values
+
+Unless task explicitly says so.
+
+=====================================================================
+6) STRUCTURE INDEX USAGE (MANDATORY)
+=====================================================================
+
+Use {structure_filename} for:
+- files[module]
+- symbols[symbol]
+- coid_index[coid]
+
+COID is the primary reference key.
+
+=====================================================================
+7) BUNDLE NAVIGATION
+=====================================================================
+
+Bundle headers define truth:
+- FILE
+- MODULE
+- MODULE_GROUP
+- SHA256
+- CODE_OBJECTS (COID)
+
+Bundle text overrides any assumptions.
+
+=====================================================================
+8) PATCH FORMAT
+=====================================================================
+
+For each file:
+- FILE path
+- VERBATIM SOURCE (before)
+- PATCH BLOCK (after)
+- short justification
+
+=====================================================================
+ENFORCEMENT RULE
+=====================================================================
+
+If ANY rule above cannot be satisfied:
+→ STOP
+→ Explain which rule blocks continuation
+→ Ask for missing bundle scope
 
 End of instructions.
 """
@@ -951,11 +713,6 @@ def build_llm_header(project_root: Path, bundle_scope: str, metas: List[FileMeta
     header.append("# 4) When proposing changes, always reference the exact FILE and MODULE headers below.\n")
     header.append("# 5) Prefer minimal, backward-compatible edits.\n")
     header.append("#\n")
-    header.append("# How to navigate this bundle:\n")
-    header.append("# - Use the STRUCTURAL MAP, GLOBAL SYMBOL TABLE, and CODE_OBJECTS (COID).\n")
-    header.append("# - Prefer the separate STRUCTURE.json for indexing call sites and COID lookup.\n")
-    header.append("# - Each original file is included below with a header.\n")
-    header.append("#\n")
     header.append("# Included module groups (structural):\n")
     for g in module_groups:
         header.append(f"# - {g}/\n")
@@ -979,11 +736,9 @@ def _build_metas_from_paths(
         txt = read_source_for_bundle(p)
 
         if include_symbols:
-            syms, imps = extract_symbols_and_imports_for_file(p, txt, module_name=module_name)
-            creates, calls, type_usages, code_objects = extract_extended_python_like_metadata(p, txt, module_name=module_name)
+            syms, imps, code_objects = _extract_python_like_metadata(p, txt, module_name=module_name)
         else:
-            syms, imps = ([], [])
-            creates, calls, type_usages, code_objects = ([], [], [], [])
+            syms, imps, code_objects = ([], [], [])
 
         metas.append(
             FileMeta(
@@ -995,9 +750,6 @@ def _build_metas_from_paths(
                 chars=len(txt),
                 symbols=syms,
                 imports=imps,
-                creates=creates,
-                calls=calls,
-                type_usages=type_usages,
                 code_objects=code_objects,
             )
         )
@@ -1020,11 +772,8 @@ def build_bundle_from_paths(
 ) -> List[FileMeta]:
     """
     Generate a bundle from a pre-selected list of source file paths.
-    Supported: extensions registered in SOURCE_HANDLERS.
-    Paths MUST be absolute or project_root-relative (we resolve anyway).
-
     Also generates:
-    - <bundle_stem>_STRUCTURE.json (machine index)
+    - <bundle_stem>_STRUCTURE.json (lightweight index)
     - <bundle_stem>_INSTRUCTIONS.md (LLM procedure)
     """
     project_root = project_root.resolve()
@@ -1070,37 +819,6 @@ def build_bundle_from_paths(
     parts.append(f"#\n# TOTAL LINES: {total_lines}\n")
     parts.append("# ======================================================================\n\n")
 
-    # Global machine-readable sections inside bundle (still useful)
-    parts.append("# ======================================================================\n")
-    parts.append("# STRUCTURAL MAP (folder tree JSON)\n")
-    parts.append("# ======================================================================\n")
-    parts.append(build_folder_tree(metas))
-    parts.append("\n\n")
-
-    parts.append("# ======================================================================\n")
-    parts.append("# GLOBAL SYMBOL TABLE (JSON)\n")
-    parts.append("# ======================================================================\n")
-    parts.append(build_global_symbol_table(metas))
-    parts.append("\n\n")
-
-    parts.append("# ======================================================================\n")
-    parts.append("# DEPENDENCY GRAPH (module -> imports, JSON)\n")
-    parts.append("# ======================================================================\n")
-    parts.append(build_dependency_graph(metas))
-    parts.append("\n\n")
-
-    parts.append("# ======================================================================\n")
-    parts.append("# CALL GRAPH (module -> {creates,calls}, JSON)\n")
-    parts.append("# ======================================================================\n")
-    parts.append(build_call_graph(metas))
-    parts.append("\n\n")
-
-    parts.append("# ======================================================================\n")
-    parts.append("# TYPE USAGE GRAPH (module -> identifiers, JSON)\n")
-    parts.append("# ======================================================================\n")
-    parts.append(build_type_usage_graph(metas))
-    parts.append("\n\n")
-
     total_chars = sum(len(s) for s in parts)
 
     for m in metas:
@@ -1120,7 +838,7 @@ def build_bundle_from_paths(
         header.append(f"# SHA256: {m.sha256}\n")
 
         if include_symbols:
-            header.append("# SYMBOLS (global-unique, best-effort):\n")
+            header.append("# SYMBOLS (class/function only, best-effort):\n")
             if m.symbols:
                 for s in m.symbols:
                     header.append(f"#   - {s}\n")
@@ -1137,8 +855,9 @@ def build_bundle_from_paths(
             header.append("# CODE_OBJECTS (COID) (best-effort, python-like only):\n")
             if m.code_objects:
                 for o in m.code_objects:
-                    # keep it extremely grep-friendly
-                    header.append(f"#   - COID={o.coid} | kind={o.kind} | symbol={o.symbol} | lineno={o.lineno} | end_lineno={o.end_lineno}\n")
+                    header.append(
+                        f"#   - COID={o.coid} | kind={o.kind} | symbol={o.symbol} | lineno={o.lineno} | end_lineno={o.end_lineno}\n"
+                    )
             else:
                 header.append("#   - <none>\n")
 
@@ -1198,7 +917,6 @@ def build_extra_bundles(
     Generate additional bundles based on a dict:
       key   -> output filename stem (we will generate: <key>._py)
       value -> folder path relative to project_root
-    Supported files: extensions registered in SOURCE_HANDLERS.
     """
     project_root = project_root.resolve()
 
@@ -1235,8 +953,7 @@ def build_extra_bundles(
 
 def find_project_root(start: Path) -> Path:
     """
-    Walk up the directory tree to find project root
-    (identified by pyproject.toml).
+    Walk up the directory tree to find project root (identified by pyproject.toml).
     """
     current = start
     while current != current.parent:

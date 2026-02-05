@@ -5,9 +5,14 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, List, Optional
+from typing import TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+
+if TYPE_CHECKING:
+    from intergrax.runtime.nexus.artifacts.models import ArtifactRef
+
 from intergrax.runtime.nexus.context.context_builder import BuiltContext
 from intergrax.runtime.nexus.engine.runtime_context import LLMUsageRunRecord, RuntimeContext
 from intergrax.runtime.nexus.ingestion.ingestion_service import IngestionResult
@@ -113,6 +118,7 @@ class RuntimeState:
         message: str,
         level: TraceLevel = TraceLevel.INFO,
         payload: Optional[DiagnosticPayload] = None,
+        artifact_refs: Optional[List["ArtifactRef"]] = None,
     ) -> None:
         if not self.run_id:
             raise RuntimeError("RuntimeState.run_id must be provided (got empty).")
@@ -133,6 +139,7 @@ class RuntimeState:
             message=message,
             payload=payload,
             tags={},
+            artifact_refs=artifact_refs or [],
         )
         self.trace_events.append(evt)
 
