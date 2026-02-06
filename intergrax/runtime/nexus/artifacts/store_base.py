@@ -14,7 +14,7 @@ class ArtifactStore(Protocol):
     Storage port for execution artifacts.
 
     Implementations MUST:
-    - persist artifacts durably (or in-memory for tests),
+    - persist artifacts durably (or in-memory for tests), 
     - allow listing artifacts for a run,
     - allow fetching a single artifact by id.
 
