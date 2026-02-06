@@ -1,6 +1,6 @@
 Intergrax Roadmap
 
-Last updated: 2026-02-01
+Last updated: 2026-02-06
 
 This is a living engineering roadmap / TODO list.
 It reflects current development priorities and may change frequently.
@@ -27,13 +27,13 @@ DONE
 [DONE] Prompting — all LLM instructions migrated to YAML prompt registry (no hard-coded prompts)
 [DONE] Prompting — versioning, pinning and metadata for prompts implemented
 [DONE] Prompting — prompts moved outside source code with nested folder support and backward-compatible lookup
+[DONE] Artifacts — implement persistent artifact store and reference linking from trace
 
 [PARTIAL] Tests — unit and integration coverage for runtime, trace, retry and cost
 [PARTIAL] Tests — minimal unit and integration test coverage for all P0 foundations
 
 Production foundations (P0 — must be done before first E2E agent)
 
-[P0] Artifacts — implement persistent artifact store and reference linking from trace
 [P0] Runtime — implement run replay and inspection (ability to reconstruct a run from trace + artifacts)
 [P0] Runtime — implement idempotency and safe retry for tool calls with side effects
 [P0] Sessions — implement production storage adapters for sessions and user profiles (DB-backed)
