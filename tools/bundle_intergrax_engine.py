@@ -10,7 +10,7 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Tuple
 
 BUNDLES_DIR_NAME = "bundles"
 
@@ -31,6 +31,9 @@ EXCLUDE_DIRS = {
     "node_modules",
     ".eggs",
 }
+
+# Schema v4: STRUCTURE.json is now a true lightweight index (no graphs, no per-file code_objects duplication).
+BUNDLE_SCHEMA_VERSION = 4
 
 # =============================================================================
 # Source type registry (edit here)
@@ -57,7 +60,7 @@ SOURCE_EXTS = tuple(sorted(SOURCE_HANDLERS.keys()))
 
 # ----------------------------------------------------------------------
 # define extra module bundles here
-# keys  -> output file name (without extension handling; we'll append ". _py" style exactly)
+# keys  -> output file name stem (we append "._py" exactly)
 # values-> folder path relative to project root
 # ----------------------------------------------------------------------
 EXTRA_BUNDLES: Dict[str, str] = {
@@ -76,8 +79,24 @@ EXTRA_BUNDLES: Dict[str, str] = {
     "NOTEBOOKS": r"notebooks",
     "TESTS": r"tests",
     "PROMPTS": r"prompts",
-    "FASTAPI_CORE":r"intergrax\fastapi_core"
+    "FASTAPI_CORE": r"intergrax\fastapi_core",
 }
+
+# =============================================================================
+# Typed metadata
+# =============================================================================
+
+@dataclass(frozen=True)
+class CodeObjectMeta:
+    """
+    Code object metadata for stable reference linking.
+    The 'coid' is stable per object content (AST-based), independent from line numbers.
+    """
+    symbol: str                 # e.g. "pkg.mod:Class.method" or "pkg.mod:function"
+    kind: str                   # "class" | "function" | "method"
+    coid: str                   # sha256(...)
+    lineno: Optional[int]       # best-effort (may be None)
+    end_lineno: Optional[int]   # best-effort (may be None)
 
 
 @dataclass(frozen=True)
@@ -88,7 +107,11 @@ class FileMeta:
     sha256: str
     lines: int
     chars: int
-    symbols: List[str]
+
+    # python-like only (best-effort)
+    symbols: List[str]                  # class/function symbols only (module:Name)
+    imports: List[str]                  # import modules
+    code_objects: List[CodeObjectMeta]  # COID per class/function/method
 
 
 # =============================================================================
@@ -138,7 +161,6 @@ def _as_list(x: object) -> List[str]:
 
 
 def _normalize_newlines(s: str) -> str:
-    # Keep output deterministic
     return s.replace("\r\n", "\n").replace("\r", "\n")
 
 
@@ -202,15 +224,13 @@ def _render_ipynb_to_text(path: Path) -> str:
     return out
 
 
-# Bind ipynb renderer in the registry (no hardcoded ifs elsewhere)
+# Bind ipynb renderer in the registry
 SOURCE_HANDLERS[".ipynb"] = _render_ipynb_to_text
 
 
 def read_source_for_bundle(path: Path) -> str:
     """
     Unified reader based on SOURCE_HANDLERS registry.
-    - If a renderer is registered for a suffix -> use it.
-    - Otherwise -> read_text + normalize newlines.
     """
     suffix = path.suffix.lower()
     renderer = SOURCE_HANDLERS.get(suffix)
@@ -282,12 +302,7 @@ def to_module_name(rel_path: str) -> str:
 
 def module_group_from_rel(rel_path: str) -> str:
     """
-    Grouping rules:
-    - intergrax/<subfolder>/...   -> module_group = <subfolder>
-    - intergrax/<file>.py         -> module_group = "root"
-    - notebooks/...               -> module_group = "notebooks"
-    - tests/...                   -> module_group = "tests"
-    - otherwise                   -> first top-level folder or "root"
+    Grouping rules (structure-only, no architectural meaning).
     """
     parts = rel_path.split("/")
     if not parts:
@@ -308,13 +323,12 @@ def module_group_from_rel(rel_path: str) -> str:
 
 
 # =============================================================================
-# Symbol extraction (python-like only)
+# Python-like analysis: symbols, imports, COID (single AST pass)
 # =============================================================================
 
 def _strip_ipython_magics(code: str) -> str:
     """
     Best-effort cleanup so ast.parse doesn't fail on notebook magics.
-    - Remove lines starting with %, !, or containing cell magics like %%time.
     """
     cleaned: List[str] = []
     for line in _normalize_newlines(code).split("\n"):
@@ -329,35 +343,345 @@ def _strip_ipython_magics(code: str) -> str:
     return "\n".join(cleaned)
 
 
-def extract_symbols(py_like_text: str) -> List[str]:
+def _ast_parse_best_effort(py_like_text: str) -> Optional[ast.AST]:
     try:
-        tree = ast.parse(py_like_text)
+        return ast.parse(py_like_text)
     except SyntaxError:
-        return ["<syntax-error: unable to parse symbols>"]
-
-    symbols: List[str] = []
-    for node in tree.body:
-        if isinstance(node, ast.ClassDef):
-            symbols.append(f"class {node.name}")
-        elif isinstance(node, ast.AsyncFunctionDef):
-            symbols.append(f"async def {node.name}()")
-        elif isinstance(node, ast.FunctionDef):
-            symbols.append(f"def {node.name}()")
-    return symbols
+        return None
 
 
-def extract_symbols_for_file(path: Path, rendered_text: str) -> List[str]:
+def _ast_normalized_dump(node: ast.AST) -> str:
     """
-    Extract symbols only for extensions listed in SYMBOL_EXTS.
+    Stable representation for hashing.
+    No attributes = independent from line numbers and formatting.
+    """
+    return ast.dump(node, include_attributes=False)
+
+
+def _compute_coid(module_name: str, qualified_name: str, kind: str, node: ast.AST) -> str:
+    raw = f"{module_name}|{qualified_name}|{kind}|{_ast_normalized_dump(node)}"
+    return hashlib.sha256(raw.encode("utf-8", errors="ignore")).hexdigest()
+
+
+def _extract_python_like_metadata(path: Path, rendered_text: str, module_name: str) -> Tuple[List[str], List[str], List[CodeObjectMeta]]:
+    """
+    Single AST pass:
+    - symbols: class/function (module:Name)
+    - imports: best-effort import modules list
+    - code_objects: class/function/method with COID
     """
     suffix = path.suffix.lower()
     if suffix not in SYMBOL_EXTS:
-        return []
+        return ([], [], [])
 
     txt = rendered_text
     if suffix == ".ipynb":
         txt = _strip_ipython_magics(txt)
-    return extract_symbols(txt)
+
+    tree = _ast_parse_best_effort(txt)
+    if tree is None:
+        # Keep deterministic fallback for symbols
+        return ([f"{module_name}:<syntax-error>"], [], [])
+
+    symbols: List[str] = []
+    imports: List[str] = []
+    code_objects: List[CodeObjectMeta] = []
+
+    class Visitor(ast.NodeVisitor):
+        def visit_Import(self, node: ast.Import) -> None:
+            for alias in node.names:
+                if alias.name:
+                    imports.append(str(alias.name))
+            self.generic_visit(node)
+
+        def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+            if node.module:
+                imports.append(str(node.module))
+            self.generic_visit(node)
+
+        def visit_ClassDef(self, node: ast.ClassDef) -> None:
+            # class object
+            sym = f"{module_name}:{node.name}"
+            symbols.append(sym)
+
+            coid = _compute_coid(module_name, node.name, "class", node)
+            code_objects.append(
+                CodeObjectMeta(
+                    symbol=sym,
+                    kind="class",
+                    coid=coid,
+                    lineno=getattr(node, "lineno", None),
+                    end_lineno=getattr(node, "end_lineno", None),
+                )
+            )
+
+            # methods
+            for sub in node.body:
+                if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    qn = f"{node.name}.{sub.name}"
+                    sym_m = f"{module_name}:{qn}"
+                    coid_m = _compute_coid(module_name, qn, "method", sub)
+                    code_objects.append(
+                        CodeObjectMeta(
+                            symbol=sym_m,
+                            kind="method",
+                            coid=coid_m,
+                            lineno=getattr(sub, "lineno", None),
+                            end_lineno=getattr(sub, "end_lineno", None),
+                        )
+                    )
+
+            self.generic_visit(node)
+
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+            sym = f"{module_name}:{node.name}"
+            symbols.append(sym)
+
+            coid = _compute_coid(module_name, node.name, "function", node)
+            code_objects.append(
+                CodeObjectMeta(
+                    symbol=sym,
+                    kind="function",
+                    coid=coid,
+                    lineno=getattr(node, "lineno", None),
+                    end_lineno=getattr(node, "end_lineno", None),
+                )
+            )
+
+            self.generic_visit(node)
+
+        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+            sym = f"{module_name}:{node.name}"
+            symbols.append(sym)
+
+            coid = _compute_coid(module_name, node.name, "function", node)
+            code_objects.append(
+                CodeObjectMeta(
+                    symbol=sym,
+                    kind="function",
+                    coid=coid,
+                    lineno=getattr(node, "lineno", None),
+                    end_lineno=getattr(node, "end_lineno", None),
+                )
+            )
+
+            self.generic_visit(node)
+
+    Visitor().visit(tree)
+
+    # Deduplicate + deterministic order
+    symbols = sorted(set(symbols), key=lambda s: s.lower())
+    imports = sorted(set(imports), key=lambda s: s.lower())
+    code_objects.sort(key=lambda o: (o.symbol.lower(), o.kind.lower(), o.coid))
+    return (symbols, imports, code_objects)
+
+
+# =============================================================================
+# STRUCTURE.json (true lightweight index)
+# =============================================================================
+
+def build_structure_index(
+    *,
+    bundle_filename: str,
+    bundle_scope: str,
+    project_root: Path,
+    metas: List[FileMeta],
+) -> dict:
+    """
+    ULTRA-LIGHT STRUCTURE INDEX.
+
+    Purpose:
+    - Navigation only
+    - No symbols
+    - No COID
+    - No stats
+    - No duplication of bundle semantics
+    """
+
+    modules_index: Dict[str, str] = {}
+
+    for m in metas:
+        modules_index[m.module_name] = m.rel_path
+
+    return {
+        "schema_version": BUNDLE_SCHEMA_VERSION,
+        "bundle": {
+            "filename": bundle_filename,
+            "scope": bundle_scope,
+            "project_root": str(project_root),
+        },
+        "modules": modules_index,
+    }
+
+
+
+# =============================================================================
+# LLM Instructions content (separate file)
+# =============================================================================
+
+def build_llm_instructions_text(*, bundle_filename: str, bundle_scope: str, structure_filename: str) -> str:
+    """
+    Generate an English instruction file that the user can paste into chat,
+    while requiring responses in Polish.
+    """
+    text = f"""# Intergrax Bundle Reading Instructions (LLM)
+
+Bundle file: {bundle_filename}
+Structure file: {structure_filename}
+Scope: {bundle_scope}
+
+These instructions define a deterministic, safety-critical procedure for analyzing and modifying Intergrax code.
+Deviation from this procedure is considered a failure.
+
+The bundle is the single source of truth for code content.
+The structure file is the single source of truth for indexing.
+
+Response language requirement:
+- Provide all answers in Polish (PL).
+- Keep code comments in English (EN).
+
+=====================================================================
+0) OPERATING MODEL (MANDATORY)
+=====================================================================
+
+You operate strictly as a code-referencing system.
+
+Allowed knowledge sources:
+1) Structure index ({structure_filename})
+2) Bundle ({bundle_filename})
+
+Anything not explicitly present there is UNKNOWN.
+
+If any step cannot be completed using only these two files → STOP.
+
+=====================================================================
+1) SCOPE GATE (HARD STOP)
+=====================================================================
+
+Before proposing any patch you MUST list:
+- ALL files to be modified
+- ALL files to be read for context
+
+If ANY file is outside bundle scope or missing:
+→ STOP immediately
+→ Request missing bundle
+
+No assumptions allowed.
+
+=====================================================================
+2) ZERO-HALLUCINATION RULE (HARD STOP)
+=====================================================================
+
+You MUST NOT:
+- invent variable names
+- invent parameters
+- invent method signatures
+- rewrite signatures in your own format
+- "simplify" code for explanation
+
+If exact code cannot be located verbatim → STOP.
+
+=====================================================================
+3) DETERMINISTIC WORKFLOW (FIXED ORDER)
+=====================================================================
+
+You MUST follow these steps in order:
+
+STEP 1 — STRUCTURE LOOKUP
+Use structure index ONLY to locate:
+- file
+- module
+- COID(s)
+
+STEP 2 — VERBATIM SOURCE EXTRACTION
+Open bundle and copy exact source fragment.
+
+STEP 3 — VERIFICATION PASS
+List:
+- FILE
+- MODULE
+- COID
+- VERBATIM SOURCE BLOCK
+
+STEP 4 — ONLY AFTER THAT → PATCH
+
+Skipping any step = invalid response.
+
+=====================================================================
+4) VERBATIM SOURCE GATE (CRITICAL)
+=====================================================================
+
+Before ANY modification proposal you MUST include VERBATIM SOURCE copied from bundle (not paraphrased).
+
+Must include:
+- full function/method signature
+- exact parameter names
+- local variable names
+
+If signature differs by one parameter → INVALID.
+
+If VERBATIM block is missing → STOP.
+
+=====================================================================
+5) SIGNATURE LOCK RULE
+=====================================================================
+
+Signatures are immutable references.
+
+You may not:
+- reorder parameters
+- rename parameters
+- change type annotations
+- omit default values
+
+Unless task explicitly says so.
+
+=====================================================================
+6) STRUCTURE INDEX USAGE (MANDATORY)
+=====================================================================
+
+Use {structure_filename} for:
+- files[module]
+- symbols[symbol]
+- coid_index[coid]
+
+COID is the primary reference key.
+
+=====================================================================
+7) BUNDLE NAVIGATION
+=====================================================================
+
+Bundle headers define truth:
+- FILE
+- MODULE
+- MODULE_GROUP
+- SHA256
+- CODE_OBJECTS (COID)
+
+Bundle text overrides any assumptions.
+
+=====================================================================
+8) PATCH FORMAT
+=====================================================================
+
+For each file:
+- FILE path
+- VERBATIM SOURCE (before)
+- PATCH BLOCK (after)
+- short justification
+
+=====================================================================
+ENFORCEMENT RULE
+=====================================================================
+
+If ANY rule above cannot be satisfied:
+→ STOP
+→ Explain which rule blocks continuation
+→ Ask for missing bundle scope
+
+End of instructions.
+"""
+    return text
 
 
 # =============================================================================
@@ -370,29 +694,26 @@ def build_llm_header(project_root: Path, bundle_scope: str, metas: List[FileMeta
 
     header: List[str] = []
     header.append("# ======================================================================\n")
-    header.append("# LLM INSTRUCTIONS\n")
+    header.append("# LLM INSTRUCTIONS (embedded)\n")
     header.append("# ======================================================================\n")
     header.append("# This file is an auto-generated, complete source code bundle of the Intergrax framework.\n")
+    header.append("#\n")
+    header.append("# BUNDLE_SCHEMA_VERSION:\n")
+    header.append(f"#   - {BUNDLE_SCHEMA_VERSION}\n")
     header.append("#\n")
     header.append("# Bundle scope:\n")
     header.append(f"#   - {bundle_scope}\n")
     header.append(f"#   - Project root: {project_root}\n")
     header.append("#\n")
+    header.append("# CODE_OBJECTS are AST-based and stable via COID.\n")
     header.append("# IMPORTANT RULES FOR THE MODEL:\n")
     header.append("# 1) Treat THIS file as the single source of truth for the included scope.\n")
     header.append("# 2) Do NOT assume any missing code exists elsewhere.\n")
-    header.append("# 3) When proposing changes, always reference the exact FILE and MODULE headers below.\n")
-    header.append("# 4) Prefer edits that preserve existing architecture, naming, and conventions.\n")
+    header.append("# 3) Do NOT invent paths/classes/methods. Verify everything against the bundle.\n")
+    header.append("# 4) When proposing changes, always reference the exact FILE and MODULE headers below.\n")
+    header.append("# 5) Prefer minimal, backward-compatible edits.\n")
     header.append("#\n")
-    header.append("# How to navigate this bundle:\n")
-    header.append("# - Use the MODULE MAP and INDEX to find modules.\n")
-    header.append("# - Each original file is included below with a header:\n")
-    header.append("#     FILE: <relative path>\n")
-    header.append("#     MODULE: <python import path or stable pseudo-module for non-.py>\n")
-    header.append("#     MODULE_GROUP: <first folder under intergrax/ or a known top-level folder>\n")
-    header.append("#     SYMBOLS: <top-level classes/functions (best-effort)>\n")
-    header.append("#\n")
-    header.append("# Included module groups (dynamic):\n")
+    header.append("# Included module groups (structural):\n")
     for g in module_groups:
         header.append(f"# - {g}/\n")
     header.append("#\n")
@@ -411,17 +732,25 @@ def _build_metas_from_paths(
     metas: List[FileMeta] = []
     for p in paths:
         rel = to_rel(project_root, p)
+        module_name = to_module_name(rel)
         txt = read_source_for_bundle(p)
+
+        if include_symbols:
+            syms, imps, code_objects = _extract_python_like_metadata(p, txt, module_name=module_name)
+        else:
+            syms, imps, code_objects = ([], [], [])
 
         metas.append(
             FileMeta(
                 rel_path=rel,
-                module_name=to_module_name(rel),
+                module_name=module_name,
                 module_group=module_group_from_rel(rel),
                 sha256=sha256_text(txt),
                 lines=count_lines(txt),
                 chars=len(txt),
-                symbols=extract_symbols_for_file(p, txt) if include_symbols else [],
+                symbols=syms,
+                imports=imps,
+                code_objects=code_objects,
             )
         )
 
@@ -438,11 +767,14 @@ def build_bundle_from_paths(
     bundle_scope: str,
     max_mb: int = 25,
     include_symbols: bool = True,
+    write_instructions_file: bool = True,
+    write_structure_file: bool = True,
 ) -> List[FileMeta]:
     """
     Generate a bundle from a pre-selected list of source file paths.
-    Supported: extensions registered in SOURCE_HANDLERS.
-    Paths MUST be absolute or project_root-relative (we resolve anyway).
+    Also generates:
+    - <bundle_stem>_STRUCTURE.json (lightweight index)
+    - <bundle_stem>_INSTRUCTIONS.md (LLM procedure)
     """
     project_root = project_root.resolve()
 
@@ -474,7 +806,7 @@ def build_bundle_from_paths(
     for m in metas:
         module_map.setdefault(m.module_group, []).append(m)
 
-    parts.append("# MODULE MAP (dynamic):\n")
+    parts.append("# MODULE MAP (structural):\n")
     for group in sorted(module_map.keys(), key=lambda s: s.lower()):
         parts.append(f"# - {group}/ ({len(module_map[group])} files)\n")
     parts.append("#\n")
@@ -502,14 +834,33 @@ def build_bundle_from_paths(
         header.append(f"#   - module_group={m.module_group}\n")
         header.append(f"#   - file={Path(m.rel_path).name}\n")
         header.append(f"# LINES: {m.lines}\n")
+        header.append(f"# CHARS: {m.chars}\n")
         header.append(f"# SHA256: {m.sha256}\n")
+
         if include_symbols:
-            header.append("# SYMBOLS:\n")
+            header.append("# SYMBOLS (class/function only, best-effort):\n")
             if m.symbols:
                 for s in m.symbols:
                     header.append(f"#   - {s}\n")
             else:
                 header.append("#   - <none>\n")
+
+            header.append("# IMPORTS (best-effort):\n")
+            if m.imports:
+                for imp in m.imports:
+                    header.append(f"#   - {imp}\n")
+            else:
+                header.append("#   - <none>\n")
+
+            header.append("# CODE_OBJECTS (COID) (best-effort, python-like only):\n")
+            if m.code_objects:
+                for o in m.code_objects:
+                    header.append(
+                        f"#   - COID={o.coid} | kind={o.kind} | symbol={o.symbol} | lineno={o.lineno} | end_lineno={o.end_lineno}\n"
+                    )
+            else:
+                header.append("#   - <none>\n")
+
         header.append("# ======================================================================\n")
 
         body = read_source_for_bundle(abs_path)
@@ -530,6 +881,25 @@ def build_bundle_from_paths(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("".join(parts), encoding="utf-8")
 
+    structure_path = out_path.parent / f"{out_path.stem}_STRUCTURE.json"
+    if write_structure_file:
+        structure = build_structure_index(
+            bundle_filename=out_path.name,
+            bundle_scope=bundle_scope,
+            project_root=project_root,
+            metas=metas,
+        )
+        structure_path.write_text(json.dumps(structure, indent=2), encoding="utf-8")
+
+    if write_instructions_file:
+        instr_path = out_path.parent / f"{out_path.stem}_INSTRUCTIONS.md"
+        instr_text = build_llm_instructions_text(
+            bundle_filename=out_path.name,
+            bundle_scope=bundle_scope,
+            structure_filename=structure_path.name,
+        )
+        instr_path.write_text(instr_text, encoding="utf-8")
+
     return metas
 
 
@@ -540,12 +910,13 @@ def build_extra_bundles(
     bundles_dir: Path,
     max_mb: int = 25,
     include_symbols: bool = True,
+    write_instructions_file: bool = True,
+    write_structure_file: bool = True,
 ) -> None:
     """
     Generate additional bundles based on a dict:
       key   -> output filename stem (we will generate: <key>._py)
       value -> folder path relative to project_root
-    Supported files: extensions registered in SOURCE_HANDLERS.
     """
     project_root = project_root.resolve()
 
@@ -566,15 +937,23 @@ def build_extra_bundles(
             bundle_scope=f"folder={to_rel(project_root, folder)}/",
             max_mb=max_mb,
             include_symbols=include_symbols,
+            write_instructions_file=write_instructions_file,
+            write_structure_file=write_structure_file,
         )
 
+        instr_name = f"{out_path.stem}_INSTRUCTIONS.md"
+        struct_name = f"{out_path.stem}_STRUCTURE.json"
+
         print(f"Module bundle created: {out_path.name}  (files={len(paths)})")
+        if write_structure_file:
+            print(f"Structure created:    {struct_name}")
+        if write_instructions_file:
+            print(f"Instructions created: {instr_name}")
 
 
 def find_project_root(start: Path) -> Path:
     """
-    Walk up the directory tree to find project root
-    (identified by pyproject.toml).
+    Walk up the directory tree to find project root (identified by pyproject.toml).
     """
     current = start
     while current != current.parent:
@@ -598,6 +977,8 @@ def main() -> None:
             bundles_dir=bundles_dir,
             max_mb=25,
             include_symbols=True,
+            write_instructions_file=True,
+            write_structure_file=True,
         )
 
 

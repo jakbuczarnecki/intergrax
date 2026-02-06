@@ -5,9 +5,14 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, List, Optional
+from typing import TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+
+if TYPE_CHECKING:
+    from intergrax.runtime.nexus.artifacts.models import ArtifactRef
+
 from intergrax.runtime.nexus.context.context_builder import BuiltContext
 from intergrax.runtime.nexus.engine.runtime_context import LLMUsageRunRecord, RuntimeContext
 from intergrax.runtime.nexus.ingestion.ingestion_service import IngestionResult
@@ -81,6 +86,8 @@ class RuntimeState:
     # Typed tool call traces (production runtime artifact).
     tool_traces: List[ToolCallTrace] = field(default_factory=list)
 
+    # --- Execution Artifacts (runtime infra output) ---
+    artifacts: List["ArtifactRef"] = field(default_factory=list)
 
     # Production trace (append-only structured events)
     trace_events: List[TraceEvent] = field(default_factory=list)
@@ -113,6 +120,7 @@ class RuntimeState:
         message: str,
         level: TraceLevel = TraceLevel.INFO,
         payload: Optional[DiagnosticPayload] = None,
+        artifact_refs: Optional[List["ArtifactRef"]] = None,
     ) -> None:
         if not self.run_id:
             raise RuntimeError("RuntimeState.run_id must be provided (got empty).")
@@ -133,6 +141,7 @@ class RuntimeState:
             message=message,
             payload=payload,
             tags={},
+            artifact_refs=artifact_refs or [],
         )
         self.trace_events.append(evt)
 
@@ -162,6 +171,17 @@ class RuntimeState:
                 self.llm_usage_tracker.register_adapter(websearch_config.llm.rerank_adapter, label="web_rerank_adapter")
 
     
+
+    def add_artifact(self, artifact: "ArtifactRef") -> None:
+        """
+        Register execution artifact reference in runtime state.
+
+        RuntimeState stores only references, never payloads.
+        """
+        self.artifacts.append(artifact)
+
+
+
     async def finalize_llm_tracker(
         self,
         request: RuntimeRequest,
