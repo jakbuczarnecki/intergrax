@@ -86,6 +86,8 @@ class RuntimeState:
     # Typed tool call traces (production runtime artifact).
     tool_traces: List[ToolCallTrace] = field(default_factory=list)
 
+    # --- Execution Artifacts (runtime infra output) ---
+    artifacts: List["ArtifactRef"] = field(default_factory=list)
 
     # Production trace (append-only structured events)
     trace_events: List[TraceEvent] = field(default_factory=list)
@@ -169,6 +171,17 @@ class RuntimeState:
                 self.llm_usage_tracker.register_adapter(websearch_config.llm.rerank_adapter, label="web_rerank_adapter")
 
     
+
+    def add_artifact(self, artifact: "ArtifactRef") -> None:
+        """
+        Register execution artifact reference in runtime state.
+
+        RuntimeState stores only references, never payloads.
+        """
+        self.artifacts.append(artifact)
+
+
+
     async def finalize_llm_tracker(
         self,
         request: RuntimeRequest,

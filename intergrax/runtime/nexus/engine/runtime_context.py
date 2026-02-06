@@ -8,9 +8,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 from typing import TYPE_CHECKING
+import uuid
 from intergrax.llm_adapters.llm_usage_track import LLMUsageReport
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
+from intergrax.runtime.nexus.artifacts.models import Artifact, ArtifactRef
+from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
+if TYPE_CHECKING:
+    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+from intergrax.utils.time_provider import SystemTimeProvider
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_builder import ContextBuilder
@@ -80,6 +87,9 @@ class RuntimeContext:
     trace_writer: Optional[RunTraceWriter] = None
 
     prompt_registry: Optional[YamlPromptRegistry] = None
+    
+    artifact_store: Optional[ArtifactStore] = None
+
 
     async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
         async with self.llm_usage_lock:
@@ -154,6 +164,59 @@ class RuntimeContext:
         for r in runs:
             print("=" * 100)
             print(r.pretty())
+
+
+    def create_artifact(
+        self,
+        *,
+        state: "RuntimeState",
+        kind: str,
+        mime_type: str,
+        data: bytes,
+        step_id: str | None = None,
+    ) -> ArtifactRef:
+        """
+        Runtime infrastructure gateway for execution artifacts.
+
+        This is NOT agent logic.
+        This is part of the execution substrate.
+        """
+
+        if self.artifact_store is None:
+            raise RuntimeError("ArtifactStore not configured.")
+
+        artifact_id = uuid.uuid4().hex
+
+        artifact = Artifact(
+            artifact_id=artifact_id,
+            run_id=state.run_id,
+            step_id=step_id,
+            kind=kind,
+            mime_type=mime_type,
+            created_at_utc=SystemTimeProvider.utc_now(),
+            data=data,
+            size_bytes=len(data),
+        )
+
+        self.artifact_store.put(artifact)
+
+        ref = ArtifactRef(
+            artifact_id=artifact_id,
+            kind=kind,
+            size_bytes=len(data),
+        )
+
+        state.add_artifact(ref)
+
+        state.trace_event(
+            component=TraceComponent.ENGINE,
+            step="artifact_created",
+            message=f"Artifact created: {kind}",
+            artifact_refs=[ref],
+        )
+
+        return ref
+
 
 
     @classmethod
