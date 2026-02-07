@@ -19,7 +19,7 @@ from intergrax.runtime.nexus.planning.step_executor_models import StepExecutorCo
 from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
 from intergrax.runtime.nexus.policies.runtime_policies import RuntimePolicies
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.provider import ToolProvider
+from intergrax.tools.core.provider import ToolProvider
 from intergrax.tools.tools_agent import ToolsAgent
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor

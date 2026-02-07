@@ -14,7 +14,7 @@ from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.planning.stepplan_models import StepId
-from intergrax.runtime.nexus.tools.tool_plan import PlannedToolCall, ToolCallPlan
+from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.tools.tools_base import ToolRegistry, _limit_tool_output
 
 logger = IntergraxLogging.get_logger(__name__, component="rag")
