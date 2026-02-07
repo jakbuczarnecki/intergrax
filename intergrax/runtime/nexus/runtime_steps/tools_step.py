@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
+from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.tools.execution_models import ToolExecutionRequest
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.config import ToolsContextScope
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
@@ -30,9 +32,46 @@ class ToolsStep(RuntimeStep):
           - optionally used as the final answer (when tools_mode != "off"),
           - appended as system context for the core LLM.
         """
+
         state.used_tools = False
         state.tool_traces = []
         state.tools_agent_answer = None
+
+        invoker = state.context.config.tool_invoker
+
+        # If runtime tool invoker is configured, use new runtime-controlled path.
+        if invoker is not None and state.context.config.tools_agent is not None:
+            plan = state.context.config.tools_agent.plan_tools(
+                input_data=state.request.message,
+                context=None,
+                run_id=state.run_id,
+            )
+
+            for call in plan.calls:
+                req = ToolExecutionRequest(
+                    run_id=state.run_id,
+                    step_id=call.step_id,
+                    tool_id=call.tool_id,
+                    input=call.input,
+                )
+
+                result = invoker.invoke(state=state, request=req)
+
+                state.used_tools = True
+
+                state.tool_traces.append(
+                    ToolCallTrace(
+                        tool_name=call.tool_id,
+                        arguments=call.input.model_dump(),
+                        output_preview=None if not result.success else result.output.model_dump_json()[:400],
+                        success=result.success,
+                        error_message=None if result.success else result.error.error_message,
+                        raw_trace={},
+                    )
+                )
+
+            # Runtime handled tools; skip legacy tools_agent.run() path
+            return
 
         use_tools = (
             state.context.config.tools_agent is not None

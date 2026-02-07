@@ -4,7 +4,7 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, FrozenSet, Optional, Literal
+from typing import Any, Dict, FrozenSet, Optional, Literal, Sequence
 
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.rag.embedding_manager import EmbeddingManager
@@ -18,6 +18,8 @@ from intergrax.runtime.nexus.planning.plan_sources import PlanSource
 from intergrax.runtime.nexus.planning.step_executor_models import StepExecutorConfig
 from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
 from intergrax.runtime.nexus.policies.runtime_policies import RuntimePolicies
+from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.nexus.tools.provider import ToolProvider
 from intergrax.tools.tools_agent import ToolsAgent
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
@@ -156,6 +158,8 @@ class RuntimeConfig:
     #
     tools_context_scope: ToolsContextScope = ToolsContextScope.CURRENT_MESSAGE_ONLY
 
+    tool_invoker: Optional[RuntimeToolInvoker] = None
+    tool_providers: Sequence[ToolProvider] = ()
 
     # Memory toggles
     enable_user_profile_memory: bool = True

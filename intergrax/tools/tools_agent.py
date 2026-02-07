@@ -13,6 +13,8 @@ from intergrax.logging import IntergraxLogging
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
+from intergrax.runtime.nexus.planning.stepplan_models import StepId
+from intergrax.runtime.nexus.tools.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.tools.tools_base import ToolRegistry, _limit_tool_output
 
 logger = IntergraxLogging.get_logger(__name__, component="rag")
@@ -208,6 +210,50 @@ class ToolsAgent:
         
 
     # ----- PUBLIC API -----
+
+    def plan_tools(
+        self,
+        input_data: Union[str, List[ChatMessage]],
+        *,
+        context: Optional[str] = None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        run_id: Optional[str] = None,
+    ) -> ToolCallPlan:
+        """
+        Planner-only mode.
+
+        Uses LLM to decide WHICH tools to call and with WHAT arguments,
+        but does NOT execute them.
+        """
+
+        result = self.run(
+            input_data,
+            context=context,
+            tool_choice=tool_choice,
+            run_id=run_id,
+        )
+
+        calls: list[PlannedToolCall] = []
+
+        for trace in result.get("tool_traces", []):
+            tool_name = trace["tool"]
+            args = trace["args"]
+
+            tool = self.tools.get(tool_name)
+            model_cls = tool.schema_model
+            validated = model_cls.model_validate(args)
+
+            calls.append(
+                PlannedToolCall(
+                    step_id=StepId.TOOL,
+                    tool_id=tool_name,
+                    input=validated,
+                )
+            )
+
+        return ToolCallPlan(calls=calls)
+
+
     def run(
         self,
         input_data: Union[str, List[ChatMessage]],
