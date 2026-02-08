@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+
 from dataclasses import dataclass
 import json
 import logging
@@ -15,7 +16,9 @@ from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
-from intergrax.tools.tools_base import ToolRegistry, _limit_tool_output
+from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.tools_base import _limit_tool_output
 
 logger = IntergraxLogging.get_logger(__name__, component="tools")
 
@@ -76,9 +79,9 @@ class AgentExecutionResult:
 # =====================================================================
 
 class ToolsAgentConfig:
-    temperature: float = 0.2
+    temperature: Optional[float] = None,
     max_answer_tokens: Optional[int] = None
-    max_tool_iters: int = 6
+    max_tool_iters: int = 6    
     system_instructions: str = SYSTEM_PROMPT()
     system_context_template: str = SYSTEM_CONTEXT_TEMPLATE()
     planner_instructions: str = PLANNER_PROMPT()
@@ -145,6 +148,48 @@ def _extract_json_from_text(text: str) -> Optional[dict]:
     except Exception:
         return None
     return None
+
+
+def _pydantic_parameters_schema(model_cls: Type) -> Dict[str, Any]:
+    """
+    Returns an OpenAI-compatible JSON Schema for 'parameters':
+      {"type":"object","properties":...,"required":[...],"additionalProperties":False}
+
+    We intentionally do NOT pass through the full Pydantic schema, because it often
+    includes top-level metadata that OpenAI tools schema doesn't need.
+    """
+    raw = model_cls.model_json_schema()
+    props = raw.get("properties", {}) or {}
+    required = raw.get("required", []) or []
+
+    parameters: Dict[str, Any] = {
+        "type": "object",
+        "properties": props,
+        "required": required,
+        "additionalProperties": False,
+    }
+    return parameters
+
+
+def _build_openai_tools_schema(tools: ToolRegistry) -> List[Dict[str, Any]]:
+    """
+    Builds OpenAI-compatible 'tools' schema from system ToolRegistry.
+    Tool name is registry key (= contract.tool_id).
+    """
+    schemas: List[Dict[str, Any]] = []
+    for rt in tools._tools.values():  # intentional: ToolRegistry has no list/export API yet
+        contract = rt.contract
+        schemas.append(
+            {
+                "type": "function",
+                "function": {
+                    "name": contract.tool_id,
+                    "description": contract.description,
+                    "parameters": _pydantic_parameters_schema(contract.input_schema),
+                },
+            }
+        )
+    return schemas
 
 
 # =====================================================================
@@ -260,27 +305,157 @@ class ToolsAgent:
         Uses LLM to decide WHICH tools to call and with WHAT arguments,
         but does NOT execute them.
         """
-        result = self.run(
-            input_data,
-            context=context,
-            tool_choice=tool_choice,
-            run_id=run_id,
-        )
+
+        # Build messages exactly like in run(), but without tool execution.
+        if isinstance(input_data, list):
+            base_messages: List[ChatMessage] = input_data
+            if context:
+                ctx_msg = ChatMessage(
+                    role="system",
+                    content=self.cfg.system_context_template.format(context=context),
+                )
+                if base_messages and base_messages[-1].role == "user":
+                    messages = base_messages[:-1] + [ctx_msg, base_messages[-1]]
+                else:
+                    base_messages.append(ctx_msg)
+                    messages = base_messages
+            else:
+                messages = base_messages
+        else:
+            user_input: str = input_data
+            if not user_input:
+                raise ValueError("ToolsAgent.plan_tools requires non-empty input_data.")
+
+            if self.memory:
+                # Keep legacy-compatible behavior (plan_tools previously called run()).
+                self.memory.add("user", user_input)
+                messages = self.memory.get_for_model(native_tools=self._native_tools)
+
+                if not any(m.role == "system" for m in messages):
+                    messages.insert(
+                        0,
+                        ChatMessage(role="system", content=self.cfg.system_instructions),
+                    )
+
+                if context:
+                    ctx_msg = ChatMessage(
+                        role="system",
+                        content=self.cfg.system_context_template.format(context=context),
+                    )
+                    if messages and messages[-1].role == "user":
+                        messages = messages[:-1] + [ctx_msg, messages[-1]]
+                    else:
+                        messages.append(ctx_msg)
+            else:
+                sys = ChatMessage(
+                    role="system",
+                    content=self.cfg.system_instructions
+                    + (
+                        f"\n\n{self.cfg.system_context_template.format(context=context)}"
+                        if context
+                        else ""
+                    ),
+                )
+                messages = [sys, ChatMessage(role="user", content=user_input)]
 
         calls: List[PlannedToolCall] = []
 
-        for trace in result.tool_traces:
-            tool_name = trace.tool
-            args = trace.args
+        # ===== BRANCH A: Native tools (OpenAI, etc.) =====
+        if self._native_tools:
+            tools_schema = _build_openai_tools_schema(self.tools)
+            messages = self._prune_messages_for_openai(messages)
 
-            tool = self.tools.get(tool_name)
-            model_cls = tool.schema_model
-            validated = model_cls.model_validate(args)
+            effective_tool_choice = tool_choice if tool_choice is not None else "auto"
+
+            result = self.llm.generate_with_tools(
+                messages,
+                tools_schema,
+                temperature=self.cfg.temperature,
+                max_tokens=self.cfg.max_answer_tokens,
+                tool_choice=effective_tool_choice,
+                run_id=run_id,
+            )
+
+            tool_calls = result.get("tool_calls") or []
+
+            for tc in tool_calls:
+                fn = tc.get("function") or {}
+                name = fn.get("name") or tc.get("name")
+                args_json = fn.get("arguments") or tc.get("arguments") or "{}"
+
+                try:
+                    args = json.loads(args_json)
+                except Exception:
+                    args = {}
+
+                registered = self.tools.get(name)
+                contract = registered.contract
+                validated = contract.input_schema.model_validate(args)
+
+                calls.append(
+                    PlannedToolCall(
+                        step_id="tool",
+                        tool_id=name,
+                        input=validated,
+                    )
+                )
+
+            return AgentDecision(
+                final_answer=None,
+                tool_plan=ToolCallPlan(calls=calls),
+                messages=[],
+            )
+
+        # ===== BRANCH B: JSON planner (e.g., Ollama) =====
+        tools_desc = [
+            {
+                "name": rt.contract.tool_id,
+                "description": rt.contract.description,
+                "parameters": _pydantic_parameters_schema(rt.contract.input_schema),
+            }
+            for rt in self.tools._tools.values()
+        ]
+
+        plan_intro = ChatMessage(
+            role="system",
+            content=self.cfg.planner_instructions
+            + "\nTOOLS=\n"
+            + json.dumps(tools_desc, ensure_ascii=False),
+        )
+
+        if len(messages) and messages[0].role == "system":
+            messages = [messages[0], plan_intro] + messages[1:]
+        else:
+            messages = [plan_intro] + messages
+
+        plan_text = self.llm.generate_messages(
+            messages,
+            temperature=self.cfg.temperature,
+            max_tokens=self.cfg.max_answer_tokens,
+            run_id=run_id,
+        )
+
+        plan_obj = None
+        try:
+            start, end = plan_text.find("{"), plan_text.rfind("}")
+            if start != -1 and end > start:
+                plan_obj = json.loads(plan_text[start : end + 1])
+        except Exception:
+            plan_obj = None
+
+        if plan_obj and "call_tool" in plan_obj:
+            call = plan_obj["call_tool"]
+            name = call.get("name")
+            args = call.get("arguments", {}) or {}
+
+            registered = self.tools.get(name)
+            contract = registered.contract
+            validated = contract.input_schema.model_validate(args)
 
             calls.append(
                 PlannedToolCall(
                     step_id="tool",
-                    tool_id=tool_name,
+                    tool_id=name,
                     input=validated,
                 )
             )
@@ -288,7 +463,7 @@ class ToolsAgent:
         return AgentDecision(
             final_answer=None,
             tool_plan=ToolCallPlan(calls=calls),
-            messages=result.messages,
+            messages=[],
         )
 
     def run(
@@ -305,20 +480,9 @@ class ToolsAgent:
         """
         High-level tools orchestration entrypoint.
 
-        Modes:
-        - If `input_data` is a List[ChatMessage]:
-            Use this list as the base conversation context (already built by the caller,
-            e.g. runtime engine with RAG + websearch + history). Optionally inject
-            system instructions and context.
-        - If `input_data` is a str:
-            Fall back to legacy mode with single user_input + optional memory.
-
-        Returns:
-            AgentExecutionResult:
-                - final_answer: final answer from tools loop (or planner),
-                - tool_traces: list of executed tools (name, args, output, preview),
-                - messages: final message list used by the tools loop,
-                - output_structure: optional structured output (if output_model provided).
+        Notes:
+        - Tool execution requires run_id (ToolExecutionRequest requires it).
+        - ToolsAgent is allowed to execute tools standalone (no runtime enforcement).
         """
 
         # --- Branch 1: caller provides full messages context (ChatGPT-like mode) ---
@@ -387,7 +551,7 @@ class ToolsAgent:
 
         # ===== BRANCH A: Native tools (OpenAI, etc.) =====
         if self._native_tools:
-            tools_schema = self.tools.to_openai_tools()
+            tools_schema = _build_openai_tools_schema(self.tools)
 
             while iterations < self.cfg.max_tool_iters:
                 iterations += 1
@@ -457,7 +621,10 @@ class ToolsAgent:
                     )
 
                 # --- execute tools ---
-                for tc in tool_calls:
+                if run_id is None:
+                    raise ValueError("ToolsAgent.run: run_id is required for tool execution.")
+
+                for tool_idx, tc in enumerate(tool_calls):
                     fn = tc.get("function") or {}
                     name = fn.get("name") or tc.get("name")
                     call_id = tc.get("id")
@@ -468,10 +635,14 @@ class ToolsAgent:
                     except Exception:
                         args = {}
 
-                    tool = self.tools.get(name)
-                    validated = tool.validate_args(args)
+                    registered = self.tools.get(name)
+                    contract = registered.contract
+                    handler = registered.handler
 
-                    fp = (name, json.dumps(validated, sort_keys=True))
+                    validated_model = contract.input_schema.model_validate(args)
+                    validated_dict = validated_model.model_dump()
+
+                    fp = (name, json.dumps(validated_dict, sort_keys=True))
                     if fp == last_call_fp:
                         final = "Stopped repeated identical tool call."
                         output_obj = self._build_output_structure(
@@ -486,14 +657,19 @@ class ToolsAgent:
                     last_call_fp = fp
 
                     if logger.isEnabledFor(logging.DEBUG):
-                        logger.debug(f"[intergraxToolsAgent] Calling tool: {name}({validated})")
+                        logger.debug(f"[intergraxToolsAgent] Calling tool: {name}({validated_dict})")
+
+                    step_id = f"tools_agent/{iterations}/{tool_idx}"
 
                     try:
-                        out = tool.run(
+                        req = ToolExecutionRequest(
                             run_id=run_id,
-                            llm_usage_tracker=llm_usage_tracker,
-                            **validated,
+                            step_id=step_id,
+                            tool_id=name,
+                            input=validated_model,
                         )
+                        out_model = handler.execute(req)
+                        out = out_model.model_dump()
                     except Exception as e:
                         out = f"[{name}] ERROR: {e}"
 
@@ -501,7 +677,7 @@ class ToolsAgent:
                     tool_traces.append(
                         ToolTrace(
                             tool=name,
-                            args=validated,
+                            args=validated_dict,
                             output_preview=safe_out[:400],
                             output=out,
                         )
@@ -535,11 +711,11 @@ class ToolsAgent:
         # ===== BRANCH B: JSON planner (e.g., Ollama) =====
         tools_desc = [
             {
-                "name": t.name,
-                "description": t.description,
-                "parameters": t.get_parameters(),
+                "name": rt.contract.tool_id,
+                "description": rt.contract.description,
+                "parameters": _pydantic_parameters_schema(rt.contract.input_schema),
             }
-            for t in self.tools.list()
+            for rt in self.tools._tools.values()
         ]
 
         plan_intro = ChatMessage(
@@ -600,22 +776,34 @@ class ToolsAgent:
                 )
 
             if "call_tool" in plan_obj:
+                if run_id is None:
+                    raise ValueError("ToolsAgent.run: run_id is required for tool execution.")
+
                 call = plan_obj["call_tool"]
                 name = call.get("name")
                 args = call.get("arguments", {}) or {}
 
-                tool = self.tools.get(name)
-                validated = tool.validate_args(args)
+                registered = self.tools.get(name)
+                contract = registered.contract
+                handler = registered.handler
+
+                validated_model = contract.input_schema.model_validate(args)
+                validated_dict = validated_model.model_dump()
 
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f"[intergraxToolsAgent] Calling tool: {name}({validated})")
+                    logger.debug(f"[intergraxToolsAgent] Calling tool: {name}({validated_dict})")
+
+                step_id = f"tools_agent/{iterations}/0"
 
                 try:
-                    out = tool.run(
+                    req = ToolExecutionRequest(
                         run_id=run_id,
-                        llm_usage_tracker=llm_usage_tracker,
-                        **validated,
+                        step_id=step_id,
+                        tool_id=name,
+                        input=validated_model,
                     )
+                    out_model = handler.execute(req)
+                    out = out_model.model_dump()
                 except Exception as e:
                     out = f"[{name}] ERROR: {e}"
 
@@ -623,7 +811,7 @@ class ToolsAgent:
                 tool_traces.append(
                     ToolTrace(
                         tool=name,
-                        args=validated,
+                        args=validated_dict,
                         output_preview=safe_out[:400],
                         output=out,
                     )
