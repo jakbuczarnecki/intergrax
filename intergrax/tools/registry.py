@@ -9,7 +9,7 @@ from typing import Dict
 
 from pydantic import BaseModel
 
-from intergrax.tools.contracts import ToolContract
+from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.tool_executor import ToolHandler
 
 @dataclass(frozen=True, slots=True)

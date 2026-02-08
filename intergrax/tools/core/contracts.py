@@ -9,8 +9,6 @@ from typing import Mapping, Type
 
 from pydantic import BaseModel
 
-from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
-
 
 @dataclass(frozen=True, slots=True)
 class ToolContract:
@@ -26,6 +24,6 @@ class ToolContract:
     input_schema: Type[BaseModel]
     output_schema: Type[BaseModel]
 
-    error_mapping: Mapping[type[Exception], RuntimeErrorCode]
+    error_mapping: Mapping[type[Exception], str]
 
     side_effects: bool

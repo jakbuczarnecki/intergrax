@@ -9,12 +9,10 @@ from typing import List
 
 from pydantic import BaseModel
 
-from intergrax.runtime.nexus.planning.stepplan_models import StepId
-
 
 @dataclass(frozen=True, slots=True)
 class PlannedToolCall:
-    step_id: StepId
+    step_id: str
     tool_id: str
     input: BaseModel  # already validated by planner schema
 

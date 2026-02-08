@@ -9,10 +9,6 @@ from typing import Generic, Optional, TypeVar
 
 from pydantic import BaseModel
 
-from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
-from intergrax.runtime.nexus.planning.stepplan_models import StepId
-
-
 InModelT = TypeVar("InModelT", bound=BaseModel)
 OutModelT = TypeVar("OutModelT", bound=BaseModel)
 
@@ -26,7 +22,7 @@ class ToolExecutionRequest(Generic[InModelT]):
     - runtime controls execution semantics via run_id + step_id
     """
     run_id: str
-    step_id: StepId
+    step_id: str
     tool_id: str
     input: InModelT
 
@@ -39,7 +35,7 @@ class ToolExecutionError:
     - error_code is already mapped by runtime enforcement (ToolContract.error_mapping)
     - error_message is safe to log/trace (no raw exception objects)
     """
-    error_code: RuntimeErrorCode
+    error_code: str
     error_message: str
 
 
@@ -61,7 +57,7 @@ class ToolExecutionResult(Generic[OutModelT]):
         return ToolExecutionResult(success=True, output=output, error=None)
 
     @staticmethod
-    def fail(code: RuntimeErrorCode, message: str) -> ToolExecutionResult[OutModelT]:
+    def fail(code: str, message: str) -> ToolExecutionResult[OutModelT]:
         return ToolExecutionResult(
             success=False,
             output=None,

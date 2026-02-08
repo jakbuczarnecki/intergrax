@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from dataclasses import dataclass
 import json
 import logging
 from typing import Any, Dict, List, Optional, Union, Type
@@ -13,12 +14,15 @@ from intergrax.logging import IntergraxLogging
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
-from intergrax.runtime.nexus.planning.stepplan_models import StepId
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.tools.tools_base import ToolRegistry, _limit_tool_output
 
-logger = IntergraxLogging.get_logger(__name__, component="rag")
+logger = IntergraxLogging.get_logger(__name__, component="tools")
 
+
+# =====================================================================
+# PROMPTS
+# =====================================================================
 
 def PLANNER_PROMPT() -> str:
     registry = YamlPromptRegistry.create_default(load=True)
@@ -36,12 +40,40 @@ def SYSTEM_CONTEXT_TEMPLATE() -> str:
     Formatting is done later via `.format(context=...)`.
     """
     registry = YamlPromptRegistry.create_default(load=True)
-
     localized = registry.resolve_localized("tools_agent_context")
     return localized.user_template or ""
 
 
+# =====================================================================
+# RESULT MODELS
+# =====================================================================
 
+@dataclass(slots=True)
+class ToolTrace:
+    tool: str
+    args: Dict[str, Any]
+    output_preview: str
+    output: Any
+
+
+@dataclass(slots=True)
+class AgentDecision:
+    final_answer: Optional[str]
+    tool_plan: Optional[ToolCallPlan]
+    messages: List[ChatMessage]
+
+
+@dataclass(slots=True)
+class AgentExecutionResult:
+    final_answer: str
+    tool_traces: List[ToolTrace]
+    messages: List[ChatMessage]
+    output_structure: Optional[Any]
+
+
+# =====================================================================
+# CONFIG
+# =====================================================================
 
 class ToolsAgentConfig:
     temperature: float = 0.2
@@ -49,8 +81,12 @@ class ToolsAgentConfig:
     max_tool_iters: int = 6
     system_instructions: str = SYSTEM_PROMPT()
     system_context_template: str = SYSTEM_CONTEXT_TEMPLATE()
-    planner_instructions : str = PLANNER_PROMPT()
+    planner_instructions: str = PLANNER_PROMPT()
 
+
+# =====================================================================
+# HELPERS
+# =====================================================================
 
 def _maybe_import_pydantic_base() -> Optional[type]:
     try:
@@ -68,13 +104,13 @@ def _instantiate_output_model(model_cls: Type, payload: Any) -> Any:
     """
     if payload is None:
         return None
-    # If payload is a JSON string → decode
+
     if isinstance(payload, str):
         try:
             payload = json.loads(payload)
         except Exception:
             return None
-    # If payload is not a dict but has .dict/.model_dump → use it
+
     if not isinstance(payload, dict):
         try:
             if hasattr(payload, "model_dump"):
@@ -86,11 +122,9 @@ def _instantiate_output_model(model_cls: Type, payload: Any) -> Any:
         except Exception:
             return None
 
-    # Pydantic / regular class with **kwargs
     try:
         return model_cls(**payload)
     except Exception:
-        # Another attempt: if a pydantic model needs type conversion
         try:
             base = _maybe_import_pydantic_base()
             if base and isinstance(model_cls, type) and issubclass(model_cls, base):
@@ -113,6 +147,10 @@ def _extract_json_from_text(text: str) -> Optional[dict]:
     return None
 
 
+# =====================================================================
+# TOOLS AGENT
+# =====================================================================
+
 class ToolsAgent:
     def __init__(
         self,
@@ -120,22 +158,23 @@ class ToolsAgent:
         tools: ToolRegistry,
         *,
         memory: Optional[ConversationalMemory] = None,
-        config: Optional[ToolsAgentConfig] = None,        
+        config: Optional[ToolsAgentConfig] = None,
     ):
         self.llm = llm
         self.tools = tools
         self.memory = memory
-        self.cfg = config or ToolsAgentConfig()        
+        self.cfg = config or ToolsAgentConfig()
 
         # Does the LLM support native tools (OpenAI) or a JSON planner (Ollama)?
         self._native_tools = False
         try:
             self._native_tools = bool(self.llm.supports_tools())
         except Exception:
-            self._native_tools = False  
-                  
-        
-    # ----- helpers -----
+            self._native_tools = False
+
+    # ------------------------------------------------------------------
+    # helpers
+    # ------------------------------------------------------------------
 
     def _prune_messages_for_openai(self, messages: List[ChatMessage]) -> List[ChatMessage]:
         """
@@ -152,13 +191,11 @@ class ToolsAgent:
                 break
 
         if last_tc_idx is None:
-            # No active tool_calls → remove all 'tool' messages
             return [m for m in messages if m.role in ("system", "user", "assistant")]
 
         pruned: List[ChatMessage] = []
         for i, m in enumerate(messages):
             if m.role == "tool":
-                # Keep only tool messages after the last assistant.tool_calls
                 if i > last_tc_idx:
                     pruned.append(m)
             else:
@@ -169,28 +206,26 @@ class ToolsAgent:
         self,
         output_model: Optional[Type],
         answer_text: str,
-        tool_traces: List[Dict[str, Any]],
+        tool_traces: List[ToolTrace],
     ) -> Any:
         """
         Strategy:
-        1) If there are tool_traces and they have 'output' (full result) → use the last one.
-        2) If there were no tools → try to extract JSON from answer_text.
-        3) Map to output_model (Pydantic / regular class).
+        1) If there are tool_traces -> prefer last full output
+        2) Otherwise -> try to extract JSON from answer_text
+        3) Map to output_model (Pydantic / regular class)
         """
         if not output_model:
             return None
 
-        # 1) Prefer tools (full result — see change in append tool trace)
         if tool_traces:
             last = tool_traces[-1]
-            full = last.get("output")  # full, not truncated result
+            full = last.output
             if full is not None:
                 obj = _instantiate_output_model(output_model, full)
                 if obj is not None:
                     return obj
 
-            # If there's no 'output' but there is output_preview → try JSON
-            preview = last.get("output_preview")
+            preview = last.output_preview
             if preview:
                 try:
                     obj = _instantiate_output_model(output_model, json.loads(preview))
@@ -199,7 +234,6 @@ class ToolsAgent:
                 except Exception:
                     pass
 
-        # 2) Without tools: try to extract JSON from text
         data = _extract_json_from_text(answer_text)
         if data is not None:
             obj = _instantiate_output_model(output_model, data)
@@ -207,9 +241,10 @@ class ToolsAgent:
                 return obj
 
         return None
-        
 
-    # ----- PUBLIC API -----
+    # ------------------------------------------------------------------
+    # PUBLIC API
+    # ------------------------------------------------------------------
 
     def plan_tools(
         self,
@@ -218,14 +253,13 @@ class ToolsAgent:
         context: Optional[str] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> ToolCallPlan:
+    ) -> AgentDecision:
         """
         Planner-only mode.
 
         Uses LLM to decide WHICH tools to call and with WHAT arguments,
         but does NOT execute them.
         """
-
         result = self.run(
             input_data,
             context=context,
@@ -233,11 +267,11 @@ class ToolsAgent:
             run_id=run_id,
         )
 
-        calls: list[PlannedToolCall] = []
+        calls: List[PlannedToolCall] = []
 
-        for trace in result.get("tool_traces", []):
-            tool_name = trace["tool"]
-            args = trace["args"]
+        for trace in result.tool_traces:
+            tool_name = trace.tool
+            args = trace.args
 
             tool = self.tools.get(tool_name)
             model_cls = tool.schema_model
@@ -245,14 +279,17 @@ class ToolsAgent:
 
             calls.append(
                 PlannedToolCall(
-                    step_id=StepId.TOOL,
+                    step_id="tool",
                     tool_id=tool_name,
                     input=validated,
                 )
             )
 
-        return ToolCallPlan(calls=calls)
-
+        return AgentDecision(
+            final_answer=None,
+            tool_plan=ToolCallPlan(calls=calls),
+            messages=result.messages,
+        )
 
     def run(
         self,
@@ -262,9 +299,9 @@ class ToolsAgent:
         stream: bool = False,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         output_model: Optional[Type] = None,
-        run_id:Optional[str] = None,
+        run_id: Optional[str] = None,
         llm_usage_tracker: Optional[LLMUsageTracker] = None,
-    ) -> Dict[str, Any]:
+    ) -> AgentExecutionResult:
         """
         High-level tools orchestration entrypoint.
 
@@ -277,19 +314,17 @@ class ToolsAgent:
             Fall back to legacy mode with single user_input + optional memory.
 
         Returns:
-            Dict with keys:
-                - "answer": final answer from tools loop (or planner),
-                - "tool_traces": list of executed tools (name, args, output, preview),
-                - "messages": final message list used by the tools loop,
-                - "output_structure": optional structured output (if output_model provided).
+            AgentExecutionResult:
+                - final_answer: final answer from tools loop (or planner),
+                - tool_traces: list of executed tools (name, args, output, preview),
+                - messages: final message list used by the tools loop,
+                - output_structure: optional structured output (if output_model provided).
         """
 
         # --- Branch 1: caller provides full messages context (ChatGPT-like mode) ---
         if isinstance(input_data, list):
-            # Treat input_data as List[ChatMessage]
             base_messages: List[ChatMessage] = list(input_data)
 
-            # Ensure there is at least one system message with core instructions.
             has_system = any(m.role == "system" for m in base_messages)
             if not has_system:
                 base_messages.insert(
@@ -297,14 +332,11 @@ class ToolsAgent:
                     ChatMessage(role="system", content=self.cfg.system_instructions),
                 )
 
-            # Inject textual session context (RAG + websearch) as extra system message.
             if context:
                 ctx_msg = ChatMessage(
                     role="system",
                     content=self.cfg.system_context_template.format(context=context),
                 )
-                # Wkładamy go tuż przed ostatnią wiadomością user, jeśli jest,
-                # żeby model widział kontekst „tuż przed pytaniem”.
                 if base_messages and base_messages[-1].role == "user":
                     base_messages = base_messages[:-1] + [ctx_msg, base_messages[-1]]
                 else:
@@ -325,10 +357,7 @@ class ToolsAgent:
                 if not any(m.role == "system" for m in messages):
                     messages.insert(
                         0,
-                        ChatMessage(
-                            role="system",
-                            content=self.cfg.system_instructions,
-                        ),
+                        ChatMessage(role="system", content=self.cfg.system_instructions),
                     )
 
                 if context:
@@ -353,7 +382,7 @@ class ToolsAgent:
                 messages = [sys, ChatMessage(role="user", content=user_input)]
 
         iterations = 0
-        tool_traces: List[Dict[str, Any]] = []
+        tool_traces: List[ToolTrace] = []
         last_call_fp = None  # anti-loop
 
         # ===== BRANCH A: Native tools (OpenAI, etc.) =====
@@ -378,10 +407,9 @@ class ToolsAgent:
                         temperature=self.cfg.temperature,
                         max_tokens=self.cfg.max_answer_tokens,
                         tool_choice=effective_tool_choice,
-                        run_id=run_id
+                        run_id=run_id,
                     ):
                         chunks.append(ev)
-
                     result = chunks[-1] if chunks else {"content": "", "tool_calls": []}
                 else:
                     result = self.llm.generate_with_tools(
@@ -390,7 +418,7 @@ class ToolsAgent:
                         temperature=self.cfg.temperature,
                         max_tokens=self.cfg.max_answer_tokens,
                         tool_choice=effective_tool_choice,
-                        run_id=run_id
+                        run_id=run_id,
                     )
 
                 content = result.get("content") or ""
@@ -408,24 +436,25 @@ class ToolsAgent:
                         output_obj = self._build_output_structure(
                             output_model, content, tool_traces
                         )
-                        return {
-                            "answer": content,
-                            "tool_traces": tool_traces,
-                            "messages": messages,
-                            "output_structure": output_obj,
-                        }
+                        return AgentExecutionResult(
+                            final_answer=content,
+                            tool_traces=tool_traces,
+                            messages=messages,
+                            output_structure=output_obj,
+                        )
+
                     final = "(no tool call, empty content)"
                     if self.memory:
                         self.memory.add("assistant", final)
                     output_obj = self._build_output_structure(
                         output_model, final, tool_traces
                     )
-                    return {
-                        "answer": final,
-                        "tool_traces": tool_traces,
-                        "messages": messages,
-                        "output_structure": output_obj,
-                    }
+                    return AgentExecutionResult(
+                        final_answer=final,
+                        tool_traces=tool_traces,
+                        messages=messages,
+                        output_structure=output_obj,
+                    )
 
                 # --- execute tools ---
                 for tc in tool_calls:
@@ -448,35 +477,34 @@ class ToolsAgent:
                         output_obj = self._build_output_structure(
                             output_model, final, tool_traces
                         )
-                        return {
-                            "answer": final,
-                            "tool_traces": tool_traces,
-                            "messages": messages,
-                            "output_structure": output_obj,
-                        }
+                        return AgentExecutionResult(
+                            final_answer=final,
+                            tool_traces=tool_traces,
+                            messages=messages,
+                            output_structure=output_obj,
+                        )
                     last_call_fp = fp
 
                     if logger.isEnabledFor(logging.DEBUG):
-                        logger.debug(
-                            f"[intergraxToolsAgent] Calling tool: {name}({validated})"
-                        )
+                        logger.debug(f"[intergraxToolsAgent] Calling tool: {name}({validated})")
 
                     try:
                         out = tool.run(
-                            run_id=run_id, 
-                            llm_usage_tracker=llm_usage_tracker, 
-                            **validated)  # full result
+                            run_id=run_id,
+                            llm_usage_tracker=llm_usage_tracker,
+                            **validated,
+                        )
                     except Exception as e:
                         out = f"[{name}] ERROR: {e}"
 
                     safe_out = _limit_tool_output(json.dumps(out, ensure_ascii=False))
                     tool_traces.append(
-                        {
-                            "tool": name,
-                            "args": validated,
-                            "output_preview": safe_out[:400],
-                            "output": out,
-                        }
+                        ToolTrace(
+                            tool=name,
+                            args=validated,
+                            output_preview=safe_out[:400],
+                            output=out,
+                        )
                     )
 
                     messages.append(
@@ -496,15 +524,13 @@ class ToolsAgent:
             final = "Reached tool iteration limit."
             if self.memory:
                 self.memory.add("assistant", final)
-            output_obj = self._build_output_structure(
-                output_model, final, tool_traces
+            output_obj = self._build_output_structure(output_model, final, tool_traces)
+            return AgentExecutionResult(
+                final_answer=final,
+                tool_traces=tool_traces,
+                messages=messages,
+                output_structure=output_obj,
             )
-            return {
-                "answer": final,
-                "tool_traces": tool_traces,
-                "messages": messages,
-                "output_structure": output_obj,
-            }
 
         # ===== BRANCH B: JSON planner (e.g., Ollama) =====
         tools_desc = [
@@ -537,7 +563,7 @@ class ToolsAgent:
                 messages,
                 temperature=self.cfg.temperature,
                 max_tokens=self.cfg.max_answer_tokens,
-                run_id=run_id
+                run_id=run_id,
             )
 
             plan_obj = None
@@ -554,55 +580,53 @@ class ToolsAgent:
                 output_obj = self._build_output_structure(
                     output_model, plan_text, tool_traces
                 )
-                return {
-                    "answer": plan_text,
-                    "tool_traces": tool_traces,
-                    "messages": messages,
-                    "output_structure": output_obj,
-                }
+                return AgentExecutionResult(
+                    final_answer=plan_text,
+                    tool_traces=tool_traces,
+                    messages=messages,
+                    output_structure=output_obj,
+                )
 
             if "final_answer" in plan_obj:
                 final = str(plan_obj["final_answer"])
                 if self.memory:
                     self.memory.add("assistant", final)
-                output_obj = self._build_output_structure(
-                    output_model, final, tool_traces
+                output_obj = self._build_output_structure(output_model, final, tool_traces)
+                return AgentExecutionResult(
+                    final_answer=final,
+                    tool_traces=tool_traces,
+                    messages=messages,
+                    output_structure=output_obj,
                 )
-                return {
-                    "answer": final,
-                    "tool_traces": tool_traces,
-                    "messages": messages,
-                    "output_structure": output_obj,
-                }
 
             if "call_tool" in plan_obj:
                 call = plan_obj["call_tool"]
                 name = call.get("name")
                 args = call.get("arguments", {}) or {}
+
                 tool = self.tools.get(name)
                 validated = tool.validate_args(args)
 
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(
-                        f"[intergraxToolsAgent] Calling tool: {name}({validated})"
-                    )
+                    logger.debug(f"[intergraxToolsAgent] Calling tool: {name}({validated})")
 
                 try:
                     out = tool.run(
-                        run_id=run_id, 
-                        llm_usage_tracker=llm_usage_tracker, 
-                        **validated)
+                        run_id=run_id,
+                        llm_usage_tracker=llm_usage_tracker,
+                        **validated,
+                    )
                 except Exception as e:
                     out = f"[{name}] ERROR: {e}"
 
                 safe_out = _limit_tool_output(json.dumps(out, ensure_ascii=False))
                 tool_traces.append(
-                    {
-                        "tool": name,
-                        "args": validated,
-                        "output_preview": safe_out[:400],
-                        "output": out,
-                    }
+                    ToolTrace(
+                        tool=name,
+                        args=validated,
+                        output_preview=safe_out[:400],
+                        output=out,
+                    )
                 )
 
                 messages.append(
@@ -627,11 +651,9 @@ class ToolsAgent:
         if self.memory:
             self.memory.add("assistant", final)
         output_obj = self._build_output_structure(output_model, final, tool_traces)
-        return {
-            "answer": final,
-            "tool_traces": tool_traces,
-            "messages": messages,
-            "output_structure": output_obj,
-        }
-
-
+        return AgentExecutionResult(
+            final_answer=final,
+            tool_traces=tool_traces,
+            messages=messages,
+            output_structure=output_obj,
+        )

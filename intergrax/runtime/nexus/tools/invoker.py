@@ -11,7 +11,7 @@ from pydantic import BaseModel, ValidationError
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.tools.tool_invocation import ToolInvocationEndDiagV1, ToolInvocationErrorDiagV1, ToolInvocationStartDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-from intergrax.tools.contracts import ToolContract
+from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tool_executor import ToolExecutor
