@@ -806,6 +806,7 @@ def build_bundle_from_paths(
             raise SystemExit(f"Unsupported file type: {p.suffix} (file={p})")
 
     metas = _build_metas_from_paths(project_root=project_root, paths=resolved_paths, include_symbols=include_symbols)
+    write_llm_system_model_for_bundle(out_path=out_path, metas=metas)
 
     max_chars: Optional[int] = None if max_mb <= 0 else max_mb * 1024 * 1024
     parts: List[str] = []
@@ -979,6 +980,356 @@ def find_project_root(start: Path) -> Path:
     raise RuntimeError("Project root not found (pyproject.toml missing)")
 
 
+
+# =============================================================================
+# LLM System Model files (per-bundle) — ADDED
+# =============================================================================
+
+def write_arch_graph_file_for_bundle(*, out_path: Path, metas: List[FileMeta]) -> None:
+    """
+    ARCH_GRAPH for a bundle = structural grouping, not semantic architecture.
+    No hardcoded knowledge about Intergrax domains.
+    """
+
+    stem = out_path.stem
+
+    layers: Dict[str, List[str]] = {}
+
+    for m in metas:
+        group = m.module_group or "root"
+        layers.setdefault(group, []).append(m.module_name)
+
+    for k in layers:
+        layers[k] = sorted(set(layers[k]))
+
+    data = {
+        "schema": "intergrax_arch_graph_v1",
+        "bundle": {
+            "stem": stem,
+            "bundle_file": out_path.name,
+        },
+        "layers": layers,
+    }
+
+    (out_path.parent / f"{stem}_ARCH_GRAPH.json").write_text(
+        json.dumps(data, indent=2),
+        encoding="utf-8",
+    )
+
+
+
+def write_dep_graph_file_for_bundle(*, out_path: Path, metas: List[FileMeta]) -> None:
+    stem = out_path.stem
+
+    forward: Dict[str, List[str]] = {}
+    reverse: Dict[str, List[str]] = {}
+
+    all_modules = {m.module_name for m in metas}
+
+    for m in metas:
+        if not m.imports:
+            continue
+
+        # tylko importy, które wskazują na moduły z bundla
+        internal_imports = sorted({imp for imp in m.imports if imp in all_modules})
+        if not internal_imports:
+            continue
+
+        forward[m.module_name] = internal_imports
+
+        for dep in internal_imports:
+            reverse.setdefault(dep, []).append(m.module_name)
+
+    # sort deterministically
+    for k in reverse:
+        reverse[k] = sorted(set(reverse[k]))
+
+    data = {
+        "schema": "intergrax_dep_graph_v2",
+        "bundle": {
+            "stem": stem,
+            "bundle_file": out_path.name,
+        },
+
+        "semantics": {
+            "type": "static_import_graph",
+            "meaning": "module A lists modules it imports",
+            "NOT": [
+                "runtime_call_graph",
+                "execution_flow",
+                "architecture_layers",
+                "data_flow_graph",
+            ],
+            "direction": "forward = importer → imported",
+        },
+
+        "internal_modules_only": True,
+
+        "forward_dependencies": forward,
+        "reverse_dependencies": reverse,
+    }
+
+    (out_path.parent / f"{stem}_DEP_GRAPH.json").write_text(
+        json.dumps(data, indent=2),
+        encoding="utf-8",
+    )
+
+
+
+def write_contracts_file_for_bundle(*, out_path: Path, metas: List[FileMeta]) -> None:
+    """
+    Generates mechanical symbol lock information.
+    This is NOT an architectural contract.
+    It only restricts modification operations for the LLM.
+    """
+
+    stem = out_path.stem
+
+    locked: Dict[str, dict] = {}
+
+    for m in metas:
+        mn = m.module_name.lower()
+
+        # core runtime surface
+        if ".runtime." in mn or ".fastapi_core." in mn:
+            for obj in m.code_objects:
+                locked[obj.coid] = {
+                    "symbol": obj.symbol,
+                    "kind": obj.kind,
+                    "lock_type": "hard_lock",  # cannot change signature
+                    "reason": "core_runtime_surface",
+                }
+
+    data = {
+        "schema": "intergrax_contracts_v2",
+        "bundle": {
+            "stem": stem,
+            "bundle_file": out_path.name,
+        },
+
+        "semantics": {
+            "meaning": "mechanical_modification_constraints",
+            "NOT": [
+                "public_api_definition",
+                "architectural_boundary",
+                "layer_definition",
+            ],
+        },
+
+        "lock_policy": {
+            "hard_lock": "signature and symbol existence cannot change",
+            "soft_lock": "signature locked, body modifiable",
+        },
+
+        "locked_code_objects": locked,
+    }
+
+    (out_path.parent / f"{stem}_CONTRACTS.json").write_text(
+        json.dumps(data, indent=2),
+        encoding="utf-8",
+    )
+
+
+
+def write_patch_zones_file_for_bundle(*, out_path: Path, metas: List[FileMeta]) -> None:
+    """
+    Patch zones define edit-risk classification for LLM operations.
+    They DO NOT define architecture, ownership, or importance.
+    """
+
+    stem = out_path.stem
+
+    safe: List[str] = []
+    restricted: List[str] = []
+    locked: List[str] = []
+
+    for m in metas:
+        mn = m.module_name.lower()
+        mg = m.module_group.lower()
+
+        # low-risk areas (feature logic, extensions, tests)
+        if (
+            ".tools." in mn
+            or mg == "tests"
+            or mn.startswith("tests.")
+            or ".prompts." in mn
+            or mn.startswith("prompts.")
+        ):
+            safe.append(m.rel_path)
+
+        # core system areas (editable but high impact)
+        elif ".runtime." in mn or ".fastapi_core." in mn:
+            restricted.append(m.rel_path)
+
+        # everything else is default locked unless explicitly requested
+        else:
+            locked.append(m.rel_path)
+
+    data = {
+        "schema": "intergrax_patch_zones_v2",
+        "bundle": {
+            "stem": stem,
+            "bundle_file": out_path.name,
+        },
+
+        "semantics": {
+            "meaning": "edit_risk_classification",
+            "NOT": [
+                "architecture_definition",
+                "ownership",
+                "importance_level",
+                "permission_model",
+            ],
+        },
+
+        "zones": {
+            "safe": sorted(set(safe)),
+            "restricted": sorted(set(restricted)),
+            "locked": sorted(set(locked)),
+        },
+
+        "zone_policy": {
+            "safe": "LLM may modify with standard verification",
+            "restricted": "LLM must minimize edits and verify dependencies",
+            "locked": "LLM must not modify unless explicitly instructed",
+        },
+    }
+
+    (out_path.parent / f"{stem}_PATCH_ZONES.json").write_text(
+        json.dumps(data, indent=2),
+        encoding="utf-8",
+    )
+
+
+
+def write_llm_protocol_file_for_bundle(*, out_path: Path) -> None:
+    stem = out_path.stem
+
+    text = f"""# Intergrax LLM Operating Protocol (Per-Bundle)
+
+Bundle stem: {stem}
+Bundle file: {out_path.name}
+
+====================================================================
+SYSTEM MODEL
+====================================================================
+
+You are operating on a MACHINE-GENERATED CODE MODEL.
+This is NOT documentation.
+This is NOT architecture description.
+This is a deterministic mechanical representation of source code.
+
+You are an IMPLEMENTATION ENGINE, not a reasoning agent.
+
+====================================================================
+TRUTH HIERARCHY (CRITICAL)
+====================================================================
+
+1) {stem}._py
+   → The ONLY source of truth about code.
+   → If something is not present here verbatim, it does not exist.
+
+2) {stem}_CONTRACTS.json
+   → Defines modification constraints.
+   → Overrides any assumption about editability.
+
+3) {stem}_STRUCTURE.json
+   → Maps modules → files.
+   → Navigation only. No semantics.
+
+4) {stem}_DEP_GRAPH.json
+   → Symbol reference graph.
+   → Static relationships only.
+   → NOT runtime flow.
+
+5) {stem}_ARCH_GRAPH.json
+   → Structural grouping by module_group.
+   → NOT system architecture.
+
+6) {stem}_PATCH_ZONES.json
+   → Safe vs restricted regions inside files.
+
+If two files appear to conflict → bundle ._py wins.
+
+====================================================================
+ROLE
+====================================================================
+
+You are NOT:
+- an architect
+- a refactoring agent
+- a documentation system
+
+You ARE:
+a deterministic code patch engine operating strictly inside the bundle.
+
+====================================================================
+HARD RULES
+====================================================================
+
+- Do NOT invent symbols, methods, modules, paths.
+- Do NOT reformat or "simplify" code for explanation.
+- Do NOT change signatures unless explicitly instructed.
+- Any referenced code must exist VERBATIM in bundle.
+
+If a required symbol is not found verbatim → STOP.
+
+====================================================================
+WORKFLOW (MANDATORY ORDER)
+====================================================================
+
+STEP 1 — Locate file via STRUCTURE.json  
+STEP 2 — Extract VERBATIM source from bundle  
+STEP 3 — Verify against CONTRACTS.json (edit permissions)  
+STEP 4 — Check DEP_GRAPH.json for impact scope  
+STEP 5 — Check PATCH_ZONES.json for safe regions  
+STEP 6 — Only then propose MINIMAL patch  
+
+Skipping steps = invalid operation.
+
+====================================================================
+OUTPUT FORMAT
+====================================================================
+
+FILE:
+VERBATIM SOURCE (before):
+PATCH (after):
+Justification (1–2 sentences max)
+
+====================================================================
+FAIL CONDITIONS
+====================================================================
+
+STOP if:
+- symbol not found verbatim
+- file not in STRUCTURE.json
+- edit violates CONTRACTS.json
+- edit outside allowed PATCH_ZONES
+- scope incomplete
+
+Ask for missing bundle scope instead of guessing.
+
+End of protocol.
+"""
+
+    (out_path.parent / f"{stem}_LLM_PROTOCOL.md").write_text(text, encoding="utf-8")
+
+
+
+def write_llm_system_model_for_bundle(*, out_path: Path, metas: List[FileMeta]) -> None:
+    """
+    Generates per-bundle LLM navigation/guard artifacts next to the bundle.
+    """
+    write_arch_graph_file_for_bundle(out_path=out_path, metas=metas)
+    write_dep_graph_file_for_bundle(out_path=out_path, metas=metas)
+    write_contracts_file_for_bundle(out_path=out_path, metas=metas)
+    write_patch_zones_file_for_bundle(out_path=out_path, metas=metas)
+    write_llm_protocol_file_for_bundle(out_path=out_path)
+
+
+
+
+
 def main() -> None:
     script_dir = Path(__file__).resolve().parent
     project_root = find_project_root(script_dir)
@@ -991,9 +1342,9 @@ def main() -> None:
             project_root=project_root,
             bundles=EXTRA_BUNDLES,
             bundles_dir=bundles_dir,
-            max_mb=25,
+            max_mb=100,
             include_symbols=True,
-            write_instructions_file=True,
+            write_instructions_file=False,
             write_structure_file=True,
         )
 

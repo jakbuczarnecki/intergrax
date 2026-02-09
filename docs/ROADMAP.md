@@ -1,6 +1,6 @@
-Intergrax Roadmap
+# Intergrax Roadmap
 
-Last updated: 2026-02-06
+Last updated: 2026-02-09
 
 This is a living engineering roadmap / TODO list.
 It reflects current development priorities and may change frequently.
@@ -11,7 +11,25 @@ Legend:
 [P2] — Important but not blocking first real use
 [P3] — Nice-to-have / future
 
-DONE
+---
+
+## CORE AGENT — MUST-HAVE BLOCKERS (subset of P0)
+
+After completing this subset, we can start building the first E2E agent.
+
+* [P0] Tooling — implement a formal tool/skill contract (input/output schema, error taxonomy, permissions)
+* [P0] Tooling — implement permission scopes and auditing for tool usage
+* [P0] Guardrails — implement minimal hard gates (output validation, tool gating, pii-safe logging)
+* [P0] Security — implement PII redaction and multi-tenant isolation for logs, memory, artifacts and vector stores
+* [P0] Sessions — implement production storage adapters for sessions and user profiles (DB-backed)
+* [P0] Organization profiles — implement production storage and isolation per organization
+* [P0] Runtime — implement run replay and inspection (ability to reconstruct a run from trace + artifacts)
+* [P0] Runtime — implement idempotency and safe retry for tool calls with side effects
+* [P0] Eval — implement an evaluation harness for agent quality, regressions and cost tracking
+
+---
+
+## DONE
 
 [DONE] Logging — global settings and global contracts — simplify logging
 [DONE] Diagnostics and tracing — in runtime and RuntimeState — replace dictionaries with typed structures
@@ -32,7 +50,9 @@ DONE
 [PARTIAL] Tests — unit and integration coverage for runtime, trace, retry and cost
 [PARTIAL] Tests — minimal unit and integration test coverage for all P0 foundations
 
-Production foundations (P0 — must be done before first E2E agent)
+---
+
+## Production foundations (P0 — must be done before first E2E agent)
 
 [P0] Runtime — implement run replay and inspection (ability to reconstruct a run from trace + artifacts)
 [P0] Runtime — implement idempotency and safe retry for tool calls with side effects
@@ -44,7 +64,9 @@ Production foundations (P0 — must be done before first E2E agent)
 [P0] Guardrails — implement minimal hard gates (output validation, tool gating, pii-safe logging)
 [P0] Eval — implement an evaluation harness for agent quality, regressions and cost tracking
 
-P0 additions: production-grade platform primitives (enterprise expectations)
+---
+
+## P0 additions: production-grade platform primitives (enterprise expectations)
 
 [P0] Observability — define a first-class telemetry contract (traces, metrics, logs) and correlation IDs across all layers, compatible with OpenTelemetry
 [P0] Observability — implement exporters/adapters: metrics to Prometheus, dashboards readiness for Grafana, error reporting adapter for Sentry
@@ -58,7 +80,9 @@ P0 additions: production-grade platform primitives (enterprise expectations)
 [P0] Rate limiting — production-grade rate limiter port + adapter (Redis-based), supporting per-tenant/per-route/per-tool quotas
 [P0] Data retention — retention policies for traces, artifacts, sessions, and evaluation datasets (TTL, archival)
 
-Productization & stability (P1)
+---
+
+## Productization & stability (P1)
 
 [P1] Tests — convert notebooks into production-grade unit and integration tests
 [P1] Runtime — create lifecycle events to notify users about reasoning and pipelines, and allow interruption when needed
@@ -74,7 +98,9 @@ Productization & stability (P1)
 [P1] Logging — attach logger to other system components
 [P1] Guardrails — extended policy and safety layer (advanced validators, classifiers, moderation)
 
-P1 additions: production-scale execution, observability, scaling
+---
+
+## P1 additions: production-scale execution, observability, scaling
 
 [P1] Broker backends — add production adapters for Apache Kafka (event streaming) and RabbitMQ (task queue); document semantics and recommended use-cases
 [P1] Worker framework — implement a worker runner abstraction; provide adapters for Celery (Python) and a thin “native worker” mode (no external deps)
@@ -88,7 +114,9 @@ P1 additions: production-scale execution, observability, scaling
 [P1] Infra integration — add Kubernetes-ready deployment patterns: worker scaling and queue depth metrics; optional autoscaling hook for Kubernetes environments
 [P1] CI quality gates — implement CI pipelines for eval regressions (quality + cost) and load tests for critical endpoints and worker throughput
 
-Agent Factory (P1 — foundations for building specialized, product-grade agents)
+---
+
+## Agent Factory (P1 — foundations for building specialized, product-grade agents)
 
 [P1] Agent Factory — define a first-class “Agent Pipeline” concept (specialized pipeline = product agent behavior), with strict typed contracts and invariants (run -> RuntimeAnswer)
 [P1] Agent Factory — introduce a typed AgentSpec/AgentProfile (agent identity, purpose, pipeline selection, tool scopes, budget policy, memory/RAG sources, output contract)
@@ -99,13 +127,17 @@ Agent Factory (P1 — foundations for building specialized, product-grade agents
 [P1] Agent Factory — add contract tests for pipelines/agents (behavioral invariants: tool gating, clarification behavior, output schema, stop reasons, budget limits)
 [P1] Agent Factory — create an agent catalog/registry (discoverability, versioning, rollout strategy), enabling selection by config and safe upgrades/rollbacks
 
-P1 additions: agent ops readiness
+---
+
+## P1 additions: agent ops readiness
 
 [P1] Agent Factory — add “deployment descriptors” for agents (resource needs, queue/worker class, concurrency limits, model routing policy, cache policy)
 [P1] Agent Factory — add “SLO profile” per agent (latency target, max cost per run, acceptable tool failure budget)
 [P1] Agent Factory — add offline replay suites (golden runs) + production “shadow mode” execution for safe rollouts
 
-Agents & product demos (P1–P2)
+---
+
+## Agents & product demos (P1–P2)
 
 [P1] Agent — design and implement a company profile agent (first E2E product)
 [P1] Agent — design and implement an IT headhunter agent
@@ -114,12 +146,16 @@ Agents & product demos (P1–P2)
 [P2] Agent — implement an agent that searches project directories and creates summaries and comments
 [P2] Agent / Tool — Text-to-SQL
 
-P2 additions: production-grade demos
+---
+
+## P2 additions: production-grade demos
 
 [P2] Agent — “Ops Copilot” agent that inspects traces/metrics/logs and proposes mitigations (run replay + diagnostics-first demo)
 [P2] Agent — “RAG Quality Analyst” agent that runs eval suites, finds regressions, and suggests dataset fixes (query rewrite, chunking, rerank)
 
-Integrations & external systems (P2)
+---
+
+## Integrations & external systems (P2)
 
 [P2] Integrations — Google Docs
 [P2] Integrations — Google Drive
@@ -130,7 +166,9 @@ Integrations & external systems (P2)
 [P2] Integrations — DuckDuckGo
 [P2] Integrations — other useful and well-known APIs
 
-P2 additions: production toolchain integrations
+---
+
+## P2 additions: production toolchain integrations
 
 [P2] Integrations (LLM providers) — OpenAI, Azure OpenAI (Microsoft Azure), Anthropic, Google (Gemini), Amazon Web Services (Bedrock), plus “local/self-hosted” adapter family (vLLM/llama.cpp/Ollama style)
 [P2] Integrations (vector stores) — Qdrant, Milvus, Weaviate, Pinecone, PostgreSQL + pgvector
@@ -140,21 +178,27 @@ P2 additions: production toolchain integrations
 [P2] Integrations (CI/CD) — GitHub Actions/GitLab CI templates for eval gating and load tests; publish artifacts (traces/eval datasets)
 [P2] Integrations (infra-as-code) — Terraform templates for minimal production stack (DB + Redis + broker + workers + OTel collector)
 
-Advanced capabilities (P3)
+---
+
+## Advanced capabilities (P3)
 
 [P3] Cloud — create mechanisms for cloud computing integrations (Azure, AWS, etc.)
 [P3] Voice agent — create an example voice chatbot
 [P3] Large data handling — scalable reasoning over large datasets (source code, corpora)
 [P3] Critics in CoT — implement self-awareness and auto-correction modules
 
-P3 additions: big-scale platform features
+---
+
+## P3 additions: big-scale platform features
 
 [P3] Multi-region — active/active patterns for runs, queues, and vector stores; latency-aware routing
 [P3] Data governance — lineage for artifacts/context, audit trails, compliance exports
 [P3] Advanced scaling — workload-aware autoscaling (queue depth, token usage, model latency) and cost-aware scheduling
 [P3] Advanced safety — classifier ensembles, advanced policy engine integrations, content provenance/grounding guarantees
 
-Notes: platform stance (implicit requirements now captured by roadmap)
+---
+
+## Notes: platform stance (implicit requirements now captured by roadmap)
 
 Intergrax core remains dependency-light; production tools integrate via typed ports/adapters.
 
