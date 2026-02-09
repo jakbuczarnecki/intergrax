@@ -4,9 +4,11 @@
 from __future__ import annotations
 from typing import Protocol
 
+from intergrax.runtime.replay.contracts.run_record_dto import RunRecordDTO
+
 
 class RunRecordStore(Protocol):
     """Read-only access to persisted run records."""
 
-    def get(self, run_id: str):
+    def get(self, run_id: str)->RunRecordDTO:
         ...
