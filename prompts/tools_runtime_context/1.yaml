@@ -1,0 +1,27 @@
+id: tools_runtime_context
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        Tool execution context:
+
+        The system has executed one or more tools. Their results are provided below as factual context.
+
+        Use these results if they are relevant to answering the user.
+        Do not mention tools unless necessary.
+        Do not assume tool outputs are always correct — reason about them.
+
+        {context}
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: tools.runtime.context.v1
+  tags:
+    - tools
+    - runtime
+    - context
+  description: Injected by Nexus after runtime tool execution to provide tool results as factual context for the core LLM.

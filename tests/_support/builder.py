@@ -25,6 +25,7 @@ from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.tools.core.contracts import ToolContract
 
 
 class FakeLLMAdapter(LLMAdapter):
@@ -269,3 +270,15 @@ class DummyRunStore(RunStore):
 
         self._runs[run_id] = updated
         return updated
+
+
+def tools_agent_make_contract(tool_id: str, input_model, output_model):
+    return ToolContract(
+        tool_id=tool_id,
+        name=tool_id,
+        description=f"{tool_id} description",
+        input_schema=input_model,
+        output_schema=output_model,
+        error_mapping={},
+        side_effects=False,
+    )

@@ -39,7 +39,10 @@ class ToolExecutionError:
     error_message: str
 
 
-@dataclass(frozen=True, slots=True)
+from dataclasses import dataclass
+from typing import Generic, Optional
+
+@dataclass(frozen=True)
 class ToolExecutionResult(Generic[OutModelT]):
     """
     Normalized tool execution outcome.
@@ -47,19 +50,24 @@ class ToolExecutionResult(Generic[OutModelT]):
     Exactly one of:
       - output (success=True)
       - error  (success=False)
+
+    CONTRACT:
+    If success=True → output MUST be instance of ToolContract.output_schema.
+    Runtime relies on this guarantee.
     """
     success: bool
     output: Optional[OutModelT]
     error: Optional[ToolExecutionError]
 
     @staticmethod
-    def ok(output: OutModelT) -> ToolExecutionResult[OutModelT]:
+    def ok(output: OutModelT) -> "ToolExecutionResult[OutModelT]":
         return ToolExecutionResult(success=True, output=output, error=None)
 
     @staticmethod
-    def fail(code: str, message: str) -> ToolExecutionResult[OutModelT]:
+    def fail(code: str, message: str) -> "ToolExecutionResult[OutModelT]":
         return ToolExecutionResult(
             success=False,
             output=None,
             error=ToolExecutionError(error_code=code, error_message=message),
         )
+

@@ -6,24 +6,11 @@ import json
 
 from pydantic import BaseModel
 
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.tools_agent import ToolsAgent
-from tests._support.builder import FakeLLMAdapter
-
-
-def make_contract(tool_id: str, input_model, output_model):
-    return ToolContract(
-        tool_id=tool_id,
-        name=tool_id,
-        description=f"{tool_id} description",
-        input_schema=input_model,
-        output_schema=output_model,
-        error_mapping={},
-        side_effects=False,
-    )
+from tests._support.builder import FakeLLMAdapter, tools_agent_make_contract
 
 
 # ============================================================
@@ -89,7 +76,7 @@ class SumHandler:
 def build_registry() -> ToolRegistry:
     registry = ToolRegistry()
     registry.register(
-        make_contract("sum_tool", SumInput, SumOutput),
+        tools_agent_make_contract("sum_tool", SumInput, SumOutput),
         SumHandler(),
     )
     return registry
@@ -178,7 +165,7 @@ def test_tool_selection_from_many_tools_native_mode():
         b: int
 
     registry.register(
-        make_contract("sub_tool", SubInput, SubOutput),
+        tools_agent_make_contract("sub_tool", SubInput, SubOutput),
         SubHandler(),
     )
 
