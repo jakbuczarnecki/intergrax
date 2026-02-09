@@ -66,19 +66,35 @@ SOURCE_EXTS = tuple(sorted(SOURCE_HANDLERS.keys()))
 EXTRA_BUNDLES: Dict[str, str] = {
     "NEXUS_FULL_BUNDLE": r"intergrax\runtime\nexus",
     "NEXUS_TRACING_BUNDLE": r"intergrax\runtime\nexus\tracing",
+    "NEXUS_RUNTIME_STEPS": r"intergrax\runtime\nexus\runtime_steps",
+
     "LLM": r"intergrax\llm",
     "LLM_ADAPTERS": r"intergrax\llm_adapters",
+
     "MEMORY": r"intergrax\memory",
+
     "MULTIMEDIA": r"intergrax\multimedia",
+
     "RAG": r"intergrax\rag",
+
     "PROMPTS_ENGINE": r"intergrax\prompts",
+
     "SUPERVISOR": r"intergrax\supervisor",
+
     "TOOLS": r"intergrax\tools",
+
     "WEBSEARCH": r"intergrax\websearch",
+
     "INTERGRAX_FULL_BUNDLE": r"intergrax",
+    
     "NOTEBOOKS": r"notebooks",
+
     "TESTS": r"tests",
+    "TESTS_UNITS": r"tests\unit",
+    "TESTS_UNITS_NEXUS": r"tests\unit\nexus",
+
     "PROMPTS": r"prompts",
+
     "FASTAPI_CORE": r"intergrax\fastapi_core",
 }
 

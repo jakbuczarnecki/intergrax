@@ -13,7 +13,10 @@ from intergrax.llm_adapters.llm_usage_track import LLMUsageReport
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.artifacts.models import Artifact, ArtifactRef
 from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
+from intergrax.runtime.nexus.tools import RegistryToolExecutor
+from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
+from intergrax.tools.registry import ToolRegistry
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
@@ -299,6 +302,18 @@ class RuntimeContext:
             session_manager=session_manager,
             history_prompt_builder=resolved_history_prompt_builder,
         )
+
+        # --- Runtime Tools ---
+        registry = ToolRegistry()
+        
+
+        executor = RegistryToolExecutor(registry)
+        config.tool_invoker = RuntimeToolInvoker(registry=registry, executor=executor)
+
+        # Register tools from providers
+        for provider in config.tool_providers:
+            provider.register_tools(registry)
+
 
         return cls(
             config=config,
