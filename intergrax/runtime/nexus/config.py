@@ -19,6 +19,7 @@ from intergrax.runtime.nexus.planning.step_executor_models import StepExecutorCo
 from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
 from intergrax.runtime.nexus.policies.runtime_policies import RuntimePolicies
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.tools.idempotency_store import IdempotencyStore
 from intergrax.tools.core.provider import ToolProvider
 from intergrax.tools.tools_agent import ToolsAgent
 from intergrax.websearch.service.websearch_config import WebSearchConfig
@@ -159,6 +160,7 @@ class RuntimeConfig:
     tools_context_scope: ToolsContextScope = ToolsContextScope.CURRENT_MESSAGE_ONLY
 
     tool_invoker: Optional[RuntimeToolInvoker] = None
+    idempotency_store: Optional[IdempotencyStore] = None
     tool_providers: Sequence[ToolProvider] = ()
 
     # Memory toggles

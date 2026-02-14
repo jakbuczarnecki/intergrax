@@ -42,6 +42,7 @@ def runtime_state() -> RuntimeState:
         enable_rag=False,
         enable_websearch=False,
         tools_mode="off",
+        production_mode=False,
     )
 
     session_manager = SessionManager(storage=InMemorySessionStorage())
