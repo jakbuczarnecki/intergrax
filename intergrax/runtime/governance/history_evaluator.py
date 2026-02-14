@@ -30,17 +30,33 @@ class HistoryAwareEvaluator:
 
         history = self._history_analyzer.analyze(previous_runs)
 
+        def _spike(current: int, avg: float, ratio: float | None) -> bool:
+            if ratio is None or avg <= 0:
+                return False
+            return current > avg * ratio
+
+
+        def _drop(current: int, avg: float, ratio: float | None) -> bool:
+            if ratio is None or avg <= 0:
+                return False
+            return current < avg * ratio
+
+
         return RegressionSignals(
-            llm_cost_spike=(
-                self._config.llm_spike_ratio is not None
-                and current.total_llm_calls > history.avg_llm_calls * self._config.llm_spike_ratio
+            llm_cost_spike=_spike(
+                current.total_llm_calls,
+                history.avg_llm_calls,
+                self._config.llm_spike_ratio,
             ),
-            tool_usage_drop=(
-                self._config.tool_drop_ratio is not None
-                and current.total_tool_calls < history.avg_tool_calls * self._config.tool_drop_ratio
+            tool_usage_drop=_drop(
+                current.total_tool_calls,
+                history.avg_tool_calls,
+                self._config.tool_drop_ratio,
             ),
-            step_explosion=(
-                self._config.step_spike_ratio is not None
-                and current.step_count > history.avg_steps * self._config.step_spike_ratio
+            step_explosion=_spike(
+                current.step_count,
+                history.avg_steps,
+                self._config.step_spike_ratio,
             ),
         )
+

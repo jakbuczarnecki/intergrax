@@ -2,18 +2,26 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
+from dataclasses import dataclass
 from typing import List
 
 from intergrax.logging import IntergraxLogging
 from intergrax.runtime.governance.contracts.metrics_record_dto import RunMetricsRecord
 from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
 from intergrax.runtime.replay.service import ReplayService
-from intergrax.runtime.replay.metrics import ExecutionMetricsEngine
+from intergrax.runtime.replay.metrics import ExecutionMetrics, ExecutionMetricsEngine
 from intergrax.runtime.replay.policy import ExecutionPolicyEngine, PolicyDecision
 from intergrax.runtime.replay.regression import RegressionSignals
 from intergrax.runtime.governance.history_evaluator import HistoryAwareEvaluator
 from intergrax.runtime.governance.policy_actions import PolicyActionHandler
 
+
+@dataclass(slots=True)
+class GovernanceEvaluation:
+    decision: PolicyDecision
+    metrics: ExecutionMetrics
+    regression: RegressionSignals
+    
 
 class ExecutionGuard:
     """
@@ -45,14 +53,14 @@ class ExecutionGuard:
         self._metrics_store = metrics_store
         self._actions = actions
         self._history_window = history_window
-
         self._logger = IntergraxLogging.get_logger(__name__, component="governance")
+
 
     def evaluate_run(
         self,
         run_id: str,
         agent_id: str,
-    ) -> PolicyDecision:
+    ) -> GovernanceEvaluation:
         """
         Evaluates a completed run and enforces governance decisions.
         """
@@ -93,7 +101,11 @@ class ExecutionGuard:
             },
         )
 
-        # 7. Persist metrics
+        # 7. Execute policy actions (may raise)
+        for action in self._actions:
+            action.handle(run_id, decision)
+
+        # 8. Persist metrics only after successful enforcement
         record = RunMetricsRecord(
             run_id=run_id,
             agent_id=agent_id,
@@ -101,8 +113,9 @@ class ExecutionGuard:
         )
         self._metrics_store.save(record)
 
-        # 8. Execute policy actions
-        for action in self._actions:
-            action.handle(run_id, decision)
+        return GovernanceEvaluation(
+            decision=decision,
+            metrics=metrics,
+            regression=regression,
+        )
 
-        return decision
