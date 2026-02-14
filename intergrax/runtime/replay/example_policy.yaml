@@ -1,0 +1,11 @@
+default:
+  max_total_tokens: 4000
+
+prod:
+  max_total_tokens: 3000
+  max_steps: 12
+
+prod:agent_search:
+  max_total_tokens: 2000
+  min_tool_calls: 2
+  fail_on_answer_change: true

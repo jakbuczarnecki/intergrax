@@ -230,6 +230,8 @@ class RuntimeConfig:
     budget_policy: Optional[BudgetPolicy] = None
     
 
+    production_mode: bool = True
+
     # ------------------------------------------------------------------
     # VALIDATION
     # ------------------------------------------------------------------

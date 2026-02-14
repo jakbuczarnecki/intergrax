@@ -91,9 +91,10 @@ EXTRA_BUNDLES: Dict[str, str] = {
 
     "TESTS": r"tests",
     "TESTS_UNITS": r"tests\unit",
-    "TESTS_UNITS_NEXUS": r"tests\unit\nexus",
 
     "PROMPTS": r"prompts",
+
+    "RUNTIME": r"intergrax\runtime",
 
     "FASTAPI_CORE": r"intergrax\fastapi_core",
 }

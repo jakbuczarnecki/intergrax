@@ -19,10 +19,10 @@ from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 from intergrax.tools.registry import ToolRegistry
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+    from intergrax.runtime.nexus.config import RuntimeConfig
+    from intergrax.runtime.governance.service import GovernanceService
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.utils.time_provider import SystemTimeProvider
-if TYPE_CHECKING:
-    from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_builder import ContextBuilder
 from intergrax.runtime.nexus.context.engine_history_layer import HistoryLayer
 from intergrax.runtime.nexus.ingestion.ingestion_service import AttachmentIngestionService
@@ -88,7 +88,7 @@ class RuntimeContext:
     llm_usage_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     trace_writer: Optional[RunTraceWriter] = None
-
+    governance_service: Optional["GovernanceService"] = None
     prompt_registry: Optional[YamlPromptRegistry] = None
     
     artifact_store: Optional[ArtifactStore] = None
@@ -235,6 +235,7 @@ class RuntimeContext:
         websearch_prompt_builder: Optional[WebSearchPromptBuilder] = None,
         history_prompt_builder: Optional[HistorySummaryPromptBuilder] = None,
         prompt_registry: Optional[YamlPromptRegistry] = None,
+        governance_service: Optional["GovernanceService"] = None,
     ) -> "RuntimeContext":
         """
         Build a fully-resolved RuntimeContext using the same resolution rules as Runtime.__init__:
@@ -314,7 +315,11 @@ class RuntimeContext:
         for provider in config.tool_providers:
             provider.register_tools(registry)
 
-
+        if config.production_mode and governance_service is None:
+            raise ValueError(
+                "GovernanceService is required when production_mode=True."
+            )
+        
         return cls(
             config=config,
             session_manager=session_manager,
@@ -327,4 +332,6 @@ class RuntimeContext:
             history_prompt_builder=resolved_history_prompt_builder,
             history_layer=resolved_history_layer,            
             prompt_registry=prompt_registry,
+            governance_service=governance_service,
+
         )

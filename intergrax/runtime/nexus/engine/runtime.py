@@ -327,6 +327,30 @@ class RuntimeEngine:
                     )
                     writer.finalize_run(state.run_id, metadata)
 
+                governance = self.context.governance_service
+                if governance is not None:
+                    agent_id_val = None
+                    if isinstance(request.metadata, dict):
+                        agent_id_val = request.metadata.get("agent_id")
+
+                    agent_id = agent_id_val.strip() if isinstance(agent_id_val, str) and agent_id_val.strip() else "default"
+
+                    try:
+                        governance.evaluate(run_id=state.run_id, agent_id=agent_id)
+                        state.trace_event(
+                            component=TraceComponent.POLICY,
+                            step="governance_evaluated",
+                            level=TraceLevel.INFO,
+                            message="Governance evaluation completed.",
+                        )
+                    except Exception as exc:
+                        state.trace_event(
+                            component=TraceComponent.POLICY,
+                            step="governance_failed",
+                            level=TraceLevel.WARNING,
+                            message=f"Governance evaluation failed: {exc.__class__.__name__}: {exc}",
+                            )
+
 
     async def _run_with_timeout(
             self,
