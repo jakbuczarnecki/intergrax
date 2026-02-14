@@ -25,6 +25,7 @@ from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.tools.idempotency_store import IdempotencyStore
 from intergrax.tools.core.contracts import ToolContract
 
 
@@ -98,6 +99,7 @@ def build_runtime_config_deterministic(
     plan_specs: Optional[Sequence[PlanSpec]] = None,
     llm_text: str = "OK",
     plan_loop_policy: Optional[PlanLoopPolicy] = None,
+    idempotency_store: Optional[IdempotencyStore] = None,
 ) -> RuntimeConfig:
     """
     Deterministic RuntimeConfig for CI:
@@ -143,7 +145,9 @@ def build_runtime_config_deterministic(
         enable_rag=False,
         enable_websearch=False,
         enable_org_profile_memory=False,
-        tools_mode="off"        
+        tools_mode="off",
+        idempotency_store=idempotency_store,
+        production_mode=False,
     )
 
     # If RuntimeConfig exposes validate(), keep it enabled (enterprise style).
@@ -206,6 +210,7 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
         enable_websearch=False,
         enable_org_profile_memory=False,
         tools_mode="off",
+        production_mode=False,
     )
 
     sm = SessionManager(storage=InMemorySessionStorage())

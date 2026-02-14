@@ -25,6 +25,7 @@ class ToolExecutionRequest(Generic[InModelT]):
     step_id: str
     tool_id: str
     input: InModelT
+    idempotency_key: Optional[str] = None
 
 
 @dataclass(frozen=True, slots=True)

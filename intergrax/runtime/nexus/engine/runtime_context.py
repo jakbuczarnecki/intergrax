@@ -309,7 +309,18 @@ class RuntimeContext:
         
 
         executor = RegistryToolExecutor(registry)
-        config.tool_invoker = RuntimeToolInvoker(registry=registry, executor=executor)
+        base_invoker = RuntimeToolInvoker(registry=registry, executor=executor)
+
+        if config.idempotency_store is not None:
+            from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
+
+            config.tool_invoker = IdempotentToolInvoker(
+                base_invoker=base_invoker,
+                idempotency_store=config.idempotency_store,
+            )
+        else:
+            config.tool_invoker = base_invoker
+
 
         # Register tools from providers
         for provider in config.tool_providers:

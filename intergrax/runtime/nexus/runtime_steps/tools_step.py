@@ -74,6 +74,7 @@ class ToolsStep(RuntimeStep):
                         step_id=call.step_id,
                         tool_id=call.tool_id,
                         input=call.input,
+                        idempotency_key=f"{state.run_id}:{call.step_id}",
                     )
 
                     result = invoker.invoke(state=state, request=req)
