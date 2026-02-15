@@ -1,6 +1,6 @@
 # Intergrax Roadmap
 
-Last updated: 2026-02-14
+Last updated: 2026-02-15
 
 This is a living engineering roadmap / TODO list.
 It reflects current development priorities and may change frequently.
@@ -18,13 +18,11 @@ Legend:
 After completing this subset, we can start building the first E2E agent.
 
 * [P0] Tooling — implement a formal tool/skill contract (input/output schema, error taxonomy, permissions)
-* [P0] Tooling — implement permission scopes and auditing for tool usage
 * [P0] Guardrails — implement minimal hard gates (output validation, tool gating, pii-safe logging)
 * [P0] Security — implement PII redaction and multi-tenant isolation for logs, memory, artifacts and vector stores
 * [P0] Sessions — implement production storage adapters for sessions and user profiles (DB-backed)
 * [P0] Organization profiles — implement production storage and isolation per organization
 * [P0] Runtime — implement run replay and inspection (ability to reconstruct a run from trace + artifacts)
-* [P0] Runtime — implement idempotency and safe retry for tool calls with side effects
 * [P0] Eval — implement an evaluation harness for agent quality, regressions and cost tracking
 
 ---
@@ -46,6 +44,8 @@ After completing this subset, we can start building the first E2E agent.
 [DONE] Prompting — versioning, pinning and metadata for prompts implemented
 [DONE] Prompting — prompts moved outside source code with nested folder support and backward-compatible lookup
 [DONE] Artifacts — implement persistent artifact store and reference linking from trace
+[DONE] Tooling — implement permission scopes and auditing for tool usage
+[DONE] Runtime — implement idempotency and safe retry for tool calls with side effects
 
 [PARTIAL] Tests — unit and integration coverage for runtime, trace, retry and cost
 [PARTIAL] Tests — minimal unit and integration test coverage for all P0 foundations
@@ -60,7 +60,6 @@ After completing this subset, we can start building the first E2E agent.
 [P0] Organization profiles — implement production storage and isolation per organization
 [P0] Security — implement PII redaction and multi-tenant isolation for logs, memory, artifacts and vector stores
 [P0] Tooling — implement a formal tool/skill contract (input/output schema, error taxonomy, permissions)
-[P0] Tooling — implement permission scopes and auditing for tool usage
 [P0] Guardrails — implement minimal hard gates (output validation, tool gating, pii-safe logging)
 [P0] Eval — implement an evaluation harness for agent quality, regressions and cost tracking
 

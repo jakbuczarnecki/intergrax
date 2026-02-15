@@ -66,7 +66,12 @@ class RuntimeToolInvoker:
         # 0) scope authorization check (capability boundary)
         if self._scope_policy is not None:
 
-            if not self._scope_policy.is_allowed(agent_id, request.tool_id):
+            allowed = self._scope_policy.is_allowed(
+                agent_id=agent_id,
+                tool_id=request.tool_id,
+            )
+
+            if not allowed:
                 msg = "Tool execution denied by scope policy."
 
                 state.trace_event(
