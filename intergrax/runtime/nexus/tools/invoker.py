@@ -11,6 +11,7 @@ from pydantic import BaseModel, ValidationError
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.tools.tool_invocation import ToolInvocationEndDiagV1, ToolInvocationErrorDiagV1, ToolInvocationStartDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
 from intergrax.tools.registry import ToolRegistry
@@ -43,16 +44,51 @@ class RuntimeToolInvoker:
     - trace start/end/error
     """
 
-    def __init__(self, *, registry: ToolRegistry, executor: ToolExecutor) -> None:
+    def __init__(
+        self,
+        *,
+        registry: ToolRegistry,
+        executor: ToolExecutor,
+        scope_policy: Optional[ToolScopePolicy] = None,
+    ) -> None:
         self._registry = registry
         self._executor = executor
+        self._scope_policy = scope_policy
+
 
     def invoke(
         self,
         *,
         state: TraceEmitter,
+        agent_id: str,
         request: ToolExecutionRequest[BaseModel],
     ) -> ToolExecutionResult[BaseModel]:
+        # 0) scope authorization check (capability boundary)
+        if self._scope_policy is not None:
+
+            allowed = self._scope_policy.is_allowed(
+                agent_id=agent_id,
+                tool_id=request.tool_id,
+            )
+
+            if not allowed:
+                msg = "Tool execution denied by scope policy."
+
+                state.trace_event(
+                    component=TraceComponent.TOOLS,
+                    step="tool_invocation_denied",
+                    message=msg,
+                    level=TraceLevel.ERROR,
+                    payload=ToolInvocationErrorDiagV1(
+                        tool_id=request.tool_id,
+                        step_id=str(request.step_id),
+                        error_code=RuntimeErrorCode.TOOL_ERROR,
+                        error_message=msg,
+                    ),
+                )
+                return ToolExecutionResult.fail(RuntimeErrorCode.TOOL_ERROR, msg)
+
+
         # 1) registry check + contract bind
         try:
             reg = self._registry.get(request.tool_id)

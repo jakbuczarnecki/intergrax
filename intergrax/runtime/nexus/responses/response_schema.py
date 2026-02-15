@@ -133,6 +133,7 @@ class RuntimeRequest:
     RuntimeEngine. It can be created directly or via helper
     functions/wrappers in web frameworks.
     """
+    agent_id: str
 
     user_id: str
     session_id: str

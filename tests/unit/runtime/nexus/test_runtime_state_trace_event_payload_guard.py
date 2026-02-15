@@ -53,6 +53,7 @@ def runtime_state() -> RuntimeState:
     )
 
     request = RuntimeRequest(
+        agent_id="agent_test",
         session_id="trace-guard-test-session",
         user_id="trace-guard-test-user",
         message="test",

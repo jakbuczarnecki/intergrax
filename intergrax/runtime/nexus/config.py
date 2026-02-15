@@ -20,6 +20,7 @@ from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
 from intergrax.runtime.nexus.policies.runtime_policies import RuntimePolicies
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.tools.idempotency_store import IdempotencyStore
+from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.provider import ToolProvider
 from intergrax.tools.tools_agent import ToolsAgent
 from intergrax.websearch.service.websearch_config import WebSearchConfig
@@ -162,6 +163,10 @@ class RuntimeConfig:
     tool_invoker: Optional[RuntimeToolInvoker] = None
     idempotency_store: Optional[IdempotencyStore] = None
     tool_providers: Sequence[ToolProvider] = ()
+
+     # Optional capability-level tool authorization policy.
+    # If None → all tools are allowed (backward compatible behavior).
+    tool_scope_policy: Optional["ToolScopePolicy"] = None
 
     # Memory toggles
     enable_user_profile_memory: bool = True

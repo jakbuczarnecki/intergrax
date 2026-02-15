@@ -44,7 +44,7 @@ class FakeToolsAgent:
 
 
 class FakeInvoker:
-    def invoke(self, state, request):
+    def invoke(self, state, request, agent_id):
         return ToolExecutionResult.ok(DummyOutput(y=42))
 
 

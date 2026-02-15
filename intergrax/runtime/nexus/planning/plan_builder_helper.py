@@ -19,6 +19,7 @@ async def build_plan(
     config: RuntimeConfig,
     message: str,
     user_id: str,
+    agent_id: str,
     session_id: Optional[str] = None,
     run_id: Optional[str] = None,
     instructions: Optional[str] = None,
@@ -39,6 +40,7 @@ async def build_plan(
 
     # 1. Request
     req = RuntimeRequest(
+        agent_id=agent_id,
         user_id=user_id,
         session_id=inner_session_id,
         message=message,

@@ -329,14 +329,9 @@ class RuntimeEngine:
 
                 governance = self.context.governance_service
                 if governance is not None:
-                    agent_id_val = None
-                    if isinstance(request.metadata, dict):
-                        agent_id_val = request.metadata.get("agent_id")
-
-                    agent_id = agent_id_val.strip() if isinstance(agent_id_val, str) and agent_id_val.strip() else "default"
-
+                    
                     try:
-                        governance.evaluate(run_id=state.run_id, agent_id=agent_id)
+                        governance.evaluate(run_id=state.run_id, agent_id=request.agent_id)
                         state.trace_event(
                             component=TraceComponent.POLICY,
                             step="governance_evaluated",

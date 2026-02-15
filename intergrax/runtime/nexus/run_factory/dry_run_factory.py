@@ -65,16 +65,19 @@ class DryRunRuntimeRunFactory(RuntimeRunFactory):
         self,
         *,
         runtime_context: RuntimeContext,
+        agent_id:str = "__api__",
         system_user_id: str = "__api__",
         system_session_id: str = "__api__",
     ) -> None:
         self._context = runtime_context
         self._system_user_id = system_user_id
         self._system_session_id = system_session_id
+        self._agent_id = agent_id
 
     def create_api_run(self, *, run_id: str) -> RuntimeRunHandle:
         # Synthetic, explicit API-originated request
         request = RuntimeRequest(
+            agent_id=self._agent_id, 
             user_id=self._system_user_id,
             session_id=self._system_session_id,
             message="[API dry-run]",

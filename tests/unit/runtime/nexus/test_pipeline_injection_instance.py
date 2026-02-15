@@ -31,12 +31,13 @@ def _make_state_with_config(*, cfg) -> RuntimeState:
     storage = InMemorySessionStorage()
     session_manager = SessionManager(storage=storage)
 
-    ctx = RuntimeContext(
+    ctx = RuntimeContext.build(
         config=cfg,
         session_manager=session_manager,
     )
 
     req = RuntimeRequest(
+        agent_id="agent_test",
         user_id="u-001",
         session_id="s-001",
         message="hello",
