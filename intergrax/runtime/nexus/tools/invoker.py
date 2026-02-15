@@ -11,6 +11,7 @@ from pydantic import BaseModel, ValidationError
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.tools.tool_invocation import ToolInvocationEndDiagV1, ToolInvocationErrorDiagV1, ToolInvocationStartDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
 from intergrax.tools.registry import ToolRegistry
@@ -43,9 +44,17 @@ class RuntimeToolInvoker:
     - trace start/end/error
     """
 
-    def __init__(self, *, registry: ToolRegistry, executor: ToolExecutor) -> None:
+    def __init__(
+        self,
+        *,
+        registry: ToolRegistry,
+        executor: ToolExecutor,
+        scope_policy: Optional[ToolScopePolicy] = None,
+    ) -> None:
         self._registry = registry
         self._executor = executor
+        self._scope_policy = scope_policy
+
 
     def invoke(
         self,
