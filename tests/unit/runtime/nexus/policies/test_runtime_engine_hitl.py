@@ -44,6 +44,7 @@ async def test_runtime_engine_returns_needs_user_input_on_policy_abort(monkeypat
     monkeypatch.setattr(_pf.PipelineFactory, "build_pipeline", lambda *, state: _FailingPipeline())
 
     request = RuntimeRequest(
+        agent_id="agent_test",
         user_id="test-user",
         session_id="test-session",
         message="test",

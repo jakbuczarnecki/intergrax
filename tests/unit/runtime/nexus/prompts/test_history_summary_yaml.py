@@ -44,6 +44,7 @@ def test_history_summary_prompt_builder_uses_yaml_registry() -> None:
     # Act
     bundle = builder.build_history_summary_prompt(
         request=RuntimeRequest(
+            agent_id="agent_test",
             message="",
             session_id="test_session_1",
             user_id="test_user_1"),

@@ -24,6 +24,7 @@ async def test_runtime_aborts_on_max_total_tokens_exceeded() -> None:
     harness = build_engine_harness(cfg=cfg)
 
     request = RuntimeRequest(
+        agent_id="agent_test",
         user_id="test-user",
         session_id="test-session",
         message="hello",

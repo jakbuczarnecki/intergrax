@@ -1097,7 +1097,7 @@ def write_contracts_file_for_bundle(*, out_path: Path, metas: List[FileMeta]) ->
                 locked[obj.coid] = {
                     "symbol": obj.symbol,
                     "kind": obj.kind,
-                    "lock_type": "hard_lock",  # cannot change signature
+                    "lock_type": "soft_lock",
                     "reason": "core_runtime_surface",
                 }
 

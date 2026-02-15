@@ -67,7 +67,7 @@ class RuntimeContext:
     IMPORTANT:
     - per-request flags/results belong to RuntimeState, not here.
     """
-
+    
     config: "RuntimeConfig"
     session_manager: SessionManager
 

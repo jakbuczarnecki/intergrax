@@ -53,6 +53,7 @@ async def test_runtime_aborts_on_max_tool_calls_exceeded(monkeypatch) -> None:
     monkeypatch.setattr(PipelineFactory, "build_pipeline", _fake_build_pipeline)
 
     request = RuntimeRequest(
+        agent_id="agent_test",
         user_id="test-user",
         session_id="test-session",
         message="hello",

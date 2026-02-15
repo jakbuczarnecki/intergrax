@@ -47,11 +47,11 @@ async def test_runtime_calls_governance_after_run():
 
     engine = RuntimeEngine(context=context)
 
-    request = RuntimeRequest(
+    request = RuntimeRequest(        
         user_id="test-user",
         session_id="test-session",
         message="test",
-        metadata={"agent_id": "agent-1"},
+        agent_id="agent-1",
     )
     
     answer = await engine.run(request)

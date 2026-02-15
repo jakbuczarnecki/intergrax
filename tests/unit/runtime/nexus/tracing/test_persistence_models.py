@@ -109,6 +109,7 @@ async def test_runtime_finalizes_run_metadata() -> None:
     harness.engine.context.trace_writer = store
 
     request = RuntimeRequest(
+        agent_id="agent_test",
         user_id="user-1",
         session_id="sess-1",
         message="hello",
@@ -143,6 +144,7 @@ async def test_runtime_persists_error_metadata_on_exception(monkeypatch) -> None
     monkeypatch.setattr(PipelineFactory, "build_pipeline", _fake_build_pipeline)
 
     request = RuntimeRequest(
+        agent_id="agent_test",
         user_id="user-1",
         session_id="sess-1",
         message="hello",
@@ -189,6 +191,7 @@ async def test_runtime_persists_timeout_error(monkeypatch) -> None:
     monkeypatch.setattr(PipelineFactory, "build_pipeline", _fake_build_pipeline)
 
     request = RuntimeRequest(
+        agent_id="agent_test",
         user_id="user-1",
         session_id="sess-1",
         message="hello",

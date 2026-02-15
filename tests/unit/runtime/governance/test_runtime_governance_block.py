@@ -42,7 +42,7 @@ async def test_runtime_handles_governance_failure_gracefully():
         user_id="u",
         session_id="s",
         message="test",
-        metadata={"agent_id": "agent-1"},
+        agent_id="agent-1",
     )
 
     # Should not raise despite governance failure

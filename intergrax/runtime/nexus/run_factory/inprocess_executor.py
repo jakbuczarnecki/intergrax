@@ -8,7 +8,7 @@ from typing import Awaitable, Callable
 
 from intergrax.runtime.nexus.run_factory.contracts import RuntimeRunHandle
 from intergrax.runtime.nexus.run_factory.executor_contracts import RuntimeRunExecutor
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload, TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
 
 
 class InProcessRuntimeRunExecutor(RuntimeRunExecutor):

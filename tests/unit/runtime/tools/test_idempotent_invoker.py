@@ -80,8 +80,10 @@ def test_side_effect_tool_is_idempotent():
         idempotency_key="key-123",
     )
 
-    r1 = invoker.invoke(state=state, request=request)
-    r2 = invoker.invoke(state=state, request=request)
+    agent_id:str = "agent-test"
+
+    r1 = invoker.invoke(state=state, agent_id=agent_id, request=request)
+    r2 = invoker.invoke(state=state, agent_id=agent_id, request=request)
 
     assert r1.success
     assert r2.success

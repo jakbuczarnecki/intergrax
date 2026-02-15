@@ -60,8 +60,30 @@ class RuntimeToolInvoker:
         self,
         *,
         state: TraceEmitter,
+        agent_id: str,
         request: ToolExecutionRequest[BaseModel],
     ) -> ToolExecutionResult[BaseModel]:
+        # 0) scope authorization check (capability boundary)
+        if self._scope_policy is not None:
+
+            if not self._scope_policy.is_allowed(agent_id, request.tool_id):
+                msg = "Tool execution denied by scope policy."
+
+                state.trace_event(
+                    component=TraceComponent.TOOLS,
+                    step="tool_invocation_denied",
+                    message=msg,
+                    level=TraceLevel.ERROR,
+                    payload=ToolInvocationErrorDiagV1(
+                        tool_id=request.tool_id,
+                        step_id=str(request.step_id),
+                        error_code=RuntimeErrorCode.TOOL_ERROR,
+                        error_message=msg,
+                    ),
+                )
+                return ToolExecutionResult.fail(RuntimeErrorCode.TOOL_ERROR, msg)
+
+
         # 1) registry check + contract bind
         try:
             reg = self._registry.get(request.tool_id)

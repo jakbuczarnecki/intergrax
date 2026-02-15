@@ -21,6 +21,7 @@ class IdempotentToolInvoker:
         self,
         *,
         state: RuntimeState,
+        agent_id: str,
         request: ToolExecutionRequest[BaseModel],
     ) -> ToolExecutionResult[BaseModel]:
 
@@ -46,8 +47,10 @@ class IdempotentToolInvoker:
                 message=f"Tool call deduplicated via idempotency (tool_id={request.tool_id}, key={key}).",
             )
             return cached
-        result = self._base_invoker.invoke(
+        
+        result = self._base_invoker.invoke(            
             state=state,
+            agent_id=agent_id,
             request=request,
         )
 
