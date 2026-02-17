@@ -16,6 +16,7 @@ from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
 from intergrax.runtime.nexus.tools import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
+from intergrax.runtime.replay.service import ReplayService
 from intergrax.tools.registry import ToolRegistry
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -70,6 +71,8 @@ class RuntimeContext:
     
     config: "RuntimeConfig"
     session_manager: SessionManager
+
+    replay_service: Optional[ReplayService] = None
 
     ingestion_service: Optional[AttachmentIngestionService] = None
     context_builder: Optional[ContextBuilder] = None
