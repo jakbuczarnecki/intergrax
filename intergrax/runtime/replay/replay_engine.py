@@ -93,15 +93,6 @@ class ReplayEngine:
     # RECONSTRUCTION STAGES
     # -------------------------------------------------
 
-    def _reconstruct_steps(
-        self,
-        trace_events,
-        artifacts: List[ArtifactRef],
-    ) -> List[ReconstructedStep]:
-        """
-        Build step timeline from trace events.
-        """
-        raise NotImplementedError
 
     def _collect_tool_calls(
         self, steps: List[ReconstructedStep]
