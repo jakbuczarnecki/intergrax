@@ -15,6 +15,7 @@ from intergrax.runtime.nexus.artifacts.models import Artifact, ArtifactRef
 from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
 from intergrax.runtime.nexus.tools import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 from intergrax.runtime.replay.service import ReplayService
 from intergrax.tools.registry import ToolRegistry
@@ -334,6 +335,15 @@ class RuntimeContext:
                 "GovernanceService is required when production_mode=True."
             )
         
+        trace_writer: Optional[RunTraceWriter] = None
+        if config.production_mode:
+            if config.trace_db_path is None:
+                raise ValueError("trace_db_path must be set in production_mode.")
+
+            trace_writer = SQLiteRunTraceStore(
+                db_path=Path(config.trace_db_path)
+            )
+        
         return cls(
             config=config,
             session_manager=session_manager,
@@ -347,5 +357,5 @@ class RuntimeContext:
             history_layer=resolved_history_layer,            
             prompt_registry=prompt_registry,
             governance_service=governance_service,
-
+            trace_writer=trace_writer,
         )

@@ -13,54 +13,56 @@ from intergrax.runtime.nexus.tracing.persistence_models import (
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 
 
-def test_sqlite_run_trace_store_persist_and_read():
-    with TemporaryDirectory() as tmp:
-        db_path = "documents/trace.db"
-        # Path(tmp) / "trace.db"
-        store = SQLiteRunTraceStore(db_path=db_path)
+def test_sqlite_run_trace_store_persist_and_read():    
 
-        # ---- Create event ----
-        event = TraceEvent(
-            event_id=TraceEvent.new_id(),
-            run_id="run-1",
-            seq=1,
-            ts_utc="2026-01-01T00:00:00Z",
-            level=TraceLevel.INFO,
-            component=TraceComponent.ENGINE,
-            step="test_step",
-            message="hello",
-            payload=None,
-            tags={},
-            artifact_refs=(),
-        )
+    db_path = Path("documents/trace.db")
+    if db_path.exists():
+        db_path.unlink()
 
-        store.append_event(event)
+    store = SQLiteRunTraceStore(db_path=db_path)
 
-        # ---- Create metadata ----
-        stats = RunStats(
-            duration_ms=10,
-            llm_usage={},
-        )
+    # ---- Create event ----
+    event = TraceEvent(
+        event_id=TraceEvent.new_id(),
+        run_id="run-1",
+        seq=1,
+        ts_utc="2026-01-01T00:00:00Z",
+        level=TraceLevel.INFO,
+        component=TraceComponent.ENGINE,
+        step="test_step",
+        message="hello",
+        payload=None,
+        tags={},
+        artifact_refs=(),
+    )
 
-        metadata = RunMetadata(
-            run_id="run-1",
-            session_id="s1",
-            user_id="u1",
-            tenant_id="t1",
-            started_at_utc="2026-01-01T00:00:00Z",
-            stats=stats,
-            error=None,
-        )
+    store.append_event(event)
 
-        store.finalize_run("run-1", metadata)
+    # ---- Create metadata ----
+    stats = RunStats(
+        duration_ms=10,
+        llm_usage={},
+    )
 
-        # ---- Read ----
-        persisted = store.read_run("run-1")
+    metadata = RunMetadata(
+        run_id="run-1",
+        session_id="s1",
+        user_id="u1",
+        tenant_id="t1",
+        started_at_utc="2026-01-01T00:00:00Z",
+        stats=stats,
+        error=None,
+    )
 
-        assert persisted.metadata.run_id == "run-1"
-        assert persisted.metadata.session_id == "s1"
-        assert persisted.metadata.tenant_id == "t1"
-        assert persisted.metadata.stats.duration_ms == 10
+    store.finalize_run("run-1", metadata)
 
-        assert len(persisted.events) == 1
-        assert persisted.events[0]["run_id"] == "run-1"
+    # ---- Read ----
+    persisted = store.read_run("run-1")
+
+    assert persisted.metadata.run_id == "run-1"
+    assert persisted.metadata.session_id == "s1"
+    assert persisted.metadata.tenant_id == "t1"
+    assert persisted.metadata.stats.duration_ms == 10
+
+    assert len(persisted.events) == 1
+    assert persisted.events[0]["run_id"] == "run-1"
