@@ -186,6 +186,12 @@ class RuntimeEngine:
                         state=state,
                     )
 
+                # --- Hard Output Gate (contract enforcement) ---
+                self._validate_runtime_answer_contract(
+                    state=state,
+                    runtime_answer=runtime_answer,
+                )
+
                 # Final trace entry for this request.
                 state.trace_event(
                     component=TraceComponent.ENGINE,
@@ -357,3 +363,43 @@ class RuntimeEngine:
         if timeout_ms is None:
             return await pipeline.run(state=state)
         return await asyncio.wait_for(pipeline.run(state=state), timeout=timeout_ms/1000.0)
+    
+
+    
+    def _validate_runtime_answer_contract(
+        self,
+        *,
+        state: RuntimeState,
+        runtime_answer: RuntimeAnswer,
+    ) -> None:
+        """
+        Hard production contract validation for RuntimeAnswer.
+
+        This enforces ENGINE-level invariants.
+        It does NOT perform semantic or content inspection.
+        """
+
+        if runtime_answer is None:
+            from intergrax.runtime.nexus.errors.output_validation_error import OutputValidationError
+            raise OutputValidationError(
+                run_id=state.run_id,
+                reason_code="NULL_RUNTIME_ANSWER",
+                message="RuntimeAnswer is None.",
+            )
+
+        if not isinstance(runtime_answer.answer, str):
+            from intergrax.runtime.nexus.errors.output_validation_error import OutputValidationError
+            raise OutputValidationError(
+                run_id=state.run_id,
+                reason_code="INVALID_ANSWER_TYPE",
+                message="RuntimeAnswer.answer must be a string.",
+            )
+
+        if not runtime_answer.answer.strip():
+            from intergrax.runtime.nexus.errors.output_validation_error import OutputValidationError
+            raise OutputValidationError(
+                run_id=state.run_id,
+                reason_code="EMPTY_OUTPUT",
+                message="RuntimeAnswer.answer is empty.",
+            )
+
