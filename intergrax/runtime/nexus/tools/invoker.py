@@ -6,7 +6,12 @@ from __future__ import annotations
 
 from typing import Optional, Protocol, Type, runtime_checkable
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.tools.tool_invocation import ToolInvocationEndDiagV1, ToolInvocationErrorDiagV1, ToolInvocationStartDiagV1
@@ -59,7 +64,7 @@ class RuntimeToolInvoker:
     def invoke(
         self,
         *,
-        state: TraceEmitter,
+        state: "RuntimeState",
         agent_id: str,
         request: ToolExecutionRequest[BaseModel],
     ) -> ToolExecutionResult[BaseModel]:
@@ -86,7 +91,17 @@ class RuntimeToolInvoker:
                         error_message=msg,
                     ),
                 )
-                return ToolExecutionResult.fail(RuntimeErrorCode.TOOL_ERROR, msg)
+
+                from intergrax.runtime.nexus.errors.tool_scope_violation_error import (
+                    ToolScopeViolationError,
+                )
+
+                raise ToolScopeViolationError(
+                    run_id=state.run_id,
+                    agent_id=agent_id,
+                    tool_id=request.tool_id,
+                )
+
 
 
         # 1) registry check + contract bind
