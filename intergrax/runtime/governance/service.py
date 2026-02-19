@@ -3,7 +3,8 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from intergrax.logging import IntergraxLogging
 from intergrax.runtime.governance.execution_guard import ExecutionGuard, GovernanceEvaluation
@@ -16,6 +17,7 @@ class GovernanceService:
     """
 
     guard: ExecutionGuard
+    _logger: Any = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         self._logger = IntergraxLogging.get_logger(__name__, component="governance")

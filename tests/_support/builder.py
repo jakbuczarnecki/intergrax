@@ -5,12 +5,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional, Sequence
 from datetime import datetime
 from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 from intergrax.fastapi_core.runs.store_base import RunStore
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.governance.execution_guard import ExecutionGuard, GovernanceEvaluation
+from intergrax.runtime.governance.service import GovernanceService
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -25,6 +28,10 @@ from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
+from intergrax.runtime.replay.metrics import ExecutionMetrics
+from intergrax.runtime.replay.policy import PolicyDecision, PolicyDecisionType
+from intergrax.runtime.replay.regression import RegressionSignals
 from intergrax.runtime.tools.idempotency_store import IdempotencyStore
 from intergrax.tools.core.contracts import ToolContract
 
@@ -73,6 +80,44 @@ class FakeLLMAdapter(LLMAdapter):
                 output_tokens=len(self._fixed_text),
                 success=True,
             )
+
+class DummyExecutionGuard(ExecutionGuard):
+    """
+    Minimal execution guard for production-trace tests.
+
+    It does NOT:
+    - reconstruct execution
+    - compute real metrics
+    - evaluate history
+    - execute actions
+
+    It only returns a deterministic ALLOW decision.
+    """
+
+    def __init__(self) -> None:
+        # We intentionally do NOT call super().__init__
+        # because we do not need replay/metrics/policy engines.
+        pass
+
+    def evaluate_run(
+        self,
+        run_id: str,
+        agent_id: str,
+    ) -> GovernanceEvaluation:
+        decision = PolicyDecision(
+            decision=PolicyDecisionType.ALLOW,
+            reasons=["dummy-allow"],
+        )
+
+        # Minimal dummy objects (empty but correctly typed)
+        metrics = ExecutionMetrics()
+        regression = RegressionSignals()
+
+        return GovernanceEvaluation(
+            decision=decision,
+            metrics=metrics,
+            regression=regression,
+        )
 
 
 @dataclass(frozen=True)
@@ -155,6 +200,87 @@ def build_runtime_config_deterministic(
     cfg.validate()
 
     return cfg
+
+
+def build_engine_harness_production_trace(
+    *,
+    trace_db_path: Path,
+    llm_text: str = "OK",
+) -> DeterministicRuntimeHarness:
+
+    if trace_db_path is None:
+        raise ValueError("trace_db_path must be provided.")
+
+    llm = FakeLLMAdapter(fixed_text=llm_text)
+
+    cfg = RuntimeConfig(
+        llm_adapter=llm,
+        embedding_manager=None,
+        vectorstore_manager=None,
+        tenant_id="test-tenant",
+        workspace_id="test-workspace",
+        websearch_executor=None,
+        websearch_config=None,
+        tools_agent=None,
+        pipeline=NoPlannerPipeline(),
+        step_planner_cfg=StepPlannerConfig(),
+        step_executor_cfg=StepExecutorConfig(),
+        planner_prompt_config=PlannerPromptConfig(),
+        plan_loop_policy=PlanLoopPolicy(),
+        plan_source=ScriptedPlanSource(
+            plans=[
+                PlanSpec(
+                    version="1",
+                    intent=PlanIntent.GENERIC,
+                    next_step=EngineNextStep.FINALIZE,
+                    reasoning_summary="test: production trace harness",
+                    ask_clarifying_question=False,
+                    clarifying_question=None,
+                    use_websearch=False,
+                    use_user_longterm_memory=False,
+                    use_rag=False,
+                    use_tools=False,
+                    debug=None,
+                )
+            ]
+        ),
+        enable_rag=False,
+        enable_websearch=False,
+        enable_org_profile_memory=False,
+        tools_mode="off",
+        production_mode=True,
+        trace_db_path=str(trace_db_path),
+    )
+
+    cfg.validate()
+
+    session_manager = build_in_memory_session_manager()
+
+    governance_service = GovernanceService(
+        guard=DummyExecutionGuard()
+    )
+
+    ctx = RuntimeContext.build(
+        config=cfg,
+        session_manager=session_manager,
+        ingestion_service=None,
+        context_builder=None,
+        rag_prompt_builder=None,
+        user_longterm_memory_prompt_builder=None,
+        websearch_prompt_builder=None,
+        history_prompt_builder=None,
+        prompt_registry=None,
+        governance_service=governance_service,
+    )
+
+    engine = RuntimeEngine(context=ctx)
+
+    return DeterministicRuntimeHarness(
+        engine=engine,
+        config=cfg,
+        session_manager=session_manager,
+    )
+
 
 
 def build_engine_harness(
