@@ -130,6 +130,12 @@ class RuntimeState:
 
         self._trace_seq += 1
 
+        # Minimal P0 PII-safe logging (deterministic, no heuristics)
+        if self.context.config.production_mode:
+            safe_message = "[REDACTED]"
+        else:
+            safe_message = message
+
         evt = TraceEvent(
             event_id=TraceEvent.new_id(),
             run_id=self.run_id,
@@ -138,7 +144,7 @@ class RuntimeState:
             level=level,
             component=component,
             step=step,
-            message=message,
+            message=safe_message,
             payload=payload,
             tags={},
             artifact_refs=artifact_refs or [],
