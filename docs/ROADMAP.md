@@ -31,7 +31,6 @@ After completing this subset, we can start building the first E2E agent.
 
 [DONE] Logging — global settings and global contracts — simplify logging
 [DONE] Diagnostics and tracing — in runtime and RuntimeState — replace dictionaries with typed structures
-
 [DONE] Run record — persistent run record (trace + metadata + LLM cost) — in-memory MVP
 [DONE] Trace events — persistent trace event storage — in-memory backend
 [DONE] Runtime loop — retry and escalation at run level
@@ -47,6 +46,10 @@ After completing this subset, we can start building the first E2E agent.
 [DONE] Tooling — implement permission scopes and auditing for tool usage
 [DONE] Runtime — implement idempotency and safe retry for tool calls with side effects
 [DONE] Guardrails — implement minimal hard gates (output validation, tool gating, pii-safe logging)
+[DONE] Runtime — implement run replay and inspection (ability to reconstruct a run from trace + artifacts)
+[DONE] Runtime — implement idempotency and safe retry for tool calls with side effects
+[DONE] Tooling — implement a formal tool/skill contract (input/output schema, error taxonomy, permissions)
+
 
 [PARTIAL] Tests — unit and integration coverage for runtime, trace, retry and cost
 [PARTIAL] Tests — minimal unit and integration test coverage for all P0 foundations
@@ -55,12 +58,9 @@ After completing this subset, we can start building the first E2E agent.
 
 ## Production foundations (P0 — must be done before first E2E agent)
 
-[P0] Runtime — implement run replay and inspection (ability to reconstruct a run from trace + artifacts)
-[P0] Runtime — implement idempotency and safe retry for tool calls with side effects
 [P0] Sessions — implement production storage adapters for sessions and user profiles (DB-backed)
 [P0] Organization profiles — implement production storage and isolation per organization
 [P0] Security — implement PII redaction and multi-tenant isolation for logs, memory, artifacts and vector stores
-[P0] Tooling — implement a formal tool/skill contract (input/output schema, error taxonomy, permissions)
 [P0] Eval — implement an evaluation harness for agent quality, regressions and cost tracking
 
 ---
