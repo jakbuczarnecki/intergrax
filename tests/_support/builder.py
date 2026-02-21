@@ -414,3 +414,9 @@ def tools_agent_make_contract(tool_id: str, input_model, output_model):
         error_mapping={},
         side_effects=False,
     )
+
+def prepare_sqlite_db(name:str)->Path:
+    db_path = Path(f"documents/{name}")
+    if db_path.exists():
+        db_path.unlink()
+    return db_path

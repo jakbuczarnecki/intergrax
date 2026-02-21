@@ -2,22 +2,18 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import pytest
 
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
-from tests._support.builder import build_engine_harness_production_trace
+from tests._support.builder import build_engine_harness_production_trace, prepare_sqlite_db
 
 
 @pytest.mark.asyncio
 async def test_runtime_sqlite_replay_e2e():
-    db_path = Path("documents/trace.db")
-    if db_path.exists():
-        db_path.unlink()
-
+    db_path = prepare_sqlite_db("trace.db")
+    
     harness = build_engine_harness_production_trace(
         trace_db_path=db_path
     )
