@@ -328,8 +328,7 @@ class SQLiteSessionStorage(SessionStorage):
         return sessions
 
     async def append_message(
-        self,
-        *,
+        self,        
         session_id: str,
         message: ChatMessage
     ) -> SessionMessageAppendResult:        

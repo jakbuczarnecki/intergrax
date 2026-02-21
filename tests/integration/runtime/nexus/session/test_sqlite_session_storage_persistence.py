@@ -12,8 +12,7 @@ from tests._support.builder import prepare_sqlite_db
 
 def test_sqlite_session_storage_persistence():
 
-    async def scenario(tmp_path: str) -> None:
-        db_path = f"{tmp_path}/sessions.db"
+    async def scenario(db_path: str) -> None:
 
         # First instance
         storage = SQLiteSessionStorage(db_path=db_path)
@@ -53,5 +52,5 @@ def test_sqlite_session_storage_persistence():
         assert history[0].content == "hello world"
 
 
-    db_path = prepare_sqlite_db("trace.db")
+    db_path = prepare_sqlite_db("sessions.db")
     asyncio.run(scenario(db_path))
