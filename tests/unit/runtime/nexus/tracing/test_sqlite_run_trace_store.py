@@ -1,6 +1,3 @@
-import json
-from pathlib import Path
-from tempfile import TemporaryDirectory
 
 from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import (
     SQLiteRunTraceStore,
@@ -11,13 +8,12 @@ from intergrax.runtime.nexus.tracing.persistence_models import (
     RunStats,
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
+from tests._support.builder import prepare_sqlite_db
 
 
 def test_sqlite_run_trace_store_persist_and_read():    
 
-    db_path = Path("documents/trace.db")
-    if db_path.exists():
-        db_path.unlink()
+    db_path = prepare_sqlite_db("sqlite_trace.db")
 
     store = SQLiteRunTraceStore(db_path=db_path)
 
