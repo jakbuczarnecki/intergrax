@@ -12,7 +12,7 @@ from tests._support.builder import build_engine_harness_production_trace, prepar
 
 @pytest.mark.asyncio
 async def test_runtime_sqlite_replay_e2e():
-    db_path = prepare_sqlite_db("trace.db")
+    db_path = prepare_sqlite_db("reply_e2e.db")
     
     harness = build_engine_harness_production_trace(
         trace_db_path=db_path

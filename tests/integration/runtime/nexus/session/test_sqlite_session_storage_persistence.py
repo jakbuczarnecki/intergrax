@@ -52,5 +52,5 @@ def test_sqlite_session_storage_persistence():
         assert history[0].content == "hello world"
 
 
-    db_path = prepare_sqlite_db("sessions.db")
+    db_path = prepare_sqlite_db("sessions_persistance.db")
     asyncio.run(scenario(db_path))

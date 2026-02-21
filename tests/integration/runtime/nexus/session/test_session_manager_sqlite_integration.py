@@ -50,5 +50,5 @@ def test_session_manager_with_sqlite_storage() -> None:
         assert len(history) == 1
         assert history[0].content == "integration test"
     
-    db_path = prepare_sqlite_db("sessions.db")
+    db_path = prepare_sqlite_db("sessions_intergration.db")
     asyncio.run(scenario(db_path))

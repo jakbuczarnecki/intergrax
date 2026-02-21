@@ -13,7 +13,7 @@ from tests._support.builder import prepare_sqlite_db
 
 def test_sqlite_run_trace_store_persist_and_read():    
 
-    db_path = prepare_sqlite_db("trace.db")
+    db_path = prepare_sqlite_db("sqlite_trace.db")
 
     store = SQLiteRunTraceStore(db_path=db_path)
 
