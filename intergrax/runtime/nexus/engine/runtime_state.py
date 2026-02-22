@@ -73,8 +73,6 @@ class RuntimeState:
     profile_user_instructions: Optional[str] = None
     profile_org_instructions: Optional[str] = None
 
-    # Tenant
-    tenant_id: Optional[str] = None
 
     # Usage flags
     used_rag: bool = False
@@ -113,6 +111,15 @@ class RuntimeState:
 
     # Filled by Persist step (final runtime output)
     runtime_answer: Optional[RuntimeAnswer] = None
+
+    # Tenant
+    @property
+    def tenant_id(self) -> str:
+        """
+        Returns tenant_id from the immutable RuntimeRequest.
+        Tenant identity is defined at request level (single source of truth).
+        """
+        return self.request.tenant_id
 
 
     def trace_event(
