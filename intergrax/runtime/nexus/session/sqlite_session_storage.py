@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional, List
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 import uuid
 
 
@@ -17,7 +17,6 @@ from intergrax.runtime.nexus.session.session_storage import SessionStorage
 from intergrax.runtime.nexus.session.chat_session import ChatSession, SessionStatus
 from intergrax.runtime.nexus.session.session_message_append_result import SessionMessageAppendResult
 from intergrax.llm.messages import AttachmentRef, ChatMessage
-from intergrax.utils.time_provider import SystemTimeProvider
 
 
 class SQLiteSessionStorage(SessionStorage):
