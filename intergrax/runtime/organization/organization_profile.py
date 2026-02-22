@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.utils.time_provider import SystemTimeProvider
 
 
 @dataclass
@@ -121,7 +122,7 @@ class OrganizationProfile:
     tags: List[str] = field(default_factory=list)
 
     # Last update timestamp of the profile (UTC).
-    last_updated_utc: datetime = field(default_factory=datetime.utcnow)
+    last_updated_utc: datetime = field(default_factory=lambda: SystemTimeProvider.utc_now())
 
     # Extra extensible metadata (for future use).
     extra: Dict[str, Any] = field(default_factory=dict)
