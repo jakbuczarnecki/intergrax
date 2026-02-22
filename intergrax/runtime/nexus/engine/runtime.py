@@ -106,7 +106,6 @@ class RuntimeEngine:
             context=self.context,
             request=request,
             run_id=run_id,
-            tenant_id=request.tenant_id,
             llm_usage_tracker=LLMUsageTracker(run_id=run_id),
         )
 
