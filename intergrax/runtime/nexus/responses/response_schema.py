@@ -133,17 +133,18 @@ class RuntimeRequest:
     RuntimeEngine. It can be created directly or via helper
     functions/wrappers in web frameworks.
     """
+
     agent_id: str
 
     user_id: str
     session_id: str
-    message: str
+    message: str    
 
     attachments: List[AttachmentRef] = field(default_factory=list)
 
-    # Optional tenant/workspace scoping
-    tenant_id: Optional[str] = None
+    # Workspace scoping    
     workspace_id: Optional[str] = None
+    tenant_id: Optional[str] = None
 
     # Optional UI / app metadata (channel, app name, etc.)
     metadata: Dict[str, Any] = field(default_factory=dict)

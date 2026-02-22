@@ -73,6 +73,7 @@ async def test_runtime_retries_on_internal_error(monkeypatch) -> None:
     monkeypatch.setattr(PipelineFactory, "build_pipeline", _fake_build_pipeline)
 
     request = RuntimeRequest(
+        tenant_id="test-tenant",
         agent_id="agent_test",
         user_id="user-1",
         session_id="sess-1",

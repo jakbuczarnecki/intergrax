@@ -40,6 +40,7 @@ async def build_plan(
 
     # 1. Request
     req = RuntimeRequest(
+        tenant_id=config.tenant_id,
         agent_id=agent_id,
         user_id=user_id,
         session_id=inner_session_id,

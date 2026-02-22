@@ -21,6 +21,7 @@ async def test_runtime_sqlite_replay_e2e():
     engine = harness.engine
 
     request = RuntimeRequest(
+        tenant_id="test-tenant",
         agent_id="agent_test",
         user_id="user_test",
         session_id="session_test",

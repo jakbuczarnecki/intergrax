@@ -48,6 +48,7 @@ async def test_runtime_calls_governance_after_run():
     engine = RuntimeEngine(context=context)
 
     request = RuntimeRequest(        
+        tenant_id="test-tenant",
         user_id="test-user",
         session_id="test-session",
         message="test",

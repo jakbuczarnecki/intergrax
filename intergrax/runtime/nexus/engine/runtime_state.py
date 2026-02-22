@@ -73,6 +73,9 @@ class RuntimeState:
     profile_user_instructions: Optional[str] = None
     profile_org_instructions: Optional[str] = None
 
+    # Tenant
+    tenant_id: Optional[str] = None
+
     # Usage flags
     used_rag: bool = False
     used_websearch: bool = False

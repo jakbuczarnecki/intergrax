@@ -77,6 +77,7 @@ class DryRunRuntimeRunFactory(RuntimeRunFactory):
     def create_api_run(self, *, run_id: str) -> RuntimeRunHandle:
         # Synthetic, explicit API-originated request
         request = RuntimeRequest(
+            tenant_id=self._context.config.tenant_id,
             agent_id=self._agent_id, 
             user_id=self._system_user_id,
             session_id=self._system_session_id,

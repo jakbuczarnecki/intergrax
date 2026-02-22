@@ -39,6 +39,7 @@ async def test_runtime_handles_governance_failure_gracefully():
     engine = RuntimeEngine(context=context)
 
     request = RuntimeRequest(
+        tenant_id="test-tenant",
         user_id="u",
         session_id="s",
         message="test",

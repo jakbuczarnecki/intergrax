@@ -28,6 +28,7 @@ async def test_runtime_aborts_on_max_llm_calls_exceeded() -> None:
     engine = harness.engine
 
     request = RuntimeRequest(
+        tenant_id="test-tenant",
         agent_id="agent_test",
         user_id="test-user",
         session_id="test-session",

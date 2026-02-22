@@ -87,6 +87,7 @@ async def test_run_case_success_exact_match():
     )
 
     request = RuntimeRequest(
+        tenant_id="test-tenant",
         agent_id="agent",
         user_id="user",
         session_id="session",
@@ -136,6 +137,7 @@ async def test_run_case_failure_exact_mismatch():
     )
 
     request = RuntimeRequest(
+        tenant_id="test-tenant",
         agent_id="agent",
         user_id="user",
         session_id="session",
@@ -188,6 +190,7 @@ async def test_run_case_missing_run_id():
     )
 
     request = RuntimeRequest(
+        tenant_id="test-tenant",
         agent_id="agent",
         user_id="user",
         session_id="session",
