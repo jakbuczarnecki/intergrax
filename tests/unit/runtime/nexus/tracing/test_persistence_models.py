@@ -118,7 +118,7 @@ async def test_runtime_finalizes_run_metadata() -> None:
 
     answer = await harness.engine.run(request)
 
-    run = store.read_run(answer.run_id)
+    run = store.read_run(answer.run_id, request.tenant_id)
 
     assert run.metadata.run_id == answer.run_id
     assert run.metadata.session_id == "sess-1"
@@ -161,7 +161,7 @@ async def test_runtime_persists_error_metadata_on_exception(monkeypatch) -> None
     assert len(store._metadata_by_run) == 1  # if you prefer, expose a public method later (separate change)
 
     run_id = next(iter(store._metadata_by_run.keys()))
-    run = store.read_run(run_id)
+    run = store.read_run(run_id, request.tenant_id)
 
     assert run.metadata.error is not None
     assert run.metadata.error.error_type == RuntimeErrorCode.INTERNAL_ERROR
@@ -205,7 +205,7 @@ async def test_runtime_persists_timeout_error(monkeypatch) -> None:
 
     assert len(store._metadata_by_run) == 1
     run_id = next(iter(store._metadata_by_run.keys()))
-    run = store.read_run(run_id)
+    run = store.read_run(run_id, request.tenant_id)
 
     assert run.metadata.error is not None
     assert run.metadata.error.error_type == RuntimeErrorCode.TIMEOUT

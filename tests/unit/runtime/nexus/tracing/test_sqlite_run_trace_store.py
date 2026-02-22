@@ -53,7 +53,7 @@ def test_sqlite_run_trace_store_persist_and_read():
     store.finalize_run("run-1", metadata)
 
     # ---- Read ----
-    persisted = store.read_run("run-1")
+    persisted = store.read_run("run-1", metadata.tenant_id)
 
     assert persisted.metadata.run_id == "run-1"
     assert persisted.metadata.session_id == "s1"

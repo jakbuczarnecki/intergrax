@@ -84,5 +84,5 @@ async def test_runtime_retries_on_internal_error(monkeypatch) -> None:
     assert answer.answer == "OK"
     assert answer.run_id is not None
 
-    run = store.read_run(answer.run_id)
+    run = store.read_run(answer.run_id, request.tenant_id)
     assert run.metadata.error is None

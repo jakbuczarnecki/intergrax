@@ -138,7 +138,7 @@ class SQLiteRunTraceStore(RunTraceWriter, RunTraceReader):
             )
 
 
-    def read_run(self, run_id: str) -> PersistedRun:
+    def read_run(self, run_id: str, tenant_id: str) -> PersistedRun:
         """
         Reconstruct PersistedRun from SQLite storage.
         """
@@ -155,8 +155,9 @@ class SQLiteRunTraceStore(RunTraceWriter, RunTraceReader):
                        error_json
                 FROM runs
                 WHERE run_id = ?
+                AND tenant_id = ?
                 """,
-                (run_id,),
+                (run_id, tenant_id,),
             ).fetchone()
 
             if run_row is None:
