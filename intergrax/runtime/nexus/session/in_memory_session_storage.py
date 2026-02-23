@@ -97,7 +97,12 @@ class InMemorySessionStorage(SessionStorage):
             metadata=dict(metadata),
         )
 
-        self._sessions[session_id] = session
+        if tenant_id is None:
+            raise ValueError("tenant_id is required")
+
+        key = (tenant_id, session_id)
+        self._sessions[key] = session
+
         return replace(session)
 
     async def save_session(self, session: ChatSession) -> None:

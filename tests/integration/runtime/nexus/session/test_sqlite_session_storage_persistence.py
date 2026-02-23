@@ -31,6 +31,7 @@ def test_sqlite_session_storage_persistence():
         )
 
         await storage.append_message(
+            tenant_id="tenant-1",
             session_id=session.id,
             message=message,
         )
@@ -38,12 +39,13 @@ def test_sqlite_session_storage_persistence():
         # Re-create storage (simulate restart)
         storage = SQLiteSessionStorage(db_path=db_path)
 
-        restored_session = await storage.get_session(session.id)
+        restored_session = await storage.get_session(tenant_id="tenant-1",session_id=session.id)
         assert restored_session is not None
         assert restored_session.id == session.id
         assert restored_session.metadata == {"k": "v"}
 
         history = await storage.get_history(
+            tenant_id="tenant-1",
             session_id=session.id,
             native_tools=True,
         )

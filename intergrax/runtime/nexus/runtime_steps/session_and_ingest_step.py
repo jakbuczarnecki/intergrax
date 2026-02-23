@@ -37,8 +37,8 @@ class SessionAndIngestStep(RuntimeStep):
 
         # 1. Load or create session
         session = await state.context.session_manager.get_session(
-            req.session_id, 
             tenant_id=effective_tenant_id,
+            session_id=req.session_id,
         )
 
         if session is None:
@@ -70,8 +70,9 @@ class SessionAndIngestStep(RuntimeStep):
         # 2. Append user message to session history
         user_message = self._build_session_message_from_request(req)
         append_res = await state.context.session_manager.append_message(
-            session.id,
-            user_message,
+            tenant_id=session.tenant_id,
+            session_id=session.id,
+            message=user_message,
         )
 
         if append_res.consolidation_diag is not None:
@@ -84,7 +85,12 @@ class SessionAndIngestStep(RuntimeStep):
             )
 
         # Reload the session to ensure we have the latest metadata
-        session = await state.context.session_manager.get_session(session.id) or session
+        session = (
+            await state.context.session_manager.get_session(
+                tenant_id=session.tenant_id,
+                session_id=session.id,
+            )
+        ) or session
 
         ingestion_preview: List[IngestionPreviewItemV1] = []
         if ingestion_results:

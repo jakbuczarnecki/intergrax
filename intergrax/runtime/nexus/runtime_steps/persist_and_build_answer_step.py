@@ -51,8 +51,9 @@ class PersistAndBuildAnswerStep(RuntimeStep):
         )
         
         append_res = await state.context.session_manager.append_message(
-            session.id,
-            assistant_message,
+            tenant_id=session.tenant_id,
+            session_id=session.id,
+            message=assistant_message,
         )
 
         if append_res.consolidation_diag is not None:
