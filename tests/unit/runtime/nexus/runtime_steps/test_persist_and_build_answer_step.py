@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 import pytest
+from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
+from intergrax.runtime.nexus.session.session_storage import SessionStorage
 from tests._support.builder import build_runtime_state_for_tests
 
 
@@ -13,12 +15,18 @@ class _FakeAppendResult:
     consolidation_diag = None
 
 
-class _FakeSessionManager:
+class _FakeSessionManager(SessionStorage):
     def __init__(self):
         self.append_called = False
         self.last_message = None
 
-    async def append_message(self, session_id, message):
+    async def append_message(
+        self,
+        *,
+        tenant_id: str,
+        session_id: str,
+        message: ChatMessage,
+    ):
         self.append_called = True
         self.last_message = message
         return _FakeAppendResult()
@@ -36,7 +44,7 @@ async def test_persist_step_requires_session():
 @pytest.mark.asyncio
 async def test_persist_step_uses_raw_answer():
     state = build_runtime_state_for_tests(run_id="run-1")
-    state.session = type("S", (), {"id": "s1"})()
+    state.session = type("S", (), {"id": "s1", "tenant_id": "t1"})()
     state.context.session_manager = _FakeSessionManager()
 
     state.raw_answer = "hello"
@@ -49,7 +57,7 @@ async def test_persist_step_uses_raw_answer():
 @pytest.mark.asyncio
 async def test_persist_step_fallback_to_tools_agent_answer():
     state = build_runtime_state_for_tests(run_id="run-1")
-    state.session = type("S", (), {"id": "s1"})()
+    state.session = type("S", (), {"id": "s1", "tenant_id": "t1"})()
     state.context.session_manager = _FakeSessionManager()
 
     state.raw_answer = ""
@@ -63,7 +71,7 @@ async def test_persist_step_fallback_to_tools_agent_answer():
 @pytest.mark.asyncio
 async def test_persist_step_strategy_selection():
     state = build_runtime_state_for_tests(run_id="run-1")
-    state.session = type("S", (), {"id": "s1"})()
+    state.session = type("S", (), {"id": "s1", "tenant_id": "t1"})()
     state.context.session_manager = _FakeSessionManager()
 
     state.raw_answer = "ok"
@@ -82,7 +90,7 @@ async def test_persist_step_strategy_selection():
 @pytest.mark.asyncio
 async def test_persist_step_tool_calls_mapping():
     state = build_runtime_state_for_tests(run_id="run-1")
-    state.session = type("S", (), {"id": "s1"})()
+    state.session = type("S", (), {"id": "s1", "tenant_id": "t1"})()
     state.context.session_manager = _FakeSessionManager()
 
     state.raw_answer = "ok"
@@ -107,7 +115,7 @@ async def test_persist_step_tool_calls_mapping():
 @pytest.mark.asyncio
 async def test_persist_step_used_attachments_in_route():
     state = build_runtime_state_for_tests(run_id="run-1")
-    state.session = type("S", (), {"id": "s1"})()
+    state.session = type("S", (), {"id": "s1", "tenant_id": "test-tenant"})()
     state.context.session_manager = _FakeSessionManager()
 
     state.raw_answer = "ok"

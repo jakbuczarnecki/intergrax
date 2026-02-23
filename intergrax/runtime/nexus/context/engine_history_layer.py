@@ -246,7 +246,10 @@ class HistoryLayer:
         Any model-specific preprocessing (truncation, summarization, token
         accounting) should happen in `_step_build_base_history`, not here.
         """
-        return await self._session_manager.get_history(session_id=session.id)
+        return await self._session_manager.get_history(
+            tenant_id=session.tenant_id,
+            session_id=session.id,
+        )
 
 
     def _count_tokens_for_messages(self, messages: List[ChatMessage]) -> Optional[int]:

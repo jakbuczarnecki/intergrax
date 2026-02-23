@@ -31,6 +31,7 @@ def test_session_manager_with_sqlite_storage() -> None:
         )
 
         await manager.append_message(
+            tenant_id="tenant-1",
             session_id=session.id,
             message=message,
         )
@@ -38,11 +39,12 @@ def test_session_manager_with_sqlite_storage() -> None:
         storage = SQLiteSessionStorage(db_path=db_path)
         manager = SessionManager(storage=storage)
 
-        restored_session = await manager.get_session(session.id)
+        restored_session = await manager.get_session(tenant_id="tenant-1",session_id=session.id)
         assert restored_session is not None
         assert restored_session.id == session.id
 
         history = await manager.get_history_for_session(
+            tenant_id="tenant-1",
             session_id=session.id,
             native_tools=True,
         )

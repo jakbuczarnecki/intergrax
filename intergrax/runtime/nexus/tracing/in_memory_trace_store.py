@@ -38,7 +38,7 @@ class InMemoryRunTraceStore(RunTraceWriter, RunTraceReader):
     def finalize_run(self, run_id: str, metadata: RunMetadata) -> None:
         self._metadata_by_run[run_id] = metadata
 
-    def read_run(self, run_id: str) -> PersistedRun:
+    def read_run(self, run_id: str, tenant_id: str) -> PersistedRun:
         if run_id not in self._events_by_run:
             raise KeyError(f"Run '{run_id}' not found in trace store")
 
@@ -47,6 +47,9 @@ class InMemoryRunTraceStore(RunTraceWriter, RunTraceReader):
             raise KeyError(
                 f"Run '{run_id}' metadata not found in trace store. Did you forget to call finalize_run()?"                
             )
+        
+        if metadata.tenant_id != tenant_id:
+            raise KeyError(f"Run '{run_id}' not found in trace store")
 
         return PersistedRun(
             metadata=metadata,

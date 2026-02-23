@@ -121,11 +121,11 @@ class SQLiteSessionStorage(SessionStorage):
     async def create_session(
         self,
         *,
-        session_id: Optional[str],
         tenant_id: str,
-        workspace_id: str,
-        user_id: str,
-        metadata: Optional[dict]
+        session_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        workspace_id: Optional[str] = None,
+        metadata: Optional[dict] = None,
     ) -> ChatSession:
 
         if session_id is None:
@@ -175,7 +175,12 @@ class SQLiteSessionStorage(SessionStorage):
         self._connection.commit()
         return session
 
-    async def get_session(self, session_id: str) -> Optional[ChatSession]:
+    async def get_session(
+        self,
+        *,
+        tenant_id: str,
+        session_id: str,
+    ) -> Optional[ChatSession]:
 
         cursor = self._connection.cursor()
         cursor.execute(
@@ -192,8 +197,9 @@ class SQLiteSessionStorage(SessionStorage):
                 updated_at_utc
             FROM sessions
             WHERE session_id = ?
+            AND tenant_id = ?
             """,
-            (session_id,),
+            (session_id, tenant_id),
         )
 
         row = cursor.fetchone()
@@ -235,7 +241,6 @@ class SQLiteSessionStorage(SessionStorage):
             """
             UPDATE sessions
             SET
-                tenant_id = ?,
                 workspace_id = ?,
                 user_id = ?,
                 metadata_json = ?,
@@ -244,9 +249,9 @@ class SQLiteSessionStorage(SessionStorage):
                 created_at_utc = ?,
                 updated_at_utc = ?
             WHERE session_id = ?
+            AND tenant_id = ?
             """,
             (
-                session.tenant_id,
                 session.workspace_id,
                 session.user_id,
                 json.dumps(session.metadata) if session.metadata else None,
@@ -255,6 +260,7 @@ class SQLiteSessionStorage(SessionStorage):
                 session.created_at.isoformat(),
                 session.updated_at.isoformat(),
                 session.id,
+                session.tenant_id,
             ),
         )
 
@@ -264,33 +270,53 @@ class SQLiteSessionStorage(SessionStorage):
         self,
         *,
         tenant_id: str,
-        workspace_id: str,
         user_id: str,
-        limit: int
+        limit: Optional[int] = None,
     ) -> List[ChatSession]:
         
         cursor = self._connection.cursor()
-        cursor.execute(
-            """
-            SELECT
-                session_id,
-                tenant_id,
-                workspace_id,
-                user_id,
-                metadata_json,
-                status,
-                user_turns,
-                created_at_utc,
-                updated_at_utc
-            FROM sessions
-            WHERE tenant_id = ?
-            AND workspace_id = ?
-            AND user_id = ?
-            ORDER BY updated_at_utc DESC
-            LIMIT ?
-            """,
-            (tenant_id, workspace_id, user_id, limit),
-        )
+
+        if limit is not None:
+            cursor.execute(
+                """
+                SELECT
+                    session_id,
+                    tenant_id,
+                    workspace_id,
+                    user_id,
+                    metadata_json,
+                    status,
+                    user_turns,
+                    created_at_utc,
+                    updated_at_utc
+                FROM sessions
+                WHERE tenant_id = ?
+                AND user_id = ?
+                ORDER BY updated_at_utc DESC
+                LIMIT ?
+                """,
+                (tenant_id, user_id, limit),
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT
+                    session_id,
+                    tenant_id,
+                    workspace_id,
+                    user_id,
+                    metadata_json,
+                    status,
+                    user_turns,
+                    created_at_utc,
+                    updated_at_utc
+                FROM sessions
+                WHERE tenant_id = ?
+                AND user_id = ?
+                ORDER BY updated_at_utc DESC
+                """,
+                (tenant_id, user_id),
+            )
 
         rows = cursor.fetchall()
         sessions: List[ChatSession] = []
@@ -327,14 +353,21 @@ class SQLiteSessionStorage(SessionStorage):
         return sessions
 
     async def append_message(
-        self,        
+        self,
+        *,
+        tenant_id: str,
         session_id: str,
-        message: ChatMessage
-    ) -> SessionMessageAppendResult:        
+        message: ChatMessage,
+    ) -> SessionMessageAppendResult:
 
-        session = await self.get_session(session_id)
+        session = await self.get_session(
+            tenant_id=tenant_id,
+            session_id=session_id,
+        )
         if session is None:
-            raise ValueError(f"Session not found: {session_id}")
+            raise ValueError(
+                f"Session not found for tenant '{tenant_id}': {session_id}"
+            )
 
         cursor = self._connection.cursor()
 
@@ -404,31 +437,35 @@ class SQLiteSessionStorage(SessionStorage):
     async def get_history(
         self,
         *,
+        tenant_id: str,
         session_id: str,
-        native_tools: bool
+        native_tools: bool,
     ) -> List[ChatMessage]:
-        
+
         cursor = self._connection.cursor()
 
         cursor.execute(
             """
             SELECT
-                entry_id,
-                role,
-                content,
-                deleted,
-                modified,
-                created_at,
-                tool_call_id,
-                name,
-                tool_calls_json,
-                attachments_json,
-                metadata_json
-            FROM session_messages
-            WHERE session_id = ?
-            ORDER BY created_at ASC
+                m.entry_id,
+                m.role,
+                m.content,
+                m.deleted,
+                m.modified,
+                m.created_at,
+                m.tool_call_id,
+                m.name,
+                m.tool_calls_json,
+                m.attachments_json,
+                m.metadata_json
+            FROM session_messages m
+            INNER JOIN sessions s
+                ON m.session_id = s.session_id
+            WHERE m.session_id = ?
+            AND s.tenant_id = ?
+            ORDER BY m.created_at ASC
             """,
-            (session_id,),
+            (session_id, tenant_id),
         )
 
         rows = cursor.fetchall()

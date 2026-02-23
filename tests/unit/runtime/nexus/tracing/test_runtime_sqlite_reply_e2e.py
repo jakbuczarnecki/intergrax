@@ -21,6 +21,7 @@ async def test_runtime_sqlite_replay_e2e():
     engine = harness.engine
 
     request = RuntimeRequest(
+        tenant_id="test-tenant",
         agent_id="agent_test",
         user_id="user_test",
         session_id="session_test",
@@ -32,7 +33,7 @@ async def test_runtime_sqlite_replay_e2e():
     assert db_path.exists()
 
     store = SQLiteRunTraceStore(db_path=db_path)
-    persisted = store.read_run(runtime_answer.run_id)
+    persisted = store.read_run(runtime_answer.run_id, request.tenant_id)
 
     assert persisted.metadata is not None
     assert persisted.metadata.run_id == runtime_answer.run_id

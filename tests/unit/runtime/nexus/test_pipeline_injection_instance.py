@@ -37,6 +37,7 @@ def _make_state_with_config(*, cfg) -> RuntimeState:
     )
 
     req = RuntimeRequest(
+        tenant_id="test-tenant",
         agent_id="agent_test",
         user_id="u-001",
         session_id="s-001",

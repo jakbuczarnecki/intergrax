@@ -39,13 +39,25 @@ async def test_runtime_handles_governance_failure_gracefully():
     engine = RuntimeEngine(context=context)
 
     request = RuntimeRequest(
+        tenant_id="test-tenant",
         user_id="u",
         session_id="s",
         message="test",
         agent_id="agent-1",
     )
 
-    # Should not raise despite governance failure
+    await engine.context.session_manager.create_session(
+        tenant_id="test-tenant",
+        session_id="s",
+        user_id="u",
+    )
+
+    session = await engine.context.session_manager.get_session(
+        tenant_id="test-tenant",
+        session_id="s",
+    )
+    assert session is not None
+
     answer = await engine.run(request)
 
     assert answer.run_id is not None

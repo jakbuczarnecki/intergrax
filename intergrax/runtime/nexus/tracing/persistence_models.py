@@ -4,8 +4,9 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Optional
 from intergrax.runtime.nexus.artifacts.models import ArtifactRef
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
@@ -89,14 +90,25 @@ class PersistedRun:
     events: List[Dict[str, Any]]  # Serialized TraceEvent dicts
 
 
-class RunTraceWriter(Protocol):
+class RunTraceWriter(ABC):
+
+    @abstractmethod
     def append_event(self, event: TraceEvent) -> None:
         ...
 
+    @abstractmethod
     def finalize_run(self, run_id: str, metadata: RunMetadata) -> None:
         ...
 
 
-class RunTraceReader(Protocol):
-    def read_run(self, run_id: str) -> PersistedRun:
+class RunTraceReader(ABC):
+
+    @abstractmethod
+    def read_run(self, run_id: str, tenant_id: str) -> PersistedRun:
+        """
+        Read a persisted run scoped by tenant.
+
+        Isolation boundary:
+        Implementations MUST enforce filtering by both run_id and tenant_id.
+        """
         ...

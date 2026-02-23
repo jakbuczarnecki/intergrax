@@ -130,25 +130,41 @@ class SessionManager:
         self._consolidation_cooldown_seconds: int = effective_cooldown
 
 
-    async def get_history(self, session_id: str) -> List[ChatMessage]:
-        return await self._storage.get_history(session_id=session_id)
+    async def get_history(
+        self,
+        *,
+        tenant_id: str,
+        session_id: str,
+    ) -> List[ChatMessage]:
+        return await self._storage.get_history(
+            tenant_id=tenant_id,
+            session_id=session_id,
+        )
 
     # ------------------------------------------------------------------
     # Session lifecycle (metadata)
     # ------------------------------------------------------------------
 
-    async def get_session(self, session_id: str) -> Optional[ChatSession]:
+    async def get_session(
+        self,
+        *,
+        tenant_id: str,
+        session_id: str,
+    ) -> Optional[ChatSession]:
         """
-        Return ChatSession metadata if it exists, else None.
+        Return ChatSession metadata if it exists for a given tenant.
         """
-        return await self._storage.get_session(session_id)
+        return await self._storage.get_session(
+            tenant_id=tenant_id,
+            session_id=session_id,
+        )  
 
     async def create_session(
         self,
-        session_id: Optional[str] = None,
         *,
+        tenant_id: str,
+        session_id: Optional[str] = None,
         user_id: Optional[str] = None,
-        tenant_id: Optional[str] = None,
         workspace_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> ChatSession:
@@ -161,9 +177,9 @@ class SessionManager:
             all persistence is delegated to SessionStorage.
         """
         return await self._storage.create_session(
+            tenant_id=tenant_id,
             session_id=session_id,
             user_id=user_id,
-            tenant_id=tenant_id,
             workspace_id=workspace_id,
             metadata=metadata,
         )
@@ -173,17 +189,27 @@ class SessionManager:
         *,
         user_id: str,
         session_id: str,
+        tenant_id: str,
+        workspace_id: Optional[str] = None,
     ) -> ChatSession:
-        session = await self.get_session(            
+        session = await self.get_session(
+            tenant_id=tenant_id,
             session_id=session_id,
         )
 
         if session is not None:
+            if workspace_id is not None and session.workspace_id != workspace_id:
+                raise ValueError(
+                    "Session workspace mismatch for given session_id. "
+                    "Possible cross-workspace collision or access attempt."
+                )
             return session
 
         session = await self.create_session(
             user_id=user_id,
-            session_id=session_id
+            session_id=session_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
         )
 
         await self._storage.save_session(session)
@@ -300,6 +326,8 @@ class SessionManager:
 
     async def append_message(
         self,
+        *,
+        tenant_id: str,
         session_id: str,
         message: ChatMessage,
     ) -> SessionMessageAppendResult:
@@ -324,7 +352,10 @@ class SessionManager:
 
         # Try to load the session so we can apply domain-level updates
         # (user_turns counter, timestamps, etc.).
-        session = await self._storage.get_session(session_id)
+        session = await self._storage.get_session(
+            tenant_id=tenant_id,
+            session_id=session_id,
+        )
 
         # Increment user_turns only for user messages and only if the
         # session exists. If the session is missing, we delegate error
@@ -378,7 +409,13 @@ class SessionManager:
 
         # Delegate message persistence to the storage backend. The storage
         # may apply its own retention/trimming logic (FIFO, max_messages, etc.).
-        stored_message = await self._storage.append_message(session_id, message)
+        
+        stored_message = await self._storage.append_message(
+            tenant_id=tenant_id,
+            session_id=session_id,
+            message=message,
+        )
+
         return SessionMessageAppendResult(
             message=stored_message,
             consolidation_diag=consolidation_diag,
@@ -386,18 +423,16 @@ class SessionManager:
 
     async def get_history_for_session(
         self,
-        session_id: str,
         *,
+        tenant_id: str,
+        session_id: str,
         native_tools: bool = False,
     ) -> List[ChatMessage]:
         """
-        Convenience helper: return conversation history by session id.
-
-        This is the primary method to use from higher-level components
-        (e.g. memory consolidation services) when they need the full
-        conversation for a given session.
+        Return conversation history scoped to a tenant.
         """
         return await self._storage.get_history(
+            tenant_id=tenant_id,
             session_id=session_id,
             native_tools=native_tools,
         )

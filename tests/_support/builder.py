@@ -312,6 +312,7 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
     """
 
     request = RuntimeRequest(
+        tenant_id="test-tenant",
         agent_id="agent_test",
         user_id="test-user",
         session_id="test-session",

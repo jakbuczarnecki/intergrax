@@ -67,9 +67,11 @@ class ChatSession:
     # Stable session identifier used throughout the runtime.
     id: str
 
+    # can be used as organization/tenant identifier
+    tenant_id: str
+
     # Optional identifiers for user, tenant and workspace.
-    user_id: Optional[str] = None
-    tenant_id: Optional[str] = None     # can be used as organization/tenant identifier
+    user_id: Optional[str] = None    
     workspace_id: Optional[str] = None  # workspace/project/context within a tenant
 
     # Timestamps for auditing and retention policies.

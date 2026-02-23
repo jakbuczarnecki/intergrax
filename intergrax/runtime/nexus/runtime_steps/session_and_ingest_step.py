@@ -33,13 +33,19 @@ class SessionAndIngestStep(RuntimeStep):
     async def run(self, state: RuntimeState) -> None:
         req = state.request
 
+        effective_tenant_id = req.tenant_id or state.context.config.tenant_id
+
         # 1. Load or create session
-        session = await state.context.session_manager.get_session(req.session_id)
+        session = await state.context.session_manager.get_session(
+            tenant_id=effective_tenant_id,
+            session_id=req.session_id,
+        )
+
         if session is None:
             session = await state.context.session_manager.create_session(
                 session_id=req.session_id,
                 user_id=req.user_id,
-                tenant_id=req.tenant_id or state.context.config.tenant_id,
+                tenant_id=effective_tenant_id,
                 workspace_id=req.workspace_id or state.context.config.workspace_id,
                 metadata=req.metadata,
             )
@@ -64,8 +70,9 @@ class SessionAndIngestStep(RuntimeStep):
         # 2. Append user message to session history
         user_message = self._build_session_message_from_request(req)
         append_res = await state.context.session_manager.append_message(
-            session.id,
-            user_message,
+            tenant_id=session.tenant_id,
+            session_id=session.id,
+            message=user_message,
         )
 
         if append_res.consolidation_diag is not None:
@@ -78,7 +85,12 @@ class SessionAndIngestStep(RuntimeStep):
             )
 
         # Reload the session to ensure we have the latest metadata
-        session = await state.context.session_manager.get_session(session.id) or session
+        session = (
+            await state.context.session_manager.get_session(
+                tenant_id=session.tenant_id,
+                session_id=session.id,
+            )
+        ) or session
 
         ingestion_preview: List[IngestionPreviewItemV1] = []
         if ingestion_results:

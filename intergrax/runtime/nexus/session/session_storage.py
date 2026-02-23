@@ -29,7 +29,12 @@ class SessionStorage(Protocol):
     # Session metadata CRUD
     # ------------------------------------------------------------------
 
-    async def get_session(self, session_id: str) -> Optional[ChatSession]:
+    async def get_session(
+        self,
+        *,
+        tenant_id: str,
+        session_id: str,
+    ) -> Optional[ChatSession]:
         """
         Load a session by its identifier.
 
@@ -40,10 +45,10 @@ class SessionStorage(Protocol):
 
     async def create_session(
         self,
-        session_id: Optional[str] = None,
         *,
+        tenant_id: str,
+        session_id: Optional[str] = None,
         user_id: Optional[str] = None,
-        tenant_id: Optional[str] = None,
         workspace_id: Optional[str] = None,
         metadata: Optional[dict] = None,
     ) -> ChatSession:
@@ -67,8 +72,9 @@ class SessionStorage(Protocol):
 
     async def list_sessions_for_user(
         self,
-        user_id: str,
         *,
+        tenant_id: str,
+        user_id: str,
         limit: Optional[int] = None,
     ) -> List[ChatSession]:
         """
@@ -92,6 +98,8 @@ class SessionStorage(Protocol):
 
     async def append_message(
         self,
+        *,
+        tenant_id: str,
         session_id: str,
         message: ChatMessage,
     ) -> ChatMessage:
@@ -108,8 +116,9 @@ class SessionStorage(Protocol):
 
     async def get_history(
         self,
-        session_id: str,
         *,
+        tenant_id: str,
+        session_id: str,
         native_tools: bool = False,
     ) -> List[ChatMessage]:
         """

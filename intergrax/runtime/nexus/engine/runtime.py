@@ -96,6 +96,9 @@ class RuntimeEngine:
         Main async entrypoint for the runtime.
         """
 
+        if not request.tenant_id:
+            raise ValueError("tenant_id must be provided in RuntimeRequest.")
+
         run_id = f"run_{uuid.uuid4().hex}"
         start_perf = time.perf_counter()
 
@@ -126,7 +129,7 @@ class RuntimeEngine:
             payload=RuntimeRunStartDiagV1(
                 session_id=request.session_id,
                 user_id=request.user_id,
-                tenant_id=(request.tenant_id or self.context.config.tenant_id),
+                tenant_id=request.tenant_id,
                 run_id=state.run_id,
                 pipeline_name=pipeline.__class__.__name__ if pipeline is not None else "None",
             ),
@@ -323,7 +326,7 @@ class RuntimeEngine:
                         run_id=state.run_id,
                         session_id=request.session_id,
                         user_id=request.user_id,
-                        tenant_id=(request.tenant_id or self.context.config.tenant_id),
+                        tenant_id=request.tenant_id,
                         started_at_utc=state.started_at_utc,
                         stats=RunStats(
                             duration_ms=duration_ms,

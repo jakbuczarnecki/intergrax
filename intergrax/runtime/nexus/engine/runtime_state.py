@@ -44,9 +44,13 @@ class RuntimeState:
     # Input
     request: RuntimeRequest
 
+    # Run
     run_id: str
 
-    started_at_utc: str = SystemTimeProvider.utc_now().isoformat()
+    # Utc
+    started_at_utc: str = field(
+        default_factory=lambda: SystemTimeProvider.utc_now().isoformat()
+    )
 
     llm_usage_tracker: Optional[LLMUsageTracker] = None
 
@@ -72,6 +76,7 @@ class RuntimeState:
     # Profile-based instruction fragments prepared by the memory layer
     profile_user_instructions: Optional[str] = None
     profile_org_instructions: Optional[str] = None
+
 
     # Usage flags
     used_rag: bool = False
@@ -111,6 +116,16 @@ class RuntimeState:
     # Filled by Persist step (final runtime output)
     runtime_answer: Optional[RuntimeAnswer] = None
 
+    # Tenant
+    @property
+    def tenant_id(self) -> str:
+        tenant = self.request.tenant_id
+        if not tenant:
+            raise RuntimeError(
+                "tenant_id must be set in RuntimeRequest before RuntimeState is used."
+            )
+        return tenant
+
 
     def trace_event(
         self,
@@ -125,6 +140,15 @@ class RuntimeState:
         if not self.run_id:
             raise RuntimeError("RuntimeState.run_id must be provided (got empty).")
 
+        # Enforce DiagnosticPayload contract
+        if payload is not None:
+            if not isinstance(payload, DiagnosticPayload):
+                raise TypeError(
+                    "Trace payload must implement DiagnosticPayload."
+                )
+
+            payload = payload.redact()
+
         if payload is not None and not isinstance(payload, DiagnosticPayload):
             raise TypeError(f"payload must be DiagnosticPayload (got {type(payload).__name__}).")
 
@@ -134,7 +158,8 @@ class RuntimeState:
         if self.context.config.production_mode:
             safe_message = "[REDACTED]"
         else:
-            safe_message = message
+            safe_message = message        
+            
 
         evt = TraceEvent(
             event_id=TraceEvent.new_id(),
@@ -147,7 +172,7 @@ class RuntimeState:
             message=safe_message,
             payload=payload,
             tags={},
-            artifact_refs=artifact_refs or [],
+            artifact_refs=list(artifact_refs) if artifact_refs else [],
         )
         self.trace_events.append(evt)
 

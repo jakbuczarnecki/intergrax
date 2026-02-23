@@ -57,6 +57,13 @@ class DiagnosticPayload(ABC):
     @abstractmethod
     def to_dict(self) -> Dict[str, Any]:
         raise NotImplementedError
+        
+    def redact(self) -> DiagnosticPayload:
+        """
+        Default implementation assumes payload contains no PII.
+        Override in subclasses if PII is present.
+        """
+        return self
 
 
 
