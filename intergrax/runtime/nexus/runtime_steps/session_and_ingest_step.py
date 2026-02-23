@@ -33,13 +33,19 @@ class SessionAndIngestStep(RuntimeStep):
     async def run(self, state: RuntimeState) -> None:
         req = state.request
 
+        effective_tenant_id = req.tenant_id or state.context.config.tenant_id
+
         # 1. Load or create session
-        session = await state.context.session_manager.get_session(req.session_id)
+        session = await state.context.session_manager.get_session(
+            req.session_id, 
+            tenant_id=effective_tenant_id,
+        )
+
         if session is None:
             session = await state.context.session_manager.create_session(
                 session_id=req.session_id,
                 user_id=req.user_id,
-                tenant_id=req.tenant_id or state.context.config.tenant_id,
+                tenant_id=effective_tenant_id,
                 workspace_id=req.workspace_id or state.context.config.workspace_id,
                 metadata=req.metadata,
             )

@@ -5,12 +5,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 import pytest
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.runtime_steps.session_and_ingest_step import SessionAndIngestStep
+from intergrax.runtime.nexus.session.chat_session import ChatSession
 from tests._support.builder import build_runtime_state_for_tests
 
 
@@ -41,7 +42,12 @@ class _FakeSessionManager:
         self.created_session = None
         self.append_called = False
 
-    async def get_session(self, session_id):
+    async def get_session(
+        self,
+        session_id: str,
+        *,
+        tenant_id: Optional[str] = None,
+    ) -> Optional[ChatSession]:
         return self.existing_session
 
     async def create_session(self, **kwargs):
