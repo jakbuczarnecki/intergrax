@@ -44,9 +44,13 @@ class RuntimeState:
     # Input
     request: RuntimeRequest
 
+    # Run
     run_id: str
 
-    started_at_utc: str = SystemTimeProvider.utc_now().isoformat()
+    # Utc
+    started_at_utc: str = field(
+        default_factory=lambda: SystemTimeProvider.utc_now().isoformat()
+    )
 
     llm_usage_tracker: Optional[LLMUsageTracker] = None
 
@@ -115,11 +119,12 @@ class RuntimeState:
     # Tenant
     @property
     def tenant_id(self) -> str:
-        """
-        Returns tenant_id from the immutable RuntimeRequest.
-        Tenant identity is defined at request level (single source of truth).
-        """
-        return self.request.tenant_id
+        tenant = self.request.tenant_id
+        if not tenant:
+            raise RuntimeError(
+                "tenant_id must be set in RuntimeRequest before RuntimeState is used."
+            )
+        return tenant
 
 
     def trace_event(
@@ -145,6 +150,16 @@ class RuntimeState:
             safe_message = "[REDACTED]"
         else:
             safe_message = message
+
+        # Enforce DiagnosticPayload contract
+        if payload is not None:
+            if not isinstance(payload, DiagnosticPayload):
+                raise TypeError(
+                    "Trace payload must implement DiagnosticPayload."
+                )
+
+            payload = payload.redact()
+            
 
         evt = TraceEvent(
             event_id=TraceEvent.new_id(),

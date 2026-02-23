@@ -137,11 +137,24 @@ class SessionManager:
     # Session lifecycle (metadata)
     # ------------------------------------------------------------------
 
-    async def get_session(self, session_id: str) -> Optional[ChatSession]:
+    async def get_session(
+        self,
+        session_id: str,
+        *,
+        tenant_id: Optional[str] = None,
+    ) -> Optional[ChatSession]:
         """
         Return ChatSession metadata if it exists, else None.
         """
-        return await self._storage.get_session(session_id)
+        session = await self._storage.get_session(session_id)
+
+        if session is None:
+            return None
+
+        if session and tenant_id and session.tenant_id != tenant_id:
+            raise ValueError("Cross-tenant access attempt detected.")
+
+        return session    
 
     async def create_session(
         self,
@@ -173,17 +186,30 @@ class SessionManager:
         *,
         user_id: str,
         session_id: str,
+        tenant_id: str,
+        workspace_id: Optional[str] = None,
     ) -> ChatSession:
-        session = await self.get_session(            
-            session_id=session_id,
-        )
+        session = await self.get_session(session_id=session_id)
 
         if session is not None:
+            # Hard isolation guard (storage may be non-scoped by session_id alone)
+            if session.tenant_id != tenant_id:
+                raise ValueError(
+                    "Session tenant mismatch for given session_id. "
+                    "Possible cross-tenant collision or access attempt."
+                )
+            if workspace_id is not None and session.workspace_id != workspace_id:
+                raise ValueError(
+                    "Session workspace mismatch for given session_id. "
+                    "Possible cross-workspace collision or access attempt."
+                )
             return session
 
         session = await self.create_session(
             user_id=user_id,
-            session_id=session_id
+            session_id=session_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
         )
 
         await self._storage.save_session(session)
