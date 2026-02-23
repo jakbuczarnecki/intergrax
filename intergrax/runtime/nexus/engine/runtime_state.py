@@ -140,6 +140,15 @@ class RuntimeState:
         if not self.run_id:
             raise RuntimeError("RuntimeState.run_id must be provided (got empty).")
 
+        # Enforce DiagnosticPayload contract
+        if payload is not None:
+            if not isinstance(payload, DiagnosticPayload):
+                raise TypeError(
+                    "Trace payload must implement DiagnosticPayload."
+                )
+
+            payload = payload.redact()
+
         if payload is not None and not isinstance(payload, DiagnosticPayload):
             raise TypeError(f"payload must be DiagnosticPayload (got {type(payload).__name__}).")
 
@@ -149,16 +158,7 @@ class RuntimeState:
         if self.context.config.production_mode:
             safe_message = "[REDACTED]"
         else:
-            safe_message = message
-
-        # Enforce DiagnosticPayload contract
-        if payload is not None:
-            if not isinstance(payload, DiagnosticPayload):
-                raise TypeError(
-                    "Trace payload must implement DiagnosticPayload."
-                )
-
-            payload = payload.redact()
+            safe_message = message        
             
 
         evt = TraceEvent(
@@ -172,7 +172,7 @@ class RuntimeState:
             message=safe_message,
             payload=payload,
             tags={},
-            artifact_refs=artifact_refs or [],
+            artifact_refs=list(artifact_refs) if artifact_refs else [],
         )
         self.trace_events.append(evt)
 
