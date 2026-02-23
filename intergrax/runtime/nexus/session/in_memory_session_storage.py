@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import replace
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.memory.conversational_memory import ConversationalMemory
@@ -40,10 +40,10 @@ class InMemorySessionStorage(SessionStorage):
         max_history_messages: Optional[int] = None,
     ) -> None:
         # Metadata storage (chat sessions registry).
-        self._sessions: Dict[str, ChatSession] = {}
+        self._sessions: Dict[Tuple[str, str], ChatSession] = {}
 
         # Internal conversational memory storage (one per session).
-        self._conv_memory: Dict[str, ConversationalMemory] = {}
+        self._conv_memory: Dict[Tuple[str, str], ConversationalMemory] = {}
 
         # Maximum number of messages to keep before trimming FIFO-style.
         self._max_history_messages = max_history_messages
@@ -52,17 +52,22 @@ class InMemorySessionStorage(SessionStorage):
     # Session metadata CRUD
     # ------------------------------------------------------------------
 
-    async def get_session(self, session_id: str) -> Optional[ChatSession]:
+    async def get_session(
+        self,
+        *,
+        tenant_id: str,
+        session_id: str,
+    ) -> Optional[ChatSession]:
         """
-        Return the session metadata if it exists, else None.
-
-        A shallow copy of the session is returned so that callers cannot
-        accidentally mutate the internal storage without calling save_session().
+        Return the session metadata if it exists for the given tenant,
+        else None.
         """
-        session = self._sessions.get(session_id)
+        key = (tenant_id, session_id)
+        session = self._sessions.get(key)
         if session is None:
             return None
         return replace(session)
+
 
     async def create_session(
         self,
@@ -97,12 +102,14 @@ class InMemorySessionStorage(SessionStorage):
 
     async def save_session(self, session: ChatSession) -> None:
         """
-        Persist changes to an existing ChatSession.
-
-        For the in-memory implementation this simply updates
-        the internal dictionary.
+        Persist changes to an existing ChatSession scoped by tenant.
         """
-        self._sessions[session.id] = session
+        if session.tenant_id is None:
+            raise ValueError("Cannot save session without tenant_id")
+
+        key = (session.tenant_id, session.id)
+        self._sessions[key] = session
+
 
     async def list_sessions_for_user(
         self,
@@ -128,54 +135,54 @@ class InMemorySessionStorage(SessionStorage):
 
     async def append_message(
         self,
+        *,
+        tenant_id: str,
         session_id: str,
         message: ChatMessage,
     ) -> ChatMessage:
         """
-        Append a single message to the conversation history of a session.
-
-        If the session does not exist, a KeyError is raised.
-        If no ConversationalMemory exists yet for the session, it is created.
+        Append a single message to the conversation history of a session
+        scoped to a tenant.
         """
-        session = self._sessions.get(session_id)
+        key = (tenant_id, session_id)
+
+        session = self._sessions.get(key)
         if session is None:
-            raise KeyError(f"Session '{session_id}' does not exist")
+            raise KeyError(
+                f"Session '{session_id}' does not exist for tenant '{tenant_id}'"
+            )
 
-        memory = self._conv_memory.get(session_id)
+        memory = self._conv_memory.get(key)
 
-        # Safety fallback: create a new conversational memory if missing.
         if memory is None:
             memory = ConversationalMemory(
                 session_id=session_id,
                 max_messages=self._max_history_messages,
             )
-            self._conv_memory[session_id] = memory
+            self._conv_memory[key] = memory
 
-        # Delegate trimming / retention policy to ConversationalMemory.
         memory.add_message(message)
 
-        # Update session recency.
         session.touch()
-        self._sessions[session_id] = session
+        self._sessions[key] = session
 
         return message
 
     async def get_history(
         self,
-        session_id: str,
         *,
+        tenant_id: str,
+        session_id: str,
         native_tools: bool = False,
     ) -> List[ChatMessage]:
         """
-        Return the ordered conversation history for a given session id.
-
-        Trimming logic (max history size, FIFO) is handled internally by
-        the underlying ConversationalMemory instance.
+        Return the ordered conversation history for a given session id
+        scoped to a tenant.
         """
-        memory = self._conv_memory.get(session_id)
+        key = (tenant_id, session_id)
+
+        memory = self._conv_memory.get(key)
         if memory is None:
             return []
 
-        # Still uses ConversationalMemory under the hood, but the storage
-        # interface does not talk about LLMs or prompts.
         return memory.get_for_model(native_tools=native_tools)
