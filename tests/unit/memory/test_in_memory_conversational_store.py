@@ -165,3 +165,57 @@ async def test_list_sessions_reflects_persisted_state() -> None:
     await store.delete_session(tenant_id=TENANT, session_id= "s1")
     sessions2 = set(store.list_sessions(tenant_id=TENANT))
     assert sessions2 == {"s2"}
+
+@pytest.mark.asyncio
+async def test_cross_tenant_isolation_for_same_session_id() -> None:
+    """
+    Same session_id used by different tenants must be fully isolated.
+    """
+
+    store = InMemoryConversationalMemoryStore()
+
+    tenant_a = "tenant-a"
+    tenant_b = "tenant-b"
+    session_id = "shared-session"
+
+    # --- Tenant A ---
+    mem_a = ConversationalMemory(session_id=session_id)
+    mem_a.add("user", "message-from-A")
+    await store.save_memory(
+        tenant_id=tenant_a,
+        memory=mem_a,
+    )
+
+    # --- Tenant B ---
+    mem_b = ConversationalMemory(session_id=session_id)
+    mem_b.add("user", "message-from-B")
+    await store.save_memory(
+        tenant_id=tenant_b,
+        memory=mem_b,
+    )
+
+    # --- Verify isolation ---
+    loaded_a = await store.load_memory(
+        tenant_id=tenant_a,
+        session_id=session_id,
+    )
+    loaded_b = await store.load_memory(
+        tenant_id=tenant_b,
+        session_id=session_id,
+    )
+
+    assert [m.content for m in loaded_a.get_all()] == ["message-from-A"]
+    assert [m.content for m in loaded_b.get_all()] == ["message-from-B"]
+
+    # --- Delete A, B must remain ---
+    await store.delete_session(
+        tenant_id=tenant_a,
+        session_id=session_id,
+    )
+
+    remaining_b = await store.load_memory(
+        tenant_id=tenant_b,
+        session_id=session_id,
+    )
+
+    assert [m.content for m in remaining_b.get_all()] == ["message-from-B"]
