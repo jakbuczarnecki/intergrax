@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Dict, Iterable, List
 
-from intergrax.runtime.replay.contracts.artifact_store import ArtifactStore
+from intergrax.runtime.replay.contracts.artifact_store import ReplayArtifactStore
 from intergrax.runtime.replay.contracts.run_record_dto import RunRecordDTO
 from intergrax.runtime.replay.contracts.run_record_store import RunRecordStore
 from intergrax.runtime.replay.contracts.trace_event_dto import TraceEventDTO
@@ -36,7 +36,7 @@ class ReplayEngine:
         self,
         run_store: RunRecordStore,
         trace_store: TraceEventStore,
-        artifact_store: ArtifactStore,
+        artifact_store: ReplayArtifactStore,
     ) -> None:
         self._run_store = run_store
         self._trace_store = trace_store
@@ -48,8 +48,8 @@ class ReplayEngine:
 
     def reconstruct(self, tenant_id: str, run_id: str) -> ReconstructedRun:
         run_record = self._load_run_record(tenant_id, run_id)
-        trace_events = self._load_trace(run_id)
-        artifacts = self._load_artifacts(run_id)
+        trace_events = self._load_trace(tenant_id, run_id)
+        artifacts = self._load_artifacts(tenant_id, run_id)
 
         steps = self._reconstruct_steps(trace_events, artifacts)
         tool_calls = self._collect_tool_calls(steps)
@@ -72,11 +72,11 @@ class ReplayEngine:
     def _load_run_record(self, tenant_id: str, run_id: str) -> RunRecordDTO:
         return self._run_store.get(tenant_id, run_id)
     
-    def _load_trace(self, run_id: str)-> List[TraceEventDTO]:
-        return list(self._trace_store.get_events(run_id))
+    def _load_trace(self, tenant_id: str, run_id: str)-> List[TraceEventDTO]:
+        return list(self._trace_store.get_events(tenant_id, run_id))
 
-    def _load_artifacts(self, run_id: str) -> List[ArtifactRef]:
-        artifacts = self._artifact_store.list_for_run(run_id)
+    def _load_artifacts(self, tenant_id: str, run_id: str) -> List[ArtifactRef]:
+        artifacts = self._artifact_store.list_for_run(tenant_id, run_id)
 
         return [
             ArtifactRef(

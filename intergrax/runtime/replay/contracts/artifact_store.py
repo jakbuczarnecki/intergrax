@@ -2,13 +2,15 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
-from typing import Protocol, Iterable
+from abc import ABC, abstractmethod
+from typing import Iterable
 
 from intergrax.runtime.replay.contracts.artifact_dto import ArtifactDTO
 
 
-class ArtifactStore(Protocol):
+class ReplayArtifactStore(ABC):
     """Read-only access to artifacts metadata."""
 
-    def list_for_run(self, run_id: str) -> Iterable[ArtifactDTO]:
+    @abstractmethod
+    def list_for_run(self, tenant_id: str, run_id: str) -> Iterable[ArtifactDTO]:
         ...

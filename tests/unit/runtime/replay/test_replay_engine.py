@@ -1,12 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from typing import List
+from typing import Iterable, List
 
 from intergrax.runtime.replay.contracts.artifact_dto import ArtifactDTO
+from intergrax.runtime.replay.contracts.artifact_store import ReplayArtifactStore
 from intergrax.runtime.replay.contracts.run_record_dto import RunRecordDTO
 from intergrax.runtime.replay.contracts.run_record_store import RunRecordStore
 from intergrax.runtime.replay.contracts.trace_event_dto import TraceEventDTO
+from intergrax.runtime.replay.contracts.trace_event_store import TraceEventStore
 from intergrax.runtime.replay.replay_engine import ReplayEngine
 from intergrax.runtime.replay.models import ReconstructedRun
 
@@ -26,8 +28,8 @@ class FakeRunStore(RunRecordStore):
         )
 
 
-class FakeTraceStore:
-    def get_events(self, run_id: str) -> List[TraceEventDTO]:
+class FakeTraceStore(TraceEventStore):
+    def get_events(self, tenant_id: str, run_id: str) -> Iterable[TraceEventDTO]:
         return [
             TraceEventDTO(
                 run_id=run_id,
@@ -71,8 +73,8 @@ class FakeTraceStore:
         ]
 
 
-class FakeArtifactStore:
-    def list_for_run(self, run_id: str) -> List[ArtifactDTO]:
+class FakeArtifactStore(ReplayArtifactStore):
+    def list_for_run(self, tenant_id: str, run_id: str) -> Iterable[ArtifactDTO]:
         return [
             ArtifactDTO(
                 artifact_id="art-1",
@@ -118,8 +120,8 @@ def test_replay_engine_reconstructs_run():
 
 
 def test_replay_engine_run_without_tool_calls():
-    class NoToolTraceStore:
-        def get_events(self, run_id: str) -> List[TraceEventDTO]:
+    class NoToolTraceStore(TraceEventStore):
+        def get_events(self, tenant_id: str, run_id: str) -> Iterable[TraceEventDTO]:
             return [
                 TraceEventDTO(
                     run_id=run_id,
@@ -150,8 +152,8 @@ def test_replay_engine_run_without_tool_calls():
                 ),
             ]
 
-    class EmptyArtifactStore:
-        def list_for_run(self, run_id: str) -> List[ArtifactDTO]:
+    class EmptyArtifactStore(ReplayArtifactStore):
+        def list_for_run(self, tenant_id: str, run_id: str) -> Iterable[ArtifactDTO]:
             return []
 
     engine = ReplayEngine(
@@ -171,8 +173,8 @@ def test_replay_engine_run_without_tool_calls():
 
 
 def test_replay_engine_step_without_finish_event():
-    class NoFinishTraceStore:
-        def get_events(self, run_id: str) -> List[TraceEventDTO]:
+    class NoFinishTraceStore(TraceEventStore):
+        def get_events(self, tenant_id: str, run_id: str) -> Iterable[TraceEventDTO]:
             return [
                 TraceEventDTO(
                     run_id=run_id,
@@ -196,8 +198,8 @@ def test_replay_engine_step_without_finish_event():
                 ),
             ]
 
-    class EmptyArtifactStore:
-        def list_for_run(self, run_id: str) -> List[ArtifactDTO]:
+    class EmptyArtifactStore(ReplayArtifactStore):
+        def list_for_run(self, tenant_id: str, run_id: str) -> Iterable[ArtifactDTO]:
             return []
 
     engine = ReplayEngine(
@@ -218,8 +220,8 @@ def test_replay_engine_step_without_finish_event():
 
 
 def test_replay_engine_multiple_steps_ordering():
-    class MultiStepTraceStore:
-        def get_events(self, run_id: str) -> List[TraceEventDTO]:
+    class MultiStepTraceStore(TraceEventStore):
+        def get_events(self, tenant_id: str, run_id: str) -> Iterable[TraceEventDTO]:
             return [
                 # Step B starts later
                 TraceEventDTO(
@@ -253,8 +255,8 @@ def test_replay_engine_multiple_steps_ordering():
                 ),
             ]
 
-    class EmptyArtifactStore:
-        def list_for_run(self, run_id: str) -> List[ArtifactDTO]:
+    class EmptyArtifactStore(ReplayArtifactStore):
+        def list_for_run(self, tenant_id: str, run_id: str) -> Iterable[ArtifactDTO]:
             return []
 
     engine = ReplayEngine(
@@ -276,8 +278,8 @@ def test_replay_engine_multiple_steps_ordering():
 
 
 def test_replay_engine_ignores_events_without_step_started():
-    class NoStartTraceStore:
-        def get_events(self, run_id: str) -> List[TraceEventDTO]:
+    class NoStartTraceStore(TraceEventStore):
+        def get_events(self, tenant_id: str, run_id: str) -> Iterable[TraceEventDTO]:
             return [
                 TraceEventDTO(
                     run_id=run_id,
@@ -301,8 +303,8 @@ def test_replay_engine_ignores_events_without_step_started():
                 ),
             ]
 
-    class EmptyArtifactStore:
-        def list_for_run(self, run_id: str) -> List[ArtifactDTO]:
+    class EmptyArtifactStore(ReplayArtifactStore):
+        def list_for_run(self, tenant_id: str, run_id: str) -> Iterable[ArtifactDTO]:
             return []
 
     engine = ReplayEngine(
