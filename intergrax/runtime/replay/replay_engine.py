@@ -46,8 +46,8 @@ class ReplayEngine:
     # PUBLIC API
     # -------------------------------------------------
 
-    def reconstruct(self, run_id: str) -> ReconstructedRun:
-        run_record = self._load_run_record(run_id)
+    def reconstruct(self, tenant_id: str, run_id: str) -> ReconstructedRun:
+        run_record = self._load_run_record(tenant_id, run_id)
         trace_events = self._load_trace(run_id)
         artifacts = self._load_artifacts(run_id)
 
@@ -69,8 +69,8 @@ class ReplayEngine:
     # LOADERS
     # -------------------------------------------------
 
-    def _load_run_record(self, run_id: str) -> RunRecordDTO:
-        return self._run_store.get(run_id)
+    def _load_run_record(self, tenant_id: str, run_id: str) -> RunRecordDTO:
+        return self._run_store.get(tenant_id, run_id)
     
     def _load_trace(self, run_id: str)-> List[TraceEventDTO]:
         return list(self._trace_store.get_events(run_id))

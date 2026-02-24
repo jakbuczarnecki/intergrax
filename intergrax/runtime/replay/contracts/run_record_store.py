@@ -10,5 +10,5 @@ from intergrax.runtime.replay.contracts.run_record_dto import RunRecordDTO
 class RunRecordStore(Protocol):
     """Read-only access to persisted run records."""
 
-    def get(self, run_id: str)->RunRecordDTO:
+    def get(self, tenant_id: str, run_id: str) -> RunRecordDTO:
         ...

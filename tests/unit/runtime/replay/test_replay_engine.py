@@ -5,6 +5,7 @@ from typing import List
 
 from intergrax.runtime.replay.contracts.artifact_dto import ArtifactDTO
 from intergrax.runtime.replay.contracts.run_record_dto import RunRecordDTO
+from intergrax.runtime.replay.contracts.run_record_store import RunRecordStore
 from intergrax.runtime.replay.contracts.trace_event_dto import TraceEventDTO
 from intergrax.runtime.replay.replay_engine import ReplayEngine
 from intergrax.runtime.replay.models import ReconstructedRun
@@ -12,9 +13,10 @@ from intergrax.runtime.replay.models import ReconstructedRun
 
 # ---------------- FAKE STORES ----------------
 
+TENANT = "tenant_test"
 
-class FakeRunStore:
-    def get(self, run_id: str) -> RunRecordDTO:
+class FakeRunStore(RunRecordStore):
+    def get(self, tenant_id: str, run_id: str) -> RunRecordDTO:
         return RunRecordDTO(
             run_id=run_id,
             started_at=0.0,
@@ -92,7 +94,7 @@ def test_replay_engine_reconstructs_run():
         artifact_store=FakeArtifactStore(),
     )
 
-    result: ReconstructedRun = engine.reconstruct("run-1")
+    result: ReconstructedRun = engine.reconstruct(TENANT, "run-1")
 
     assert result.run_id == "run-1"
     assert result.final_answer == "Hello World"
@@ -158,7 +160,7 @@ def test_replay_engine_run_without_tool_calls():
         artifact_store=EmptyArtifactStore(),
     )
 
-    result = engine.reconstruct("run-2")
+    result = engine.reconstruct(TENANT, "run-2")
 
     assert len(result.steps) == 1
     step = result.steps[0]
@@ -204,7 +206,7 @@ def test_replay_engine_step_without_finish_event():
         artifact_store=EmptyArtifactStore(),
     )
 
-    result = engine.reconstruct("run-3")
+    result = engine.reconstruct(TENANT, "run-3")
 
     assert len(result.steps) == 1
     step = result.steps[0]
@@ -261,7 +263,7 @@ def test_replay_engine_multiple_steps_ordering():
         artifact_store=EmptyArtifactStore(),
     )
 
-    result = engine.reconstruct("run-4")
+    result = engine.reconstruct(TENANT, "run-4")
 
     assert len(result.steps) == 2
 
@@ -309,7 +311,7 @@ def test_replay_engine_ignores_events_without_step_started():
         artifact_store=EmptyArtifactStore(),
     )
 
-    result = engine.reconstruct("run-5")
+    result = engine.reconstruct(TENANT, "run-5")
 
     # No STEP_STARTED → no reconstructed steps
     assert result.steps == []

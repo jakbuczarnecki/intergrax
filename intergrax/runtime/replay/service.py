@@ -17,5 +17,5 @@ class ReplayService:
     def __init__(self, engine: ReplayEngine) -> None:
         self._engine = engine
 
-    def inspect_run(self, run_id: str) -> ReconstructedRun:
-        return self._engine.reconstruct(run_id)
+    def inspect_run(self, tenant_id: str, run_id: str) -> ReconstructedRun:
+        return self._engine.reconstruct(tenant_id, run_id)
