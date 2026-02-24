@@ -1,0 +1,485 @@
+{
+  "schema": "intergrax_dep_graph_v2",
+  "bundle": {
+    "stem": "FASTAPI_CORE",
+    "bundle_file": "FASTAPI_CORE._py"
+  },
+  "semantics": {
+    "type": "static_import_graph",
+    "meaning": "module A lists modules it imports",
+    "NOT": [
+      "runtime_call_graph",
+      "execution_flow",
+      "architecture_layers",
+      "data_flow_graph"
+    ],
+    "direction": "forward = importer \u2192 imported"
+  },
+  "internal_modules_only": true,
+  "forward_dependencies": {
+    "intergrax.fastapi_core.app_factory": [
+      "intergrax.fastapi_core.auth.provider",
+      "intergrax.fastapi_core.auth.providers.api_key.provider",
+      "intergrax.fastapi_core.auth.providers.compose.provider",
+      "intergrax.fastapi_core.auth.providers.no_auth",
+      "intergrax.fastapi_core.budget.noop_policy",
+      "intergrax.fastapi_core.budget.policy",
+      "intergrax.fastapi_core.config",
+      "intergrax.fastapi_core.errors.handlers",
+      "intergrax.fastapi_core.execution.adapters.default_adapter",
+      "intergrax.fastapi_core.middleware.request_context",
+      "intergrax.fastapi_core.rate_limit.dependency",
+      "intergrax.fastapi_core.rate_limit.policy",
+      "intergrax.fastapi_core.routers.health",
+      "intergrax.fastapi_core.runs.default_service",
+      "intergrax.fastapi_core.runs.router",
+      "intergrax.fastapi_core.runs.service",
+      "intergrax.fastapi_core.runs.store_base",
+      "intergrax.fastapi_core.runs.store_memory"
+    ],
+    "intergrax.fastapi_core.auth.authorization": [
+      "intergrax.fastapi_core.context",
+      "intergrax.fastapi_core.errors.auth"
+    ],
+    "intergrax.fastapi_core.auth.dependency": [
+      "intergrax.fastapi_core.auth.context",
+      "intergrax.fastapi_core.context"
+    ],
+    "intergrax.fastapi_core.auth.extractors.api_key": [
+      "intergrax.fastapi_core.auth.extractors.base",
+      "intergrax.fastapi_core.protocol"
+    ],
+    "intergrax.fastapi_core.auth.extractors.jwt_bearer": [
+      "intergrax.fastapi_core.auth.extractors.base",
+      "intergrax.fastapi_core.protocol"
+    ],
+    "intergrax.fastapi_core.auth.provider": [
+      "intergrax.fastapi_core.auth.context"
+    ],
+    "intergrax.fastapi_core.auth.providers.allow_all": [
+      "intergrax.fastapi_core.auth.context",
+      "intergrax.fastapi_core.auth.provider"
+    ],
+    "intergrax.fastapi_core.auth.providers.api_key.extractor": [
+      "intergrax.fastapi_core.protocol"
+    ],
+    "intergrax.fastapi_core.auth.providers.api_key.provider": [
+      "intergrax.fastapi_core.auth.api_key",
+      "intergrax.fastapi_core.auth.context",
+      "intergrax.fastapi_core.auth.provider",
+      "intergrax.fastapi_core.auth.providers.api_key.extractor",
+      "intergrax.fastapi_core.auth.providers.api_key.resolver"
+    ],
+    "intergrax.fastapi_core.auth.providers.api_key.resolver": [
+      "intergrax.fastapi_core.auth.api_key"
+    ],
+    "intergrax.fastapi_core.auth.providers.compose.provider": [
+      "intergrax.fastapi_core.auth.context",
+      "intergrax.fastapi_core.auth.provider"
+    ],
+    "intergrax.fastapi_core.auth.providers.jwt.extractor": [
+      "intergrax.fastapi_core.protocol"
+    ],
+    "intergrax.fastapi_core.auth.providers.jwt.provider": [
+      "intergrax.fastapi_core.auth.context",
+      "intergrax.fastapi_core.auth.extractors.jwt_bearer",
+      "intergrax.fastapi_core.auth.provider",
+      "intergrax.fastapi_core.auth.providers.jwt.verifier"
+    ],
+    "intergrax.fastapi_core.auth.providers.no_auth": [
+      "intergrax.fastapi_core.auth.context",
+      "intergrax.fastapi_core.auth.provider"
+    ],
+    "intergrax.fastapi_core.auth.resolver": [
+      "intergrax.fastapi_core.auth.extractors.api_key",
+      "intergrax.fastapi_core.auth.extractors.base",
+      "intergrax.fastapi_core.auth.extractors.jwt_bearer"
+    ],
+    "intergrax.fastapi_core.budget.dependency": [
+      "intergrax.fastapi_core.budget.policy",
+      "intergrax.fastapi_core.context",
+      "intergrax.fastapi_core.errors.budget"
+    ],
+    "intergrax.fastapi_core.budget.noop_policy": [
+      "intergrax.fastapi_core.budget.policy",
+      "intergrax.fastapi_core.context"
+    ],
+    "intergrax.fastapi_core.budget.policy": [
+      "intergrax.fastapi_core.context"
+    ],
+    "intergrax.fastapi_core.config": [
+      "intergrax.fastapi_core.auth.api_key",
+      "intergrax.fastapi_core.auth.provider",
+      "intergrax.fastapi_core.budget.policy",
+      "intergrax.fastapi_core.execution.adapters.adapter",
+      "intergrax.fastapi_core.rate_limit.policy",
+      "intergrax.fastapi_core.runs.service",
+      "intergrax.fastapi_core.runs.store_base"
+    ],
+    "intergrax.fastapi_core.context": [
+      "intergrax.fastapi_core.auth.context"
+    ],
+    "intergrax.fastapi_core.errors.handlers": [
+      "intergrax.fastapi_core.context",
+      "intergrax.fastapi_core.errors.mapping",
+      "intergrax.fastapi_core.errors.models"
+    ],
+    "intergrax.fastapi_core.errors.mapping": [
+      "intergrax.fastapi_core.errors.auth",
+      "intergrax.fastapi_core.errors.budget",
+      "intergrax.fastapi_core.errors.error_types",
+      "intergrax.fastapi_core.rate_limit.errors"
+    ],
+    "intergrax.fastapi_core.execution.adapters.adapter": [
+      "intergrax.fastapi_core.execution.models"
+    ],
+    "intergrax.fastapi_core.execution.adapters.default_adapter": [
+      "intergrax.fastapi_core.execution.adapters.adapter",
+      "intergrax.fastapi_core.execution.models"
+    ],
+    "intergrax.fastapi_core.execution.adapters.inprocess_adapter": [
+      "intergrax.fastapi_core.execution.adapters.adapter",
+      "intergrax.fastapi_core.execution.models",
+      "intergrax.fastapi_core.execution.worker_contract",
+      "intergrax.fastapi_core.runs.service"
+    ],
+    "intergrax.fastapi_core.execution.adapters.simple_worker": [
+      "intergrax.fastapi_core.execution.models",
+      "intergrax.fastapi_core.execution.worker_contract"
+    ],
+    "intergrax.fastapi_core.execution.adapters.threaded_adapter": [
+      "intergrax.fastapi_core.execution.adapters.adapter",
+      "intergrax.fastapi_core.execution.capabilities",
+      "intergrax.fastapi_core.execution.decisions.decision_engine",
+      "intergrax.fastapi_core.execution.decisions.decision_record",
+      "intergrax.fastapi_core.execution.decisions.decisions",
+      "intergrax.fastapi_core.execution.failures.failure_classifier",
+      "intergrax.fastapi_core.execution.failures.failures",
+      "intergrax.fastapi_core.execution.models",
+      "intergrax.fastapi_core.execution.policies",
+      "intergrax.fastapi_core.execution.worker_contract",
+      "intergrax.fastapi_core.runs.models",
+      "intergrax.fastapi_core.runs.service"
+    ],
+    "intergrax.fastapi_core.execution.decisions.decision_engine": [
+      "intergrax.fastapi_core.execution.decisions.decisions",
+      "intergrax.fastapi_core.execution.failures.failures",
+      "intergrax.fastapi_core.execution.policies"
+    ],
+    "intergrax.fastapi_core.execution.decisions.decision_record": [
+      "intergrax.fastapi_core.execution.decisions.decisions",
+      "intergrax.fastapi_core.execution.failures.failures"
+    ],
+    "intergrax.fastapi_core.execution.failures.failure_classifier": [
+      "intergrax.fastapi_core.execution.failures.failures"
+    ],
+    "intergrax.fastapi_core.execution.governance.contracts": [
+      "intergrax.fastapi_core.execution.governance.models"
+    ],
+    "intergrax.fastapi_core.execution.governance.defaults": [
+      "intergrax.fastapi_core.execution.governance.contracts",
+      "intergrax.fastapi_core.execution.governance.models"
+    ],
+    "intergrax.fastapi_core.execution.worker_contract": [
+      "intergrax.fastapi_core.execution.models"
+    ],
+    "intergrax.fastapi_core.middleware.request_context": [
+      "intergrax.fastapi_core.auth.provider",
+      "intergrax.fastapi_core.context",
+      "intergrax.fastapi_core.protocol"
+    ],
+    "intergrax.fastapi_core.middleware.request_logging": [
+      "intergrax.fastapi_core.context"
+    ],
+    "intergrax.fastapi_core.rate_limit.dependency": [
+      "intergrax.fastapi_core.context",
+      "intergrax.fastapi_core.rate_limit.errors",
+      "intergrax.fastapi_core.rate_limit.keys",
+      "intergrax.fastapi_core.rate_limit.policy"
+    ],
+    "intergrax.fastapi_core.rate_limit.memory_policy": [
+      "intergrax.fastapi_core.rate_limit.keys"
+    ],
+    "intergrax.fastapi_core.rate_limit.policy": [
+      "intergrax.fastapi_core.rate_limit.keys"
+    ],
+    "intergrax.fastapi_core.runs.default_service": [
+      "intergrax.fastapi_core.context",
+      "intergrax.fastapi_core.execution.adapters.adapter",
+      "intergrax.fastapi_core.execution.models",
+      "intergrax.fastapi_core.runs.models",
+      "intergrax.fastapi_core.runs.service",
+      "intergrax.fastapi_core.runs.state_machine",
+      "intergrax.fastapi_core.runs.store_base"
+    ],
+    "intergrax.fastapi_core.runs.router": [
+      "intergrax.fastapi_core.auth.dependency",
+      "intergrax.fastapi_core.budget.dependency",
+      "intergrax.fastapi_core.context",
+      "intergrax.fastapi_core.rate_limit.dependency",
+      "intergrax.fastapi_core.rate_limit.keys",
+      "intergrax.fastapi_core.runs.models",
+      "intergrax.fastapi_core.runs.service"
+    ],
+    "intergrax.fastapi_core.runs.service": [
+      "intergrax.fastapi_core.context",
+      "intergrax.fastapi_core.execution.decisions.decision_record",
+      "intergrax.fastapi_core.runs.models"
+    ],
+    "intergrax.fastapi_core.runs.state_machine": [
+      "intergrax.fastapi_core.runs.models"
+    ],
+    "intergrax.fastapi_core.runs.store_base": [
+      "intergrax.fastapi_core.runs.models"
+    ],
+    "intergrax.fastapi_core.runs.store_memory": [
+      "intergrax.fastapi_core.runs.models",
+      "intergrax.fastapi_core.runs.store_base"
+    ],
+    "intergrax.fastapi_core.runs.store_provider": [
+      "intergrax.fastapi_core.runs.store_base"
+    ],
+    "intergrax.fastapi_core.runs.store_runtime": [
+      "intergrax.fastapi_core.runs.models",
+      "intergrax.fastapi_core.runs.store_base"
+    ]
+  },
+  "reverse_dependencies": {
+    "intergrax.fastapi_core.auth.provider": [
+      "intergrax.fastapi_core.app_factory",
+      "intergrax.fastapi_core.auth.providers.allow_all",
+      "intergrax.fastapi_core.auth.providers.api_key.provider",
+      "intergrax.fastapi_core.auth.providers.compose.provider",
+      "intergrax.fastapi_core.auth.providers.jwt.provider",
+      "intergrax.fastapi_core.auth.providers.no_auth",
+      "intergrax.fastapi_core.config",
+      "intergrax.fastapi_core.middleware.request_context"
+    ],
+    "intergrax.fastapi_core.auth.providers.api_key.provider": [
+      "intergrax.fastapi_core.app_factory"
+    ],
+    "intergrax.fastapi_core.auth.providers.compose.provider": [
+      "intergrax.fastapi_core.app_factory"
+    ],
+    "intergrax.fastapi_core.auth.providers.no_auth": [
+      "intergrax.fastapi_core.app_factory"
+    ],
+    "intergrax.fastapi_core.budget.noop_policy": [
+      "intergrax.fastapi_core.app_factory"
+    ],
+    "intergrax.fastapi_core.budget.policy": [
+      "intergrax.fastapi_core.app_factory",
+      "intergrax.fastapi_core.budget.dependency",
+      "intergrax.fastapi_core.budget.noop_policy",
+      "intergrax.fastapi_core.config"
+    ],
+    "intergrax.fastapi_core.config": [
+      "intergrax.fastapi_core.app_factory"
+    ],
+    "intergrax.fastapi_core.errors.handlers": [
+      "intergrax.fastapi_core.app_factory"
+    ],
+    "intergrax.fastapi_core.execution.adapters.default_adapter": [
+      "intergrax.fastapi_core.app_factory"
+    ],
+    "intergrax.fastapi_core.middleware.request_context": [
+      "intergrax.fastapi_core.app_factory"
+    ],
+    "intergrax.fastapi_core.rate_limit.dependency": [
+      "intergrax.fastapi_core.app_factory",
+      "intergrax.fastapi_core.runs.router"
+    ],
+    "intergrax.fastapi_core.rate_limit.policy": [
+      "intergrax.fastapi_core.app_factory",
+      "intergrax.fastapi_core.config",
+      "intergrax.fastapi_core.rate_limit.dependency"
+    ],
+    "intergrax.fastapi_core.routers.health": [
+      "intergrax.fastapi_core.app_factory"
+    ],
+    "intergrax.fastapi_core.runs.default_service": [
+      "intergrax.fastapi_core.app_factory"
+    ],
+    "intergrax.fastapi_core.runs.router": [
+      "intergrax.fastapi_core.app_factory"
+    ],
+    "intergrax.fastapi_core.runs.service": [
+      "intergrax.fastapi_core.app_factory",
+      "intergrax.fastapi_core.config",
+      "intergrax.fastapi_core.execution.adapters.inprocess_adapter",
+      "intergrax.fastapi_core.execution.adapters.threaded_adapter",
+      "intergrax.fastapi_core.runs.default_service",
+      "intergrax.fastapi_core.runs.router"
+    ],
+    "intergrax.fastapi_core.runs.store_base": [
+      "intergrax.fastapi_core.app_factory",
+      "intergrax.fastapi_core.config",
+      "intergrax.fastapi_core.runs.default_service",
+      "intergrax.fastapi_core.runs.store_memory",
+      "intergrax.fastapi_core.runs.store_provider",
+      "intergrax.fastapi_core.runs.store_runtime"
+    ],
+    "intergrax.fastapi_core.runs.store_memory": [
+      "intergrax.fastapi_core.app_factory"
+    ],
+    "intergrax.fastapi_core.context": [
+      "intergrax.fastapi_core.auth.authorization",
+      "intergrax.fastapi_core.auth.dependency",
+      "intergrax.fastapi_core.budget.dependency",
+      "intergrax.fastapi_core.budget.noop_policy",
+      "intergrax.fastapi_core.budget.policy",
+      "intergrax.fastapi_core.errors.handlers",
+      "intergrax.fastapi_core.middleware.request_context",
+      "intergrax.fastapi_core.middleware.request_logging",
+      "intergrax.fastapi_core.rate_limit.dependency",
+      "intergrax.fastapi_core.runs.default_service",
+      "intergrax.fastapi_core.runs.router",
+      "intergrax.fastapi_core.runs.service"
+    ],
+    "intergrax.fastapi_core.errors.auth": [
+      "intergrax.fastapi_core.auth.authorization",
+      "intergrax.fastapi_core.errors.mapping"
+    ],
+    "intergrax.fastapi_core.auth.context": [
+      "intergrax.fastapi_core.auth.dependency",
+      "intergrax.fastapi_core.auth.provider",
+      "intergrax.fastapi_core.auth.providers.allow_all",
+      "intergrax.fastapi_core.auth.providers.api_key.provider",
+      "intergrax.fastapi_core.auth.providers.compose.provider",
+      "intergrax.fastapi_core.auth.providers.jwt.provider",
+      "intergrax.fastapi_core.auth.providers.no_auth",
+      "intergrax.fastapi_core.context"
+    ],
+    "intergrax.fastapi_core.auth.extractors.base": [
+      "intergrax.fastapi_core.auth.extractors.api_key",
+      "intergrax.fastapi_core.auth.extractors.jwt_bearer",
+      "intergrax.fastapi_core.auth.resolver"
+    ],
+    "intergrax.fastapi_core.protocol": [
+      "intergrax.fastapi_core.auth.extractors.api_key",
+      "intergrax.fastapi_core.auth.extractors.jwt_bearer",
+      "intergrax.fastapi_core.auth.providers.api_key.extractor",
+      "intergrax.fastapi_core.auth.providers.jwt.extractor",
+      "intergrax.fastapi_core.middleware.request_context"
+    ],
+    "intergrax.fastapi_core.auth.api_key": [
+      "intergrax.fastapi_core.auth.providers.api_key.provider",
+      "intergrax.fastapi_core.auth.providers.api_key.resolver",
+      "intergrax.fastapi_core.config"
+    ],
+    "intergrax.fastapi_core.auth.providers.api_key.extractor": [
+      "intergrax.fastapi_core.auth.providers.api_key.provider"
+    ],
+    "intergrax.fastapi_core.auth.providers.api_key.resolver": [
+      "intergrax.fastapi_core.auth.providers.api_key.provider"
+    ],
+    "intergrax.fastapi_core.auth.extractors.jwt_bearer": [
+      "intergrax.fastapi_core.auth.providers.jwt.provider",
+      "intergrax.fastapi_core.auth.resolver"
+    ],
+    "intergrax.fastapi_core.auth.providers.jwt.verifier": [
+      "intergrax.fastapi_core.auth.providers.jwt.provider"
+    ],
+    "intergrax.fastapi_core.auth.extractors.api_key": [
+      "intergrax.fastapi_core.auth.resolver"
+    ],
+    "intergrax.fastapi_core.errors.budget": [
+      "intergrax.fastapi_core.budget.dependency",
+      "intergrax.fastapi_core.errors.mapping"
+    ],
+    "intergrax.fastapi_core.execution.adapters.adapter": [
+      "intergrax.fastapi_core.config",
+      "intergrax.fastapi_core.execution.adapters.default_adapter",
+      "intergrax.fastapi_core.execution.adapters.inprocess_adapter",
+      "intergrax.fastapi_core.execution.adapters.threaded_adapter",
+      "intergrax.fastapi_core.runs.default_service"
+    ],
+    "intergrax.fastapi_core.errors.mapping": [
+      "intergrax.fastapi_core.errors.handlers"
+    ],
+    "intergrax.fastapi_core.errors.models": [
+      "intergrax.fastapi_core.errors.handlers"
+    ],
+    "intergrax.fastapi_core.errors.error_types": [
+      "intergrax.fastapi_core.errors.mapping"
+    ],
+    "intergrax.fastapi_core.rate_limit.errors": [
+      "intergrax.fastapi_core.errors.mapping",
+      "intergrax.fastapi_core.rate_limit.dependency"
+    ],
+    "intergrax.fastapi_core.execution.models": [
+      "intergrax.fastapi_core.execution.adapters.adapter",
+      "intergrax.fastapi_core.execution.adapters.default_adapter",
+      "intergrax.fastapi_core.execution.adapters.inprocess_adapter",
+      "intergrax.fastapi_core.execution.adapters.simple_worker",
+      "intergrax.fastapi_core.execution.adapters.threaded_adapter",
+      "intergrax.fastapi_core.execution.worker_contract",
+      "intergrax.fastapi_core.runs.default_service"
+    ],
+    "intergrax.fastapi_core.execution.worker_contract": [
+      "intergrax.fastapi_core.execution.adapters.inprocess_adapter",
+      "intergrax.fastapi_core.execution.adapters.simple_worker",
+      "intergrax.fastapi_core.execution.adapters.threaded_adapter"
+    ],
+    "intergrax.fastapi_core.execution.capabilities": [
+      "intergrax.fastapi_core.execution.adapters.threaded_adapter"
+    ],
+    "intergrax.fastapi_core.execution.decisions.decision_engine": [
+      "intergrax.fastapi_core.execution.adapters.threaded_adapter"
+    ],
+    "intergrax.fastapi_core.execution.decisions.decision_record": [
+      "intergrax.fastapi_core.execution.adapters.threaded_adapter",
+      "intergrax.fastapi_core.runs.service"
+    ],
+    "intergrax.fastapi_core.execution.decisions.decisions": [
+      "intergrax.fastapi_core.execution.adapters.threaded_adapter",
+      "intergrax.fastapi_core.execution.decisions.decision_engine",
+      "intergrax.fastapi_core.execution.decisions.decision_record"
+    ],
+    "intergrax.fastapi_core.execution.failures.failure_classifier": [
+      "intergrax.fastapi_core.execution.adapters.threaded_adapter"
+    ],
+    "intergrax.fastapi_core.execution.failures.failures": [
+      "intergrax.fastapi_core.execution.adapters.threaded_adapter",
+      "intergrax.fastapi_core.execution.decisions.decision_engine",
+      "intergrax.fastapi_core.execution.decisions.decision_record",
+      "intergrax.fastapi_core.execution.failures.failure_classifier"
+    ],
+    "intergrax.fastapi_core.execution.policies": [
+      "intergrax.fastapi_core.execution.adapters.threaded_adapter",
+      "intergrax.fastapi_core.execution.decisions.decision_engine"
+    ],
+    "intergrax.fastapi_core.runs.models": [
+      "intergrax.fastapi_core.execution.adapters.threaded_adapter",
+      "intergrax.fastapi_core.runs.default_service",
+      "intergrax.fastapi_core.runs.router",
+      "intergrax.fastapi_core.runs.service",
+      "intergrax.fastapi_core.runs.state_machine",
+      "intergrax.fastapi_core.runs.store_base",
+      "intergrax.fastapi_core.runs.store_memory",
+      "intergrax.fastapi_core.runs.store_runtime"
+    ],
+    "intergrax.fastapi_core.execution.governance.models": [
+      "intergrax.fastapi_core.execution.governance.contracts",
+      "intergrax.fastapi_core.execution.governance.defaults"
+    ],
+    "intergrax.fastapi_core.execution.governance.contracts": [
+      "intergrax.fastapi_core.execution.governance.defaults"
+    ],
+    "intergrax.fastapi_core.rate_limit.keys": [
+      "intergrax.fastapi_core.rate_limit.dependency",
+      "intergrax.fastapi_core.rate_limit.memory_policy",
+      "intergrax.fastapi_core.rate_limit.policy",
+      "intergrax.fastapi_core.runs.router"
+    ],
+    "intergrax.fastapi_core.runs.state_machine": [
+      "intergrax.fastapi_core.runs.default_service"
+    ],
+    "intergrax.fastapi_core.auth.dependency": [
+      "intergrax.fastapi_core.runs.router"
+    ],
+    "intergrax.fastapi_core.budget.dependency": [
+      "intergrax.fastapi_core.runs.router"
+    ]
+  }
+}
