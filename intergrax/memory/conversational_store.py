@@ -33,8 +33,9 @@ class ConversationalMemoryStore(Protocol):
 
     async def load_memory(
         self,
-        session_id: str,
         *,
+        tenant_id: str,
+        session_id: str,
         max_messages: Optional[int] = None,
     ) -> ConversationalMemory:
         """
@@ -58,6 +59,8 @@ class ConversationalMemoryStore(Protocol):
 
     async def save_memory(
         self,
+        *,
+        tenant_id: str,
         memory: ConversationalMemory,
     ) -> None:
         """
@@ -74,6 +77,8 @@ class ConversationalMemoryStore(Protocol):
 
     async def append_message(
         self,
+        *,
+        tenant_id: str,
         memory: ConversationalMemory,
         message: ChatMessage,
     ) -> None:
@@ -90,6 +95,8 @@ class ConversationalMemoryStore(Protocol):
 
     async def delete_session(
         self,
+        *,
+        tenant_id: str,
         session_id: str,
     ) -> None:
         """
