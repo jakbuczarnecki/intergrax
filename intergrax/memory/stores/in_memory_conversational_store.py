@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.memory.conversational_memory import ConversationalMemory
@@ -31,18 +31,20 @@ class InMemoryConversationalMemoryStore(ConversationalMemoryStore):
 
     def __init__(self) -> None:
         # Maps session_id -> ordered list of ChatMessage
-        self._sessions: Dict[str, List[ChatMessage]] = {}
+        self._sessions: Dict[Tuple[str, str], List[ChatMessage]] = {}
 
     async def load_memory(
         self,
-        session_id: str,
         *,
+        tenant_id: str,
+        session_id: str,
         max_messages: Optional[int] = None,
     ) -> ConversationalMemory:
         """
         Load conversation history into an IntergraxConversationalMemory instance.
         """
-        messages = self._sessions.get(session_id, [])
+        key = (tenant_id, session_id)
+        messages = self._sessions.get(key, [])
 
         memory = ConversationalMemory(
             session_id=session_id,
@@ -56,40 +58,47 @@ class InMemoryConversationalMemoryStore(ConversationalMemoryStore):
 
     async def save_memory(
         self,
+        *,
+        tenant_id: str,
         memory: ConversationalMemory,
     ) -> None:
         """
         Persist the full conversation history using defensive copying.
         """
-        self._sessions[memory.session_id] = list(memory.get_all())
+        key = (tenant_id, memory.session_id)
+        self._sessions[key] = list(memory.get_all())
 
     async def append_message(
         self,
+        *,
+        tenant_id: str,
         memory: ConversationalMemory,
         message: ChatMessage,
     ) -> None:
-        """
-        Append message in memory and persist the updated state.
-        """
         # First apply runtime logic (includes trimming & locking)
         memory.add(message.role, message.content)
 
-        # Then persist the new state
-        if memory.session_id not in self._sessions:
-            self._sessions[memory.session_id] = []
+        key = (tenant_id, memory.session_id)
 
-        self._sessions[memory.session_id].append(message)
+        # Then persist the new state
+        if key not in self._sessions:
+            self._sessions[key] = []
+
+        self._sessions[key].append(message)
 
     async def delete_session(
         self,
+        *,
+        tenant_id: str,
         session_id: str,
     ) -> None:
-        """
-        Remove persistent session data (no-error semantics).
-        """
-        self._sessions.pop(session_id, None)
+        key = (tenant_id, session_id)
+        self._sessions.pop(key, None)
 
     # Optional helper for diagnostics and testing
-    def list_sessions(self) -> List[str]:
-        """Return list of active persisted session IDs."""
-        return list(self._sessions.keys())
+    def list_sessions(self, *, tenant_id: str) -> List[str]:
+        return [
+            session_id
+            for (t_id, session_id) in self._sessions.keys()
+            if t_id == tenant_id
+        ]

@@ -29,7 +29,7 @@ from intergrax.memory.stores.in_memory_conversational_store import (
 
 
 pytestmark = pytest.mark.unit
-
+TENANT = "test-tenant"
 
 @pytest.mark.asyncio
 async def test_load_memory_unknown_session_returns_empty_memory() -> None:
@@ -39,7 +39,7 @@ async def test_load_memory_unknown_session_returns_empty_memory() -> None:
     """
     store = InMemoryConversationalMemoryStore()
 
-    mem = await store.load_memory("missing-session")
+    mem = await store.load_memory(tenant_id=TENANT, session_id= "missing-session")
 
     assert mem.session_id == "missing-session"
     assert mem.get_all() == []
@@ -60,13 +60,13 @@ async def test_save_memory_persists_full_history_with_defensive_copying() -> Non
     mem.add("user", "u1")
     mem.add("assistant", "a1")
 
-    await store.save_memory(mem)
+    await store.save_memory(tenant_id=TENANT, memory=mem)
 
     # Mutate the aggregate AFTER saving.
     mem.add("user", "u2")
 
     # Persisted state must remain as it was at save time.
-    reloaded = await store.load_memory("s1")
+    reloaded = await store.load_memory(tenant_id=TENANT, session_id= "s1")
     assert [m.content for m in reloaded.get_all()] == ["u1", "a1"]
 
 
@@ -81,17 +81,17 @@ async def test_append_message_updates_aggregate_and_persists_incrementally() -> 
     """
     store = InMemoryConversationalMemoryStore()
 
-    mem = await store.load_memory("s1")
+    mem = await store.load_memory(tenant_id=TENANT, session_id= "s1")
     assert mem.get_all() == []
 
     msg = ChatMessage(role="user", content="hello")
-    await store.append_message(mem, msg)
+    await store.append_message(tenant_id=TENANT, memory=mem, message=msg)
 
     # Aggregate updated.
     assert [m.content for m in mem.get_all()] == ["hello"]
 
     # Persisted state updated.
-    reloaded = await store.load_memory("s1")
+    reloaded = await store.load_memory(tenant_id=TENANT, session_id= "s1")
     assert [m.content for m in reloaded.get_all()] == ["hello"]
 
 
@@ -111,9 +111,9 @@ async def test_load_memory_respects_max_messages_via_aggregate_trimming() -> Non
     mem.add("user", "m3")
     mem.add("user", "m4")
 
-    await store.save_memory(mem)
+    await store.save_memory(tenant_id=TENANT, memory=mem)
 
-    limited = await store.load_memory("s1", max_messages=2)
+    limited = await store.load_memory(tenant_id=TENANT, session_id= "s1", max_messages=2)
     assert [m.content for m in limited.get_all()] == ["m3", "m4"]
 
 
@@ -130,15 +130,15 @@ async def test_delete_session_is_idempotent_and_has_no_error_semantics() -> None
 
     mem = ConversationalMemory(session_id="s1")
     mem.add("user", "x")
-    await store.save_memory(mem)
+    await store.save_memory(tenant_id=TENANT, memory=mem)
 
-    await store.delete_session("s1")
-    reloaded = await store.load_memory("s1")
+    await store.delete_session(tenant_id=TENANT, session_id= "s1")
+    reloaded = await store.load_memory(tenant_id=TENANT, session_id= "s1")
     assert reloaded.get_all() == []
 
     # Idempotent: deleting again must not raise.
-    await store.delete_session("s1")
-    reloaded2 = await store.load_memory("s1")
+    await store.delete_session(tenant_id=TENANT, session_id= "s1")
+    reloaded2 = await store.load_memory(tenant_id=TENANT, session_id= "s1")
     assert reloaded2.get_all() == []
 
 
@@ -149,19 +149,73 @@ async def test_list_sessions_reflects_persisted_state() -> None:
     """
     store = InMemoryConversationalMemoryStore()
 
-    assert store.list_sessions() == []
+    assert store.list_sessions(tenant_id=TENANT) == []
 
     mem1 = ConversationalMemory(session_id="s1")
     mem1.add("user", "a")
-    await store.save_memory(mem1)
+    await store.save_memory(tenant_id=TENANT, memory=mem1)
 
     mem2 = ConversationalMemory(session_id="s2")
     mem2.add("user", "b")
-    await store.save_memory(mem2)
+    await store.save_memory(tenant_id=TENANT, memory=mem2)
 
-    sessions = set(store.list_sessions())
+    sessions = set(store.list_sessions(tenant_id=TENANT))
     assert sessions == {"s1", "s2"}
 
-    await store.delete_session("s1")
-    sessions2 = set(store.list_sessions())
+    await store.delete_session(tenant_id=TENANT, session_id= "s1")
+    sessions2 = set(store.list_sessions(tenant_id=TENANT))
     assert sessions2 == {"s2"}
+
+@pytest.mark.asyncio
+async def test_cross_tenant_isolation_for_same_session_id() -> None:
+    """
+    Same session_id used by different tenants must be fully isolated.
+    """
+
+    store = InMemoryConversationalMemoryStore()
+
+    tenant_a = "tenant-a"
+    tenant_b = "tenant-b"
+    session_id = "shared-session"
+
+    # --- Tenant A ---
+    mem_a = ConversationalMemory(session_id=session_id)
+    mem_a.add("user", "message-from-A")
+    await store.save_memory(
+        tenant_id=tenant_a,
+        memory=mem_a,
+    )
+
+    # --- Tenant B ---
+    mem_b = ConversationalMemory(session_id=session_id)
+    mem_b.add("user", "message-from-B")
+    await store.save_memory(
+        tenant_id=tenant_b,
+        memory=mem_b,
+    )
+
+    # --- Verify isolation ---
+    loaded_a = await store.load_memory(
+        tenant_id=tenant_a,
+        session_id=session_id,
+    )
+    loaded_b = await store.load_memory(
+        tenant_id=tenant_b,
+        session_id=session_id,
+    )
+
+    assert [m.content for m in loaded_a.get_all()] == ["message-from-A"]
+    assert [m.content for m in loaded_b.get_all()] == ["message-from-B"]
+
+    # --- Delete A, B must remain ---
+    await store.delete_session(
+        tenant_id=tenant_a,
+        session_id=session_id,
+    )
+
+    remaining_b = await store.load_memory(
+        tenant_id=tenant_b,
+        session_id=session_id,
+    )
+
+    assert [m.content for m in remaining_b.get_all()] == ["message-from-B"]
