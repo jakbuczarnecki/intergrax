@@ -27,11 +27,11 @@ class ArtifactStore(Protocol):
     def put(self, artifact: Artifact) -> None:
         ...
 
-    def get(self, artifact_id: str) -> Artifact:
+    def get(self, tenant_id: str, artifact_id: str) -> Artifact:
         ...
 
-    def list_for_run(self, run_id: str) -> Iterable[Artifact]:
+    def list_for_run(self, tenant_id: str, run_id: str) -> Iterable[Artifact]:
         ...
 
-    def delete_for_run(self, run_id: str) -> None:
+    def delete_for_run(self, tenant_id: str, run_id: str) -> None:
         ...

@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Tuple
 
 from intergrax.runtime.nexus.artifacts.models import Artifact
 from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
@@ -14,28 +14,34 @@ class InMemoryArtifactStore(ArtifactStore):
     """
     In-memory artifact store for tests and local development.
 
-    Contract notes:
-    - get() raises KeyError if artifact_id not found (consistent with InMemoryRunStore).
-    - delete_for_run() tolerates unknown run_id.
+    Security:
+    - Fully tenant-scoped storage.
+    - No global artifact namespace.
     """
 
     def __init__(self) -> None:
-        self._artifacts: Dict[str, Artifact] = {}
-        self._by_run: Dict[str, List[str]] = {}
+        self._artifacts: Dict[Tuple[str, str], Artifact] = {}
+        self._by_run: Dict[Tuple[str, str], List[str]] = {}
 
     def put(self, artifact: Artifact) -> None:
-        self._artifacts[artifact.artifact_id] = artifact
-        self._by_run.setdefault(artifact.run_id, []).append(artifact.artifact_id)
+        key = (artifact.tenant_id, artifact.artifact_id)
+        self._artifacts[key] = artifact
 
-    def get(self, artifact_id: str) -> Artifact:
-        return self._artifacts[artifact_id]
+        run_key = (artifact.tenant_id, artifact.run_id)
+        self._by_run.setdefault(run_key, []).append(artifact.artifact_id)
 
-    def list_for_run(self, run_id: str) -> Iterable[Artifact]:
-        ids = self._by_run.get(run_id, [])
+    def get(self, tenant_id: str, artifact_id: str) -> Artifact:
+        key = (tenant_id, artifact_id)
+        return self._artifacts[key]
+
+    def list_for_run(self, tenant_id: str, run_id: str) -> Iterable[Artifact]:
+        run_key = (tenant_id, run_id)
+        ids = self._by_run.get(run_key, [])
         for artifact_id in ids:
-            yield self._artifacts[artifact_id]
+            yield self._artifacts[(tenant_id, artifact_id)]
 
-    def delete_for_run(self, run_id: str) -> None:
-        ids = self._by_run.pop(run_id, [])
+    def delete_for_run(self, tenant_id: str, run_id: str) -> None:
+        run_key = (tenant_id, run_id)
+        ids = self._by_run.pop(run_key, [])
         for artifact_id in ids:
-            self._artifacts.pop(artifact_id, None)
+            self._artifacts.pop((tenant_id, artifact_id), None)
