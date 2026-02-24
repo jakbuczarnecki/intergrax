@@ -58,6 +58,10 @@ logger = IntergraxLogging.get_logger(__name__, component="rag")
 @dataclass
 class VSConfig:
     """Generic vector-store configuration."""
+
+     # --- Multi-tenant isolation ---
+    tenant_id: str
+
     provider: VectorProvider
     collection_name: str = "documentation"
     metric: Metric = "cosine"
@@ -100,7 +104,11 @@ class VectorstoreManager:
         self.cfg = config
 
         self.provider: VectorProvider = config.provider
-        self.collection_name = config.collection_name
+        
+        base_collection_name = config.collection_name
+        tenant_id = config.tenant_id
+        self.collection_name = f"{base_collection_name}__tenant__{tenant_id}"
+
         self.metric = config.metric
 
         self._client = None
@@ -363,6 +371,15 @@ class VectorstoreManager:
             docs_batch = documents[start:end]
             metas_batch = self._doc_payloads(docs_batch, base=base_metadata)
 
+            # --- Tenant metadata enforcement (second line of defense) ---
+            for i in range(len(metas_batch)):
+                existing = metas_batch[i].get("tenant_id")
+                if existing is not None and existing != self.cfg.tenant_id:
+                    raise ValueError(
+                        f"Metadata tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{existing}'."
+                    )
+                metas_batch[i]["tenant_id"] = self.cfg.tenant_id
+
             # Provider-specific upsert
             if self.provider == "chroma":
                 self._upsert_chroma(ids_batch, embeddings_batch, metas_batch, self._doc_texts(docs_batch))
@@ -506,10 +523,15 @@ class VectorstoreManager:
             if include_embeddings:
                 include.append("embeddings")
 
+            # --- Enforce tenant filter ---
+            tenant_filter = {"tenant_id": self.cfg.tenant_id}
+            effective_where = dict(where or {})
+            effective_where.update(tenant_filter)
+
             res = self._collection.query(
                 query_embeddings=Q,
                 n_results=top_k,
-                where=self._normalize_chroma_where(where),
+                where=self._normalize_chroma_where(effective_where),
                 include=include,
             )
 
@@ -532,12 +554,17 @@ class VectorstoreManager:
             self._ensure_qdrant_collection()
             out = {"ids": [], "scores": [], "metadatas": [], "documents": []}
             for q in Q:
+                tenant_filter = {"tenant_id": self.cfg.tenant_id}
+                effective_where = dict(where or {})
+                effective_where.update(tenant_filter)
+
                 qr = self._client.search(
                     collection_name=self.collection_name,
                     query_vector=list(map(float, q)),
                     limit=top_k,
-                    query_filter=self._qdrant_filter(where),
+                    query_filter=self._qdrant_filter(effective_where),
                 )
+
                 out["ids"].append([str(h.id) for h in qr])
                 out["scores"].append([float(h.score) for h in qr])  # ascending = better (Qdrant returns similarity)
                 out["metadatas"].append([dict(h.payload or {}) for h in qr])
@@ -548,13 +575,18 @@ class VectorstoreManager:
             self._ensure_pinecone_index()
             out = {"ids": [], "scores": [], "metadatas": [], "documents": []}
             for q in Q:
+                tenant_filter = {"tenant_id": self.cfg.tenant_id}
+                effective_where = dict(where or {})
+                effective_where.update(tenant_filter)
+
                 qr = self._collection.query(
                     vector=list(map(float, q)),
                     top_k=top_k,
                     include_values=False,
                     include_metadata=True,
-                    filter=where or None,
+                    filter=effective_where,
                 )
+                
                 matches = qr.get("matches", []) if isinstance(qr, dict) else qr.matches
                 ids_row, scores_row, mds_row, docs_row = [], [], [], []
                 for m in matches:

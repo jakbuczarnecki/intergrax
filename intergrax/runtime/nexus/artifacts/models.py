@@ -18,6 +18,7 @@ class Artifact:
     not user/profile memory.
     """
 
+    tenant_id: str
     artifact_id: str
     run_id: str
     step_id: Optional[str]
