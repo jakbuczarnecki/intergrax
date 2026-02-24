@@ -24,7 +24,12 @@ class UserProfileStore(Protocol):
     - decide how profile is injected into prompts.
     """
 
-    async def get_profile(self, user_id: str) -> UserProfile:
+    async def get_profile(
+        self,
+        *,
+        tenant_id: str,
+        user_id: str,
+    ) -> UserProfile:
         """
         Load user profile for the given user_id.
 
@@ -35,7 +40,12 @@ class UserProfileStore(Protocol):
         """
         ...
 
-    async def save_profile(self, profile: UserProfile) -> None:
+    async def save_profile(
+        self,
+        *,
+        tenant_id: str,
+        profile: UserProfile,
+    ) -> None:
         """
         Persist the given profile aggregate for the associated user_id.
 
@@ -43,7 +53,12 @@ class UserProfileStore(Protocol):
         """
         ...
 
-    async def delete_profile(self, user_id: str) -> None:
+    async def delete_profile(
+        self,
+        *,
+        tenant_id: str,
+        user_id: str,
+    ) -> None:
         """
         Remove any stored profile data for the given user_id.
 

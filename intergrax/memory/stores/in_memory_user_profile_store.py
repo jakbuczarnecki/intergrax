@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Dict
+from typing import Dict, Tuple
 
 from intergrax.memory.user_profile_memory import UserProfile, UserIdentity, UserPreferences
 from intergrax.memory.user_profile_store import UserProfileStore
@@ -24,35 +24,42 @@ class InMemoryUserProfileStore(UserProfileStore):
 
     def __init__(self) -> None:
         # user_id -> UserProfile
-        self._profiles: Dict[str, UserProfile] = {}
+        self._profiles: Dict[Tuple[str, str], UserProfile] = {}
 
-    async def get_profile(self, user_id: str) -> UserProfile:
-        """
-        Return an existing profile or a default one if not present.
-        """
-        if user_id in self._profiles:
-            return self._profiles[user_id]
+    async def get_profile(
+        self,
+        *,
+        tenant_id: str,
+        user_id: str,
+    ) -> UserProfile:
+        key = (tenant_id, user_id)
+        if key in self._profiles:
+            return self._profiles[key]
 
-        # Create a default, mostly empty profile for a new user.
         identity = UserIdentity(user_id=user_id)
         preferences = UserPreferences()
         profile = UserProfile(identity=identity, preferences=preferences)
 
-        # Optionally store the default profile to make subsequent calls cheaper.
-        self._profiles[user_id] = profile
+        self._profiles[key] = profile
         return profile
 
-    async def save_profile(self, profile: UserProfile) -> None:
-        """
-        Persist or update the profile in memory.
-        """
-        self._profiles[profile.identity.user_id] = profile
+    async def save_profile(
+        self,
+        *,
+        tenant_id: str,
+        profile: UserProfile,
+    ) -> None:
+        key = (tenant_id, profile.identity.user_id)
+        self._profiles[key] = profile
 
-    async def delete_profile(self, user_id: str) -> None:
-        """
-        Remove a stored profile, if present. Ignore unknown IDs.
-        """
-        self._profiles.pop(user_id, None)
+    async def delete_profile(
+        self,
+        *,
+        tenant_id: str,
+        user_id: str,
+    ) -> None:
+        key = (tenant_id, user_id)
+        self._profiles.pop(key, None)
 
     # Optional helper for debugging / tests
     def list_user_ids(self):
