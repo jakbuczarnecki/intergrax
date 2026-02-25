@@ -45,11 +45,23 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     tenant_id TEXT NOT NULL,
                     key TEXT NOT NULL,
                     status TEXT NOT NULL,
-                    result_json TEXT,
+                    result_blob TEXT,
                     PRIMARY KEY (tenant_id, key)
                 )
                 """
             )
+
+            # --- Migration: ensure result_blob column exists ---
+            columns = conn.execute(
+                "PRAGMA table_info(idempotency_ledger)"
+            ).fetchall()
+
+            column_names = {row[1] for row in columns}
+
+            if "result_blob" not in column_names:
+                conn.execute(
+                    "ALTER TABLE idempotency_ledger ADD COLUMN result_blob TEXT"
+                )
 
     def get_status(
         self,
