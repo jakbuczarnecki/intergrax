@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
+import pytest
 from typing import Iterable, List
 
 from intergrax.runtime.replay.contracts.artifact_dto import ArtifactDTO
@@ -11,6 +12,8 @@ from intergrax.runtime.replay.contracts.trace_event_dto import TraceEventDTO
 from intergrax.runtime.replay.contracts.trace_event_store import TraceEventStore
 from intergrax.runtime.replay.replay_engine import ReplayEngine
 from intergrax.runtime.replay.models import ReconstructedRun
+
+pytestmark = pytest.mark.unit
 
 
 # ---------------- FAKE STORES ----------------

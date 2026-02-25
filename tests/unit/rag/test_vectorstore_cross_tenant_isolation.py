@@ -2,9 +2,12 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+import pytest
 import numpy as np
 from typing import Dict, List, Any
 from langchain_core.documents import Document
+
+pytestmark = pytest.mark.unit
 
 
 class InMemoryVectorStore:

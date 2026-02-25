@@ -10,6 +10,8 @@ from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySe
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from tests._support.builder import FakeLLMAdapter
 
+pytestmark = pytest.mark.unit
+
 
 def test_runtime_context_requires_governance_in_production_mode():
     config = RuntimeConfig(

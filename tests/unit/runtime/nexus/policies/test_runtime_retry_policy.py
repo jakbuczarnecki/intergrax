@@ -14,6 +14,8 @@ from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTra
 
 from tests._support.builder import build_engine_harness, build_runtime_config_deterministic
 
+pytestmark = pytest.mark.unit
+
 
 class _FlakyInternalErrorPipeline(RuntimePipeline):
     def __init__(self) -> None:

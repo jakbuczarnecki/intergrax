@@ -9,6 +9,8 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.runtime_steps.instructions_step import InstructionsStep
 from tests._support.builder import build_runtime_state_for_tests
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.asyncio
 async def test_instructions_step_no_instructions_noop():

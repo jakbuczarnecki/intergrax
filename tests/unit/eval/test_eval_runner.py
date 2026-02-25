@@ -20,6 +20,8 @@ from intergrax.runtime.replay.models import (
 
 from intergrax.runtime.replay.metrics import ExecutionMetrics
 
+pytestmark = pytest.mark.unit
+
 
 # -----------------------------
 # Test Stubs (minimal, explicit)

@@ -52,8 +52,16 @@ def process_file(path: Path) -> None:
         updated = True
 
     if not has_pytestmark(content, category):
-        lines.append("")
-        lines.append(f"pytestmark = pytest.mark.{category}")
+        insert_index = 0
+
+        # find last import line
+        for i, line in enumerate(lines):
+            if line.startswith("import ") or line.startswith("from "):
+                insert_index = i + 1
+
+        # insert marker after imports
+        lines.insert(insert_index, "")
+        lines.insert(insert_index + 1, f"pytestmark = pytest.mark.{category}")
         updated = True
 
     if updated:

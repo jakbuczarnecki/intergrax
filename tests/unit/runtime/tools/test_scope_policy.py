@@ -13,6 +13,8 @@ from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tool_executor import ToolExecutor, ToolHandler
 
+pytestmark = pytest.mark.unit
+
 
 class DummyInput(BaseModel):
     value: int

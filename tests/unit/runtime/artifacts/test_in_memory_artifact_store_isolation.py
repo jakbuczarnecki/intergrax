@@ -8,6 +8,8 @@ from intergrax.runtime.nexus.artifacts.models import Artifact
 from intergrax.runtime.nexus.artifacts.in_memory_artifact_store import InMemoryArtifactStore
 from intergrax.utils.time_provider import SystemTimeProvider
 
+pytestmark = pytest.mark.unit
+
 
 def _artifact(
     tenant_id: str,

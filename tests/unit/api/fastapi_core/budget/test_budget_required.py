@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from fastapi import Request
 
@@ -9,6 +10,8 @@ from intergrax.fastapi_core.config import ApiConfig
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.errors.error_types import ApiErrorType
 from tests._support.builder import DummyRunStore
+
+pytestmark = pytest.mark.unit
 
 
 class RejectAllBudgetPolicy(BudgetPolicy):

@@ -3,9 +3,12 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+import pytest
 
 from intergrax.chains.langchain_qa_chain import _default_prompt_builder
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
+
+pytestmark = pytest.mark.unit
 
 
 def test_langchain_qa_yaml_contract() -> None:

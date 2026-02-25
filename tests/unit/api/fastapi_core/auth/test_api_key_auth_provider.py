@@ -1,9 +1,12 @@
+import pytest
 from fastapi import Request
 from starlette.requests import Request as StarletteRequest
 
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig, ApiKeyIdentity
 from intergrax.fastapi_core.auth.providers.api_key.provider import ApiKeyAuthProvider
 from intergrax.fastapi_core.protocol import ApiHeaders
+
+pytestmark = pytest.mark.unit
 
 
 def _request_with_api_key(api_key: str) -> Request:

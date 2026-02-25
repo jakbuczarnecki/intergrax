@@ -1,4 +1,5 @@
 
+import pytest
 from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import (
     SQLiteRunTraceStore,
 )
@@ -9,6 +10,8 @@ from intergrax.runtime.nexus.tracing.persistence_models import (
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 from tests._support.builder import prepare_sqlite_db
+
+pytestmark = pytest.mark.unit
 
 
 def test_sqlite_run_trace_store_persist_and_read():    

@@ -4,12 +4,14 @@
 
 from __future__ import annotations
 
+import pytest
 import asyncio
-from typing import Optional
 
 from intergrax.fastapi_core.execution.adapters.inprocess_adapter import InProcessExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.fastapi_core.runs.service import RunService
+
+pytestmark = pytest.mark.unit
 
 
 

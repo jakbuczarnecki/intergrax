@@ -8,6 +8,8 @@ import pytest
 from intergrax.runtime.nexus.runtime_steps.profile_based_memory_step import ProfileBasedMemoryStep
 from tests._support.builder import build_runtime_state_for_tests
 
+pytestmark = pytest.mark.unit
+
 
 class _FakeSessionManager:
     def __init__(self, user_instr=None, org_instr=None):

@@ -1,3 +1,4 @@
+import pytest
 from fastapi import APIRouter, Depends
 from fastapi.testclient import TestClient
 
@@ -6,6 +7,8 @@ from intergrax.fastapi_core.auth.dependency import get_auth_context
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig, ApiKeyIdentity
 from intergrax.fastapi_core.protocol import ApiHeaders
+
+pytestmark = pytest.mark.unit
 
 
 def test_auth_context_available_in_request() -> None:

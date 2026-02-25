@@ -6,6 +6,8 @@ import pytest
 
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.asyncio
 async def test_runtime_engine_rejects_empty_tenant_id(harness_static):

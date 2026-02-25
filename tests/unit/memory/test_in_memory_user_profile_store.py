@@ -9,6 +9,8 @@ from intergrax.memory.stores.in_memory_user_profile_store import (
 )
 from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.asyncio
 async def test_profiles_are_isolated_between_tenants():

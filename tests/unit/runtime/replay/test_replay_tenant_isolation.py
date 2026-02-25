@@ -15,6 +15,8 @@ from intergrax.runtime.replay.contracts.run_record_dto import RunRecordDTO
 from intergrax.runtime.replay.contracts.trace_event_dto import TraceEventDTO
 from intergrax.runtime.replay.contracts.artifact_dto import ArtifactDTO
 
+pytestmark = pytest.mark.unit
+
 
 TENANT_A = "tenant_A"
 TENANT_B = "tenant_B"

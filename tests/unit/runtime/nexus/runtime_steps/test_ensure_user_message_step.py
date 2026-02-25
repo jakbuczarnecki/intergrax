@@ -9,6 +9,8 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.runtime_steps.ensure_current_user_message_step import EnsureCurrentUserMessageStep
 from tests._support.builder import build_runtime_state_for_tests
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.asyncio
 async def test_ensure_user_step_noop_when_request_empty():

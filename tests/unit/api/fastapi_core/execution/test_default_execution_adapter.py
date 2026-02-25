@@ -3,6 +3,8 @@ from intergrax.fastapi_core.execution.models import ExecutionRequest
 
 import pytest
 
+pytestmark = pytest.mark.unit
+
 @pytest.mark.asyncio
 async def test_default_execution_adapter_is_noop():
     adapter = DefaultExecutionAdapter()

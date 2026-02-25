@@ -96,8 +96,8 @@ torch = { index = "pytorch-cpu" }
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=8.4",
-  "pytest-asyncio",
+  "pytest>=8.4,<9",
+  "pytest-asyncio>=0.23,<0.24",
   "ruff",
   "pyright",
 ]
@@ -134,9 +134,4 @@ filterwarnings = [
   "ignore:builtin type SwigPyPacked has no __module__ attribute:DeprecationWarning",
   "ignore:builtin type SwigPyObject has no __module__ attribute:DeprecationWarning",
   "ignore:builtin type swigvarlink has no __module__ attribute:DeprecationWarning",
-]
-
-[dependency-groups]
-dev = [
-    "pytest>=9.0.2",
 ]

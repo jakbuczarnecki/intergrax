@@ -3,9 +3,8 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+import pytest
 
-import tempfile
-from pathlib import Path
 
 from pydantic import BaseModel
 
@@ -15,6 +14,8 @@ from intergrax.runtime.tools.sqlite_idempotency_store import (
 from intergrax.runtime.tools.idempotency_store import InvocationStatus
 from intergrax.tools.execution_models import ToolExecutionResult
 from tests._support.builder import prepare_sqlite_db
+
+pytestmark = pytest.mark.unit
 
 
 class DummyOutput(BaseModel):

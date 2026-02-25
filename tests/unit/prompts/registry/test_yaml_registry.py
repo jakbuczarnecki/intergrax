@@ -2,11 +2,14 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+import pytest
 from pathlib import Path
 
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.prompts.registry.pin_config import PromptPinConfig
 from intergrax.prompts.storage.models import PromptNotFound
+
+pytestmark = pytest.mark.unit
 
 
 def _make_prompt(p: Path, version: int) -> None:

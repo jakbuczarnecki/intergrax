@@ -13,6 +13,8 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest, St
 from intergrax.runtime.nexus.runtime_steps.contract import RuntimeStepRunner
 from tests._support.builder import build_runtime_config_deterministic, build_engine_harness
 
+pytestmark = pytest.mark.unit
+
 
 class _AlwaysFailStep:
     def execution_kind(self) -> ExecutionKind:

@@ -11,6 +11,8 @@ from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind, Run
 from intergrax.runtime.nexus.runtime_steps.contract import RuntimeStepRunner
 from tests._support.builder import build_runtime_state_for_tests
 
+pytestmark = pytest.mark.unit
+
 
 class _FlakyStep:
     def __init__(self) -> None:

@@ -17,6 +17,8 @@ from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.errors.auth import NotAuthenticatedError
 from intergrax.fastapi_core.errors.error_types import ApiErrorType
 
+pytestmark = pytest.mark.unit
+
 
 def test_auth_required_allows_authenticated_request() -> None:
     context = RequestContext(

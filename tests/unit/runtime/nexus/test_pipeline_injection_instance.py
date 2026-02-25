@@ -19,6 +19,8 @@ from intergrax.runtime.nexus.session.session_manager import SessionManager
 
 from tests._support.builder import build_runtime_config_deterministic
 
+pytestmark = pytest.mark.unit
+
 
 class _DummyPipeline(RuntimePipeline):
     async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:

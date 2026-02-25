@@ -1,7 +1,10 @@
+import pytest
 from fastapi import Request
 from starlette.requests import Request as StarletteRequest
 
 from intergrax.fastapi_core.auth.providers.no_auth import NoAuthProvider
+
+pytestmark = pytest.mark.unit
 
 
 def test_no_auth_provider_returns_none() -> None:

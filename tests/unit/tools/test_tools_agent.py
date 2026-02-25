@@ -2,6 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+import pytest
 import json
 
 from pydantic import BaseModel
@@ -11,6 +12,8 @@ from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.tools_agent import ToolsAgent
 from tests._support.builder import FakeLLMAdapter, tools_agent_make_contract
+
+pytestmark = pytest.mark.unit
 
 
 # ============================================================

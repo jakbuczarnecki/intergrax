@@ -2,6 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+import pytest
 from pydantic import BaseModel
 
 from intergrax.runtime.nexus.runtime_steps.tools_step import ToolsStep
@@ -9,6 +10,8 @@ from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempote
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.core.provider import ToolProvider
 from tests._support.builder import build_runtime_state_for_tests
+
+pytestmark = pytest.mark.unit
 
 
 class DummyInput(BaseModel):
