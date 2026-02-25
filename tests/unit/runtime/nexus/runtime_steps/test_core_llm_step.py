@@ -9,6 +9,8 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.runtime_steps.core_llm_step import CoreLLMStep
 from tests._support.builder import build_runtime_state_for_tests
 
+pytestmark = pytest.mark.unit
+
 
 class _FakeAdapter:
     def __init__(self, result="OK"):

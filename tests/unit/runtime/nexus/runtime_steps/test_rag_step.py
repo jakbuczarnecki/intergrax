@@ -13,6 +13,8 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.runtime_steps.rag_step import RagStep
 from tests._support.builder import build_runtime_state_for_tests
 
+pytestmark = pytest.mark.unit
+
 
 @dataclass
 class _BuiltContext:

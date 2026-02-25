@@ -15,6 +15,8 @@ from intergrax.runtime.nexus.session.chat_session import ChatSession
 from intergrax.runtime.nexus.session.session_storage import SessionStorage
 from tests._support.builder import build_runtime_state_for_tests
 
+pytestmark = pytest.mark.unit
+
 
 @dataclass
 class _FakeSession:

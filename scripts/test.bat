@@ -12,8 +12,17 @@ if not exist .venv\Scripts\python.exe (
     exit /b 1
 )
 
-REM --- Run tests using venv interpreter ---
-echo [INFO] Running test suite
-.\.venv\Scripts\python -m pytest %*
+set MODE=%1
+
+REM --- Default: run all tests ---
+if "%MODE%"=="" (
+    echo [INFO] Running ALL tests
+    .\.venv\Scripts\python -m pytest
+    exit /b %ERRORLEVEL%
+)
+
+REM --- Run by marker ---
+echo [INFO] Running tests with marker: %MODE%
+.\.venv\Scripts\python -m pytest -m "%MODE%"
 
 exit /b %ERRORLEVEL%

@@ -9,6 +9,8 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
 from tests._support.builder import build_engine_harness_production_trace, prepare_sqlite_db
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.asyncio
 async def test_runtime_sqlite_replay_e2e():

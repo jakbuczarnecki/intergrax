@@ -12,6 +12,8 @@ from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySe
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from tests._support.builder import FakeLLMAdapter
 
+pytestmark = pytest.mark.unit
+
 
 class DummyGovernanceService:
     def __init__(self):

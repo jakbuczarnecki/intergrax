@@ -8,6 +8,8 @@ import pytest
 from intergrax.prompts.storage.yaml_loader import YamlPromptLoader
 from intergrax.prompts.storage.models import PromptValidationError
 
+pytestmark = pytest.mark.unit
+
 
 def test_loader_parses_minimal_document(tmp_path: Path) -> None:
     p = tmp_path / "p.yaml"

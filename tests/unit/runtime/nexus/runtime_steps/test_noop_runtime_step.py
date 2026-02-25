@@ -8,6 +8,8 @@ import pytest
 from intergrax.runtime.nexus.runtime_steps.noop_runtime_step import NoOpRuntimeStep
 from tests._support.builder import build_runtime_state_for_tests
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.asyncio
 async def test_noop_runtime_step_does_not_mutate_runtime_state():

@@ -2,8 +2,11 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+import pytest
 from intergrax.eval.eval_report_renderer import EvalReportRenderer
 from intergrax.eval.eval_result import EvalResult
+
+pytestmark = pytest.mark.unit
 
 
 def test_render_deterministic_report():

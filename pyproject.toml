@@ -96,11 +96,16 @@ torch = { index = "pytorch-cpu" }
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=8.4",
-  "pytest-asyncio",
+  "pytest>=8.4,<9",
+  "pytest-asyncio>=0.23,<0.24",
   "ruff",
   "pyright",
 ]
+
+distributed = [
+  "redis>=5.0",
+]
+
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

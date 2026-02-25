@@ -9,6 +9,8 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.runtime_steps.retrieve_attachments_step import RetrieveAttachmentsStep
 from tests._support.builder import build_runtime_state_for_tests
 
+pytestmark = pytest.mark.unit
+
 
 class _FakeIngestionService:
     def __init__(self, result=None, error=None):

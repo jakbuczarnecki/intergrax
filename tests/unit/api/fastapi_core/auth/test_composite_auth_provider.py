@@ -1,9 +1,12 @@
+import pytest
 from fastapi import Request
 from starlette.requests import Request as StarletteRequest
 
 from intergrax.fastapi_core.auth.context import AuthContext
 from intergrax.fastapi_core.auth.provider import AuthProvider
 from intergrax.fastapi_core.auth.providers.compose.provider import CompositeAuthProvider
+
+pytestmark = pytest.mark.unit
 
 
 class DummyProvider(AuthProvider):

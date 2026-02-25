@@ -11,6 +11,9 @@ from intergrax.runtime.organization.stores.sqlite_organization_profile_store imp
 from tests._support.builder import prepare_sqlite_db
 
 
+pytestmark = pytest.mark.integration
+
+
 @pytest.mark.asyncio
 async def test_sqlite_organization_profile_store_persistence() -> None:
     db_path: Path = prepare_sqlite_db("organization_test.db")

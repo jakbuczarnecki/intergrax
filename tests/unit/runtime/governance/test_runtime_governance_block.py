@@ -11,6 +11,8 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 
+pytestmark = pytest.mark.unit
+
 
 class FailingGovernanceService:
     def evaluate(self, run_id: str, agent_id: str):

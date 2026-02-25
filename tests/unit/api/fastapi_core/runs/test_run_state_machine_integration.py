@@ -6,6 +6,8 @@ from intergrax.fastapi_core.runs.models import RunStatus
 from intergrax.fastapi_core.runs.state_machine import InvalidRunTransitionError
 from tests._support.builder import DummyRunStore
 
+pytestmark = pytest.mark.unit
+
 
 # class DummyRunStore(RunStore):
 #     def __init__(self) -> None:

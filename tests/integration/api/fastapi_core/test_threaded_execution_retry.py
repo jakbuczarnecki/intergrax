@@ -20,6 +20,9 @@ from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
 
 
+pytestmark = pytest.mark.integration
+
+
 class NoOpCancellableWorker(CancellableExecutionWorker):
 
     def execute(self, request):

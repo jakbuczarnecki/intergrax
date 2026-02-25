@@ -8,6 +8,9 @@ from intergrax.runtime.organization.stores.in_memory_organization_profile_store 
     InMemoryOrganizationProfileStore,
 )
 
+pytestmark = pytest.mark.unit
+    
+
 
 @pytest.mark.asyncio
 async def test_in_memory_organization_profile_store_basic_flow() -> None:

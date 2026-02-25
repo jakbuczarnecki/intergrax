@@ -9,10 +9,7 @@ from pathlib import Path
 import pytest
 
 
-pytestmark = [
-    pytest.mark.asyncio,
-    pytest.mark.network,
-]
+pytestmark = pytest.mark.e2e
 
 
 def _require_path(p: Path, *, label: str) -> Path:

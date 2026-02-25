@@ -10,6 +10,8 @@ from intergrax.runtime.nexus.runtime_steps.persist_and_build_answer_step import 
 from intergrax.runtime.nexus.session.session_storage import SessionStorage
 from tests._support.builder import build_runtime_state_for_tests
 
+pytestmark = pytest.mark.unit
+
 
 class _FakeAppendResult:
     consolidation_diag = None

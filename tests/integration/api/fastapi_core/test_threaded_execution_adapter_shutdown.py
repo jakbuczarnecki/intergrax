@@ -8,6 +8,7 @@ from intergrax.fastapi_core.execution.adapters.threaded_adapter import ThreadedE
 from intergrax.fastapi_core.execution.worker_contract import CancellableExecutionWorker
 from intergrax.fastapi_core.runs.service import RunService
 
+pytestmark = pytest.mark.integration
 
 class DummyWorker(CancellableExecutionWorker):
     def execute(self, request: ExecutionRequest) -> None:

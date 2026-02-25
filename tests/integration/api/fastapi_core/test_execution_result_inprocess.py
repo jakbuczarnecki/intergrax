@@ -1,6 +1,7 @@
 import asyncio
 from typing import Optional
 from fastapi import BackgroundTasks
+import pytest
 
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.execution.adapters.inprocess_adapter import InProcessExecutionAdapter
@@ -12,7 +13,7 @@ from intergrax.fastapi_core.runs.store_base import RunStore
 from intergrax.fastapi_core.runs.models import RunResponse
 from tests._support.builder import DummyRunStore
 
-
+pytestmark = pytest.mark.integration
 
 class ResultWorker(ExecutionWorker):
     def execute(self, request: ExecutionRequest) -> Optional[dict]:

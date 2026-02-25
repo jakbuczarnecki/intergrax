@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import time
 from fastapi import BackgroundTasks
+import pytest
 
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.execution.adapters.simple_worker import SimpleExecutionWorker
@@ -10,6 +11,8 @@ from intergrax.fastapi_core.execution.adapters.threaded_adapter import ThreadedE
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import RunStatus
 from tests._support.builder import DummyRunStore
+
+pytestmark = pytest.mark.integration
 
 
 def test_execution_pipeline_threaded() -> None:

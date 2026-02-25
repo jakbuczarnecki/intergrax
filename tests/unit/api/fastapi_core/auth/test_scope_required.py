@@ -7,6 +7,8 @@ from intergrax.fastapi_core.auth.context import AuthContext
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.errors.auth import MissingScopeError, NotAuthenticatedError
 
+pytestmark = pytest.mark.unit
+
 
 def _ctx(scopes: tuple[str, ...]) -> RequestContext:
     return RequestContext(

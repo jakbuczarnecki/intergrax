@@ -4,8 +4,12 @@
 
 from __future__ import annotations
 
+import pytest
+
 from intergrax.prompts.inventory.models import PromptInstructionKind
 from intergrax.prompts.inventory.registry import PromptInventoryBuilder
+
+pytestmark = pytest.mark.unit
 
 
 def test_inventory_builder_groups_by_kind() -> None:

@@ -1,3 +1,4 @@
+import pytest
 from pydantic import BaseModel
 from intergrax.tools.execution_models import (
     ToolExecutionRequest,
@@ -11,6 +12,8 @@ from intergrax.runtime.tools.idempotent_invoker import (
     IdempotentToolInvoker,
 )
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+
+pytestmark = pytest.mark.unit
 
 
 class DummyInput(BaseModel):

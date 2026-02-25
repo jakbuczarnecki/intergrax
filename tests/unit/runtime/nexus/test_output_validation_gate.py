@@ -10,6 +10,8 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer
 from intergrax.runtime.nexus.errors.output_validation_error import OutputValidationError
 
+pytestmark = pytest.mark.unit
+
 
 class DummyConfig:
     production_mode = True
