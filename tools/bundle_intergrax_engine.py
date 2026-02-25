@@ -82,6 +82,8 @@ EXTRA_BUNDLES: Dict[str, str] = {
 
     "WEBSEARCH": r"intergrax\websearch",
 
+    "DISTRIBUTED": r"intergrax\distributed",
+
     "INTERGRAX_FULL": r"intergrax",
     
     "NOTEBOOKS": r"notebooks",

@@ -102,6 +102,11 @@ dev = [
   "pyright",
 ]
 
+distributed = [
+  "redis>=5.0",
+]
+
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
