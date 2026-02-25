@@ -36,8 +36,6 @@ class RuntimeRunStore(RunStore):
         # In dry-run we only allocate run_id and emit trace
         run_id = self._allocate_run_id()
 
-        state = RuntimeState()
-
         run = RunResponse(
             run_id=run_id,
             status=RunStatus.PENDING,

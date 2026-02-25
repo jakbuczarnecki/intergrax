@@ -161,7 +161,10 @@ class RuntimeConfig:
     tools_context_scope: ToolsContextScope = ToolsContextScope.CURRENT_MESSAGE_ONLY
 
     tool_invoker: Optional[RuntimeToolInvoker] = None
+
     idempotency_store: Optional[IdempotencyStore] = None
+    idempotency_db_path: Optional[str] = None
+    
     tool_providers: Sequence[ToolProvider] = ()
 
      # Optional capability-level tool authorization policy.

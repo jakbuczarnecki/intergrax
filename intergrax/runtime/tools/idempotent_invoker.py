@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
 from intergrax.runtime.nexus.tracing.trace_models import (
     TraceComponent,
     TraceLevel,
@@ -41,7 +41,7 @@ class IdempotentToolInvoker:
     def invoke(
         self,
         *,
-        state: RuntimeState,
+        state: RuntimeStateContract,
         agent_id: str,
         request: ToolExecutionRequest[BaseModel],
     ) -> ToolExecutionResult[BaseModel]:
