@@ -30,8 +30,17 @@ class CountingExecutor:
         return DummyOutput(result=request.input.value * 2)
 
 
+class DummyRequest:
+    def __init__(self) -> None:
+        self.tenant_id = "tenant_test"
+        self.agent_id = "agent_test"
+
+
 class DummyState:
-    def trace_event(self, **kwargs):
+    def __init__(self) -> None:
+        self.request = DummyRequest()
+
+    def trace_event(self, *args, **kwargs):
         pass
 
 class DummyHandler:
