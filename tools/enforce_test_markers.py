@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import List, Optional
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,7 +18,7 @@ MARKER_MAP = {
 }
 
 
-def detect_category(path: Path) -> str | None:
+def detect_category(path: Path) -> Optional[str]:
     parts = path.relative_to(TESTS_DIR).parts
     if not parts:
         return None
@@ -32,36 +33,82 @@ def has_pytest_import(content: str) -> bool:
     return "import pytest" in content
 
 
+def find_insert_position(lines: List[str]) -> int:
+    """
+    Returns index AFTER the import section.
+    Safely handles:
+    - copyright header
+    - module docstring
+    - __future__ imports
+    - multiline imports with ()
+    """
+
+    index = 0
+    total = len(lines)
+
+    # Skip initial comments
+    while index < total and lines[index].strip().startswith("#"):
+        index += 1
+
+    # Skip empty lines
+    while index < total and lines[index].strip() == "":
+        index += 1
+
+    # Skip module docstring
+    if index < total and lines[index].strip().startswith(('"""', "'''")):
+        quote = lines[index].strip()[:3]
+        index += 1
+        while index < total and quote not in lines[index]:
+            index += 1
+        if index < total:
+            index += 1
+
+    # Skip __future__ imports
+    while index < total and lines[index].startswith("from __future__"):
+        index += 1
+
+    # Skip remaining import section
+    while index < total:
+        stripped = lines[index].strip()
+
+        if stripped.startswith("import ") or stripped.startswith("from "):
+            index += 1
+
+            # handle multiline import (...)
+            if stripped.endswith("("):
+                while index < total and ")" not in lines[index]:
+                    index += 1
+                if index < total:
+                    index += 1
+            continue
+
+        break
+
+    return index
+
+
 def process_file(path: Path) -> None:
     content = path.read_text(encoding="utf-8")
-
     category = detect_category(path)
+
     if not category:
         return
 
-    updated = False
     lines = content.splitlines()
+    updated = False
 
+    insert_pos = find_insert_position(lines)
+
+    # Ensure pytest import
     if not has_pytest_import(content):
-        insert_index = 0
-        for i, line in enumerate(lines):
-            if line.startswith("import ") or line.startswith("from "):
-                insert_index = i
-                break
-        lines.insert(insert_index, "import pytest")
+        lines.insert(insert_pos, "import pytest")
+        insert_pos += 1
         updated = True
 
+    # Ensure pytestmark
     if not has_pytestmark(content, category):
-        insert_index = 0
-
-        # find last import line
-        for i, line in enumerate(lines):
-            if line.startswith("import ") or line.startswith("from "):
-                insert_index = i + 1
-
-        # insert marker after imports
-        lines.insert(insert_index, "")
-        lines.insert(insert_index + 1, f"pytestmark = pytest.mark.{category}")
+        lines.insert(insert_pos, "")
+        lines.insert(insert_pos + 1, f"pytestmark = pytest.mark.{category}")
         updated = True
 
     if updated:
