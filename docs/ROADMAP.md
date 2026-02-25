@@ -1,6 +1,6 @@
 # Intergrax Roadmap
 
-Last updated: 2026-02-22
+Last updated: 2026-02-25
 
 This is a living engineering roadmap / TODO list.
 It reflects current development priorities and may change frequently.
@@ -52,6 +52,7 @@ After completing this subset, we can start building the first E2E agent.
 [DONE] Eval — implement an evaluation harness for agent quality, regressions and cost tracking
 [DONE] Sessions — implement production storage adapters for sessions and user profiles (DB-backed)
 [DONE] Organization profiles — implement production storage and isolation per organization
+[DONE] Security — implement PII redaction and multi-tenant isolation for logs, memory, artifacts and vector stores
 
 [PARTIAL] Tests — unit and integration coverage for runtime, trace, retry and cost
 [PARTIAL] Tests — minimal unit and integration test coverage for all P0 foundations
@@ -60,7 +61,7 @@ After completing this subset, we can start building the first E2E agent.
 
 ## Production foundations (P0 — must be done before first E2E agent)
 
-[P0] Security — implement PII redaction and multi-tenant isolation for logs, memory, artifacts and vector stores
+
 
 ---
 
