@@ -5,11 +5,10 @@
 from __future__ import annotations
 import pytest
 
-from intergrax.chains.langchain_qa_chain import _default_prompt_builder
-from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
-
 pytestmark = pytest.mark.unit
 
+from intergrax.chains.langchain_qa_chain import _default_prompt_builder
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 
 def test_langchain_qa_yaml_contract() -> None:
     registry = YamlPromptRegistry.create_default(load=True)
