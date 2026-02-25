@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.runtime.nexus.tracing.trace_models import DEFAULT_REDACTED_TEXT, DiagnosticPayload
 
 
 @dataclass(frozen=True)
@@ -27,6 +27,26 @@ class WebsearchSummaryDiagV1(DiagnosticPayload):
 
     context_preview_chars: int
     context_preview: str  # limited
+
+    def redact(self) -> WebsearchSummaryDiagV1:
+        """
+        This diagnostic payload may contain websearch context previews
+        and raw error messages which can include external content
+        or user-related data.
+        In production, raw context and error details must not be persisted.
+        """
+        return WebsearchSummaryDiagV1(
+            enabled=self.enabled,
+            configured=self.configured,
+            used_websearch=self.used_websearch,
+            results_count=self.results_count,
+            context_blocks_count=self.context_blocks_count,
+            no_evidence=self.no_evidence,
+            error_type=self.error_type,
+            error_message=DEFAULT_REDACTED_TEXT if self.error_message is not None else None,
+            context_preview_chars=self.context_preview_chars,
+            context_preview=DEFAULT_REDACTED_TEXT,
+        )
 
     @classmethod
     def schema_id(cls) -> str:

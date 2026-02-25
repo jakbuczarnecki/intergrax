@@ -18,6 +18,15 @@ class ProfileBasedMemorySummaryDiagV1(DiagnosticPayload):
     enable_user_profile_memory: bool
     enable_org_profile_memory: bool
 
+    def redact(self) -> ProfileBasedMemorySummaryDiagV1:
+        """
+        This diagnostic payload contains only boolean flags describing
+        memory layer configuration.
+        It does not include user content or identifying information
+        and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.memory_layer.profile_based.summary"

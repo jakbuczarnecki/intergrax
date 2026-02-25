@@ -17,6 +17,14 @@ class PlannerStaticPlanningIterationStartedDiagV1(DiagnosticPayload):
     has_replan_ctx: bool
     replan_reason: Optional[str]
 
+    def redact(self) -> PlannerStaticPlanningIterationStartedDiagV1:
+        """
+        This diagnostic payload contains only planner iteration metadata
+        and system-level replan reason indicators.
+        It does not include user content or tool outputs and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.planner.static_planning_iteration_started"

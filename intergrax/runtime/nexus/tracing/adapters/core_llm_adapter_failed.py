@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict
 
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.runtime.nexus.tracing.trace_models import DEFAULT_REDACTED_TEXT, DiagnosticPayload
 
 
 @dataclass(frozen=True)
@@ -15,6 +15,18 @@ class CoreLLMAdapterFailedDiagV1(DiagnosticPayload):
     error_type: str
     error_message: str
     has_tools_agent_answer: bool
+
+    def redact(self) -> CoreLLMAdapterFailedDiagV1:
+        """
+        This diagnostic payload may contain raw LLM adapter error messages
+        which can include user content, prompts or provider responses.
+        In production, error_message must not be persisted.
+        """
+        return CoreLLMAdapterFailedDiagV1(
+            error_type=self.error_type,
+            error_message=DEFAULT_REDACTED_TEXT,
+            has_tools_agent_answer=self.has_tools_agent_answer,
+        )
 
     @classmethod
     def schema_id(cls) -> str:

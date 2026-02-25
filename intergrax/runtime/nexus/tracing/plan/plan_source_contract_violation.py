@@ -20,6 +20,14 @@ class PlannerPlanSourceContractViolationDiagV1(DiagnosticPayload):
     plan_source_type: str
     raw_type: str
 
+    def redact(self) -> PlannerPlanSourceContractViolationDiagV1:
+        """
+        This diagnostic payload contains only type-level metadata
+        about a contract violation (component type and raw value type).
+        It does not include user content or tool outputs and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.planner.plan_source_contract_violation"

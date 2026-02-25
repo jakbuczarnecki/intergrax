@@ -15,6 +15,7 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.nexus.tracing.session.session_consolidation_diag import SessionConsolidationDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload, TraceComponent, TraceLevel
 
 from tests._support.builder import FakeLLMAdapter
@@ -26,6 +27,9 @@ pytestmark = pytest.mark.unit
 @dataclass(frozen=True)
 class _DummyDiag(DiagnosticPayload):
     value: int
+
+    def redact(self) -> SessionConsolidationDiagV1:        
+        return self
 
     @classmethod
     def schema_id(cls) -> str:

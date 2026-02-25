@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.runtime.nexus.tracing.trace_models import DEFAULT_REDACTED_TEXT, DiagnosticPayload
 
 
 @dataclass(frozen=True)
@@ -18,6 +18,32 @@ class SessionAndIngestSummaryDiagV1(DiagnosticPayload):
 
     attachments_count: int
     ingestion_results_count: int
+
+    def redact(self) -> SessionAndIngestSummaryDiagV1:
+        """
+        This diagnostic payload contains user- and tenant-level identifiers
+        and attachment identifiers which must not be persisted in raw form
+        in production traces.
+        We preserve ingestion metrics but remove identifying fields.
+        """
+        redacted_preview = [
+            IngestionPreviewItemV1(
+                attachment_id=DEFAULT_REDACTED_TEXT,
+                attachment_type=p.attachment_type,
+                num_chunks=p.num_chunks,
+                vector_ids_count=p.vector_ids_count,
+            )
+            for p in self.ingestion_preview
+        ]
+
+        return SessionAndIngestSummaryDiagV1(
+            session_id=self.session_id,
+            user_id=DEFAULT_REDACTED_TEXT,
+            tenant_id=DEFAULT_REDACTED_TEXT if self.tenant_id is not None else None,
+            attachments_count=self.attachments_count,
+            ingestion_results_count=self.ingestion_results_count,
+            ingestion_preview=redacted_preview,
+        )
 
     # Keep this small and stable (optional)
     ingestion_preview: List[IngestionPreviewItemV1]

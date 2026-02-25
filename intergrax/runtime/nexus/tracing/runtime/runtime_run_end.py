@@ -19,6 +19,15 @@ class RuntimeRunEndDiagV1(DiagnosticPayload):
     used_user_longterm_memory: bool = False
     run_id: str = ""
 
+    def redact(self) -> RuntimeRunEndDiagV1:
+        """
+        This diagnostic payload contains only runtime execution metadata
+        and a technical run identifier.
+        It does not include user content, prompts or business data
+        and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.runtime.run_end"

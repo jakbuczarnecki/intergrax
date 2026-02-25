@@ -16,6 +16,14 @@ class PlannerExecutionRequestedReplanDiagV1(DiagnosticPayload):
     replan_reason: Optional[str]
     last_plan_id: str
 
+    def redact(self) -> PlannerExecutionRequestedReplanDiagV1:
+        """
+        This diagnostic payload contains only planner execution metadata
+        (iteration counters, internal plan identifiers and system replan reason).
+        It does not include user content or tool outputs and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.planner.execution_requested_replan"

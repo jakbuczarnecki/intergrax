@@ -14,6 +14,15 @@ from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 class RuntimeStepStartedDiagV1(DiagnosticPayload):
     step_name: str
 
+    def redact(self) -> RuntimeStepStartedDiagV1:
+        """
+        This diagnostic payload contains only the technical name
+        of a runtime step.
+        It does not include user content or identifying information
+        and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.runtime.step_started"

@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.runtime.nexus.tracing.trace_models import DEFAULT_REDACTED_TEXT, DiagnosticPayload
 
 
 @dataclass(frozen=True)
@@ -26,6 +26,27 @@ class PlannerBuildDebugDiagV1(DiagnosticPayload):
 
     planner_forced_plan_json_len: Optional[int]
     planner_forced_plan_hash: Optional[str]
+
+    def redact(self) -> PlannerBuildDebugDiagV1:
+        """
+        This diagnostic payload contains raw plan previews which may include
+        user content, prompt fragments or tool outputs.
+        In production, raw previews must not be persisted.
+        We preserve structural metadata and hashes only.
+        """
+        return PlannerBuildDebugDiagV1(
+            planner_forced_plan_used=self.planner_forced_plan_used,
+            planner_source_kind=self.planner_source_kind,
+            planner_source_detail=None,
+            planner_replan_ctx_present=self.planner_replan_ctx_present,
+            planner_replan_ctx_hash=self.planner_replan_ctx_hash,
+            planner_raw_len=self.planner_raw_len,
+            planner_raw_hash=self.planner_raw_hash,
+            planner_raw_preview=DEFAULT_REDACTED_TEXT,
+            planner_raw_tail_preview=DEFAULT_REDACTED_TEXT,
+            planner_forced_plan_json_len=self.planner_forced_plan_json_len,
+            planner_forced_plan_hash=self.planner_forced_plan_hash,
+        )
 
     @classmethod
     def schema_id(cls) -> str:

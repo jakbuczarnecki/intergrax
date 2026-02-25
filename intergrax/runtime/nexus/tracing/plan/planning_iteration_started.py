@@ -18,6 +18,14 @@ class PlannerPlanningIterationStartedDiagV1(DiagnosticPayload):
     replan_reason: Optional[str]
     replan_attempt: Optional[int]
 
+    def redact(self) -> PlannerPlanningIterationStartedDiagV1:
+        """
+        This diagnostic payload contains only planner iteration metadata
+        and system-level replan reason indicators.
+        It does not include user content or tool outputs and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.planner.planning_iteration_started"

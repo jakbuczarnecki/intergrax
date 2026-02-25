@@ -21,6 +21,15 @@ class BudgetExceededDiagV1(DiagnosticPayload):
     actual: Optional[float]
     enforcement_mode: str
 
+    def redact(self) -> BudgetExceededDiagV1:
+        """
+        This diagnostic payload contains only runtime budget metadata
+        and a technical run identifier.
+        It does not include user content or identifying information
+        and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.runtime.budget_exceeded"

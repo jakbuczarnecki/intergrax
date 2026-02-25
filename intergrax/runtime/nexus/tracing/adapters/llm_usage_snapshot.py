@@ -25,6 +25,15 @@ class LLMUsageSnapshotDiag(DiagnosticPayload):
     adapters_registered: int = 0
     provider_model_groups: int = 0
 
+    def redact(self) -> LLMUsageSnapshotDiag:
+        """
+        This diagnostic payload contains only aggregated LLM usage metrics
+        and a technical run identifier.
+        It does not include user content, prompts or external data
+        and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.llm_usage_snapshot"

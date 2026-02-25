@@ -20,10 +20,27 @@ class LogRecordDiagV1(DiagnosticPayload):
 
     # Structured extra context from logging (already pre-validated upstream)
     data: Dict[str, Any] = None  # type: ignore[assignment]
+    
 
     def __post_init__(self) -> None:
         if self.data is None:
             object.__setattr__(self, "data", {})
+
+    def redact(self) -> LogRecordDiagV1:
+        """
+        This diagnostic payload may contain arbitrary structured logging data
+        which can include user content, prompts, tool inputs/outputs
+        or external API responses.
+        In production, log data must not be persisted in trace.
+        """
+        return LogRecordDiagV1(
+            logger_name=self.logger_name,
+            pathname=self.pathname,
+            lineno=self.lineno,
+            func_name=self.func_name,
+            levelname=self.levelname,
+            data={"_redacted": True},
+        )
 
     @classmethod
     def schema_id(cls) -> str:

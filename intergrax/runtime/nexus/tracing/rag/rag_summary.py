@@ -18,6 +18,15 @@ class RagSummaryDiagV1(DiagnosticPayload):
     context_messages_count: int
     warning: Optional[str]
 
+    def redact(self) -> RagSummaryDiagV1:
+        """
+        This diagnostic payload contains only RAG usage metadata
+        and optional system-level warning indicators.
+        It does not include document content, chunk previews,
+        or user data and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.rag.summary"

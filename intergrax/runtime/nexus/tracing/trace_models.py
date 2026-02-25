@@ -15,6 +15,8 @@ from intergrax.runtime.nexus.artifacts.models import ArtifactRef
 from intergrax.utils.time_provider import SystemTimeProvider
 
 
+DEFAULT_REDACTED_TEXT: str = "[REDACTED]"
+
 class TraceLevel(str, Enum):
     DEBUG = "debug"
     INFO = "info"
@@ -58,12 +60,9 @@ class DiagnosticPayload(ABC):
     def to_dict(self) -> Dict[str, Any]:
         raise NotImplementedError
         
+    @abstractmethod
     def redact(self) -> DiagnosticPayload:
-        """
-        Default implementation assumes payload contains no PII.
-        Override in subclasses if PII is present.
-        """
-        return self
+        raise NotImplementedError
 
 
 

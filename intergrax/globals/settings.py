@@ -46,6 +46,7 @@ class GlobalSettings:
     # Default model identifiers (fallbacks for runtime components)
     # ------------------------------------------------------------------
 
+
     # Default local Ollama chat model.
     default_ollama_model: str = os.getenv(
         "INTERGRAX_DEFAULT_OLLAMA_MODEL", "llama3.1:latest"
