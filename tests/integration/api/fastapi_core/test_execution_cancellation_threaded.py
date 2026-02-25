@@ -1,12 +1,16 @@
 import time
 from threading import Event
 
+import pytest
+
 from intergrax.fastapi_core.execution.worker_contract import CancellableExecutionWorker
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.fastapi_core.execution.adapters.threaded_adapter import ThreadedExecutionAdapter
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import RunStatus
 from tests._support.builder import DummyRunStore
+
+pytestmark = pytest.mark.integration
 
 
 class BlockingWorker(CancellableExecutionWorker):

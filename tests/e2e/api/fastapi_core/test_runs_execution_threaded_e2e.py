@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from fastapi.testclient import TestClient
+import pytest
 
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
@@ -12,6 +13,7 @@ from intergrax.fastapi_core.runs.models import RunStatus
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
 from tests.unit.api.fastapi_core.budget.test_budget_required import AllowAllAuthProvider
 
+pytestmark = pytest.mark.e2e
 
 def test_runs_execution_threaded_e2e() -> None:
     store = InMemoryRunStore()

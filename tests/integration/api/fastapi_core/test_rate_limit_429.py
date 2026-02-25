@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from fastapi import Depends
 from fastapi.testclient import TestClient
+import pytest
 
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.config import ApiConfig
@@ -16,7 +17,7 @@ from intergrax.fastapi_core.errors.error_types import ApiErrorType
 from intergrax.fastapi_core.rate_limit.dependency import RateLimitRequired
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
 
-
+pytestmark = pytest.mark.integration
 
 class DenyAllPolicy(RateLimitPolicy):
     def allow(self, context: RequestContext) -> bool:

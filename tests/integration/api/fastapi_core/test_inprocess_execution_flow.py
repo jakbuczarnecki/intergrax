@@ -2,6 +2,7 @@ from __future__ import annotations
 import asyncio
 
 from fastapi import BackgroundTasks
+import pytest
 
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.execution.adapters.inprocess_adapter import InProcessExecutionAdapter
@@ -10,6 +11,8 @@ from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import RunStatus
 from tests._support.builder import DummyRunStore
 
+
+pytestmark = pytest.mark.integration
 
 def test_execution_pipeline_inprocess() -> None:
     store = DummyRunStore()

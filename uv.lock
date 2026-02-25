@@ -819,6 +819,11 @@ distributed = [
     { name = "redis", marker = "sys_platform == 'win32'" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest", marker = "sys_platform == 'win32'" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "anthropic", specifier = ">=0.25" },
@@ -872,6 +877,9 @@ requires-dist = [
     { name = "yt-dlp", specifier = ">=2024.0" },
 ]
 provides-extras = ["dev", "distributed"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.0.2" }]
 
 [[package]]
 name = "invoke"

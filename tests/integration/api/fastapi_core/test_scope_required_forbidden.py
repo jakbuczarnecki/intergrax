@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import Depends
 from fastapi.testclient import TestClient
+import pytest
 
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.auth.authorization import ScopeRequired
@@ -13,6 +14,8 @@ from intergrax.fastapi_core.config import ApiConfig
 from intergrax.fastapi_core.auth.providers.no_auth import NoAuthProvider
 from intergrax.fastapi_core.errors.error_types import ApiErrorType
 
+
+pytestmark = pytest.mark.integration
 
 class AuthenticatedNoScopeProvider(AuthProvider):
     def authenticate(self, request):

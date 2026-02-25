@@ -66,6 +66,7 @@ class RedisKVStore(DistributedKVStore):
         redis_key = self._build_key(tenant_id, key)
         self._client.delete(redis_key)
 
+    
     def compare_and_set(
         self,
         tenant_id: str,
@@ -76,7 +77,62 @@ class RedisKVStore(DistributedKVStore):
         ttl_seconds: Optional[int] = None,
     ) -> bool:
         """
-        Minimal implementation placeholder.
-        Atomic semantics will be implemented in a dedicated step.
+        Atomic compare-and-set using Redis Lua script.
+
+        Semantics:
+        - If expected is None: succeeds only if key does not exist.
+        - If expected is not None: succeeds only if current value equals expected.
+        - On success: sets new_value (with optional TTL).
+        - Returns True on success, False otherwise.
         """
-        raise NotImplementedError("compare_and_set not yet implemented.")
+
+        redis_key = self._build_key(tenant_id, key)
+
+        lua_script = """
+        local current = redis.call("GET", KEYS[1])
+
+        if ARGV[1] == "__NONE__" then
+            if current == false then
+                if ARGV[3] ~= "" then
+                    redis.call("SET", KEYS[1], ARGV[2], "EX", ARGV[3])
+                else
+                    redis.call("SET", KEYS[1], ARGV[2])
+                end
+                return 1
+            else
+                return 0
+            end
+        else
+            if current == ARGV[1] then
+                if ARGV[3] ~= "" then
+                    redis.call("SET", KEYS[1], ARGV[2], "EX", ARGV[3])
+                else
+                    redis.call("SET", KEYS[1], ARGV[2])
+                end
+                return 1
+            else
+                return 0
+            end
+        end
+        """
+
+        expected_arg: bytes
+        if expected is None:
+            expected_arg = b"__NONE__"
+        else:
+            expected_arg = expected
+
+        ttl_arg = ""
+        if ttl_seconds is not None:
+            ttl_arg = str(ttl_seconds)
+
+        result = self._client.eval(
+            lua_script,
+            1,
+            redis_key,
+            expected_arg,
+            new_value,
+            ttl_arg,
+        )
+
+        return result == 1

@@ -135,3 +135,8 @@ filterwarnings = [
   "ignore:builtin type SwigPyObject has no __module__ attribute:DeprecationWarning",
   "ignore:builtin type swigvarlink has no __module__ attribute:DeprecationWarning",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

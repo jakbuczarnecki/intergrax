@@ -3,12 +3,15 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 import asyncio
-from tempfile import TemporaryDirectory
+
+import pytest
 
 from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
 from intergrax.llm.messages import ChatMessage
 from tests._support.builder import prepare_sqlite_db
 
+
+pytestmark = pytest.mark.integration
 
 def test_sqlite_session_storage_persistence():
 
