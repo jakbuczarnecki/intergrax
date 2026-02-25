@@ -18,6 +18,15 @@ class PersistAndBuildAnswerSummaryDiagV1(DiagnosticPayload):
     used_websearch: bool
     used_tools: bool
 
+    def redact(self) -> PersistAndBuildAnswerSummaryDiagV1:
+        """
+        This diagnostic payload contains only session-level identifiers
+        and engine execution metadata.
+        It does not include user content, prompts or tool outputs
+        and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.engine.persist_and_build_answer.summary"

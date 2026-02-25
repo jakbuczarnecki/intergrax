@@ -19,6 +19,7 @@ from intergrax.runtime.nexus.pipelines.pipeline_factory import PipelineFactory
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, RunMetadata, RunStats
+from intergrax.runtime.nexus.tracing.session.session_consolidation_diag import SessionConsolidationDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import (
     DiagnosticPayload,
     TraceComponent,
@@ -33,6 +34,9 @@ pytestmark = pytest.mark.unit
 @dataclass(frozen=True)
 class _DummyDiag(DiagnosticPayload):
     value: int
+
+    def redact(self) -> SessionConsolidationDiagV1:        
+        return self
 
     @classmethod
     def schema_id(cls) -> str:

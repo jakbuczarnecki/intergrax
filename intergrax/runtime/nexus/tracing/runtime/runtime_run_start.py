@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict
 
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.runtime.nexus.tracing.trace_models import DEFAULT_REDACTED_TEXT, DiagnosticPayload
 
 
 @dataclass(frozen=True)
@@ -18,6 +18,22 @@ class RuntimeRunStartDiagV1(DiagnosticPayload):
     run_id: str = ""
 
     pipeline_name: str = ""
+
+    def redact(self) -> RuntimeRunStartDiagV1:
+        """
+        This diagnostic payload contains runtime identifiers including
+        user_id and tenant_id, which must not be persisted in raw form
+        in production traces.
+        We preserve technical execution identifiers but remove
+        user- and tenant-level identifiers.
+        """
+        return RuntimeRunStartDiagV1(
+            session_id=self.session_id,
+            user_id=DEFAULT_REDACTED_TEXT,
+            tenant_id=DEFAULT_REDACTED_TEXT,
+            run_id=self.run_id,
+            pipeline_name=self.pipeline_name,
+        )
 
     @classmethod
     def schema_id(cls) -> str:

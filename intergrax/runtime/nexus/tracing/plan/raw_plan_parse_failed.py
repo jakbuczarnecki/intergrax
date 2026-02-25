@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.runtime.nexus.tracing.trace_models import DEFAULT_REDACTED_TEXT, DiagnosticPayload
 
 
 @dataclass(frozen=True)
@@ -22,6 +22,24 @@ class PlannerRawPlanParseFailedDiagV1(DiagnosticPayload):
 
     error_type: str
     error_message: str
+
+    def redact(self) -> PlannerRawPlanParseFailedDiagV1:
+        """
+        This diagnostic payload may contain raw plan previews and error messages
+        that include user content, prompt fragments or tool outputs.
+        In production, raw content must not be persisted.
+        We preserve structural metadata and hashes only.
+        """
+        return PlannerRawPlanParseFailedDiagV1(
+            planner_source_kind=self.planner_source_kind,
+            planner_source_detail=None,
+            raw_len=self.raw_len,
+            raw_hash=self.raw_hash,
+            raw_preview=DEFAULT_REDACTED_TEXT,
+            raw_tail_preview=DEFAULT_REDACTED_TEXT,
+            error_type=self.error_type,
+            error_message=DEFAULT_REDACTED_TEXT,
+        )
 
     @classmethod
     def schema_id(cls) -> str:

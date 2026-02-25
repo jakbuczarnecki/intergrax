@@ -17,6 +17,14 @@ class PlannerReplanContextInjectedDiagV1(DiagnosticPayload):
     replan_hash: str
     replan_json_len: int
 
+    def redact(self) -> PlannerReplanContextInjectedDiagV1:
+        """
+        This diagnostic payload contains only planner replan metadata
+        (flags, hash and JSON length).
+        It does not include user content or tool outputs and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.planner.replan_context_injected"

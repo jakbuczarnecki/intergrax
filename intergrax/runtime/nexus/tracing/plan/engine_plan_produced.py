@@ -19,6 +19,14 @@ class PlannerEnginePlanProducedDiagV1(DiagnosticPayload):
     intent: str
     next_step: Optional[str]
 
+    def redact(self) -> PlannerEnginePlanProducedDiagV1:
+        """
+        This diagnostic payload contains only planner control metadata
+        (no user content, no prompt fragments, no tool outputs).
+        Therefore it is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.planner.engine_plan_produced"

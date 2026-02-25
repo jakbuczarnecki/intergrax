@@ -26,6 +26,7 @@ from typing import Any, Dict
 
 import pytest
 
+from intergrax.runtime.nexus.tracing.session.session_consolidation_diag import SessionConsolidationDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import (
     DiagnosticPayload,
     TraceComponent,
@@ -40,6 +41,9 @@ pytestmark = pytest.mark.unit
 @dataclass(frozen=True)
 class _DummyPayload(DiagnosticPayload):
     value: int
+
+    def redact(self) -> SessionConsolidationDiagV1:        
+        return self
 
     @classmethod
     def schema_id(cls) -> str:

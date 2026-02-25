@@ -14,6 +14,13 @@ from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 class RuntimeRunAbortDiagV1(DiagnosticPayload):
     run_id: str = ""
 
+    def redact(self) -> RuntimeRunAbortDiagV1:
+        """
+        This diagnostic payload contains only a technical runtime run identifier.
+        It does not include user content or business data and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.runtime.run_abort"

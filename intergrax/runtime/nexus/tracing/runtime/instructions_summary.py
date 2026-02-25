@@ -17,6 +17,15 @@ class InstructionsSummaryDiagV1(DiagnosticPayload):
     source_user_profile: bool
     source_org_profile: bool
 
+    def redact(self) -> InstructionsSummaryDiagV1:
+        """
+        This diagnostic payload contains only boolean metadata
+        about instruction sources.
+        It does not include any user content, profile data,
+        or organization data and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.instructions.summary"

@@ -17,6 +17,15 @@ class CoreLLMAdapterReturnedDiagV1(DiagnosticPayload):
     answer_len: int
     answer_is_empty: bool
 
+    def redact(self) -> CoreLLMAdapterReturnedDiagV1:
+        """
+        This diagnostic payload contains only LLM adapter execution metadata
+        (flags and answer size information).
+        It does not include any user content or model output
+        and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.engine.core_llm.adapter_returned"

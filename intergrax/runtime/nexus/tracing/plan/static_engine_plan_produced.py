@@ -26,6 +26,13 @@ class PlannerStaticEnginePlanProducedDiagV1(DiagnosticPayload):
 
     same_plan_repeats: int
 
+    def redact(self) -> PlannerStaticEnginePlanProducedDiagV1:
+        """
+        This diagnostic payload contains only engine control metadata
+        (intent, flags and internal identifiers).
+        It does not include user content or tool outputs and is considered PII-safe.
+        """
+        return self
 
     @classmethod
     def schema_id(cls) -> str:

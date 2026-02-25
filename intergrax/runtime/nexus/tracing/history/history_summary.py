@@ -17,6 +17,15 @@ class HistorySummaryDiagV1(DiagnosticPayload):
     history_includes_current_user: bool
     history_tokens: Optional[int]
 
+    def redact(self) -> HistorySummaryDiagV1:
+        """
+        This diagnostic payload contains only aggregated history metadata
+        (lengths and token counts).
+        It does not include user content or identifying information
+        and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.history.summary"

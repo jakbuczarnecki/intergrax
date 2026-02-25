@@ -15,6 +15,15 @@ class SessionConsolidationDiagV1(DiagnosticPayload):
     entries_count: int
     entry_types: Dict[str, int]
 
+    def redact(self) -> SessionConsolidationDiagV1:
+        """
+        This diagnostic payload contains only aggregation metadata
+        about session entry counts and types.
+        It does not include user content or identifying information
+        and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.nexus.session.consolidation"

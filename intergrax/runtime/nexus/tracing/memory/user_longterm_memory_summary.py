@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import Any, Dict, Optional
 
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.runtime.nexus.tracing.trace_models import DEFAULT_REDACTED_TEXT, DiagnosticPayload
 
 
 @dataclass(frozen=True)
@@ -43,4 +43,4 @@ class UserLongtermMemorySummaryDiagV1(DiagnosticPayload):
         """
         Redact potentially sensitive preview content.
         """
-        return replace(self, context_preview="[REDACTED]")
+        return replace(self, context_preview=DEFAULT_REDACTED_TEXT)

@@ -26,6 +26,8 @@ class PlannerDynamicEnginePlanProducedDiagV1(DiagnosticPayload):
 
     same_plan_repeats: int
 
+    def redact(self) -> PlannerDynamicEnginePlanProducedDiagV1:
+        return self
 
     @classmethod
     def schema_id(cls) -> str:

@@ -22,7 +22,7 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, Run
 from intergrax.runtime.nexus.session.chat_session import ChatSession
 from intergrax.runtime.nexus.tracing.adapters.llm_usage_finalize import LLMUsageFinalizeDiag
 from intergrax.runtime.nexus.tracing.adapters.llm_usage_snapshot import LLMUsageSnapshotDiag
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload, ToolCallTrace, TraceComponent, TraceEvent, TraceLevel, utc_now_iso
+from intergrax.runtime.nexus.tracing.trace_models import DEFAULT_REDACTED_TEXT, DiagnosticPayload, ToolCallTrace, TraceComponent, TraceEvent, TraceLevel, utc_now_iso
 from intergrax.utils.time_provider import SystemTimeProvider
 
 
@@ -158,7 +158,7 @@ class RuntimeState(RuntimeStateContract):
 
         # Minimal P0 PII-safe logging (deterministic, no heuristics)
         if self.context.config.production_mode:
-            safe_message = "[REDACTED]"
+            safe_message = DEFAULT_REDACTED_TEXT
         else:
             safe_message = message        
             

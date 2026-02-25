@@ -27,6 +27,14 @@ class PlannerCapabilityClampDiagV1(DiagnosticPayload):
     after_use_rag: bool
     after_use_tools: bool
 
+    def redact(self) -> PlannerCapabilityClampDiagV1:
+        """
+        This diagnostic payload contains only planner capability flags.
+        It does not include user content or identifying information
+        and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.planner.capability_clamp"

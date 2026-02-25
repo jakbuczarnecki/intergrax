@@ -18,6 +18,15 @@ class RuntimeRunRetryDiagV1(DiagnosticPayload):
     max_retries: int = 0
     error_code: RuntimeErrorCode = RuntimeErrorCode.INTERNAL_ERROR
 
+    def redact(self) -> RuntimeRunRetryDiagV1:
+        """
+        This diagnostic payload contains only runtime retry metadata
+        and a technical run identifier.
+        It does not include user content, prompts or business data
+        and is considered PII-safe.
+        """
+        return self
+
     @classmethod
     def schema_id(cls) -> str:
         return "intergrax.diag.runtime.run_retry"
