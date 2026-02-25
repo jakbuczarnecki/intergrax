@@ -3,25 +3,84 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-
-from typing import Optional, Protocol
+from abc import ABC, abstractmethod
+from enum import Enum
+from typing import Optional
 
 from pydantic import BaseModel
 
 from intergrax.tools.execution_models import ToolExecutionResult
 
 
-class IdempotencyStore(Protocol):
+class InvocationStatus(str, Enum):
     """
-    Idempotency port for tool invocations.
+    Persistent invocation state.
 
-    Contract:
-    - check(key) returns a previously saved ToolExecutionResult or None
-    - save(key, result) persists the ToolExecutionResult for future deduplication
+    STARTED   — execution began but not completed.
+    COMPLETED — execution finished and result is stored.
     """
 
-    def check(self, key: str) -> Optional[ToolExecutionResult[BaseModel]]:
+    STARTED = "started"
+    COMPLETED = "completed"
+
+
+class IdempotencyStore(ABC):
+    """
+    Ledger-based idempotency port for tool invocations.
+
+    Guarantees:
+    - tenant isolation
+    - crash safety (STARTED vs COMPLETED)
+    - prevention of duplicate side-effects
+    - deterministic retry semantics
+
+    Exactly-once semantics for side-effect tools.
+    """
+
+    @abstractmethod
+    def get_status(
+        self,
+        tenant_id: str,
+        key: str,
+    ) -> Optional[InvocationStatus]:
+        """
+        Returns current invocation status or None if not recorded.
+        """
         ...
 
-    def save(self, key: str, result: ToolExecutionResult[BaseModel]) -> None:
+    @abstractmethod
+    def record_started(
+        self,
+        tenant_id: str,
+        key: str,
+    ) -> None:
+        """
+        Atomically persist STARTED state before executing tool.
+
+        Must guarantee that concurrent calls with the same (tenant_id, key)
+        cannot both transition from NONE → STARTED.
+        """
+        ...
+
+    @abstractmethod
+    def record_completed(
+        self,
+        tenant_id: str,
+        key: str,
+        result: ToolExecutionResult[BaseModel],
+    ) -> None:
+        """
+        Persist COMPLETED state and execution result.
+        """
+        ...
+
+    @abstractmethod
+    def get_completed_result(
+        self,
+        tenant_id: str,
+        key: str,
+    ) -> Optional[ToolExecutionResult[BaseModel]]:
+        """
+        Returns previously completed execution result if exists.
+        """
         ...

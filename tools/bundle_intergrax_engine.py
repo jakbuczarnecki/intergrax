@@ -64,10 +64,7 @@ SOURCE_EXTS = tuple(sorted(SOURCE_HANDLERS.keys()))
 # values-> folder path relative to project root
 # ----------------------------------------------------------------------
 EXTRA_BUNDLES: Dict[str, str] = {
-    "NEXUS_FULL_BUNDLE": r"intergrax\runtime\nexus",
-    "NEXUS_TRACING_BUNDLE": r"intergrax\runtime\nexus\tracing",
-    "NEXUS_RUNTIME_STEPS": r"intergrax\runtime\nexus\runtime_steps",
-
+    
     "LLM": r"intergrax\llm",
     "LLM_ADAPTERS": r"intergrax\llm_adapters",
 
@@ -85,16 +82,25 @@ EXTRA_BUNDLES: Dict[str, str] = {
 
     "WEBSEARCH": r"intergrax\websearch",
 
-    "INTERGRAX_FULL_BUNDLE": r"intergrax",
+    "INTERGRAX_FULL": r"intergrax",
     
     "NOTEBOOKS": r"notebooks",
 
-    "TESTS": r"tests",
+    "TESTS_FULL": r"tests",
     "TESTS_UNITS": r"tests\unit",
 
     "PROMPTS": r"prompts",
 
-    "RUNTIME": r"intergrax\runtime",
+    "RUNTIME_FULL": r"intergrax\runtime",
+    "RUNTIME_GOVERNANCE": r"intergrax\runtime\governance",
+    "RUNTIME_REPLAY": r"intergrax\runtime\replay",
+    "RUNTIME_TOOLS": r"intergrax\runtime\tools",
+    "RUNTIME_ORGANIZATION": r"intergrax\runtime\organization",
+    "RUNTIME_USER_PROFILE": r"intergrax\runtime\user_profile",
+    "RUNTIME_NEXUS": r"intergrax\runtime\nexus",
+    "RUNTIME_NEXUS_TRACING": r"intergrax\runtime\nexus\tracing",
+    "RUNTIME_NEXUS_NEXUS_RUNTIME_STEPS": r"intergrax\runtime\nexus\runtime_steps",
+
 
     "FASTAPI_CORE": r"intergrax\fastapi_core",
 }

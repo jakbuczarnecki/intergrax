@@ -4,20 +4,21 @@
 
 import asyncio
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 from typing import TYPE_CHECKING
 import uuid
-from intergrax.llm_adapters.llm_usage_track import LLMUsageReport
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.artifacts.models import Artifact, ArtifactRef
 from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
+from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import LLMUsageRunRecord
 from intergrax.runtime.nexus.tools import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 from intergrax.runtime.replay.service import ReplayService
+from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
+from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
 from intergrax.tools.registry import ToolRegistry
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -36,25 +37,6 @@ from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
 
-@dataclass(frozen=True)
-class LLMUsageRunRecord:
-    seq: int
-    ts_utc: datetime
-    run_id: str
-    session_id: str
-    user_id: str
-    report: LLMUsageReport
-
-    def pretty(self) -> str:
-        lines: List[str] = []
-        lines.append(f"Run #{self.seq}")
-        lines.append(f"  ts_utc     : {self.ts_utc.isoformat()}")
-        lines.append(f"  run_id     : {self.run_id}")
-        lines.append(f"  session_id : {self.session_id}")
-        lines.append(f"  user_id    : {self.user_id}")
-        lines.append(self.report.pretty())        
-
-        return "\n".join(lines)
 
 @dataclass(frozen=False)
 class RuntimeContext:
@@ -315,9 +297,12 @@ class RuntimeContext:
         executor = RegistryToolExecutor(registry)
         base_invoker = RuntimeToolInvoker(registry=registry, executor=executor)
 
-        if config.idempotency_store is not None:
-            from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
+        if config.idempotency_store is None and config.idempotency_db_path is not None:
+            config.idempotency_store = SQLiteIdempotencyStore(
+                db_path=config.idempotency_db_path
+            )
 
+        if config.idempotency_store is not None:
             config.tool_invoker = IdempotentToolInvoker(
                 base_invoker=base_invoker,
                 idempotency_store=config.idempotency_store,

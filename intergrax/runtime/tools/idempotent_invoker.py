@@ -1,13 +1,34 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
 from pydantic import BaseModel
 
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-from intergrax.runtime.tools.idempotency_store import IdempotencyStore
+from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
+from intergrax.runtime.nexus.tracing.trace_models import (
+    TraceComponent,
+    TraceLevel,
+)
+from intergrax.runtime.tools.idempotency_store import (
+    IdempotencyStore,
+    InvocationStatus,
+)
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
+from intergrax.tools.execution_models import (
+    ToolExecutionRequest,
+    ToolExecutionResult,
+)
 
 
 class IdempotentToolInvoker:
+    """
+    Ledger-based idempotent tool invoker.
+
+    Enforces exactly-once semantics for tools with side effects.
+    """
+
     def __init__(
         self,
         *,
@@ -20,40 +41,63 @@ class IdempotentToolInvoker:
     def invoke(
         self,
         *,
-        state: RuntimeState,
+        state: RuntimeStateContract,
         agent_id: str,
         request: ToolExecutionRequest[BaseModel],
     ) -> ToolExecutionResult[BaseModel]:
 
-        # side_effects decision requires contract lookup
         registry = self._base_invoker._registry  # read-only usage
         reg = registry.get(request.tool_id)
         contract = reg.contract
 
+        # Non-side-effect tools → delegate directly
         if not contract.side_effects or not request.idempotency_key:
             return self._base_invoker.invoke(
                 state=state,
+                agent_id=agent_id,
                 request=request,
             )
 
+        tenant_id = state.request.tenant_id
         key = request.idempotency_key
 
-        cached = self._store.check(key)
-        if cached is not None:
+        status = self._store.get_status(tenant_id, key)
+
+        if status == InvocationStatus.COMPLETED:
+            cached = self._store.get_completed_result(tenant_id, key)
+            if cached is None:
+                raise RuntimeError(
+                    "Ledger inconsistency: COMPLETED without stored result."
+                )
+
             state.trace_event(
                 component=TraceComponent.TOOLS,
                 step="idempotency_cache_hit",
                 level=TraceLevel.INFO,
-                message=f"Tool call deduplicated via idempotency (tool_id={request.tool_id}, key={key}).",
+                message=(
+                    f"Tool call deduplicated via idempotency "
+                    f"(tool_id={request.tool_id}, key={key})."
+                ),
             )
+
             return cached
-        
-        result = self._base_invoker.invoke(            
+
+        if status == InvocationStatus.STARTED:
+            raise RuntimeError(
+                f"Invocation already started for key={key}. "
+                "Blocking to preserve exactly-once semantics."
+            )
+
+        # NONE → transition to STARTED
+        self._store.record_started(tenant_id, key)
+
+        result = self._base_invoker.invoke(
             state=state,
             agent_id=agent_id,
             request=request,
         )
 
-        self._store.save(key, result)
+        # Transition to COMPLETED
+        self._store.record_completed(tenant_id, key, result)
 
         return result

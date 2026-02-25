@@ -9,12 +9,14 @@ from typing import TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import LLMUsageRunRecord
+from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
 
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.artifacts.models import ArtifactRef
 
 from intergrax.runtime.nexus.context.context_builder import BuiltContext
-from intergrax.runtime.nexus.engine.runtime_context import LLMUsageRunRecord, RuntimeContext
+from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.ingestion.ingestion_service import IngestionResult
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.nexus.session.chat_session import ChatSession
@@ -25,7 +27,7 @@ from intergrax.utils.time_provider import SystemTimeProvider
 
 
 @dataclass
-class RuntimeState:
+class RuntimeState(RuntimeStateContract):
     """
     Mutable state object passed through the runtime pipeline.
 
