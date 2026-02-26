@@ -19,6 +19,15 @@ class IdempotencyLockConflictError(RuntimeError):
     pass
 
 
+class RetryableHandlerError(RuntimeError):
+    """
+    Raised by logical task handler to indicate transient failure.
+
+    This signals that the failure is retryable at the execution plane level.
+    """
+    pass
+
+
 def execute_logical_task(
     *,
     registry: TaskExecutionRegistry,

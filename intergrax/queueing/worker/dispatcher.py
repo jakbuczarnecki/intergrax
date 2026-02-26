@@ -10,6 +10,7 @@ from celery import Celery
 
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.worker.execution import (
+    RetryableHandlerError,
     execute_logical_task,
     IdempotencyLockConflictError,
 )
@@ -62,21 +63,28 @@ def register_dispatcher_task(
                 lock_ttl_seconds=lock_ttl_seconds,
             )
 
-        except IdempotencyLockConflictError as exc:
-            if (
-                retry_policy is not None
-                and retry_policy.retry_on_lock_conflict
-            ):
-                current_retries: int = self.request.retries
+        except (IdempotencyLockConflictError, RetryableHandlerError) as exc:
 
-                if current_retries >= retry_policy.max_retries:
-                    raise
+            if retry_policy is None:
+                raise
 
-                countdown: float = calculate_retry_countdown(
-                    policy=retry_policy,
-                    current_retries=current_retries,
-                )
+            # Determine retry eligibility based on exception type
+            if isinstance(exc, IdempotencyLockConflictError):
+                should_retry = retry_policy.retry_on_lock_conflict
+            else:
+                should_retry = retry_policy.retry_on_handler_exception
 
-                raise self.retry(exc=exc, countdown=countdown)
+            if not should_retry:
+                raise
 
-            raise
+            current_retries: int = self.request.retries
+
+            if current_retries >= retry_policy.max_retries:
+                raise
+
+            countdown: float = calculate_retry_countdown(
+                policy=retry_policy,
+                current_retries=current_retries,
+            )
+
+            raise self.retry(exc=exc, countdown=countdown)

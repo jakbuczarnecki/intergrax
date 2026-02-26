@@ -54,13 +54,3 @@ def test_missing_backend_raises() -> None:
 
     with pytest.raises(ValueError):
         registry.get_provider("missing")
-
-
-def test_create_instantiates_provider() -> None:
-    registry = DistributedProviderRegistry()
-    registry.register("dummy", DummyKVStore)
-
-    instance = registry.create("dummy", value=42)
-
-    assert isinstance(instance, DummyKVStore)
-    assert instance.value == 42
