@@ -11,6 +11,7 @@ from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 
+pytestmark = pytest.mark.unit
 
 class DummyKVStore(DistributedKVStore):
     def __init__(self) -> None:
