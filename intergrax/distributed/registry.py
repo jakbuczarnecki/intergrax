@@ -44,18 +44,3 @@ class DistributedProviderRegistry:
         
         return self._providers[backend_id]
     
-    
-    def create(
-        self,
-        backend_id: str,
-        **kwargs: object,
-    ) -> DistributedKVStore:
-        """
-        Create a concrete DistributedKVStore instance for a given backend.
-
-        The registry does not validate constructor arguments.
-        It delegates instantiation to the registered provider class.
-        """
-
-        provider_cls = self.get_provider(backend_id)
-        return provider_cls(**kwargs)
