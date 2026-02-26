@@ -106,6 +106,10 @@ distributed = [
   "redis>=5.0",
 ]
 
+queueing = [
+  "celery>=5.3",
+]
+
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -22,8 +22,8 @@ if not exist .venv\Scripts\python.exe (
     if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 )
 
-REM --- Sync dev + distributed extras ---
-echo [INFO] Syncing dev + distributed dependencies...
-uv sync --extra dev --extra distributed
+REM --- Sync dev extras ---
+echo [INFO] Syncing dev dependencies...
+uv sync --extra dev --extra distributed --extra queueing
 
 exit /b %ERRORLEVEL%
