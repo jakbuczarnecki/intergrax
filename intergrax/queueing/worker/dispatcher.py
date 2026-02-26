@@ -15,6 +15,7 @@ from intergrax.queueing.worker.execution import (
 )
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_policy import RetryPolicy
+from intergrax.queueing.worker.retry_backoff import calculate_retry_countdown
 
 
 def register_dispatcher_task(
@@ -66,20 +67,15 @@ def register_dispatcher_task(
                 retry_policy is not None
                 and retry_policy.retry_on_lock_conflict
             ):
-                current_retries = self.request.retries
+                current_retries: int = self.request.retries
 
                 if current_retries >= retry_policy.max_retries:
                     raise
 
-                countdown = retry_policy.initial_backoff_seconds * (
-                    retry_policy.backoff_multiplier ** current_retries
+                countdown: float = calculate_retry_countdown(
+                    policy=retry_policy,
+                    current_retries=current_retries,
                 )
-
-                if (
-                    retry_policy.max_backoff_seconds is not None
-                    and countdown > retry_policy.max_backoff_seconds
-                ):
-                    countdown = retry_policy.max_backoff_seconds
 
                 raise self.retry(exc=exc, countdown=countdown)
 

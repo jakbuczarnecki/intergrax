@@ -13,6 +13,8 @@ from intergrax.queueing.worker.execution import IdempotencyLockConflictError
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_policy import RetryPolicy
 
+pytestmark = pytest.mark.unit
+
 
 class FakeRegistry(TaskExecutionRegistry):
     def get_handler(self, logical_task_name: str):
