@@ -93,6 +93,8 @@ EXTRA_BUNDLES: Dict[str, str] = {
 
     "PROMPTS": r"prompts",
 
+    "INFRA": r"infra",
+
     "RUNTIME_FULL": r"intergrax\runtime",
     "RUNTIME_GOVERNANCE": r"intergrax\runtime\governance",
     "RUNTIME_REPLAY": r"intergrax\runtime\replay",
