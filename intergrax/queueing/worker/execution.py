@@ -10,6 +10,15 @@ from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 
 
+class IdempotencyLockConflictError(RuntimeError):
+    """
+    Raised when idempotency lock is currently held by another execution.
+
+    This is considered a retryable infrastructure-level exception.
+    """
+    pass
+
+
 def execute_logical_task(
     *,
     registry: TaskExecutionRegistry,
@@ -56,7 +65,7 @@ def execute_logical_task(
             if existing is not None and existing != b"__LOCK__":
                 return existing
 
-            raise RuntimeError(
+            raise IdempotencyLockConflictError(
                 f"Idempotency lock is held for key '{idempotency_key}'."
             )
 
