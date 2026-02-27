@@ -61,7 +61,15 @@ class RedisDistributedRateLimiter(DistributedRateLimiter):
     )
 
     -- Set TTL (optional cleanup)
-    local ttl = math.ceil(capacity / refill_rate * 2)
+    local ttl
+
+    if refill_rate > 0 then
+        ttl = math.ceil(capacity / refill_rate * 2)
+    else
+        -- No refill: use fixed TTL to avoid division by zero
+        ttl = 60
+    end
+
     redis.call("EXPIRE", key, ttl)
 
     return {allowed, tokens, retry_after}
