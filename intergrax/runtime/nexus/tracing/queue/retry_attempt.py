@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.queueing.worker.retry_event import RetryEvent
+from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload, TraceComponent, TraceLevel
 
 
 @dataclass(frozen=True)
@@ -44,3 +46,34 @@ class RetryAttemptDiagnosticPayload(DiagnosticPayload):
             "countdown_seconds": self.countdown_seconds,
             "reason": self.reason,
         }
+    
+
+def make_retry_trace_hook(
+    runtime_state: RuntimeState,
+) -> Callable[[RetryEvent], None]:
+    """
+    Creates a Tier-1 adapter translating RetryEvent into DiagnosticPayload
+    and emitting it through runtime_state.trace_event.
+
+    This preserves clean separation between Tier-0 and Tier-1.
+    """
+
+    def _hook(event: RetryEvent) -> None:
+        payload = RetryAttemptDiagnosticPayload(
+            logical_task_name=event.logical_task_name,
+            exception_type=event.exception_type,
+            current_retries=event.current_retries,
+            max_retries=event.max_retries,
+            countdown_seconds=event.countdown_seconds,
+            reason=event.reason,
+        )
+
+        runtime_state.trace_event(
+            component=TraceComponent.ENGINE,
+            step="retry_scheduled",
+            message="Retry scheduled by execution plane.",
+            level=TraceLevel.INFO,
+            payload=payload,
+        )
+
+    return _hook
