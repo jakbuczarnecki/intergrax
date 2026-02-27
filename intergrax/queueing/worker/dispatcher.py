@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Callable, Optional
 
 from celery import Celery
 
@@ -15,6 +15,7 @@ from intergrax.queueing.worker.execution import (
     IdempotencyLockConflictError,
 )
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.queueing.worker.retry_event import RetryEvent
 from intergrax.queueing.worker.retry_policy import RetryPolicy
 from intergrax.queueing.worker.retry_backoff import calculate_retry_countdown
 
@@ -26,6 +27,7 @@ def register_dispatcher_task(
     *,
     lock_ttl_seconds: Optional[int] = None,
     retry_policy: Optional[RetryPolicy] = None,
+    on_retry_scheduled: Optional[Callable[[RetryEvent], None]] = None,
 ) -> None:
     """
     Registers the generic execution task into Celery app.
@@ -86,5 +88,23 @@ def register_dispatcher_task(
                 policy=retry_policy,
                 current_retries=current_retries,
             )
+
+            reason: str = (
+                "lock_conflict"
+                if isinstance(exc, IdempotencyLockConflictError)
+                else "handler_transient"
+            )
+
+            event = RetryEvent(
+                logical_task_name=logical_task_name,
+                exception_type=type(exc).__name__,
+                current_retries=current_retries,
+                max_retries=retry_policy.max_retries,
+                countdown_seconds=countdown,
+                reason=reason,
+            )
+
+            if on_retry_scheduled is not None:
+                on_retry_scheduled(event)
 
             raise self.retry(exc=exc, countdown=countdown)
