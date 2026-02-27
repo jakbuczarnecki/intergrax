@@ -11,7 +11,7 @@ from intergrax.runtime.nexus.tracing.trace_models import (
     TraceComponent,
     TraceLevel,
 )
-from intergrax.runtime.tools.idempotency_store import (
+from intergrax.contracts.idempotency_store import (
     IdempotencyStore,
     InvocationStatus,
 )

@@ -16,8 +16,10 @@ from intergrax.distributed.contracts.rate_limiter import (
     RateLimitResult,
 )
 from intergrax.queueing.worker.dispatcher import register_dispatcher_task
+from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_policy import RetryPolicy
+
 
 pytestmark = pytest.mark.unit
 
@@ -131,3 +133,56 @@ def test_rate_limited_retry_applies_jitter() -> None:
 
     _, kwargs = retry_mock.call_args
     assert kwargs["countdown"] == pytest.approx(4.0)
+
+
+def test_rate_limit_event_hook_is_emitted() -> None:
+    app = Celery("test_app_event", broker="memory://", backend="rpc://")
+
+    registry = TaskExecutionRegistry()
+    retry_policy = _create_retry_policy(max_retries=5)
+
+    rate_limiter = DenyRateLimiter()
+
+    def rate_limit_config(_: str) -> Tuple[int, float]:
+        return (10, 1.0)
+
+    rate_limit_hook = Mock()
+
+    register_dispatcher_task(
+        app=app,
+        registry=registry,
+        kv_store=None,
+        rate_limiter=rate_limiter,
+        retry_policy=retry_policy,
+        rate_limit_config=rate_limit_config,
+        on_rate_limited=rate_limit_hook,
+    )
+
+    task = app.tasks["intergrax.execute"]
+
+    retry_mock = Mock(side_effect=Exception("retry_called"))
+    task.retry = retry_mock  # type: ignore
+
+    # Stabilizujemy jitter żeby test był deterministyczny
+    with patch("intergrax.queueing.worker.dispatcher.random.uniform", return_value=0.0):
+        with pytest.raises(Exception, match="retry_called"):
+            task.run(
+                logical_task_name="test_task",
+                tenant_id="tenant_X",
+                run_id="run_1",
+                payload=b"{}",
+                idempotency_key=None,
+            )
+
+    # Sprawdzenie czy hook został wywołany
+    rate_limit_hook.assert_called_once()
+
+    event = rate_limit_hook.call_args[0][0]
+
+    assert isinstance(event, RateLimitEvent)
+    assert event.logical_task_name == "test_task"
+    assert event.tenant_id == "tenant_X"
+    assert event.retry_after_seconds == 3.5
+    assert event.remaining_tokens == 0.0
+    assert event.current_retries == 0
+    assert event.max_retries == 5

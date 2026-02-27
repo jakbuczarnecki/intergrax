@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from intergrax.runtime.tools.sqlite_idempotency_store import (
     SQLiteIdempotencyStore,
 )
-from intergrax.runtime.tools.idempotency_store import InvocationStatus
+from intergrax.contracts.idempotency_store import InvocationStatus
 from intergrax.tools.execution_models import ToolExecutionResult
 from tests._support.builder import prepare_sqlite_db
 

@@ -10,12 +10,16 @@ from typing import Callable, Optional, Tuple
 from celery import Celery
 
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
-from intergrax.distributed.contracts.rate_limiter import DistributedRateLimiter, RateLimitResult
+from intergrax.distributed.contracts.rate_limiter import (
+    DistributedRateLimiter,
+    RateLimitResult,
+)
 from intergrax.queueing.worker.execution import (
     RetryableHandlerError,
     execute_logical_task,
     IdempotencyLockConflictError,
 )
+from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_event import RetryEvent
 from intergrax.queueing.worker.retry_policy import RetryPolicy
@@ -32,6 +36,7 @@ def register_dispatcher_task(
     retry_policy: Optional[RetryPolicy] = None,
     on_retry_scheduled: Optional[Callable[[RetryEvent], None]] = None,
     rate_limit_config: Optional[Callable[[str], Tuple[int, float]]] = None,
+    on_rate_limited: Optional[Callable[[RateLimitEvent], None]] = None,
 ) -> None:
     """
     Registers the generic execution task into Celery app.
@@ -43,8 +48,6 @@ def register_dispatcher_task(
         retry_policy.validate()
 
     if rate_limiter is not None and retry_policy is None:
-        # Rate limiting denial is handled via Celery retry. Without retry_policy,
-        # we cannot enforce max_retries deterministically.
         raise ValueError("retry_policy must be provided when rate_limiter is enabled.")
 
     @app.task(name="intergrax.execute", bind=True)
@@ -62,10 +65,14 @@ def register_dispatcher_task(
         Dispatches execution to registered logical task handler.
         """
 
-        # Adapter-only rate limiting (Tier-0). Execution core remains unchanged.
+        # -------------------------
+        # Tier-0: Distributed Rate Limiting
+        # -------------------------
         if rate_limiter is not None:
             if rate_limit_config is None:
-                raise ValueError("rate_limit_config must be provided when rate_limiter is enabled.")
+                raise ValueError(
+                    "rate_limit_config must be provided when rate_limiter is enabled."
+                )
 
             capacity, refill_rate_per_second = rate_limit_config(logical_task_name)
 
@@ -79,33 +86,56 @@ def register_dispatcher_task(
             if not result.allowed:
                 current_retries: int = self.request.retries
 
-                # Deterministic retry bound enforced by RetryPolicy
                 if current_retries >= retry_policy.max_retries:
                     raise RuntimeError("rate_limited: max_retries reached")
 
                 base_countdown: float = float(result.retry_after_seconds)
 
-                # Small jitter to avoid retry storms under heavy load.
-                # Jitter window = 20% of base delay.
+                # ---- RateLimit hook (attached to task, not closure) ----
+                rate_limit_hook: Optional[
+                    Callable[[RateLimitEvent], None]
+                ] = self.on_rate_limited  # type: ignore[attr-defined]
+
+                if rate_limit_hook is not None:
+                    rate_limit_event = RateLimitEvent(
+                        logical_task_name=logical_task_name,
+                        tenant_id=tenant_id,
+                        retry_after_seconds=base_countdown,
+                        remaining_tokens=result.remaining_tokens,
+                        current_retries=current_retries,
+                        max_retries=retry_policy.max_retries,
+                    )
+                    rate_limit_hook(rate_limit_event)
+
+                # ---- Jitter (20%) ----
                 jitter_window: float = base_countdown * 0.2
                 jitter: float = random.uniform(0.0, jitter_window)
-
                 countdown: float = base_countdown + jitter
 
-                event = RetryEvent(
-                    logical_task_name=logical_task_name,
-                    exception_type="RateLimited",
-                    current_retries=current_retries,
-                    max_retries=retry_policy.max_retries,
-                    countdown_seconds=countdown,
-                    reason="rate_limited",
+                # ---- Retry hook ----
+                retry_hook: Optional[
+                    Callable[[RetryEvent], None]
+                ] = self.on_retry_scheduled  # type: ignore[attr-defined]
+
+                if retry_hook is not None:
+                    retry_event = RetryEvent(
+                        logical_task_name=logical_task_name,
+                        exception_type="RateLimited",
+                        current_retries=current_retries,
+                        max_retries=retry_policy.max_retries,
+                        countdown_seconds=countdown,
+                        reason="rate_limited",
+                    )
+                    retry_hook(retry_event)
+
+                raise self.retry(
+                    exc=RuntimeError("rate_limited"),
+                    countdown=countdown,
                 )
 
-                if on_retry_scheduled is not None:
-                    on_retry_scheduled(event)
-
-                raise self.retry(exc=RuntimeError("rate_limited"), countdown=countdown)
-
+        # -------------------------
+        # Core Execution
+        # -------------------------
         try:
             return execute_logical_task(
                 registry=registry,
@@ -123,11 +153,12 @@ def register_dispatcher_task(
             if retry_policy is None:
                 raise
 
-            # Determine retry eligibility based on exception type
             if isinstance(exc, IdempotencyLockConflictError):
                 should_retry = retry_policy.retry_on_lock_conflict
+                reason = "lock_conflict"
             else:
                 should_retry = retry_policy.retry_on_handler_exception
+                reason = "handler_transient"
 
             if not should_retry:
                 raise
@@ -142,22 +173,25 @@ def register_dispatcher_task(
                 current_retries=current_retries,
             )
 
-            reason: str = (
-                "lock_conflict"
-                if isinstance(exc, IdempotencyLockConflictError)
-                else "handler_transient"
-            )
+            retry_hook: Optional[
+                Callable[[RetryEvent], None]
+            ] = self.on_retry_scheduled  # type: ignore[attr-defined]
 
-            event = RetryEvent(
-                logical_task_name=logical_task_name,
-                exception_type=type(exc).__name__,
-                current_retries=current_retries,
-                max_retries=retry_policy.max_retries,
-                countdown_seconds=countdown,
-                reason=reason,
-            )
-
-            if on_retry_scheduled is not None:
-                on_retry_scheduled(event)
+            if retry_hook is not None:
+                retry_event = RetryEvent(
+                    logical_task_name=logical_task_name,
+                    exception_type=type(exc).__name__,
+                    current_retries=current_retries,
+                    max_retries=retry_policy.max_retries,
+                    countdown_seconds=countdown,
+                    reason=reason,
+                )
+                retry_hook(retry_event)
 
             raise self.retry(exc=exc, countdown=countdown)
+
+    # ---------------------------------------------
+    # Attach hooks to task instance (production-safe)
+    # ---------------------------------------------
+    intergrax_execute.on_rate_limited = on_rate_limited  # type: ignore[attr-defined]
+    intergrax_execute.on_retry_scheduled = on_retry_scheduled  # type: ignore[attr-defined]
