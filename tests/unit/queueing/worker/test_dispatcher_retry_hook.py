@@ -50,7 +50,7 @@ def test_dispatcher_calls_retry_hook() -> None:
     register_dispatcher_task(
         app=app,
         registry=registry,
-        kv_store=None,
+        idempotency_store=None,
         lock_ttl_seconds=None,
         retry_policy=retry_policy,
         on_retry_scheduled=retry_hook,

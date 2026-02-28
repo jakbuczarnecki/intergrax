@@ -13,6 +13,7 @@ from intergrax.queueing.worker.retry_policy import RetryPolicy
 
 pytestmark = pytest.mark.unit
 
+
 class DummyRegistry(TaskExecutionRegistry):
     def get_handler(self, logical_task_name: str):
         def handler(*, tenant_id: str, run_id: str, payload: bytes, idempotency_key):
@@ -28,10 +29,10 @@ def test_create_celery_worker_app_registers_dispatcher() -> None:
         max_retries=3,
         initial_backoff_seconds=1.0,
         backoff_multiplier=2.0,
-        max_backoff_seconds=None,
-        jitter=False,
+        max_backoff_seconds=10.0,
         retry_on_lock_conflict=True,
         retry_on_handler_exception=True,
+        jitter=False,
     )
 
     app: Celery = create_celery_worker_app(
@@ -39,9 +40,10 @@ def test_create_celery_worker_app_registers_dispatcher() -> None:
         broker_url="memory://",
         backend_url=None,
         registry=registry,
-        kv_store=None,
+        idempotency_store=None,
         retry_policy=retry_policy,
         lock_ttl_seconds=None,
+        completed_ttl_seconds=None,
     )
 
     assert isinstance(app, Celery)

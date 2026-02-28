@@ -53,14 +53,14 @@ class IdempotencyStore(ABC):
         self,
         tenant_id: str,
         key: str,
+        lease_seconds: Optional[int] = None,
     ) -> None:
         """
-        Atomically persist STARTED state before executing tool.
+        Records STARTED state atomically.
 
-        Must guarantee that concurrent calls with the same (tenant_id, key)
-        cannot both transition from NONE → STARTED.
+        If lease_seconds is provided, implementation must guarantee that
+        STARTED state expires after given number of seconds to allow takeover.
         """
-        ...
 
     @abstractmethod
     def record_completed(
@@ -68,11 +68,14 @@ class IdempotencyStore(ABC):
         tenant_id: str,
         key: str,
         result: ToolExecutionResult[BaseModel],
+        completed_ttl_seconds: Optional[int] = None,
     ) -> None:
         """
-        Persist COMPLETED state and execution result.
+        Transitions STARTED -> COMPLETED atomically.
+
+        If completed_ttl_seconds is provided, implementation may expire
+        COMPLETED entry after given number of seconds.
         """
-        ...
 
     @abstractmethod
     def get_completed_result(

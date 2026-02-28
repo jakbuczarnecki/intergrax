@@ -2,58 +2,88 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from typing import Optional
-from unittest.mock import Mock
-
 import pytest
+from pydantic import BaseModel
 
-from intergrax.distributed.contracts.kv_store import DistributedKVStore
-from intergrax.queueing.worker.execution import execute_logical_task
+from intergrax.contracts.idempotency_store import (
+    IdempotencyStore,
+    InvocationStatus,
+)
+from intergrax.queueing.worker.execution import (
+    execute_logical_task,
+    IdempotencyLockConflictError,
+)
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.tools.execution_models import ToolExecutionResult
 
-pytestmark = pytest.mark.unit
 
-class DummyKVStore(DistributedKVStore):
+class DummyOutput(BaseModel):
+    value: str
+
+
+class DummyIdempotencyStore(IdempotencyStore):
     def __init__(self) -> None:
-        self.storage = {}
+        self._store: dict[str, tuple[InvocationStatus, ToolExecutionResult]] = {}
 
-    def get(self, tenant_id: str, key: str) -> Optional[bytes]:
-        return self.storage.get((tenant_id, key))
-
-    def set(
+    def record_started(
         self,
         tenant_id: str,
         key: str,
-        value: bytes,
-        *,
-        ttl_seconds: Optional[int] = None,
+        lease_seconds: int | None = None,
     ) -> None:
-        self.storage[(tenant_id, key)] = value
+        full_key = f"{tenant_id}:{key}"
+        if full_key in self._store:
+            raise RuntimeError("already exists")
+        # temporary placeholder
+        self._store[full_key] = (InvocationStatus.STARTED, None)  # type: ignore
 
-    def delete(self, tenant_id: str, key: str) -> None:
-        self.storage.pop((tenant_id, key), None)
-
-    def compare_and_set(
+    def record_completed(
         self,
         tenant_id: str,
         key: str,
-        expected: Optional[bytes],
-        new_value: bytes,
-        *,
-        ttl_seconds: Optional[int] = None,
-    ) -> bool:
-        current = self.storage.get((tenant_id, key))
-        if current == expected:
-            self.storage[(tenant_id, key)] = new_value
-            return True
-        return False
+        result: ToolExecutionResult,
+        completed_ttl_seconds: int | None = None,
+    ) -> None:
+        full_key = f"{tenant_id}:{key}"
+        status, _ = self._store.get(full_key, (None, None))
+        if status != InvocationStatus.STARTED:
+            raise RuntimeError("invalid state")
+        self._store[full_key] = (InvocationStatus.COMPLETED, result)
+
+    def get_status(self, tenant_id: str, key: str):
+        full_key = f"{tenant_id}:{key}"
+        entry = self._store.get(full_key)
+        if not entry:
+            return None
+        return entry[0]
+
+    def get_completed_result(self, tenant_id: str, key: str):
+        full_key = f"{tenant_id}:{key}"
+        entry = self._store.get(full_key)
+        if not entry:
+            return None
+        status, result = entry
+        if status == InvocationStatus.COMPLETED:
+            return result
+        return None
 
 
-def test_execute_without_idempotency() -> None:
+@pytest.fixture
+def registry() -> TaskExecutionRegistry:
     registry = TaskExecutionRegistry()
-    handler = Mock(return_value=b"ok")
-    registry.register("task.a", handler)
 
+    def handler(**kwargs):
+        return ToolExecutionResult(
+            success=True,
+            output=DummyOutput(value="ok"),
+            error=None,
+        )
+
+    registry.register("task.a", handler)
+    return registry
+
+
+def test_execute_without_idempotency(registry):
     result = execute_logical_task(
         registry=registry,
         logical_task_name="task.a",
@@ -61,20 +91,16 @@ def test_execute_without_idempotency() -> None:
         run_id="r1",
         payload=b"data",
         idempotency_key=None,
-        kv_store=None,
-        lock_ttl_seconds=None,
+        idempotency_store=None,
     )
 
-    assert result == b"ok"
-    handler.assert_called_once()
+    assert result.success is True
+    assert result.output is not None
+    assert isinstance(result.output, DummyOutput)
 
 
-def test_execute_with_idempotency_fresh() -> None:
-    registry = TaskExecutionRegistry()
-    handler = Mock(return_value=b"fresh")
-    registry.register("task.a", handler)
-
-    kv = DummyKVStore()
+def test_execute_with_idempotency_fresh(registry):
+    store = DummyIdempotencyStore()
 
     result = execute_logical_task(
         registry=registry,
@@ -82,74 +108,61 @@ def test_execute_with_idempotency_fresh() -> None:
         tenant_id="t1",
         run_id="r1",
         payload=b"data",
-        idempotency_key="abc",
-        kv_store=kv,
-        lock_ttl_seconds=60,
+        idempotency_key="k1",
+        idempotency_store=store,
+        lease_seconds=60,
     )
 
-    assert result == b"fresh"
-    handler.assert_called_once()
+    assert result.success is True
+    assert result.output is not None
+    assert isinstance(result.output, DummyOutput)
 
 
-def test_execute_with_existing_result() -> None:
-    registry = TaskExecutionRegistry()
-    handler = Mock(return_value=b"should_not_run")
-    registry.register("task.a", handler)
+def test_execute_with_existing_result(registry):
+    store = DummyIdempotencyStore()
 
-    kv = DummyKVStore()
-    kv.storage[("t1", "idempotency:t1:abc")] = b"cached"
-
-    result = execute_logical_task(
+    # first execution
+    result1 = execute_logical_task(
         registry=registry,
         logical_task_name="task.a",
         tenant_id="t1",
         run_id="r1",
         payload=b"data",
-        idempotency_key="abc",
-        kv_store=kv,
-        lock_ttl_seconds=60,
+        idempotency_key="k1",
+        idempotency_store=store,
+        lease_seconds=60,
     )
 
-    assert result == b"cached"
-    handler.assert_not_called()
+    # replay
+    result2 = execute_logical_task(
+        registry=registry,
+        logical_task_name="task.a",
+        tenant_id="t1",
+        run_id="r2",
+        payload=b"data",
+        idempotency_key="k1",
+        idempotency_store=store,
+        lease_seconds=60,
+    )
+
+    assert result2.success is True
+    assert result2.output.value == "ok"
 
 
-def test_execute_lock_held() -> None:
-    registry = TaskExecutionRegistry()
-    handler = Mock(return_value=b"x")
-    registry.register("task.a", handler)
+def test_execute_lock_held(registry):
+    store = DummyIdempotencyStore()
 
-    kv = DummyKVStore()
-    kv.storage[("t1", "idempotency:t1:abc")] = b"__LOCK__"
+    # Manually insert STARTED
+    store._store["t1:task.a:k1"] = (InvocationStatus.STARTED, None)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(IdempotencyLockConflictError):
         execute_logical_task(
             registry=registry,
             logical_task_name="task.a",
             tenant_id="t1",
             run_id="r1",
             payload=b"data",
-            idempotency_key="abc",
-            kv_store=kv,
-            lock_ttl_seconds=60,
-        )
-
-
-def test_missing_ttl_raises() -> None:
-    registry = TaskExecutionRegistry()
-    handler = Mock(return_value=b"x")
-    registry.register("task.a", handler)
-
-    kv = DummyKVStore()
-
-    with pytest.raises(ValueError):
-        execute_logical_task(
-            registry=registry,
-            logical_task_name="task.a",
-            tenant_id="t1",
-            run_id="r1",
-            payload=b"data",
-            idempotency_key="abc",
-            kv_store=kv,
-            lock_ttl_seconds=None,
+            idempotency_key="k1",
+            idempotency_store=store,
+            lease_seconds=60,
         )

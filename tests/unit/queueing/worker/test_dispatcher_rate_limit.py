@@ -66,7 +66,7 @@ def test_rate_limited_triggers_retry() -> None:
     register_dispatcher_task(
         app=app,
         registry=registry,
-        kv_store=None,
+        idempotency_store=None,
         rate_limiter=rate_limiter,
         retry_policy=retry_policy,
         rate_limit_config=rate_limit_config,
@@ -106,7 +106,7 @@ def test_rate_limited_retry_applies_jitter() -> None:
     register_dispatcher_task(
         app=app,
         registry=registry,
-        kv_store=None,
+        idempotency_store=None,
         rate_limiter=rate_limiter,
         retry_policy=retry_policy,
         rate_limit_config=rate_limit_config,
@@ -151,7 +151,7 @@ def test_rate_limit_event_hook_is_emitted() -> None:
     register_dispatcher_task(
         app=app,
         registry=registry,
-        kv_store=None,
+        idempotency_store=None,
         rate_limiter=rate_limiter,
         retry_policy=retry_policy,
         rate_limit_config=rate_limit_config,

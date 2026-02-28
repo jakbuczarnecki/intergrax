@@ -9,7 +9,7 @@ from typing import Callable, Optional, Tuple
 
 from celery import Celery
 
-from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.distributed.contracts.rate_limiter import (
     DistributedRateLimiter,
     RateLimitResult,
@@ -29,10 +29,11 @@ from intergrax.queueing.worker.retry_backoff import calculate_retry_countdown
 def register_dispatcher_task(
     app: Celery,
     registry: TaskExecutionRegistry,
-    kv_store: Optional[DistributedKVStore] = None,
+    idempotency_store: Optional[IdempotencyStore] = None,
     rate_limiter: Optional[DistributedRateLimiter] = None,
     *,
     lock_ttl_seconds: Optional[int] = None,
+    completed_ttl_seconds: Optional[int] = None,
     retry_policy: Optional[RetryPolicy] = None,
     on_retry_scheduled: Optional[Callable[[RetryEvent], None]] = None,
     rate_limit_config: Optional[Callable[[str], Tuple[int, float]]] = None,
@@ -144,8 +145,9 @@ def register_dispatcher_task(
                 run_id=run_id,
                 payload=payload,
                 idempotency_key=idempotency_key,
-                kv_store=kv_store,
-                lock_ttl_seconds=lock_ttl_seconds,
+                idempotency_store=idempotency_store,
+                lease_seconds=lock_ttl_seconds,
+                completed_ttl_seconds=completed_ttl_seconds,
             )
 
         except (IdempotencyLockConflictError, RetryableHandlerError) as exc:

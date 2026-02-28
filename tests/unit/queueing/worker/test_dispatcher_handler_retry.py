@@ -44,7 +44,7 @@ def test_dispatcher_retries_on_retryable_handler_error() -> None:
     register_dispatcher_task(
         app=app,
         registry=registry,
-        kv_store=None,
+        idempotency_store=None,
         lock_ttl_seconds=None,
         retry_policy=retry_policy,
     )
