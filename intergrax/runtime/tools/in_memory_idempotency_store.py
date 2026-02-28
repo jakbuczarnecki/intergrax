@@ -7,7 +7,7 @@ from typing import Dict, Optional, Tuple
 
 from pydantic import BaseModel
 
-from intergrax.runtime.tools.idempotency_store import (
+from intergrax.contracts.idempotency_store import (
     IdempotencyStore,
     InvocationStatus,
 )

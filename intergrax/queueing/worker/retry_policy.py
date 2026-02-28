@@ -49,3 +49,25 @@ class RetryPolicy:
         if self.max_backoff_seconds is not None:
             if self.max_backoff_seconds <= 0:
                 raise ValueError("max_backoff_seconds must be > 0 when provided.")
+            
+    
+    def max_retry_window_seconds(self) -> float:
+        """
+        Deterministically computes the maximum possible retry window
+        (sum of all retry countdowns), excluding jitter.
+
+        This is used to validate lease safety against retry duration.
+        """
+
+        total: float = 0.0
+
+        for retry_index in range(self.max_retries):
+            backoff = self.initial_backoff_seconds * (
+                self.backoff_multiplier ** retry_index
+            )
+
+            countdown = min(backoff, self.max_backoff_seconds)
+
+            total += countdown
+
+        return total

@@ -32,7 +32,7 @@ from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTrac
 from intergrax.runtime.replay.metrics import ExecutionMetrics
 from intergrax.runtime.replay.policy import PolicyDecision, PolicyDecisionType
 from intergrax.runtime.replay.regression import RegressionSignals
-from intergrax.runtime.tools.idempotency_store import IdempotencyStore
+from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.tools.core.contracts import ToolContract
 
 

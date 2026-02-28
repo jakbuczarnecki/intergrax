@@ -19,7 +19,7 @@ from intergrax.runtime.nexus.planning.step_executor_models import StepExecutorCo
 from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
 from intergrax.runtime.nexus.policies.runtime_policies import RuntimePolicies
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.tools.idempotency_store import IdempotencyStore
+from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.provider import ToolProvider
 from intergrax.tools.tools_agent import ToolsAgent

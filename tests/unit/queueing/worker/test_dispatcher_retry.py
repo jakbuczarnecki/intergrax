@@ -36,17 +36,18 @@ def test_dispatcher_retries_on_lock_conflict() -> None:
         max_retries=3,
         initial_backoff_seconds=2.0,
         backoff_multiplier=2.0,
-        max_backoff_seconds=None,
-        jitter=False,
+        max_backoff_seconds=10.0,
         retry_on_lock_conflict=True,
         retry_on_handler_exception=False,
+        jitter=False,
     )
 
     register_dispatcher_task(
         app=app,
         registry=registry,
-        kv_store=None,
+        idempotency_store=None,
         lock_ttl_seconds=None,
+        completed_ttl_seconds=None,
         retry_policy=retry_policy,
     )
 
