@@ -16,7 +16,7 @@ class ToolInvocationStartDiagV1(DiagnosticPayload):
     tool_id: str
     step_id: str
     side_effects: bool
-    input_payload: Dict[str, Any]
+    input_payload: Dict[str, Any]    
 
     def redact(self) -> ToolInvocationStartDiagV1:
         """
@@ -42,7 +42,7 @@ class ToolInvocationStartDiagV1(DiagnosticPayload):
             "tool_id": self.tool_id,
             "step_id": self.step_id,
             "side_effects": self.side_effects,
-            "input_payload": dict(self.input_payload),
+            "input_payload": dict(self.input_payload),            
         }
 
 
@@ -52,6 +52,7 @@ class ToolInvocationEndDiagV1(DiagnosticPayload):
     step_id: str
     success: bool
     output_preview: Optional[str]
+    duration_ms: Optional[int]
 
     def redact(self) -> ToolInvocationEndDiagV1:
         """
@@ -64,6 +65,7 @@ class ToolInvocationEndDiagV1(DiagnosticPayload):
             step_id=self.step_id,
             success=self.success,
             output_preview=DEFAULT_REDACTED_TEXT if self.output_preview is not None else None,
+            duration_ms=self.duration_ms,
         )
 
     @classmethod
@@ -76,6 +78,7 @@ class ToolInvocationEndDiagV1(DiagnosticPayload):
             "step_id": self.step_id,
             "success": self.success,
             "output_preview": self.output_preview,
+            "duration_ms": self.duration_ms,
         }
 
 
