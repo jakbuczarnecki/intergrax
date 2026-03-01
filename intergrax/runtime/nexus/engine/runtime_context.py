@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List, Optional
 from typing import TYPE_CHECKING
 import uuid
+from intergrax.distributed.contracts.execution_semaphore import DistributedExecutionSemaphore
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.artifacts.models import Artifact, ArtifactRef
 from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
@@ -80,6 +81,8 @@ class RuntimeContext:
     
     artifact_store: Optional[ArtifactStore] = None
 
+    execution_semaphore: Optional[DistributedExecutionSemaphore] = None
+    max_parallel_per_tenant: Optional[int] = None
 
     async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
         async with self.llm_usage_lock:
