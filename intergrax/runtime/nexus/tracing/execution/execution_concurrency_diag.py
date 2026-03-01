@@ -13,6 +13,7 @@ class ExecutionConcurrencyDiagV1(DiagnosticPayload):
     tenant_id: str
     run_id: str
     action: str  # "acquire_success" | "acquire_rejected" | "release"
+    duration_ms: int | None = None
 
     @classmethod
     def schema_id(cls) -> str:
@@ -23,6 +24,7 @@ class ExecutionConcurrencyDiagV1(DiagnosticPayload):
             "tenant_id": self.tenant_id,
             "run_id": self.run_id,
             "action": self.action,
+            "duration_ms": self.duration_ms,
         }
 
     def redact(self) -> "ExecutionConcurrencyDiagV1":

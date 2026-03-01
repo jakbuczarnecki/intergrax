@@ -115,6 +115,7 @@ class RuntimeEngine:
         state.configure_llm_tracker()
 
         slot: Optional[ExecutionSlot] = None
+        acquire_perf: float | None = None
 
         if self.context.execution_semaphore is not None:
             if self.context.max_parallel_per_tenant is None:
@@ -155,6 +156,8 @@ class RuntimeEngine:
                     action="acquire_success",
                 ),
             )
+
+            acquire_perf = time.perf_counter()
 
         budget_enforcer: BudgetEnforcer | None = None
         if self.context.config.run_budget is not None and self.context.config.budget_policy is not None:
@@ -403,6 +406,12 @@ class RuntimeEngine:
 
         finally:
             if slot is not None:
+                duration_ms = None
+                if acquire_perf is not None:
+                    duration_ms = int((time.perf_counter() - acquire_perf) * 1000)
+                    if duration_ms < 0:
+                        duration_ms = 0
+
                 self.context.execution_semaphore.release(
                     tenant_id=state.tenant_id,
                     slot=slot,
@@ -417,6 +426,7 @@ class RuntimeEngine:
                         tenant_id=state.tenant_id,
                         run_id=state.run_id,
                         action="release",
+                        duration_ms=duration_ms,
                     ),
                 )
 
