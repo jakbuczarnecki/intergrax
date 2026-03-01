@@ -44,6 +44,7 @@ from intergrax.runtime.nexus.responses.response_schema import (
     StopReason,
 )
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.tracing.execution.execution_concurrency_diag import ExecutionConcurrencyDiagV1
 from intergrax.runtime.nexus.tracing.persistence_models import RunError, RunMetadata, RunStats
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_abort import RuntimeRunAbortDiagV1
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_end import RuntimeRunEndDiagV1
@@ -127,9 +128,33 @@ class RuntimeEngine:
             )
 
             if slot is None:
+                state.trace_event(
+                    component=TraceComponent.ENGINE,
+                    step="execution.acquire.rejected",
+                    level=TraceLevel.WARNING,
+                    message="Execution concurrency limit reached.",
+                    payload=ExecutionConcurrencyDiagV1(
+                        tenant_id=state.tenant_id,
+                        run_id=state.run_id,
+                        action="acquire_rejected",
+                    ),
+                )
+
                 raise RuntimeError(
                     f"Execution concurrency limit reached for tenant {state.tenant_id}"
                 )
+            
+            state.trace_event(
+                component=TraceComponent.ENGINE,
+                step="execution.acquire.success",
+                level=TraceLevel.INFO,
+                message="Execution slot acquired.",
+                payload=ExecutionConcurrencyDiagV1(
+                    tenant_id=state.tenant_id,
+                    run_id=state.run_id,
+                    action="acquire_success",
+                ),
+            )
 
         budget_enforcer: BudgetEnforcer | None = None
         if self.context.config.run_budget is not None and self.context.config.budget_policy is not None:
@@ -381,6 +406,18 @@ class RuntimeEngine:
                 self.context.execution_semaphore.release(
                     tenant_id=state.tenant_id,
                     slot=slot,
+                )
+
+                state.trace_event(
+                    component=TraceComponent.ENGINE,
+                    step="execution.release",
+                    level=TraceLevel.INFO,
+                    message="Execution slot released.",
+                    payload=ExecutionConcurrencyDiagV1(
+                        tenant_id=state.tenant_id,
+                        run_id=state.run_id,
+                        action="release",
+                    ),
                 )
 
     async def _run_with_timeout(
