@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Optional, Protocol, Type, runtime_checkable
 
 from pydantic import BaseModel
@@ -161,11 +162,17 @@ class RuntimeToolInvoker:
 
         # 4) execute + normalize
         try:
+            start_perf = time.perf_counter()
+            
             raw_out = self._executor.execute(request)
 
             # output enforcement (typed)
             out = self._validate_output(contract.output_schema, raw_out)
 
+            duration_ms = int((time.perf_counter() - start_perf) * 1000)
+            if duration_ms < 0:
+                duration_ms = 0
+            
             state.trace_event(
                 component=TraceComponent.TOOLS,
                 step="tool_invocation_end",
@@ -176,6 +183,7 @@ class RuntimeToolInvoker:
                     step_id=str(request.step_id),
                     success=True,
                     output_preview=self._preview_output(out),
+                    duration_ms=duration_ms,
                 ),
             )
             return ToolExecutionResult.ok(out)

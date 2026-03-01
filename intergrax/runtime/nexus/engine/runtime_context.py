@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List, Optional
 from typing import TYPE_CHECKING
 import uuid
+from intergrax.distributed.contracts.execution_semaphore import DistributedExecutionSemaphore
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.artifacts.models import Artifact, ArtifactRef
 from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
@@ -18,6 +19,7 @@ from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTrac
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 from intergrax.runtime.replay.service import ReplayService
 from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
+from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
 from intergrax.tools.registry import ToolRegistry
 if TYPE_CHECKING:
@@ -79,6 +81,8 @@ class RuntimeContext:
     
     artifact_store: Optional[ArtifactStore] = None
 
+    execution_semaphore: Optional[DistributedExecutionSemaphore] = None
+    max_parallel_per_tenant: Optional[int] = None
 
     async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
         async with self.llm_usage_lock:
@@ -297,10 +301,8 @@ class RuntimeContext:
         executor = RegistryToolExecutor(registry)
         base_invoker = RuntimeToolInvoker(registry=registry, executor=executor)
 
-        if config.idempotency_store is None and config.idempotency_db_path is not None:
-            config.idempotency_store = SQLiteIdempotencyStore(
-                db_path=config.idempotency_db_path
-            )
+        if config.idempotency_store is None:
+            config.idempotency_store = InMemoryIdempotencyStore()
 
         if config.idempotency_store is not None:
             config.tool_invoker = IdempotentToolInvoker(
