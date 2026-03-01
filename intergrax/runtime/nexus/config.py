@@ -228,6 +228,10 @@ class RuntimeConfig:
 
     runtime_policies: RuntimePolicies = RuntimePolicies()
 
+    # Warn if execution semaphore slot is held longer than this threshold (ms).
+    # If None → disabled.
+    execution_slot_warn_threshold_ms: Optional[int] = None
+
     hitl_default_message: Optional[str] = None
 
 
@@ -261,12 +265,14 @@ class RuntimeConfig:
         if self.runtime_timeout_ms is not None:
             if not isinstance(self.runtime_timeout_ms, int):
                 raise TypeError("runtime_timeout_ms must be an int or None.")
+            
             if self.runtime_timeout_ms<=0:
                 raise ValueError("runtime_timeout_ms must be > 0 when provided.")
             
         
         if not isinstance(self.max_run_retries, int):
             raise TypeError("max_run_retries must be an int.")
+        
         if self.max_run_retries < 0:
             raise ValueError("max_run_retries must be >= 0.")
 
@@ -298,3 +304,10 @@ class RuntimeConfig:
         if self.budget_policy is not None:
             if not isinstance(self.budget_policy, BudgetPolicy):
                 raise TypeError("budget_policy must be BudgetPolicy or None.")
+        
+        
+        if self.execution_slot_warn_threshold_ms is not None:
+            if not isinstance(self.execution_slot_warn_threshold_ms, int):
+                raise TypeError("execution_slot_warn_threshold_ms must be int or None.")
+            if self.execution_slot_warn_threshold_ms < 0:
+                raise ValueError("execution_slot_warn_threshold_ms must be >= 0.")

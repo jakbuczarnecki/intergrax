@@ -79,3 +79,29 @@ async def test_execution_concurrency_trace_rejected():
 
     with pytest.raises(RuntimeError):
         await harness.engine.run(request)
+
+    
+@pytest.mark.asyncio
+async def test_execution_slot_long_hold_warning():
+    from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+
+    cfg = build_runtime_config_deterministic()
+    cfg.execution_slot_warn_threshold_ms = 0  # always warn
+
+    harness = build_engine_harness(cfg=cfg)
+    harness.engine.context.execution_semaphore = FakeExecutionSemaphore(allow=True)
+    harness.engine.context.max_parallel_per_tenant = 1
+
+    request = RuntimeRequest(
+        tenant_id="tenant_A",
+        user_id="user_A",
+        session_id="session_A",
+        agent_id="agent_A",
+        message="hello",
+    )
+
+    answer = await harness.engine.run(request)
+
+    steps = [e.step for e in answer.trace_events]
+
+    assert "execution.slot_long_hold_warning" in steps

@@ -430,6 +430,25 @@ class RuntimeEngine:
                     ),
                 )
 
+                threshold = self.context.config.execution_slot_warn_threshold_ms
+                if (
+                    threshold is not None
+                    and duration_ms is not None
+                    and duration_ms >= threshold
+                ):
+                    state.trace_event(
+                        component=TraceComponent.ENGINE,
+                        step="execution.slot_long_hold_warning",
+                        level=TraceLevel.WARNING,
+                        message="Execution slot held longer than configured threshold.",
+                        payload=ExecutionConcurrencyDiagV1(
+                            tenant_id=state.tenant_id,
+                            run_id=state.run_id,
+                            action="release",
+                            duration_ms=duration_ms,
+                        ),
+                    )
+
     async def _run_with_timeout(
             self,
             *,
