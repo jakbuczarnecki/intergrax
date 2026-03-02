@@ -26,12 +26,15 @@ class MessageConsumer(ABC):
     """
 
     @abstractmethod
-    def poll(self) -> Optional[bytes]:
+    def poll(self, *, timeout_seconds: float) -> Optional[bytes]:
         """
-        Retrieve next raw message payload from transport.
+        Poll broker for a single message.
+
+        Args:
+            timeout_seconds: Maximum time to wait for a message.
 
         Returns:
-            - bytes payload if message available
-            - None if no message available
+            Raw payload bytes if message is available,
+            None if no message was received within timeout.
         """
-        ...
+        raise NotImplementedError

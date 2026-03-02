@@ -30,6 +30,7 @@ class KafkaWorker(BrokerWorkerBase):
         registry,
         kv_store,
         idempotency_store=None,
+        poll_timeout_seconds: float = 1.0,
     ) -> None:
         super().__init__(
             registry=registry,
@@ -37,6 +38,7 @@ class KafkaWorker(BrokerWorkerBase):
             idempotency_store=idempotency_store,
         )
         self._consumer: MessageConsumer = consumer
+        self._poll_timeout_seconds = poll_timeout_seconds
 
     def start(self) -> None:
         """
@@ -46,7 +48,7 @@ class KafkaWorker(BrokerWorkerBase):
         """
 
         while True:
-            payload = self._consumer.poll()
+            payload = self._consumer.poll(timeout_seconds=self._poll_timeout_seconds)
 
             if payload is None:
                 continue

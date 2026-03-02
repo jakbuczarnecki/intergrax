@@ -2,109 +2,116 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-import json
+from __future__ import annotations
+
 import base64
-import pytest
 from typing import Optional
 
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
-from intergrax.queueing.contracts.task_queue import TaskStatus
-from intergrax.queueing.providers.broker_worker_base import BrokerWorkerBase
+from intergrax.queueing.contracts.task_queue import (
+    TaskQueue,
+    TaskHandle,
+    TaskStatus,
+    TaskResult,
+)
 
 
-pytestmark = pytest.mark.unit
+class BrokerBackedTaskQueueBase(TaskQueue):
+    """
+    Base class for broker-backed transports (Kafka, RabbitMQ, etc.).
 
+    These transports do not provide built-in:
+    - task status inspection
+    - result backend
+    - retry metadata
 
-class InMemoryKVStore(DistributedKVStore):
-    def __init__(self) -> None:
-        self._data: dict[tuple[str, str], bytes] = {}
+    Therefore status and result are stored in DistributedKVStore.
 
-    def get(self, tenant_id: str, key: str) -> Optional[bytes]:
-        return self._data.get((tenant_id, key))
+    Subclasses must implement:
+    - enqueue()
+    - transport publishing logic
+    - worker bootstrap
+    """
 
-    def set(
+    def __init__(
         self,
-        tenant_id: str,
-        key: str,
-        value: bytes,
         *,
-        ttl_seconds: Optional[int] = None,
+        kv_store: DistributedKVStore,
+        provider_name: str,
     ) -> None:
-        self._data[(tenant_id, key)] = value
+        self._kv_store: DistributedKVStore = kv_store
+        self._provider_name: str = provider_name
 
-    def delete(self, tenant_id: str, key: str) -> None:
-        self._data.pop((tenant_id, key), None)
+    # ------------------------------------------------------------------
+    # Storage keys
+    # ------------------------------------------------------------------
 
-    def compare_and_set(
+    def _status_key(self, task_id: str) -> str:
+        return f"task:{task_id}:status"
+
+    def _result_key(self, task_id: str) -> str:
+        return f"task:{task_id}:result"
+
+    # ------------------------------------------------------------------
+    # TaskQueue contract implementation
+    # ------------------------------------------------------------------
+
+    def get_status(
         self,
-        tenant_id: str,
-        key: str,
-        expected: Optional[bytes],
-        new_value: bytes,
-        *,
-        ttl_seconds: Optional[int] = None,
-    ) -> bool:
-        current = self._data.get((tenant_id, key))
-        if current != expected:
-            return False
-        self._data[(tenant_id, key)] = new_value
-        return True
+        handle: TaskHandle,
+    ) -> TaskStatus:
+        if handle.tenant_id is None:
+            return TaskStatus.PENDING
 
+        raw = self._kv_store.get(
+            tenant_id=handle.tenant_id,
+            key=self._status_key(handle.task_id),
+        )
 
-class FakeRegistry:
-    def execute(
+        if raw is None:
+            return TaskStatus.PENDING
+
+        return TaskStatus(raw.decode("utf-8"))
+
+    def get_result(
         self,
-        *,
-        logical_task_name: str,
-        tenant_id: str,
-        run_id: str,
-        payload: bytes,
-    ) -> bytes:
-        return b"OK"
+        handle: TaskHandle,
+    ) -> Optional[TaskResult]:
+        if handle.tenant_id is None:
+            return None
 
+        raw = self._kv_store.get(
+            tenant_id=handle.tenant_id,
+            key=self._result_key(handle.task_id),
+        )
 
-class _TestWorker(BrokerWorkerBase):
-    def start(self) -> None:
-        raise NotImplementedError
+        if raw is None:
+            return None
 
+        decoded = raw.decode("utf-8")
 
-def test_broker_worker_base_transitions_to_succeeded() -> None:
-    kv = InMemoryKVStore()
-    registry = FakeRegistry()
+        # Expected format:
+        # status|attempts|error|base64_output
+        parts = decoded.split("|", 3)
 
-    worker = _TestWorker(
-        registry=registry,
-        kv_store=kv,
-        idempotency_store=None,
-    )
+        status = TaskStatus(parts[0])
+        attempts = int(parts[1])
 
-    encoded_payload = base64.b64encode(b"input").decode("ascii")
+        error_message: Optional[str] = None
+        if len(parts) >= 3 and parts[2]:
+            error_message = parts[2]
 
-    message = {
-        "task_id": "t1",
-        "tenant_id": "tenant-A",
-        "run_id": "run-1",
-        "task_name": "dummy",
-        "payload": encoded_payload,
-        "idempotency_key": None,
-    }
+        output: Optional[bytes] = None
+        if len(parts) == 4 and parts[3]:
+            try:
+                output = base64.b64decode(parts[3].encode("ascii"))
+            except Exception:
+                # Defensive fallback: treat invalid base64 as no output
+                output = None
 
-    raw = json.dumps(message).encode("utf-8")
-
-    worker.process_message(raw_payload=raw)
-
-    status_bytes = kv.get("tenant-A", "task:t1:status")
-    assert status_bytes == TaskStatus.SUCCEEDED.value.encode("utf-8")
-
-    result_bytes = kv.get("tenant-A", "task:t1:result")
-    assert result_bytes is not None
-
-    decoded = result_bytes.decode("utf-8")
-    parts = decoded.split("|", 3)
-
-    assert parts[0] == TaskStatus.SUCCEEDED.value
-    assert parts[1] == "1"
-    assert parts[2] == ""
-
-    output_decoded = base64.b64decode(parts[3].encode("ascii"))
-    assert output_decoded == b"OK"
+        return TaskResult(
+            status=status,
+            output=output,
+            error_message=error_message,
+            attempts=attempts,
+        )

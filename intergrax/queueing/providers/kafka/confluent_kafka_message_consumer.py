@@ -28,7 +28,7 @@ class ConfluentKafkaMessageConsumer(MessageConsumer):
         bootstrap_servers: str,
         group_id: str,
         topic: str,
-        extra_config: Optional[Dict[str, str]] = None,
+        extra_config: Optional[Dict[str, str]] = None,        
     ) -> None:
         config: Dict[str, str] = {
             "bootstrap.servers": bootstrap_servers,
@@ -36,6 +36,8 @@ class ConfluentKafkaMessageConsumer(MessageConsumer):
             "auto.offset.reset": "earliest",
             "enable.auto.commit": "true",
         }
+
+        config["auto.offset.reset"] = "earliest"
 
         if extra_config:
             config.update(extra_config)
@@ -45,16 +47,19 @@ class ConfluentKafkaMessageConsumer(MessageConsumer):
 
         self._consumer.subscribe([self._topic])
 
-    def poll(self) -> Optional[bytes]:
+    def poll(self, *, timeout_seconds: float) -> Optional[bytes]:
         """
         Retrieve next message payload from Kafka.
+
+        Args:
+            timeout_seconds: Maximum time to wait for a message.
 
         Returns:
             - bytes payload if message available
             - None if no message available
         """
 
-        msg = self._consumer.poll(timeout=1.0)
+        msg = self._consumer.poll(timeout=timeout_seconds)
 
         if msg is None:
             return None
