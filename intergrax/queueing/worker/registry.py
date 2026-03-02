@@ -4,6 +4,9 @@
 
 from typing import Callable, Dict
 
+from pydantic import BaseModel
+from intergrax.tools.execution_models import ToolExecutionResult
+
 
 class TaskExecutionRegistry:
     """
@@ -13,12 +16,12 @@ class TaskExecutionRegistry:
     """
 
     def __init__(self) -> None:
-        self._handlers: Dict[str, Callable[..., bytes]] = {}
+        self._handlers: Dict[str, Callable[..., ToolExecutionResult[BaseModel]]] = {}
 
     def register(
         self,
         task_name: str,
-        handler: Callable[..., bytes],
+        handler: Callable[..., ToolExecutionResult[BaseModel]],
     ) -> None:
         if task_name in self._handlers:
             raise ValueError(
@@ -30,7 +33,7 @@ class TaskExecutionRegistry:
     def get_handler(
         self,
         task_name: str,
-    ) -> Callable[..., bytes]:
+    ) -> Callable[..., ToolExecutionResult[BaseModel]]:
         if task_name not in self._handlers:
             raise ValueError(
                 f"Task '{task_name}' is not registered."

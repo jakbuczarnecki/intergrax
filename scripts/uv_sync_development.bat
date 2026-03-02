@@ -24,6 +24,6 @@ if not exist .venv\Scripts\python.exe (
 
 REM --- Sync dev extras ---
 echo [INFO] Syncing dev dependencies...
-uv sync --extra dev --extra distributed --extra queueing
+uv sync --extra dev
 
 exit /b %ERRORLEVEL%

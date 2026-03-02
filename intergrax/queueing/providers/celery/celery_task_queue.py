@@ -53,6 +53,7 @@ class CeleryTaskQueue(TaskQueue):
         return TaskHandle(
             task_id=result.id,
             provider="celery",
+            tenant_id=request.tenant_id,
         )
 
 
