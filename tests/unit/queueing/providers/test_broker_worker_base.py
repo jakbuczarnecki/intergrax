@@ -7,9 +7,13 @@ import base64
 import pytest
 from typing import Optional
 
+from pydantic import BaseModel
+
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.contracts.task_queue import TaskStatus
 from intergrax.queueing.providers.broker_worker_base import BrokerWorkerBase
+from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.tools.execution_models import ToolExecutionResult
 
 
 pytestmark = pytest.mark.unit
@@ -51,16 +55,8 @@ class InMemoryKVStore(DistributedKVStore):
         return True
 
 
-class FakeRegistry:
-    def execute(
-        self,
-        *,
-        logical_task_name: str,
-        tenant_id: str,
-        run_id: str,
-        payload: bytes,
-    ) -> bytes:
-        return b"OK"
+class DummyOutput(BaseModel):
+    value: str
 
 
 class _TestWorker(BrokerWorkerBase):
@@ -70,7 +66,22 @@ class _TestWorker(BrokerWorkerBase):
 
 def test_broker_worker_base_transitions_to_succeeded() -> None:
     kv = InMemoryKVStore()
-    registry = FakeRegistry()
+    registry = TaskExecutionRegistry()
+
+    def handler(
+        *,
+        tenant_id: str,
+        run_id: str,
+        payload: bytes,
+        idempotency_key,
+    ) -> ToolExecutionResult[DummyOutput]:
+        return ToolExecutionResult(
+            success=True,
+            output=DummyOutput(value="OK"),
+            error=None,
+        )
+
+    registry.register("dummy", handler)
 
     worker = _TestWorker(
         registry=registry,
@@ -107,4 +118,4 @@ def test_broker_worker_base_transitions_to_succeeded() -> None:
     assert parts[2] == ""
 
     output_decoded = base64.b64decode(parts[3].encode("ascii"))
-    assert output_decoded == b"OK"
+    assert output_decoded == b'{"value":"OK"}'

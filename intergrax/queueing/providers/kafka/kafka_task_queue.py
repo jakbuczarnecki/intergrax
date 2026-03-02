@@ -4,9 +4,9 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import uuid
-from typing import Any
 
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.contracts.message_producer import MessageProducer
@@ -50,12 +50,21 @@ class KafkaTaskQueue(BrokerBackedTaskQueueBase):
     ) -> TaskHandle:
         task_id: str = str(uuid.uuid4())
 
+        # Explicitly initialize task state
+        self._kv_store.set(
+            tenant_id=request.tenant_id,
+            key=self._status_key(task_id),
+            value=b"PENDING",
+        )
+
+        encoded_payload: str = base64.b64encode(request.payload).decode("ascii")
+
         message = {
             "task_id": task_id,
             "tenant_id": request.tenant_id,
             "run_id": request.run_id,
             "task_name": request.task_name,
-            "payload": request.payload,
+            "payload": encoded_payload,
             "idempotency_key": request.idempotency_key,
         }
 

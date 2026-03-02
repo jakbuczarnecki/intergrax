@@ -12,7 +12,7 @@ from intergrax.queueing.contracts.task_queue import (
     TaskResult,
     TaskStatus,
 )
-from intergrax.queueing.providers.celery_task_queue import CeleryTaskQueue
+from intergrax.queueing.providers.celery.celery_task_queue import CeleryTaskQueue
 
 pytestmark = pytest.mark.unit
 

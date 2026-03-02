@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from pydantic import BaseModel
 import pytest
 from celery import Celery
 from celery.exceptions import Retry
@@ -12,12 +13,23 @@ from intergrax.queueing.worker.dispatcher import register_dispatcher_task
 from intergrax.queueing.worker.execution import RetryableHandlerError
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_policy import RetryPolicy
+from intergrax.tools.execution_models import ToolExecutionResult
 
 pytestmark = pytest.mark.unit
 
+class _DummyOutput(BaseModel):
+    value: str
+
+
 class FakeRegistry(TaskExecutionRegistry):
     def get_handler(self, logical_task_name: str):
-        def handler(*, tenant_id: str, run_id: str, payload: bytes, idempotency_key):
+        def handler(
+            *,
+            tenant_id: str,
+            run_id: str,
+            payload: bytes,
+            idempotency_key,
+        ) -> ToolExecutionResult[_DummyOutput]:
             raise RetryableHandlerError("transient failure")
 
         return handler

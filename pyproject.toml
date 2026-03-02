@@ -100,16 +100,10 @@ dev = [
   "pytest-asyncio>=0.23,<0.24",
   "ruff",
   "pyright",
-]
-
-distributed = [
   "redis>=5.0",
-]
-
-queueing = [
   "celery>=5.3",
+  "confluent-kafka>=2.3.0",
 ]
-
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
