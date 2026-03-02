@@ -11,6 +11,8 @@ into the TaskQueueProviderRegistry.
 It is the only place where registry and concrete providers are coupled.
 """
 
+from intergrax.queueing.providers.kafka.kafka_task_queue import KafkaTaskQueue
+from intergrax.queueing.providers.rabbitmq.rabbitmq_task_queue import RabbitMQTaskQueue
 from intergrax.queueing.registry import TaskQueueProviderRegistry
 
 
@@ -22,6 +24,5 @@ def bootstrap_default_providers(
 
     This function must be called during application composition phase.
     """
-    # No default providers yet.
-    # Concrete providers (e.g. Celery) will be registered here.
-    return
+    registry.register("kafka", KafkaTaskQueue)
+    registry.register("rabbitmq", RabbitMQTaskQueue)
