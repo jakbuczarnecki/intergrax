@@ -47,6 +47,7 @@ class TaskHandle:
 
     task_id: str
     provider: str
+    tenant_id: Optional[str] = None
 
 
 @dataclass(frozen=True)
