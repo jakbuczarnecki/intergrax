@@ -8,17 +8,18 @@ from typing import Optional
 
 import pika
 from pika.adapters.blocking_connection import BlockingChannel
-from intergrax.queueing.contracts.message_producer import MessageProducer
+
+from intergrax.queueing.contracts.message_consumer import MessageConsumer
 
 
-class RabbitMQMessageProducer(MessageProducer):
+class RabbitMQMessageConsumer(MessageConsumer):
     """
-    Production-grade RabbitMQ MessageProducer implementation
+    Production-grade RabbitMQ MessageConsumer implementation
     based on pika.
 
     This adapter:
     - isolates vendor API
-    - publishes raw bytes only
+    - returns raw bytes only
     - does not expose pika types outside
     """
 
@@ -28,6 +29,7 @@ class RabbitMQMessageProducer(MessageProducer):
         host: str,
         port: int = 5672,
         virtual_host: str = "/",
+        queue: str,
         username: Optional[str] = None,
         password: Optional[str] = None,
     ) -> None:
@@ -48,33 +50,28 @@ class RabbitMQMessageProducer(MessageProducer):
                 virtual_host=virtual_host,
                 credentials=credentials,
             )
+
         self._connection: pika.BlockingConnection = pika.BlockingConnection(parameters)
         self._channel: BlockingChannel = self._connection.channel()
-        self._channel.confirm_delivery()
 
-    def publish(
-        self,
-        topic: str,
-        payload: bytes,
-    ) -> None:
+        self._queue: str = queue
+
+        # Ensure queue exists (idempotent declaration)
+        self._channel.queue_declare(queue=self._queue, durable=True)
+
+    def poll(self, *, timeout_seconds: float) -> Optional[bytes]:
         """
-        Publish raw bytes payload to a given queue
-        with publisher confirm (deterministic).
+        Poll RabbitMQ queue for a single message.
+
+        Uses basic_get (non-streaming pull model).
         """
 
-        # Ensure queue exists and is durable
-        self._channel.queue_declare(queue=topic, durable=True)
+        method_frame, properties, body = self._channel.basic_get(
+            queue=self._queue,
+            auto_ack=True,
+        )
 
-        try:
-            self._channel.basic_publish(
-                exchange="",
-                routing_key=topic,
-                body=payload,
-                properties=pika.BasicProperties(
-                    delivery_mode=2
-                ),
-            )
-        except Exception as exc:
-            raise RuntimeError(
-                "RabbitMQ producer failed to confirm message delivery"
-            ) from exc
+        if method_frame is None:
+            return None
+
+        return body
