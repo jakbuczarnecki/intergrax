@@ -47,6 +47,7 @@ class QdrantConfig:
 
     collection_name: str
     tenant_id: str
+    batch_size: int = 256
     metric: Metric = "cosine"
 
     qdrant_url: Optional[str] = None
@@ -135,6 +136,7 @@ class QdrantVectorStore(BaseVectorStore):
         ]
         self._client.upsert(collection_name=self.collection_name, points=points)
 
+
     def add_documents(
         self,
         documents: Sequence[Document],
@@ -145,8 +147,7 @@ class QdrantVectorStore(BaseVectorStore):
         if len(documents) == 0:
             return
 
-        batch_size = 256
-
+        
         X = self._to_list_of_lists(embeddings)
         if len(X) != len(documents):
             raise ValueError("Number of documents must match number of embeddings")
@@ -161,8 +162,8 @@ class QdrantVectorStore(BaseVectorStore):
             raise ValueError("Embeddings appear empty/corrupt; cannot infer dimension.")
         self._dim = self._dim or first_dim
 
-        for start in range(0, n, batch_size):
-            end = min(start + batch_size, n)
+        for start in range(0, n, self.cfg.batch_size):
+            end = min(start + self.cfg.batch_size, n)
             ids_batch = ids_list[start:end]
             embeddings_batch = X[start:end]
             self._ensure_dim_consistency(embeddings_batch)
@@ -234,55 +235,32 @@ class QdrantVectorStore(BaseVectorStore):
         return hits
 
 
-    def delete(
-        self,
-        *,
-        ids: Optional[Sequence[str]] = None,
-        metadata_filter: Optional[MetadataFilter] = None,
-    ) -> None:
-        if ids:
-            self._client.delete(
-                collection_name=self.collection_name,
-                points_selector=list(ids),
-            )
+    def delete(self, ids: Sequence[str]) -> None:
+        if not ids:
             return
-
-        if metadata_filter:
-            effective_where: Dict[str, Any] = dict(metadata_filter)
-            existing = effective_where.get("tenant_id")
-            if existing is not None and existing != self.cfg.tenant_id:
-                raise ValueError(
-                    f"Delete tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{existing}'."
+        self._ensure_qdrant_collection()
+        try:
+            if PointIdsList is not None:
+                self._client.delete(
+                    collection_name=self.collection_name,
+                    points_selector=PointIdsList(points=list(ids)),
                 )
-            effective_where["tenant_id"] = self.cfg.tenant_id
-
-            qfilter = self._qdrant_filter(effective_where)
-
+            else:
+                self._client.delete(
+                    self.collection_name,
+                    points_selector={"points": list(ids)},
+                )
+        except TypeError:
             self._client.delete(
-                collection_name=self.collection_name,
-                points_selector=qfilter,
+                self.collection_name,
+                points_selector={"points": list(ids)},
             )
 
 
-    def count(
-        self,
-        *,
-        metadata_filter: Optional[MetadataFilter] = None,
-    ) -> int:
-        effective_where: Dict[str, Any] = dict(metadata_filter or {})
-        existing = effective_where.get("tenant_id")
-        if existing is not None and existing != self.cfg.tenant_id:
-            raise ValueError(
-                f"Count tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{existing}'."
-            )
-        effective_where["tenant_id"] = self.cfg.tenant_id
-
-        qfilter = self._qdrant_filter(effective_where)
-
-        result = self._client.count(
-            collection_name=self.collection_name,
-            count_filter=qfilter,
-            exact=True,
-        )
-
-        return int(result.count)
+    def count(self) -> int:
+        self._ensure_qdrant_collection()
+        c = self._client.count(self.collection_name, exact=True)
+        try:
+            return int(c.count)
+        except Exception:
+            return int(getattr(c, "count", 0))

@@ -32,6 +32,7 @@ class ChromaConfig:
     tenant_id: str
     persist_directory: Optional[str] = None
     settings: Optional[ChromaSettings] = None
+    batch_size: int = 256
     
 
 class ChromaVectorStore(BaseVectorStore):
@@ -91,45 +92,6 @@ class ChromaVectorStore(BaseVectorStore):
             )
 
 
-    def _to_list_of_lists(
-        self, embeddings: Union[NDArray[np.float32], Sequence[Sequence[float]]]
-    ) -> List[List[float]]:
-        if isinstance(embeddings, np.ndarray):
-            if embeddings.ndim != 2:
-                raise ValueError("Embeddings numpy array must be 2D [N, D]")
-            return embeddings.astype(np.float32).tolist()
-        return [list(map(float, row)) for row in embeddings]
-
-
-    def _doc_texts(self, docs: Sequence[Document]) -> List[str]:
-        return [d.page_content or "" for d in docs]
-
-
-    def _doc_payloads(
-        self, docs: Sequence[Document], *, base: Optional[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
-        out: List[Dict[str, Any]] = []
-        for d in docs:
-            meta = dict(base or {})
-            if d.metadata:
-                meta.update(d.metadata)
-            out.append(meta)
-        return out
-
-
-    def _make_ids(self, n: int) -> List[str]:
-        return [uuid.uuid4().hex for _ in range(n)]
-
-
-    def _ensure_dim_consistency(self, batch: Sequence[Sequence[float]]) -> None:
-        if self._dim is None:
-            return
-        for v in batch:
-            if len(v) != self._dim:
-                raise ValueError(
-                    f"Embedding dimension mismatch. expected={self._dim}, got={len(v)}"
-                )
-
     def add_documents(
         self,
         documents: Sequence[Document],
@@ -159,12 +121,10 @@ class ChromaVectorStore(BaseVectorStore):
                 "Embeddings appear empty/corrupt; cannot infer dimension."
             )
 
-        self._dim = self._dim or first_dim
+        self._dim = self._dim or first_dim        
 
-        batch_size = 256
-
-        for start in range(0, n, batch_size):
-            end = min(start + batch_size, n)
+        for start in range(0, n, self.cfg.batch_size):
+            end = min(start + self.cfg.batch_size, n)
 
             ids_batch = ids_list[start:end]
             embeddings_batch = X[start:end]
