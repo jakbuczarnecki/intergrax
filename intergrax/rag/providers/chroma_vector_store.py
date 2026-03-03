@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Literal, Optional, Sequence, Union
 import uuid
 
 import chromadb
@@ -33,6 +33,11 @@ class ChromaConfig:
     persist_directory: Optional[str] = None
     settings: Optional[ChromaSettings] = None
     batch_size: int = 256
+    metric: Literal["cosine", "l2"] = "cosine"
+
+    mode: Literal["embedded", "http"] = "embedded"
+    http_host: str = "localhost"
+    http_port: int = 8000
     
 
 class ChromaVectorStore(BaseVectorStore):
@@ -54,19 +59,30 @@ class ChromaVectorStore(BaseVectorStore):
     def _init_chroma(self) -> None:
         settings = self.cfg.settings or ChromaSettings()
 
-        persist_dir = self.cfg.persist_directory
-        if persist_dir:
-            os.makedirs(persist_dir, exist_ok=True)
-            self._client = chromadb.PersistentClient(
-                path=persist_dir,
-                settings=settings,
+        if self.cfg.mode == "http":
+            self._client = chromadb.HttpClient(
+                host=self.cfg.http_host,
+                port=self.cfg.http_port,
             )
         else:
-            self._client = chromadb.Client(settings=settings)
+            persist_dir = self.cfg.persist_directory
+            if persist_dir:
+                os.makedirs(persist_dir, exist_ok=True)
+                self._client = chromadb.PersistentClient(
+                    path=persist_dir,
+                    settings=settings,
+                )
+            else:
+                self._client = chromadb.Client(settings=settings)
+
+        space = "cosine" if self.cfg.metric == "cosine" else "l2"
 
         self._collection = self._client.get_or_create_collection(
             name=self.collection_name,
-            metadata={"description": "Document embeddings for intergrax system"},
+            metadata={
+                "description": "Document embeddings for intergrax system",
+                "hnsw:space": space,
+            },
         )
 
     def _upsert_chroma(
@@ -177,10 +193,12 @@ class ChromaVectorStore(BaseVectorStore):
         )
 
         distances = res.get("distances", [])
+
         if self.cfg.metric == "cosine":
             scores = [[1.0 - float(d) for d in row] for row in distances]
         else:
-            scores = distances
+            # L2 normalization
+            scores = [[1.0 / (1.0 + float(d)) for d in row] for row in distances]        
 
         ids_out = res.get("ids", [[]])
         metadatas_out = res.get("metadatas", [[]])

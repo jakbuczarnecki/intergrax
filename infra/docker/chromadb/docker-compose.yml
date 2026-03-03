@@ -6,6 +6,8 @@ services:
       - "8000:8000"
     environment:
       - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=False
+      - CHROMA_TELEMETRY_ENABLED=false
     volumes:
       - chroma_data:/chroma
     restart: unless-stopped

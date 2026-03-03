@@ -44,7 +44,7 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
 
   qdrant:
-    image: qdrant/qdrant:v1.7.4
+    image: qdrant/qdrant:v1.16.2
     container_name: intergrax-qdrant
     ports:
       - "6333:6333"
@@ -53,12 +53,14 @@ services:
     restart: unless-stopped
 
   chroma:
-    image: chromadb/chroma:0.5.0
+    image: chromadb/chroma:1.4.1
     container_name: intergrax-chroma
     ports:
-      - "8000:8000"
+      - "8000:8000"    
     environment:
       - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=False
+      - CHROMA_TELEMETRY_ENABLED=false
     volumes:
       - chroma_data:/chroma
     restart: unless-stopped

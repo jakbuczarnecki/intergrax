@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence
+import uuid
 
 from langchain_core.documents import Document
 
@@ -88,8 +89,16 @@ class QdrantVectorStore(BaseVectorStore):
             )
 
     def _ensure_qdrant_collection(self) -> None:
-        assert self._client is not None, "Qdrant client is not initialized"
-        assert self._dim is not None, "Embedding dim unknown; cannot create Qdrant collection."
+        assert self._client is not None
+
+        try:
+            self._client.get_collection(self.collection_name)
+            return
+        except Exception:
+            pass
+
+        if self._dim is None:
+            return
 
         metric_map = {
             "cosine": Distance.COSINE,
@@ -98,15 +107,10 @@ class QdrantVectorStore(BaseVectorStore):
         }
         dist = metric_map.get(self.cfg.metric, Distance.COSINE)
 
-        try:
-            # If the collection does not exist, get_collection will raise
-            self._client.get_collection(self.collection_name)
-        except Exception:
-            # Create only if it does not exist (no destructive recreate)
-            self._client.create_collection(
-                collection_name=self.collection_name,
-                vectors_config=VectorParams(size=self._dim, distance=dist),
-            )
+        self._client.create_collection(
+            collection_name=self.collection_name,
+            vectors_config=VectorParams(size=self._dim, distance=dist),
+        )
 
     def _qdrant_filter(self, where: Optional[Dict[str, Any]]) -> Optional[QFilter]:  # type: ignore
         """Lightweight helper: simple dict -> Filter(must=[FieldCondition(...)])."""
@@ -153,7 +157,7 @@ class QdrantVectorStore(BaseVectorStore):
             raise ValueError("Number of documents must match number of embeddings")
 
         n = len(documents)
-        ids_list = list(ids) if ids else self._make_ids(n)
+        ids_list = list(ids) if ids else [str(uuid.uuid4()) for _ in range(n)]
         if len(ids_list) != n:
             raise ValueError("Length of `ids` must match number of documents")
 
@@ -202,7 +206,11 @@ class QdrantVectorStore(BaseVectorStore):
         vector = list(map(float, query_embedding))
 
         # Enforce tenant filter (exact logic from manager)
-        effective_where: Dict[str, Any] = dict(metadata_filter or {})
+        effective_where: Dict[str, Any] = (
+            dict(metadata_filter.conditions)
+            if metadata_filter is not None
+            else {}
+        )
         existing = effective_where.get("tenant_id")
         if existing is not None and existing != self.cfg.tenant_id:
             raise ValueError(
@@ -211,24 +219,32 @@ class QdrantVectorStore(BaseVectorStore):
         effective_where["tenant_id"] = self.cfg.tenant_id
 
         qfilter = self._qdrant_filter(effective_where)
-
-        results = self._client.search(
-            collection_name=self.collection_name,
-            query_vector=vector,
-            query_filter=qfilter,
-            limit=top_k,
-        )
+        try:
+            results = self._client.query_points(
+                collection_name=self.collection_name,
+                query=vector,
+                query_filter=qfilter,
+                limit=top_k,
+                with_payload=True,
+                with_vectors=include_embeddings,
+            )
+        except Exception:            
+            return []
 
         hits: List[VectorStoreHit] = []
-        for r in results:
-            payload = dict(r.payload or {})
-            text = payload.pop("text", "")
+
+        for rank, r in enumerate(results.points):
+            payload = r.payload or {}
+            text = payload.get("text", "")
+
             hits.append(
                 VectorStoreHit(
                     id=str(r.id),
-                    score=float(r.score),
+                    content=text,
                     metadata=payload,
-                    document=text,
+                    similarity_score=float(r.score),
+                    rank=rank,
+                    embedding=list(r.vector) if include_embeddings else None,
                 )
             )
 
@@ -258,9 +274,9 @@ class QdrantVectorStore(BaseVectorStore):
 
 
     def count(self) -> int:
-        self._ensure_qdrant_collection()
-        c = self._client.count(self.collection_name, exact=True)
         try:
-            return int(c.count)
-        except Exception:
+            self._ensure_qdrant_collection()
+            c = self._client.count(self.collection_name, exact=True)
             return int(getattr(c, "count", 0))
+        except Exception:            
+            return 0

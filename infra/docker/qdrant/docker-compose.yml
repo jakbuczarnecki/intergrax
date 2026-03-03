@@ -1,6 +1,6 @@
 services:
   qdrant:
-    image: qdrant/qdrant:v1.7.4
+    image: qdrant/qdrant:v1.16.2
     container_name: intergrax-qdrant
     ports:
       - "6333:6333"
