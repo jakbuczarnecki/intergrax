@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import os
 from typing import Any, Dict, List, Optional, Sequence, Union
 import uuid
@@ -14,17 +15,32 @@ from langchain_core.documents import Document
 import numpy as np
 from numpy.typing import NDArray
 
-from intergrax.rag.contracts.vector_store import MetadataFilter, VectorStore, VectorStoreHit
-from intergrax.rag.vectorstore_manager import VSConfig
+from intergrax.rag.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.providers.base_vector_store import BaseVectorStore
 
 
-class ChromaVectorStore(VectorStore):
+@dataclass(frozen=True)
+class ChromaConfig:
+    """
+    Configuration model for Chroma vector store provider.
+
+    The provider is responsible for creating and managing
+    the Chroma client instance based on this configuration.
+    """
+
+    collection_name: str
+    tenant_id: str
+    persist_directory: Optional[str] = None
+    settings: Optional[ChromaSettings] = None
+    
+
+class ChromaVectorStore(BaseVectorStore):
     """
     Literal extraction of Chroma initialization logic from VectorstoreManager.
     No behavioral changes.
     """
 
-    def __init__(self, cfg: VSConfig) -> None:
+    def __init__(self, cfg: ChromaConfig) -> None:
         self.cfg = cfg
         self.collection_name = f"{cfg.collection_name}__tenant__{cfg.tenant_id}"
 
@@ -35,9 +51,9 @@ class ChromaVectorStore(VectorStore):
         self._init_chroma()
 
     def _init_chroma(self) -> None:
-        settings = self.cfg.chroma_settings or ChromaSettings()
+        settings = self.cfg.settings or ChromaSettings()
 
-        persist_dir = self.cfg.chroma_persist_directory
+        persist_dir = self.cfg.persist_directory
         if persist_dir:
             os.makedirs(persist_dir, exist_ok=True)
             self._client = chromadb.PersistentClient(

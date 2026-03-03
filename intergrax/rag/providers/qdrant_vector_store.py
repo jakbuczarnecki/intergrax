@@ -1,0 +1,288 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Sequence
+
+from langchain_core.documents import Document
+
+from intergrax.rag.config.vector_config import Metric
+from intergrax.rag.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.providers.base_vector_store import BaseVectorStore
+
+try:
+    from qdrant_client import QdrantClient
+    from qdrant_client.http.models import (
+        Distance,
+        VectorParams,
+        PointStruct,
+        Filter as QFilter,
+        FieldCondition,
+        MatchValue,
+        PointIdsList,
+    )
+except ImportError:
+    QdrantClient = None  # type: ignore
+    Distance = None      # type: ignore
+    VectorParams = None  # type: ignore
+    PointStruct = None   # type: ignore
+    QFilter = None       # type: ignore
+    FieldCondition = None # type: ignore
+    MatchValue = None    # type: ignore
+    PointIdsList = None  # type: ignore
+
+
+
+@dataclass(frozen=True)
+class QdrantConfig:
+    """
+    Configuration model for Qdrant vector store provider.
+
+    The provider is responsible for creating and managing
+    the Qdrant client instance based on this configuration.
+    """
+
+    collection_name: str
+    tenant_id: str
+    metric: Metric = "cosine"
+
+    qdrant_url: Optional[str] = None
+    qdrant_api_key: Optional[str] = None
+
+
+
+class QdrantVectorStore(BaseVectorStore):
+    """
+    Literal extraction of Qdrant initialization logic from VectorstoreManager.
+    No behavioral changes.
+    """
+
+    def __init__(self, cfg: QdrantConfig) -> None:
+        self.cfg = cfg
+        self.collection_name = f"{cfg.collection_name}__tenant__{cfg.tenant_id}"
+
+        self._client = None
+        self._dim: Optional[int] = None
+
+        self._init_qdrant()
+
+    def _init_qdrant(self) -> None:
+        if QdrantClient is None:
+            raise ImportError("qdrant-client is not installed. `pip install qdrant-client`")
+
+        if self.cfg.qdrant_url:
+            self._client = QdrantClient(
+                url=self.cfg.qdrant_url,
+                api_key=self.cfg.qdrant_api_key,
+            )
+        else:
+            # Local default
+            self._client = QdrantClient(
+                host="localhost",
+                port=6333,
+                api_key=self.cfg.qdrant_api_key,
+            )
+
+    def _ensure_qdrant_collection(self) -> None:
+        assert self._client is not None, "Qdrant client is not initialized"
+        assert self._dim is not None, "Embedding dim unknown; cannot create Qdrant collection."
+
+        metric_map = {
+            "cosine": Distance.COSINE,
+            "dot": Distance.DOT,
+            "euclidean": Distance.EUCLID,
+        }
+        dist = metric_map.get(self.cfg.metric, Distance.COSINE)
+
+        try:
+            # If the collection does not exist, get_collection will raise
+            self._client.get_collection(self.collection_name)
+        except Exception:
+            # Create only if it does not exist (no destructive recreate)
+            self._client.create_collection(
+                collection_name=self.collection_name,
+                vectors_config=VectorParams(size=self._dim, distance=dist),
+            )
+
+    def _qdrant_filter(self, where: Optional[Dict[str, Any]]) -> Optional[QFilter]:  # type: ignore
+        """Lightweight helper: simple dict -> Filter(must=[FieldCondition(...)])."""
+        if not where or QFilter is None:
+            return None
+        must: List[Dict[str, Any]] = []
+        for k, v in where.items():
+            # simple equality
+            must.append({"key": k, "match": {"value": v}})
+        return QFilter(**{"must": must})
+    
+
+    def _upsert_qdrant(
+        self,
+        ids: Sequence[str],
+        embeddings: Sequence[Sequence[float]],
+        metadatas: Sequence[Dict[str, Any]],
+    ) -> None:
+        self._ensure_qdrant_collection()
+        points = [
+            PointStruct(
+                id=ids[i],
+                vector=list(map(float, embeddings[i])),
+                payload=metadatas[i],
+            )
+            for i in range(len(ids))
+        ]
+        self._client.upsert(collection_name=self.collection_name, points=points)
+
+    def add_documents(
+        self,
+        documents: Sequence[Document],
+        embeddings: Sequence[Sequence[float]],
+        *,
+        ids: Optional[Sequence[str]] = None,
+    ) -> None:
+        if len(documents) == 0:
+            return
+
+        batch_size = 256
+
+        X = self._to_list_of_lists(embeddings)
+        if len(X) != len(documents):
+            raise ValueError("Number of documents must match number of embeddings")
+
+        n = len(documents)
+        ids_list = list(ids) if ids else self._make_ids(n)
+        if len(ids_list) != n:
+            raise ValueError("Length of `ids` must match number of documents")
+
+        first_dim = len(X[0]) if X and X[0] else None
+        if first_dim is None:
+            raise ValueError("Embeddings appear empty/corrupt; cannot infer dimension.")
+        self._dim = self._dim or first_dim
+
+        for start in range(0, n, batch_size):
+            end = min(start + batch_size, n)
+            ids_batch = ids_list[start:end]
+            embeddings_batch = X[start:end]
+            self._ensure_dim_consistency(embeddings_batch)
+
+            docs_batch = documents[start:end]
+            metas_batch = self._doc_payloads(docs_batch, base=None)
+
+            # Tenant metadata enforcement
+            for i in range(len(metas_batch)):
+                existing = metas_batch[i].get("tenant_id")
+                if existing is not None and existing != self.cfg.tenant_id:
+                    raise ValueError(
+                        f"Metadata tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{existing}'."
+                    )
+                metas_batch[i]["tenant_id"] = self.cfg.tenant_id
+
+            # Store raw text inside metadata (Qdrant branch behavior)
+            for i, d in enumerate(docs_batch):
+                metas_batch[i] = dict(metas_batch[i], text=d.page_content or "")
+
+            self._upsert_qdrant(ids_batch, embeddings_batch, metas_batch)
+    
+
+    def query(
+        self,
+        query_embedding: Sequence[float],
+        *,
+        top_k: int,
+        metadata_filter: Optional[MetadataFilter] = None,
+        include_embeddings: bool = False,
+    ) -> List[VectorStoreHit]:
+        if QFilter is None:
+            raise RuntimeError("Qdrant client is not available.")
+
+        # Convert embedding to float list (exactly as in manager)
+        vector = list(map(float, query_embedding))
+
+        # Enforce tenant filter (exact logic from manager)
+        effective_where: Dict[str, Any] = dict(metadata_filter or {})
+        existing = effective_where.get("tenant_id")
+        if existing is not None and existing != self.cfg.tenant_id:
+            raise ValueError(
+                f"Query tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{existing}'."
+            )
+        effective_where["tenant_id"] = self.cfg.tenant_id
+
+        qfilter = self._qdrant_filter(effective_where)
+
+        results = self._client.search(
+            collection_name=self.collection_name,
+            query_vector=vector,
+            query_filter=qfilter,
+            limit=top_k,
+        )
+
+        hits: List[VectorStoreHit] = []
+        for r in results:
+            payload = dict(r.payload or {})
+            text = payload.pop("text", "")
+            hits.append(
+                VectorStoreHit(
+                    id=str(r.id),
+                    score=float(r.score),
+                    metadata=payload,
+                    document=text,
+                )
+            )
+
+        return hits
+
+
+    def delete(
+        self,
+        *,
+        ids: Optional[Sequence[str]] = None,
+        metadata_filter: Optional[MetadataFilter] = None,
+    ) -> None:
+        if ids:
+            self._client.delete(
+                collection_name=self.collection_name,
+                points_selector=list(ids),
+            )
+            return
+
+        if metadata_filter:
+            effective_where: Dict[str, Any] = dict(metadata_filter)
+            existing = effective_where.get("tenant_id")
+            if existing is not None and existing != self.cfg.tenant_id:
+                raise ValueError(
+                    f"Delete tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{existing}'."
+                )
+            effective_where["tenant_id"] = self.cfg.tenant_id
+
+            qfilter = self._qdrant_filter(effective_where)
+
+            self._client.delete(
+                collection_name=self.collection_name,
+                points_selector=qfilter,
+            )
+
+
+    def count(
+        self,
+        *,
+        metadata_filter: Optional[MetadataFilter] = None,
+    ) -> int:
+        effective_where: Dict[str, Any] = dict(metadata_filter or {})
+        existing = effective_where.get("tenant_id")
+        if existing is not None and existing != self.cfg.tenant_id:
+            raise ValueError(
+                f"Count tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{existing}'."
+            )
+        effective_where["tenant_id"] = self.cfg.tenant_id
+
+        qfilter = self._qdrant_filter(effective_where)
+
+        result = self._client.count(
+            collection_name=self.collection_name,
+            count_filter=qfilter,
+            exact=True,
+        )
+
+        return int(result.count)

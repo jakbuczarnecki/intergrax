@@ -19,6 +19,7 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings
 
 from intergrax.logging import IntergraxLogging
+from intergrax.rag.config.vector_config import Metric, VectorProvider
 
 # --- Qdrant ---
 try:
@@ -47,9 +48,6 @@ try:
     from pinecone import Pinecone
 except ImportError:
     Pinecone = None  # type: ignore
-
-VectorProvider = Literal["chroma", "qdrant", "pinecone"]
-Metric = Literal["cosine", "dot", "euclidean"]
 
 
 logger = IntergraxLogging.get_logger(__name__, component="rag")
