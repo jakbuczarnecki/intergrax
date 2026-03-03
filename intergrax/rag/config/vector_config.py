@@ -7,13 +7,6 @@ from __future__ import annotations
 from typing import Literal
 
 
-VectorProvider = Literal[
-    "chroma",
-    "qdrant",
-    "pinecone",
-]
-
-
 Metric = Literal[
     "cosine",
     "dot",

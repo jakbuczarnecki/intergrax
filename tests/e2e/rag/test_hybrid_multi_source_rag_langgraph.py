@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.rag.providers.chroma_vector_store import ChromaConfig, ChromaVectorStore
+
 
 pytestmark = pytest.mark.e2e
 
@@ -29,10 +31,9 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
     from intergrax.rag.documents_loader import DocumentsLoader
     from intergrax.rag.documents_splitter import DocumentsSplitter
     from intergrax.rag.embedding_manager import EmbeddingManager
-    from intergrax.rag.vectorstore_manager import VectorstoreManager, VSConfig
+    from intergrax.rag.vectorstore_manager import VectorstoreManager
     from intergrax.rag.rag_retriever import RagRetriever
 
-    import intergrax.logging  # initializes logging
 
     # ---- Tenant / corpus configuration
     TENANT = "intergrax"
@@ -55,12 +56,15 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
         assume_ollama_dim=1536,
     )
 
-    vs_config = VSConfig(
-        provider="chroma",
+    chroma_cfg = ChromaConfig(
         collection_name="hybrid_multi_source_rag",
-        chroma_persist_directory=None,  # ephemeral (test-friendly)
+        persist_directory=None,  # ephemeral (test-friendly)
+        settings=None,
     )
-    vectorstore = VectorstoreManager(config=vs_config)
+
+    provider = ChromaVectorStore(cfg=chroma_cfg)
+
+    vectorstore = VectorstoreManager(store=provider)
 
     # ---- Load local docs via loader.load_documents ----
     pdf_docs = doc_loader.load_documents(str(pdf_dir))

@@ -24,8 +24,6 @@ except ImportError:
 class PineconeConfig:
     """
     Configuration model for Pinecone vector store provider.
-
-    Literal extraction of VSConfig subset used by Pinecone branch.
     """
 
     collection_name: str
