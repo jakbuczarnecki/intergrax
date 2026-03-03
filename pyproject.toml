@@ -44,7 +44,7 @@ dependencies = [
   # -----------------
   # RAG / Vector DBs
   # -----------------
-  "chromadb>=0.5",
+  "chromadb==1.4.1",
   "qdrant-client>=1.9",
   "pinecone>=3.0",
   "sentence-transformers>=3.0",

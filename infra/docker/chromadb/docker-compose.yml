@@ -1,0 +1,16 @@
+services:
+  chroma:
+    image: chromadb/chroma:0.5.0
+    container_name: intergrax-chroma
+    ports:
+      - "8000:8000"
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=False
+      - CHROMA_TELEMETRY_ENABLED=false
+    volumes:
+      - chroma_data:/chroma
+    restart: unless-stopped
+
+volumes:
+  chroma_data:

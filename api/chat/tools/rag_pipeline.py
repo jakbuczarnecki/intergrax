@@ -7,11 +7,11 @@ import os
 from pathlib import Path
 from typing import Dict, Optional, Tuple, List
 
-# === Twoje komponenty ===
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
+from intergrax.rag.providers.chroma_vector_store import ChromaConfig, ChromaVectorStore
 from intergrax.rag.rag_answerer import (
     RagAnswerer,
     AnswererConfig,
@@ -19,18 +19,16 @@ from intergrax.rag.rag_answerer import (
 )
 
 from intergrax.rag.rag_retriever import RagRetriever
-from intergrax.rag.vectorstore_manager import VectorstoreManager, VSConfig
+from intergrax.rag.vectorstore_manager import VectorstoreManager
 from intergrax.rag.documents_loader import DocumentsLoader
 from intergrax.rag.documents_splitter import DocumentsSplitter
 from intergrax.rag.re_ranker import ReRanker,ReRankerConfig
 from intergrax.rag.embedding_manager import EmbeddingManager
 
-# === ustawienia środowiskowe / katalogi ===
 PERSIST_DIR = os.environ.get("CHROMA_DIR", "./chroma_db")
 EMBED_MODEL = GLOBAL_SETTINGS.default_ollama_embed_model
 DEFAULT_MODEL = GLOBAL_SETTINGS.default_ollama_model
 
-# === Singletons (leniwe) ===
 _vectorstore: Optional[VectorstoreManager] = None
 _embedder: Optional[EmbeddingManager] = None
 _retriever: Optional[RagRetriever] = None
@@ -44,13 +42,13 @@ _answerers: Dict[str, RagAnswerer] = {}
 def _get_vectorstore() -> VectorstoreManager:
     global _vectorstore
     if _vectorstore is None:
-        cfg = VSConfig(
-            provider="chroma",
+        chroma_cfg = ChromaConfig(
             collection_name="intergrax_docs",
-            metric="cosine",
-            chroma_persist_directory=PERSIST_DIR,
+            persist_directory=PERSIST_DIR,
+            settings=None,
         )
-        _vectorstore = VectorstoreManager(config=cfg)
+        store = ChromaVectorStore(cfg=chroma_cfg)
+        _vectorstore = VectorstoreManager(store=store)
     return _vectorstore
 
 
