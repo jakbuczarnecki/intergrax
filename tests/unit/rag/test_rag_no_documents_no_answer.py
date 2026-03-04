@@ -15,8 +15,8 @@ from typing import Any, Dict, List, Optional
 
 import pytest
 
-from intergrax.rag.rag_answerer import RagAnswerer
-from intergrax.rag.rag_retriever import RagRetriever
+from intergrax.rag.answers.rag_answerer import RagAnswerer
+from intergrax.rag.retrievers.rag_retriever import RagRetriever
 from tests._support.builder import FakeLLMAdapter
 
 

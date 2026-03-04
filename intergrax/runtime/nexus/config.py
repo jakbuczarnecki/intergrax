@@ -7,8 +7,8 @@ from enum import Enum
 from typing import Any, Dict, FrozenSet, Optional, Literal, Sequence
 
 from intergrax.llm_adapters.llm_adapter import LLMAdapter
-from intergrax.rag.embedding_manager import EmbeddingManager
-from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.rag.embedding.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.runtime.nexus.budget.budget_models import BudgetPolicy, RunBudget
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline

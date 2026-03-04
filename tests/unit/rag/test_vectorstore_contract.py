@@ -2,7 +2,7 @@ import pytest
 from typing import List, Optional, Sequence
 from langchain_core.documents import Document
 
-from intergrax.rag.contracts.vector_store import (
+from intergrax.rag.vectorstore.contracts.vector_store import (
     VectorStore,
     VectorStoreHit,
     MetadataFilter,

@@ -10,9 +10,9 @@ import uuid
 
 from langchain_core.documents import Document
 
-from intergrax.rag.config.vector_config import Metric
-from intergrax.rag.contracts.vector_store import MetadataFilter, VectorStoreHit
-from intergrax.rag.providers.vectorstore.base_vector_store import BaseVectorStore
+from intergrax.rag.vectorstore.config.vector_config import Metric
+from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.vectorstore.providers.base_vector_store import BaseVectorStore
 
 try:
     from qdrant_client import QdrantClient

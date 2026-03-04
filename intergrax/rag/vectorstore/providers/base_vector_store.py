@@ -11,7 +11,7 @@ import numpy as np
 from numpy.typing import NDArray
 from langchain_core.documents import Document
 
-from intergrax.rag.contracts.vector_store import VectorStore
+from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
 
 
 class BaseVectorStore(VectorStore):

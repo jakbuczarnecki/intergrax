@@ -5,8 +5,8 @@
 from __future__ import annotations
 from typing import List, Dict, Optional, Any
 import numpy as np
-from intergrax.rag.embedding_manager import EmbeddingManager
-from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.rag.embedding.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 import logging
 from intergrax.logging import IntergraxLogging
 

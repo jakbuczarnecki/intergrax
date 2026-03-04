@@ -29,10 +29,10 @@ from typing import Any, Dict, List, Optional, Sequence
 from langchain_core.documents import Document
 
 from intergrax.llm.messages import AttachmentRef
-from intergrax.rag.documents_loader import DocumentsLoader
-from intergrax.rag.documents_splitter import DocumentsSplitter
-from intergrax.rag.embedding_manager import EmbeddingManager
-from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.rag.document_loaders.documents_loader import DocumentsLoader
+from intergrax.rag.document_splitters.documents_splitter import DocumentsSplitter
+from intergrax.rag.embedding.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.runtime.nexus.context.context_builder import RetrievedChunk
 from intergrax.runtime.nexus.ingestion.attachments import AttachmentResolver
 

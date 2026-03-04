@@ -4,9 +4,9 @@ from typing import List
 
 from langchain_core.documents import Document
 
-from intergrax.rag.providers.qdrant_vector_store import QdrantVectorStore, QdrantConfig
-from intergrax.rag.providers.chroma_vector_store import ChromaVectorStore, ChromaConfig
-from intergrax.rag.contracts.vector_store import MetadataFilter
+from intergrax.rag.vectorstore.providers.qdrant_vector_store import QdrantVectorStore, QdrantConfig
+from intergrax.rag.vectorstore.providers.chroma_vector_store import ChromaVectorStore, ChromaConfig
+from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 
 
 pytestmark = pytest.mark.integration

@@ -8,9 +8,9 @@ from typing import Optional, Sequence
 
 from langchain_core.documents import Document
 
-from intergrax.rag.contracts.vector_store import VectorStore
-from intergrax.rag.contracts.vector_store import MetadataFilter
-from intergrax.rag.contracts.vector_store import VectorStoreHit
+from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
+from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
+from intergrax.rag.vectorstore.contracts.vector_store import VectorStoreHit
 from intergrax.logging import IntergraxLogging
 
 logger = IntergraxLogging.get_logger(__name__, component="rag")

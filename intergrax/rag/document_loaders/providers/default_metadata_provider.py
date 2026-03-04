@@ -10,7 +10,7 @@ from typing import Sequence
 
 from langchain_core.documents import Document
 
-from intergrax.rag.contracts.metadata_provider import BaseMetadataProvider
+from intergrax.rag.document_loaders.contracts.metadata_provider import BaseMetadataProvider
 
 
 class DefaultMetadataProvider(BaseMetadataProvider):

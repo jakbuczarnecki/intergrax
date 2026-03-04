@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 from typing import TYPE_CHECKING
 
-from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.llm.messages import ChatMessage
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.config import RuntimeConfig

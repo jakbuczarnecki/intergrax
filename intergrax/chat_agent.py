@@ -15,7 +15,7 @@ from intergrax.llm_adapters.llm_adapter import LLMAdapter
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.tools.tools_agent import ToolsAgent, ToolsAgentConfig
 from intergrax.tools.tools_base import ToolRegistry
-from intergrax.rag.rag_answerer import RagAnswerer
+from intergrax.rag.answers.rag_answerer import RagAnswerer
 
 Route = Literal["rag", "tools", "general"]
 

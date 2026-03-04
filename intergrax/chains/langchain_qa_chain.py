@@ -13,8 +13,8 @@ from langchain_core.runnables import RunnableLambda, RunnableMap, RunnableSequen
 from langchain_core.output_parsers import StrOutputParser
 
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
-from intergrax.rag.rag_retriever import RagRetriever
-from intergrax.rag.re_ranker import ReRanker
+from intergrax.rag.retrievers.rag_retriever import RagRetriever
+from intergrax.rag.rerankers.re_ranker import ReRanker
 
 from operator import itemgetter
 
