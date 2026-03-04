@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import Sequence
 
 from langchain_core.documents import Document
@@ -15,58 +14,49 @@ class BaseDocumentHandler(ABC):
     """
     Contract for document format handlers used in the Intergrax RAG ingestion system.
 
-    Handlers are responsible for converting a source file into a sequence
-    of LangChain Document objects.
-
-    The handler does NOT perform orchestration, metadata enrichment,
-    chunking, or indexing.
+    Handlers convert a source URI into a sequence of LangChain Document objects.
     """
 
     @abstractmethod
-    def supports(self, source: Path) -> bool:
+    def supports(self, source: str) -> bool:
         """
-        Determine whether this handler supports the given file.
+        Determine whether this handler supports the given source.
 
         Parameters
         ----------
-        source : Path
-            Path to the source document.
+        source : str
+            Source URI (file path, HTTP URL, S3 URI, etc.).
 
         Returns
         -------
         bool
-            True if this handler can process the file.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def confidence(self, source: Path) -> float:
+    def confidence(self, source: str) -> float:
         """
-        Estimate how well this handler can process the document.
+        Estimate how well this handler can process the source.
 
         Returns
         -------
         float
             Value in range [0.0, 1.0].
-
-            0.0  → handler should not be used
-            1.0  → handler is ideal for this document
         """
         raise NotImplementedError
 
     @abstractmethod
-    def load(self, source: Path) -> Sequence[Document]:
+    def load(self, source: str) -> Sequence[Document]:
         """
-        Load a document and convert it into LangChain Document objects.
+        Load documents from the given source.
 
         Parameters
         ----------
-        source : Path
-            Path to the source document.
+        source : str
+            Source URI.
 
         Returns
         -------
         Sequence[Document]
-            Extracted documents.
         """
         raise NotImplementedError
