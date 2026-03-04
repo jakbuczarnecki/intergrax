@@ -11,6 +11,7 @@ from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
+from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_documents_loader
 from intergrax.rag.vectorstore.providers.chroma_vector_store import ChromaConfig, ChromaVectorStore
 from intergrax.rag.answers.rag_answerer import (
     RagAnswerer,
@@ -143,9 +144,7 @@ def get_answerer(model_name: Optional[str] = None) -> RagAnswerer:
 def load_and_split_documents(file_path: str):
     p = Path(file_path)
 
-    loader = DocumentsLoader(
-        # tu możesz doprecyzować tryby (np. docx_mode="paragraphs", pdf_enable_ocr=True, itd.)
-    )
+    loader = create_default_documents_loader()
 
     def _base_metadata(doc, absolute_path: Path):
         return {

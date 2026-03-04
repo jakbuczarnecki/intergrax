@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional, Sequence
 from langchain_core.documents import Document
 
 from intergrax.llm.messages import AttachmentRef
+from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_documents_loader
 from intergrax.rag.document_loaders.documents_loader import DocumentsLoader
 from intergrax.rag.document_splitters.documents_splitter import DocumentsSplitter
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
@@ -108,7 +109,7 @@ class AttachmentIngestionService:
         self._vectorstore_manager = vectorstore_manager
 
         # Use provided loader/splitter or fall back to default instances.
-        self._loader = loader or DocumentsLoader()
+        self._loader = loader or create_default_documents_loader()
         self._splitter = splitter or DocumentsSplitter(            
             default_chunk_size=1000,
             default_chunk_overlap=100,

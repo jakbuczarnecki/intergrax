@@ -27,12 +27,12 @@ class PdfSmartDocumentHandler(BaseDocumentHandler):
 
     def __init__(
         self,
-        enable_ocr: bool,
-        ocr_lang: str,
-        ocr_dpi: int,
-        ocr_psm: int,
-        ocr_oem: int,
-        ocr_max_pages: int,
+        enable_ocr: bool = False,
+        ocr_lang: str = "eng",
+        ocr_dpi: int = 200,
+        ocr_psm: int | None = None,
+        ocr_oem: int | None = None,
+        ocr_max_pages: int | None = None,   
     ) -> None:
         self._enable_ocr = enable_ocr
         self._ocr_lang = ocr_lang

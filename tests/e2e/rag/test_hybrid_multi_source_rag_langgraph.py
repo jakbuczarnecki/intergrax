@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_documents_loader
 from intergrax.rag.vectorstore.providers.chroma_vector_store import ChromaConfig, ChromaVectorStore
 
 
@@ -28,7 +29,6 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
     """
 
     from intergrax.globals.settings import GLOBAL_SETTINGS
-    from intergrax.rag.document_loaders.documents_loader import DocumentsLoader
     from intergrax.rag.document_splitters.documents_splitter import DocumentsSplitter
     from intergrax.rag.embedding.embedding_manager import EmbeddingManager
     from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
@@ -47,7 +47,7 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
     docx_dir = _require_path(base_docs_dir / "docx", label="DOCX corpus directory")
 
     # ---- Instantiate core components ----
-    doc_loader = DocumentsLoader(docx_mode="paragraphs")
+    doc_loader = create_default_documents_loader()
     splitter = DocumentsSplitter()
 
     embed_manager = EmbeddingManager(
