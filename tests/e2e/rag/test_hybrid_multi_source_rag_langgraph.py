@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from intergrax.rag.providers.chroma_vector_store import ChromaConfig, ChromaVectorStore
+from intergrax.rag.providers.vectorstore.chroma_vector_store import ChromaConfig, ChromaVectorStore
 
 
 pytestmark = pytest.mark.e2e

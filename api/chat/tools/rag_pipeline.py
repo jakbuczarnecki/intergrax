@@ -11,7 +11,7 @@ from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
-from intergrax.rag.providers.chroma_vector_store import ChromaConfig, ChromaVectorStore
+from intergrax.rag.providers.vectorstore.chroma_vector_store import ChromaConfig, ChromaVectorStore
 from intergrax.rag.rag_answerer import (
     RagAnswerer,
     AnswererConfig,

@@ -13,10 +13,9 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings
 from langchain_core.documents import Document
 import numpy as np
-from numpy.typing import NDArray
 
 from intergrax.rag.contracts.vector_store import MetadataFilter, VectorStoreHit
-from intergrax.rag.providers.base_vector_store import BaseVectorStore
+from intergrax.rag.providers.vectorstore.base_vector_store import BaseVectorStore
 
 
 @dataclass(frozen=True)
