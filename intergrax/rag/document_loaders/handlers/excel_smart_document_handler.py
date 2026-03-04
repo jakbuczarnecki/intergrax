@@ -5,8 +5,10 @@
 from __future__ import annotations
 
 import json
-from typing import Literal, Sequence
+from typing import List, Literal, Sequence
 from pandas import DataFrame
+
+from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 try:
     import pandas as pd
 except Exception:
@@ -21,7 +23,7 @@ from intergrax.rag.document_loaders.config.document_loader_config import (
 EXTRACTION_STRATEGY = Literal["rows", "sheets", "markdown"]
 
 class ExcelSmartDocumentHandler(BaseDocumentHandler):
-    
+
     def __init__(
         self,
         *,
@@ -33,6 +35,7 @@ class ExcelSmartDocumentHandler(BaseDocumentHandler):
         encoding: str | None = None,
         delimiter: str | None = None,
     ) -> None:
+
         self._mode = mode
         self._header = header
         self._sheet = sheet
@@ -42,7 +45,9 @@ class ExcelSmartDocumentHandler(BaseDocumentHandler):
         self._delimiter = delimiter
 
     def supports(self, source: str) -> bool:
+
         s = source.lower()
+
         return (
             s.endswith(".xlsx")
             or s.endswith(".xls")
@@ -53,7 +58,52 @@ class ExcelSmartDocumentHandler(BaseDocumentHandler):
     def confidence(self, source: str) -> float:
         return DEFAULT_BUILTIN_HANDLER_CONFIDENCE
 
+    def build_parsers(self) -> List[BaseDocumentParser]:
+
+        return [
+            ExcelSmartParser(
+                mode=self._mode,
+                header=self._header,
+                sheet=self._sheet,
+                na_filter=self._na_filter,
+                max_rows_per_sheet=self._max_rows_per_sheet,
+                encoding=self._encoding,
+                delimiter=self._delimiter,
+            )
+        ]
+
+
+class ExcelSmartParser(BaseDocumentParser):
+
+    def __init__(
+        self,
+        *,
+        mode: EXTRACTION_STRATEGY,
+        header: int,
+        sheet: str | int | None,
+        na_filter: bool,
+        max_rows_per_sheet: int | None,
+        encoding: str | None,
+        delimiter: str | None,
+    ):
+
+        self._mode = mode
+        self._header = header
+        self._sheet = sheet
+        self._na_filter = na_filter
+        self._max_rows_per_sheet = max_rows_per_sheet
+        self._encoding = encoding
+        self._delimiter = delimiter
+
+    @classmethod
+    def parser_id(cls) -> str:
+        return "excel_smart"
+
+    def is_available(self) -> bool:
+        return True
+
     def load(self, source: str) -> Sequence[Document]:
+
         loader = ExcelSmartLoader(
             source,
             mode=self._mode,
@@ -64,8 +114,8 @@ class ExcelSmartDocumentHandler(BaseDocumentHandler):
             encoding=self._encoding,
             delimiter=self._delimiter,
         )
+
         return loader.load()
-    
 
 
 class ExcelSmartLoader:

@@ -11,8 +11,8 @@ from intergrax.rag.document_loaders.handlers.doc_smart_document_handler import D
 from intergrax.rag.document_loaders.handlers.excel_smart_document_handler import ExcelSmartDocumentHandler
 from intergrax.rag.document_loaders.handlers.image_smart_document_handler import ImageSmartDocumentHandler
 from intergrax.rag.document_loaders.handlers.pdf_smart_document_handler import PdfSmartDocumentHandler
-from intergrax.rag.document_loaders.handlers.text_loader_document_handler import TextLoaderDocumentHandler
-from intergrax.rag.document_loaders.handlers.unstructured_html_document_handler import UnstructuredHtmlDocumentHandler
+from intergrax.rag.document_loaders.handlers.text_smart_document_handler import TextSmartDocumentHandler
+from intergrax.rag.document_loaders.handlers.html_document_handler import HtmlSmartDocumentHandler
 from intergrax.rag.document_loaders.handlers.video_smart_document_handler import VideoSmartDocumentHandler
 from intergrax.rag.document_loaders.metadata_pipeline import MetadataPipeline
 from intergrax.rag.document_loaders.providers.default_metadata_provider import DefaultMetadataProvider
@@ -30,8 +30,8 @@ def create_default_documents_loader(
         registry.register(PdfSmartDocumentHandler())
         registry.register(DocSmartDocumentHandler())
         registry.register(ExcelSmartDocumentHandler())
-        registry.register(UnstructuredHtmlDocumentHandler())
-        registry.register(TextLoaderDocumentHandler())
+        registry.register(HtmlSmartDocumentHandler())
+        registry.register(TextSmartDocumentHandler())
         registry.register(VideoSmartDocumentHandler())
         registry.register(AudioSmartDocumentHandler())
         registry.register(ImageSmartDocumentHandler())

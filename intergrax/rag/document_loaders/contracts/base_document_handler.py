@@ -5,9 +5,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence
+from typing import List, Sequence
 
 from langchain_core.documents import Document
+
+from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
+from intergrax.rag.document_loaders.parsers.parser_pipeline import ParserPipeline
 
 
 class BaseDocumentHandler(ABC):
@@ -60,3 +63,24 @@ class BaseDocumentHandler(ABC):
         Sequence[Document]
         """
         raise NotImplementedError
+
+
+    @abstractmethod
+    def build_parsers(self) -> List[BaseDocumentParser]:
+        """
+        Return ordered list of parsers.
+
+        Order defines priority.
+        """
+        raise NotImplementedError
+
+
+    def load(self, source: str) -> Sequence[Document]:
+        """
+        Execute parser pipeline.
+        """
+        parsers = self.build_parsers()
+
+        pipeline = ParserPipeline(parsers)
+
+        return pipeline.parse(source)
