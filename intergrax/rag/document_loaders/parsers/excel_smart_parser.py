@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import json
-from typing import Sequence
+from typing import Literal, Sequence
 
 from langchain_core.documents import Document
 from pandas import DataFrame
@@ -15,7 +15,9 @@ except Exception:
     pd = None
 
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
-from intergrax.rag.document_loaders.handlers.doc_smart_document_handler import EXTRACTION_STRATEGY
+
+
+EXTRACTION_STRATEGY = Literal["rows", "sheets", "markdown"]
 
 class ExcelSmartParser(BaseDocumentParser):
 

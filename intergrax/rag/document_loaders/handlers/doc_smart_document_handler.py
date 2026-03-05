@@ -16,10 +16,7 @@ from intergrax.rag.document_loaders.contracts.base_document_handler import (
 from intergrax.rag.document_loaders.contracts.base_document_parser import (
     BaseDocumentParser,
 )
-from intergrax.rag.document_loaders.parsers.doc_smart_parser import DocSmartParser
-
-EXTRACTION_STRATEGY = Literal["auto", "fulltext", "paragraphs", "headings"]
-
+from intergrax.rag.document_loaders.parsers.doc_smart_parser import EXTRACTION_STRATEGY, DocSmartParser
 
 class DocSmartDocumentHandler(BaseDocumentHandler):
 

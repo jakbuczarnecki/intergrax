@@ -4,14 +4,15 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Literal, Sequence
 
 import docx
 from langchain_community.document_loaders import Docx2txtLoader
 from langchain_core.documents import Document
 
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
-from intergrax.rag.document_loaders.handlers.doc_smart_document_handler import EXTRACTION_STRATEGY
+
+EXTRACTION_STRATEGY = Literal["auto", "fulltext", "paragraphs", "headings"]
 
 class DocSmartParser(BaseDocumentParser):
 
