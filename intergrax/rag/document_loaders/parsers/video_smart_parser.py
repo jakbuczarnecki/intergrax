@@ -9,6 +9,7 @@ from typing import Sequence
 from langchain_core.documents import Document
 from intergrax.multimedia.video_smart_loader import VideoSmartLoader
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
+from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
 
 
 class VideoSmartParser(BaseDocumentParser):
@@ -53,4 +54,25 @@ class VideoSmartParser(BaseDocumentParser):
             frame_target_height=self._frame_target_height,
         )
 
-        return loader.load()
+        docs = loader.load()
+
+        result: list[Document] = []
+
+        for i, d in enumerate(docs):
+
+            metadata = build_loader_metadata(
+                source=source,
+                parser=self.parser_id(),
+                position=i,
+            )
+
+            metadata.update(d.metadata or {})
+
+            result.append(
+                Document(
+                    page_content=d.page_content,
+                    metadata=metadata,
+                )
+            )
+
+        return result
