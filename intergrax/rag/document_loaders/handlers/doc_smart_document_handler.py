@@ -4,12 +4,10 @@
 
 from __future__ import annotations
 
-from typing import List, Literal
+from typing import List
 
 
-from intergrax.rag.document_loaders.config.document_loader_config import (
-    DEFAULT_BUILTIN_HANDLER_CONFIDENCE,
-)
+from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.contracts.base_document_handler import (
     BaseDocumentHandler,
 )
@@ -28,7 +26,7 @@ class DocSmartDocumentHandler(BaseDocumentHandler):
         return s.endswith(".docx") or s.endswith(".doc")
 
     def confidence(self, source: str) -> float:
-        return DEFAULT_BUILTIN_HANDLER_CONFIDENCE
+        return GLOBAL_DOCUMENT_LOADER_CONFIG.default_builtin_handler_confidence
 
     def build_parsers(self) -> List[BaseDocumentParser]:
         return [

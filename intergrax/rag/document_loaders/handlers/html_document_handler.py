@@ -7,11 +7,9 @@ from __future__ import annotations
 from typing import List
 
 
+from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.contracts.base_document_handler import BaseDocumentHandler
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
-from intergrax.rag.document_loaders.config.document_loader_config import (
-    DEFAULT_BUILTIN_HANDLER_CONFIDENCE,
-)
 from intergrax.rag.document_loaders.parsers.html_smart_parser import HtmlSmartParser
 
 
@@ -27,7 +25,7 @@ class HtmlSmartDocumentHandler(BaseDocumentHandler):
         )
 
     def confidence(self, source: str) -> float:
-        return DEFAULT_BUILTIN_HANDLER_CONFIDENCE
+        return GLOBAL_DOCUMENT_LOADER_CONFIG.default_builtin_handler_confidence
 
     def build_parsers(self) -> List[BaseDocumentParser]:
 

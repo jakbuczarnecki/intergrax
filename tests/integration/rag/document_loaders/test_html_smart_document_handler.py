@@ -9,14 +9,10 @@ from pathlib import Path
 
 from langchain_core.documents import Document
 
+from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.html_document_handler import (
     HtmlSmartDocumentHandler,
 )
-
-from intergrax.rag.document_loaders.config.document_loader_config import (
-    DEFAULT_BUILTIN_HANDLER_CONFIDENCE,
-)
-
 
 pytestmark = pytest.mark.integration
 
@@ -51,7 +47,7 @@ def test_html_handler_confidence():
 
     handler = HtmlSmartDocumentHandler()
 
-    assert handler.confidence("page.html") == DEFAULT_BUILTIN_HANDLER_CONFIDENCE
+    assert handler.confidence("page.html") == GLOBAL_DOCUMENT_LOADER_CONFIG.default_builtin_handler_confidence
 
 
 def test_html_handler_builds_parser():

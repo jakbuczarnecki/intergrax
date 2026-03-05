@@ -9,15 +9,10 @@ from pathlib import Path
 
 from langchain_core.documents import Document
 
+from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.audio_smart_document_handler import (
     AudioSmartDocumentHandler,
 )
-
-from intergrax.rag.document_loaders.config.document_loader_config import (
-    DEFAULT_BUILTIN_HANDLER_CONFIDENCE,
-)
-
-
 pytestmark = pytest.mark.integration
 
 
@@ -50,7 +45,7 @@ def test_audio_handler_confidence():
 
     handler = AudioSmartDocumentHandler()
 
-    assert handler.confidence("file.wav") == DEFAULT_BUILTIN_HANDLER_CONFIDENCE
+    assert handler.confidence("file.wav") == GLOBAL_DOCUMENT_LOADER_CONFIG.default_builtin_handler_confidence
 
 
 def test_audio_handler_builds_parser():

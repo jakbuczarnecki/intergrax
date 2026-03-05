@@ -10,13 +10,10 @@ from pathlib import Path
 import docx
 from langchain_core.documents import Document
 
+from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.doc_smart_document_handler import (
     DocSmartDocumentHandler,
 )
-from intergrax.rag.document_loaders.config.document_loader_config import (
-    DEFAULT_BUILTIN_HANDLER_CONFIDENCE,
-)
-
 
 pytestmark = pytest.mark.integration
 
@@ -42,7 +39,7 @@ def test_doc_handler_confidence():
 
     handler = DocSmartDocumentHandler()
 
-    assert handler.confidence("file.docx") == DEFAULT_BUILTIN_HANDLER_CONFIDENCE
+    assert handler.confidence("file.docx") == GLOBAL_DOCUMENT_LOADER_CONFIG.default_builtin_handler_confidence
 
 
 def test_doc_handler_builds_parser():

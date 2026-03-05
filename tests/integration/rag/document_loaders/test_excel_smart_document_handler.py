@@ -10,14 +10,10 @@ from pathlib import Path
 import pandas as pd
 from langchain_core.documents import Document
 
+from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.excel_smart_document_handler import (
     ExcelSmartDocumentHandler,
 )
-
-from intergrax.rag.document_loaders.config.document_loader_config import (
-    DEFAULT_BUILTIN_HANDLER_CONFIDENCE,
-)
-
 
 pytestmark = pytest.mark.integration
 
@@ -49,7 +45,7 @@ def test_excel_handler_confidence():
 
     handler = ExcelSmartDocumentHandler()
 
-    assert handler.confidence("file.xlsx") == DEFAULT_BUILTIN_HANDLER_CONFIDENCE
+    assert handler.confidence("file.xlsx") == GLOBAL_DOCUMENT_LOADER_CONFIG.default_builtin_handler_confidence
 
 
 def test_excel_handler_builds_parser():

@@ -9,14 +9,10 @@ from pathlib import Path
 
 from langchain_core.documents import Document
 
+from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.image_smart_document_handler import (
     ImageSmartDocumentHandler,
 )
-
-from intergrax.rag.document_loaders.config.document_loader_config import (
-    DEFAULT_BUILTIN_HANDLER_CONFIDENCE,
-)
-
 
 pytestmark = pytest.mark.integration
 
@@ -50,7 +46,7 @@ def test_image_handler_confidence():
 
     handler = ImageSmartDocumentHandler()
 
-    assert handler.confidence("file.jpg") == DEFAULT_BUILTIN_HANDLER_CONFIDENCE
+    assert handler.confidence("file.jpg") == GLOBAL_DOCUMENT_LOADER_CONFIG.default_builtin_handler_confidence
 
 
 def test_image_handler_builds_parser():
