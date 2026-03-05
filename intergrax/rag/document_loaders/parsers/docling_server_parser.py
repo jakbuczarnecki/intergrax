@@ -9,7 +9,7 @@ import httpx
 
 from langchain_core.documents import Document
 
-from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
+from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG, DoclingMode
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
 
@@ -22,7 +22,7 @@ class DoclingServerParser(BaseDocumentParser):
 
     def is_available(self) -> bool:
         cfg = GLOBAL_DOCUMENT_LOADER_CONFIG
-        return cfg.docling_mode == "server"
+        return cfg.docling_mode == DoclingMode.SERVER
 
     def load(self, source: str) -> Sequence[Document]:
 

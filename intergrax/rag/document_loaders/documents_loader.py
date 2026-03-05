@@ -11,6 +11,8 @@ from typing import List, Optional, Sequence
 from tqdm import tqdm
 from langchain_core.documents import Document
 
+from intergrax.rag.document_loaders.normalizer_pipeline import NormalizerPipeline
+
 from .registry.document_handler_registry import DocumentHandlerRegistry
 from .metadata_pipeline import MetadataPipeline
 
@@ -34,6 +36,7 @@ class DocumentsLoader:
         self,
         *,
         registry: DocumentHandlerRegistry,
+        normalizer_pipeline: NormalizerPipeline,
         metadata_pipeline: MetadataPipeline,
         allowed_exts: Optional[Sequence[str]] = None,
         file_patterns: Optional[Sequence[str]] = None,
@@ -42,6 +45,7 @@ class DocumentsLoader:
     ) -> None:
 
         self._registry = registry
+        self._normalizer_pipeline = normalizer_pipeline
         self._metadata_pipeline = metadata_pipeline
 
         self._allowed_exts = {e.lower() for e in (allowed_exts or [])}
@@ -71,8 +75,13 @@ class DocumentsLoader:
             loaded = handler.load(source)
             if not loaded:
                 return docs
+            
+            normalized = self._normalizer_pipeline.normalize(
+                loaded,
+                source,
+            )
 
-            enriched = self._metadata_pipeline.enrich(loaded, source)
+            enriched = self._metadata_pipeline.enrich(normalized, source)
             docs.extend(enriched)
             return docs
 

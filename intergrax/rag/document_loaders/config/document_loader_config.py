@@ -42,7 +42,7 @@ class DocumentLoaderConfig:
     #   none   -> disabled
     #   local  -> use local docling library
     #   server -> use docling server (docker)
-    docling_mode: str =  _read_docling_mode()
+    docling_mode: DoclingMode =  _read_docling_mode()
 
     # URL for Docling server
     docling_server_url: str = os.getenv(

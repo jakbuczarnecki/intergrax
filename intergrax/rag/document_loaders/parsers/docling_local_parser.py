@@ -10,6 +10,7 @@ from typing import Sequence
 from docling.document_converter import DocumentConverter
 from langchain_core.documents import Document
 
+from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG, DoclingMode
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
 
@@ -30,11 +31,8 @@ class DoclingLocalParser(BaseDocumentParser):
 
     @classmethod
     def is_available(cls) -> bool:
-        try:
-            import docling  # noqa: F401
-            return True
-        except ImportError:
-            return False
+        cfg = GLOBAL_DOCUMENT_LOADER_CONFIG
+        return cfg.docling_mode == DoclingMode.LOCAL
 
     def load(self, source: str) -> Sequence[Document]:
 
