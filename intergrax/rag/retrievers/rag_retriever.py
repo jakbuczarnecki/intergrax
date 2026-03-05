@@ -9,8 +9,8 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 import numpy as np
 
 from intergrax.logging import IntergraxLogging
-from intergrax.rag.embedding_manager import EmbeddingManager
-from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.rag.embedding.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 
 # Optional reranker function type: accepts and returns a list of hits

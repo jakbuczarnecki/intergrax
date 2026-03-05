@@ -9,8 +9,8 @@ import math
 from typing import List, Dict, Callable, Optional
 from langchain_core.documents import Document
 
-from intergrax.rag.embedding_manager import EmbeddingManager
-from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.rag.embedding.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 logger = IntergraxLogging.get_logger(__name__, component="rag")
 

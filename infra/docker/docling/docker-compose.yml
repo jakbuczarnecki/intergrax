@@ -1,0 +1,28 @@
+services:
+  docling:
+    build: .
+    container_name: intergrax-docling
+    ports:
+      - "8081:8080"
+
+    environment:
+      DOCLING_CACHE_DIR: /models
+
+    volumes:
+      - docling_models:/models
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+volumes:
+  docling_models:

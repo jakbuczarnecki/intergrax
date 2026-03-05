@@ -13,8 +13,8 @@ from intergrax.memory.user_profile_memory import (
     UserProfileMemoryEntry,
 )
 from intergrax.memory.user_profile_store import UserProfileStore
-from intergrax.rag.embedding_manager import EmbeddingManager
-from intergrax.rag.vectorstore_manager import VectorstoreManager
+from intergrax.rag.embedding.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 
 class UserProfileManager:

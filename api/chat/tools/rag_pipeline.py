@@ -11,19 +11,20 @@ from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
-from intergrax.rag.providers.chroma_vector_store import ChromaConfig, ChromaVectorStore
-from intergrax.rag.rag_answerer import (
+from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_documents_loader
+from intergrax.rag.vectorstore.providers.chroma_vector_store import ChromaConfig, ChromaVectorStore
+from intergrax.rag.answers.rag_answerer import (
     RagAnswerer,
     AnswererConfig,
     ChatMessage,
 )
 
-from intergrax.rag.rag_retriever import RagRetriever
-from intergrax.rag.vectorstore_manager import VectorstoreManager
-from intergrax.rag.documents_loader import DocumentsLoader
-from intergrax.rag.documents_splitter import DocumentsSplitter
-from intergrax.rag.re_ranker import ReRanker,ReRankerConfig
-from intergrax.rag.embedding_manager import EmbeddingManager
+from intergrax.rag.retrievers.rag_retriever import RagRetriever
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.rag.document_loaders.documents_loader import DocumentsLoader
+from intergrax.rag.document_splitters.documents_splitter import DocumentsSplitter
+from intergrax.rag.rerankers.re_ranker import ReRanker,ReRankerConfig
+from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 
 PERSIST_DIR = os.environ.get("CHROMA_DIR", "./chroma_db")
 EMBED_MODEL = GLOBAL_SETTINGS.default_ollama_embed_model
@@ -143,9 +144,7 @@ def get_answerer(model_name: Optional[str] = None) -> RagAnswerer:
 def load_and_split_documents(file_path: str):
     p = Path(file_path)
 
-    loader = DocumentsLoader(
-        # tu możesz doprecyzować tryby (np. docx_mode="paragraphs", pdf_enable_ocr=True, itd.)
-    )
+    loader = create_default_documents_loader()
 
     def _base_metadata(doc, absolute_path: Path):
         return {
