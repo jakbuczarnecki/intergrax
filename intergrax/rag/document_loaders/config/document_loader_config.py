@@ -5,7 +5,28 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 import os
+
+
+class DoclingMode(str, Enum):
+
+    NONE = "none"
+    LOCAL = "local"
+    SERVER = "server"
+
+
+def _read_docling_mode() -> DoclingMode:
+
+    raw = os.getenv("INTERGRAX_DOCLING_MODE", "local").lower()
+
+    try:
+        return DoclingMode(raw)
+    except ValueError:
+        raise RuntimeError(
+            f"Invalid INTERGRAX_DOCLING_MODE='{raw}'. "
+            "Allowed values: none, local, server."
+        )
 
 
 @dataclass
@@ -21,10 +42,7 @@ class DocumentLoaderConfig:
     #   none   -> disabled
     #   local  -> use local docling library
     #   server -> use docling server (docker)
-    docling_mode: str = os.getenv(
-        "INTERGRAX_DOCLING_MODE",
-        "local"
-    )
+    docling_mode: str =  _read_docling_mode()
 
     # URL for Docling server
     docling_server_url: str = os.getenv(
@@ -36,6 +54,9 @@ class DocumentLoaderConfig:
     docling_server_timeout_seconds: int = int(
         os.getenv("INTERGRAX_DOCLING_TIMEOUT", "120")
     )
+
+
+    
 
 
 GLOBAL_DOCUMENT_LOADER_CONFIG = DocumentLoaderConfig()
