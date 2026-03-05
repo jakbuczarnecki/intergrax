@@ -4,16 +4,15 @@
 
 from __future__ import annotations
 
-from typing import List, Sequence
+from typing import List
 
-from langchain_core.documents import Document
-from langchain_community.document_loaders import UnstructuredHTMLLoader
 
 from intergrax.rag.document_loaders.contracts.base_document_handler import BaseDocumentHandler
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.config.document_loader_config import (
     DEFAULT_BUILTIN_HANDLER_CONFIDENCE,
 )
+from intergrax.rag.document_loaders.parsers.html_smart_parser import HtmlSmartParser
 
 
 class HtmlSmartDocumentHandler(BaseDocumentHandler):
@@ -35,19 +34,3 @@ class HtmlSmartDocumentHandler(BaseDocumentHandler):
         return [
             HtmlSmartParser()
         ]
-
-
-class HtmlSmartParser(BaseDocumentParser):
-
-    @classmethod
-    def parser_id(cls) -> str:
-        return "html_smart"
-
-    def is_available(self) -> bool:
-        return True
-
-    def load(self, source: str) -> Sequence[Document]:
-
-        loader = UnstructuredHTMLLoader(source)
-
-        return loader.load()
