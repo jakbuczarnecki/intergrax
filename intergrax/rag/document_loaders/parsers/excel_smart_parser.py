@@ -5,17 +5,21 @@
 from __future__ import annotations
 
 import json
-from typing import Sequence
+from typing import Literal, Sequence
 
 from langchain_core.documents import Document
 from pandas import DataFrame
+
+from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
 try:
     import pandas as pd
 except Exception:
     pd = None
 
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
-from intergrax.rag.document_loaders.handlers.doc_smart_document_handler import EXTRACTION_STRATEGY
+
+
+EXTRACTION_STRATEGY = Literal["rows", "sheets", "markdown"]
 
 class ExcelSmartParser(BaseDocumentParser):
 
@@ -59,7 +63,28 @@ class ExcelSmartParser(BaseDocumentParser):
             delimiter=self._delimiter,
         )
 
-        return loader.load()
+        docs = loader.load()
+
+        result: list[Document] = []
+
+        for i, d in enumerate(docs):
+
+            metadata = build_loader_metadata(
+                source=source,
+                parser=self.parser_id(),
+                position=i,
+            )
+
+            metadata.update(d.metadata or {})
+
+            result.append(
+                Document(
+                    page_content=d.page_content,
+                    metadata=metadata,
+                )
+            )
+
+        return result
 
 
 class ExcelSmartLoader:

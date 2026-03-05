@@ -9,6 +9,7 @@ from typing import Sequence
 from langchain_community.document_loaders import UnstructuredHTMLLoader
 from langchain_core.documents import Document
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
+from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
 
 class HtmlSmartParser(BaseDocumentParser):
 
@@ -23,4 +24,25 @@ class HtmlSmartParser(BaseDocumentParser):
 
         loader = UnstructuredHTMLLoader(source)
 
-        return loader.load()
+        docs = loader.load()
+
+        result: list[Document] = []
+
+        for i, d in enumerate(docs):
+
+            metadata = build_loader_metadata(
+                source=source,
+                parser=self.parser_id(),
+                position=i,
+            )
+
+            metadata.update(d.metadata or {})
+
+            result.append(
+                Document(
+                    page_content=d.page_content,
+                    metadata=metadata,
+                )
+            )
+
+        return result

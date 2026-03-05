@@ -9,6 +9,7 @@ from typing import Sequence
 from langchain_core.documents import Document
 from intergrax.multimedia.image_smart_loader import ImageSmartLoader
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
+from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
 
 class ImageSmartParser(BaseDocumentParser):
 
@@ -55,4 +56,25 @@ class ImageSmartParser(BaseDocumentParser):
             both_joiner=self._both_joiner,
         )
 
-        return loader.load()
+        docs = loader.load()
+
+        result: list[Document] = []
+
+        for i, d in enumerate(docs):
+
+            metadata = build_loader_metadata(
+                source=source,
+                parser=self.parser_id(),
+                position=i,
+            )
+
+            metadata.update(d.metadata or {})
+
+            result.append(
+                Document(
+                    page_content=d.page_content,
+                    metadata=metadata,
+                )
+            )
+
+        return result

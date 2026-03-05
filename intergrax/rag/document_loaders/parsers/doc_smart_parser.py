@@ -4,14 +4,16 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Literal, Sequence
 
 import docx
 from langchain_community.document_loaders import Docx2txtLoader
 from langchain_core.documents import Document
 
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
-from intergrax.rag.document_loaders.handlers.doc_smart_document_handler import EXTRACTION_STRATEGY
+from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
+
+EXTRACTION_STRATEGY = Literal["auto", "fulltext", "paragraphs", "headings"]
 
 class DocSmartParser(BaseDocumentParser):
 
@@ -34,13 +36,35 @@ class DocSmartParser(BaseDocumentParser):
 
         if strategy == "fulltext":
             loader = Docx2txtLoader(source)
-            return loader.load()
+            docs = loader.load()
 
-        if strategy in ("paragraphs", "headings"):
+        elif strategy in ("paragraphs", "headings"):
             loader = DocxParagraphLoader(source, mode=strategy)
-            return loader.load()
+            docs = loader.load()
 
-        raise RuntimeError("Invalid extraction strategy state")
+        else:
+            raise RuntimeError("Invalid extraction strategy state")
+
+        result: list[Document] = []
+
+        for i, d in enumerate(docs):
+
+            metadata = build_loader_metadata(
+                source=source,
+                parser=self.parser_id(),
+                position=i,
+            )
+
+            metadata.update(d.metadata or {})
+
+            result.append(
+                Document(
+                    page_content=d.page_content,
+                    metadata=metadata,
+                )
+            )
+
+        return result
 
 
 class DocxParagraphLoader:
