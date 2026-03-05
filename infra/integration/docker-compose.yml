@@ -65,8 +65,6 @@ services:
       - chroma_data:/chroma
     restart: unless-stopped
     
-
-
 volumes:
   kafka_data:
   rabbitmq_data:

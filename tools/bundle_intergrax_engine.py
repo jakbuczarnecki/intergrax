@@ -1169,7 +1169,7 @@ def write_patch_zones_file_for_bundle(*, out_path: Path, metas: List[FileMeta]) 
             safe.append(m.rel_path)
 
         # core system areas (editable but high impact)
-        elif ".runtime." in mn or ".fastapi_core." in mn:
+        elif ".runtime." in mn or ".fastapi_core." in mn or "infra" in mn:
             restricted.append(m.rel_path)
 
         # everything else is default locked unless explicitly requested
