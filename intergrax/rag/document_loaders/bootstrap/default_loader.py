@@ -15,12 +15,15 @@ from intergrax.rag.document_loaders.handlers.text_smart_document_handler import 
 from intergrax.rag.document_loaders.handlers.html_document_handler import HtmlSmartDocumentHandler
 from intergrax.rag.document_loaders.handlers.video_smart_document_handler import VideoSmartDocumentHandler
 from intergrax.rag.document_loaders.metadata_pipeline import MetadataPipeline
-from intergrax.rag.document_loaders.providers.default_metadata_provider import DefaultMetadataProvider
+from intergrax.rag.document_loaders.metadata.default_metadata_provider import DefaultMetadataProvider
+from intergrax.rag.document_loaders.normalizer_pipeline import NormalizerPipeline
+from intergrax.rag.document_loaders.normalizers.whitespace_normalizer import WhitespaceNormalizer
 from intergrax.rag.document_loaders.registry.document_handler_registry import DocumentHandlerRegistry
 
 
 def create_default_documents_loader(
     registry: DocumentHandlerRegistry | None = None,
+    normalizer_pipeline: NormalizerPipeline | None = None,
     metadata_pipeline: MetadataPipeline | None = None,
 ) -> DocumentsLoader:
 
@@ -36,6 +39,13 @@ def create_default_documents_loader(
         registry.register(AudioSmartDocumentHandler())
         registry.register(ImageSmartDocumentHandler())
 
+    if normalizer_pipeline is None:
+        normalizer_pipeline = NormalizerPipeline(
+            normalizers=[
+                WhitespaceNormalizer(),
+            ]
+        )
+
     if metadata_pipeline is None:
         metadata_pipeline = MetadataPipeline(
             providers=[
@@ -45,5 +55,6 @@ def create_default_documents_loader(
 
     return DocumentsLoader(
         registry=registry,
+        normalizer_pipeline=normalizer_pipeline,
         metadata_pipeline=metadata_pipeline,
     )

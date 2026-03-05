@@ -6,13 +6,13 @@ from __future__ import annotations
 
 from typing import List, Literal
 
+from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG, DoclingMode
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
+from intergrax.rag.document_loaders.parsers.docling_local_parser import DoclingLocalParser
+from intergrax.rag.document_loaders.parsers.docling_server_parser import DoclingServerParser
 from intergrax.rag.document_loaders.parsers.excel_smart_parser import EXTRACTION_STRATEGY, ExcelSmartParser
 
 from intergrax.rag.document_loaders.contracts.base_document_handler import BaseDocumentHandler
-from intergrax.rag.document_loaders.config.document_loader_config import (
-    DEFAULT_BUILTIN_HANDLER_CONFIDENCE,
-)
 
 class ExcelSmartDocumentHandler(BaseDocumentHandler):
 
@@ -48,11 +48,13 @@ class ExcelSmartDocumentHandler(BaseDocumentHandler):
         )
 
     def confidence(self, source: str) -> float:
-        return DEFAULT_BUILTIN_HANDLER_CONFIDENCE
+        return GLOBAL_DOCUMENT_LOADER_CONFIG.default_builtin_handler_confidence
 
     def build_parsers(self) -> List[BaseDocumentParser]:
 
-        return [
+        parsers: List[BaseDocumentParser] = []
+
+        parsers.append(
             ExcelSmartParser(
                 mode=self._mode,
                 header=self._header,
@@ -62,4 +64,14 @@ class ExcelSmartDocumentHandler(BaseDocumentHandler):
                 encoding=self._encoding,
                 delimiter=self._delimiter,
             )
-        ]
+        )
+
+        mode = GLOBAL_DOCUMENT_LOADER_CONFIG.docling_mode
+
+        if mode is DoclingMode.LOCAL:
+            parsers.append(DoclingLocalParser())
+
+        elif mode is DoclingMode.SERVER:
+            parsers.append(DoclingServerParser())
+
+        return parsers

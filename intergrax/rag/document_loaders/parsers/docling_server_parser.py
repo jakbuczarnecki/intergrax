@@ -4,10 +4,9 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Sequence
+import httpx
 
-from docling.document_converter import DocumentConverter
 from langchain_core.documents import Document
 
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG, DoclingMode
@@ -15,34 +14,39 @@ from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDo
 from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
 
 
-class DoclingLocalParser(BaseDocumentParser):
-    """
-    Local Docling backend parser.
-
-    This parser uses a locally installed Docling runtime
-    to convert documents into LangChain Document objects.
-
-    Actual Docling integration will be implemented in a later step.
-    """
+class DoclingServerParser(BaseDocumentParser):
 
     @classmethod
     def parser_id(cls) -> str:
-        return "docling.local"
+        return "docling.server"
 
-    @classmethod
-    def is_available(cls) -> bool:
+    def is_available(self) -> bool:
         cfg = GLOBAL_DOCUMENT_LOADER_CONFIG
-        return cfg.docling_mode == DoclingMode.LOCAL
+        return cfg.docling_mode == DoclingMode.SERVER
 
     def load(self, source: str) -> Sequence[Document]:
 
-        converter = DocumentConverter()
+        cfg = GLOBAL_DOCUMENT_LOADER_CONFIG
 
-        result = converter.convert(Path(source))
+        url = cfg.docling_server_url.rstrip("/") + "/convert"
 
-        doc = result.document
+        timeout = cfg.docling_server_timeout_seconds
 
-        text = doc.export_to_markdown()
+        with open(source, "rb") as f:
+
+            files = {"file": (source, f)}
+
+            response = httpx.post(
+                url,
+                files=files,
+                timeout=timeout
+            )
+
+        response.raise_for_status()
+
+        payload = response.json()
+
+        text = payload.get("markdown") or payload.get("text") or ""
 
         metadata = build_loader_metadata(
             source=source,

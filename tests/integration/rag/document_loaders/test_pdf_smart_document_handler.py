@@ -7,13 +7,10 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 
+from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.pdf_smart_document_handler import (
     PdfSmartDocumentHandler,
 )
-from intergrax.rag.document_loaders.config.document_loader_config import (
-    DEFAULT_BUILTIN_HANDLER_CONFIDENCE,
-)
-
 
 pytestmark = pytest.mark.integration
 
@@ -43,7 +40,7 @@ def test_pdf_handler_confidence():
 
     handler = PdfSmartDocumentHandler()
 
-    assert handler.confidence("file.pdf") == DEFAULT_BUILTIN_HANDLER_CONFIDENCE
+    assert handler.confidence("file.pdf") == GLOBAL_DOCUMENT_LOADER_CONFIG.default_builtin_handler_confidence
 
 
 def test_pdf_handler_builds_parser():

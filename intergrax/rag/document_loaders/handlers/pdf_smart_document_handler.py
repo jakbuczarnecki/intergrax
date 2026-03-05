@@ -6,9 +6,11 @@ from __future__ import annotations
 
 from typing import List
 
+from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG, DoclingMode
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
+from intergrax.rag.document_loaders.parsers.docling_local_parser import DoclingLocalParser
+from intergrax.rag.document_loaders.parsers.docling_server_parser import DoclingServerParser
 from intergrax.rag.document_loaders.parsers.pdf_smart_parser import PdfSmartParser
-from intergrax.rag.document_loaders.config.document_loader_config import DEFAULT_BUILTIN_HANDLER_CONFIDENCE
 from intergrax.rag.document_loaders.contracts.base_document_handler import BaseDocumentHandler
 
 
@@ -34,10 +36,20 @@ class PdfSmartDocumentHandler(BaseDocumentHandler):
         return source.lower().endswith(".pdf")
 
     def confidence(self, source: str) -> float:
-        return DEFAULT_BUILTIN_HANDLER_CONFIDENCE
+        return GLOBAL_DOCUMENT_LOADER_CONFIG.default_builtin_handler_confidence
 
     def build_parsers(self) -> List[BaseDocumentParser]:
-        return [
+        parsers = []
+
+        mode = GLOBAL_DOCUMENT_LOADER_CONFIG.docling_mode
+
+        if mode is DoclingMode.LOCAL:
+            parsers.append(DoclingLocalParser())
+
+        elif mode is DoclingMode.SERVER:
+            parsers.append(DoclingServerParser())
+
+        parsers.append(
             PdfSmartParser(
                 enable_ocr=self._enable_ocr,
                 ocr_lang=self._ocr_lang,
@@ -46,4 +58,6 @@ class PdfSmartDocumentHandler(BaseDocumentHandler):
                 ocr_oem=self._ocr_oem,
                 ocr_max_pages=self._ocr_max_pages,
             )
-        ]
+        )
+
+        return parsers
