@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 import time
 
-from intergrax.llm_adapters.llm_adapter import LLMAdapter, LLMRunStats
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter, LLMRunStats
 
 from dataclasses import dataclass, asdict
 from typing import Any, Dict, List, Optional, Tuple

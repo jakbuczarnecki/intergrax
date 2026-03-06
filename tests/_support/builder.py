@@ -10,7 +10,7 @@ from typing import Optional, Sequence
 from datetime import datetime
 from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 from intergrax.fastapi_core.runs.store_base import RunStore
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.governance.execution_guard import ExecutionGuard, GovernanceEvaluation
 from intergrax.runtime.governance.service import GovernanceService

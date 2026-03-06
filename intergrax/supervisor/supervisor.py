@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from typing import Any, Dict, List, Optional, Literal, Iterable, Callable
 import json, re, math
 
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
 from .supervisor_components import Component, ComponentContext, ComponentResult, PipelineState
 from .supervisor_prompts import SupervisorPromptPack, SupervisorPromptPack as _DefaultPack

@@ -11,7 +11,7 @@ import re
 import uuid
 import time
 import tiktoken
-from intergrax.llm_adapters.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.memory.conversational_memory import ChatMessage
 
 

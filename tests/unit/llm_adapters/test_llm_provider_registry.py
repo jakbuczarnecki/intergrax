@@ -25,8 +25,8 @@ from typing import Any, Callable, Dict, Iterator, Sequence, Optional
 import pytest
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 
 

@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, FrozenSet, Optional, Literal, Sequence
 
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.runtime.nexus.budget.budget_models import BudgetPolicy, RunBudget

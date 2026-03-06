@@ -5,7 +5,7 @@
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
-from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
 
 # --- Optional Pydantic (as before) ---
 try:

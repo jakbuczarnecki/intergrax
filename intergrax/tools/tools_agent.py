@@ -9,8 +9,8 @@ import json
 import logging
 from typing import Any, Dict, List, Optional, Union, Type
 
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
 from intergrax.logging import IntergraxLogging
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage

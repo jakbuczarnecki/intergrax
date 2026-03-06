@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from intergrax.llm.messages import AttachmentRef
-from intergrax.llm_adapters.llm_usage_track import LLMUsageReport
+from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageReport
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
 
 

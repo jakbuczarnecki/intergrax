@@ -10,7 +10,7 @@ import json
 from typing import Any, Dict, Mapping, Optional, Sequence
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.planning.engine_plan_models import EngineNextStep, PlanIntent
 from intergrax.runtime.nexus.planning.step_executor_models import ReplanContext
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload

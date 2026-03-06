@@ -8,7 +8,7 @@ from typing import Any, List, Optional
 from typing import TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
 from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import LLMUsageRunRecord
 from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
 
