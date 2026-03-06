@@ -361,6 +361,16 @@ wheels = [
 ]
 
 [[package]]
+name = "chardet"
+version = "7.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6c/80/4684035f1a2a3096506bc377276a815ccf0be3c3316eab35d589e82d9f3c/chardet-7.0.1.tar.gz", hash = "sha256:6fce895c12c5495bb598e59ae3cd89306969b4464ec7b6dd609b9c86e3397fe3", size = 490240, upload-time = "2026-03-04T21:25:26.97Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/ba/7ca89301e492ac4184ba7f4736565d954ba3125acf6bf02c66a38a802bda/chardet-7.0.1-cp312-cp312-win_amd64.whl", hash = "sha256:302798e1e62008ca34a216dd04ecc5e240993b2090628e2a35d4c0754313ea9a", size = 524256, upload-time = "2026-03-04T21:25:05.581Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/1f/c1a089db6333b1283409cad3714b8935e7e56722c9c60f9299726a1e57c2/chardet-7.0.1-py3-none-any.whl", hash = "sha256:e51e1ff2c51b2d622d97c9737bd5ee9d9b9038f05b7dd8f9ea10b9e2d9674c24", size = 408292, upload-time = "2026-03-04T21:25:25.214Z" },
+]
+
+[[package]]
 name = "charset-normalizer"
 version = "3.4.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1171,6 +1181,7 @@ dependencies = [
     { name = "beautifulsoup4", marker = "sys_platform == 'win32'" },
     { name = "boto3", marker = "sys_platform == 'win32'" },
     { name = "botocore", marker = "sys_platform == 'win32'" },
+    { name = "chardet", marker = "sys_platform == 'win32'" },
     { name = "chromadb", marker = "sys_platform == 'win32'" },
     { name = "fastapi", marker = "sys_platform == 'win32'" },
     { name = "google-genai", marker = "sys_platform == 'win32'" },
@@ -1236,6 +1247,7 @@ requires-dist = [
     { name = "boto3", specifier = ">=1.34" },
     { name = "botocore", specifier = ">=1.34" },
     { name = "celery", marker = "extra == 'dev'", specifier = ">=5.3" },
+    { name = "chardet", specifier = ">=5.2" },
     { name = "chromadb", specifier = "==1.4.1" },
     { name = "confluent-kafka", marker = "extra == 'dev'", specifier = ">=2.3.0" },
     { name = "docling", extras = ["all"], marker = "extra == 'dev'", specifier = "==2.76.0" },
