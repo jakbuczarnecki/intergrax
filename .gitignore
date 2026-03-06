@@ -24,7 +24,7 @@ notebooks/nexus/chroma_db
 notebooks/nexus/data
 notebooks/nexus/_artifacts
 
-documents/
+temp_documents/
 api/chat/rag_app.db
 
 /bundles/

@@ -72,7 +72,7 @@ dependencies = [
   "yt-dlp>=2024.0",
   "webvtt-py>=0.4",
   "opencv-python-headless==4.9.0.80",
-
+  "chardet>=5.2",
 
   # -----------------
   # UI
