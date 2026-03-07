@@ -10,6 +10,7 @@ import numpy as np
 from langchain_core.documents import Document
 
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import BaseChunkingStrategy
+from intergrax.rag.document_splitters.contracts.chunk_metadata_contract import ChunkMetadataKey
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 
 
@@ -81,7 +82,8 @@ class SemanticChunkingStrategy(BaseChunkingStrategy):
                     chunk_text = ". ".join(current_chunk)
 
                     chunk_metadata = dict(metadata)
-                    chunk_metadata["chunk_index"] = chunk_index
+                    chunk_metadata[ChunkMetadataKey.CHUNK_INDEX] = chunk_index
+                    chunk_metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
 
                     chunks.append(
                         Document(
@@ -100,7 +102,8 @@ class SemanticChunkingStrategy(BaseChunkingStrategy):
                 chunk_text = ". ".join(current_chunk)
 
                 chunk_metadata = dict(metadata)
-                chunk_metadata["chunk_index"] = chunk_index
+                chunk_metadata[ChunkMetadataKey.CHUNK_INDEX] = chunk_index
+                chunk_metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
 
                 chunks.append(
                     Document(

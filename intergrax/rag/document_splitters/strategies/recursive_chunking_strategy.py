@@ -9,6 +9,7 @@ from typing import Sequence, List
 from langchain_core.documents import Document
 
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import BaseChunkingStrategy
+from intergrax.rag.document_splitters.contracts.chunk_metadata_contract import ChunkMetadataKey
 
 
 class RecursiveChunkingStrategy(BaseChunkingStrategy):
@@ -54,7 +55,8 @@ class RecursiveChunkingStrategy(BaseChunkingStrategy):
                 chunk_text = text[start:end]
 
                 chunk_metadata = dict(metadata)
-                chunk_metadata["chunk_index"] = chunk_index
+                chunk_metadata[ChunkMetadataKey.CHUNK_INDEX] = chunk_index
+                chunk_metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
 
                 chunk = Document(
                     page_content=chunk_text,

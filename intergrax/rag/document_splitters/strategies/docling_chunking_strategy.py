@@ -24,6 +24,7 @@ from intergrax.rag.document_loaders.contracts.metadata_constants import DOCLING_
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import (
     BaseChunkingStrategy,
 )
+from intergrax.rag.document_splitters.contracts.chunk_metadata_contract import ChunkMetadataKey
 
 
 class DoclingChunkingStrategy(BaseChunkingStrategy):
@@ -60,6 +61,7 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
                 continue
 
             buffer: List[str] = []
+            buffer_length: int = 0
             chunk_index = 0
 
             for item, _level in docling_doc.iterate_items():
@@ -76,14 +78,18 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
                         )
                         chunk_index += 1
                         buffer = []
+                        buffer_length = 0
 
                     buffer.append(item.text)
+                    buffer_length += len(item.text)
 
                 elif isinstance(item, TextItem):
                     buffer.append(item.text)
+                    buffer_length += len(item.text)
 
                 elif isinstance(item, ListItem):
                     buffer.append(item.text)
+                    buffer_length += len(item.text)
 
                 elif isinstance(item, TableItem):
 
@@ -97,6 +103,7 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
                         )
                         chunk_index += 1
                         buffer = []
+                        buffer_length = 0
 
                     table_text = item.export_to_markdown()
 
@@ -124,9 +131,11 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
 
                 elif isinstance(item, CodeItem):
                     buffer.append(item.text)
+                    buffer_length += len(item.text)
 
                 elif isinstance(item, FormulaItem):
                     buffer.append(item.text)
+                    buffer_length += len(item.text)
 
                 if sum(len(x) for x in buffer) >= self.MAX_CHUNK_SIZE:
 
@@ -140,6 +149,7 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
 
                     chunk_index += 1
                     buffer = []
+                    buffer_length = 0
 
             if buffer:
 
@@ -163,8 +173,9 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
         chunk_text = "\n".join(buffer)
 
         chunk_metadata = dict(metadata)
-        chunk_metadata["chunk_index"] = chunk_index
-        chunk_metadata["chunk_strategy"] = "docling"
+
+        chunk_metadata[ChunkMetadataKey.CHUNK_INDEX] = chunk_index
+        chunk_metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
 
         chunk_metadata.pop(DOCLING_DOCUMENT_META_KEY, None)
 
@@ -181,8 +192,8 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
     ) -> Document:
 
         chunk_metadata = dict(metadata)
-        chunk_metadata["chunk_index"] = chunk_index
-        chunk_metadata["chunk_strategy"] = "docling"
+        chunk_metadata[ChunkMetadataKey.CHUNK_INDEX] = chunk_index
+        chunk_metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
 
         chunk_metadata.pop(DOCLING_DOCUMENT_META_KEY, None)
 
