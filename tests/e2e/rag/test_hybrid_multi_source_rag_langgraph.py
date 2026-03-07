@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_documents_loader
+from intergrax.rag.document_splitters.bootstrap.default_chunking_engine import create_default_document_splitter
 from intergrax.rag.vectorstore.providers.chroma_vector_store import ChromaConfig, ChromaVectorStore
 
 
@@ -48,7 +49,7 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
 
     # ---- Instantiate core components ----
     doc_loader = create_default_documents_loader()
-    splitter = DocumentsSplitter()
+    splitter = create_default_document_splitter()
 
     embed_manager = EmbeddingManager(
         provider="ollama",

@@ -31,6 +31,7 @@ from langchain_core.documents import Document
 from intergrax.llm.messages import AttachmentRef
 from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_documents_loader
 from intergrax.rag.document_loaders.documents_loader import DocumentsLoader
+from intergrax.rag.document_splitters.bootstrap.default_chunking_engine import create_default_document_splitter
 from intergrax.rag.document_splitters.documents_splitter import DocumentsSplitter
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
@@ -110,10 +111,7 @@ class AttachmentIngestionService:
 
         # Use provided loader/splitter or fall back to default instances.
         self._loader = loader or create_default_documents_loader()
-        self._splitter = splitter or DocumentsSplitter(            
-            default_chunk_size=1000,
-            default_chunk_overlap=100,
-        )
+        self._splitter = splitter or create_default_document_splitter()
 
     # ------------------------------------------------------------------
     # Public API

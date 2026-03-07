@@ -10,6 +10,7 @@ from typing import Sequence
 
 from langchain_core.documents import Document
 
+from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_normalizer_pipeline
 from intergrax.rag.document_loaders.documents_loader import DocumentsLoader
 from intergrax.rag.document_loaders.registry.document_handler_registry import (
     DocumentHandlerRegistry,
@@ -23,6 +24,7 @@ class _DummyMetadataPipeline:
 
     def enrich(self, docs, source):
         return docs
+    
 
 
 class _DummyHandler:
@@ -44,11 +46,13 @@ def _build_loader():
     registry = DocumentHandlerRegistry()
     registry.register(_DummyHandler())
 
-    pipeline = _DummyMetadataPipeline()
+    metadata_pipeline = _DummyMetadataPipeline()
+    normalizer_pipeline = create_default_normalizer_pipeline()
 
     return DocumentsLoader(
         registry=registry,
-        metadata_pipeline=pipeline,
+        metadata_pipeline=metadata_pipeline,
+        normalizer_pipeline=normalizer_pipeline
     )
 
 
@@ -68,9 +72,15 @@ def test_loader_respects_allowed_extensions(tmp_path: Path):
     (tmp_path / "a.txt").write_text("a")
     (tmp_path / "b.pdf").write_text("b")
 
+    registry = DocumentHandlerRegistry()
+    metadata_pipeline = _DummyMetadataPipeline()
+    normalizer_pipeline = create_default_normalizer_pipeline()
+
+
     loader = DocumentsLoader(
-        registry=DocumentHandlerRegistry(),
-        metadata_pipeline=_DummyMetadataPipeline(),
+        registry=registry,
+        metadata_pipeline=metadata_pipeline,
+        normalizer_pipeline=normalizer_pipeline,
         allowed_exts=[".txt"],
     )
 
@@ -85,12 +95,17 @@ def test_loader_respects_allowed_extensions(tmp_path: Path):
 
 def test_loader_respects_max_files(tmp_path: Path):
 
+    normalizer_pipeline = create_default_normalizer_pipeline()
+    metadata_pipeline = _DummyMetadataPipeline()
+    registry = DocumentHandlerRegistry()
+
     for i in range(5):
         (tmp_path / f"f{i}.txt").write_text("x")
 
     loader = DocumentsLoader(
-        registry=DocumentHandlerRegistry(),
-        metadata_pipeline=_DummyMetadataPipeline(),
+        registry=registry,
+        metadata_pipeline=metadata_pipeline,
+        normalizer_pipeline=normalizer_pipeline,
         max_files=2,
     )
 

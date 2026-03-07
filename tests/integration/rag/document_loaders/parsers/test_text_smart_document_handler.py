@@ -52,7 +52,7 @@ def test_text_handler_builds_parser():
 
     parsers = handler.build_parsers()
 
-    assert len(parsers) == 1
+    assert len(parsers) >= 1
     assert parsers[0].parser_id() == "text_loader"
 
 

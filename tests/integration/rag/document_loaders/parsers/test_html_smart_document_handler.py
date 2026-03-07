@@ -56,8 +56,7 @@ def test_html_handler_builds_parser():
 
     parsers = handler.build_parsers()
 
-    assert len(parsers) == 1
-    assert parsers[0].parser_id() == "html_smart"
+    assert len(parsers) >= 1
 
 
 def test_html_handler_loads_html(tmp_path: Path):

@@ -10,6 +10,7 @@ import pytest
 
 from langchain_core.documents import Document
 
+from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_normalizer_pipeline
 from intergrax.rag.document_loaders.documents_loader import DocumentsLoader
 from intergrax.rag.document_loaders.contracts.base_document_handler import (
     BaseDocumentHandler,
@@ -61,11 +62,13 @@ def test_loader_calls_handler_load():
     registry = DocumentHandlerRegistry()
     registry.register(handler)
 
-    pipeline = _DummyMetadataPipeline()
+    metadata_pipeline = _DummyMetadataPipeline()
+    normalizer_pipeline = create_default_normalizer_pipeline()
 
     loader = DocumentsLoader(
         registry=registry,
-        metadata_pipeline=pipeline,
+        metadata_pipeline=metadata_pipeline,
+        normalizer_pipeline=normalizer_pipeline,
     )
 
     result = loader.load_document("file.pdf")
@@ -83,16 +86,18 @@ def test_loader_runs_metadata_pipeline():
     registry = DocumentHandlerRegistry()
     registry.register(handler)
 
-    pipeline = _DummyMetadataPipeline()
+    metadata_pipeline = _DummyMetadataPipeline()
+    normalizer_pipeline = create_default_normalizer_pipeline()
 
     loader = DocumentsLoader(
         registry=registry,
-        metadata_pipeline=pipeline,
+        metadata_pipeline=metadata_pipeline,
+        normalizer_pipeline=normalizer_pipeline,
     )
 
     loader.load_document("file.pdf")
 
-    assert pipeline.called
+    assert metadata_pipeline.called
 
 
 def test_loader_returns_empty_when_handler_returns_none():
@@ -102,11 +107,13 @@ def test_loader_returns_empty_when_handler_returns_none():
     registry = DocumentHandlerRegistry()
     registry.register(handler)
 
-    pipeline = _DummyMetadataPipeline()
+    metadata_pipeline = _DummyMetadataPipeline()
+    normalizer_pipeline = create_default_normalizer_pipeline()
 
     loader = DocumentsLoader(
         registry=registry,
-        metadata_pipeline=pipeline,
+        metadata_pipeline=metadata_pipeline,
+        normalizer_pipeline=normalizer_pipeline,
     )
 
     result = loader.load_document("file.pdf")
@@ -126,11 +133,13 @@ def test_loader_returns_empty_on_exception():
     registry = DocumentHandlerRegistry()
     registry.register(handler)
 
-    pipeline = _DummyMetadataPipeline()
+    metadata_pipeline = _DummyMetadataPipeline()
+    normalizer_pipeline = create_default_normalizer_pipeline()
 
     loader = DocumentsLoader(
         registry=registry,
-        metadata_pipeline=pipeline,
+        metadata_pipeline=metadata_pipeline,
+        normalizer_pipeline=normalizer_pipeline,
     )
 
     result = loader.load_document("file.pdf")
