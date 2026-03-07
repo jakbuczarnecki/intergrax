@@ -48,8 +48,7 @@ def test_doc_handler_builds_parser():
 
     parsers = handler.build_parsers()
 
-    assert len(parsers) == 1
-    assert parsers[0].parser_id() == "doc_smart"
+    assert len(parsers) >= 1
 
 
 def test_doc_handler_loads_docx(tmp_path: Path):

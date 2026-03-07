@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Optional, List
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest

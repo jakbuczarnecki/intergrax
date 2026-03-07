@@ -5,15 +5,15 @@
 from __future__ import annotations
 from typing import Any, Callable, Dict, Union
 
-from intergrax.llm_adapters.aws_bedrock_adapter import BedrockChatAdapter
-from intergrax.llm_adapters.azure_openai_adapter import AzureOpenAIChatAdapter
-from intergrax.llm_adapters.claude_adapter import ClaudeChatAdapter
-from intergrax.llm_adapters.gemini_adapter import GeminiChatAdapter
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.llm_provider import LLMProvider
-from intergrax.llm_adapters.mistral_adapter import MistralChatAdapter
-from intergrax.llm_adapters.ollama_adapter import LangChainOllamaAdapter
-from intergrax.llm_adapters.openai_responses_adapter import OpenAIChatResponsesAdapter
+from intergrax.llm_adapters.providers.aws_bedrock_adapter import BedrockChatAdapter
+from intergrax.llm_adapters.providers.azure_openai_adapter import AzureOpenAIChatAdapter
+from intergrax.llm_adapters.providers.claude_adapter import ClaudeChatAdapter
+from intergrax.llm_adapters.providers.gemini_adapter import GeminiChatAdapter
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.providers.mistral_adapter import MistralChatAdapter
+from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+from intergrax.llm_adapters.providers.openai_responses_adapter import OpenAIChatResponsesAdapter
 
 class LLMAdapterRegistry:
     _factories: Dict[str, Callable[..., LLMAdapter]] = {}

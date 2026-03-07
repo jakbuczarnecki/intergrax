@@ -30,7 +30,7 @@ from typing import Optional
 import uuid
 
 from intergrax.distributed.contracts.execution_semaphore import ExecutionSlot
-from intergrax.llm_adapters.llm_usage_track import LLMUsageTracker
+from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
 from intergrax.runtime.nexus.budget.budget_enforcer import BudgetEnforcer, BudgetExceededError
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.errors.classifier import ErrorClassifier

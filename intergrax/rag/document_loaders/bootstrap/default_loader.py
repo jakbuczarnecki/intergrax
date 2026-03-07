@@ -21,6 +21,24 @@ from intergrax.rag.document_loaders.normalizers.whitespace_normalizer import Whi
 from intergrax.rag.document_loaders.registry.document_handler_registry import DocumentHandlerRegistry
 
 
+def create_default_normalizer_pipeline() -> NormalizerPipeline:
+    normalizer_pipeline = NormalizerPipeline(
+            normalizers=[
+                WhitespaceNormalizer(),
+            ]
+        )
+    return normalizer_pipeline
+
+
+def create_default_metadata_pipeline() -> MetadataPipeline:
+    metadata_pipeline = MetadataPipeline(
+            providers=[
+                DefaultMetadataProvider(),
+            ]
+        )
+    return metadata_pipeline
+
+
 def create_default_documents_loader(
     registry: DocumentHandlerRegistry | None = None,
     normalizer_pipeline: NormalizerPipeline | None = None,
@@ -40,18 +58,10 @@ def create_default_documents_loader(
         registry.register(ImageSmartDocumentHandler())
 
     if normalizer_pipeline is None:
-        normalizer_pipeline = NormalizerPipeline(
-            normalizers=[
-                WhitespaceNormalizer(),
-            ]
-        )
+        normalizer_pipeline = create_default_normalizer_pipeline()
 
     if metadata_pipeline is None:
-        metadata_pipeline = MetadataPipeline(
-            providers=[
-                DefaultMetadataProvider(),
-            ]
-        )
+        metadata_pipeline = create_default_metadata_pipeline()
 
     return DocumentsLoader(
         registry=registry,

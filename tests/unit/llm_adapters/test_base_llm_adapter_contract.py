@@ -21,7 +21,7 @@ import pytest
 from requests_cache import Optional
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
 
 pytestmark = pytest.mark.unit

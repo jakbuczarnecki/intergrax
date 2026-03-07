@@ -21,7 +21,13 @@ from tests._support.builder import DeterministicRuntimeHarness, build_engine_har
 from intergrax.runtime.nexus.planning.engine_plan_models import EngineNextStep, PlanIntent
 from intergrax.runtime.nexus.planning.plan_sources import PlanSpec
 
+import warnings
 
+warnings.filterwarnings(
+    "ignore",
+    category=DeprecationWarning,
+    module="docling"
+)
 
 @pytest.fixture
 def session_manager_in_memory():

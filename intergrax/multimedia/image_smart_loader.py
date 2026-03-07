@@ -9,7 +9,7 @@ from typing import Literal, Optional
 from PIL import Image, ExifTags
 from langchain_core.documents import Document
 
-from intergrax.llm_adapters.ollama_adapter import LangChainOllamaAdapter
+from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
 
 
 try:
@@ -17,7 +17,7 @@ try:
 except Exception:
     pytesseract = None
 
-from intergrax.llm_adapters.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
 class ImageSmartLoader:
     """

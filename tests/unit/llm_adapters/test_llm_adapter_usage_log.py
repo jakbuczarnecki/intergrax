@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.llm_adapters.llm_adapter import LLMAdapterUsageLog
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapterUsageLog
 
 
 pytestmark = pytest.mark.unit

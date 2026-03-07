@@ -12,6 +12,7 @@ from langchain_core.documents import Document
 
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG, DoclingMode
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
+from intergrax.rag.document_loaders.contracts.metadata_constants import DOCLING_DOCUMENT_META_KEY
 from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
 
 
@@ -47,8 +48,9 @@ class DoclingLocalParser(BaseDocumentParser):
         metadata = build_loader_metadata(
             source=source,
             parser=self.parser_id(),
-            position=0,
+            position=0,            
         )
+        metadata[DOCLING_DOCUMENT_META_KEY] = doc
 
         return [
             Document(
