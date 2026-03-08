@@ -9,7 +9,7 @@ from typing import Sequence, List
 from langchain_core.documents import Document
 
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import BaseChunkingStrategy
-from intergrax.rag.document_splitters.contracts.chunk_metadata_contract import ChunkMetadataKey
+from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 
 
 class ParentChildChunkingStrategy(BaseChunkingStrategy):
@@ -74,6 +74,7 @@ class ParentChildChunkingStrategy(BaseChunkingStrategy):
                     child_metadata = dict(metadata)
                     child_metadata[ChunkMetadataKey.PARENT_CHUNK_ID] = parent_id
                     child_metadata[ChunkMetadataKey.PARENT_CHUNK_INDEX] = parent_index
+                    child_metadata[ChunkMetadataKey.CHUNK_SIZE] = len(text)
                     child_metadata[ChunkMetadataKey.CHUNK_INDEX] = child_index                
                     child_metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
 

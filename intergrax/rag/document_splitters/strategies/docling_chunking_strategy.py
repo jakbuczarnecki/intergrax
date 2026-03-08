@@ -10,7 +10,6 @@ from langchain_core.documents import Document
 
 from docling_core.types.doc import (
     DoclingDocument,
-    NodeItem,
     SectionHeaderItem,
     TextItem,
     ListItem,
@@ -20,11 +19,11 @@ from docling_core.types.doc import (
     FormulaItem,
 )
 
-from intergrax.rag.document_loaders.contracts.metadata_constants import DOCLING_DOCUMENT_META_KEY
+from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import (
     BaseChunkingStrategy,
 )
-from intergrax.rag.document_splitters.contracts.chunk_metadata_contract import ChunkMetadataKey
+from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 
 
 class DoclingChunkingStrategy(BaseChunkingStrategy):
@@ -54,7 +53,7 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
 
             docling_doc: Optional[DoclingDocument] = cast(
                 Optional[DoclingDocument],
-                metadata.get(DOCLING_DOCUMENT_META_KEY),
+                metadata.get(DocumentMetadataKey.DOCLING_DOCUMENT_META),
             )
 
             if docling_doc is None:
@@ -63,20 +62,24 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
             buffer: List[str] = []
             buffer_length: int = 0
             chunk_index = 0
+            current_section: Optional[str] = None
 
             for item, _level in docling_doc.iterate_items():
 
                 if isinstance(item, SectionHeaderItem):
 
+                    current_section = item.text
+
                     if buffer:
                         chunks.append(
                             self._create_chunk(
-                                buffer,
+                                "\n".join(buffer),
                                 metadata,
                                 chunk_index,
+                                current_section,
                             )
                         )
-                        chunk_index += 1
+                        chunk_index = len(chunks)
                         buffer = []
                         buffer_length = 0
 
@@ -96,12 +99,13 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
                     if buffer:
                         chunks.append(
                             self._create_chunk(
-                                buffer,
+                                "\n".join(buffer),
                                 metadata,
                                 chunk_index,
+                                current_section,
                             )
                         )
-                        chunk_index += 1
+                        chunk_index = len(chunks)
                         buffer = []
                         buffer_length = 0
 
@@ -112,9 +116,11 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
                             table_text,
                             metadata,
                             chunk_index,
+                            current_section,
                         )
                     )
-                    chunk_index += 1
+                    chunk_index = len(chunks)
+                    continue
 
                 elif isinstance(item, PictureItem):
 
@@ -125,9 +131,11 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
                             caption,
                             metadata,
                             chunk_index,
+                            current_section,
                         )
                     )
-                    chunk_index += 1
+                    chunk_index = len(chunks)
+                    continue
 
                 elif isinstance(item, CodeItem):
                     buffer.append(item.text)
@@ -137,17 +145,18 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
                     buffer.append(item.text)
                     buffer_length += len(item.text)
 
-                if sum(len(x) for x in buffer) >= self.MAX_CHUNK_SIZE:
+                if buffer_length >= self.MAX_CHUNK_SIZE:
 
                     chunks.append(
                         self._create_chunk(
-                            buffer,
+                            "\n".join(buffer),
                             metadata,
                             chunk_index,
+                            current_section,
                         )
                     )
 
-                    chunk_index += 1
+                    chunk_index = len(chunks)
                     buffer = []
                     buffer_length = 0
 
@@ -155,9 +164,10 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
 
                 chunks.append(
                     self._create_chunk(
-                        buffer,
+                        "\n".join(buffer),
                         metadata,
                         chunk_index,
+                        current_section,
                     )
                 )
 
@@ -165,19 +175,29 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
 
     def _create_chunk(
         self,
-        buffer: List[str],
+        chunk_text: str,
         metadata: dict,
         chunk_index: int,
+        section: Optional[str],
     ) -> Document:
-
-        chunk_text = "\n".join(buffer)
 
         chunk_metadata = dict(metadata)
 
         chunk_metadata[ChunkMetadataKey.CHUNK_INDEX] = chunk_index
         chunk_metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
+        chunk_metadata[ChunkMetadataKey.CHUNK_SIZE] = len(chunk_text)
 
-        chunk_metadata.pop(DOCLING_DOCUMENT_META_KEY, None)
+        if section:
+            chunk_metadata[ChunkMetadataKey.SECTION] = section
+
+        document_id = chunk_metadata.get(DocumentMetadataKey.DOCUMENT_ID)
+
+        if document_id:
+            chunk_metadata[ChunkMetadataKey.CHUNK_ID] = (
+                f"{document_id}:{self.strategy_id()}:{chunk_index}"
+            )
+
+        chunk_metadata.pop(DocumentMetadataKey.DOCLING_DOCUMENT_META, None)
 
         return Document(
             page_content=chunk_text,
@@ -189,13 +209,26 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
         text: str,
         metadata: dict,
         chunk_index: int,
+        section: Optional[str],
     ) -> Document:
 
         chunk_metadata = dict(metadata)
+
         chunk_metadata[ChunkMetadataKey.CHUNK_INDEX] = chunk_index
         chunk_metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
+        chunk_metadata[ChunkMetadataKey.CHUNK_SIZE] = len(text)
 
-        chunk_metadata.pop(DOCLING_DOCUMENT_META_KEY, None)
+        if section:
+            chunk_metadata[ChunkMetadataKey.SECTION] = section
+
+        document_id = chunk_metadata.get(DocumentMetadataKey.DOCUMENT_ID)
+
+        if document_id:
+            chunk_metadata[ChunkMetadataKey.CHUNK_ID] = (
+                f"{document_id}:{self.strategy_id()}:{chunk_index}"
+            )
+
+        chunk_metadata.pop(DocumentMetadataKey.DOCLING_DOCUMENT_META, None)
 
         return Document(
             page_content=text,

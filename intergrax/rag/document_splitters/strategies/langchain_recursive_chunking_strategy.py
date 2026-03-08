@@ -10,7 +10,7 @@ from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import BaseChunkingStrategy
-from intergrax.rag.document_splitters.contracts.chunk_metadata_contract import ChunkMetadataKey
+from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 
 
 class LangChainRecursiveChunkingStrategy(BaseChunkingStrategy):
@@ -55,6 +55,7 @@ class LangChainRecursiveChunkingStrategy(BaseChunkingStrategy):
                 metadata = dict(doc.metadata)
                 metadata[ChunkMetadataKey.CHUNK_INDEX] = index                
                 metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
+                metadata[ChunkMetadataKey.CHUNK_SIZE] = len(text)
 
                 chunk = Document(
                     page_content=text,
