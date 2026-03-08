@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Optional, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
@@ -19,7 +19,16 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
     OpenAI embedding provider.
     """
 
-    def __init__(self, model_name: str) -> None:
+    DEFAULT_MODEL = "text-embedding-3-small"
+
+    def __init__(
+            self, 
+            model_name: Optional[str] = None
+    ) -> None:
+        
+        if model_name is None:
+            model_name = self.DEFAULT_MODEL
+
         self._model = OpenAIEmbeddings(model=model_name)
 
         # probe embedding dimension

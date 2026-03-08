@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Optional, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
@@ -20,7 +20,16 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
     Ollama embedding provider.
     """
 
-    def __init__(self, model_name: str) -> None:
+    DEFAULT_MODEL = "rjmalagon/gte-qwen2-1.5b-instruct-embed-f16:latest"
+
+    def __init__(
+            self, 
+            model_name: Optional[str] = None
+    ) -> None:
+        
+        if model_name is None:
+            model_name = self.DEFAULT_MODEL
+
         self._model = OllamaEmbeddings(model=model_name)
 
         # probe embedding dimension

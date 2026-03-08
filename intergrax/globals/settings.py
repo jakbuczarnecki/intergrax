@@ -52,25 +52,9 @@ class GlobalSettings:
         "INTERGRAX_DEFAULT_OLLAMA_MODEL", "llama3.1:latest"
     )
 
-    # Default local Ollama embedding model.
-    default_ollama_embed_model: str = os.getenv(
-        "INTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL",
-        "rjmalagon/gte-qwen2-1.5b-instruct-embed-f16:latest",
-    )
-
     # Default OpenAI chat model.
     default_openai_model: str = os.getenv("INTERGRAX_DEFAULT_OPENAI_MODEL", "gpt-5-mini")
 
-    # Default OpenAI embedding model.
-    default_openai_embed_model: str = os.getenv(
-        "INTERGRAX_DEFAULT_OPENAI_EMBED_MODEL", "text-embedding-3-small"
-    )
-
-    # Default HuggingFace embedding model (fallback).
-    default_hf_embed_model: str = os.getenv(
-        "INTERGRAX_DEFAULT_HG_EMBED_MODEL",
-        "sentence-transformers/all-MiniLM-L6-v2",
-    )
 
     # Default Google Gemini chat model.
     default_gemini_model: str = os.getenv("INTERGRAX_DEFAULT_GEMINI_MODEL", "gemini-2.5-flash")

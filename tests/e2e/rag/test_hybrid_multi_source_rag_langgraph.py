@@ -10,6 +10,7 @@ import pytest
 
 from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_documents_loader
 from intergrax.rag.document_splitters.bootstrap.default_chunking_engine import create_default_document_splitter
+from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_pipeline
 from intergrax.rag.vectorstore.providers.chroma_vector_store import ChromaConfig, ChromaVectorStore
 
 
@@ -52,10 +53,8 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
     splitter = create_default_document_splitter()
 
     embed_manager = EmbeddingManager(
-        provider="ollama",
-        model_name=GLOBAL_SETTINGS.default_ollama_embed_model,
-        assume_ollama_dim=1536,
-    )
+    pipeline=create_default_embedding_pipeline(),
+)
 
     chroma_cfg = ChromaConfig(
         collection_name="hybrid_multi_source_rag",

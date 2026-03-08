@@ -19,15 +19,20 @@ class HFEmbeddingProvider(EmbeddingProvider):
     HuggingFace SentenceTransformer embedding provider.
     """
 
+    DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+
     def __init__(
         self,
-        model_name: str,
+        model_name: Optional[str] = None,
         *,
         device: Optional[str] = None,
         batch_size: int = 32,
         normalize_inside: bool = False,
         max_length: Optional[int] = None,
     ) -> None:
+
+        if model_name is None:
+            model_name = self.DEFAULT_MODEL
 
         self._model = SentenceTransformer(model_name, device=device)
 
