@@ -91,3 +91,17 @@ def test_embed_documents() -> None:
 
     assert np.all(vector_0 == 1.0)
     assert np.all(vector_1 == 1.0)
+
+
+def test_embedding_dimension_matches_provider() -> None:
+
+    pipeline = create_pipeline()
+
+    result = pipeline.embed_texts(["a", "b"])
+
+    dimension = result.shape[1]
+
+    assert dimension > 0
+
+    for row in result:
+        assert row.shape[0] == dimension
