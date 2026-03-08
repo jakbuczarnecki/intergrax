@@ -4,8 +4,11 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Dict
+import hashlib
+
+
+from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 
 
 def build_loader_metadata(
@@ -27,35 +30,36 @@ def build_loader_metadata(
 
     def _safe_document_id(source: str) -> str:
         """
-        Extract a stable document identifier from source.
+        Generate a stable deterministic document identifier.
 
-        Works for:
-        - local paths
-        - URLs
-        - S3/GCS URIs
-        - arbitrary strings
+        The identifier must remain stable regardless of loader,
+        parser, or ingestion pipeline.
+
+        The source may represent:
+        - filesystem path
+        - URL
+        - S3/GCS URI
+        - database identifier
+        - arbitrary string
+
+        The ID must therefore be derived deterministically from source.
         """
 
         if not source:
-            return "unknown"
+            return "unknown_document"
 
-        # normalize separators
-        s = source.replace("\\", "/")
+        normalized = source.replace("\\", "/").rstrip("/")
 
-        # remove trailing slash
-        if s.endswith("/"):
-            s = s[:-1]
+        digest = hashlib.sha1(normalized.encode("utf-8")).hexdigest()
 
-        # basename extraction
-        if "/" in s:
-            return s.rsplit("/", 1)[-1]
-
-        return s
+        return digest[:16]
     
 
+    doc_id = _safe_document_id(source)
+
     return {
-        "source": source,
-        "parser": parser,
-        "document_id": _safe_document_id(source),
-        "position": position,
+        DocumentMetadataKey.SOURCE: source,
+        DocumentMetadataKey.PARSER: parser,
+        DocumentMetadataKey.DOCUMENT_ID: doc_id,
+        DocumentMetadataKey.POSITION: position,
     }

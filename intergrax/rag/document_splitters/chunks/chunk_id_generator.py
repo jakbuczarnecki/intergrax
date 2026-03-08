@@ -11,40 +11,22 @@ class ChunkIDGenerator:
     """
     Deterministic chunk identifier generator.
 
-    This generator produces a stable SHA256 identifier for each chunk.
-    The identifier is based on the source identifier, chunk index,
-    and normalized chunk text.
-
-    The goal is to ensure stable chunk IDs across repeated ingestions
-    of the same document.
+    The identifier must remain stable across:
+    - repeated ingestion
+    - distributed pipelines
+    - different workers
     """
 
     @staticmethod
     def generate(
-        source: str,
+        document_id: str,
+        strategy_id: str,
         chunk_index: int,
         text: str,
     ) -> str:
-        """
-        Generate a deterministic chunk identifier.
 
-        Parameters
-        ----------
-        source:
-            Unique identifier of the source document.
-        chunk_index:
-            Sequential index of the chunk within the document.
-        text:
-            Chunk text content.
+        base = f"{document_id}|{strategy_id}|{chunk_index}|{text}"
 
-        Returns
-        -------
-        str
-            Stable SHA256 chunk identifier.
-        """
+        digest = hashlib.sha1(base.encode("utf-8")).hexdigest()
 
-        normalized_text = text.strip()
-
-        payload = f"{source}|{chunk_index}|{normalized_text}"
-
-        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        return digest[:16]

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Dict, Any
 
-from intergrax.rag.document_splitters.contracts.chunk_metadata_contract import (
+from intergrax.rag.document_splitters.contracts.chunk_metadata_key import (
     ChunkMetadataKey,
 )
 

@@ -12,7 +12,7 @@ from langchain_core.documents import Document
 from intergrax.rag.document_splitters.strategies.recursive_chunking_strategy import (
     RecursiveChunkingStrategy,
 )
-from intergrax.rag.document_splitters.contracts.chunk_metadata_contract import (
+from intergrax.rag.document_splitters.contracts.chunk_metadata_key import (
     ChunkMetadataKey,
 )
 
