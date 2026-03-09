@@ -13,7 +13,7 @@ from langchain_core.runnables import RunnableLambda, RunnableMap, RunnableSequen
 from langchain_core.output_parsers import StrOutputParser
 
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
-from intergrax.rag.retrievers.rag_retriever import RagRetriever
+from intergrax.rag.retrievers._legacy.rag_retriever import RagRetriever
 from intergrax.rag.rerankers.re_ranker import ReRanker
 
 from operator import itemgetter
@@ -21,53 +21,6 @@ from operator import itemgetter
 from intergrax.logging import IntergraxLogging
 
 logger = IntergraxLogging.get_logger(__name__, component="rag")
-
-# How to use:
-# 1) You already have:
-# store, embed_manager, retriever = intergraxRagRetriever(...), reranker = intergraxReRanker(...) (optional)
-# llm: e.g. from langchain_ollama import ChatOllama
-# from langchain_ollama import ChatOllama
-# llm = ChatOllama(model="llama3.1:latest", temperature=0.2)
-
-# 2) Hooks (optional)
-# def before(payload):
-#     # e.g. force an additional filter
-#     if payload.get("where") is None:
-#         payload["where"] = {}
-#     return payload
-
-# def after_prompt(prompt_text, payload):
-#     # e.g. append a note for the model
-#     return prompt_text + "\n\nNote: Be precise and cite context segments."
-
-# def after_llm(answer_text, payload):
-#     # e.g. post-processing
-#     return answer_text.strip()
-
-# 3) Configuration
-# cfg = intergraxChainConfig(
-#     top_k=12,
-#     min_score=0.18,
-#     use_rerank=True,
-#     rerank_k=6,
-#     max_context_chars=10_000,
-#     on_before_build_prompt=before,
-#     on_after_build_prompt=after_prompt,
-#     on_after_llm=after_llm,
-# )
-
-# 4) Build the chain
-# qa_chain = intergraxLangChainQAChain(
-#     retriever=retriever,
-#     llm=llm,
-#     reranker=reranker,   # or None
-#     config=cfg,
-# )
-
-# 5) Call
-# res = qa_chain.invoke("What are intergrax virtual fairs?")
-# print(res["answer"])
-
 
 # ----------------------------
 # Helper types

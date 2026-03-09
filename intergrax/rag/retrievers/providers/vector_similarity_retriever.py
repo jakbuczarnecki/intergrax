@@ -6,10 +6,9 @@ from __future__ import annotations
 
 from typing import List
 
-import numpy as np
 
-from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
     RetrieverCandidate,
@@ -21,8 +20,8 @@ class VectorSimilarityRetriever(BaseRetriever):
 
     def __init__(
         self,
-        vector_store: VectorstoreManager,
-        embedding_manager: EmbeddingManager,
+        vector_store: BaseVectorstoreManager,
+        embedding_manager: BaseEmbeddingManager,
         *,
         prefetch_factor: int = 10,
     ) -> None:

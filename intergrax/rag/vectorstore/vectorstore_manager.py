@@ -4,9 +4,11 @@
 
 from __future__ import annotations
 
+import math
 from typing import Optional, Sequence
 
 from langchain_core.documents import Document
+import numpy as np
 
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
@@ -35,6 +37,32 @@ class VectorstoreManager(BaseVectorstoreManager):
         *,
         ids: Optional[Sequence[str]] = None,
     ) -> None:
+        
+        if len(documents) != len(embeddings):
+            raise ValueError(
+                "VectorstoreManager.add_documents: "
+                "documents and embeddings length mismatch "
+                f"({len(documents)} vs {len(embeddings)})"
+            )
+
+        if isinstance(embeddings, np.ndarray):
+            embeddings = embeddings.tolist()
+
+        dim = len(embeddings[0])
+        for i, vec in enumerate(embeddings):
+
+            if len(vec) != dim:
+                raise ValueError(
+                    "Embedding dimension mismatch "
+                    f"at index {i}: {len(vec)} != {dim}"
+                )
+            
+            for v in vec:
+                if math.isnan(v) or math.isinf(v):
+                    raise ValueError(
+                        f"Invalid embedding value at index {i}"
+                    )
+
         self._store.add_documents(
             documents=documents,
             embeddings=embeddings,
@@ -49,6 +77,10 @@ class VectorstoreManager(BaseVectorstoreManager):
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
     ) -> Sequence[VectorStoreHit]:
+        
+        if isinstance(query_embedding, np.ndarray):
+            query_embedding = query_embedding.tolist()
+
         return self._store.query(
             query_embedding=query_embedding,
             top_k=top_k,

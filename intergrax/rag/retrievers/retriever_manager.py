@@ -35,6 +35,7 @@ class RetrieverManager(BaseRetrieverManager):
         self,
         query_text: str,
         *,
+        retriever_id: str,
         query_embedding: Sequence[float] | None = None,
         top_k: int = 5,
         metadata_filter=None,
@@ -50,6 +51,7 @@ class RetrieverManager(BaseRetrieverManager):
             top_k=top_k,
             metadata_filter=metadata_filter,
             include_embeddings=include_embeddings,
+            retriever_id=retriever_id,
         )
 
     def retrieve_query(

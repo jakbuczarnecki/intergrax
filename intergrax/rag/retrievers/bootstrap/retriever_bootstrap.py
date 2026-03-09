@@ -4,9 +4,11 @@
 
 from __future__ import annotations
 
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.rag.retrievers.engine.retriever_engine import RetrieverEngine
 from intergrax.rag.retrievers.providers.fusion_retriever import FusionRetriever
+from intergrax.rag.retrievers.providers.hierarchical_retriever import HierarchicalRetriever
 from intergrax.rag.retrievers.providers.hybrid_retriever import HybridRetriever
 from intergrax.rag.retrievers.providers.mmr_retriever import MMRRetriever
 from intergrax.rag.retrievers.providers.multiquery_retriever import MultiQueryRetriever
@@ -15,13 +17,15 @@ from intergrax.rag.retrievers.providers.vector_similarity_retriever import Vecto
 from intergrax.rag.retrievers.registry.retriever_registry import RetrieverRegistry
 from intergrax.rag.retrievers.retriever_manager import RetrieverManager
 from intergrax.rag.retrievers.retriever_pipeline import RetrieverPipeline
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 
 
 def create_default_retriever_registry(
     *,
-    vector_store,
-    embedding_manager,
-    registry: RetrieverRegistry | None = None,
+    vector_store: BaseVectorstoreManager,
+    embedding_manager: BaseEmbeddingManager,
+    registry: RetrieverRegistry | None = None,    
+    toc_vector_store: BaseVectorstoreManager | None = None,
 ) -> RetrieverRegistry:
     """
     Create RetrieverRegistry with built-in retriever providers registered.
@@ -63,6 +67,13 @@ def create_default_retriever_registry(
             )
         )
         registry.register(
+            HierarchicalRetriever(
+                chunks_store=vector_store,
+                embedding_manager=embedding_manager,
+                toc_store=toc_vector_store,
+            )
+        )
+        registry.register(
             FusionRetriever(
                 registry=registry,
                 retrievers=[
@@ -78,8 +89,8 @@ def create_default_retriever_registry(
 
 def create_default_retriever_engine(
     *,
-    vector_store,
-    embedding_manager,
+    vector_store: BaseVectorstoreManager,
+    embedding_manager: BaseEmbeddingManager,
     registry: RetrieverRegistry | None = None,
 ) -> RetrieverEngine:
     """
@@ -99,9 +110,8 @@ def create_default_retriever_engine(
 
 def create_default_retriever_pipeline(
     *,
-    retriever_id: str | None = None,
-    vector_store,
-    embedding_manager,
+    vector_store: BaseVectorstoreManager,
+    embedding_manager: BaseEmbeddingManager,
     registry: RetrieverRegistry | None = None,
 ) -> RetrieverPipeline:
     """
@@ -114,9 +124,6 @@ def create_default_retriever_pipeline(
             embedding_manager=embedding_manager,
         )
 
-    if retriever_id is None:
-        retriever_id = registry.default_retriever()
-
     engine = create_default_retriever_engine(
         vector_store=vector_store,
         embedding_manager=embedding_manager,
@@ -124,29 +131,27 @@ def create_default_retriever_pipeline(
     )
 
     return RetrieverPipeline(
-        engine=engine,
-        retriever_id=retriever_id,
+        engine=engine,        
+        embedding_manager=embedding_manager
     )
 
 
 def create_default_retriever_manager(
     *,
-    retriever_id: str | None = None,
-    vector_store,
-    embedding_manager,
+    vector_store: BaseVectorstoreManager,
+    embedding_manager: BaseEmbeddingManager,
     registry: RetrieverRegistry | None = None,
 ) -> BaseRetrieverManager:
     """
     Create RetrieverManager using the default retriever pipeline.
     """
 
-    pipeline = create_default_retriever_pipeline(
-        retriever_id=retriever_id,
+    pipeline = create_default_retriever_pipeline(        
         vector_store=vector_store,
         embedding_manager=embedding_manager,
         registry=registry,
     )
 
     return RetrieverManager(
-        pipeline=pipeline,
+        pipeline=pipeline,        
     )

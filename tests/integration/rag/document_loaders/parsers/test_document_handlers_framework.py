@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+import sys
 
 import pytest
 from pathlib import Path
@@ -15,7 +16,6 @@ from intergrax.rag.document_loaders.handlers.pdf_smart_document_handler import (
 
 
 pytestmark = pytest.mark.integration
-
 
 def _create_pdf(path: Path) -> None:
     import fitz

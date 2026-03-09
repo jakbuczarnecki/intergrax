@@ -12,7 +12,7 @@ from langchain_core.documents import Document
 
 from intergrax.logging import IntergraxLogging
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.retrievers.rag_retriever import RagRetriever
+from intergrax.rag.retrievers._legacy.rag_retriever import RagRetriever
 
 logger = IntergraxLogging.get_logger(__name__, component="rag")
 
