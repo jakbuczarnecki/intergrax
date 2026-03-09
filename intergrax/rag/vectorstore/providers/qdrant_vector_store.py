@@ -10,6 +10,7 @@ import uuid
 
 from langchain_core.documents import Document
 
+from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMetadataKey
 from intergrax.rag.vectorstore.config.vector_config import Metric
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
 from intergrax.rag.vectorstore.providers.base_vector_store import BaseVectorStore
@@ -174,6 +175,10 @@ class QdrantVectorStore(BaseVectorStore):
 
             docs_batch = documents[start:end]
             metas_batch = self._doc_payloads(docs_batch, base=None)
+
+            for i in range(len(metas_batch)):
+                if EmbeddingMetadataKey.VECTOR in metas_batch[i]:
+                    metas_batch[i].pop(EmbeddingMetadataKey.VECTOR, None)
 
             # Tenant metadata enforcement
             for i in range(len(metas_batch)):

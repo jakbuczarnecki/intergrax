@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 
+from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDocumentsLoader
 from intergrax.rag.document_loaders.documents_loader import DocumentsLoader
 from intergrax.rag.document_loaders.handlers.audio_smart_document_handler import AudioSmartDocumentHandler
 from intergrax.rag.document_loaders.handlers.doc_smart_document_handler import DocSmartDocumentHandler
@@ -43,7 +44,7 @@ def create_default_documents_loader(
     registry: DocumentHandlerRegistry | None = None,
     normalizer_pipeline: NormalizerPipeline | None = None,
     metadata_pipeline: MetadataPipeline | None = None,
-) -> DocumentsLoader:
+) -> BaseDocumentsLoader:
 
     if registry is None:
         registry = DocumentHandlerRegistry()
