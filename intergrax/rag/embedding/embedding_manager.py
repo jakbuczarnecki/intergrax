@@ -54,7 +54,13 @@ class EmbeddingManager(BaseEmbeddingManager):
         """
         Generate embedding for a single text.
         """
-        return self._pipeline.embed_one(text)
+
+        vec = self._pipeline.embed_one(text)
+
+        if isinstance(vec, np.ndarray) and vec.ndim == 2 and vec.shape[0] == 1:
+            vec = vec[0]
+
+        return vec
 
 
     def embed_documents(

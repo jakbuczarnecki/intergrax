@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import List
 
+import numpy as np
+
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.rag.retrievers.contracts.base_retriever import (
