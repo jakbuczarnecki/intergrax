@@ -4,33 +4,18 @@
 
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import List, Sequence
 
 from intergrax.rag.retrievers.contracts.base_retriever import (
     RetrieverCandidate,
     RetrieverQuery,
 )
-from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
-from intergrax.rag.retrievers.retriever_pipeline import RetrieverPipeline
 
 
-class RetrieverManager(BaseRetrieverManager):
-    """
-    Public entry point for retrieval operations.
-
-    Responsibilities
-    ----------------
-    - expose simplified retrieval API
-    - delegate execution to RetrieverPipeline
-    """
-
-    def __init__(
-        self,
-        pipeline: RetrieverPipeline,
-    ) -> None:
-
-        self._pipeline = pipeline
-
+class BaseRetrieverManager:
+    
+    @abstractmethod
     def retrieve(
         self,
         query_text: str,
@@ -43,15 +28,10 @@ class RetrieverManager(BaseRetrieverManager):
         """
         Retrieve candidates for query text.
         """
-
-        return self._pipeline.retrieve(
-            query_text=query_text,
-            query_embedding=query_embedding,
-            top_k=top_k,
-            metadata_filter=metadata_filter,
-            include_embeddings=include_embeddings,
-        )
-
+        raise NotImplementedError
+    
+    
+    @abstractmethod
     def retrieve_query(
         self,
         query: RetrieverQuery,
@@ -59,5 +39,4 @@ class RetrieverManager(BaseRetrieverManager):
         """
         Retrieve using preconstructed RetrieverQuery.
         """
-
-        return self._pipeline.retrieve_query(query)
+        raise NotImplementedError

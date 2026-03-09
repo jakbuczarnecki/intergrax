@@ -35,9 +35,11 @@ class MMRRetriever(BaseRetriever):
     @classmethod
     def name(cls) -> str:
         return "mmr"
-    
+
     def _cosine(self, a: np.ndarray, b: np.ndarray) -> float:
-        return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-12))
+        return float(
+            np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-12)
+        )
 
     def retrieve(
         self,
@@ -66,9 +68,17 @@ class MMRRetriever(BaseRetriever):
         if not hits:
             return []
 
-        query_vec = np.array(q_vec)
+        query_vec = np.asarray(q_vec, dtype="float32").reshape(-1)
 
         valid_hits = [h for h in hits if h.embedding is not None]
+
+        if not valid_hits:
+            return []
+
+        embeddings = [
+            np.asarray(h.embedding, dtype="float32").reshape(-1)
+            for h in valid_hits
+        ]
 
         selected: List[int] = []
         remaining = list(range(len(valid_hits)))
@@ -78,7 +88,7 @@ class MMRRetriever(BaseRetriever):
             if not selected:
 
                 scores = [
-                    self._cosine(query_vec, valid_hits[i])
+                    self._cosine(query_vec, embeddings[i])
                     for i in remaining
                 ]
 
@@ -93,10 +103,10 @@ class MMRRetriever(BaseRetriever):
 
             for i in remaining:
 
-                sim_query = self._cosine(query_vec, valid_hits[i])
+                sim_query = self._cosine(query_vec, embeddings[i])
 
                 sim_selected = max(
-                    self._cosine(valid_hits[i], valid_hits[j])
+                    self._cosine(embeddings[i], embeddings[j])
                     for j in selected
                 )
 
@@ -116,7 +126,7 @@ class MMRRetriever(BaseRetriever):
 
         for rank, idx in enumerate(selected):
 
-            hit = hits[idx]
+            hit = valid_hits[idx]
 
             candidates.append(
                 RetrieverCandidate(

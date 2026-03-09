@@ -8,6 +8,7 @@ from typing import Optional, Sequence
 
 from langchain_core.documents import Document
 
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 from intergrax.rag.vectorstore.contracts.vector_store import VectorStoreHit
@@ -16,7 +17,7 @@ from intergrax.logging import IntergraxLogging
 logger = IntergraxLogging.get_logger(__name__, component="rag")
 
 
-class VectorstoreManager:
+class VectorstoreManager(BaseVectorstoreManager):
     """
     Thin delegation layer for VectorStore providers.
 

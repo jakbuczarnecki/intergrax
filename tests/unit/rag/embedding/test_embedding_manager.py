@@ -7,6 +7,7 @@ import numpy as np
 
 from langchain_core.documents import Document
 
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.embedding_pipeline import EmbeddingPipeline
@@ -30,7 +31,7 @@ class FakeEmbeddingProvider(EmbeddingProvider):
         return np.ones((len(texts), 4), dtype=np.float32)
 
 
-def create_manager() -> EmbeddingManager:
+def create_manager() -> BaseEmbeddingManager:
 
     registry = EmbeddingProviderRegistry()
     registry.register(FakeEmbeddingProvider())

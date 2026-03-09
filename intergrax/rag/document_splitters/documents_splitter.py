@@ -9,11 +9,12 @@ from typing import Optional, Sequence
 
 from langchain_core.documents import Document
 
+from intergrax.rag.document_splitters.contracts.base_documents_splitter import BaseDocumentsSplitter
 from intergrax.rag.document_splitters.engine.chunking_engine import ChunkingEngine
 from intergrax.rag.document_splitters.strategies.langchain_recursive_chunking_strategy import LangChainRecursiveChunkingStrategy
 
 
-class DocumentsSplitter:
+class DocumentsSplitter(BaseDocumentsSplitter):
     """
     Entry point for document chunking.
 

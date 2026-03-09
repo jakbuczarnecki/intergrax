@@ -50,6 +50,7 @@ class VectorStore(ABC):
         """
         Add or upsert documents with corresponding embeddings.
         """
+        raise NotImplementedError
 
     @abstractmethod
     def query(
@@ -64,15 +65,18 @@ class VectorStore(ABC):
         Query top_k most similar vectors.
         Must return similarity_score normalized to [0,1].
         """
+        raise NotImplementedError
 
     @abstractmethod
     def delete(self, ids: Sequence[str]) -> None:
         """
         Delete vectors by ids.
         """
+        raise NotImplementedError
 
     @abstractmethod
     def count(self) -> int:
         """
         Return number of stored vectors.
         """
+        raise NotImplementedError
