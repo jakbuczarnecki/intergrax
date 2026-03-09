@@ -7,8 +7,8 @@ from __future__ import annotations
 from typing import Dict, List
 
 from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
-from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
     RetrieverCandidate,
@@ -20,8 +20,8 @@ class ParentChildRetriever(BaseRetriever):
 
     def __init__(
         self,
-        vector_store: VectorstoreManager,
-        embedding_manager: EmbeddingManager,
+        vector_store: BaseVectorstoreManager,
+        embedding_manager: BaseEmbeddingManager,
         *,
         prefetch_factor: int = 10,
         max_per_parent: int = 2,

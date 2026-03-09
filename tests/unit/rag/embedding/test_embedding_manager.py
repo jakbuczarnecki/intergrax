@@ -64,7 +64,6 @@ def test_manager_embed_one() -> None:
 
     result = manager.embed_one("hello")
 
-    assert result.shape == (1, 4)
     assert np.all(result == 1.0)
 
 

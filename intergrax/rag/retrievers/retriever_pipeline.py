@@ -6,11 +6,13 @@ from __future__ import annotations
 
 from typing import List, Sequence
 
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.retrievers.contracts.base_retriever import (
     RetrieverCandidate,
     RetrieverQuery,
 )
 from intergrax.rag.retrievers.engine.retriever_engine import RetrieverEngine
+from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 
 
 class RetrieverPipeline:
@@ -28,23 +30,27 @@ class RetrieverPipeline:
         self,
         engine: RetrieverEngine,
         *,
-        retriever_id: str,
+        embedding_manager: BaseEmbeddingManager
     ) -> None:
         self._engine = engine
-        self._retriever_id = retriever_id
+        self._embedding_manager = embedding_manager
 
     def retrieve(
         self,
         query_text: str,
         *,
+        retriever_id: str,
         query_embedding: Sequence[float] | None = None,
         top_k: int = 5,
-        metadata_filter=None,
+        metadata_filter: MetadataFilter | None=None,
         include_embeddings: bool = False,
     ) -> List[RetrieverCandidate]:
         """
         Execute retrieval for a query text.
         """
+
+        if query_embedding is None:
+            query_embedding = self._embedding_manager.embed_one(query_text)
 
         query = RetrieverQuery(
             query_text=query_text,
@@ -56,12 +62,14 @@ class RetrieverPipeline:
 
         return self._engine.retrieve(
             query,
-            retriever_id=self._retriever_id,
+            retriever_id=retriever_id,
         )
 
     def retrieve_query(
         self,
         query: RetrieverQuery,
+        *,
+        retriever_id: str,        
     ) -> List[RetrieverCandidate]:
         """
         Execute retrieval using an already constructed query.
@@ -69,5 +77,5 @@ class RetrieverPipeline:
 
         return self._engine.retrieve(
             query,
-            retriever_id=self._retriever_id,
+            retriever_id=retriever_id,
         )

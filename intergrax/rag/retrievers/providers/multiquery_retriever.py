@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
     RetrieverCandidate,
@@ -19,8 +19,8 @@ class MultiQueryRetriever(BaseRetriever):
 
     def __init__(
         self,
-        vector_store: VectorstoreManager,
-        embedding_manager: EmbeddingManager,
+        vector_store: BaseVectorstoreManager,
+        embedding_manager: BaseEmbeddingManager,
         *,
         prefetch_factor: int = 5,
         num_queries: int = 3,

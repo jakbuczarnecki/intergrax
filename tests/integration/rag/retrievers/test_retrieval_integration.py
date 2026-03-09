@@ -3,10 +3,12 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+import sys
 
 import pytest
 from langchain_core.documents import Document
 
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMetadataKey
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.embedding_pipeline import EmbeddingPipeline
@@ -24,10 +26,17 @@ from intergrax.rag.retrievers.engine.retriever_engine import RetrieverEngine
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.retriever_manager import RetrieverManager
 from intergrax.rag.retrievers.retriever_pipeline import RetrieverPipeline
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.providers.qdrant_vector_store import QdrantConfig, QdrantVectorStore
 
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(
+        sys.platform.startswith("win"),
+        reason="ChromaDB Rust backend crashes on Windows during upsert",
+    ),
+]
 
 
 def create_embedding_manager() -> EmbeddingManager:
@@ -50,7 +59,7 @@ def create_embedding_manager() -> EmbeddingManager:
     return manager
 
 
-def create_retriever_manager(vector_store, embedding_manager):
+def create_retriever_manager(vector_store: BaseVectorstoreManager, embedding_manager: BaseEmbeddingManager):
 
     retriever = VectorSimilarityRetriever(
         vector_store=vector_store,
@@ -64,7 +73,7 @@ def create_retriever_manager(vector_store, embedding_manager):
 
     pipeline = RetrieverPipeline(
         engine=engine,
-        retriever_id=retriever.name(),
+        embedding_manager=embedding_manager,
     )
 
     manager = RetrieverManager(

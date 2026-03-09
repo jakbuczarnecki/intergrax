@@ -11,6 +11,7 @@ import pytest
 from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_documents_loader
 from intergrax.rag.document_splitters.bootstrap.default_chunking_engine import create_default_document_splitter
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_pipeline
+from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
 from intergrax.rag.vectorstore.providers.chroma_vector_store import ChromaConfig, ChromaVectorStore
 
 
@@ -34,7 +35,7 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
     from intergrax.rag.document_splitters.documents_splitter import DocumentsSplitter
     from intergrax.rag.embedding.embedding_manager import EmbeddingManager
     from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
-    from intergrax.rag.retrievers.rag_retriever import RagRetriever
+    from intergrax.rag.retrievers._legacy.rag_retriever import RagRetriever
 
 
     # ---- Tenant / corpus configuration
@@ -57,6 +58,7 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
 )
 
     chroma_cfg = ChromaConfig(
+        tenant_id="intergrax",
         collection_name="hybrid_multi_source_rag",
         persist_directory=None,  # ephemeral (test-friendly)
         settings=None,
@@ -117,19 +119,21 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
     assert total > 0, "Vectorstore count is 0 after ingest."
 
     # ---- Retrieval (RagRetriever.retrieve) ----
-    rag_retriever = RagRetriever(vectorstore, embed_manager)
+    retriever_manager = create_default_retriever_manager(
+        vector_store=vectorstore,
+        embedding_manager=embed_manager,
+    )
 
     question = "Summarize the key ideas present in the local corpus."
 
-    hits = rag_retriever.retrieve(
-        question=question,
+    hits = retriever_manager.retrieve(
+        query_text=question,
         top_k=8,
-        score_threshold=0.15,
-        where={"tenant": TENANT, "corpus": CORPUS, "version": VERSION},
-        max_per_parent=2,
-        use_mmr=True,
-        include_embeddings=False,
-        prefetch_factor=5,
+        metadata_filter={
+            "tenant": TENANT,
+            "corpus": CORPUS,
+            "version": VERSION,
+        },
     )
 
     assert isinstance(hits, list)
