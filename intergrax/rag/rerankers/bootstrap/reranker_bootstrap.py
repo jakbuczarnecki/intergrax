@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 
+from intergrax.rag.rerankers.cache.base_rerank_cache import BaseRerankCache
+from intergrax.rag.rerankers.cache.rerank_cache import RerankCache
 from intergrax.rag.rerankers.providers.cohere_reranker import CohereReranker
 from intergrax.rag.rerankers.providers.cross_encoder_reranker import CrossEncoderReranker
 from intergrax.rag.rerankers.providers.jina_reranker import JinaReranker
@@ -63,19 +65,23 @@ def create_default_reranker_engine(
     *,
     embedding_manager: BaseEmbeddingManager,
     registry: RerankerRegistry | None = None,
+    cache: BaseRerankCache | None = None
 ) -> RerankerEngine:
     """
     Create RerankerEngine with default reranker providers registered.
     """
 
     if registry is None:
-
         registry = create_default_reranker_registry(
             embedding_manager=embedding_manager,
         )
 
+    if cache is None:
+        cache = RerankCache()
+
     return RerankerEngine(
         registry=registry,
+        cache=cache,
     )
 
 

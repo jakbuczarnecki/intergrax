@@ -8,8 +8,10 @@ import hashlib
 import time
 from typing import Dict, List, Optional, Tuple
 
+from intergrax.rag.rerankers.cache.base_rerank_cache import BaseRerankCache
 
-class RerankCache:
+
+class RerankCache(BaseRerankCache):
     """
     In-memory cache for reranker score results.
     """
@@ -23,13 +25,37 @@ class RerankCache:
         self._ttl = ttl_seconds
         self._store: Dict[str, Tuple[float, List[float]]] = {}
 
+    def _normalize_text(self, text: str) -> str:
+        """
+        Normalize candidate text before hashing to avoid
+        cache misses caused by whitespace differences.
+        """
+        return text.strip()
+
     def _hash_query(self, query: str) -> str:
         return hashlib.sha256(query.encode("utf-8")).hexdigest()
 
     def _hash_documents(self, texts: List[str]) -> str:
+        """
+        Deterministically hash candidate texts using incremental hashing.
+        Avoids delimiter ambiguity and large intermediate strings.
+        """
 
-        joined = "\n".join(texts)
-        return hashlib.sha256(joined.encode("utf-8")).hexdigest()
+        hasher = hashlib.sha256()
+
+        for text in texts:
+
+            normalized = self._normalize_text(text)
+
+            encoded = normalized.encode("utf-8")
+
+            # length prefix prevents boundary ambiguity
+            length_prefix = len(encoded).to_bytes(8, "big")
+
+            hasher.update(length_prefix)
+            hasher.update(encoded)
+
+        return hasher.hexdigest()
 
     def _build_key(
         self,

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from intergrax.rag.rerankers.cache.rerank_cache import RerankCache
+from intergrax.rag.rerankers.cache.base_rerank_cache import BaseRerankCache
 from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
 from intergrax.rag.rerankers.contracts.reranker_types import (
     Candidates,
@@ -23,7 +23,7 @@ class RerankerEngine:
     def __init__(
         self,
         registry: RerankerRegistry,
-        cache: Optional[RerankCache] = None,
+        cache: Optional[BaseRerankCache] = None,
     ) -> None:
 
         self._registry = registry
