@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 from anthropic import Anthropic
@@ -33,6 +34,11 @@ class ClaudeChatAdapter(LLMAdapter):
         # Add exact model ids used in your env as needed.
     }
 
+    DEFAULT_MODEL = "claude-3-5-sonnet-latest"
+
+    ENV_MODEL = "INTERGRAX_DEFAULT_CLAUDE_MODEL"
+    ENV_API_KEY = "ANTHROPIC_API_KEY"
+
     def __init__(
         self,
         client: Optional[Anthropic] = None,
@@ -40,9 +46,24 @@ class ClaudeChatAdapter(LLMAdapter):
         **defaults,
     ):
         super().__init__()
-        self.client: Anthropic = client or Anthropic()
-        default_model = GLOBAL_SETTINGS.default_claude_model
-        self.model: str = model or default_model
+
+        env_model = os.getenv(self.ENV_MODEL)
+        api_key = os.getenv(self.ENV_API_KEY)
+
+        resolved_model = model or env_model or self.DEFAULT_MODEL
+
+        if client is None:
+
+            if not api_key:
+                raise RuntimeError(
+                    "ANTHROPIC_API_KEY not found in environment variables."
+                )
+
+            client = Anthropic(api_key=api_key)
+
+        self.client: Anthropic = client
+        self.model: str = resolved_model
+
         self.defaults = defaults
         self.model_name_for_token_estimation: str = self.model
         self._context_window_tokens: int = self._CLAUDE_CONTEXT_WINDOWS.get(self.model, 32_000)

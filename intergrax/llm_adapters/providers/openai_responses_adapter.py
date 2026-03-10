@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 import json
+import os
 from typing import Any, Dict, Iterable, Optional, Sequence, List
 from mistralai import Union
 from openai import Client
@@ -61,11 +62,32 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 
         # Conservative fallback for unknown models.
         return 128_000
+    
+    DEFAULT_MODEL = "gpt-5-mini"
+
+    ENV_MODEL = "INTERGRAX_DEFAULT_OPENAI_MODEL"
+    ENV_API_KEY = "OPENAI_API_KEY"
 
     def __init__(self, client: Optional[Client] = None, model: Optional[str] = None, **defaults):
         super().__init__()
-        self.client = client or Client()
-        self.model = model or GLOBAL_SETTINGS.default_openai_model
+
+        env_model = os.getenv(self.ENV_MODEL)
+        api_key = os.getenv(self.ENV_API_KEY)
+
+        resolved_model = model or env_model or self.DEFAULT_MODEL
+
+        if client is None:
+
+            if not api_key:
+                raise RuntimeError(
+                    "OPENAI_API_KEY not found in environment variables."
+                )
+
+            client = Client(api_key=api_key)
+
+        self.client: Client = client
+        self.model: str = resolved_model
+
         self.model_name_for_token_estimation = self.model
         self.defaults = defaults
         self._context_window_tokens: int = self._estimate_openai_context_window(self.model)

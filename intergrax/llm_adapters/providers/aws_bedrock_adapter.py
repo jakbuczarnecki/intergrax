@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from enum import Enum
+import os
 from typing import Dict, Iterable, List, Optional, Protocol, Sequence, Tuple
 
 import boto3
@@ -359,8 +360,18 @@ class BedrockChatAdapter(LLMAdapter):
     ):
         super().__init__()
 
-        resolved_region = region or GLOBAL_SETTINGS.aws_region
-        resolved_model_id = model_id or GLOBAL_SETTINGS.default_bedrock_model_id
+        resolved_region = region or os.getenv("INTERGRAX_DEFAULT_AWS_REGION", "")
+        resolved_model_id = model_id or os.getenv("INTERGRAX_DEFAULT_BEDROCK_MODEL_ID", "")
+
+        if not resolved_region:
+            raise RuntimeError(
+                "INTERGRAX_DEFAULT_AWS_REGION must be configured for Bedrock adapter."
+            )
+
+        if not resolved_model_id:
+            raise RuntimeError(
+                "INTERGRAX_DEFAULT_BEDROCK_MODEL_ID must be configured for Bedrock adapter."
+            )
 
         inferred_family = family or self._infer_family_from_model_id(resolved_model_id)
 
