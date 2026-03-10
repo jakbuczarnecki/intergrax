@@ -64,6 +64,8 @@ class LangChainOllamaAdapter(LLMAdapter):
         "gpt-oss:120b": 128_000,
     }
 
+    DEFAULT_MODEL = "llama3.1:latest"
+
 
     def _estimate_ollama_context_window_from_model(self, model: str) -> int:
         """
@@ -83,7 +85,7 @@ class LangChainOllamaAdapter(LLMAdapter):
         super().__init__()
 
         self.chat = chat or ChatOllama(
-            model=GLOBAL_SETTINGS.default_ollama_model
+            model=self.DEFAULT_MODEL
         )
         self.defaults = defaults
 

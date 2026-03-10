@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+import os
 
 from openai import AzureOpenAI
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
@@ -44,10 +45,11 @@ class AzureOpenAIChatAdapter(LLMAdapter):
         super().__init__()
 
         # Framework-wide defaults should be routed via GLOBAL_SETTINGS.
-        # Keep these names consistent with your settings pattern.
-        endpoint = GLOBAL_SETTINGS.azure_openai_endpoint
-        api_version = GLOBAL_SETTINGS.azure_openai_api_version
-        default_deployment = GLOBAL_SETTINGS.default_azure_openai_deployment
+        # Keep these names consistent with your settings pattern.        
+
+        endpoint = os.getenv("INTERGRAX_DEFAULT_AZURE_OPENAI_ENDPOINT", "")
+        api_version = os.getenv("INTERGRAX_DEFAULT_AZURE_OPENAI_API_VERSION", "")
+        default_deployment = os.getenv("INTERGRAX_DEFAULT_AZURE_OPENAI_DEPLOYMENT", "")
 
         # Official SDK can read API key from env (AZURE_OPENAI_API_KEY),
         # but we keep instantiation explicit and consistent with other adapters.

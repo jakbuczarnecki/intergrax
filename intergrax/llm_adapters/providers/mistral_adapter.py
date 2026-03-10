@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Dict, Iterable, List, Optional, Protocol, Sequence, Tuple
 
 from mistralai import Mistral
@@ -43,6 +44,11 @@ class MistralChatAdapter(LLMAdapter):
         "codestral-latest": 32_000,
     }
 
+    DEFAULT_MODEL = "mistral-large-latest"
+
+    ENV_MODEL = "INTERGRAX_DEFAULT_MISTRAL_MODEL"
+    ENV_API_KEY = "MISTRAL_API_KEY"
+
     def __init__(
         self,
         client: Optional[Mistral] = None,
@@ -51,10 +57,24 @@ class MistralChatAdapter(LLMAdapter):
     ):
         super().__init__()
 
-        # Framework-wide defaults should be routed via GLOBAL_SETTINGS.
-        self.client: Mistral = client or Mistral()
-        self.model: str = model or GLOBAL_SETTINGS.default_mistral_model
-        self.model_name_for_token_estimation: str = self.model
+        env_model = os.getenv(self.ENV_MODEL)
+        api_key = os.getenv(self.ENV_API_KEY)
+
+        resolved_model = model or env_model or self.DEFAULT_MODEL
+
+        if client is None:
+
+            if not api_key:
+                raise RuntimeError(
+                    "MISTRAL_API_KEY not found in environment variables."
+                )
+
+            client = Mistral(api_key=api_key)
+
+        self.client: Mistral = client
+        self.model: str = resolved_model
+
+        self.model_name_for_token_estimation = self.model
         self.defaults = defaults
 
         self._context_window_tokens: int = self._estimate_mistral_context_window(self.model)

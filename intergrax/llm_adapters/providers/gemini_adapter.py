@@ -35,6 +35,11 @@ class GeminiChatAdapter(LLMAdapter):
         "gemini-2.0-flash": 1_000_000,
     }
 
+    DEFAULT_MODEL = "gemini-2.5-flash"
+
+    ENV_MODEL = "INTERGRAX_DEFAULT_GEMINI_MODEL"
+    ENV_API_KEY = "GOOGLE_API_KEY"
+
     def __init__(
         self,
         client: Optional[genai.Client] = None,
@@ -43,13 +48,24 @@ class GeminiChatAdapter(LLMAdapter):
     ):
         super().__init__()
 
-        # If you want framework-wide defaults later, you can route this via GLOBAL_SETTINGS,
-        # but this adapter stays self-contained to avoid inventing missing settings fields.
-        default_model = GLOBAL_SETTINGS.default_gemini_model
+        env_model = os.getenv(self.ENV_MODEL)
+        api_key = os.getenv(self.ENV_API_KEY)
 
-        self.client: genai.Client = client or genai.Client()
-        self.model: str = model or default_model
-        self.model_name_for_token_estimation: str = self.model
+        resolved_model = model or env_model or self.DEFAULT_MODEL
+
+        if client is None:
+
+            if not api_key:
+                raise RuntimeError(
+                    "GOOGLE_API_KEY not found in environment variables."
+                )
+
+            client = genai.Client(api_key=api_key)
+
+        self.client: genai.Client = client
+        self.model: str = resolved_model
+
+        self.model_name_for_token_estimation = self.model
         self.defaults = defaults
 
         self._context_window_tokens: int = self._estimate_gemini_context_window(self.model)

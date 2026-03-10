@@ -42,41 +42,6 @@ class GlobalSettings:
     # Default timezone (used if no user/org-specific value is configured).
     default_timezone: str = os.getenv("INTERGRAX_DEFAULT_TIMEZONE", "Europe/Warsaw")
 
-    # ------------------------------------------------------------------
-    # Default model identifiers (fallbacks for runtime components)
-    # ------------------------------------------------------------------
-
-
-    # Default local Ollama chat model.
-    default_ollama_model: str = os.getenv(
-        "INTERGRAX_DEFAULT_OLLAMA_MODEL", "llama3.1:latest"
-    )
-
-    # Default OpenAI chat model.
-    default_openai_model: str = os.getenv("INTERGRAX_DEFAULT_OPENAI_MODEL", "gpt-5-mini")
-
-
-    # Default Google Gemini chat model.
-    default_gemini_model: str = os.getenv("INTERGRAX_DEFAULT_GEMINI_MODEL", "gemini-2.5-flash")
-
-    # Default Anthropic Claude chat model.
-    default_claude_model: str = os.getenv("INTERGRAX_DEFAULT_CLAUDE_MODEL", "claude-3-5-sonnet-latest")
-
-    # Default Mistral chat model.
-    default_mistral_model: str = os.getenv("INTERGRAX_DEFAULT_MISTRAL_MODEL", "mistral-large-latest")
-
-
-    azure_openai_endpoint: str = os.getenv("INTERGRAX_DEFAULT_AZURE_OPENAI_ENDPOINT", "")
-    
-    azure_openai_api_version: str = os.getenv("INTERGRAX_DEFAULT_AZURE_OPENAI_API_VERSION", "")
-
-    default_azure_openai_deployment: str = os.getenv("INTERGRAX_DEFAULT_AZURE_OPENAI_DEPLOYMENT", "")
-
-
-    aws_region: str = os.getenv("INTERGRAX_DEFAULT_AWS_REGION", "")
-
-
-    default_bedrock_model_id: str = os.getenv("INTERGRAX_DEFAULT_BEDROCK_MODEL_ID", "")
 
     # ------------------------------------------------------------------
     # Session memory / consolidation defaults
