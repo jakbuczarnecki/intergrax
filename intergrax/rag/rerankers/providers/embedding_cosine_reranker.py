@@ -10,7 +10,7 @@ from typing import List, Optional
 import numpy as np
 from langchain_core.documents import Document
 
-from intergrax.rag.embedding.embedding_manager import EmbeddingManager
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
 from intergrax.rag.rerankers.contracts.reranker_types import (
     RerankerCandidate,
@@ -24,7 +24,7 @@ class EmbeddingCosineReranker(BaseReranker):
 
     def __init__(
         self,
-        embedding_manager: EmbeddingManager,
+        embedding_manager: BaseEmbeddingManager,
         *,
         normalization: Optional[RerankerNormalizationMode] = RerankerNormalizationMode.MINMAX,
         fusion_alpha: float = 0.5,

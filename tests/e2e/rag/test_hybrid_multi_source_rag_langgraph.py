@@ -54,8 +54,8 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
     splitter = create_default_document_splitter()
 
     embed_manager = EmbeddingManager(
-    pipeline=create_default_embedding_pipeline(),
-)
+        pipeline=create_default_embedding_pipeline(),
+    )
 
     chroma_cfg = ChromaConfig(
         tenant_id="intergrax",

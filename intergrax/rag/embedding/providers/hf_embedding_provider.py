@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Sequence, Optional
 
 import numpy as np
@@ -20,6 +21,7 @@ class HFEmbeddingProvider(EmbeddingProvider):
     """
 
     DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+    ENV_MODEL = "INTERGRAX_DEFAULT_HF_EMBED_MODEL"
 
     def __init__(
         self,
@@ -31,32 +33,58 @@ class HFEmbeddingProvider(EmbeddingProvider):
         max_length: Optional[int] = None,
     ) -> None:
 
-        if model_name is None:
-            model_name = self.DEFAULT_MODEL
+        env_model = os.getenv(self.ENV_MODEL)
+        resolved_model = model_name or env_model or self.DEFAULT_MODEL
 
-        self._model = SentenceTransformer(model_name, device=device)
+        self._model_name = resolved_model
+        self._device = device
+        self._max_length = max_length
 
-        if max_length is not None:
-            try:
-                self._model.max_seq_length = int(max_length)
-            except Exception:
-                pass
+        self._model: Optional[SentenceTransformer] = None
 
         self._batch_size = int(batch_size)
         self._normalize_inside = bool(normalize_inside)
 
-        self._dim = int(self._model.get_sentence_embedding_dimension())
+        self._dim: Optional[int] = None
 
     def provider_name(self) -> str:
         return "hf"
 
+    def _ensure_model(self) -> None:
+
+        if self._model is None:
+
+            self._model = SentenceTransformer(
+                self._model_name,
+                device=self._device,
+            )
+
+            if self._max_length is not None:
+                try:
+                    self._model.max_seq_length = int(self._max_length)
+                except Exception:
+                    pass
+
+    def _resolve_dim(self) -> None:
+
+        if self._dim is None:
+
+            self._ensure_model()
+
+            self._dim = int(self._model.get_sentence_embedding_dimension())
+
     def dimension(self) -> int:
+
+        self._resolve_dim()
         return self._dim
 
     def embed(self, texts: Sequence[str]) -> NDArray[np.float32]:
 
         if not texts:
+            self._resolve_dim()
             return np.empty((0, self._dim), dtype=np.float32)
+
+        self._ensure_model()
 
         vecs = self._model.encode(
             list(texts),
