@@ -31,8 +31,6 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
     - requires embeddings provider (Ollama) used by EmbeddingManager
     """
 
-    from intergrax.globals.settings import GLOBAL_SETTINGS
-    from intergrax.rag.document_splitters.documents_splitter import DocumentsSplitter
     from intergrax.rag.embedding.embedding_manager import EmbeddingManager
     from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
     from intergrax.rag.retrievers._legacy.rag_retriever import RagRetriever
@@ -54,8 +52,8 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
     splitter = create_default_document_splitter()
 
     embed_manager = EmbeddingManager(
-    pipeline=create_default_embedding_pipeline(),
-)
+        pipeline=create_default_embedding_pipeline(),
+    )
 
     chroma_cfg = ChromaConfig(
         tenant_id="intergrax",

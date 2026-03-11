@@ -5,7 +5,8 @@
 from __future__ import annotations
 from typing import Optional
 
-from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
@@ -13,6 +14,21 @@ from intergrax.rag.embedding.providers.ollama_embedding_provider import OllamaEm
 from intergrax.rag.embedding.providers.openai_embedding_provider import OpenAIEmbeddingProvider
 from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
 
+
+def create_default_registry()-> EmbeddingProviderRegistry:
+    registry = EmbeddingProviderRegistry()
+    registry.register(HFEmbeddingProvider())
+    registry.register(OpenAIEmbeddingProvider())
+    registry.register(OllamaEmbeddingProvider())
+    return registry
+
+
+def create_default_embedding_manager()-> BaseEmbeddingManager:
+    
+    pipeline = create_default_embedding_pipeline()
+    manager = EmbeddingManager(pipeline=pipeline)
+
+    return manager
 
 
 def create_default_embedding_engine(
@@ -25,11 +41,7 @@ def create_default_embedding_engine(
     """
 
     if registry is None:
-        registry = EmbeddingProviderRegistry()
-
-        registry.register(HFEmbeddingProvider())
-        registry.register(OpenAIEmbeddingProvider())
-        registry.register(OllamaEmbeddingProvider())
+        registry = create_default_registry()
 
     return EmbeddingEngine(
         registry=registry,
@@ -43,6 +55,9 @@ def create_default_embedding_pipeline(
     """
     Create EmbeddingPipeline using the default embedding engine.
     """
+
+    if registry is None:
+        registry = create_default_registry()
 
     if provider_id is None:
         provider_id = registry.default_provider()
