@@ -16,7 +16,7 @@ from intergrax.rag.retrievers.providers.parent_child_retriever import ParentChil
 from intergrax.rag.retrievers.providers.vector_similarity_retriever import VectorSimilarityRetriever
 from intergrax.rag.retrievers.registry.retriever_registry import RetrieverRegistry
 from intergrax.rag.retrievers.retriever_manager import RetrieverManager
-from intergrax.rag.retrievers.retriever_pipeline import RetrieverPipeline
+from intergrax.rag.retrievers.pipeline.retriever_pipeline import RetrieverPipeline
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 
 

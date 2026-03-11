@@ -11,7 +11,7 @@ from intergrax.rag.retrievers.contracts.base_retriever import (
     RetrieverQuery,
 )
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
-from intergrax.rag.retrievers.retriever_pipeline import RetrieverPipeline
+from intergrax.rag.retrievers.pipeline.retriever_pipeline import RetrieverPipeline
 
 
 class RetrieverManager(BaseRetrieverManager):

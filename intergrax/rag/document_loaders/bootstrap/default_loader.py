@@ -15,9 +15,9 @@ from intergrax.rag.document_loaders.handlers.pdf_smart_document_handler import P
 from intergrax.rag.document_loaders.handlers.text_smart_document_handler import TextSmartDocumentHandler
 from intergrax.rag.document_loaders.handlers.html_document_handler import HtmlSmartDocumentHandler
 from intergrax.rag.document_loaders.handlers.video_smart_document_handler import VideoSmartDocumentHandler
-from intergrax.rag.document_loaders.metadata_pipeline import MetadataPipeline
+from intergrax.rag.document_loaders.pipeline.metadata_pipeline import MetadataPipeline
 from intergrax.rag.document_loaders.metadata.default_metadata_provider import DefaultMetadataProvider
-from intergrax.rag.document_loaders.normalizer_pipeline import NormalizerPipeline
+from intergrax.rag.document_loaders.pipeline.normalizer_pipeline import NormalizerPipeline
 from intergrax.rag.document_loaders.normalizers.whitespace_normalizer import WhitespaceNormalizer
 from intergrax.rag.document_loaders.registry.document_handler_registry import DocumentHandlerRegistry
 

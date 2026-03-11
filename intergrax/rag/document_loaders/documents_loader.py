@@ -12,8 +12,8 @@ from tqdm import tqdm
 from langchain_core.documents import Document
 
 from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDocumentsLoader
-from intergrax.rag.document_loaders.metadata_pipeline import MetadataPipeline
-from intergrax.rag.document_loaders.normalizer_pipeline import NormalizerPipeline
+from intergrax.rag.document_loaders.pipeline.metadata_pipeline import MetadataPipeline
+from intergrax.rag.document_loaders.pipeline.normalizer_pipeline import NormalizerPipeline
 from intergrax.rag.document_loaders.registry.document_handler_registry import DocumentHandlerRegistry
 
 logger = logging.getLogger(__name__)

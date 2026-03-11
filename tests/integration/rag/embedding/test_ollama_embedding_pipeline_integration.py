@@ -9,7 +9,7 @@ import requests
 from langchain_core.documents import Document
 
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.embedding.embedding_pipeline import EmbeddingPipeline
+from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
 from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider

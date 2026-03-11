@@ -10,7 +10,7 @@ from typing import List, Sequence
 from langchain_core.documents import Document
 
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
-from intergrax.rag.document_loaders.parser_pipeline import ParserPipeline
+from intergrax.rag.document_loaders.pipeline.parser_pipeline import ParserPipeline
 
 
 class BaseDocumentHandler(ABC):

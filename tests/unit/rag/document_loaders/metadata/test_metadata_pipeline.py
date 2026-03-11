@@ -10,7 +10,7 @@ from typing import Sequence
 
 from langchain_core.documents import Document
 
-from intergrax.rag.document_loaders.metadata_pipeline import MetadataPipeline
+from intergrax.rag.document_loaders.pipeline.metadata_pipeline import MetadataPipeline
 from intergrax.rag.document_loaders.contracts.metadata_provider import BaseMetadataProvider
 
 
