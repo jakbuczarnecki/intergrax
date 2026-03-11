@@ -5,6 +5,8 @@
 from __future__ import annotations
 from typing import Optional
 
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
@@ -19,6 +21,14 @@ def create_default_registry()-> EmbeddingProviderRegistry:
     registry.register(OpenAIEmbeddingProvider())
     registry.register(OllamaEmbeddingProvider())
     return registry
+
+
+def create_default_embedding_manager()-> BaseEmbeddingManager:
+    
+    pipeline = create_default_embedding_pipeline()
+    manager = EmbeddingManager(pipeline=pipeline)
+
+    return manager
 
 
 def create_default_embedding_engine(
