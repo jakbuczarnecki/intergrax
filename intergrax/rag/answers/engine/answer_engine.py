@@ -1,0 +1,57 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+from __future__ import annotations
+
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.rag.answers.contracts.answer_engine import AnswerEngine
+from intergrax.rag.answers.contracts.answer_request import AnswerRequest
+from intergrax.rag.answers.contracts.answer_result import AnswerResult
+
+from intergrax.rag.answers.builders.context_builder import ContextBuilder
+from intergrax.rag.answers.builders.prompt_builder import PromptBuilder
+from intergrax.rag.answers.pipeline.answer_pipeline import AnswerPipeline
+from intergrax.rag.rerankers.re_ranker import ReRanker
+from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
+
+
+class DefaultAnswerEngine(AnswerEngine):
+
+    def __init__(
+        self,
+        *,
+        retriever_manager: BaseRetrieverManager,
+        reranker_manager: ReRanker,
+        context_builder: ContextBuilder,
+        prompt_builder: PromptBuilder,
+        llm: LLMAdapter,
+        retriever_id:str,
+        include_embeddings: bool = False,
+    ) -> None:
+                
+        self._retriever_manager = retriever_manager
+        self._reranker_manager = reranker_manager
+        self._context_builder = context_builder
+        self._prompt_builder = prompt_builder
+        self._llm = llm
+        self._retriever_id = retriever_id
+        self._include_embeddings = include_embeddings
+
+        self._pipeline = AnswerPipeline(
+            retriever_manager=self._retriever_manager,
+            reranker_manager=self._reranker_manager,
+            context_builder=self._context_builder,
+            prompt_builder=self._prompt_builder,
+            llm=self._llm,
+            retriever_id=self._retriever_id,
+            include_embeddings=self._include_embeddings,
+        )
+
+
+    def answer(
+        self,
+        *,
+        request: AnswerRequest,
+    ) -> AnswerResult:
+        return self._pipeline.run(request=request)

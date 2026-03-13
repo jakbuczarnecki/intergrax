@@ -11,7 +11,7 @@ from typing import List, Dict, Optional, Tuple
 from intergrax.llm.messages import ChatMessage
 from intergrax.logging import IntergraxLogging
 from intergrax.rag.retrievers._legacy.dual_retriever import DualRetriever
-from intergrax.rag.answers.rag_answerer import AnswerSource, RagAnswerer
+from intergrax.rag.answers._legacy.rag_answerer import AnswerSource, RagAnswerer
 
 logger = IntergraxLogging.get_logger(__name__, component="rag")
 

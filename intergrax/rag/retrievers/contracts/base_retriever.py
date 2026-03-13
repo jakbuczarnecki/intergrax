@@ -61,6 +61,8 @@ class BaseRetriever(ABC):
     candidate documents from vector stores or other sources.
     """
 
+    requires_query_embedding: bool = True
+
     @classmethod
     @abstractmethod
     def name(cls) -> str:

@@ -749,6 +749,33 @@ def build_llm_header(project_root: Path, bundle_scope: str, metas: List[FileMeta
     header.append("# ======================================================================\n\n")
     return "".join(header)
 
+def build_symbol_index(metas: List[FileMeta]) -> str:
+    """
+    Build fast symbol lookup index for LLM navigation.
+    Maps symbol → file path.
+    """
+
+    index: Dict[str, str] = {}
+
+    for m in metas:
+        for obj in m.code_objects:
+            # symbol format: module:Class.method
+            symbol = obj.symbol.split(":")[-1]
+            index[symbol] = m.rel_path
+
+    lines: List[str] = []
+    lines.append("# ============================================================\n")
+    lines.append("# INTERGRAX SYMBOL INDEX\n")
+    lines.append("# Auto-generated for fast LLM navigation\n")
+    lines.append("# Format: Symbol → file path\n")
+    lines.append("# ============================================================\n")
+
+    for sym in sorted(index.keys(), key=lambda s: s.lower()):
+        lines.append(f"# {sym:<40} → {index[sym]}\n")
+
+    lines.append("# ============================================================\n\n")
+
+    return "".join(lines)
 
 def _build_metas_from_paths(
     *,
@@ -823,6 +850,7 @@ def build_bundle_from_paths(
     parts: List[str] = []
 
     parts.append(build_llm_header(project_root, bundle_scope, metas))
+    parts.append(build_symbol_index(metas))
 
     parts.append(f"# {bundle_title} (auto-generated)\n")
     parts.append(f"# ROOT: {project_root}\n")

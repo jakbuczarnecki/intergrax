@@ -25,7 +25,7 @@ Do not output anything else.
 
 ----- BEGIN LLM_INSTRUCTIONS -----
 
-# INTERGRAX — LLM EXECUTION PROTOCOL v5
+# INTERGRAX — LLM EXECUTION PROTOCOL v6
 
 Strict engineering collaboration protocol for developing the **Intergrax AI Agent Framework**.
 
@@ -53,31 +53,36 @@ The assistant must identify:
 4. Next planned step
 5. Whether a **Repository Bundle** is present
 
-If a repository bundle is available, the assistant must use it as the primary project context.
+Repository Bundle presence should be determined from the SESSION HANDOFF message or from an explicit user statement provided in the current conversation.
 
-If no bundle exists, the assistant may request minimal files required.
+The assistant must not attempt to inspect or verify uploaded files during bootstrap.
+
+If a repository bundle is declared as available, the assistant should prefer it as the primary project context.
+
+If no bundle is declared, or if the task cannot be completed safely from the declared bundle context, the assistant may request minimal additional files required to proceed.
 
 ---
 
 # FILE HANDLING RULE (CRITICAL)
 
-Intergrax sessions must assume that files from previous sessions **do not exist**.
-
 The assistant must follow these rules:
 
-1. Never assume file availability across sessions.
-2. Never reference internal file identifiers (file_id).
-3. Never attempt to retrieve files automatically.
-4. Only analyze files explicitly attached to the current conversation.
-5. Files must always be referenced **by filename only**.
+1. Ignore files from previous sessions.
+2. Files provided earlier within the current conversation may be used if they are available in the conversation context.
+3. Never reference internal file identifiers (file_id).
+4. Never attempt to validate file storage state or artifact lifetime.
+5. Only analyze files explicitly provided by the user in the current conversation.
+6. Files must always be referenced by filename only.
+
+The assistant must not infer that a file has expired unless the system explicitly reports that the file is unavailable.
 
 ---
 
-# REPOSITORY BUNDLE PROTOCOL (PRIMARY SOURCE OF TRUTH)
+# REPOSITORY BUNDLE PROTOCOL (PRIMARY SOURCE OF TRUTH WHEN PROVIDED)
 
-Intergrax development sessions may provide a **Repository Bundle**.
+Intergrax development sessions may provide a Repository Bundle.
 
-The bundle contains structured metadata describing the repository and a consolidated implementation file.
+The bundle may contain structured metadata describing the repository and a consolidated implementation file.
 
 Typical bundle structure:
 
@@ -88,56 +93,93 @@ Typical bundle structure:
 - PATCH_ZONES.json
 - FULL._py
 
-When a repository bundle is present it becomes the **authoritative source of repository structure and implementation**.
+Bundle artifacts may contain module or snapshot prefixes.
+
+Examples:
+
+- INTERGRAX_FULL_STRUCTURE.json
+- INTERGRAX_FULL_DEP_GRAPH.json
+- INTERGRAX_FULL_CONTRACTS.json
+- INTERGRAX_FULL_ARCH_GRAPH.json
+- INTERGRAX_FULL_PATCH_ZONES.json
+- INTERGRAX_FULL._py
+
+When a repository bundle is provided by the user, it becomes the preferred source of repository structure and implementation for the covered scope.
+
+The assistant must use the bundle when it is available and sufficient for the task.
+
+If the bundle is absent, partial, or insufficient for safe continuation, the assistant may request minimal additional files or a structure map.
+
+---
 
 ## Bundle Priority Rule
 
-If a repository bundle exists the assistant must:
+If a repository bundle is available, the assistant should:
 
-- use the bundle as the primary project context
-- **never request individual repository files**
-- derive all repository information from the bundle
+- primarily use the bundle as project context for the covered scope
+- avoid requesting repository files that are already clearly covered by the bundle
+- derive repository information from the bundle whenever possible
 
-## Purpose of Bundle Files
+If the bundle does not cover the needed scope, the assistant may request minimal additional files required to proceed safely.
 
-STRUCTURE.json  
-Repository layout, modules, file paths.
+---
 
-DEP_GRAPH.json  
-Dependency relationships between modules.
+## Bundle Navigation Strategy
 
-CONTRACTS.json  
-Class definitions, interfaces, method signatures.
+When analyzing repository structure the assistant must follow this order:
 
-ARCH_GRAPH.json  
-High-level architectural relationships.
+1. STRUCTURE.json → locate module or file
+2. CONTRACTS.json → verify classes and signatures
+3. DEP_GRAPH.json → verify dependencies
+4. FULL._py → inspect implementation
 
-PATCH_ZONES.json  
-Defined areas where modifications are allowed.
+---
 
-FULL._py  
-Consolidated source implementation of the module or repository.
+## Implementation Search Strategy
 
-## Implementation Lookup Rule
+FULL._py may contain the entire module or repository source.
 
-When implementation details are required the assistant must:
+The assistant must **not read FULL._py sequentially**.
 
-1. Locate module via STRUCTURE.json
-2. Verify signatures via CONTRACTS.json
-3. Check dependencies via DEP_GRAPH.json
-4. Inspect implementation inside **FULL._py**
+Instead the assistant must:
 
-The assistant must **not request original source files if FULL._py is available**.
+1. Identify class/function name from CONTRACTS.json
+2. Search FULL._py for that symbol
+3. Inspect only the relevant implementation block
+
+If the symbol is not present in CONTRACTS.json, the assistant may locate it directly in FULL._py using the module path from STRUCTURE.json.
+
+---
+
+## Token Efficiency Rule
+
+The assistant must avoid analyzing the entire FULL._py file.
+
+The assistant must only inspect the specific sections required to answer the current task.
+
+---
+
+## Bundle Query First Rule
+
+Before requesting additional files, the assistant should first consider whether the required information is likely already covered by the provided repository bundle.
+
+The assistant must not perform storage-state checks or artifact-validity checks for this purpose.
+
+If the task can be completed from the provided bundle context, the assistant should continue without requesting more files.
+
+If the task cannot be completed safely, the assistant may request the minimal missing files or a repository structure map.
+
+---
 
 ## Forbidden Behaviour
 
-When a repository bundle exists the assistant must not:
+When a repository bundle is available the assistant must not:
 
-- request individual repository files
-- assume files outside the bundle
-- ask the user to upload scripts already contained in the bundle
+- request repository files that are already clearly covered by the bundle
+- assume files outside the provided scope
+- invent repository structure
 
-All repository analysis must be performed using the bundle.
+When the bundle is absent or insufficient, the assistant may request minimal additional files required for safe continuation.
 
 ---
 
@@ -364,11 +406,9 @@ No runtime impact.
 
 Tests are part of system architecture.
 
-They enforce contracts and invariants.
-
 pytestmark = pytest.mark.unit  
 pytestmark = pytest.mark.integration  
-pytestmark = pytest.mark.e2e  
+pytestmark = pytest.mark.e2e
 
 Definitions:
 
@@ -389,7 +429,9 @@ Minimal files needed:
 - <file1>
 - <file2>
 
-This rule does not apply when a repository bundle is available.
+If a repository bundle is available and sufficient for the task, this rule does not apply.
+
+If the bundle is partial or insufficient, the assistant may request minimal additional files required for safe continuation.
 
 ---
 

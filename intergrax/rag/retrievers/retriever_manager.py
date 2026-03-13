@@ -57,9 +57,10 @@ class RetrieverManager(BaseRetrieverManager):
     def retrieve_query(
         self,
         query: RetrieverQuery,
+        retriever_id: str,
     ) -> List[RetrieverCandidate]:
         """
         Retrieve using preconstructed RetrieverQuery.
         """
 
-        return self._pipeline.retrieve_query(query)
+        return self._pipeline.retrieve_query(query, retriever_id=retriever_id)

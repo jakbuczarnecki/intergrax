@@ -16,14 +16,15 @@ from intergrax.rag.retrievers.registry.retriever_registry import RetrieverRegist
 
 class FusionRetriever(BaseRetriever):
 
+    requires_query_embedding = False
+
     def __init__(
         self,
         registry: RetrieverRegistry,
         *,
         retrievers: List[str],
         rrf_k: int = 60,
-    ) -> None:
-
+    ) -> None:        
         self._registry = registry
         self._retrievers = list(retrievers)
         self._rrf_k = int(rrf_k)
