@@ -13,9 +13,9 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.answers.contracts.answer_request import AnswerRequest
 from intergrax.rag.answers.contracts.answer_result import AnswerResult
 
-from intergrax.rag.answers.builders.context_builder import ContextBuilder
-from intergrax.rag.answers.builders.prompt_builder import PromptBuilder
 
+from intergrax.rag.answers.contracts.base_context_builder import BaseContextBuilder
+from intergrax.rag.answers.contracts.base_prompt_builder import BasePromptBuilder
 from intergrax.rag.answers.pipeline.pipeline_trace import PipelineTrace, StepTimer
 from intergrax.rag.rerankers.contracts.reranker_types import RerankerCandidate
 from intergrax.rag.rerankers.re_ranker import ReRanker
@@ -30,8 +30,8 @@ class AnswerPipeline:
         *,
         retriever_manager: BaseRetrieverManager,
         reranker_manager: ReRanker,
-        context_builder: ContextBuilder,
-        prompt_builder: PromptBuilder,
+        context_builder: BaseContextBuilder,
+        prompt_builder: BasePromptBuilder,
         llm: LLMAdapter,
         retriever_id: str,
         include_embeddings: bool,

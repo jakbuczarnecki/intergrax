@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.answers.engine.answer_engine import DefaultAnswerEngine
-from intergrax.rag.answers.builders.context_builder import ContextBuilder
-from intergrax.rag.answers.builders.prompt_builder import PromptBuilder
+from intergrax.rag.answers.builders.context_builder import DefaultContextBuilder
+from intergrax.rag.answers.builders.prompt_builder import DefaultPromptBuilder
 from intergrax.rag.answers.pipeline.answer_pipeline import AnswerPipeline
 from intergrax.rag.retrievers.retriever_manager import RetrieverManager
 
@@ -38,8 +38,8 @@ def create_default_answer_pipeline(
     if reranker_engine is None:
         reranker_engine = create_default_reranker_engine()
 
-    context_builder = ContextBuilder()
-    prompt_builder = PromptBuilder()
+    context_builder = DefaultContextBuilder()
+    prompt_builder = DefaultPromptBuilder()
 
     return AnswerPipeline(
         retriever_manager=retriever_manager,

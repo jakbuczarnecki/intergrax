@@ -7,11 +7,12 @@ from typing import List
 
 from langchain_core.documents import Document
 
+from intergrax.rag.answers.contracts.base_context_builder import BaseContextBuilder
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 from intergrax.tokenizers.contracts.tokenizer import Tokenizer
 
 
-class ContextBuilder:
+class DefaultContextBuilder(BaseContextBuilder):
     """
     Builds LLM context from retrieved documents.
 

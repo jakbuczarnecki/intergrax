@@ -9,8 +9,8 @@ from intergrax.rag.answers.contracts.answer_engine import AnswerEngine
 from intergrax.rag.answers.contracts.answer_request import AnswerRequest
 from intergrax.rag.answers.contracts.answer_result import AnswerResult
 
-from intergrax.rag.answers.builders.context_builder import ContextBuilder
-from intergrax.rag.answers.builders.prompt_builder import PromptBuilder
+from intergrax.rag.answers.contracts.base_context_builder import BaseContextBuilder
+from intergrax.rag.answers.contracts.base_prompt_builder import BasePromptBuilder
 from intergrax.rag.answers.pipeline.answer_pipeline import AnswerPipeline
 from intergrax.rag.rerankers.re_ranker import ReRanker
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
@@ -23,8 +23,8 @@ class DefaultAnswerEngine(AnswerEngine):
         *,
         retriever_manager: BaseRetrieverManager,
         reranker_manager: ReRanker,
-        context_builder: ContextBuilder,
-        prompt_builder: PromptBuilder,
+        context_builder: BaseContextBuilder,
+        prompt_builder: BasePromptBuilder,
         llm: LLMAdapter,
         retriever_id:str,
         include_embeddings: bool = False,
