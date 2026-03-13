@@ -79,7 +79,7 @@ class UserProfileManager:
             {
                 "user_id": user_id,
                 "entry_id": entry.entry_id,
-                "kind": getattr(entry.kind, "value", str(entry.kind)),
+                "kind": entry.kind,
                 "deleted": 1 if entry.deleted else 0,
             }
         )

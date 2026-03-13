@@ -37,9 +37,9 @@ class RetrieverRegistry:
     def get(self, name: str) -> BaseRetriever:
 
         if name is None or name == DEFAULT_RETRIEVER_ID:
-            retriever = self.default_retriever()
-        else:
-            retriever = self._retrievers.get(name)
+            name = self.default_retriever()
+        
+        retriever = self._retrievers.get(name)
 
         if retriever is None:
             raise RuntimeError(
