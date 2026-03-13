@@ -5,6 +5,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.rag.retrievers.registry.retriever_registry import DEFAULT_RETRIEVER_ID
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 
 
@@ -19,3 +22,9 @@ class AnswerRequest:
     top_k: int = 5
 
     metadata_filter: MetadataFilter | None = None
+
+    retriever_id: str = DEFAULT_RETRIEVER_ID
+
+    include_embeddings: bool = False
+
+    llm: Optional[LLMAdapter] = None

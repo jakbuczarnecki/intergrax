@@ -9,6 +9,8 @@ from typing import Dict, Iterable
 from intergrax.rag.retrievers.contracts.base_retriever import BaseRetriever
 
 
+DEFAULT_RETRIEVER_ID : str = "default"
+
 class RetrieverRegistry:
     """
     Registry for retriever strategies.
@@ -34,7 +36,10 @@ class RetrieverRegistry:
 
     def get(self, name: str) -> BaseRetriever:
 
-        retriever = self._retrievers.get(name)
+        if name is None or name == DEFAULT_RETRIEVER_ID:
+            retriever = self.default_retriever()
+        else:
+            retriever = self._retrievers.get(name)
 
         if retriever is None:
             raise RuntimeError(

@@ -7,15 +7,18 @@ from typing import List, Optional, Sequence
 from langchain_core.documents import Document
 import pytest
 
-from intergrax.rag.answers.contracts.base_context_builder import BaseContextBuilder
-from intergrax.rag.answers.contracts.base_prompt_builder import BasePromptBuilder
-from intergrax.rag.answers.engine.answer_engine import DefaultAnswerEngine
+from intergrax.rag.answers.pipeline.answer_pipeline import AnswerPipeline
 from intergrax.rag.answers.contracts.answer_request import AnswerRequest
 from intergrax.rag.answers.contracts.answer_result import AnswerResult
-from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
-from intergrax.rag.rerankers.contracts.reranker_types import Candidates, RerankerResult
+from intergrax.rag.answers.contracts.base_context_builder import BaseContextBuilder
+from intergrax.rag.answers.contracts.base_prompt_builder import BasePromptBuilder
+
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverCandidate
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
+
+from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
+from intergrax.rag.rerankers.contracts.reranker_types import Candidates, RerankerResult
+
 from tests._support.builder import FakeLLMAdapter
 
 
@@ -23,6 +26,7 @@ pytestmark = pytest.mark.unit
 
 
 class DummyRetrieverManager(BaseRetrieverManager):
+
     def retrieve(
         self,
         query_text: str,
@@ -33,17 +37,19 @@ class DummyRetrieverManager(BaseRetrieverManager):
         metadata_filter=None,
         include_embeddings: bool = False,
     ) -> List[RetrieverCandidate]:
+
         return [
             RetrieverCandidate(
-                id="id_0",
+                id="doc_1",
                 content="Intergrax is an AI agent framework.",
-                metadata={},
-                score=0.9
+                metadata={"source": "test"},
+                score=0.95
             )
         ]
 
 
 class DummyReranker(BaseReranker):
+
     def rerank(
         self,
         *,
@@ -51,6 +57,7 @@ class DummyReranker(BaseReranker):
         candidates: Candidates,
         limit: Optional[int] = None,
     ) -> List[RerankerResult]:
+
         return [
             RerankerResult(
                 candidate=candidate,
@@ -60,31 +67,37 @@ class DummyReranker(BaseReranker):
             )
             for index, candidate in enumerate(candidates, start=1)
         ]
-    
-    @classmethod    
-    def name(self) -> str:
+
+    @classmethod
+    def name(cls) -> str:
         return "DummyReranker"
 
+
 class DummyContextBuilder(BaseContextBuilder):
+
     def build(
         self,
         documents: List[Document],
     ) -> str:
+
         return "context"
 
 
 class DummyPromptBuilder(BasePromptBuilder):
+
     def build(
         self,
         *,
         query: str,
         context: str,
     ) -> str:
+
         return f"{query}\n{context}"
 
 
-def test_answer_engine_returns_answer_result_without_documents():
-    engine = DefaultAnswerEngine(
+def test_answer_pipeline_runs_full_rag_flow():
+
+    pipeline = AnswerPipeline(
         retriever_manager=DummyRetrieverManager(),
         reranker_manager=DummyReranker(),
         context_builder=DummyContextBuilder(),
@@ -92,12 +105,13 @@ def test_answer_engine_returns_answer_result_without_documents():
     )
 
     request = AnswerRequest(
-        query="What is Intergrax?",        
+        query="What is Intergrax?",
         llm=FakeLLMAdapter(),
-        retriever_id="test"
+        retriever_id="test",
+        include_embeddings=False,
     )
 
-    result = engine.answer(request=request)
+    result = pipeline.run(request=request)
 
     assert isinstance(result, AnswerResult)
     assert result.answer is not None

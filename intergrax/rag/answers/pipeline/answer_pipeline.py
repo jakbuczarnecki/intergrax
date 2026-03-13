@@ -32,18 +32,12 @@ class AnswerPipeline:
         reranker_manager: ReRanker,
         context_builder: BaseContextBuilder,
         prompt_builder: BasePromptBuilder,
-        llm: LLMAdapter,
-        retriever_id: str,
-        include_embeddings: bool,
     ) -> None:
 
         self._retriever_manager = retriever_manager
         self._reranker_manager = reranker_manager
         self._context_builder = context_builder
         self._prompt_builder = prompt_builder
-        self._llm = llm
-        self._retriever_id = retriever_id
-        self._include_embeddings = include_embeddings
 
     def run(
         self,
@@ -57,11 +51,11 @@ class AnswerPipeline:
         timer = StepTimer()
         retrieved_candidates = self._retriever_manager.retrieve(
             query_text=request.query,
-            retriever_id=self._retriever_id,
+            retriever_id=request.retriever_id,
             query_embedding=None,
             top_k=request.top_k,
             metadata_filter=request.metadata_filter,
-            include_embeddings=self._include_embeddings
+            include_embeddings=request.include_embeddings
         )
 
         trace.retrieval_latency_ms = timer.stop_ms()
@@ -120,7 +114,7 @@ class AnswerPipeline:
         ]
 
         timer = StepTimer()
-        answer_text = self._llm.generate_messages(messages)
+        answer_text = request.llm.generate_messages(messages)
         trace.llm_latency_ms = timer.stop_ms()
 
         result = AnswerResult(

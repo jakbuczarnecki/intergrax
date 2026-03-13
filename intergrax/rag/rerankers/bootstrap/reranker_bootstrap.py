@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 
 from intergrax.rag.rerankers.cache.base_rerank_cache import BaseRerankCache
@@ -23,7 +24,7 @@ from intergrax.rag.rerankers.providers.embedding_cosine_reranker import (
 
 def create_default_reranker_registry(
     *,
-    embedding_manager: BaseEmbeddingManager,
+    embedding_manager: BaseEmbeddingManager | None = None,
     registry: RerankerRegistry | None = None,
 ) -> RerankerRegistry:
     """
@@ -31,6 +32,9 @@ def create_default_reranker_registry(
 
     Allows dependency override by providing a custom registry.
     """
+
+    if embedding_manager is None:
+        embedding_manager = create_default_embedding_manager()
 
     if registry is None:
 
@@ -63,13 +67,16 @@ def create_default_reranker_registry(
 
 def create_default_reranker_engine(
     *,
-    embedding_manager: BaseEmbeddingManager,
+    embedding_manager: BaseEmbeddingManager | None = None,
     registry: RerankerRegistry | None = None,
     cache: BaseRerankCache | None = None
 ) -> RerankerEngine:
     """
     Create RerankerEngine with default reranker providers registered.
     """
+
+    if embedding_manager is None:
+        embedding_manager = create_default_embedding_manager()
 
     if registry is None:
         registry = create_default_reranker_registry(
@@ -87,12 +94,15 @@ def create_default_reranker_engine(
 
 def create_default_reranker_pipeline(
     *,
-    embedding_manager: BaseEmbeddingManager,
+    embedding_manager: BaseEmbeddingManager | None = None,
     registry: RerankerRegistry | None = None,
 ) -> RerankerPipeline:
     """
     Create RerankerPipeline using the default reranker engine.
     """
+
+    if embedding_manager is None:
+        embedding_manager = create_default_embedding_manager()
 
     if registry is None:
 

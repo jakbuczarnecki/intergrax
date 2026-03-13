@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.answers.contracts.answer_engine import AnswerEngine
 from intergrax.rag.answers.contracts.answer_request import AnswerRequest
 from intergrax.rag.answers.contracts.answer_result import AnswerResult
@@ -24,28 +23,19 @@ class DefaultAnswerEngine(AnswerEngine):
         retriever_manager: BaseRetrieverManager,
         reranker_manager: ReRanker,
         context_builder: BaseContextBuilder,
-        prompt_builder: BasePromptBuilder,
-        llm: LLMAdapter,
-        retriever_id:str,
-        include_embeddings: bool = False,
+        prompt_builder: BasePromptBuilder,        
     ) -> None:
                 
         self._retriever_manager = retriever_manager
         self._reranker_manager = reranker_manager
         self._context_builder = context_builder
         self._prompt_builder = prompt_builder
-        self._llm = llm
-        self._retriever_id = retriever_id
-        self._include_embeddings = include_embeddings
 
         self._pipeline = AnswerPipeline(
             retriever_manager=self._retriever_manager,
             reranker_manager=self._reranker_manager,
             context_builder=self._context_builder,
             prompt_builder=self._prompt_builder,
-            llm=self._llm,
-            retriever_id=self._retriever_id,
-            include_embeddings=self._include_embeddings,
         )
 
 

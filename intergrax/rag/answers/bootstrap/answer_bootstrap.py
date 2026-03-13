@@ -5,6 +5,9 @@
 from __future__ import annotations
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.rag.answers.contracts.answer_engine import AnswerEngine
+from intergrax.rag.answers.contracts.base_context_builder import BaseContextBuilder
+from intergrax.rag.answers.contracts.base_prompt_builder import BasePromptBuilder
 from intergrax.rag.answers.engine.answer_engine import DefaultAnswerEngine
 from intergrax.rag.answers.builders.context_builder import DefaultContextBuilder
 from intergrax.rag.answers.builders.prompt_builder import DefaultPromptBuilder
@@ -24,12 +27,15 @@ from intergrax.rag.rerankers.bootstrap.reranker_bootstrap import (
 
 from intergrax.rag.retrievers.retriever_manager import RetrieverManager
 from intergrax.rag.rerankers.engine.reranker_engine import RerankerEngine
+from intergrax.tokenizers.bootstrap.tokenizer_bootstrap import create_default_tokenizer
 
 
 def create_default_answer_pipeline(
-    *,
+    *,    
     retriever_manager: Optional[RetrieverManager] = None,
     reranker_engine: Optional[RerankerEngine] = None,
+    context_builder: Optional[BaseContextBuilder] = None,
+    prompt_builder: Optional[BasePromptBuilder] = None,
 ) -> AnswerPipeline:
 
     if retriever_manager is None:
@@ -38,8 +44,14 @@ def create_default_answer_pipeline(
     if reranker_engine is None:
         reranker_engine = create_default_reranker_engine()
 
-    context_builder = DefaultContextBuilder()
-    prompt_builder = DefaultPromptBuilder()
+    if context_builder is None:
+        context_builder = DefaultContextBuilder(
+            tokenizer=create_default_tokenizer()
+        )
+
+    if prompt_builder is None:
+        prompt_builder = DefaultPromptBuilder()
+    
 
     return AnswerPipeline(
         retriever_manager=retriever_manager,
@@ -54,14 +66,21 @@ def create_default_answer_engine(
     llm: Optional[LLMAdapter] = None,
     retriever_manager: Optional[RetrieverManager] = None,
     reranker_engine: Optional[RerankerEngine] = None,
-) -> DefaultAnswerEngine:
+    context_builder: Optional[BaseContextBuilder] = None,
+    prompt_builder: Optional[BasePromptBuilder] = None,
+) -> AnswerEngine:
 
-    pipeline = create_default_answer_pipeline(
-        retriever_manager=retriever_manager,
-        reranker_engine=reranker_engine,
-    )
+    if context_builder is None:
+        context_builder = DefaultContextBuilder(
+            tokenizer=create_default_tokenizer()
+        )
 
+    if prompt_builder is None:
+        prompt_builder = DefaultPromptBuilder()
+        
     return DefaultAnswerEngine(
-        llm=llm,
-        pipeline=pipeline,
+        retriever_manager=retriever_manager,
+        reranker_manager=reranker_engine,
+        context_builder=context_builder,
+        prompt_builder=prompt_builder,
     )

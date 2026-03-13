@@ -28,20 +28,10 @@ class CohereReranker(_APIRerankerBase):
     ) -> None:
 
         env_model = os.getenv(self.ENV_MODEL)
-        api_key = os.getenv(self.ENV_API_KEY)
-
         resolved_model = model or env_model or self.DEFAULT_MODEL
 
-        if client is None:
-
-            if not api_key:
-                raise RuntimeError(
-                    "COHERE_API_KEY not found in environment variables."
-                )
-
-            client = cohere.Client(api_key)
-
-        self._client = client
+        # Lazy initialization fields
+        self._client: Optional[cohere.Client] = client
         self._model = resolved_model
         self._top_n = top_n
 
@@ -49,11 +39,29 @@ class CohereReranker(_APIRerankerBase):
     def name(cls) -> str:
         return "cohere"
 
+    def _ensure_client(self) -> None:
+
+        if self._client is not None:
+            return
+
+        api_key = os.getenv(self.ENV_API_KEY)
+
+        if not api_key:
+            raise RuntimeError(
+                "COHERE_API_KEY not found in environment variables."
+            )
+
+        self._client = cohere.Client(api_key)
+
     def _score(
         self,
         query: str,
         texts: List[str],
     ) -> List[float]:
+
+        self._ensure_client()
+
+        assert self._client is not None
 
         top_n = len(texts)
 
