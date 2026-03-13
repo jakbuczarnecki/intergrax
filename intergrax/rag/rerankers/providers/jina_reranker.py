@@ -28,28 +28,40 @@ class JinaReranker(_APIRerankerBase):
     ) -> None:
 
         env_model = os.getenv(self.ENV_MODEL)
-        env_api_key = os.getenv(self.ENV_API_KEY)
 
         resolved_model = model or env_model or self.DEFAULT_MODEL
-        resolved_key = env_api_key
 
-        if not resolved_key:
-            raise RuntimeError(
-                "JINA_API_KEY not found in environment variables."
-            )
-
-        self._api_key = resolved_key
+        # lazy initialization
+        self._api_key: Optional[str] = None
         self._model = resolved_model
 
     @classmethod
     def name(cls) -> str:
         return "jina"
 
+    def _ensure_api_key(self) -> None:
+
+        if self._api_key is not None:
+            return
+
+        env_api_key = os.getenv(self.ENV_API_KEY)
+
+        if not env_api_key:
+            raise RuntimeError(
+                "JINA_API_KEY not found in environment variables."
+            )
+
+        self._api_key = env_api_key
+
     def _score(
         self,
         query: str,
         texts: List[str],
     ) -> List[float]:
+
+        self._ensure_api_key()
+
+        assert self._api_key is not None
 
         payload = {
             "model": self._model,

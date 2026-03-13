@@ -11,7 +11,7 @@ from langchain_core.documents import Document
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMetadataKey
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.embedding.embedding_pipeline import EmbeddingPipeline
+from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.registry.embedding_provider_registry import (
     EmbeddingProviderRegistry,
@@ -25,7 +25,7 @@ from intergrax.rag.retrievers.registry.retriever_registry import RetrieverRegist
 from intergrax.rag.retrievers.engine.retriever_engine import RetrieverEngine
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.retriever_manager import RetrieverManager
-from intergrax.rag.retrievers.retriever_pipeline import RetrieverPipeline
+from intergrax.rag.retrievers.pipeline.retriever_pipeline import RetrieverPipeline
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.providers.qdrant_vector_store import QdrantConfig, QdrantVectorStore
 

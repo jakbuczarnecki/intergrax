@@ -49,7 +49,9 @@ class RetrieverPipeline:
         Execute retrieval for a query text.
         """
 
-        if query_embedding is None:
+        retriever = self._engine.get_retriever(retriever_id)
+
+        if query_embedding is None and retriever.requires_query_embedding:
             query_embedding = self._embedding_manager.embed_one(query_text)
 
         query = RetrieverQuery(

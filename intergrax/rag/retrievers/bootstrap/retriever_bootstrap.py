@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.rag.retrievers.engine.retriever_engine import RetrieverEngine
@@ -16,14 +17,15 @@ from intergrax.rag.retrievers.providers.parent_child_retriever import ParentChil
 from intergrax.rag.retrievers.providers.vector_similarity_retriever import VectorSimilarityRetriever
 from intergrax.rag.retrievers.registry.retriever_registry import RetrieverRegistry
 from intergrax.rag.retrievers.retriever_manager import RetrieverManager
-from intergrax.rag.retrievers.retriever_pipeline import RetrieverPipeline
+from intergrax.rag.retrievers.pipeline.retriever_pipeline import RetrieverPipeline
+from intergrax.rag.vectorstore.bootstrap.vectorstore_bootstrap import create_default_vectorstore_manager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 
 
 def create_default_retriever_registry(
     *,
-    vector_store: BaseVectorstoreManager,
-    embedding_manager: BaseEmbeddingManager,
+    vector_store: BaseVectorstoreManager | None = None,
+    embedding_manager: BaseEmbeddingManager | None = None,
     registry: RetrieverRegistry | None = None,    
     toc_vector_store: BaseVectorstoreManager | None = None,
 ) -> RetrieverRegistry:
@@ -32,6 +34,12 @@ def create_default_retriever_registry(
 
     Allows dependency override by providing a custom registry.
     """
+
+    if vector_store is None:
+        vector_store = create_default_vectorstore_manager()
+
+    if embedding_manager is None:
+        embedding_manager = create_default_embedding_manager()
 
     if registry is None:
         registry = RetrieverRegistry()
@@ -89,13 +97,19 @@ def create_default_retriever_registry(
 
 def create_default_retriever_engine(
     *,
-    vector_store: BaseVectorstoreManager,
-    embedding_manager: BaseEmbeddingManager,
+    vector_store: BaseVectorstoreManager | None = None,
+    embedding_manager: BaseEmbeddingManager | None = None,
     registry: RetrieverRegistry | None = None,
 ) -> RetrieverEngine:
     """
     Create RetrieverEngine with default retriever providers registered.
     """
+
+    if vector_store is None:
+        vector_store = create_default_vectorstore_manager()
+
+    if embedding_manager is None:
+        embedding_manager = create_default_embedding_manager()
 
     if registry is None:
         registry = create_default_retriever_registry(
@@ -110,13 +124,16 @@ def create_default_retriever_engine(
 
 def create_default_retriever_pipeline(
     *,
-    vector_store: BaseVectorstoreManager,
-    embedding_manager: BaseEmbeddingManager,
+    vector_store: BaseVectorstoreManager | None = None,
+    embedding_manager: BaseEmbeddingManager | None = None,
     registry: RetrieverRegistry | None = None,
 ) -> RetrieverPipeline:
     """
     Create RetrieverPipeline using the default retriever engine.
     """
+
+    if embedding_manager is None:
+        embedding_manager = create_default_embedding_manager()
 
     if registry is None:
         registry = create_default_retriever_registry(
@@ -138,13 +155,19 @@ def create_default_retriever_pipeline(
 
 def create_default_retriever_manager(
     *,
-    vector_store: BaseVectorstoreManager,
-    embedding_manager: BaseEmbeddingManager,
+    vector_store: BaseVectorstoreManager | None = None,
+    embedding_manager: BaseEmbeddingManager | None = None,
     registry: RetrieverRegistry | None = None,
 ) -> BaseRetrieverManager:
     """
     Create RetrieverManager using the default retriever pipeline.
     """
+
+    if vector_store is None:
+        vector_store = create_default_vectorstore_manager()
+
+    if embedding_manager is None:
+        embedding_manager = create_default_embedding_manager()
 
     pipeline = create_default_retriever_pipeline(        
         vector_store=vector_store,

@@ -11,7 +11,6 @@ from typing import Dict, List, Optional, Sequence
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 
 
-
 @dataclass(frozen=True)
 class RetrieverQuery:
     """
@@ -60,6 +59,8 @@ class BaseRetriever(ABC):
     Implementations define the strategy used to retrieve
     candidate documents from vector stores or other sources.
     """
+
+    requires_query_embedding: bool = True
 
     @classmethod
     @abstractmethod

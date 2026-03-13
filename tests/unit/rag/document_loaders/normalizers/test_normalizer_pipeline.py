@@ -8,7 +8,7 @@ from typing import Sequence
 import pytest
 from langchain_core.documents import Document
 
-from intergrax.rag.document_loaders.normalizer_pipeline import NormalizerPipeline
+from intergrax.rag.document_loaders.pipeline.normalizer_pipeline import NormalizerPipeline
 from intergrax.rag.document_loaders.contracts.base_document_normalizer import BaseDocumentNormalizer
 
 

@@ -12,7 +12,7 @@ from numpy.typing import NDArray
 from langchain_core.documents import Document
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
-from intergrax.rag.embedding.embedding_pipeline import EmbeddingPipeline
+from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 
 class EmbeddingManager(BaseEmbeddingManager):
     """

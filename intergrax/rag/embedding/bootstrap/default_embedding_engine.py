@@ -7,7 +7,7 @@ from typing import Optional
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.embedding.embedding_pipeline import EmbeddingPipeline
+from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
 from intergrax.rag.embedding.providers.ollama_embedding_provider import OllamaEmbeddingProvider

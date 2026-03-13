@@ -20,6 +20,7 @@ class BaseRetrieverManager:
         self,
         query_text: str,
         *,
+        retriever_id: str,
         query_embedding: Sequence[float] | None = None,
         top_k: int = 5,
         metadata_filter=None,
@@ -35,6 +36,7 @@ class BaseRetrieverManager:
     def retrieve_query(
         self,
         query: RetrieverQuery,
+        retriever_id: str,
     ) -> List[RetrieverCandidate]:
         """
         Retrieve using preconstructed RetrieverQuery.

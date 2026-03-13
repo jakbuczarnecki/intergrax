@@ -30,6 +30,7 @@ class VectorstoreManager(BaseVectorstoreManager):
     def __init__(self, store: VectorStore) -> None:
         self._store = store
 
+
     def add_documents(
         self,
         documents: Sequence[Document],

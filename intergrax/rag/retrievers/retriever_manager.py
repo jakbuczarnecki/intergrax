@@ -11,7 +11,7 @@ from intergrax.rag.retrievers.contracts.base_retriever import (
     RetrieverQuery,
 )
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
-from intergrax.rag.retrievers.retriever_pipeline import RetrieverPipeline
+from intergrax.rag.retrievers.pipeline.retriever_pipeline import RetrieverPipeline
 
 
 class RetrieverManager(BaseRetrieverManager):
@@ -57,9 +57,10 @@ class RetrieverManager(BaseRetrieverManager):
     def retrieve_query(
         self,
         query: RetrieverQuery,
+        retriever_id: str,
     ) -> List[RetrieverCandidate]:
         """
         Retrieve using preconstructed RetrieverQuery.
         """
 
-        return self._pipeline.retrieve_query(query)
+        return self._pipeline.retrieve_query(query, retriever_id=retriever_id)

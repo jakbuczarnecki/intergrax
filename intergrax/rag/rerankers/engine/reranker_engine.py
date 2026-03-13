@@ -32,8 +32,8 @@ class RerankerEngine:
     def rerank(
         self,
         *,
-        reranker_name: Optional[str],
-        query: Optional[str],
+        reranker_name: Optional[str] = None,
+        query: Optional[str] = None,
         candidates: Candidates,
         max_candidates: Optional[int] = None,
         limit: Optional[int] = None,

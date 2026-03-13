@@ -44,9 +44,15 @@ class RetrieverEngine:
         Execute retrieval for a query using a registered retriever.
         """
 
-        retriever: BaseRetriever = self._registry.get(retriever_id)
+        retriever: BaseRetriever = self.get_retriever(retriever_id)
 
         return self._retrieve_with_retry(retriever, query)
+    
+
+    def get_retriever(self, retriever_id: str) -> BaseRetriever:
+        retriever: BaseRetriever = self._registry.get(retriever_id)
+        return retriever
+    
 
     def _retrieve_with_retry(
         self,

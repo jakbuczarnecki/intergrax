@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.rag.answers.rag_answerer import AnswererConfig
+from intergrax.rag.answers._legacy.rag_answerer import AnswererConfig
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 
 
