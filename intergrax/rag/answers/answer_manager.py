@@ -4,12 +4,13 @@
 
 from __future__ import annotations
 
+from intergrax.rag.answers.contracts.base_answer_manager import BaseAnswerManager
 from intergrax.rag.answers.engine.answer_engine import AnswerEngine
 from intergrax.rag.answers.contracts.answer_request import AnswerRequest
 from intergrax.rag.answers.contracts.answer_result import AnswerResult
 
 
-class AnswerManager:
+class AnswerManager(BaseAnswerManager):
     """
     Public entry point for the RAG answering subsystem.
 
