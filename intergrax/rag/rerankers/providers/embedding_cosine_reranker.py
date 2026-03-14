@@ -38,17 +38,22 @@ class EmbeddingCosineReranker(BaseReranker):
         self._fusion_alpha = fusion_alpha
         self._use_score_fusion = use_score_fusion
         self._doc_batch_size = doc_batch_size
-
-        if cache_query_embeddings:
-            self._embed_query = lru_cache(maxsize=256)(self._embed_query_uncached)
-        else:
-            self._embed_query = self._embed_query_uncached
+        self._cache_query_embeddings = cache_query_embeddings
+        self._embed_query: np.ndarray = None        
 
     
     @classmethod
     def name(self) -> str:
         return "embedding_cosine"
     
+
+    def _ensure_embed_query(self):
+        if self._embed_query is None:
+            if self._cache_query_embeddings:
+                self._embed_query = lru_cache(maxsize=256)(self._embed_query_uncached)
+            else:
+                self._embed_query = self._embed_query_uncached
+
 
     def rerank(
         self,
@@ -60,6 +65,8 @@ class EmbeddingCosineReranker(BaseReranker):
 
         if not candidates:
             return []
+        
+        self._ensure_embed_query()
 
         normalized = self._normalize_candidates(candidates)
 

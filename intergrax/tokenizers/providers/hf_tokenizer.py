@@ -22,19 +22,24 @@ class HFTokenizer(Tokenizer):
     def __init__(
         self,
         *,
-        model_name: str = "meta-llama/Llama-2-7b-hf",
+        model: str = "meta-llama/Llama-2-7b-hf",
     ) -> None:
+        self._model = model
+        self._tokenizer = None
 
-        self._tokenizer = AutoTokenizer.from_pretrained(
-            model_name,
-            use_fast=True,
+    def _ensure_loaded(self):
+
+        if self._tokenizer is None:
+            self._tokenizer = AutoTokenizer.from_pretrained(
+                self._model
+            )
+
+    def encode(self, text: str) -> list[int]:
+        self._ensure_loaded()
+        return self._tokenizer.encode(
+            text,
+            add_special_tokens=False
         )
 
     def count_tokens(self, text: str) -> int:
-
-        if not text:
-            return 0
-
-        tokens = self._tokenizer.encode(text)
-
-        return len(tokens)
+        return len(self.encode(text))

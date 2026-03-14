@@ -75,8 +75,7 @@ def test_rag_context_truncation() -> None:
     )
 
     context_builder = DefaultContextBuilder(
-        tokenizer=create_default_tokenizer(),
-        max_tokens=200
+        tokenizer_manager=create_default_tokenizer(),
     )
 
     answer_engine = DefaultAnswerEngine(

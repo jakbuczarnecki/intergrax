@@ -25,12 +25,20 @@ class TiktokenTokenizer(Tokenizer):
         encoding_name: str = "cl100k_base",
     ) -> None:
 
-        self._encoding = tiktoken.get_encoding(encoding_name)
+        self._encoding_name = encoding_name
+        self._encoding = None
+
+    def _ensure_loaded(self):
+
+        if self._encoding is None:
+            self._encoding = tiktoken.get_encoding(self._encoding_name)
 
     def count_tokens(self, text: str) -> int:
 
         if not text:
             return 0
+
+        self._ensure_loaded()
 
         tokens = self._encoding.encode(text)
 

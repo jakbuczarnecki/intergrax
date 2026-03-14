@@ -27,14 +27,16 @@ class _CrossEncoderBaseReranker(BaseReranker):
         model_name: Optional[str] = None,
         max_length: int = 512,
     ) -> None:
+        self._model_name = model_name or self.DEFAULT_MODEL
+        self._max_length = max_length
+        self._model: Optional[CrossEncoder] = None        
 
-        if model_name is None:
-            model_name = self.DEFAULT_MODEL
-
-        self._model = CrossEncoder(
-            model_name,
-            max_length=max_length,
-        )
+    def _ensure_cross_encoder(self):
+        if self._model is None:
+            self._model = CrossEncoder(
+                self._model_name,
+                max_length=self._max_length,
+            )
 
     def rerank(
         self,
@@ -49,6 +51,8 @@ class _CrossEncoderBaseReranker(BaseReranker):
 
         if query is None or not query.strip():
             return []
+        
+        self._ensure_cross_encoder()
 
         normalized: List[RerankerCandidate] = []
 

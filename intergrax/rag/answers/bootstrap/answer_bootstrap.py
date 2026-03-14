@@ -46,7 +46,7 @@ def create_default_answer_pipeline(
 
     if context_builder is None:
         context_builder = DefaultContextBuilder(
-            tokenizer=create_default_tokenizer()
+            tokenizer_manager=create_default_tokenizer()
         )
 
     if prompt_builder is None:
@@ -72,7 +72,7 @@ def create_default_answer_engine(
 
     if context_builder is None:
         context_builder = DefaultContextBuilder(
-            tokenizer=create_default_tokenizer()
+            tokenizer_manager=create_default_tokenizer()
         )
 
     if prompt_builder is None:
