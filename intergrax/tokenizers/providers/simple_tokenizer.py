@@ -17,6 +17,8 @@ class SimpleTokenizer(Tokenizer):
     - local development
     """
 
+    id:str = "simple"
+
     def count_tokens(self, text: str) -> int:
 
         if not text:

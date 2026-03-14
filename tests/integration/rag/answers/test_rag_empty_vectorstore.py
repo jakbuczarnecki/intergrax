@@ -55,7 +55,7 @@ def test_rag_pipeline_empty_vectorstore() -> None:
         retriever_manager=retriever_manager,
         reranker_manager=reranker,
         context_builder=DefaultContextBuilder(
-            tokenizer=create_default_tokenizer(),
+            tokenizer_manager=create_default_tokenizer(),
         ),
         prompt_builder=DefaultPromptBuilder(),
     )

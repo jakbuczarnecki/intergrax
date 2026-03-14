@@ -15,6 +15,8 @@ class Tokenizer(ABC):
     prompt builders, context builders and budget controllers.
     """
 
+    id:str = None
+
     @abstractmethod
     def count_tokens(self, text: str) -> int:
         """
