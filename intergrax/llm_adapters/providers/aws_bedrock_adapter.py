@@ -17,7 +17,6 @@ from typing import Dict, Iterable, List, Optional, Protocol, Sequence, Tuple
 import boto3
 from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
 
-from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.contracts.llm_adapter import ChatMessage, LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 

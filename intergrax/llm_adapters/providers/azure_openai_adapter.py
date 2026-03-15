@@ -10,7 +10,6 @@ import os
 from openai import AzureOpenAI
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
-from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.contracts.llm_adapter import ChatMessage, LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 

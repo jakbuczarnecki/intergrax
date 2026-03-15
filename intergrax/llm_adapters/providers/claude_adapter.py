@@ -9,7 +9,6 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 from anthropic import Anthropic
 
-from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.contracts.llm_adapter import ChatMessage, LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 

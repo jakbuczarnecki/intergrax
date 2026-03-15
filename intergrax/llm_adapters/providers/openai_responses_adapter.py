@@ -9,9 +9,8 @@ import os
 from typing import Any, Dict, Iterable, Optional, Sequence, List
 from mistralai import Union
 from openai import Client
-from openai.types.responses import Response, ResponseUsage
+from openai.types.responses import Response
 
-from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.contracts.llm_adapter import (    
     ChatMessage,
     LLMAdapter,

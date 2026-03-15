@@ -6,7 +6,6 @@ from typing import Dict, Iterable, List, Optional, Protocol, Sequence, Tuple
 from mistralai import Mistral
 from mistralai.models import ChatCompletionResponse
 
-from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.contracts.llm_adapter import ChatMessage, LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
