@@ -13,12 +13,13 @@ from langchain_core.runnables import RunnableLambda, RunnableMap, RunnableSequen
 from langchain_core.output_parsers import StrOutputParser
 
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
-from intergrax.rag.retrievers._legacy.rag_retriever import RagRetriever
-from intergrax.rag.rerankers.re_ranker_manager import ReRankerManager
+from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 
 from operator import itemgetter
 
 from intergrax.logging import IntergraxLogging
+from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
+from intergrax.rag.retrievers.registry.retriever_registry import DEFAULT_RETRIEVER_ID
 
 logger = IntergraxLogging.get_logger(__name__, component="rag")
 
@@ -163,12 +164,14 @@ class LangChainQAChain:
     def __init__(
         self,
         *,
-        retriever: RagRetriever,
+        retriever: BaseRetrieverManager,
         llm,  # any LangChain LLM (e.g., ChatOllama, ChatOpenAI, etc.)
-        reranker: Optional[ReRankerManager] = None,
+        reranker: Optional[BaseRerankerManager] = None,
         config: Optional[ChainConfig] = None,
+        retriever_id: str = DEFAULT_RETRIEVER_ID
     ):
         self.retriever = retriever
+        self.retriever_id = retriever_id
         self.llm = llm
         self.reranker = reranker
         self.cfg = config or ChainConfig()
@@ -222,12 +225,11 @@ class LangChainQAChain:
             return payload
 
         # 2) retrieve
-        def retrieve_stage(payload: Dict[str, Any]) -> Dict[str, Any]:
+        def retrieve_stage(payload: Dict[str, Any]) -> Dict[str, Any]:            
             hits = self.retriever.retrieve(
-                question=payload["question"],
-                top_k=payload["top_k"],
-                score_threshold=payload["min_score"],
-                where=payload["where"],
+                query_text=payload['question'],
+                top_k=payload['top_k'],
+                retriever_id=self.retriever_id,
             )
             payload["raw_hits"] = hits            
             logger.debug(f"[intergraxChain] Retrieved {len(hits)} hits")
