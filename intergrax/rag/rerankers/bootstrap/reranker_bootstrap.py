@@ -9,10 +9,12 @@ from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddi
 
 from intergrax.rag.rerankers.cache.base_rerank_cache import BaseRerankCache
 from intergrax.rag.rerankers.cache.rerank_cache import RerankCache
+from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.rerankers.providers.cohere_reranker import CohereReranker
 from intergrax.rag.rerankers.providers.cross_encoder_reranker import CrossEncoderReranker
 from intergrax.rag.rerankers.providers.jina_reranker import JinaReranker
 from intergrax.rag.rerankers.providers.semantic_reranker import SemanticReranker
+from intergrax.rag.rerankers.re_ranker_manager import ReRankerManager
 from intergrax.rag.rerankers.registry.reranker_registry import RerankerRegistry
 from intergrax.rag.rerankers.engine.reranker_engine import RerankerEngine
 from intergrax.rag.rerankers.pipeline.reranker_pipeline import RerankerPipeline
@@ -117,4 +119,17 @@ def create_default_reranker_pipeline(
 
     return RerankerPipeline(
         engine=engine,
+    )
+
+
+def create_default_reranker_manager(
+        *,
+        engine: RerankerEngine | None = None
+)->BaseRerankerManager:
+    
+    if engine is None:
+        engine = create_default_reranker_engine()
+
+    return ReRankerManager(
+        engine=engine
     )

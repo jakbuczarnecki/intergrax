@@ -18,7 +18,7 @@ class Tokenizer(ABC):
     id:str = None
 
     @abstractmethod
-    def count_tokens(self, text: str) -> int:
+    def count_tokens(self, *, text: str) -> int:
         """
         Returns number of tokens produced from the input text.
         """

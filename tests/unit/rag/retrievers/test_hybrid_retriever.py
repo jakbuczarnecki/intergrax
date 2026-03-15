@@ -12,6 +12,7 @@ from typing import List, Optional, Sequence
 
 from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
 from intergrax.rag.retrievers.providers.hybrid_retriever import HybridRetriever
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
@@ -36,7 +37,7 @@ class FakeEmbeddingManager(BaseEmbeddingManager):
     def embed_documents(
         self,
         documents: Sequence[Document],
-    ) -> Sequence[Document]:
+    ) -> EmbeddingResult:
         pass
 
 

@@ -55,8 +55,8 @@ def test_ollama_embedding_documents() -> None:
 
     assert len(result) == 2
 
-    vector_0 = result[0].metadata[EmbeddingMetadataKey.VECTOR]
-    vector_1 = result[1].metadata[EmbeddingMetadataKey.VECTOR]
+    vector_0 = result.embeddings[0]
+    vector_1 = result.embeddings[1]
 
     assert isinstance(vector_0, np.ndarray)
     assert isinstance(vector_1, np.ndarray)
@@ -67,5 +67,5 @@ def test_ollama_embedding_documents() -> None:
     assert vector_0.shape[0] > 0
     assert vector_1.shape[0] > 0
 
-    assert result[0].page_content == docs[0].page_content
-    assert result[1].page_content == docs[1].page_content
+    assert result.documents[0].page_content == docs[0].page_content
+    assert result.documents[1].page_content == docs[1].page_content

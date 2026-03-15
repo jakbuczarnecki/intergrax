@@ -6,9 +6,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-
-from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
-from intergrax.rag.rerankers.bootstrap.reranker_bootstrap import create_default_reranker_engine
+from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.rerankers.engine.reranker_engine import RerankerEngine
 from intergrax.rag.rerankers.contracts.reranker_types import (
     RerankerCandidate,
@@ -16,7 +14,7 @@ from intergrax.rag.rerankers.contracts.reranker_types import (
 )
 
 
-class ReRanker:
+class ReRankerManager(BaseRerankerManager):
     """
     Public facade for the Intergrax reranking subsystem.
 
@@ -37,10 +35,10 @@ class ReRanker:
 
     def __init__(
         self,
-        engine: Optional[RerankerEngine] = None,
+        engine: RerankerEngine = None,
     ) -> None:
 
-        self._engine = engine or create_default_reranker_engine(embedding_manager=create_default_embedding_manager())
+        self._engine = engine
 
     # ------------------------------------------------------------------
     # Core API
@@ -55,24 +53,6 @@ class ReRanker:
     ) -> List[RerankerResult]:
 
         return self._engine.rerank(
-            query=query,
-            candidates=candidates,
-            limit=limit,
-        )
-
-    # ------------------------------------------------------------------
-    # Callable interface
-    # ------------------------------------------------------------------
-
-    def __call__(
-        self,
-        *,
-        query: Optional[str],
-        candidates: List[RerankerCandidate],
-        limit: Optional[int] = None,
-    ) -> List[RerankerResult]:
-
-        return self.rerank(
             query=query,
             candidates=candidates,
             limit=limit,

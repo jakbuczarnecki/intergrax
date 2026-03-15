@@ -11,6 +11,7 @@ import pytest
 from typing import List, Optional, Sequence
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
 from intergrax.rag.retrievers.providers.vector_similarity_retriever import (
     VectorSimilarityRetriever,
 )
@@ -36,7 +37,7 @@ class FakeEmbeddingManager(BaseEmbeddingManager):
     def embed_documents(
         self,
         documents: Sequence[Document],
-    ) -> Sequence[Document]:
+    ) -> EmbeddingResult:
         pass
 
 

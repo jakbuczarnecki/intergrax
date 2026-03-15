@@ -14,7 +14,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.rag.retrievers._legacy.rag_retriever import RagRetriever
-from intergrax.rag.rerankers.re_ranker import ReRanker
+from intergrax.rag.rerankers.re_ranker_manager import ReRankerManager
 
 from operator import itemgetter
 
@@ -165,7 +165,7 @@ class LangChainQAChain:
         *,
         retriever: RagRetriever,
         llm,  # any LangChain LLM (e.g., ChatOllama, ChatOpenAI, etc.)
-        reranker: Optional[ReRanker] = None,
+        reranker: Optional[ReRankerManager] = None,
         config: Optional[ChainConfig] = None,
     ):
         self.retriever = retriever

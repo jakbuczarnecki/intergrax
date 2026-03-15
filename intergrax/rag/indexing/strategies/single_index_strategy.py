@@ -8,8 +8,8 @@ from typing import List
 
 from langchain_core.documents import Document
 
-from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.indexing.contracts.index_strategy import IndexStrategy
 
 
@@ -25,16 +25,16 @@ class SingleIndexStrategy(IndexStrategy):
         self,
         *,
         documents: List[Document],
-        embed_manager: EmbeddingManager,
-        vectorstore: VectorstoreManager,
+        embed_manager: BaseEmbeddingManager,
+        vectorstore: BaseVectorstoreManager,
     ) -> None:
 
         if not documents:
             return
 
-        embeddings, aligned_docs = embed_manager.embed_documents(documents)
+        result = embed_manager.embed_documents(documents)
 
         vectorstore.add_documents(
-            documents=aligned_docs,
-            embeddings=embeddings,
+            documents=result.documents,
+            embeddings=result.embeddings,
         )

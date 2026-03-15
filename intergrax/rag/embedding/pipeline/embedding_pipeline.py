@@ -12,6 +12,7 @@ from numpy.typing import NDArray
 from langchain_core.documents import Document
 
 from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMetadataKey
+from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 
 
@@ -70,30 +71,36 @@ class EmbeddingPipeline:
     def embed_documents(
         self,
         documents: Sequence[Document],
-    ) -> Sequence[Document]:
+    ) -> EmbeddingResult:
         """
-        Generate embeddings and attach them to document metadata.
+        Generate embeddings for documents and attach them to metadata.
         """
 
         if not documents:
-            return documents
+            return EmbeddingResult(
+                documents=[],
+                embeddings=[],
+            )
 
         texts: List[str] = [doc.page_content for doc in documents]
 
         embeddings = self.embed_texts(texts)
 
-        result: List[Document] = []
+        enriched_documents: List[Document] = []
 
         for document, vector in zip(documents, embeddings):
 
             metadata = dict(document.metadata or {})
             metadata[EmbeddingMetadataKey.VECTOR] = vector
 
-            result.append(
+            enriched_documents.append(
                 Document(
                     page_content=document.page_content,
                     metadata=metadata,
                 )
             )
 
-        return result
+        return EmbeddingResult(
+            documents=enriched_documents,
+            embeddings=embeddings,
+        )

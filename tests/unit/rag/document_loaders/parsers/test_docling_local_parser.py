@@ -38,7 +38,7 @@ def test_docling_local_parser_returns_document(monkeypatch):
     parser = DoclingLocalParser()
 
     monkeypatch.setattr(
-        "intergrax.rag.document_loaders.parsers.docling_local_parser.DocumentConverter",
+        "intergrax.rag.document_loaders.parsers.docling_local_parser.create_docling_converter",
         lambda: FakeConverter()
     )
 
@@ -54,7 +54,7 @@ def test_docling_local_parser_sets_metadata(monkeypatch):
     parser = DoclingLocalParser()
 
     monkeypatch.setattr(
-        "intergrax.rag.document_loaders.parsers.docling_local_parser.DocumentConverter",
+        "intergrax.rag.document_loaders.parsers.docling_local_parser.create_docling_converter",
         lambda: FakeConverter()
     )
 
@@ -82,7 +82,7 @@ def test_docling_local_parser_handles_empty_text(monkeypatch):
             return EmptyResult()
 
     monkeypatch.setattr(
-        "intergrax.rag.document_loaders.parsers.docling_local_parser.DocumentConverter",
+        "intergrax.rag.document_loaders.parsers.docling_local_parser.create_docling_converter",
         lambda: EmptyConverter()
     )
 
@@ -99,7 +99,7 @@ def test_docling_local_parser_multiple_calls(monkeypatch):
     parser = DoclingLocalParser()
 
     monkeypatch.setattr(
-        "intergrax.rag.document_loaders.parsers.docling_local_parser.DocumentConverter",
+        "intergrax.rag.document_loaders.parsers.docling_local_parser.create_docling_converter",
         lambda: FakeConverter()
     )
 

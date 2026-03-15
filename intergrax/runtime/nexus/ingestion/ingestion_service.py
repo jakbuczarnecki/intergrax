@@ -391,22 +391,19 @@ class AttachmentIngestionService:
 
         # 5a) Embeddings
         try:
-            # Preferred path: the manager exposes embed_documents(chunks)
             embed_result = self._embedding_manager.embed_documents(chunks)
 
             if inspect.iscoroutine(embed_result):
                 embed_result = await embed_result
 
-            # Normalize result: either (embeddings, docs) or embeddings-only
-            if isinstance(embed_result, tuple) and len(embed_result) == 2:
-                embeddings, aligned_docs = embed_result
-            else:
-                embeddings = embed_result
-                aligned_docs = chunks
+            aligned_docs = embed_result.documents
+            embeddings = embed_result.embeddings
 
         except AttributeError:
             # Fallback: manager exposes only embed_texts(texts)
+
             texts = [c.page_content for c in chunks]
+
             embed_result = self._embedding_manager.embed_texts(texts)
 
             if inspect.iscoroutine(embed_result):

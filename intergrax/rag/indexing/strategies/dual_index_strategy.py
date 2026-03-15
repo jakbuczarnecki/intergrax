@@ -4,13 +4,13 @@
 
 from __future__ import annotations
 
-from typing import List, Dict, Set
-import math
+from typing import List, Dict
 
 from langchain_core.documents import Document
 
 from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
-from intergrax.rag.embedding.embedding_manager import EmbeddingManager
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.rag.indexing.contracts.index_strategy import IndexStrategy
 
@@ -28,7 +28,7 @@ class DualIndexStrategy(IndexStrategy):
     def __init__(
         self,
         *,
-        toc_vectorstore: VectorstoreManager,
+        toc_vectorstore: BaseVectorstoreManager,
         batch_size: int = 512,
     ):
         self.toc_vectorstore = toc_vectorstore
@@ -38,8 +38,8 @@ class DualIndexStrategy(IndexStrategy):
         self,
         *,
         documents: List[Document],
-        embed_manager: EmbeddingManager,
-        vectorstore: VectorstoreManager,
+        embed_manager: BaseEmbeddingManager,
+        vectorstore: BaseVectorstoreManager,
     ) -> None:
 
         if not documents:
@@ -49,12 +49,12 @@ class DualIndexStrategy(IndexStrategy):
         # Main CHUNK index
         # -----------------------------
 
-        embeddings, aligned_docs = embed_manager.embed_documents(documents)
+        result = embed_manager.embed_documents(documents)
 
         self._insert_batches(
             vectorstore,
-            aligned_docs,
-            embeddings,
+            result.documents,
+            result.embeddings,
         )
 
         # -----------------------------
@@ -93,17 +93,17 @@ class DualIndexStrategy(IndexStrategy):
                 )
             )
 
-        embeddings, aligned_docs = embed_manager.embed_documents(toc_docs)
+        result = embed_manager.embed_documents(toc_docs)
 
         self._insert_batches(
             self.toc_vectorstore,
-            aligned_docs,
-            embeddings,
+            result.documents,
+            result.embeddings,
         )
 
     def _insert_batches(
         self,
-        vectorstore: VectorstoreManager,
+        vectorstore: BaseVectorstoreManager,
         documents: List[Document],
         embeddings,
     ) -> None:

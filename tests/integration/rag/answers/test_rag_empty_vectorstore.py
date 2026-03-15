@@ -18,7 +18,7 @@ from intergrax.rag.embedding.bootstrap.default_embedding_engine import (
 from intergrax.rag.rerankers.bootstrap.reranker_bootstrap import (
     create_default_reranker_engine,
 )
-from intergrax.rag.rerankers.re_ranker import ReRanker
+from intergrax.rag.rerankers.re_ranker_manager import ReRankerManager
 from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import (
     create_default_retriever_manager,
 )
@@ -45,7 +45,7 @@ def test_rag_pipeline_empty_vectorstore() -> None:
         embedding_manager=embedding_manager,
     )
 
-    reranker = ReRanker(
+    reranker = ReRankerManager(
         engine=create_default_reranker_engine(
             embedding_manager=embedding_manager,
         )

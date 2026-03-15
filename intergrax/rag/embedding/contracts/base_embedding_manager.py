@@ -10,6 +10,8 @@ from langchain_core.documents import Document
 import numpy as np
 from numpy.typing import NDArray
 
+from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
+
 
 class BaseEmbeddingManager(ABC):
     
@@ -37,7 +39,7 @@ class BaseEmbeddingManager(ABC):
     def embed_documents(
         self,
         documents: Sequence[Document],
-    ) -> Sequence[Document]:
+    ) -> EmbeddingResult:
         """
         Generate embeddings for LangChain Document objects.
         """

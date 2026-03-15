@@ -78,8 +78,12 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
     chunks = splitter.split_documents(documents=all_docs)
     assert chunks, "No chunks produced from local corpus."
 
-    # ---- Embed chunks (embed_manager.embed_documents(docs=...)) ----
-    embeddings, documents = embed_manager.embed_documents(docs=chunks)
+    # ---- Embed chunks (embed_manager.embed_documents(...)) ----
+    embed_result = embed_manager.embed_documents(chunks)
+
+    documents = embed_result.documents
+    embeddings = embed_result.embeddings
+
     assert len(embeddings) == len(documents), "Embeddings/documents length mismatch."
     assert embeddings, "No embeddings produced."
 

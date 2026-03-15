@@ -44,6 +44,8 @@ class DocumentLoaderConfig:
     #   server -> use docling server (docker)
     docling_mode: DoclingMode =  _read_docling_mode()
 
+    docling_simple_pdf_mode = True
+
     # URL for Docling server
     docling_server_url: str = os.getenv(
         "INTERGRAX_DOCLING_SERVER_URL",
