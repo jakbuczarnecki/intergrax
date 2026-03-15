@@ -34,6 +34,7 @@ from intergrax.rag.document_loaders.documents_loader import DocumentsLoader
 from intergrax.rag.document_splitters.bootstrap.default_chunking_engine import create_default_document_splitter
 from intergrax.rag.document_splitters.documents_splitter import DocumentsSplitter
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
+from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.runtime.nexus.context.context_builder import RetrievedChunk
 from intergrax.runtime.nexus.ingestion.attachments import AttachmentResolver
@@ -170,8 +171,7 @@ class AttachmentIngestionService:
 
         Contract:
           - Uses ingestion embedding_manager to embed the user query
-          - Uses ingestion vectorstore_manager.query(query_embeddings, top_k, where=...)
-          - No getattr/hasattr or signature guessing
+          - Uses ingestion vectorstore_manager.query(query_embedding, top_k, metadata_filter=...)
         """
         q = (query or "").strip()
         if not q:
@@ -207,6 +207,8 @@ class AttachmentIngestionService:
         if workspace_id is not None:
             where["workspace_id"] = workspace_id
 
+        metadata_filter = MetadataFilter(conditions=where) if where else None
+
         # 1) Embed the query using ingestion embedder.
         # Expected EmbeddingManager API in Intergrax: embed_one / embed_query / embed
         # Use the same call you use in ingestion indexing for chunks, but for single query string.
@@ -216,58 +218,34 @@ class AttachmentIngestionService:
 
         # 2) Vector search in ingestion vectorstore with strict session filters.
         raw = self._vectorstore_manager.query(
-            query_embeddings=query_emb,
+            query_embedding=query_emb,
             top_k=int(top_k),
-            where=where,
+            metadata_filter=metadata_filter,
             include_embeddings=False,
         )
         
-        # VectorstoreManager.query() returns a provider-normalized dict:
-        # {
-        #   "ids": List[List[str]],
-        #   "scores": List[List[float]],
-        #   "metadatas": List[List[dict]],
-        #   "documents": List[List[str]] | None
-        # }
-        if not isinstance(raw, dict):
-            return {
-                "used": False,
-                "hits": [],
-                "scores": [],
-                "debug": {"reason": "unexpected_vectorstore_result_type"},
-            }
-
-        ids_rows = raw.get("ids") or []
-        scores_rows = raw.get("scores") or []
-        metas_rows = raw.get("metadatas") or []
-        docs_rows = raw.get("documents") or []
-
-        # Batched outputs: take first row for a single query.
-        ids_row = ids_rows[0] if isinstance(ids_rows, list) and len(ids_rows) > 0 else []
-        scores_row = scores_rows[0] if isinstance(scores_rows, list) and len(scores_rows) > 0 else []
-        metas_row = metas_rows[0] if isinstance(metas_rows, list) and len(metas_rows) > 0 else []
-        docs_row = docs_rows[0] if isinstance(docs_rows, list) and len(docs_rows) > 0 else []
-
         hits: List[RetrievedChunk] = []
         scores: List[float] = []
 
-        n = min(len(docs_row), len(metas_row), len(scores_row), len(ids_row) if ids_row else 10**9)
+        for i, raw_hit in enumerate(raw):
+            if not isinstance(raw_hit, VectorStoreHit):
+                return {
+                    "used": False,
+                    "hits": [],
+                    "scores": [],
+                    "debug": {"reason": "unexpected_vectorstore_result_type"},
+                }
 
-        for i in range(n):
-            text = (docs_row[i] or "").strip()
+            text = (raw_hit.content or "").strip()
             if not text:
                 continue
 
-            md = metas_row[i] or {}
-            sc = scores_row[i] if i < len(scores_row) else 0.0
-            scv = float(sc) if sc is not None else 0.0
+            md = dict(raw_hit.metadata or {})
+            scv = float(raw_hit.similarity_score)
 
-            # Optional: keep id in metadata for traceability
-            if ids_row and i < len(ids_row):
-                md = dict(md)
-                md["vector_id"] = ids_row[i]
+            md["vector_id"] = raw_hit.id
+            chunk_id = str(raw_hit.id) if raw_hit.id is not None else f"{session_id}:{i}"
 
-            chunk_id = ids_row[i] if (ids_row and i < len(ids_row)) else f"{session_id}:{i}"
             hits.append(RetrievedChunk(chunk_id, text, md, scv))
             scores.append(scv)
 

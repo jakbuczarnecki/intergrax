@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 from typing import TYPE_CHECKING
 
+from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.llm.messages import ChatMessage
 if TYPE_CHECKING:
@@ -229,8 +230,7 @@ class ContextBuilder:
         max_docs: int = int(self._config.max_docs_per_query)
         score_threshold: Optional[float] = self._config.rag_score_threshold
 
-        # Translate logical `where` into backend-specific filter
-        backend_where = self._build_backend_where(where)
+        metadata_filter = MetadataFilter(conditions=where) if where else None
 
         # 2) Get embedding manager from runtime config
         embedding_manager = self._config.embedding_manager
@@ -238,40 +238,38 @@ class ContextBuilder:
             # Without an embedding manager we cannot perform semantic search.
             return [], "no_embedding_manager_in_config"
 
-        # 3) Compute query embeddings using IntergraxEmbeddingManager API
-        # Preferred path: single-text embedding
+        # 3) Compute query embedding using IntergraxEmbeddingManager API
         try:
-            query_embeddings = embedding_manager.embed_one(query_text)
+            query_embedding = embedding_manager.embed_one(query_text)
         except Exception:
-            # Fallback: some providers might only support batch embedding
-            query_embeddings = embedding_manager.embed_texts([query_text])
+            query_embedding = embedding_manager.embed_texts([query_text])
 
         # Normalize embeddings shape for vector store:
-        # - numpy array: ensure 2D
-        # - plain list: wrap 1D into batch-of-1        
-        if hasattr(query_embeddings, "ndim"):
+        # - numpy array: convert 2D batch-of-1 into 1D vector
+        # - plain list: unwrap batch-of-1 into a single vector
+        if hasattr(query_embedding, "ndim"):
             try:
-                if query_embeddings.ndim == 1:
-                    query_embeddings = query_embeddings.reshape(1, -1)
+                if query_embedding.ndim > 1:
+                    query_embedding = query_embedding[0]
             except Exception:
                 pass
-        else:
-            if isinstance(query_embeddings, (list, tuple)) and query_embeddings:
-                first = query_embeddings[0]
-                if isinstance(first, (float, int)):
-                    # 1D -> wrap into batch
-                    query_embeddings = [query_embeddings]
+        elif (
+            isinstance(query_embedding, (list, tuple))
+            and query_embedding
+            and isinstance(query_embedding[0], (list, tuple))
+        ):
+            query_embedding = query_embedding[0]
 
-        # 4) Call vector store with embeddings + backend_where
-        hits_dict = self._vectorstore.query(
-            query_embeddings=query_embeddings,
+        # 4) Call vector store with the normalized Tier-1 contract
+        hits = self._vectorstore.query(
+            query_embedding=query_embedding,
             top_k=max_docs,
-            where=backend_where,
+            metadata_filter=metadata_filter,
             include_embeddings=False,
         )
 
         # 5) Normalize hits into RetrievedChunk objects
-        retrieved_chunks = self._map_hits_to_chunks(hits_dict)
+        retrieved_chunks = self._map_hits_to_chunks(hits)
 
         # Apply score_threshold as an extra safety net
         if score_threshold is not None:
@@ -315,118 +313,26 @@ class ContextBuilder:
 
         return {"$and": conditions}
 
-    def _map_hits_to_chunks(self, hits: Any) -> List[RetrievedChunk]:
+    def _map_hits_to_chunks(self, hits: List[VectorStoreHit]) -> List[RetrievedChunk]:
         """
-        Normalize raw hits from the vector store into RetrievedChunk objects.
+        Convert Tier-1 VectorStoreHit objects into RetrievedChunk objects.
+        """
 
-        Supported patterns:
-        - Dict with parallel lists (Chroma-style).
-        - Dict with a `matches` list.
-        - Flat list or list-of-lists of dict-like objects.
-        """
         if not hits:
             return []
 
-        if isinstance(hits, dict):
-            if "matches" in hits and isinstance(hits["matches"], list):
-                flat_hits = hits["matches"]
-            else:
-                docs = (
-                    hits.get("documents")
-                    or hits.get("texts")
-                    or hits.get("contents")
-                )
-                metas = hits.get("metadatas") or hits.get("metadata")
-                scores = hits.get("scores") or hits.get("distances")
-                ids = hits.get("ids") or hits.get("id")
-
-                if docs is None:
-                    return []
-
-                if isinstance(docs, list) and docs and isinstance(docs[0], list):
-                    docs_list = docs[0]
-                    metas_list = metas[0] if isinstance(metas, list) and metas else metas
-                    scores_list = scores[0] if isinstance(scores, list) and scores else scores
-                    ids_list = ids[0] if isinstance(ids, list) and ids else ids
-                else:
-                    docs_list = docs
-                    metas_list = metas
-                    scores_list = scores
-                    ids_list = ids
-
-                flat_hits = []
-                n = len(docs_list)
-
-                for i in range(n):
-                    doc_text = docs_list[i]
-
-                    if isinstance(metas_list, (list, tuple)) and i < len(metas_list):
-                        meta_i = metas_list[i]
-                    else:
-                        meta_i = metas_list or {}
-
-                    if isinstance(scores_list, (list, tuple)) and i < len(scores_list):
-                        score_i = scores_list[i]
-                    else:
-                        score_i = scores_list
-
-                    if isinstance(ids_list, (list, tuple)) and i < len(ids_list):
-                        id_i = ids_list[i]
-                    else:
-                        id_i = ids_list
-
-                    flat_hits.append(
-                        {
-                            "id": id_i,
-                            "text": doc_text,
-                            "metadata": meta_i,
-                            "distance": score_i,
-                        }
-                    )
-        else:
-            if isinstance(hits, list) and hits and isinstance(hits[0], list):
-                flat_hits = hits[0]
-            else:
-                flat_hits = hits
-
         chunks: List[RetrievedChunk] = []
 
-        for raw in flat_hits:
-            if not isinstance(raw, dict):
-                raw_dict = raw.__dict__ if hasattr(raw, "__dict__") else {}
-            else:
-                raw_dict = raw
+        for hit in hits:
 
-            metadata = raw_dict.get("metadata") or raw_dict.get("meta") or {}
-            if not isinstance(metadata, dict):
-                metadata = {"_raw_metadata": metadata}
+            metadata = dict(hit.metadata or {})
 
-            raw_id = (
-                raw_dict.get("id")
-                or raw_dict.get("doc_id")
-                or metadata.get("id")
-                or metadata.get("doc_id")
-                or "unknown"
-            )
+            raw_id = hit.id or "unknown"
 
-            raw_text = (
-                raw_dict.get("text")
-                or raw_dict.get("page_content")
-                or raw_dict.get("content")
-                or ""
-            )
-
-            raw_score = raw_dict.get("score")
-            if raw_score is None:
-                raw_score = raw_dict.get("distance")
-                if raw_score is not None:
-                    try:
-                        raw_score = 1.0 / (1.0 + float(raw_score))
-                    except Exception:
-                        raw_score = 0.0
+            raw_text = hit.content or ""
 
             try:
-                score = float(raw_score) if raw_score is not None else 0.0
+                score = float(hit.similarity_score)
             except Exception:
                 score = 0.0
 
