@@ -19,7 +19,7 @@ class SimpleTokenizer(Tokenizer):
 
     id:str = "simple"
 
-    def count_tokens(self, text: str) -> int:
+    def count_tokens(self, *, text: str) -> int:
 
         if not text:
             return 0

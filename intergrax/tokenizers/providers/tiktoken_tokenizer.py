@@ -33,7 +33,7 @@ class TiktokenTokenizer(Tokenizer):
         if self._encoding is None:
             self._encoding = tiktoken.get_encoding(self._encoding_name)
 
-    def count_tokens(self, text: str) -> int:
+    def count_tokens(self, *, text: str) -> int:
 
         if not text:
             return 0

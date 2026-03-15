@@ -8,14 +8,13 @@ from typing import Any, Dict, Iterable, List, Optional, Type, Union, Literal
 import json
 import time
 
-# Your components
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
+from intergrax.rag.answers.contracts.base_answer_manager import BaseAnswerManager
 from intergrax.tools.tools_agent import ToolsAgent, ToolsAgentConfig
 from intergrax.tools.tools_base import ToolRegistry
-from intergrax.rag.answers._legacy.rag_answerer import RagAnswerer
 
 Route = Literal["rag", "tools", "general"]
 
@@ -91,7 +90,7 @@ class ChatRouterConfig:
 class RagComponent:
     """Single RAG endpoint with a description used for routing decisions."""
     name: str
-    answerer: RagAnswerer
+    manager: BaseAnswerManager
     description: str
     priority: int = 100
 
@@ -506,9 +505,8 @@ class ChatAgent:
         if rc is None:
             return self._do_general(question=question, output_model=output_model, stream=stream, summarize=summarize)
 
-        res = rc.answerer.run(
+        res = rc.manager.answer(
             question=question,
-            where=None,             # inject where-clauses inside the answerer if needed
             stream=stream,
             summarize=summarize,
             output_model=output_model,

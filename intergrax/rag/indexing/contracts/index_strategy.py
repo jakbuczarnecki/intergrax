@@ -9,8 +9,8 @@ from typing import List
 
 from langchain_core.documents import Document
 
-from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 
 
 class IndexStrategy(ABC):
@@ -33,8 +33,8 @@ class IndexStrategy(ABC):
         self,
         *,
         documents: List[Document],
-        embed_manager: EmbeddingManager,
-        vectorstore: VectorstoreManager,
+        embed_manager: BaseEmbeddingManager,
+        vectorstore: BaseVectorstoreManager,
     ) -> None:
         """
         Build a vector index from the provided documents.

@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.rag.answers.answer_manager import AnswerManager
 from intergrax.rag.answers.contracts.answer_engine import AnswerEngine
+from intergrax.rag.answers.contracts.base_answer_manager import BaseAnswerManager
 from intergrax.rag.answers.contracts.base_context_builder import BaseContextBuilder
 from intergrax.rag.answers.contracts.base_prompt_builder import BasePromptBuilder
 from intergrax.rag.answers.engine.answer_engine import DefaultAnswerEngine
@@ -27,7 +29,7 @@ from intergrax.rag.rerankers.bootstrap.reranker_bootstrap import (
 
 from intergrax.rag.retrievers.retriever_manager import RetrieverManager
 from intergrax.rag.rerankers.engine.reranker_engine import RerankerEngine
-from intergrax.tokenizers.bootstrap.tokenizer_bootstrap import create_default_tokenizer
+from intergrax.tokenizers.bootstrap.tokenizer_bootstrap import create_default_tokenizer_manager
 
 
 def create_default_answer_pipeline(
@@ -46,7 +48,7 @@ def create_default_answer_pipeline(
 
     if context_builder is None:
         context_builder = DefaultContextBuilder(
-            tokenizer_manager=create_default_tokenizer()
+            tokenizer_manager=create_default_tokenizer_manager()
         )
 
     if prompt_builder is None:
@@ -72,7 +74,7 @@ def create_default_answer_engine(
 
     if context_builder is None:
         context_builder = DefaultContextBuilder(
-            tokenizer_manager=create_default_tokenizer()
+            tokenizer_manager=create_default_tokenizer_manager()
         )
 
     if prompt_builder is None:
@@ -83,4 +85,16 @@ def create_default_answer_engine(
         reranker_manager=reranker_engine,
         context_builder=context_builder,
         prompt_builder=prompt_builder,
+    )
+
+
+def create_default_answerer_manager(
+        *,
+        engine: Optional[AnswerEngine] = None,
+) -> BaseAnswerManager:
+    if engine is None:
+        engine = create_default_answer_engine()
+
+    return AnswerManager(
+        engine=engine
     )

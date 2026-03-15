@@ -78,13 +78,13 @@ def test_embed_documents() -> None:
 
     result = pipeline.embed_documents(docs)
 
-    assert len(result) == 2
+    assert len(result.documents) == 2
 
-    assert result[0].page_content == "doc1"
-    assert result[1].page_content == "doc2"
+    assert result.documents[0].page_content == "doc1"
+    assert result.documents[1].page_content == "doc2"
 
-    vector_0 = result[0].metadata[EmbeddingMetadataKey.VECTOR]
-    vector_1 = result[1].metadata[EmbeddingMetadataKey.VECTOR]
+    vector_0 = result.embeddings[0]
+    vector_1 = result.embeddings[1]
 
     assert vector_0.shape == (5,)
     assert vector_1.shape == (5,)

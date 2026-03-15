@@ -93,7 +93,7 @@ def test_retrieval_pipeline():
         Document(page_content="Vector databases store embeddings."),
     ]
 
-    embedded_docs = embedding_manager.embed_documents(documents)
+    result = embedding_manager.embed_documents(documents)
 
     cfg = QdrantConfig(
             collection_name="retrieval_integration_it_qdrant",
@@ -101,14 +101,10 @@ def test_retrieval_pipeline():
         )
     vector_store = QdrantVectorStore(cfg)
 
-    embeddings = [
-        doc.metadata[EmbeddingMetadataKey.VECTOR]
-        for doc in embedded_docs
-    ]
 
     vector_store.add_documents(
-        embedded_docs,
-        embeddings,
+        result.documents,
+        result.embeddings,
     )
 
     retriever_manager = create_retriever_manager(

@@ -17,8 +17,9 @@ from intergrax.rag.answers.contracts.answer_result import AnswerResult
 from intergrax.rag.answers.contracts.base_context_builder import BaseContextBuilder
 from intergrax.rag.answers.contracts.base_prompt_builder import BasePromptBuilder
 from intergrax.rag.answers.pipeline.pipeline_trace import PipelineTrace, StepTimer
+from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.rerankers.contracts.reranker_types import RerankerCandidate
-from intergrax.rag.rerankers.re_ranker import ReRanker
+from intergrax.rag.rerankers.re_ranker_manager import ReRankerManager
 
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 
@@ -29,7 +30,7 @@ class AnswerPipeline:
         self,
         *,
         retriever_manager: BaseRetrieverManager,
-        reranker_manager: ReRanker,
+        reranker_manager: BaseRerankerManager,
         context_builder: BaseContextBuilder,
         prompt_builder: BasePromptBuilder,
     ) -> None:

@@ -41,5 +41,5 @@ class HFTokenizer(Tokenizer):
             add_special_tokens=False
         )
 
-    def count_tokens(self, text: str) -> int:
+    def count_tokens(self, *, text: str) -> int:
         return len(self.encode(text))

@@ -78,10 +78,10 @@ def test_manager_embed_documents() -> None:
 
     result = manager.embed_documents(docs)
 
-    assert len(result) == 2
+    assert len(result.documents) == 2
 
-    vector_0 = result[0].metadata[EmbeddingMetadataKey.VECTOR]
-    vector_1 = result[1].metadata[EmbeddingMetadataKey.VECTOR]
+    vector_0 = result.embeddings[0]
+    vector_1 = result.embeddings[1]
 
     assert vector_0.shape == (4,)
     assert vector_1.shape == (4,)

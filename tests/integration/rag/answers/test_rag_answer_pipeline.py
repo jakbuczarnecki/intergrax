@@ -21,7 +21,7 @@ from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMe
 from intergrax.rag.rerankers.bootstrap.reranker_bootstrap import (
     create_default_reranker_engine,
 )
-from intergrax.rag.rerankers.re_ranker import ReRanker
+from intergrax.rag.rerankers.re_ranker_manager import ReRankerManager
 from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import (
     create_default_retriever_manager,
 )
@@ -44,11 +44,9 @@ def test_rag_answer_pipeline_end_to_end() -> None:
         Document(page_content="Madrid is the capital of Spain.", metadata={}),
     ]
 
-    embedded_documents = embedding_manager.embed_documents(raw_documents)
-    embeddings = [
-        document.metadata[EmbeddingMetadataKey.VECTOR]
-        for document in embedded_documents
-    ]
+    result = embedding_manager.embed_documents(raw_documents)
+    embedded_documents = result.documents
+    embeddings = result.embeddings    
 
     vectorstore_manager.add_documents(
         documents=embedded_documents,
@@ -60,7 +58,7 @@ def test_rag_answer_pipeline_end_to_end() -> None:
         embedding_manager=embedding_manager,
     )
 
-    reranker = ReRanker(
+    reranker = ReRankerManager(
         engine=create_default_reranker_engine(
             embedding_manager=embedding_manager,
         )
