@@ -33,7 +33,6 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
 
     from intergrax.rag.embedding.embedding_manager import EmbeddingManager
     from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
-    from intergrax.rag.retrievers._legacy.rag_retriever import RagRetriever
 
 
     # ---- Tenant / corpus configuration

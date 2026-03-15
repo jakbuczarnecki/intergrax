@@ -264,6 +264,7 @@ class RagE2EPipeline:
         assert self.result is not None
         assert self.result.answer
         assert self.result.context_documents is not None
+        assert len(self.result.context_documents) > 0
 
 
 # ------------------------------------------------------
