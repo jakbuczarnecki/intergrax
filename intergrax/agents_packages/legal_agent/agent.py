@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
+from __future__ import annotations
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter

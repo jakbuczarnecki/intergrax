@@ -65,6 +65,10 @@ SOURCE_EXTS = tuple(sorted(SOURCE_HANDLERS.keys()))
 # ----------------------------------------------------------------------
 EXTRA_BUNDLES: Dict[str, str] = {
     
+    "AGENTS": r"intergrax\agents",
+
+    "AGENTS_PACKAGES": r"intergrax\agents_packages",
+
     "LLM": r"intergrax\llm",
     "LLM_ADAPTERS": r"intergrax\llm_adapters",
 

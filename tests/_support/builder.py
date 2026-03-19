@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Any, Optional, Sequence
 from datetime import datetime
 
 import numpy as np
@@ -65,9 +65,15 @@ class FakeLLMAdapter(LLMAdapter):
         return 128_000
 
 
-    def __init__(self, *, fixed_text: str = "OK") -> None:
+    def __init__(
+        self,
+        *,
+        fixed_text: str = "OK",
+        fake_structured_data: Optional[Any] = None,
+    ) -> None:
         super().__init__()
         self._fixed_text = fixed_text
+        self._fake_structured_data = fake_structured_data
 
     def generate_messages(
         self,
@@ -88,6 +94,40 @@ class FakeLLMAdapter(LLMAdapter):
                 call,
                 input_tokens=0,
                 output_tokens=len(self._fixed_text),
+                success=True,
+            )
+
+    def generate_structured(
+        self,
+        messages: Sequence[ChatMessage],
+        output_model: type,
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
+    ):
+        call = self.usage.begin_call(run_id=run_id)
+
+        try:
+            if self._fake_structured_data is not None:
+                obj = self._fake_structured_data
+
+                # Safety check: ensure correct type
+                if not isinstance(obj, output_model):
+                    raise TypeError(
+                        "FakeLLMAdapter: fake_structured_data must be instance of output_model"
+                    )
+
+                return obj
+
+            # Fallback: instantiate empty model (will fail if required fields exist)
+            return output_model()
+
+        finally:
+            self.usage.end_call(
+                call,
+                input_tokens=0,
+                output_tokens=0,
                 success=True,
             )
 
