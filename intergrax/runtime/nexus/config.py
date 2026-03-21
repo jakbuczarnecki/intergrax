@@ -7,8 +7,8 @@ from enum import Enum
 from typing import Any, Dict, FrozenSet, Optional, Literal, Sequence
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.runtime.nexus.budget.budget_models import BudgetPolicy, RunBudget
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
@@ -65,10 +65,10 @@ class RuntimeConfig:
     llm_adapter: LLMAdapter
 
     # Embedding manager used for RAG/document indexing and retrieval.
-    embedding_manager: Optional[EmbeddingManager] = None
+    embedding_manager: Optional[BaseEmbeddingManager] = None
 
     # Vectorstore manager providing semantic search over stored chunks.
-    vectorstore_manager: Optional[VectorstoreManager] = None
+    vectorstore_manager: Optional[BaseVectorstoreManager] = None
 
     # ------------------------------------------------------------------
     # FEATURE FLAGS
