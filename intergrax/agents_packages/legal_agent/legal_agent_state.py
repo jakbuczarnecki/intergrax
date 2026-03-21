@@ -63,8 +63,6 @@ class LegalAgentState(AgentState, BaseModel):
     
     config: LegalAgentConfig
     
-    attachment_refs: List[AttachmentRef] = Field(default_factory=list)
-
     clauses: List[Clause] = Field(default_factory=list)
     sensitive_flags: List[SensitiveFlag] = Field(default_factory=list)
 

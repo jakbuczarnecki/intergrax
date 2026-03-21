@@ -4,14 +4,17 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import List
 
 from pydantic import BaseModel, Field
 
 from intergrax.agents_packages.legal_agent.steps.legal_base_step import LegalBaseStep
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.agents_packages.legal_agent.legal_agent_state import Clause, LegalAgentState
+from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.context.context_builder import RetrievedChunk
-from intergrax.agents_packages.legal_agent.legal_agent_state import LegalAgentState
+from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
 # ---------------------------------------------------------------------------
@@ -42,7 +45,7 @@ class LegalExtractClausesStep(LegalBaseStep):
 
         # ------------------------------------------------------------------
         # 1. Resolve ingestion service
-        # ------------------------------------------------------------------
+        # ------------------------------------------------------------------        
         service = state.context.ingestion_service
         if service is None:
             raise RuntimeError("AttachmentIngestionService is not configured.")
@@ -59,7 +62,7 @@ class LegalExtractClausesStep(LegalBaseStep):
                 user_id=state.request.user_id,
                 tenant_id=state.tenant_id,
                 workspace_id=state.request.workspace_id,
-            )
+            )            
 
         # ------------------------------------------------------------------
         # 3. Retrieval
@@ -80,25 +83,45 @@ class LegalExtractClausesStep(LegalBaseStep):
         if not hits:
             agent_state.clauses = []
             return
+        
+        state.used_rag = True
 
         # ------------------------------------------------------------------
         # 4. LLM processing (per chunk)
         # ------------------------------------------------------------------
-        all_clauses: List[LegalClause] = []
+        all_clauses: List[Clause] = []
 
         llm = state.context.config.llm_adapter
 
+        system = (
+            "You are a legal analysis system. Extract clauses from the user message. "
+            "Return structured JSON only (schema enforced by the runtime)."
+        )
+
         for chunk in hits:
-            result = await llm.generate_structured(
-                prompt=self._build_prompt(chunk.text),
-                output_model=LegalClausesExtractionResult,
-            )
+            messages = [
+                ChatMessage(role="system", content=system),
+                ChatMessage(role="user", content=self._build_prompt(chunk.text)),
+            ]
+            result = llm.generate_structured(
+                    messages,
+                    LegalClausesExtractionResult,
+                    run_id=state.run_id,
+                )
 
             if not isinstance(result, LegalClausesExtractionResult):
                 raise TypeError("Invalid LLM response type.")
 
             if result.clauses:
-                all_clauses.extend(result.clauses)
+                for lc in result.clauses:
+                    all_clauses.append(
+                        Clause(
+                            id=uuid.uuid4().hex,
+                            text=lc.text,
+                            category=lc.clause_type,
+                            is_sensitive=lc.risk_level.lower() == "high",
+                        )
+                    )
 
         # ------------------------------------------------------------------
         # 5. Save
@@ -106,9 +129,10 @@ class LegalExtractClausesStep(LegalBaseStep):
         agent_state.clauses = all_clauses
 
         state.trace_event(
-            component="LEGAL_AGENT",
+            component=TraceComponent.STEP,
             step="LegalExtractClausesStep",
             message=f"Extracted {len(all_clauses)} clauses from {len(hits)} chunks.",
+            level=TraceLevel.INFO,
         )
 
     # ------------------------------------------------------------------
