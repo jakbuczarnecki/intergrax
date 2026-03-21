@@ -14,15 +14,18 @@ if not exist .venv\Scripts\python.exe (
 
 set MODE=%1
 
+REM --- Test targets ---
+set TARGETS=tests intergrax/agents_packages
+
 REM --- Default: run all tests ---
 if "%MODE%"=="" (
     echo [INFO] Running ALL tests
-    .\.venv\Scripts\python -m pytest
+    .\.venv\Scripts\python -m pytest %TARGETS%
     exit /b %ERRORLEVEL%
 )
 
 REM --- Run by marker ---
 echo [INFO] Running tests with marker: %MODE%
-.\.venv\Scripts\python -m pytest -m "%MODE%"
+.\.venv\Scripts\python -m pytest %TARGETS% -m "%MODE%"
 
 exit /b %ERRORLEVEL%

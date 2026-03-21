@@ -30,12 +30,12 @@ from langchain_core.documents import Document
 
 from intergrax.llm.messages import AttachmentRef
 from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_documents_loader
-from intergrax.rag.document_loaders.documents_loader import DocumentsLoader
+from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDocumentsLoader
 from intergrax.rag.document_splitters.bootstrap.default_chunking_engine import create_default_document_splitter
-from intergrax.rag.document_splitters.documents_splitter import DocumentsSplitter
-from intergrax.rag.embedding.embedding_manager import EmbeddingManager
+from intergrax.rag.document_splitters.contracts.base_documents_splitter import BaseDocumentsSplitter
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
-from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.runtime.nexus.context.context_builder import RetrievedChunk
 from intergrax.runtime.nexus.ingestion.attachments import AttachmentResolver
 
@@ -86,10 +86,10 @@ class AttachmentIngestionService:
         self,
         *,
         resolver: AttachmentResolver,
-        embedding_manager: EmbeddingManager,
-        vectorstore_manager: VectorstoreManager,
-        loader: Optional[DocumentsLoader] = None,
-        splitter: Optional[DocumentsSplitter] = None,
+        embedding_manager: BaseEmbeddingManager,
+        vectorstore_manager: BaseVectorstoreManager,
+        loader: Optional[BaseDocumentsLoader] = None,
+        splitter: Optional[BaseDocumentsSplitter] = None,
     ) -> None:
         """
         Args:

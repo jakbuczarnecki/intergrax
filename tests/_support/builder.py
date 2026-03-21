@@ -6,12 +6,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Any, Optional, Sequence
 from datetime import datetime
+
+import numpy as np
+from numpy.typing import NDArray
 from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 from intergrax.fastapi_core.runs.store_base import RunStore
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage
+from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
+from intergrax.rag.embedding.embedding_manager import EmbeddingManager
+from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
+from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
+from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.providers.inmemory_vectorstore import InMemoryVectorStore
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.runtime.governance.execution_guard import ExecutionGuard, GovernanceEvaluation
 from intergrax.runtime.governance.service import GovernanceService
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -28,7 +39,6 @@ from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
-from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
 from intergrax.runtime.replay.metrics import ExecutionMetrics
 from intergrax.runtime.replay.policy import PolicyDecision, PolicyDecisionType
 from intergrax.runtime.replay.regression import RegressionSignals
@@ -55,9 +65,15 @@ class FakeLLMAdapter(LLMAdapter):
         return 128_000
 
 
-    def __init__(self, *, fixed_text: str = "OK") -> None:
+    def __init__(
+        self,
+        *,
+        fixed_text: str = "OK",
+        fake_structured_data: Optional[Any] = None,
+    ) -> None:
         super().__init__()
         self._fixed_text = fixed_text
+        self._fake_structured_data = fake_structured_data
 
     def generate_messages(
         self,
@@ -80,6 +96,41 @@ class FakeLLMAdapter(LLMAdapter):
                 output_tokens=len(self._fixed_text),
                 success=True,
             )
+
+    def generate_structured(
+        self,
+        messages: Sequence[ChatMessage],
+        output_model: type,
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
+    ):
+        call = self.usage.begin_call(run_id=run_id)
+
+        try:
+            if self._fake_structured_data is not None:
+                obj = self._fake_structured_data
+
+                # Safety check: ensure correct type
+                if not isinstance(obj, output_model):
+                    raise TypeError(
+                        "FakeLLMAdapter: fake_structured_data must be instance of output_model"
+                    )
+
+                return obj
+
+            # Fallback: instantiate empty model (will fail if required fields exist)
+            return output_model()
+
+        finally:
+            self.usage.end_call(
+                call,
+                input_tokens=0,
+                output_tokens=0,
+                success=True,
+            )
+
 
 class DummyExecutionGuard(ExecutionGuard):
     """
@@ -119,7 +170,6 @@ class DummyExecutionGuard(ExecutionGuard):
             regression=regression,
         )
 
-
 @dataclass(frozen=True)
 class DeterministicRuntimeHarness:
     """
@@ -133,9 +183,70 @@ class DeterministicRuntimeHarness:
     session_manager: SessionManager
 
 
+class FakeEmbeddingProvider(EmbeddingProvider):
+    
+    def __init__(
+        self,
+    ) -> None:
+        self._dim: Optional[int] = None
+
+    def provider_name(self) -> str:
+        return "fake"
+
+    def _ensure_model(self) -> None:
+        pass        
+
+    def _resolve_dim(self) -> None:
+
+        if self._dim is None:
+            self._dim = 256
+            
+
+    def dimension(self) -> int:
+
+        self._resolve_dim()
+        return self._dim
+
+    def embed(self, texts: Sequence[str]) -> NDArray[np.float32]:
+        self._resolve_dim()
+
+        if not texts:
+            return np.empty((0, self._dim), dtype=np.float32)
+
+        self._ensure_model()
+
+        return np.zeros((len(texts), self._dim), dtype=np.float32)
+    
+
 def build_in_memory_session_manager() -> SessionManager:
     storage = InMemorySessionStorage()
     return SessionManager(storage)
+
+def build_in_memory_vectorstore_manager(*, tenant_id: Optional[str] = None)-> BaseVectorstoreManager:
+    if tenant_id is None:
+        tenant_id = "in_memory_tenant_id"
+
+    manager = VectorstoreManager(store=InMemoryVectorStore(tenant_id=tenant_id))
+    return manager
+
+
+def build_fake_embedding_manager() -> EmbeddingManager:
+    registry = EmbeddingProviderRegistry()
+
+    provider = FakeEmbeddingProvider()
+
+    registry.register(provider)
+
+    engine = EmbeddingEngine(registry)
+
+    pipeline = EmbeddingPipeline(
+        engine=engine,
+        provider_id=provider.provider_name(),
+    )
+
+    manager = EmbeddingManager(pipeline=pipeline)
+
+    return manager
 
 
 def build_runtime_config_deterministic(
