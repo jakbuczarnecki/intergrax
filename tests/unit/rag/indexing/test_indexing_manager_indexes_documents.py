@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from typing import Optional, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
@@ -59,6 +59,7 @@ class FakeVectorstore(BaseVectorstoreManager):
         embeddings: Sequence[Sequence[float]],
         *,
         ids: Optional[Sequence[str]] = None,
+        base_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.docs.extend(documents)
     

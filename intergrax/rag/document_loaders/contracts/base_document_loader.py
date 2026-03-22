@@ -5,18 +5,33 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
 
 from langchain_core.documents import Document
 
 
+MetadataCallback = Callable[[Document, Path], Dict[str, Any]]
+
 
 class BaseDocumentsLoader(ABC):
-    
+
     @abstractmethod
-    def load_document(self, source: str) -> List[Document]:
+    def load_document(
+        self,
+        source: str,
+        *,
+        use_default_metadata: bool = True,
+        call_custom_metadata: Optional[MetadataCallback] = None,
+    ) -> List[Document]:
         """
         Load a single source (path/http/s3/etc.) using handler registry + metadata pipeline.
+
+        Args:
+            source: URI or path passed to the resolved handler.
+            use_default_metadata: When True, run the configured metadata pipeline after normalize.
+            call_custom_metadata: Optional callback ``(doc, path) -> dict`` merged into each
+                document's metadata (after default enrichment when enabled).
 
         NOTE:
         - DocumentsLoader does NOT validate source correctness.

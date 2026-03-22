@@ -8,7 +8,7 @@ from langchain_core.documents import Document
 import numpy as np
 from numpy.typing import NDArray
 import pytest
-from typing import List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
@@ -74,6 +74,7 @@ class FakeVectorStoreManager(BaseVectorstoreManager):
         embeddings: Sequence[Sequence[float]],
         *,
         ids: Optional[Sequence[str]] = None,
+        base_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         pass
 

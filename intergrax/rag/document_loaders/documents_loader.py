@@ -6,12 +6,15 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 from tqdm import tqdm
 from langchain_core.documents import Document
 
-from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDocumentsLoader
+from intergrax.rag.document_loaders.contracts.base_document_loader import (
+    BaseDocumentsLoader,
+    MetadataCallback,
+)
 from intergrax.rag.document_loaders.pipeline.metadata_pipeline import MetadataPipeline
 from intergrax.rag.document_loaders.pipeline.normalizer_pipeline import NormalizerPipeline
 from intergrax.rag.document_loaders.registry.document_handler_registry import DocumentHandlerRegistry
@@ -57,7 +60,13 @@ class DocumentsLoader(BaseDocumentsLoader):
     # Load single file
     # ---------------------------------------------------------
 
-    def load_document(self, source: str) -> List[Document]:
+    def load_document(
+        self,
+        source: str,
+        *,
+        use_default_metadata: bool = True,
+        call_custom_metadata: Optional[MetadataCallback] = None,
+    ) -> List[Document]:
         """
         Load a single source (path/http/s3/etc.) using handler registry + metadata pipeline.
 
@@ -74,13 +83,24 @@ class DocumentsLoader(BaseDocumentsLoader):
             loaded = handler.load(source)
             if not loaded:
                 return docs
-            
+
             normalized = self._normalizer_pipeline.normalize(
                 loaded,
                 source,
             )
 
-            enriched = self._metadata_pipeline.enrich(normalized, source)
+            if use_default_metadata:
+                enriched_seq = self._metadata_pipeline.enrich(normalized, source)
+                enriched: List[Document] = list(enriched_seq)
+            else:
+                enriched = list(normalized)
+
+            if call_custom_metadata is not None:
+                for d in enriched:
+                    extra: Dict[str, Any] = call_custom_metadata(d, source)
+                    if extra:
+                        d.metadata = {**(d.metadata or {}), **extra}
+
             docs.extend(enriched)
             return docs
 

@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import math
-from typing import Optional, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 from langchain_core.documents import Document
 import numpy as np
@@ -37,13 +37,19 @@ class VectorstoreManager(BaseVectorstoreManager):
         embeddings: Sequence[Sequence[float]],
         *,
         ids: Optional[Sequence[str]] = None,
+        base_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        
-        if len(documents) != len(embeddings):
+
+        docs = list(documents)
+        if base_metadata:
+            for d in docs:
+                d.metadata = {**(d.metadata or {}), **base_metadata}
+
+        if len(docs) != len(embeddings):
             raise ValueError(
                 "VectorstoreManager.add_documents: "
                 "documents and embeddings length mismatch "
-                f"({len(documents)} vs {len(embeddings)})"
+                f"({len(docs)} vs {len(embeddings)})"
             )
 
         if isinstance(embeddings, np.ndarray):
@@ -65,7 +71,7 @@ class VectorstoreManager(BaseVectorstoreManager):
                     )
 
         self._store.add_documents(
-            documents=documents,
+            documents=docs,
             embeddings=embeddings,
             ids=ids,
         )

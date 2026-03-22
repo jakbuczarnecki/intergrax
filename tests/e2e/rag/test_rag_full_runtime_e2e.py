@@ -16,7 +16,6 @@ from intergrax.rag.document_loaders.bootstrap.default_loader import create_defau
 from intergrax.rag.document_splitters.bootstrap.default_chunking_engine import create_default_document_splitter
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
-from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMetadataKey
 from intergrax.rag.rerankers.bootstrap.reranker_bootstrap import create_default_reranker_manager
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
