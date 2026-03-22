@@ -4,12 +4,16 @@
 
 from __future__ import annotations
 
+import os
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, Sequence
-from datetime import datetime
 
 import numpy as np
+import pytest
 from numpy.typing import NDArray
 from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 from intergrax.fastapi_core.runs.store_base import RunStore
@@ -216,7 +220,30 @@ class FakeEmbeddingProvider(EmbeddingProvider):
         self._ensure_model()
 
         return np.zeros((len(texts), self._dim), dtype=np.float32)
-    
+
+
+def require_ollama_reachable(
+    *,
+    base_url: Optional[str] = None,
+    timeout_sec: float = 3.0,
+) -> None:
+    """
+    Skip the current test if the Ollama HTTP API is not reachable.
+
+    Resolution order for the server base URL:
+    1. explicit ``base_url`` argument
+    2. environment variable ``OLLAMA_HOST`` (e.g. ``http://127.0.0.1:11434``)
+    3. :data:`DEFAULT_OLLAMA_BASE_URL`
+    """
+
+    DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434"
+    raw = (base_url or os.environ.get("OLLAMA_HOST") or DEFAULT_OLLAMA_BASE_URL).strip().rstrip("/")
+    tags_url = f"{raw}/api/tags"
+    try:
+        urllib.request.urlopen(tags_url, timeout=timeout_sec)
+    except (urllib.error.URLError, OSError) as e:
+        pytest.skip(f"Ollama not reachable at {raw}: {e}")
+
 
 def build_in_memory_session_manager() -> SessionManager:
     storage = InMemorySessionStorage()

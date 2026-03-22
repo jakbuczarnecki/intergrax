@@ -14,11 +14,11 @@ If Ollama is unreachable, the test is skipped.
 
 from __future__ import annotations
 
-import urllib.error
-import urllib.request
 from pathlib import Path
 
 import pytest
+
+from tests._support.builder import require_ollama_reachable
 
 from intergrax.agents_packages.legal_agent.legal_agent_config import LegalAgentConfig
 from intergrax.agents_packages.legal_agent.legal_agent_state import LegalAgentState
@@ -41,16 +41,9 @@ from intergrax.runtime.nexus.session.session_manager import SessionManager
 pytestmark = pytest.mark.integration
 
 
-def _require_ollama_reachable() -> None:
-    try:
-        urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=3.0)
-    except (urllib.error.URLError, OSError) as e:
-        pytest.skip(f"Ollama not reachable at 127.0.0.1:11434: {e}")
-
-
 @pytest.mark.asyncio
 async def test_extract_clauses_uses_rag_bootstraps_and_ollama(tmp_path: Path) -> None:
-    _require_ollama_reachable()
+    require_ollama_reachable()
 
     tenant_id = "legal-agent-extract-test"
     workspace_id = "ws-legal-1"
