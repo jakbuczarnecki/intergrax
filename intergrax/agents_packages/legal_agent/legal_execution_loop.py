@@ -24,6 +24,7 @@ from intergrax.agents_packages.legal_agent.legal_pipeline_routing import (
     build_legal_step_runners_from_routing,
     legal_routing_fingerprint,
     legal_stage_flag_for_runner,
+    legal_workspace_metrics_json,
     obtain_initial_legal_routing,
     obtain_replan_legal_routing,
 )
@@ -35,31 +36,26 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
-def legal_workspace_metrics_json(agent_state: LegalAgentState) -> str:
-    """Compact JSON for evaluator / replanner (no clause bodies)."""
+def _legal_post_wave_early_exit_ok(
+    agent_state: LegalAgentState,
+    completed: Set[str],
+    config: LegalAgentConfig,
+) -> bool:
+    if "run_decision" not in completed:
+        return False
     pol_v = agent_state.policy_violations
-    payload = {
-        "clause_count": len(agent_state.clauses),
-        "sensitive_flag_count": len(agent_state.sensitive_flags),
-        "legal_check_count": len(agent_state.legal_checks),
-        "compliance_result_count": len(agent_state.compliance_results),
-        "policy_violation_count": len(pol_v) if pol_v else 0,
-        "recommendation_count": len(agent_state.recommendations),
-        "uncertainty_count": len(agent_state.uncertainties),
-        "has_decision": agent_state.decision is not None,
-        "decision_status": agent_state.decision.status if agent_state.decision else None,
-        "decision_confidence": (
-            agent_state.decision.confidence if agent_state.decision else None
-        ),
-        "blocking_issues_count": (
-            len(agent_state.decision.blocking_issues)
-            if agent_state.decision and agent_state.decision.blocking_issues
-            else 0
-        ),
-        "decision_enforcement_modified": agent_state.decision_enforcement_modified,
-        "final_opinion_present": agent_state.final_opinion is not None,
-    }
-    return json.dumps(payload, sort_keys=True, ensure_ascii=False)
+    if pol_v and len(pol_v) > 0:
+        return False
+    d = agent_state.decision
+    if d is None:
+        return False
+    if d.status == "ESCALATE":
+        return False
+    if d.confidence < config.legal_loop_early_exit_min_confidence:
+        return False
+    if d.blocking_issues:
+        return False
+    return True
 
 
 async def _evaluate_legal_run_llm(
@@ -111,7 +107,11 @@ async def run_legal_dynamic_execution_loop(
     agent_state.legal_stages_completed_this_run = []
     completed: Set[str] = set()
 
-    routing = await obtain_initial_legal_routing(state=state, config=config)
+    routing = await obtain_initial_legal_routing(
+        state=state,
+        config=config,
+        agent_state=agent_state,
+    )
     last_fp: str | None = legal_routing_fingerprint(routing)
     same_fp = 0
     max_iter = config.legal_loop_max_iterations
@@ -156,6 +156,22 @@ async def run_legal_dynamic_execution_loop(
                 agent_state.legal_stages_completed_this_run.append(flag)
 
         if not config.use_legal_run_evaluator:
+            break
+
+        if (
+            config.legal_loop_early_exit
+            and to_run
+            and _legal_post_wave_early_exit_ok(agent_state, completed, config)
+        ):
+            state.trace_event(
+                component=TraceComponent.PIPELINE,
+                step="LegalExecutionLoop",
+                message=(
+                    "early exit: decision confidence and policy/blocking gates satisfied; "
+                    "skipping evaluator/replan"
+                ),
+                level=TraceLevel.INFO,
+            )
             break
 
         ev = await _evaluate_legal_run_llm(

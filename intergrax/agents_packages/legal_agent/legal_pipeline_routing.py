@@ -85,6 +85,33 @@ class LegalEvaluationResult(BaseModel):
     rationale: str = ""
 
 
+def legal_workspace_metrics_json(agent_state: LegalAgentState) -> str:
+    """Compact JSON for routing, evaluator, and replanner (no clause bodies)."""
+    pol_v = agent_state.policy_violations
+    payload = {
+        "clause_count": len(agent_state.clauses),
+        "sensitive_flag_count": len(agent_state.sensitive_flags),
+        "legal_check_count": len(agent_state.legal_checks),
+        "compliance_result_count": len(agent_state.compliance_results),
+        "policy_violation_count": len(pol_v) if pol_v else 0,
+        "recommendation_count": len(agent_state.recommendations),
+        "uncertainty_count": len(agent_state.uncertainties),
+        "has_decision": agent_state.decision is not None,
+        "decision_status": agent_state.decision.status if agent_state.decision else None,
+        "decision_confidence": (
+            agent_state.decision.confidence if agent_state.decision else None
+        ),
+        "blocking_issues_count": (
+            len(agent_state.decision.blocking_issues)
+            if agent_state.decision and agent_state.decision.blocking_issues
+            else 0
+        ),
+        "decision_enforcement_modified": agent_state.decision_enforcement_modified,
+        "final_opinion_present": agent_state.final_opinion is not None,
+    }
+    return json.dumps(payload, sort_keys=True, ensure_ascii=False)
+
+
 # (flag attribute name, step factory) — execution order
 _LEGAL_STAGE_FACTORIES: Tuple[Tuple[str, Callable[[], Any]], ...] = (
     ("run_extract", lambda: LegalExtractClausesStep()),
@@ -207,11 +234,13 @@ async def obtain_initial_legal_routing(
     *,
     state: RuntimeState,
     config: LegalAgentConfig,
+    agent_state: LegalAgentState,
 ) -> LegalRoutingResult:
     """First routing plan for the request (LLM or full default + dependency closure)."""
     req = state.request
     has_attachments = bool(req.attachments)
     snippet = _history_snippet(state)
+    metrics = legal_workspace_metrics_json(agent_state)
 
     if config.use_llm_legal_route_planner:
         plan = await _llm_legal_routing(
@@ -221,6 +250,7 @@ async def obtain_initial_legal_routing(
                 user_message=(req.message or "").strip(),
                 has_attachments=has_attachments,
                 conversation_snippet=snippet,
+                workspace_metrics_json=metrics,
             ),
         )
     else:
@@ -280,7 +310,11 @@ async def plan_legal_step_runners(
     """
     Returns ordered runtime step instances (including finalize) to execute.
     """
-    plan = await obtain_initial_legal_routing(state=state, config=config)
+    plan = await obtain_initial_legal_routing(
+        state=state,
+        config=config,
+        agent_state=agent_state,
+    )
     runners = build_legal_step_runners_from_routing(plan, include_finalize=True)
 
     enabled = [flag for flag, _ in _LEGAL_STAGE_FACTORIES if plan.model_dump().get(flag)]

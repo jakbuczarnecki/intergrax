@@ -99,3 +99,18 @@ class LegalAgentConfig(BaseModel):
         le=10,
         description="Stop replanning when the merged routing fingerprint repeats this many times.",
     )
+
+    legal_loop_early_exit: bool = Field(
+        default=True,
+        description=(
+            "After a wave, skip evaluator/replan when decision ran this wave, confidence is high, "
+            "and there are no policy violations or blocking issues."
+        ),
+    )
+
+    legal_loop_early_exit_min_confidence: float = Field(
+        default=0.9,
+        ge=0.0,
+        le=1.0,
+        description="Minimum decision.confidence for legal_loop_early_exit (requires run_decision this wave).",
+    )

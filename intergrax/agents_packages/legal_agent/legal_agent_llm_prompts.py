@@ -231,8 +231,22 @@ def finalize_answer_user(*, user_request: str, workspace: str) -> str:
 
 LEGAL_PIPELINE_ROUTING_SYSTEM = (
     "You are the execution router for a legal contract analysis agent.\n"
-    "Given the latest user message, whether new file attachments are present, and a "
-    "short conversation snippet, decide which analysis stages should run THIS turn.\n\n"
+    "Given the latest user message, whether new file attachments are present, a "
+    "short conversation snippet, and workspace metrics (JSON), decide which analysis "
+    "stages should run THIS turn.\n\n"
+    "Multi-turn awareness:\n"
+    "- Treat the user message as a follow-up when they paraphrase, ask for clarification, "
+    "or refer to \"above\" / \"previous\" without supplying a new contract.\n"
+    "- If workspace metrics show clause_count > 0 and New attachments is false, the session "
+    "likely already has contract text: for a simple follow-up you usually should set "
+    "run_extract and run_normalize false unless the user asks to re-ingest or change the document.\n"
+    "- If decision_status is already set with high decision_confidence and policy_violation_count "
+    "is 0, prefer a minimal path for narrow follow-ups (often only finalize is implied downstream; "
+    "still set booleans honestly for stages that must refresh).\n\n"
+    "Use workspace metrics to avoid redundant work: e.g. if legal_check_count > 0, risk analysis "
+    "already ran in a prior turn; skip run_risk_analysis unless the user requests a fresh risk pass.\n\n"
+    "Tooling note: RAG / retrieval and websearch are governed by runtime configuration; this router "
+    "only selects the legal pipeline stages below (not separate tool toggles).\n\n"
     "Return one JSON object only with boolean fields:\n"
     "- run_extract: need to load clauses from session documents / RAG (typically yes "
     "if attachments are present or the user asks to analyze a document).\n"
@@ -258,11 +272,14 @@ def legal_pipeline_routing_user(
     user_message: str,
     has_attachments: bool,
     conversation_snippet: str,
+    workspace_metrics_json: str,
 ) -> str:
     return (
         f"Latest user message:\n{user_message or '[empty]'}\n\n"
         f"New attachments this request: {has_attachments}\n\n"
-        f"Recent conversation (trimmed):\n{conversation_snippet}\n"
+        f"Recent conversation (trimmed):\n{conversation_snippet}\n\n"
+        f"Workspace metrics (JSON; current agent state, no clause text):\n"
+        f"{workspace_metrics_json}\n"
     )
 
 
@@ -274,6 +291,13 @@ LEGAL_RUN_EVALUATION_SYSTEM = (
     "You evaluate whether a legal contract analysis run is complete enough for final "
     "user-facing synthesis.\n"
     "You receive counts and short status fields only — not full clause text.\n\n"
+    "Use workspace metrics fields decision_confidence and blocking_issues_count:\n"
+    "- If decision_confidence is null, very low, or blocking_issues_count > 0, prefer "
+    "replan=true (unless the user message is purely conversational and no contract work "
+    "is expected).\n"
+    "- If decision_confidence is clearly high (e.g. >= 0.9) and blocking_issues_count is 0 "
+    "and policy_violation_count is 0, lean toward complete=true and replan=false unless "
+    "a required stage clearly did not run (e.g. clauses but legal_check_count=0).\n\n"
     "Return one JSON object only with:\n"
     "- complete: true if the workspace is sufficient for a solid final answer "
     "(risks, decision path, recommendations as appropriate to the user request).\n"
