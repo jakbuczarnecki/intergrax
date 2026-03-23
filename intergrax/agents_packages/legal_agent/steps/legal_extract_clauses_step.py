@@ -9,8 +9,11 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
-from intergrax.agents_packages.legal_agent.steps.legal_base_step import LegalBaseStep
+from intergrax.agents_packages.legal_agent.steps.base.legal_base_step import LegalBaseStep
 from intergrax.agents_packages.legal_agent.legal_agent_state import Clause, LegalAgentState
+from intergrax.agents_packages.legal_agent.tracing.legal_extract_clauses_step_diag_v1 import (
+    LegalExtractClausesStepDiagV1,
+)
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.context.context_builder import RetrievedChunk
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -82,8 +85,23 @@ class LegalExtractClausesStep(LegalBaseStep):
 
         if not hits:
             agent_state.clauses = []
+            state.trace_event(
+                component=TraceComponent.STEP,
+                step="LegalExtractClausesStep",
+                message="No retrieval hits; clauses cleared.",
+                level=TraceLevel.INFO,
+                payload=LegalExtractClausesStepDiagV1(
+                    step_name="LegalExtractClausesStep",
+                    outcome="no_hits",
+                    retrieval_chunks_count=0,
+                    clauses_extracted_count=0,
+                    llm_calls_count=0,
+                    attachments_ingested=bool(req.attachments),
+                    pre_flagged_sensitive_clauses_count=0,
+                ),
+            )
             return
-        
+
         state.used_rag = True
 
         # ------------------------------------------------------------------
@@ -128,11 +146,21 @@ class LegalExtractClausesStep(LegalBaseStep):
         # ------------------------------------------------------------------
         agent_state.clauses = all_clauses
 
+        sensitive_n = sum(1 for c in all_clauses if c.is_sensitive)
         state.trace_event(
             component=TraceComponent.STEP,
             step="LegalExtractClausesStep",
             message=f"Extracted {len(all_clauses)} clauses from {len(hits)} chunks.",
             level=TraceLevel.INFO,
+            payload=LegalExtractClausesStepDiagV1(
+                step_name="LegalExtractClausesStep",
+                outcome="extracted",
+                retrieval_chunks_count=len(hits),
+                clauses_extracted_count=len(all_clauses),
+                llm_calls_count=len(hits),
+                attachments_ingested=bool(req.attachments),
+                pre_flagged_sensitive_clauses_count=sensitive_n,
+            ),
         )
 
     # ------------------------------------------------------------------
