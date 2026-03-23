@@ -12,6 +12,7 @@ from intergrax.runtime.nexus.ingestion.ingestion_service import AttachmentIngest
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.config import RuntimeConfig
 
+from intergrax.agents_packages.legal_agent.legal_dynamic_pipeline import LegalDynamicPipeline
 from intergrax.agents_packages.legal_agent.legal_agent_pipeline import LegalAnalysisPipeline
 
 
@@ -42,9 +43,10 @@ class LegalAgent(Agent):
         )
 
         # --- PIPELINE ---
-        runtime_config.pipeline = LegalAnalysisPipeline(
-            config=cfg,
-        )
+        if cfg.enable_sequential_legal_pipeline:
+            runtime_config.pipeline = LegalAnalysisPipeline(config=cfg)
+        else:
+            runtime_config.pipeline = LegalDynamicPipeline(config=cfg)
 
 
         ingestion_service: Optional[AttachmentIngestionService] = None

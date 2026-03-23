@@ -50,3 +50,20 @@ class LegalAgentConfig(BaseModel):
             "Override per tenant/org. Set to empty string to skip that step."
         ),
     )
+
+    enable_sequential_legal_pipeline: bool = Field(
+        default=False,
+        description=(
+            "If True, use fixed-order LegalAnalysisPipeline (no SETUP_STEPS, no LLM routing). "
+            "If False (default), use LegalDynamicPipeline: session/history setup + routed stages."
+        ),
+    )
+
+    use_llm_legal_route_planner: bool = Field(
+        default=True,
+        description=(
+            "When using LegalDynamicPipeline: if True, LLM selects which stages to run "
+            "(with deterministic dependency closure). If False, run all stages except "
+            "those that self-skip inside steps."
+        ),
+    )

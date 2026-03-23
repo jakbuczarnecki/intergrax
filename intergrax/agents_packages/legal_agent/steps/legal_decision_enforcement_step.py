@@ -13,6 +13,7 @@ from intergrax.agents_packages.legal_agent.tracing.legal_decision_enforcement_st
     LegalDecisionEnforcementStepDiagV1,
 )
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
@@ -23,6 +24,9 @@ class LegalDecisionEnforcementStep(LegalBaseStep):
     Overrides LLM decision when objective signals require it (policy breaches,
     failed legal checks). Mutates ``agent_state.decision`` in place.
     """
+
+    def execution_kind(self) -> ExecutionKind | None:
+        return None
 
     async def run_step(
         self,

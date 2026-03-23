@@ -223,3 +223,44 @@ def finalize_answer_user(*, user_request: str, workspace: str) -> str:
         f"User request:\n{user_request}\n\n"
         f"Legal agent workspace (all prior steps; JSON per section):\n{workspace}\n"
     )
+
+
+# ---------------------------------------------------------------------------
+# Legal pipeline routing (dynamic stage selection)
+# ---------------------------------------------------------------------------
+
+LEGAL_PIPELINE_ROUTING_SYSTEM = (
+    "You are the execution router for a legal contract analysis agent.\n"
+    "Given the latest user message, whether new file attachments are present, and a "
+    "short conversation snippet, decide which analysis stages should run THIS turn.\n\n"
+    "Return one JSON object only with boolean fields:\n"
+    "- run_extract: need to load clauses from session documents / RAG (typically yes "
+    "if attachments are present or the user asks to analyze a document).\n"
+    "- run_normalize: merge/dedupe clauses (useful when multiple chunks; skip for "
+    "pure follow-up chat with no new document).\n"
+    "- run_policy_compliance: check organization policy vs clauses (skip if user only "
+    "asks a generic legal question with no contract text).\n"
+    "- run_risk_analysis: legal_checks + sensitive_flags.\n"
+    "- run_recommendations: structured remediation advice.\n"
+    "- run_decision: formal APPROVE/REJECT/CONDITIONAL/ESCALATE from LLM.\n"
+    "- run_enforcement: deterministic tightening after decision (keep true whenever "
+    "run_decision is true).\n\n"
+    "Prefer fewer stages for short follow-ups (e.g. clarify prior answer) but never "
+    "skip run_extract when new attachments arrived.\n"
+    "When in doubt on a new contract review request, set all flags true.\n"
+    "The runtime always runs a final user-facing synthesis step after your selection; "
+    "do not include it in the JSON.\n"
+)
+
+
+def legal_pipeline_routing_user(
+    *,
+    user_message: str,
+    has_attachments: bool,
+    conversation_snippet: str,
+) -> str:
+    return (
+        f"Latest user message:\n{user_message or '[empty]'}\n\n"
+        f"New attachments this request: {has_attachments}\n\n"
+        f"Recent conversation (trimmed):\n{conversation_snippet}\n"
+    )
