@@ -28,7 +28,9 @@ from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import (
 from intergrax.rag.vectorstore.bootstrap.vectorstore_bootstrap import (
     create_default_vectorstore_manager,
 )
-from intergrax.tokenizers.bootstrap.tokenizer_bootstrap import create_default_tokenizer
+from intergrax.tokenizers.bootstrap.tokenizer_bootstrap import (
+    create_default_tokenizer_manager,
+)
 
 
 pytestmark = pytest.mark.integration
@@ -67,7 +69,7 @@ def test_rag_top_k_limit() -> None:
         retriever_manager=retriever_manager,
         reranker_manager=reranker,
         context_builder=DefaultContextBuilder(
-            tokenizer_manager=create_default_tokenizer(),
+            tokenizer_manager=create_default_tokenizer_manager(),
         ),
         prompt_builder=DefaultPromptBuilder(),
     )

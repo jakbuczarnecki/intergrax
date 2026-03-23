@@ -264,3 +264,84 @@ def legal_pipeline_routing_user(
         f"New attachments this request: {has_attachments}\n\n"
         f"Recent conversation (trimmed):\n{conversation_snippet}\n"
     )
+
+
+# ---------------------------------------------------------------------------
+# Legal run evaluation (post-execution, before optional replan)
+# ---------------------------------------------------------------------------
+
+LEGAL_RUN_EVALUATION_SYSTEM = (
+    "You evaluate whether a legal contract analysis run is complete enough for final "
+    "user-facing synthesis.\n"
+    "You receive counts and short status fields only — not full clause text.\n\n"
+    "Return one JSON object only with:\n"
+    "- complete: true if the workspace is sufficient for a solid final answer "
+    "(risks, decision path, recommendations as appropriate to the user request).\n"
+    "- replan: true if additional pipeline stages should run before finalize "
+    "(e.g. risk analysis missing when clauses exist; recommendations missing when "
+    "there are policy violations).\n"
+    "- missing_aspects: array of short strings (what is missing or weak), empty if none.\n"
+    "- rationale: one short paragraph for logs.\n\n"
+    "If the user only asked a trivial follow-up and prior stages already ran, set "
+    "complete=true and replan=false.\n"
+    "When in doubt after substantive document analysis, prefer complete=true unless "
+    "a clearly required stage was skipped (e.g. clauses present but zero legal_checks).\n"
+)
+
+
+def legal_run_evaluation_user(
+    *,
+    user_message: str,
+    workspace_metrics_json: str,
+    stages_completed: str,
+    current_routing_json: str,
+) -> str:
+    return (
+        f"Latest user message:\n{user_message or '[empty]'}\n\n"
+        f"Stages already executed this run (flag names): {stages_completed}\n\n"
+        f"Current routing plan (booleans):\n{current_routing_json}\n\n"
+        f"Workspace metrics (JSON):\n{workspace_metrics_json}\n"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Legal pipeline replanning (merge with prior routing on the server)
+# ---------------------------------------------------------------------------
+
+LEGAL_PIPELINE_REPLAN_SYSTEM = (
+    "You replan which legal analysis stages should still run (or re-run if needed).\n"
+    "The runtime will UNION your booleans with the prior plan and with dependency rules, "
+    "and will skip stages already completed this run unless you explicitly require them.\n\n"
+    "Return the same JSON boolean fields as the initial router:\n"
+    "run_extract, run_normalize, run_policy_compliance, run_risk_analysis, "
+    "run_recommendations, run_decision, run_enforcement.\n\n"
+    "Enable stages that address the evaluator's missing_aspects. "
+    "If extraction is already done (clauses count > 0) and the gap is downstream, "
+    "you may set run_extract false.\n"
+    "When run_decision is true, set run_enforcement true.\n"
+)
+
+
+def legal_pipeline_replan_user(
+    *,
+    user_message: str,
+    has_attachments: bool,
+    conversation_snippet: str,
+    iteration: int,
+    prior_routing_json: str,
+    stages_completed: str,
+    evaluation_rationale: str,
+    missing_aspects_json: str,
+    workspace_metrics_json: str,
+) -> str:
+    return (
+        f"Latest user message:\n{user_message or '[empty]'}\n\n"
+        f"New attachments this request: {has_attachments}\n\n"
+        f"Recent conversation (trimmed):\n{conversation_snippet}\n\n"
+        f"Replan iteration (1-based): {iteration}\n\n"
+        f"Prior merged routing (booleans):\n{prior_routing_json}\n\n"
+        f"Stages already completed this run: {stages_completed}\n\n"
+        f"Evaluator rationale:\n{evaluation_rationale}\n\n"
+        f"Missing aspects (JSON array of strings):\n{missing_aspects_json}\n\n"
+        f"Workspace metrics (JSON):\n{workspace_metrics_json}\n"
+    )

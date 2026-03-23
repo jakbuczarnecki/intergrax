@@ -13,7 +13,9 @@ from __future__ import annotations
 
 from intergrax.agents_packages.legal_agent.legal_agent_config import LegalAgentConfig
 from intergrax.agents_packages.legal_agent.legal_agent_state import LegalAgentState
-from intergrax.agents_packages.legal_agent.legal_pipeline_routing import plan_legal_step_runners
+from intergrax.agents_packages.legal_agent.legal_execution_loop import (
+    run_legal_dynamic_execution_loop,
+)
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer
@@ -36,14 +38,11 @@ class LegalDynamicPipeline(RuntimePipeline):
         if not isinstance(state.agent_state, LegalAgentState):
             raise TypeError("state.agent_state must be LegalAgentState for LegalDynamicPipeline.")
 
-        runners = await plan_legal_step_runners(
+        await run_legal_dynamic_execution_loop(
             state=state,
             agent_state=state.agent_state,
             config=self._config,
         )
-
-        for step in runners:
-            await step.run(state=state)
 
         if state.runtime_answer is None:
             raise RuntimeError("Legal pipeline did not set state.runtime_answer.")

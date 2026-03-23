@@ -135,3 +135,11 @@ class LegalAgentState(AgentState, BaseModel):
     )
 
     final_opinion: Optional[LegalOpinion] = None
+
+    legal_stages_completed_this_run: List[str] = Field(
+        default_factory=list,
+        description=(
+            "Stage flag names already executed in the current LegalDynamicPipeline run "
+            "(e.g. 'run_extract'); used to avoid duplicate execution across loop iterations."
+        ),
+    )

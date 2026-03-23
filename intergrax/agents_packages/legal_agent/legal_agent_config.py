@@ -67,3 +67,35 @@ class LegalAgentConfig(BaseModel):
             "those that self-skip inside steps."
         ),
     )
+
+    use_legal_run_evaluator: bool = Field(
+        default=True,
+        description=(
+            "When using LegalDynamicPipeline: after executing the routed stages, call an "
+            "LLM evaluator. If it requests replanning (and limits allow), merge a new "
+            "routing plan and run only stages not yet completed this run."
+        ),
+    )
+
+    use_legal_route_replanner: bool = Field(
+        default=True,
+        description=(
+            "If True (and use_llm_legal_route_planner), replanning uses an LLM to propose "
+            "additional stages. If False, replan falls back to union with a full routing "
+            "(all stages on) once per loop."
+        ),
+    )
+
+    legal_loop_max_iterations: int = Field(
+        default=3,
+        ge=1,
+        le=20,
+        description="Max plan→execute cycles per LegalDynamicPipeline run (includes first pass).",
+    )
+
+    legal_loop_max_same_routing_repeats: int = Field(
+        default=2,
+        ge=1,
+        le=10,
+        description="Stop replanning when the merged routing fingerprint repeats this many times.",
+    )
