@@ -8,6 +8,10 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
+from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
+    POLICY_COMPLIANCE_SYSTEM,
+    policy_compliance_user,
+)
 from intergrax.agents_packages.legal_agent.steps.base.legal_base_step import LegalBaseStep
 from intergrax.agents_packages.legal_agent.legal_agent_state import (
     Clause,
@@ -67,23 +71,15 @@ class LegalPolicyComplianceStep(LegalBaseStep):
             )
             return
 
-        system = (
-            "You are a legal compliance system.\n"
-            "Check whether the contract clauses violate the organization policy.\n\n"
-            "Return structured JSON only.\n\n"
-            "For each violation:\n"
-            "- clause_id must match input\n"
-            "- policy_rule: short rule name\n"
-            "- violation: what is wrong\n"
-            "- suggested_fix: how to correct it\n"
-            "- severity: LOW / MEDIUM / HIGH\n"
-        )
-
-        user = f"{policy_text}\n\nClauses:\n{clauses_block}\n"
-
         messages = [
-            ChatMessage(role="system", content=system),
-            ChatMessage(role="user", content=user),
+            ChatMessage(role="system", content=POLICY_COMPLIANCE_SYSTEM),
+            ChatMessage(
+                role="user",
+                content=policy_compliance_user(
+                    policy_text=policy_text,
+                    clauses_block=clauses_block,
+                ),
+            ),
         ]
 
         result = llm.generate_structured(

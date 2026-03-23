@@ -9,6 +9,11 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
+from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
+    DEFAULT_RAG_QUERY_FOR_CLAUSE_EXTRACTION,
+    EXTRACT_CLAUSES_SYSTEM,
+    extract_clauses_chunk_user,
+)
 from intergrax.agents_packages.legal_agent.steps.base.legal_base_step import LegalBaseStep
 from intergrax.agents_packages.legal_agent.legal_agent_state import Clause, LegalAgentState
 from intergrax.agents_packages.legal_agent.tracing.legal_extract_clauses_step_diag_v1 import (
@@ -70,7 +75,7 @@ class LegalExtractClausesStep(LegalBaseStep):
         # ------------------------------------------------------------------
         # 3. Retrieval
         # ------------------------------------------------------------------
-        query = req.message or "Analyze legal document and extract clauses."
+        query = req.message or DEFAULT_RAG_QUERY_FOR_CLAUSE_EXTRACTION
 
         search_result = await service.search_session_attachments(
             query=query,
@@ -111,15 +116,13 @@ class LegalExtractClausesStep(LegalBaseStep):
 
         llm = state.context.config.llm_adapter
 
-        system = (
-            "You are a legal analysis system. Extract clauses from the user message. "
-            "Return structured JSON only (schema enforced by the runtime)."
-        )
-
         for chunk in hits:
             messages = [
-                ChatMessage(role="system", content=system),
-                ChatMessage(role="user", content=self._build_prompt(chunk.text)),
+                ChatMessage(role="system", content=EXTRACT_CLAUSES_SYSTEM),
+                ChatMessage(
+                    role="user",
+                    content=extract_clauses_chunk_user(chunk_text=chunk.text),
+                ),
             ]
             result = llm.generate_structured(
                     messages,
@@ -162,24 +165,3 @@ class LegalExtractClausesStep(LegalBaseStep):
                 pre_flagged_sensitive_clauses_count=sensitive_n,
             ),
         )
-
-    # ------------------------------------------------------------------
-    # Prompt
-    # ------------------------------------------------------------------
-
-    def _build_prompt(self, text: str) -> str:
-        return f"""
-You are a legal analysis system.
-
-Extract all legal clauses from the text below.
-
-For each clause:
-- identify clause_type
-- extract full clause text
-- assign risk_level: low, medium, high
-
-Return structured JSON only.
-
-TEXT:
-{text}
-"""

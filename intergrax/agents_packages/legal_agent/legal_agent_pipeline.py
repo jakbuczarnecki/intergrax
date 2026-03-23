@@ -12,6 +12,9 @@ from intergrax.agents_packages.legal_agent.steps.legal_decision_enforcement_step
 from intergrax.agents_packages.legal_agent.steps.legal_decision_step import LegalDecisionStep
 from intergrax.agents_packages.legal_agent.steps.legal_extract_clauses_step import LegalExtractClausesStep
 from intergrax.agents_packages.legal_agent.steps.legal_finalize_answer_step import LegalFinalizeAnswerStep
+from intergrax.agents_packages.legal_agent.steps.legal_normalize_clauses_step import (
+    LegalNormalizeClausesStep,
+)
 from intergrax.agents_packages.legal_agent.steps.legal_recommendation_step import LegalRecommendationStep
 from intergrax.agents_packages.legal_agent.steps.legal_risk_analysis_step import LegalRiskAnalysisStep
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -35,6 +38,7 @@ class LegalAnalysisPipeline(RuntimePipeline):
             )
 
         await LegalExtractClausesStep().run(state=state)
+        await LegalNormalizeClausesStep().run(state=state)
         await LegalRiskAnalysisStep().run(state=state)
         await LegalRecommendationStep().run(state=state)
         await LegalDecisionStep().run(state=state)

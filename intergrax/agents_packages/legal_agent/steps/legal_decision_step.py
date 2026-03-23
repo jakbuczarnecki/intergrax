@@ -8,6 +8,10 @@ from typing import List
 
 from pydantic import BaseModel
 
+from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
+    DECISION_SYSTEM,
+    decision_user,
+)
 from intergrax.agents_packages.legal_agent.steps.base.legal_base_step import LegalBaseStep
 from intergrax.agents_packages.legal_agent.legal_agent_state import (
     LegalAgentState,
@@ -61,26 +65,15 @@ class LegalDecisionStep(LegalBaseStep):
         checks_block = self._format_checks(agent_state.legal_checks)
         flags_block = self._format_flags(agent_state.sensitive_flags)
 
-        system = (
-            "You are a senior legal decision system.\n"
-            "Based on legal checks and sensitive flags, determine whether the contract "
-            "should be approved.\n\n"
-            "Return structured JSON only.\n\n"
-            "Decision rules:\n"
-            "- APPROVE: no significant risks\n"
-            "- CONDITIONAL: acceptable but requires changes\n"
-            "- REJECT: contains blocking issues\n"
-            "- ESCALATE: requires higher authority decision\n"
-        )
-
-        user = (
-            f"LEGAL CHECKS:\n{checks_block}\n\n"
-            f"SENSITIVE FLAGS:\n{flags_block}\n"
-        )
-
         messages = [
-            ChatMessage(role="system", content=system),
-            ChatMessage(role="user", content=user),
+            ChatMessage(role="system", content=DECISION_SYSTEM),
+            ChatMessage(
+                role="user",
+                content=decision_user(
+                    checks_block=checks_block,
+                    flags_block=flags_block,
+                ),
+            ),
         ]
 
         result = llm.generate_structured(

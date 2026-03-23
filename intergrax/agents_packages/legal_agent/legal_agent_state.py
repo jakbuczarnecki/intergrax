@@ -96,7 +96,13 @@ class LegalAgentState(AgentState, BaseModel):
     
     config: LegalAgentConfig
     
-    clauses: List[Clause] = Field(default_factory=list)
+    clauses: List[Clause] = Field(
+        default_factory=list,
+        description=(
+            "Filled by LegalExtractClausesStep; optionally merged/deduped by "
+            "LegalNormalizeClausesStep before risk and downstream steps."
+        ),
+    )
     sensitive_flags: List[SensitiveFlag] = Field(default_factory=list)
 
     compliance_results: List[ComplianceResult] = Field(default_factory=list)

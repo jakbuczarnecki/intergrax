@@ -11,7 +11,7 @@ from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDo
 from intergrax.rag.document_splitters.contracts.base_documents_splitter import BaseDocumentsSplitter
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
-from intergrax.agents_packages.legal_agent.organization_compliance_policy_defaults import (
+from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
     DEFAULT_ORGANIZATION_COMPLIANCE_POLICY,
 )
 from intergrax.runtime.governance.service import GovernanceService

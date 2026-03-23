@@ -8,6 +8,10 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
+from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
+    RECOMMENDATION_SYSTEM,
+    recommendation_user,
+)
 from intergrax.agents_packages.legal_agent.steps.base.legal_base_step import LegalBaseStep
 from intergrax.agents_packages.legal_agent.legal_agent_state import (
     Clause,
@@ -70,29 +74,17 @@ class LegalRecommendationStep(LegalBaseStep):
         violations_block = self._format_violations(violations)
         clauses_block = self._format_clauses(agent_state.clauses)
 
-        system = (
-            "You are a legal advisor.\n"
-            "Based on legal checks, sensitive flags, and policy violations, "
-            "generate actionable recommendations.\n\n"
-            "Return structured JSON only.\n\n"
-            "For each recommendation:\n"
-            "- clause_id must match a clause id from the context (or the most relevant clause).\n"
-            "- action: modify / remove / add / review\n"
-            "- priority: LOW / MEDIUM / HIGH\n"
-            "- recommendation: what to do\n"
-            "- suggested_text: optional improved clause text\n"
-        )
-
-        user = (
-            f"CLAUSES (context):\n{clauses_block}\n\n"
-            f"LEGAL CHECKS:\n{checks_block}\n\n"
-            f"SENSITIVE FLAGS:\n{flags_block}\n\n"
-            f"POLICY VIOLATIONS:\n{violations_block}\n"
-        )
-
         messages = [
-            ChatMessage(role="system", content=system),
-            ChatMessage(role="user", content=user),
+            ChatMessage(role="system", content=RECOMMENDATION_SYSTEM),
+            ChatMessage(
+                role="user",
+                content=recommendation_user(
+                    clauses_block=clauses_block,
+                    checks_block=checks_block,
+                    flags_block=flags_block,
+                    violations_block=violations_block,
+                ),
+            ),
         ]
 
         result = llm.generate_structured(

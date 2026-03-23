@@ -8,6 +8,10 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
+from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
+    RISK_ANALYSIS_SYSTEM,
+    risk_analysis_user,
+)
 from intergrax.agents_packages.legal_agent.steps.base.legal_base_step import LegalBaseStep
 from intergrax.agents_packages.legal_agent.legal_agent_state import (
     Clause,
@@ -65,24 +69,12 @@ class LegalRiskAnalysisStep(LegalBaseStep):
 
         clauses_block = self._format_clauses_for_prompt(agent_state.clauses)
 
-        system = (
-            "You are a senior legal analyst. Review the numbered clauses below.\n"
-            "Return structured JSON only (schema enforced by the runtime).\n\n"
-            "For legal_checks (one entry per clause you assess, typically each input clause):\n"
-            "- clause_id: MUST equal the clause id given in the input (the id=... value).\n"
-            "- valid: true if the clause is broadly acceptable / low concern from a legal-risk "
-            "perspective; false if there are material concerns.\n"
-            "- source: short tag, e.g. risk level LOW/MEDIUM/HIGH or \"review\".\n"
-            "- details: concise rationale (issues, mitigations, caveats).\n\n"
-            "For sensitive_flags: flag clauses that involve sensitive legal areas (privacy, "
-            "regulatory, liability caps, IP, etc.). Each needs clause_id and reason."
-        )
-
-        user = f"Clauses to analyze:\n{clauses_block}\n"
-
         messages = [
-            ChatMessage(role="system", content=system),
-            ChatMessage(role="user", content=user),
+            ChatMessage(role="system", content=RISK_ANALYSIS_SYSTEM),
+            ChatMessage(
+                role="user",
+                content=risk_analysis_user(clauses_block=clauses_block),
+            ),
         ]
 
         result = llm.generate_structured(

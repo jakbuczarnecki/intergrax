@@ -9,6 +9,10 @@ from typing import List, Sequence
 
 from pydantic import BaseModel
 
+from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
+    FINALIZE_ANSWER_SYSTEM,
+    finalize_answer_user,
+)
 from intergrax.agents_packages.legal_agent.steps.base.legal_base_step import LegalBaseStep
 from intergrax.agents_packages.legal_agent.legal_agent_state import (
     Clause,
@@ -42,27 +46,13 @@ class LegalFinalizeAnswerStep(LegalBaseStep):
         workspace = self._build_workspace_text(agent_state)
 
         user_msg = (state.request.message or "").strip()
-        human = (
-            f"User request:\n{user_msg or '[none]'}\n\n"
-            f"Legal agent workspace (all prior steps; JSON per section):\n{workspace}\n"
-        )
-
-        system = (
-            "You are a legal analysis assistant. Synthesize a single clear, accurate "
-            "user-facing answer using the full workspace: clauses, risk/legal checks, "
-            "sensitive flags, compliance results, uncertainties, policy violations, "
-            "structured recommendations, the formal decision (if present), and the "
-            "Decision enforcement section (LegalDecisionEnforcementStep: whether the "
-            "LLM decision was tightened using policy / legal-check rules). "
-            "Treat the post-enforcement decision.status and blocking_issues as authoritative "
-            "for approval posture; call out enforcement-driven changes explicitly in prose "
-            "when decision_enforcement_modified is true. "
-            "Do not invent facts; if a section is empty, say what was not analyzed. "
-            "Return structured JSON only matching the provided schema."
+        human = finalize_answer_user(
+            user_request=user_msg or "[none]",
+            workspace=workspace,
         )
 
         messages = [
-            ChatMessage(role="system", content=system),
+            ChatMessage(role="system", content=FINALIZE_ANSWER_SYSTEM),
             ChatMessage(role="user", content=human),
         ]
 
