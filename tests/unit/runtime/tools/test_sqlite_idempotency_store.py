@@ -13,7 +13,7 @@ from intergrax.runtime.tools.sqlite_idempotency_store import (
 )
 from intergrax.contracts.idempotency_store import InvocationStatus
 from intergrax.tools.execution_models import ToolExecutionResult
-from tests._support.builder import prepare_sqlite_db
+from testing_support.builder import prepare_sqlite_db
 
 pytestmark = pytest.mark.unit
 

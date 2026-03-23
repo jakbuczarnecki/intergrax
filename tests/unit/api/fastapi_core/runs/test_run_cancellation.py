@@ -1,7 +1,7 @@
 import pytest
 from intergrax.fastapi_core.runs.models import RunStatus
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
-from tests._support.builder import DummyRunStore
+from testing_support.builder import DummyRunStore
 
 pytestmark = pytest.mark.unit
 

@@ -8,7 +8,7 @@ import pytest
 
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.budget.budget_models import RunBudget, BudgetPolicy, BudgetEnforcementMode
-from tests._support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter
 
 pytestmark = pytest.mark.unit
 

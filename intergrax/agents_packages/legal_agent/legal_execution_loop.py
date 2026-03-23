@@ -28,6 +28,9 @@ from intergrax.agents_packages.legal_agent.legal_pipeline_routing import (
     obtain_initial_legal_routing,
     obtain_replan_legal_routing,
 )
+from intergrax.agents_packages.legal_agent.legal_tool_plan_governance import (
+    enforce_legal_tool_plan_governance,
+)
 from intergrax.agents_packages.legal_agent.legal_tool_runtime_bridge import (
     run_legal_tool_runtime_bridge,
     sync_legal_tool_runtime_feedback,
@@ -110,11 +113,27 @@ async def run_legal_dynamic_execution_loop(
     """
     Runs routed stages (possibly over several iterations), then
     :class:`LegalFinalizeAnswerStep`. Mutates ``agent_state`` and ``state``.
+
+    At the start of each loop: tool plan from LLM → static org governance
+    (:func:`~intergrax.agents_packages.legal_agent.legal_tool_plan_governance.enforce_legal_tool_plan_governance`)
+    → optional :attr:`~intergrax.agents_packages.legal_agent.legal_agent_config.LegalAgentConfig.legal_tool_plan_governance`
+    → Nexus bridge. ``last_legal_tool_plan`` stores the **final** plan after all clamps.
     """
     agent_state.legal_stages_completed_this_run = []
     completed: Set[str] = set()
 
     tool_plan = await decide_legal_tool_plan(state=state, legal_config=config)
+    tool_plan = enforce_legal_tool_plan_governance(
+        plan=tool_plan,
+        state=state,
+        legal_config=config,
+    )
+    if config.legal_tool_plan_governance is not None:
+        tool_plan = config.legal_tool_plan_governance.adjust_legal_tool_plan(
+            tool_plan,
+            state=state,
+            legal_config=config,
+        )
     agent_state.last_legal_tool_plan = tool_plan
     await run_legal_tool_runtime_bridge(state=state, plan=tool_plan)
     sync_legal_tool_runtime_feedback(agent_state, state)

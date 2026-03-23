@@ -13,7 +13,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.runtime_steps.session_and_ingest_step import SessionAndIngestStep
 from intergrax.runtime.nexus.session.chat_session import ChatSession
 from intergrax.runtime.nexus.session.session_storage import SessionStorage
-from tests._support.builder import build_runtime_state_for_tests
+from testing_support.builder import build_runtime_state_for_tests
 
 pytestmark = pytest.mark.unit
 

@@ -3,14 +3,12 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 """
-Enterprise regression: Tier-2 tool decision forces **all** context layers
-(``use_rag``, ``use_websearch``, ``use_tools``) in one bridge pass.
+E2E: :class:`CallableLegalToolPlanGovernance` on a real Legal Agent run (Ollama, RAG stack,
+``decide_legal_tool_plan``), proving the port runs **inside** ``legal_execution_loop`` and can
+strip Nexus RAG before the bridge.
 
-Validates that Nexus runs ``RagStep`` → ``WebsearchStep`` → ``ToolsStep`` in order,
-the legal pipeline still completes, and trace contains the three step ids.
-
-Web search uses a real ``WebSearchExecutor`` with a **no-op provider** (no HTTP / API keys);
-RAG and legal steps use real Ollama.
+Uses the same patch pattern as ``test_legal_agent_empty_rag`` to force ``use_rag=True`` from
+the tool-decision path, then dynamic governance turns RAG off — expect **no** ``rag`` step in trace.
 """
 
 from __future__ import annotations
@@ -23,10 +21,13 @@ import pytest
 from intergrax.agents.agent_engine import AgentEngine
 from intergrax.agents_packages.legal_agent.legal_agent import LegalAgent
 from intergrax.agents_packages.legal_agent.legal_agent_config import LegalAgentConfig
+from intergrax.agents_packages.legal_agent.legal_tool_plan import LegalToolPlan
+from intergrax.agents_packages.legal_agent.legal_tool_plan_governance_impl import (
+    CallableLegalToolPlanGovernance,
+)
 from intergrax.agents_packages.legal_agent.tool_decision_component import (
     decide_legal_tool_plan,
 )
-from intergrax.llm.messages import AttachmentRef
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import (
@@ -36,15 +37,11 @@ from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.vectorstore.bootstrap.vectorstore_bootstrap import (
     create_default_vectorstore_manager,
 )
+from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
-from intergrax.tools.registry import ToolRegistry
-from intergrax.tools.tools_agent import ToolsAgent
-from intergrax.websearch.providers.base import WebSearchProvider
-from intergrax.websearch.schemas.query_spec import QuerySpec
-from intergrax.websearch.schemas.search_hit import SearchHit
-from intergrax.websearch.service.websearch_executor import WebSearchExecutor
+from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
 
 from testing_support.builder import require_ollama_reachable
 
@@ -55,42 +52,38 @@ def _trace_steps(answer: RuntimeAnswer) -> list[str]:
     return [e.step for e in (answer.trace_events or [])]
 
 
-class _NoOpWebSearchProvider(WebSearchProvider):
-    """Satisfies ``WebSearchExecutor`` init; never returns hits (no outbound calls)."""
-
-    name = "noop-legal-over-decision-test"
-
-    def search(self, spec: QuerySpec) -> list[SearchHit]:
-        return []
+def _dynamic_strip_rag(
+    plan: LegalToolPlan,
+    state: RuntimeState,
+    legal_config: LegalAgentConfig,
+) -> LegalToolPlan:
+    """Production-style hook: degrade RAG for this scenario (deterministic test policy)."""
+    _ = state
+    _ = legal_config
+    if not plan.use_rag:
+        return plan
+    return plan.model_copy(
+        update={
+            "use_rag": False,
+            "intent": "llm_only",
+        },
+    )
 
 
 @pytest.mark.asyncio
-async def test_legal_agent_over_decision_runs_rag_websearch_tools_in_order(
+async def test_legal_agent_callable_governance_port_strips_rag_before_bridge_e2e(
     tmp_path: Path,
 ) -> None:
     require_ollama_reachable()
+    _ = tmp_path
 
-    tenant_id = "legal-over-decision"
-    contract_path = tmp_path / "contract_over_decision.txt"
-    contract_path.write_text(
-        "Party A shall pay Party B within 14 days. "
-        "Late payment accrues interest at statutory rate.\n",
-        encoding="utf-8",
-    )
-    attachment = AttachmentRef(
-        id="contract-over-decision",
-        type="txt",
-        uri=contract_path.resolve().as_uri(),
-    )
-
-    llm_adapter = LLMAdapterRegistry.create(LLMProvider.OLLAMA)
-    session_manager = SessionManager(storage=InMemorySessionStorage())
-    tools_agent = ToolsAgent(llm=llm_adapter, tools=ToolRegistry())
-
+    tenant_id = "legal-governance-port-e2e"
     embedding_manager = EmbeddingManager(
         pipeline=create_default_embedding_pipeline(provider_id="ollama"),
     )
     vectorstore_manager = create_default_vectorstore_manager(tenant_id=tenant_id)
+    llm_adapter = LLMAdapterRegistry.create(LLMProvider.OLLAMA)
+    session_manager = SessionManager(storage=InMemorySessionStorage())
 
     cfg = LegalAgentConfig(
         session_manager=session_manager,
@@ -99,47 +92,41 @@ async def test_legal_agent_over_decision_runs_rag_websearch_tools_in_order(
         enable_rag=True,
         embedding_manager=embedding_manager,
         vectorstore_manager=vectorstore_manager,
-        enable_websearch=True,
-        websearch_executor=WebSearchExecutor(
-            providers=[_NoOpWebSearchProvider()],
-        ),
         use_legal_tool_decision=True,
-        tools_agent=tools_agent,
-        tools_mode="auto",
-        tool_providers=[],
         use_llm_legal_route_planner=False,
         use_legal_run_evaluator=False,
+        legal_tool_plan_governance=CallableLegalToolPlanGovernance(_dynamic_strip_rag),
     )
 
     request = RuntimeRequest(
-        agent_id="legal-agent-over-decision",
-        user_id="user-od",
-        session_id="session-od",
+        agent_id="legal-agent-gov-port-e2e",
+        user_id="user-gov-e2e",
+        session_id="session-gov-e2e",
         message=(
-            "Analyze the attached payment clause and briefly note whether recent "
-            "legal updates could affect statutory interest (general guidance only)."
+            "Summarize GDPR fine ceilings in the EU. "
+            "Do not claim internal retrieval if you did not run RAG."
         ),
-        attachments=[attachment],
+        attachments=[],
         tenant_id=tenant_id,
-        workspace_id="ws-od",
+        workspace_id="ws-gov-e2e",
     )
 
     agent = LegalAgent(config=cfg)
 
-    async def _decide_then_force_combination(**kwargs: object) -> object:
+    async def _decide_then_force_rag(**kwargs: object) -> object:
         plan = await decide_legal_tool_plan(**kwargs)  # type: ignore[misc]
         return plan.model_copy(
             update={
                 "use_rag": True,
-                "use_tools": True,
-                "use_websearch": True,
-                "intent": "combination",
+                "use_tools": False,
+                "use_websearch": False,
+                "intent": "rag",
             }
         )
 
     with patch(
         "intergrax.agents_packages.legal_agent.legal_execution_loop.decide_legal_tool_plan",
-        side_effect=_decide_then_force_combination,
+        side_effect=_decide_then_force_rag,
     ):
         result = await AgentEngine.run_agent(agent, request)
 
@@ -148,6 +135,10 @@ async def test_legal_agent_over_decision_runs_rag_websearch_tools_in_order(
     assert result.answer.strip() != ""
 
     steps = _trace_steps(result)
-    assert "rag" in steps
-    assert "websearch" in steps
-    assert "tools" in steps
+    assert "LegalToolDecision" in steps
+    assert "rag" not in steps, (
+        "Callable governance should clear use_rag before the bridge; Nexus RagStep must not run."
+    )
+
+    errors = [e for e in result.trace_events if e.level == TraceLevel.ERROR]
+    assert not errors, f"unexpected ERROR trace events: {[e.message for e in errors]}"

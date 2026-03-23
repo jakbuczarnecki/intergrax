@@ -8,7 +8,7 @@ from pathlib import Path
 from intergrax.runtime.organization.stores.sqlite_organization_profile_store import (
     SQLiteOrganizationProfileStore,
 )
-from tests._support.builder import prepare_sqlite_db
+from testing_support.builder import prepare_sqlite_db
 
 
 pytestmark = pytest.mark.integration

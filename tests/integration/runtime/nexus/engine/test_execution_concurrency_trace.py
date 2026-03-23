@@ -8,7 +8,7 @@ from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.distributed.contracts.execution_semaphore import DistributedExecutionSemaphore, ExecutionSlot
-from tests._support.builder import build_engine_harness, build_runtime_config_deterministic
+from testing_support.builder import build_engine_harness, build_runtime_config_deterministic
 
 
 class FakeExecutionSemaphore(DistributedExecutionSemaphore):

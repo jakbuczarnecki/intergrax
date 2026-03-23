@@ -10,7 +10,7 @@ import pytest
 from intergrax.runtime.nexus.budget.budget_models import RunBudget, BudgetPolicy, BudgetEnforcementMode
 from intergrax.runtime.nexus.pipelines.pipeline_factory import PipelineFactory
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest, StopReason, RuntimeAnswer
-from tests._support.builder import build_runtime_config_deterministic, build_engine_harness
+from testing_support.builder import build_runtime_config_deterministic, build_engine_harness
 
 
 pytestmark = pytest.mark.unit

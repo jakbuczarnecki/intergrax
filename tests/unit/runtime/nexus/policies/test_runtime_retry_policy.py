@@ -12,7 +12,7 @@ from intergrax.runtime.nexus.pipelines.pipeline_factory import PipelineFactory
 from intergrax.runtime.nexus.responses.response_schema import RouteInfo, RuntimeAnswer, RuntimeRequest, RuntimeStats
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 
-from tests._support.builder import build_engine_harness, build_runtime_config_deterministic
+from testing_support.builder import build_engine_harness, build_runtime_config_deterministic
 
 pytestmark = pytest.mark.unit
 

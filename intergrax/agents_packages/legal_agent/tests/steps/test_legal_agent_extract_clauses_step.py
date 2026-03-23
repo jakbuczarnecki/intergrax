@@ -18,8 +18,6 @@ from pathlib import Path
 
 import pytest
 
-from tests._support.builder import require_ollama_reachable
-
 from intergrax.agents_packages.legal_agent.legal_agent_config import LegalAgentConfig
 from intergrax.agents_packages.legal_agent.legal_agent_state import LegalAgentState
 from intergrax.agents_packages.legal_agent.steps.legal_extract_clauses_step import LegalExtractClausesStep
@@ -37,6 +35,7 @@ from intergrax.runtime.nexus.ingestion.ingestion_service import AttachmentIngest
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
+from testing_support.builder import require_ollama_reachable
 
 pytestmark = pytest.mark.integration
 

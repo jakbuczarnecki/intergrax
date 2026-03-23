@@ -10,7 +10,7 @@ from intergrax.rag.answers.bootstrap.answer_bootstrap import (
     create_default_answer_engine,
     create_default_answer_pipeline,
 )
-from tests._support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter
 
 
 pytestmark = pytest.mark.unit

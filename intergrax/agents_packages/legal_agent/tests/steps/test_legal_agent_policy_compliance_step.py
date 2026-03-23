@@ -13,13 +13,13 @@ from __future__ import annotations
 
 import pytest
 
-from tests._support.builder import require_ollama_reachable
+from testing_support.builder import require_ollama_reachable
 
 from intergrax.agents_packages.legal_agent.legal_agent_state import Clause
 from intergrax.agents_packages.legal_agent.steps.legal_policy_compliance_step import (
     LegalPolicyComplianceStep,
 )
-from .._legal_agent_step_runtime import build_legal_ollama_runtime_state
+from intergrax.agents_packages.legal_agent.tests._legal_agent_step_runtime import build_legal_ollama_runtime_state
 
 pytestmark = pytest.mark.integration
 

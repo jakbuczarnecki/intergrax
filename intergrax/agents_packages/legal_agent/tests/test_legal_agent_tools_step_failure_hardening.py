@@ -41,7 +41,7 @@ from intergrax.runtime.nexus.tracing.trace_models import DEFAULT_REDACTED_TEXT, 
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tools_agent import ToolsAgent
 
-from tests._support.builder import require_ollama_reachable
+from testing_support.builder import require_ollama_reachable
 
 pytestmark = pytest.mark.e2e
 

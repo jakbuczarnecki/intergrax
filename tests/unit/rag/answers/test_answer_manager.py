@@ -20,7 +20,7 @@ from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrie
 from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
 from intergrax.rag.rerankers.contracts.reranker_types import Candidates, RerankerResult
 
-from tests._support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter
 
 
 pytestmark = pytest.mark.unit

@@ -11,7 +11,7 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.config import RuntimeConfig
 
-from tests._support.builder import (
+from testing_support.builder import (
     FakeLLMAdapter,
     build_fake_embedding_manager,
     build_in_memory_session_manager,

@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from intergrax.agents.agent_engine import AgentEngine
-from tests._support.builder import require_ollama_reachable
+from testing_support.builder import require_ollama_reachable
 
 from intergrax.agents_packages.legal_agent.legal_agent import LegalAgent
 from intergrax.agents_packages.legal_agent.legal_agent_config import LegalAgentConfig

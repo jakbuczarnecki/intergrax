@@ -8,7 +8,7 @@ import pytest
 
 from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
 from intergrax.llm.messages import ChatMessage
-from tests._support.builder import prepare_sqlite_db
+from testing_support.builder import prepare_sqlite_db
 
 
 pytestmark = pytest.mark.integration

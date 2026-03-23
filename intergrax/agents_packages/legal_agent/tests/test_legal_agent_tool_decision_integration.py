@@ -46,7 +46,7 @@ from intergrax.runtime.nexus.runtime_steps.setup_steps_tool import SETUP_STEPS
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 
-from tests._support.builder import require_ollama_reachable
+from testing_support.builder import require_ollama_reachable
 
 pytestmark = pytest.mark.e2e
 

@@ -26,7 +26,7 @@ from intergrax.runtime.nexus.tracing.trace_models import (
     TraceEvent,
     TraceLevel,
 )
-from tests._support.builder import build_engine_harness, build_runtime_config_deterministic
+from testing_support.builder import build_engine_harness, build_runtime_config_deterministic
 
 pytestmark = pytest.mark.unit
 

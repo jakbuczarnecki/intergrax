@@ -40,7 +40,7 @@ from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySe
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
 
-from tests._support.builder import require_ollama_reachable
+from testing_support.builder import require_ollama_reachable
 
 pytestmark = pytest.mark.e2e
 

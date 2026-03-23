@@ -4,14 +4,14 @@
 
 from __future__ import annotations
 
-import os
-import urllib.error
-import urllib.request
 from dataclasses import dataclass
 from datetime import datetime
+import os
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
+import urllib.request
+import urllib.error
 import numpy as np
 import pytest
 from numpy.typing import NDArray
@@ -48,6 +48,7 @@ from intergrax.runtime.replay.policy import PolicyDecision, PolicyDecisionType
 from intergrax.runtime.replay.regression import RegressionSignals
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.tools.core.contracts import ToolContract
+
 
 
 class FakeLLMAdapter(LLMAdapter):
@@ -233,11 +234,11 @@ def require_ollama_reachable(
     Resolution order for the server base URL:
     1. explicit ``base_url`` argument
     2. environment variable ``OLLAMA_HOST`` (e.g. ``http://127.0.0.1:11434``)
-    3. :data:`DEFAULT_OLLAMA_BASE_URL`
+    3. default ``http://127.0.0.1:11434``
     """
 
-    DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434"
-    raw = (base_url or os.environ.get("OLLAMA_HOST") or DEFAULT_OLLAMA_BASE_URL).strip().rstrip("/")
+    default_ollama_base_url = "http://127.0.0.1:11434"
+    raw = (base_url or os.environ.get("OLLAMA_HOST") or default_ollama_base_url).strip().rstrip("/")
     tags_url = f"{raw}/api/tags"
     try:
         urllib.request.urlopen(tags_url, timeout=timeout_sec)

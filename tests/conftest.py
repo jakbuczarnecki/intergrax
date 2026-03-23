@@ -17,7 +17,7 @@ if str(ROOT) not in sys.path:
 
 import pytest
 
-from tests._support.builder import DeterministicRuntimeHarness, build_engine_harness, build_in_memory_session_manager, build_runtime_config_deterministic
+from testing_support.builder import DeterministicRuntimeHarness, build_engine_harness, build_in_memory_session_manager, build_runtime_config_deterministic
 from intergrax.runtime.nexus.planning.engine_plan_models import EngineNextStep, PlanIntent
 from intergrax.runtime.nexus.planning.plan_sources import PlanSpec
 

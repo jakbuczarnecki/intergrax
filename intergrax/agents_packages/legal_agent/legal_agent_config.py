@@ -15,6 +15,9 @@ from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVec
 from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
     DEFAULT_ORGANIZATION_COMPLIANCE_POLICY,
 )
+from intergrax.agents_packages.legal_agent.legal_tool_plan_governance_port import (
+    LegalToolPlanGovernancePort,
+)
 from intergrax.runtime.governance.service import GovernanceService
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.tools.core.provider import ToolProvider
@@ -50,6 +53,16 @@ class LegalAgentConfig(BaseModel):
 
     governance_service: Optional[GovernanceService] = None
 
+    legal_tool_plan_governance: Optional[LegalToolPlanGovernancePort] = Field(
+        default=None,
+        description=(
+            "Optional dynamic clamp of LegalToolPlan after static organization rules and before "
+            "the Nexus bridge. Implement :class:`LegalToolPlanGovernancePort`; often the same "
+            "instance as governance_service when your platform class implements both evaluate() "
+            "and adjust_legal_tool_plan()."
+        ),
+    )
+
     tools_agent: Optional[ToolsAgent] = None
     tools_mode: ToolChoiceMode = "off"
     tool_providers: List[ToolProvider] = Field(default_factory=list)
@@ -67,6 +80,28 @@ class LegalAgentConfig(BaseModel):
         description=(
             "Full policy text for LegalPolicyComplianceStep. "
             "Override per tenant/org. Set to empty string to skip that step."
+        ),
+    )
+
+    organization_allow_rag: bool = Field(
+        default=True,
+        description=(
+            "If False, organization governance clamps LegalToolPlan.use_rag before the runtime "
+            "bridge (Nexus RagStep will not run for this agent even if tool-decision requests it)."
+        ),
+    )
+    organization_allow_websearch: bool = Field(
+        default=True,
+        description=(
+            "If False, governance clamps use_websearch before the runtime bridge "
+            "(Nexus WebsearchStep will not run)."
+        ),
+    )
+    organization_allow_tools: bool = Field(
+        default=True,
+        description=(
+            "If False, governance clamps use_tools before the runtime bridge "
+            "(Nexus ToolsStep will not run)."
         ),
     )
 
