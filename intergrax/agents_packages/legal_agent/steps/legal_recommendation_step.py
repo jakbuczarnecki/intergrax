@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
     RECOMMENDATION_SYSTEM,
@@ -36,6 +36,20 @@ from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLe
 
 class LegalRecommendationResult(BaseModel):
     recommendations: List[LegalRecommendation] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_llm_root_shape(cls, data: object) -> object:
+        """
+        Ollama / small models sometimes return one recommendation object or a bare
+        array instead of ``{"recommendations": [...]}``.
+        """
+        if isinstance(data, list):
+            return {"recommendations": data}
+        if isinstance(data, dict) and "recommendations" not in data:
+            if "clause_id" in data:
+                return {"recommendations": [data]}
+        return data
 
 
 # ---------------------------------------------------------------------------

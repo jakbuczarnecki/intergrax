@@ -147,19 +147,27 @@ class LLMAdapter(ABC):
 
     def _extract_json_object(self, text: str) -> str:
         """
-        Try to extract the first {...} block that looks like a JSON object.
-        Returns an empty string if none is found.
+        Extract the first balanced top-level {...} JSON object.
 
-        This is tolerant to extra text around the JSON.
+        Uses brace depth (not rfind), so concatenated objects like ``{...}{...}``
+        do not produce invalid slices that trigger JSON "Extra data" errors.
         """
         if not text:
             return ""
         text = self._strip_code_fences(text).strip()
         start = text.find("{")
-        end = text.rfind("}")
-        if start == -1 or end == -1 or end <= start:
+        if start == -1:
             return ""
-        return text[start : end + 1]
+        depth = 0
+        for i in range(start, len(text)):
+            ch = text[i]
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[start : i + 1]
+        return ""
 
 
     def _model_json_schema(self, model_cls: type) -> Dict[str, Any]:

@@ -108,13 +108,19 @@ RECOMMENDATION_SYSTEM = (
     "You are a legal advisor.\n"
     "Based on legal checks, sensitive flags, and policy violations, "
     "generate actionable recommendations.\n\n"
-    "Return structured JSON only.\n\n"
-    "For each recommendation:\n"
-    "- clause_id must match a clause id from the context (or the most relevant clause).\n"
-    "- action: modify / remove / add / review\n"
-    "- priority: LOW / MEDIUM / HIGH\n"
-    "- recommendation: what to do\n"
-    "- suggested_text: optional improved clause text\n"
+    "Return one JSON object only (no markdown fences, no commentary).\n"
+    "The root object MUST have exactly one key: \"recommendations\" (array).\n"
+    "Each array element is an object with:\n"
+    "- clause_id: string (must match a clause id from the context or the most relevant one)\n"
+    "- action: one of modify / remove / add / review\n"
+    "- priority: one of LOW / MEDIUM / HIGH\n"
+    "- recommendation: string (what to do)\n"
+    "- suggested_text: string or null (optional improved clause text)\n\n"
+    "Example shape (structure only):\n"
+    '{"recommendations":[{"clause_id":"...","action":"modify","priority":"HIGH",'
+    '"recommendation":"...","suggested_text":null}]}\n'
+    "Do not return a bare array, multiple top-level objects, or one recommendation "
+    "object without the \"recommendations\" wrapper.\n"
 )
 
 
