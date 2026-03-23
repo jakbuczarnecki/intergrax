@@ -7,6 +7,7 @@ Each infrastructure component is isolated and self-contained.
 Examples of infrastructure components:
 
 * Redis
+* PostgreSQL
 * Kafka
 * RabbitMQ
 * Qdrant
@@ -31,6 +32,9 @@ infra/
   docker/
 
     redis/
+      docker-compose.yml
+
+    postgresql/
       docker-compose.yml
 
     kafka/

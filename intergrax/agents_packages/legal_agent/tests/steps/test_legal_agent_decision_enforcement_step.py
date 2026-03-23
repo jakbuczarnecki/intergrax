@@ -23,7 +23,7 @@ from intergrax.agents_packages.legal_agent.legal_agent_state import (
 from intergrax.agents_packages.legal_agent.steps.legal_decision_enforcement_step import (
     LegalDecisionEnforcementStep,
 )
-from ._legal_agent_step_runtime import build_legal_ollama_runtime_state
+from .._legal_agent_step_runtime import build_legal_ollama_runtime_state
 
 pytestmark = pytest.mark.integration
 

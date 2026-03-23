@@ -18,7 +18,7 @@ from intergrax.agents_packages.legal_agent.legal_agent_state import Clause
 from intergrax.agents_packages.legal_agent.steps.legal_risk_analysis_step import (
     LegalRiskAnalysisStep,
 )
-from ._legal_agent_step_runtime import build_legal_ollama_runtime_state
+from .._legal_agent_step_runtime import build_legal_ollama_runtime_state
 
 pytestmark = pytest.mark.integration
 
