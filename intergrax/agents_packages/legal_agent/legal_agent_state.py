@@ -5,9 +5,10 @@
 from __future__ import annotations
 
 from typing import List, Literal, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from intergrax.agents_packages.legal_agent.legal_agent_config import LegalAgentConfig
+from intergrax.agents_packages.legal_agent.legal_tool_plan import LegalToolPlan
 from intergrax.llm.messages import AttachmentRef
 from intergrax.runtime.nexus.engine.contracts.agent_state import AgentState
 
@@ -25,7 +26,17 @@ class Clause(BaseModel):
 
 class SensitiveFlag(BaseModel):
     clause_id: str
-    reason: str
+    reason: str = Field(
+        default="",
+        description="Why the clause is sensitive; LLM may send null — coerced to empty.",
+    )
+
+    @field_validator("reason", mode="before")
+    @classmethod
+    def _coerce_sensitive_reason(cls, v: object) -> str:
+        if v is None:
+            return ""
+        return v if isinstance(v, str) else str(v)
 
 
 PolicyViolationSeverity = Literal["LOW", "MEDIUM", "HIGH"]
@@ -82,7 +93,17 @@ class LegalDecision(BaseModel):
     status: DecisionStatus
     confidence: float = Field(ge=0.0, le=1.0)
     blocking_issues: List[str] = Field(default_factory=list)
-    summary: str
+    summary: str = Field(
+        default="",
+        description="Short rationale; LLMs often omit — default empty.",
+    )
+
+    @field_validator("summary", mode="before")
+    @classmethod
+    def _coerce_summary(cls, v: object) -> str:
+        if v is None:
+            return ""
+        return v if isinstance(v, str) else str(v)
 
 
 # -------------------------
@@ -141,5 +162,18 @@ class LegalAgentState(AgentState, BaseModel):
         description=(
             "Stage flag names already executed in the current LegalDynamicPipeline run "
             "(e.g. 'run_extract'); used to avoid duplicate execution across loop iterations."
+        ),
+    )
+
+    last_legal_tool_plan: Optional[LegalToolPlan] = Field(
+        default=None,
+        description="Latest Tier-2 tool/RAG/websearch intent before legal stage routing.",
+    )
+
+    legal_tool_runtime_feedback_json: str = Field(
+        default="{}",
+        description=(
+            "JSON summary of Nexus RAG/websearch/tools usage after the tool bridge "
+            "(feeds legal routing / replan metrics)."
         ),
     )

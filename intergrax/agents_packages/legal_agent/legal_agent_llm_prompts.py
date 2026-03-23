@@ -92,7 +92,8 @@ RISK_ANALYSIS_SYSTEM = (
     "- source: short tag, e.g. risk level LOW/MEDIUM/HIGH or \"review\".\n"
     "- details: concise rationale (issues, mitigations, caveats).\n\n"
     "For sensitive_flags: flag clauses that involve sensitive legal areas (privacy, "
-    "regulatory, liability caps, IP, etc.). Each needs clause_id and reason."
+    "regulatory, liability caps, IP, etc.). Each entry needs clause_id and reason "
+    "(reason must be a string, never null — use a short phrase if unsure)."
 )
 
 
@@ -147,7 +148,11 @@ DECISION_SYSTEM = (
     "You are a senior legal decision system.\n"
     "Based on legal checks and sensitive flags, determine whether the contract "
     "should be approved.\n\n"
-    "Return structured JSON only.\n\n"
+    "Return structured JSON only. Root object MUST have key \"decision\" with object:\n"
+    "- status: APPROVE | REJECT | CONDITIONAL | ESCALATE\n"
+    "- confidence: number 0..1\n"
+    "- blocking_issues: array of strings (empty if none)\n"
+    "- summary: non-empty string — brief rationale for the decision\n\n"
     "Decision rules:\n"
     "- APPROVE: no significant risks\n"
     "- CONDITIONAL: acceptable but requires changes\n"
@@ -244,7 +249,10 @@ LEGAL_PIPELINE_ROUTING_SYSTEM = (
     "is 0, prefer a minimal path for narrow follow-ups (often only finalize is implied downstream; "
     "still set booleans honestly for stages that must refresh).\n\n"
     "Use workspace metrics to avoid redundant work: e.g. if legal_check_count > 0, risk analysis "
-    "already ran in a prior turn; skip run_risk_analysis unless the user requests a fresh risk pass.\n\n"
+    "already ran in a prior turn; skip run_risk_analysis unless the user requests a fresh risk pass.\n"
+    "Metrics may include legal_tool_intent, legal_tool_confidence, runtime_used_rag / "
+    "runtime_used_tools / runtime_used_websearch and legal_tool_runtime_feedback — use them to align "
+    "legal stages with what context layers already ran.\n\n"
     "Tooling note: RAG / retrieval and websearch are governed by runtime configuration; this router "
     "only selects the legal pipeline stages below (not separate tool toggles).\n\n"
     "Return one JSON object only with boolean fields:\n"
@@ -368,4 +376,50 @@ def legal_pipeline_replan_user(
         f"Evaluator rationale:\n{evaluation_rationale}\n\n"
         f"Missing aspects (JSON array of strings):\n{missing_aspects_json}\n\n"
         f"Workspace metrics (JSON):\n{workspace_metrics_json}\n"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Legal tool / retrieval decision (Tier-2; execution stays Tier-1 steps)
+# ---------------------------------------------------------------------------
+
+LEGAL_TOOL_DECISION_SYSTEM = (
+    "You decide which Nexus runtime context layers to run BEFORE the legal contract "
+    "pipeline stages (RAG retrieval, web search, registered tools).\n"
+    "You do not execute tools — you only set booleans and classify intent.\n\n"
+    "Capabilities below are HARD: never set use_rag true if RAG is not available; "
+    "same for websearch and tools.\n\n"
+    "Return one JSON object only with:\n"
+    "- intent: one of llm_only | rag | tools | websearch | combination\n"
+    "- confidence: number 0..1\n"
+    "- use_rag: boolean\n"
+    "- use_tools: boolean\n"
+    "- use_websearch: boolean\n"
+    "- reasoning_summary: short string\n\n"
+    "Guidance:\n"
+    "- llm_only: contract/legal question needs no external retrieval (e.g. short follow-up).\n"
+    "- rag: user attached documents or asks about indexed contract text.\n"
+    "- websearch: needs current law, news, or facts outside the session.\n"
+    "- tools: structured actions (calculators, lookups) when tools are available.\n"
+    "- combination: more than one layer is clearly useful.\n"
+    "Prefer minimal layers to control cost; enable RAG when attachments exist and RAG is available.\n"
+)
+
+
+def legal_tool_decision_user(
+    *,
+    user_message: str,
+    has_attachments: bool,
+    conversation_snippet: str,
+    rag_available: bool,
+    websearch_available: bool,
+    tools_available: bool,
+) -> str:
+    return (
+        f"Latest user message:\n{user_message or '[empty]'}\n\n"
+        f"New attachments this request: {has_attachments}\n\n"
+        f"Recent conversation (trimmed):\n{conversation_snippet}\n\n"
+        f"Capabilities — RAG available: {rag_available}, "
+        f"websearch available: {websearch_available}, "
+        f"tools available: {tools_available}\n"
     )

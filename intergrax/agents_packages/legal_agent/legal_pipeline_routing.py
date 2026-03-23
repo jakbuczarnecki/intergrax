@@ -85,10 +85,14 @@ class LegalEvaluationResult(BaseModel):
     rationale: str = ""
 
 
-def legal_workspace_metrics_json(agent_state: LegalAgentState) -> str:
+def legal_workspace_metrics_json(
+    agent_state: LegalAgentState,
+    *,
+    runtime_state: Optional[RuntimeState] = None,
+) -> str:
     """Compact JSON for routing, evaluator, and replanner (no clause bodies)."""
     pol_v = agent_state.policy_violations
-    payload = {
+    payload: Dict[str, Any] = {
         "clause_count": len(agent_state.clauses),
         "sensitive_flag_count": len(agent_state.sensitive_flags),
         "legal_check_count": len(agent_state.legal_checks),
@@ -109,6 +113,29 @@ def legal_workspace_metrics_json(agent_state: LegalAgentState) -> str:
         "decision_enforcement_modified": agent_state.decision_enforcement_modified,
         "final_opinion_present": agent_state.final_opinion is not None,
     }
+
+    p = agent_state.last_legal_tool_plan
+    if p is not None:
+        payload["legal_tool_intent"] = p.intent
+        payload["legal_tool_confidence"] = p.confidence
+        payload["legal_tool_requested_rag"] = p.use_rag
+        payload["legal_tool_requested_websearch"] = p.use_websearch
+        payload["legal_tool_requested_tools"] = p.use_tools
+
+    if agent_state.legal_tool_runtime_feedback_json:
+        try:
+            payload["legal_tool_runtime_feedback"] = json.loads(
+                agent_state.legal_tool_runtime_feedback_json
+            )
+        except json.JSONDecodeError:
+            payload["legal_tool_runtime_feedback"] = agent_state.legal_tool_runtime_feedback_json
+
+    if runtime_state is not None:
+        payload["runtime_used_rag"] = runtime_state.used_rag
+        payload["runtime_used_websearch"] = runtime_state.used_websearch
+        payload["runtime_used_tools"] = runtime_state.used_tools
+        payload["runtime_tool_trace_count"] = len(runtime_state.tool_traces or [])
+
     return json.dumps(payload, sort_keys=True, ensure_ascii=False)
 
 
@@ -240,7 +267,7 @@ async def obtain_initial_legal_routing(
     req = state.request
     has_attachments = bool(req.attachments)
     snippet = _history_snippet(state)
-    metrics = legal_workspace_metrics_json(agent_state)
+    metrics = legal_workspace_metrics_json(agent_state, runtime_state=state)
 
     if config.use_llm_legal_route_planner:
         plan = await _llm_legal_routing(

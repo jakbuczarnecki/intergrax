@@ -34,12 +34,19 @@ class LegalAgent(Agent):
         cfg = self._config
 
         runtime_config = RuntimeConfig(
-            llm_adapter = cfg.llm_adapter,
-            enable_rag=cfg.enable_rag and cfg.embedding_manager is not None and cfg.vectorstore_manager is not None,
+            llm_adapter=cfg.llm_adapter,
+            enable_rag=cfg.enable_rag
+            and cfg.embedding_manager is not None
+            and cfg.vectorstore_manager is not None,
             enable_websearch=cfg.enable_websearch,
             production_mode=cfg.production_mode,
             embedding_manager=cfg.embedding_manager,
             vectorstore_manager=cfg.vectorstore_manager,
+            tools_agent=cfg.tools_agent,
+            tools_mode=cfg.tools_mode,
+            tool_providers=tuple(cfg.tool_providers),
+            websearch_executor=cfg.websearch_executor,
+            websearch_config=cfg.websearch_config,
         )
 
         # --- PIPELINE ---

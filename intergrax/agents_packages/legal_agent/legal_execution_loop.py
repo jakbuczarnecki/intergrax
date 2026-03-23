@@ -28,6 +28,13 @@ from intergrax.agents_packages.legal_agent.legal_pipeline_routing import (
     obtain_initial_legal_routing,
     obtain_replan_legal_routing,
 )
+from intergrax.agents_packages.legal_agent.legal_tool_runtime_bridge import (
+    run_legal_tool_runtime_bridge,
+    sync_legal_tool_runtime_feedback,
+)
+from intergrax.agents_packages.legal_agent.tool_decision_component import (
+    decide_legal_tool_plan,
+)
 from intergrax.agents_packages.legal_agent.steps.legal_finalize_answer_step import (
     LegalFinalizeAnswerStep,
 )
@@ -65,7 +72,7 @@ async def _evaluate_legal_run_llm(
     agent_state: LegalAgentState,
 ) -> LegalEvaluationResult:
     llm = state.context.config.llm_adapter
-    metrics = legal_workspace_metrics_json(agent_state)
+    metrics = legal_workspace_metrics_json(agent_state, runtime_state=state)
     stages = ", ".join(agent_state.legal_stages_completed_this_run) or "(none)"
     user = legal_run_evaluation_user(
         user_message=(state.request.message or "").strip(),
@@ -106,6 +113,11 @@ async def run_legal_dynamic_execution_loop(
     """
     agent_state.legal_stages_completed_this_run = []
     completed: Set[str] = set()
+
+    tool_plan = await decide_legal_tool_plan(state=state, legal_config=config)
+    agent_state.last_legal_tool_plan = tool_plan
+    await run_legal_tool_runtime_bridge(state=state, plan=tool_plan)
+    sync_legal_tool_runtime_feedback(agent_state, state)
 
     routing = await obtain_initial_legal_routing(
         state=state,
@@ -154,6 +166,8 @@ async def run_legal_dynamic_execution_loop(
             if flag:
                 completed.add(flag)
                 agent_state.legal_stages_completed_this_run.append(flag)
+
+        sync_legal_tool_runtime_feedback(agent_state, state)
 
         if not config.use_legal_run_evaluator:
             break
@@ -204,7 +218,10 @@ async def run_legal_dynamic_execution_loop(
             iteration=iteration + 1,
             evaluation_rationale=ev.rationale,
             missing_aspects=list(ev.missing_aspects or []),
-            workspace_metrics_json=legal_workspace_metrics_json(agent_state),
+            workspace_metrics_json=legal_workspace_metrics_json(
+                agent_state,
+                runtime_state=state,
+            ),
         )
 
         fp = legal_routing_fingerprint(routing)
