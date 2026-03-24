@@ -28,7 +28,7 @@ from intergrax.rag.retrievers.retriever_manager import RetrieverManager
 
 from intergrax.tokenizers.bootstrap.tokenizer_bootstrap import create_default_tokenizer_manager
 
-from tests._support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter
 
 
 pytestmark = pytest.mark.unit

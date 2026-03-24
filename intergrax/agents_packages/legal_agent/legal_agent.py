@@ -6,14 +6,13 @@ from typing import Optional
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents_packages.legal_agent.legal_agent_config import LegalAgentConfig
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.ingestion.attachments import FileSystemAttachmentResolver
 from intergrax.runtime.nexus.ingestion.ingestion_service import AttachmentIngestionService
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.session.session_manager import SessionManager
 
+from intergrax.agents_packages.legal_agent.legal_dynamic_pipeline import LegalDynamicPipeline
 from intergrax.agents_packages.legal_agent.legal_agent_pipeline import LegalAnalysisPipeline
 
 
@@ -35,18 +34,28 @@ class LegalAgent(Agent):
         cfg = self._config
 
         runtime_config = RuntimeConfig(
-            llm_adapter = cfg.llm_adapter,
-            enable_rag=cfg.enable_rag and cfg.embedding_manager is not None and cfg.vectorstore_manager is not None,
+            llm_adapter=cfg.llm_adapter,
+            enable_rag=cfg.enable_rag
+            and cfg.embedding_manager is not None
+            and cfg.vectorstore_manager is not None,
             enable_websearch=cfg.enable_websearch,
             production_mode=cfg.production_mode,
             embedding_manager=cfg.embedding_manager,
             vectorstore_manager=cfg.vectorstore_manager,
+            tools_agent=cfg.tools_agent,
+            tools_mode=cfg.tools_mode,
+            tool_providers=tuple(cfg.tool_providers),
+            websearch_executor=cfg.websearch_executor,
+            websearch_config=cfg.websearch_config,
+            run_budget=cfg.run_budget,
+            budget_policy=cfg.budget_policy,
         )
 
         # --- PIPELINE ---
-        runtime_config.pipeline = LegalAnalysisPipeline(
-            config=cfg,
-        )
+        if cfg.enable_sequential_legal_pipeline:
+            runtime_config.pipeline = LegalAnalysisPipeline(config=cfg)
+        else:
+            runtime_config.pipeline = LegalDynamicPipeline(config=cfg)
 
 
         ingestion_service: Optional[AttachmentIngestionService] = None

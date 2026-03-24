@@ -7,7 +7,7 @@ from __future__ import annotations
 import pytest
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.runtime_steps.ensure_current_user_message_step import EnsureCurrentUserMessageStep
-from tests._support.builder import build_runtime_state_for_tests
+from testing_support.builder import build_runtime_state_for_tests
 
 pytestmark = pytest.mark.unit
 

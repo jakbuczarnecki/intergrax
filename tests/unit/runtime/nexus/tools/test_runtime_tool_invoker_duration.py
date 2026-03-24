@@ -8,7 +8,7 @@ import pytest
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
-from tests._support.builder import build_runtime_state_for_tests
+from testing_support.builder import build_runtime_state_for_tests
 
 pytestmark = pytest.mark.unit
 

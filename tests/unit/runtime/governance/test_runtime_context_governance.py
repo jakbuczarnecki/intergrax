@@ -8,7 +8,7 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
-from tests._support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter
 
 pytestmark = pytest.mark.unit
 

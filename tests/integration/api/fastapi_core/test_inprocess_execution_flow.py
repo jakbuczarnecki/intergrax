@@ -9,7 +9,7 @@ from intergrax.fastapi_core.execution.adapters.inprocess_adapter import InProces
 from intergrax.fastapi_core.execution.adapters.simple_worker import SimpleExecutionWorker
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import RunStatus
-from tests._support.builder import DummyRunStore
+from testing_support.builder import DummyRunStore
 
 
 pytestmark = pytest.mark.integration

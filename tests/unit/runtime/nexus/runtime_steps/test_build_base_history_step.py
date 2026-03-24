@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 from intergrax.runtime.nexus.runtime_steps.build_base_history_step import BuildBaseHistoryStep
-from tests._support.builder import build_runtime_state_for_tests
+from testing_support.builder import build_runtime_state_for_tests
 
 pytestmark = pytest.mark.unit
 

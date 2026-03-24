@@ -9,7 +9,7 @@ from intergrax.fastapi_core.budget.policy import BudgetPolicy
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.errors.error_types import ApiErrorType
-from tests._support.builder import DummyRunStore
+from testing_support.builder import DummyRunStore
 
 pytestmark = pytest.mark.unit
 

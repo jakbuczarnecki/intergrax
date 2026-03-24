@@ -13,7 +13,11 @@ from intergrax.runtime.governance.execution_guard import ExecutionGuard, Governa
 @dataclass(slots=True)
 class GovernanceService:
     """
-    Entry point for governance evaluation after run completion.
+    Post-run governance: replay, metrics, policy evaluation via :class:`ExecutionGuard`.
+
+    Pre-bridge legal tool plan adjustments use :class:`~intergrax.agents_packages.legal_agent.legal_tool_plan_governance_port.LegalToolPlanGovernancePort`
+    on :attr:`~intergrax.agents_packages.legal_agent.legal_agent_config.LegalAgentConfig.legal_tool_plan_governance`
+    (same concrete object may implement both this service and that port).
     """
 
     guard: ExecutionGuard

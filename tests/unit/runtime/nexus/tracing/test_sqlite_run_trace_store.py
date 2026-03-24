@@ -9,7 +9,7 @@ from intergrax.runtime.nexus.tracing.persistence_models import (
     RunStats,
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
-from tests._support.builder import prepare_sqlite_db
+from testing_support.builder import prepare_sqlite_db
 
 pytestmark = pytest.mark.unit
 

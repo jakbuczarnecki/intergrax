@@ -38,11 +38,10 @@ class AgentEngine:
         if agent is None:
             raise ValueError(f"Agent '{agent_id}' is not registered.")
 
-        # Agent builds full runtime environment
+        return await AgentEngine.run_agent(agent, request)
+
+    @staticmethod
+    async def run_agent(agent: Agent, request: RuntimeRequest) -> RuntimeAnswer:
         context = agent.build_context(request)
-
-        # Runtime is completely unaware of agent
         runtime = RuntimeEngine(context)
-
-        # Execute
         return await runtime.run(request)

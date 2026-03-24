@@ -32,7 +32,9 @@ from intergrax.rag.vectorstore.bootstrap.vectorstore_bootstrap import (
     create_default_vectorstore_manager,
 )
 
-from intergrax.tokenizers.bootstrap.tokenizer_bootstrap import create_default_tokenizer
+from intergrax.tokenizers.bootstrap.tokenizer_bootstrap import (
+    create_default_tokenizer_manager,
+)
 
 
 pytestmark = pytest.mark.integration
@@ -72,7 +74,7 @@ def test_rag_context_truncation() -> None:
     )
 
     context_builder = DefaultContextBuilder(
-        tokenizer_manager=create_default_tokenizer(),
+            tokenizer_manager=create_default_tokenizer_manager(),
     )
 
     answer_engine = DefaultAnswerEngine(

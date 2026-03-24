@@ -113,6 +113,8 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Katalog projektu na sys.path — potrzebne przy zbieraniu testów z intergrax/... (import intergrax.*).
+pythonpath = ["."]
 asyncio_mode = "auto"
 
 addopts = [

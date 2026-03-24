@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 
+from intergrax.runtime.nexus.budget.budget_ticks import record_rag_invocation_and_enforce
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
@@ -54,6 +55,8 @@ class RagStep(RuntimeStep):
 
         if ctx.context_builder is None:
             raise RuntimeError("RAG enabled but ContextBuilder is not configured.")
+
+        record_rag_invocation_and_enforce(state)
 
         # Prefer result from HistoryStep (normal flow)
         built = state.context_builder_result

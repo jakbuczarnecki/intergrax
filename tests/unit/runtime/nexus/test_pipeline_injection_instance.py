@@ -17,7 +17,7 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, Run
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 
-from tests._support.builder import build_runtime_config_deterministic
+from testing_support.builder import build_runtime_config_deterministic
 
 pytestmark = pytest.mark.unit
 

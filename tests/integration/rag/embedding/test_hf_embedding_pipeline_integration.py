@@ -49,7 +49,7 @@ def test_hf_embedding_documents() -> None:
 
     result = manager.embed_documents(docs)
 
-    assert len(result) == 2
+    assert len(result.embeddings) == 2
 
     vector_0 = result.embeddings[0]
     vector_1 = result.embeddings[1]

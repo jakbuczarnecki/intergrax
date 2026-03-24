@@ -310,7 +310,7 @@ class AttachmentIngestionService:
             base_metadata.update(attachment.metadata)
 
         # 3) Use IntergraxDocumentsLoader.load_document(...) for a single file
-        def _metadata_callback(doc: Document, p: Path) -> Dict[str, Any]:
+        def _metadata_callback(doc: Document, p: str) -> Dict[str, Any]:
             """
             Custom metadata callback for the IntergraxDocumentsLoader.
 

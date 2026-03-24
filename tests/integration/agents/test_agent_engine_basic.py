@@ -12,7 +12,7 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest, RuntimeAnswer
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
-from tests._support.builder import FakeLLMAdapter, build_fake_embedding_manager, build_in_memory_session_manager, build_in_memory_vectorstore_manager
+from testing_support.builder import FakeLLMAdapter, build_fake_embedding_manager, build_in_memory_session_manager, build_in_memory_vectorstore_manager
 
 
 # ----------------------------------------

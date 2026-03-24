@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 from langchain_core.documents import Document
 
@@ -23,6 +23,7 @@ class BaseVectorstoreManager(ABC):
         embeddings: Sequence[Sequence[float]],
         *,
         ids: Optional[Sequence[str]] = None,
+        base_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         raise NotImplementedError
 

@@ -19,7 +19,7 @@ from intergrax.runtime.nexus.responses.response_schema import (
     RuntimeRequest,
     RuntimeAnswer,
 )
-from tests._support.builder import (
+from testing_support.builder import (
     build_runtime_config_deterministic,
     build_engine_harness,
 )

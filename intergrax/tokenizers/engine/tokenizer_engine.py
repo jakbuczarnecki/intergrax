@@ -15,6 +15,6 @@ class TokenizerEngine:
         self._registry = registry
 
 
-    def count_tokens(self, *, tokenizer_id: str, text: str) -> int:
+    def count_tokens(self, *, tokenizer_id: str | None, text: str) -> int:
         tokenizer = self._registry.get(tokenizer_id)
         return tokenizer.count_tokens(text=text)

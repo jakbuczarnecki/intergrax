@@ -9,7 +9,7 @@ from intergrax.runtime.nexus.runtime_steps.tools_step import ToolsStep
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.core.provider import ToolProvider
-from tests._support.builder import build_runtime_state_for_tests
+from testing_support.builder import build_runtime_state_for_tests
 
 pytestmark = pytest.mark.unit
 

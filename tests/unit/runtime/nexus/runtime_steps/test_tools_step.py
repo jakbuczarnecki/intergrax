@@ -9,7 +9,7 @@ from intergrax.tools.tool_executor import ToolHandler
 from pydantic import BaseModel
 
 from intergrax.tools.tools_agent import AgentDecision
-from tests._support.builder import FakeLLMAdapter, build_runtime_state_for_tests, tools_agent_make_contract
+from testing_support.builder import FakeLLMAdapter, build_runtime_state_for_tests, tools_agent_make_contract
 
 pytestmark = pytest.mark.unit
 

@@ -9,7 +9,7 @@ import pytest
 from intergrax.llm_adapters.contracts.llm_adapter import LLMRunStats
 
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
-from tests._support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter
 
 
 pytestmark = pytest.mark.unit

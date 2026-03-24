@@ -6,7 +6,17 @@ from __future__ import annotations
 
 from intergrax.agents_packages.legal_agent.legal_agent_config import LegalAgentConfig
 from intergrax.agents_packages.legal_agent.legal_agent_state import LegalAgentState
+from intergrax.agents_packages.legal_agent.steps.legal_decision_enforcement_step import (
+    LegalDecisionEnforcementStep,
+)
+from intergrax.agents_packages.legal_agent.steps.legal_decision_step import LegalDecisionStep
 from intergrax.agents_packages.legal_agent.steps.legal_extract_clauses_step import LegalExtractClausesStep
+from intergrax.agents_packages.legal_agent.steps.legal_finalize_answer_step import LegalFinalizeAnswerStep
+from intergrax.agents_packages.legal_agent.steps.legal_normalize_clauses_step import (
+    LegalNormalizeClausesStep,
+)
+from intergrax.agents_packages.legal_agent.steps.legal_recommendation_step import LegalRecommendationStep
+from intergrax.agents_packages.legal_agent.steps.legal_risk_analysis_step import LegalRiskAnalysisStep
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer
@@ -28,7 +38,14 @@ class LegalAnalysisPipeline(RuntimePipeline):
             )
 
         await LegalExtractClausesStep().run(state=state)
+        await LegalNormalizeClausesStep().run(state=state)
+        await LegalRiskAnalysisStep().run(state=state)
+        await LegalRecommendationStep().run(state=state)
+        await LegalDecisionStep().run(state=state)
+        await LegalDecisionEnforcementStep().run(state=state)
+        await LegalFinalizeAnswerStep().run(state=state)
 
-        return RuntimeAnswer(
-            answer="OK"
-        )
+        if state.runtime_answer is None:
+            raise RuntimeError("LegalFinalizeAnswerStep did not set state.runtime_answer.")
+
+        return state.runtime_answer

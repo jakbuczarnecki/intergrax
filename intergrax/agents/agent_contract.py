@@ -5,7 +5,7 @@
 from abc import ABC, abstractmethod
 
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 
 
 class Agent(ABC):
@@ -32,3 +32,14 @@ class Agent(ABC):
         - all required dependencies
         """
         ...
+
+    async def run(self, request: RuntimeRequest) -> RuntimeAnswer:
+        """
+        Execute this agent for the given request.
+
+        Delegates to :meth:`intergrax.agents.agent_engine.AgentEngine.run_agent`
+        so all Tier-2 agents share one runtime path.
+        """
+        from intergrax.agents.agent_engine import AgentEngine
+
+        return await AgentEngine.run_agent(self, request)
