@@ -5,9 +5,18 @@
 from __future__ import annotations
 
 import os
+import requests
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from urllib.parse import urlparse
+
+from tavily.errors import (
+    BadRequestError,
+    InvalidAPIKeyError,
+    MissingAPIKeyError,
+    UsageLimitExceededError,
+)
+from tavily.errors import TimeoutError as TavilyTimeoutError
 
 from intergrax.websearch.schemas.query_spec import QuerySpec
 from intergrax.websearch.schemas.search_hit import SearchHit
@@ -101,7 +110,6 @@ class TavilyProvider(WebSearchProvider):
             "query": spec.normalized_query(),
             "max_results": spec.capped_top_k(self._PAGE_CAP),
             "search_depth": self.search_depth,
-            "include_answer": bool(spec.safe_search),
         }
 
         time_range = self._map_freshness(spec.freshness)
@@ -110,7 +118,14 @@ class TavilyProvider(WebSearchProvider):
 
         try:
             response = self._client.search(**kwargs)
-        except Exception:
+        except (
+            BadRequestError,
+            InvalidAPIKeyError,
+            MissingAPIKeyError,
+            UsageLimitExceededError,
+            TavilyTimeoutError,
+            requests.RequestException,
+        ):
             return []
 
         results = response.get("results", []) or []
@@ -120,3 +135,9 @@ class TavilyProvider(WebSearchProvider):
             if hit:
                 hits.append(hit)
         return hits
+
+    def close(self) -> None:
+        try:
+            self._client.close()
+        except Exception:
+            pass
