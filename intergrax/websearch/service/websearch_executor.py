@@ -13,6 +13,7 @@ from intergrax.websearch.schemas.web_document import WebDocument
 from intergrax.websearch.providers.base import WebSearchProvider
 from intergrax.websearch.providers.google_cse_provider import GoogleCSEProvider
 from intergrax.websearch.providers.bing_provider import BingWebProvider
+from intergrax.websearch.providers.tavily_provider import TavilyProvider
 from intergrax.websearch.pipeline.search_and_read import SearchAndReadPipeline
 from intergrax.websearch.schemas.web_search_result import WebSearchResult
 
@@ -37,6 +38,7 @@ class WebSearchExecutor:
         providers: Optional[List[WebSearchProvider]] = None,
         enable_google_cse: bool = True,
         enable_bing_web: bool = True,
+        enable_tavily: bool = True,
         http_rate_per_sec: float = 2.0,
         http_capacity: int = 5,
         default_top_k: int = 8,
@@ -52,6 +54,7 @@ class WebSearchExecutor:
           providers        : explicit list of providers. If None, they are built from flags.
           enable_google_cse: if True and no explicit providers, include Google CSE.
           enable_bing_web  : if True and no explicit providers, include Bing Web Search.
+          enable_tavily    : if True and no explicit providers, include Tavily.
           http_rate_per_sec: HTTP token refill rate for the pipeline.
           http_capacity    : HTTP token bucket capacity.
           default_top_k    : default number of search hits to request.
@@ -74,6 +77,7 @@ class WebSearchExecutor:
             providers = self._build_default_providers(
                 enable_google_cse=enable_google_cse,
                 enable_bing_web=enable_bing_web,
+                enable_tavily=enable_tavily,
             )
 
         if not providers:
@@ -93,6 +97,7 @@ class WebSearchExecutor:
     def _build_default_providers(
         enable_google_cse: bool,
         enable_bing_web: bool,
+        enable_tavily: bool = True,
     ) -> List[WebSearchProvider]:
         providers: List[WebSearchProvider] = []
 
@@ -108,6 +113,13 @@ class WebSearchExecutor:
                 providers.append(BingWebProvider())
             except Exception:
                 # Missing configuration or init error; skip.
+                pass
+
+        if enable_tavily:
+            try:
+                providers.append(TavilyProvider())
+            except Exception:
+                # Missing configuration or init error (no TAVILY_API_KEY); skip.
                 pass
 
         return providers
