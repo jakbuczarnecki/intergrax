@@ -35,6 +35,7 @@ class LegalAgentConfig(BaseModel):
     Full configuration for the Legal Agent (tier-2).
 
     This is a single source of truth for the Legal Agent.
+    Optional SKU defaults: :class:`~intergrax.agents_packages.legal_agent.legal_agent_product_profiles.LegalAgentProductProfile`.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
