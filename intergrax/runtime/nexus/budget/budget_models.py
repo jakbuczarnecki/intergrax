@@ -30,6 +30,10 @@ class RunBudget:
     max_llm_calls: Optional[int] = None
     max_tool_calls: Optional[int] = None
 
+    # Per-run RagStep / WebsearchStep invocations, enforced mid-pipeline.
+    max_rag_invocations: Optional[int] = None
+    max_websearch_invocations: Optional[int] = None
+
     max_wall_time_seconds: Optional[float] = None
 
     max_planner_iterations: Optional[int] = None

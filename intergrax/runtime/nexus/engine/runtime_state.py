@@ -97,6 +97,10 @@ class RuntimeState(RuntimeStateContract):
     # Typed tool call traces (production runtime artifact).
     tool_traces: List[ToolCallTrace] = field(default_factory=list)
 
+    # RunBudget mid-run enforcement (RagStep / WebsearchStep entry counts).
+    rag_step_invocation_count: int = 0
+    websearch_step_invocation_count: int = 0
+
     # --- Execution Artifacts (runtime infra output) ---
     artifacts: List["ArtifactRef"] = field(default_factory=list)
 

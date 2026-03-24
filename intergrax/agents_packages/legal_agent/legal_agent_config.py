@@ -4,7 +4,7 @@
 
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.config import ToolChoiceMode
@@ -19,6 +19,7 @@ from intergrax.agents_packages.legal_agent.legal_tool_plan_governance_port impor
     LegalToolPlanGovernancePort,
 )
 from intergrax.runtime.governance.service import GovernanceService
+from intergrax.runtime.nexus.budget.budget_models import BudgetPolicy, RunBudget
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.tools.core.provider import ToolProvider
 from intergrax.tools.tools_agent import ToolsAgent
@@ -52,6 +53,12 @@ class LegalAgentConfig(BaseModel):
     documents_splitter: Optional[BaseDocumentsSplitter] = None
 
     governance_service: Optional[GovernanceService] = None
+
+    run_budget: Optional[RunBudget] = None
+    budget_policy: Optional[BudgetPolicy] = Field(
+        default=None,
+        description="Required when run_budget is set; forwarded to RuntimeConfig for engine RunBudget enforcement.",
+    )
 
     legal_tool_plan_governance: Optional[LegalToolPlanGovernancePort] = Field(
         default=None,
@@ -144,7 +151,11 @@ class LegalAgentConfig(BaseModel):
         default=3,
         ge=1,
         le=20,
-        description="Max plan→execute cycles per LegalDynamicPipeline run (includes first pass).",
+        description=(
+            "Execution budget (Tier-2): max plan→execute waves per LegalDynamicPipeline run "
+            "(includes first pass). Caps runaway replan/evaluator loops; pair with RuntimeConfig "
+            "run_budget for RAG/websearch/tools/token limits on RuntimeConfig."
+        ),
     )
 
     legal_loop_max_same_routing_repeats: int = Field(
@@ -168,3 +179,9 @@ class LegalAgentConfig(BaseModel):
         le=1.0,
         description="Minimum decision.confidence for legal_loop_early_exit (requires run_decision this wave).",
     )
+
+    @model_validator(mode="after")
+    def _budget_policy_when_run_budget(self) -> "LegalAgentConfig":
+        if self.run_budget is not None and self.budget_policy is None:
+            raise ValueError("budget_policy is required when run_budget is set.")
+        return self

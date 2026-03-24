@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.nexus.budget.budget_ticks import record_websearch_invocation_and_enforce
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
@@ -74,6 +75,8 @@ class WebsearchStep(RuntimeStep):
                 ),
             )
             return
+
+        record_websearch_invocation_and_enforce(state)
 
         web_results: list[WebSearchResult] = []
         context_messages: list[ChatMessage] = []

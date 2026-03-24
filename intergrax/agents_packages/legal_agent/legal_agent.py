@@ -47,6 +47,8 @@ class LegalAgent(Agent):
             tool_providers=tuple(cfg.tool_providers),
             websearch_executor=cfg.websearch_executor,
             websearch_config=cfg.websearch_config,
+            run_budget=cfg.run_budget,
+            budget_policy=cfg.budget_policy,
         )
 
         # --- PIPELINE ---

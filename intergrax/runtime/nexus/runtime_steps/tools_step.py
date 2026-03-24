@@ -16,6 +16,7 @@ from intergrax.tools.execution_models import ToolExecutionRequest
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.config import ToolsContextScope
 
+from intergrax.runtime.nexus.budget.budget_ticks import enforce_tool_call_budget
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.tracing.tools.tools_summary import ToolsSummaryDiagV1
@@ -98,6 +99,7 @@ class ToolsStep(RuntimeStep):
                             raw_trace={},
                         )
                     )
+                    enforce_tool_call_budget(state)
 
             # Inject tool execution results into LLM context
             if state.tool_traces:

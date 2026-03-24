@@ -70,6 +70,69 @@ class BudgetEnforcer:
         if self._policy.enforcement_mode is BudgetEnforcementMode.ABORT:
             raise BudgetExceededError(f"Budget exceeded: max_tool_calls ({tool_calls} > {limit})")
 
+    def check_rag_invocations(
+        self,
+        *,
+        run_id: str,
+        rag_invocations: int,
+        state: RuntimeState,
+    ) -> None:
+        limit = self._budget.max_rag_invocations
+        if limit is None:
+            return
+        if rag_invocations <= limit:
+            return
+
+        state.trace_event(
+            component=TraceComponent.POLICY,
+            step="budget_exceeded",
+            level=TraceLevel.ERROR,
+            message="Budget exceeded: max_rag_invocations",
+            payload=BudgetExceededDiagV1(
+                run_id=run_id,
+                budget_name="max_rag_invocations",
+                limit=limit,
+                actual=rag_invocations,
+                enforcement_mode=self._policy.enforcement_mode.value,
+            ),
+        )
+
+        if self._policy.enforcement_mode is BudgetEnforcementMode.ABORT:
+            raise BudgetExceededError(
+                f"Budget exceeded: max_rag_invocations ({rag_invocations} > {limit})"
+            )
+
+    def check_websearch_invocations(
+        self,
+        *,
+        run_id: str,
+        websearch_invocations: int,
+        state: RuntimeState,
+    ) -> None:
+        limit = self._budget.max_websearch_invocations
+        if limit is None:
+            return
+        if websearch_invocations <= limit:
+            return
+
+        state.trace_event(
+            component=TraceComponent.POLICY,
+            step="budget_exceeded",
+            level=TraceLevel.ERROR,
+            message="Budget exceeded: max_websearch_invocations",
+            payload=BudgetExceededDiagV1(
+                run_id=run_id,
+                budget_name="max_websearch_invocations",
+                limit=limit,
+                actual=websearch_invocations,
+                enforcement_mode=self._policy.enforcement_mode.value,
+            ),
+        )
+
+        if self._policy.enforcement_mode is BudgetEnforcementMode.ABORT:
+            raise BudgetExceededError(
+                f"Budget exceeded: max_websearch_invocations ({websearch_invocations} > {limit})"
+            )
 
     def check_total_tokens(self, *, run_id: str, total_tokens: int, state: RuntimeState) -> None:
         limit = self._budget.max_total_tokens
