@@ -22,7 +22,7 @@ Concrete :class:`LegalToolPlanGovernancePort` subclasses for :class:`LegalAgentC
    * :class:`~intergrax.agents_packages.legal_agent.legal_platform_policy_governance.ResolvingLegalToolPlanGovernance`
      with a :class:`~intergrax.agents_packages.legal_agent.legal_platform_policy_governance.LegalExecutionPolicyPort`
      implementation (platform factory), or :class:`~intergrax.agents_packages.legal_agent.legal_platform_policy_governance.DualLegalGovernanceService`
-     for post-run + pre-bridge in one object.
+     for post-run + pre-bridge in one object, or :func:`~intergrax.agents_packages.legal_agent.legal_agent_governance_wiring.with_dual_legal_governance`.
    * A subclass of :class:`~intergrax.runtime.governance.service.GovernanceService` that also
      inherits ``LegalToolPlanGovernancePort`` — assign the **same instance** to
      ``governance_service`` and ``legal_tool_plan_governance`` for post-run + pre-bridge in one object.

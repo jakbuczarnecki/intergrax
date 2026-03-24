@@ -15,6 +15,9 @@ Provides:
 
 Static org clamp (:func:`~intergrax.agents_packages.legal_agent.legal_tool_plan_governance.enforce_legal_tool_plan_governance`)
 still runs first; this layer applies **additional** caps (AND with the plan).
+
+See also :mod:`intergrax.agents_packages.legal_agent.legal_execution_policy_sources` (tenant registry,
+request metadata, policy chains) and :mod:`intergrax.agents_packages.legal_agent.legal_agent_governance_wiring`.
 """
 
 from __future__ import annotations
