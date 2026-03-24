@@ -17,7 +17,10 @@ from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
     LEGAL_TOOL_DECISION_SYSTEM,
     legal_tool_decision_user,
 )
-from intergrax.agents_packages.legal_agent.legal_tool_plan import LegalToolPlan
+from intergrax.agents_packages.legal_agent.legal_tool_plan import (
+    LegalToolPlan,
+    compute_legal_tool_intent_from_layers,
+)
 from intergrax.agents_packages.legal_agent.legal_pipeline_routing import _history_snippet
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -102,6 +105,16 @@ async def decide_legal_tool_plan(
         rag_ok=rag_ok,
         web_ok=web_ok,
         tools_ok=tools_ok,
+    )
+    # Structured models sometimes emit intent labels that disagree with layer flags; flags win.
+    plan = plan.model_copy(
+        update={
+            "intent": compute_legal_tool_intent_from_layers(
+                use_rag=plan.use_rag,
+                use_tools=plan.use_tools,
+                use_websearch=plan.use_websearch,
+            )
+        }
     )
 
     state.trace_event(

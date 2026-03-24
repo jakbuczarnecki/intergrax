@@ -13,30 +13,15 @@ disallows them for the tenant/organization — no exceptions, trace per clamp.
 from __future__ import annotations
 
 from intergrax.agents_packages.legal_agent.legal_agent_config import LegalAgentConfig
-from intergrax.agents_packages.legal_agent.legal_tool_plan import LegalToolIntent, LegalToolPlan
+from intergrax.agents_packages.legal_agent.legal_tool_plan import (
+    LegalToolPlan,
+    compute_legal_tool_intent_from_layers,
+)
 from intergrax.agents_packages.legal_agent.tracing.legal_tool_plan_governance_clamp_diag_v1 import (
     LegalToolPlanGovernanceClampDiagV1,
 )
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-
-
-def _intent_from_layers(
-    *,
-    use_rag: bool,
-    use_tools: bool,
-    use_websearch: bool,
-) -> LegalToolIntent:
-    n = int(use_rag) + int(use_tools) + int(use_websearch)
-    if n == 0:
-        return "llm_only"
-    if n == 1:
-        if use_rag:
-            return "rag"
-        if use_tools:
-            return "tools"
-        return "websearch"
-    return "combination"
 
 
 def enforce_legal_tool_plan_governance(
@@ -101,7 +86,7 @@ def enforce_legal_tool_plan_governance(
     if not changed:
         return plan
 
-    new_intent = _intent_from_layers(
+    new_intent = compute_legal_tool_intent_from_layers(
         use_rag=use_rag,
         use_tools=use_tools,
         use_websearch=use_websearch,

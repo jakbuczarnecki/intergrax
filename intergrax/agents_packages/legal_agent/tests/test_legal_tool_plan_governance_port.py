@@ -18,13 +18,25 @@ from intergrax.agents_packages.legal_agent.legal_tool_plan_governance_impl impor
     CallableLegalToolPlanGovernance,
     PassthroughLegalToolPlanGovernance,
 )
+from intergrax.agents_packages.legal_agent.legal_platform_policy_governance import (
+    DualLegalGovernanceService,
+    LegalNexusLayerCaps,
+    ResolvingLegalToolPlanGovernance,
+    StaticLegalExecutionPolicy,
+    apply_legal_nexus_layer_caps_to_plan,
+)
 from intergrax.agents_packages.legal_agent.legal_tool_plan_governance_port import (
     LegalToolPlanGovernancePort,
 )
 from intergrax.runtime.governance.service import GovernanceService
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
-from testing_support.builder import DummyExecutionGuard, FakeLLMAdapter, build_in_memory_session_manager, build_runtime_state_for_tests
+from testing_support.builder import (
+    DummyExecutionGuard,
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+    build_runtime_state_for_tests,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -103,3 +115,57 @@ def test_callable_delegates_with_positional_callback() -> None:
     out = gov.adjust_legal_tool_plan(plan, state=state, legal_config=cfg)
     assert out.use_websearch is False
     assert out.intent == "rag"
+
+
+def test_resolving_governance_applies_policy_caps() -> None:
+    state = build_runtime_state_for_tests(run_id="gov-resolve")
+    cfg = _cfg()
+    policy = StaticLegalExecutionPolicy(
+        caps=LegalNexusLayerCaps(allow_rag=False, allow_websearch=True, allow_tools=True),
+    )
+    gov = ResolvingLegalToolPlanGovernance(policy=policy)
+    plan = LegalToolPlan(
+        intent="rag",
+        confidence=1.0,
+        use_rag=True,
+        use_tools=False,
+        use_websearch=False,
+    )
+    out = gov.adjust_legal_tool_plan(plan, state=state, legal_config=cfg)
+    assert out.use_rag is False
+    assert out.intent == "llm_only"
+    assert "execution policy clamp" in (out.reasoning_summary or "")
+
+
+def test_dual_governance_service_is_single_wiring_instance() -> None:
+    state = build_runtime_state_for_tests(run_id="gov-dual")
+    cfg = _cfg()
+    policy = StaticLegalExecutionPolicy(
+        caps=LegalNexusLayerCaps(allow_rag=True, allow_websearch=False, allow_tools=True),
+    )
+    g = DualLegalGovernanceService(guard=DummyExecutionGuard(), policy=policy)
+    assert isinstance(g, GovernanceService)
+    assert isinstance(g, LegalToolPlanGovernancePort)
+    plan = LegalToolPlan(
+        intent="websearch",
+        confidence=1.0,
+        use_rag=False,
+        use_tools=False,
+        use_websearch=True,
+    )
+    out = g.adjust_legal_tool_plan(plan, state=state, legal_config=cfg)
+    assert out.use_websearch is False
+
+
+def test_apply_caps_noop_when_nothing_clamped() -> None:
+    state = build_runtime_state_for_tests(run_id="gov-cap-noop")
+    plan = LegalToolPlan(
+        intent="rag",
+        confidence=1.0,
+        use_rag=True,
+        use_tools=False,
+        use_websearch=False,
+    )
+    caps = LegalNexusLayerCaps()
+    out = apply_legal_nexus_layer_caps_to_plan(plan=plan, state=state, caps=caps)
+    assert out is plan

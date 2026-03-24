@@ -19,6 +19,10 @@ Concrete :class:`LegalToolPlanGovernancePort` subclasses for :class:`LegalAgentC
      tenant rules, feature flags, or DB lookups without a new class.
    * Your own subclass of :class:`~intergrax.agents_packages.legal_agent.legal_tool_plan_governance_port.LegalToolPlanGovernancePort`
      for production policy.
+   * :class:`~intergrax.agents_packages.legal_agent.legal_platform_policy_governance.ResolvingLegalToolPlanGovernance`
+     with a :class:`~intergrax.agents_packages.legal_agent.legal_platform_policy_governance.LegalExecutionPolicyPort`
+     implementation (platform factory), or :class:`~intergrax.agents_packages.legal_agent.legal_platform_policy_governance.DualLegalGovernanceService`
+     for post-run + pre-bridge in one object.
    * A subclass of :class:`~intergrax.runtime.governance.service.GovernanceService` that also
      inherits ``LegalToolPlanGovernancePort`` — assign the **same instance** to
      ``governance_service`` and ``legal_tool_plan_governance`` for post-run + pre-bridge in one object.

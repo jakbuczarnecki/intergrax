@@ -26,6 +26,28 @@ LegalToolIntent = Literal[
 ]
 
 
+def compute_legal_tool_intent_from_layers(
+    *,
+    use_rag: bool,
+    use_tools: bool,
+    use_websearch: bool,
+) -> LegalToolIntent:
+    """
+    Derive :class:`LegalToolIntent` from enabled Nexus layer flags (single source of truth).
+    Used by organization governance, dynamic policy caps, and similar clamps.
+    """
+    n = int(use_rag) + int(use_tools) + int(use_websearch)
+    if n == 0:
+        return "llm_only"
+    if n == 1:
+        if use_rag:
+            return "rag"
+        if use_tools:
+            return "tools"
+        return "websearch"
+    return "combination"
+
+
 class LegalToolPlan(BaseModel):
     """
     Structured output from :mod:`tool_decision_component`.
