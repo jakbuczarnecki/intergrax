@@ -13,6 +13,9 @@ from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
     FINALIZE_ANSWER_SYSTEM,
     finalize_answer_user,
 )
+from intergrax.agents_packages.legal_agent.legal_shaped_client_response import (
+    compose_legal_client_answer_text,
+)
 from intergrax.agents_packages.legal_agent.steps.base.legal_base_step import LegalBaseStep
 from intergrax.agents_packages.legal_agent.legal_agent_state import (
     Clause,
@@ -67,14 +70,45 @@ class LegalFinalizeAnswerStep(LegalBaseStep):
 
         stripped = result.answer.strip()
         empty_fallback = not stripped
-        answer_text = stripped or "[ERROR] Empty legal finalize answer."
-        state.raw_answer = answer_text
+        draft_answer = stripped or "[ERROR] Empty legal finalize answer."
+        state.raw_answer = draft_answer
+
+        gov = agent_state.config.legal_response_governance
+        if gov is not None:
+            shaped = gov.shape_legal_client_response(
+                draft_answer,
+                state=state,
+                agent_state=agent_state,
+                legal_config=agent_state.config,
+            )
+            answer_text = compose_legal_client_answer_text(shaped)
+            governance_extra = {
+                "legal_response_governance_applied": True,
+                "legal_client_response_format_version": shaped.format_version,
+            }
+        else:
+            answer_text = draft_answer
+            governance_extra = {"legal_response_governance_applied": False}
 
         used_attachments = bool(state.request.attachments)
         if used_attachments:
             state.used_attachments_context = True
 
         violations = agent_state.policy_violations or []
+        route_extra = {
+            "clauses_count": len(agent_state.clauses),
+            "legal_checks_count": len(agent_state.legal_checks),
+            "sensitive_flags_count": len(agent_state.sensitive_flags),
+            "compliance_results_count": len(agent_state.compliance_results),
+            "uncertainties_count": len(agent_state.uncertainties),
+            "policy_violations_count": len(violations),
+            "recommendations_count": len(agent_state.recommendations),
+            "decision_status": (
+                agent_state.decision.status if agent_state.decision else None
+            ),
+        }
+        route_extra.update(governance_extra)
+
         route = RouteInfo(
             used_rag=state.used_rag,
             used_websearch=False,
@@ -82,18 +116,7 @@ class LegalFinalizeAnswerStep(LegalBaseStep):
             used_user_profile=state.used_user_profile,
             used_user_longterm_memory=state.used_user_longterm_memory,
             strategy="legal_agent",
-            extra={
-                "clauses_count": len(agent_state.clauses),
-                "legal_checks_count": len(agent_state.legal_checks),
-                "sensitive_flags_count": len(agent_state.sensitive_flags),
-                "compliance_results_count": len(agent_state.compliance_results),
-                "uncertainties_count": len(agent_state.uncertainties),
-                "policy_violations_count": len(violations),
-                "recommendations_count": len(agent_state.recommendations),
-                "decision_status": (
-                    agent_state.decision.status if agent_state.decision else None
-                ),
-            },
+            extra=route_extra,
         )
 
         state.runtime_answer = RuntimeAnswer(

@@ -15,6 +15,9 @@ from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVec
 from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
     DEFAULT_ORGANIZATION_COMPLIANCE_POLICY,
 )
+from intergrax.agents_packages.legal_agent.legal_response_governance_port import (
+    LegalResponseGovernancePort,
+)
 from intergrax.agents_packages.legal_agent.legal_tool_plan_governance_port import (
     LegalToolPlanGovernancePort,
 )
@@ -58,6 +61,15 @@ class LegalAgentConfig(BaseModel):
     budget_policy: Optional[BudgetPolicy] = Field(
         default=None,
         description="Required when run_budget is set; forwarded to RuntimeConfig for engine RunBudget enforcement.",
+    )
+
+    legal_response_governance: Optional[LegalResponseGovernancePort] = Field(
+        default=None,
+        description=(
+            "Optional product-layer transform after LegalFinalizeAnswerStep draft: disclaimers, "
+            "uncertainty summary, format version (see LegalShapedClientResponse). None keeps draft as "
+            "RuntimeAnswer.answer."
+        ),
     )
 
     legal_tool_plan_governance: Optional[LegalToolPlanGovernancePort] = Field(
