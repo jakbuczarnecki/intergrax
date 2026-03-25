@@ -15,7 +15,7 @@ from intergrax.contracts.idempotency_store import InvocationStatus
 from intergrax.tools.execution_models import ToolExecutionResult
 from testing_support.builder import prepare_sqlite_db
 
-pytestmark = pytest.mark.unit
+pytestmark = pytest.mark.integration
 
 
 class DummyOutput(BaseModel):
