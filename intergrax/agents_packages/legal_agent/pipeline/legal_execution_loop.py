@@ -51,6 +51,11 @@ def _legal_post_wave_early_exit_ok(
     completed: Set[str],
     config: LegalAgentConfig,
 ) -> bool:
+    """
+    Gates :attr:`~intergrax.agents_packages.legal_agent.config.legal_agent_config.LegalAgentConfig.legal_loop_early_exit`.
+
+    Contract text lives on ``config.failure_policy`` (low confidence, ESCALATE, blocking issues, violations).
+    """
     if "run_decision" not in completed:
         return False
     pol_v = agent_state.policy_violations

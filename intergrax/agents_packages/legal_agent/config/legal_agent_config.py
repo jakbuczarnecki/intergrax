@@ -15,6 +15,7 @@ from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVec
 from intergrax.agents_packages.legal_agent.prompts.legal_agent_llm_prompts import (
     DEFAULT_ORGANIZATION_COMPLIANCE_POLICY,
 )
+from intergrax.agents_packages.legal_agent.config.legal_failure_policy import LegalFailurePolicy
 from intergrax.agents_packages.legal_agent.memory.legal_memory_policy import LegalMemoryPolicy
 from intergrax.agents_packages.legal_agent.governance.legal_response_governance_port import (
     LegalResponseGovernancePort,
@@ -37,6 +38,7 @@ class LegalAgentConfig(BaseModel):
 
     This is a single source of truth for the Legal Agent.
     Optional SKU defaults: :class:`~intergrax.agents_packages.legal_agent.config.legal_agent_product_profiles.LegalAgentProductProfile`.
+    Failure & degradation contract: :class:`~intergrax.agents_packages.legal_agent.config.legal_failure_policy.LegalFailurePolicy`.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -201,6 +203,15 @@ class LegalAgentConfig(BaseModel):
             "and whether workspace metrics snapshot is written/read on the session. Fully host-controlled "
             "(build :class:`~intergrax.agents_packages.legal_agent.memory.legal_memory_policy.LegalMemoryPolicy` "
             "or use presets from the same module). Ignored by sequential pipeline except finalize persistence flags."
+        ),
+    )
+
+    failure_policy: LegalFailurePolicy = Field(
+        default_factory=LegalFailurePolicy.product_default,
+        description=(
+            "Prescriptive product contract for empty retrieval, Nexus/tool degradation, governance clamps, "
+            "low-confidence decisions, and evaluator/finalize failures. Hosts replace only when explicitly "
+            "changing SKU guarantees; see :class:`~intergrax.agents_packages.legal_agent.config.legal_failure_policy.LegalFailurePolicy`."
         ),
     )
 
