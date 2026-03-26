@@ -13,15 +13,19 @@ product-level contract for those trimmed snippets.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Sequence
+from typing import TYPE_CHECKING, List, Optional, Sequence
 
 from pydantic import BaseModel, Field
 
 from intergrax.agents_packages.legal_agent.domain.legal_workspace_session_snapshot import (
     LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY,
+    LegalWorkspaceSessionSnapshotV1,
+    try_load_legal_workspace_session_snapshot,
 )
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.session.chat_session import ChatSession
 
 if TYPE_CHECKING:
     from intergrax.agents_packages.legal_agent.domain.legal_agent_state import LegalAgentState
@@ -29,19 +33,48 @@ if TYPE_CHECKING:
 NO_PRIOR_TURNS_PLACEHOLDER = "(no prior turns in context)"
 
 
+def resolve_session_prior_workspace_snapshot(
+    *,
+    session: Optional[ChatSession],
+    request: RuntimeRequest,
+    policy: LegalMemoryPolicy,
+) -> LegalWorkspaceSessionSnapshotV1 | None:
+    """
+    Load the prior-run workspace snapshot from session metadata when policy allows.
+
+    Used by :class:`~intergrax.agents_packages.legal_agent.pipeline.legal_dynamic_pipeline.LegalDynamicPipeline`
+    before ``run_legal_dynamic_execution_loop``; kept as a pure helper for tests and host reuse.
+    """
+    if not policy.hydrate_workspace_snapshot_from_session or session is None:
+        return None
+    if (
+        policy.ignore_workspace_snapshot_when_request_has_attachments
+        and bool(request.attachments)
+    ):
+        return None
+    return try_load_legal_workspace_session_snapshot(session.metadata)
+
+
 class LegalMemoryPolicy(BaseModel):
     """
-    Tunable limits for legal-tier use of recent conversation in routing / tool-plan LLM prompts.
+    Tunable Tier-2 memory behaviour: routing/tool snippets and optional session workspace snapshot.
 
-    Session store retention and ``RuntimeConfig.enable_user_longterm_memory`` are orthogonal;
-    adjust those at deployment; use this model for per-SKU control of snippet shape.
+    Construct directly for full control, or start from a preset (see module functions
+    ``default_legal_memory_policy``, ``minimal_exposure_legal_memory_policy``,
+    ``strict_legal_workspace_legal_memory_policy``) and override fields with
+    :meth:`~pydantic.BaseModel.model_copy` if needed.
+
+    Session store TTL and ``RuntimeConfig.enable_user_longterm_memory`` remain configured at
+    Nexus / host level; this model does not replace those switches.
     """
 
     persist_workspace_snapshot_to_session: bool = Field(
         default=True,
         description=(
             "After finalize, write LegalWorkspaceSessionSnapshotV1 into session metadata "
-            f"({LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY}) for the next turn's router."
+            f"({LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY}) for the next turn's router. "
+            "Hosts may call clear_persisted_legal_workspace_snapshot at session close if policy "
+            "requires dropping these hints."
         ),
     )
     hydrate_workspace_snapshot_from_session: bool = Field(
@@ -110,3 +143,44 @@ async def persist_legal_workspace_session_snapshot(
     md[LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY] = snap.model_dump()
     sess.metadata = md
     await state.context.session_manager.save_session(sess)
+
+
+# ---------------------------------------------------------------------------
+# Named presets (hosts pass as ``LegalAgentConfig(memory_policy=...)`` or merge in YAML)
+# ---------------------------------------------------------------------------
+
+
+def default_legal_memory_policy() -> LegalMemoryPolicy:
+    """Balanced defaults — same values as :class:`LegalMemoryPolicy` field defaults."""
+    return LegalMemoryPolicy()
+
+
+def minimal_exposure_legal_memory_policy() -> LegalMemoryPolicy:
+    """
+    Shorter routing/tool history excerpts and no cross-turn workspace snapshot in session metadata.
+
+    Use when hosts want to minimise what Tier-2 stores in ``ChatSession.metadata`` and how much
+    prior chat appears in router prompts (follow-up routing may be less informed).
+    """
+    return LegalMemoryPolicy(
+        persist_workspace_snapshot_to_session=False,
+        hydrate_workspace_snapshot_from_session=False,
+        conversation_tail_message_limit=6,
+        conversation_snippet_max_chars_per_message=320,
+    )
+
+
+def strict_legal_workspace_legal_memory_policy() -> LegalMemoryPolicy:
+    """
+    Tighter snippets but keeps snapshot persist/hydrate for multi-turn contract workflows.
+
+    Intended for careful legal pipelines that still rely on ``session_prior_legal_run`` hints
+    between turns without widening conversational context in router prompts.
+    """
+    return LegalMemoryPolicy(
+        persist_workspace_snapshot_to_session=True,
+        hydrate_workspace_snapshot_from_session=True,
+        ignore_workspace_snapshot_when_request_has_attachments=True,
+        conversation_tail_message_limit=8,
+        conversation_snippet_max_chars_per_message=400,
+    )

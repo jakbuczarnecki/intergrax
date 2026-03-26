@@ -10,8 +10,9 @@ call :meth:`~LegalAgentProductProfile.make_config` to construct config, or
 :meth:`~LegalAgentProductProfile.apply_to` on an existing :class:`LegalAgentConfig` (returns a copy with
 SKU fields applied; the passed instance is not mutated).
 
-Injectable wiring (RAG, governance, budgets, tools) remains the host's responsibility; ``**overrides``
-win over SKU defaults. Typical order: ``profile.make_config(...)`` then
+Memory defaults per SKU set ``memory_policy``; override with ``make_config(..., memory_policy=...)`` or
+partial dict accepted by :class:`LegalAgentConfig`. Injectable wiring (RAG, governance, budgets, tools)
+remains the host's responsibility; explicit ``make_config`` / ``apply_to`` arguments win over SKU defaults. Typical order: ``profile.make_config(...)`` then
 :func:`~intergrax.agents_packages.legal_agent.governance.legal_agent_governance_wiring.with_dual_legal_governance`.
 """
 
@@ -21,6 +22,10 @@ from enum import StrEnum
 from typing import Any
 
 from intergrax.agents_packages.legal_agent.config.legal_agent_config import LegalAgentConfig
+from intergrax.agents_packages.legal_agent.memory.legal_memory_policy import (
+    minimal_exposure_legal_memory_policy,
+    strict_legal_workspace_legal_memory_policy,
+)
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 
@@ -47,6 +52,7 @@ class LegalAgentProductProfile(StrEnum):
                 return {
                     "organization_allow_websearch": False,
                     "organization_allow_tools": False,
+                    "memory_policy": minimal_exposure_legal_memory_policy(),
                 }
             case LegalAgentProductProfile.RESEARCH:
                 return {
@@ -66,6 +72,7 @@ class LegalAgentProductProfile(StrEnum):
                     "use_legal_run_evaluator": True,
                     "use_legal_route_replanner": True,
                     "use_llm_legal_route_planner": True,
+                    "memory_policy": strict_legal_workspace_legal_memory_policy(),
                 }
 
     def make_config(

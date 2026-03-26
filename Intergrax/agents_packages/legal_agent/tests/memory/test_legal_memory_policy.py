@@ -20,19 +20,112 @@ from intergrax.agents_packages.legal_agent.memory.legal_memory_policy import (
     LegalMemoryPolicy,
     NO_PRIOR_TURNS_PLACEHOLDER,
     build_legal_conversation_snippet,
+    default_legal_memory_policy,
+    minimal_exposure_legal_memory_policy,
+    resolve_session_prior_workspace_snapshot,
+    strict_legal_workspace_legal_memory_policy,
 )
 from intergrax.agents_packages.legal_agent.domain.legal_workspace_session_snapshot import (
     LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY,
+    LegalWorkspaceSessionSnapshotV1,
+    clear_persisted_legal_workspace_snapshot,
     try_load_legal_workspace_session_snapshot,
 )
 from intergrax.agents_packages.legal_agent.pipeline.legal_pipeline_routing import (
     legal_workspace_metrics_json,
 )
-from intergrax.llm.messages import ChatMessage
+from intergrax.llm.messages import AttachmentRef, ChatMessage
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.session.chat_session import ChatSession
 
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 pytestmark = pytest.mark.unit
+
+
+def test_resolve_session_prior_workspace_snapshot_from_metadata() -> None:
+    snap_in = LegalAgentState(
+        config=LegalAgentConfig(
+            session_manager=build_in_memory_session_manager(),
+            llm_adapter=FakeLLMAdapter(),
+        ),
+        clauses=[Clause(id="c1", text="x", category=None, is_sensitive=False)],
+    ).to_workspace_session_snapshot_v1()
+    meta = {LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY: snap_in.model_dump()}
+    session = ChatSession(id="s1", tenant_id="t1", metadata=meta)
+    req = RuntimeRequest(
+        agent_id="a",
+        user_id="u",
+        session_id="s1",
+        message="follow-up",
+        tenant_id="t1",
+    )
+    policy = LegalMemoryPolicy()
+    loaded = resolve_session_prior_workspace_snapshot(
+        session=session,
+        request=req,
+        policy=policy,
+    )
+    assert loaded is not None
+    assert loaded.clause_count == 1
+
+
+def test_resolve_session_prior_skips_when_new_attachments() -> None:
+    snap_in = LegalAgentState(
+        config=LegalAgentConfig(
+            session_manager=build_in_memory_session_manager(),
+            llm_adapter=FakeLLMAdapter(),
+        ),
+        clauses=[Clause(id="c1", text="x", category=None, is_sensitive=False)],
+    ).to_workspace_session_snapshot_v1()
+    meta = {LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY: snap_in.model_dump()}
+    session = ChatSession(id="s1", tenant_id="t1", metadata=meta)
+    req = RuntimeRequest(
+        agent_id="a",
+        user_id="u",
+        session_id="s1",
+        message="new doc",
+        tenant_id="t1",
+        attachments=[
+            AttachmentRef(id="f1", type="txt", uri="file://x"),
+        ],
+    )
+    loaded = resolve_session_prior_workspace_snapshot(
+        session=session,
+        request=req,
+        policy=LegalMemoryPolicy(),
+    )
+    assert loaded is None
+
+
+def test_resolve_session_prior_honors_hydrate_flag() -> None:
+    session = ChatSession(id="s1", tenant_id="t1", metadata={})
+    req = RuntimeRequest(
+        agent_id="a",
+        user_id="u",
+        session_id="s1",
+        message="x",
+        tenant_id="t1",
+    )
+    policy = LegalMemoryPolicy(hydrate_workspace_snapshot_from_session=False)
+    assert (
+        resolve_session_prior_workspace_snapshot(session=session, request=req, policy=policy)
+        is None
+    )
+
+
+def test_memory_policy_presets_are_deterministic() -> None:
+    d = default_legal_memory_policy()
+    assert d.conversation_tail_message_limit == 12
+    assert d.persist_workspace_snapshot_to_session is True
+    m = minimal_exposure_legal_memory_policy()
+    assert m.conversation_tail_message_limit == 6
+    assert m.persist_workspace_snapshot_to_session is False
+    assert m.hydrate_workspace_snapshot_from_session is False
+    s = strict_legal_workspace_legal_memory_policy()
+    assert s.conversation_tail_message_limit == 8
+    assert s.persist_workspace_snapshot_to_session is True
+    assert s.conversation_snippet_max_chars_per_message == 400
 
 
 def _state_with_messages(
@@ -152,3 +245,50 @@ def test_legal_workspace_metrics_includes_session_prior() -> None:
     assert payload["clause_count"] == 0
     assert "session_prior_legal_run" in payload
     assert payload["session_prior_legal_run"]["clause_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_clear_persisted_legal_workspace_snapshot_removes_key() -> None:
+    sm = build_in_memory_session_manager()
+    tenant_id = "t-clear-snap"
+    session = await sm.create_session(
+        tenant_id=tenant_id,
+        session_id="sess-1",
+        user_id="u1",
+    )
+    session.metadata = {
+        LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY: LegalWorkspaceSessionSnapshotV1(
+            clause_count=2
+        ).model_dump(),
+        "other": 1,
+    }
+    await sm.save_session(session)
+    loaded = await sm.get_session(tenant_id=tenant_id, session_id="sess-1")
+    assert loaded is not None
+    assert LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY in loaded.metadata
+    did = await clear_persisted_legal_workspace_snapshot(
+        session=loaded,
+        session_manager=sm,
+    )
+    assert did is True
+    final = await sm.get_session(tenant_id=tenant_id, session_id="sess-1")
+    assert final is not None
+    assert LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY not in final.metadata
+    assert final.metadata.get("other") == 1
+
+
+@pytest.mark.asyncio
+async def test_clear_persisted_legal_workspace_snapshot_idempotent() -> None:
+    sm = build_in_memory_session_manager()
+    tenant_id = "t-clear-idem"
+    session = await sm.create_session(
+        tenant_id=tenant_id,
+        session_id="sess-2",
+        user_id="u1",
+    )
+    await sm.save_session(session)
+    did = await clear_persisted_legal_workspace_snapshot(
+        session=session,
+        session_manager=sm,
+    )
+    assert did is False

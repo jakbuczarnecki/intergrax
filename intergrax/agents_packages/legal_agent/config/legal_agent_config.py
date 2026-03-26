@@ -197,8 +197,10 @@ class LegalAgentConfig(BaseModel):
     memory_policy: LegalMemoryPolicy = Field(
         default_factory=LegalMemoryPolicy,
         description=(
-            "How much recent conversation is passed to legal routing, replan, and tool-intent LLM "
-            "prompts (trimmed snippet only; not session TTL)."
+            "Tier-2 memory contract: conversation snippet limits for routing/tool/replan LLM calls, "
+            "and whether workspace metrics snapshot is written/read on the session. Fully host-controlled "
+            "(build :class:`~intergrax.agents_packages.legal_agent.memory.legal_memory_policy.LegalMemoryPolicy` "
+            "or use presets from the same module). Ignored by sequential pipeline except finalize persistence flags."
         ),
     )
 

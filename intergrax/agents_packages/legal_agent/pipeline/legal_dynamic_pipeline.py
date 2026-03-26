@@ -13,8 +13,8 @@ from __future__ import annotations
 
 from intergrax.agents_packages.legal_agent.config.legal_agent_config import LegalAgentConfig
 from intergrax.agents_packages.legal_agent.domain.legal_agent_state import LegalAgentState
-from intergrax.agents_packages.legal_agent.domain.legal_workspace_session_snapshot import (
-    try_load_legal_workspace_session_snapshot,
+from intergrax.agents_packages.legal_agent.memory.legal_memory_policy import (
+    resolve_session_prior_workspace_snapshot,
 )
 from intergrax.agents_packages.legal_agent.pipeline.legal_execution_loop import (
     run_legal_dynamic_execution_loop,
@@ -36,14 +36,11 @@ class LegalDynamicPipeline(RuntimePipeline):
         await RuntimeStepRunner.execute_pipeline(SETUP_STEPS, state)
 
         policy = self._config.memory_policy
-        prior_snapshot = None
-        if policy.hydrate_workspace_snapshot_from_session and state.session is not None:
-            prior_snapshot = try_load_legal_workspace_session_snapshot(state.session.metadata)
-        if (
-            policy.ignore_workspace_snapshot_when_request_has_attachments
-            and state.request.attachments
-        ):
-            prior_snapshot = None
+        prior_snapshot = resolve_session_prior_workspace_snapshot(
+            session=state.session,
+            request=state.request,
+            policy=policy,
+        )
 
         if state.agent_state is None:
             state.agent_state = LegalAgentState(
