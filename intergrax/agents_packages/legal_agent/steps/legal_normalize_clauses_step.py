@@ -9,12 +9,12 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
+from intergrax.agents_packages.legal_agent.prompts.legal_agent_llm_prompts import (
     NORMALIZE_CLAUSES_SYSTEM,
     normalize_clauses_user,
 )
 from intergrax.agents_packages.legal_agent.steps.base.legal_base_step import LegalBaseStep
-from intergrax.agents_packages.legal_agent.legal_agent_state import (
+from intergrax.agents_packages.legal_agent.domain.legal_agent_state import (
     Clause,
     LegalAgentState,
 )

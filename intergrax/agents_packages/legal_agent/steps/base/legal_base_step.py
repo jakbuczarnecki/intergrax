@@ -5,7 +5,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 
-from intergrax.agents_packages.legal_agent.legal_agent_state import LegalAgentState
+from intergrax.agents_packages.legal_agent.domain.legal_agent_state import LegalAgentState
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.runtime_steps.contract import RuntimeStep

@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from intergrax.agents_packages.legal_agent.steps.base.legal_base_step import LegalBaseStep
-from intergrax.agents_packages.legal_agent.legal_agent_state import (
+from intergrax.agents_packages.legal_agent.domain.legal_agent_state import (
     DecisionStatus,
     LegalAgentState,
 )
