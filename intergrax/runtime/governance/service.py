@@ -15,8 +15,8 @@ class GovernanceService:
     """
     Post-run governance: replay, metrics, policy evaluation via :class:`ExecutionGuard`.
 
-    Pre-bridge legal tool plan adjustments use :class:`~intergrax.agents_packages.legal_agent.legal_tool_plan_governance_port.LegalToolPlanGovernancePort`
-    on :attr:`~intergrax.agents_packages.legal_agent.legal_agent_config.LegalAgentConfig.legal_tool_plan_governance`
+    Pre-bridge legal tool plan adjustments use :class:`~intergrax.agents_packages.legal_agent.governance.legal_tool_plan_governance_port.LegalToolPlanGovernancePort`
+    on :attr:`~intergrax.agents_packages.legal_agent.config.legal_agent_config.LegalAgentConfig.legal_tool_plan_governance`
     (same concrete object may implement both this service and that port).
     """
 

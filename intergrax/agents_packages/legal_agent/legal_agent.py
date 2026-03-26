@@ -5,15 +5,15 @@ from __future__ import annotations
 from typing import Optional
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents_packages.legal_agent.legal_agent_config import LegalAgentConfig
+from intergrax.agents_packages.legal_agent.config.legal_agent_config import LegalAgentConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.ingestion.attachments import FileSystemAttachmentResolver
 from intergrax.runtime.nexus.ingestion.ingestion_service import AttachmentIngestionService
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.config import RuntimeConfig
 
-from intergrax.agents_packages.legal_agent.legal_dynamic_pipeline import LegalDynamicPipeline
-from intergrax.agents_packages.legal_agent.legal_agent_pipeline import LegalAnalysisPipeline
+from intergrax.agents_packages.legal_agent.pipeline.legal_dynamic_pipeline import LegalDynamicPipeline
+from intergrax.agents_packages.legal_agent.pipeline.legal_agent_pipeline import LegalAnalysisPipeline
 
 
 class LegalAgent(Agent):

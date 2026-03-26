@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-from intergrax.agents_packages.legal_agent.legal_agent_config import LegalAgentConfig
-from intergrax.agents_packages.legal_agent.legal_agent_state import LegalAgentState
+from intergrax.agents_packages.legal_agent.config.legal_agent_config import LegalAgentConfig
+from intergrax.agents_packages.legal_agent.domain.legal_agent_state import LegalAgentState
 from intergrax.agents_packages.legal_agent.steps.legal_extract_clauses_step import LegalExtractClausesStep
 from intergrax.llm.messages import AttachmentRef
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider

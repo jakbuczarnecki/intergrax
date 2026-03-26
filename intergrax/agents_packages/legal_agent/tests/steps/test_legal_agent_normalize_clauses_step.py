@@ -14,11 +14,11 @@ import pytest
 
 from testing_support.builder import require_ollama_reachable
 
-from intergrax.agents_packages.legal_agent.legal_agent_state import Clause
+from intergrax.agents_packages.legal_agent.domain.legal_agent_state import Clause
 from intergrax.agents_packages.legal_agent.steps.legal_normalize_clauses_step import (
     LegalNormalizeClausesStep,
 )
-from intergrax.agents_packages.legal_agent.tests._legal_agent_step_runtime import build_legal_ollama_runtime_state
+from intergrax.agents_packages.legal_agent.tests.support.step_runtime import build_legal_ollama_runtime_state
 
 pytestmark = pytest.mark.integration
 

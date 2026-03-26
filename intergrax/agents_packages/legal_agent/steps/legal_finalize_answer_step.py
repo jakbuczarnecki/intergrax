@@ -9,15 +9,18 @@ from typing import List, Sequence
 
 from pydantic import BaseModel
 
-from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
+from intergrax.agents_packages.legal_agent.prompts.legal_agent_llm_prompts import (
     FINALIZE_ANSWER_SYSTEM,
     finalize_answer_user,
 )
-from intergrax.agents_packages.legal_agent.legal_shaped_client_response import (
+from intergrax.agents_packages.legal_agent.domain.legal_shaped_client_response import (
     compose_legal_client_answer_text,
 )
+from intergrax.agents_packages.legal_agent.memory.legal_memory_policy import (
+    persist_legal_workspace_session_snapshot,
+)
 from intergrax.agents_packages.legal_agent.steps.base.legal_base_step import LegalBaseStep
-from intergrax.agents_packages.legal_agent.legal_agent_state import (
+from intergrax.agents_packages.legal_agent.domain.legal_agent_state import (
     Clause,
     LegalAgentState,
     LegalDecision,
@@ -151,6 +154,12 @@ class LegalFinalizeAnswerStep(LegalBaseStep):
                 ),
                 decision_enforcement_modified=agent_state.decision_enforcement_modified,
             ),
+        )
+
+        await persist_legal_workspace_session_snapshot(
+            state=state,
+            agent_state=agent_state,
+            policy=agent_state.config.memory_policy,
         )
 
     def _build_workspace_text(self, agent_state: LegalAgentState) -> str:

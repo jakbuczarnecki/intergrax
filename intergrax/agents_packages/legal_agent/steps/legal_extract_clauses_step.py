@@ -9,13 +9,13 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
-from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
+from intergrax.agents_packages.legal_agent.prompts.legal_agent_llm_prompts import (
     DEFAULT_RAG_QUERY_FOR_CLAUSE_EXTRACTION,
     EXTRACT_CLAUSES_SYSTEM,
     extract_clauses_chunk_user,
 )
 from intergrax.agents_packages.legal_agent.steps.base.legal_base_step import LegalBaseStep
-from intergrax.agents_packages.legal_agent.legal_agent_state import Clause, LegalAgentState
+from intergrax.agents_packages.legal_agent.domain.legal_agent_state import Clause, LegalAgentState
 from intergrax.agents_packages.legal_agent.tracing.legal_extract_clauses_step_diag_v1 import (
     LegalExtractClausesStepDiagV1,
 )
