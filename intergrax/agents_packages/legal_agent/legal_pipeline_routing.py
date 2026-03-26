@@ -13,11 +13,12 @@ document context is required). Final synthesis always runs.
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
 from pydantic import BaseModel, Field
 
 from intergrax.agents_packages.legal_agent.legal_agent_config import LegalAgentConfig
+from intergrax.agents_packages.legal_agent.legal_memory_policy import build_legal_conversation_snippet
 from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
     LEGAL_PIPELINE_REPLAN_SYSTEM,
     LEGAL_PIPELINE_ROUTING_SYSTEM,
@@ -161,18 +162,6 @@ _STAGE_FLAG_BY_TYPE: Dict[Type[Any], str] = {
 }
 
 
-def _history_snippet(state: RuntimeState, *, max_messages: int = 12) -> str:
-    lines: List[str] = []
-    msgs: Sequence[Any] = state.messages_for_llm or state.built_history_messages or []
-    tail = list(msgs)[-max_messages:]
-    for m in tail:
-        role = getattr(m, "role", "?")
-        content = getattr(m, "content", "") or ""
-        text = content if isinstance(content, str) else str(content)
-        lines.append(f"{role}: {text[:500]}")
-    return "\n".join(lines) if lines else "(no prior turns in context)"
-
-
 def _apply_dependency_closure(
     r: LegalRoutingResult,
     *,
@@ -266,7 +255,7 @@ async def obtain_initial_legal_routing(
     """First routing plan for the request (LLM or full default + dependency closure)."""
     req = state.request
     has_attachments = bool(req.attachments)
-    snippet = _history_snippet(state)
+    snippet = build_legal_conversation_snippet(state, policy=config.memory_policy)
     metrics = legal_workspace_metrics_json(agent_state, runtime_state=state)
 
     if config.use_llm_legal_route_planner:
@@ -302,7 +291,7 @@ async def obtain_replan_legal_routing(
     """
     req = state.request
     has_attachments = bool(req.attachments)
-    snippet = _history_snippet(state)
+    snippet = build_legal_conversation_snippet(state, policy=config.memory_policy)
 
     if config.use_llm_legal_route_planner and config.use_legal_route_replanner:
         proposed = await _llm_legal_routing(

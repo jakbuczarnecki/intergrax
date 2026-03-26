@@ -15,6 +15,7 @@ from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVec
 from intergrax.agents_packages.legal_agent.legal_agent_llm_prompts import (
     DEFAULT_ORGANIZATION_COMPLIANCE_POLICY,
 )
+from intergrax.agents_packages.legal_agent.legal_memory_policy import LegalMemoryPolicy
 from intergrax.agents_packages.legal_agent.legal_response_governance_port import (
     LegalResponseGovernancePort,
 )
@@ -191,6 +192,14 @@ class LegalAgentConfig(BaseModel):
         ge=0.0,
         le=1.0,
         description="Minimum decision.confidence for legal_loop_early_exit (requires run_decision this wave).",
+    )
+
+    memory_policy: LegalMemoryPolicy = Field(
+        default_factory=LegalMemoryPolicy,
+        description=(
+            "How much recent conversation is passed to legal routing, replan, and tool-intent LLM "
+            "prompts (trimmed snippet only; not session TTL)."
+        ),
     )
 
     @model_validator(mode="after")

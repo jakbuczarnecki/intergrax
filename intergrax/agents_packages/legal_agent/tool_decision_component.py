@@ -21,7 +21,7 @@ from intergrax.agents_packages.legal_agent.legal_tool_plan import (
     LegalToolPlan,
     compute_legal_tool_intent_from_layers,
 )
-from intergrax.agents_packages.legal_agent.legal_pipeline_routing import _history_snippet
+from intergrax.agents_packages.legal_agent.legal_memory_policy import build_legal_conversation_snippet
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
@@ -74,7 +74,7 @@ async def decide_legal_tool_plan(
     rag_ok, web_ok, tools_ok = _runtime_capability_flags(state)
     req = state.request
     has_attachments = bool(req.attachments)
-    snippet = _history_snippet(state)
+    snippet = build_legal_conversation_snippet(state, policy=legal_config.memory_policy)
 
     llm = legal_config.llm_adapter
     user = legal_tool_decision_user(

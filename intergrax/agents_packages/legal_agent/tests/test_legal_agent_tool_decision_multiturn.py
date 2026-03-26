@@ -7,7 +7,7 @@ Enterprise regression (TEST 5): Tier-2 tool decision across **two turns** with t
 
 Turn 1 ingests a contract (attachments + natural tool-decision LLM).
 Turn 2 is a short follow-up without new attachments; the decision prompt includes
-trimmed conversation history (see ``legal_tool_decision_user`` + ``_history_snippet``).
+trimmed conversation history (see ``legal_tool_decision_user`` + ``build_legal_conversation_snippet``).
 
 Expectations (behavioral, LLM-dependent within bounds):
   - Turn-2 plan stays in ``intent in {\"llm_only\", \"rag\"}`` (no ``websearch`` /
