@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from typing import List, Literal, Optional
+
 from pydantic import BaseModel, Field, field_validator
 
 from intergrax.agents_packages.legal_agent.config.legal_agent_config import LegalAgentConfig
@@ -15,6 +16,7 @@ from intergrax.agents_packages.legal_agent.domain.legal_tool_plan import LegalTo
 from intergrax.llm.messages import AttachmentRef
 from intergrax.runtime.nexus.engine.contracts.agent_state import AgentState
 
+ClauseExtractionRetrievalOutcome = Literal["no_hits", "hits"]
 
 # -------------------------
 # LOW-LEVEL DOMAIN MODELS
@@ -171,6 +173,31 @@ class LegalAgentState(AgentState, BaseModel):
     last_legal_tool_plan: Optional[LegalToolPlan] = Field(
         default=None,
         description="Latest Tier-2 tool/RAG/websearch intent before legal stage routing.",
+    )
+
+    legal_dynamic_loop_waves: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "Number of execution waves completed in LegalDynamicPipeline (plan→stages). "
+            "0 when using sequential LegalAnalysisPipeline or before the dynamic loop runs."
+        ),
+    )
+
+    clause_extraction_retrieval_outcome: Optional[ClauseExtractionRetrievalOutcome] = Field(
+        default=None,
+        description=(
+            "Set by LegalExtractClausesStep: attachment retrieval returned zero vs non-zero hits. "
+            "None if that step did not run."
+        ),
+    )
+
+    legal_run_evaluator_degraded: bool = Field(
+        default=False,
+        description=(
+            "True if the legal run evaluator LLM threw or returned an invalid payload in this run "
+            "(conservative complete/no-replan path)."
+        ),
     )
 
     legal_tool_runtime_feedback_json: str = Field(

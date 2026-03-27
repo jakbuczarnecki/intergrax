@@ -89,6 +89,7 @@ class LegalExtractClausesStep(LegalBaseStep):
         hits: List[RetrievedChunk] = search_result.get("hits", [])
 
         if not hits:
+            agent_state.clause_extraction_retrieval_outcome = "no_hits"
             agent_state.clauses = []
             state.trace_event(
                 component=TraceComponent.STEP,
@@ -107,6 +108,7 @@ class LegalExtractClausesStep(LegalBaseStep):
             )
             return
 
+        agent_state.clause_extraction_retrieval_outcome = "hits"
         state.used_rag = True
 
         # ------------------------------------------------------------------

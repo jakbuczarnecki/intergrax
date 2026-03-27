@@ -22,10 +22,7 @@ from enum import StrEnum
 from typing import Any
 
 from intergrax.agents_packages.legal_agent.config.legal_agent_config import LegalAgentConfig
-from intergrax.agents_packages.legal_agent.memory.legal_memory_policy import (
-    minimal_exposure_legal_memory_policy,
-    strict_legal_workspace_legal_memory_policy,
-)
+from intergrax.agents_packages.legal_agent.memory.legal_memory_policy import LegalMemoryPolicyPresets
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 
@@ -52,7 +49,7 @@ class LegalAgentProductProfile(StrEnum):
                 return {
                     "organization_allow_websearch": False,
                     "organization_allow_tools": False,
-                    "memory_policy": minimal_exposure_legal_memory_policy(),
+                    "memory_policy": LegalMemoryPolicyPresets.minimal_exposure(),
                 }
             case LegalAgentProductProfile.RESEARCH:
                 return {
@@ -72,7 +69,7 @@ class LegalAgentProductProfile(StrEnum):
                     "use_legal_run_evaluator": True,
                     "use_legal_route_replanner": True,
                     "use_llm_legal_route_planner": True,
-                    "memory_policy": strict_legal_workspace_legal_memory_policy(),
+                    "memory_policy": LegalMemoryPolicyPresets.strict_legal_workspace(),
                 }
 
     def make_config(

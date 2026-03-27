@@ -346,3 +346,19 @@ async def plan_legal_step_runners(
     )
 
     return runners
+
+
+class LegalPipelineRouting:
+    """
+    Grouped public entry points for legal dynamic pipeline routing.
+
+    Implementations stay as module functions for cohesion; this class is the ergonomic import surface.
+    """
+
+    workspace_metrics_json = staticmethod(legal_workspace_metrics_json)
+    routing_fingerprint = staticmethod(legal_routing_fingerprint)
+    stage_flag_for_runner = staticmethod(legal_stage_flag_for_runner)
+    merge_routing_union = staticmethod(merge_legal_routing_union)
+    build_step_runners = staticmethod(build_legal_step_runners_from_routing)
+    obtain_initial = staticmethod(obtain_initial_legal_routing)
+    obtain_replan = staticmethod(obtain_replan_legal_routing)

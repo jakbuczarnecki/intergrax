@@ -26,6 +26,9 @@ from intergrax.agents_packages.legal_agent.domain.legal_agent_state import (
     LegalDecision,
     LegalOpinion,
 )
+from intergrax.agents_packages.legal_agent.domain.legal_product_observability import (
+    LegalProductObservability,
+)
 from intergrax.agents_packages.legal_agent.tracing.legal_finalize_answer_step_diag_v1 import (
     LegalFinalizeAnswerStepDiagV1,
 )
@@ -33,6 +36,8 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RouteInfo, RuntimeAnswer, RuntimeStats
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+
+LEGAL_PRODUCT_OBS_ROUTE_EXTRA_KEY = LegalProductObservability.ROUTE_EXTRA_KEY
 
 
 class FinalAnswerModel(BaseModel):
@@ -112,10 +117,17 @@ class LegalFinalizeAnswerStep(LegalBaseStep):
         }
         route_extra.update(governance_extra)
 
+        rc = state.context.config
+        route_extra[LEGAL_PRODUCT_OBS_ROUTE_EXTRA_KEY] = LegalProductObservability.build_route_extra_payload(
+            agent_state=agent_state,
+            state=state,
+            finalize_empty_fallback=empty_fallback,
+        )
+
         route = RouteInfo(
-            used_rag=state.used_rag,
-            used_websearch=False,
-            used_tools=False,
+            used_rag=state.used_rag and rc.enable_rag,
+            used_websearch=state.used_websearch and rc.enable_websearch,
+            used_tools=state.used_tools and rc.tools_mode != "off",
             used_user_profile=state.used_user_profile,
             used_user_longterm_memory=state.used_user_longterm_memory,
             strategy="legal_agent",
@@ -127,7 +139,7 @@ class LegalFinalizeAnswerStep(LegalBaseStep):
             citations=[],
             route=route,
             tool_calls=[],
-            stats=RuntimeStats(),
+            stats=self._runtime_stats_from_tracker(state),
             raw_model_output=None,
         )
 
@@ -160,6 +172,20 @@ class LegalFinalizeAnswerStep(LegalBaseStep):
             state=state,
             agent_state=agent_state,
             policy=agent_state.config.memory_policy,
+        )
+
+    def _runtime_stats_from_tracker(self, state: RuntimeState) -> RuntimeStats:
+        """Map Nexus LLMUsageTracker aggregates into RuntimeStats (same source engine uses)."""
+        t = state.llm_usage_tracker
+        if t is None:
+            return RuntimeStats()
+        agg = t.total()
+        return RuntimeStats(
+            total_tokens=agg.total_tokens,
+            input_tokens=agg.input_tokens,
+            output_tokens=agg.output_tokens,
+            duration_ms=agg.duration_ms,
+            extra={},
         )
 
     def _build_workspace_text(self, agent_state: LegalAgentState) -> str:

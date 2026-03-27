@@ -16,7 +16,10 @@ from intergrax.agents_packages.legal_agent.prompts.legal_agent_llm_prompts impor
     DEFAULT_ORGANIZATION_COMPLIANCE_POLICY,
 )
 from intergrax.agents_packages.legal_agent.config.legal_failure_policy import LegalFailurePolicy
-from intergrax.agents_packages.legal_agent.memory.legal_memory_policy import LegalMemoryPolicy
+from intergrax.agents_packages.legal_agent.memory.legal_memory_policy import (
+    LegalMemoryPolicy,
+    LegalMemoryPolicyPresets,
+)
 from intergrax.agents_packages.legal_agent.governance.legal_response_governance_port import (
     LegalResponseGovernancePort,
 )
@@ -197,7 +200,7 @@ class LegalAgentConfig(BaseModel):
     )
 
     memory_policy: LegalMemoryPolicy = Field(
-        default_factory=LegalMemoryPolicy,
+        default_factory=LegalMemoryPolicyPresets.default,
         description=(
             "Tier-2 memory contract: conversation snippet limits for routing/tool/replan LLM calls, "
             "and whether workspace metrics snapshot is written/read on the session. Fully host-controlled "
