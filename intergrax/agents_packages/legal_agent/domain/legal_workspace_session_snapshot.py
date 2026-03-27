@@ -8,8 +8,9 @@ Cross-turn legal workspace snapshot (counts/status only) stored in ChatSession.m
 Kept separate from :mod:`~intergrax.agents_packages.legal_agent.memory.legal_memory_policy` so agent state can
 depend on the snapshot model without importing the full memory policy module.
 
-To drop persisted hints when a session ends, hosts call :func:`clear_persisted_legal_workspace_snapshot`
-(alongside their existing session-close flow).
+To drop persisted hints when a session ends, hosts call
+:class:`LegalWorkspaceSessionContract` ``.clear_persisted`` (or the module alias
+``clear_persisted_legal_workspace_snapshot``) alongside their existing session-close flow.
 """
 
 from __future__ import annotations
@@ -21,8 +22,6 @@ from pydantic import BaseModel, Field, ValidationError
 
 from intergrax.runtime.nexus.session.chat_session import ChatSession
 from intergrax.runtime.nexus.session.session_manager import SessionManager
-
-LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY = "intergrax.legal_workspace_snapshot_v1"
 
 
 class LegalWorkspaceSessionSnapshotV1(BaseModel):
@@ -49,38 +48,50 @@ class LegalWorkspaceSessionSnapshotV1(BaseModel):
     final_opinion_present: bool = False
 
 
-def try_load_legal_workspace_session_snapshot(metadata: object | None) -> LegalWorkspaceSessionSnapshotV1 | None:
-    """Parse snapshot from session metadata; return None if missing or invalid."""
-    if metadata is None:
-        return None
-    if not isinstance(metadata, Mapping):
-        return None
-    raw_obj = metadata.get(LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY)
-    if raw_obj is None:
-        return None
-    if not isinstance(raw_obj, Mapping):
-        return None
-    try:
-        return LegalWorkspaceSessionSnapshotV1.model_validate(dict(raw_obj))
-    except ValidationError:
-        return None
+class LegalWorkspaceSessionContract:
+    """Session ``metadata`` key and IO for :class:`LegalWorkspaceSessionSnapshotV1`."""
+
+    METADATA_KEY = "intergrax.legal_workspace_snapshot_v1"
+
+    @staticmethod
+    def try_load(metadata: object | None) -> LegalWorkspaceSessionSnapshotV1 | None:
+        """Parse snapshot from session metadata; return None if missing or invalid."""
+        if metadata is None:
+            return None
+        if not isinstance(metadata, Mapping):
+            return None
+        raw_obj = metadata.get(LegalWorkspaceSessionContract.METADATA_KEY)
+        if raw_obj is None:
+            return None
+        if not isinstance(raw_obj, Mapping):
+            return None
+        try:
+            return LegalWorkspaceSessionSnapshotV1.model_validate(dict(raw_obj))
+        except ValidationError:
+            return None
+
+    @staticmethod
+    async def clear_persisted(
+        *,
+        session: ChatSession,
+        session_manager: SessionManager,
+    ) -> bool:
+        """
+        Remove :attr:`~LegalWorkspaceSessionContract.METADATA_KEY` from ``session.metadata`` and save.
+
+        Idempotent. Hosts should call this when closing or archiving a chat if policy forbids retaining
+        cross-turn legal routing hints (e.g. GDPR minimisation). Does not close the session itself.
+        """
+        md = dict(session.metadata or {})
+        key = LegalWorkspaceSessionContract.METADATA_KEY
+        if key not in md:
+            return False
+        del md[key]
+        session.metadata = md
+        await session_manager.save_session(session)
+        return True
 
 
-async def clear_persisted_legal_workspace_snapshot(
-    *,
-    session: ChatSession,
-    session_manager: SessionManager,
-) -> bool:
-    """
-    Remove :data:`LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY` from ``session.metadata`` and save.
-
-    Idempotent. Hosts should call this when closing or archiving a chat if policy forbids retaining
-    cross-turn legal routing hints (e.g. GDPR minimisation). Does not close the session itself.
-    """
-    md = dict(session.metadata or {})
-    if LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY not in md:
-        return False
-    del md[LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY]
-    session.metadata = md
-    await session_manager.save_session(session)
-    return True
+LEGAL_WORKSPACE_SESSION_SNAPSHOT_METADATA_KEY = LegalWorkspaceSessionContract.METADATA_KEY
+try_load_legal_workspace_session_snapshot = LegalWorkspaceSessionContract.try_load
+clear_persisted_legal_workspace_snapshot = LegalWorkspaceSessionContract.clear_persisted
