@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Deployable FastAPI host for the Legal product (Tier-2). Depends on ``intergrax`` (Tier-0/1) only."""
+"""Tier-3 Legal product host: FastAPI shell composing ``intergrax`` (Tier-0/1) + Legal domain (Tier-2)."""
 
 from legal_agent.host.factory import create_legal_backend_app
 from legal_agent.host.settings import LegalBackendSettings

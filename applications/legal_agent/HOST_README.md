@@ -1,6 +1,6 @@
 # Legal backend host (product shell)
 
-**Tier-2** FastAPI application built on `intergrax.fastapi_core` and **Legal Agent** routes (`mount_legal_agent_routes`). Entrypoint: `legal_agent.host`.
+**Tier-3** FastAPI host built on `intergrax.fastapi_core` with **Legal Agent** routes (`mount_legal_agent_routes`). Entrypoint: `legal_agent.host`. Module index: [`host/README.md`](host/README.md). Phased product roadmap: [`ROADMAP.md`](ROADMAP.md).
 
 ## Local run
 

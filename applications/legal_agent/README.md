@@ -1,6 +1,16 @@
-# Legal backend host (product shell)
+# Legal product (`legal_agent`)
 
-**Tier-2** package: a self-contained Legal product (domain logic + FastAPI host). The host layers `intergrax.fastapi_core` (including `/health`, `/runs`) with **Legal Agent** HTTP routes (`mount_legal_agent_routes`). The `intergrax` platform does not import this package.
+Self-contained **Tier-2** Legal domain (pipeline, serving, compliance) plus a **Tier-3** deployable host in `legal_agent.host`—FastAPI entrypoint that mounts `intergrax.fastapi_core` (`/health`, `/runs`, …) and **Legal** HTTP routes (`mount_legal_agent_routes`). **`intergrax` does not import this tree.**
+
+| Layer | Location |
+|-------|----------|
+| Tier‑3 product host | [`host/`](host/README.md) — `main.py`, `factory.py`, `settings.py`, `wiring.py` |
+| Tier‑2 domain & API | `serving/`, `pipeline/`, `config/`, … |
+
+- **Strategy / phases:** [ROADMAP.md](ROADMAP.md)  
+- **Implementation checklist (ordered steps, components, SaaS):** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)  
+
+The former `intergrax.apps.legal_backend` layout lives here as `legal_agent.host`.
 
 ## Local run
 
@@ -46,4 +56,4 @@ Full list in `.env.example` (Legal backend host section).
 
 ## Roadmap
 
-File uploads, RAG ingest jobs, REST history, billing—extensions of this host without forking the Nexus engine.
+See [ROADMAP.md](ROADMAP.md) and the numbered tasks in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
