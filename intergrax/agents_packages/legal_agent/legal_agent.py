@@ -40,6 +40,8 @@ class LegalAgent(Agent):
             and cfg.vectorstore_manager is not None,
             enable_websearch=cfg.enable_websearch,
             production_mode=cfg.production_mode,
+            tenant_id=request.tenant_id,
+            workspace_id=request.workspace_id,
             embedding_manager=cfg.embedding_manager,
             vectorstore_manager=cfg.vectorstore_manager,
             tools_agent=cfg.tools_agent,

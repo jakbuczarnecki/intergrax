@@ -26,7 +26,9 @@ class LegalChatRequestV1(BaseModel):
     """
     Product chat request — maps to :class:`~intergrax.runtime.nexus.responses.response_schema.RuntimeRequest`.
 
-    Identity: ``tenant_id`` / ``user_id`` may come from auth (``RequestContext``); body fields override when set.
+    Identity: resolution depends on serving ``identity_source``. With ``body_or_context``, body may fill
+    missing values from ``RequestContext``. With ``context_only``, only ``RequestContext`` (auth) defines
+    tenant and user; mismatched body fields are rejected.
     """
 
     message: str = Field(min_length=1)
@@ -34,11 +36,13 @@ class LegalChatRequestV1(BaseModel):
     workspace_id: Optional[str] = None
     tenant_id: Optional[str] = Field(
         default=None,
-        description="Overrides RequestContext.tenant_id when your gateway does not set auth context.",
+        description="With body_or_context serving policy: fills identity when auth context is empty. "
+        "With context_only: must match RequestContext or be omitted.",
     )
     user_id: Optional[str] = Field(
         default=None,
-        description="Overrides RequestContext.user_id when needed.",
+        description="With body_or_context serving policy: fills identity when auth context is empty. "
+        "With context_only: must match RequestContext or be omitted.",
     )
     agent_id: Optional[str] = Field(
         default=None,

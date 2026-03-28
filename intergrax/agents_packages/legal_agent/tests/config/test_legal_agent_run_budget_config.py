@@ -63,3 +63,23 @@ def test_legal_agent_build_context_propagates_run_budget_to_runtime_config() -> 
     assert ctx.config.budget_policy is budget_policy
     assert ctx.config.run_budget.max_rag_invocations == 1
     assert ctx.config.run_budget.max_tool_calls == 3
+
+
+def test_legal_agent_build_context_propagates_tenant_workspace_to_runtime_config() -> None:
+    cfg = LegalAgentConfig(
+        session_manager=build_in_memory_session_manager(),
+        llm_adapter=FakeLLMAdapter(),
+        production_mode=False,
+    )
+    agent = LegalAgent(config=cfg)
+    request = RuntimeRequest(
+        agent_id="legal-scope-smoke",
+        user_id="u1",
+        session_id="s1",
+        message="ping",
+        tenant_id="tenant-scope",
+        workspace_id="ws-scope",
+    )
+    ctx = agent.build_context(request)
+    assert ctx.config.tenant_id == "tenant-scope"
+    assert ctx.config.workspace_id == "ws-scope"

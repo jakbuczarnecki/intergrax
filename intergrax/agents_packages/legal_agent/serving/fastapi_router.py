@@ -6,9 +6,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, Mapping, Protocol
+from typing import Dict, Literal, Mapping, Protocol
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+
+LegalIdentitySource = Literal["body_or_context", "context_only"]
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
@@ -37,6 +39,9 @@ class LegalAgentServingConfig:
 
     agents: Mapping[str, Agent]
     default_agent_id: str
+    #: ``context_only`` — SaaS: ``tenant_id`` / ``user_id`` must come from :class:`RequestContext` (auth middleware).
+    #: ``body_or_context`` — dev-friendly: body may supply identity when context is empty.
+    identity_source: LegalIdentitySource = "body_or_context"
 
     def __post_init__(self) -> None:
         if self.default_agent_id not in self.agents:
@@ -61,18 +66,40 @@ class DefaultLegalAgentService:
         body: LegalChatRequestV1,
         http_ctx: RequestContext,
     ) -> LegalChatResponseV1:
-        tenant = body.tenant_id or http_ctx.tenant_id
-        user = body.user_id or http_ctx.user_id
-        if not tenant:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="tenant_id is required (body.tenant_id or authenticated RequestContext).",
-            )
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="user_id is required (body.user_id or authenticated RequestContext).",
-            )
+        if self.config.identity_source == "context_only":
+            tenant = http_ctx.tenant_id
+            user = http_ctx.user_id
+            if not tenant or not user:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=(
+                        "tenant_id and user_id must be set on RequestContext "
+                        "(configure AuthProvider / JWT or API key on the app)."
+                    ),
+                )
+            if body.tenant_id is not None and body.tenant_id != tenant:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="tenant_id in request body conflicts with authenticated RequestContext.",
+                )
+            if body.user_id is not None and body.user_id != user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="user_id in request body conflicts with authenticated RequestContext.",
+                )
+        else:
+            tenant = body.tenant_id or http_ctx.tenant_id
+            user = body.user_id or http_ctx.user_id
+            if not tenant:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="tenant_id is required (body.tenant_id or authenticated RequestContext).",
+                )
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="user_id is required (body.user_id or authenticated RequestContext).",
+                )
 
         engine = AgentEngine(agents=dict(self.config.agents))
         runtime_req = self.mapper.to_runtime_request(
@@ -156,6 +183,7 @@ def mount_legal_agent_routes(
     default_agent_id: str,
     prefix: str = "/v1/legal",
     mapper: LegalApiV1RuntimeMapper | None = None,
+    identity_source: LegalIdentitySource = "body_or_context",
 ) -> DefaultLegalAgentService:
     """
     Register legal routes on ``app`` via ``dependency_overrides`` (same pattern as ``RunService`` in ``create_app``).
@@ -163,8 +191,15 @@ def mount_legal_agent_routes(
     Returns the :class:`DefaultLegalAgentService` instance for tests or extra wiring.
 
     ``app`` must use ``RequestContextMiddleware`` (e.g. :func:`intergrax.fastapi_core.app_factory.create_app`).
+
+    For production SaaS, pass ``identity_source="context_only"`` so tenant/user come only from auth-resolved
+    :class:`RequestContext`.
     """
-    config = LegalAgentServingConfig(agents=agents, default_agent_id=default_agent_id)
+    config = LegalAgentServingConfig(
+        agents=agents,
+        default_agent_id=default_agent_id,
+        identity_source=identity_source,
+    )
     svc = DefaultLegalAgentService(
         config=config,
         mapper=mapper or LegalApiV1RuntimeMapper(),
