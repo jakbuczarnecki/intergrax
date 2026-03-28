@@ -5,8 +5,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Any, Dict, Optional
 import uuid
@@ -137,7 +136,12 @@ class TraceEvent:
             "tags": self.tags,
             "artifact_refs": artifact_refs,
         }
-    
+
+    def with_redacted_payload(self) -> TraceEvent:
+        """Copy with :meth:`DiagnosticPayload.redact` applied when a payload is present."""
+        if self.payload is None:
+            return self
+        return replace(self, payload=self.payload.redact())
 
 @dataclass(frozen=True)
 class ToolCallTrace:

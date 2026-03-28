@@ -14,12 +14,15 @@ LegalIdentitySource = Literal["body_or_context", "context_only"]
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
+from intergrax.agents_packages.legal_agent.legal_agent import LegalAgent
 from intergrax.agents_packages.legal_agent.serving.runtime_bridge import LegalApiV1RuntimeMapper
 from intergrax.agents_packages.legal_agent.serving.schemas import (
     LegalChatRequestV1,
     LegalChatResponseV1,
 )
 from intergrax.fastapi_core.context import RequestContext, get_request_context
+from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 
 
 class LegalAgentService(Protocol):
@@ -60,6 +63,12 @@ class DefaultLegalAgentService:
 
     config: LegalAgentServingConfig
     mapper: LegalApiV1RuntimeMapper = field(default_factory=LegalApiV1RuntimeMapper)
+
+    def _data_compliance_for_request(self, runtime_req: RuntimeRequest) -> DataCompliancePolicy:
+        agent = self.config.agents.get(runtime_req.agent_id)
+        if isinstance(agent, LegalAgent):
+            return agent.data_compliance_policy
+        return DataCompliancePolicy()
 
     async def run_legal_chat(
         self,
@@ -126,6 +135,7 @@ class DefaultLegalAgentService:
             answer,
             http_context=http_ctx,
             include_trace=body.include_trace,
+            data_compliance=self._data_compliance_for_request(runtime_req),
         )
 
 

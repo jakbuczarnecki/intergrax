@@ -2,6 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 from __future__ import annotations
+from dataclasses import replace
 from typing import Optional
 
 from intergrax.agents.agent_contract import Agent
@@ -11,6 +12,7 @@ from intergrax.runtime.nexus.ingestion.attachments import FileSystemAttachmentRe
 from intergrax.runtime.nexus.ingestion.ingestion_service import AttachmentIngestionService
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy, RuntimePolicies
 
 from intergrax.agents_packages.legal_agent.pipeline.legal_dynamic_pipeline import LegalDynamicPipeline
 from intergrax.agents_packages.legal_agent.pipeline.legal_agent_pipeline import LegalAnalysisPipeline
@@ -28,10 +30,19 @@ class LegalAgent(Agent):
     ) -> None:
         self._config = config
 
+    @property
+    def data_compliance_policy(self) -> DataCompliancePolicy:
+        """Egress policy for product API surfaces (trace, tool args); same object as on :class:`LegalAgentConfig`."""
+        return self._config.data_compliance
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
 
         cfg = self._config
+
+        runtime_policies = replace(
+            RuntimePolicies(),
+            data_compliance=cfg.data_compliance,
+        )
 
         runtime_config = RuntimeConfig(
             llm_adapter=cfg.llm_adapter,
@@ -51,6 +62,7 @@ class LegalAgent(Agent):
             websearch_config=cfg.websearch_config,
             run_budget=cfg.run_budget,
             budget_policy=cfg.budget_policy,
+            runtime_policies=runtime_policies,
         )
 
         # --- PIPELINE ---

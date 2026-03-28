@@ -20,8 +20,10 @@ from intergrax.agents_packages.legal_agent.serving.fastapi_router import (
     mount_legal_agent_routes,
 )
 from intergrax.agents_packages.legal_agent.serving.runtime_bridge import LegalApiV1RuntimeMapper
+from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy
 
 __all__ = [
+    "DataCompliancePolicy",
     "DefaultLegalAgentService",
     "LegalAgentService",
     "LegalAgentServingConfig",

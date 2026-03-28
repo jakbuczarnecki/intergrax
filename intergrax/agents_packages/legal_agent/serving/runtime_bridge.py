@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 from intergrax.agents_packages.legal_agent.serving.schemas import (
     AttachmentRefV1,
@@ -14,6 +14,7 @@ from intergrax.agents_packages.legal_agent.serving.schemas import (
 )
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.llm.messages import AttachmentRef
+from intergrax.runtime.nexus.policies.runtime_policies import ApiTraceExportMode, DataCompliancePolicy
 from intergrax.runtime.nexus.responses.response_schema import (
     HistoryCompressionStrategy,
     RuntimeAnswer,
@@ -68,10 +69,15 @@ class LegalApiV1RuntimeMapper:
         *,
         http_context: RequestContext,
         include_trace: bool,
+        data_compliance: Optional[DataCompliancePolicy] = None,
     ) -> LegalChatResponseV1:
-        trace_payload: Optional[List[Dict[str, Any]]] = None
-        if include_trace and answer.trace_events:
-            trace_payload = [e.to_dict() for e in answer.trace_events]
+        policy = data_compliance or DataCompliancePolicy()
+        trace_payload = self._trace_events_for_api(
+            answer.trace_events,
+            include_trace_requested=include_trace,
+            mode=policy.api_trace_export,
+        )
+        redact_tc = policy.redact_tool_calls_in_api
 
         llm_usage: Optional[Dict[str, Any]] = None
         if answer.llm_usage_report is not None:
@@ -85,10 +91,25 @@ class LegalApiV1RuntimeMapper:
             route=self._route_to_dict(answer.route),
             stats=self._stats_to_dict(answer.stats),
             citations=[self._citation_to_dict(c) for c in (answer.citations or [])],
-            tool_calls=[self._tool_call_to_dict(t) for t in (answer.tool_calls or [])],
+            tool_calls=[
+                self._tool_call_to_dict(t, redact_arguments=redact_tc) for t in (answer.tool_calls or [])
+            ],
             llm_usage=llm_usage,
             trace_events=trace_payload,
         )
+
+    @staticmethod
+    def _trace_events_for_api(
+        events: Optional[Sequence[Any]],
+        *,
+        include_trace_requested: bool,
+        mode: ApiTraceExportMode,
+    ) -> Optional[List[Dict[str, Any]]]:
+        if not events or mode == "none" or not include_trace_requested:
+            return None
+        if mode == "full":
+            return [e.to_dict() for e in events]
+        return [e.with_redacted_payload().to_dict() for e in events]
 
     @staticmethod
     def _attachment_from_v1(ref: AttachmentRefV1) -> AttachmentRef:
@@ -120,10 +141,13 @@ class LegalApiV1RuntimeMapper:
         }
 
     @staticmethod
-    def _tool_call_to_dict(t: Any) -> Dict[str, Any]:
+    def _tool_call_to_dict(t: Any, *, redact_arguments: bool = False) -> Dict[str, Any]:
+        args: Dict[str, Any] = dict(t.arguments) if t.arguments else {}
+        if redact_arguments:
+            args = {"_redacted": True}
         return {
             "tool_name": t.tool_name,
-            "arguments": dict(t.arguments) if t.arguments else {},
+            "arguments": args,
             "result_summary": t.result_summary,
             "success": t.success,
             "error_message": t.error_message,

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import Literal
 
 
 class ExecutionKind(str, Enum):
@@ -40,9 +41,28 @@ class HitlPolicy:
     stop_reason: str = "needs_user_input"
 
 
+ApiTraceExportMode = Literal["none", "redacted", "full"]
+
+
+@dataclass(frozen=True)
+class DataCompliancePolicy:
+    """
+    Cross-cutting rules for what product HTTP/API surfaces may expose outside the tenant boundary.
+
+    - ``api_trace_export``: how :class:`~intergrax.runtime.nexus.tracing.trace_models.TraceEvent`
+      payloads are serialized on eg. Legal HTTP ``trace_events`` (Nexus ``redact()`` vs raw ``to_dict()``).
+    - ``redact_tool_calls_in_api``: when True, strip tool ``arguments`` from API-shaped tool_calls
+      (summaries and success/error may remain).
+    """
+
+    api_trace_export: ApiTraceExportMode = "redacted"
+    redact_tool_calls_in_api: bool = True
+
+
 @dataclass(frozen=True)
 class RuntimePolicies:
     timeout: TimeoutPolicy = TimeoutPolicy()
     retry: RetryPolicy = RetryPolicy()
     fallback: FallbackPolicy = FallbackPolicy()
     hitl: HitlPolicy = HitlPolicy()
+    data_compliance: DataCompliancePolicy = DataCompliancePolicy()

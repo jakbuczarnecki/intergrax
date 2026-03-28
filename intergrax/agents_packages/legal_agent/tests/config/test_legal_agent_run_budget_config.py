@@ -9,6 +9,7 @@ import pytest
 from intergrax.agents_packages.legal_agent.legal_agent import LegalAgent
 from intergrax.agents_packages.legal_agent.config.legal_agent_config import LegalAgentConfig
 from intergrax.runtime.nexus.budget.budget_models import BudgetPolicy, BudgetEnforcementMode, RunBudget
+from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
@@ -83,3 +84,24 @@ def test_legal_agent_build_context_propagates_tenant_workspace_to_runtime_config
     ctx = agent.build_context(request)
     assert ctx.config.tenant_id == "tenant-scope"
     assert ctx.config.workspace_id == "ws-scope"
+
+
+def test_legal_agent_build_context_propagates_data_compliance_to_runtime_policies() -> None:
+    dc = DataCompliancePolicy(api_trace_export="none", redact_tool_calls_in_api=True)
+    cfg = LegalAgentConfig(
+        session_manager=build_in_memory_session_manager(),
+        llm_adapter=FakeLLMAdapter(),
+        production_mode=False,
+        data_compliance=dc,
+    )
+    agent = LegalAgent(config=cfg)
+    request = RuntimeRequest(
+        agent_id="legal-dc-smoke",
+        user_id="u1",
+        session_id="s1",
+        message="ping",
+        tenant_id="t1",
+    )
+    ctx = agent.build_context(request)
+    assert ctx.config.runtime_policies.data_compliance.api_trace_export == "none"
+    assert ctx.config.runtime_policies.data_compliance.redact_tool_calls_in_api is True
