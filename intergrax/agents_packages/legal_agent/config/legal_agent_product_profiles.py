@@ -24,6 +24,7 @@ from typing import Any
 from intergrax.agents_packages.legal_agent.config.legal_agent_config import LegalAgentConfig
 from intergrax.agents_packages.legal_agent.memory.legal_memory_policy import LegalMemoryPolicyPresets
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 
 
@@ -50,6 +51,10 @@ class LegalAgentProductProfile(StrEnum):
                     "organization_allow_websearch": False,
                     "organization_allow_tools": False,
                     "memory_policy": LegalMemoryPolicyPresets.minimal_exposure(),
+                    "data_compliance": DataCompliancePolicy(
+                        api_trace_export="none",
+                        redact_tool_calls_in_api=True,
+                    ),
                 }
             case LegalAgentProductProfile.RESEARCH:
                 return {
@@ -59,6 +64,10 @@ class LegalAgentProductProfile(StrEnum):
                     "legal_loop_max_iterations": 6,
                     "use_legal_run_evaluator": True,
                     "use_legal_route_replanner": True,
+                    "data_compliance": DataCompliancePolicy(
+                        api_trace_export="redacted",
+                        redact_tool_calls_in_api=False,
+                    ),
                 }
             case LegalAgentProductProfile.STRICT_LEGAL:
                 return {
@@ -70,6 +79,10 @@ class LegalAgentProductProfile(StrEnum):
                     "use_legal_route_replanner": True,
                     "use_llm_legal_route_planner": True,
                     "memory_policy": LegalMemoryPolicyPresets.strict_legal_workspace(),
+                    "data_compliance": DataCompliancePolicy(
+                        api_trace_export="redacted",
+                        redact_tool_calls_in_api=True,
+                    ),
                 }
 
     def make_config(

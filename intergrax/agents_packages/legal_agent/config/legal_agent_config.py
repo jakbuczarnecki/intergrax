@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.config import ToolChoiceMode
+from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy
 from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDocumentsLoader
 from intergrax.rag.document_splitters.contracts.base_documents_splitter import BaseDocumentsSplitter
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
@@ -215,6 +216,15 @@ class LegalAgentConfig(BaseModel):
             "Prescriptive product contract for empty retrieval, Nexus/tool degradation, governance clamps, "
             "low-confidence decisions, and evaluator/finalize failures. Hosts replace only when explicitly "
             "changing SKU guarantees; see :class:`~intergrax.agents_packages.legal_agent.config.legal_failure_policy.LegalFailurePolicy`."
+        ),
+    )
+
+    data_compliance: DataCompliancePolicy = Field(
+        default_factory=DataCompliancePolicy,
+        description=(
+            "Product data egress rules forwarded to :class:`~intergrax.runtime.nexus.config.RuntimeConfig` "
+            "(via :class:`~intergrax.runtime.nexus.policies.runtime_policies.RuntimePolicies`) and applied "
+            "when shaping Legal HTTP responses (trace serialization, tool argument exposure)."
         ),
     )
 
