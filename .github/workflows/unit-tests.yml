@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 # Mirrors: scripts\test.bat unit
-#   → pytest tests intergrax/agents_packages -m unit
+#   → pytest tests applications -m unit
 
 name: Unit tests
 
@@ -33,4 +33,4 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run unit tests
-        run: uv run pytest tests intergrax/agents_packages -m unit
+        run: uv run pytest tests applications -m unit

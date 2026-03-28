@@ -1,0 +1,53 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+"""
+Integration test: LegalDecisionStep + Ollama structured output.
+
+If Ollama is unreachable, the test is skipped.
+"""
+
+from __future__ import annotations
+
+import pytest
+
+from legal_agent.tests.support.step_runtime import build_legal_ollama_runtime_state
+from testing_support.builder import require_ollama_reachable
+
+from legal_agent.domain.legal_agent_state import LegalCheck, SensitiveFlag
+from legal_agent.steps.legal_decision_step import LegalDecisionStep
+
+pytestmark = pytest.mark.integration
+
+
+@pytest.mark.asyncio
+async def test_decision_step_produces_structured_decision() -> None:
+    require_ollama_reachable()
+
+    state, agent_state = build_legal_ollama_runtime_state(
+        run_id="run-legal-decision-1",
+    )
+
+    agent_state.legal_checks = [
+        LegalCheck(
+            clause_id="c_dec_1",
+            valid=False,
+            source="HIGH",
+            details="Material liability concern.",
+        ),
+    ]
+    agent_state.sensitive_flags = [
+        SensitiveFlag(clause_id="c_dec_1", reason="High-risk liability."),
+    ]
+
+    await LegalDecisionStep().run_step(state=state, agent_state=agent_state)
+
+    assert agent_state.decision is not None
+    assert agent_state.decision.status in (
+        "APPROVE",
+        "REJECT",
+        "CONDITIONAL",
+        "ESCALATE",
+    )
+    assert 0.0 <= agent_state.decision.confidence <= 1.0

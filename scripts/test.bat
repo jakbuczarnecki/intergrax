@@ -15,7 +15,7 @@ if not exist .venv\Scripts\python.exe (
 set MODE=%1
 
 REM --- Test targets ---
-set TARGETS=tests intergrax/agents_packages
+set TARGETS=tests applications
 
 REM --- Default: run all tests ---
 if "%MODE%"=="" (

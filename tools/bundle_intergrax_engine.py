@@ -67,7 +67,8 @@ EXTRA_BUNDLES: Dict[str, str] = {
     
     "AGENTS": r"intergrax\agents",
 
-    "AGENTS_PACKAGES": r"intergrax\agents_packages",
+    # Tier-2 products live under ``applications/`` (not under ``intergrax``).
+    "APPLICATIONS_LEGAL_AGENT": r"applications\legal_agent",
 
     "LLM": r"intergrax\llm",
     "LLM_ADAPTERS": r"intergrax\llm_adapters",
