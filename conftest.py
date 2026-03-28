@@ -12,8 +12,12 @@ def pytest_configure(config) -> None:
     """Put ``applications/`` on ``sys.path`` so each product is ``applications/<import_name>/``.
 
     Example: ``applications/legal_agent/`` is the ``legal_agent`` package; ``import legal_agent`` works.
+
+    Ensure ``build/`` exists so ``--basetemp=build/pytest-basetemp`` and ``cache_dir=build/pytest-cache``
+    work on fresh checkouts (e.g. GitHub Actions) where ``build`` is gitignored and absent.
     """
     root = Path(__file__).resolve().parent
+    (root / "build").mkdir(parents=True, exist_ok=True)
     apps = root / "applications"
     if not apps.is_dir():
         return
