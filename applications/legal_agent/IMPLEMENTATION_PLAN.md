@@ -31,10 +31,11 @@ Goal: **`session_id` survives restarts**; UI can load conversation without repla
 |------|------|---------------------|
 | B.1 | `[ ]` **Session storage adapter** | Wire `SessionManager` (or equivalent in `fastapi_core` / Nexus) to **SQLite (already optional)** or **Postgres** |
 | B.2 | `[ ]` **DB schema + migrations** | Alembic (or chosen tool) in host or `infra/`; tenant_id on session rows |
-| B.3 | `[ ]|``GET /v1/legal/sessions/{id}/messages`** (or under `/v1/...`) | Thin read model for front; authz: tenant owns session |
-| B.4 | `[ ]` **Lifecycle** | `lifespan` in host: open/close DB pool, optional migration check in dev |
+| B.3 | `[ ]` **`GET /v1/legal/sessions/{id}/messages`** (or under `/v1/...`) | Thin read model for front; authz: tenant owns session |
+| B.4 | `[ ]` **Turn persistence on chat** | Every successful `POST …/chat` appends user + assistant (and tool metadata if needed) to session store—UI history matches server source of truth |
+| B.5 | `[ ]` **Lifecycle** | `lifespan` in host: open/close DB pool, optional migration check in dev |
 
-**Exit:** restart server does not lose sessions (except deliberate in-memory dev).
+**Exit:** restart server does not lose sessions (except deliberate in-memory dev); messages can be listed and new turns are stored atomically with the run.
 
 ---
 
@@ -60,12 +61,13 @@ Goal: large files **do not block** HTTP workers.
 
 | Step | Task | Notes / integration |
 |------|------|---------------------|
-| D.1 | `[ ]` **Queue port** | **Redis + RQ / Celery / arq** — pick one aligned with Intergrax distributed roadmap |
-| D.2 | `[ ]` **Job model + DB** | `pending | running | succeeded | failed`, error message, correlation id |
-| D.3 | `[ ]` **Worker process** | Same image different CMD or sidecar; consumes `ingest_attachment` |
-| D.4 | `[ ]` **`GET /v1/jobs/{id}`** | Authz by tenant; optional webhook later |
+| D.1 | `[ ]` **Queue port (broker)** | Default: **Redis** + **Celery** / **RQ** / **arq** (align with Intergrax distributed story). **Kafka** (or **NATS**) add only if you need durable event log, many subscribers, or cross-team streaming—not mandatory for “enqueue ingest job” |
+| D.2 | `[ ]` **Upload vs processing split** | HTTP: store blob + enqueue. Worker: chunk, embed, write vectors—never block request thread on heavy work |
+| D.3 | `[ ]` **Job model + DB** | `pending | running | succeeded | failed`, error, correlation id; **idempotency** for retries |
+| D.4 | `[ ]` **Worker deployment** | Same image, different `CMD`; tune concurrency/prefetch so workers do not become DB/vector bottleneck |
+| D.5 | `[ ]` **`GET /v1/jobs/{id}`** | Tenant-scoped; optional webhook when job completes |
 
-**Exit:** large upload returns `job_id`; UI polls until success before attaching to chat.
+**Exit:** large upload returns `job_id`; UI polls (or webhook) until attachable in chat.
 
 ---
 
@@ -75,13 +77,15 @@ Goal: safe multi-tenant default, observable, limitable.
 
 | Step | Task | Notes / integration |
 |------|------|---------------------|
-| E.1 | `[ ]` **Rate limiting** | `RateLimitPolicy` on `/v1/legal/chat` (and upload) **per tenant/API key** |
-| E.2 | `[ ]` **Structured logging + correlation** | Request id through `RequestContext`; JSON logs in prod |
-| E.3 | `[ ]` **Metrics / tracing** | OTEL hooks where `fastapi_core` exposes them; RED metrics for chat/jobs |
-| E.4 | `[ ]` **Secrets & environments** | Stage/prod profiles; no secrets in image; reference Vault/KMS when applicable |
-| E.5 | `[ ]` **Runbook** | Backup DB, blob retention, RPO/RTO, upgrade procedure |
+| E.1 | `[ ]` **Rate limiting** | `RateLimitPolicy` on `/v1/legal/chat`, attachments, job status—**per tenant / API key / plan** |
+| E.2 | `[ ]` **Runtime & API budget** | Wire Nexus **run budget** (tokens, tool calls, wall time) + `BudgetPolicy` in `fastapi_core` for coarse HTTP-level caps—reject or degrade before LLM spin |
+| E.3 | `[ ]` **Backpressure & capacity** | DB pool limits, timeouts, queue depth alerts; document horizontal scale (N API replicas, M workers)—avoid single hot partition |
+| E.4 | `[ ]` **Structured logging + correlation** | Request / run id in `RequestContext`; JSON logs in prod |
+| E.5 | `[ ]` **Metrics / tracing** | OTEL + RED/USE for chat, ingest, queue lag, DB latency |
+| E.6 | `[ ]` **Secrets & environments** | Stage/prod profiles; Vault/KMS references |
+| E.7 | `[ ]` **Runbook** | Backup DB, blob retention, RPO/RTO, upgrades, replay/trace retention policy |
 
-**Exit:** ops can run and debug service without reading Python internals.
+**Exit:** ops can run, throttle abuse, and see budgets/latency without reading Python internals.
 
 ---
 
@@ -91,7 +95,7 @@ Goal: **same binary**, different deploy and policy—not a second runtime.
 
 | Step | Task | Notes / integration |
 |------|------|---------------------|
-| F.1 | `[ ]` **Multi-tenant guardrails** | Enforce tenant on every route; no cross-tenant IDs in responses |
+| F.1 | `[ ]` **Multi-tenant guardrails** | Tenant on every route; **no IDOR**; optional **tenant registry** table; indexes `(tenant_id, session_id)` / `(tenant_id, attachment_id)`; consider RLS on Postgres for stricter isolation |
 | F.2 | `[ ]` **Provisioning hooks (optional)** | Stub API or admin path: create tenant, default quotas (billing system out of scope or separate service) |
 | F.3 | `[ ]` **Plan / quota config** | Env or DB: max attachments, RAG size, RPM — wire to rate limit + job rejection |
 | F.4 | `[ ]` **Enterprise variant** | Single-tenant deploy doc: dedicated DB, SSO ingress, optional CMK for blobs |
@@ -122,6 +126,71 @@ A (shell + auth) → B (sessions) → C (sync RAG) → D (async) → E (ops) →
                                                                     ↑
 Factory (FF*) parallel after C stable ─────────────────────────────┘
 ```
+
+---
+
+## Implicit per-phase deliverables (engineering checklist)
+
+These items are **expected** when closing each phase even if they are not duplicated in every row above. Treat them as **DoD for merge**, not optional polish.
+
+### Cross-cutting (every phase)
+
+- **OpenAPI:** exported schema checked in CI (`/openapi.json` or static export); **breaking changes** require version bump or explicit API review.
+- **Contract tests:** at least one automated test per **new public route** (status codes, authz denial for wrong tenant, happy path).
+- **CI:** unit/integration jobs green; legal host tests under `applications/legal_agent/tests` included where relevant.
+- **Dependencies:** bump policy + optional **CVE scan** (e.g. `uv pip audit` / GH Dependabot) before production tags.
+
+### Phase A
+
+- **Smoke script** or documented curl sequence: prod-like env → `POST /v1/legal/chat` with API key / JWT.
+- **CORS / `allowed_hosts`** verified against a real front origin in staging.
+
+### Phase B
+
+- **Migrations** applied on a clean DB in CI (or dedicated job); rollback notes for first breaking migration.
+- **Authorization tests:** user A cannot read session or messages of tenant B (IDOR).
+
+### Phase C
+
+- **E2E:** small file upload → metadata row → chat with `attachment_id` (skip LLM assertions if flaky; assert HTTP + storage path).
+- **Limits:** max upload size, MIME allowlist—enforced at API before storage.
+
+### Phase D
+
+- **Worker process** health signal (separate from API `/health` if needed).
+- **Retries / DLQ policy** documented (max retries, dead-letter queue or failed job status).
+- **Idempotency** tests: duplicate enqueue does not double-charge storage or embed twice incorrectly.
+
+### Phase E
+
+- **Dashboards or runbook links** for: p95 chat latency, queue depth, worker errors, DB saturation.
+- **Alerting** on SLO breaches (even minimal: error rate + queue lag).
+
+### Phase F
+
+- **Tenant isolation suite** required before “GA”: sessions, attachments, jobs—all scoped by `tenant_id` with negative tests.
+
+### Agent Factory (FF)
+
+- **Contract test pack** runnable for **any** new Tier-2 agent using the same hooks (no Legal imports in Intergrax factory code).
+
+---
+
+## Coverage checklist (SaaS “did we forget anything?”)
+
+Use this to sanity-check the table above—not every box is required on day one, but it should be **consciously** in or out.
+
+| Concern | Where addressed | Gap if missing |
+|---------|-----------------|----------------|
+| Primary DB (sessions, jobs, metadata) | B.1–B.2, C.3, D.3 | Cannot persist SaaS state |
+| Session history + append turns | B.3–B.4 | Chat works but UI cannot trust history / reload |
+| Replay / audit of N runs | *Add when needed* | Nexus trace/replay—wire `trace_db_path` + retention (see host README prod note) |
+| Budget (tokens, tools, time) | E.2 | Cost / abuse risk at LLM layer |
+| Tenancy isolation | B.2, F.1, C.4–D.* | Data leaks across customers |
+| Abuse / spike traffic | E.1, E.3 | DDoS or noisy neighbor |
+| Large file path | D.2, D.4 | API timeouts and OOM on workers |
+| Redis | A.4, D.1 | Needed for queue + optional cache/rate-limit backend |
+| Celery (or RQ/arq) | D.1, D.4 | Worker execution model—**Kafka optional** per D.1 |
 
 ---
 
