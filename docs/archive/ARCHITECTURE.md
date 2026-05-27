@@ -1,3 +1,9 @@
+> **DEPRECATED — ARCHIVE**  
+> Do not update. Superseded by [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) §5.1 (Four-Tier model).  
+> **Mapping:** Layer 1 → Tier-0 Platform · Layer 2 → Tier-1 Nexus · Layer 3 → Tier-2 Agents (+ Tier-3 Applications in `applications/`).
+
+---
+
 # Intergrax — Architecture & Mission Context
 
 Intergrax is an **AI agent runtime platform** designed to build **production-grade, specialized business agents**.

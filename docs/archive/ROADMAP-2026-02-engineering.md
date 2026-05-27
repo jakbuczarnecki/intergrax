@@ -1,3 +1,9 @@
+> **INFRA / ARCHIVE**  
+> DevOps and platform engineering backlog (2026-02). **Not** the runtime architecture plan.  
+> For agent runtime work use [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md).
+
+---
+
 # Intergrax Roadmap
 
 Last updated: 2026-02-25

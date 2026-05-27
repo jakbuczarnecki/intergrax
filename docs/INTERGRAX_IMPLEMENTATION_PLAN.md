@@ -8,6 +8,8 @@ Canonical source: [`intergrax_runtime_architecture.md`](intergrax_runtime_archit
 
 Baseline: [`INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md`](INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md) §14–§16  
 
+Documentation map: [`README.md`](README.md)  
+
 Principle: **evolve, not rewrite** · **reuse Tier-0** (§5.2)
 
 
@@ -328,7 +330,7 @@ LATER:   Phase F (on demand)
 
 3. **Test** — unit + integration, deterministic, no network
 
-4. **Documentation** — update this plan + `experiment_guide.md` when workflow changes
+4. **Documentation** — update this plan + [`experiment_guide.md`](experiment_guide.md) when workflow changes
 
 5. **No regression** — `pytest tests/ -m gate` green; Echo through NexusLoop
 

@@ -1,3 +1,8 @@
+> **DEPRECATED — ARCHIVE**  
+> Do not update. Superseded by [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) §7.2, §9 (`NexusLoop`, `Task`, `AgentEngine`).
+
+---
+
 # nexus Mode – Runtime Design
 
 ## 1. Purpose

@@ -1,6 +1,9 @@
 # Intergrax Experiment Guide
 
-Minimal workflow for validating agent capabilities through Nexus (§2, §35, §41).
+Minimal workflow for validating agent capabilities through Nexus (CANON §2, §35, §41).
+
+**Canonical spec:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md)  
+**Documentation map:** [README.md](README.md)
 
 ## Prerequisites
 
@@ -45,11 +48,11 @@ async def main():
 asyncio.run(main())
 ```
 
+**Execution paths:** `EchoAgent` uses **UAEP** (`get_steps` / `run_step` via `AgentEngine`). `LegalAgent` still uses the **legacy pipeline** path until migrated (P4.5).
+
 ## 3. Run Legal Agent via application host
 
 ```bash
-uv run uvicorn legal_application.host.main:app --host 0.0.0.0 --port 8000
-# backward compatible:
 uv run uvicorn legal_application.host.main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -59,7 +62,7 @@ Optional global loop for HTTP:
 set LEGAL_USE_NEXUS_LOOP=true
 ```
 
-## 5. Research pipeline (multi-agent)
+## 4. Research pipeline (multi-agent)
 
 ```python
 from intergrax.runtime.registry import build_research_registry
@@ -84,6 +87,6 @@ HTTP host:
 uv run uvicorn research_application.host.main:app --host 0.0.0.0 --port 8010
 ```
 
-## 4. Decision
+## 5. Decision
 
 After observing traces, cost, and quality: **keep**, **improve**, **pause**, or **delete** the experiment (§35).

@@ -1,3 +1,8 @@
+> **DEPRECATED — ARCHIVE**  
+> Do not update. Pipeline-first model superseded by [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) §42 (AgentEngine, UAEP).
+
+---
+
 ## Agent Factory — Architectural Principles
 
 Intergrax is designed as an **Agent Factory**, not as a single general-purpose conversational system.

@@ -4,6 +4,7 @@
 |-------|-------|
 | **Status** | Architectural analysis · **§14–§16 live** · repo split complete (2026-05-27) |
 | **Target (source of truth)** | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) — Tier model §5.1, **Unified Execution Runtime §42** |
+| **Documentation map** | [`README.md`](README.md) |
 | **Scope** | Implementation vs. canonical spec |
 | **Author** | Intergrax architectural analysis |
 
@@ -109,22 +110,28 @@ docs/
 ...
 ```
 
-The tier model is documented in [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) and encoded in [`intergrax/agent_kit/tiers.py`](intergrax/agent_kit/tiers.py):
+The tier model is documented in [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §5.1 and encoded in [`intergrax/agent_kit/tiers.py`](../intergrax/agent_kit/tiers.py):
 
-```12:23:intergrax/agent_kit/tiers.py
+```12:29:intergrax/agent_kit/tiers.py
 class DeploymentTier(IntEnum):
     """
-    Deployment layer label—for logs, metrics, and product configuration.
+    Platform tier label—for logs, metrics, and product configuration.
 
-    - ``PLATFORM``: core engine (execution, trace storage, etc.) — Tier-0.
-    - ``FRAMEWORK``: Nexus, FastAPI core, agent scaffolding — Tier-1.
-    - ``PRODUCT``: concrete agent / HTTP host / UI — Tier-2 (outside the ``intergrax`` package).
+    Aligned with ``docs/intergrax_runtime_architecture.md`` §5.1:
+
+    - ``PLATFORM`` (0): Tier-0 — universal components (LLM, memory, adapters, …).
+    - ``FRAMEWORK`` (1): Tier-1 — Nexus Agent OS (orchestration, registry, …).
+    - ``AGENT`` (2): Tier-2 — concrete agent capability modules under ``agents/``.
+    - ``APPLICATION`` (3): Tier-3 — ready-made environments under ``applications/``.
     """
 
     PLATFORM = 0
     FRAMEWORK = 1
-    PRODUCT = 2
+    AGENT = 2
+    APPLICATION = 3
 ```
+
+> Historical three-layer doc: [`docs/archive/ARCHITECTURE.md`](../archive/ARCHITECTURE.md) (deprecated).
 
 ### 2.2 Current Layers
 
@@ -607,9 +614,9 @@ Minimal runtime flow (§41):
 
 | Area | Code Evidence | Canon Section |
 |------|---------------|---------------|
-| Three-layer model | `docs/ARCHITECTURE.md`, `agent_kit/tiers.py` | §6–7 |
+| Four-tier model | `agent_kit/tiers.py`, CANON §5.1 | §5.1, §6–7 |
 | Nexus as OS for agents | `RuntimeEngine`, pipeline injection | §7.2, §8.1 |
-| Pipeline as behavioral program | `RuntimeConfig.pipeline`, `PipelineFactory` | §8.4, agent_factory.md |
+| Pipeline as behavioral program | `RuntimeConfig.pipeline`, `PipelineFactory` | §8.4 (legacy path; UAEP in §42) |
 | Agent builds context, does not execute | `Agent.build_context()` → `AgentEngine` → `RuntimeEngine` | §11 |
 | ToolRegistry with schemas | `ToolRegistry`, `ToolContract` | §22 |
 | LLM adapters with registry | `LLMAdapterRegistry` | §17 |
@@ -635,7 +642,7 @@ Minimal runtime flow (§41):
 | Tracing | Rich `TraceEvent` model, SQLite store | No unified `TraceLogger` API; no task-level trace (run-level only) |
 | FastAPI hosting | `create_app()`, legal routes, auth | Two lifecycles (RunService vs RuntimeEngine) |
 | RAG stack | Full, modular, with registries | No unified AdapterRegistry facade |
-| `docs/agent_factory.md` | Pipeline-first, experimentation | No capability registry, no experiment lifecycle |
+| Pipeline-first era (archived) | `docs/archive/agent_factory.md` | Superseded by AgentEngine / UAEP (§42) |
 | `AgentState` marker | `state.agent_state: AgentState` opaque to Nexus | No standard output schema per agent |
 
 ### 4.3 MISALIGNED — Non-compliant with Canon (baseline; many resolved in §14)
@@ -1237,9 +1244,13 @@ applications/                       # Execution environments
     └── orchestration.yaml          # which agents, rules, topology
 
 docs/
-├── intergrax_runtime_architecture.md       # Canon (EXISTING)
+├── README.md                               # Documentation map (entry point)
+├── intergrax_runtime_architecture.md       # Canonical spec
+├── INTERGRAX_IMPLEMENTATION_PLAN.md
 ├── INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md  # This document
-└── experiment_guide.md                     # NEW (future)
+├── experiment_guide.md
+├── key_components/                         # Product ideas (non-normative)
+└── archive/                                # Deprecated historical docs
 
 notebooks/
 ├── nexus/                          # EXISTING
