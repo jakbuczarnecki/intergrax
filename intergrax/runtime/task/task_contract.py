@@ -48,12 +48,22 @@ class TaskGovernanceOptions(BaseModel):
     high_risk: bool = False
 
 
+class TaskLongRunningOptions(BaseModel):
+    """Intake options for durable / resumable tasks (§26, F.4)."""
+
+    enabled: bool = False
+    notify_channel: Optional[str] = None
+    checkpoint_on_pause: bool = True
+    resume_token: Optional[str] = None
+
+
 class TaskExecutionOptions(BaseModel):
     """User-provided intake options for a task."""
 
     isolation: TaskIsolationOptions = Field(default_factory=TaskIsolationOptions)
     human: TaskHumanInput = Field(default_factory=TaskHumanInput)
     governance: TaskGovernanceOptions = Field(default_factory=TaskGovernanceOptions)
+    long_running: TaskLongRunningOptions = Field(default_factory=TaskLongRunningOptions)
 
 
 class EscalationStep(BaseModel):
@@ -92,6 +102,9 @@ class TaskOrchestrationState(BaseModel):
     plan_id: Optional[str] = None
     graph_id: Optional[str] = None
     needs_more_information: bool = False
+    checkpoint_id: Optional[str] = None
+    resume_token: Optional[str] = None
+    progress_message: str = ""
 
 
 class TaskRuntimeState(BaseModel):
@@ -147,6 +160,9 @@ class TaskResultSummary(BaseModel):
     escalation_level: int = 0
     escalation_chain: List[EscalationStep] = Field(default_factory=list)
     governance_human_request: Optional[Dict[str, Any]] = None
+    checkpoint_id: Optional[str] = None
+    resume_token: Optional[str] = None
+    progress_message: str = ""
 
 
 class TaskContractPayload(BaseModel):

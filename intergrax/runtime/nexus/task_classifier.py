@@ -24,6 +24,7 @@ class TaskClassification(str, Enum):
     UNSUPPORTED = "unsupported"
     HIGH_RISK = "high_risk"
     HUMAN_APPROVAL_REQUIRED = "human_approval_required"
+    LONG_RUNNING = "long_running"
 
 
 class TaskClassifier:
@@ -63,6 +64,16 @@ class TaskClassifier:
             cls_state.risk_level = AgentRiskLevel.HIGH.value
             if cls_state.value != TaskClassification.UNSUPPORTED.value:
                 cls_state.value = TaskClassification.HIGH_RISK.value
+
+        if (
+            task.options.long_running.enabled
+            and cls_state.value
+            not in (
+                TaskClassification.UNSUPPORTED.value,
+                TaskClassification.HUMAN_APPROVAL_REQUIRED.value,
+            )
+        ):
+            cls_state.value = TaskClassification.LONG_RUNNING.value
 
         task.sync_metadata()
         return task

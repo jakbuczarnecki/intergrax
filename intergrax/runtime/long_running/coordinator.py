@@ -1,0 +1,118 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""Checkpoint save/restore for long-running Nexus tasks (Phase F.4)."""
+
+from __future__ import annotations
+
+from typing import Optional
+
+from intergrax.runtime.long_running.models import NotificationMessage, TaskCheckpoint
+from intergrax.runtime.long_running.notification import NotificationAdapter, resolve_notification_adapter
+from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.task.task import Task, TaskState
+
+
+class LongRunningCoordinator:
+    """Persists checkpoints and restores tasks on resume."""
+
+    @staticmethod
+    def is_long_running(task: Task) -> bool:
+        return task.options.long_running.enabled
+
+    @staticmethod
+    def should_checkpoint(task: Task) -> bool:
+        return (
+            LongRunningCoordinator.is_long_running(task)
+            and task.options.long_running.checkpoint_on_pause
+        )
+
+    @staticmethod
+    def restore_if_resuming(
+        task: Task,
+        store: SQLiteTaskCheckpointStore,
+    ) -> Optional[TaskCheckpoint]:
+        token = task.options.long_running.resume_token
+        if not LongRunningCoordinator.is_long_running(task) or not token:
+            return None
+
+        checkpoint = store.get_by_token(task.task_id, task.tenant_id, token)
+        if checkpoint is None:
+            return None
+
+        incoming_human = task.options.human.model_copy(deep=True)
+        restored = Task.model_validate(checkpoint.task_snapshot)
+        task.state = restored.state
+        task.options = restored.options
+        task.runtime = restored.runtime
+        task.message = restored.message
+        task.agent_id = restored.agent_id
+        task.context = restored.context
+        task.options.long_running.enabled = True
+        task.options.long_running.resume_token = token
+        if incoming_human.verdict is not None or incoming_human.response_text is not None:
+            task.options.human = incoming_human
+        task.runtime.orchestration.checkpoint_id = checkpoint.checkpoint_id
+        task.runtime.orchestration.resume_token = checkpoint.resume_token
+        task.runtime.orchestration.progress_message = checkpoint.progress_message
+        task.sync_metadata()
+        return checkpoint
+
+    @staticmethod
+    def persist_checkpoint(
+        task: Task,
+        store: SQLiteTaskCheckpointStore,
+        *,
+        progress_message: str = "",
+    ) -> TaskCheckpoint:
+        existing_token = task.runtime.orchestration.resume_token
+        checkpoint = SQLiteTaskCheckpointStore.build_checkpoint(
+            task,
+            progress_message=progress_message,
+            resume_token=existing_token,
+        )
+        store.save(checkpoint)
+        task.runtime.orchestration.checkpoint_id = checkpoint.checkpoint_id
+        task.runtime.orchestration.resume_token = checkpoint.resume_token
+        task.runtime.orchestration.progress_message = progress_message or checkpoint.progress_message
+        task.sync_metadata()
+        return checkpoint
+
+    @staticmethod
+    async def notify_progress(
+        task: Task,
+        *,
+        subject: str,
+        body: str,
+        adapter: Optional[NotificationAdapter] = None,
+        extra: Optional[dict] = None,
+    ) -> None:
+        if not LongRunningCoordinator.is_long_running(task):
+            return
+        channel = task.options.long_running.notify_channel or "log"
+        notifier = adapter or resolve_notification_adapter(channel)
+        await notifier.notify(
+            NotificationMessage(
+                channel=channel,
+                subject=subject,
+                body=body,
+                task_id=task.task_id,
+                tenant_id=task.tenant_id,
+                metadata={
+                    "task_state": task.state.value,
+                    "resume_token": task.runtime.orchestration.resume_token,
+                    "checkpoint_id": task.runtime.orchestration.checkpoint_id,
+                    **(extra or {}),
+                },
+            )
+        )
+
+    @staticmethod
+    def paused_states() -> frozenset[TaskState]:
+        return frozenset(
+            {
+                TaskState.WAITING_FOR_HUMAN,
+                TaskState.WAITING_FOR_RESOURCES,
+                TaskState.NEEDS_MORE_INFORMATION,
+            }
+        )

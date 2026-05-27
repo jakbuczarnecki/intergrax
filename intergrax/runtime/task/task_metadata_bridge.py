@@ -30,6 +30,7 @@ from intergrax.runtime.task.task_contract import (
     TaskHumanInput,
     TaskIsolationOptions,
     TaskIsolationSummary,
+    TaskLongRunningOptions,
     TaskOrchestrationState,
     TaskOrchestrationSummary,
     TaskPauseRecord,
@@ -39,6 +40,7 @@ from intergrax.runtime.task.task_contract import (
     TaskValidationSummary,
 )
 from intergrax.runtime.task.task_metadata_keys import (
+    CHECKPOINT_ID_KEY,
     ESCALATION_CHAIN_KEY,
     ESCALATION_LEVEL_KEY,
     ESCALATION_TARGET_KEY,
@@ -51,6 +53,11 @@ from intergrax.runtime.task.task_metadata_keys import (
     HUMAN_ESCALATED_KEY,
     HUMAN_REJECTED_KEY,
     HUMAN_RESPONSE_KEY,
+    LONG_RUNNING_CHECKPOINT_ON_PAUSE_KEY,
+    LONG_RUNNING_FLAG,
+    LONG_RUNNING_NOTIFY_CHANNEL_KEY,
+    PROGRESS_MESSAGE_KEY,
+    RESUME_TOKEN_KEY,
 )
 
 
@@ -74,6 +81,10 @@ _LEGACY_OPTION_KEYS = frozenset(
         "require_human_approval",
         "require_human_on_critical",
         "high_risk",
+        LONG_RUNNING_FLAG,
+        LONG_RUNNING_NOTIFY_CHANNEL_KEY,
+        LONG_RUNNING_CHECKPOINT_ON_PAUSE_KEY,
+        RESUME_TOKEN_KEY,
     }
 )
 
@@ -94,6 +105,8 @@ _LEGACY_RUNTIME_KEYS = frozenset(
         ESCALATION_LEVEL_KEY,
         ESCALATION_TARGET_KEY,
         ESCALATION_CHAIN_KEY,
+        CHECKPOINT_ID_KEY,
+        PROGRESS_MESSAGE_KEY,
     }
 )
 
@@ -148,6 +161,16 @@ def execution_options_from_metadata(metadata: Dict[str, Any]) -> TaskExecutionOp
         require_human_on_critical=metadata.get("require_human_on_critical", True) is not False,
         high_risk=_truthy(metadata.get("high_risk")),
     )
+    long_running = TaskLongRunningOptions(
+        enabled=_truthy(metadata.get(LONG_RUNNING_FLAG)),
+        notify_channel=metadata.get(LONG_RUNNING_NOTIFY_CHANNEL_KEY),
+        checkpoint_on_pause=metadata.get(LONG_RUNNING_CHECKPOINT_ON_PAUSE_KEY, True) is not False,
+        resume_token=(
+            str(metadata[RESUME_TOKEN_KEY]) if metadata.get(RESUME_TOKEN_KEY) else None
+        ),
+    )
+    if long_running.resume_token and not long_running.enabled:
+        long_running.enabled = True
     return TaskExecutionOptions(
         isolation=isolation,
         human=TaskHumanInput(
@@ -155,6 +178,7 @@ def execution_options_from_metadata(metadata: Dict[str, Any]) -> TaskExecutionOp
             verdict=_verdict_to_contract_value(verdict) if verdict is not None else None,
         ),
         governance=governance,
+        long_running=long_running,
     )
 
 
@@ -194,6 +218,9 @@ def runtime_state_from_metadata(metadata: Dict[str, Any]) -> TaskRuntimeState:
         plan_id=metadata.get("plan_id"),
         graph_id=metadata.get("graph_id"),
         needs_more_information=_truthy(metadata.get("needs_more_information")),
+        checkpoint_id=metadata.get(CHECKPOINT_ID_KEY),
+        resume_token=metadata.get(RESUME_TOKEN_KEY),
+        progress_message=str(metadata.get(PROGRESS_MESSAGE_KEY) or ""),
     )
     return TaskRuntimeState(classification=classification, orchestration=orchestration, governance=governance)
 
@@ -256,6 +283,27 @@ def sync_task_metadata(task: Task) -> None:
         meta.pop(HUMAN_APPROVED_KEY, None)
         meta.pop(HUMAN_REJECTED_KEY, None)
         meta.pop(HUMAN_ESCALATED_KEY, None)
+
+    lr = opts.long_running
+    meta[LONG_RUNNING_FLAG] = lr.enabled
+    if lr.notify_channel is not None:
+        meta[LONG_RUNNING_NOTIFY_CHANNEL_KEY] = lr.notify_channel
+    else:
+        meta.pop(LONG_RUNNING_NOTIFY_CHANNEL_KEY, None)
+    meta[LONG_RUNNING_CHECKPOINT_ON_PAUSE_KEY] = lr.checkpoint_on_pause
+    if lr.resume_token is not None:
+        meta[RESUME_TOKEN_KEY] = lr.resume_token
+    elif RESUME_TOKEN_KEY in meta and orch.resume_token is None:
+        meta.pop(RESUME_TOKEN_KEY, None)
+
+    if orch.checkpoint_id is not None:
+        meta[CHECKPOINT_ID_KEY] = orch.checkpoint_id
+    if orch.resume_token is not None:
+        meta[RESUME_TOKEN_KEY] = orch.resume_token
+    if orch.progress_message:
+        meta[PROGRESS_MESSAGE_KEY] = orch.progress_message
+    else:
+        meta.pop(PROGRESS_MESSAGE_KEY, None)
 
     if cls.value is not None:
         meta["classification"] = cls.value
@@ -356,6 +404,9 @@ def result_summary_from_metadata(metadata: Dict[str, Any]) -> TaskResultSummary:
             for step in chain_raw
         ],
         governance_human_request=gov_req if isinstance(gov_req, dict) else None,
+        checkpoint_id=metadata.get(CHECKPOINT_ID_KEY),
+        resume_token=metadata.get(RESUME_TOKEN_KEY),
+        progress_message=str(metadata.get(PROGRESS_MESSAGE_KEY) or ""),
     )
 
 
@@ -403,6 +454,13 @@ def sync_result_metadata(result: TaskResult) -> None:
         meta[ESCALATION_CHAIN_KEY] = [step.model_dump() for step in summary.escalation_chain]
     if summary.governance_human_request is not None:
         meta[GOVERNANCE_HUMAN_REQUEST_KEY] = summary.governance_human_request
+
+    if summary.checkpoint_id is not None:
+        meta[CHECKPOINT_ID_KEY] = summary.checkpoint_id
+    if summary.resume_token is not None:
+        meta[RESUME_TOKEN_KEY] = summary.resume_token
+    if summary.progress_message:
+        meta[PROGRESS_MESSAGE_KEY] = summary.progress_message
 
     meta["task_result.v1"] = summary.model_dump(mode="json")
     result.metadata = meta

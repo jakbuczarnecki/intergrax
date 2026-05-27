@@ -276,7 +276,7 @@ uv run pytest tests/ -m gate -q
 | F.1 | ShadowWorkspace | **Done** | `runtime/workspace/`; UAEP + NexusLoop integration |
 | F.2 | SandboxRuntime | **Done** | `runtime/sandbox/`; `sandbox.exec` via BoundToolGateway |
 | F.3 | Advanced HITL (reject/escalation store) | **Done** | `runtime/human/` store + NexusLoop reject/escalate |
-| F.4 | Long-running tasks / Slack-Teams | Pending | on demand |
+| F.4 | Long-running tasks / Slack-Teams | **Done** | `runtime/long_running/`; checkpoint store + notification adapters |
 
 Long-running tasks, HITL advanced, Shadow, Sandbox, Slack/Teams — **only with concrete use case**.
 
@@ -328,9 +328,9 @@ Long-running tasks, HITL advanced, Shadow, Sandbox, Slack/Teams — **only with 
 
 ```text
 
-NOW:     F.4 long-running / adapters (on demand)
+NOW:     Phase F complete (on demand remainder as needed)
 
-NEXT:    Phase F remainder (on demand)
+NEXT:    New capabilities / applications as concrete use cases emerge
 
 LATER:   Phase F (on demand)
 
@@ -366,7 +366,7 @@ LATER:   Phase F (on demand)
 
 ## 6. Recommended Next Step
 
-**F.4 (on demand):** long-running tasks / Slack-Teams adapters.
+**F.4 (Done):** long-running tasks — checkpoint/resume via `SQLiteTaskCheckpointStore`; Slack/Teams notification stubs.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -396,7 +396,7 @@ uv run pytest tests/ -m gate -q
 
 
 
-**Then:** F.4 long-running tasks (on demand).
+**Then:** new application capabilities as concrete use cases emerge.
 
 
 
@@ -519,6 +519,49 @@ task = Task(..., task_id=original_task_id, metadata={"human_response": "reject"}
 - Store: `INTERGRAX_HUMAN_DECISIONS_DB` (default `build/intergrax_human_decisions.db`)
 
 Optional on `NexusLoop`: `human_decision_store=SQLiteHumanDecisionStore(...)`.
+
+### F.4 Long-running tasks (Done)
+
+Enable durable pause/resume on Nexus tasks (§26):
+
+```python
+from intergrax.runtime.task import Task, TaskExecutionOptions, TaskLongRunningOptions
+
+task = Task(
+    tenant_id="t1",
+    user_id="u1",
+    message="monitor vendors for 30 days",
+    context=TaskContext(capability="hitl.basic"),
+    options=TaskExecutionOptions(
+        long_running=TaskLongRunningOptions(
+            enabled=True,
+            notify_channel="slack",  # or "teams" / "log"
+        ),
+    ),
+)
+```
+
+On pause (`WAITING_FOR_HUMAN`), NexusLoop persists a checkpoint with `resume_token` in result metadata.
+
+Resume with the same `task_id` and token:
+
+```python
+Task(
+    ...,
+    task_id=original_task_id,
+    options=TaskExecutionOptions(
+        long_running=TaskLongRunningOptions(enabled=True, resume_token=token),
+    ),
+    metadata={"human_approved": True, "resume_token": token},
+)
+```
+
+Optional on `NexusLoop`: `checkpoint_store=SQLiteTaskCheckpointStore(...)`, `notification_adapter=LoggingNotificationAdapter()`.
+
+Env:
+
+- `INTERGRAX_TASK_CHECKPOINTS_DB` (default `build/intergrax_task_checkpoints.db`)
+- `INTERGRAX_SLACK_WEBHOOK_URL` / `INTERGRAX_TEAMS_WEBHOOK_URL` (stub adapters; no network unless configured)
 
 ### D.1 Debug CLI (Done)
 

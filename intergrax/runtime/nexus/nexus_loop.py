@@ -24,6 +24,9 @@ from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.human.escalation import EscalationRouter
 from intergrax.runtime.human.models import HumanResponseVerdict, EscalationTarget
 from intergrax.runtime.human.store import SQLiteHumanDecisionStore
+from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
+from intergrax.runtime.long_running.notification import NotificationAdapter
+from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -81,6 +84,8 @@ class NexusLoop:
         sandbox_manager: Optional[SandboxSessionManager] = None,
         human_decision_store: Optional[SQLiteHumanDecisionStore] = None,
         escalation_router: Optional[EscalationRouter] = None,
+        checkpoint_store: Optional[SQLiteTaskCheckpointStore] = None,
+        notification_adapter: Optional[NotificationAdapter] = None,
     ) -> None:
         self._registry = registry
         self._event_bus = event_bus or RuntimeEventBus()
@@ -92,6 +97,8 @@ class NexusLoop:
         self._sandbox_manager = sandbox_manager or SandboxSessionManager()
         self._human_store = human_decision_store
         self._escalation_router = escalation_router or EscalationRouter()
+        self._checkpoint_store = checkpoint_store
+        self._notification_adapter = notification_adapter
         self._engine = AgentEngine(
             registry,
             event_bus=self._event_bus,
@@ -154,6 +161,14 @@ class NexusLoop:
         self._trace_emitter = trace_emitter
 
         self._normalize_human_response(task)
+        await self._maybe_restore_long_running(task)
+        self._normalize_human_response(task)
+        if (
+            LongRunningCoordinator.is_long_running(task)
+            and HumanPauseCoordinator.is_resumed(task)
+            and task.state in LongRunningCoordinator.paused_states()
+        ):
+            task.state = TaskState.CREATED
         verdict = HumanPauseCoordinator.verdict_from_task(task)
         if verdict == HumanResponseVerdict.REJECT:
             return await self._handle_human_rejection(task, trace_emitter, lifecycle)
@@ -234,6 +249,10 @@ class NexusLoop:
         if classification == TaskClassification.HUMAN_APPROVAL_REQUIRED.value:
             if not HumanPauseCoordinator.is_resumed(task):
                 lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
+                await self._maybe_checkpoint_long_running(
+                    task,
+                    progress_message="awaiting human approval",
+                )
                 return await self._finish_task(
                     task,
                     trace_emitter,
@@ -287,6 +306,10 @@ class NexusLoop:
             paused = executions[-1]
             HumanPauseCoordinator.apply_pause(task, paused)
             lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
+            await self._maybe_checkpoint_long_running(
+                task,
+                progress_message="awaiting human input",
+            )
             await self._publish_runtime_event(
                 runtime_event_from_task_state(
                     task,
@@ -484,6 +507,9 @@ class NexusLoop:
             escalation_level=escalation_level,
             escalation_chain=escalation_chain,
             governance_human_request=gov_human_request,
+            checkpoint_id=task.runtime.orchestration.checkpoint_id,
+            resume_token=task.runtime.orchestration.resume_token,
+            progress_message=task.runtime.orchestration.progress_message,
         )
 
         self._maybe_cleanup_shadow(task, executions)
@@ -501,6 +527,73 @@ class NexusLoop:
         )
         result.sync_metadata()
         return result
+
+    async def _maybe_restore_long_running(self, task: Task) -> None:
+        if self._checkpoint_store is None:
+            return
+        restored = LongRunningCoordinator.restore_if_resuming(task, self._checkpoint_store)
+        if restored is None:
+            return
+        await self._publish_runtime_event(
+            runtime_event_from_task_state(
+                task,
+                run_id=task.task_id,
+                message="long-running task restored from checkpoint",
+            ).model_copy(
+                update={
+                    "event_type": RuntimeEventType.RESUMED,
+                    "phase": ExecutionPhase.HUMAN_APPROVAL,
+                    "payload": {
+                        "checkpoint_id": restored.checkpoint_id,
+                        "resume_token": restored.resume_token,
+                    },
+                }
+            )
+        )
+        await LongRunningCoordinator.notify_progress(
+            task,
+            subject="Task resumed",
+            body=restored.progress_message or "checkpoint restored",
+            adapter=self._notification_adapter,
+        )
+
+    async def _maybe_checkpoint_long_running(
+        self,
+        task: Task,
+        *,
+        progress_message: str,
+    ) -> None:
+        if self._checkpoint_store is None or not LongRunningCoordinator.should_checkpoint(task):
+            return
+        checkpoint = LongRunningCoordinator.persist_checkpoint(
+            task,
+            self._checkpoint_store,
+            progress_message=progress_message,
+        )
+        await self._publish_runtime_event(
+            runtime_event_from_task_state(
+                task,
+                run_id=task.task_id,
+                message="long-running checkpoint saved",
+            ).model_copy(
+                update={
+                    "event_type": RuntimeEventType.PAUSED,
+                    "phase": ExecutionPhase.HUMAN_APPROVAL,
+                    "payload": {
+                        "checkpoint_id": checkpoint.checkpoint_id,
+                        "resume_token": checkpoint.resume_token,
+                        "progress_message": progress_message,
+                    },
+                }
+            )
+        )
+        await LongRunningCoordinator.notify_progress(
+            task,
+            subject="Task paused",
+            body=progress_message,
+            adapter=self._notification_adapter,
+            extra={"checkpoint_id": checkpoint.checkpoint_id},
+        )
 
     async def _publish_runtime_event(self, event: object) -> None:
         from intergrax.runtime.events.runtime_event import RuntimeEvent
@@ -701,6 +794,10 @@ class NexusLoop:
             lifecycle.transition(task, TaskState.CLASSIFIED)
             lifecycle.transition(task, TaskState.PLANNED)
         lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
+        await self._maybe_checkpoint_long_running(
+            task,
+            progress_message="awaiting escalated human review",
+        )
         if isinstance(trace_emitter, PersistingTaskTraceEmitter):
             self._finalize_persisting_trace(trace_emitter, [])
         return await self._finish_task(
