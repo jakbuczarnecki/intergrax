@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Callable, List, Optional
 
+from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
 from intergrax.runtime.nexus.tracing.trace_models import (
     TraceComponent,
     TraceEvent,
@@ -19,12 +21,20 @@ from intergrax.runtime.task.task import Task
 class TaskTraceEmitter:
     """
     Emits TraceEvent records for TaskLifecycle transitions (§23).
+
+    When ``event_bus`` is provided, also records canonical ``RuntimeEvent`` entries
+    via ``trace_bridge`` (§42.1, P4.1) — without replacing trace persistence.
     """
 
-    def __init__(self, *, run_id: str) -> None:
+    def __init__(self, *, run_id: str, event_bus: Optional[RuntimeEventBus] = None) -> None:
         self._run_id = run_id
         self._seq = 0
         self.events: List[TraceEvent] = []
+        self._event_bus = event_bus
+
+    @property
+    def event_bus(self) -> Optional[RuntimeEventBus]:
+        return self._event_bus
 
     def emit(self, task: Task, *, message: str) -> TraceEvent:
         self._seq += 1
@@ -45,6 +55,8 @@ class TaskTraceEmitter:
             },
         )
         self.events.append(evt)
+        if self._event_bus is not None:
+            self._event_bus.record(trace_event_to_runtime_event(evt, task))
         return evt
 
     def as_transition_handler(self) -> Callable[[Task], None]:
@@ -65,8 +77,9 @@ class PersistingTaskTraceEmitter(TaskTraceEmitter):
         tenant_id: str,
         user_id: str,
         session_id: str = "",
+        event_bus: Optional[RuntimeEventBus] = None,
     ) -> None:
-        super().__init__(run_id=run_id)
+        super().__init__(run_id=run_id, event_bus=event_bus)
         self._trace_store = trace_store
         self._tenant_id = tenant_id
         self._user_id = user_id
@@ -103,6 +116,7 @@ def lifecycle_with_persisting_trace(
     tenant_id: str,
     user_id: str,
     session_id: str = "",
+    event_bus: Optional[RuntimeEventBus] = None,
     on_transition: Optional[Callable[[Task], None]] = None,
 ) -> tuple[TaskLifecycle, PersistingTaskTraceEmitter]:
     emitter = PersistingTaskTraceEmitter(
@@ -111,6 +125,7 @@ def lifecycle_with_persisting_trace(
         tenant_id=tenant_id,
         user_id=user_id,
         session_id=session_id,
+        event_bus=event_bus,
     )
 
     def _combined(task: Task) -> None:
@@ -124,12 +139,13 @@ def lifecycle_with_persisting_trace(
 def lifecycle_with_trace(
     run_id: str,
     *,
+    event_bus: Optional[RuntimeEventBus] = None,
     on_transition: Optional[Callable[[Task], None]] = None,
 ) -> tuple[TaskLifecycle, TaskTraceEmitter]:
     """Build TaskLifecycle wired to a TaskTraceEmitter."""
     from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 
-    emitter = TaskTraceEmitter(run_id=run_id)
+    emitter = TaskTraceEmitter(run_id=run_id, event_bus=event_bus)
 
     def _combined(task: Task) -> None:
         emitter.as_transition_handler()(task)

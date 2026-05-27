@@ -20,6 +20,10 @@ from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier, T
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import (
@@ -50,6 +54,7 @@ class NexusLoop:
         lifecycle: Optional[TaskLifecycle] = None,
         trace_emitter: Optional[TaskTraceEmitter] = None,
         trace_store: Optional[RunTraceWriter] = None,
+        event_bus: Optional[RuntimeEventBus] = None,
         retry_policy: Optional[RetryPolicy] = None,
     ) -> None:
         self._registry = registry
@@ -75,6 +80,7 @@ class NexusLoop:
         self._lifecycle = lifecycle
         self._trace_emitter = trace_emitter
         self._trace_store = trace_store
+        self._event_bus = event_bus or RuntimeEventBus()
 
     @property
     def registry(self) -> AgentRegistry:
@@ -84,9 +90,26 @@ class NexusLoop:
     def trace_emitter(self) -> Optional[TaskTraceEmitter]:
         return self._trace_emitter
 
+    @property
+    def event_bus(self) -> RuntimeEventBus:
+        return self._event_bus
+
     async def handle_task(self, task: Task) -> TaskResult:
         lifecycle, trace_emitter = self._resolve_lifecycle(task)
         self._trace_emitter = trace_emitter
+
+        await self._publish_runtime_event(
+            runtime_event_from_task_state(
+                task,
+                run_id=task.task_id,
+                message="task intake",
+            ).model_copy(
+                update={
+                    "event_type": RuntimeEventType.TASK_CREATED,
+                    "phase": ExecutionPhase.INTAKE,
+                }
+            )
+        )
 
         task = self._classifier.classify(task)
         classification = task.metadata.get("classification", "")
@@ -94,7 +117,7 @@ class NexusLoop:
 
         if classification == TaskClassification.UNSUPPORTED.value:
             lifecycle.transition(task, TaskState.FAILED)
-            return self._build_result(
+            return await self._finish_task(
                 task,
                 trace_emitter,
                 answer="",
@@ -111,11 +134,24 @@ class NexusLoop:
         plan = self._planner.plan(task, self._registry)
         task.metadata["plan_id"] = plan.plan_id
         lifecycle.transition(task, TaskState.PLANNED)
+        await self._publish_runtime_event(
+            runtime_event_from_task_state(task, run_id=task.task_id, message="plan created").model_copy(
+                update={
+                    "event_type": RuntimeEventType.PLAN_CREATED,
+                    "phase": ExecutionPhase.PLANNING,
+                    "payload": {
+                        "plan_id": plan.plan_id,
+                        "step_count": len(plan.steps),
+                        "task_state": task.state.value,
+                    },
+                }
+            )
+        )
 
         if classification == TaskClassification.HUMAN_APPROVAL_REQUIRED.value:
             if not task.metadata.get("human_approved"):
                 lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
-                return self._build_result(
+                return await self._finish_task(
                     task,
                     trace_emitter,
                     answer="",
@@ -171,7 +207,7 @@ class NexusLoop:
             lifecycle.transition(task, TaskState.FAILED)
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
                 trace_emitter.finalize()
-            return self._build_result(
+            return await self._finish_task(
                 task,
                 trace_emitter,
                 answer=self._composer.compose_summary(executions),
@@ -211,7 +247,7 @@ class NexusLoop:
         if isinstance(trace_emitter, PersistingTaskTraceEmitter):
             trace_emitter.finalize()
 
-        return self._build_result(
+        return await self._finish_task(
             task,
             trace_emitter,
             answer=self._composer.compose_summary(executions),
@@ -220,6 +256,30 @@ class NexusLoop:
             plan=plan,
             retry_records=retry_records,
             graph_id=graph.graph_id,
+        )
+
+    async def _finish_task(
+        self,
+        task: Task,
+        trace_emitter: TaskTraceEmitter,
+        *,
+        answer: str,
+        executions: List[AgentExecutionResult],
+        validation: ValidationResult,
+        plan: Optional[NexusPlan],
+        retry_records: List[RetryRecord],
+        graph_id: str,
+    ) -> TaskResult:
+        await self._publish_terminal_runtime_event(task)
+        return self._build_result(
+            task,
+            trace_emitter,
+            answer=answer,
+            executions=executions,
+            validation=validation,
+            plan=plan,
+            retry_records=retry_records,
+            graph_id=graph_id,
         )
 
     def _build_result(
@@ -244,6 +304,24 @@ class NexusLoop:
         composer_meta["graph_id"] = graph_id
         composer_meta["graph_node_count"] = len(plan.steps) if plan else 0
 
+        metadata = {
+            **composer_meta,
+            "validation_valid": validation.valid,
+            "validation_errors": validation.errors,
+            "validation_warnings": validation.warnings,
+            "task_trace_events": len(trace_emitter.events),
+            "runtime_events": len(self._event_bus.history),
+            "retries": [
+                {
+                    "attempt": r.attempt,
+                    "agent_id": r.agent_id,
+                    "alternate_agent_id": r.alternate_agent_id,
+                    "reason": r.reason,
+                }
+                for r in retry_records
+            ],
+        }
+
         return TaskResult(
             task_id=task.task_id,
             run_id=primary.run_id if primary else task.task_id,
@@ -251,27 +329,26 @@ class NexusLoop:
             answer=answer,
             agent_id=primary.agent_id if primary else task.agent_id,
             execution_result=primary,
-            metadata={
-                **composer_meta,
-                "validation_valid": validation.valid,
-                "validation_errors": validation.errors,
-                "validation_warnings": validation.warnings,
-                "task_trace_events": len(trace_emitter.events),
-                "retries": [
-                    {
-                        "attempt": r.attempt,
-                        "agent_id": r.agent_id,
-                        "alternate_agent_id": r.alternate_agent_id,
-                        "reason": r.reason,
-                    }
-                    for r in retry_records
-                ],
-            },
+            metadata=metadata,
+        )
+
+    async def _publish_runtime_event(self, event: object) -> None:
+        from intergrax.runtime.events.runtime_event import RuntimeEvent
+
+        if isinstance(event, RuntimeEvent):
+            await self._event_bus.publish(event)
+
+    async def _publish_terminal_runtime_event(self, task: Task) -> None:
+        await self._publish_runtime_event(
+            runtime_event_from_task_state(task, run_id=task.task_id, message="task terminal")
         )
 
     def _resolve_lifecycle(self, task: Task) -> tuple[TaskLifecycle, TaskTraceEmitter]:
         if self._lifecycle is not None:
-            emitter = self._trace_emitter or TaskTraceEmitter(run_id=task.task_id)
+            emitter = self._trace_emitter or TaskTraceEmitter(
+                run_id=task.task_id,
+                event_bus=self._event_bus,
+            )
             return self._lifecycle, emitter
         if self._trace_store is not None:
             return lifecycle_with_persisting_trace(
@@ -280,5 +357,6 @@ class NexusLoop:
                 tenant_id=task.tenant_id,
                 user_id=task.user_id,
                 session_id=task.session_id or "",
+                event_bus=self._event_bus,
             )
-        return lifecycle_with_trace(run_id=task.task_id)
+        return lifecycle_with_trace(run_id=task.task_id, event_bus=self._event_bus)

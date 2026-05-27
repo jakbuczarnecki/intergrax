@@ -1546,9 +1546,9 @@ Recommended convergence order — **wire scaffold into existing Nexus/AgentEngin
 
 | Step | Action | Target files |
 |------|--------|--------------|
-| 1 | Instantiate `RuntimeEventBus` in `NexusLoop` | `nexus_loop.py` |
-| 2 | Emit `RuntimeEvent` on task lifecycle transitions | `task_lifecycle.py`, `task_trace.py` |
-| 3 | Bridge `TraceEvent` → `RuntimeEvent` adapter | `runtime/events/trace_bridge.py` (new) |
+| 1 | Instantiate `RuntimeEventBus` in `NexusLoop` | `nexus_loop.py` | **Done** |
+| 2 | Emit `RuntimeEvent` on task lifecycle transitions | `task_lifecycle.py`, `task_trace.py` | **Done** |
+| 3 | Bridge `TraceEvent` → `RuntimeEvent` adapter | `runtime/events/trace_bridge.py` | **Done** |
 
 ### P4.2 — UAEP in AgentEngine
 

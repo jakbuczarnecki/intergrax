@@ -10,6 +10,8 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 
+from intergrax.contracts.event_severity import EventSeverity
+
 
 class AgentDecisionType(str, Enum):
     CONTINUE = "continue"
@@ -21,14 +23,6 @@ class AgentDecisionType(str, Enum):
     MODIFY_PLAN = "modify_plan"
     FAIL = "fail"
     CANCEL = "cancel"
-
-
-class EventSeverity(str, Enum):
-    DEBUG = "debug"
-    INFO = "info"
-    WARNING = "warning"
-    ERROR = "error"
-    CRITICAL = "critical"
 
 
 class RetryHint(BaseModel):

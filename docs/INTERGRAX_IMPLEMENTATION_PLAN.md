@@ -128,6 +128,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | # | Deliverable | Sections | Actions |
 |---|-------------|----------|---------|
+| D.0 | §42 P4.1 Event Bus wiring | §42.1–§42.2 | **Done** — `RuntimeEventBus` in NexusLoop, `trace_bridge`, lifecycle dual-emit |
 | D.1 | Debug CLI | §19 | `intergrax debug tasks list|show|trace <task_id>` |
 | D.2 | Minimal debug API | §19 | Endpoints: list runs, get trace, get AgentExecutionResult |
 | D.3 | Experiment registry | §35 | Experiment metadata: hypothesis, status (keep/improve/pause/delete) |
@@ -237,7 +238,9 @@ Each deliverable is complete when:
 
 ## 8. Recommended Next Step
 
-**Start Phase A.1:** unified run lifecycle — bridge between `intergrax/runtime/task/` and `intergrax/fastapi_core/runs/`.
+**Phase D.1:** debug CLI — list tasks/runs and inspect trace + `RuntimeEvent` history from NexusLoop.
+
+**Phase P4.2 (parallel):** UAEP in AgentEngine — step loop, `RuntimeExecutionContext`, middleware wiring (§42.5).
 
 Existing components to reuse (do not rewrite from scratch):
 

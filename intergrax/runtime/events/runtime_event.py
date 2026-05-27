@@ -12,8 +12,8 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from intergrax.contracts.agent_decision import EventSeverity
-from intergrax.runtime.events.execution_phase import ExecutionPhase
+from intergrax.contracts.event_severity import EventSeverity
+from intergrax.contracts.execution_phase import ExecutionPhase
 
 
 class RuntimeEventType(str, Enum):

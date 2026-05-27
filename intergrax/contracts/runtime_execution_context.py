@@ -5,14 +5,16 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Optional, Protocol, runtime_checkable
+from typing import Any, Dict, Optional, Protocol, TYPE_CHECKING, runtime_checkable
 
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse
-from intergrax.runtime.events.execution_phase import ExecutionPhase
-from intergrax.runtime.events.runtime_event import RuntimeEvent
+from intergrax.contracts.execution_phase import ExecutionPhase
+
+if TYPE_CHECKING:
+    from intergrax.runtime.events.runtime_event import RuntimeEvent
 
 
 @runtime_checkable
@@ -55,7 +57,6 @@ class RuntimeExecutionContext(BaseModel):
 
     model_config = {"arbitrary_types_allowed": True}
 
-    # Protocol-typed gateways — set by AgentEngine at runtime (not serialized)
     tool_gateway: Optional[Any] = Field(default=None, exclude=True)
     event_emitter: Optional[Any] = Field(default=None, exclude=True)
     memory_view: Optional[Any] = Field(default=None, exclude=True)

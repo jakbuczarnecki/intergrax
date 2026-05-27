@@ -28,3 +28,6 @@ async def test_nexus_loop_runs_echo_agent():
     assert result.state == TaskState.COMPLETED
     assert "hello harness" in result.answer
     assert result.agent_id == "echo"
+    assert result.metadata.get("runtime_events", 0) > 0
+    assert len(loop.event_bus.history) > 0
+    assert loop.event_bus.history[0].event_type.value == "task_created"

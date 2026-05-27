@@ -2,7 +2,8 @@
 # Intergrax framework – proprietary and confidential.
 
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentExecutionMode, AgentRiskLevel
-from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType, EventSeverity
+from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
+from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.agent_step import AgentStep, StepExecutionResult, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult

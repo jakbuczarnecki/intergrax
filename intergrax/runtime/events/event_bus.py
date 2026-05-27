@@ -56,8 +56,7 @@ class RuntimeEventBus:
             self._handlers[et] = [t for t in self._handlers[et] if t[0] != subscription_id]
 
     async def publish(self, event: RuntimeEvent) -> None:
-        if self._record_history:
-            self._history.append(event)
+        self.record(event)
         handlers = list(self._wildcard)
         handlers.extend(self._handlers.get(event.event_type, []))
         handlers.sort(key=lambda x: x[1])
@@ -75,3 +74,8 @@ class RuntimeEventBus:
 
     def clear_history(self) -> None:
         self._history.clear()
+
+    def record(self, event: RuntimeEvent) -> None:
+        """Synchronous append for callers that cannot await (e.g. TaskLifecycle)."""
+        if self._record_history:
+            self._history.append(event)

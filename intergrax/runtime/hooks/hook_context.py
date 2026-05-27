@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 
-from intergrax.runtime.events.execution_phase import ExecutionPhase
+from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 
 
