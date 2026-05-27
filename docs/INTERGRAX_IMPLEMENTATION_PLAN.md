@@ -2,7 +2,7 @@
 
 
 
-Status: Working draft (2026-05-27, synced post A.5-min gate)  
+Status: Working draft (2026-05-27, synced post F.4 + task contract gate)  
 
 Canonical source: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 
@@ -46,13 +46,13 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 |-------|-------|-------|
 
-| Architecture §1–41 (tiers, Nexus, graph, repo split) | **~82–88%** | Phases A–C complete |
+| Architecture §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** | Phases A–F; typed task contract |
 
-| §42 Unified Execution Runtime | **~50–55%** | P4.1–P4.4 wired; agent UAEP migration pending |
+| §42 Unified Execution Runtime | **~65–70%** | P4 + E + F; §42.9/18/27/40 gaps |
 
 | Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
 
-| Pre-P4.2 regression gate | **Done** | A.5-min (~10 tests, marker `gate`) |
+| Pre-P4.2 regression gate | **Done** | **78 tests**, marker `gate` |
 
 
 
@@ -74,13 +74,13 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §9.1 Nexus Loop | Global orchestration | **Done** | `nexus_loop.py` |
 
-| §9.2 Local agent loop | Bounded steps | **Partial** | Legal pipeline; not UAEP |
+| §9.2 Local agent loop | Bounded UAEP steps | **Done** | Echo, Research, Legal `thin_steps` / `dynamic_steps` |
 
 | §12–16 Contracts / Registry | AgentContract, capabilities | **Done** | `intergrax/contracts/`, `runtime/registry/` |
 
 | §22 ToolRuntime | Policy gateway | **Done** | `tool_runtime.py`, `ToolAccessPolicy` |
 
-| §23 Task lifecycle | States + trace | **Done** | `task/`, `TaskTraceEmitter` |
+| §23 Task lifecycle | States + trace + typed contract | **Done** | `task/`, `task_contract.py`, `task_metadata_bridge.py` |
 
 | §24–25 Execution graph | Multi-agent | **Done** | `execution/`, `GraphExecutor` |
 
@@ -90,14 +90,20 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §33 Observability | Trace + events | **Partial** | Trace store ✅; P4.1 dual-emit ✅; D.1 CLI ✅ |
 
-| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial** | P4 + Phase E ✅ |
+| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial (~65–70%)** | P4 + E + F ✅ |
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
-| §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` (no `legal_agent` shim) |
+| §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
 
-| §19 Debug surface | CLI / API | **Partial** | D.1 CLI ✅; D.2 API ✅ |
+| §19 Debug surface | CLI / API | **Done** | D.1 CLI + D.2 API ✅ |
 
-| §32 HITL | Approval flow | **Done** | F.3 approve/reject/escalate + decision store |
+| §32 HITL | Approval / reject / escalate | **Done** | F.3 + `runtime/human/` |
+
+| §26 Long-running tasks | Checkpoint / resume | **Partial** | F.4 task snapshot ✅; scheduler / UAEP mid-step pending |
+| §18 Slack / Teams | Interaction adapters | **Stub** | F.4 notification stub only; no intake / webhook |
+| §27 Memory model | Bounded task / agent memory | **Not started** | Session memory exists; no `MemoryView` gateway |
+| §42.9 Pause / Resume | `RuntimeCheckpoint` | **Partial** | HITL pause ✅; full plan/graph/UAEP checkpoint pending |
+| §41 Unified entry | Single run lifecycle | **Partial** | `NexusLoop` + `RunService` + `RuntimeEngine` still parallel |
 
 | §20–21 Shadow / Sandbox | Isolated exec | **Done** | F.1 ShadowWorkspace + F.2 SandboxRuntime ✅ |
 
@@ -276,9 +282,11 @@ uv run pytest tests/ -m gate -q
 | F.1 | ShadowWorkspace | **Done** | `runtime/workspace/`; UAEP + NexusLoop integration |
 | F.2 | SandboxRuntime | **Done** | `runtime/sandbox/`; `sandbox.exec` via BoundToolGateway |
 | F.3 | Advanced HITL (reject/escalation store) | **Done** | `runtime/human/` store + NexusLoop reject/escalate |
-| F.4 | Long-running tasks / Slack-Teams | **Done** | `runtime/long_running/`; checkpoint store + notification adapters |
+| F.4 | Long-running tasks / Slack-Teams | **Done (partial)** | Checkpoints ✅; Slack/Teams = notification stub only |
 
-Long-running tasks, HITL advanced, Shadow, Sandbox, Slack/Teams — **only with concrete use case**.
+| F.5 | Typed task contract | **Done** | `TaskExecutionOptions`, `TaskRuntimeState`, `TaskResultSummary`, bridge |
+
+Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** §18 — see Phase G–H below.
 
 
 
@@ -320,7 +328,72 @@ Long-running tasks, HITL advanced, Shadow, Sandbox, Slack/Teams — **only with 
 
 ---
 
+### Phase G — §42 Runtime Convergence
 
+**Goal:** Close largest gaps vs §42.9, §42.10, §42.24, §42.40 (evolve, not rewrite).
+
+| # | Deliverable | Status | Canon | Notes |
+|---|-------------|--------|-------|-------|
+| G.1 | `RuntimeCheckpoint` contract | Pending | §42.9.2 | Plan + graph node states + UAEP step index |
+| G.2 | UAEP mid-execution resume | Pending | §42.9.3 | Continue paused step; not full task restart |
+| G.3 | HITL middleware hooks | Pending | §42.10 | `BEFORE/AFTER_HUMAN_APPROVAL` in NexusLoop |
+| G.4 | `HumanRequest` v2 fields | Pending | §42.10.1 | urgency, timeout, `default_on_timeout` |
+| G.5 | RuntimeEvent-first observability | Pending | §42.24 | Persist event stream; trace as projection |
+| G.6 | Debug API: HITL + checkpoints | Pending | §19 | Human response + checkpoint list endpoints |
+| G.7 | Graph failure recovery | Pending | §42.40, §30 | Resume from last successful node |
+| G.8 | Cooperative cancellation | Pending | §42.26 | Cancel propagation through graph / UAEP |
+
+---
+
+### Phase H — Interaction Surfaces (§18)
+
+| # | Deliverable | Status | Canon | Notes |
+|---|-------------|--------|-------|-------|
+| H.1 | Outbound webhook delivery | Pending | §18 | Real HTTP for Slack/Teams (opt-in env) |
+| H.2 | `InteractionAdapter` protocol | Pending | §18 | Inbound → normalized `Task` |
+| H.3 | Slack inbound lab path | Pending | §18 | Slash command or Events API minimal |
+| H.4 | HITL notification templates | Pending | §42.10 | `resume_token` + approve/reject in message |
+| H.5 | Teams parity | Pending | §18 | Same as H.3–H.4 |
+| H.6 | Organization Worker demo | Pending | §38 | End-to-end §38 reference flow |
+
+---
+
+### Phase I — Memory & Context (§27–28)
+
+| # | Deliverable | Status | Canon | Notes |
+|---|-------------|--------|-------|-------|
+| I.1 | `TaskMemory` store | Pending | §27 | Nexus-owned bounded task memory |
+| I.2 | `MemoryView` gateway | Pending | §42.35 | Policy-scoped UAEP memory access |
+| I.3 | `SharedTaskContext` | Pending | §42.14 | Formal cross-agent payload |
+| I.4 | Agent handoff | Pending | §42.15 | Graph handoff + validation |
+| I.5 | ContextManager v2 | Pending | §28 | Provenance + summary tiers |
+
+---
+
+### Phase J — Unified Execution Entry (§41)
+
+| # | Deliverable | Status | Canon | Notes |
+|---|-------------|--------|-------|-------|
+| J.1 | NexusLoop default in apps | Pending | §41 | Legal/Research: opt-out legacy engine |
+| J.2 | RunService → UnifiedTaskRunner | Pending | §41 | Single Task lifecycle path |
+| J.3 | Worker queue Task v2 | Pending | §41 | Celery + typed Task + checkpoint resume |
+| J.4 | Long-running scheduler | Pending | §26 | In-proc cron / delayed resume first |
+| J.5 | Partial results API | Pending | §26 | Progress in debug API + notifications |
+
+---
+
+### Phase K — Hardening & Reference Agents
+
+| # | Deliverable | Status | Canon | Notes |
+|---|-------------|--------|-------|-------|
+| K.1 | Problem Radar prototype | Pending | §36 | Long-running monitor use case |
+| K.2 | Vendor Discovery prototype | Pending | §37 | Shadow + research pipeline |
+| K.3 | Policy engine facade | Pending | §42.11 | Unify replay / validation / runtime policy |
+| K.4 | Dual `AgentDecision` cleanup | Pending | §42.7 | Converge tools agent variant |
+| K.5 | ChatAgent / legacy removal | Pending | §39 | After J.1 |
+| K.6 | A.5 full Legal E2E gate | Deferred | — | Real LLM; not blocking lab |
+
+---
 
 ## 4. Priority Order
 
@@ -328,13 +401,17 @@ Long-running tasks, HITL advanced, Shadow, Sandbox, Slack/Teams — **only with 
 
 ```text
 
-NOW:     Phase F complete (on demand remainder as needed)
+NOW:     G.1–G.2 RuntimeCheckpoint + UAEP resume (§42.9 beyond F.4 snapshot)
 
-NEXT:    New capabilities / applications as concrete use cases emerge
+NEXT:    G.3–G.6 HITL hooks + debug surfaces (§42.10, §19)
 
-LATER:   Phase F (on demand)
+THEN:    H.1–H.4 Slack/Teams real adapters (§18)
+
+PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ```
+
+**Rationale:** §42.9 requires execution-layer checkpoint. §18 needs real adapters before §38 Organization Worker. Phase J reduces dual-path debt (`RuntimeEngine` vs `NexusLoop`).
 
 
 
@@ -366,37 +443,22 @@ LATER:   Phase F (on demand)
 
 ## 6. Recommended Next Step
 
-**F.4 (Done):** long-running tasks — checkpoint/resume via `SQLiteTaskCheckpointStore`; Slack/Teams notification stubs.
+**G.1 — `RuntimeCheckpoint` contract** (extends F.4, does not replace it):
+
+1. Define `RuntimeCheckpoint` Pydantic model: `plan_id`, `graph_id`, `node_states`, `uaep_step_index`, `pending_human_request`.
+2. Persist alongside existing `TaskCheckpoint` in `SQLiteTaskCheckpointStore`.
+3. Wire UAEP to save checkpoint on `REQUEST_HUMAN` / interrupt pause.
+4. Resume: restore graph + continue step loop (integration test with HITL agent).
 
 ```bash
 uv run pytest tests/ -m gate -q
 ```
 
-**F.3 (Done):** advanced HITL — approve/reject/escalate via `human_response`; SQLite decision store (`INTERGRAX_HUMAN_DECISIONS_DB`).
+**Recently completed:**
 
-**F.2 (Done):** SandboxRuntime — `SandboxSession` + `sandbox.exec` tool via UAEP; enable with `task.metadata["sandbox"]=True`.
-
-**F.1 (Done):** ShadowWorkspace — isolated temp filesystem; enable with `task.metadata["shadow_workspace"]=True`; optional cleanup via `shadow_workspace_cleanup=True`.
-
-**D.5 (Done):** cost in trace — `AgentExecutionResult.cost` + `duration_seconds` from LLM usage; persisted in `RunStats.llm_usage` via NexusLoop.
-
-**D.4 (Done):** notebook templates — `notebooks/experiments/`; `ExperimentSession` in `intergrax/experiments/workflow.py`.
-
-**D.3 (Done):** experiment registry — `intergrax/experiments/`; CLI `experiments register|list|decide|link-run`; HTTP `/debug/experiments`.
-
-**E.4 (Done):** Legal dynamic pipeline — 5 UAEP macro-steps; wave/replan loop in `legal_dynamic_waves`.
-
-**E.1 (Done):** Legal sequential — 8 UAEP domain steps via `thin_steps.py`.
-
-**D.2 (Done):** FastAPI debug API — `GET /debug/tasks`, `GET /debug/tasks/{run_id}`, `GET /debug/tasks/{run_id}/trace`.
-
-**P4.4 (Done):** `RuntimeToolGateway` + `ToolRequest`/`ToolResponse`; Legal bridge no longer imports Nexus steps directly.
-
-**P4.3 (Done):** governance / HITL pause-resume in NexusLoop.
-
-
-
-**Then:** new application capabilities as concrete use cases emerge.
+- **F.5:** typed task contract — `TaskExecutionOptions` / `TaskRuntimeState` / `TaskResultSummary` + metadata bridge.
+- **F.4:** long-running task snapshots + notification adapter stubs (Slack/Teams **not** real integration).
+- **F.1–F.3:** Shadow, Sandbox, advanced HITL.
 
 
 
@@ -599,5 +661,5 @@ Reuse:
 
 
 
-*Plan synced with codebase after P4.4 tool gateway (2026-05-27). Gate: 25 tests.*
+*Plan synced with codebase after F.4 + typed task contract (2026-05-27). Gate: 78 tests.*
 
