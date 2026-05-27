@@ -26,7 +26,12 @@ from intergrax.runtime.nexus.tools.uaep_tool_gateway import BoundToolGateway
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
+from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RouteInfo, RuntimeRequest
+from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
+from intergrax.runtime.workspace.shadow_workspace import (
+    SHADOW_WORKSPACE_FLAG,
+    SHADOW_WORKSPACE_ID_KEY,
+)
 
 
 class UAEPBlockedError(RuntimeError):
@@ -63,11 +68,13 @@ class UAEPExecutor:
         event_bus: Optional[RuntimeEventBus] = None,
         policy_engine: Optional[RuntimePolicyEngine] = None,
         interrupt_handler: Optional[ExecutionInterruptHandler] = None,
+        shadow_manager: Optional[ShadowWorkspaceManager] = None,
     ) -> None:
         self._event_bus = event_bus
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=policy_engine,
         )
+        self._shadow_manager = shadow_manager or ShadowWorkspaceManager()
         if middleware is not None:
             self._middleware = middleware
         elif event_bus is not None:
@@ -106,6 +113,7 @@ class UAEPExecutor:
             request=request,
             event_emitter=_BusEventEmitter(self._event_bus) if self._event_bus else None,
         )
+        self._attach_shadow_workspace(exec_ctx, request, task_id=task_id)
 
         hook_base = HookContext(
             task_id=task_id,
@@ -201,6 +209,7 @@ class UAEPExecutor:
                 break
 
         answer = self._build_answer(exec_ctx, last_output, run_id)
+        self._annotate_answer_with_shadow(answer, exec_ctx)
 
         if governance is not None and governance.should_pause:
             validation = ValidationResult(valid=False, errors=["awaiting human input"])
@@ -299,6 +308,38 @@ class UAEPExecutor:
             return cached
         summary = output.summary if output else ""
         return RuntimeAnswer(run_id=run_id, answer=summary)
+
+    def _attach_shadow_workspace(
+        self,
+        exec_ctx: RuntimeExecutionContext,
+        request: RuntimeRequest,
+        *,
+        task_id: str,
+    ) -> None:
+        if not request.metadata.get(SHADOW_WORKSPACE_FLAG):
+            return
+        tenant_id = request.tenant_id or "default"
+        workspace = self._shadow_manager.open_or_create(
+            tenant_id=tenant_id,
+            task_id=task_id,
+        )
+        exec_ctx.metadata["shadow_workspace"] = workspace
+        exec_ctx.metadata[SHADOW_WORKSPACE_ID_KEY] = workspace.workspace_id
+
+    @staticmethod
+    def _annotate_answer_with_shadow(
+        answer: RuntimeAnswer,
+        exec_ctx: RuntimeExecutionContext,
+    ) -> None:
+        workspace_id = exec_ctx.metadata.get(SHADOW_WORKSPACE_ID_KEY)
+        if not workspace_id:
+            return
+        if answer.route is None:
+            answer.route = RouteInfo(extra={})
+        answer.route.extra[SHADOW_WORKSPACE_ID_KEY] = workspace_id
+        workspace = exec_ctx.metadata.get("shadow_workspace")
+        if workspace is not None:
+            answer.route.extra["shadow_artifact_count"] = len(workspace.list_artifacts())
 
     async def _emit(
         self,

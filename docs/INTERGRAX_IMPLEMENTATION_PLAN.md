@@ -99,7 +99,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §32 HITL | Approval flow | **Not started** | Phase F |
 
-| §20–21 Shadow / Sandbox | Isolated exec | **Not started** | Phase F |
+| §20–21 Shadow / Sandbox | Isolated exec | **Partial** | F.1 ShadowWorkspace ✅; F.2 Sandbox pending |
 
 
 
@@ -271,9 +271,14 @@ uv run pytest tests/ -m gate -q
 
 ### Phase F — Advanced / On-Demand
 
+| # | Deliverable | Status | Notes |
+|---|-------------|--------|-------|
+| F.1 | ShadowWorkspace | **Done** | `runtime/workspace/`; UAEP + NexusLoop integration |
+| F.2 | SandboxRuntime | Pending | on demand |
+| F.3 | Advanced HITL (reject/escalation store) | Pending | on demand |
+| F.4 | Long-running tasks / Slack-Teams | Pending | on demand |
 
-
-Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete use case**.
+Long-running tasks, HITL advanced, Shadow, Sandbox, Slack/Teams — **only with concrete use case**.
 
 
 
@@ -323,9 +328,9 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 ```text
 
-NOW:     Phase F (on demand)
+NOW:     F.2 Sandbox (on demand) · F.3 advanced HITL (on demand)
 
-NEXT:    Phase F (on demand)
+NEXT:    Phase F remainder (on demand)
 
 LATER:   Phase F (on demand)
 
@@ -361,11 +366,13 @@ LATER:   Phase F (on demand)
 
 ## 6. Recommended Next Step
 
-**Phase F (on demand):** HITL advanced, Shadow, Sandbox.
+**F.2 (on demand):** SandboxRuntime, or **F.3** advanced HITL reject/escalation store.
 
 ```bash
 uv run pytest tests/ -m gate -q
 ```
+
+**F.1 (Done):** ShadowWorkspace — isolated temp filesystem; enable with `task.metadata["shadow_workspace"]=True`; optional cleanup via `shadow_workspace_cleanup=True`.
 
 **D.5 (Done):** cost in trace — `AgentExecutionResult.cost` + `duration_seconds` from LLM usage; persisted in `RunStats.llm_usage` via NexusLoop.
 
@@ -385,7 +392,7 @@ uv run pytest tests/ -m gate -q
 
 
 
-**Then:** Phase F (on demand).
+**Then:** F.2 Sandbox or F.3 advanced HITL (on demand).
 
 
 
@@ -454,6 +461,24 @@ session = ExperimentSession(trace_db=Path("build/notebooks/trace.db"))
 - Debug API/CLI: `stats.cost` on run detail; CLI `tasks show` prints cost line
 
 Cost proxy: **1 cost unit = 1 LLM token** (laboratory default, matches EvalRunner).
+
+### F.1 Shadow workspace (Done)
+
+Isolated temporary filesystem for experiments (§20). Enable on a Nexus task:
+
+```python
+task = Task(
+    tenant_id="t1",
+    user_id="u1",
+    message="analyze vendor",
+    context=TaskContext(capability="research.web_search"),
+    metadata={"shadow_workspace": True},  # optional: "shadow_workspace_cleanup": True
+)
+```
+
+UAEP agents receive `ctx.metadata["shadow_workspace"]` in `run_step`. Result metadata includes `shadow_workspace_id`.
+
+Root directory: `INTERGRAX_SHADOW_ROOT` (default `build/shadow_workspaces/`).
 
 ### D.1 Debug CLI (Done)
 

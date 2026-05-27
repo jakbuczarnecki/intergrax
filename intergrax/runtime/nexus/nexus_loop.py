@@ -36,6 +36,13 @@ from intergrax.runtime.task.task_trace import (
     lifecycle_with_persisting_trace,
     lifecycle_with_trace,
 )
+from intergrax.agents.uaep import UAEPExecutor
+from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
+from intergrax.runtime.workspace.shadow_workspace import (
+    SHADOW_WORKSPACE_CLEANUP_KEY,
+    SHADOW_WORKSPACE_FLAG,
+    SHADOW_WORKSPACE_ID_KEY,
+)
 
 class NexusLoop:
     """
@@ -61,6 +68,7 @@ class NexusLoop:
         retry_policy: Optional[RetryPolicy] = None,
         policy_engine: Optional[RuntimePolicyEngine] = None,
         interrupt_handler: Optional[ExecutionInterruptHandler] = None,
+        shadow_manager: Optional[ShadowWorkspaceManager] = None,
     ) -> None:
         self._registry = registry
         self._event_bus = event_bus or RuntimeEventBus()
@@ -68,10 +76,16 @@ class NexusLoop:
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=self._policy_engine,
         )
+        self._shadow_manager = shadow_manager or ShadowWorkspaceManager()
         self._engine = AgentEngine(
             registry,
             event_bus=self._event_bus,
             policy_engine=self._policy_engine,
+            uaep_executor=UAEPExecutor(
+                event_bus=self._event_bus,
+                policy_engine=self._policy_engine,
+                shadow_manager=self._shadow_manager,
+            ),
         )
         self._classifier = classifier or ClassifyingTaskClassifier(registry)
         self._planner = planner or TaskPlanner()
@@ -110,6 +124,10 @@ class NexusLoop:
     @property
     def interrupt_handler(self) -> ExecutionInterruptHandler:
         return self._interrupt_handler
+
+    @property
+    def shadow_manager(self) -> ShadowWorkspaceManager:
+        return self._shadow_manager
 
     async def handle_task(self, task: Task) -> TaskResult:
         lifecycle, trace_emitter = self._resolve_lifecycle(task)
@@ -403,6 +421,14 @@ class NexusLoop:
             ],
         }
 
+        if primary and primary.structured_data.get(SHADOW_WORKSPACE_ID_KEY):
+            metadata["shadow_workspace_id"] = primary.structured_data[SHADOW_WORKSPACE_ID_KEY]
+            artifact_count = primary.structured_data.get("shadow_artifact_count")
+            if artifact_count is not None:
+                metadata["shadow_artifact_count"] = artifact_count
+
+        self._maybe_cleanup_shadow(task, executions)
+
         return TaskResult(
             task_id=task.task_id,
             run_id=primary.run_id if primary else task.task_id,
@@ -452,3 +478,20 @@ class NexusLoop:
             duration_ms=metrics.duration_ms,
             llm_usage=metrics.as_llm_usage(),
         )
+
+    def _maybe_cleanup_shadow(self, task: Task, executions: List[AgentExecutionResult]) -> None:
+        if not task.metadata.get(SHADOW_WORKSPACE_FLAG):
+            return
+        if not task.metadata.get(SHADOW_WORKSPACE_CLEANUP_KEY, False):
+            return
+
+        workspace_id = None
+        if executions:
+            workspace_id = executions[-1].structured_data.get(SHADOW_WORKSPACE_ID_KEY)
+        if workspace_id:
+            self._shadow_manager.cleanup(str(workspace_id))
+        else:
+            self._shadow_manager.cleanup_for_task(
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+            )
