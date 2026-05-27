@@ -94,7 +94,12 @@ class PersistingTaskTraceEmitter(TaskTraceEmitter):
             self._started_at_utc = evt.ts_utc
         return evt
 
-    def finalize(self, *, duration_ms: int = 0) -> None:
+    def finalize(
+        self,
+        *,
+        duration_ms: int = 0,
+        llm_usage: dict[str, object] | None = None,
+    ) -> None:
         if self._started_at_utc is None:
             return
         self._trace_store.finalize_run(
@@ -105,7 +110,10 @@ class PersistingTaskTraceEmitter(TaskTraceEmitter):
                 user_id=self._user_id,
                 tenant_id=self._tenant_id,
                 started_at_utc=self._started_at_utc,
-                stats=RunStats(duration_ms=duration_ms, llm_usage={}),
+                stats=RunStats(
+                    duration_ms=duration_ms,
+                    llm_usage=dict(llm_usage or {}),
+                ),
             ),
         )
 

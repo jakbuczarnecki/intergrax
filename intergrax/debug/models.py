@@ -42,6 +42,8 @@ class RunListResponse(BaseModel):
 
 class RunStatsResponse(BaseModel):
     duration_ms: int
+    cost: Optional[float] = None
+    total_tokens: Optional[int] = None
     llm_usage: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -77,11 +79,31 @@ class RunDetailResponse(BaseModel):
             started_at_utc=meta.started_at_utc,
             stats=RunStatsResponse(
                 duration_ms=meta.stats.duration_ms,
+                cost=_coerce_optional_float((meta.stats.llm_usage or {}).get("cost")),
+                total_tokens=_coerce_optional_int((meta.stats.llm_usage or {}).get("total_tokens")),
                 llm_usage=dict(meta.stats.llm_usage or {}),
             ),
             event_count=len(persisted.events),
             error=error,
         )
+
+
+def _coerce_optional_float(value: Any) -> Optional[float]:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _coerce_optional_int(value: Any) -> Optional[int]:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 class TraceResponse(BaseModel):

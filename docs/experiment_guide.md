@@ -193,3 +193,5 @@ Run with `uv run jupyter lab notebooks/experiments/01_echo_experiment.ipynb` or 
 ## 8. Decision
 
 After observing traces, cost, and quality: **keep**, **improve**, **pause**, or **delete** the experiment (§35). Use the registry (§7) to persist the verdict and linked `run_id`s.
+
+**Cost (Phase D.5):** `AgentExecutionResult.cost` is populated from LLM token usage (1 cost unit = 1 token, laboratory proxy). Nexus task metadata exposes `execution_cost`; persisted traces store `stats.llm_usage.cost` when using `trace_store`.

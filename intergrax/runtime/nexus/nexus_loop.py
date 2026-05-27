@@ -7,6 +7,7 @@ from typing import List, Optional
 
 from intergrax.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.runtime_cost import aggregate_execution_metrics
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionNodeStatus
 from intergrax.runtime.nexus.agent_router import AgentRouter
@@ -35,7 +36,6 @@ from intergrax.runtime.task.task_trace import (
     lifecycle_with_persisting_trace,
     lifecycle_with_trace,
 )
-
 
 class NexusLoop:
     """
@@ -256,7 +256,7 @@ class NexusLoop:
                 )
             )
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                trace_emitter.finalize()
+                self._finalize_persisting_trace(trace_emitter, executions)
             return await self._finish_task(
                 task,
                 trace_emitter,
@@ -278,7 +278,7 @@ class NexusLoop:
             lifecycle.transition(task, TaskState.VALIDATING)
             lifecycle.transition(task, TaskState.FAILED)
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                trace_emitter.finalize()
+                self._finalize_persisting_trace(trace_emitter, executions)
             return await self._finish_task(
                 task,
                 trace_emitter,
@@ -317,7 +317,7 @@ class NexusLoop:
             lifecycle.transition(task, TaskState.COMPLETED)
 
         if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-            trace_emitter.finalize()
+            self._finalize_persisting_trace(trace_emitter, executions)
 
         return await self._finish_task(
             task,
@@ -376,6 +376,8 @@ class NexusLoop:
         composer_meta["graph_id"] = graph_id
         composer_meta["graph_node_count"] = len(plan.steps) if plan else 0
 
+        execution_metrics = aggregate_execution_metrics(executions)
+
         metadata = {
             **composer_meta,
             "validation_valid": validation.valid,
@@ -383,6 +385,8 @@ class NexusLoop:
             "validation_warnings": validation.warnings,
             "task_trace_events": len(trace_emitter.events),
             "runtime_events": len(self._event_bus.history),
+            "execution_cost": execution_metrics.cost,
+            "execution_total_tokens": execution_metrics.total_tokens,
             "governance_human_request": (
                 executions[-1].human_request.model_dump()
                 if executions and executions[-1].human_request
@@ -437,3 +441,14 @@ class NexusLoop:
                 event_bus=self._event_bus,
             )
         return lifecycle_with_trace(run_id=task.task_id, event_bus=self._event_bus)
+
+    @staticmethod
+    def _finalize_persisting_trace(
+        trace_emitter: PersistingTaskTraceEmitter,
+        executions: List[AgentExecutionResult],
+    ) -> None:
+        metrics = aggregate_execution_metrics(executions)
+        trace_emitter.finalize(
+            duration_ms=metrics.duration_ms,
+            llm_usage=metrics.as_llm_usage(),
+        )

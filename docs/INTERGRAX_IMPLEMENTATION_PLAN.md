@@ -50,7 +50,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §42 Unified Execution Runtime | **~50–55%** | P4.1–P4.4 wired; agent UAEP migration pending |
 
-| Laboratory workflow (inspect, decide) | **~85%** | D.1–D.4 done; D.5 cost in trace pending |
+| Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
 
 | Pre-P4.2 regression gate | **Done** | A.5-min (~10 tests, marker `gate`) |
 
@@ -91,7 +91,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | §33 Observability | Trace + events | **Partial** | Trace store ✅; P4.1 dual-emit ✅; D.1 CLI ✅ |
 
 | §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial** | P4 + Phase E ✅ |
-| §19 Debug / experiments | CLI, API, registry | **Partial** | D.1–D.3 ✅; D.5 cost pending |
+| §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` (no `legal_agent` shim) |
 
@@ -231,7 +231,7 @@ uv run pytest tests/ -m gate -q
 
 | D.4 | Notebook templates | **Done** | `notebooks/experiments/`, `experiments/workflow.py` |
 
-| D.5 | Cost in trace | Pending | `AgentExecutionResult.cost` from runtime stats |
+| D.5 | Cost in trace | **Done** | `AgentExecutionResult.cost` from LLM usage / runtime stats |
 
 
 
@@ -323,7 +323,7 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 ```text
 
-NOW:     D.5 cost in trace
+NOW:     Phase F (on demand)
 
 NEXT:    Phase F (on demand)
 
@@ -361,11 +361,13 @@ LATER:   Phase F (on demand)
 
 ## 6. Recommended Next Step
 
-**D.5** — cost in trace (`AgentExecutionResult.cost`).
+**Phase F (on demand):** HITL advanced, Shadow, Sandbox.
 
 ```bash
 uv run pytest tests/ -m gate -q
 ```
+
+**D.5 (Done):** cost in trace — `AgentExecutionResult.cost` + `duration_seconds` from LLM usage; persisted in `RunStats.llm_usage` via NexusLoop.
 
 **D.4 (Done):** notebook templates — `notebooks/experiments/`; `ExperimentSession` in `intergrax/experiments/workflow.py`.
 
@@ -383,7 +385,7 @@ uv run pytest tests/ -m gate -q
 
 
 
-**Then:** D.5 cost in trace.
+**Then:** Phase F (on demand).
 
 
 
@@ -442,6 +444,16 @@ from intergrax.experiments.workflow import ExperimentSession, ensure_repo_root_o
 ensure_repo_root_on_path()
 session = ExperimentSession(trace_db=Path("build/notebooks/trace.db"))
 ```
+
+### D.5 Cost in trace (Done)
+
+`AgentExecutionResult.cost` and `duration_seconds` are derived from LLM usage (`intergrax/contracts/runtime_cost.py`):
+
+- Mapping: `runtime_answer_to_agent_result()` reads `llm_usage_report` or `stats.extra.cost`
+- NexusLoop: aggregates multi-agent cost into task metadata (`execution_cost`) and `RunStats.llm_usage` on finalize
+- Debug API/CLI: `stats.cost` on run detail; CLI `tasks show` prints cost line
+
+Cost proxy: **1 cost unit = 1 LLM token** (laboratory default, matches EvalRunner).
 
 ### D.1 Debug CLI (Done)
 

@@ -6,6 +6,10 @@ from __future__ import annotations
 from typing import Optional
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.runtime_cost import (
+    extract_cost_from_runtime_answer,
+    extract_duration_seconds_from_runtime_answer,
+)
 from intergrax.runtime.interrupts.handler import GovernanceResolution
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer
 
@@ -47,6 +51,8 @@ def runtime_answer_to_agent_result(
         structured_data=structured,
         used_tools=[t.tool_name for t in (answer.tool_calls or [])],
         errors=errors,
+        cost=extract_cost_from_runtime_answer(answer),
+        duration_seconds=extract_duration_seconds_from_runtime_answer(answer),
         agent_decision=governance.agent_decision if governance else None,
         human_request=governance.human_request if governance else None,
         execution_interrupt=governance.interrupt if governance else None,

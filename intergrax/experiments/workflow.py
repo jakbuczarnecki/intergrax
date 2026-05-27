@@ -182,10 +182,13 @@ class ExperimentSession:
         store = SQLiteRunTraceStore(db_path=self._trace_db)
         persisted = store.read_run(run_id, self.tenant_id)
         stats = persisted.metadata.stats if persisted.metadata else None
+        llm_usage = dict(stats.llm_usage or {}) if stats else {}
         return {
             "run_id": run_id,
             "event_count": len(persisted.events),
             "duration_ms": stats.duration_ms if stats else None,
+            "cost": llm_usage.get("cost"),
+            "total_tokens": llm_usage.get("total_tokens"),
             "lifecycle_steps": [
                 event.get("step")
                 for event in persisted.events
