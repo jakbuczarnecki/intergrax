@@ -1,159 +1,164 @@
-# Intergrax Framework
+# Intergrax
 
-**Modular AI Framework and Application Platform for Building Intelligent Business Systems**
-
----
-
-## Overview
-**Intergrax** is an enterprise-grade modular framework meticulously engineered to accelerate the delivery of high-stakes, intelligent business systems. By harmonizing state-of-the-art Large Language Models (LLMs) with professional retrieval pipelines and autonomous reasoning agents, Intergrax bridges the gap between raw AI capabilities and production-ready reliability.
-
-It provides a robust, end-to-end ecosystem for deterministic AI-driven reasoning, multi-layered automation, and cognitive knowledge management. Built on a foundation of composable, decoupled components, Intergrax empowers architects to design complex, stateful workflows and mission-critical decision-support systems that are as scalable as they are intelligent.
-
-**Why Intergrax?**
-Architectural Precision: Moving beyond simple prompts into structured, multi-step Chain-of-Thought orchestration.
-
-Operational Control: Integrated Human-In-The-Loop (HITL) and real-time state persistence for auditable AI behavior.
-
-Production Velocity: Pre-built modules for RAG, multimedia processing, and tool execution (MCP) to turn R&D into ROI in record time.
-
-Intergrax combines:
-- A **core AI framework** (Tier-0 platform + Tier-1 Nexus runtime) with RAG, agents, and MCP integration.
-- A **FastAPI application layer** (Tier-3) for deploying domain-specific hosts.
-- **Reusable agent modules** (Tier-2) under `agents/` for business intelligence, document processing, and workflow automation.
-
-The framework is being developed as an **internal agent experimentation laboratory** (see `docs/intergrax_runtime_architecture.md` §2) on the path toward the Intergrax Platform.
-
-**Documentation:** [`docs/README.md`](docs/README.md) · **Implementation plan:** [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
+**Agent OS and Harness AI runtime for building, orchestrating, and validating specialized AI agents.**
 
 ---
 
-## Key Capabilities
+## What is Intergrax?
 
-### 1. Modular AI Architecture
-Intergrax provides a flexible, component-based architecture:
-- **RAG Layer:** advanced multi-index retrieval and summarization.
-- **LLM Layer:** unified access to OpenAI, Ollama, Gemini, and other models.
-- **Nexus Runtime:** task intake, agent registry, and multi-agent orchestration (`NexusLoop`, `ExecutionGraph`).
-- **Tool Registry (MCP):** exposes internal and external tools to agents.
-- **FastAPI Layer:** production-ready API surface for Tier-3 applications.
+Intergrax is an **AI Operating System** — a controlled **Harness AI** environment for designing agentic capabilities, running them through a shared runtime, and deciding which ideas to keep, improve, or discard.
 
-### 2. Multi-Agent Orchestration
-**NexusLoop** and **ExecutionGraph** coordinate multi-agent workflows. The legacy Supervisor / LangGraph adapter is deprecated in favour of the Nexus runtime model.
+The core asset is not a single chatbot or domain agent. It is the **runtime** that lets you:
 
-### 3. Real-Time and Contextual Reasoning
-The system combines:
-- Document and knowledge retrieval (RAG)  
-- Web data access for up-to-date information  
-- Context memory and reasoning history  
-to deliver consistent, traceable outputs in dynamic business environments.
+- define agent capabilities as reusable modules,
+- register and compose agents in a multi-agent graph,
+- enforce tools, governance, and observability consistently,
+- run experiments with full traceability (CLI and HTTP debug surfaces).
 
-### 4. Ready-Made Modules and Applications
-Intergrax ships with pre-built modules that can be combined or extended:
-- **Large-File Conversational RAG** — persistent document reasoning.  
-- **Business Profile Intelligence System** — automated company profiling and scoring.  
-- **Web Research Agent** — live search and contextual summarization.  
-- **Multi-Agent Nexus Flow** — task routing and graph execution via NexusLoop.  
+Intergrax is developed as an **internal agent experimentation laboratory** on the path toward a broader agent platform. The canonical architecture is defined in [`docs/intergrax_runtime_architecture.md`](docs/intergrax_runtime_architecture.md).
 
-Each module can operate standalone or be embedded into custom business solutions.
+**Documentation:** [`docs/README.md`](docs/README.md) · **Implementation plan:** [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) · **Experiment workflow:** [`docs/experiment_guide.md`](docs/experiment_guide.md)
 
 ---
 
-## Example Use Cases
-- Building AI-powered assistants for document analysis and reporting.  
-- Automating due-diligence, recruitment, or project evaluation workflows.  
-- Generating structured business insights and dynamic company profiles.  
-- Enabling virtual multi-role teams that simulate decision-making processes.  
-- Integrating intelligent reasoning layers into ERP/CRM systems.
+## Four-tier model
 
+Intergrax is organized as a **four-tier stack**. Higher tiers compose lower tiers; they do not reimplement platform infrastructure.
 
----
+| Tier | Role | Repository path |
+|------|------|-----------------|
+| **Tier-0 — Platform** | Universal, domain-agnostic building blocks: LLM adapters, RAG, tools, memory, logging, trace persistence | `intergrax/` (outside Nexus orchestration) |
+| **Tier-1 — Nexus Runtime** | Agent OS: task lifecycle, `NexusLoop`, `AgentEngine`, UAEP, execution graph, governance, event bus | `intergrax/runtime/` |
+| **Tier-2 — Agents** | Specialized capability modules: contracts, domain logic, pipelines, agent-local governance | `agents/` |
+| **Tier-3 — Applications** | Product hosts: FastAPI entrypoints, env config, HTTP routes wiring Tier-2 agents | `applications/` |
 
-## Vision
-Intergrax aims to become a **unified foundation for AI-powered enterprise software** — where reasoning, automation, and human-like collaboration are embedded into the core of business systems.
+**Dependency rules:**
 
-The long-term goal is to provide:
-- An **AI-native layer** for ERP/CRM and knowledge-intensive platforms.  
-- A **developer framework** for assembling intelligent, context-aware business tools.  
-- A **strategic foundation** for organizations adopting autonomous and semi-autonomous workflows.
+- `intergrax/` must not import from `agents/` or `applications/`.
+- `agents/` must not import from `applications/`.
+- `applications/` may import from `agents/` and `intergrax/`.
 
----
-
-## Repository Structure
-- **intergrax**
-- **supervisor**        # Deprecated — legacy multi-agent orchestration (prefer NexusLoop)
-- **runtime**           # Core execution engine & Stateful Pipelines (CoT & HITL)
-- **llm_adapters**      # Unified interface for Multi-LLM support (OpenAI, Anthropic, Ollama, etc.)
-- **rag**               # Advanced RAG (Retrieval-Augmented Generation) & document indexing
-- **tools**             # Extensible Tool Registry & Model Context Protocol (MCP)
-- **multimedia**        # Vision and Audio processing (OCR, Whisper, etc.)
-- **api**               # Enterprise-ready FastAPI backend
-- **applications**      # Reference implementations (UX Audit Agent, Financial Analysis)
-
-## Advanced Architectural Patterns
-
-- **Recursive Reasoning & Chain-of-Thought (CoT)** 
-The supervisor/ and runtime/ modules implement structured reasoning. Instead of a single LLM call, Intergrax breaks down user queries into a logical graph of thoughts:
-`Intent Decomposition`: The EnginePlanner analyzes the request and generates a sequence of sub-tasks.
-`Reasoning Loops`: Each step is validated against the current RuntimeState before proceeding to the next node.
-
-- **Human-In-The-Loop (HITL)**
-Intergrax is built for high-stakes business environments where full autonomy might be risky. The runtime/ engine supports:
-`Interruptible Pipelines`: Execution can be paused at critical checkpoints (e.g., before executing a financial transaction or a data-destructive tool).
-`State Persistence`: Sessions are stored, allowing a human operator to review the "Agent's Thinking" and provide manual feedback or approval to resume the flow.
-
-- **Enterprise Tooling & MCP**
-The tools/ module is more than just a function library; it’s a robust execution environment:
-`Model Context Protocol (MCP)`: Standardized integration for external data sources and services.
-`Safety Constraints`: Built-in compliance checkers (e.g., ComplianceChecker in ux_audit_agent) ensure that tool outputs align with corporate policies.
-
-- **Observability & Traceability**
-Every reasoning step generates a TraceEvent. This allows developers to:
-`Reconstruct` the Chain-of-Thought for debugging.
-`Monitor` Token Usage & Costs per specific sub-task.
-`Audit` the decision-making process for compliance purposes.
-
+This separation keeps the **Harness** (runtime) stable while agents and product surfaces evolve independently.
 
 ---
 
-## Usage Examples and Notebooks
-Examples demonstrating how to use core components (RAG, supervisor workflows, web search, adapters, and agents) are provided as runnable notebooks.
-These can be found in:
-**/notebooks/**
-Each notebook corresponds to a specific capability or automation pattern and serves as a practical reference for building LangGraph workflows, integrating tools, composing agents, and testing retrieval or reasoning components.
+## Harness AI workflow
+
+The intended experimentation loop:
+
+```text
+new idea
+  → define agent capability (AgentContract)
+  → implement Tier-2 agent under agents/
+  → register in AgentRegistry
+  → run via NexusLoop (Task → AgentEngine → UAEP)
+  → inspect traces, cost, quality, failures
+  → keep · improve · pause · delete
+```
+
+Scaffold a new agent:
+
+```bash
+python -m intergrax.scaffold new-agent <name> --capabilities <domain>.<action>
+```
+
+Run the regression gate:
+
+```bash
+uv run pytest tests/ -m gate -q
+```
 
 ---
 
+## Reference agents and applications
 
-## Status and Development
-Intergrax is under **active development** as part of the intergrax ecosystem.  
-The current focus is on:
-- Consolidating the Nexus runtime (NexusLoop, AgentEngine, UAEP).
-- Extending Tier-3 application hosts (Legal, Research).
-- Experimentation workflow and §42 unified execution runtime.
+**Tier-2 agents** (capability modules):
 
-See [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) for the current roadmap.
+| Agent | Capability | Path |
+|-------|------------|------|
+| Echo | Minimal UAEP reference | `agents/echo/` |
+| Research | Web research pipeline | `agents/research/` |
+| Research Summary | Summarization stage in multi-agent flow | `agents/research/` |
+| Legal | Contract analysis and legal review | `agents/legal/` |
 
-Early prototypes already demonstrate multi-step reasoning, agent collaboration, and document-based workflows.
+**Tier-3 applications** (HTTP / product hosts):
+
+| Application | Purpose |
+|-------------|---------|
+| `applications/legal_application/` | Legal agent FastAPI host |
+| `applications/research_application/` | Research pipeline HTTP host |
+
+Agents execute through **UAEP** (Unified Agent Execution Protocol): `get_steps` → `run_step` → `decide_after_step`, orchestrated by `AgentEngine` inside `NexusLoop`.
+
+---
+
+## Runtime capabilities
+
+- **NexusLoop** — task intake, agent selection, lifecycle (`Task` → `RUNNING` → `COMPLETED` / `WAITING_FOR_HUMAN`).
+- **ExecutionGraph** — multi-agent workflows (e.g. Research → Summary).
+- **UAEP + governance** — step boundaries, `AgentDecision`, human-in-the-loop pause/resume, policy interrupts.
+- **ToolRuntime gateway** — unified tool access via `ToolRequest` / `RuntimeToolGateway` (§42.12).
+- **Observability** — persisted run traces (SQLite), debug CLI (`python -m intergrax.debug`), debug HTTP API (`intergrax.debug.app`).
+- **Tier-0 reuse** — one canonical path for LLM, RAG, tools, and tracing; agents compose rather than reimplement.
+
+Legacy Supervisor / LangGraph orchestration is **deprecated** in favour of the Nexus runtime model.
+
+---
+
+## Repository layout
+
+```text
+intergrax/              # Tier-0 platform + Tier-1 Nexus runtime, AgentEngine, UAEP
+agents/                 # Tier-2 specialized agents (echo, legal, research, …)
+applications/           # Tier-3 product hosts (legal_application, research_application)
+docs/                   # Canonical architecture, implementation plan, experiment guide
+notebooks/              # Runnable examples and integration demos
+tests/                  # Unit and integration tests (gate: pytest -m gate)
+```
+
+---
+
+## Platform building blocks (Tier-0)
+
+Shared infrastructure used by all agents:
+
+- **LLM adapters** — OpenAI, Anthropic, Ollama, Gemini, and others (`intergrax/llm_adapters/`)
+- **RAG** — embeddings, vector stores, document loaders (`intergrax/rag/`)
+- **Tools** — registry, MCP-oriented integrations (`intergrax/tools/`)
+- **Memory** — conversational and session storage (`intergrax/memory/`)
+- **FastAPI core** — shared API primitives for Tier-3 hosts (`intergrax/fastapi_core/`)
+
+---
+
+## Status
+
+Intergrax is under **active development** (private R&D). Priorities, phases, and completion status are maintained in a single place:
+
+**[`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)**
+
+For architectural alignment and gap tracking, see also [`docs/INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md`](docs/INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md).
 
 ---
 
 ## Audience
-Intergrax is intended for:
-- **Developers** building AI-enabled business applications.  
-- **Research teams** exploring multi-agent orchestration and reasoning.  
-- **Companies** seeking to integrate AI into ERP/CRM or decision workflows.  
-- **Investors** and **technical leaders** interested in scalable AI infrastructure with commercial application.
+
+Intergrax is for teams and developers who want to:
+
+- build **specialized agents** on a shared Harness rather than one-off LLM scripts,
+- orchestrate **multi-agent ecosystems** with traceable execution,
+- validate agent hypotheses in a **controlled laboratory** before productizing,
+- integrate AI capabilities into business systems via Tier-3 application hosts.
 
 ---
 
 ## License
-All rights reserved © Artur Czarnecki.  
-This repository is currently in private R&D stage.  
-Commercial licensing and partnership opportunities are available upon request.
+
+All rights reserved © Artur Czarnecki.
+
+This repository is currently in private R&D stage. Commercial licensing and partnership opportunities are available upon request.
 
 ---
 
 **Maintainer:** Artur Czarnecki  
 **Repository:** [Intergrax](https://github.com/jakbuczarnecki/intergrax-ai)  
 **Contact:** jakbu.czarnecki.83@gmail.com
-
