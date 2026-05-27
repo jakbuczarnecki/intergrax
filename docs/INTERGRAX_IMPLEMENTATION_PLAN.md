@@ -99,7 +99,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §32 HITL | Approval flow | **Not started** | Phase F |
 
-| §20–21 Shadow / Sandbox | Isolated exec | **Partial** | F.1 ShadowWorkspace ✅; F.2 Sandbox pending |
+| §20–21 Shadow / Sandbox | Isolated exec | **Done** | F.1 ShadowWorkspace + F.2 SandboxRuntime ✅ |
 
 
 
@@ -274,7 +274,7 @@ uv run pytest tests/ -m gate -q
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
 | F.1 | ShadowWorkspace | **Done** | `runtime/workspace/`; UAEP + NexusLoop integration |
-| F.2 | SandboxRuntime | Pending | on demand |
+| F.2 | SandboxRuntime | **Done** | `runtime/sandbox/`; `sandbox.exec` via BoundToolGateway |
 | F.3 | Advanced HITL (reject/escalation store) | Pending | on demand |
 | F.4 | Long-running tasks / Slack-Teams | Pending | on demand |
 
@@ -328,7 +328,7 @@ Long-running tasks, HITL advanced, Shadow, Sandbox, Slack/Teams — **only with 
 
 ```text
 
-NOW:     F.2 Sandbox (on demand) · F.3 advanced HITL (on demand)
+NOW:     F.3 advanced HITL (on demand) · F.4 long-running / adapters (on demand)
 
 NEXT:    Phase F remainder (on demand)
 
@@ -366,11 +366,13 @@ LATER:   Phase F (on demand)
 
 ## 6. Recommended Next Step
 
-**F.2 (on demand):** SandboxRuntime, or **F.3** advanced HITL reject/escalation store.
+**F.3 (on demand):** advanced HITL reject/escalation store, or **F.4** long-running tasks.
 
 ```bash
 uv run pytest tests/ -m gate -q
 ```
+
+**F.2 (Done):** SandboxRuntime — `SandboxSession` + `sandbox.exec` tool via UAEP; enable with `task.metadata["sandbox"]=True`.
 
 **F.1 (Done):** ShadowWorkspace — isolated temp filesystem; enable with `task.metadata["shadow_workspace"]=True`; optional cleanup via `shadow_workspace_cleanup=True`.
 
@@ -392,7 +394,7 @@ uv run pytest tests/ -m gate -q
 
 
 
-**Then:** F.2 Sandbox or F.3 advanced HITL (on demand).
+**Then:** F.3 advanced HITL or F.4 long-running tasks (on demand).
 
 
 
@@ -479,6 +481,26 @@ task = Task(
 UAEP agents receive `ctx.metadata["shadow_workspace"]` in `run_step`. Result metadata includes `shadow_workspace_id`.
 
 Root directory: `INTERGRAX_SHADOW_ROOT` (default `build/shadow_workspaces/`).
+
+### F.2 Sandbox runtime (Done)
+
+Controlled session for risky tool use (§21). Enable on a Nexus task:
+
+```python
+task = Task(..., metadata={"sandbox": True})
+```
+
+Agents invoke allowlisted operations through the tool gateway:
+
+```python
+await ctx.invoke_tool(ToolRequest(
+    tool_name="sandbox.exec",
+    agent_id=ctx.agent_id,
+    input={"operation": "write_file", "payload": {"path": "out.txt", "content": "..."}},
+))
+```
+
+Operations: `echo`, `write_file`, `read_file`, `list_files`. Root: `INTERGRAX_SANDBOX_ROOT` (default `build/sandbox_sessions/`).
 
 ### D.1 Debug CLI (Done)
 

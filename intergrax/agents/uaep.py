@@ -32,6 +32,11 @@ from intergrax.runtime.workspace.shadow_workspace import (
     SHADOW_WORKSPACE_FLAG,
     SHADOW_WORKSPACE_ID_KEY,
 )
+from intergrax.runtime.sandbox.manager import SandboxSessionManager
+from intergrax.runtime.sandbox.sandbox_runtime import (
+    SANDBOX_FLAG,
+    SANDBOX_SESSION_ID_KEY,
+)
 
 
 class UAEPBlockedError(RuntimeError):
@@ -69,12 +74,14 @@ class UAEPExecutor:
         policy_engine: Optional[RuntimePolicyEngine] = None,
         interrupt_handler: Optional[ExecutionInterruptHandler] = None,
         shadow_manager: Optional[ShadowWorkspaceManager] = None,
+        sandbox_manager: Optional[SandboxSessionManager] = None,
     ) -> None:
         self._event_bus = event_bus
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=policy_engine,
         )
         self._shadow_manager = shadow_manager or ShadowWorkspaceManager()
+        self._sandbox_manager = sandbox_manager or SandboxSessionManager()
         if middleware is not None:
             self._middleware = middleware
         elif event_bus is not None:
@@ -114,6 +121,7 @@ class UAEPExecutor:
             event_emitter=_BusEventEmitter(self._event_bus) if self._event_bus else None,
         )
         self._attach_shadow_workspace(exec_ctx, request, task_id=task_id)
+        self._attach_sandbox_session(exec_ctx, request, task_id=task_id)
 
         hook_base = HookContext(
             task_id=task_id,
@@ -210,6 +218,7 @@ class UAEPExecutor:
 
         answer = self._build_answer(exec_ctx, last_output, run_id)
         self._annotate_answer_with_shadow(answer, exec_ctx)
+        self._annotate_answer_with_sandbox(answer, exec_ctx)
 
         if governance is not None and governance.should_pause:
             validation = ValidationResult(valid=False, errors=["awaiting human input"])
@@ -340,6 +349,38 @@ class UAEPExecutor:
         workspace = exec_ctx.metadata.get("shadow_workspace")
         if workspace is not None:
             answer.route.extra["shadow_artifact_count"] = len(workspace.list_artifacts())
+
+    def _attach_sandbox_session(
+        self,
+        exec_ctx: RuntimeExecutionContext,
+        request: RuntimeRequest,
+        *,
+        task_id: str,
+    ) -> None:
+        if not request.metadata.get(SANDBOX_FLAG):
+            return
+        tenant_id = request.tenant_id or "default"
+        session = self._sandbox_manager.open_or_create(
+            tenant_id=tenant_id,
+            task_id=task_id,
+        )
+        exec_ctx.metadata["sandbox_session"] = session
+        exec_ctx.metadata[SANDBOX_SESSION_ID_KEY] = session.session_id
+
+    @staticmethod
+    def _annotate_answer_with_sandbox(
+        answer: RuntimeAnswer,
+        exec_ctx: RuntimeExecutionContext,
+    ) -> None:
+        session_id = exec_ctx.metadata.get(SANDBOX_SESSION_ID_KEY)
+        if not session_id:
+            return
+        if answer.route is None:
+            answer.route = RouteInfo(extra={})
+        answer.route.extra[SANDBOX_SESSION_ID_KEY] = session_id
+        session = exec_ctx.metadata.get("sandbox_session")
+        if session is not None:
+            answer.route.extra["sandbox_operation_count"] = len(session.audit_log)
 
     async def _emit(
         self,

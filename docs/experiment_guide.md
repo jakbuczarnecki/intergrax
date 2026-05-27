@@ -215,3 +215,26 @@ if workspace is not None:
 ```
 
 Auto-cleanup: add `"shadow_workspace_cleanup": True` to task metadata when the workspace should be removed after the run.
+
+## 11. Sandbox runtime (Phase F.2)
+
+For permission-controlled risky operations, enable sandbox on the task:
+
+```python
+task = Task(..., metadata={"sandbox": True})
+```
+
+Use the `sandbox.exec` tool from UAEP steps (must be in `AgentContract.allowed_tools`):
+
+```python
+response = await ctx.invoke_tool(ToolRequest(
+    tool_name="sandbox.exec",
+    agent_id=ctx.agent_id,
+    input={
+        "operation": "write_file",
+        "payload": {"path": "result.txt", "content": "safe output"},
+    },
+))
+```
+
+Result metadata includes `sandbox_session_id` and `sandbox_operation_count`. Optional cleanup: `"sandbox_cleanup": True`.

@@ -43,6 +43,12 @@ from intergrax.runtime.workspace.shadow_workspace import (
     SHADOW_WORKSPACE_FLAG,
     SHADOW_WORKSPACE_ID_KEY,
 )
+from intergrax.runtime.sandbox.manager import SandboxSessionManager
+from intergrax.runtime.sandbox.sandbox_runtime import (
+    SANDBOX_CLEANUP_KEY,
+    SANDBOX_FLAG,
+    SANDBOX_SESSION_ID_KEY,
+)
 
 class NexusLoop:
     """
@@ -69,6 +75,7 @@ class NexusLoop:
         policy_engine: Optional[RuntimePolicyEngine] = None,
         interrupt_handler: Optional[ExecutionInterruptHandler] = None,
         shadow_manager: Optional[ShadowWorkspaceManager] = None,
+        sandbox_manager: Optional[SandboxSessionManager] = None,
     ) -> None:
         self._registry = registry
         self._event_bus = event_bus or RuntimeEventBus()
@@ -77,6 +84,7 @@ class NexusLoop:
             policy_engine=self._policy_engine,
         )
         self._shadow_manager = shadow_manager or ShadowWorkspaceManager()
+        self._sandbox_manager = sandbox_manager or SandboxSessionManager()
         self._engine = AgentEngine(
             registry,
             event_bus=self._event_bus,
@@ -85,6 +93,7 @@ class NexusLoop:
                 event_bus=self._event_bus,
                 policy_engine=self._policy_engine,
                 shadow_manager=self._shadow_manager,
+                sandbox_manager=self._sandbox_manager,
             ),
         )
         self._classifier = classifier or ClassifyingTaskClassifier(registry)
@@ -128,6 +137,10 @@ class NexusLoop:
     @property
     def shadow_manager(self) -> ShadowWorkspaceManager:
         return self._shadow_manager
+
+    @property
+    def sandbox_manager(self) -> SandboxSessionManager:
+        return self._sandbox_manager
 
     async def handle_task(self, task: Task) -> TaskResult:
         lifecycle, trace_emitter = self._resolve_lifecycle(task)
@@ -427,7 +440,14 @@ class NexusLoop:
             if artifact_count is not None:
                 metadata["shadow_artifact_count"] = artifact_count
 
+        if primary and primary.structured_data.get(SANDBOX_SESSION_ID_KEY):
+            metadata["sandbox_session_id"] = primary.structured_data[SANDBOX_SESSION_ID_KEY]
+            operation_count = primary.structured_data.get("sandbox_operation_count")
+            if operation_count is not None:
+                metadata["sandbox_operation_count"] = operation_count
+
         self._maybe_cleanup_shadow(task, executions)
+        self._maybe_cleanup_sandbox(task, executions)
 
         return TaskResult(
             task_id=task.task_id,
@@ -492,6 +512,23 @@ class NexusLoop:
             self._shadow_manager.cleanup(str(workspace_id))
         else:
             self._shadow_manager.cleanup_for_task(
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+            )
+
+    def _maybe_cleanup_sandbox(self, task: Task, executions: List[AgentExecutionResult]) -> None:
+        if not task.metadata.get(SANDBOX_FLAG):
+            return
+        if not task.metadata.get(SANDBOX_CLEANUP_KEY, False):
+            return
+
+        session_id = None
+        if executions:
+            session_id = executions[-1].structured_data.get(SANDBOX_SESSION_ID_KEY)
+        if session_id:
+            self._sandbox_manager.cleanup(str(session_id))
+        else:
+            self._sandbox_manager.cleanup_for_task(
                 tenant_id=task.tenant_id,
                 task_id=task.task_id,
             )
