@@ -6,8 +6,16 @@ from dataclasses import replace
 from typing import Optional
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.uaep_pipeline import (
+    pipeline_agent_steps,
+    pipeline_step_complete,
+    run_pipeline_step,
+)
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_decision import AgentDecision
+from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from legal.config.legal_agent_config import LegalAgentConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.ingestion.attachments import FileSystemAttachmentResolver
@@ -42,6 +50,7 @@ class LegalAgent(Agent):
             allowed_tools=["rag", "websearch", "tools"],
             required_adapters=["llm"],
             risk_level=AgentRiskLevel.HIGH,
+            max_steps=20,
             validation_rules=["non_empty_answer"],
             failure_modes=["governance_abort", "budget_exceeded"],
         )
@@ -120,3 +129,25 @@ class LegalAgent(Agent):
         )
 
         return context
+
+    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+        _ = context
+        contract = self.get_contract()
+        return pipeline_agent_steps(
+            step_id="legal_pipeline",
+            step_name="legal_pipeline",
+            trace_label="legal.contract_review",
+            allowed_tools=list(contract.allowed_tools),
+        )
+
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        return await run_pipeline_step(step, ctx)
+
+    def decide_after_step(
+        self,
+        step: AgentStep,
+        output: StepOutput | None,
+        ctx: RuntimeExecutionContext,
+    ) -> AgentDecision:
+        _ = step, output, ctx
+        return pipeline_step_complete(reason="legal pipeline finished")

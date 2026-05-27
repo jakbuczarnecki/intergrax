@@ -48,7 +48,7 @@ async def main():
 asyncio.run(main())
 ```
 
-**Execution paths:** `EchoAgent` uses **UAEP** (`get_steps` / `run_step` via `AgentEngine`). `LegalAgent` still uses the **legacy pipeline** path until migrated (P4.5).
+**Execution paths:** Echo, Research, Summary, and Legal agents run through **UAEP** (`get_steps` / `run_step` / `decide_after_step` via `AgentEngine`). Pipeline-backed agents use `intergrax/agents/uaep_pipeline.py` as a thin wrapper over `RuntimeEngine`.
 
 ## 3. Human-in-the-loop (governance)
 

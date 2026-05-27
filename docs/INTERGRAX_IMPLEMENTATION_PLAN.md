@@ -90,7 +90,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §33 Observability | Trace + events | **Partial** | Trace store ✅; P4.1 dual-emit ✅; D.1 CLI ✅ |
 
-| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial** | P4.2–P4.4 ✅; P4.5 pending |
+| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial** | P4.2–P4.5 ✅; Phase E (thin Legal) pending |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` (no `legal_agent` shim) |
 
@@ -282,7 +282,11 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 | P4.4 | Tool gateway unification | **Done** |
 
-| P4.5 | Agent migration (Echo, Research, Legal) | **Next** |
+| P4.5 | Agent migration (Echo, Research, Legal) | **Done** |
+
+
+
+**P4.5 delivered (2026-05-27):** `uaep_pipeline.py`; Research, Summary, Legal agents on UAEP (`get_steps` / `run_step` / `decide_after_step`); integration tests + NexusLoop research. Gate: 31 tests.
 
 
 
@@ -304,11 +308,9 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 ```text
 
-NOW:     P4.5 Research/Legal UAEP migration · D.2 debug API
+NOW:     Phase E (Legal thin) · D.2 debug API
 
-NEXT:    Phase E (Legal thin) · D.3 experiment registry
-
-THEN:    Phase E (Legal thin) · D.3 experiment registry
+NEXT:    D.3 experiment registry
 
 LATER:   Phase F (on demand)
 
@@ -344,11 +346,13 @@ LATER:   Phase F (on demand)
 
 ## 6. Recommended Next Step
 
-**Phase P4.5** — migrate Research and Legal agents to UAEP step pattern (Echo is reference).
+**Phase E** — thin Legal domain steps (pipeline remains behind UAEP boundary; odchudzenie agenta).
 
 ```bash
 uv run pytest tests/ -m gate -q
 ```
+
+**P4.5 (Done):** Research, Summary, Legal agents migrated to UAEP via `uaep_pipeline.py` (Echo remains reference).
 
 **P4.4 (Done):** `RuntimeToolGateway` + `ToolRequest`/`ToolResponse`; Legal bridge no longer imports Nexus steps directly.
 
