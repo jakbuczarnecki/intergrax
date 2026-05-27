@@ -2,9 +2,9 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Architectural analysis (as of 2026-05-27) |
-| **Target (source of truth)** | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) |
-| **Scope** | Implementation vs. canonical spec — **no code changes** |
+| **Status** | Architectural analysis (as of 2026-05-27, post §42) |
+| **Target (source of truth)** | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) — Tier model §5.1, **Unified Execution Runtime §42** |
+| **Scope** | Implementation vs. canonical spec |
 | **Author** | Intergrax architectural analysis |
 
 ---
@@ -24,6 +24,9 @@
 11. [Priority Order](#11-priority-order)
 12. [Risks](#12-risks)
 13. [Final Recommendation](#13-final-recommendation)
+14. [Implementation Status (Phases A–C)](#14-implementation-status-phases-ac)
+15. [§42 Unified Execution Runtime — Gap Matrix](#15-42-unified-execution-runtime--gap-matrix)
+16. [§42 Implementation Roadmap (P4+)](#16-42-implementation-roadmap-p4)
 
 ---
 
@@ -31,9 +34,11 @@
 
 ### 1.1 Alignment with Target Architecture
 
-**Overall score: ~45–55% (moderate)**
+**Overall score: ~82–88% (architecture §1–41) · ~18–25% (§42 Unified Execution Runtime)**
 
-Intergrax has a **mature single-agent runtime** (Nexus + pipeline + tracing + budget + governance), but it **does not yet behave like the AI Operating System / Harness Runtime** described in the canonical document. The system is closer to *"Nexus MVP + one reference product implementation (Legal Agent)"* than to a full multi-agent experimentation environment.
+Intergrax has evolved from *"Nexus MVP + Legal Agent"* to a **multi-agent-capable runtime** (Phases A–C): NexusLoop, AgentRegistry, ExecutionGraph, TaskLifecycle, Research pipeline. The **§42 Unified Execution Runtime** (event-driven UAEP, hooks, governance) is fully specified and **scaffolded in code** but **not yet wired** into NexusLoop / AgentEngine.
+
+> **Note:** §1–§13 below describe the **baseline analysis** (pre-Phase A). Current status: §14–§16.
 
 | Area | Score | Notes |
 |------|-------|-------|
@@ -1389,30 +1394,194 @@ The current model (`AgentEngine(agents={"legal": ...})`) is hardcoded wiring —
 
 ---
 
-## 14. Implementation Status (2026-05-27)
+## 14. Implementation Status (Phases A–C)
 
-Progress against the migration plan in §9–§10. **Evolve, not rewrite** — backward-compatible `legal_agent` shim retained.
+Progress against the migration plan in §9–§10 and phases A–C. **Evolve, not rewrite** — backward-compatible `legal_agent` shim retained.
 
 | Priority | Item | Status |
 |----------|------|--------|
-| P0 | AgentContract, ValidationResult, CapabilityMatchResult | Done — `intergrax/contracts/` |
-| P0 | AgentRegistry + bootstrap | Done — `intergrax/runtime/registry/` |
-| P0 | Split Legal → `agents/legal/` + `applications/legal_application/` | Done — shim in `applications/legal_agent/` |
-| P0 | Minimal NexusLoop | Done — `intergrax/runtime/nexus/nexus_loop.py` |
-| P0 | EchoAgent | Done — `agents/echo/` |
-| P1 | Task + TaskLifecycle | Done — `intergrax/runtime/task/` |
-| P1 | AgentRouter + TaskClassifier | Done — `intergrax/runtime/nexus/` |
-| P1 | AgentExecutionResult at Agent→Nexus boundary | Done — `AgentEngine.run_with_result`, NexusLoop |
-| P1 | ToolRuntime primitive | Done — `intergrax/runtime/nexus/tools/tool_runtime.py` |
-| P1 | Agent scaffold | Done — `python -m intergrax.scaffold new-agent` |
-| P1 | TaskLifecycle trace emission | Done — `TaskTraceEmitter` |
-| P1 | Deprecate ChatAgent / Supervisor | Done — `DeprecationWarning` |
-| P1 | Experiment guide | Done — `docs/experiment_guide.md` |
-| P1 | Unified run lifecycle (Task + RunService + Worker) | Not started |
-| P2 | ExecutionGraph, ShadowWorkspace, Sandbox | Not started |
-| P2 | Legacy cleanup (chains/, full ChatAgent removal) | Not started |
+| P0 | AgentContract, ValidationResult, CapabilityMatchResult | **Done** — `intergrax/contracts/` |
+| P0 | AgentRegistry + bootstrap | **Done** — `intergrax/runtime/registry/` |
+| P0 | Split Legal → `agents/legal/` + `applications/legal_application/` | **Done** — shim in `applications/legal_agent/` |
+| P0 | Minimal NexusLoop | **Done** — `intergrax/runtime/nexus/nexus_loop.py` |
+| P0 | EchoAgent | **Done** — `agents/echo/` |
+| P1 | Task + TaskLifecycle | **Done** — `intergrax/runtime/task/` |
+| P1 | AgentRouter + TaskClassifier | **Done** — `intergrax/runtime/nexus/` |
+| P1 | AgentExecutionResult at Agent→Nexus boundary | **Done** — `AgentEngine.run_with_result`, NexusLoop |
+| P1 | ToolRuntime primitive | **Done** — `intergrax/runtime/nexus/tools/tool_runtime.py` |
+| P1 | Agent scaffold | **Done** — `python -m intergrax.scaffold new-agent` |
+| P1 | TaskLifecycle trace emission | **Done** — `TaskTraceEmitter`, `PersistingTaskTraceEmitter` |
+| P1 | Deprecate ChatAgent / Supervisor | **Done** — `DeprecationWarning` |
+| P1 | Experiment guide | **Done** — `docs/experiment_guide.md` |
+| P1 | Unified run lifecycle (Task + RunService + Worker) | **Partial** — bridge exists; full worker unification pending |
+| P2 | ExecutionGraph + GraphExecutor | **Done** — `intergrax/runtime/nexus/execution/` |
+| P2 | ContextManager | **Done** — `intergrax/runtime/nexus/context/` |
+| P2 | NexusValidationEngine, RetryEngine, FinalResponseComposer | **Done** — Phase B |
+| P2 | Research multi-agent pipeline | **Done** — `agents/research/`, `applications/research_application/` |
+| P2 | EvalRunner (Nexus) | **Done** — `intergrax/eval/nexus_eval_runner.py` |
+| P2 | ShadowWorkspace, Sandbox | **Not started** |
+| P2 | Legacy cleanup (chains/, full ChatAgent removal) | **Not started** |
+| P4 | §42 Unified Execution Runtime (events, hooks, UAEP) | **Scaffold** — see §15–§16 |
 
-**Estimated alignment after P0+P1 partial:** ~65–70% (up from ~45–55%).
+**Estimated alignment after Phases A–C (architecture §1–41):** ~**82–88%**
+
+**Estimated alignment for §42 Unified Execution Runtime:** ~**18–25%** (contracts scaffold + existing partial primitives)
 
 **Production NexusLoop:** opt-in via `LEGAL_USE_NEXUS_LOOP=true` in Legal backend settings.
 
+---
+
+## 15. §42 Unified Execution Runtime — Gap Matrix
+
+Mapping of [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) **§42** to current codebase.
+
+**Legend:** ✅ Done · 🟡 Partial · 🔴 Not started · 📄 Doc only · ⚠️ Violation risk
+
+| §42 | Topic | Status | Current location / notes |
+|-----|-------|--------|--------------------------|
+| 42.1 | Runtime Event Model | 🟡 | **Scaffold:** `intergrax/runtime/events/runtime_event.py`. Legacy parallel: `TraceEvent` / `trace_event()` in Nexus pipeline — not unified |
+| 42.2 | Event Bus Architecture | 🟡 | **Scaffold:** `intergrax/runtime/events/event_bus.py`. Not wired into NexusLoop / AgentEngine |
+| 42.3 | Hook System | 🟡 | **Scaffold:** `intergrax/runtime/hooks/`. Not wired |
+| 42.4 | Standard Agent Lifecycle | 🟡 | `TaskLifecycle` (task-level). No formal per-agent lifecycle enum/state machine |
+| 42.5 | Unified Agent Execution Protocol (UAEP) | 🟡 | `AgentEngine._execute_agent` runs single `RuntimeEngine.run()` — no step loop, no middleware |
+| 42.6 | Agent Step Lifecycle | 🟡 | **Scaffold:** `intergrax/contracts/agent_step.py`. Agents use domain pipelines, not `AgentStep` contract |
+| 42.7 | Agent Decision Model | 🟡 | **Scaffold:** `intergrax/contracts/agent_decision.py`. Separate legacy `AgentDecision` in `tools/tools_agent.py` |
+| 42.8 | Execution Interrupt Model | 🟡 | **Scaffold:** `intergrax/contracts/execution_interrupt.py`. Not handled in NexusLoop |
+| 42.9 | Pause / Resume Model | 🔴 | `WAITING_FOR_HUMAN` task state exists; no `PauseRecord`, checkpoint, resume token |
+| 42.10 | Human In The Loop Flow | 🟡 | Task state + architecture doc; no formal `HumanRequest` flow or Nexus notification adapter trigger |
+| 42.11 | Policy Engine (runtime governance) | 🟡 | **Scaffold:** `intergrax/runtime/policy/runtime_policy_engine.py`. Separate: `ExecutionPolicyEngine` (replay/eval only) |
+| 42.12 | ToolRuntime Enforcement | ✅ | `ToolRuntime` + `ToolAccessPolicy` — basic enforcement. Missing `ToolRequest`/`ToolResponse` at gateway boundary |
+| 42.13 | Shared Execution Contracts | 🟡 | **Scaffold:** `RuntimeExecutionContext`, contracts package. AgentEngine does not yet build full context |
+| 42.14 | Cross-Agent Communication | 🟡 | `ContextManager`, graph results merge — informal; no `SharedTaskContext` contract type |
+| 42.15 | Agent Handoff Contracts | 🔴 | Not implemented |
+| 42.16 | Validation Contract Model | 🟡 | `ValidationResult` + **scaffold** `ValidationContract`. Multi-stage validation partial via `NexusValidationEngine` |
+| 42.17 | Runtime State Machine | 🟡 | `TaskLifecycle` + NexusLoop phases implicit; not unified with `ExecutionPhase` enum |
+| 42.18 | Runtime Step Contracts | 🟡 | Nexus `runtime_steps/*` exist — different namespace from §42 `RuntimeStep` |
+| 42.19 | AgentEngine Responsibilities | 🟡 | Thin bridge exists; missing UAEP, events, middleware, step loop, `AgentDecision` integration |
+| 42.20 | Runtime Middleware Pipeline | 🟡 | **Scaffold:** `intergrax/runtime/middleware/`. Not integrated |
+| 42.21 | Runtime Extensibility Rules | 📄 | Documented §42.21; no enforcement |
+| 42.22 | Plugin / Hook Architecture | 🟡 | `HookRegistry` scaffold; no `RuntimePlugin` loader |
+| 42.23 | Structured Event Payloads | 🟡 | Schema version fields on contracts; no payload validator registry |
+| 42.24 | Observability Protocol | 🟡 | Strong Nexus tracing (`RunTraceWriter`, SQLite store); not event-first / `RuntimeEvent`-canonical |
+| 42.25 | Runtime Safety Enforcement | 🟡 | `ToolAccessPolicy`, budget enforcer, governance ports — partial |
+| 42.26 | Cancellation Semantics | 🟡 | `TaskState.CANCELLED`; no cooperative cancel propagation in graph |
+| 42.27 | Agent Capability Versioning | 🟡 | `AgentContract.version` field; no semver routing |
+| 42.28 | Contract Versioning | 🟡 | `schema_version` on new contracts; no migration framework |
+| 42.29 | Runtime Compatibility Guarantees | 🔴 | Not implemented |
+| 42.30 | Runtime Scheduling Model | ✅ | `GraphExecutor` — sequential batches + parallel within batch; retry via `RetryEngine` |
+| 42.31 | Runtime Execution Phases | 🟡 | **Scaffold:** `ExecutionPhase` enum. Not used in NexusLoop yet |
+| 42.32 | Agent Local Loop Standardization | 🟡 | Legal/Research pipelines — ad hoc; not `get_steps()` / `run_step()` pattern |
+| 42.33 | Runtime-Controlled Local Loops | 🔴 | AgentEngine delegates to monolithic `RuntimeEngine.run()` |
+| 42.34 | Runtime-Managed Retries | ✅ | `RetryEngine` in Nexus graph path |
+| 42.35 | Runtime-Controlled Memory Access | 🟡 | Session memory, profiles — no policy-scoped `MemoryView` gateway |
+| 42.36 | Runtime-Controlled Tool Access | 🟡 | ToolRuntime for RAG/websearch/tools steps; Legal bridge still couples tool planning |
+| 42.37 | Runtime Governance Model | 🟡 | Distributed across validation, retry, tool policy — not unified governance layer |
+| 42.38 | Runtime Escalation Flow | 🔴 | Not implemented |
+| 42.39 | Critical Event Handling | 🔴 | Not implemented |
+| 42.40 | Runtime Recovery Model | 🔴 | Not implemented |
+| 42.41 | Forbidden Runtime Patterns | 📄 | Documented. **⚠️** Legal agent tool bridge still references Nexus steps directly |
+| 42.42 | Middleware Hook Catalog | 🟡 | `HookPoint` enum covers catalog; wiring pending |
+| 42.43 | Multi-Agent Collaboration Flow | 🟡 | Research pipeline (research → summary); not full PM→UX→Legal→Validator→Human reference |
+| 42.44 | AgentEngine Universal Executor | 🟡 | Exists as thin bridge — target architecture in §42.44 not yet realized |
+
+### 15.1 §42 Summary Scorecard
+
+| Category | Score | Notes |
+|----------|-------|-------|
+| **Contracts & types (§42.1, .6–.8, .12–.13, .16)** | ~45% | Scaffold added 2026-05-27; not wired |
+| **Event-driven core (§42.1–.3, .20, .24)** | ~15% | Event bus + hooks scaffold; Nexus still trace-centric |
+| **AgentEngine / UAEP (§42.5, .19, .32–.33, .44)** | ~25% | Single-shot execution; no step governance |
+| **Governance (§42.11, .25, .37–.40)** | ~20% | Policy/retry/validation partial; no interrupt/HITL/recovery |
+| **Scheduling & graph (§42.30, .17)** | ~70% | Strongest §42 alignment — Phase C |
+| **Overall §42 compliance** | ~**18–25%** | Up from 0% pre-scaffold; architecture fully specified |
+
+### 15.2 Key Architectural Violations vs §42
+
+1. **Dual `AgentDecision` types** — canonical (`contracts/agent_decision.py`) vs tools agent internal (`tools/tools_agent.py`). Converge or rename tools variant.
+2. **Dual observability paths** — `TraceEvent` pipeline vs target `RuntimeEvent` stream. Need adapter or migration layer.
+3. **AgentEngine bypasses UAEP** — agents run monolithic `RuntimeEngine.run()` instead of runtime-controlled step loop.
+4. **Legal tool bridge** — still orchestrates Nexus step invocation from agent layer (§42.41 violation risk).
+5. **PolicyEngine split** — three engines: replay eval, Nexus validation, new runtime policy — need unified facade.
+
+### 15.3 New Scaffold Modules (2026-05-27)
+
+```text
+intergrax/contracts/
+    agent_decision.py
+    agent_step.py
+    execution_interrupt.py
+    runtime_execution_context.py
+    runtime_policy.py
+    tool_request.py
+    validation_contract.py
+
+intergrax/runtime/events/
+    runtime_event.py
+    event_bus.py
+    execution_phase.py
+
+intergrax/runtime/hooks/
+    hook_point.py
+    hook_context.py
+    hook_registry.py
+
+intergrax/runtime/middleware/
+    base.py
+    pipeline.py
+    trace_middleware.py
+
+intergrax/runtime/policy/
+    runtime_policy_engine.py
+```
+
+---
+
+## 16. §42 Implementation Roadmap (P4+)
+
+Recommended convergence order — **wire scaffold into existing Nexus/AgentEngine without rewrite**.
+
+**Mandatory constraint (architecture §5.2, §8.8):** P4 work MUST **reuse** existing Tier-0 mechanisms (LLM adapters, logging, `RunTraceWriter`, `ToolRuntime` → `ToolRegistry`, `RuntimeEngine`). Do NOT implement parallel universal stacks. New Tier-0 capabilities require **human approval** before coding. §42 scaffold modules are orchestration wiring — not replacements for platform infrastructure.
+
+### P4.1 — Wire Event Bus (foundation)
+
+| Step | Action | Target files |
+|------|--------|--------------|
+| 1 | Instantiate `RuntimeEventBus` in `NexusLoop` | `nexus_loop.py` |
+| 2 | Emit `RuntimeEvent` on task lifecycle transitions | `task_lifecycle.py`, `task_trace.py` |
+| 3 | Bridge `TraceEvent` → `RuntimeEvent` adapter | `runtime/events/trace_bridge.py` (new) |
+
+### P4.2 — UAEP in AgentEngine
+
+| Step | Action | Target files |
+|------|--------|--------------|
+| 4 | Build `RuntimeExecutionContext` in AgentEngine | `agent_engine.py` |
+| 5 | Introduce `get_steps()` / `run_step()` optional protocol on `Agent` | `agent_contract.py` |
+| 6 | Runtime-controlled step loop with `MiddlewarePipeline` | `agent_engine.py` |
+| 7 | Return `AgentDecision` + `AgentExecutionResult` bundle | `agent_engine.py`, `nexus_loop.py` |
+
+### P4.3 — Governance integration
+
+| Step | Action | Target files |
+|------|--------|--------------|
+| 8 | Wire `RuntimePolicyEngine` into interrupt/decision path | `nexus_loop.py`, `graph_executor.py` |
+| 9 | Implement `ExecutionInterrupt` handler | `runtime/interrupts/` (new) |
+| 10 | Pause/resume + `HumanRequest` flow | `runtime/human/` (new) |
+
+### P4.4 — Tool gateway unification
+
+| Step | Action | Target files |
+|------|--------|--------------|
+| 11 | Wrap `ToolRuntime.invoke` with `ToolRequest`/`ToolResponse` | `tool_runtime.py` |
+| 12 | Refactor Legal tool bridge to use `ctx.tool_gateway` only | `agents/legal/runtime/` |
+
+### P4.5 — Agent migration
+
+| Step | Action | Target files |
+|------|--------|--------------|
+| 13 | Migrate EchoAgent to UAEP step pattern (reference) | `agents/echo/` |
+| 14 | Migrate ResearchAgent pipeline to `AgentStep` list | `agents/research/` |
+| 15 | Legal agent: thin domain steps, remove direct Nexus step refs | `agents/legal/` |
+
+**Success metric for P4:** EchoAgent + ResearchAgent run through full UAEP with `RuntimeEvent` trace inspectable end-to-end; Legal agent tool bridge compliant with §42.12.
+
+---
