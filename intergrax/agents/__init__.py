@@ -5,5 +5,6 @@
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
+from intergrax.agents.uaep import UAEPExecutor, supports_uaep
 
-__all__ = ["Agent", "AgentEngine"]
+__all__ = ["Agent", "AgentEngine", "UAEPExecutor", "supports_uaep"]

@@ -1488,8 +1488,8 @@ Mapping of [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.
 | 42.2 | Event Bus Architecture | 🟡 | **Scaffold:** `intergrax/runtime/events/event_bus.py`. Not wired into NexusLoop / AgentEngine |
 | 42.3 | Hook System | 🟡 | **Scaffold:** `intergrax/runtime/hooks/`. Not wired |
 | 42.4 | Standard Agent Lifecycle | 🟡 | `TaskLifecycle` (task-level). No formal per-agent lifecycle enum/state machine |
-| 42.5 | Unified Agent Execution Protocol (UAEP) | 🟡 | `AgentEngine._execute_agent` runs single `RuntimeEngine.run()` — no step loop, no middleware |
-| 42.6 | Agent Step Lifecycle | 🟡 | **Scaffold:** `intergrax/contracts/agent_step.py`. Agents use domain pipelines, not `AgentStep` contract |
+| 42.5 | Unified Agent Execution Protocol (UAEP) | 🟢 | `UAEPExecutor` + Echo; legacy fallback for pipeline agents |
+| 42.6 | Agent Step Lifecycle | 🟡 | Echo uses `AgentStep`; Legal still domain pipelines |
 | 42.7 | Agent Decision Model | 🟡 | **Scaffold:** `intergrax/contracts/agent_decision.py`. Separate legacy `AgentDecision` in `tools/tools_agent.py` |
 | 42.8 | Execution Interrupt Model | 🟡 | **Scaffold:** `intergrax/contracts/execution_interrupt.py`. Not handled in NexusLoop |
 | 42.9 | Pause / Resume Model | 🔴 | `WAITING_FOR_HUMAN` task state exists; no `PauseRecord`, checkpoint, resume token |
@@ -1502,7 +1502,7 @@ Mapping of [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.
 | 42.16 | Validation Contract Model | 🟡 | `ValidationResult` + **scaffold** `ValidationContract`. Multi-stage validation partial via `NexusValidationEngine` |
 | 42.17 | Runtime State Machine | 🟡 | `TaskLifecycle` + NexusLoop phases implicit; not unified with `ExecutionPhase` enum |
 | 42.18 | Runtime Step Contracts | 🟡 | Nexus `runtime_steps/*` exist — different namespace from §42 `RuntimeStep` |
-| 42.19 | AgentEngine Responsibilities | 🟡 | Thin bridge exists; missing UAEP, events, middleware, step loop, `AgentDecision` integration |
+| 42.19 | AgentEngine Responsibilities | 🟡 | UAEP + middleware wired; full decision bundle to Nexus pending |
 | 42.20 | Runtime Middleware Pipeline | 🟡 | **Scaffold:** `intergrax/runtime/middleware/`. Not integrated |
 | 42.21 | Runtime Extensibility Rules | 📄 | Documented §42.21; no enforcement |
 | 42.22 | Plugin / Hook Architecture | 🟡 | `HookRegistry` scaffold; no `RuntimePlugin` loader |
@@ -1595,14 +1595,15 @@ Recommended convergence order — **wire scaffold into existing Nexus/AgentEngin
 | 2 | Emit `RuntimeEvent` on task lifecycle transitions | `task_lifecycle.py`, `task_trace.py` | **Done** |
 | 3 | Bridge `TraceEvent` → `RuntimeEvent` adapter | `runtime/events/trace_bridge.py` | **Done** |
 
-### P4.2 — UAEP in AgentEngine
+### P4.2 — UAEP in AgentEngine — **Done**
 
-| Step | Action | Target files |
-|------|--------|--------------|
-| 4 | Build `RuntimeExecutionContext` in AgentEngine | `agent_engine.py` |
-| 5 | Introduce `get_steps()` / `run_step()` optional protocol on `Agent` | `agent_contract.py` |
-| 6 | Runtime-controlled step loop with `MiddlewarePipeline` | `agent_engine.py` |
-| 7 | Return `AgentDecision` + `AgentExecutionResult` bundle | `agent_engine.py`, `nexus_loop.py` |
+| Step | Action | Target files | Status |
+|------|--------|--------------|--------|
+| 4 | Build `RuntimeExecutionContext` in UAEP | `agents/uaep.py` | **Done** |
+| 5 | Optional `get_steps()` / `run_step()` on agents | `agents/echo/echo_agent.py` | **Done** |
+| 6 | Runtime-controlled step loop + `MiddlewarePipeline` | `agents/uaep.py`, `agent_engine.py` | **Done** |
+| 7 | `AgentDecision` emission per step | `agents/uaep.py` | **Done** |
+| — | Legacy `RuntimeEngine` fallback for non-UAEP agents | `agent_engine.py` | **Done** |
 
 ### P4.3 — Governance integration
 
@@ -1623,7 +1624,7 @@ Recommended convergence order — **wire scaffold into existing Nexus/AgentEngin
 
 | Step | Action | Target files |
 |------|--------|--------------|
-| 13 | Migrate EchoAgent to UAEP step pattern (reference) | `agents/echo/` |
+| 13 | Migrate EchoAgent to UAEP step pattern (reference) | `agents/echo/` | **Done** |
 | 14 | Migrate ResearchAgent pipeline to `AgentStep` list | `agents/research/` |
 | 15 | Legal agent: thin domain steps, remove direct Nexus step refs | `agents/legal/` |
 

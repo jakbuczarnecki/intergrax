@@ -154,7 +154,11 @@ class GraphExecutor:
             request.metadata["allowed_tools"] = list(current_agent.get_contract().allowed_tools)
             request.metadata["graph_node_id"] = node.node_id
             request.metadata["graph_id"] = graph.graph_id
-            return await self._engine.run_agent_with_result(current_agent, request)
+            return await AgentEngine.run_agent_with_result(
+                current_agent,
+                request,
+                uaep_executor=self._engine.uaep_executor,
+            )
 
         execution, retries, validation = await self._retry_engine.execute_with_retry(
             node_task,

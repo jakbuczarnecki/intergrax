@@ -88,7 +88,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §33 Observability | Trace + events | **Partial** | Trace store ✅; P4.1 dual-emit ✅; D.1 CLI ✅ |
 
-| §42 Execution runtime | UAEP, hooks, governance | **Partial** | Scaffold + P4.1; **P4.2 next** |
+| §42 Execution runtime | UAEP, hooks, governance | **Partial** | P4.2 UAEP ✅; P4.3+ pending |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` (no `legal_agent` shim) |
 
@@ -274,9 +274,9 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 | P4.1 | Event bus + trace bridge | **Done** |
 
-| P4.2 | UAEP in AgentEngine | **Next** |
+| P4.2 | UAEP in AgentEngine | **Done** |
 
-| P4.3 | Governance (interrupt, HITL) | Pending |
+| P4.3 | Governance (interrupt, HITL) | **Next** |
 
 | P4.4 | Tool gateway unification | Pending |
 
@@ -284,21 +284,11 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 
 
-**P4.2 entry criteria:** `uv run pytest tests/ -m gate -q` green.
+**P4.2 delivered (2026-05-27):** `intergrax/agents/uaep.py`, `UAEPExecutor`, Echo `get_steps`/`run_step`, legacy fallback preserved. Gate: 16 tests.
 
 
 
-**P4.2 scope (Echo reference):**
-
-
-
-- `RuntimeExecutionContext` wired in `AgentEngine`
-
-- Optional agent protocol `get_steps()` / `run_step()` on Echo
-
-- Runtime-controlled step loop + minimal middleware hook points
-
-- Gate tests must remain green (no Legal migration yet)
+**P4.3 scope (next):**
 
 
 
@@ -312,11 +302,11 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 ```text
 
-NOW:     P4.2 UAEP in AgentEngine (Echo reference)
+NOW:     P4.3 governance (interrupt, HITL) · D.2 debug API
 
-NEXT:    D.2 debug API · D.3 experiment registry
+NEXT:    P4.4 tool gateway · P4.5 Research/Legal UAEP migration
 
-THEN:    Phase E (Legal) · A.5 full regression · D.4 notebooks
+THEN:    Phase E (Legal thin) · D.3 experiment registry
 
 LATER:   Phase F (on demand)
 
@@ -352,25 +342,17 @@ LATER:   Phase F (on demand)
 
 ## 6. Recommended Next Step
 
-
-
-**Phase P4.2** — UAEP in `AgentEngine` using EchoAgent as reference.
-
-
-
-Run gate before and after:
-
-
+**Phase P4.3** — governance integration (interrupt handler, HITL scaffolding).
 
 ```bash
-
 uv run pytest tests/ -m gate -q
-
 ```
 
+**P4.2 (Done):** `UAEPExecutor` in `intergrax/agents/uaep.py`; `AgentEngine` UAEP + legacy fallback; Echo reference agent.
 
 
-**Then:** D.2 minimal debug API or D.3 experiment registry (laboratory workflow).
+
+**Then:** D.2 debug API or P4.4 tool gateway unification.
 
 
 

@@ -58,7 +58,8 @@ class NexusLoop:
         retry_policy: Optional[RetryPolicy] = None,
     ) -> None:
         self._registry = registry
-        self._engine = AgentEngine(registry)
+        self._event_bus = event_bus or RuntimeEventBus()
+        self._engine = AgentEngine(registry, event_bus=self._event_bus)
         self._classifier = classifier or ClassifyingTaskClassifier(registry)
         self._planner = planner or TaskPlanner()
         self._validation_engine = validation_engine or NexusValidationEngine()
@@ -80,7 +81,6 @@ class NexusLoop:
         self._lifecycle = lifecycle
         self._trace_emitter = trace_emitter
         self._trace_store = trace_store
-        self._event_bus = event_bus or RuntimeEventBus()
 
     @property
     def registry(self) -> AgentRegistry:

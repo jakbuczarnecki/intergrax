@@ -7,10 +7,14 @@ from typing import Optional, Sequence
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
+from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.memory.conversational_memory import ChatMessage
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
@@ -104,4 +108,56 @@ class EchoAgent(Agent):
         return RuntimeContext.build(
             config=config,
             session_manager=session_manager,
+        )
+
+    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+        """UAEP reference: single pipeline step (§42.32)."""
+        _ = context
+        contract = self.get_contract()
+        return [
+            AgentStep(
+                step_id="echo_pipeline",
+                step_name="echo_pipeline",
+                step_index=0,
+                trace_label="echo.basic",
+                allowed_tools=list(contract.allowed_tools),
+            )
+        ]
+
+    async def run_step(
+        self,
+        step: AgentStep,
+        ctx: RuntimeExecutionContext,
+    ) -> StepOutput:
+        """Execute Nexus pipeline inside runtime-controlled step boundary."""
+        request = ctx.request
+        runtime_context = ctx.domain_context
+        if request is None or runtime_context is None:
+            raise RuntimeError("UAEP context missing request or domain_context.")
+
+        runtime = RuntimeEngine(runtime_context)
+        answer = await runtime.run(request)
+        ctx.metadata["runtime_answer"] = answer
+
+        message = (request.message or "").strip()
+        echoed = f"echo: {message}"
+        if answer.answer != echoed and answer.answer:
+            echoed = answer.answer
+
+        return StepOutput(
+            step_id=step.step_id,
+            summary=echoed,
+            data={"run_id": answer.run_id or ctx.run_id},
+        )
+
+    def decide_after_step(
+        self,
+        step: AgentStep,
+        output: StepOutput | None,
+        ctx: RuntimeExecutionContext,
+    ) -> AgentDecision:
+        _ = step, output, ctx
+        return AgentDecision(
+            type=AgentDecisionType.COMPLETE,
+            reason="echo step finished",
         )

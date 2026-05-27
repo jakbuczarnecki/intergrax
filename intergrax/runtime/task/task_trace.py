@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Callable, List, Optional
 
 from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
 from intergrax.runtime.nexus.tracing.trace_models import (
     TraceComponent,
     TraceEvent,
@@ -56,6 +55,8 @@ class TaskTraceEmitter:
         )
         self.events.append(evt)
         if self._event_bus is not None:
+            from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
+
             self._event_bus.record(trace_event_to_runtime_event(evt, task))
         return evt
 
