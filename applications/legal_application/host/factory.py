@@ -15,7 +15,7 @@ from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
-from intergrax.fastapi_core.runs.store_runtime import InMemoryRunStore
+from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry

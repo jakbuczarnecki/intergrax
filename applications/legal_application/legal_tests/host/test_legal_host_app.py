@@ -39,6 +39,7 @@ def dev_settings() -> LegalBackendSettings:
         legal_default_agent_id="legal-default",
         legal_route_prefix="/v1/legal",
         identity_source="body_or_context",
+        use_nexus_loop=False,
         cors_allow_origins=frozenset(),
         allowed_hosts=frozenset(),
         openapi_enabled_override=True,
