@@ -290,6 +290,156 @@ Agents MUST NOT own global orchestration.
 
 ---
 
+## 7.4 Applications And Agents Repository Split
+
+Intergrax separates **reusable agent capabilities** from **execution environments** at the repository level.
+
+This split is NOT a deployment detail.
+
+This split is a core architectural boundary.
+
+### 7.4.1 Three Repository Roots
+
+```text
+intergrax/              Framework — Layer 1 + Layer 2 (Nexus, contracts, adapters)
+agents/                 Layer 3 — reusable agent capability modules
+applications/           Execution environments — compose agents into runnable products
+```
+
+| Root | Layer | Role |
+|------|-------|------|
+| `intergrax/` | Framework | Shared runtime, Nexus, `Agent` ABC, `AgentEngine`, `AgentRegistry`, adapters, RAG, tools |
+| `agents/<name>/` | Layer 3 | Domain capability: pipeline, steps, prompts, governance, agent-local runtime helpers |
+| `applications/<name>/` | Environment | Host, HTTP serving, env config, DI wiring, product profiles, deployment entrypoints |
+
+**Important distinction:**
+
+- `intergrax/agents/` is the **framework contract** (`Agent`, `AgentEngine`) — it MUST NOT contain concrete agent implementations.
+- `agents/` at repository root is where **concrete agents** live (`LegalAgent`, `EchoAgent`, future `ResearchAgent`).
+
+### 7.4.2 What Belongs In `agents/<name>/`
+
+An agent capability module MUST contain:
+
+- agent class implementing `Agent` / `AgentContract`
+- domain models and business rules for that capability
+- pipeline, steps, prompts
+- agent-local governance and validation
+- agent-local tracing helpers
+- agent unit and integration tests for capability behavior
+- notebooks for capability experiments
+
+An agent capability module MUST NOT contain:
+
+- FastAPI host or `uvicorn` entrypoint
+- HTTP route definitions (`/v1/...`)
+- environment-specific settings (`.env`, SKU profiles, API keys wiring)
+- product deployment manifests (Dockerfile, k8s) unless explicitly shared infra
+- global orchestration or cross-agent routing
+
+Agents MUST be runnable through Nexus (`AgentEngine`, `NexusLoop`) **without** starting an HTTP server.
+
+### 7.4.3 What Belongs In `applications/<name>/`
+
+An application is an **execution environment** that composes one or more agents into a concrete runnable product or experiment host.
+
+An application MUST contain:
+
+- host package (`main.py`, `factory.py`, `settings.py`, wiring)
+- serving layer (FastAPI routers, request/response mapping)
+- environment-level configuration (env vars, product profiles, tenant defaults)
+- registration of agents into `AgentRegistry`
+- optional feature flags (e.g. NexusLoop vs direct `AgentEngine`)
+
+An application MUST NOT contain:
+
+- pipeline steps or domain logic that belongs to a single agent
+- duplicated agent implementation (import from `agents/<name>/` instead)
+- Nexus runtime internals
+
+Applications are **thin composition layers**.
+
+They wire agents to adapters, config, and transport — they do not implement agent reasoning.
+
+### 7.4.4 Dependency Direction
+
+```text
+applications/<app>/  →  agents/<agent>/  →  intergrax/
+```
+
+Rules:
+
+- `intergrax/` MUST NOT import code from `agents/` or `applications/`.
+- `agents/` MUST NOT import code from `applications/`.
+- `applications/` MAY import from `agents/` and `intergrax/`.
+- Multiple applications MAY register the same agent with different config.
+
+This preserves the framework as a stable, product-agnostic core.
+
+### 7.4.5 Reference Layout: Legal
+
+Canonical split (reference implementation):
+
+```text
+agents/legal/
+    legal_agent.py          # LegalAgent(Agent)
+    domain/                 # legal domain models
+    pipeline/               # LegalPipeline, execution loop
+    steps/                  # extract, normalize, recommend, ...
+    governance/             # agent-local policy ports
+    runtime/                # agent-local tool bridge
+    tracing/                # agent-local diagnostics
+    tests/                  # capability tests
+
+applications/legal_application/
+    host/                   # FastAPI app, factory, settings
+    serving/                # mount_legal_agent_routes, chat API
+    legal_tests/            # host/serving integration tests
+```
+
+During migration, `applications/legal_agent/` MAY remain as a **backward-compatible import shim** re-exporting `legal.*` and `legal_application.*`.
+
+New code MUST use `agents/legal/` and `applications/legal_application/` directly.
+
+The shim MUST NOT receive new domain logic.
+
+### 7.4.6 Creating A New Capability
+
+Recommended workflow:
+
+```text
+1. python -m intergrax.scaffold new-agent <name> --capabilities <cap>.<action>
+   → creates agents/<name>/
+
+2. Implement domain logic in agents/<name>/
+   → get_contract(), build_context(), pipeline
+
+3. (Optional) Create applications/<name>_application/
+   → host + serving if HTTP/product entry is needed
+
+4. Register agent in AgentRegistry (notebook, test, or application factory)
+
+5. Run through NexusLoop → observe trace → evaluate
+```
+
+Not every agent requires an application.
+
+Notebook-only or test-only experiments MAY use `agents/<name>/` without creating `applications/`.
+
+Create an application only when a stable host, env config, or external API surface is required.
+
+### 7.4.7 Anti-Pattern: Agent-Application Monolith
+
+Do NOT place agent implementation, pipeline, host, serving, and env config in a single package under `applications/`.
+
+This was the legacy `applications/legal_agent/` layout.
+
+It couples capability code to deployment, makes reuse across environments harder, and violates Layer 3 boundaries.
+
+If agent logic and host live together, split them before adding a second agent or second deployment target.
+
+---
+
 # 8. Core Design Principles
 
 ## 8.1 Runtime First
@@ -1584,6 +1734,10 @@ agents/
     ResearchAgent prototype
     ProblemRadarAgent prototype
 
+applications/
+    legal_application/          # host + serving + env config (composes agents/legal)
+    <name>_application/         # future execution environments
+
 runtime/
     NexusLoop
     TaskClassifier
@@ -1674,6 +1828,16 @@ Do not build billing, marketplace, advanced UI or enterprise features before val
 
 ---
 
+## 42.7 Agent-Application Conflation Anti-Pattern
+
+Do not implement agent capabilities inside `applications/`.
+
+Do not put FastAPI hosts, env settings, or HTTP serving inside `agents/`.
+
+See §7.4 for the canonical repository split.
+
+---
+
 # 43. Decision Records
 
 ## 43.1 Decision: Nexus Has Global Loop
@@ -1737,6 +1901,22 @@ Agents are capability modules, not independent products.
 Reason:
 
 This allows rapid creation, replacement and composition.
+
+---
+
+## 43.6 Decision: Agents And Applications Are Separate Repository Roots
+
+Decision:
+
+Agent capability code lives under `agents/<name>/`.
+
+Execution environments (host, serving, env config) live under `applications/<name>/`.
+
+The framework package `intergrax/` MUST remain free of product-specific agent implementations.
+
+Reason:
+
+The same agent can be reused across notebooks, tests, and multiple deployment targets without duplicating domain logic or coupling capability code to a single HTTP host.
 
 ---
 
