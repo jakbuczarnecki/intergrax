@@ -3,6 +3,8 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+
+import warnings
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Optional, Type, Union, Literal
 import json
@@ -15,6 +17,12 @@ from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.rag.answers.contracts.base_answer_manager import BaseAnswerManager
 from intergrax.tools.tools_agent import ToolsAgent, ToolsAgentConfig
 from intergrax.tools.tools_base import ToolRegistry
+
+warnings.warn(
+    "intergrax.chat_agent.ChatAgent is deprecated; use Nexus RuntimeEngine / NoPlannerPipeline instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 Route = Literal["rag", "tools", "general"]
 

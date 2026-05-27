@@ -2,6 +2,8 @@
 # Integrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+import warnings
+
 from dataclasses import dataclass, field
 from types import SimpleNamespace
 from typing import Any, Dict, List, Optional, Literal, Iterable, Callable
@@ -11,6 +13,12 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
 from .supervisor_components import Component, ComponentContext, ComponentResult, PipelineState
 from .supervisor_prompts import SupervisorPromptPack, SupervisorPromptPack as _DefaultPack
+
+warnings.warn(
+    "intergrax.supervisor.Supervisor is deprecated; use NexusLoop and AgentRegistry.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 NeedsDict = Dict[str, bool]
 Intent = Literal["qa", "procedural", "creative", "decision", "unknown"]

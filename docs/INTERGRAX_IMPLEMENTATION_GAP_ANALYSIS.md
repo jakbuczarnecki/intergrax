@@ -1385,4 +1385,34 @@ The current model (`AgentEngine(agents={"legal": ...})`) is hardcoded wiring —
 
 ---
 
-*This document was generated from analysis of the Intergrax source code and the canonical specification [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md). No code changes were made.*
+*This document was generated from analysis of the Intergrax source code and the canonical specification [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md).*
+
+---
+
+## 14. Implementation Status (2026-05-27)
+
+Progress against the migration plan in §9–§10. **Evolve, not rewrite** — backward-compatible `legal_agent` shim retained.
+
+| Priority | Item | Status |
+|----------|------|--------|
+| P0 | AgentContract, ValidationResult, CapabilityMatchResult | Done — `intergrax/contracts/` |
+| P0 | AgentRegistry + bootstrap | Done — `intergrax/runtime/registry/` |
+| P0 | Split Legal → `agents/legal/` + `applications/legal_application/` | Done — shim in `applications/legal_agent/` |
+| P0 | Minimal NexusLoop | Done — `intergrax/runtime/nexus/nexus_loop.py` |
+| P0 | EchoAgent | Done — `agents/echo/` |
+| P1 | Task + TaskLifecycle | Done — `intergrax/runtime/task/` |
+| P1 | AgentRouter + TaskClassifier | Done — `intergrax/runtime/nexus/` |
+| P1 | AgentExecutionResult at Agent→Nexus boundary | Done — `AgentEngine.run_with_result`, NexusLoop |
+| P1 | ToolRuntime primitive | Done — `intergrax/runtime/nexus/tools/tool_runtime.py` |
+| P1 | Agent scaffold | Done — `python -m intergrax.scaffold new-agent` |
+| P1 | TaskLifecycle trace emission | Done — `TaskTraceEmitter` |
+| P1 | Deprecate ChatAgent / Supervisor | Done — `DeprecationWarning` |
+| P1 | Experiment guide | Done — `docs/experiment_guide.md` |
+| P1 | Unified run lifecycle (Task + RunService + Worker) | Not started |
+| P2 | ExecutionGraph, ShadowWorkspace, Sandbox | Not started |
+| P2 | Legacy cleanup (chains/, full ChatAgent removal) | Not started |
+
+**Estimated alignment after P0+P1 partial:** ~65–70% (up from ~45–55%).
+
+**Production NexusLoop:** opt-in via `LEGAL_USE_NEXUS_LOOP=true` in Legal backend settings.
+
