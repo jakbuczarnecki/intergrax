@@ -42,6 +42,7 @@ class TaskLifecycle:
         },
         TaskState.RUNNING: {
             TaskState.VALIDATING,
+            TaskState.WAITING_FOR_HUMAN,
             TaskState.FAILED,
             TaskState.CANCELLED,
         },

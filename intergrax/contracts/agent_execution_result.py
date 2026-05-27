@@ -8,6 +8,9 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from intergrax.contracts.agent_decision import AgentDecision, HumanRequest
+from intergrax.contracts.execution_interrupt import ExecutionInterrupt
+
 
 class AgentExecutionStatus(str, Enum):
     COMPLETED = "completed"
@@ -35,3 +38,7 @@ class AgentExecutionResult(BaseModel):
     cost: Optional[float] = None
     duration_seconds: Optional[float] = None
     next_recommendations: List[str] = Field(default_factory=list)
+    agent_decision: Optional[AgentDecision] = None
+    human_request: Optional[HumanRequest] = None
+    execution_interrupt: Optional[ExecutionInterrupt] = None
+    policy_rule_id: Optional[str] = None

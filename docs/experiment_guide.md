@@ -50,7 +50,26 @@ asyncio.run(main())
 
 **Execution paths:** `EchoAgent` uses **UAEP** (`get_steps` / `run_step` via `AgentEngine`). `LegalAgent` still uses the **legacy pipeline** path until migrated (P4.5).
 
-## 3. Run Legal Agent via application host
+## 3. Human-in-the-loop (governance)
+
+Agents may return `AgentDecision.REQUEST_HUMAN` during UAEP execution. Nexus pauses the task in `WAITING_FOR_HUMAN` and stores `HumanRequest` in task metadata.
+
+Resume by re-submitting with approval in metadata:
+
+```python
+task = Task(
+    tenant_id="t1",
+    user_id="u1",
+    message="sensitive action",
+    context=TaskContext(capability="hitl.basic"),
+    metadata={"human_approved": True},
+)
+result = await loop.handle_task(task)
+```
+
+Inspect pause events: `HUMAN_APPROVAL_REQUESTED` / `HUMAN_APPROVAL_RECEIVED` on `loop.event_bus.history`.
+
+## 4. Run Legal Agent via application host
 
 ```bash
 uv run uvicorn legal_application.host.main:app --host 0.0.0.0 --port 8000
@@ -62,7 +81,7 @@ Optional global loop for HTTP:
 set LEGAL_USE_NEXUS_LOOP=true
 ```
 
-## 4. Research pipeline (multi-agent)
+## 5. Research pipeline (multi-agent)
 
 ```python
 from intergrax.runtime.registry import build_research_registry
@@ -87,6 +106,6 @@ HTTP host:
 uv run uvicorn research_application.host.main:app --host 0.0.0.0 --port 8010
 ```
 
-## 5. Decision
+## 6. Decision
 
 After observing traces, cost, and quality: **keep**, **improve**, **pause**, or **delete** the experiment (§35).

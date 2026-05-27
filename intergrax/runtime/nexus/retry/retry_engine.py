@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Awaitable, Callable, List, Optional
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
@@ -90,6 +90,12 @@ class RetryEngine:
 
         while True:
             execution = await execute_fn(agent)
+            if execution.status == AgentExecutionStatus.NEEDS_INPUT:
+                return (
+                    execution,
+                    records,
+                    ValidationResult(valid=False, errors=["awaiting_human_input"]),
+                )
             validation = validate_fn(execution, agent)
             if validation.valid:
                 return execution, records, validation

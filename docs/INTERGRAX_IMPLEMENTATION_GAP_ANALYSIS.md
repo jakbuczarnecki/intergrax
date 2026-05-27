@@ -1502,10 +1502,10 @@ Mapping of [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.
 | 42.5 | Unified Agent Execution Protocol (UAEP) | 🟢 | `UAEPExecutor` + Echo; legacy fallback for pipeline agents |
 | 42.6 | Agent Step Lifecycle | 🟡 | Echo uses `AgentStep`; Legal still domain pipelines |
 | 42.7 | Agent Decision Model | 🟡 | **Scaffold:** `intergrax/contracts/agent_decision.py`. Separate legacy `AgentDecision` in `tools/tools_agent.py` |
-| 42.8 | Execution Interrupt Model | 🟡 | **Scaffold:** `intergrax/contracts/execution_interrupt.py`. Not handled in NexusLoop |
-| 42.9 | Pause / Resume Model | 🔴 | `WAITING_FOR_HUMAN` task state exists; no `PauseRecord`, checkpoint, resume token |
-| 42.10 | Human In The Loop Flow | 🟡 | Task state + architecture doc; no formal `HumanRequest` flow or Nexus notification adapter trigger |
-| 42.11 | Policy Engine (runtime governance) | 🟡 | **Scaffold:** `intergrax/runtime/policy/runtime_policy_engine.py`. Separate: `ExecutionPolicyEngine` (replay/eval only) |
+| 42.8 | Execution Interrupt Model | 🟡 | **Wired:** `runtime/interrupts/handler.py`; UAEP emits `INTERRUPT_REQUESTED` |
+| 42.9 | Pause / Resume Model | 🟡 | **Wired:** `runtime/human/pause.py`, `PauseRecord`; resume via `human_approved` metadata |
+| 42.10 | Human In The Loop Flow | 🟡 | **Wired:** NexusLoop → `WAITING_FOR_HUMAN`; `HUMAN_APPROVAL_*` events; no Slack/Teams adapter yet |
+| 42.11 | Policy Engine (runtime governance) | 🟡 | **Wired:** `RuntimePolicyEngine` in UAEP decision path + NexusLoop; not unified with replay eval facade |
 | 42.12 | ToolRuntime Enforcement | ✅ | `ToolRuntime` + `ToolAccessPolicy` — basic enforcement. Missing `ToolRequest`/`ToolResponse` at gateway boundary |
 | 42.13 | Shared Execution Contracts | 🟡 | **Scaffold:** `RuntimeExecutionContext`, contracts package. AgentEngine does not yet build full context |
 | 42.14 | Cross-Agent Communication | 🟡 | `ContextManager`, graph results merge — informal; no `SharedTaskContext` contract type |
@@ -1616,13 +1616,13 @@ Recommended convergence order — **wire scaffold into existing Nexus/AgentEngin
 | 7 | `AgentDecision` emission per step | `agents/uaep.py` | **Done** |
 | — | Legacy `RuntimeEngine` fallback for non-UAEP agents | `agent_engine.py` | **Done** |
 
-### P4.3 — Governance integration
+### P4.3 — Governance integration — **Done**
 
-| Step | Action | Target files |
-|------|--------|--------------|
-| 8 | Wire `RuntimePolicyEngine` into interrupt/decision path | `nexus_loop.py`, `graph_executor.py` |
-| 9 | Implement `ExecutionInterrupt` handler | `runtime/interrupts/` (new) |
-| 10 | Pause/resume + `HumanRequest` flow | `runtime/human/` (new) |
+| Step | Action | Target files | Status |
+|------|--------|--------------|--------|
+| 8 | Wire `RuntimePolicyEngine` into interrupt/decision path | `uaep.py`, `nexus_loop.py`, `graph_executor.py` | **Done** |
+| 9 | Implement `ExecutionInterrupt` handler | `runtime/interrupts/handler.py` | **Done** |
+| 10 | Pause/resume + `HumanRequest` flow | `runtime/human/pause.py` | **Done** |
 
 ### P4.4 — Tool gateway unification
 

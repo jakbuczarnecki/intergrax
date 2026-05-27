@@ -16,7 +16,9 @@ from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
+from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.interrupts.handler import GovernanceResolution
 
 _DEFAULT_UAEP = UAEPExecutor()
 
@@ -36,6 +38,7 @@ class AgentEngine:
         event_bus: Optional[RuntimeEventBus] = None,
         middleware: Optional[MiddlewarePipeline] = None,
         uaep_executor: Optional[UAEPExecutor] = None,
+        policy_engine: Optional[RuntimePolicyEngine] = None,
     ) -> None:
         if isinstance(agents, AgentRegistry):
             self._registry = agents
@@ -46,6 +49,7 @@ class AgentEngine:
         self._uaep = uaep_executor or UAEPExecutor(
             middleware=middleware,
             event_bus=event_bus,
+            policy_engine=policy_engine,
         )
 
     @property
@@ -82,7 +86,7 @@ class AgentEngine:
         *,
         uaep_executor: Optional[UAEPExecutor] = None,
     ) -> RuntimeAnswer:
-        answer, _validation, _context = await AgentEngine._execute_agent_impl(
+        answer, _validation, _context, _governance = await AgentEngine._execute_agent_impl(
             agent,
             request,
             uaep_executor or _DEFAULT_UAEP,
@@ -96,7 +100,7 @@ class AgentEngine:
         *,
         uaep_executor: Optional[UAEPExecutor] = None,
     ) -> AgentExecutionResult:
-        answer, validation, _context = await AgentEngine._execute_agent_impl(
+        answer, validation, _context, governance = await AgentEngine._execute_agent_impl(
             agent,
             request,
             uaep_executor or _DEFAULT_UAEP,
@@ -107,6 +111,7 @@ class AgentEngine:
             agent_id=contract.id,
             valid=validation.valid,
             validation_errors=validation.errors,
+            governance=governance,
         )
 
     @staticmethod
@@ -114,7 +119,7 @@ class AgentEngine:
         agent: Agent,
         request: RuntimeRequest,
         uaep_executor: UAEPExecutor,
-    ) -> tuple[RuntimeAnswer, ValidationResult, RuntimeContext]:
+    ) -> tuple[RuntimeAnswer, ValidationResult, RuntimeContext, Optional[GovernanceResolution]]:
         if supports_uaep(agent):
             return await uaep_executor.execute(agent, request)
 
@@ -125,4 +130,4 @@ class AgentEngine:
         if not validation.valid and validation.errors:
             if answer.route is not None:
                 answer.route.extra.setdefault("agent_validation_errors", validation.errors)
-        return answer, validation, context
+        return answer, validation, context, None

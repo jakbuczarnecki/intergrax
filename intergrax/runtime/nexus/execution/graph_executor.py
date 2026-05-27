@@ -8,7 +8,7 @@ from typing import Awaitable, Callable, Dict, List, Optional
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
-from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.context.context_manager import ContextManager
@@ -171,6 +171,13 @@ class GraphExecutor:
                 on_retry(record)
 
         node.execution_result = execution
+        if execution.status == AgentExecutionStatus.NEEDS_INPUT:
+            node.status = ExecutionNodeStatus.PENDING
+            node.metadata["governance_pause"] = True
+            if on_node_complete is not None:
+                on_node_complete(node)
+            return execution, retries, False
+
         if validation.valid:
             node.status = ExecutionNodeStatus.COMPLETED
         else:

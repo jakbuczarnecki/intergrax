@@ -48,7 +48,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | Architecture §1–41 (tiers, Nexus, graph, repo split) | **~82–88%** | Phases A–C complete |
 
-| §42 Unified Execution Runtime | **~25–30%** | P4.1 wired; scaffold exists; UAEP pending |
+| §42 Unified Execution Runtime | **~45–50%** | P4.1–P4.3 wired; tool gateway + agent migration pending |
 
 | Laboratory workflow (inspect, decide) | **~55%** | D.1 debug CLI done; experiment registry pending |
 
@@ -90,7 +90,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §33 Observability | Trace + events | **Partial** | Trace store ✅; P4.1 dual-emit ✅; D.1 CLI ✅ |
 
-| §42 Execution runtime | UAEP, hooks, governance | **Partial** | P4.2 UAEP ✅; P4.3+ pending |
+| §42 Execution runtime | UAEP, hooks, governance | **Partial** | P4.2 UAEP ✅; P4.3 governance ✅; P4.4+ pending |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` (no `legal_agent` shim) |
 
@@ -278,19 +278,19 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 | P4.2 | UAEP in AgentEngine | **Done** |
 
-| P4.3 | Governance (interrupt, HITL) | **Next** |
+| P4.3 | Governance (interrupt, HITL) | **Done** |
 
-| P4.4 | Tool gateway unification | Pending |
+| P4.4 | Tool gateway unification | **Next** |
 
 | P4.5 | Agent migration (Echo, Research, Legal) | Pending |
 
 
 
-**P4.2 delivered (2026-05-27):** `intergrax/agents/uaep.py`, `UAEPExecutor`, Echo `get_steps`/`run_step`, legacy fallback preserved. Gate: 16 tests.
+**P4.3 delivered (2026-05-27):** `runtime/interrupts/`, `runtime/human/`, `RuntimePolicyEngine` wired in UAEP + NexusLoop; `WAITING_FOR_HUMAN` pause/resume via `human_approved` metadata. Gate: 21 tests.
 
 
 
-**P4.3 scope (next):**
+**P4.2 delivered (2026-05-27):** `intergrax/agents/uaep.py`, `UAEPExecutor`, Echo `get_steps`/`run_step`, legacy fallback preserved.
 
 
 
@@ -304,9 +304,9 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 ```text
 
-NOW:     P4.3 governance (interrupt, HITL) · D.2 debug API
+NOW:     P4.4 tool gateway · D.2 debug API
 
-NEXT:    P4.4 tool gateway · P4.5 Research/Legal UAEP migration
+NEXT:    P4.5 Research/Legal UAEP migration
 
 THEN:    Phase E (Legal thin) · D.3 experiment registry
 
@@ -344,17 +344,19 @@ LATER:   Phase F (on demand)
 
 ## 6. Recommended Next Step
 
-**Phase P4.3** — governance integration (interrupt handler, HITL scaffolding).
+**Phase P4.4** — tool gateway unification (`ToolRequest`/`ToolResponse`, Legal bridge).
 
 ```bash
 uv run pytest tests/ -m gate -q
 ```
 
+**P4.3 (Done):** `ExecutionInterruptHandler`, `HumanPauseCoordinator`, policy in UAEP, NexusLoop `WAITING_FOR_HUMAN` + resume.
+
 **P4.2 (Done):** `UAEPExecutor` in `intergrax/agents/uaep.py`; `AgentEngine` UAEP + legacy fallback; Echo reference agent.
 
 
 
-**Then:** D.2 debug API or P4.4 tool gateway unification.
+**Then:** P4.5 agent migration or D.2 debug API.
 
 
 
@@ -394,5 +396,5 @@ Reuse:
 
 
 
-*Plan synced with codebase after A.5-min gate, infra cleanup, and P4.2 readiness (2026-05-27).*
+*Plan synced with codebase after P4.3 governance (2026-05-27). Gate: 21 tests.*
 

@@ -7,8 +7,8 @@ from typing import List, Optional
 
 from intergrax.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
-from intergrax.runtime.nexus.execution.execution_graph import ExecutionNodeStatus
 from intergrax.contracts.validation import ValidationResult
+from intergrax.runtime.nexus.execution.execution_graph import ExecutionNodeStatus
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.execution.graph_builder import plan_to_execution_graph
@@ -19,6 +19,9 @@ from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy,
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier, TaskClassification
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
+from intergrax.runtime.human.pause import HumanPauseCoordinator, HUMAN_APPROVED_KEY
+from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
+from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -56,10 +59,20 @@ class NexusLoop:
         trace_store: Optional[RunTraceWriter] = None,
         event_bus: Optional[RuntimeEventBus] = None,
         retry_policy: Optional[RetryPolicy] = None,
+        policy_engine: Optional[RuntimePolicyEngine] = None,
+        interrupt_handler: Optional[ExecutionInterruptHandler] = None,
     ) -> None:
         self._registry = registry
         self._event_bus = event_bus or RuntimeEventBus()
-        self._engine = AgentEngine(registry, event_bus=self._event_bus)
+        self._policy_engine = policy_engine or RuntimePolicyEngine()
+        self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
+            policy_engine=self._policy_engine,
+        )
+        self._engine = AgentEngine(
+            registry,
+            event_bus=self._event_bus,
+            policy_engine=self._policy_engine,
+        )
         self._classifier = classifier or ClassifyingTaskClassifier(registry)
         self._planner = planner or TaskPlanner()
         self._validation_engine = validation_engine or NexusValidationEngine()
@@ -94,9 +107,29 @@ class NexusLoop:
     def event_bus(self) -> RuntimeEventBus:
         return self._event_bus
 
+    @property
+    def interrupt_handler(self) -> ExecutionInterruptHandler:
+        return self._interrupt_handler
+
     async def handle_task(self, task: Task) -> TaskResult:
         lifecycle, trace_emitter = self._resolve_lifecycle(task)
         self._trace_emitter = trace_emitter
+
+        if HumanPauseCoordinator.is_resumed(task):
+            await self._publish_runtime_event(
+                runtime_event_from_task_state(
+                    task,
+                    run_id=task.task_id,
+                    message="human approval received",
+                ).model_copy(
+                    update={
+                        "event_type": RuntimeEventType.HUMAN_APPROVAL_RECEIVED,
+                        "phase": ExecutionPhase.HUMAN_APPROVAL,
+                        "payload": {"response": task.metadata.get(HUMAN_APPROVED_KEY)},
+                    }
+                )
+            )
+            HumanPauseCoordinator.clear_pause(task)
 
         await self._publish_runtime_event(
             runtime_event_from_task_state(
@@ -198,6 +231,45 @@ class NexusLoop:
             on_node_start=_on_node_start,
             on_node_complete=_on_node_complete,
         )
+
+        if executions and executions[-1].status == AgentExecutionStatus.NEEDS_INPUT:
+            paused = executions[-1]
+            HumanPauseCoordinator.apply_pause(task, paused)
+            lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
+            await self._publish_runtime_event(
+                runtime_event_from_task_state(
+                    task,
+                    run_id=task.task_id,
+                    message="human approval requested",
+                ).model_copy(
+                    update={
+                        "event_type": RuntimeEventType.HUMAN_APPROVAL_REQUESTED,
+                        "phase": ExecutionPhase.HUMAN_APPROVAL,
+                        "payload": {
+                            "human_request": (
+                                paused.human_request.model_dump()
+                                if paused.human_request
+                                else {}
+                            ),
+                        },
+                    }
+                )
+            )
+            if isinstance(trace_emitter, PersistingTaskTraceEmitter):
+                trace_emitter.finalize()
+            return await self._finish_task(
+                task,
+                trace_emitter,
+                answer=paused.summary,
+                executions=executions,
+                validation=ValidationResult(
+                    valid=False,
+                    errors=["awaiting human input"],
+                ),
+                plan=plan,
+                retry_records=retry_records,
+                graph_id=graph.graph_id,
+            )
 
         failed_nodes = [
             n.node_id for n in graph.nodes if n.status == ExecutionNodeStatus.FAILED
@@ -311,6 +383,11 @@ class NexusLoop:
             "validation_warnings": validation.warnings,
             "task_trace_events": len(trace_emitter.events),
             "runtime_events": len(self._event_bus.history),
+            "governance_human_request": (
+                executions[-1].human_request.model_dump()
+                if executions and executions[-1].human_request
+                else task.metadata.get("governance_human_request")
+            ),
             "retries": [
                 {
                     "attempt": r.attempt,
