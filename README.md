@@ -17,13 +17,13 @@ Operational Control: Integrated Human-In-The-Loop (HITL) and real-time state per
 Production Velocity: Pre-built modules for RAG, multimedia processing, and tool execution (MCP) to turn R&D into ROI in record time.
 
 Intergrax combines:
-- A **core AI framework** with RAG, Agents, Supervisor, and MCP integration.
-- A **FastAPI backend layer** for deploying domain-specific applications.
-- A set of **ready-to-use modules and agents** for business intelligence, document processing, and workflow automation.
+- A **core AI framework** (Tier-0 platform + Tier-1 Nexus runtime) with RAG, agents, and MCP integration.
+- A **FastAPI application layer** (Tier-3) for deploying domain-specific hosts.
+- **Reusable agent modules** (Tier-2) under `agents/` for business intelligence, document processing, and workflow automation.
 
-The framework is being developed as part of the **Intergrax Platform**, a long-term initiative to digitalize enterprise operations, enhance collaboration, and integrate AI-powered reasoning into daily business processes.
+The framework is being developed as an **internal agent experimentation laboratory** (see `docs/intergrax_runtime_architecture.md` §2) on the path toward the Intergrax Platform.
 
-**More information about Roadmap**: `docs/ROADMAP.md`
+**Documentation:** [`docs/README.md`](docs/README.md) · **Implementation plan:** [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
 
 ---
 
@@ -33,12 +33,12 @@ The framework is being developed as part of the **Intergrax Platform**, a long-t
 Intergrax provides a flexible, component-based architecture:
 - **RAG Layer:** advanced multi-index retrieval and summarization.
 - **LLM Layer:** unified access to OpenAI, Ollama, Gemini, and other models.
-- **Supervisor:** orchestrates multi-agent workflows with planning and memory.
+- **Nexus Runtime:** task intake, agent registry, and multi-agent orchestration (`NexusLoop`, `ExecutionGraph`).
 - **Tool Registry (MCP):** exposes internal and external tools to agents.
-- **FastAPI Layer:** production-ready API surface for chat, agents, and automation.
+- **FastAPI Layer:** production-ready API surface for Tier-3 applications.
 
 ### 2. Multi-Agent Orchestration
-A built-in Supervisor (or LangGraph adapter) manages **flow between agents** — enabling them to cooperate like virtual employees (Project Manager, HR, CFO, etc.) when solving real business tasks.
+**NexusLoop** and **ExecutionGraph** coordinate multi-agent workflows. The legacy Supervisor / LangGraph adapter is deprecated in favour of the Nexus runtime model.
 
 ### 3. Real-Time and Contextual Reasoning
 The system combines:
@@ -52,7 +52,7 @@ Intergrax ships with pre-built modules that can be combined or extended:
 - **Large-File Conversational RAG** — persistent document reasoning.  
 - **Business Profile Intelligence System** — automated company profiling and scoring.  
 - **Web Research Agent** — live search and contextual summarization.  
-- **Multi-Agent Supervisor Flow** — end-to-end reasoning and decision automation.  
+- **Multi-Agent Nexus Flow** — task routing and graph execution via NexusLoop.  
 
 Each module can operate standalone or be embedded into custom business solutions.
 
@@ -80,7 +80,7 @@ The long-term goal is to provide:
 
 ## Repository Structure
 - **intergrax**
-- **supervisor**        # Multi-agent orchestration, intent planning, and state management
+- **supervisor**        # Deprecated — legacy multi-agent orchestration (prefer NexusLoop)
 - **runtime**           # Core execution engine & Stateful Pipelines (CoT & HITL)
 - **llm_adapters**      # Unified interface for Multi-LLM support (OpenAI, Anthropic, Ollama, etc.)
 - **rag**               # Advanced RAG (Retrieval-Augmented Generation) & document indexing
@@ -127,9 +127,11 @@ Each notebook corresponds to a specific capability or automation pattern and ser
 ## Status and Development
 Intergrax is under **active development** as part of the intergrax ecosystem.  
 The current focus is on:
-- Consolidating core components (RAG, Agents, MCP, Supervisor).
-- Extending the FastAPI layer for real applications.
-- Integrating multi-agent business flows and external data access.
+- Consolidating the Nexus runtime (NexusLoop, AgentEngine, UAEP).
+- Extending Tier-3 application hosts (Legal, Research).
+- Experimentation workflow and §42 unified execution runtime.
+
+See [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) for the current roadmap.
 
 Early prototypes already demonstrate multi-step reasoning, agent collaboration, and document-based workflows.
 

@@ -2,8 +2,14 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from abc import ABC, abstractmethod
+from __future__ import annotations
 
+from abc import ABC, abstractmethod
+from typing import Any, Optional
+
+from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 
@@ -15,11 +21,12 @@ class Agent(ABC):
     Agent is responsible for:
     - building RuntimeContext (including RuntimeConfig)
     - configuring pipeline via config.pipeline
+    - declaring capabilities via get_contract()
 
     Agent is NOT responsible for:
     - RuntimeState
-    - execution
-    - lifecycle management
+    - execution lifecycle
+    - global orchestration
     """
 
     @abstractmethod
@@ -32,6 +39,31 @@ class Agent(ABC):
         - all required dependencies
         """
         ...
+
+    def get_contract(self) -> AgentContract:
+        """Return declarative agent metadata. Override in concrete agents."""
+        raise NotImplementedError(
+            f"{type(self).__name__} must implement get_contract() "
+            "or register metadata via AgentRegistry."
+        )
+
+    def can_handle(self, task_context: Any) -> CapabilityMatchResult:
+        """Optional capability pre-check. Default: no match."""
+        return CapabilityMatchResult(
+            matched=False,
+            rationale=f"{type(self).__name__} does not implement can_handle()",
+        )
+
+    def validate(
+        self,
+        output: RuntimeAnswer,
+        *,
+        context: Optional[RuntimeContext] = None,
+    ) -> ValidationResult:
+        """Optional local output validation. Default: pass if answer non-empty."""
+        if output.answer and output.answer.strip():
+            return ValidationResult(valid=True)
+        return ValidationResult(valid=False, errors=["empty answer"])
 
     async def run(self, request: RuntimeRequest) -> RuntimeAnswer:
         """

@@ -7,9 +7,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from intergrax.runtime.nexus.pipelines.planner_dynamic_pipeline import PlannerDynamicPipeline
-from intergrax.runtime.nexus.pipelines.planner_static_pipeline import PlannerStaticPipeline
-
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -36,6 +33,8 @@ def session_manager_in_memory():
 
 @pytest.fixture
 def harness_static(session_manager_in_memory) -> DeterministicRuntimeHarness:
+    from intergrax.runtime.nexus.pipelines.planner_static_pipeline import PlannerStaticPipeline
+
     # Minimal deterministic plan for STATIC smoke: planner returns FINALIZE.
     plans = [
         PlanSpec(
@@ -63,6 +62,8 @@ def harness_static(session_manager_in_memory) -> DeterministicRuntimeHarness:
 
 @pytest.fixture
 def harness_dynamic(session_manager_in_memory) -> DeterministicRuntimeHarness:
+    from intergrax.runtime.nexus.pipelines.planner_dynamic_pipeline import PlannerDynamicPipeline
+
     # Deterministic two-iteration DYNAMIC: SYNTHESIZE then FINALIZE.
     plans = [
         PlanSpec(

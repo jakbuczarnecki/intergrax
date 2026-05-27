@@ -9,18 +9,18 @@ from pathlib import Path
 
 
 def pytest_configure(config) -> None:
-    """Put ``applications/`` on ``sys.path`` so each product is ``applications/<import_name>/``.
+    """Put product and agent roots on ``sys.path`` for Tier-2 imports.
 
-    Example: ``applications/legal_agent/`` is the ``legal_agent`` package; ``import legal_agent`` works.
-
-    Ensure ``build/`` exists so ``--basetemp=build/pytest-basetemp`` and ``cache_dir=build/pytest-cache``
-    work on fresh checkouts (e.g. GitHub Actions) where ``build`` is gitignored and absent.
+    - ``applications/`` — execution environments (``legal_application``, ``research_application``)
+    - ``agents/`` — reusable capability modules (``legal``, ``echo``)
     """
     root = Path(__file__).resolve().parent
     (root / "build").mkdir(parents=True, exist_ok=True)
-    apps = root / "applications"
-    if not apps.is_dir():
-        return
-    path = str(apps.resolve())
-    if path not in sys.path:
-        sys.path.insert(0, path)
+
+    for subdir in ("applications", "agents"):
+        path_root = root / subdir
+        if not path_root.is_dir():
+            continue
+        path = str(path_root.resolve())
+        if path not in sys.path:
+            sys.path.insert(0, path)

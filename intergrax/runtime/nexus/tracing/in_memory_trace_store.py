@@ -9,6 +9,7 @@ from typing import Dict, List
 from intergrax.runtime.nexus.tracing.persistence_models import (
     PersistedRun,
     RunMetadata,
+    RunSummary,
     RunTraceReader,
     RunTraceWriter,
     SerializedTraceEvent,
@@ -55,3 +56,22 @@ class InMemoryRunTraceStore(RunTraceWriter, RunTraceReader):
             metadata=metadata,
             events=list(self._events_by_run[run_id]),
         )
+
+    def list_runs(self, tenant_id: str, *, limit: int = 50) -> List[RunSummary]:
+        rows: List[RunSummary] = []
+        for run_id, metadata in self._metadata_by_run.items():
+            if metadata.tenant_id != tenant_id:
+                continue
+            rows.append(
+                RunSummary(
+                    run_id=run_id,
+                    tenant_id=metadata.tenant_id,
+                    user_id=metadata.user_id,
+                    session_id=metadata.session_id,
+                    started_at_utc=metadata.started_at_utc,
+                    duration_ms=metadata.stats.duration_ms,
+                    event_count=len(self._events_by_run.get(run_id, [])),
+                )
+            )
+        rows.sort(key=lambda r: r.started_at_utc, reverse=True)
+        return rows[:limit]

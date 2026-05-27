@@ -60,26 +60,14 @@ from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLe
 
 class RuntimeEngine:
     """
-    High-level conversational runtime for the Intergrax framework.
+    High-level agent runtime engine for the Intergrax framework.
 
-    This class is designed to behave like a ChatGPT/Claude-style engine,
-    but fully powered by Intergrax components (LLM adapters, RAG, web search,
-    tools, memory, etc.).
+    Executes a configured :class:`~intergrax.runtime.nexus.pipelines.contract.RuntimePipeline`
+    for a single agent run: session load, capability steps (RAG, websearch, tools),
+    LLM synthesis, tracing, budget enforcement, and governance.
 
-    Responsibilities (current stage):
-      - Accept a RuntimeRequest.
-      - Load or create a ChatSession via SessionManager.
-      - Append the user message to the session.
-      - Build an LLM-ready context:
-          * system prompt(s),
-          * chat history from SessionManager,
-          * optional retrieved chunks from documents (RAG),
-          * optional web search context (if enabled),
-          * optional tools results.
-      - Call the main LLM adapter once with the fully enriched context
-        to produce the final answer.
-      - Append the assistant message to the session.
-      - Return a RuntimeAnswer with the final answer text and metadata.
+    Invoked by :class:`~intergrax.agents.agent_engine.AgentEngine` and
+    :class:`~intergrax.runtime.nexus.nexus_loop.NexusLoop` — not called directly by applications.
     """
 
     def __init__(
@@ -102,7 +90,7 @@ class RuntimeEngine:
         if not request.tenant_id:
             raise ValueError("tenant_id must be provided in RuntimeRequest.")
 
-        run_id = f"run_{uuid.uuid4().hex}"
+        run_id = request.metadata.get("run_id") or f"run_{uuid.uuid4().hex}"
         start_perf = time.perf_counter()
 
         state = RuntimeState(
