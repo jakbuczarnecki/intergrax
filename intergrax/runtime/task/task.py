@@ -7,9 +7,14 @@ from enum import Enum
 from typing import Any, Dict, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.runtime.task.task_contract import (
+    TaskExecutionOptions,
+    TaskResultSummary,
+    TaskRuntimeState,
+)
 
 
 class TaskState(str, Enum):
@@ -47,13 +52,38 @@ class Task(BaseModel):
     message: str = ""
     state: TaskState = TaskState.CREATED
     context: TaskContext = Field(default_factory=TaskContext)
+    options: TaskExecutionOptions = Field(default_factory=TaskExecutionOptions)
+    runtime: TaskRuntimeState = Field(default_factory=TaskRuntimeState)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    _registry: Optional[Any] = PrivateAttr(default=None)
+
+    @model_validator(mode="after")
+    def _hydrate_from_legacy_metadata(self) -> Task:
+        from intergrax.runtime.task.task_metadata_bridge import hydrate_task_from_metadata
+
+        hydrate_task_from_metadata(self)
+        return self
+
+    @property
+    def classification(self) -> Optional[str]:
+        return self.runtime.classification.value
+
+    def sync_metadata(self) -> None:
+        from intergrax.runtime.task.task_metadata_bridge import sync_task_metadata
+
+        sync_task_metadata(self)
 
     def to_runtime_request(self) -> "RuntimeRequest":
         from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+        from intergrax.runtime.task.task_metadata_bridge import task_to_request_metadata
 
         if not self.agent_id:
             raise ValueError("Task.agent_id must be set before execution.")
+
+        metadata = task_to_request_metadata(self)
+        metadata["run_id"] = self.task_id
+        metadata["task_id"] = self.task_id
 
         return RuntimeRequest(
             tenant_id=self.tenant_id,
@@ -61,7 +91,7 @@ class Task(BaseModel):
             session_id=self.session_id or f"sess_{uuid4().hex}",
             agent_id=self.agent_id,
             message=self.message,
-            metadata={**self.metadata, "run_id": self.task_id},
+            metadata=metadata,
         )
 
 
@@ -72,4 +102,27 @@ class TaskResult(BaseModel):
     answer: str = ""
     agent_id: Optional[str] = None
     execution_result: Optional[AgentExecutionResult] = None
+    summary: TaskResultSummary = Field(default_factory=TaskResultSummary)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _inject_summary_from_legacy(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "summary" not in data:
+            metadata = data.get("metadata")
+            if isinstance(metadata, dict) and (
+                metadata.get("task_result.v1") is not None
+                or metadata.get("validation_valid") is not None
+            ):
+                from intergrax.runtime.task.task_metadata_bridge import (
+                    result_summary_from_metadata,
+                )
+
+                data = dict(data)
+                data["summary"] = result_summary_from_metadata(metadata).model_dump()
+        return data
+
+    def sync_metadata(self) -> None:
+        from intergrax.runtime.task.task_metadata_bridge import sync_result_metadata
+
+        sync_result_metadata(self)

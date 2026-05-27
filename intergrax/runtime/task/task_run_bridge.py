@@ -28,6 +28,11 @@ def task_from_runtime_request(
     """Build a Nexus Task from a RuntimeRequest (HTTP / eval intake)."""
     resolved_run_id = run_id or runtime_req.metadata.get("run_id") or new_run_id()
     cap = capability or runtime_req.metadata.get("capability")
+    flat_metadata = {
+        "source": "runtime_request",
+        "runtime_metadata": dict(runtime_req.metadata),
+        **dict(runtime_req.metadata),
+    }
     return Task(
         task_id=resolved_run_id,
         tenant_id=tenant_id,
@@ -36,10 +41,7 @@ def task_from_runtime_request(
         agent_id=runtime_req.agent_id,
         message=runtime_req.message or "",
         context=TaskContext(capability=cap),
-        metadata={
-            "source": "runtime_request",
-            "runtime_metadata": dict(runtime_req.metadata),
-        },
+        metadata=flat_metadata,
     )
 
 
@@ -79,6 +81,7 @@ def task_to_execution_payload(task: Task) -> Dict[str, Any]:
 
 def task_result_to_payload(result: TaskResult) -> Dict[str, Any]:
     """Serialize TaskResult for RunStore.result_payload."""
+    result.sync_metadata()
     payload: Dict[str, Any] = {
         "task_id": result.task_id,
         "run_id": result.run_id,
@@ -86,6 +89,7 @@ def task_result_to_payload(result: TaskResult) -> Dict[str, Any]:
         "answer": result.answer,
         "agent_id": result.agent_id,
         "metadata": dict(result.metadata),
+        "summary": result.summary.model_dump(mode="json"),
     }
     if result.execution_result is not None:
         payload["execution_result"] = result.execution_result.model_dump(mode="json")

@@ -6,6 +6,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from intergrax.runtime.task.task_contract import (
+    TaskExecutionOptions,
+    TaskIsolationOptions,
+    TaskResultSummary,
+    TaskRuntimeState,
+)
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_run_bridge import (
     new_run_id,
@@ -30,8 +36,12 @@ __all__ = [
     "PersistingTaskTraceEmitter",
     "Task",
     "TaskContext",
+    "TaskExecutionOptions",
+    "TaskIsolationOptions",
     "TaskLifecycle",
     "TaskResult",
+    "TaskResultSummary",
+    "TaskRuntimeState",
     "TaskState",
     "TaskTraceEmitter",
     "UnifiedTaskRunner",

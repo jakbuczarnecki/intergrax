@@ -62,10 +62,17 @@ task = Task(
     user_id="u1",
     message="sensitive action",
     context=TaskContext(capability="hitl.basic"),
-    metadata={"human_approved": True},
+    task_id=original_task_id,
+    metadata={"human_response": "approve"},  # or "reject" / "escalate"
 )
 result = await loop.handle_task(task)
 ```
+
+- **approve** — continues execution (same as `human_approved: True`)
+- **reject** — task fails with `human rejected`
+- **escalate** — records escalation chain; task stays paused for higher-level review
+
+Decisions are persisted when `NexusLoop` is configured with `human_decision_store`.
 
 Inspect pause events: `HUMAN_APPROVAL_REQUESTED` / `HUMAN_APPROVAL_RECEIVED` on `loop.event_bus.history`.
 

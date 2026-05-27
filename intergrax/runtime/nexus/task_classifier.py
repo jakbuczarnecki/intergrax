@@ -34,51 +34,55 @@ class TaskClassifier:
     """
 
     def classify(self, task: Task) -> Task:
+        cls_state = task.runtime.classification
         capability = task.context.capability
         if capability:
-            task.metadata["requested_capability"] = capability
+            cls_state.requested_capability = capability
 
-        if task.metadata.get("require_human_approval"):
-            task.metadata["classification"] = TaskClassification.HUMAN_APPROVAL_REQUIRED.value
+        if task.options.governance.require_human_approval:
+            cls_state.value = TaskClassification.HUMAN_APPROVAL_REQUIRED.value
+            task.sync_metadata()
             return task
 
         if capability and not self._has_capability_support(task, capability):
-            task.metadata["classification"] = TaskClassification.UNSUPPORTED.value
-            task.metadata["unsupported_reason"] = f"no agent for capability {capability!r}"
+            cls_state.value = TaskClassification.UNSUPPORTED.value
+            cls_state.unsupported_reason = f"no agent for capability {capability!r}"
+            task.sync_metadata()
             return task
 
         if capability and self._is_multi_agent_capability(task, capability):
-            task.metadata["classification"] = TaskClassification.MULTI_AGENT.value
+            cls_state.value = TaskClassification.MULTI_AGENT.value
         elif task.agent_id:
-            task.metadata["classification"] = TaskClassification.SINGLE_AGENT_EXPLICIT.value
+            cls_state.value = TaskClassification.SINGLE_AGENT_EXPLICIT.value
         elif capability:
-            task.metadata["classification"] = TaskClassification.CAPABILITY_ROUTED.value
+            cls_state.value = TaskClassification.CAPABILITY_ROUTED.value
         else:
-            task.metadata["classification"] = TaskClassification.SINGLE_AGENT_DEFAULT.value
+            cls_state.value = TaskClassification.SINGLE_AGENT_DEFAULT.value
 
         if self._is_high_risk(task):
-            task.metadata["risk_level"] = AgentRiskLevel.HIGH.value
-            if task.metadata["classification"] != TaskClassification.UNSUPPORTED.value:
-                task.metadata["classification"] = TaskClassification.HIGH_RISK.value
+            cls_state.risk_level = AgentRiskLevel.HIGH.value
+            if cls_state.value != TaskClassification.UNSUPPORTED.value:
+                cls_state.value = TaskClassification.HIGH_RISK.value
 
+        task.sync_metadata()
         return task
 
     def _has_capability_support(self, task: Task, capability: str) -> bool:
-        registry: Optional[AgentRegistry] = task.metadata.get("_registry")  # type: ignore[assignment]
+        registry = task._registry
         if registry is None:
             return True
         return len(registry.find_by_capability(capability)) > 0
 
     def _is_multi_agent_capability(self, task: Task, capability: str) -> bool:
-        registry: Optional[AgentRegistry] = task.metadata.get("_registry")  # type: ignore[assignment]
+        registry = task._registry
         if registry is None:
             return False
         return len(registry.find_by_capability(capability)) > 1
 
     def _is_high_risk(self, task: Task) -> bool:
-        registry: Optional[AgentRegistry] = task.metadata.get("_registry")  # type: ignore[assignment]
+        registry = task._registry
         if registry is None:
-            return bool(task.metadata.get("high_risk"))
+            return task.options.governance.high_risk
         agent_id = task.agent_id
         if agent_id and registry.has(agent_id):
             return registry.get_contract(agent_id).risk_level == AgentRiskLevel.HIGH
@@ -86,7 +90,7 @@ class TaskClassifier:
         if capability:
             agents = registry.find_by_capability(capability)
             return any(a.get_contract().risk_level == AgentRiskLevel.HIGH for a in agents)
-        return bool(task.metadata.get("high_risk"))
+        return task.options.governance.high_risk
 
 
 class ClassifyingTaskClassifier(TaskClassifier):
@@ -96,7 +100,8 @@ class ClassifyingTaskClassifier(TaskClassifier):
         self._registry = registry
 
     def classify(self, task: Task) -> Task:
-        task.metadata["_registry"] = self._registry
-        result = super().classify(task)
-        result.metadata.pop("_registry", None)
-        return result
+        task._registry = self._registry
+        try:
+            return super().classify(task)
+        finally:
+            task._registry = None

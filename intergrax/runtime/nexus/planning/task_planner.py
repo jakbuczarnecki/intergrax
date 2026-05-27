@@ -41,10 +41,7 @@ class TaskPlanner:
     """
 
     def plan(self, task: Task, registry: AgentRegistry) -> NexusPlan:
-        classification = task.metadata.get(
-            "classification",
-            TaskClassification.SINGLE_AGENT_DEFAULT.value,
-        )
+        classification = task.classification or TaskClassification.SINGLE_AGENT_DEFAULT.value
 
         if classification == TaskClassification.UNSUPPORTED.value:
             return NexusPlan(

@@ -97,7 +97,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §19 Debug surface | CLI / API | **Partial** | D.1 CLI ✅; D.2 API ✅ |
 
-| §32 HITL | Approval flow | **Not started** | Phase F |
+| §32 HITL | Approval flow | **Done** | F.3 approve/reject/escalate + decision store |
 
 | §20–21 Shadow / Sandbox | Isolated exec | **Done** | F.1 ShadowWorkspace + F.2 SandboxRuntime ✅ |
 
@@ -275,7 +275,7 @@ uv run pytest tests/ -m gate -q
 |---|-------------|--------|-------|
 | F.1 | ShadowWorkspace | **Done** | `runtime/workspace/`; UAEP + NexusLoop integration |
 | F.2 | SandboxRuntime | **Done** | `runtime/sandbox/`; `sandbox.exec` via BoundToolGateway |
-| F.3 | Advanced HITL (reject/escalation store) | Pending | on demand |
+| F.3 | Advanced HITL (reject/escalation store) | **Done** | `runtime/human/` store + NexusLoop reject/escalate |
 | F.4 | Long-running tasks / Slack-Teams | Pending | on demand |
 
 Long-running tasks, HITL advanced, Shadow, Sandbox, Slack/Teams — **only with concrete use case**.
@@ -328,7 +328,7 @@ Long-running tasks, HITL advanced, Shadow, Sandbox, Slack/Teams — **only with 
 
 ```text
 
-NOW:     F.3 advanced HITL (on demand) · F.4 long-running / adapters (on demand)
+NOW:     F.4 long-running / adapters (on demand)
 
 NEXT:    Phase F remainder (on demand)
 
@@ -366,11 +366,13 @@ LATER:   Phase F (on demand)
 
 ## 6. Recommended Next Step
 
-**F.3 (on demand):** advanced HITL reject/escalation store, or **F.4** long-running tasks.
+**F.4 (on demand):** long-running tasks / Slack-Teams adapters.
 
 ```bash
 uv run pytest tests/ -m gate -q
 ```
+
+**F.3 (Done):** advanced HITL — approve/reject/escalate via `human_response`; SQLite decision store (`INTERGRAX_HUMAN_DECISIONS_DB`).
 
 **F.2 (Done):** SandboxRuntime — `SandboxSession` + `sandbox.exec` tool via UAEP; enable with `task.metadata["sandbox"]=True`.
 
@@ -394,7 +396,7 @@ uv run pytest tests/ -m gate -q
 
 
 
-**Then:** F.3 advanced HITL or F.4 long-running tasks (on demand).
+**Then:** F.4 long-running tasks (on demand).
 
 
 
@@ -501,6 +503,22 @@ await ctx.invoke_tool(ToolRequest(
 ```
 
 Operations: `echo`, `write_file`, `read_file`, `list_files`. Root: `INTERGRAX_SANDBOX_ROOT` (default `build/sandbox_sessions/`).
+
+### F.3 Advanced HITL (Done)
+
+Human responses beyond approve:
+
+```python
+# Re-submit paused task with verdict
+task = Task(..., task_id=original_task_id, metadata={"human_response": "reject"})
+# or "approve" / "escalate"
+```
+
+- **reject** → task `FAILED`, decision persisted
+- **escalate** → `INTERRUPT_ESCALATED` event, escalation chain in metadata, stays `WAITING_FOR_HUMAN`
+- Store: `INTERGRAX_HUMAN_DECISIONS_DB` (default `build/intergrax_human_decisions.db`)
+
+Optional on `NexusLoop`: `human_decision_store=SQLiteHumanDecisionStore(...)`.
 
 ### D.1 Debug CLI (Done)
 
