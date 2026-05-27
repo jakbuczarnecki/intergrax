@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import Optional, Protocol, Sequence, runtime_checkable
 
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
@@ -54,11 +54,15 @@ class ToolRuntime:
         state: RuntimeState,
         plan: ToolInvocationPlan,
         trace_step: str = "ToolRuntime",
+        allowed_tools: Optional[Sequence[str]] = None,
     ) -> ToolRuntimeResult:
+        from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
         from intergrax.runtime.nexus.runtime_steps.rag_step import RagStep
         from intergrax.runtime.nexus.runtime_steps.tools_step import ToolsStep
         from intergrax.runtime.nexus.runtime_steps.websearch_step import WebsearchStep
         from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+
+        plan = ToolAccessPolicy.apply(plan, allowed_tools=allowed_tools, state=state)
 
         cfg = state.context.config
 

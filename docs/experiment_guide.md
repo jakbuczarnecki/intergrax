@@ -59,6 +59,31 @@ Optional global loop for HTTP:
 set LEGAL_USE_NEXUS_LOOP=true
 ```
 
+## 5. Research pipeline (multi-agent)
+
+```python
+from intergrax.runtime.registry import build_research_registry
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.task import Task, TaskContext
+
+registry = build_research_registry()
+loop = NexusLoop(registry)
+result = await loop.handle_task(
+    Task(
+        tenant_id="t1",
+        user_id="u1",
+        message="AI logistics partners in Poland",
+        context=TaskContext(capability="research.pipeline", intent="research_summarize"),
+    )
+)
+```
+
+HTTP host:
+
+```bash
+uv run uvicorn research_application.host.main:app --host 0.0.0.0 --port 8010
+```
+
 ## 4. Decision
 
 After observing traces, cost, and quality: **keep**, **improve**, **pause**, or **delete** the experiment (§35).

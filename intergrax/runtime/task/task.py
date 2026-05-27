@@ -17,11 +17,16 @@ class TaskState(str, Enum):
     CREATED = "created"
     CLASSIFIED = "classified"
     PLANNED = "planned"
+    WAITING_FOR_RESOURCES = "waiting_for_resources"
+    WAITING_FOR_HUMAN = "waiting_for_human"
     RUNNING = "running"
     VALIDATING = "validating"
     COMPLETED = "completed"
+    PARTIALLY_COMPLETED = "partially_completed"
+    NEEDS_MORE_INFORMATION = "needs_more_information"
     FAILED = "failed"
     CANCELLED = "cancelled"
+    EXPIRED = "expired"
 
 
 class TaskContext(BaseModel):
@@ -57,6 +62,7 @@ class Task(BaseModel):
             session_id=self.session_id or f"sess_{uuid4().hex}",
             agent_id=self.agent_id,
             message=self.message,
+            metadata={**self.metadata, "run_id": self.task_id},
         )
 
 

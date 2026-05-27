@@ -17,7 +17,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 **Success metric:** time from idea to first running experiment **< 1 hour** (currently: days via copying `legal_agent`).
 
-**Current alignment with target:** ~65–70% (P0 + most of P1 completed).
+**Current alignment with target:** ~85–88% (Phase A + B + C complete).
 
 ---
 
@@ -72,12 +72,12 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | # | Deliverable | Sections | Actions |
 |---|-------------|----------|---------|
-| A.1 | Unified run lifecycle | §10.6, §26, §41 | Wire `Task` ↔ `RunService` ↔ `ExecutionAdapter` ↔ `NexusLoop`; single `run_id` end-to-end |
-| A.2 | Task trace persistence | §23, §33 | `TaskTraceEmitter` → `TraceEventStore` (sqlite/in-memory); run_id = task_id |
-| A.3 | NexusLoop production path | §9.1 | `LEGAL_USE_NEXUS_LOOP` default `true` in dev; A/B test in stage |
-| A.4 | EvalRunner integration | §34 | Input/output via `AgentExecutionResult`; report with capability id |
-| A.5 | Test regression suite | §39.6 | Run and stabilize: contracts, registry, NexusLoop, legal_tests, agents/legal/tests |
-| A.6 | Shim cleanup | §7.4 | Replace imports `legal_agent.*` → `legal.*` / `legal_application.*` in code and notebooks |
+| A.1 | Unified run lifecycle | **Done** | `task_run_bridge`, `NexusTaskExecutionAdapter`, `UnifiedTaskRunner`, factory wiring |
+| A.2 | Task trace persistence | **Done** | `PersistingTaskTraceEmitter`, NexusLoop `trace_store` |
+| A.3 | NexusLoop production path | **Done** | `LEGAL_USE_NEXUS_LOOP` default `true` in dev |
+| A.4 | EvalRunner integration | **Done** | `NexusEvalRunner` |
+| A.5 | Test regression suite | Pending | — |
+| A.6 | Shim cleanup | **Done** | `applications/legal_agent/` → shim + `host/main.py` stub only |
 
 **Completion criteria:** Legal HTTP → NexusLoop → LegalAgent → trace in store → EvalRunner reports result.
 
@@ -91,13 +91,13 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | # | Deliverable | Sections | Actions |
 |---|-------------|----------|---------|
-| B.1 | TaskClassifier v2 | §10.2 | Classification: single-agent / multi-agent / unsupported / high-risk |
-| B.2 | Minimal Planner | §10.3 | `Plan` object (steps, agent assignments); integration with existing `PlanLoopController` |
-| B.3 | TaskState extension | §23 | `waiting_for_resources`, `waiting_for_human`, `partially_completed`, `needs_more_information` |
-| B.4 | Nexus ValidationEngine | §29 | Schema + rule validation on `AgentExecutionResult`; plug-in per capability |
-| B.5 | RetryEngine (basic) | §31, §30 | Retry with limit, reason in trace; retry alternate agent from registry |
-| B.6 | Tool access policy | §10.8, §22 | Nexus checks `allowed_tools` before `ToolRuntime.invoke()` |
-| B.7 | Final response composer | §10.10 | `NexusLoop` composes response from multiple `AgentExecutionResult` (prep for multi-agent) |
+| B.1 | TaskClassifier v2 | **Done** | `TaskClassification`, `ClassifyingTaskClassifier` |
+| B.2 | Minimal Planner | **Done** | `NexusPlan`, `TaskPlanner` |
+| B.3 | TaskState extension | **Done** | extended `TaskState` + lifecycle transitions |
+| B.4 | Nexus ValidationEngine | **Done** | `NexusValidationEngine` + capability plug-ins |
+| B.5 | RetryEngine (basic) | **Done** | `RetryEngine`, alternate agent, trace in NexusLoop |
+| B.6 | Tool access policy | **Done** | `ToolAccessPolicy`, `ToolRuntime.invoke(allowed_tools=...)` |
+| B.7 | Final response composer | **Done** | `FinalResponseComposer`, multi-step execution in NexusLoop |
 
 **Completion criteria:** EchoAgent + LegalAgent routed via classifier; retry visible in trace; validation failure → `TaskState.FAILED` with explicit reason.
 
@@ -109,12 +109,12 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | # | Deliverable | Sections | Actions |
 |---|-------------|----------|---------|
-| C.1 | ExecutionGraph | §24 | `ExecutionNode`, `ExecutionGraph`, status per node |
-| C.2 | Sequential executor | §25 | NexusLoop iterates graph sequentially |
-| C.3 | Parallel executor (limited) | §25 | `asyncio.gather` for independent nodes; merge results |
-| C.4 | ContextManager | §28 | `build_agent_context(task, node, prior_outputs)` — bounded context |
-| C.5 | ResearchAgent prototype | §36–§38, §40 | `python -m intergrax.scaffold new-agent research`; minimal web search capability |
-| C.6 | Second application shell | §7.4 | `applications/research_application/` — optional thin host |
+| C.1 | ExecutionGraph | **Done** | `ExecutionGraph`, `ExecutionNode`, `ExecutionNodeStatus` |
+| C.2 | Sequential executor | **Done** | `GraphExecutor` batch iteration |
+| C.3 | Parallel executor (limited) | **Done** | `asyncio.gather` per independent batch |
+| C.4 | ContextManager | **Done** | `ContextManager.build_agent_context` |
+| C.5 | ResearchAgent prototype | **Done** | `agents/research/` + `SummaryAgent` |
+| C.6 | Second application shell | **Done** | `applications/research_application/` |
 
 **Completion criteria:** Task “research → summarize” through 2 agents in ExecutionGraph with full trace.
 

@@ -1,6 +1,5 @@
-# © Artur Czarnecki. All rights reserved.
-# Shim — use ``legal_application.host.main`` in new code.
+# Backward-compatibility shim only.
 
-from legal_application.host.main import app, run
+from legal_application.host.main import app
 
-__all__ = ["app", "run"]
+__all__ = ["app"]

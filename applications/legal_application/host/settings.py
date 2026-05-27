@@ -97,7 +97,7 @@ class LegalBackendSettings:
         llm = os.environ.get("LEGAL_LLM_PROVIDER", "ollama").strip().lower()
         agent_id = os.environ.get("LEGAL_DEFAULT_AGENT_ID", "legal-default").strip()
         prefix = os.environ.get("LEGAL_ROUTE_PREFIX", "/v1/legal").strip() or "/v1/legal"
-        use_nexus_loop = _env_bool("LEGAL_USE_NEXUS_LOOP", False)
+        use_nexus_loop = _env_bool("LEGAL_USE_NEXUS_LOOP", environment == ApiEnvironment.DEV)
 
         id_src_env = os.environ.get("LEGAL_IDENTITY_SOURCE", "").strip().lower()
         if id_src_env in {"body_or_context", "context_only"}:

@@ -90,7 +90,7 @@ class RuntimeEngine:
         if not request.tenant_id:
             raise ValueError("tenant_id must be provided in RuntimeRequest.")
 
-        run_id = f"run_{uuid.uuid4().hex}"
+        run_id = request.metadata.get("run_id") or f"run_{uuid.uuid4().hex}"
         start_perf = time.perf_counter()
 
         state = RuntimeState(

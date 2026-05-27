@@ -14,7 +14,12 @@ from legal_application.serving.fastapi_router import mount_legal_agent_routes
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
+from intergrax.fastapi_core.runs.default_service import DefaultRunService
+from intergrax.fastapi_core.runs.store_runtime import InMemoryRunStore
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecutionAdapter
 
 from legal_application.host.settings import LegalBackendSettings
 from legal_application.host.wiring import build_legal_agent
@@ -38,12 +43,29 @@ def create_legal_backend_app(*, settings: Optional[LegalBackendSettings] = None)
 
     api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
 
+    agent = build_legal_agent(settings)
+    registry = AgentRegistry()
+    contract = agent.get_contract().model_copy(
+        update={"id": settings.legal_default_agent_id},
+    )
+    registry.register(agent, contract=contract)
+
+    trace_store = InMemoryRunTraceStore()
+    nexus_loop = NexusLoop(registry, trace_store=trace_store)
+    nexus_adapter = NexusTaskExecutionAdapter(nexus_loop)
+
+    run_store = InMemoryRunStore()
+    run_service = DefaultRunService(run_store, nexus_adapter)
+    nexus_adapter.bind_run_service(run_service)
+
     api_cfg = ApiConfig(
         environment=settings.environment,
         api_prefix="/v1",
         cors_allow_origins=settings.cors_allow_origins,
         allowed_hosts=settings.allowed_hosts,
         api_key_config=api_key_config,
+        run_store=run_store,
+        run_service=run_service,
     )
     app = create_app(api_cfg)
 
@@ -65,13 +87,6 @@ def create_legal_backend_app(*, settings: Optional[LegalBackendSettings] = None)
             allow_headers=["*"],
         )
 
-    agent = build_legal_agent(settings)
-    registry = AgentRegistry()
-    contract = agent.get_contract().model_copy(
-        update={"id": settings.legal_default_agent_id},
-    )
-    registry.register(agent, contract=contract)
-
     mount_legal_agent_routes(
         app,
         registry=registry,
@@ -79,6 +94,7 @@ def create_legal_backend_app(*, settings: Optional[LegalBackendSettings] = None)
         prefix=settings.legal_route_prefix,
         identity_source=settings.identity_source,
         use_nexus_loop=settings.use_nexus_loop,
+        trace_store=trace_store,
     )
 
     if settings.environment == ApiEnvironment.PROD:

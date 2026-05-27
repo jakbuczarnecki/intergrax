@@ -21,7 +21,25 @@ class TaskLifecycle:
     _ALLOWED: dict[TaskState, set[TaskState]] = {
         TaskState.CREATED: {TaskState.CLASSIFIED, TaskState.FAILED, TaskState.CANCELLED},
         TaskState.CLASSIFIED: {TaskState.PLANNED, TaskState.FAILED, TaskState.CANCELLED},
-        TaskState.PLANNED: {TaskState.RUNNING, TaskState.FAILED, TaskState.CANCELLED},
+        TaskState.PLANNED: {
+            TaskState.RUNNING,
+            TaskState.WAITING_FOR_RESOURCES,
+            TaskState.WAITING_FOR_HUMAN,
+            TaskState.FAILED,
+            TaskState.CANCELLED,
+        },
+        TaskState.WAITING_FOR_RESOURCES: {
+            TaskState.RUNNING,
+            TaskState.FAILED,
+            TaskState.CANCELLED,
+            TaskState.EXPIRED,
+        },
+        TaskState.WAITING_FOR_HUMAN: {
+            TaskState.RUNNING,
+            TaskState.FAILED,
+            TaskState.CANCELLED,
+            TaskState.EXPIRED,
+        },
         TaskState.RUNNING: {
             TaskState.VALIDATING,
             TaskState.FAILED,
@@ -29,12 +47,17 @@ class TaskLifecycle:
         },
         TaskState.VALIDATING: {
             TaskState.COMPLETED,
+            TaskState.PARTIALLY_COMPLETED,
+            TaskState.NEEDS_MORE_INFORMATION,
             TaskState.FAILED,
             TaskState.CANCELLED,
         },
         TaskState.COMPLETED: set(),
+        TaskState.PARTIALLY_COMPLETED: set(),
+        TaskState.NEEDS_MORE_INFORMATION: set(),
         TaskState.FAILED: set(),
         TaskState.CANCELLED: set(),
+        TaskState.EXPIRED: set(),
     }
 
     def __init__(self, *, on_transition: Optional[TransitionHandler] = None) -> None:
