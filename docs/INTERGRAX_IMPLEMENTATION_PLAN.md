@@ -90,7 +90,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §33 Observability | Trace + events | **Partial** | Trace store ✅; P4.1 dual-emit ✅; D.1 CLI ✅ |
 
-| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial** | P4 + E.1 ✅; E.4 dynamic Legal pending |
+| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial** | P4 + Phase E ✅; D.3 experiment registry pending |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` (no `legal_agent` shim) |
 
@@ -252,7 +252,11 @@ uv run pytest tests/ -m gate -q
 
 | E.3 | Governance on UAEP decision path | **Done** (P4.3) |
 
-| E.4 | Thin dynamic Legal (`LegalDynamicPipeline` routing) | **Pending** |
+| E.4 | Thin dynamic Legal (`LegalDynamicPipeline` routing) | **Done** |
+
+
+
+**E.4 delivered (2026-05-27):** `agents/legal/uaep/dynamic_steps.py` — 5 UAEP macro-steps (setup → tool plan → route → waves → finalize); `legal_execution_loop` phase functions extracted. Gate: 34 tests.
 
 
 
@@ -318,9 +322,9 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 ```text
 
-NOW:     E.4 dynamic Legal thin · D.3 experiment registry
+NOW:     D.3 experiment registry
 
-NEXT:    D.3 experiment registry
+NEXT:    D.4 notebook templates · D.5 cost in trace
 
 LATER:   Phase F (on demand)
 
@@ -356,13 +360,15 @@ LATER:   Phase F (on demand)
 
 ## 6. Recommended Next Step
 
-**E.4** — thin dynamic Legal pipeline (decompose `legal_execution_loop` routing into UAEP steps), or **D.3** experiment registry.
+**D.3** — experiment registry (hypothesis, keep/improve/pause/delete per §35).
 
 ```bash
 uv run pytest tests/ -m gate -q
 ```
 
-**E.1 (Done):** Legal sequential analysis exposed as 8 UAEP steps via `agents/legal/uaep/thin_steps.py`.
+**E.4 (Done):** Legal dynamic pipeline — 5 UAEP macro-steps; wave/replan loop in `legal_dynamic_waves`.
+
+**E.1 (Done):** Legal sequential — 8 UAEP domain steps via `thin_steps.py`.
 
 **D.2 (Done):** FastAPI debug API — `GET /debug/tasks`, `GET /debug/tasks/{run_id}`, `GET /debug/tasks/{run_id}/trace`.
 

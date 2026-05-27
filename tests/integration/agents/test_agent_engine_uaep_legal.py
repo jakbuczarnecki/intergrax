@@ -83,3 +83,48 @@ async def test_agent_engine_runs_legal_via_uaep():
         e for e in bus.history if e.event_type == RuntimeEventType.STEP_STARTED
     ]
     assert len(step_starts) == 8
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.gate
+async def test_agent_engine_runs_legal_dynamic_via_uaep():
+    tenant_id = "legal-uaep-dynamic-gate"
+    cfg = LegalAgentConfig(
+        session_manager=SessionManager(storage=InMemorySessionStorage()),
+        llm_adapter=FakeLLMAdapter(
+            fixed_text="No critical issues identified.",
+            fake_structured_data=FinalAnswerModel(
+                answer="No critical issues identified."
+            ),
+        ),
+        production_mode=False,
+        enable_rag=True,
+        embedding_manager=build_fake_embedding_manager(),
+        vectorstore_manager=build_in_memory_vectorstore_manager(tenant_id=tenant_id),
+        use_legal_tool_decision=False,
+        enable_sequential_legal_pipeline=False,
+        use_llm_legal_route_planner=False,
+        use_legal_run_evaluator=False,
+        organization_compliance_policy="",
+    )
+    agent = LegalAgent(config=cfg)
+    bus = RuntimeEventBus()
+    engine = AgentEngine({"legal": agent}, event_bus=bus)
+    request = RuntimeRequest(
+        tenant_id=tenant_id,
+        user_id="u1",
+        session_id="s1",
+        agent_id="legal",
+        message="Review payment terms in the attached contract.",
+        metadata={"run_id": "run_legal_dynamic_uaep", "task_id": "task_legal_dynamic_uaep"},
+    )
+
+    result = await engine.run_with_result(request)
+
+    assert result.status == AgentExecutionStatus.COMPLETED
+    assert result.summary
+    step_starts = [
+        e for e in bus.history if e.event_type == RuntimeEventType.STEP_STARTED
+    ]
+    assert len(step_starts) == 5

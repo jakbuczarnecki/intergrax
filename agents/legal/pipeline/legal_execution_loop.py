@@ -1,10 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
 
 """
 Production-style controller for LegalDynamicPipeline: plan → execute stages →
 optional LLM evaluation → bounded replan (routing union) → finalize.
+
+Phase E.4 exposes each macro-phase as a UAEP step via :mod:`legal.uaep.dynamic_steps`.
 """
 
 from __future__ import annotations
@@ -86,23 +87,14 @@ async def _evaluate_legal_run_llm(
     )
 
 
-async def run_legal_dynamic_execution_loop(
+async def run_legal_tool_plan_phase(
     *,
     state: RuntimeState,
     agent_state: LegalAgentState,
     config: LegalAgentConfig,
 ) -> None:
-    """
-    Runs routed stages (possibly over several iterations), then
-    :class:`LegalFinalizeAnswerStep`. Mutates ``agent_state`` and ``state``.
-
-    At the start of each loop: tool plan from LLM → static org governance
-    (:func:`~legal.governance.legal_tool_plan_governance.enforce_legal_tool_plan_governance`)
-    → optional :attr:`~legal.config.legal_agent_config.LegalAgentConfig.legal_tool_plan_governance`
-    → Nexus bridge. ``last_legal_tool_plan`` stores the **final** plan after all clamps.
-    """
+    """Tier-2 tool intent, governance clamps, and Nexus tool bridge."""
     agent_state.legal_stages_completed_this_run = []
-    completed: Set[str] = set()
     agent_state.legal_dynamic_loop_waves = 0
     agent_state.legal_run_evaluator_degraded = False
     agent_state.clause_extraction_retrieval_outcome = None
@@ -123,11 +115,32 @@ async def run_legal_dynamic_execution_loop(
     await run_legal_tool_runtime_bridge(state=state, plan=tool_plan)
     sync_legal_tool_runtime_feedback(agent_state, state)
 
-    routing = await LegalPipelineRouting.obtain_initial(
+
+async def run_legal_initial_route_phase(
+    *,
+    state: RuntimeState,
+    agent_state: LegalAgentState,
+    config: LegalAgentConfig,
+) -> LegalRoutingResult:
+    return await LegalPipelineRouting.obtain_initial(
         state=state,
         config=config,
         agent_state=agent_state,
     )
+
+
+async def run_legal_dynamic_waves_phase(
+    *,
+    state: RuntimeState,
+    agent_state: LegalAgentState,
+    config: LegalAgentConfig,
+    routing: LegalRoutingResult,
+    completed: Set[str] | None = None,
+) -> LegalRoutingResult:
+    """
+    Execute routed legal stages with optional evaluator/replan loop (no finalize).
+    """
+    done: Set[str] = set(completed or ())
     last_fp: str | None = LegalPipelineRouting.routing_fingerprint(routing)
     same_fp = 0
     max_iter = config.legal_loop_max_iterations
@@ -148,7 +161,7 @@ async def run_legal_dynamic_execution_loop(
         to_run: List[Any] = []
         for step in stage_runners:
             flag = LegalPipelineRouting.stage_flag_for_runner(step)
-            if flag is None or flag not in completed:
+            if flag is None or flag not in done:
                 to_run.append(step)
 
         flags_this_wave = [LegalPipelineRouting.stage_flag_for_runner(s) for s in to_run]
@@ -168,7 +181,7 @@ async def run_legal_dynamic_execution_loop(
             await step.run(state=state)
             flag = LegalPipelineRouting.stage_flag_for_runner(step)
             if flag:
-                completed.add(flag)
+                done.add(flag)
                 agent_state.legal_stages_completed_this_run.append(flag)
 
         sync_legal_tool_runtime_feedback(agent_state, state)
@@ -180,7 +193,7 @@ async def run_legal_dynamic_execution_loop(
         if (
             config.legal_loop_early_exit
             and to_run
-            and LegalDynamicLoopGates.post_wave_early_exit_ok(agent_state, completed, config)
+            and LegalDynamicLoopGates.post_wave_early_exit_ok(agent_state, done, config)
         ):
             state.trace_event(
                 component=TraceComponent.PIPELINE,
@@ -248,5 +261,39 @@ async def run_legal_dynamic_execution_loop(
             )
             break
 
-    finalize = LegalFinalizeAnswerStep()
-    await finalize.run(state=state)
+    return routing
+
+
+async def run_legal_finalize_phase(*, state: RuntimeState) -> None:
+    await LegalFinalizeAnswerStep().run(state=state)
+
+
+async def run_legal_dynamic_execution_loop(
+    *,
+    state: RuntimeState,
+    agent_state: LegalAgentState,
+    config: LegalAgentConfig,
+) -> None:
+    """
+    Runs routed stages (possibly over several iterations), then finalize.
+
+    At the start of each loop: tool plan from LLM → static org governance
+    → optional product governance port → Nexus bridge.
+    """
+    await run_legal_tool_plan_phase(
+        state=state,
+        agent_state=agent_state,
+        config=config,
+    )
+    routing = await run_legal_initial_route_phase(
+        state=state,
+        agent_state=agent_state,
+        config=config,
+    )
+    await run_legal_dynamic_waves_phase(
+        state=state,
+        agent_state=agent_state,
+        config=config,
+        routing=routing,
+    )
+    await run_legal_finalize_phase(state=state)

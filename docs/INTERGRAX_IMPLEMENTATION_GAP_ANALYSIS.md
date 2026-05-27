@@ -59,7 +59,7 @@ Intergrax has evolved from *"Nexus MVP + Legal Agent"* to a **multi-agent-capabl
 
 2. ~~**Missing global Nexus loop and agent registry**~~ — **Now:** `NexusLoop`, `AgentRegistry`, `Task`, `TaskLifecycle`, `ExecutionGraph`.
 
-3. ~~**Fat Agent in Legal**~~ — **Partially addressed**; full thin-agent + UAEP pending (Phase E / P4.2).
+3. ~~**Fat Agent in Legal**~~ — **Resolved (E.1 + E.4):** sequential and dynamic Legal expose UAEP step boundaries; loop phases in `legal_execution_loop`.
 
 ### 1.3 Most Important Missing Runtime Concepts
 
@@ -1500,7 +1500,7 @@ Mapping of [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.
 | 42.3 | Hook System | 🟡 | **Scaffold:** `intergrax/runtime/hooks/`. Not wired |
 | 42.4 | Standard Agent Lifecycle | 🟡 | `TaskLifecycle` (task-level). No formal per-agent lifecycle enum/state machine |
 | 42.5 | Unified Agent Execution Protocol (UAEP) | 🟢 | `UAEPExecutor` + Echo; legacy fallback for pipeline agents |
-| 42.6 | Agent Step Lifecycle | 🟢 | Legal sequential: 8 domain UAEP steps; dynamic: single pipeline step |
+| 42.6 | Agent Step Lifecycle | 🟢 | Legal sequential (8 steps) + dynamic (5 macro-steps) on UAEP |
 | 42.7 | Agent Decision Model | 🟡 | **Scaffold:** `intergrax/contracts/agent_decision.py`. Separate legacy `AgentDecision` in `tools/tools_agent.py` |
 | 42.8 | Execution Interrupt Model | 🟡 | **Wired:** `runtime/interrupts/handler.py`; UAEP emits `INTERRUPT_REQUESTED` |
 | 42.9 | Pause / Resume Model | 🟡 | **Wired:** `runtime/human/pause.py`, `PauseRecord`; resume via `human_approved` metadata |
@@ -1535,7 +1535,7 @@ Mapping of [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.
 | 42.38 | Runtime Escalation Flow | 🔴 | Not implemented |
 | 42.39 | Critical Event Handling | 🔴 | Not implemented |
 | 42.40 | Runtime Recovery Model | 🔴 | Not implemented |
-| 42.41 | Forbidden Runtime Patterns | 📄 | Dynamic Legal routing in `legal_execution_loop.py` (E.4 pending) |
+| 42.41 | Forbidden Runtime Patterns | 🟢 | Legal orchestration split into UAEP macro-steps + phase functions |
 | 42.42 | Middleware Hook Catalog | 🟡 | `HookPoint` enum covers catalog; wiring pending |
 | 42.43 | Multi-Agent Collaboration Flow | 🟡 | Research pipeline (research → summary); not full PM→UX→Legal→Validator→Human reference |
 | 42.44 | AgentEngine Universal Executor | 🟡 | Exists as thin bridge — target architecture in §42.44 not yet realized |
