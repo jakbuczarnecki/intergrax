@@ -12,11 +12,16 @@ from intergrax.agents.uaep_pipeline import (
     run_pipeline_step,
 )
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
-from intergrax.contracts.agent_decision import AgentDecision
+from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from legal.config.legal_agent_config import LegalAgentConfig
+from legal.uaep.thin_steps import (
+    FINAL_SEQUENTIAL_STEP_ID,
+    legal_sequential_agent_steps,
+    run_legal_uaep_step,
+)
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.ingestion.attachments import FileSystemAttachmentResolver
 from intergrax.runtime.nexus.ingestion.ingestion_service import AttachmentIngestionService
@@ -31,6 +36,10 @@ from legal.pipeline.legal_agent_pipeline import LegalAnalysisPipeline
 class LegalAgent(Agent):
     """
     Real business agent: contract analysis.
+
+    Sequential mode (``enable_sequential_legal_pipeline=True``) exposes each
+    domain step as a UAEP ``AgentStep`` (Phase E thin agent). Dynamic mode
+    keeps a single UAEP boundary over ``LegalDynamicPipeline``.
     """
 
     def __init__(
@@ -102,15 +111,13 @@ class LegalAgent(Agent):
             runtime_policies=runtime_policies,
         )
 
-        # --- PIPELINE ---
         if cfg.enable_sequential_legal_pipeline:
             runtime_config.pipeline = LegalAnalysisPipeline(config=cfg)
         else:
             runtime_config.pipeline = LegalDynamicPipeline(config=cfg)
 
-
         ingestion_service: Optional[AttachmentIngestionService] = None
-        
+
         if runtime_config.enable_rag:
             ingestion_service = AttachmentIngestionService(
                 embedding_manager=cfg.embedding_manager,
@@ -120,7 +127,6 @@ class LegalAgent(Agent):
                 splitter=cfg.documents_splitter,
             )
 
-        # --- BUILD CONTEXT ---
         context = RuntimeContext.build(
             config=runtime_config,
             session_manager=cfg.session_manager,
@@ -133,14 +139,20 @@ class LegalAgent(Agent):
     def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
         _ = context
         contract = self.get_contract()
+        if self._config.enable_sequential_legal_pipeline:
+            return legal_sequential_agent_steps(
+                allowed_tools=list(contract.allowed_tools),
+            )
         return pipeline_agent_steps(
             step_id="legal_pipeline",
-            step_name="legal_pipeline",
+            step_name="legal_dynamic_pipeline",
             trace_label="legal.contract_review",
             allowed_tools=list(contract.allowed_tools),
         )
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        if self._config.enable_sequential_legal_pipeline:
+            return await run_legal_uaep_step(step, ctx, config=self._config)
         return await run_pipeline_step(step, ctx)
 
     def decide_after_step(
@@ -149,5 +161,13 @@ class LegalAgent(Agent):
         output: StepOutput | None,
         ctx: RuntimeExecutionContext,
     ) -> AgentDecision:
-        _ = step, output, ctx
+        _ = output, ctx
+        if (
+            self._config.enable_sequential_legal_pipeline
+            and step.step_id != FINAL_SEQUENTIAL_STEP_ID
+        ):
+            return AgentDecision(
+                type=AgentDecisionType.CONTINUE,
+                reason=f"{step.step_id} finished",
+            )
         return pipeline_step_complete(reason="legal pipeline finished")

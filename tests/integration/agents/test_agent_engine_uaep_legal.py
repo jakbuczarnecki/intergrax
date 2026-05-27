@@ -78,3 +78,8 @@ async def test_agent_engine_runs_legal_via_uaep():
     assert any(e.event_type == RuntimeEventType.CONTEXT_BUILT for e in bus.history)
     assert any(e.event_type == RuntimeEventType.STEP_STARTED for e in bus.history)
     assert any(e.event_type == RuntimeEventType.DECISION_EMITTED for e in bus.history)
+
+    step_starts = [
+        e for e in bus.history if e.event_type == RuntimeEventType.STEP_STARTED
+    ]
+    assert len(step_starts) == 8

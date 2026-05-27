@@ -1500,7 +1500,7 @@ Mapping of [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.
 | 42.3 | Hook System | 🟡 | **Scaffold:** `intergrax/runtime/hooks/`. Not wired |
 | 42.4 | Standard Agent Lifecycle | 🟡 | `TaskLifecycle` (task-level). No formal per-agent lifecycle enum/state machine |
 | 42.5 | Unified Agent Execution Protocol (UAEP) | 🟢 | `UAEPExecutor` + Echo; legacy fallback for pipeline agents |
-| 42.6 | Agent Step Lifecycle | 🟢 | Echo + Research + Summary + Legal on UAEP; pipeline wrapped as single `AgentStep` |
+| 42.6 | Agent Step Lifecycle | 🟢 | Legal sequential: 8 domain UAEP steps; dynamic: single pipeline step |
 | 42.7 | Agent Decision Model | 🟡 | **Scaffold:** `intergrax/contracts/agent_decision.py`. Separate legacy `AgentDecision` in `tools/tools_agent.py` |
 | 42.8 | Execution Interrupt Model | 🟡 | **Wired:** `runtime/interrupts/handler.py`; UAEP emits `INTERRUPT_REQUESTED` |
 | 42.9 | Pause / Resume Model | 🟡 | **Wired:** `runtime/human/pause.py`, `PauseRecord`; resume via `human_approved` metadata |
@@ -1526,8 +1526,8 @@ Mapping of [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.
 | 42.29 | Runtime Compatibility Guarantees | 🔴 | Not implemented |
 | 42.30 | Runtime Scheduling Model | ✅ | `GraphExecutor` — sequential batches + parallel within batch; retry via `RetryEngine` |
 | 42.31 | Runtime Execution Phases | 🟡 | **Scaffold:** `ExecutionPhase` enum. Not used in NexusLoop yet |
-| 42.32 | Agent Local Loop Standardization | 🟢 | Echo, Research, Summary, Legal expose `get_steps()` / `run_step()`; shared `uaep_pipeline.py` |
-| 42.33 | Runtime-Controlled Local Loops | 🟡 | UAEP step loop active; pipeline agents still delegate inner work to `RuntimeEngine.run()` |
+| 42.32 | Agent Local Loop Standardization | 🟢 | Echo, Research, Legal sequential: thin UAEP steps; dynamic Legal: pipeline boundary |
+| 42.33 | Runtime-Controlled Local Loops | 🟢 | UAEP controls sequential Legal loop; dynamic mode still pipeline-delegated |
 | 42.34 | Runtime-Managed Retries | ✅ | `RetryEngine` in Nexus graph path |
 | 42.35 | Runtime-Controlled Memory Access | 🟡 | Session memory, profiles — no policy-scoped `MemoryView` gateway |
 | 42.36 | Runtime-Controlled Tool Access | 🟡 | ToolRuntime for RAG/websearch/tools steps; Legal bridge still couples tool planning |
@@ -1535,7 +1535,7 @@ Mapping of [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.
 | 42.38 | Runtime Escalation Flow | 🔴 | Not implemented |
 | 42.39 | Critical Event Handling | 🔴 | Not implemented |
 | 42.40 | Runtime Recovery Model | 🔴 | Not implemented |
-| 42.41 | Forbidden Runtime Patterns | 📄 | Documented. Legal inner pipeline still domain-heavy (Phase E) |
+| 42.41 | Forbidden Runtime Patterns | 📄 | Dynamic Legal routing in `legal_execution_loop.py` (E.4 pending) |
 | 42.42 | Middleware Hook Catalog | 🟡 | `HookPoint` enum covers catalog; wiring pending |
 | 42.43 | Multi-Agent Collaboration Flow | 🟡 | Research pipeline (research → summary); not full PM→UX→Legal→Validator→Human reference |
 | 42.44 | AgentEngine Universal Executor | 🟡 | Exists as thin bridge — target architecture in §42.44 not yet realized |

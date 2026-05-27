@@ -90,7 +90,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §33 Observability | Trace + events | **Partial** | Trace store ✅; P4.1 dual-emit ✅; D.1 CLI ✅ |
 
-| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial** | P4.2–P4.5 ✅; Phase E (thin Legal) pending |
+| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial** | P4 + E.1 ✅; E.4 dynamic Legal pending |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` (no `legal_agent` shim) |
 
@@ -246,7 +246,17 @@ uv run pytest tests/ -m gate -q
 
 |---|-------------|--------|
 
-| E.1–E.4 | Thin Legal, ToolRuntime migration, governance, loop bounds | **Not started** |
+| E.1 | Thin sequential Legal — domain steps as UAEP `AgentStep` list | **Done** |
+
+| E.2 | ToolRuntime via gateway (no direct Nexus step imports in bridge) | **Done** (P4.4) |
+
+| E.3 | Governance on UAEP decision path | **Done** (P4.3) |
+
+| E.4 | Thin dynamic Legal (`LegalDynamicPipeline` routing) | **Pending** |
+
+
+
+**E.1 delivered (2026-05-27):** `agents/legal/uaep/thin_steps.py` — 8 UAEP steps (setup → finalize); `LegalAnalysisPipeline` reuses same runners; dynamic mode keeps single pipeline boundary. Gate: 33 tests.
 
 
 
@@ -308,7 +318,7 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 ```text
 
-NOW:     Phase E (Legal thin) · D.3 experiment registry
+NOW:     E.4 dynamic Legal thin · D.3 experiment registry
 
 NEXT:    D.3 experiment registry
 
@@ -346,13 +356,13 @@ LATER:   Phase F (on demand)
 
 ## 6. Recommended Next Step
 
-**Phase E** — thin Legal domain steps (pipeline remains behind UAEP boundary; odchudzenie agenta).
+**E.4** — thin dynamic Legal pipeline (decompose `legal_execution_loop` routing into UAEP steps), or **D.3** experiment registry.
 
 ```bash
 uv run pytest tests/ -m gate -q
 ```
 
-**P4.5 (Done):** Research, Summary, Legal agents migrated to UAEP via `uaep_pipeline.py` (Echo remains reference).
+**E.1 (Done):** Legal sequential analysis exposed as 8 UAEP steps via `agents/legal/uaep/thin_steps.py`.
 
 **D.2 (Done):** FastAPI debug API — `GET /debug/tasks`, `GET /debug/tasks/{run_id}`, `GET /debug/tasks/{run_id}/trace`.
 
