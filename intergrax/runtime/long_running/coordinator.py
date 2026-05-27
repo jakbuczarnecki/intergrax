@@ -7,9 +7,16 @@ from __future__ import annotations
 
 from typing import Optional
 
+from intergrax.runtime.long_running.checkpoint_builder import (
+    apply_runtime_checkpoint_to_task,
+    build_runtime_checkpoint,
+)
 from intergrax.runtime.long_running.models import NotificationMessage, TaskCheckpoint
 from intergrax.runtime.long_running.notification import NotificationAdapter, resolve_notification_adapter
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
+from intergrax.runtime.nexus.planning.task_planner import NexusPlan
+from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.runtime.task.task import Task, TaskState
 
 
@@ -55,6 +62,8 @@ class LongRunningCoordinator:
         task.runtime.orchestration.checkpoint_id = checkpoint.checkpoint_id
         task.runtime.orchestration.resume_token = checkpoint.resume_token
         task.runtime.orchestration.progress_message = checkpoint.progress_message
+        if checkpoint.runtime is not None:
+            apply_runtime_checkpoint_to_task(task, checkpoint.runtime)
         task.sync_metadata()
         return checkpoint
 
@@ -64,17 +73,28 @@ class LongRunningCoordinator:
         store: SQLiteTaskCheckpointStore,
         *,
         progress_message: str = "",
+        plan: Optional[NexusPlan] = None,
+        graph: Optional[ExecutionGraph] = None,
+        last_execution: Optional[AgentExecutionResult] = None,
     ) -> TaskCheckpoint:
+        runtime = build_runtime_checkpoint(
+            task,
+            plan=plan,
+            graph=graph,
+            last_execution=last_execution,
+        )
         existing_token = task.runtime.orchestration.resume_token
         checkpoint = SQLiteTaskCheckpointStore.build_checkpoint(
             task,
             progress_message=progress_message,
             resume_token=existing_token,
+            runtime=runtime,
         )
         store.save(checkpoint)
         task.runtime.orchestration.checkpoint_id = checkpoint.checkpoint_id
         task.runtime.orchestration.resume_token = checkpoint.resume_token
         task.runtime.orchestration.progress_message = progress_message or checkpoint.progress_message
+        apply_runtime_checkpoint_to_task(task, runtime)
         task.sync_metadata()
         return checkpoint
 

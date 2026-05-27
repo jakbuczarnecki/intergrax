@@ -252,6 +252,7 @@ class NexusLoop:
                 await self._maybe_checkpoint_long_running(
                     task,
                     progress_message="awaiting human approval",
+                    plan=plan,
                 )
                 return await self._finish_task(
                     task,
@@ -309,6 +310,9 @@ class NexusLoop:
             await self._maybe_checkpoint_long_running(
                 task,
                 progress_message="awaiting human input",
+                plan=plan,
+                graph=graph,
+                last_execution=paused,
             )
             await self._publish_runtime_event(
                 runtime_event_from_task_state(
@@ -562,13 +566,22 @@ class NexusLoop:
         task: Task,
         *,
         progress_message: str,
+        plan: Optional[NexusPlan] = None,
+        graph: Optional[object] = None,
+        last_execution: Optional[AgentExecutionResult] = None,
     ) -> None:
         if self._checkpoint_store is None or not LongRunningCoordinator.should_checkpoint(task):
             return
+        from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
+
+        graph_obj = graph if isinstance(graph, ExecutionGraph) else None
         checkpoint = LongRunningCoordinator.persist_checkpoint(
             task,
             self._checkpoint_store,
             progress_message=progress_message,
+            plan=plan,
+            graph=graph_obj,
+            last_execution=last_execution,
         )
         await self._publish_runtime_event(
             runtime_event_from_task_state(

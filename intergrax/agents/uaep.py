@@ -30,6 +30,13 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, Rou
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
 from intergrax.runtime.task.task_metadata_bridge import execution_options_from_metadata
+from intergrax.runtime.long_running.checkpoint_builder import should_skip_uaep_step
+from intergrax.runtime.long_running.runtime_checkpoint import (
+    RUNTIME_CHECKPOINT_KEY,
+    RuntimeCheckpoint,
+    attach_runtime_checkpoint_to_metadata,
+    runtime_checkpoint_from_metadata,
+)
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
 
@@ -153,6 +160,8 @@ class UAEPExecutor:
         steps = self._resolve_steps(agent, runtime_context, contract.max_steps)
         last_output: Optional[StepOutput] = None
         governance: Optional[GovernanceResolution] = None
+        runtime_ckpt = runtime_checkpoint_from_metadata(request.metadata)
+        human_approved = task_options.human.is_resumed or bool(request.metadata.get("human_approved"))
 
         for index, step in enumerate(steps):
             exec_ctx.phase = ExecutionPhase.STEP_EXECUTION
@@ -164,7 +173,16 @@ class UAEPExecutor:
             )
 
             started = time.perf_counter()
-            step_result = await self.execute_step(agent, step, exec_ctx)
+            if should_skip_uaep_step(
+                step_index=index,
+                step_id=step.step_id,
+                checkpoint=runtime_ckpt,
+                human_approved=human_approved,
+            ):
+                last_output = StepOutput.model_validate(runtime_ckpt.last_step_output)
+                step_result = StepExecutionResult(output=last_output)
+            else:
+                step_result = await self.execute_step(agent, step, exec_ctx)
             step_result.duration_ms = int((time.perf_counter() - started) * 1000)
 
             await self._guard_hook(
@@ -206,11 +224,25 @@ class UAEPExecutor:
             await self._emit_governance(exec_ctx, resolution)
 
             if resolution.should_pause or resolution.should_fail:
+                runtime_snapshot = self._build_runtime_checkpoint(
+                    request=request,
+                    contract_id=contract.id,
+                    step_index=index,
+                    step=step,
+                    last_output=last_output,
+                    resolution=resolution,
+                )
+                exec_ctx.metadata[RUNTIME_CHECKPOINT_KEY] = runtime_snapshot
                 break
             if decision.type != AgentDecisionType.CONTINUE:
                 break
 
         answer = self._build_answer(exec_ctx, last_output, run_id)
+        runtime_snapshot = exec_ctx.metadata.get(RUNTIME_CHECKPOINT_KEY)
+        if isinstance(runtime_snapshot, RuntimeCheckpoint):
+            if answer.route is None:
+                answer.route = RouteInfo(extra={})
+            attach_runtime_checkpoint_to_metadata(answer.route.extra, runtime_snapshot)
         self._annotate_answer_with_shadow(answer, exec_ctx)
         self._annotate_answer_with_sandbox(answer, exec_ctx)
 
@@ -238,6 +270,32 @@ class UAEPExecutor:
             answer.route.extra.setdefault("agent_validation_errors", validation.errors)
 
         return answer, validation, runtime_context, governance
+
+    @staticmethod
+    def _build_runtime_checkpoint(
+        *,
+        request: RuntimeRequest,
+        contract_id: str,
+        step_index: int,
+        step: AgentStep,
+        last_output: Optional[StepOutput],
+        resolution: GovernanceResolution,
+    ) -> RuntimeCheckpoint:
+        return RuntimeCheckpoint(
+            plan_id=str(request.metadata.get("plan_id") or "") or None,
+            graph_id=str(request.metadata.get("graph_id") or "") or None,
+            graph_node_id=str(request.metadata.get("graph_node_id") or "") or None,
+            agent_id=contract_id,
+            uaep_step_index=step_index,
+            uaep_step_id=step.step_id,
+            paused_phase=ExecutionPhase.HUMAN_APPROVAL.value,
+            pending_human_request=(
+                resolution.human_request.model_dump()
+                if resolution.human_request is not None
+                else None
+            ),
+            last_step_output=last_output.model_dump(mode="json") if last_output else None,
+        )
 
     async def _emit_governance(
         self,

@@ -2,7 +2,7 @@
 
 
 
-Status: Working draft (2026-05-27, synced post F.4 + task contract gate)  
+Status: Working draft (2026-05-27, synced post G.1–G.2 + F.4 gate)  
 
 Canonical source: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 
@@ -52,7 +52,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
 
-| Pre-P4.2 regression gate | **Done** | **78 tests**, marker `gate` |
+| Pre-P4.2 regression gate | **Done** | **81 tests**, marker `gate` |
 
 
 
@@ -334,8 +334,8 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
-| G.1 | `RuntimeCheckpoint` contract | Pending | §42.9.2 | Plan + graph node states + UAEP step index |
-| G.2 | UAEP mid-execution resume | Pending | §42.9.3 | Continue paused step; not full task restart |
+| G.1 | `RuntimeCheckpoint` contract | **Done** | §42.9.2 | Plan + graph node states + UAEP step index |
+| G.2 | UAEP mid-execution resume | **Done** | §42.9.3 | Skip re-run paused step on resume |
 | G.3 | HITL middleware hooks | Pending | §42.10 | `BEFORE/AFTER_HUMAN_APPROVAL` in NexusLoop |
 | G.4 | `HumanRequest` v2 fields | Pending | §42.10.1 | urgency, timeout, `default_on_timeout` |
 | G.5 | RuntimeEvent-first observability | Pending | §42.24 | Persist event stream; trace as projection |
@@ -401,9 +401,9 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     G.1–G.2 RuntimeCheckpoint + UAEP resume (§42.9 beyond F.4 snapshot)
+NOW:     G.3–G.4 HITL middleware hooks + HumanRequest v2 (§42.10)
 
-NEXT:    G.3–G.6 HITL hooks + debug surfaces (§42.10, §19)
+NEXT:    G.5–G.6 RuntimeEvent observability + debug API checkpoints (§42.24, §19)
 
 THEN:    H.1–H.4 Slack/Teams real adapters (§18)
 
@@ -443,12 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**G.1 — `RuntimeCheckpoint` contract** (extends F.4, does not replace it):
+**G.3 — HITL middleware hooks** (§42.10):
 
-1. Define `RuntimeCheckpoint` Pydantic model: `plan_id`, `graph_id`, `node_states`, `uaep_step_index`, `pending_human_request`.
-2. Persist alongside existing `TaskCheckpoint` in `SQLiteTaskCheckpointStore`.
-3. Wire UAEP to save checkpoint on `REQUEST_HUMAN` / interrupt pause.
-4. Resume: restore graph + continue step loop (integration test with HITL agent).
+1. Emit `BEFORE_HUMAN_APPROVAL` / `AFTER_HUMAN_APPROVAL` from `NexusLoop` around pause and resume.
+2. Wire hooks into existing `MiddlewarePipeline` (same pattern as UAEP step hooks).
+3. Integration test: middleware observes approval cycle without blocking resume.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -456,6 +455,7 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
+- **G.1–G.2:** `RuntimeCheckpoint` contract + UAEP mid-execution resume (skip paused step on approve).
 - **F.5:** typed task contract — `TaskExecutionOptions` / `TaskRuntimeState` / `TaskResultSummary` + metadata bridge.
 - **F.4:** long-running task snapshots + notification adapter stubs (Slack/Teams **not** real integration).
 - **F.1–F.3:** Shadow, Sandbox, advanced HITL.

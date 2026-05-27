@@ -10,6 +10,11 @@ from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.validation import ValidationResult
+from intergrax.runtime.long_running.checkpoint_builder import apply_runtime_checkpoint_to_graph
+from intergrax.runtime.long_running.runtime_checkpoint import (
+    attach_runtime_checkpoint_to_metadata,
+    runtime_checkpoint_from_metadata,
+)
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.execution.execution_graph import (
@@ -61,6 +66,10 @@ class GraphExecutor:
         prior_outputs: Dict[str, AgentExecutionResult] = {}
         all_executions: List[AgentExecutionResult] = []
         all_retries: List[RetryRecord] = []
+
+        runtime_ckpt = runtime_checkpoint_from_metadata(task.metadata)
+        if runtime_ckpt is not None:
+            apply_runtime_checkpoint_to_graph(graph, runtime_ckpt, prior_outputs)
 
         for batch in graph.batches():
             if len(batch) == 1:
@@ -154,6 +163,14 @@ class GraphExecutor:
             request.metadata["allowed_tools"] = list(current_agent.get_contract().allowed_tools)
             request.metadata["graph_node_id"] = node.node_id
             request.metadata["graph_id"] = graph.graph_id
+            plan_id = task.runtime.orchestration.plan_id
+            if plan_id:
+                request.metadata["plan_id"] = plan_id
+            runtime_snapshot = runtime_checkpoint_from_metadata(task.metadata)
+            if runtime_snapshot is not None:
+                attach_runtime_checkpoint_to_metadata(request.metadata, runtime_snapshot)
+            if task.options.human.is_resumed or task.metadata.get("human_approved"):
+                request.metadata["human_approved"] = True
             return await AgentEngine.run_agent_with_result(
                 current_agent,
                 request,
