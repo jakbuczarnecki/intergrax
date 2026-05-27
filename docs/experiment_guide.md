@@ -166,6 +166,30 @@ curl -X POST http://127.0.0.1:8099/debug/experiments/EXPERIMENT_ID/decision \
 
 Registry database: `INTERGRAX_EXPERIMENTS_DB` (default `build/intergrax_experiments.db`).
 
+## 9. Notebook templates (Phase D.4)
+
+For interactive experiments, use the templates under `notebooks/experiments/`:
+
+| Notebook | Purpose |
+|----------|---------|
+| `00_experiment_template.ipynb` | Copy and fill in your hypothesis |
+| `01_echo_experiment.ipynb` | Working Echo smoke test (no network) |
+
+Both notebooks use `ExperimentSession` from `intergrax.experiments.workflow`:
+
+```python
+from pathlib import Path
+from intergrax.experiments.workflow import ExperimentSession, ensure_repo_root_on_path
+
+ensure_repo_root_on_path()
+session = ExperimentSession(
+    experiments_db=Path("build/notebooks/experiments.db"),
+    trace_db=Path("build/notebooks/trace.db"),
+)
+```
+
+Run with `uv run jupyter lab notebooks/experiments/01_echo_experiment.ipynb` or open in Cursor/VS Code.
+
 ## 8. Decision
 
 After observing traces, cost, and quality: **keep**, **improve**, **pause**, or **delete** the experiment (§35). Use the registry (§7) to persist the verdict and linked `run_id`s.

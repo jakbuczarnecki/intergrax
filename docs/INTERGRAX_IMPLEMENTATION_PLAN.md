@@ -50,7 +50,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §42 Unified Execution Runtime | **~50–55%** | P4.1–P4.4 wired; agent UAEP migration pending |
 
-| Laboratory workflow (inspect, decide) | **~75%** | D.1–D.3 done; D.5 cost in trace pending |
+| Laboratory workflow (inspect, decide) | **~85%** | D.1–D.4 done; D.5 cost in trace pending |
 
 | Pre-P4.2 regression gate | **Done** | A.5-min (~10 tests, marker `gate`) |
 
@@ -229,7 +229,7 @@ uv run pytest tests/ -m gate -q
 
 | D.3 | Experiment registry | **Done** | SQLite registry; CLI + `GET/POST /debug/experiments` |
 
-| D.4 | Notebook templates | Pending | `notebooks/experiments/` |
+| D.4 | Notebook templates | **Done** | `notebooks/experiments/`, `experiments/workflow.py` |
 
 | D.5 | Cost in trace | Pending | `AgentExecutionResult.cost` from runtime stats |
 
@@ -323,7 +323,7 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 ```text
 
-NOW:     D.4 notebook templates · D.5 cost in trace
+NOW:     D.5 cost in trace
 
 NEXT:    Phase F (on demand)
 
@@ -361,11 +361,13 @@ LATER:   Phase F (on demand)
 
 ## 6. Recommended Next Step
 
-**D.4** — notebook templates under `notebooks/experiments/`, or **D.5** — cost in trace (`AgentExecutionResult.cost`).
+**D.5** — cost in trace (`AgentExecutionResult.cost`).
 
 ```bash
 uv run pytest tests/ -m gate -q
 ```
+
+**D.4 (Done):** notebook templates — `notebooks/experiments/`; `ExperimentSession` in `intergrax/experiments/workflow.py`.
 
 **D.3 (Done):** experiment registry — `intergrax/experiments/`; CLI `experiments register|list|decide|link-run`; HTTP `/debug/experiments`.
 
@@ -381,7 +383,7 @@ uv run pytest tests/ -m gate -q
 
 
 
-**Then:** D.4 notebook templates or D.5 cost in trace.
+**Then:** D.5 cost in trace.
 
 
 
@@ -423,6 +425,23 @@ python -m intergrax.debug experiments list --decision pending
 ```
 
 HTTP: `GET/POST /debug/experiments`, `POST /debug/experiments/{id}/decision`, `POST /debug/experiments/{id}/runs/{run_id}`.
+
+### D.4 Notebook templates (Done)
+
+Interactive §35 workflow under `notebooks/experiments/`:
+
+| File | Purpose |
+|------|---------|
+| `00_experiment_template.ipynb` | Blank template — copy for new capabilities |
+| `01_echo_experiment.ipynb` | Deterministic Echo smoke test |
+
+Shared API: `intergrax.experiments.workflow.ExperimentSession`.
+
+```python
+from intergrax.experiments.workflow import ExperimentSession, ensure_repo_root_on_path
+ensure_repo_root_on_path()
+session = ExperimentSession(trace_db=Path("build/notebooks/trace.db"))
+```
 
 ### D.1 Debug CLI (Done)
 
