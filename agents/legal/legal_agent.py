@@ -7,8 +7,22 @@ from typing import Optional
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
+from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from legal.config.legal_agent_config import LegalAgentConfig
+from intergrax.agents.uaep_pipeline import pipeline_step_complete
+from legal.uaep.dynamic_steps import (
+    FINAL_DYNAMIC_STEP_ID,
+    legal_dynamic_agent_steps,
+    run_legal_dynamic_uaep_step,
+)
+from legal.uaep.thin_steps import (
+    FINAL_SEQUENTIAL_STEP_ID,
+    legal_sequential_agent_steps,
+    run_legal_uaep_step,
+)
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.ingestion.attachments import FileSystemAttachmentResolver
 from intergrax.runtime.nexus.ingestion.ingestion_service import AttachmentIngestionService
@@ -23,6 +37,9 @@ from legal.pipeline.legal_agent_pipeline import LegalAnalysisPipeline
 class LegalAgent(Agent):
     """
     Real business agent: contract analysis.
+
+    Sequential and dynamic modes expose UAEP macro-steps (Phase E). Sequential
+    runs fixed domain stages; dynamic runs setup → tool plan → route → waves → finalize.
     """
 
     def __init__(
@@ -42,6 +59,7 @@ class LegalAgent(Agent):
             allowed_tools=["rag", "websearch", "tools"],
             required_adapters=["llm"],
             risk_level=AgentRiskLevel.HIGH,
+            max_steps=20,
             validation_rules=["non_empty_answer"],
             failure_modes=["governance_abort", "budget_exceeded"],
         )
@@ -93,15 +111,13 @@ class LegalAgent(Agent):
             runtime_policies=runtime_policies,
         )
 
-        # --- PIPELINE ---
         if cfg.enable_sequential_legal_pipeline:
             runtime_config.pipeline = LegalAnalysisPipeline(config=cfg)
         else:
             runtime_config.pipeline = LegalDynamicPipeline(config=cfg)
 
-
         ingestion_service: Optional[AttachmentIngestionService] = None
-        
+
         if runtime_config.enable_rag:
             ingestion_service = AttachmentIngestionService(
                 embedding_manager=cfg.embedding_manager,
@@ -111,7 +127,6 @@ class LegalAgent(Agent):
                 splitter=cfg.documents_splitter,
             )
 
-        # --- BUILD CONTEXT ---
         context = RuntimeContext.build(
             config=runtime_config,
             session_manager=cfg.session_manager,
@@ -120,3 +135,35 @@ class LegalAgent(Agent):
         )
 
         return context
+
+    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+        _ = context
+        contract = self.get_contract()
+        allowed = list(contract.allowed_tools)
+        if self._config.enable_sequential_legal_pipeline:
+            return legal_sequential_agent_steps(allowed_tools=allowed)
+        return legal_dynamic_agent_steps(allowed_tools=allowed)
+
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        if self._config.enable_sequential_legal_pipeline:
+            return await run_legal_uaep_step(step, ctx, config=self._config)
+        return await run_legal_dynamic_uaep_step(step, ctx, config=self._config)
+
+    def decide_after_step(
+        self,
+        step: AgentStep,
+        output: StepOutput | None,
+        ctx: RuntimeExecutionContext,
+    ) -> AgentDecision:
+        _ = output, ctx
+        final_step_id = (
+            FINAL_SEQUENTIAL_STEP_ID
+            if self._config.enable_sequential_legal_pipeline
+            else FINAL_DYNAMIC_STEP_ID
+        )
+        if step.step_id != final_step_id:
+            return AgentDecision(
+                type=AgentDecisionType.CONTINUE,
+                reason=f"{step.step_id} finished",
+            )
+        return pipeline_step_complete(reason="legal pipeline finished")

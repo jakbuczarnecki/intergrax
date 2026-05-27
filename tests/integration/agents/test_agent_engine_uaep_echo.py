@@ -39,6 +39,7 @@ async def test_agent_engine_runs_echo_via_uaep():
     assert result.agent_id == "echo"
     assert result.status == AgentExecutionStatus.COMPLETED
     assert "uaep path" in result.summary
+    assert result.cost == 0.0
     assert any(e.event_type == RuntimeEventType.CONTEXT_BUILT for e in bus.history)
     assert any(e.event_type == RuntimeEventType.STEP_STARTED for e in bus.history)
     assert any(e.event_type == RuntimeEventType.DECISION_EMITTED for e in bus.history)

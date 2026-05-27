@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Human-in-the-loop pause and resume helpers (architecture §42.9, §42.10)."""
+"""Human-in-the-loop pause, resume, reject and escalation helpers (§42.9, §42.38)."""
 
 from __future__ import annotations
 
@@ -14,14 +14,40 @@ from pydantic import BaseModel, Field
 from intergrax.contracts.agent_decision import HumanRequest
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
+from intergrax.runtime.human.response_parser import parse_human_response
+from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.interrupts.handler import GovernanceResolution
 from intergrax.runtime.task.task import Task
+from intergrax.runtime.task.task_contract import TaskPauseRecord
+from intergrax.runtime.task.task_metadata_keys import (
+    ESCALATION_CHAIN_KEY,
+    ESCALATION_LEVEL_KEY,
+    ESCALATION_TARGET_KEY,
+    GOVERNANCE_HUMAN_REQUEST_KEY,
+    GOVERNANCE_INTERRUPT_KEY,
+    GOVERNANCE_PAUSE_KEY,
+    HUMAN_APPROVED_KEY,
+    HUMAN_DECISION_KEY,
+    HUMAN_ESCALATED_KEY,
+    HUMAN_REJECTED_KEY,
+    HUMAN_RESPONSE_KEY,
+)
 
-GOVERNANCE_HUMAN_REQUEST_KEY = "governance_human_request"
-GOVERNANCE_INTERRUPT_KEY = "governance_interrupt"
-GOVERNANCE_PAUSE_KEY = "governance_pause"
-HUMAN_APPROVED_KEY = "human_approved"
-HUMAN_RESPONSE_KEY = "human_response"
+__all__ = [
+    "ESCALATION_CHAIN_KEY",
+    "ESCALATION_LEVEL_KEY",
+    "ESCALATION_TARGET_KEY",
+    "GOVERNANCE_HUMAN_REQUEST_KEY",
+    "GOVERNANCE_INTERRUPT_KEY",
+    "GOVERNANCE_PAUSE_KEY",
+    "HUMAN_APPROVED_KEY",
+    "HUMAN_DECISION_KEY",
+    "HUMAN_ESCALATED_KEY",
+    "HUMAN_REJECTED_KEY",
+    "HUMAN_RESPONSE_KEY",
+    "HumanPauseCoordinator",
+    "PauseRecord",
+]
 
 
 class PauseRecord(BaseModel):
@@ -34,61 +60,95 @@ class PauseRecord(BaseModel):
 
 
 class HumanPauseCoordinator:
-    """Persists pause metadata on tasks and supports resume signals."""
+    """Persists pause state on tasks and supports approve/reject/escalate resume signals."""
 
     @staticmethod
     def apply_pause(task: Task, execution: AgentExecutionResult) -> Task:
+        gov = task.runtime.governance
         if execution.human_request is not None:
-            task.metadata[GOVERNANCE_HUMAN_REQUEST_KEY] = execution.human_request.model_dump()
+            gov.human_request = execution.human_request
         if execution.execution_interrupt is not None:
-            task.metadata[GOVERNANCE_INTERRUPT_KEY] = execution.execution_interrupt.model_dump()
+            gov.execution_interrupt = execution.execution_interrupt
         if execution.human_request is not None:
             reason = ""
             if execution.agent_decision is not None:
                 reason = execution.agent_decision.reason
-            task.metadata["governance_pause_record"] = PauseRecord(
+            record = PauseRecord(
                 task_id=task.task_id,
                 human_request_id=execution.human_request.request_id,
                 reason=reason,
-            ).model_dump()
-        task.metadata[GOVERNANCE_PAUSE_KEY] = True
+            )
+            gov.pause_record = TaskPauseRecord(
+                pause_id=record.pause_id,
+                task_id=record.task_id,
+                human_request_id=record.human_request_id,
+                reason=record.reason,
+                created_at=record.created_at.isoformat(),
+                schema_version=record.schema_version,
+            )
+        gov.paused = True
+        task.sync_metadata()
         return task
 
     @staticmethod
     def apply_resolution(task: Task, resolution: GovernanceResolution) -> Task:
+        gov = task.runtime.governance
         if resolution.human_request is not None:
-            task.metadata[GOVERNANCE_HUMAN_REQUEST_KEY] = resolution.human_request.model_dump()
+            gov.human_request = resolution.human_request
         if resolution.interrupt is not None:
-            task.metadata[GOVERNANCE_INTERRUPT_KEY] = resolution.interrupt.model_dump()
-        task.metadata[GOVERNANCE_PAUSE_KEY] = True
+            gov.execution_interrupt = resolution.interrupt
+        gov.paused = True
+        task.sync_metadata()
         return task
 
     @staticmethod
     def clear_pause(task: Task) -> Task:
-        task.metadata.pop(GOVERNANCE_PAUSE_KEY, None)
+        task.runtime.governance.paused = False
+        task.sync_metadata()
         return task
 
     @staticmethod
+    def verdict_from_task(task: Task) -> Optional[HumanResponseVerdict]:
+        raw = task.options.human.verdict
+        if not raw:
+            return None
+        try:
+            return HumanResponseVerdict(str(raw))
+        except ValueError:
+            return HumanResponseVerdict.UNKNOWN
+
+    @staticmethod
     def is_resumed(task: Task) -> bool:
-        return bool(task.metadata.get(HUMAN_APPROVED_KEY))
+        return task.options.human.is_resumed
+
+    @staticmethod
+    def is_rejected(task: Task) -> bool:
+        return task.options.human.is_rejected
+
+    @staticmethod
+    def is_escalated(task: Task) -> bool:
+        return task.options.human.is_escalated
 
     @staticmethod
     def record_human_response(task: Task, response: str) -> Task:
-        normalized = response.strip().lower()
-        task.metadata[HUMAN_RESPONSE_KEY] = response
-        task.metadata[HUMAN_APPROVED_KEY] = normalized in {"approve", "approved", "yes", "accept"}
+        verdict = parse_human_response(response)
+        task.options.human.response_text = response
+        task.options.human.verdict = verdict.value
+        task.sync_metadata()
         return task
 
     @staticmethod
     def human_request_from_task(task: Task) -> Optional[HumanRequest]:
-        raw = task.metadata.get(GOVERNANCE_HUMAN_REQUEST_KEY)
-        if not raw:
-            return None
-        return HumanRequest.model_validate(raw)
+        return task.runtime.governance.human_request
 
     @staticmethod
     def interrupt_from_task(task: Task) -> Optional[ExecutionInterrupt]:
-        raw = task.metadata.get(GOVERNANCE_INTERRUPT_KEY)
-        if not raw:
-            return None
-        return ExecutionInterrupt.model_validate(raw)
+        return task.runtime.governance.execution_interrupt
+
+    @staticmethod
+    def escalation_level(task: Task) -> int:
+        return task.runtime.governance.escalation_level
+
+    @staticmethod
+    def escalation_chain(task: Task) -> list:
+        return [step.model_dump() for step in task.runtime.governance.escalation_chain]

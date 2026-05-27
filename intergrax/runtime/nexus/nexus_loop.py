@@ -7,6 +7,7 @@ from typing import List, Optional
 
 from intergrax.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.runtime_cost import aggregate_execution_metrics
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionNodeStatus
 from intergrax.runtime.nexus.agent_router import AgentRouter
@@ -19,7 +20,13 @@ from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy,
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier, TaskClassification
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
-from intergrax.runtime.human.pause import HumanPauseCoordinator, HUMAN_APPROVED_KEY
+from intergrax.runtime.human.pause import HumanPauseCoordinator
+from intergrax.runtime.human.escalation import EscalationRouter
+from intergrax.runtime.human.models import HumanResponseVerdict, EscalationTarget
+from intergrax.runtime.human.store import SQLiteHumanDecisionStore
+from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
+from intergrax.runtime.long_running.notification import NotificationAdapter
+from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -28,6 +35,14 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
+from intergrax.runtime.task.task_contract import (
+    TaskExecutionMetrics,
+    TaskIsolationSummary,
+    TaskOrchestrationSummary,
+    TaskResultSummary,
+    TaskRetryRecord,
+    TaskValidationSummary,
+)
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import (
     PersistingTaskTraceEmitter,
@@ -35,7 +50,11 @@ from intergrax.runtime.task.task_trace import (
     lifecycle_with_persisting_trace,
     lifecycle_with_trace,
 )
-
+from intergrax.agents.uaep import UAEPExecutor
+from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
+from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
+from intergrax.runtime.sandbox.manager import SandboxSessionManager
+from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
 
 class NexusLoop:
     """
@@ -61,6 +80,12 @@ class NexusLoop:
         retry_policy: Optional[RetryPolicy] = None,
         policy_engine: Optional[RuntimePolicyEngine] = None,
         interrupt_handler: Optional[ExecutionInterruptHandler] = None,
+        shadow_manager: Optional[ShadowWorkspaceManager] = None,
+        sandbox_manager: Optional[SandboxSessionManager] = None,
+        human_decision_store: Optional[SQLiteHumanDecisionStore] = None,
+        escalation_router: Optional[EscalationRouter] = None,
+        checkpoint_store: Optional[SQLiteTaskCheckpointStore] = None,
+        notification_adapter: Optional[NotificationAdapter] = None,
     ) -> None:
         self._registry = registry
         self._event_bus = event_bus or RuntimeEventBus()
@@ -68,10 +93,22 @@ class NexusLoop:
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=self._policy_engine,
         )
+        self._shadow_manager = shadow_manager or ShadowWorkspaceManager()
+        self._sandbox_manager = sandbox_manager or SandboxSessionManager()
+        self._human_store = human_decision_store
+        self._escalation_router = escalation_router or EscalationRouter()
+        self._checkpoint_store = checkpoint_store
+        self._notification_adapter = notification_adapter
         self._engine = AgentEngine(
             registry,
             event_bus=self._event_bus,
             policy_engine=self._policy_engine,
+            uaep_executor=UAEPExecutor(
+                event_bus=self._event_bus,
+                policy_engine=self._policy_engine,
+                shadow_manager=self._shadow_manager,
+                sandbox_manager=self._sandbox_manager,
+            ),
         )
         self._classifier = classifier or ClassifyingTaskClassifier(registry)
         self._planner = planner or TaskPlanner()
@@ -111,9 +148,32 @@ class NexusLoop:
     def interrupt_handler(self) -> ExecutionInterruptHandler:
         return self._interrupt_handler
 
+    @property
+    def shadow_manager(self) -> ShadowWorkspaceManager:
+        return self._shadow_manager
+
+    @property
+    def sandbox_manager(self) -> SandboxSessionManager:
+        return self._sandbox_manager
+
     async def handle_task(self, task: Task) -> TaskResult:
         lifecycle, trace_emitter = self._resolve_lifecycle(task)
         self._trace_emitter = trace_emitter
+
+        self._normalize_human_response(task)
+        await self._maybe_restore_long_running(task)
+        self._normalize_human_response(task)
+        if (
+            LongRunningCoordinator.is_long_running(task)
+            and HumanPauseCoordinator.is_resumed(task)
+            and task.state in LongRunningCoordinator.paused_states()
+        ):
+            task.state = TaskState.CREATED
+        verdict = HumanPauseCoordinator.verdict_from_task(task)
+        if verdict == HumanResponseVerdict.REJECT:
+            return await self._handle_human_rejection(task, trace_emitter, lifecycle)
+        if verdict == HumanResponseVerdict.ESCALATE:
+            return await self._handle_human_escalation(task, trace_emitter, lifecycle)
 
         if HumanPauseCoordinator.is_resumed(task):
             await self._publish_runtime_event(
@@ -125,7 +185,9 @@ class NexusLoop:
                     update={
                         "event_type": RuntimeEventType.HUMAN_APPROVAL_RECEIVED,
                         "phase": ExecutionPhase.HUMAN_APPROVAL,
-                        "payload": {"response": task.metadata.get(HUMAN_APPROVED_KEY)},
+                        "payload": {
+                            "response": task.options.human.response_text or "approve",
+                        },
                     }
                 )
             )
@@ -145,7 +207,7 @@ class NexusLoop:
         )
 
         task = self._classifier.classify(task)
-        classification = task.metadata.get("classification", "")
+        classification = task.classification or ""
         lifecycle.transition(task, TaskState.CLASSIFIED)
 
         if classification == TaskClassification.UNSUPPORTED.value:
@@ -157,7 +219,9 @@ class NexusLoop:
                 executions=[],
                 validation=ValidationResult(
                     valid=False,
-                    errors=[task.metadata.get("unsupported_reason", "unsupported task")],
+                    errors=[
+                        task.runtime.classification.unsupported_reason or "unsupported task"
+                    ],
                 ),
                 plan=None,
                 retry_records=[],
@@ -165,7 +229,8 @@ class NexusLoop:
             )
 
         plan = self._planner.plan(task, self._registry)
-        task.metadata["plan_id"] = plan.plan_id
+        task.runtime.orchestration.plan_id = plan.plan_id
+        task.sync_metadata()
         lifecycle.transition(task, TaskState.PLANNED)
         await self._publish_runtime_event(
             runtime_event_from_task_state(task, run_id=task.task_id, message="plan created").model_copy(
@@ -182,8 +247,12 @@ class NexusLoop:
         )
 
         if classification == TaskClassification.HUMAN_APPROVAL_REQUIRED.value:
-            if not task.metadata.get("human_approved"):
+            if not HumanPauseCoordinator.is_resumed(task):
                 lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
+                await self._maybe_checkpoint_long_running(
+                    task,
+                    progress_message="awaiting human approval",
+                )
                 return await self._finish_task(
                     task,
                     trace_emitter,
@@ -202,7 +271,8 @@ class NexusLoop:
             lifecycle.transition(task, TaskState.RUNNING)
 
         graph = plan_to_execution_graph(plan)
-        task.metadata["graph_id"] = graph.graph_id
+        task.runtime.orchestration.graph_id = graph.graph_id
+        task.sync_metadata()
 
         def _on_retry(record: RetryRecord) -> None:
             trace_emitter.emit(
@@ -236,6 +306,10 @@ class NexusLoop:
             paused = executions[-1]
             HumanPauseCoordinator.apply_pause(task, paused)
             lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
+            await self._maybe_checkpoint_long_running(
+                task,
+                progress_message="awaiting human input",
+            )
             await self._publish_runtime_event(
                 runtime_event_from_task_state(
                     task,
@@ -256,7 +330,7 @@ class NexusLoop:
                 )
             )
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                trace_emitter.finalize()
+                self._finalize_persisting_trace(trace_emitter, executions)
             return await self._finish_task(
                 task,
                 trace_emitter,
@@ -278,7 +352,7 @@ class NexusLoop:
             lifecycle.transition(task, TaskState.VALIDATING)
             lifecycle.transition(task, TaskState.FAILED)
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                trace_emitter.finalize()
+                self._finalize_persisting_trace(trace_emitter, executions)
             return await self._finish_task(
                 task,
                 trace_emitter,
@@ -311,13 +385,13 @@ class NexusLoop:
             e.status == AgentExecutionStatus.COMPLETED for e in executions
         ):
             lifecycle.transition(task, TaskState.PARTIALLY_COMPLETED)
-        elif task.metadata.get("needs_more_information"):
+        elif task.runtime.orchestration.needs_more_information:
             lifecycle.transition(task, TaskState.NEEDS_MORE_INFORMATION)
         else:
             lifecycle.transition(task, TaskState.COMPLETED)
 
         if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-            trace_emitter.finalize()
+            self._finalize_persisting_trace(trace_emitter, executions)
 
         return await self._finish_task(
             task,
@@ -369,44 +443,156 @@ class NexusLoop:
         primary = executions[-1] if executions else None
         composer_meta = self._composer.compose_metadata(
             executions,
-            classification=task.metadata.get("classification", ""),
+            classification=task.classification or "",
             plan_id=plan.plan_id if plan else "",
             retry_count=len(retry_records),
         )
-        composer_meta["graph_id"] = graph_id
-        composer_meta["graph_node_count"] = len(plan.steps) if plan else 0
 
-        metadata = {
-            **composer_meta,
-            "validation_valid": validation.valid,
-            "validation_errors": validation.errors,
-            "validation_warnings": validation.warnings,
-            "task_trace_events": len(trace_emitter.events),
-            "runtime_events": len(self._event_bus.history),
-            "governance_human_request": (
-                executions[-1].human_request.model_dump()
-                if executions and executions[-1].human_request
-                else task.metadata.get("governance_human_request")
+        execution_metrics = aggregate_execution_metrics(executions)
+
+        gov_human_request = None
+        if executions and executions[-1].human_request:
+            gov_human_request = executions[-1].human_request.model_dump()
+        elif task.runtime.governance.human_request is not None:
+            gov_human_request = task.runtime.governance.human_request.model_dump()
+
+        isolation = TaskIsolationSummary()
+        if primary and primary.structured_data.get(SHADOW_WORKSPACE_ID_KEY):
+            isolation.shadow_workspace_id = str(primary.structured_data[SHADOW_WORKSPACE_ID_KEY])
+            artifact_count = primary.structured_data.get("shadow_artifact_count")
+            if artifact_count is not None:
+                isolation.shadow_artifact_count = int(artifact_count)
+
+        if primary and primary.structured_data.get(SANDBOX_SESSION_ID_KEY):
+            isolation.sandbox_session_id = str(primary.structured_data[SANDBOX_SESSION_ID_KEY])
+            operation_count = primary.structured_data.get("sandbox_operation_count")
+            if operation_count is not None:
+                isolation.sandbox_operation_count = int(operation_count)
+
+        escalation_level = HumanPauseCoordinator.escalation_level(task)
+        escalation_chain = list(task.runtime.governance.escalation_chain)
+
+        summary = TaskResultSummary(
+            validation=TaskValidationSummary(
+                valid=validation.valid,
+                errors=list(validation.errors),
+                warnings=list(validation.warnings),
             ),
-            "retries": [
-                {
-                    "attempt": r.attempt,
-                    "agent_id": r.agent_id,
-                    "alternate_agent_id": r.alternate_agent_id,
-                    "reason": r.reason,
-                }
-                for r in retry_records
-            ],
-        }
+            metrics=TaskExecutionMetrics(
+                cost=execution_metrics.cost,
+                total_tokens=execution_metrics.total_tokens,
+                runtime_events=len(self._event_bus.history),
+                task_trace_events=len(trace_emitter.events),
+            ),
+            isolation=isolation,
+            orchestration=TaskOrchestrationSummary(
+                classification=composer_meta.get("classification", ""),
+                plan_id=composer_meta.get("plan_id", ""),
+                graph_id=graph_id,
+                graph_node_count=len(plan.steps) if plan else 0,
+                agent_count=composer_meta.get("agent_count", 0),
+                agent_ids=list(composer_meta.get("agent_ids") or []),
+                retry_count=composer_meta.get("retry_count", 0),
+                retries=[
+                    TaskRetryRecord(
+                        attempt=r.attempt,
+                        agent_id=r.agent_id,
+                        alternate_agent_id=r.alternate_agent_id,
+                        reason=r.reason,
+                    )
+                    for r in retry_records
+                ],
+                all_completed=bool(composer_meta.get("all_completed")),
+            ),
+            escalation_level=escalation_level,
+            escalation_chain=escalation_chain,
+            governance_human_request=gov_human_request,
+            checkpoint_id=task.runtime.orchestration.checkpoint_id,
+            resume_token=task.runtime.orchestration.resume_token,
+            progress_message=task.runtime.orchestration.progress_message,
+        )
 
-        return TaskResult(
+        self._maybe_cleanup_shadow(task, executions)
+        self._maybe_cleanup_sandbox(task, executions)
+
+        result = TaskResult(
             task_id=task.task_id,
             run_id=primary.run_id if primary else task.task_id,
             state=task.state,
             answer=answer,
             agent_id=primary.agent_id if primary else task.agent_id,
             execution_result=primary,
-            metadata=metadata,
+            summary=summary,
+            metadata=dict(composer_meta),
+        )
+        result.sync_metadata()
+        return result
+
+    async def _maybe_restore_long_running(self, task: Task) -> None:
+        if self._checkpoint_store is None:
+            return
+        restored = LongRunningCoordinator.restore_if_resuming(task, self._checkpoint_store)
+        if restored is None:
+            return
+        await self._publish_runtime_event(
+            runtime_event_from_task_state(
+                task,
+                run_id=task.task_id,
+                message="long-running task restored from checkpoint",
+            ).model_copy(
+                update={
+                    "event_type": RuntimeEventType.RESUMED,
+                    "phase": ExecutionPhase.HUMAN_APPROVAL,
+                    "payload": {
+                        "checkpoint_id": restored.checkpoint_id,
+                        "resume_token": restored.resume_token,
+                    },
+                }
+            )
+        )
+        await LongRunningCoordinator.notify_progress(
+            task,
+            subject="Task resumed",
+            body=restored.progress_message or "checkpoint restored",
+            adapter=self._notification_adapter,
+        )
+
+    async def _maybe_checkpoint_long_running(
+        self,
+        task: Task,
+        *,
+        progress_message: str,
+    ) -> None:
+        if self._checkpoint_store is None or not LongRunningCoordinator.should_checkpoint(task):
+            return
+        checkpoint = LongRunningCoordinator.persist_checkpoint(
+            task,
+            self._checkpoint_store,
+            progress_message=progress_message,
+        )
+        await self._publish_runtime_event(
+            runtime_event_from_task_state(
+                task,
+                run_id=task.task_id,
+                message="long-running checkpoint saved",
+            ).model_copy(
+                update={
+                    "event_type": RuntimeEventType.PAUSED,
+                    "phase": ExecutionPhase.HUMAN_APPROVAL,
+                    "payload": {
+                        "checkpoint_id": checkpoint.checkpoint_id,
+                        "resume_token": checkpoint.resume_token,
+                        "progress_message": progress_message,
+                    },
+                }
+            )
+        )
+        await LongRunningCoordinator.notify_progress(
+            task,
+            subject="Task paused",
+            body=progress_message,
+            adapter=self._notification_adapter,
+            extra={"checkpoint_id": checkpoint.checkpoint_id},
         )
 
     async def _publish_runtime_event(self, event: object) -> None:
@@ -437,3 +623,190 @@ class NexusLoop:
                 event_bus=self._event_bus,
             )
         return lifecycle_with_trace(run_id=task.task_id, event_bus=self._event_bus)
+
+    @staticmethod
+    def _finalize_persisting_trace(
+        trace_emitter: PersistingTaskTraceEmitter,
+        executions: List[AgentExecutionResult],
+    ) -> None:
+        metrics = aggregate_execution_metrics(executions)
+        trace_emitter.finalize(
+            duration_ms=metrics.duration_ms,
+            llm_usage=metrics.as_llm_usage(),
+        )
+
+    def _maybe_cleanup_shadow(self, task: Task, executions: List[AgentExecutionResult]) -> None:
+        iso = task.options.isolation
+        if not iso.shadow_workspace:
+            return
+        if not iso.shadow_workspace_cleanup:
+            return
+
+        workspace_id = None
+        if executions:
+            workspace_id = executions[-1].structured_data.get(SHADOW_WORKSPACE_ID_KEY)
+        if workspace_id:
+            self._shadow_manager.cleanup(str(workspace_id))
+        else:
+            self._shadow_manager.cleanup_for_task(
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+            )
+
+    def _maybe_cleanup_sandbox(self, task: Task, executions: List[AgentExecutionResult]) -> None:
+        iso = task.options.isolation
+        if not iso.sandbox:
+            return
+        if not iso.sandbox_cleanup:
+            return
+
+        session_id = None
+        if executions:
+            session_id = executions[-1].structured_data.get(SANDBOX_SESSION_ID_KEY)
+        if session_id:
+            self._sandbox_manager.cleanup(str(session_id))
+        else:
+            self._sandbox_manager.cleanup_for_task(
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+            )
+
+    @staticmethod
+    def _normalize_human_response(task: Task) -> None:
+        response = task.options.human.response_text
+        if response and task.options.human.verdict is None:
+            HumanPauseCoordinator.record_human_response(task, str(response))
+
+    def _persist_human_decision(
+        self,
+        task: Task,
+        verdict: HumanResponseVerdict,
+        *,
+        response_text: str = "",
+    ) -> None:
+        if self._human_store is None:
+            return
+        human_request = HumanPauseCoordinator.human_request_from_task(task)
+        target_raw = task.runtime.governance.escalation_target
+        target = EscalationTarget(str(target_raw)) if target_raw else None
+        record = SQLiteHumanDecisionStore.build_record(
+            task_id=task.task_id,
+            tenant_id=task.tenant_id,
+            user_id=task.user_id,
+            verdict=verdict,
+            response_text=response_text or str(task.options.human.response_text or ""),
+            human_request_id=human_request.request_id if human_request else "",
+            escalation_level=HumanPauseCoordinator.escalation_level(task),
+            escalation_target=target,
+            agent_id=task.agent_id,
+            run_id=task.task_id,
+        )
+        self._human_store.record(record)
+
+    async def _handle_human_rejection(
+        self,
+        task: Task,
+        trace_emitter: TaskTraceEmitter,
+        lifecycle: TaskLifecycle,
+    ) -> TaskResult:
+        await self._publish_runtime_event(
+            runtime_event_from_task_state(
+                task,
+                run_id=task.task_id,
+                message="human rejection received",
+            ).model_copy(
+                update={
+                    "event_type": RuntimeEventType.HUMAN_APPROVAL_RECEIVED,
+                    "phase": ExecutionPhase.HUMAN_APPROVAL,
+                    "payload": {
+                        "decision": HumanResponseVerdict.REJECT.value,
+                        "response": task.options.human.response_text,
+                    },
+                }
+            )
+        )
+        self._persist_human_decision(task, HumanResponseVerdict.REJECT)
+        lifecycle.transition(task, TaskState.FAILED)
+        if isinstance(trace_emitter, PersistingTaskTraceEmitter):
+            self._finalize_persisting_trace(trace_emitter, [])
+        return await self._finish_task(
+            task,
+            trace_emitter,
+            answer="",
+            executions=[],
+            validation=ValidationResult(valid=False, errors=["human rejected"]),
+            plan=None,
+            retry_records=[],
+            graph_id="",
+        )
+
+    async def _handle_human_escalation(
+        self,
+        task: Task,
+        trace_emitter: TaskTraceEmitter,
+        lifecycle: TaskLifecycle,
+    ) -> TaskResult:
+        outcome = self._escalation_router.route(task)
+        self._escalation_router.apply_to_task(task, outcome)
+        self._persist_human_decision(task, HumanResponseVerdict.ESCALATE)
+
+        await self._publish_runtime_event(
+            runtime_event_from_task_state(
+                task,
+                run_id=task.task_id,
+                message="human escalation requested",
+            ).model_copy(
+                update={
+                    "event_type": RuntimeEventType.INTERRUPT_ESCALATED,
+                    "phase": ExecutionPhase.HUMAN_APPROVAL,
+                    "payload": {
+                        "level": outcome.level,
+                        "target": outcome.target.value,
+                        "message": outcome.message,
+                    },
+                }
+            )
+        )
+
+        task.options.human.response_text = None
+        task.options.human.verdict = None
+        task.sync_metadata()
+
+        if outcome.fail_task:
+            lifecycle.transition(task, TaskState.FAILED)
+            if isinstance(trace_emitter, PersistingTaskTraceEmitter):
+                self._finalize_persisting_trace(trace_emitter, [])
+            return await self._finish_task(
+                task,
+                trace_emitter,
+                answer="",
+                executions=[],
+                validation=ValidationResult(
+                    valid=False,
+                    errors=[outcome.message or "escalation limit reached"],
+                ),
+                plan=None,
+                retry_records=[],
+                graph_id="",
+            )
+
+        if task.state == TaskState.CREATED:
+            lifecycle.transition(task, TaskState.CLASSIFIED)
+            lifecycle.transition(task, TaskState.PLANNED)
+        lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
+        await self._maybe_checkpoint_long_running(
+            task,
+            progress_message="awaiting escalated human review",
+        )
+        if isinstance(trace_emitter, PersistingTaskTraceEmitter):
+            self._finalize_persisting_trace(trace_emitter, [])
+        return await self._finish_task(
+            task,
+            trace_emitter,
+            answer="",
+            executions=[],
+            validation=ValidationResult(valid=False, errors=["awaiting escalated human review"]),
+            plan=None,
+            retry_records=[],
+            graph_id="",
+        )

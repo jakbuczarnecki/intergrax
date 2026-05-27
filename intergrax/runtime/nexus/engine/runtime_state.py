@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
+from intergrax.contracts.runtime_cost import tokens_to_cost_units
 from intergrax.runtime.nexus.engine.contracts.agent_state import AgentState
 from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import LLMUsageRunRecord
 from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
@@ -273,6 +274,11 @@ class RuntimeState(RuntimeStateContract):
 
         # Attach report to the answer for API consumers.
         runtime_answer.llm_usage_report = report
+        runtime_answer.stats.total_tokens = total.total_tokens
+        runtime_answer.stats.input_tokens = total.input_tokens
+        runtime_answer.stats.output_tokens = total.output_tokens
+        runtime_answer.stats.duration_ms = total.duration_ms
+        runtime_answer.stats.extra["cost"] = tokens_to_cost_units(total.total_tokens)
 
         # Optional: store run record for analytics/monitoring
         if self.context.config.enable_llm_usage_collection and runtime_answer.llm_usage_report is not None:

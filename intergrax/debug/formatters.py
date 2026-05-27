@@ -39,6 +39,8 @@ def format_run_list(runs: List[RunSummary]) -> str:
 
 def format_run_show(persisted: PersistedRun) -> str:
     meta = persisted.metadata
+    llm_usage = dict(meta.stats.llm_usage or {})
+    cost = llm_usage.get("cost")
     lines = [
         f"run_id:      {meta.run_id}",
         f"tenant_id:   {meta.tenant_id}",
@@ -46,6 +48,7 @@ def format_run_show(persisted: PersistedRun) -> str:
         f"session_id:  {meta.session_id}",
         f"started_at:  {meta.started_at_utc}",
         f"duration_ms: {meta.stats.duration_ms}",
+        f"cost:        {cost if cost is not None else '(none)'}",
         f"events:      {len(persisted.events)}",
     ]
     if meta.error is not None:

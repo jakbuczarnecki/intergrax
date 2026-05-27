@@ -22,10 +22,16 @@ from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler, GovernanceResolution
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
+from intergrax.runtime.nexus.tools.uaep_tool_gateway import BoundToolGateway
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
+from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RouteInfo, RuntimeRequest
+from intergrax.runtime.sandbox.manager import SandboxSessionManager
+from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
+from intergrax.runtime.task.task_metadata_bridge import execution_options_from_metadata
+from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
+from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
 
 
 class UAEPBlockedError(RuntimeError):
@@ -62,11 +68,15 @@ class UAEPExecutor:
         event_bus: Optional[RuntimeEventBus] = None,
         policy_engine: Optional[RuntimePolicyEngine] = None,
         interrupt_handler: Optional[ExecutionInterruptHandler] = None,
+        shadow_manager: Optional[ShadowWorkspaceManager] = None,
+        sandbox_manager: Optional[SandboxSessionManager] = None,
     ) -> None:
         self._event_bus = event_bus
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=policy_engine,
         )
+        self._shadow_manager = shadow_manager or ShadowWorkspaceManager()
+        self._sandbox_manager = sandbox_manager or SandboxSessionManager()
         if middleware is not None:
             self._middleware = middleware
         elif event_bus is not None:
@@ -90,6 +100,7 @@ class UAEPExecutor:
         request: RuntimeRequest,
     ) -> tuple[RuntimeAnswer, ValidationResult, RuntimeContext, Optional[GovernanceResolution]]:
         contract = agent.get_contract()
+        task_options = execution_options_from_metadata(request.metadata)
         run_id = str(request.metadata.get("run_id") or request.metadata.get("task_id") or uuid4().hex)
         task_id = str(request.metadata.get("task_id") or run_id)
         node_id = request.metadata.get("graph_node_id")
@@ -105,6 +116,8 @@ class UAEPExecutor:
             request=request,
             event_emitter=_BusEventEmitter(self._event_bus) if self._event_bus else None,
         )
+        self._attach_shadow_workspace(exec_ctx, request, task_id=task_id)
+        self._attach_sandbox_session(exec_ctx, request, task_id=task_id)
 
         hook_base = HookContext(
             task_id=task_id,
@@ -119,6 +132,10 @@ class UAEPExecutor:
 
         runtime_context = agent.build_context(request)
         exec_ctx.domain_context = runtime_context
+        exec_ctx.tool_gateway = BoundToolGateway(
+            exec_ctx,
+            allowed_tools=list(contract.allowed_tools),
+        )
 
         await self._guard_hook(
             await self._middleware.run_after(
@@ -167,9 +184,7 @@ class UAEPExecutor:
                 agent_id=contract.id,
                 step_id=step.step_id,
                 context={
-                    "require_human_on_critical": request.metadata.get(
-                        "require_human_on_critical", True
-                    ),
+                    "require_human_on_critical": task_options.governance.require_human_on_critical,
                     "has_unresolved_critical_interrupt": exec_ctx.metadata.get(
                         "has_unresolved_critical_interrupt", False
                     ),
@@ -196,6 +211,8 @@ class UAEPExecutor:
                 break
 
         answer = self._build_answer(exec_ctx, last_output, run_id)
+        self._annotate_answer_with_shadow(answer, exec_ctx)
+        self._annotate_answer_with_sandbox(answer, exec_ctx)
 
         if governance is not None and governance.should_pause:
             validation = ValidationResult(valid=False, errors=["awaiting human input"])
@@ -294,6 +311,70 @@ class UAEPExecutor:
             return cached
         summary = output.summary if output else ""
         return RuntimeAnswer(run_id=run_id, answer=summary)
+
+    def _attach_shadow_workspace(
+        self,
+        exec_ctx: RuntimeExecutionContext,
+        request: RuntimeRequest,
+        *,
+        task_id: str,
+    ) -> None:
+        if not execution_options_from_metadata(request.metadata).isolation.shadow_workspace:
+            return
+        tenant_id = request.tenant_id or "default"
+        workspace = self._shadow_manager.open_or_create(
+            tenant_id=tenant_id,
+            task_id=task_id,
+        )
+        exec_ctx.metadata["shadow_workspace"] = workspace
+        exec_ctx.metadata[SHADOW_WORKSPACE_ID_KEY] = workspace.workspace_id
+
+    @staticmethod
+    def _annotate_answer_with_shadow(
+        answer: RuntimeAnswer,
+        exec_ctx: RuntimeExecutionContext,
+    ) -> None:
+        workspace_id = exec_ctx.metadata.get(SHADOW_WORKSPACE_ID_KEY)
+        if not workspace_id:
+            return
+        if answer.route is None:
+            answer.route = RouteInfo(extra={})
+        answer.route.extra[SHADOW_WORKSPACE_ID_KEY] = workspace_id
+        workspace = exec_ctx.metadata.get("shadow_workspace")
+        if workspace is not None:
+            answer.route.extra["shadow_artifact_count"] = len(workspace.list_artifacts())
+
+    def _attach_sandbox_session(
+        self,
+        exec_ctx: RuntimeExecutionContext,
+        request: RuntimeRequest,
+        *,
+        task_id: str,
+    ) -> None:
+        if not execution_options_from_metadata(request.metadata).isolation.sandbox:
+            return
+        tenant_id = request.tenant_id or "default"
+        session = self._sandbox_manager.open_or_create(
+            tenant_id=tenant_id,
+            task_id=task_id,
+        )
+        exec_ctx.metadata["sandbox_session"] = session
+        exec_ctx.metadata[SANDBOX_SESSION_ID_KEY] = session.session_id
+
+    @staticmethod
+    def _annotate_answer_with_sandbox(
+        answer: RuntimeAnswer,
+        exec_ctx: RuntimeExecutionContext,
+    ) -> None:
+        session_id = exec_ctx.metadata.get(SANDBOX_SESSION_ID_KEY)
+        if not session_id:
+            return
+        if answer.route is None:
+            answer.route = RouteInfo(extra={})
+        answer.route.extra[SANDBOX_SESSION_ID_KEY] = session_id
+        session = exec_ctx.metadata.get("sandbox_session")
+        if session is not None:
+            answer.route.extra["sandbox_operation_count"] = len(session.audit_log)
 
     async def _emit(
         self,

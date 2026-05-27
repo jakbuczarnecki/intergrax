@@ -48,9 +48,9 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | Architecture §1–41 (tiers, Nexus, graph, repo split) | **~82–88%** | Phases A–C complete |
 
-| §42 Unified Execution Runtime | **~45–50%** | P4.1–P4.3 wired; tool gateway + agent migration pending |
+| §42 Unified Execution Runtime | **~50–55%** | P4.1–P4.4 wired; agent UAEP migration pending |
 
-| Laboratory workflow (inspect, decide) | **~55%** | D.1 debug CLI done; experiment registry pending |
+| Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
 
 | Pre-P4.2 regression gate | **Done** | A.5-min (~10 tests, marker `gate`) |
 
@@ -90,15 +90,16 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §33 Observability | Trace + events | **Partial** | Trace store ✅; P4.1 dual-emit ✅; D.1 CLI ✅ |
 
-| §42 Execution runtime | UAEP, hooks, governance | **Partial** | P4.2 UAEP ✅; P4.3 governance ✅; P4.4+ pending |
+| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial** | P4 + Phase E ✅ |
+| §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` (no `legal_agent` shim) |
 
-| §19 Debug surface | CLI / API | **Partial** | D.1 CLI ✅; D.2 API pending |
+| §19 Debug surface | CLI / API | **Partial** | D.1 CLI ✅; D.2 API ✅ |
 
-| §32 HITL | Approval flow | **Not started** | Phase F |
+| §32 HITL | Approval flow | **Done** | F.3 approve/reject/escalate + decision store |
 
-| §20–21 Shadow / Sandbox | Isolated exec | **Not started** | Phase F |
+| §20–21 Shadow / Sandbox | Isolated exec | **Done** | F.1 ShadowWorkspace + F.2 SandboxRuntime ✅ |
 
 
 
@@ -224,13 +225,13 @@ uv run pytest tests/ -m gate -q
 
 | D.1 | Debug CLI | **Done** | `python -m intergrax.debug tasks list\|show\|trace` |
 
-| D.2 | Minimal debug API | Pending | FastAPI endpoints on trace store |
+| D.2 | Minimal debug API | **Done** | FastAPI `GET /debug/tasks` on trace store |
 
-| D.3 | Experiment registry | Pending | hypothesis, keep/improve/pause/delete |
+| D.3 | Experiment registry | **Done** | SQLite registry; CLI + `GET/POST /debug/experiments` |
 
-| D.4 | Notebook templates | Pending | `notebooks/experiments/` |
+| D.4 | Notebook templates | **Done** | `notebooks/experiments/`, `experiments/workflow.py` |
 
-| D.5 | Cost in trace | Pending | `AgentExecutionResult.cost` from runtime stats |
+| D.5 | Cost in trace | **Done** | `AgentExecutionResult.cost` from LLM usage / runtime stats |
 
 
 
@@ -246,7 +247,21 @@ uv run pytest tests/ -m gate -q
 
 |---|-------------|--------|
 
-| E.1–E.4 | Thin Legal, ToolRuntime migration, governance, loop bounds | **Not started** |
+| E.1 | Thin sequential Legal — domain steps as UAEP `AgentStep` list | **Done** |
+
+| E.2 | ToolRuntime via gateway (no direct Nexus step imports in bridge) | **Done** (P4.4) |
+
+| E.3 | Governance on UAEP decision path | **Done** (P4.3) |
+
+| E.4 | Thin dynamic Legal (`LegalDynamicPipeline` routing) | **Done** |
+
+
+
+**E.4 delivered (2026-05-27):** `agents/legal/uaep/dynamic_steps.py` — 5 UAEP macro-steps (setup → tool plan → route → waves → finalize); `legal_execution_loop` phase functions extracted. Gate: 34 tests.
+
+
+
+**E.1 delivered (2026-05-27):** `agents/legal/uaep/thin_steps.py` — 8 UAEP steps (setup → finalize); `LegalAnalysisPipeline` reuses same runners; dynamic mode keeps single pipeline boundary. Gate: 33 tests.
 
 
 
@@ -256,9 +271,14 @@ uv run pytest tests/ -m gate -q
 
 ### Phase F — Advanced / On-Demand
 
+| # | Deliverable | Status | Notes |
+|---|-------------|--------|-------|
+| F.1 | ShadowWorkspace | **Done** | `runtime/workspace/`; UAEP + NexusLoop integration |
+| F.2 | SandboxRuntime | **Done** | `runtime/sandbox/`; `sandbox.exec` via BoundToolGateway |
+| F.3 | Advanced HITL (reject/escalation store) | **Done** | `runtime/human/` store + NexusLoop reject/escalate |
+| F.4 | Long-running tasks / Slack-Teams | **Done** | `runtime/long_running/`; checkpoint store + notification adapters |
 
-
-Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete use case**.
+Long-running tasks, HITL advanced, Shadow, Sandbox, Slack/Teams — **only with concrete use case**.
 
 
 
@@ -280,17 +300,21 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 | P4.3 | Governance (interrupt, HITL) | **Done** |
 
-| P4.4 | Tool gateway unification | **Next** |
+| P4.4 | Tool gateway unification | **Done** |
 
-| P4.5 | Agent migration (Echo, Research, Legal) | Pending |
-
-
-
-**P4.3 delivered (2026-05-27):** `runtime/interrupts/`, `runtime/human/`, `RuntimePolicyEngine` wired in UAEP + NexusLoop; `WAITING_FOR_HUMAN` pause/resume via `human_approved` metadata. Gate: 21 tests.
+| P4.5 | Agent migration (Echo, Research, Legal) | **Done** |
 
 
 
-**P4.2 delivered (2026-05-27):** `intergrax/agents/uaep.py`, `UAEPExecutor`, Echo `get_steps`/`run_step`, legacy fallback preserved.
+**P4.5 delivered (2026-05-27):** `uaep_pipeline.py`; Research, Summary, Legal agents on UAEP (`get_steps` / `run_step` / `decide_after_step`); integration tests + NexusLoop research. Gate: 31 tests.
+
+
+
+**P4.4 delivered (2026-05-27):** `RuntimeToolGateway`, `ToolRuntime.invoke_request`, Legal bridge via `ToolRequest`; UAEP `BoundToolGateway`. Gate: 25 tests.
+
+
+
+**P4.3 delivered (2026-05-27):** `runtime/interrupts/`, `runtime/human/`, policy in UAEP + NexusLoop.
 
 
 
@@ -304,11 +328,9 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 ```text
 
-NOW:     P4.4 tool gateway · D.2 debug API
+NOW:     Phase F complete (on demand remainder as needed)
 
-NEXT:    P4.5 Research/Legal UAEP migration
-
-THEN:    Phase E (Legal thin) · D.3 experiment registry
+NEXT:    New capabilities / applications as concrete use cases emerge
 
 LATER:   Phase F (on demand)
 
@@ -344,21 +366,202 @@ LATER:   Phase F (on demand)
 
 ## 6. Recommended Next Step
 
-**Phase P4.4** — tool gateway unification (`ToolRequest`/`ToolResponse`, Legal bridge).
+**F.4 (Done):** long-running tasks — checkpoint/resume via `SQLiteTaskCheckpointStore`; Slack/Teams notification stubs.
 
 ```bash
 uv run pytest tests/ -m gate -q
 ```
 
-**P4.3 (Done):** `ExecutionInterruptHandler`, `HumanPauseCoordinator`, policy in UAEP, NexusLoop `WAITING_FOR_HUMAN` + resume.
+**F.3 (Done):** advanced HITL — approve/reject/escalate via `human_response`; SQLite decision store (`INTERGRAX_HUMAN_DECISIONS_DB`).
 
-**P4.2 (Done):** `UAEPExecutor` in `intergrax/agents/uaep.py`; `AgentEngine` UAEP + legacy fallback; Echo reference agent.
+**F.2 (Done):** SandboxRuntime — `SandboxSession` + `sandbox.exec` tool via UAEP; enable with `task.metadata["sandbox"]=True`.
+
+**F.1 (Done):** ShadowWorkspace — isolated temp filesystem; enable with `task.metadata["shadow_workspace"]=True`; optional cleanup via `shadow_workspace_cleanup=True`.
+
+**D.5 (Done):** cost in trace — `AgentExecutionResult.cost` + `duration_seconds` from LLM usage; persisted in `RunStats.llm_usage` via NexusLoop.
+
+**D.4 (Done):** notebook templates — `notebooks/experiments/`; `ExperimentSession` in `intergrax/experiments/workflow.py`.
+
+**D.3 (Done):** experiment registry — `intergrax/experiments/`; CLI `experiments register|list|decide|link-run`; HTTP `/debug/experiments`.
+
+**E.4 (Done):** Legal dynamic pipeline — 5 UAEP macro-steps; wave/replan loop in `legal_dynamic_waves`.
+
+**E.1 (Done):** Legal sequential — 8 UAEP domain steps via `thin_steps.py`.
+
+**D.2 (Done):** FastAPI debug API — `GET /debug/tasks`, `GET /debug/tasks/{run_id}`, `GET /debug/tasks/{run_id}/trace`.
+
+**P4.4 (Done):** `RuntimeToolGateway` + `ToolRequest`/`ToolResponse`; Legal bridge no longer imports Nexus steps directly.
+
+**P4.3 (Done):** governance / HITL pause-resume in NexusLoop.
 
 
 
-**Then:** P4.5 agent migration or D.2 debug API.
+**Then:** new application capabilities as concrete use cases emerge.
 
 
+
+### D.2 Debug API (Done)
+
+Standalone laboratory server:
+
+```bash
+uv run uvicorn intergrax.debug.app:create_debug_app --factory --host 127.0.0.1 --port 8099
+```
+
+Endpoints (mirror CLI):
+
+```text
+GET /debug/tasks?tenant=t1&limit=20
+GET /debug/tasks/{run_id}?tenant=t1
+GET /debug/tasks/{run_id}/trace?tenant=t1&include_runtime=true
+```
+
+Mount on an existing app:
+
+```python
+from intergrax.debug.router import create_debug_router
+
+app.include_router(create_debug_router(db_path=Path("build/intergrax_trace.db")))
+```
+
+Environment: `INTERGRAX_TRACE_DB` (same as CLI).
+
+### D.3 Experiment registry (Done)
+
+SQLite registry at `build/intergrax_experiments.db` (`INTERGRAX_EXPERIMENTS_DB`).
+
+```bash
+python -m intergrax.debug experiments register --hypothesis "..." --capability echo.basic
+python -m intergrax.debug experiments link-run EXPERIMENT_ID RUN_ID
+python -m intergrax.debug experiments decide EXPERIMENT_ID --decision keep
+python -m intergrax.debug experiments list --decision pending
+```
+
+HTTP: `GET/POST /debug/experiments`, `POST /debug/experiments/{id}/decision`, `POST /debug/experiments/{id}/runs/{run_id}`.
+
+### D.4 Notebook templates (Done)
+
+Interactive §35 workflow under `notebooks/experiments/`:
+
+| File | Purpose |
+|------|---------|
+| `00_experiment_template.ipynb` | Blank template — copy for new capabilities |
+| `01_echo_experiment.ipynb` | Deterministic Echo smoke test |
+
+Shared API: `intergrax.experiments.workflow.ExperimentSession`.
+
+```python
+from intergrax.experiments.workflow import ExperimentSession, ensure_repo_root_on_path
+ensure_repo_root_on_path()
+session = ExperimentSession(trace_db=Path("build/notebooks/trace.db"))
+```
+
+### D.5 Cost in trace (Done)
+
+`AgentExecutionResult.cost` and `duration_seconds` are derived from LLM usage (`intergrax/contracts/runtime_cost.py`):
+
+- Mapping: `runtime_answer_to_agent_result()` reads `llm_usage_report` or `stats.extra.cost`
+- NexusLoop: aggregates multi-agent cost into task metadata (`execution_cost`) and `RunStats.llm_usage` on finalize
+- Debug API/CLI: `stats.cost` on run detail; CLI `tasks show` prints cost line
+
+Cost proxy: **1 cost unit = 1 LLM token** (laboratory default, matches EvalRunner).
+
+### F.1 Shadow workspace (Done)
+
+Isolated temporary filesystem for experiments (§20). Enable on a Nexus task:
+
+```python
+task = Task(
+    tenant_id="t1",
+    user_id="u1",
+    message="analyze vendor",
+    context=TaskContext(capability="research.web_search"),
+    metadata={"shadow_workspace": True},  # optional: "shadow_workspace_cleanup": True
+)
+```
+
+UAEP agents receive `ctx.metadata["shadow_workspace"]` in `run_step`. Result metadata includes `shadow_workspace_id`.
+
+Root directory: `INTERGRAX_SHADOW_ROOT` (default `build/shadow_workspaces/`).
+
+### F.2 Sandbox runtime (Done)
+
+Controlled session for risky tool use (§21). Enable on a Nexus task:
+
+```python
+task = Task(..., metadata={"sandbox": True})
+```
+
+Agents invoke allowlisted operations through the tool gateway:
+
+```python
+await ctx.invoke_tool(ToolRequest(
+    tool_name="sandbox.exec",
+    agent_id=ctx.agent_id,
+    input={"operation": "write_file", "payload": {"path": "out.txt", "content": "..."}},
+))
+```
+
+Operations: `echo`, `write_file`, `read_file`, `list_files`. Root: `INTERGRAX_SANDBOX_ROOT` (default `build/sandbox_sessions/`).
+
+### F.3 Advanced HITL (Done)
+
+Human responses beyond approve:
+
+```python
+# Re-submit paused task with verdict
+task = Task(..., task_id=original_task_id, metadata={"human_response": "reject"})
+# or "approve" / "escalate"
+```
+
+- **reject** → task `FAILED`, decision persisted
+- **escalate** → `INTERRUPT_ESCALATED` event, escalation chain in metadata, stays `WAITING_FOR_HUMAN`
+- Store: `INTERGRAX_HUMAN_DECISIONS_DB` (default `build/intergrax_human_decisions.db`)
+
+Optional on `NexusLoop`: `human_decision_store=SQLiteHumanDecisionStore(...)`.
+
+### F.4 Long-running tasks (Done)
+
+Enable durable pause/resume on Nexus tasks (§26):
+
+```python
+from intergrax.runtime.task import Task, TaskExecutionOptions, TaskLongRunningOptions
+
+task = Task(
+    tenant_id="t1",
+    user_id="u1",
+    message="monitor vendors for 30 days",
+    context=TaskContext(capability="hitl.basic"),
+    options=TaskExecutionOptions(
+        long_running=TaskLongRunningOptions(
+            enabled=True,
+            notify_channel="slack",  # or "teams" / "log"
+        ),
+    ),
+)
+```
+
+On pause (`WAITING_FOR_HUMAN`), NexusLoop persists a checkpoint with `resume_token` in result metadata.
+
+Resume with the same `task_id` and token:
+
+```python
+Task(
+    ...,
+    task_id=original_task_id,
+    options=TaskExecutionOptions(
+        long_running=TaskLongRunningOptions(enabled=True, resume_token=token),
+    ),
+    metadata={"human_approved": True, "resume_token": token},
+)
+```
+
+Optional on `NexusLoop`: `checkpoint_store=SQLiteTaskCheckpointStore(...)`, `notification_adapter=LoggingNotificationAdapter()`.
+
+Env:
+
+- `INTERGRAX_TASK_CHECKPOINTS_DB` (default `build/intergrax_task_checkpoints.db`)
+- `INTERGRAX_SLACK_WEBHOOK_URL` / `INTERGRAX_TEAMS_WEBHOOK_URL` (stub adapters; no network unless configured)
 
 ### D.1 Debug CLI (Done)
 
@@ -396,5 +599,5 @@ Reuse:
 
 
 
-*Plan synced with codebase after P4.3 governance (2026-05-27). Gate: 21 tests.*
+*Plan synced with codebase after P4.4 tool gateway (2026-05-27). Gate: 25 tests.*
 

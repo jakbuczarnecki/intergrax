@@ -19,6 +19,8 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, Run
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.interrupts.handler import GovernanceResolution
+from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
+from intergrax.runtime.sandbox.manager import SandboxSessionManager
 
 _DEFAULT_UAEP = UAEPExecutor()
 
@@ -39,6 +41,8 @@ class AgentEngine:
         middleware: Optional[MiddlewarePipeline] = None,
         uaep_executor: Optional[UAEPExecutor] = None,
         policy_engine: Optional[RuntimePolicyEngine] = None,
+        shadow_manager: Optional[ShadowWorkspaceManager] = None,
+        sandbox_manager: Optional[SandboxSessionManager] = None,
     ) -> None:
         if isinstance(agents, AgentRegistry):
             self._registry = agents
@@ -50,6 +54,8 @@ class AgentEngine:
             middleware=middleware,
             event_bus=event_bus,
             policy_engine=policy_engine,
+            shadow_manager=shadow_manager,
+            sandbox_manager=sandbox_manager,
         )
 
     @property
