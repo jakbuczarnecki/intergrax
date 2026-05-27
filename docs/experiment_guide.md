@@ -108,6 +108,27 @@ HTTP host:
 uv run uvicorn research_application.host.main:app --host 0.0.0.0 --port 8010
 ```
 
-## 6. Decision
+## 6. Inspect traces (CLI or API)
+
+After a run is finalized to SQLite trace store:
+
+**CLI:**
+
+```bash
+python -m intergrax.debug tasks list --tenant t1 --limit 20
+python -m intergrax.debug tasks trace RUN_ID --tenant t1 --format json --runtime
+```
+
+**HTTP (Phase D.2):**
+
+```bash
+uv run uvicorn intergrax.debug.app:create_debug_app --factory --port 8099
+curl "http://127.0.0.1:8099/debug/tasks?tenant=t1"
+curl "http://127.0.0.1:8099/debug/tasks/RUN_ID/trace?tenant=t1&include_runtime=true"
+```
+
+Set `INTERGRAX_TRACE_DB` or pass `--db` (CLI) / `db_path=` (router factory) to point at your trace database.
+
+## 7. Decision
 
 After observing traces, cost, and quality: **keep**, **improve**, **pause**, or **delete** the experiment (§35).

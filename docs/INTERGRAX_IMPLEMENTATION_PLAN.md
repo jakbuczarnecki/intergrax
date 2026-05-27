@@ -94,7 +94,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` (no `legal_agent` shim) |
 
-| §19 Debug surface | CLI / API | **Partial** | D.1 CLI ✅; D.2 API pending |
+| §19 Debug surface | CLI / API | **Partial** | D.1 CLI ✅; D.2 API ✅ |
 
 | §32 HITL | Approval flow | **Not started** | Phase F |
 
@@ -224,7 +224,7 @@ uv run pytest tests/ -m gate -q
 
 | D.1 | Debug CLI | **Done** | `python -m intergrax.debug tasks list\|show\|trace` |
 
-| D.2 | Minimal debug API | Pending | FastAPI endpoints on trace store |
+| D.2 | Minimal debug API | **Done** | FastAPI `GET /debug/tasks` on trace store |
 
 | D.3 | Experiment registry | Pending | hypothesis, keep/improve/pause/delete |
 
@@ -308,7 +308,7 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 ```text
 
-NOW:     Phase E (Legal thin) · D.2 debug API
+NOW:     Phase E (Legal thin) · D.3 experiment registry
 
 NEXT:    D.3 experiment registry
 
@@ -354,15 +354,43 @@ uv run pytest tests/ -m gate -q
 
 **P4.5 (Done):** Research, Summary, Legal agents migrated to UAEP via `uaep_pipeline.py` (Echo remains reference).
 
+**D.2 (Done):** FastAPI debug API — `GET /debug/tasks`, `GET /debug/tasks/{run_id}`, `GET /debug/tasks/{run_id}/trace`.
+
 **P4.4 (Done):** `RuntimeToolGateway` + `ToolRequest`/`ToolResponse`; Legal bridge no longer imports Nexus steps directly.
 
 **P4.3 (Done):** governance / HITL pause-resume in NexusLoop.
 
 
 
-**Then:** Phase E (thin Legal) or D.2 debug API.
+**Then:** D.3 experiment registry.
 
 
+
+### D.2 Debug API (Done)
+
+Standalone laboratory server:
+
+```bash
+uv run uvicorn intergrax.debug.app:create_debug_app --factory --host 127.0.0.1 --port 8099
+```
+
+Endpoints (mirror CLI):
+
+```text
+GET /debug/tasks?tenant=t1&limit=20
+GET /debug/tasks/{run_id}?tenant=t1
+GET /debug/tasks/{run_id}/trace?tenant=t1&include_runtime=true
+```
+
+Mount on an existing app:
+
+```python
+from intergrax.debug.router import create_debug_router
+
+app.include_router(create_debug_router(db_path=Path("build/intergrax_trace.db")))
+```
+
+Environment: `INTERGRAX_TRACE_DB` (same as CLI).
 
 ### D.1 Debug CLI (Done)
 
