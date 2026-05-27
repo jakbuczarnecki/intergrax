@@ -50,7 +50,7 @@ asyncio.run(main())
 ```bash
 uv run uvicorn legal_application.host.main:app --host 0.0.0.0 --port 8000
 # backward compatible:
-uv run uvicorn legal_agent.host.main:app --host 0.0.0.0 --port 8000
+uv run uvicorn legal_application.host.main:app --host 0.0.0.0 --port 8000
 ```
 
 Optional global loop for HTTP:

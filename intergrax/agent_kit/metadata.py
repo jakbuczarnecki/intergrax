@@ -18,7 +18,7 @@ class AgentProductMetadata(TypedDict, total=False):
     """Optional fields identifying a Tier-2 agent or Tier-3 application deployment."""
 
     product_id: str
-    """Stable product identifier (e.g. ``legal_agent``)."""
+    """Stable product identifier (e.g. ``legal``)."""
 
     display_name: str
     """Human-readable name for UI or logs."""

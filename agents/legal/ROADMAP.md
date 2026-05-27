@@ -9,8 +9,8 @@
 | Layer | Role |
 |-------|------|
 | Intergrax L1/L2 | RAG primitives, session stores, runtime, tracing, budget, governance—**no “shop” product logic**. |
-| Tier‑2 `legal_agent` | Pipeline, config, serving mapper, compliance—**this package** (domain + HTTP mapping). |
-| Tier‑3 **product host** | `legal_agent.host`: FastAPI entrypoint, env DI, mounts `fastapi_core` + `mount_legal_agent_routes`, deploy wiring. |
+| Tier‑2 `legal` | Pipeline, config, governance, runtime bridge — **`agents/legal/`** |
+| Tier‑3 **product host** | `legal_application.host`: FastAPI entrypoint, env DI, mounts `fastapi_core` + `mount_legal_agent_routes`, deploy wiring. |
 | Tier‑3 **agent factory** (Intergrax) | Contracts + templates: `AgentSpec`, registry, config factory, contract tests, mount helpers—**no Legal domain inside factory**. |
 
 **Rule:** the product backend **composes** the framework; it does not fork Nexus or duplicate the Legal pipeline as a second engine.
@@ -19,12 +19,12 @@
 
 | Roadmap ID | Deliverable | Repo location |
 |------------|-------------|---------------|
-| A1 | Product shell entrypoint, settings | `legal_agent/host/main.py`, `legal_agent/host/settings.py` |
-| A2 | `create_app` + Legal mount + wiring | `legal_agent/host/factory.py`, `legal_agent/host/wiring.py` |
+| A1 | Product shell entrypoint, settings | `applications/legal_application/host/main.py`, `settings.py` |
+| A2 | `create_app` + Legal mount + wiring | `applications/legal_application/host/factory.py`, `wiring.py` |
 | A3 | Prod identity (`context_only` + API keys) | `LegalBackendSettings`, `ApiKeyConfig` in `factory.py` |
 | A4 | Runbook | `README.md`, `HOST_README.md`, repo `.env.example` |
 
-**ASGI app:** `legal_agent.host.main:app` (example in roadmap: `legal_host.main:app`—same role, this module name).
+**ASGI app:** `legal_application.host.main:app`
 
 **Phase A MVP “done for front wire-up”** when an external client can call **`POST /v1/legal/chat`** with a token and stable JSON—upload/RAG async can follow in later phases.
 

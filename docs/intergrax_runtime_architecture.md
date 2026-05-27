@@ -705,11 +705,9 @@ applications/legal_application/
     legal_tests/            # host/serving integration tests
 ```
 
-During migration, `applications/legal_agent/` MAY remain as a **backward-compatible import shim** re-exporting `legal.*` and `legal_application.*`.
+During migration, `applications/legal_agent/` was removed. Use `agents/legal/` and `applications/legal_application/` directly.
 
-New code MUST use `agents/legal/` and `applications/legal_application/` directly.
-
-The shim MUST NOT receive new domain logic.
+New code MUST NOT import `legal_agent` as a package path.
 
 ### 7.4.6 Creating A New Capability
 
@@ -2277,7 +2275,7 @@ TASK_COMPLETED | TASK_FAILED
   "task_id": "task_legal_review_001",
   "run_id": "run_20260527_001",
   "node_id": "node_legal_review",
-  "agent_id": "legal_agent",
+  "agent_id": "legal",
   "step_id": "step_clause_analysis",
   "event_type": "STEP_COMPLETED",
   "phase": "STEP_EXECUTION",
@@ -2556,7 +2554,7 @@ return AgentDecision(
     },
     interrupt=ExecutionInterrupt(
         interrupt_type=POLICY_REVIEW_REQUIRED,
-        source_agent_id="legal_agent",
+        source_agent_id="legal",
         source_step_id="step_clause_analysis",
         recommended_action=REQUEST_HUMAN,
         blocking=True,

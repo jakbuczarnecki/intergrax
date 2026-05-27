@@ -16,8 +16,8 @@ Provides:
 Static org clamp (:func:`~legal.governance.legal_tool_plan_governance.enforce_legal_tool_plan_governance`)
 still runs first; this layer applies **additional** caps (AND with the plan).
 
-See also :mod:`legal_agent.governance.legal_execution_policy_sources` (tenant registry,
-request metadata, policy chains) and :mod:`legal_agent.governance.legal_agent_governance_wiring`.
+See also :mod:`legal.governance.legal_execution_policy_sources` (tenant registry,
+request metadata, policy chains) and :mod:`legal.governance.legal_agent_governance_wiring`.
 """
 
 from __future__ import annotations

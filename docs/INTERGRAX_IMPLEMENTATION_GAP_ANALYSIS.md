@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Architectural analysis (as of 2026-05-27, post §42) |
+| **Status** | Architectural analysis · **§14–§16 live** · repo split complete (2026-05-27) |
 | **Target (source of truth)** | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) — Tier model §5.1, **Unified Execution Runtime §42** |
 | **Scope** | Implementation vs. canonical spec |
 | **Author** | Intergrax architectural analysis |
@@ -30,7 +30,9 @@
 
 ---
 
-## 1. Executive Summary
+**Reading guide:** §1–§13 describe the **baseline audit** (pre–Phase A). **§14–§16** are the **live implementation status**. Repo layout: `agents/legal` + `applications/legal_application` (legacy `applications/legal_agent/` removed).
+
+---
 
 ### 1.1 Alignment with Target Architecture
 
@@ -48,13 +50,15 @@ Intergrax has evolved from *"Nexus MVP + Legal Agent"* to a **multi-agent-capabl
 | Application model (execution environments) | **Absent (~5%)** | `applications/` contains an agent, not an execution environment |
 | Harness / experimentation | **Medium (~40%)** | Notebooks, EvalRunner, replay; missing scaffold, registry, experiment flow |
 
-### 1.2 Top Architectural Issues
+### 1.2 Top Architectural Issues (baseline — all resolved; see §14)
 
-1. **Agents and applications are conflated** — `LegalAgent`, pipeline, steps, domain, host, serving, and SKU profiles all live in one package: `applications/legal_agent/`. The folder `intergrax/agents/` contains only the framework contract and `AgentEngine` — zero agent implementations.
+> **Resolved (2026-05-27):** Legal split, NexusLoop, registry, Echo/Research agents, shim removal.
 
-2. **Missing global Nexus loop and agent registry** — the codebase has no `AgentRegistry`, `AgentRouter`, `NexusLoop`, `Task`, `TaskLifecycle`, or `ExecutionGraph`. Agent registration is ad hoc in the host (`agents={...}`).
+1. ~~**Agents and applications conflated**~~ — was `applications/legal_agent/` monolith. **Now:** `agents/legal/` + `applications/legal_application/`.
 
-3. **Fat Agent in Legal Agent** — LLM routing, replanning, tool governance, and direct Tier-1 Nexus step calls (`RagStep`, `ToolsStep`) mix orchestration with domain logic in the product layer.
+2. ~~**Missing global Nexus loop and agent registry**~~ — **Now:** `NexusLoop`, `AgentRegistry`, `Task`, `TaskLifecycle`, `ExecutionGraph`.
+
+3. ~~**Fat Agent in Legal**~~ — **Partially addressed**; full thin-agent + UAEP pending (Phase E / P4.2).
 
 ### 1.3 Most Important Missing Runtime Concepts
 
@@ -72,25 +76,37 @@ Intergrax has evolved from *"Nexus MVP + Legal Agent"* to a **multi-agent-capabl
 
 - **Preserve:** entire Nexus stack, RAG, tools, tracing, Legal Agent as reference implementation
 - **Refactor:** folder structure, agent contract, registration, minimal global loop
-- **Regression risk:** moderate — Legal Agent has an extensive test suite in `applications/legal_agent/tests/`
+- **Regression risk:** Legal tests in `agents/legal/tests/` and `applications/legal_application/legal_tests/`; gate suite `pytest tests/ -m gate`
 - **Estimated P0 effort:** 2–4 weeks (contracts + registry + Legal split + minimal NexusLoop)
 
 ---
 
 ## 2. Current Architecture Overview
 
-### 2.1 Repository Structure
+### 2.1 Repository Structure (current)
 
 ```text
-intergrax/           # Framework package Tier-0/1 (~489 Python files)
-applications/        # Tier-2 — currently ONLY legal_agent/
-tests/               # Unit, integration, e2e
-docs/                # ARCHITECTURE.md, intergrax_runtime_architecture.md, agent_factory.md
-prompts/             # YAML prompt registry
-notebooks/           # Nexus and Legal Agent demos
-infra/               # Docker (ChromaDB, etc.)
-tools/               # Repo scripts
-bundles/             # EMPTY
+intergrax/              # Tier-0/1 framework
+agents/                 # Tier-2 capabilities (legal, echo, research, …)
+applications/           # Tier-3 execution environments
+  legal_application/    # Legal host + serving + legal_tests
+  research_application/
+tests/                  # Framework unit/integration tests
+docs/
+prompts/
+notebooks/
+infra/
+tools/
+```
+
+### 2.1.1 Baseline snapshot (pre-migration, for audit trail)
+
+```text
+intergrax/           # Framework package Tier-0/1
+applications/        # Was: legal_agent monolith only
+tests/
+docs/
+...
 ```
 
 The tier model is documented in [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) and encoded in [`intergrax/agent_kit/tiers.py`](intergrax/agent_kit/tiers.py):
@@ -226,33 +242,41 @@ class AgentEngine:
         return await runtime.run(request)
 ```
 
-The folder [`intergrax/agents/`](intergrax/agents/) contains **only** the contract and engine — no agent implementations.
+The folder [`intergrax/agents/`](intergrax/agents/) contains the **framework contract and engine**. Agent implementations live under repo-root [`agents/`](agents/) (e.g. `legal`, `echo`).
 
 #### Layer 3 — Products (Tier-2)
 
-**Single product:** [`applications/legal_agent/`](applications/legal_agent/) (~114 files).
+**Single product (baseline):** was `applications/legal_agent/` (~114 files). **Current:** `agents/legal/` + `applications/legal_application/`.
 
-Package structure (import path: `legal_agent`, not `applications.legal_agent`):
+<details>
+<summary>Historical package layout (removed)</summary>
+
+Package structure (import path was `legal_agent`):
 
 ```text
-applications/legal_agent/
-├── legal_agent.py          # LegalAgent(Agent)
-├── config/                 # LegalAgentConfig, product profiles (SKU)
-├── domain/                 # LegalAgentState, domain models
-├── steps/                  # LegalBaseStep → RuntimeStep
-├── pipeline/               # LegalDynamicPipeline, LegalAnalysisPipeline
-├── runtime/                # legal_tool_runtime_bridge, tool_decision
-├── governance/             # Execution policy ports
-├── memory/                 # legal_memory_policy
-├── prompts/                # Product-specific LLM prompts
-├── tracing/                # DiagnosticPayload v1 per step
-├── serving/                # FastAPI router + API mapping
-├── host/                   # main.py, factory.py, wiring.py
-├── tests/                  # Unit, integration, e2e
-└── use_cases/              # Fixtures (NDA docx)
+applications/legal_agent/   # REMOVED — use agents/legal + legal_application
+├── legal_agent.py
+├── domain/, steps/, pipeline/, …
+├── host/, serving/
+└── tests/
 ```
 
-**Tier-1 ↔ Tier-2 boundary:** `intergrax` **does not import** `legal_agent` (one-way dependency).
+</details>
+
+**Current canonical layout:**
+
+```text
+agents/legal/
+├── legal_agent.py          # LegalAgent(Agent) — module file name, import as `legal`
+├── domain/, pipeline/, steps/, …
+└── tests/
+
+applications/legal_application/
+├── host/, serving/
+└── legal_tests/
+```
+
+**Tier-1 ↔ Tier-2 boundary:** `intergrax` **does not import** `legal` (one-way dependency).
 
 ### 2.3 Current Orchestration Model
 
@@ -279,7 +303,7 @@ sequenceDiagram
     RE-->>Client: RuntimeAnswer + trace_events
 ```
 
-**Key observations:**
+**Key observations (baseline; NexusLoop added in Phase A — see §14):**
 
 1. **No global Nexus loop** — `AgentEngine` routes by `agent_id` from the request; no task classification or capability matching.
 2. **PlanLoopController** handles plan→execute→replan **inside the Nexus pipeline** (STATIC/DYNAMIC planner), not global multi-agent orchestration.
@@ -289,21 +313,47 @@ sequenceDiagram
    - [`ChatAgent`](intergrax/chat_agent.py) — legacy LLM router + RAG/tools, outside `Agent` contract
    - [`Supervisor`](intergrax/supervisor/supervisor.py) — LangGraph-style multi-component, not integrated with Nexus
 
-### 2.4 Current Agent Structure
+### 2.4 Agent Structure (current)
 
 | Location | Contents | Canon Alignment |
 |----------|----------|-----------------|
-| `intergrax/agents/` | `Agent` contract, `AgentEngine` | Framework only — OK |
-| `applications/legal_agent/` | Agent + pipeline + steps + host + serving | **MISALIGNED** — agent in applications |
-| `intergrax/chat_agent.py` | Legacy chat agent | **MISALIGNED** — outside contract |
-| `intergrax/tools/tools_agent.py` | Tool agent inside `ToolsStep` | OK as sub-component |
-| `intergrax/supervisor/` | Separate supervisor | **MISALIGNED** — dead/alternate path |
+| `intergrax/agents/` | `Agent` contract, `AgentEngine` | Framework — OK |
+| `agents/legal/` | Legal capability (`import legal`) | **ALIGNED** |
+| `agents/echo/`, `agents/research/` | Reference / multi-agent capabilities | **ALIGNED** |
+| `applications/legal_application/` | Host + serving only | **ALIGNED** |
+| `intergrax/chat_agent.py` | Legacy chat agent | Deprecated |
+| `intergrax/supervisor/` | Separate supervisor | Deprecated / alternate path |
 
-There is no `/agents/` folder at the repository root.
+Repo-root [`agents/`](agents/) holds Tier-2 implementations. Legacy `applications/legal_agent/` **removed**.
 
-### 2.5 Current Application Structure
+### 2.4.1 Baseline (pre-split)
 
-The `applications/` folder **does not implement the "execution environment" concept**. Instead, it contains a product monolith:
+| Location | Contents | Canon Alignment |
+|----------|----------|-----------------|
+| `applications/legal_agent/` | Agent + pipeline + host + serving monolith | **MISALIGNED** (removed) |
+
+There was no `/agents/` folder at the repository root.
+
+### 2.5 Application Structure (current)
+
+`applications/` implements **execution environments**:
+
+- `legal_application/` — FastAPI host, serving, `legal_tests/`
+- `research_application/` — research host scaffold
+
+Factory wiring (canonical):
+
+```python
+# applications/legal_application/host/factory.py
+agent = build_legal_agent(settings)
+mount_legal_agent_routes(app, agents={...}, ...)
+```
+
+NexusLoop integration in host is **partial** — Legal still uses direct `AgentEngine` path in places; global loop available for Echo/Research.
+
+### 2.5.1 Baseline (pre-split)
+
+The `applications/` folder did not implement the execution-environment concept — it contained a product monolith:
 
 ```22:70:applications/legal_agent/host/factory.py
 def create_legal_backend_app(*, settings: Optional[LegalBackendSettings] = None) -> FastAPI:
@@ -588,21 +638,17 @@ Minimal runtime flow (§41):
 | `docs/agent_factory.md` | Pipeline-first, experimentation | No capability registry, no experiment lifecycle |
 | `AgentState` marker | `state.agent_state: AgentState` opaque to Nexus | No standard output schema per agent |
 
-### 4.3 MISALIGNED — Non-compliant with Canon
+### 4.3 MISALIGNED — Non-compliant with Canon (baseline; many resolved in §14)
 
-| Problem | Evidence | Violated Rule |
-|---------|----------|---------------|
-| Agent in `applications/` | `applications/legal_agent/legal_agent.py` | Agents belong in `/agents`, not `/applications` |
-| No `/agents/` root | Grep: folder missing | §7.3, §40 |
-| No AgentRegistry | Ad hoc registration: `agents={...}` in factory | §15, §39.2 |
-| No global Nexus Loop | No `NexusLoop`, `Task`, `TaskClassifier` | §9.1, §41 |
-| Fat Agent (Legal) | Routing/replan in `legal_execution_loop.py` | §42.1 |
-| Agent bypasses Nexus steps | `run_legal_tool_runtime_bridge()` → direct `RagStep()` | §11, §39.1 |
-| Legacy ChatAgent | `intergrax/chat_agent.py` — separate LLM router | §39.4 |
-| Supervisor not integrated | `intergrax/supervisor/` — separate stack | §9.3 |
-| RuntimeEngine = chat engine | Docstring: "ChatGPT/Claude-style engine" | §7.2 (task orchestrator) |
-| No Task/ExecutionGraph | Grep: zero matches | §23–24 |
-| No ShadowWorkspace/Sandbox | Grep: zero matches | §20–21 |
+| Problem | Evidence | Status |
+|---------|----------|--------|
+| Agent in `applications/` | was `applications/legal_agent/` | **Resolved** → `agents/legal/` |
+| No `/agents/` root | was missing | **Resolved** |
+| No AgentRegistry | was ad hoc `agents={...}` | **Resolved** |
+| No global Nexus Loop | was missing | **Resolved** — `NexusLoop` |
+| No Task/ExecutionGraph | was missing | **Resolved** |
+| Fat Agent (Legal) | routing in `legal_execution_loop.py` | **Partial** — Phase E / P4.2 |
+| Legacy ChatAgent / Supervisor | separate stacks | Deprecated |
 | No capability routing | No `can_handle()`, `CapabilityMatchResult` | §16 |
 | No structured agent output | `RuntimeAnswer` is string + metadata, not `AgentExecutionResult` | §14, §39.5 |
 
@@ -659,31 +705,31 @@ Minimal runtime flow (§41):
 
 **Why it matters:** "Nexus MUST use the registry for agent selection. Agents MUST NOT be hardcoded into Nexus logic" (§15).
 
-**Current state:** `AgentEngine(agents={"legal": LegalAgent(...)})` in [`applications/legal_agent/host/factory.py`](applications/legal_agent/host/factory.py).
+**Current state (baseline):** was ad hoc in host factory. **Now:** `AgentRegistry` + `applications/legal_application/host/factory.py`.
 
 **Role:** Central agent registry with capabilities, status, cost/risk profile. Enables dynamic selection and agent replacement.
 
-#### Global Nexus Loop (§9.1) — MISSING
+#### Global Nexus Loop (§9.1) — **Done** (was MISSING)
 
 **Why it matters:** Mandatory global loop — without it, Intergrax is a single-agent chat runtime, not an AI OS.
 
-**Current state:** `RuntimeEngine.run()` executes one pipeline for one agent. Missing: classify → plan → select → execute → validate → finalize at task level.
+**Current state:** `NexusLoop.handle_task()` — classify → plan → graph → validate. Legal host may still use direct `AgentEngine` path.
 
 **Role:** Multi-agent orchestration, retry strategy, HITL coordination, final response composition.
 
-#### ExecutionGraph (§24) — MISSING
+#### ExecutionGraph (§24) — **Done** (was MISSING)
 
 **Why it matters:** Complex tasks require a node graph with dependencies, parallel branches, and status tracking.
 
-**Current state:** None. Legal Agent has sequential LLM routing, but no execution graph.
+**Current state:** `ExecutionGraph`, `GraphExecutor` in `intergrax/runtime/nexus/execution/`.
 
 **Role:** Execution plan representation with nodes, assigned agents, validation results, retry counts.
 
-#### TaskLifecycle (§23) — MISSING
+#### TaskLifecycle (§23) — **Done** (was MISSING)
 
 **Why it matters:** Explicit states: created → classified → planned → running → validating → completed (+ failure states). Every transition MUST be logged.
 
-**Current state:** `RuntimeEngine` has run-level lifecycle (start → pipeline → finalize). FastAPI `RunStateMachine` has a separate lifecycle (PENDING → RUNNING → COMPLETED).
+**Current state:** `TaskLifecycle` + `TaskTraceEmitter` in `intergrax/runtime/task/`.
 
 **Role:** Unified task state machine covering the full flow from intake to final response.
 
@@ -856,11 +902,11 @@ class RuntimeEngine:
 
 **Violated rule:** §23 — explicit task lifecycle with logged transitions.
 
-### 6.9 Missing `/agents/` — Agents Treated as Applications
+### 6.9 Missing `/agents/` — **Resolved**
 
-**Violation:** Architectural intent — agents as reusable capability modules in `/agents`; applications as execution environments in `/applications`.
+**Was:** Agents treated as applications in `applications/legal_agent/`.
 
-**Current state:** The only agent (`LegalAgent`) lives in `applications/legal_agent/` together with host, serving, and SKU config.
+**Now:** `agents/legal/` + `applications/legal_application/` (host/serving only).
 
 ---
 
@@ -1073,17 +1119,16 @@ flowchart LR
 
 **Validation:** Registry lookup test; Legal host uses registry instead of dict.
 
-### Phase 3: Split Legal — Agent vs Application
+### Phase 3: Split Legal — Agent vs Application — **Done**
 
 **Goal:** Separate capability code from execution environment.
 
-**Steps:**
+**Steps (completed):**
 
-1. Create `agents/legal/` — move: legal_agent.py, domain/, steps/, pipeline/, prompts/, governance/, memory/, runtime/, tracing/
-2. Rename `applications/legal_agent/` → `applications/legal_application/`
-3. In application keep only: host/, serving/, config/ (env settings only)
-4. Update import paths (`legal_agent` → `agents.legal` or keep alias)
-5. Update test paths
+1. `agents/legal/` — capability module (`import legal`)
+2. `applications/legal_application/` — host + serving only
+3. Legacy `applications/legal_agent/` shim **removed** (2026-05-27)
+4. Import paths: `legal`, `legal_application` (not `legal_agent` package)
 
 **Risk:** **Medium** — breaking import paths, ~50+ test files to update.
 
@@ -1298,11 +1343,11 @@ notebooks/
 
 **Mitigation:** Every TaskLifecycle transition MUST emit TraceEvent (§23). Test: trace inspectable end-to-end.
 
-### 12.6 Hidden Coupling
+### 12.6 Hidden Coupling — **Resolved**
 
-**Risk:** Import path `legal_agent` → `agents.legal` breaks tests, notebooks, host.
+**Was:** Import path `legal_agent` → `agents.legal` breaks tests, notebooks, host.
 
-**Mitigation:** Compatibility shim (`legal_agent` re-exports from `agents.legal`) for 1–2 migration phases.
+**Resolution:** Shim removed; canonical imports `legal` + `legal_application`. No `import legal_agent`.
 
 ### 12.7 Runtime Instability
 
@@ -1386,7 +1431,7 @@ The current model (`AgentEngine(agents={"legal": ...})`) is hardcoded wiring —
 - Trace store (EXISTS) — observability already present; needs task-level trace
 - EvalRunner (EXISTS) — evaluation already present; needs AgentExecutionResult integration
 
-**Success metric:** Time from idea to first running experiment < 1 hour (currently: ~days via copying legal_agent).
+**Success metric:** Time from idea to first running experiment < 1 hour — **partially met** via EchoAgent + scaffold; Legal remains heavier reference.
 
 ---
 
@@ -1396,13 +1441,13 @@ The current model (`AgentEngine(agents={"legal": ...})`) is hardcoded wiring —
 
 ## 14. Implementation Status (Phases A–C)
 
-Progress against the migration plan in §9–§10 and phases A–C. **Evolve, not rewrite** — backward-compatible `legal_agent` shim retained.
+Progress against the migration plan in §9–§10 and phases A–C. **Evolve, not rewrite** — repo split complete (`agents/legal` + `applications/legal_application`; legacy `applications/legal_agent` removed).
 
 | Priority | Item | Status |
 |----------|------|--------|
 | P0 | AgentContract, ValidationResult, CapabilityMatchResult | **Done** — `intergrax/contracts/` |
 | P0 | AgentRegistry + bootstrap | **Done** — `intergrax/runtime/registry/` |
-| P0 | Split Legal → `agents/legal/` + `applications/legal_application/` | **Done** — shim in `applications/legal_agent/` |
+| P0 | Split Legal → `agents/legal/` + `applications/legal_application/` | **Done** — shim removed; docs synced |
 | P0 | Minimal NexusLoop | **Done** — `intergrax/runtime/nexus/nexus_loop.py` |
 | P0 | EchoAgent | **Done** — `agents/echo/` |
 | P1 | Task + TaskLifecycle | **Done** — `intergrax/runtime/task/` |

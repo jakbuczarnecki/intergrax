@@ -11,7 +11,7 @@ from pathlib import Path
 def pytest_configure(config) -> None:
     """Put product and agent roots on ``sys.path`` for Tier-2 imports.
 
-    - ``applications/`` — execution environments (``legal_application``, ``legal_agent`` shim)
+    - ``applications/`` — execution environments (``legal_application``, ``research_application``)
     - ``agents/`` — reusable capability modules (``legal``, ``echo``)
     """
     root = Path(__file__).resolve().parent
@@ -24,5 +24,3 @@ def pytest_configure(config) -> None:
         path = str(path_root.resolve())
         if path not in sys.path:
             sys.path.insert(0, path)
-
-    # ``legal_agent`` shim loads lazily via PEP 562 when imported.

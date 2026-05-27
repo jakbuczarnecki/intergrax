@@ -1,32 +1,31 @@
-# Legal product (`legal_agent`)
+# Legal capability (`legal`)
 
-Self-contained **Tier-2** Legal domain (pipeline, serving, compliance) plus a **Tier-3** deployable host in `legal_agent.host`—FastAPI entrypoint that mounts `intergrax.fastapi_core` (`/health`, `/runs`, …) and **Legal** HTTP routes (`mount_legal_agent_routes`). **`intergrax` does not import this tree.**
+Self-contained **Tier-2** Legal domain: pipeline, steps, config, governance, runtime bridge. **Tier-3** deployable host lives in [`applications/legal_application/`](../../applications/legal_application/) (`legal_application.host`).
+
+**`intergrax` does not import this tree.**
 
 | Layer | Location |
 |-------|----------|
-| Tier‑3 product host | [`host/`](host/README.md) — `main.py`, `factory.py`, `settings.py`, `wiring.py` |
-| Tier‑2 domain & API | `serving/`, `pipeline/`, `config/`, … |
+| Tier‑2 capability | `agents/legal/` — `legal_agent.py`, `pipeline/`, `steps/`, `config/`, … |
+| Tier‑3 application | `applications/legal_application/` — `host/`, `serving/`, `legal_tests/` |
 
-- **Strategy / phases:** [ROADMAP.md](ROADMAP.md)  
-- **Implementation checklist (ordered steps, components, SaaS):** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)  
+- **Strategy / phases:** [ROADMAP.md](ROADMAP.md)
+- **Implementation checklist:** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)
+- **Host runbook:** [HOST_README.md](HOST_README.md)
 
-The former `intergrax.apps.legal_backend` layout lives here as `legal_agent.host`.
+## Local run (Tier-3 host)
 
-## Local run
-
-From the **Intergrax repository root** (with `.env` loaded as needed). The importable package is `legal_agent` under `applications/legal_agent/`, so **`applications`** must be on `PYTHONPATH`:
+From the **Intergrax repository root** (repo `conftest.py` adds `applications/` and `agents/` to `PYTHONPATH` for pytest; for manual runs use `uv` from root):
 
 ```bash
 uv sync
-export PYTHONPATH=applications   # Linux / macOS; PowerShell: $env:PYTHONPATH="applications"
-uv run python -m legal_agent.host.main
+uv run python -m legal_application.host.main
 ```
 
 Alternatively:
 
 ```bash
-export PYTHONPATH=applications
-uv run uvicorn legal_agent.host.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn legal_application.host.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 In **dev**, OpenAPI docs: `http://127.0.0.1:8000/docs`. In **prod** (`LEGAL_BACKEND_ENV=prod`), `/docs` is off by default—enable with `LEGAL_BACKEND_OPENAPI=true` (e.g. internal network only).

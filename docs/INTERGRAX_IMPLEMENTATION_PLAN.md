@@ -90,7 +90,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §42 Execution runtime | UAEP, hooks, governance | **Partial** | Scaffold + P4.1; **P4.2 next** |
 
-| §7.4 Repo split | agents / applications | **Done** | `agents/`, `applications/` |
+| §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` (no `legal_agent` shim) |
 
 | §19 Debug surface | CLI / API | **Partial** | D.1 CLI ✅; D.2 API pending |
 
@@ -128,7 +128,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | A.5 | Full regression suite (Legal E2E, all steps) | **Deferred** |
 
-| A.6 | Shim cleanup | **Done** |
+| A.6 | Shim cleanup | **Done** | Removed `applications/legal_agent/`; docs + duplicate `legal_application/tests/` cleaned |
 
 
 

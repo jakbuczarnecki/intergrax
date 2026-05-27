@@ -9,7 +9,7 @@ Wired from :class:`~legal.steps.legal_finalize_answer_step.LegalFinalizeAnswerSt
 after the finalize LLM returns and **before** :class:`~intergrax.runtime.nexus.responses.response_schema.RuntimeAnswer`
 is stored. Tier-1 Nexus is unchanged.
 
-Ready-made implementations: :mod:`legal_agent.governance.legal_response_governance_impl`.
+Ready-made implementations: :mod:`legal.governance.legal_response_governance_impl`.
 """
 
 from __future__ import annotations

@@ -34,10 +34,6 @@ def create_legal_backend_app(*, settings: Optional[LegalBackendSettings] = None)
     Uvicorn::
 
         uvicorn legal_application.host.main:app --host 0.0.0.0 --port 8000
-
-    Backward-compatible entry (shim)::
-
-        uvicorn legal_agent.host.main:app --host 0.0.0.0 --port 8000
     """
     settings = settings or LegalBackendSettings.from_env()
 

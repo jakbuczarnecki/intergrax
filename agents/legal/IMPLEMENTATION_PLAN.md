@@ -12,9 +12,9 @@ Goal: external client runs **`POST /v1/legal/chat`** with stable JSON + OpenAPI 
 
 | Step | Task | Notes / integration |
 |------|------|---------------------|
-| A.1 | `[x]` Tier-3 host package | `legal_agent.host` — `main.py`, `factory.py`, `settings.py`, `wiring.py` |
+| A.1 | `[x]` Tier-3 host package | `legal_application.host` — `main.py`, `factory.py`, `settings.py`, `wiring.py` |
 | A.2 | `[ ]` **Phase A DoD checklist** | Document + script: curl/Postman from repo root with `PYTHONPATH=applications`, prod env + API key |
-| A.3 | `[ ]` **Dockerfile** for API | Single image: `uvicorn legal_agent.host.main:app`, env-only config |
+| A.3 | `[ ]` **Dockerfile** for API | Single image: `uvicorn legal_application.host.main:app`, env-only config |
 | A.4 | `[ ]` **docker-compose (optional)** | API + placeholder `postgres` / `redis` stubs for local dev (even if not wired yet) |
 | A.5 | `[ ]` **Auth decision recorded** | MVP: API key only **or** add **JWT** (`JwtAuthProvider` + verifier) → `RequestContext`; update `.env.example` |
 | A.6 | `[ ]` **CORS / allowed_hosts** prod defaults | Align with first real front origin |
@@ -111,7 +111,7 @@ Do **after** Legal host proves B + C (sync) so patterns are real.
 | FF.3 | `[ ]` Template package + cookiecutter/make target |
 | FF.4 | `[ ]` Contract tests: tenant isolation, compliance surface, session round-trip |
 
-**Rule:** `intergrax` factory code **must not** import `legal_agent`.
+**Rule:** `intergrax` factory code **must not** import `legal` or `legal_application`.
 
 ---
 
