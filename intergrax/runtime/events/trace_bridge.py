@@ -104,7 +104,10 @@ def trace_event_to_runtime_event(
     event_type = RuntimeEventType.STEP_STARTED
     phase = ExecutionPhase.STEP_EXECUTION
 
-    if trace.step == "task_lifecycle" and task_state_str:
+    if trace.message.startswith("retry attempt"):
+        event_type = RuntimeEventType.RETRY_STARTED
+        phase = ExecutionPhase.RETRY_HANDLING
+    elif trace.step == "task_lifecycle" and task_state_str:
         try:
             state = TaskState(task_state_str)
             event_type = _TASK_STATE_TO_EVENT.get(state, RuntimeEventType.STEP_STARTED)
@@ -117,9 +120,6 @@ def trace_event_to_runtime_event(
     elif trace.message.startswith("graph node complete:"):
         event_type = RuntimeEventType.STEP_COMPLETED
         phase = ExecutionPhase.STEP_EXECUTION
-    elif trace.message.startswith("retry attempt"):
-        event_type = RuntimeEventType.RETRY_STARTED
-        phase = ExecutionPhase.RETRY_HANDLING
 
     payload: Dict[str, Any] = {
         "trace_event_id": trace.event_id,

@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional
 from intergrax.runtime.nexus.tracing.persistence_models import (
     RunError,
     RunStats,
+    RunSummary,
     RunTraceWriter,
     RunTraceReader,
     PersistedRun,
@@ -206,5 +207,45 @@ class SQLiteRunTraceStore(RunTraceWriter, RunTraceReader):
             ]
 
         return PersistedRun(metadata=metadata, events=events)
+
+    def list_runs(self, tenant_id: str, *, limit: int = 50) -> List[RunSummary]:
+        with self._get_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                    r.run_id,
+                    r.tenant_id,
+                    r.user_id,
+                    r.session_id,
+                    r.started_at_utc,
+                    r.stats_json,
+                    (
+                        SELECT COUNT(*)
+                        FROM run_events e
+                        WHERE e.run_id = r.run_id
+                    ) AS event_count
+                FROM runs r
+                WHERE r.tenant_id = ?
+                ORDER BY r.started_at_utc DESC
+                LIMIT ?
+                """,
+                (tenant_id, limit),
+            ).fetchall()
+
+        summaries: List[RunSummary] = []
+        for row in rows:
+            stats_dict = json.loads(row[5])
+            summaries.append(
+                RunSummary(
+                    run_id=row[0],
+                    tenant_id=row[1],
+                    user_id=row[2],
+                    session_id=row[3],
+                    started_at_utc=row[4],
+                    duration_ms=int(stats_dict.get("duration_ms", 0)),
+                    event_count=int(row[6]),
+                )
+            )
+        return summaries
 
 

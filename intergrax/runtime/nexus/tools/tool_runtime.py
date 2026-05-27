@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Protocol, Sequence, runtime_checkable
+from typing import TYPE_CHECKING, Optional, Protocol, Sequence, runtime_checkable
 
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+if TYPE_CHECKING:
+    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,7 +52,7 @@ class ToolRuntime:
     @staticmethod
     async def invoke(
         *,
-        state: RuntimeState,
+        state: "RuntimeState",
         plan: ToolInvocationPlan,
         trace_step: str = "ToolRuntime",
         allowed_tools: Optional[Sequence[str]] = None,

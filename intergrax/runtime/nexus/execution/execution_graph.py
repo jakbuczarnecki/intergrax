@@ -6,6 +6,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+from pydantic import BaseModel, Field
+
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 
 

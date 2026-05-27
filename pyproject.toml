@@ -134,6 +134,7 @@ markers = [
   "network: Tests requiring real external services (LLM APIs, websearch, tools). Not for PR CI.",
   "e2e: End-to-end flows (very few; production-like).",
   "asyncio: Async tests using pytest-asyncio.",
+  "gate: Minimal pre-P4.2 regression gate (deterministic, no network).",
 ]
 
 filterwarnings = [

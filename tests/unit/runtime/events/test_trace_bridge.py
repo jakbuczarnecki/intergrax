@@ -1,5 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
+import pytest
+
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.trace_bridge import (
     runtime_event_from_task_state,
@@ -9,6 +11,8 @@ from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEv
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 
 
+@pytest.mark.unit
+@pytest.mark.gate
 def test_runtime_event_from_task_state_completed():
     task = Task(
         tenant_id="t1",
@@ -23,6 +27,8 @@ def test_runtime_event_from_task_state_completed():
     assert event.run_id == "run_1"
 
 
+@pytest.mark.unit
+@pytest.mark.gate
 def test_trace_event_to_runtime_event_lifecycle():
     task = Task(
         tenant_id="t1",
@@ -52,6 +58,8 @@ def test_trace_event_to_runtime_event_lifecycle():
     assert event.payload["trace_event_id"] == "trace-1"
 
 
+@pytest.mark.unit
+@pytest.mark.gate
 def test_trace_event_to_runtime_event_retry():
     task = Task(tenant_id="t1", user_id="u1", message="hi")
     trace = TraceEvent(

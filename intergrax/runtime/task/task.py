@@ -4,13 +4,12 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import Any, Dict, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-if TYPE_CHECKING:
-    from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.agent_execution_result import AgentExecutionResult
 
 
 class TaskState(str, Enum):
@@ -72,5 +71,5 @@ class TaskResult(BaseModel):
     state: TaskState
     answer: str = ""
     agent_id: Optional[str] = None
-    execution_result: Optional["AgentExecutionResult"] = None
+    execution_result: Optional[AgentExecutionResult] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)

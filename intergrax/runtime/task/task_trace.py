@@ -143,8 +143,6 @@ def lifecycle_with_trace(
     on_transition: Optional[Callable[[Task], None]] = None,
 ) -> tuple[TaskLifecycle, TaskTraceEmitter]:
     """Build TaskLifecycle wired to a TaskTraceEmitter."""
-    from intergrax.runtime.task.task_lifecycle import TaskLifecycle
-
     emitter = TaskTraceEmitter(run_id=run_id, event_bus=event_bus)
 
     def _combined(task: Task) -> None:

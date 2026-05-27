@@ -57,6 +57,8 @@ class FakeAgent(Agent):
 # TEST
 # ----------------------------------------
 @pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.gate
 async def test_agent_engine_runs_pipeline():
     agent = FakeAgent()
     engine = AgentEngine({"test": agent})

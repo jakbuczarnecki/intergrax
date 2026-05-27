@@ -3,9 +3,13 @@
 
 from __future__ import annotations
 
+from typing import Optional, Sequence
+
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.memory.conversational_memory import ChatMessage
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -18,15 +22,33 @@ from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySe
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 
 
-class _EchoLLMAdapter:
-    """Minimal stub LLM for harness runs without external providers."""
+class _EchoLLMAdapter(LLMAdapter):
+    """Minimal LLM adapter for harness runs without external providers."""
 
-    def generate(self, messages, **kwargs) -> str:
-        for msg in reversed(messages):
-            content = getattr(msg, "content", None) or ""
-            if content:
-                return f"echo: {content}"
-        return "echo: (empty)"
+    provider = "echo"
+    model = "echo-stub"
+
+    @property
+    def context_window_tokens(self) -> int:
+        return 128_000
+
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
+    ) -> str:
+        call = self.usage.begin_call(run_id=run_id)
+        try:
+            for msg in reversed(messages):
+                content = getattr(msg, "content", None) or ""
+                if content:
+                    return f"echo: {content}"
+            return "echo: (empty)"
+        finally:
+            self.usage.end_call(call, input_tokens=0, output_tokens=1, success=True)
 
 
 class EchoPipeline(RuntimePipeline):
@@ -72,7 +94,7 @@ class EchoAgent(Agent):
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         config = RuntimeConfig(
-            llm_adapter=_EchoLLMAdapter(),  # type: ignore[arg-type]
+            llm_adapter=_EchoLLMAdapter(),
             enable_rag=False,
             production_mode=False,
             tenant_id=request.tenant_id,

@@ -90,6 +90,19 @@ class PersistedRun:
     events: List[Dict[str, Any]]  # Serialized TraceEvent dicts
 
 
+@dataclass(frozen=True)
+class RunSummary:
+    """Lightweight run row for debug CLI list (Phase D.1)."""
+
+    run_id: str
+    tenant_id: str
+    user_id: str
+    session_id: str
+    started_at_utc: str
+    duration_ms: int
+    event_count: int
+
+
 class RunTraceWriter(ABC):
 
     @abstractmethod
@@ -112,3 +125,7 @@ class RunTraceReader(ABC):
         Implementations MUST enforce filtering by both run_id and tenant_id.
         """
         ...
+
+    def list_runs(self, tenant_id: str, *, limit: int = 50) -> List[RunSummary]:
+        """List recent finalized runs for a tenant (newest first)."""
+        raise NotImplementedError(f"{type(self).__name__} does not support list_runs")
