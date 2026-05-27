@@ -69,6 +69,8 @@ result = await loop.handle_task(task)
 
 Inspect pause events: `HUMAN_APPROVAL_REQUESTED` / `HUMAN_APPROVAL_RECEIVED` on `loop.event_bus.history`.
 
+**Tool access (§42.12):** agents invoke capabilities via `ctx.invoke_tool(ToolRequest(...))` under UAEP, or through the Legal bridge which uses `RuntimeToolGateway` internally — never import Nexus runtime steps from agent code.
+
 ## 4. Run Legal Agent via application host
 
 ```bash

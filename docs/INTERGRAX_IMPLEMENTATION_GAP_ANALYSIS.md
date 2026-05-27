@@ -1506,7 +1506,7 @@ Mapping of [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.
 | 42.9 | Pause / Resume Model | 🟡 | **Wired:** `runtime/human/pause.py`, `PauseRecord`; resume via `human_approved` metadata |
 | 42.10 | Human In The Loop Flow | 🟡 | **Wired:** NexusLoop → `WAITING_FOR_HUMAN`; `HUMAN_APPROVAL_*` events; no Slack/Teams adapter yet |
 | 42.11 | Policy Engine (runtime governance) | 🟡 | **Wired:** `RuntimePolicyEngine` in UAEP decision path + NexusLoop; not unified with replay eval facade |
-| 42.12 | ToolRuntime Enforcement | ✅ | `ToolRuntime` + `ToolAccessPolicy` — basic enforcement. Missing `ToolRequest`/`ToolResponse` at gateway boundary |
+| 42.12 | ToolRuntime Enforcement | 🟢 | `RuntimeToolGateway`, `ToolRuntime.invoke_request`; Legal bridge uses `ToolRequest` only |
 | 42.13 | Shared Execution Contracts | 🟡 | **Scaffold:** `RuntimeExecutionContext`, contracts package. AgentEngine does not yet build full context |
 | 42.14 | Cross-Agent Communication | 🟡 | `ContextManager`, graph results merge — informal; no `SharedTaskContext` contract type |
 | 42.15 | Agent Handoff Contracts | 🔴 | Not implemented |
@@ -1556,7 +1556,7 @@ Mapping of [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.
 1. **Dual `AgentDecision` types** — canonical (`contracts/agent_decision.py`) vs tools agent internal (`tools/tools_agent.py`). Converge or rename tools variant.
 2. **Dual observability paths** — `TraceEvent` pipeline vs target `RuntimeEvent` stream. Need adapter or migration layer.
 3. **AgentEngine bypasses UAEP** — agents run monolithic `RuntimeEngine.run()` instead of runtime-controlled step loop.
-4. **Legal tool bridge** — still orchestrates Nexus step invocation from agent layer (§42.41 violation risk).
+4. ~~**Legal tool bridge**~~ — **Resolved (P4.4):** bridge uses `RuntimeToolGateway` / `ToolRequest`; Nexus steps only inside Tier-1 gateway.
 5. **PolicyEngine split** — three engines: replay eval, Nexus validation, new runtime policy — need unified facade.
 
 ### 15.3 New Scaffold Modules (2026-05-27)
@@ -1624,12 +1624,13 @@ Recommended convergence order — **wire scaffold into existing Nexus/AgentEngin
 | 9 | Implement `ExecutionInterrupt` handler | `runtime/interrupts/handler.py` | **Done** |
 | 10 | Pause/resume + `HumanRequest` flow | `runtime/human/pause.py` | **Done** |
 
-### P4.4 — Tool gateway unification
+### P4.4 — Tool gateway unification — **Done**
 
-| Step | Action | Target files |
-|------|--------|--------------|
-| 11 | Wrap `ToolRuntime.invoke` with `ToolRequest`/`ToolResponse` | `tool_runtime.py` |
-| 12 | Refactor Legal tool bridge to use `ctx.tool_gateway` only | `agents/legal/runtime/` |
+| Step | Action | Target files | Status |
+|------|--------|--------------|--------|
+| 11 | Wrap `ToolRuntime.invoke` with `ToolRequest`/`ToolResponse` | `tool_gateway.py`, `tool_runtime.py` | **Done** |
+| 12 | Refactor Legal tool bridge to use gateway only | `agents/legal/runtime/legal_tool_runtime_bridge.py` | **Done** |
+| — | UAEP `BoundToolGateway` on `RuntimeExecutionContext` | `uaep_tool_gateway.py`, `uaep.py` | **Done** |
 
 ### P4.5 — Agent migration
 

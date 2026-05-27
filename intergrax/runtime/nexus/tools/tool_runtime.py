@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional, Protocol, Sequence, runtime_checkable
 
 if TYPE_CHECKING:
+    from intergrax.contracts.tool_request import ToolRequest, ToolResponse
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
 
@@ -106,3 +107,19 @@ class ToolRuntime:
             used_tools=state.used_tools,
             tool_trace_count=len(state.tool_traces or []),
         )
+
+    @staticmethod
+    async def invoke_request(
+        *,
+        state: "RuntimeState",
+        request: ToolRequest,
+        allowed_tools: Optional[Sequence[str]] = None,
+        trace_step: str = "ToolRuntime",
+    ) -> ToolResponse:
+        """§42.12 gateway entry — prefer over direct ``invoke`` from agent code."""
+        gateway = RuntimeToolGateway.for_state(
+            state,
+            allowed_tools=allowed_tools,
+            trace_step=trace_step,
+        )
+        return await gateway.invoke(request)

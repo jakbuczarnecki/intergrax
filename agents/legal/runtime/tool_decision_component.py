@@ -5,9 +5,8 @@
 """
 Tier-2 component: chooses RAG / websearch / tools intent before legal stages.
 
-Execution is delegated to Nexus :class:`~intergrax.runtime.nexus.runtime_steps.rag_step.RagStep`,
-:class:`~intergrax.runtime.nexus.runtime_steps.websearch_step.WebsearchStep`, and
-:class:`~intergrax.runtime.nexus.runtime_steps.tools_step.ToolsStep` (no new invoker).
+Execution is delegated to Tier-1 :class:`~intergrax.runtime.nexus.tools.tool_gateway.RuntimeToolGateway`
+via the legal tool bridge (§42.12) — not direct Nexus step imports.
 """
 
 from __future__ import annotations

@@ -22,6 +22,7 @@ from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler, GovernanceResolution
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
+from intergrax.runtime.nexus.tools.uaep_tool_gateway import BoundToolGateway
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -119,6 +120,10 @@ class UAEPExecutor:
 
         runtime_context = agent.build_context(request)
         exec_ctx.domain_context = runtime_context
+        exec_ctx.tool_gateway = BoundToolGateway(
+            exec_ctx,
+            allowed_tools=list(contract.allowed_tools),
+        )
 
         await self._guard_hook(
             await self._middleware.run_after(
