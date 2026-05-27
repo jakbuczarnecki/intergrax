@@ -89,3 +89,13 @@ class TraceResponse(BaseModel):
     tenant_id: str
     trace_events: List[Dict[str, Any]]
     runtime_events: Optional[List[Dict[str, Any]]] = None
+
+
+class ExperimentListResponse(BaseModel):
+    count: int
+    experiments: List[Dict[str, Any]]
+
+
+class ExperimentDeletedResponse(BaseModel):
+    experiment_id: str
+    deleted: bool = True

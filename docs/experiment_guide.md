@@ -129,6 +129,43 @@ curl "http://127.0.0.1:8099/debug/tasks/RUN_ID/trace?tenant=t1&include_runtime=t
 
 Set `INTERGRAX_TRACE_DB` or pass `--db` (CLI) / `db_path=` (router factory) to point at your trace database.
 
-## 7. Decision
+## 7. Register and decide (experiment registry)
 
-After observing traces, cost, and quality: **keep**, **improve**, **pause**, or **delete** the experiment (§35).
+Before running, register the hypothesis (§35 steps 1–4). After inspecting traces (§6), record the verdict.
+
+**CLI:**
+
+```bash
+python -m intergrax.debug experiments register \
+  --hypothesis "Echo returns deterministic prefixed answer" \
+  --capability echo.basic \
+  --agent-id echo \
+  --expected-output "echo: hello" \
+  --validation-criteria "non-empty answer with echo prefix"
+
+# After Nexus run — link trace run_id and decide
+python -m intergrax.debug experiments link-run EXPERIMENT_ID RUN_ID
+python -m intergrax.debug experiments decide EXPERIMENT_ID --decision keep
+python -m intergrax.debug experiments list --decision pending
+```
+
+Decisions: `keep` · `improve` · `pause` · `delete` (delete removes the record).
+
+**HTTP:**
+
+```bash
+curl -X POST http://127.0.0.1:8099/debug/experiments \
+  -H "Content-Type: application/json" \
+  -d '{"hypothesis":"...", "capability":"echo.basic"}'
+
+curl -X POST http://127.0.0.1:8099/debug/experiments/EXPERIMENT_ID/runs/RUN_ID
+curl -X POST http://127.0.0.1:8099/debug/experiments/EXPERIMENT_ID/decision \
+  -H "Content-Type: application/json" \
+  -d '{"decision":"keep"}'
+```
+
+Registry database: `INTERGRAX_EXPERIMENTS_DB` (default `build/intergrax_experiments.db`).
+
+## 8. Decision
+
+After observing traces, cost, and quality: **keep**, **improve**, **pause**, or **delete** the experiment (§35). Use the registry (§7) to persist the verdict and linked `run_id`s.

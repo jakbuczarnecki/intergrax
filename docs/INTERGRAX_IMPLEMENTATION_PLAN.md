@@ -50,7 +50,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §42 Unified Execution Runtime | **~50–55%** | P4.1–P4.4 wired; agent UAEP migration pending |
 
-| Laboratory workflow (inspect, decide) | **~55%** | D.1 debug CLI done; experiment registry pending |
+| Laboratory workflow (inspect, decide) | **~75%** | D.1–D.3 done; D.5 cost in trace pending |
 
 | Pre-P4.2 regression gate | **Done** | A.5-min (~10 tests, marker `gate`) |
 
@@ -90,7 +90,8 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §33 Observability | Trace + events | **Partial** | Trace store ✅; P4.1 dual-emit ✅; D.1 CLI ✅ |
 
-| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial** | P4 + Phase E ✅; D.3 experiment registry pending |
+| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial** | P4 + Phase E ✅ |
+| §19 Debug / experiments | CLI, API, registry | **Partial** | D.1–D.3 ✅; D.5 cost pending |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` (no `legal_agent` shim) |
 
@@ -226,7 +227,7 @@ uv run pytest tests/ -m gate -q
 
 | D.2 | Minimal debug API | **Done** | FastAPI `GET /debug/tasks` on trace store |
 
-| D.3 | Experiment registry | Pending | hypothesis, keep/improve/pause/delete |
+| D.3 | Experiment registry | **Done** | SQLite registry; CLI + `GET/POST /debug/experiments` |
 
 | D.4 | Notebook templates | Pending | `notebooks/experiments/` |
 
@@ -322,9 +323,9 @@ Long-running tasks, HITL, Shadow, Sandbox, Slack/Teams — **only with concrete 
 
 ```text
 
-NOW:     D.3 experiment registry
+NOW:     D.4 notebook templates · D.5 cost in trace
 
-NEXT:    D.4 notebook templates · D.5 cost in trace
+NEXT:    Phase F (on demand)
 
 LATER:   Phase F (on demand)
 
@@ -360,11 +361,13 @@ LATER:   Phase F (on demand)
 
 ## 6. Recommended Next Step
 
-**D.3** — experiment registry (hypothesis, keep/improve/pause/delete per §35).
+**D.4** — notebook templates under `notebooks/experiments/`, or **D.5** — cost in trace (`AgentExecutionResult.cost`).
 
 ```bash
 uv run pytest tests/ -m gate -q
 ```
+
+**D.3 (Done):** experiment registry — `intergrax/experiments/`; CLI `experiments register|list|decide|link-run`; HTTP `/debug/experiments`.
 
 **E.4 (Done):** Legal dynamic pipeline — 5 UAEP macro-steps; wave/replan loop in `legal_dynamic_waves`.
 
@@ -378,7 +381,7 @@ uv run pytest tests/ -m gate -q
 
 
 
-**Then:** D.3 experiment registry.
+**Then:** D.4 notebook templates or D.5 cost in trace.
 
 
 
@@ -407,6 +410,19 @@ app.include_router(create_debug_router(db_path=Path("build/intergrax_trace.db"))
 ```
 
 Environment: `INTERGRAX_TRACE_DB` (same as CLI).
+
+### D.3 Experiment registry (Done)
+
+SQLite registry at `build/intergrax_experiments.db` (`INTERGRAX_EXPERIMENTS_DB`).
+
+```bash
+python -m intergrax.debug experiments register --hypothesis "..." --capability echo.basic
+python -m intergrax.debug experiments link-run EXPERIMENT_ID RUN_ID
+python -m intergrax.debug experiments decide EXPERIMENT_ID --decision keep
+python -m intergrax.debug experiments list --decision pending
+```
+
+HTTP: `GET/POST /debug/experiments`, `POST /debug/experiments/{id}/decision`, `POST /debug/experiments/{id}/runs/{run_id}`.
 
 ### D.1 Debug CLI (Done)
 
