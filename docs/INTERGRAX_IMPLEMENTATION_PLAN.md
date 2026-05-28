@@ -351,7 +351,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 |---|-------------|--------|-------|-------|
 | H.1 | Outbound webhook delivery | **Done** | §18 | Pluggable delivery + formatters; HTTP opt-in |
 | H.2 | `InteractionAdapter` protocol | **Done** | §18 | Inbound → normalized `Task` |
-| H.3 | Slack inbound lab path | Pending | §18 | Slash command or Events API minimal |
+| H.3 | Slack inbound lab path | **Done** | §18 | Debug API intake + signature stub |
 | H.4 | HITL notification templates | Pending | §42.10 | `resume_token` + approve/reject in message |
 | H.5 | Teams parity | Pending | §18 | Same as H.3–H.4 |
 | H.6 | Organization Worker demo | Pending | §38 | End-to-end §38 reference flow |
@@ -401,7 +401,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     H.3 — Slack inbound lab path (§18)
+NOW:     H.4 — HITL notification templates (§42.10)
 
 NEXT:    Phase H — Interaction surfaces (§18)
 
@@ -443,11 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**H.3 — Slack inbound lab path** (§18):
+**H.4 — HITL notification templates** (§42.10):
 
-1. Debug API endpoint `POST /debug/interactions/intake` using `intake_payload_to_task`.
-2. Optional Slack signature verification stub (disabled by default).
-3. Integration test: HTTP POST slash-command payload → `NexusLoop.handle_task`.
+1. Reusable template formatters for outbound HITL messages (`resume_token`, approve/reject actions).
+2. Compose with existing `NotificationPayloadFormatter` — no Slack-specific logic in NexusLoop.
+3. Unit tests for template rendering + metadata propagation.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,8 +455,8 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
-- **H.2:** `InteractionAdapter` — `InboundInteraction`, parsers, `LabJson` + `SlashCommand` adapters, `ChainedInteractionAdapter`, factory.
-- **H.1:** Outbound notifications — pluggable delivery + formatters + factory.
+- **H.3:** Debug API `POST /debug/interactions/intake` — JSON/form body, optional `execute`, Slack signature verifier (opt-in).
+- **H.2:** `InteractionAdapter` — inbound parsers, factory, `ChainedInteractionAdapter`.
 - **G.6:** Debug API — `GET …/events`, `GET …/checkpoints`, `POST …/human-response` with injectable `RuntimeEventPersistence` / `TaskCheckpointPersistence`.
 - **G.5:** pluggable `RuntimeEventPersistence` + memory/SQLite backends.
 - **F.5:** typed task contract — `TaskExecutionOptions` / `TaskRuntimeState` / `TaskResultSummary` + metadata bridge.

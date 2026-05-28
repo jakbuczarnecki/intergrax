@@ -11,6 +11,7 @@ from typing import Optional
 from fastapi import FastAPI
 
 from intergrax.debug.hitl_service import DebugHitlResumeService
+from intergrax.debug.interaction_service import DebugInteractionIntakeService
 from intergrax.debug.router import create_debug_router
 from intergrax.debug.store import (
     open_default_task_checkpoint_persistence,
@@ -19,6 +20,8 @@ from intergrax.debug.store import (
 from intergrax.fastapi_core.routers.health import health_router
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 
 
@@ -32,6 +35,8 @@ def create_debug_app(
     checkpoint_store: TaskCheckpointPersistence | None = None,
     registry: Optional[AgentRegistry] = None,
     hitl_service: DebugHitlResumeService | None = None,
+    interaction_service: DebugInteractionIntakeService | None = None,
+    nexus_loop: NexusLoop | None = None,
 ) -> FastAPI:
     """
     Laboratory debug API over trace, runtime events, checkpoints, and experiments.
@@ -55,6 +60,21 @@ def create_debug_app(
             runtime_event_store=resolved_runtime_store,
         )
 
+    resolved_loop = nexus_loop
+    if resolved_loop is None and registry is not None:
+        resolved_loop = NexusLoop(
+            registry,
+            checkpoint_store=resolved_checkpoint_store,
+            runtime_event_store=resolved_runtime_store,
+        )
+
+    resolved_interaction = interaction_service
+    if resolved_interaction is None and registry is not None:
+        resolved_interaction = DebugInteractionIntakeService(
+            nexus_loop=resolved_loop,
+            verifier=create_inbound_verifier(),
+        )
+
     app = FastAPI(
         title="Intergrax Debug API",
         version="0.2.0",
@@ -73,6 +93,7 @@ def create_debug_app(
             runtime_event_store=runtime_event_store,
             checkpoint_store=resolved_checkpoint_store,
             hitl_service=resolved_hitl,
+            interaction_service=resolved_interaction,
         )
     )
     return app

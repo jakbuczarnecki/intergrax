@@ -177,3 +177,16 @@ class HumanResponseResult(BaseModel):
     answer: str = ""
     resume_token: Optional[str] = None
     checkpoint_id: Optional[str] = None
+
+
+class InteractionIntakeResponse(BaseModel):
+    task_id: str
+    tenant_id: str
+    user_id: str
+    capability: Optional[str] = None
+    message: str = ""
+    interaction_channel: str = ""
+    executed: bool = False
+    state: Optional[str] = None
+    answer: Optional[str] = None
+    run_id: Optional[str] = None
