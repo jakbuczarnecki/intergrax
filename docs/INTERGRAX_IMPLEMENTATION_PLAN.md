@@ -52,7 +52,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
 
-| Pre-P4.2 regression gate | **Done** | **102 tests**, marker `gate` |
+| Pre-P4.2 regression gate | **Done** | **107 tests**, marker `gate` |
 
 
 
@@ -339,7 +339,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | G.3 | HITL middleware hooks | **Done** | §42.10 | `BEFORE/AFTER_HUMAN_APPROVAL` in NexusLoop |
 | G.4 | `HumanRequest` v2 fields | **Done** | §42.10.1 | Typed urgency, deadline propagation, timeout stub |
 | G.5 | RuntimeEvent-first observability | **Done** | §42.24 | Pluggable `RuntimeEventPersistence`; SQLite default backend |
-| G.6 | Debug API: HITL + checkpoints | Pending | §19 | Human response + checkpoint list endpoints |
+| G.6 | Debug API: HITL + checkpoints | **Done** | §19 | Pluggable stores; events/checkpoints/HITL resume |
 | G.7 | Graph failure recovery | Pending | §42.40, §30 | Resume from last successful node |
 | G.8 | Cooperative cancellation | Pending | §42.26 | Cancel propagation through graph / UAEP |
 
@@ -401,9 +401,9 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     G.6 Debug API: HITL + checkpoints (§19)
+NOW:     G.7–G.8 Graph failure recovery + cancellation (§42.40, §42.26)
 
-NEXT:    G.7–G.8 Graph failure recovery + cancellation (§42.40, §42.26)
+NEXT:    Phase H — Interaction surfaces (§18)
 
 THEN:    H.1–H.4 Slack/Teams real adapters (§18)
 
@@ -443,11 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**G.6 — Debug API: HITL + checkpoints** (§19):
+**G.7 — Graph failure recovery** (§42.40, §30):
 
-1. `GET /debug/tasks/{id}/events` reading from injected `RuntimeEventPersistence`.
-2. `GET /debug/tasks/{id}/checkpoints` for long-running resume tokens.
-3. POST human response endpoint (approve/reject) for lab workflows.
+1. Resume graph execution from last successful node using `RuntimeCheckpoint.node_states`.
+2. Skip completed nodes in `GraphExecutor` when checkpoint present.
+3. Integration test: fail mid-graph → resume → complete without re-running successful nodes.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,8 +455,8 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
-- **G.5:** pluggable `RuntimeEventPersistence` (ABC) + memory/SQLite backends; configurable via `NexusLoop(runtime_event_store=…)` or env `INTERGRAX_RUNTIME_EVENT_STORE`.
-- **G.4:** `HumanRequest` v2 — typed urgency, deadline metadata, propagation through events/notifications/checkpoints.
+- **G.6:** Debug API — `GET …/events`, `GET …/checkpoints`, `POST …/human-response` with injectable `RuntimeEventPersistence` / `TaskCheckpointPersistence`.
+- **G.5:** pluggable `RuntimeEventPersistence` + memory/SQLite backends.
 - **F.5:** typed task contract — `TaskExecutionOptions` / `TaskRuntimeState` / `TaskResultSummary` + metadata bridge.
 - **F.4:** long-running task snapshots + notification adapter stubs (Slack/Teams **not** real integration).
 - **F.1–F.3:** Shadow, Sandbox, advanced HITL.

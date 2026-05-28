@@ -13,6 +13,7 @@ from typing import List, Optional
 from uuid import uuid4
 
 from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.utils.time_provider import SystemTimeProvider
@@ -36,7 +37,7 @@ def open_task_checkpoint_store(db_path: Path | None = None) -> SQLiteTaskCheckpo
     return SQLiteTaskCheckpointStore(db_path=path)
 
 
-class SQLiteTaskCheckpointStore:
+class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
     def __init__(self, *, db_path: Path) -> None:
         self._db_path = db_path
         self._ensure_schema()

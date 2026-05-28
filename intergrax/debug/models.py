@@ -121,3 +121,59 @@ class ExperimentListResponse(BaseModel):
 class ExperimentDeletedResponse(BaseModel):
     experiment_id: str
     deleted: bool = True
+
+
+class RuntimeEventItem(BaseModel):
+    event_id: str
+    event_type: str
+    task_id: str
+    run_id: str
+    tenant_id: Optional[str] = None
+    phase: str
+    severity: str
+    timestamp: str
+    payload: Dict[str, Any] = Field(default_factory=dict)
+
+
+class RuntimeEventListResponse(BaseModel):
+    task_id: str
+    tenant_id: str
+    count: int
+    events: List[RuntimeEventItem]
+
+
+class CheckpointItem(BaseModel):
+    checkpoint_id: str
+    task_id: str
+    tenant_id: str
+    resume_token: str
+    task_state: str
+    progress_message: str = ""
+    notify_channel: Optional[str] = None
+    created_at_utc: str = ""
+    has_runtime_checkpoint: bool = False
+
+
+class CheckpointListResponse(BaseModel):
+    task_id: str
+    tenant_id: str
+    count: int
+    checkpoints: List[CheckpointItem]
+
+
+class SubmitHumanResponseRequest(BaseModel):
+    response: str = Field(description="Human verdict text: approve, reject, escalate, …")
+    resume_token: Optional[str] = Field(
+        default=None,
+        description="Optional resume token; defaults to latest checkpoint",
+    )
+    user_id: Optional[str] = Field(default=None, description="Operator id for audit")
+
+
+class HumanResponseResult(BaseModel):
+    task_id: str
+    run_id: Optional[str] = None
+    state: str
+    answer: str = ""
+    resume_token: Optional[str] = None
+    checkpoint_id: Optional[str] = None
