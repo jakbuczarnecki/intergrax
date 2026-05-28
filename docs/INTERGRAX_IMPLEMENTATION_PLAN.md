@@ -350,7 +350,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
 | H.1 | Outbound webhook delivery | **Done** | §18 | Pluggable delivery + formatters; HTTP opt-in |
-| H.2 | `InteractionAdapter` protocol | Pending | §18 | Inbound → normalized `Task` |
+| H.2 | `InteractionAdapter` protocol | **Done** | §18 | Inbound → normalized `Task` |
 | H.3 | Slack inbound lab path | Pending | §18 | Slash command or Events API minimal |
 | H.4 | HITL notification templates | Pending | §42.10 | `resume_token` + approve/reject in message |
 | H.5 | Teams parity | Pending | §18 | Same as H.3–H.4 |
@@ -401,7 +401,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     H.2 — InteractionAdapter protocol (§18 inbound → Task)
+NOW:     H.3 — Slack inbound lab path (§18)
 
 NEXT:    Phase H — Interaction surfaces (§18)
 
@@ -443,11 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**H.2 — InteractionAdapter protocol** (§18):
+**H.3 — Slack inbound lab path** (§18):
 
-1. Define inbound `InteractionAdapter` protocol — external events → normalized `Task`.
-2. Stub implementation for lab/testing (no Slack/Teams SDK lock-in).
-3. Unit test: slash-command payload → `Task` with capability + metadata.
+1. Debug API endpoint `POST /debug/interactions/intake` using `intake_payload_to_task`.
+2. Optional Slack signature verification stub (disabled by default).
+3. Integration test: HTTP POST slash-command payload → `NexusLoop.handle_task`.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,8 +455,8 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
-- **H.1:** Outbound notifications — `NotificationDelivery` + `NotificationPayloadFormatter` + `WebhookNotificationAdapter` + factory (`log|webhook|slack|teams`, env URLs).
-- **G.8:** Cooperative cancellation — `CancellationCoordinator`, graph/UAEP propagation, `TaskState.CANCELLED`.
+- **H.2:** `InteractionAdapter` — `InboundInteraction`, parsers, `LabJson` + `SlashCommand` adapters, `ChainedInteractionAdapter`, factory.
+- **H.1:** Outbound notifications — pluggable delivery + formatters + factory.
 - **G.6:** Debug API — `GET …/events`, `GET …/checkpoints`, `POST …/human-response` with injectable `RuntimeEventPersistence` / `TaskCheckpointPersistence`.
 - **G.5:** pluggable `RuntimeEventPersistence` + memory/SQLite backends.
 - **F.5:** typed task contract — `TaskExecutionOptions` / `TaskRuntimeState` / `TaskResultSummary` + metadata bridge.
