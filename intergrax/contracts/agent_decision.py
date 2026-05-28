@@ -8,7 +8,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from intergrax.contracts.event_severity import EventSeverity
 
@@ -32,14 +32,77 @@ class RetryHint(BaseModel):
     max_attempts: Optional[int] = None
 
 
+class HumanRequestUrgency(str, Enum):
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+HUMAN_REQUEST_TIMEOUT_DEFAULTS = frozenset(
+    {
+        AgentDecisionType.FAIL,
+        AgentDecisionType.ESCALATE,
+        AgentDecisionType.CANCEL,
+    }
+)
+
+
 class HumanRequest(BaseModel):
+    schema_version: str = "human_request.v2"
     request_id: str
     prompt: str
     options: list[str] = Field(default_factory=list)
     context_artifacts: list[str] = Field(default_factory=list)
-    urgency: str = "normal"
+    urgency: HumanRequestUrgency = HumanRequestUrgency.NORMAL
     timeout_seconds: Optional[int] = None
     default_on_timeout: Optional[AgentDecisionType] = None
+
+    @field_validator("urgency", mode="before")
+    @classmethod
+    def _normalize_urgency(cls, value: object) -> HumanRequestUrgency:
+        if isinstance(value, HumanRequestUrgency):
+            return value
+        raw = str(value or HumanRequestUrgency.NORMAL.value).strip().lower()
+        try:
+            return HumanRequestUrgency(raw)
+        except ValueError:
+            return HumanRequestUrgency.NORMAL
+
+    @field_validator("timeout_seconds")
+    @classmethod
+    def _validate_timeout_seconds(cls, value: Optional[int]) -> Optional[int]:
+        if value is not None and value <= 0:
+            raise ValueError("timeout_seconds must be a positive integer")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_timeout_default(self) -> HumanRequest:
+        if self.default_on_timeout is not None:
+            if self.default_on_timeout not in HUMAN_REQUEST_TIMEOUT_DEFAULTS:
+                allowed = ", ".join(sorted(d.value for d in HUMAN_REQUEST_TIMEOUT_DEFAULTS))
+                raise ValueError(
+                    f"default_on_timeout must be one of: {allowed}"
+                )
+            if self.timeout_seconds is None:
+                raise ValueError("default_on_timeout requires timeout_seconds")
+        return self
+
+
+def human_request_fields_from_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract v2 HumanRequest fields from AgentDecision.payload."""
+    fields: Dict[str, Any] = {}
+    if "urgency" in payload:
+        fields["urgency"] = payload["urgency"]
+    if payload.get("timeout_seconds") is not None:
+        fields["timeout_seconds"] = int(payload["timeout_seconds"])
+    raw_default = payload.get("default_on_timeout")
+    if raw_default is not None:
+        try:
+            fields["default_on_timeout"] = AgentDecisionType(str(raw_default))
+        except ValueError:
+            pass
+    return fields
 
 
 class PlanDelta(BaseModel):

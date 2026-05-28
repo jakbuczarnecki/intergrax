@@ -44,6 +44,11 @@ from intergrax.runtime.task.task_contract import (
     TaskRetryRecord,
     TaskValidationSummary,
 )
+from intergrax.runtime.task.task_metadata_keys import (
+    GOVERNANCE_HUMAN_REQUEST_KEY,
+    HUMAN_REQUEST_CREATED_AT_KEY,
+    HUMAN_REQUEST_EXPIRES_AT_KEY,
+)
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import (
     PersistingTaskTraceEmitter,
@@ -56,6 +61,11 @@ from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
+from intergrax.runtime.human.request_contract import (
+    human_request_event_payload,
+    human_request_notification_extra,
+)
+from intergrax.utils.time_provider import SystemTimeProvider
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 
@@ -325,6 +335,15 @@ class NexusLoop:
 
         if executions and executions[-1].status == AgentExecutionStatus.NEEDS_INPUT:
             paused = executions[-1]
+            created_at_utc = SystemTimeProvider.utc_now().isoformat()
+            human_payload = (
+                human_request_event_payload(
+                    paused.human_request,
+                    created_at_utc=created_at_utc,
+                )
+                if paused.human_request
+                else {}
+            )
             await self._publish_runtime_event(
                 runtime_event_from_task_state(
                     task,
@@ -335,11 +354,7 @@ class NexusLoop:
                         "event_type": RuntimeEventType.HUMAN_APPROVAL_REQUESTED,
                         "phase": ExecutionPhase.HUMAN_APPROVAL,
                         "payload": {
-                            "human_request": (
-                                paused.human_request.model_dump()
-                                if paused.human_request
-                                else {}
-                            ),
+                            "human_request": human_payload,
                         },
                     }
                 )
@@ -636,7 +651,10 @@ class NexusLoop:
             subject="Task paused",
             body=progress_message,
             adapter=self._notification_adapter,
-            extra={"checkpoint_id": checkpoint.checkpoint_id},
+            extra={
+                "checkpoint_id": checkpoint.checkpoint_id,
+                **human_request_notification_extra(task),
+            },
         )
 
     async def _publish_runtime_event(self, event: object) -> None:
