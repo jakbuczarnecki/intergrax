@@ -51,6 +51,7 @@ class LegalAgentServingConfig:
     identity_source: LegalIdentitySource = "body_or_context"
     use_nexus_loop: bool = True
     trace_store: Optional[RunTraceWriter] = None
+    task_runner: Optional[UnifiedTaskRunner] = None
 
     def __post_init__(self) -> None:
         if not self.registry.has(self.default_agent_id):
@@ -68,6 +69,7 @@ class LegalAgentServingConfig:
         identity_source: LegalIdentitySource = "body_or_context",
         use_nexus_loop: bool = True,
         trace_store: Optional[RunTraceWriter] = None,
+        task_runner: Optional[UnifiedTaskRunner] = None,
     ) -> "LegalAgentServingConfig":
         registry = AgentRegistry.from_agents(dict(agents))
         return cls(
@@ -76,6 +78,7 @@ class LegalAgentServingConfig:
             identity_source=identity_source,
             use_nexus_loop=use_nexus_loop,
             trace_store=trace_store,
+            task_runner=task_runner,
         )
 
 
@@ -89,11 +92,14 @@ class DefaultLegalAgentService:
 
     def __post_init__(self) -> None:
         if self.config.use_nexus_loop:
-            nexus = NexusLoop(
-                self.config.registry,
-                trace_store=self.config.trace_store,
-            )
-            object.__setattr__(self, "_task_runner", UnifiedTaskRunner(nexus))
+            runner = self.config.task_runner
+            if runner is None:
+                nexus = NexusLoop(
+                    self.config.registry,
+                    trace_store=self.config.trace_store,
+                )
+                runner = UnifiedTaskRunner(nexus)
+            object.__setattr__(self, "_task_runner", runner)
 
     def _data_compliance_for_request(self, runtime_req: RuntimeRequest) -> DataCompliancePolicy:
         agent = self.config.registry.get(runtime_req.agent_id or self.config.default_agent_id)
@@ -252,6 +258,7 @@ def mount_legal_agent_routes(
     identity_source: LegalIdentitySource = "body_or_context",
     use_nexus_loop: bool = True,
     trace_store: Optional[RunTraceWriter] = None,
+    task_runner: Optional[UnifiedTaskRunner] = None,
 ) -> DefaultLegalAgentService:
     """
     Register legal routes on ``app`` via ``dependency_overrides``.
@@ -267,6 +274,7 @@ def mount_legal_agent_routes(
             identity_source=identity_source,
             use_nexus_loop=use_nexus_loop,
             trace_store=trace_store,
+            task_runner=task_runner,
         )
     else:
         config = LegalAgentServingConfig(
@@ -275,6 +283,7 @@ def mount_legal_agent_routes(
             identity_source=identity_source,
             use_nexus_loop=use_nexus_loop,
             trace_store=trace_store,
+            task_runner=task_runner,
         )
 
     svc = DefaultLegalAgentService(

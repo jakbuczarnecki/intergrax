@@ -26,7 +26,7 @@ def create_run(
     __=Depends(require_scope("runs:create")),
     ___=Depends(require_budget()),
 ) -> RunResponse:
-    return service.create_run(context, background_tasks)
+    return service.create_run(context, background_tasks, create_request=request)
 
 
 

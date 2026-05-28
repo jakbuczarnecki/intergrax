@@ -13,18 +13,27 @@ from intergrax.runtime.task.task_run_bridge import (
     task_from_execution_request,
     task_result_to_payload,
 )
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
 class NexusTaskExecutionAdapter(ExecutionAdapter):
     """
-    Bridges FastAPI Core RunService to NexusLoop (Phase A.1).
+    Bridges FastAPI Core RunService to Nexus via UnifiedTaskRunner (§41).
 
     ExecutionRequest.run_id becomes Task.task_id for unified trace correlation.
     """
 
-    def __init__(self, nexus_loop: NexusLoop) -> None:
-        self._nexus_loop = nexus_loop
+    def __init__(self, task_runner: UnifiedTaskRunner) -> None:
+        self._task_runner = task_runner
         self._run_service: Optional[RunService] = None
+
+    @classmethod
+    def from_nexus_loop(cls, nexus_loop: NexusLoop) -> NexusTaskExecutionAdapter:
+        return cls(UnifiedTaskRunner(nexus_loop))
+
+    @property
+    def task_runner(self) -> UnifiedTaskRunner:
+        return self._task_runner
 
     def bind_run_service(self, run_service: RunService) -> None:
         self._run_service = run_service
@@ -41,7 +50,7 @@ class NexusTaskExecutionAdapter(ExecutionAdapter):
 
         try:
             task = task_from_execution_request(request)
-            result = await self._nexus_loop.handle_task(task)
+            result = await self._task_runner.run_task(task)
             self._run_service.mark_completed(
                 run_id,
                 result_payload=task_result_to_payload(result),

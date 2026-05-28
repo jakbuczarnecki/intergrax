@@ -271,3 +271,24 @@ task = Task(
 `ContextManager` reads `task.options.context` when building `AgentContextBundle` for graph nodes.
 
 Legacy flat metadata keys (`context_summary_tier`, `context_assembly_policy`, …) are still hydrated by `task_metadata_bridge` for JSON/API compatibility, but new code should use `TaskExecutionOptions.context` directly.
+
+## 13. Unified run API (Phase J.2)
+
+FastAPI Core `POST /runs` accepts a Task payload and executes it through the same path as Legal/Research HTTP:
+
+```python
+from intergrax.runtime.task.task import Task, TaskContext
+from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
+
+payload = task_to_execution_payload(
+    Task(
+        tenant_id="t1",
+        user_id="u1",
+        message="hello",
+        context=TaskContext(capability="echo.basic"),
+    )
+)
+# POST /runs  body={"payload": payload}
+```
+
+`NexusTaskExecutionAdapter` → `UnifiedTaskRunner` → `NexusLoop.handle_task`.

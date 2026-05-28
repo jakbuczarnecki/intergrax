@@ -10,7 +10,7 @@ from datetime import datetime
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.execution.adapters.adapter import CancellableExecutionAdapter, ExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
-from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
+from intergrax.fastapi_core.runs.models import CreateRunRequest, RunResponse, RunStatus
 from intergrax.fastapi_core.runs.store_base import RunStore
 from intergrax.fastapi_core.runs.service import RunService
 from intergrax.fastapi_core.runs.state_machine import RunStateMachine
@@ -41,6 +41,8 @@ class DefaultRunService(RunService):
         self,
         context: RequestContext,
         background_tasks: BackgroundTasks,
+        *,
+        create_request: Optional[CreateRunRequest] = None,
     ) -> RunResponse:
         run = self._store.create()
 
@@ -51,7 +53,7 @@ class DefaultRunService(RunService):
             run_id=run.run_id,
             tenant_id=context.tenant_id,
             user_id=context.user_id,
-            input_payload={},
+            input_payload=dict(create_request.payload) if create_request else {},
             metadata={"request_id": context.request_id},
         )
 
