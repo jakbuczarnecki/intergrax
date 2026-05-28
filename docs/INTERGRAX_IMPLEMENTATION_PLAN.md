@@ -80,7 +80,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §22 ToolRuntime | Policy gateway | **Done** | `tool_runtime.py`, `ToolAccessPolicy` |
 
-| §23 Task lifecycle | States + trace + typed contract | **Done** | `task/`, `task_contract.py`, `task_metadata_bridge.py` |
+| §23 Task lifecycle | States + trace + typed contract | **Done** | `task/`, `task_contract.py`, `TaskContextAssemblyOptions`, `task_metadata_bridge.py` |
 
 | §24–25 Execution graph | Multi-agent | **Done** | `execution/`, `GraphExecutor` |
 
@@ -101,7 +101,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §26 Long-running tasks | Checkpoint / resume | **Partial** | F.4 task snapshot ✅; scheduler / UAEP mid-step pending |
 | §18 Slack / Teams | Interaction adapters | **Stub** | F.4 notification stub only; no intake / webhook |
-| §27 Memory model | Bounded task / agent memory | **Not started** | Session memory exists; no `MemoryView` gateway |
+| §27 Memory model | Bounded task / agent memory | **Done** | I.1–I.5: TaskMemory, MemoryView, SharedTaskContext, handoff, ContextManager v2 |
 | §42.9 Pause / Resume | `RuntimeCheckpoint` | **Partial** | HITL pause ✅; full plan/graph/UAEP checkpoint pending |
 | §41 Unified entry | Single run lifecycle | **Partial** | `NexusLoop` + `RunService` + `RuntimeEngine` still parallel |
 
@@ -338,7 +338,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | G.2 | UAEP mid-execution resume | **Done** | §42.9.3 | Skip re-run paused step on resume |
 | G.3 | HITL middleware hooks | **Done** | §42.10 | `BEFORE/AFTER_HUMAN_APPROVAL` in NexusLoop |
 | G.4 | `HumanRequest` v2 fields | **Done** | §42.10.1 | Typed urgency, deadline propagation, timeout stub |
-| G.5 | RuntimeEvent-first observability | **Done** | §42.24 | Pluggable `RuntimeEventPersistence`; SQLite default backend |
+| G.5 | RuntimeEvent-first observability | **Done** | §42.24 | `RuntimeEventPersistence` + `store.py` (`open_runtime_event_store`, env `INTERGRAX_RUNTIME_EVENTS_DB` only) |
 | G.6 | Debug API: HITL + checkpoints | **Done** | §19 | Pluggable stores; events/checkpoints/HITL resume |
 | G.7 | Graph failure recovery | **Done** | §42.40, §30 | Skip completed nodes; checkpoint on graph fail |
 | G.8 | Cooperative cancellation | **Done** | §42.26 | Cancel propagation through graph / UAEP |
@@ -362,11 +362,11 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
-| I.1 | `TaskMemory` store | Pending | §27 | Nexus-owned bounded task memory |
-| I.2 | `MemoryView` gateway | Pending | §42.35 | Policy-scoped UAEP memory access |
-| I.3 | `SharedTaskContext` | Pending | §42.14 | Formal cross-agent payload |
-| I.4 | Agent handoff | Pending | §42.15 | Graph handoff + validation |
-| I.5 | ContextManager v2 | Pending | §28 | Provenance + summary tiers |
+| I.1 | `TaskMemory` store | **Done** | §27 | Contract + coordinator; `store.py` (`open_task_memory_store`, env `INTERGRAX_TASK_MEMORY_DB` only) |
+| I.2 | `MemoryView` gateway | **Done** | §42.35 | `PolicyScopedMemoryView` + UAEP wiring + `MEMORY_*` events |
+| I.3 | `SharedTaskContext` | **Done** | §42.14 | Contract + `ContextManager` + graph merge + memory bridge |
+| I.4 | Agent handoff | **Done** | §42.15 | `AgentHandoff` + `HandoffCoordinator` + graph path + `HANDOFF_*` events |
+| I.5 | ContextManager v2 | **Done** | §28 | Provenance + summary tiers + `TaskContextAssemblyOptions` on `TaskExecutionOptions.context` |
 
 ---
 
@@ -401,9 +401,9 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     I.1 — TaskMemory store (§27)
+NOW:     J.1 — NexusLoop default in apps (§41)
 
-NEXT:    Phase I — Memory & context (§27–28)
+NEXT:    J.2–J.5 — unified execution entry
 
 THEN:    Phase J — Unified execution entry (§41)
 
@@ -443,11 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**I.1 — TaskMemory store** (§27):
+**J.1 — NexusLoop default in apps** (§41):
 
-1. Nexus-owned bounded task memory with persistence contract.
-2. Memory gateway scoped by policy (foundation for I.2 `MemoryView`).
-3. Unit tests + gate.
+1. Legal/Research hosts use NexusLoop as default execution path (legacy opt-out).
+2. Wire Task v2 lifecycle through application serving layer.
+3. Integration tests; gate green.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,6 +455,11 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
+- **I.5:** ContextManager v2 — provenance, summary tiers, typed `TaskContextAssemblyOptions` (`TaskExecutionOptions.context`), metadata bridge sync.
+- **I.4:** Agent handoff — `AgentHandoff`, `HandoffCoordinator`, graph executor path, `HANDOFF_*` events.
+- **I.3:** `SharedTaskContext` — formal payload on `Task`, `ContextManager` merge, memory read bridge.
+- **I.2:** `MemoryView` gateway — `PolicyScopedMemoryView`, UAEP wiring, `MEMORY_READ`/`MEMORY_WRITE` events.
+- **I.1:** `TaskMemory` store — `TaskMemoryPersistence`, `TaskMemoryCoordinator`, in-memory + SQLite backends.
 - **H.6:** Organization Worker demo — `OrganizationWorkerAgent`, `create_organization_worker_lab_app`, E2E Slack/Teams intake → HITL → resume.
 - **H.5:** Teams parity — `TeamsActivityInteractionAdapter`, `TeamsSignatureVerifier`, debug intake tests mirroring H.3.
 - **H.4:** HITL notification templates — `HitlPauseNotificationTemplate`, `notify_hitl_pause`, Slack/Teams formatter parity for actions/urgency.
@@ -629,6 +634,8 @@ Optional on `NexusLoop`: `checkpoint_store=SQLiteTaskCheckpointStore(...)`, `not
 Env:
 
 - `INTERGRAX_TASK_CHECKPOINTS_DB` (default `build/intergrax_task_checkpoints.db`)
+- `INTERGRAX_RUNTIME_EVENTS_DB` (optional; enables SQLite runtime events in NexusLoop / debug API)
+- `INTERGRAX_TASK_MEMORY_DB` (optional; TaskMemory SQLite path for lab / debug)
 - `INTERGRAX_SLACK_WEBHOOK_URL` / `INTERGRAX_TEAMS_WEBHOOK_URL` (stub adapters; no network unless configured)
 
 ### H.6 Organization Worker lab runbook (Done)
@@ -711,5 +718,5 @@ Reuse:
 
 
 
-*Plan synced with codebase after H.6 Organization Worker demo (2026-05-27). Gate: 153 tests.*
+*Plan synced with codebase after I.5 typed context assembly cleanup (2026-05-27). Gate: 197 tests.*
 

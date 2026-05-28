@@ -14,10 +14,17 @@ from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, Run
 class _TaskView:
     """Minimal duck type for trace_bridge (avoids heavy task package import)."""
 
-    __slots__ = ("task_id", "agent_id", "context")
+    __slots__ = ("task_id", "tenant_id", "agent_id", "context")
 
-    def __init__(self, task_id: str, agent_id: str | None, capability: Any) -> None:
+    def __init__(
+        self,
+        task_id: str,
+        tenant_id: str,
+        agent_id: str | None,
+        capability: Any,
+    ) -> None:
         self.task_id = task_id
+        self.tenant_id = tenant_id
         self.agent_id = agent_id
         self.context = type("Ctx", (), {"capability": capability})()
 
@@ -56,9 +63,10 @@ def format_run_show(persisted: PersistedRun) -> str:
     return "\n".join(lines)
 
 
-def _task_from_trace_tags(tags: Dict[str, Any], run_id: str) -> _TaskView:
+def _task_from_trace_tags(tags: Dict[str, Any], run_id: str, *, tenant_id: str = "") -> _TaskView:
     return _TaskView(
         task_id=str(tags.get("task_id") or run_id),
+        tenant_id=str(tags.get("tenant_id") or tenant_id or "default"),
         agent_id=tags.get("agent_id"),
         capability=tags.get("capability"),
     )
@@ -86,7 +94,7 @@ def build_trace_payload(
     )
 
     runtime_events: List[Dict[str, Any]] = []
-    task = _task_from_trace_tags({}, persisted.metadata.run_id)
+    task = _task_from_trace_tags({}, persisted.metadata.run_id, tenant_id=persisted.metadata.tenant_id)
     for raw in trace_events:
         if not isinstance(raw, dict):
             continue
@@ -98,6 +106,7 @@ def build_trace_payload(
                 "user_id": persisted.metadata.user_id,
             },
             persisted.metadata.run_id,
+            tenant_id=persisted.metadata.tenant_id,
         )
         trace = TraceEvent(
             event_id=str(raw.get("event_id", "")),

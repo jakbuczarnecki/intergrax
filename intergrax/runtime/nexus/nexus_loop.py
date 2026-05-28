@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import List, Optional
 
 from intergrax.agents.agent_engine import AgentEngine
@@ -34,10 +35,9 @@ from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
-from intergrax.runtime.events.store_factory import (
-    RuntimeEventStoreSettings,
-    create_runtime_event_store,
-)
+from intergrax.runtime.events.store import resolve_runtime_event_persistence
+from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
+from intergrax.runtime.task_memory.store import resolve_task_memory_persistence
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
@@ -50,11 +50,7 @@ from intergrax.runtime.task.task_contract import (
     TaskRetryRecord,
     TaskValidationSummary,
 )
-from intergrax.runtime.task.task_metadata_keys import (
-    GOVERNANCE_HUMAN_REQUEST_KEY,
-    HUMAN_REQUEST_CREATED_AT_KEY,
-    HUMAN_REQUEST_EXPIRES_AT_KEY,
-)
+from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import (
     PersistingTaskTraceEmitter,
@@ -104,12 +100,18 @@ class NexusLoop:
         notification_adapter: Optional[NotificationAdapter] = None,
         middleware: Optional[MiddlewarePipeline] = None,
         runtime_event_store: Optional[RuntimeEventPersistence] = None,
-        runtime_event_store_settings: Optional[RuntimeEventStoreSettings] = None,
+        runtime_events_db_path: Optional[Path] = None,
+        task_memory_store: Optional[TaskMemoryPersistence] = None,
+        task_memory_db_path: Optional[Path] = None,
     ) -> None:
         self._registry = registry
-        self._runtime_event_store = create_runtime_event_store(
-            runtime_event_store_settings,
+        self._runtime_event_store = resolve_runtime_event_persistence(
+            db_path=runtime_events_db_path,
             implementation=runtime_event_store,
+        )
+        self._task_memory_store = resolve_task_memory_persistence(
+            db_path=task_memory_db_path,
+            implementation=task_memory_store,
         )
         self._event_bus = event_bus or RuntimeEventBus(persistence=self._runtime_event_store)
         if event_bus is not None and self._runtime_event_store is not None:
@@ -138,6 +140,7 @@ class NexusLoop:
                 shadow_manager=self._shadow_manager,
                 sandbox_manager=self._sandbox_manager,
                 middleware=self._middleware,
+                task_memory_store=self._task_memory_store,
             ),
         )
         self._classifier = classifier or ClassifyingTaskClassifier(registry)
@@ -156,6 +159,8 @@ class NexusLoop:
             validation_engine=self._validation_engine,
             retry_engine=self._retry_engine,
             context_manager=self._context_manager,
+            event_bus=self._event_bus,
+            middleware=self._middleware,
         )
         self._composer = FinalResponseComposer()
         self._lifecycle = lifecycle
@@ -178,6 +183,10 @@ class NexusLoop:
     @property
     def runtime_event_store(self) -> Optional[RuntimeEventPersistence]:
         return self._runtime_event_store
+
+    @property
+    def task_memory_store(self) -> Optional[TaskMemoryPersistence]:
+        return self._task_memory_store
 
     @property
     def interrupt_handler(self) -> ExecutionInterruptHandler:
@@ -655,9 +664,9 @@ class NexusLoop:
             metadata=dict(composer_meta),
         )
         for key in (
-            GOVERNANCE_HUMAN_REQUEST_KEY,
-            HUMAN_REQUEST_CREATED_AT_KEY,
-            HUMAN_REQUEST_EXPIRES_AT_KEY,
+            TaskMetadataKey.GOVERNANCE_HUMAN_REQUEST,
+            TaskMetadataKey.HUMAN_REQUEST_CREATED_AT,
+            TaskMetadataKey.HUMAN_REQUEST_EXPIRES_AT,
         ):
             if key in task.metadata:
                 result.metadata[key] = task.metadata[key]

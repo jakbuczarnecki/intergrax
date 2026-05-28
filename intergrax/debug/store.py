@@ -10,12 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
-from intergrax.runtime.events.store_factory import (
-    RuntimeEventStoreBackend,
-    RuntimeEventStoreSettings,
-    create_runtime_event_store,
-    resolve_runtime_event_store_settings,
-)
+from intergrax.runtime.events.store import resolve_runtime_event_persistence
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
     TaskCheckpointReader,
@@ -23,6 +18,11 @@ from intergrax.runtime.long_running.persistence_contract import (
 from intergrax.runtime.long_running.store import (
     open_task_checkpoint_store,
     resolve_task_checkpoints_db_path,
+)
+from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
+from intergrax.runtime.task_memory.store import (
+    resolve_task_memory_db_path,
+    resolve_task_memory_persistence,
 )
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
 from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
@@ -58,18 +58,9 @@ def open_runtime_event_persistence(
     """
     Resolve runtime event store for debug API.
 
-    Priority: explicit implementation > explicit db_path (sqlite) > env defaults.
+    Priority: explicit implementation > SQLite at db_path/env path.
     """
-    if implementation is not None:
-        return implementation
-    if db_path is not None:
-        return create_runtime_event_store(
-            RuntimeEventStoreSettings(
-                backend=RuntimeEventStoreBackend.SQLITE,
-                sqlite_path=db_path,
-            )
-        )
-    return create_runtime_event_store(resolve_runtime_event_store_settings())
+    return resolve_runtime_event_persistence(db_path=db_path, implementation=implementation)
 
 
 def open_task_checkpoint_persistence(
@@ -93,6 +84,15 @@ def open_default_task_checkpoint_persistence(
         return implementation
     path = db_path or resolve_task_checkpoints_db_path(None)
     return open_task_checkpoint_store(path)
+
+
+def open_task_memory_persistence(
+    *,
+    db_path: Path | None = None,
+    implementation: TaskMemoryPersistence | None = None,
+) -> TaskMemoryPersistence | None:
+    """Resolve TaskMemory for debug / lab surfaces (explicit impl > sqlite path)."""
+    return resolve_task_memory_persistence(db_path=db_path, implementation=implementation)
 
 
 def optional_task_checkpoint_reader(

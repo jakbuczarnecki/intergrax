@@ -5,16 +5,22 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Protocol, TYPE_CHECKING, runtime_checkable
+from typing import Any, Dict, List, Optional, Protocol, TYPE_CHECKING, runtime_checkable
 
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.memory_write_policy import MemoryWritePolicy
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse
 from intergrax.contracts.execution_phase import ExecutionPhase
 
 if TYPE_CHECKING:
     from intergrax.runtime.events.runtime_event import RuntimeEvent
+
+
+@runtime_checkable
+class MetadataCarrier(Protocol):
+    metadata: Dict[str, Any]
 
 
 @runtime_checkable
@@ -31,7 +37,16 @@ class EventEmitter(Protocol):
 class MemoryView(Protocol):
     async def read(self, namespace: str, key: str) -> Optional[Dict[str, Any]]: ...
 
-    async def write(self, namespace: str, key: str, value: Dict[str, Any]) -> None: ...
+    async def write(
+        self,
+        namespace: str,
+        key: str,
+        value: Dict[str, Any],
+        *,
+        policy: MemoryWritePolicy = MemoryWritePolicy.REPLACE,
+    ) -> None: ...
+
+    async def list(self, namespace: str, prefix: str = "") -> List[Any]: ...
 
 
 @runtime_checkable
@@ -61,7 +76,7 @@ class RuntimeExecutionContext(BaseModel):
     event_emitter: Optional[Any] = Field(default=None, exclude=True)
     memory_view: Optional[Any] = Field(default=None, exclude=True)
     trace: Optional[Any] = Field(default=None, exclude=True)
-    request: Optional[Any] = Field(default=None, exclude=True)
+    request: Optional[MetadataCarrier] = Field(default=None, exclude=True)
     domain_context: Optional[Any] = Field(default=None, exclude=True)
 
     async def emit_event(self, event: RuntimeEvent) -> None:
@@ -82,8 +97,7 @@ class RuntimeExecutionContext(BaseModel):
     def should_cancel(self) -> bool:
         from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
 
-        if self.request is not None and hasattr(self.request, "metadata"):
-            metadata = getattr(self.request, "metadata", None)
-            if isinstance(metadata, dict) and CancellationCoordinator.is_requested(metadata):
+        if isinstance(self.request, MetadataCarrier):
+            if CancellationCoordinator.is_requested(self.request.metadata):
                 return True
         return CancellationCoordinator.is_requested(self.metadata)

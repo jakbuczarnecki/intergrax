@@ -109,3 +109,8 @@ async def test_graph_executor_runs_two_agents_sequentially():
     assert executions[1].summary.startswith("B: pipeline")
     assert "A: pipeline" in executions[1].summary
     assert all(node.status == ExecutionNodeStatus.COMPLETED for node in graph.nodes)
+
+    shared = task.metadata.get("shared_task_context")
+    assert isinstance(shared, dict)
+    assert shared["structured_outputs"]["n1"]["agent_id"] == "agent_a"
+    assert shared["structured_outputs"]["n2"]["agent_id"] == "agent_b"

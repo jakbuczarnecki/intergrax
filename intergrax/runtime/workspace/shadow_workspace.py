@@ -10,6 +10,8 @@ import shutil
 from pathlib import Path
 from uuid import uuid4
 
+from enum import StrEnum
+
 from intergrax.runtime.workspace.models import (
     ShadowArtifact,
     ShadowSnapshot,
@@ -17,9 +19,18 @@ from intergrax.runtime.workspace.models import (
 )
 from intergrax.utils.time_provider import SystemTimeProvider
 
-SHADOW_WORKSPACE_FLAG = "shadow_workspace"
-SHADOW_WORKSPACE_ID_KEY = "shadow_workspace_id"
-SHADOW_WORKSPACE_CLEANUP_KEY = "shadow_workspace_cleanup"
+
+class ShadowWorkspaceMetadataKey(StrEnum):
+    """Flat metadata keys for shadow workspace isolation (§20)."""
+
+    SHADOW_WORKSPACE = "shadow_workspace"
+    SHADOW_WORKSPACE_ID = "shadow_workspace_id"
+    SHADOW_WORKSPACE_CLEANUP = "shadow_workspace_cleanup"
+
+
+SHADOW_WORKSPACE_FLAG = ShadowWorkspaceMetadataKey.SHADOW_WORKSPACE
+SHADOW_WORKSPACE_ID_KEY = ShadowWorkspaceMetadataKey.SHADOW_WORKSPACE_ID
+SHADOW_WORKSPACE_CLEANUP_KEY = ShadowWorkspaceMetadataKey.SHADOW_WORKSPACE_CLEANUP
 
 
 def _safe_relative_path(relative_path: str) -> Path:

@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from intergrax.contracts.agent_handoff import AgentHandoff
 from intergrax.contracts.event_severity import EventSeverity
 
 
@@ -130,4 +131,15 @@ class AgentDecision(BaseModel):
     human_request: Optional[HumanRequest] = None
     retry_hint: Optional[RetryHint] = None
     confidence: Optional[float] = None
+    handoff: Optional[AgentHandoff] = None
     schema_version: str = "agent_decision.v1"
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_handoff_from_payload(cls, data: Any) -> Any:
+        if isinstance(data, dict) and data.get("handoff") is None:
+            payload = data.get("payload")
+            if isinstance(payload, dict) and payload.get("handoff") is not None:
+                data = dict(data)
+                data["handoff"] = payload["handoff"]
+        return data

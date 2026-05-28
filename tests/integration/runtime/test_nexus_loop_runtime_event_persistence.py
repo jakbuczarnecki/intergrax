@@ -9,7 +9,6 @@ from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.events.store_factory import RuntimeEventStoreSettings, RuntimeEventStoreBackend
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -110,15 +109,12 @@ async def test_nexus_loop_persists_runtime_events_via_injected_store():
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.gate
-async def test_nexus_loop_persists_runtime_events_via_settings(tmp_path):
+async def test_nexus_loop_persists_runtime_events_via_sqlite_path(tmp_path):
     registry = AgentRegistry()
     registry.register(_HitlAgent())
     loop = NexusLoop(
         registry,
-        runtime_event_store_settings=RuntimeEventStoreSettings(
-            backend=RuntimeEventStoreBackend.SQLITE,
-            sqlite_path=tmp_path / "runtime_events.db",
-        ),
+        runtime_events_db_path=tmp_path / "runtime_events.db",
     )
 
     paused = await loop.handle_task(

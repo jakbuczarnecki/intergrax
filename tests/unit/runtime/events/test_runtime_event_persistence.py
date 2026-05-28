@@ -6,10 +6,9 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import NullRuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.events.store_factory import (
-    RuntimeEventStoreBackend,
-    RuntimeEventStoreSettings,
-    create_runtime_event_store,
+from intergrax.runtime.events.store import (
+    open_runtime_event_store,
+    resolve_runtime_event_persistence,
 )
 from intergrax.runtime.events.stores.memory_runtime_event_store import (
     InMemoryRuntimeEventStore,
@@ -33,39 +32,37 @@ def _sample_event(**updates) -> RuntimeEvent:
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_create_runtime_event_store_none_returns_none():
-    store = create_runtime_event_store(
-        RuntimeEventStoreSettings(backend=RuntimeEventStoreBackend.NONE)
-    )
-    assert store is None
+def test_resolve_runtime_event_persistence_disabled_by_default():
+    assert resolve_runtime_event_persistence() is None
 
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_create_runtime_event_store_memory():
-    store = create_runtime_event_store(
-        RuntimeEventStoreSettings(backend=RuntimeEventStoreBackend.MEMORY)
-    )
-    assert isinstance(store, InMemoryRuntimeEventStore)
+def test_resolve_runtime_event_persistence_explicit_implementation():
+    custom = InMemoryRuntimeEventStore()
+    store = resolve_runtime_event_persistence(implementation=custom)
+    assert store is custom
 
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_create_runtime_event_store_sqlite(tmp_path):
-    store = create_runtime_event_store(
-        RuntimeEventStoreSettings(
-            backend=RuntimeEventStoreBackend.SQLITE,
-            sqlite_path=tmp_path / "events.db",
-        )
-    )
+def test_open_runtime_event_store_sqlite(tmp_path):
+    store = open_runtime_event_store(tmp_path / "events.db")
     assert isinstance(store, SQLiteRuntimeEventStore)
 
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_create_runtime_event_store_custom_implementation():
+def test_resolve_runtime_event_persistence_with_explicit_path(tmp_path):
+    store = resolve_runtime_event_persistence(db_path=tmp_path / "events.db")
+    assert isinstance(store, SQLiteRuntimeEventStore)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_resolve_runtime_event_persistence_null_implementation():
     custom = NullRuntimeEventPersistence()
-    store = create_runtime_event_store(implementation=custom)
+    store = resolve_runtime_event_persistence(implementation=custom)
     assert store is custom
 
 
@@ -84,7 +81,7 @@ def test_memory_runtime_event_store_roundtrip():
 @pytest.mark.unit
 @pytest.mark.gate
 def test_sqlite_runtime_event_store_roundtrip(tmp_path):
-    store = SQLiteRuntimeEventStore(db_path=tmp_path / "events.db")
+    store = open_runtime_event_store(tmp_path / "events.db")
     event = _sample_event()
     store.append(event, tenant_id="t1")
     by_task = store.list_for_task("task_1", tenant_id="t1")

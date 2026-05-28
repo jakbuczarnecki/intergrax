@@ -2850,6 +2850,27 @@ SharedTaskContext:
 
 Writes to `SharedTaskContext` MUST go through `ContextManager` (Tier-1), not agent-private globals.
 
+### 42.14.2 Context Assembly Options
+
+Per-node agent context is bounded by typed intake options on the task:
+
+```text
+TaskContextAssemblyOptions:
+    summary_tier: FULL | SUMMARY_ONLY | STRUCTURED_ONLY | MINIMAL
+    max_prior_chars: int
+    max_prior_entries: int
+    include_shared_handoffs: bool
+    include_shared_artifacts: bool
+```
+
+Canonical placement: `TaskExecutionOptions.context` (§23 typed task contract).
+
+`ContextManager.build_agent_context()` resolves policy from `task.options.context`, assembles `AgentContextBundle` with provenance, and applies summary-tier rules before agent execution.
+
+Legacy flat metadata keys remain supported via `task_metadata_bridge` for JSON/API serialization only.
+
+Handoff payloads in shared context use keys prefixed with `handoff:` (see §42.15).
+
 ---
 
 ## 42.15 Agent Handoff Contracts

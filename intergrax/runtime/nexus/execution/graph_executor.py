@@ -8,9 +8,16 @@ from typing import Awaitable, Callable, Dict, List, Optional
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
+from intergrax.contracts.agent_handoff import AgentHandoff, resolve_handoff_from_execution
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
+from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.hooks.hook_context import HookAction, HookContext
+from intergrax.runtime.hooks.hook_point import HookPoint
+from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_graph,
     should_skip_graph_node,
@@ -22,6 +29,8 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
 )
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.context.context_manager import ContextManager
+from intergrax.runtime.nexus.context.metadata_keys import HANDOFF_STRUCTURED_OUTPUT_PREFIX
+from intergrax.runtime.nexus.handoff.coordinator import HandoffCoordinator
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
     ExecutionNode,
@@ -34,6 +43,7 @@ from intergrax.runtime.task.task import Task
 
 ExecuteFn = Callable[[Agent, Task, ExecutionNode], Awaitable[AgentExecutionResult]]
 ValidateFn = Callable[[AgentExecutionResult, Agent, ExecutionNode], ValidationResult]
+HandoffExtra = tuple[str, AgentExecutionResult]
 
 
 class GraphExecutor:
@@ -50,6 +60,9 @@ class GraphExecutor:
         validation_engine: Optional[NexusValidationEngine] = None,
         retry_engine: Optional[RetryEngine] = None,
         context_manager: Optional[ContextManager] = None,
+        handoff_coordinator: Optional[HandoffCoordinator] = None,
+        event_bus: Optional[RuntimeEventBus] = None,
+        middleware: Optional[MiddlewarePipeline] = None,
     ) -> None:
         self._registry = registry
         self._engine = engine or AgentEngine(registry)
@@ -57,6 +70,9 @@ class GraphExecutor:
         self._validation_engine = validation_engine or NexusValidationEngine()
         self._retry_engine = retry_engine or RetryEngine(registry)
         self._context_manager = context_manager or ContextManager()
+        self._handoff = handoff_coordinator or HandoffCoordinator(registry)
+        self._event_bus = event_bus
+        self._middleware = middleware or MiddlewarePipeline()
 
     async def execute(
         self,
@@ -83,7 +99,7 @@ class GraphExecutor:
 
             if len(batch) == 1:
                 node = batch[0]
-                execution, retries, failed, cancelled = await self._execute_node(
+                execution, retries, failed, cancelled, handoff_extras = await self._execute_node(
                     graph,
                     task,
                     node,
@@ -102,6 +118,9 @@ class GraphExecutor:
                     return all_executions, all_retries, graph, False
                 all_executions.append(execution)
                 prior_outputs[node.node_id] = execution
+                for node_id, extra_execution in handoff_extras:
+                    all_executions.append(extra_execution)
+                    prior_outputs[node_id] = extra_execution
             else:
                 results = await asyncio.gather(
                     *[
@@ -119,13 +138,16 @@ class GraphExecutor:
                         for node in batch
                     ]
                 )
-                for execution, retries, failed, cancelled in results:
+                for execution, retries, failed, cancelled, handoff_extras in results:
                     all_retries.extend(retries)
                     if cancelled:
                         CancellationCoordinator.mark_pending_graph_nodes_cancelled(graph)
                         return all_executions, all_retries, graph, True
                     if failed:
                         return all_executions, all_retries, graph, False
+                    for node_id, extra_execution in handoff_extras:
+                        all_executions.append(extra_execution)
+                        prior_outputs[node_id] = extra_execution
                 for node in batch:
                     if node.execution_result is not None:
                         all_executions.append(node.execution_result)
@@ -145,7 +167,7 @@ class GraphExecutor:
         on_retry: Optional[Callable[[RetryRecord], None]],
         on_node_start: Optional[Callable[[ExecutionNode], None]],
         on_node_complete: Optional[Callable[[ExecutionNode], None]],
-    ) -> tuple[AgentExecutionResult, List[RetryRecord], bool, bool]:
+    ) -> tuple[AgentExecutionResult, List[RetryRecord], bool, bool, List[HandoffExtra]]:
         if should_skip_graph_node(
             node,
             checkpoint=runtime_ckpt,
@@ -156,7 +178,7 @@ class GraphExecutor:
             node.status = ExecutionNodeStatus.SKIPPED
             if on_node_complete is not None:
                 on_node_complete(node)
-            return execution, [], False, False
+            return execution, [], False, False, []
 
         if CancellationCoordinator.is_requested(task.metadata):
             node.status = ExecutionNodeStatus.SKIPPED
@@ -174,6 +196,7 @@ class GraphExecutor:
                 [],
                 False,
                 True,
+                [],
             )
 
         node.status = ExecutionNodeStatus.RUNNING
@@ -238,7 +261,7 @@ class GraphExecutor:
             node.metadata["cancelled"] = True
             if on_node_complete is not None:
                 on_node_complete(node)
-            return execution, retries, False, True
+            return execution, retries, False, True, []
 
         if on_retry is not None:
             for record in retries:
@@ -250,14 +273,171 @@ class GraphExecutor:
             node.metadata["governance_pause"] = True
             if on_node_complete is not None:
                 on_node_complete(node)
-            return execution, retries, False, False
+            return execution, retries, False, False, []
 
         if validation.valid:
             node.status = ExecutionNodeStatus.COMPLETED
+            self._context_manager.record_node_output(task, node, execution)
+            handoff_extras = await self._maybe_execute_handoff(
+                graph,
+                task,
+                node,
+                execution,
+                prior_outputs,
+                runtime_ckpt=runtime_ckpt,
+                plan_criteria=plan_criteria,
+                on_retry=on_retry,
+                on_node_start=on_node_start,
+                on_node_complete=on_node_complete,
+            )
         else:
             node.status = ExecutionNodeStatus.FAILED
+            handoff_extras = []
 
         if on_node_complete is not None:
             on_node_complete(node)
 
-        return execution, retries, not validation.valid, False
+        return execution, retries, not validation.valid, False, handoff_extras
+
+    async def _maybe_execute_handoff(
+        self,
+        graph: ExecutionGraph,
+        task: Task,
+        node: ExecutionNode,
+        execution: AgentExecutionResult,
+        prior_outputs: Dict[str, AgentExecutionResult],
+        *,
+        runtime_ckpt: Optional[RuntimeCheckpoint],
+        plan_criteria: Optional[List[str]],
+        on_retry: Optional[Callable[[RetryRecord], None]],
+        on_node_start: Optional[Callable[[ExecutionNode], None]],
+        on_node_complete: Optional[Callable[[ExecutionNode], None]],
+    ) -> List[HandoffExtra]:
+        handoff = resolve_handoff_from_execution(execution)
+        if handoff is None:
+            return []
+
+        validation = self._handoff.validate(
+            handoff,
+            from_agent_id=execution.agent_id,
+            task=task,
+        )
+        if not validation.valid or validation.resolved_agent_id is None:
+            node.status = ExecutionNodeStatus.FAILED
+            node.metadata["handoff_validation_errors"] = validation.errors
+            execution.errors.extend(validation.errors)
+            return []
+
+        hook_ctx = HookContext(
+            task_id=task.task_id,
+            run_id=task.task_id,
+            node_id=node.node_id,
+            agent_id=execution.agent_id,
+            phase=ExecutionPhase.STEP_EXECUTION,
+        )
+        before = await self._middleware.run_before(HookPoint.BEFORE_HANDOFF, hook_ctx)
+        if before.action != HookAction.ALLOW:
+            node.status = ExecutionNodeStatus.FAILED
+            execution.errors.append(before.reason or "handoff blocked by hook")
+            return []
+
+        await self._emit_handoff_event(
+            task,
+            handoff,
+            RuntimeEventType.HANDOFF_INITIATED,
+            from_node_id=node.node_id,
+            to_agent_id=validation.resolved_agent_id,
+        )
+
+        self._context_manager.put_structured_output(
+            task,
+            key=f"{HANDOFF_STRUCTURED_OUTPUT_PREFIX}{handoff.handoff_id}",
+            payload={
+                "from_agent_id": handoff.from_agent_id,
+                "to_agent_id": validation.resolved_agent_id,
+                "reason": handoff.reason,
+                "payload": dict(handoff.payload),
+                "artifacts": list(handoff.artifacts),
+            },
+        )
+
+        handoff_node = self._handoff.apply_to_graph(
+            graph,
+            handoff,
+            from_node_id=node.node_id,
+            resolved_agent_id=validation.resolved_agent_id,
+        )
+
+        merged_prior = dict(prior_outputs)
+        merged_prior[node.node_id] = execution
+        handoff_execution, handoff_retries, handoff_failed, _, nested_extras = await self._execute_node(
+            graph,
+            task,
+            handoff_node,
+            merged_prior,
+            runtime_ckpt=runtime_ckpt,
+            plan_criteria=plan_criteria,
+            on_retry=on_retry,
+            on_node_start=on_node_start,
+            on_node_complete=on_node_complete,
+        )
+        if on_retry is not None:
+            for record in handoff_retries:
+                on_retry(record)
+
+        if handoff_failed or handoff_execution.status != AgentExecutionStatus.COMPLETED:
+            node.metadata["handoff_failed"] = True
+            return []
+
+        await self._emit_handoff_event(
+            task,
+            handoff,
+            RuntimeEventType.HANDOFF_COMPLETED,
+            from_node_id=node.node_id,
+            to_agent_id=validation.resolved_agent_id,
+            handoff_node_id=handoff_node.node_id,
+        )
+        await self._middleware.run_after(
+            HookPoint.AFTER_HANDOFF,
+            hook_ctx.model_copy(update={"agent_id": validation.resolved_agent_id}),
+        )
+
+        extras: List[HandoffExtra] = [(handoff_node.node_id, handoff_execution)]
+        extras.extend(nested_extras)
+        return extras
+
+    async def _emit_handoff_event(
+        self,
+        task: Task,
+        handoff: AgentHandoff,
+        event_type: RuntimeEventType,
+        *,
+        from_node_id: str,
+        to_agent_id: str,
+        handoff_node_id: Optional[str] = None,
+    ) -> None:
+        if self._event_bus is None:
+            return
+        payload: dict[str, object] = {
+            "handoff_id": handoff.handoff_id,
+            "from_agent_id": handoff.from_agent_id,
+            "from_node_id": from_node_id,
+            "to_agent_id": to_agent_id,
+            "to_capability": handoff.to_capability,
+            "reason": handoff.reason,
+        }
+        if handoff_node_id is not None:
+            payload["handoff_node_id"] = handoff_node_id
+        await self._event_bus.publish(
+            RuntimeEvent(
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+                run_id=task.task_id,
+                node_id=handoff_node_id or from_node_id,
+                agent_id=handoff.from_agent_id,
+                event_type=event_type,
+                phase=ExecutionPhase.STEP_EXECUTION,
+                payload=payload,
+                correlation_id=task.task_id,
+            )
+        )
