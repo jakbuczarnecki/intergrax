@@ -5,12 +5,23 @@
 
 from __future__ import annotations
 
+from enum import StrEnum
 from typing import FrozenSet
 
-SANDBOX_FLAG = "sandbox"
-SANDBOX_SESSION_ID_KEY = "sandbox_session_id"
-SANDBOX_CLEANUP_KEY = "sandbox_cleanup"
 SANDBOX_TOOL_NAME = "sandbox.exec"
+
+
+class SandboxMetadataKey(StrEnum):
+    """Flat metadata keys for sandbox isolation (Phase F.2)."""
+
+    SANDBOX = "sandbox"
+    SANDBOX_SESSION_ID = "sandbox_session_id"
+    SANDBOX_CLEANUP = "sandbox_cleanup"
+
+
+SANDBOX_FLAG = SandboxMetadataKey.SANDBOX
+SANDBOX_SESSION_ID_KEY = SandboxMetadataKey.SANDBOX_SESSION_ID
+SANDBOX_CLEANUP_KEY = SandboxMetadataKey.SANDBOX_CLEANUP
 
 DEFAULT_SANDBOX_OPERATIONS: FrozenSet[str] = frozenset(
     {"echo", "write_file", "read_file", "list_files"}

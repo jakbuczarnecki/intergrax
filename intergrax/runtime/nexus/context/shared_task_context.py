@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field
 
 from intergrax.runtime.nexus.artifacts.models import ArtifactRef
-from intergrax.runtime.task.task_metadata_keys import SHARED_TASK_CONTEXT_KEY
+from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
 
 DEFAULT_SHARED_MEMORY_NAMESPACE = "shared"
 
@@ -67,7 +67,7 @@ def load_shared_task_context(task_or_metadata: Any) -> Optional[SharedTaskContex
 def load_shared_task_context_from_metadata(
     metadata: Dict[str, Any],
 ) -> Optional[SharedTaskContext]:
-    raw = metadata.get(SHARED_TASK_CONTEXT_KEY)
+    raw = metadata.get(TaskMetadataKey.SHARED_TASK_CONTEXT)
     if raw is None:
         return None
     if isinstance(raw, SharedTaskContext):
@@ -81,10 +81,10 @@ def save_shared_task_context(task_or_metadata: Any, shared: SharedTaskContext) -
     """Persist shared context on ``Task.metadata`` or a metadata dict."""
     payload = shared.model_dump(mode="json")
     if hasattr(task_or_metadata, "metadata"):
-        task_or_metadata.metadata[SHARED_TASK_CONTEXT_KEY] = payload
+        task_or_metadata.metadata[TaskMetadataKey.SHARED_TASK_CONTEXT] = payload
         return
     if isinstance(task_or_metadata, dict):
-        task_or_metadata[SHARED_TASK_CONTEXT_KEY] = payload
+        task_or_metadata[TaskMetadataKey.SHARED_TASK_CONTEXT] = payload
 
 
 def get_or_create_shared_task_context(task_or_metadata: Any, *, task_id: str) -> SharedTaskContext:
@@ -96,7 +96,7 @@ def get_or_create_shared_task_context(task_or_metadata: Any, *, task_id: str) ->
 
 __all__ = [
     "DEFAULT_SHARED_MEMORY_NAMESPACE",
-    "SHARED_TASK_CONTEXT_KEY",
+    "TaskMetadataKey",
     "SharedArtifactEntry",
     "SharedContextConflictError",
     "SharedTaskContext",

@@ -19,6 +19,11 @@ if TYPE_CHECKING:
 
 
 @runtime_checkable
+class MetadataCarrier(Protocol):
+    metadata: Dict[str, Any]
+
+
+@runtime_checkable
 class ToolGateway(Protocol):
     async def invoke(self, request: ToolRequest) -> ToolResponse: ...
 
@@ -71,7 +76,7 @@ class RuntimeExecutionContext(BaseModel):
     event_emitter: Optional[Any] = Field(default=None, exclude=True)
     memory_view: Optional[Any] = Field(default=None, exclude=True)
     trace: Optional[Any] = Field(default=None, exclude=True)
-    request: Optional[Any] = Field(default=None, exclude=True)
+    request: Optional[MetadataCarrier] = Field(default=None, exclude=True)
     domain_context: Optional[Any] = Field(default=None, exclude=True)
 
     async def emit_event(self, event: RuntimeEvent) -> None:
@@ -92,8 +97,7 @@ class RuntimeExecutionContext(BaseModel):
     def should_cancel(self) -> bool:
         from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
 
-        if self.request is not None and hasattr(self.request, "metadata"):
-            metadata = getattr(self.request, "metadata", None)
-            if isinstance(metadata, dict) and CancellationCoordinator.is_requested(metadata):
+        if isinstance(self.request, MetadataCarrier):
+            if CancellationCoordinator.is_requested(self.request.metadata):
                 return True
         return CancellationCoordinator.is_requested(self.metadata)

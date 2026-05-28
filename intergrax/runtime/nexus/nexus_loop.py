@@ -50,11 +50,7 @@ from intergrax.runtime.task.task_contract import (
     TaskRetryRecord,
     TaskValidationSummary,
 )
-from intergrax.runtime.task.task_metadata_keys import (
-    GOVERNANCE_HUMAN_REQUEST_KEY,
-    HUMAN_REQUEST_CREATED_AT_KEY,
-    HUMAN_REQUEST_EXPIRES_AT_KEY,
-)
+from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import (
     PersistingTaskTraceEmitter,
@@ -668,9 +664,9 @@ class NexusLoop:
             metadata=dict(composer_meta),
         )
         for key in (
-            GOVERNANCE_HUMAN_REQUEST_KEY,
-            HUMAN_REQUEST_CREATED_AT_KEY,
-            HUMAN_REQUEST_EXPIRES_AT_KEY,
+            TaskMetadataKey.GOVERNANCE_HUMAN_REQUEST,
+            TaskMetadataKey.HUMAN_REQUEST_CREATED_AT,
+            TaskMetadataKey.HUMAN_REQUEST_EXPIRES_AT,
         ):
             if key in task.metadata:
                 result.metadata[key] = task.metadata[key]

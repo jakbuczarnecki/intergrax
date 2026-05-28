@@ -245,3 +245,29 @@ response = await ctx.invoke_tool(ToolRequest(
 ```
 
 Result metadata includes `sandbox_session_id` and `sandbox_operation_count`. Optional cleanup: `"sandbox_cleanup": True`.
+
+## 12. Context assembly options (Phase I.5)
+
+Bounded per-node agent context is configured via typed options on the task — not ad-hoc metadata dicts:
+
+```python
+from intergrax.contracts.context_assembly import ContextSummaryTier, TaskContextAssemblyOptions
+from intergrax.runtime.task.task_contract import TaskExecutionOptions
+
+task = Task(
+    tenant_id="t1",
+    user_id="u1",
+    message="analyze vendors",
+    options=TaskExecutionOptions(
+        context=TaskContextAssemblyOptions(
+            summary_tier=ContextSummaryTier.MINIMAL,  # or STRUCTURED_ONLY, SUMMARY_ONLY, FULL
+            max_prior_chars=2000,
+            include_shared_handoffs=True,
+        ),
+    ),
+)
+```
+
+`ContextManager` reads `task.options.context` when building `AgentContextBundle` for graph nodes.
+
+Legacy flat metadata keys (`context_summary_tier`, `context_assembly_policy`, …) are still hydrated by `task_metadata_bridge` for JSON/API compatibility, but new code should use `TaskExecutionOptions.context` directly.

@@ -1,16 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.runtime.human.escalation import (
-    ESCALATION_CHAIN_KEY,
-    ESCALATION_LEVEL_KEY,
-    ESCALATION_TARGET_KEY,
-    EscalationRouter,
-    HUMAN_DECISION_KEY,
-    HUMAN_ESCALATED_KEY,
-    HUMAN_REJECTED_KEY,
-    parse_human_response,
-)
+from intergrax.runtime.human.escalation import EscalationRouter, TaskMetadataKey, parse_human_response
 from intergrax.runtime.human.models import (
     EscalationOutcome,
     EscalationTarget,
@@ -18,10 +9,16 @@ from intergrax.runtime.human.models import (
     HumanResponseVerdict,
 )
 from intergrax.runtime.human.pause import (
+    ESCALATION_CHAIN_KEY,
+    ESCALATION_LEVEL_KEY,
+    ESCALATION_TARGET_KEY,
     GOVERNANCE_HUMAN_REQUEST_KEY,
     GOVERNANCE_INTERRUPT_KEY,
     GOVERNANCE_PAUSE_KEY,
     HUMAN_APPROVED_KEY,
+    HUMAN_DECISION_KEY,
+    HUMAN_ESCALATED_KEY,
+    HUMAN_REJECTED_KEY,
     HUMAN_RESPONSE_KEY,
     HumanPauseCoordinator,
     PauseRecord,
@@ -59,4 +56,5 @@ __all__ = [
     "open_human_decision_store",
     "parse_human_response",
     "resolve_human_decisions_db_path",
+    "TaskMetadataKey",
 ]

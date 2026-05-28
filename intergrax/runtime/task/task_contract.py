@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_decision import HumanRequest
+from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 
 TASK_CONTRACT_METADATA_KEY = "task_contract.v1"
@@ -64,6 +65,7 @@ class TaskExecutionOptions(BaseModel):
     human: TaskHumanInput = Field(default_factory=TaskHumanInput)
     governance: TaskGovernanceOptions = Field(default_factory=TaskGovernanceOptions)
     long_running: TaskLongRunningOptions = Field(default_factory=TaskLongRunningOptions)
+    context: TaskContextAssemblyOptions = Field(default_factory=TaskContextAssemblyOptions)
 
 
 class EscalationStep(BaseModel):

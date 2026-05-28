@@ -9,6 +9,25 @@ from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.runtime.nexus.artifacts.models import ArtifactRef
+from intergrax.runtime.nexus.context.context_assembler import (
+    bridge_shared_context_reads,
+    collect_dependency_records,
+    compose_agent_message,
+    prior_outputs_dict,
+    provenance_for_shared_reads,
+)
+from intergrax.contracts.context_assembly import (
+    ContextAssemblyMetadataKey,
+    ContextSummaryTier,
+    TaskContextAssemblyOptions,
+)
+from intergrax.runtime.nexus.context.context_models import (
+    ContextProvenance,
+    ContextSourceType,
+    PriorOutputRecord,
+)
+from intergrax.runtime.nexus.context.metadata_keys import AgentContextMetadataKey
+from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
 from intergrax.runtime.nexus.context.shared_task_context import (
     SharedArtifactEntry,
     SharedContextConflictError,
@@ -29,15 +48,29 @@ class AgentContextBundle(BaseModel):
     evidence: List[str] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
     shared_context: Optional[SharedTaskContext] = None
+    shared_reads: Dict[str, Any] = Field(default_factory=dict)
+    prior_records: List[PriorOutputRecord] = Field(default_factory=list)
+    provenance: List[ContextProvenance] = Field(default_factory=list)
+    summary_tier: ContextSummaryTier = ContextSummaryTier.FULL
+    schema_version: str = "agent_context_bundle.v2"
 
 
 class ContextManager:
     """
     Builds per-node agent context from task state, shared context, and prior graph outputs.
+
+    v2 adds provenance tracking, summary tiers, and explicit shared-context reads (§28).
     """
 
-    def __init__(self, *, max_prior_chars: int = 4000) -> None:
-        self._max_prior_chars = max_prior_chars
+    def __init__(
+        self,
+        *,
+        max_prior_chars: int = 4000,
+        default_policy: Optional[TaskContextAssemblyOptions] = None,
+    ) -> None:
+        self._default_policy = default_policy or TaskContextAssemblyOptions(
+            max_prior_chars=max_prior_chars,
+        )
 
     def get_shared_context(self, task: Task) -> Optional[SharedTaskContext]:
         return load_shared_task_context(task)
@@ -47,64 +80,95 @@ class ContextManager:
         save_shared_task_context(task, shared)
         return shared
 
+    def resolve_policy(self, task: Task) -> TaskContextAssemblyOptions:
+        policy = task.options.context
+        factory_default = TaskContextAssemblyOptions()
+        if (
+            policy.max_prior_chars == factory_default.max_prior_chars
+            and self._default_policy.max_prior_chars != factory_default.max_prior_chars
+        ):
+            return policy.model_copy(update={"max_prior_chars": self._default_policy.max_prior_chars})
+        return policy
+
     def build_agent_context(
         self,
         task: Task,
         node: ExecutionNode,
         prior_outputs: Dict[str, AgentExecutionResult],
+        *,
+        policy: Optional[TaskContextAssemblyOptions] = None,
     ) -> AgentContextBundle:
         shared = self.ensure_shared_context(task)
-        evidence: List[str] = []
-        structured: Dict[str, Any] = dict(shared.structured_outputs)
+        resolved_policy = policy or self.resolve_policy(task)
 
-        for dep_id in node.depends_on:
-            prior = prior_outputs.get(dep_id)
-            if prior is None:
-                continue
-            if prior.summary:
-                evidence.append(prior.summary)
-            structured[dep_id] = {
-                "agent_id": prior.agent_id,
-                "summary": prior.summary,
-                "structured_data": prior.structured_data,
-            }
+        records, evidence, provenance = collect_dependency_records(
+            node,
+            prior_outputs,
+            policy=resolved_policy,
+            shared_version=shared.version,
+        )
+        shared_reads = bridge_shared_context_reads(shared, node, resolved_policy)
+        provenance.extend(
+            provenance_for_shared_reads(shared_reads, shared_version=shared.version)
+        )
 
-        prior_text = "\n\n".join(evidence)
-        if len(prior_text) > self._max_prior_chars:
-            prior_text = prior_text[: self._max_prior_chars] + "\n...[truncated]"
-
-        message = task.message or ""
-        if prior_text:
-            message = (
-                f"{message}\n\n--- prior agent outputs ---\n{prior_text}"
-                if message.strip()
-                else prior_text
+        if task.message.strip():
+            provenance.insert(
+                0,
+                ContextProvenance(
+                    source_type=ContextSourceType.TASK_MESSAGE,
+                    source_id=task.task_id,
+                ),
             )
+
+        structured = dict(shared.structured_outputs)
+        structured.update(prior_outputs_dict(records))
+
+        message = compose_agent_message(
+            task,
+            node=node,
+            records=records,
+            evidence=evidence,
+            shared_reads=shared_reads,
+            policy=resolved_policy,
+        )
 
         return AgentContextBundle(
             message=message,
             prior_outputs=structured,
             evidence=evidence,
             shared_context=shared,
+            shared_reads=shared_reads,
+            prior_records=records,
+            provenance=provenance,
+            summary_tier=resolved_policy.summary_tier,
             metadata={
                 "node_id": node.node_id,
                 "capability": node.capability,
                 "depends_on": list(node.depends_on),
                 "shared_context_version": shared.version,
+                "summary_tier": resolved_policy.summary_tier.value,
+                "shared_read_keys": sorted(shared_reads.keys()),
             },
         )
 
     def apply_to_task(self, task: Task, bundle: AgentContextBundle) -> Task:
-        """Return task copy with bounded message and shared context for agent execution."""
+        """Return task copy with bounded message, provenance, and shared context for agent execution."""
         shared = bundle.shared_context or self.ensure_shared_context(task)
         return task.model_copy(
             update={
                 "message": bundle.message,
                 "metadata": {
                     **task.metadata,
-                    "agent_context": bundle.metadata,
-                    "prior_agent_outputs": bundle.prior_outputs,
-                    "shared_task_context": shared.model_dump(mode="json"),
+                    AgentContextMetadataKey.AGENT_CONTEXT: bundle.metadata,
+                    AgentContextMetadataKey.AGENT_CONTEXT_BUNDLE: bundle.model_dump(mode="json"),
+                    AgentContextMetadataKey.CONTEXT_PROVENANCE: [
+                        entry.model_dump(mode="json") for entry in bundle.provenance
+                    ],
+                    ContextAssemblyMetadataKey.SUMMARY_TIER: bundle.summary_tier.value,
+                    AgentContextMetadataKey.SHARED_CONTEXT_READS: dict(bundle.shared_reads),
+                    AgentContextMetadataKey.PRIOR_AGENT_OUTPUTS: bundle.prior_outputs,
+                    TaskMetadataKey.SHARED_TASK_CONTEXT: shared.model_dump(mode="json"),
                 },
             }
         )
@@ -124,6 +188,12 @@ class ContextManager:
             "summary": execution.summary,
             "structured_data": dict(execution.structured_data or {}),
             "status": execution.status.value,
+            "provenance": {
+                "source_type": ContextSourceType.DEPENDENCY_OUTPUT.value,
+                "source_id": node.node_id,
+                "agent_id": execution.agent_id,
+                "shared_version": shared.version,
+            },
         }
         shared.version += 1
         save_shared_task_context(task, shared)

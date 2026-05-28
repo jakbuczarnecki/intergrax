@@ -13,23 +13,11 @@ from intergrax.runtime.human.models import (
 from intergrax.runtime.human.response_parser import parse_human_response
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import EscalationStep
-from intergrax.runtime.task.task_metadata_keys import (
-    ESCALATION_CHAIN_KEY,
-    ESCALATION_LEVEL_KEY,
-    ESCALATION_TARGET_KEY,
-    HUMAN_DECISION_KEY,
-    HUMAN_ESCALATED_KEY,
-    HUMAN_REJECTED_KEY,
-)
+from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
 
 __all__ = [
-    "ESCALATION_CHAIN_KEY",
-    "ESCALATION_LEVEL_KEY",
-    "ESCALATION_TARGET_KEY",
-    "HUMAN_DECISION_KEY",
-    "HUMAN_ESCALATED_KEY",
-    "HUMAN_REJECTED_KEY",
     "EscalationRouter",
+    "TaskMetadataKey",
     "parse_human_response",
 ]
 

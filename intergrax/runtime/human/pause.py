@@ -32,6 +32,7 @@ from intergrax.runtime.task.task_metadata_keys import (
     HUMAN_ESCALATED_KEY,
     HUMAN_REJECTED_KEY,
     HUMAN_RESPONSE_KEY,
+    TaskMetadataKey,
 )
 
 __all__ = [
@@ -48,6 +49,7 @@ __all__ = [
     "HUMAN_RESPONSE_KEY",
     "HumanPauseCoordinator",
     "PauseRecord",
+    "TaskMetadataKey",
 ]
 
 

@@ -29,6 +29,7 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
 )
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.context.context_manager import ContextManager
+from intergrax.runtime.nexus.context.metadata_keys import HANDOFF_STRUCTURED_OUTPUT_PREFIX
 from intergrax.runtime.nexus.handoff.coordinator import HandoffCoordinator
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
@@ -350,7 +351,7 @@ class GraphExecutor:
 
         self._context_manager.put_structured_output(
             task,
-            key=f"handoff:{handoff.handoff_id}",
+            key=f"{HANDOFF_STRUCTURED_OUTPUT_PREFIX}{handoff.handoff_id}",
             payload={
                 "from_agent_id": handoff.from_agent_id,
                 "to_agent_id": validation.resolved_agent_id,

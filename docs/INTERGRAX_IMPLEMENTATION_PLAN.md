@@ -80,7 +80,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §22 ToolRuntime | Policy gateway | **Done** | `tool_runtime.py`, `ToolAccessPolicy` |
 
-| §23 Task lifecycle | States + trace + typed contract | **Done** | `task/`, `task_contract.py`, `task_metadata_bridge.py` |
+| §23 Task lifecycle | States + trace + typed contract | **Done** | `task/`, `task_contract.py`, `TaskContextAssemblyOptions`, `task_metadata_bridge.py` |
 
 | §24–25 Execution graph | Multi-agent | **Done** | `execution/`, `GraphExecutor` |
 
@@ -101,7 +101,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §26 Long-running tasks | Checkpoint / resume | **Partial** | F.4 task snapshot ✅; scheduler / UAEP mid-step pending |
 | §18 Slack / Teams | Interaction adapters | **Stub** | F.4 notification stub only; no intake / webhook |
-| §27 Memory model | Bounded task / agent memory | **Partial** | I.1–I.4 done; ContextManager v2 pending |
+| §27 Memory model | Bounded task / agent memory | **Done** | I.1–I.5: TaskMemory, MemoryView, SharedTaskContext, handoff, ContextManager v2 |
 | §42.9 Pause / Resume | `RuntimeCheckpoint` | **Partial** | HITL pause ✅; full plan/graph/UAEP checkpoint pending |
 | §41 Unified entry | Single run lifecycle | **Partial** | `NexusLoop` + `RunService` + `RuntimeEngine` still parallel |
 
@@ -366,7 +366,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | I.2 | `MemoryView` gateway | **Done** | §42.35 | `PolicyScopedMemoryView` + UAEP wiring + `MEMORY_*` events |
 | I.3 | `SharedTaskContext` | **Done** | §42.14 | Contract + `ContextManager` + graph merge + memory bridge |
 | I.4 | Agent handoff | **Done** | §42.15 | `AgentHandoff` + `HandoffCoordinator` + graph path + `HANDOFF_*` events |
-| I.5 | ContextManager v2 | Pending | §28 | Provenance + summary tiers |
+| I.5 | ContextManager v2 | **Done** | §28 | Provenance + summary tiers + `TaskContextAssemblyOptions` on `TaskExecutionOptions.context` |
 
 ---
 
@@ -401,9 +401,9 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     I.5 — ContextManager v2 (§28)
+NOW:     J.1 — NexusLoop default in apps (§41)
 
-NEXT:    Phase J — Unified execution entry (§41)
+NEXT:    J.2–J.5 — unified execution entry
 
 THEN:    Phase J — Unified execution entry (§41)
 
@@ -443,11 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**I.5 — ContextManager v2** (§28):
+**J.1 — NexusLoop default in apps** (§41):
 
-1. Provenance + summary tiers on bounded agent context bundles.
-2. Bridge shared context reads into bundle assembly.
-3. Unit + integration tests; gate green.
+1. Legal/Research hosts use NexusLoop as default execution path (legacy opt-out).
+2. Wire Task v2 lifecycle through application serving layer.
+3. Integration tests; gate green.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,7 +455,8 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
-- **I.4:** Agent handoff — `AgentHandoff`, `HandoffCoordinator`, graph executor path, `HANDOFF_INITIATED`/`HANDOFF_COMPLETED`.
+- **I.5:** ContextManager v2 — provenance, summary tiers, typed `TaskContextAssemblyOptions` (`TaskExecutionOptions.context`), metadata bridge sync.
+- **I.4:** Agent handoff — `AgentHandoff`, `HandoffCoordinator`, graph executor path, `HANDOFF_*` events.
 - **I.3:** `SharedTaskContext` — formal payload on `Task`, `ContextManager` merge, memory read bridge.
 - **I.2:** `MemoryView` gateway — `PolicyScopedMemoryView`, UAEP wiring, `MEMORY_READ`/`MEMORY_WRITE` events.
 - **I.1:** `TaskMemory` store — `TaskMemoryPersistence`, `TaskMemoryCoordinator`, in-memory + SQLite backends.
@@ -717,5 +718,5 @@ Reuse:
 
 
 
-*Plan synced with codebase after I.4 Agent handoff (2026-05-27). Gate: 189 tests.*
+*Plan synced with codebase after I.5 typed context assembly cleanup (2026-05-27). Gate: 197 tests.*
 
