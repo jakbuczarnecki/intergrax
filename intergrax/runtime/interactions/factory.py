@@ -14,6 +14,7 @@ from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.interactions.adapters.chained_adapter import ChainedInteractionAdapter
 from intergrax.runtime.interactions.adapters.lab_json_adapter import LabJsonInteractionAdapter
 from intergrax.runtime.interactions.adapters.slash_command_adapter import SlashCommandInteractionAdapter
+from intergrax.runtime.interactions.adapters.teams_activity_adapter import TeamsActivityInteractionAdapter
 from intergrax.runtime.task.task import Task
 
 ENV_INTERACTION_SURFACE = "INTERGRAX_INTERACTION_SURFACE"
@@ -22,6 +23,7 @@ InteractionAdapterFactory = Callable[[], InteractionAdapter]
 
 _DEFAULT_CHAIN = (
     SlashCommandInteractionAdapter(),
+    TeamsActivityInteractionAdapter(),
     LabJsonInteractionAdapter(),
 )
 
@@ -30,6 +32,7 @@ class InteractionSurface(str, Enum):
     AUTO = "auto"
     LAB = "lab"
     SLASH_COMMAND = "slash_command"
+    TEAMS = "teams"
 
 
 @dataclass(frozen=True)
@@ -67,6 +70,8 @@ def create_interaction_adapter(
         return LabJsonInteractionAdapter()
     if resolved.surface == InteractionSurface.SLASH_COMMAND:
         return SlashCommandInteractionAdapter()
+    if resolved.surface == InteractionSurface.TEAMS:
+        return TeamsActivityInteractionAdapter()
     return ChainedInteractionAdapter(_DEFAULT_CHAIN)
 
 

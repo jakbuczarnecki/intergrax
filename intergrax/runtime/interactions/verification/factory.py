@@ -19,6 +19,11 @@ from intergrax.runtime.interactions.verification.slack_signature import (
     SlackSignatureVerifier,
     resolve_slack_signing_secret,
 )
+from intergrax.runtime.interactions.verification.teams_signature import (
+    ENV_TEAMS_VERIFY_SIGNATURE,
+    TeamsSignatureVerifier,
+    resolve_teams_security_token,
+)
 
 ENV_INBOUND_VERIFIER = "INTERGRAX_INBOUND_VERIFIER"
 
@@ -26,6 +31,7 @@ ENV_INBOUND_VERIFIER = "INTERGRAX_INBOUND_VERIFIER"
 class InboundVerifierMode(str, Enum):
     NONE = "none"
     SLACK = "slack"
+    TEAMS = "teams"
 
 
 @dataclass(frozen=True)
@@ -33,6 +39,8 @@ class InboundVerifierSettings:
     mode: InboundVerifierMode = InboundVerifierMode.NONE
     slack_signing_secret: str = ""
     slack_verify_enabled: Optional[bool] = None
+    teams_security_token: str = ""
+    teams_verify_enabled: Optional[bool] = None
 
 
 def resolve_inbound_verifier_settings(
@@ -40,6 +48,8 @@ def resolve_inbound_verifier_settings(
     mode: Optional[str] = None,
     slack_signing_secret: Optional[str] = None,
     slack_verify_enabled: Optional[bool] = None,
+    teams_security_token: Optional[str] = None,
+    teams_verify_enabled: Optional[bool] = None,
 ) -> InboundVerifierSettings:
     raw_mode = (mode or os.environ.get(ENV_INBOUND_VERIFIER, InboundVerifierMode.NONE.value)).strip().lower()
     try:
@@ -50,6 +60,8 @@ def resolve_inbound_verifier_settings(
         mode=resolved_mode,
         slack_signing_secret=resolve_slack_signing_secret(slack_signing_secret),
         slack_verify_enabled=slack_verify_enabled,
+        teams_security_token=resolve_teams_security_token(teams_security_token),
+        teams_verify_enabled=teams_verify_enabled,
     )
 
 
@@ -65,5 +77,10 @@ def create_inbound_verifier(
         return SlackSignatureVerifier(
             signing_secret=resolved.slack_signing_secret,
             enabled=resolved.slack_verify_enabled,
+        )
+    if resolved.mode == InboundVerifierMode.TEAMS:
+        return TeamsSignatureVerifier(
+            security_token=resolved.teams_security_token,
+            enabled=resolved.teams_verify_enabled,
         )
     return NullInboundRequestVerifier()

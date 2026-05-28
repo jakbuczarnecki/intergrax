@@ -322,7 +322,7 @@ def create_debug_router(
             )
         except ValueError as exc:
             message = str(exc)
-            if "signature" in message.lower() or "Slack" in message:
+            if "signature" in message.lower() or "Slack" in message or "Teams" in message:
                 raise HTTPException(status_code=401, detail=message) from exc
             raise HTTPException(status_code=422, detail=message) from exc
         except TypeError as exc:

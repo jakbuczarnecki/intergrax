@@ -353,7 +353,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | H.2 | `InteractionAdapter` protocol | **Done** | §18 | Inbound → normalized `Task` |
 | H.3 | Slack inbound lab path | **Done** | §18 | Debug API intake + signature stub |
 | H.4 | HITL notification templates | **Done** | §42.10 | Reusable template + `notify_hitl_pause`; Slack/Teams formatters |
-| H.5 | Teams parity | Pending | §18 | Same as H.3–H.4 |
+| H.5 | Teams parity | **Done** | §18 | Activity parser + HMAC verifier + debug intake tests |
 | H.6 | Organization Worker demo | Pending | §38 | End-to-end §38 reference flow |
 
 ---
@@ -401,11 +401,11 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     H.5 — Teams parity (§18)
+NOW:     H.6 — Organization Worker demo (§38)
 
-NEXT:    H.6 — Organization Worker demo (§38)
+NEXT:    Phase I — Memory & context (§27–28)
 
-THEN:    Phase I — Memory & context (§27–28)
+THEN:    Phase J — Unified execution entry (§41)
 
 PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
@@ -443,11 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**H.5 — Teams parity** (§18):
+**H.6 — Organization Worker demo** (§38):
 
-1. Reuse H.3 interaction intake + H.4 templates for Teams MessageCard payloads.
-2. Teams inbound parser / signature verifier (opt-in, lab path).
-3. Integration tests mirroring Slack H.3 coverage.
+1. End-to-end reference flow: inbound interaction → Nexus → HITL pause → notification → resume.
+2. Wire Slack/Teams adapters through debug API and long-running coordinator.
+3. Document lab runbook in implementation plan appendix.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,6 +455,7 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
+- **H.5:** Teams parity — `TeamsActivityInteractionAdapter`, `TeamsSignatureVerifier`, debug intake tests mirroring H.3.
 - **H.4:** HITL notification templates — `HitlPauseNotificationTemplate`, `notify_hitl_pause`, Slack/Teams formatter parity for actions/urgency.
 - **H.3:** Debug API `POST /debug/interactions/intake` — JSON/form body, optional `execute`, Slack signature verifier (opt-in).
 - **H.2:** `InteractionAdapter` — inbound parsers, factory, `ChainedInteractionAdapter`.

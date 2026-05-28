@@ -8,6 +8,7 @@ from intergrax.runtime.interactions.adapter_contract import (
 from intergrax.runtime.interactions.adapters.chained_adapter import ChainedInteractionAdapter
 from intergrax.runtime.interactions.adapters.lab_json_adapter import LabJsonInteractionAdapter
 from intergrax.runtime.interactions.adapters.slash_command_adapter import SlashCommandInteractionAdapter
+from intergrax.runtime.interactions.adapters.teams_activity_adapter import TeamsActivityInteractionAdapter
 from intergrax.runtime.interactions.factory import (
     InteractionSettings,
     InteractionSurface,
@@ -27,6 +28,7 @@ __all__ = [
     "InteractionSurface",
     "LabJsonInteractionAdapter",
     "SlashCommandInteractionAdapter",
+    "TeamsActivityInteractionAdapter",
     "create_interaction_adapter",
     "inbound_to_task",
     "intake_payload_to_task",

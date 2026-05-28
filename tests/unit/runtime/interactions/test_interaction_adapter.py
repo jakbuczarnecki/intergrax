@@ -5,6 +5,7 @@ import pytest
 from intergrax.runtime.interactions.adapters.chained_adapter import ChainedInteractionAdapter
 from intergrax.runtime.interactions.adapters.lab_json_adapter import LabJsonInteractionAdapter
 from intergrax.runtime.interactions.adapters.slash_command_adapter import SlashCommandInteractionAdapter
+from intergrax.runtime.interactions.adapters.teams_activity_adapter import TeamsActivityInteractionAdapter
 from intergrax.runtime.interactions.factory import (
     InteractionSurface,
     create_interaction_adapter,
@@ -98,6 +99,10 @@ def test_create_interaction_adapter_surfaces():
     assert isinstance(
         create_interaction_adapter(resolve_interaction_settings(surface="slash_command")),
         SlashCommandInteractionAdapter,
+    )
+    assert isinstance(
+        create_interaction_adapter(resolve_interaction_settings(surface="teams")),
+        TeamsActivityInteractionAdapter,
     )
     auto = create_interaction_adapter(resolve_interaction_settings(surface="auto"))
     assert isinstance(auto, ChainedInteractionAdapter)
