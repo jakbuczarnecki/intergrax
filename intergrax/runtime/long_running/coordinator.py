@@ -14,6 +14,7 @@ from intergrax.runtime.long_running.checkpoint_builder import (
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.notifications.models import NotificationMessage
 from intergrax.runtime.long_running.notification import NotificationAdapter, resolve_notification_adapter
+from intergrax.runtime.notifications.templates.hitl import build_hitl_pause_notification_message
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
@@ -127,6 +128,24 @@ class LongRunningCoordinator:
                 },
             )
         )
+
+    @staticmethod
+    async def notify_hitl_pause(
+        task: Task,
+        *,
+        progress_message: str,
+        adapter: Optional[NotificationAdapter] = None,
+    ) -> None:
+        if not LongRunningCoordinator.is_long_running(task):
+            return
+        channel = task.options.long_running.notify_channel or "log"
+        notifier = adapter or resolve_notification_adapter(channel)
+        message = build_hitl_pause_notification_message(
+            task,
+            progress_message=progress_message,
+            channel=channel,
+        )
+        await notifier.notify(message)
 
     @staticmethod
     def paused_states() -> frozenset[TaskState]:

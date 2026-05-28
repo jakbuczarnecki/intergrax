@@ -11,6 +11,7 @@ from intergrax.contracts.agent_decision import HumanRequestUrgency
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.long_running.notification import LoggingNotificationAdapter
+from intergrax.runtime.notifications.templates.hitl import HITL_PAUSE_TEMPLATE_ID
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -24,9 +25,11 @@ from testing_support.builder import FakeLLMAdapter, build_in_memory_session_mana
 
 class _RecordingNotificationAdapter(LoggingNotificationAdapter):
     last_metadata: dict = {}
+    last_body: str = ""
 
     async def notify(self, message) -> None:
         _RecordingNotificationAdapter.last_metadata = dict(message.metadata)
+        _RecordingNotificationAdapter.last_body = message.body
         await super().notify(message)
 
 
@@ -136,8 +139,11 @@ async def test_nexus_loop_propagates_human_request_v2_on_pause(tmp_path):
     assert event_request.get("urgency") == "critical"
     assert event_request.get("expires_at_utc")
 
+    assert _RecordingNotificationAdapter.last_metadata.get("template") == HITL_PAUSE_TEMPLATE_ID
     assert _RecordingNotificationAdapter.last_metadata.get("urgency") == "critical"
     assert _RecordingNotificationAdapter.last_metadata.get("timeout_seconds") == 600
+    assert "reply with `approve`" in _RecordingNotificationAdapter.last_body
+    assert "reply with `reject`" in _RecordingNotificationAdapter.last_body
 
     completed = await loop.handle_task(
         Task(

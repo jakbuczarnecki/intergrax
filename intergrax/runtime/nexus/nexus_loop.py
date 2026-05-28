@@ -67,10 +67,7 @@ from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
-from intergrax.runtime.human.request_contract import (
-    human_request_event_payload,
-    human_request_notification_extra,
-)
+from intergrax.runtime.human.request_contract import human_request_event_payload
 from intergrax.utils.time_provider import SystemTimeProvider
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
@@ -735,16 +732,20 @@ class NexusLoop:
                 }
             )
         )
-        await LongRunningCoordinator.notify_progress(
-            task,
-            subject="Task paused",
-            body=progress_message,
-            adapter=self._notification_adapter,
-            extra={
-                "checkpoint_id": checkpoint.checkpoint_id,
-                **human_request_notification_extra(task),
-            },
-        )
+        if task.runtime.governance.human_request is not None:
+            await LongRunningCoordinator.notify_hitl_pause(
+                task,
+                progress_message=progress_message,
+                adapter=self._notification_adapter,
+            )
+        else:
+            await LongRunningCoordinator.notify_progress(
+                task,
+                subject="Task paused",
+                body=progress_message,
+                adapter=self._notification_adapter,
+                extra={"checkpoint_id": checkpoint.checkpoint_id},
+            )
 
     async def _publish_runtime_event(
         self,

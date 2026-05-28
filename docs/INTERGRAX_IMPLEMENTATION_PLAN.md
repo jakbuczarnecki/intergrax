@@ -352,7 +352,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | H.1 | Outbound webhook delivery | **Done** | §18 | Pluggable delivery + formatters; HTTP opt-in |
 | H.2 | `InteractionAdapter` protocol | **Done** | §18 | Inbound → normalized `Task` |
 | H.3 | Slack inbound lab path | **Done** | §18 | Debug API intake + signature stub |
-| H.4 | HITL notification templates | Pending | §42.10 | `resume_token` + approve/reject in message |
+| H.4 | HITL notification templates | **Done** | §42.10 | Reusable template + `notify_hitl_pause`; Slack/Teams formatters |
 | H.5 | Teams parity | Pending | §18 | Same as H.3–H.4 |
 | H.6 | Organization Worker demo | Pending | §38 | End-to-end §38 reference flow |
 
@@ -401,11 +401,11 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     H.4 — HITL notification templates (§42.10)
+NOW:     H.5 — Teams parity (§18)
 
-NEXT:    Phase H — Interaction surfaces (§18)
+NEXT:    H.6 — Organization Worker demo (§38)
 
-THEN:    H.1–H.4 Slack/Teams real adapters (§18)
+THEN:    Phase I — Memory & context (§27–28)
 
 PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
@@ -443,11 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**H.4 — HITL notification templates** (§42.10):
+**H.5 — Teams parity** (§18):
 
-1. Reusable template formatters for outbound HITL messages (`resume_token`, approve/reject actions).
-2. Compose with existing `NotificationPayloadFormatter` — no Slack-specific logic in NexusLoop.
-3. Unit tests for template rendering + metadata propagation.
+1. Reuse H.3 interaction intake + H.4 templates for Teams MessageCard payloads.
+2. Teams inbound parser / signature verifier (opt-in, lab path).
+3. Integration tests mirroring Slack H.3 coverage.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,6 +455,7 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
+- **H.4:** HITL notification templates — `HitlPauseNotificationTemplate`, `notify_hitl_pause`, Slack/Teams formatter parity for actions/urgency.
 - **H.3:** Debug API `POST /debug/interactions/intake` — JSON/form body, optional `execute`, Slack signature verifier (opt-in).
 - **H.2:** `InteractionAdapter` — inbound parsers, factory, `ChainedInteractionAdapter`.
 - **G.6:** Debug API — `GET …/events`, `GET …/checkpoints`, `POST …/human-response` with injectable `RuntimeEventPersistence` / `TaskCheckpointPersistence`.
