@@ -21,6 +21,7 @@ from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier, T
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.human.pause import HumanPauseCoordinator
+from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator, HumanApprovalHookError
 from intergrax.runtime.human.escalation import EscalationRouter
 from intergrax.runtime.human.models import HumanResponseVerdict, EscalationTarget
 from intergrax.runtime.human.store import SQLiteHumanDecisionStore
@@ -55,6 +56,8 @@ from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
+from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
+from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 
 class NexusLoop:
     """
@@ -86,9 +89,14 @@ class NexusLoop:
         escalation_router: Optional[EscalationRouter] = None,
         checkpoint_store: Optional[SQLiteTaskCheckpointStore] = None,
         notification_adapter: Optional[NotificationAdapter] = None,
+        middleware: Optional[MiddlewarePipeline] = None,
     ) -> None:
         self._registry = registry
         self._event_bus = event_bus or RuntimeEventBus()
+        self._middleware = middleware or MiddlewarePipeline(
+            middleware=[TraceEmittingMiddleware(self._event_bus)],
+        )
+        self._human_hooks = HumanApprovalHookCoordinator(self._middleware)
         self._policy_engine = policy_engine or RuntimePolicyEngine()
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=self._policy_engine,
@@ -108,6 +116,7 @@ class NexusLoop:
                 policy_engine=self._policy_engine,
                 shadow_manager=self._shadow_manager,
                 sandbox_manager=self._sandbox_manager,
+                middleware=self._middleware,
             ),
         )
         self._classifier = classifier or ClassifyingTaskClassifier(registry)
@@ -156,6 +165,10 @@ class NexusLoop:
     def sandbox_manager(self) -> SandboxSessionManager:
         return self._sandbox_manager
 
+    @property
+    def middleware(self) -> MiddlewarePipeline:
+        return self._middleware
+
     async def handle_task(self, task: Task) -> TaskResult:
         lifecycle, trace_emitter = self._resolve_lifecycle(task)
         self._trace_emitter = trace_emitter
@@ -190,6 +203,10 @@ class NexusLoop:
                         },
                     }
                 )
+            )
+            await self._human_hooks.after_response(
+                task,
+                verdict=HumanResponseVerdict.APPROVE.value,
             )
             HumanPauseCoordinator.clear_pause(task)
 
@@ -248,6 +265,9 @@ class NexusLoop:
 
         if classification == TaskClassification.HUMAN_APPROVAL_REQUIRED.value:
             if not HumanPauseCoordinator.is_resumed(task):
+                hook_failure = await self._run_before_human_pause(task, trace_emitter, lifecycle)
+                if hook_failure is not None:
+                    return hook_failure
                 lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
                 await self._maybe_checkpoint_long_running(
                     task,
@@ -305,15 +325,6 @@ class NexusLoop:
 
         if executions and executions[-1].status == AgentExecutionStatus.NEEDS_INPUT:
             paused = executions[-1]
-            HumanPauseCoordinator.apply_pause(task, paused)
-            lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
-            await self._maybe_checkpoint_long_running(
-                task,
-                progress_message="awaiting human input",
-                plan=plan,
-                graph=graph,
-                last_execution=paused,
-            )
             await self._publish_runtime_event(
                 runtime_event_from_task_state(
                     task,
@@ -332,6 +343,26 @@ class NexusLoop:
                         },
                     }
                 )
+            )
+            hook_failure = await self._run_before_human_pause(
+                task,
+                trace_emitter,
+                lifecycle,
+                agent_id=paused.agent_id,
+                execution=paused,
+            )
+            if hook_failure is not None:
+                if isinstance(trace_emitter, PersistingTaskTraceEmitter):
+                    self._finalize_persisting_trace(trace_emitter, executions)
+                return hook_failure
+            HumanPauseCoordinator.apply_pause(task, paused)
+            lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
+            await self._maybe_checkpoint_long_running(
+                task,
+                progress_message="awaiting human input",
+                plan=plan,
+                graph=graph,
+                last_execution=paused,
             )
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
                 self._finalize_persisting_trace(trace_emitter, executions)
@@ -716,6 +747,37 @@ class NexusLoop:
         )
         self._human_store.record(record)
 
+    async def _run_before_human_pause(
+        self,
+        task: Task,
+        trace_emitter: TaskTraceEmitter,
+        lifecycle: TaskLifecycle,
+        *,
+        agent_id: Optional[str] = None,
+        execution: Optional[AgentExecutionResult] = None,
+    ) -> Optional[TaskResult]:
+        try:
+            await self._human_hooks.before_pause(
+                task,
+                agent_id=agent_id,
+                execution=execution,
+            )
+        except HumanApprovalHookError as exc:
+            lifecycle.transition(task, TaskState.FAILED)
+            if isinstance(trace_emitter, PersistingTaskTraceEmitter):
+                self._finalize_persisting_trace(trace_emitter, [])
+            return await self._finish_task(
+                task,
+                trace_emitter,
+                answer="",
+                executions=[],
+                validation=ValidationResult(valid=False, errors=[str(exc)]),
+                plan=None,
+                retry_records=[],
+                graph_id="",
+            )
+        return None
+
     async def _handle_human_rejection(
         self,
         task: Task,
@@ -737,6 +799,10 @@ class NexusLoop:
                     },
                 }
             )
+        )
+        await self._human_hooks.after_response(
+            task,
+            verdict=HumanResponseVerdict.REJECT.value,
         )
         self._persist_human_decision(task, HumanResponseVerdict.REJECT)
         lifecycle.transition(task, TaskState.FAILED)
@@ -780,6 +846,10 @@ class NexusLoop:
                 }
             )
         )
+        await self._human_hooks.after_response(
+            task,
+            verdict=HumanResponseVerdict.ESCALATE.value,
+        )
 
         task.options.human.response_text = None
         task.options.human.verdict = None
@@ -806,6 +876,11 @@ class NexusLoop:
         if task.state == TaskState.CREATED:
             lifecycle.transition(task, TaskState.CLASSIFIED)
             lifecycle.transition(task, TaskState.PLANNED)
+        hook_failure = await self._run_before_human_pause(task, trace_emitter, lifecycle)
+        if hook_failure is not None:
+            if isinstance(trace_emitter, PersistingTaskTraceEmitter):
+                self._finalize_persisting_trace(trace_emitter, [])
+            return hook_failure
         lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
         await self._maybe_checkpoint_long_running(
             task,

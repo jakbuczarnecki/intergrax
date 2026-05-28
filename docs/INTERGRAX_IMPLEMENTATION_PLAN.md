@@ -52,7 +52,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
 
-| Pre-P4.2 regression gate | **Done** | **81 tests**, marker `gate` |
+| Pre-P4.2 regression gate | **Done** | **85 tests**, marker `gate` |
 
 
 
@@ -336,7 +336,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 |---|-------------|--------|-------|-------|
 | G.1 | `RuntimeCheckpoint` contract | **Done** | §42.9.2 | Plan + graph node states + UAEP step index |
 | G.2 | UAEP mid-execution resume | **Done** | §42.9.3 | Skip re-run paused step on resume |
-| G.3 | HITL middleware hooks | Pending | §42.10 | `BEFORE/AFTER_HUMAN_APPROVAL` in NexusLoop |
+| G.3 | HITL middleware hooks | **Done** | §42.10 | `BEFORE/AFTER_HUMAN_APPROVAL` in NexusLoop |
 | G.4 | `HumanRequest` v2 fields | Pending | §42.10.1 | urgency, timeout, `default_on_timeout` |
 | G.5 | RuntimeEvent-first observability | Pending | §42.24 | Persist event stream; trace as projection |
 | G.6 | Debug API: HITL + checkpoints | Pending | §19 | Human response + checkpoint list endpoints |
@@ -401,9 +401,9 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     G.3–G.4 HITL middleware hooks + HumanRequest v2 (§42.10)
+NOW:     G.4–G.6 HumanRequest v2 + observability + debug API (§42.10, §42.24, §19)
 
-NEXT:    G.5–G.6 RuntimeEvent observability + debug API checkpoints (§42.24, §19)
+NEXT:    G.7–G.8 Graph failure recovery + cancellation (§42.40, §42.26)
 
 THEN:    H.1–H.4 Slack/Teams real adapters (§18)
 
@@ -443,11 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**G.3 — HITL middleware hooks** (§42.10):
+**G.4 — `HumanRequest` v2 fields** (§42.10.1):
 
-1. Emit `BEFORE_HUMAN_APPROVAL` / `AFTER_HUMAN_APPROVAL` from `NexusLoop` around pause and resume.
-2. Wire hooks into existing `MiddlewarePipeline` (same pattern as UAEP step hooks).
-3. Integration test: middleware observes approval cycle without blocking resume.
+1. Extend `HumanRequest` with `urgency`, `timeout_seconds`, `default_on_timeout`.
+2. Propagate through UAEP pause + NexusLoop notification payloads.
+3. Unit tests for serialization and timeout defaults.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,6 +455,7 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
+- **G.3:** HITL middleware hooks — `BEFORE/AFTER_HUMAN_APPROVAL` in NexusLoop via shared `MiddlewarePipeline`.
 - **G.1–G.2:** `RuntimeCheckpoint` contract + UAEP mid-execution resume (skip paused step on approve).
 - **F.5:** typed task contract — `TaskExecutionOptions` / `TaskRuntimeState` / `TaskResultSummary` + metadata bridge.
 - **F.4:** long-running task snapshots + notification adapter stubs (Slack/Teams **not** real integration).
