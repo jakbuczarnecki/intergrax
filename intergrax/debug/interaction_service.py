@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Mapping, Optional
+from typing import Callable, Mapping, Optional
 
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.interactions.factory import create_interaction_adapter, intake_payload_to_task
@@ -33,10 +33,12 @@ class DebugInteractionIntakeService:
         adapter: Optional[InteractionAdapter] = None,
         verifier: Optional[InboundRequestVerifier] = None,
         nexus_loop: Optional[NexusLoop] = None,
+        task_enricher: Optional[Callable[[Task], Task]] = None,
     ) -> None:
         self._adapter = adapter or create_interaction_adapter()
         self._verifier = verifier or NullInboundRequestVerifier()
         self._nexus_loop = nexus_loop
+        self._task_enricher = task_enricher
 
     async def intake_http(
         self,
@@ -63,6 +65,8 @@ class DebugInteractionIntakeService:
             tenant_id=tenant_id,
             adapter=self._adapter,
         )
+        if self._task_enricher is not None:
+            task = self._task_enricher(task)
         if not execute:
             return InteractionIntakeResult(task=task, executed=False)
         if self._nexus_loop is None:

@@ -190,3 +190,5 @@ class InteractionIntakeResponse(BaseModel):
     state: Optional[str] = None
     answer: Optional[str] = None
     run_id: Optional[str] = None
+    resume_token: Optional[str] = None
+    checkpoint_id: Optional[str] = None

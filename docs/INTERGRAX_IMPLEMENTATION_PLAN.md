@@ -354,7 +354,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | H.3 | Slack inbound lab path | **Done** | §18 | Debug API intake + signature stub |
 | H.4 | HITL notification templates | **Done** | §42.10 | Reusable template + `notify_hitl_pause`; Slack/Teams formatters |
 | H.5 | Teams parity | **Done** | §18 | Activity parser + HMAC verifier + debug intake tests |
-| H.6 | Organization Worker demo | Pending | §38 | End-to-end §38 reference flow |
+| H.6 | Organization Worker demo | **Done** | §38 | E2E lab: intake → HITL → notification → resume |
 
 ---
 
@@ -401,7 +401,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     H.6 — Organization Worker demo (§38)
+NOW:     I.1 — TaskMemory store (§27)
 
 NEXT:    Phase I — Memory & context (§27–28)
 
@@ -443,11 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**H.6 — Organization Worker demo** (§38):
+**I.1 — TaskMemory store** (§27):
 
-1. End-to-end reference flow: inbound interaction → Nexus → HITL pause → notification → resume.
-2. Wire Slack/Teams adapters through debug API and long-running coordinator.
-3. Document lab runbook in implementation plan appendix.
+1. Nexus-owned bounded task memory with persistence contract.
+2. Memory gateway scoped by policy (foundation for I.2 `MemoryView`).
+3. Unit tests + gate.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,6 +455,7 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
+- **H.6:** Organization Worker demo — `OrganizationWorkerAgent`, `create_organization_worker_lab_app`, E2E Slack/Teams intake → HITL → resume.
 - **H.5:** Teams parity — `TeamsActivityInteractionAdapter`, `TeamsSignatureVerifier`, debug intake tests mirroring H.3.
 - **H.4:** HITL notification templates — `HitlPauseNotificationTemplate`, `notify_hitl_pause`, Slack/Teams formatter parity for actions/urgency.
 - **H.3:** Debug API `POST /debug/interactions/intake` — JSON/form body, optional `execute`, Slack signature verifier (opt-in).
@@ -630,6 +631,50 @@ Env:
 - `INTERGRAX_TASK_CHECKPOINTS_DB` (default `build/intergrax_task_checkpoints.db`)
 - `INTERGRAX_SLACK_WEBHOOK_URL` / `INTERGRAX_TEAMS_WEBHOOK_URL` (stub adapters; no network unless configured)
 
+### H.6 Organization Worker lab runbook (Done)
+
+Reference flow for §38 — virtual worker via Slack / Teams without orchestration in adapters.
+
+**Agent:** `agents/organization_worker/` — capability `org.vendor_report`.
+
+**Lab app factory:**
+
+```python
+from intergrax.lab import create_organization_worker_lab_app
+
+app = create_organization_worker_lab_app()  # pre-wired registry + HITL intake enricher
+```
+
+**HTTP (debug API):**
+
+```bash
+uv run uvicorn intergrax.lab.organization_worker:create_organization_worker_lab_app --factory --host 127.0.0.1 --port 8099
+```
+
+1. **Intake + execute** (Slack-shaped slash command):
+
+```bash
+curl -s -X POST "http://127.0.0.1:8099/debug/interactions/intake?execute=true&tenant=T1" \
+  -H "Content-Type: application/json" \
+  -d '{"command":"/intergrax","text":"org.vendor_report Acme Corp Q1","user_id":"U1","team_id":"T1"}'
+```
+
+Response includes `state: waiting_for_human`, `resume_token`, HITL notification on configured channel (`slack` / `teams` / `log`).
+
+2. **Resume after approval:**
+
+```bash
+curl -s -X POST "http://127.0.0.1:8099/debug/tasks/{task_id}/human-response?tenant=T1" \
+  -H "Content-Type: application/json" \
+  -d '{"response":"approve","resume_token":"<token from intake>"}'
+```
+
+Teams intake uses the same endpoints with Bot Framework activity JSON (`channelId: msteams`).
+
+**Registry helper:** `build_organization_worker_registry()` in `intergrax.runtime.registry`.
+
+**Tests:** `tests/integration/debug/test_organization_worker_demo.py` (gate).
+
 ### D.1 Debug CLI (Done)
 
 
@@ -666,5 +711,5 @@ Reuse:
 
 
 
-*Plan synced with codebase after F.4 + typed task contract (2026-05-27). Gate: 78 tests.*
+*Plan synced with codebase after H.6 Organization Worker demo (2026-05-27). Gate: 153 tests.*
 

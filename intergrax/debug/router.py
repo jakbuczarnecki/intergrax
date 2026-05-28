@@ -342,6 +342,8 @@ def create_debug_router(
             response.state = intake.result.state.value
             response.answer = intake.result.answer
             response.run_id = intake.result.run_id
+            response.resume_token = intake.result.summary.resume_token
+            response.checkpoint_id = intake.result.summary.checkpoint_id
         return response
 
     @router.get("/experiments", response_model=ExperimentListResponse)
