@@ -42,6 +42,10 @@ def runtime_answer_to_agent_result(
     structured = dict(answer.route.extra if answer.route else {})
     if governance is not None:
         structured["governance"] = governance.model_dump()
+        if governance.agent_decision.handoff is not None:
+            structured["pending_handoff"] = governance.agent_decision.handoff.model_dump(
+                mode="json"
+            )
 
     return AgentExecutionResult(
         agent_id=agent_id,

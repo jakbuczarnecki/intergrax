@@ -163,6 +163,8 @@ class NexusLoop:
             validation_engine=self._validation_engine,
             retry_engine=self._retry_engine,
             context_manager=self._context_manager,
+            event_bus=self._event_bus,
+            middleware=self._middleware,
         )
         self._composer = FinalResponseComposer()
         self._lifecycle = lifecycle
