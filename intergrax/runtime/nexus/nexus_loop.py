@@ -32,6 +32,11 @@ from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.runtime.events.store_factory import (
+    RuntimeEventStoreSettings,
+    create_runtime_event_store,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
@@ -100,9 +105,17 @@ class NexusLoop:
         checkpoint_store: Optional[SQLiteTaskCheckpointStore] = None,
         notification_adapter: Optional[NotificationAdapter] = None,
         middleware: Optional[MiddlewarePipeline] = None,
+        runtime_event_store: Optional[RuntimeEventPersistence] = None,
+        runtime_event_store_settings: Optional[RuntimeEventStoreSettings] = None,
     ) -> None:
         self._registry = registry
-        self._event_bus = event_bus or RuntimeEventBus()
+        self._runtime_event_store = create_runtime_event_store(
+            runtime_event_store_settings,
+            implementation=runtime_event_store,
+        )
+        self._event_bus = event_bus or RuntimeEventBus(persistence=self._runtime_event_store)
+        if event_bus is not None and self._runtime_event_store is not None:
+            event_bus.attach_persistence(self._runtime_event_store)
         self._middleware = middleware or MiddlewarePipeline(
             middleware=[TraceEmittingMiddleware(self._event_bus)],
         )
@@ -150,6 +163,7 @@ class NexusLoop:
         self._lifecycle = lifecycle
         self._trace_emitter = trace_emitter
         self._trace_store = trace_store
+        self._current_task: Optional[Task] = None
 
     @property
     def registry(self) -> AgentRegistry:
@@ -162,6 +176,10 @@ class NexusLoop:
     @property
     def event_bus(self) -> RuntimeEventBus:
         return self._event_bus
+
+    @property
+    def runtime_event_store(self) -> Optional[RuntimeEventPersistence]:
+        return self._runtime_event_store
 
     @property
     def interrupt_handler(self) -> ExecutionInterruptHandler:
@@ -180,6 +198,13 @@ class NexusLoop:
         return self._middleware
 
     async def handle_task(self, task: Task) -> TaskResult:
+        self._current_task = task
+        try:
+            return await self._handle_task_impl(task)
+        finally:
+            self._current_task = None
+
+    async def _handle_task_impl(self, task: Task) -> TaskResult:
         lifecycle, trace_emitter = self._resolve_lifecycle(task)
         self._trace_emitter = trace_emitter
 
@@ -501,10 +526,18 @@ class NexusLoop:
         execution_metrics = aggregate_execution_metrics(executions)
 
         gov_human_request = None
-        if executions and executions[-1].human_request:
-            gov_human_request = executions[-1].human_request.model_dump()
-        elif task.runtime.governance.human_request is not None:
-            gov_human_request = task.runtime.governance.human_request.model_dump()
+        gov = task.runtime.governance
+        if gov.human_request is not None:
+            gov_human_request = human_request_event_payload(
+                gov.human_request,
+                created_at_utc=gov.human_request_created_at,
+                expires_at_utc=gov.human_request_expires_at,
+            )
+        elif executions and executions[-1].human_request:
+            gov_human_request = human_request_event_payload(
+                executions[-1].human_request,
+                created_at_utc=SystemTimeProvider.utc_now().isoformat(),
+            )
 
         isolation = TaskIsolationSummary()
         if primary and primary.structured_data.get(SHADOW_WORKSPACE_ID_KEY):
@@ -565,6 +598,7 @@ class NexusLoop:
         self._maybe_cleanup_shadow(task, executions)
         self._maybe_cleanup_sandbox(task, executions)
 
+        task.sync_metadata()
         result = TaskResult(
             task_id=task.task_id,
             run_id=primary.run_id if primary else task.task_id,
@@ -575,6 +609,13 @@ class NexusLoop:
             summary=summary,
             metadata=dict(composer_meta),
         )
+        for key in (
+            GOVERNANCE_HUMAN_REQUEST_KEY,
+            HUMAN_REQUEST_CREATED_AT_KEY,
+            HUMAN_REQUEST_EXPIRES_AT_KEY,
+        ):
+            if key in task.metadata:
+                result.metadata[key] = task.metadata[key]
         result.sync_metadata()
         return result
 
@@ -657,10 +698,18 @@ class NexusLoop:
             },
         )
 
-    async def _publish_runtime_event(self, event: object) -> None:
+    async def _publish_runtime_event(
+        self,
+        event: object,
+        *,
+        task: Optional[Task] = None,
+    ) -> None:
         from intergrax.runtime.events.runtime_event import RuntimeEvent
 
         if isinstance(event, RuntimeEvent):
+            scoped_task = task or self._current_task
+            if scoped_task is not None and not event.tenant_id:
+                event = event.model_copy(update={"tenant_id": scoped_task.tenant_id})
             await self._event_bus.publish(event)
 
     async def _publish_terminal_runtime_event(self, task: Task) -> None:

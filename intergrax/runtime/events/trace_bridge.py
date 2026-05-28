@@ -76,6 +76,7 @@ def runtime_event_from_task_state(
     event_type = _TASK_STATE_TO_EVENT.get(task.state, RuntimeEventType.STEP_STARTED)
     phase = _TASK_STATE_TO_PHASE.get(task.state, ExecutionPhase.STEP_EXECUTION)
     return RuntimeEvent(
+        tenant_id=task.tenant_id,
         task_id=task.task_id,
         run_id=run_id,
         agent_id=task.agent_id,
@@ -131,6 +132,7 @@ def trace_event_to_runtime_event(
 
     return RuntimeEvent(
         event_id=f"rt_{trace.event_id}",
+        tenant_id=str(trace.tags.get("tenant_id") or task.tenant_id),
         task_id=str(trace.tags.get("task_id") or task.task_id),
         run_id=trace.run_id,
         agent_id=trace.tags.get("agent_id") or task.agent_id,
