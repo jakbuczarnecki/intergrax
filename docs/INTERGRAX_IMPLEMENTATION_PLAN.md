@@ -101,7 +101,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §26 Long-running tasks | Checkpoint / resume | **Partial** | F.4 task snapshot ✅; scheduler / UAEP mid-step pending |
 | §18 Slack / Teams | Interaction adapters | **Stub** | F.4 notification stub only; no intake / webhook |
-| §27 Memory model | Bounded task / agent memory | **Not started** | Session memory exists; no `MemoryView` gateway |
+| §27 Memory model | Bounded task / agent memory | **Partial** | I.1 store + I.2 `MemoryView`; SharedTaskContext pending |
 | §42.9 Pause / Resume | `RuntimeCheckpoint` | **Partial** | HITL pause ✅; full plan/graph/UAEP checkpoint pending |
 | §41 Unified entry | Single run lifecycle | **Partial** | `NexusLoop` + `RunService` + `RuntimeEngine` still parallel |
 
@@ -363,7 +363,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
 | I.1 | `TaskMemory` store | **Done** | §27 | Contract + coordinator; `store.py` (`open_task_memory_store`, env `INTERGRAX_TASK_MEMORY_DB` only) |
-| I.2 | `MemoryView` gateway | Pending | §42.35 | Policy-scoped UAEP memory access |
+| I.2 | `MemoryView` gateway | **Done** | §42.35 | `PolicyScopedMemoryView` + UAEP wiring + `MEMORY_*` events |
 | I.3 | `SharedTaskContext` | Pending | §42.14 | Formal cross-agent payload |
 | I.4 | Agent handoff | Pending | §42.15 | Graph handoff + validation |
 | I.5 | ContextManager v2 | Pending | §28 | Provenance + summary tiers |
@@ -401,9 +401,9 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     I.2 — MemoryView gateway (§42.35)
+NOW:     I.3 — SharedTaskContext (§42.14)
 
-NEXT:    I.3–I.5 — SharedTaskContext, handoff, ContextManager v2
+NEXT:    I.4–I.5 — handoff, ContextManager v2
 
 THEN:    Phase J — Unified execution entry (§41)
 
@@ -443,11 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**I.2 — MemoryView gateway** (§42.35):
+**I.3 — SharedTaskContext** (§42.14):
 
-1. Policy-scoped read/write facade over `TaskMemoryCoordinator`.
-2. Wire into `RuntimeExecutionContext` / UAEP (no direct store access from agents).
-3. Emit `MEMORY_READ` / `MEMORY_WRITE` runtime events.
+1. Formal cross-agent payload on `Task` / `ContextManager`.
+2. Read path via `MemoryView` / context bridge (no direct store from agents).
+3. Unit + integration tests; gate green.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,6 +455,7 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
+- **I.2:** `MemoryView` gateway — `PolicyScopedMemoryView`, UAEP wiring, `MEMORY_READ`/`MEMORY_WRITE` events.
 - **I.1:** `TaskMemory` store — `TaskMemoryPersistence`, `TaskMemoryCoordinator`, in-memory + SQLite backends.
 - **H.6:** Organization Worker demo — `OrganizationWorkerAgent`, `create_organization_worker_lab_app`, E2E Slack/Teams intake → HITL → resume.
 - **H.5:** Teams parity — `TeamsActivityInteractionAdapter`, `TeamsSignatureVerifier`, debug intake tests mirroring H.3.
@@ -714,5 +715,5 @@ Reuse:
 
 
 
-*Plan synced with codebase after runtime events store refactor (2026-05-27). Gate: 166 tests.*
+*Plan synced with codebase after I.2 MemoryView gateway (2026-05-27). Gate: 175 tests.*
 

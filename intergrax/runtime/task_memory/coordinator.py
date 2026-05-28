@@ -21,7 +21,7 @@ class TaskMemoryCoordinator:
     """
     Enforces bounded writes before delegating to ``TaskMemoryPersistence``.
 
-    Future ``MemoryView`` (I.2) will wrap this coordinator with policy + events.
+    ``PolicyScopedMemoryView`` (I.2) wraps this coordinator with policy + events.
     """
 
     @staticmethod

@@ -5,11 +5,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Protocol, TYPE_CHECKING, runtime_checkable
+from typing import Any, Dict, List, Optional, Protocol, TYPE_CHECKING, runtime_checkable
 
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.memory_write_policy import MemoryWritePolicy
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse
 from intergrax.contracts.execution_phase import ExecutionPhase
 
@@ -31,7 +32,16 @@ class EventEmitter(Protocol):
 class MemoryView(Protocol):
     async def read(self, namespace: str, key: str) -> Optional[Dict[str, Any]]: ...
 
-    async def write(self, namespace: str, key: str, value: Dict[str, Any]) -> None: ...
+    async def write(
+        self,
+        namespace: str,
+        key: str,
+        value: Dict[str, Any],
+        *,
+        policy: MemoryWritePolicy = MemoryWritePolicy.REPLACE,
+    ) -> None: ...
+
+    async def list(self, namespace: str, prefix: str = "") -> List[Any]: ...
 
 
 @runtime_checkable

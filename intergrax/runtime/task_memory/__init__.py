@@ -2,11 +2,13 @@
 
 from intergrax.runtime.task_memory.coordinator import TaskMemoryCoordinator
 from intergrax.runtime.task_memory.limits import TaskMemoryLimits
+from intergrax.runtime.task_memory.memory_view import PolicyScopedMemoryView
 from intergrax.runtime.task_memory.models import TaskMemoryRecord, TaskMemoryWriteRequest
 from intergrax.runtime.task_memory.persistence_contract import (
     NullTaskMemoryPersistence,
     TaskMemoryPersistence,
 )
+from intergrax.runtime.task_memory.policy import MemoryAccessPolicy, MemoryWritePolicy
 from intergrax.runtime.task_memory.store import (
     DEFAULT_TASK_MEMORY_DB,
     ENV_TASK_MEMORY_DB,
@@ -21,13 +23,17 @@ __all__ = [
     "DEFAULT_TASK_MEMORY_DB",
     "ENV_TASK_MEMORY_DB",
     "InMemoryTaskMemoryStore",
+    "MemoryAccessPolicy",
+    "MemoryWritePolicy",
     "NullTaskMemoryPersistence",
+    "PolicyScopedMemoryView",
     "SQLiteTaskMemoryStore",
     "TaskMemoryCoordinator",
     "TaskMemoryLimits",
     "TaskMemoryPersistence",
     "TaskMemoryRecord",
     "TaskMemoryWriteRequest",
+    "memory_access_policy_from_metadata",
     "open_task_memory_store",
     "resolve_task_memory_db_path",
     "resolve_task_memory_persistence",

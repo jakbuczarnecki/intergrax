@@ -36,6 +36,8 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.store import resolve_runtime_event_persistence
+from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
+from intergrax.runtime.task_memory.store import resolve_task_memory_persistence
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
@@ -103,11 +105,17 @@ class NexusLoop:
         middleware: Optional[MiddlewarePipeline] = None,
         runtime_event_store: Optional[RuntimeEventPersistence] = None,
         runtime_events_db_path: Optional[Path] = None,
+        task_memory_store: Optional[TaskMemoryPersistence] = None,
+        task_memory_db_path: Optional[Path] = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
             db_path=runtime_events_db_path,
             implementation=runtime_event_store,
+        )
+        self._task_memory_store = resolve_task_memory_persistence(
+            db_path=task_memory_db_path,
+            implementation=task_memory_store,
         )
         self._event_bus = event_bus or RuntimeEventBus(persistence=self._runtime_event_store)
         if event_bus is not None and self._runtime_event_store is not None:
@@ -136,6 +144,7 @@ class NexusLoop:
                 shadow_manager=self._shadow_manager,
                 sandbox_manager=self._sandbox_manager,
                 middleware=self._middleware,
+                task_memory_store=self._task_memory_store,
             ),
         )
         self._classifier = classifier or ClassifyingTaskClassifier(registry)
@@ -176,6 +185,10 @@ class NexusLoop:
     @property
     def runtime_event_store(self) -> Optional[RuntimeEventPersistence]:
         return self._runtime_event_store
+
+    @property
+    def task_memory_store(self) -> Optional[TaskMemoryPersistence]:
+        return self._task_memory_store
 
     @property
     def interrupt_handler(self) -> ExecutionInterruptHandler:

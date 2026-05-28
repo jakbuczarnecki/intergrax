@@ -43,6 +43,10 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
 )
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
+from intergrax.runtime.task_memory.limits import TaskMemoryLimits
+from intergrax.runtime.task_memory.memory_view import PolicyScopedMemoryView
+from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
+from intergrax.runtime.task_memory.policy import memory_access_policy_from_metadata
 
 
 class UAEPBlockedError(RuntimeError):
@@ -81,6 +85,8 @@ class UAEPExecutor:
         interrupt_handler: Optional[ExecutionInterruptHandler] = None,
         shadow_manager: Optional[ShadowWorkspaceManager] = None,
         sandbox_manager: Optional[SandboxSessionManager] = None,
+        task_memory_store: Optional[TaskMemoryPersistence] = None,
+        memory_limits: Optional[TaskMemoryLimits] = None,
     ) -> None:
         self._event_bus = event_bus
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
@@ -88,6 +94,8 @@ class UAEPExecutor:
         )
         self._shadow_manager = shadow_manager or ShadowWorkspaceManager()
         self._sandbox_manager = sandbox_manager or SandboxSessionManager()
+        self._task_memory_store = task_memory_store
+        self._memory_limits = memory_limits or TaskMemoryLimits()
         if middleware is not None:
             self._middleware = middleware
         elif event_bus is not None:
@@ -129,6 +137,7 @@ class UAEPExecutor:
         )
         self._attach_shadow_workspace(exec_ctx, request, task_id=task_id)
         self._attach_sandbox_session(exec_ctx, request, task_id=task_id)
+        self._attach_memory_view(exec_ctx, request, task_id=task_id)
 
         hook_base = HookContext(
             task_id=task_id,
@@ -381,6 +390,25 @@ class UAEPExecutor:
             return cached
         summary = output.summary if output else ""
         return RuntimeAnswer(run_id=run_id, answer=summary)
+
+    def _attach_memory_view(
+        self,
+        exec_ctx: RuntimeExecutionContext,
+        request: RuntimeRequest,
+        *,
+        task_id: str,
+    ) -> None:
+        if self._task_memory_store is None:
+            return
+        tenant_id = request.tenant_id or "default"
+        exec_ctx.memory_view = PolicyScopedMemoryView(
+            exec_ctx,
+            self._task_memory_store,
+            tenant_id=tenant_id,
+            task_id=task_id,
+            access_policy=memory_access_policy_from_metadata(request.metadata),
+            limits=self._memory_limits,
+        )
 
     def _attach_shadow_workspace(
         self,

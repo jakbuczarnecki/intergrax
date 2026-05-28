@@ -21,6 +21,7 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.interrupts.handler import GovernanceResolution
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
+from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
 
 _DEFAULT_UAEP = UAEPExecutor()
 
@@ -43,6 +44,7 @@ class AgentEngine:
         policy_engine: Optional[RuntimePolicyEngine] = None,
         shadow_manager: Optional[ShadowWorkspaceManager] = None,
         sandbox_manager: Optional[SandboxSessionManager] = None,
+        task_memory_store: Optional[TaskMemoryPersistence] = None,
     ) -> None:
         if isinstance(agents, AgentRegistry):
             self._registry = agents
@@ -56,6 +58,7 @@ class AgentEngine:
             policy_engine=policy_engine,
             shadow_manager=shadow_manager,
             sandbox_manager=sandbox_manager,
+            task_memory_store=task_memory_store,
         )
 
     @property
