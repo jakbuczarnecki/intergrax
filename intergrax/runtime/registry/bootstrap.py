@@ -33,3 +33,16 @@ def build_research_registry(*, include_echo: bool = False) -> AgentRegistry:
 
         registry.register(EchoAgent())
     return registry
+
+
+def build_organization_worker_registry(*, include_echo: bool = False) -> AgentRegistry:
+    """Registry for §38 Organization Worker lab demos."""
+    from organization_worker.organization_worker_agent import OrganizationWorkerAgent
+
+    registry = AgentRegistry()
+    registry.register(OrganizationWorkerAgent())
+    if include_echo:
+        from echo.echo_agent import EchoAgent
+
+        registry.register(EchoAgent())
+    return registry

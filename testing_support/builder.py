@@ -557,6 +557,7 @@ def tools_agent_make_contract(tool_id: str, input_model, output_model):
 
 def prepare_sqlite_db(name:str)->Path:
     db_path = Path(f"temp_documents/{name}")
+    db_path.parent.mkdir(parents=True, exist_ok=True)
     if db_path.exists():
         db_path.unlink()
     return db_path

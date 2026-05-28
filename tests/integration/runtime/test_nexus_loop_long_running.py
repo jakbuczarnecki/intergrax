@@ -23,6 +23,8 @@ from testing_support.builder import FakeLLMAdapter, build_in_memory_session_mana
 
 
 class _HitlAgent(Agent):
+    step_run_count = 0
+
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="hitl",
@@ -60,6 +62,7 @@ class _HitlAgent(Agent):
         return [AgentStep(step_id="review", step_name="review", step_index=0)]
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        _HitlAgent.step_run_count += 1
         return StepOutput(step_id=step.step_id, summary="pending review")
 
     def decide_after_step(
@@ -86,6 +89,7 @@ class _HitlAgent(Agent):
 @pytest.mark.integration
 @pytest.mark.gate
 async def test_long_running_task_saves_checkpoint_on_pause(tmp_path):
+    _HitlAgent.step_run_count = 0
     registry = AgentRegistry()
     registry.register(_HitlAgent())
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "ckpt.db")
@@ -113,6 +117,10 @@ async def test_long_running_task_saves_checkpoint_on_pause(tmp_path):
     assert paused.metadata.get("resume_token") == paused.summary.resume_token
     checkpoints = store.list_for_task(paused.task_id, "t1")
     assert len(checkpoints) == 1
+    assert checkpoints[0].runtime is not None
+    assert checkpoints[0].runtime.uaep_step_index == 0
+    assert checkpoints[0].runtime.last_step_output is not None
+    assert _HitlAgent.step_run_count == 1
     assert any(
         e.event_type == RuntimeEventType.PAUSED for e in loop.event_bus.history
     )
@@ -122,6 +130,7 @@ async def test_long_running_task_saves_checkpoint_on_pause(tmp_path):
 @pytest.mark.integration
 @pytest.mark.gate
 async def test_long_running_task_resumes_with_token(tmp_path):
+    _HitlAgent.step_run_count = 0
     registry = AgentRegistry()
     registry.register(_HitlAgent())
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "ckpt.db")
@@ -163,6 +172,7 @@ async def test_long_running_task_resumes_with_token(tmp_path):
     )
 
     assert completed.state == TaskState.COMPLETED
+    assert _HitlAgent.step_run_count == 1
     assert any(
         e.event_type == RuntimeEventType.RESUMED for e in loop.event_bus.history
     )

@@ -10,7 +10,12 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType, HumanRequest
+from intergrax.contracts.agent_decision import (
+    AgentDecision,
+    AgentDecisionType,
+    HumanRequest,
+    human_request_fields_from_payload,
+)
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt, InterruptType
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
@@ -90,7 +95,7 @@ class ExecutionInterruptHandler:
                 prompt=decision.reason or "Human approval required",
                 options=["approve", "reject"],
                 context_artifacts=list(decision.payload.get("context_artifacts", [])),
-                urgency=str(decision.payload.get("urgency", "normal")),
+                **human_request_fields_from_payload(decision.payload),
             )
 
         return GovernanceResolution(

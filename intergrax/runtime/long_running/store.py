@@ -13,6 +13,8 @@ from typing import List, Optional
 from uuid import uuid4
 
 from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.utils.time_provider import SystemTimeProvider
 
@@ -35,7 +37,7 @@ def open_task_checkpoint_store(db_path: Path | None = None) -> SQLiteTaskCheckpo
     return SQLiteTaskCheckpointStore(db_path=path)
 
 
-class SQLiteTaskCheckpointStore:
+class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
     def __init__(self, *, db_path: Path) -> None:
         self._db_path = db_path
         self._ensure_schema()
@@ -74,6 +76,12 @@ class SQLiteTaskCheckpointStore:
                 ON task_checkpoints (task_id, tenant_id, resume_token);
                 """
             )
+            try:
+                conn.execute(
+                    "ALTER TABLE task_checkpoints ADD COLUMN runtime_checkpoint_json TEXT"
+                )
+            except sqlite3.OperationalError:
+                pass
 
     def save(self, checkpoint: TaskCheckpoint) -> TaskCheckpoint:
         with self._connection() as conn:
@@ -81,8 +89,9 @@ class SQLiteTaskCheckpointStore:
                 """
                 INSERT INTO task_checkpoints (
                     checkpoint_id, task_id, tenant_id, resume_token, task_state,
-                    task_snapshot_json, progress_message, notify_channel, created_at_utc
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    task_snapshot_json, progress_message, notify_channel, created_at_utc,
+                    runtime_checkpoint_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     checkpoint.checkpoint_id,
@@ -94,6 +103,9 @@ class SQLiteTaskCheckpointStore:
                     checkpoint.progress_message,
                     checkpoint.notify_channel,
                     checkpoint.created_at_utc,
+                    json.dumps(checkpoint.runtime.model_dump(mode="json"))
+                    if checkpoint.runtime is not None
+                    else None,
                 ),
             )
         return checkpoint
@@ -143,6 +155,10 @@ class SQLiteTaskCheckpointStore:
 
     @staticmethod
     def _row_to_checkpoint(row: sqlite3.Row) -> TaskCheckpoint:
+        runtime_raw = row["runtime_checkpoint_json"] if "runtime_checkpoint_json" in row.keys() else None
+        runtime = None
+        if runtime_raw:
+            runtime = RuntimeCheckpoint.model_validate(json.loads(runtime_raw))
         return TaskCheckpoint(
             checkpoint_id=row["checkpoint_id"],
             task_id=row["task_id"],
@@ -153,6 +169,7 @@ class SQLiteTaskCheckpointStore:
             progress_message=row["progress_message"],
             notify_channel=row["notify_channel"],
             created_at_utc=row["created_at_utc"],
+            runtime=runtime,
         )
 
     @classmethod
@@ -162,6 +179,7 @@ class SQLiteTaskCheckpointStore:
         *,
         progress_message: str = "",
         resume_token: Optional[str] = None,
+        runtime: Optional[RuntimeCheckpoint] = None,
     ) -> TaskCheckpoint:
         token = resume_token or task.runtime.orchestration.resume_token or f"rt_{uuid4().hex[:20]}"
         return TaskCheckpoint(
@@ -173,4 +191,5 @@ class SQLiteTaskCheckpointStore:
             progress_message=progress_message,
             notify_channel=task.options.long_running.notify_channel,
             created_at_utc=SystemTimeProvider.utc_now().isoformat(),
+            runtime=runtime,
         )

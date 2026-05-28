@@ -15,6 +15,7 @@ from intergrax.contracts.agent_decision import HumanRequest
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 from intergrax.runtime.human.response_parser import parse_human_response
+from intergrax.runtime.human.request_contract import HumanTimeoutCoordinator
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.interrupts.handler import GovernanceResolution
 from intergrax.runtime.task.task import Task
@@ -66,7 +67,7 @@ class HumanPauseCoordinator:
     def apply_pause(task: Task, execution: AgentExecutionResult) -> Task:
         gov = task.runtime.governance
         if execution.human_request is not None:
-            gov.human_request = execution.human_request
+            HumanTimeoutCoordinator.attach_to_task(task, execution.human_request)
         if execution.execution_interrupt is not None:
             gov.execution_interrupt = execution.execution_interrupt
         if execution.human_request is not None:
@@ -94,7 +95,7 @@ class HumanPauseCoordinator:
     def apply_resolution(task: Task, resolution: GovernanceResolution) -> Task:
         gov = task.runtime.governance
         if resolution.human_request is not None:
-            gov.human_request = resolution.human_request
+            HumanTimeoutCoordinator.attach_to_task(task, resolution.human_request)
         if resolution.interrupt is not None:
             gov.execution_interrupt = resolution.interrupt
         gov.paused = True

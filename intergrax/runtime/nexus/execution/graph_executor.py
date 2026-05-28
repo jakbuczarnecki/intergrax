@@ -10,6 +10,16 @@ from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.validation import ValidationResult
+from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
+from intergrax.runtime.long_running.checkpoint_builder import (
+    apply_runtime_checkpoint_to_graph,
+    should_skip_graph_node,
+)
+from intergrax.runtime.long_running.runtime_checkpoint import (
+    RuntimeCheckpoint,
+    attach_runtime_checkpoint_to_metadata,
+    runtime_checkpoint_from_metadata,
+)
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.execution.execution_graph import (
@@ -57,27 +67,39 @@ class GraphExecutor:
         on_retry: Optional[Callable[[RetryRecord], None]] = None,
         on_node_start: Optional[Callable[[ExecutionNode], None]] = None,
         on_node_complete: Optional[Callable[[ExecutionNode], None]] = None,
-    ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph]:
+    ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
         prior_outputs: Dict[str, AgentExecutionResult] = {}
         all_executions: List[AgentExecutionResult] = []
         all_retries: List[RetryRecord] = []
 
+        runtime_ckpt = runtime_checkpoint_from_metadata(task.metadata)
+        if runtime_ckpt is not None:
+            apply_runtime_checkpoint_to_graph(graph, runtime_ckpt, prior_outputs)
+
         for batch in graph.batches():
+            if CancellationCoordinator.is_requested(task.metadata):
+                CancellationCoordinator.mark_pending_graph_nodes_cancelled(graph)
+                return all_executions, all_retries, graph, True
+
             if len(batch) == 1:
                 node = batch[0]
-                execution, retries, failed = await self._execute_node(
+                execution, retries, failed, cancelled = await self._execute_node(
                     graph,
                     task,
                     node,
                     prior_outputs,
+                    runtime_ckpt=runtime_ckpt,
                     plan_criteria=plan_criteria,
                     on_retry=on_retry,
                     on_node_start=on_node_start,
                     on_node_complete=on_node_complete,
                 )
                 all_retries.extend(retries)
+                if cancelled:
+                    CancellationCoordinator.mark_pending_graph_nodes_cancelled(graph)
+                    return all_executions, all_retries, graph, True
                 if failed:
-                    return all_executions, all_retries, graph
+                    return all_executions, all_retries, graph, False
                 all_executions.append(execution)
                 prior_outputs[node.node_id] = execution
             else:
@@ -88,6 +110,7 @@ class GraphExecutor:
                             task,
                             node,
                             prior_outputs,
+                            runtime_ckpt=runtime_ckpt,
                             plan_criteria=plan_criteria,
                             on_retry=on_retry,
                             on_node_start=on_node_start,
@@ -96,16 +119,19 @@ class GraphExecutor:
                         for node in batch
                     ]
                 )
-                for execution, retries, failed in results:
+                for execution, retries, failed, cancelled in results:
                     all_retries.extend(retries)
+                    if cancelled:
+                        CancellationCoordinator.mark_pending_graph_nodes_cancelled(graph)
+                        return all_executions, all_retries, graph, True
                     if failed:
-                        return all_executions, all_retries, graph
+                        return all_executions, all_retries, graph, False
                 for node in batch:
                     if node.execution_result is not None:
                         all_executions.append(node.execution_result)
                         prior_outputs[node.node_id] = node.execution_result
 
-        return all_executions, all_retries, graph
+        return all_executions, all_retries, graph, False
 
     async def _execute_node(
         self,
@@ -114,11 +140,42 @@ class GraphExecutor:
         node: ExecutionNode,
         prior_outputs: Dict[str, AgentExecutionResult],
         *,
+        runtime_ckpt: Optional[RuntimeCheckpoint] = None,
         plan_criteria: Optional[List[str]],
         on_retry: Optional[Callable[[RetryRecord], None]],
         on_node_start: Optional[Callable[[ExecutionNode], None]],
         on_node_complete: Optional[Callable[[ExecutionNode], None]],
-    ) -> tuple[AgentExecutionResult, List[RetryRecord], bool]:
+    ) -> tuple[AgentExecutionResult, List[RetryRecord], bool, bool]:
+        if should_skip_graph_node(
+            node,
+            checkpoint=runtime_ckpt,
+            prior_outputs=prior_outputs,
+        ):
+            execution = prior_outputs[node.node_id]
+            node.execution_result = execution
+            node.status = ExecutionNodeStatus.SKIPPED
+            if on_node_complete is not None:
+                on_node_complete(node)
+            return execution, [], False, False
+
+        if CancellationCoordinator.is_requested(task.metadata):
+            node.status = ExecutionNodeStatus.SKIPPED
+            node.metadata["cancelled"] = True
+            if on_node_complete is not None:
+                on_node_complete(node)
+            return (
+                AgentExecutionResult(
+                    agent_id=node.agent_id or "",
+                    run_id=task.task_id,
+                    status=AgentExecutionStatus.FAILED,
+                    summary="",
+                    errors=["task_cancelled"],
+                ),
+                [],
+                False,
+                True,
+            )
+
         node.status = ExecutionNodeStatus.RUNNING
         if on_node_start is not None:
             on_node_start(node)
@@ -154,6 +211,15 @@ class GraphExecutor:
             request.metadata["allowed_tools"] = list(current_agent.get_contract().allowed_tools)
             request.metadata["graph_node_id"] = node.node_id
             request.metadata["graph_id"] = graph.graph_id
+            plan_id = task.runtime.orchestration.plan_id
+            if plan_id:
+                request.metadata["plan_id"] = plan_id
+            runtime_snapshot = runtime_checkpoint_from_metadata(task.metadata)
+            if runtime_snapshot is not None:
+                attach_runtime_checkpoint_to_metadata(request.metadata, runtime_snapshot)
+            if task.options.human.is_resumed or task.metadata.get("human_approved"):
+                request.metadata["human_approved"] = True
+            CancellationCoordinator.propagate(task.metadata, request.metadata)
             return await AgentEngine.run_agent_with_result(
                 current_agent,
                 request,
@@ -166,6 +232,14 @@ class GraphExecutor:
             execute_fn,
             validate_fn=validate_fn,
         )
+        if CancellationCoordinator.is_requested(task.metadata):
+            node.execution_result = execution
+            node.status = ExecutionNodeStatus.SKIPPED
+            node.metadata["cancelled"] = True
+            if on_node_complete is not None:
+                on_node_complete(node)
+            return execution, retries, False, True
+
         if on_retry is not None:
             for record in retries:
                 on_retry(record)
@@ -176,7 +250,7 @@ class GraphExecutor:
             node.metadata["governance_pause"] = True
             if on_node_complete is not None:
                 on_node_complete(node)
-            return execution, retries, False
+            return execution, retries, False, False
 
         if validation.valid:
             node.status = ExecutionNodeStatus.COMPLETED
@@ -186,4 +260,4 @@ class GraphExecutor:
         if on_node_complete is not None:
             on_node_complete(node)
 
-        return execution, retries, not validation.valid
+        return execution, retries, not validation.valid, False

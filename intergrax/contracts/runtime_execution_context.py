@@ -78,3 +78,12 @@ class RuntimeExecutionContext(BaseModel):
                 error="tool_gateway_not_configured",
             )
         return await self.tool_gateway.invoke(request)
+
+    def should_cancel(self) -> bool:
+        from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
+
+        if self.request is not None and hasattr(self.request, "metadata"):
+            metadata = getattr(self.request, "metadata", None)
+            if isinstance(metadata, dict) and CancellationCoordinator.is_requested(metadata):
+                return True
+        return CancellationCoordinator.is_requested(self.metadata)

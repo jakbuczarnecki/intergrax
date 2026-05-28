@@ -84,6 +84,8 @@ class TaskPauseRecord(BaseModel):
 class TaskGovernanceState(BaseModel):
     paused: bool = False
     human_request: Optional[HumanRequest] = None
+    human_request_created_at: Optional[str] = None
+    human_request_expires_at: Optional[str] = None
     execution_interrupt: Optional[ExecutionInterrupt] = None
     pause_record: Optional[TaskPauseRecord] = None
     escalation_level: int = 0

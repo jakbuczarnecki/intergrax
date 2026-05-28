@@ -53,6 +53,8 @@ from intergrax.runtime.task.task_metadata_keys import (
     HUMAN_ESCALATED_KEY,
     HUMAN_REJECTED_KEY,
     HUMAN_RESPONSE_KEY,
+    HUMAN_REQUEST_CREATED_AT_KEY,
+    HUMAN_REQUEST_EXPIRES_AT_KEY,
     LONG_RUNNING_CHECKPOINT_ON_PAUSE_KEY,
     LONG_RUNNING_FLAG,
     LONG_RUNNING_NOTIFY_CHANNEL_KEY,
@@ -102,6 +104,8 @@ _LEGACY_RUNTIME_KEYS = frozenset(
         GOVERNANCE_HUMAN_REQUEST_KEY,
         GOVERNANCE_INTERRUPT_KEY,
         GOVERNANCE_PAUSE_RECORD_KEY,
+        HUMAN_REQUEST_CREATED_AT_KEY,
+        HUMAN_REQUEST_EXPIRES_AT_KEY,
         ESCALATION_LEVEL_KEY,
         ESCALATION_TARGET_KEY,
         ESCALATION_CHAIN_KEY,
@@ -195,6 +199,8 @@ def runtime_state_from_metadata(metadata: Dict[str, Any]) -> TaskRuntimeState:
     governance = TaskGovernanceState(
         paused=_truthy(metadata.get(GOVERNANCE_PAUSE_KEY)),
         human_request=HumanRequest.model_validate(human_request) if human_request else None,
+        human_request_created_at=metadata.get(HUMAN_REQUEST_CREATED_AT_KEY),
+        human_request_expires_at=metadata.get(HUMAN_REQUEST_EXPIRES_AT_KEY),
         execution_interrupt=(
             ExecutionInterrupt.model_validate(interrupt) if interrupt else None
         ),
@@ -325,6 +331,14 @@ def sync_task_metadata(task: Task) -> None:
         meta[GOVERNANCE_HUMAN_REQUEST_KEY] = gov.human_request.model_dump()
     else:
         meta.pop(GOVERNANCE_HUMAN_REQUEST_KEY, None)
+    if gov.human_request_created_at is not None:
+        meta[HUMAN_REQUEST_CREATED_AT_KEY] = gov.human_request_created_at
+    else:
+        meta.pop(HUMAN_REQUEST_CREATED_AT_KEY, None)
+    if gov.human_request_expires_at is not None:
+        meta[HUMAN_REQUEST_EXPIRES_AT_KEY] = gov.human_request_expires_at
+    else:
+        meta.pop(HUMAN_REQUEST_EXPIRES_AT_KEY, None)
     if gov.execution_interrupt is not None:
         meta[GOVERNANCE_INTERRUPT_KEY] = gov.execution_interrupt.model_dump()
     else:

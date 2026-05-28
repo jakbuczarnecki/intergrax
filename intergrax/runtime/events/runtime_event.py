@@ -60,6 +60,7 @@ class RuntimeEventType(str, Enum):
 
 class RuntimeEvent(BaseModel):
     event_id: str = Field(default_factory=lambda: f"evt_{uuid4().hex}")
+    tenant_id: Optional[str] = None
     task_id: str
     run_id: str
     node_id: Optional[str] = None
