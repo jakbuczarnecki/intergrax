@@ -11,7 +11,8 @@ from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_task,
     build_runtime_checkpoint,
 )
-from intergrax.runtime.long_running.models import NotificationMessage, TaskCheckpoint
+from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.notifications.models import NotificationMessage
 from intergrax.runtime.long_running.notification import NotificationAdapter, resolve_notification_adapter
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph

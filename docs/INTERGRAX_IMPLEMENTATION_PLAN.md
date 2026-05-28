@@ -349,7 +349,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
-| H.1 | Outbound webhook delivery | Pending | §18 | Real HTTP for Slack/Teams (opt-in env) |
+| H.1 | Outbound webhook delivery | **Done** | §18 | Pluggable delivery + formatters; HTTP opt-in |
 | H.2 | `InteractionAdapter` protocol | Pending | §18 | Inbound → normalized `Task` |
 | H.3 | Slack inbound lab path | Pending | §18 | Slash command or Events API minimal |
 | H.4 | HITL notification templates | Pending | §42.10 | `resume_token` + approve/reject in message |
@@ -401,7 +401,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     Phase H — Interaction Surfaces (§18), start H.1 outbound webhooks
+NOW:     H.2 — InteractionAdapter protocol (§18 inbound → Task)
 
 NEXT:    Phase H — Interaction surfaces (§18)
 
@@ -443,11 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**Phase H — Interaction Surfaces (§18)** — start with H.1 outbound webhook delivery:
+**H.2 — InteractionAdapter protocol** (§18):
 
-1. Real HTTP delivery for Slack/Teams notification adapter (opt-in env).
-2. Wire `LoggingNotificationAdapter` → `WebhookNotificationAdapter` behind factory.
-3. Integration test with httpx mock server.
+1. Define inbound `InteractionAdapter` protocol — external events → normalized `Task`.
+2. Stub implementation for lab/testing (no Slack/Teams SDK lock-in).
+3. Unit test: slash-command payload → `Task` with capability + metadata.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,8 +455,8 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
-- **G.8:** Cooperative cancellation — `CancellationCoordinator`, skip pending nodes in `GraphExecutor`, UAEP step boundary check, `TaskState.CANCELLED` + checkpoint cleanup stub.
-- **G.7:** Graph failure recovery — `should_skip_graph_node`, skip completed nodes in `GraphExecutor`, checkpoint on graph fail, resume from `node_states`.
+- **H.1:** Outbound notifications — `NotificationDelivery` + `NotificationPayloadFormatter` + `WebhookNotificationAdapter` + factory (`log|webhook|slack|teams`, env URLs).
+- **G.8:** Cooperative cancellation — `CancellationCoordinator`, graph/UAEP propagation, `TaskState.CANCELLED`.
 - **G.6:** Debug API — `GET …/events`, `GET …/checkpoints`, `POST …/human-response` with injectable `RuntimeEventPersistence` / `TaskCheckpointPersistence`.
 - **G.5:** pluggable `RuntimeEventPersistence` + memory/SQLite backends.
 - **F.5:** typed task contract — `TaskExecutionOptions` / `TaskRuntimeState` / `TaskResultSummary` + metadata bridge.

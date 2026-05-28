@@ -10,6 +10,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from intergrax.runtime.notifications.models import NotificationMessage
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.task.task import TaskState
 
@@ -28,10 +29,4 @@ class TaskCheckpoint(BaseModel):
     runtime: Optional[RuntimeCheckpoint] = None
 
 
-class NotificationMessage(BaseModel):
-    channel: str
-    subject: str
-    body: str
-    task_id: str
-    tenant_id: str
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+__all__ = ["NotificationMessage", "TaskCheckpoint"]
