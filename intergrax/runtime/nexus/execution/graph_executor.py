@@ -254,6 +254,7 @@ class GraphExecutor:
 
         if validation.valid:
             node.status = ExecutionNodeStatus.COMPLETED
+            self._context_manager.record_node_output(task, node, execution)
         else:
             node.status = ExecutionNodeStatus.FAILED
 

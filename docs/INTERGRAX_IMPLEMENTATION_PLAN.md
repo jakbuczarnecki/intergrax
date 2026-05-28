@@ -101,7 +101,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §26 Long-running tasks | Checkpoint / resume | **Partial** | F.4 task snapshot ✅; scheduler / UAEP mid-step pending |
 | §18 Slack / Teams | Interaction adapters | **Stub** | F.4 notification stub only; no intake / webhook |
-| §27 Memory model | Bounded task / agent memory | **Partial** | I.1 store + I.2 `MemoryView`; SharedTaskContext pending |
+| §27 Memory model | Bounded task / agent memory | **Partial** | I.1–I.3 done; handoff / ContextManager v2 pending |
 | §42.9 Pause / Resume | `RuntimeCheckpoint` | **Partial** | HITL pause ✅; full plan/graph/UAEP checkpoint pending |
 | §41 Unified entry | Single run lifecycle | **Partial** | `NexusLoop` + `RunService` + `RuntimeEngine` still parallel |
 
@@ -364,7 +364,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 |---|-------------|--------|-------|-------|
 | I.1 | `TaskMemory` store | **Done** | §27 | Contract + coordinator; `store.py` (`open_task_memory_store`, env `INTERGRAX_TASK_MEMORY_DB` only) |
 | I.2 | `MemoryView` gateway | **Done** | §42.35 | `PolicyScopedMemoryView` + UAEP wiring + `MEMORY_*` events |
-| I.3 | `SharedTaskContext` | Pending | §42.14 | Formal cross-agent payload |
+| I.3 | `SharedTaskContext` | **Done** | §42.14 | Contract + `ContextManager` + graph merge + memory bridge |
 | I.4 | Agent handoff | Pending | §42.15 | Graph handoff + validation |
 | I.5 | ContextManager v2 | Pending | §28 | Provenance + summary tiers |
 
@@ -401,9 +401,9 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     I.3 — SharedTaskContext (§42.14)
+NOW:     I.4 — Agent handoff (§42.15)
 
-NEXT:    I.4–I.5 — handoff, ContextManager v2
+NEXT:    I.5 — ContextManager v2 (§28)
 
 THEN:    Phase J — Unified execution entry (§41)
 
@@ -443,10 +443,10 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**I.3 — SharedTaskContext** (§42.14):
+**I.4 — Agent handoff** (§42.15):
 
-1. Formal cross-agent payload on `Task` / `ContextManager`.
-2. Read path via `MemoryView` / context bridge (no direct store from agents).
+1. `AgentHandoff` contract + `HANDOFF_INITIATED` / `HANDOFF_COMPLETED` events.
+2. Nexus graph update path for handoff decisions.
 3. Unit + integration tests; gate green.
 
 ```bash
@@ -455,6 +455,7 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
+- **I.3:** `SharedTaskContext` — formal payload on `Task`, `ContextManager` merge, memory read bridge.
 - **I.2:** `MemoryView` gateway — `PolicyScopedMemoryView`, UAEP wiring, `MEMORY_READ`/`MEMORY_WRITE` events.
 - **I.1:** `TaskMemory` store — `TaskMemoryPersistence`, `TaskMemoryCoordinator`, in-memory + SQLite backends.
 - **H.6:** Organization Worker demo — `OrganizationWorkerAgent`, `create_organization_worker_lab_app`, E2E Slack/Teams intake → HITL → resume.
@@ -715,5 +716,5 @@ Reuse:
 
 
 
-*Plan synced with codebase after I.2 MemoryView gateway (2026-05-27). Gate: 175 tests.*
+*Plan synced with codebase after I.3 SharedTaskContext (2026-05-27). Gate: 182 tests.*
 

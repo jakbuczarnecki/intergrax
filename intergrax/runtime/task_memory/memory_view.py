@@ -138,6 +138,9 @@ class PolicyScopedMemoryView:
             raise MemoryViewError("memory namespace must not be empty")
         if write and self._access_policy.read_only:
             raise MemoryViewAccessDenied("memory view is read-only")
+        denied = self._access_policy.write_denied_namespaces
+        if write and denied is not None and ns in denied:
+            raise MemoryViewAccessDenied(f"namespace write denied: {ns}")
         allowed = self._access_policy.allowed_namespaces
         if allowed is not None and ns not in allowed:
             raise MemoryViewAccessDenied(f"namespace not allowed: {ns}")

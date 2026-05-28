@@ -46,7 +46,15 @@ from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
 from intergrax.runtime.task_memory.limits import TaskMemoryLimits
 from intergrax.runtime.task_memory.memory_view import PolicyScopedMemoryView
 from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
-from intergrax.runtime.task_memory.policy import memory_access_policy_from_metadata
+from intergrax.runtime.task_memory.policy import (
+    MemoryAccessPolicy,
+    memory_access_policy_from_metadata,
+)
+from intergrax.runtime.nexus.context.shared_context_bridge import hydrate_shared_context_memory
+from intergrax.runtime.nexus.context.shared_task_context import (
+    DEFAULT_SHARED_MEMORY_NAMESPACE,
+    load_shared_task_context_from_metadata,
+)
 
 
 class UAEPBlockedError(RuntimeError):
@@ -137,6 +145,7 @@ class UAEPExecutor:
         )
         self._attach_shadow_workspace(exec_ctx, request, task_id=task_id)
         self._attach_sandbox_session(exec_ctx, request, task_id=task_id)
+        self._attach_shared_context(exec_ctx, request)
         self._attach_memory_view(exec_ctx, request, task_id=task_id)
 
         hook_base = HookContext(
@@ -391,6 +400,15 @@ class UAEPExecutor:
         summary = output.summary if output else ""
         return RuntimeAnswer(run_id=run_id, answer=summary)
 
+    @staticmethod
+    def _attach_shared_context(
+        exec_ctx: RuntimeExecutionContext,
+        request: RuntimeRequest,
+    ) -> None:
+        shared = load_shared_task_context_from_metadata(request.metadata)
+        if shared is not None:
+            exec_ctx.metadata["shared_task_context"] = shared.model_dump(mode="json")
+
     def _attach_memory_view(
         self,
         exec_ctx: RuntimeExecutionContext,
@@ -401,13 +419,35 @@ class UAEPExecutor:
         if self._task_memory_store is None:
             return
         tenant_id = request.tenant_id or "default"
+        access_policy = self._memory_access_policy_for_request(request.metadata)
         exec_ctx.memory_view = PolicyScopedMemoryView(
             exec_ctx,
             self._task_memory_store,
             tenant_id=tenant_id,
             task_id=task_id,
-            access_policy=memory_access_policy_from_metadata(request.metadata),
+            access_policy=access_policy,
             limits=self._memory_limits,
+        )
+        shared = load_shared_task_context_from_metadata(request.metadata)
+        if shared is not None:
+            hydrate_shared_context_memory(
+                self._task_memory_store,
+                tenant_id=tenant_id,
+                task_id=task_id,
+                shared=shared,
+                limits=self._memory_limits,
+            )
+
+    @staticmethod
+    def _memory_access_policy_for_request(metadata: dict[str, Any]) -> MemoryAccessPolicy:
+        policy = memory_access_policy_from_metadata(metadata)
+        protected = frozenset({DEFAULT_SHARED_MEMORY_NAMESPACE})
+        denied = (policy.write_denied_namespaces or frozenset()) | protected
+        return MemoryAccessPolicy(
+            allowed_namespaces=policy.allowed_namespaces,
+            read_only=policy.read_only,
+            write_denied_namespaces=denied,
+            list_limit=policy.list_limit,
         )
 
     def _attach_shadow_workspace(
