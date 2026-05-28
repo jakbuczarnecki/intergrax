@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import List, Optional
 
 from intergrax.agents.agent_engine import AgentEngine
@@ -34,10 +35,7 @@ from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
-from intergrax.runtime.events.store_factory import (
-    RuntimeEventStoreSettings,
-    create_runtime_event_store,
-)
+from intergrax.runtime.events.store import resolve_runtime_event_persistence
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
@@ -104,11 +102,11 @@ class NexusLoop:
         notification_adapter: Optional[NotificationAdapter] = None,
         middleware: Optional[MiddlewarePipeline] = None,
         runtime_event_store: Optional[RuntimeEventPersistence] = None,
-        runtime_event_store_settings: Optional[RuntimeEventStoreSettings] = None,
+        runtime_events_db_path: Optional[Path] = None,
     ) -> None:
         self._registry = registry
-        self._runtime_event_store = create_runtime_event_store(
-            runtime_event_store_settings,
+        self._runtime_event_store = resolve_runtime_event_persistence(
+            db_path=runtime_events_db_path,
             implementation=runtime_event_store,
         )
         self._event_bus = event_bus or RuntimeEventBus(persistence=self._runtime_event_store)

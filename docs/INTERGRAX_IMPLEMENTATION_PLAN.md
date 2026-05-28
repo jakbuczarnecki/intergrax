@@ -338,7 +338,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | G.2 | UAEP mid-execution resume | **Done** | §42.9.3 | Skip re-run paused step on resume |
 | G.3 | HITL middleware hooks | **Done** | §42.10 | `BEFORE/AFTER_HUMAN_APPROVAL` in NexusLoop |
 | G.4 | `HumanRequest` v2 fields | **Done** | §42.10.1 | Typed urgency, deadline propagation, timeout stub |
-| G.5 | RuntimeEvent-first observability | **Done** | §42.24 | Pluggable `RuntimeEventPersistence`; SQLite default backend |
+| G.5 | RuntimeEvent-first observability | **Done** | §42.24 | `RuntimeEventPersistence` + `store.py` (`open_runtime_event_store`, env `INTERGRAX_RUNTIME_EVENTS_DB` only) |
 | G.6 | Debug API: HITL + checkpoints | **Done** | §19 | Pluggable stores; events/checkpoints/HITL resume |
 | G.7 | Graph failure recovery | **Done** | §42.40, §30 | Skip completed nodes; checkpoint on graph fail |
 | G.8 | Cooperative cancellation | **Done** | §42.26 | Cancel propagation through graph / UAEP |
@@ -362,7 +362,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
-| I.1 | `TaskMemory` store | Pending | §27 | Nexus-owned bounded task memory |
+| I.1 | `TaskMemory` store | **Done** | §27 | Contract + coordinator; `store.py` (`open_task_memory_store`, env `INTERGRAX_TASK_MEMORY_DB` only) |
 | I.2 | `MemoryView` gateway | Pending | §42.35 | Policy-scoped UAEP memory access |
 | I.3 | `SharedTaskContext` | Pending | §42.14 | Formal cross-agent payload |
 | I.4 | Agent handoff | Pending | §42.15 | Graph handoff + validation |
@@ -401,9 +401,9 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     I.1 — TaskMemory store (§27)
+NOW:     I.2 — MemoryView gateway (§42.35)
 
-NEXT:    Phase I — Memory & context (§27–28)
+NEXT:    I.3–I.5 — SharedTaskContext, handoff, ContextManager v2
 
 THEN:    Phase J — Unified execution entry (§41)
 
@@ -443,11 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**I.1 — TaskMemory store** (§27):
+**I.2 — MemoryView gateway** (§42.35):
 
-1. Nexus-owned bounded task memory with persistence contract.
-2. Memory gateway scoped by policy (foundation for I.2 `MemoryView`).
-3. Unit tests + gate.
+1. Policy-scoped read/write facade over `TaskMemoryCoordinator`.
+2. Wire into `RuntimeExecutionContext` / UAEP (no direct store access from agents).
+3. Emit `MEMORY_READ` / `MEMORY_WRITE` runtime events.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,6 +455,7 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
+- **I.1:** `TaskMemory` store — `TaskMemoryPersistence`, `TaskMemoryCoordinator`, in-memory + SQLite backends.
 - **H.6:** Organization Worker demo — `OrganizationWorkerAgent`, `create_organization_worker_lab_app`, E2E Slack/Teams intake → HITL → resume.
 - **H.5:** Teams parity — `TeamsActivityInteractionAdapter`, `TeamsSignatureVerifier`, debug intake tests mirroring H.3.
 - **H.4:** HITL notification templates — `HitlPauseNotificationTemplate`, `notify_hitl_pause`, Slack/Teams formatter parity for actions/urgency.
@@ -629,6 +630,8 @@ Optional on `NexusLoop`: `checkpoint_store=SQLiteTaskCheckpointStore(...)`, `not
 Env:
 
 - `INTERGRAX_TASK_CHECKPOINTS_DB` (default `build/intergrax_task_checkpoints.db`)
+- `INTERGRAX_RUNTIME_EVENTS_DB` (optional; enables SQLite runtime events in NexusLoop / debug API)
+- `INTERGRAX_TASK_MEMORY_DB` (optional; TaskMemory SQLite path for lab / debug)
 - `INTERGRAX_SLACK_WEBHOOK_URL` / `INTERGRAX_TEAMS_WEBHOOK_URL` (stub adapters; no network unless configured)
 
 ### H.6 Organization Worker lab runbook (Done)
@@ -711,5 +714,5 @@ Reuse:
 
 
 
-*Plan synced with codebase after H.6 Organization Worker demo (2026-05-27). Gate: 153 tests.*
+*Plan synced with codebase after runtime events store refactor (2026-05-27). Gate: 166 tests.*
 

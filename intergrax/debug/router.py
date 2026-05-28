@@ -210,7 +210,7 @@ def create_debug_router(
                 detail=(
                     "Runtime event persistence is not configured. "
                     "Pass runtime_event_store / runtime_events_db_path to create_debug_app "
-                    "or set INTERGRAX_RUNTIME_EVENT_STORE."
+                    "or set INTERGRAX_RUNTIME_EVENTS_DB."
                 ),
             )
         events = store.list_for_task(task_id, tenant_id=tenant, limit=limit)
