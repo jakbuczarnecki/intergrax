@@ -84,10 +84,10 @@ Inspect pause events: `HUMAN_APPROVAL_REQUESTED` / `HUMAN_APPROVAL_RECEIVED` on 
 uv run uvicorn legal_application.host.main:app --host 0.0.0.0 --port 8000
 ```
 
-Optional global loop for HTTP:
+HTTP `/v1/legal/chat` uses **NexusLoop + UnifiedTaskRunner** by default (§41). Legacy `AgentEngine` opt-out:
 
 ```bash
-set LEGAL_USE_NEXUS_LOOP=true
+set LEGAL_USE_LEGACY_AGENT_ENGINE=true
 ```
 
 ## 5. Research pipeline (multi-agent)

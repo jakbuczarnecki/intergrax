@@ -10,12 +10,17 @@ from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from research_application.serving.schemas import ResearchRunRequestV1, ResearchRunResponseV1
 
 
 @dataclass
 class ResearchRunService:
-    nexus_loop: NexusLoop
+    task_runner: UnifiedTaskRunner
+
+    @classmethod
+    def from_nexus_loop(cls, nexus_loop: NexusLoop) -> ResearchRunService:
+        return cls(task_runner=UnifiedTaskRunner(nexus_loop))
 
     async def run_pipeline(self, body: ResearchRunRequestV1) -> ResearchRunResponseV1:
         run_id = new_run_id()
@@ -30,7 +35,7 @@ class ResearchRunService:
                 intent="research_summarize",
             ),
         )
-        result = await self.nexus_loop.handle_task(task)
+        result = await self.task_runner.run_task(task)
         return ResearchRunResponseV1(
             task_id=result.task_id,
             run_id=result.run_id,
@@ -47,7 +52,7 @@ def mount_research_routes(
     nexus_loop: NexusLoop,
     prefix: str = "/v1/research",
 ) -> ResearchRunService:
-    service = ResearchRunService(nexus_loop=nexus_loop)
+    service = ResearchRunService.from_nexus_loop(nexus_loop)
     router = APIRouter(prefix=prefix, tags=["research"])
 
     @router.post("/run", response_model=ResearchRunResponseV1)

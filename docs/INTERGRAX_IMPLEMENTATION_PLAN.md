@@ -103,7 +103,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | §18 Slack / Teams | Interaction adapters | **Stub** | F.4 notification stub only; no intake / webhook |
 | §27 Memory model | Bounded task / agent memory | **Done** | I.1–I.5: TaskMemory, MemoryView, SharedTaskContext, handoff, ContextManager v2 |
 | §42.9 Pause / Resume | `RuntimeCheckpoint` | **Partial** | HITL pause ✅; full plan/graph/UAEP checkpoint pending |
-| §41 Unified entry | Single run lifecycle | **Partial** | `NexusLoop` + `RunService` + `RuntimeEngine` still parallel |
+| §41 Unified entry | Single run lifecycle | **Partial** | J.1 apps default NexusLoop; RunService parallel path remains (J.2) |
 
 | §20–21 Shadow / Sandbox | Isolated exec | **Done** | F.1 ShadowWorkspace + F.2 SandboxRuntime ✅ |
 
@@ -374,7 +374,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
-| J.1 | NexusLoop default in apps | Pending | §41 | Legal/Research: opt-out legacy engine |
+| J.1 | NexusLoop default in apps | **Done** | §41 | Legal: Nexus default + `LEGAL_USE_LEGACY_AGENT_ENGINE`; Research: `UnifiedTaskRunner` |
 | J.2 | RunService → UnifiedTaskRunner | Pending | §41 | Single Task lifecycle path |
 | J.3 | Worker queue Task v2 | Pending | §41 | Celery + typed Task + checkpoint resume |
 | J.4 | Long-running scheduler | Pending | §26 | In-proc cron / delayed resume first |
@@ -401,9 +401,9 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     J.1 — NexusLoop default in apps (§41)
+NOW:     J.2 — RunService → UnifiedTaskRunner (§41)
 
-NEXT:    J.2–J.5 — unified execution entry
+NEXT:    J.3–J.5 — worker queue, scheduler, partial results
 
 THEN:    Phase J — Unified execution entry (§41)
 
@@ -443,10 +443,10 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**J.1 — NexusLoop default in apps** (§41):
+**J.2 — RunService → UnifiedTaskRunner** (§41):
 
-1. Legal/Research hosts use NexusLoop as default execution path (legacy opt-out).
-2. Wire Task v2 lifecycle through application serving layer.
+1. Align FastAPI Core `RunService` dispatch with `UnifiedTaskRunner` (same path as Legal/Research HTTP).
+2. Remove duplicate task construction in `NexusTaskExecutionAdapter` where possible.
 3. Integration tests; gate green.
 
 ```bash
@@ -454,6 +454,8 @@ uv run pytest tests/ -m gate -q
 ```
 
 **Recently completed:**
+
+- **J.1:** NexusLoop default in apps — Legal HTTP uses `UnifiedTaskRunner` by default; legacy `AgentEngine` via `LEGAL_USE_LEGACY_AGENT_ENGINE`; Research host wired through `UnifiedTaskRunner`.
 
 - **I.5:** ContextManager v2 — provenance, summary tiers, typed `TaskContextAssemblyOptions` (`TaskExecutionOptions.context`), metadata bridge sync.
 - **I.4:** Agent handoff — `AgentHandoff`, `HandoffCoordinator`, graph executor path, `HANDOFF_*` events.
@@ -718,5 +720,5 @@ Reuse:
 
 
 
-*Plan synced with codebase after I.5 typed context assembly cleanup (2026-05-27). Gate: 197 tests.*
+*Plan synced with codebase after J.1 NexusLoop default in apps (2026-05-27). Gate: 200 tests.*
 

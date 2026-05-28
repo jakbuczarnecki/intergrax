@@ -49,7 +49,7 @@ class LegalAgentServingConfig:
     registry: AgentRegistry
     default_agent_id: str
     identity_source: LegalIdentitySource = "body_or_context"
-    use_nexus_loop: bool = False
+    use_nexus_loop: bool = True
     trace_store: Optional[RunTraceWriter] = None
 
     def __post_init__(self) -> None:
@@ -66,7 +66,7 @@ class LegalAgentServingConfig:
         *,
         default_agent_id: str,
         identity_source: LegalIdentitySource = "body_or_context",
-        use_nexus_loop: bool = False,
+        use_nexus_loop: bool = True,
         trace_store: Optional[RunTraceWriter] = None,
     ) -> "LegalAgentServingConfig":
         registry = AgentRegistry.from_agents(dict(agents))
@@ -81,7 +81,7 @@ class LegalAgentServingConfig:
 
 @dataclass
 class DefaultLegalAgentService:
-    """Validate identity, drive AgentEngine or NexusLoop, map responses."""
+    """Validate identity, drive UnifiedTaskRunner (NexusLoop) or legacy AgentEngine, map responses."""
 
     config: LegalAgentServingConfig
     mapper: LegalApiV1RuntimeMapper = field(default_factory=LegalApiV1RuntimeMapper)
@@ -250,7 +250,7 @@ def mount_legal_agent_routes(
     prefix: str = "/v1/legal",
     mapper: LegalApiV1RuntimeMapper | None = None,
     identity_source: LegalIdentitySource = "body_or_context",
-    use_nexus_loop: bool = False,
+    use_nexus_loop: bool = True,
     trace_store: Optional[RunTraceWriter] = None,
 ) -> DefaultLegalAgentService:
     """
