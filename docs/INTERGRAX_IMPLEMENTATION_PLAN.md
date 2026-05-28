@@ -340,7 +340,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | G.4 | `HumanRequest` v2 fields | **Done** | §42.10.1 | Typed urgency, deadline propagation, timeout stub |
 | G.5 | RuntimeEvent-first observability | **Done** | §42.24 | Pluggable `RuntimeEventPersistence`; SQLite default backend |
 | G.6 | Debug API: HITL + checkpoints | **Done** | §19 | Pluggable stores; events/checkpoints/HITL resume |
-| G.7 | Graph failure recovery | Pending | §42.40, §30 | Resume from last successful node |
+| G.7 | Graph failure recovery | **Done** | §42.40, §30 | Skip completed nodes; checkpoint on graph fail |
 | G.8 | Cooperative cancellation | Pending | §42.26 | Cancel propagation through graph / UAEP |
 
 ---
@@ -443,11 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**G.7 — Graph failure recovery** (§42.40, §30):
+**G.8 — Cooperative cancellation** (§42.26):
 
-1. Resume graph execution from last successful node using `RuntimeCheckpoint.node_states`.
-2. Skip completed nodes in `GraphExecutor` when checkpoint present.
-3. Integration test: fail mid-graph → resume → complete without re-running successful nodes.
+1. Cancel propagation through graph / UAEP execution loops.
+2. `TaskState.CANCELLED` transition from RUNNING with checkpoint cleanup stub.
+3. Integration test: cancel mid-graph → nodes stop, task reaches CANCELLED.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,6 +455,7 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
+- **G.7:** Graph failure recovery — `should_skip_graph_node`, skip completed nodes in `GraphExecutor`, checkpoint on graph fail, resume from `node_states`.
 - **G.6:** Debug API — `GET …/events`, `GET …/checkpoints`, `POST …/human-response` with injectable `RuntimeEventPersistence` / `TaskCheckpointPersistence`.
 - **G.5:** pluggable `RuntimeEventPersistence` + memory/SQLite backends.
 - **F.5:** typed task contract — `TaskExecutionOptions` / `TaskRuntimeState` / `TaskResultSummary` + metadata bridge.

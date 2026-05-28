@@ -4,7 +4,9 @@ import pytest
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.runtime.long_running.checkpoint_builder import (
+    apply_runtime_checkpoint_to_graph,
     build_runtime_checkpoint,
+    should_skip_graph_node,
     should_skip_uaep_step,
 )
 from intergrax.runtime.long_running.runtime_checkpoint import (
@@ -12,6 +14,7 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
     RuntimeCheckpoint,
     runtime_checkpoint_from_execution_structured,
 )
+from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode, ExecutionNodeStatus
 from intergrax.runtime.task.task import Task
 
 
@@ -80,3 +83,54 @@ def test_build_runtime_checkpoint_merges_execution_structured():
     assert runtime.uaep_step_index == 0
     assert runtime.uaep_step_id == "review"
     assert runtime.last_step_output is not None
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_should_skip_graph_node_when_completed_with_prior_output():
+    ckpt = RuntimeCheckpoint(
+        node_states={"n1": ExecutionNodeStatus.COMPLETED.value},
+        prior_node_outputs={"n1": {"agent_id": "a1", "summary": "done", "status": "completed"}},
+    )
+    node = ExecutionNode(node_id="n1", agent_id="a1", status=ExecutionNodeStatus.COMPLETED)
+    prior = {
+        "n1": AgentExecutionResult(
+            agent_id="a1",
+            run_id="run_1",
+            status=AgentExecutionStatus.COMPLETED,
+            summary="done",
+        )
+    }
+    assert should_skip_graph_node(node, checkpoint=ckpt, prior_outputs=prior)
+    failed = ExecutionNode(node_id="n2", agent_id="a2", status=ExecutionNodeStatus.FAILED)
+    assert not should_skip_graph_node(failed, checkpoint=ckpt, prior_outputs=prior)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_apply_runtime_checkpoint_to_graph_restores_completed_node():
+    graph = ExecutionGraph(
+        graph_id="g1",
+        task_id="task_1",
+        nodes=[
+            ExecutionNode(node_id="n1", agent_id="a1"),
+            ExecutionNode(node_id="n2", agent_id="a2", depends_on=["n1"]),
+        ],
+    )
+    runtime = RuntimeCheckpoint(
+        node_states={
+            "n1": ExecutionNodeStatus.COMPLETED.value,
+            "n2": ExecutionNodeStatus.FAILED.value,
+        },
+        prior_node_outputs={
+            "n1": {"agent_id": "a1", "summary": "step one", "status": "completed"},
+        },
+    )
+    prior: dict = {}
+    apply_runtime_checkpoint_to_graph(graph, runtime, prior)
+
+    assert graph.node_by_id("n1").status == ExecutionNodeStatus.COMPLETED
+    assert graph.node_by_id("n1").execution_result is not None
+    assert graph.node_by_id("n1").execution_result.summary == "step one"
+    assert graph.node_by_id("n2").status == ExecutionNodeStatus.FAILED
+    assert "n1" in prior

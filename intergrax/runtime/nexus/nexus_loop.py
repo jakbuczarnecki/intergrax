@@ -217,6 +217,12 @@ class NexusLoop:
             and task.state in LongRunningCoordinator.paused_states()
         ):
             task.state = TaskState.CREATED
+        elif (
+            LongRunningCoordinator.is_long_running(task)
+            and task.options.long_running.resume_token
+            and task.state == TaskState.FAILED
+        ):
+            task.state = TaskState.CREATED
         verdict = HumanPauseCoordinator.verdict_from_task(task)
         if verdict == HumanResponseVerdict.REJECT:
             return await self._handle_human_rejection(task, trace_emitter, lifecycle)
@@ -426,6 +432,14 @@ class NexusLoop:
         if failed_nodes:
             lifecycle.transition(task, TaskState.VALIDATING)
             lifecycle.transition(task, TaskState.FAILED)
+            if LongRunningCoordinator.is_long_running(task):
+                await self._maybe_checkpoint_long_running(
+                    task,
+                    progress_message=f"graph failed at {failed_nodes}",
+                    plan=plan,
+                    graph=graph,
+                    last_execution=executions[-1] if executions else None,
+                )
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
                 self._finalize_persisting_trace(trace_emitter, executions)
             return await self._finish_task(

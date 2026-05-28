@@ -111,12 +111,31 @@ def apply_runtime_checkpoint_to_graph(
                 pass
         prior = runtime.prior_node_outputs.get(node.node_id)
         if prior and node.node_id not in prior_outputs:
-            prior_outputs[node.node_id] = AgentExecutionResult(
+            restored = AgentExecutionResult(
                 agent_id=str(prior.get("agent_id") or node.agent_id or ""),
                 run_id=task_run_id_placeholder(graph.task_id),
                 status=_status_from_summary(prior.get("status")),
                 summary=str(prior.get("summary") or ""),
             )
+            prior_outputs[node.node_id] = restored
+            if node.status in (
+                ExecutionNodeStatus.COMPLETED,
+                ExecutionNodeStatus.SKIPPED,
+            ):
+                node.execution_result = restored
+
+
+def should_skip_graph_node(
+    node: ExecutionNode,
+    *,
+    checkpoint: Optional[RuntimeCheckpoint],
+    prior_outputs: Dict[str, AgentExecutionResult],
+) -> bool:
+    if checkpoint is None:
+        return False
+    if node.status not in (ExecutionNodeStatus.COMPLETED, ExecutionNodeStatus.SKIPPED):
+        return False
+    return node.node_id in prior_outputs
 
 
 def task_run_id_placeholder(task_id: str) -> str:

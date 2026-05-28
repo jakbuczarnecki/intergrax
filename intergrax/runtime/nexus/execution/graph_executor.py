@@ -10,8 +10,12 @@ from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.validation import ValidationResult
-from intergrax.runtime.long_running.checkpoint_builder import apply_runtime_checkpoint_to_graph
+from intergrax.runtime.long_running.checkpoint_builder import (
+    apply_runtime_checkpoint_to_graph,
+    should_skip_graph_node,
+)
 from intergrax.runtime.long_running.runtime_checkpoint import (
+    RuntimeCheckpoint,
     attach_runtime_checkpoint_to_metadata,
     runtime_checkpoint_from_metadata,
 )
@@ -79,6 +83,7 @@ class GraphExecutor:
                     task,
                     node,
                     prior_outputs,
+                    runtime_ckpt=runtime_ckpt,
                     plan_criteria=plan_criteria,
                     on_retry=on_retry,
                     on_node_start=on_node_start,
@@ -97,6 +102,7 @@ class GraphExecutor:
                             task,
                             node,
                             prior_outputs,
+                            runtime_ckpt=runtime_ckpt,
                             plan_criteria=plan_criteria,
                             on_retry=on_retry,
                             on_node_start=on_node_start,
@@ -123,11 +129,24 @@ class GraphExecutor:
         node: ExecutionNode,
         prior_outputs: Dict[str, AgentExecutionResult],
         *,
+        runtime_ckpt: Optional[RuntimeCheckpoint] = None,
         plan_criteria: Optional[List[str]],
         on_retry: Optional[Callable[[RetryRecord], None]],
         on_node_start: Optional[Callable[[ExecutionNode], None]],
         on_node_complete: Optional[Callable[[ExecutionNode], None]],
     ) -> tuple[AgentExecutionResult, List[RetryRecord], bool]:
+        if should_skip_graph_node(
+            node,
+            checkpoint=runtime_ckpt,
+            prior_outputs=prior_outputs,
+        ):
+            execution = prior_outputs[node.node_id]
+            node.execution_result = execution
+            node.status = ExecutionNodeStatus.SKIPPED
+            if on_node_complete is not None:
+                on_node_complete(node)
+            return execution, [], False
+
         node.status = ExecutionNodeStatus.RUNNING
         if on_node_start is not None:
             on_node_start(node)
