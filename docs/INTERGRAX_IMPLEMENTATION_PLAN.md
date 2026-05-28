@@ -341,7 +341,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | G.5 | RuntimeEvent-first observability | **Done** | §42.24 | Pluggable `RuntimeEventPersistence`; SQLite default backend |
 | G.6 | Debug API: HITL + checkpoints | **Done** | §19 | Pluggable stores; events/checkpoints/HITL resume |
 | G.7 | Graph failure recovery | **Done** | §42.40, §30 | Skip completed nodes; checkpoint on graph fail |
-| G.8 | Cooperative cancellation | Pending | §42.26 | Cancel propagation through graph / UAEP |
+| G.8 | Cooperative cancellation | **Done** | §42.26 | Cancel propagation through graph / UAEP |
 
 ---
 
@@ -401,7 +401,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     G.7–G.8 Graph failure recovery + cancellation (§42.40, §42.26)
+NOW:     Phase H — Interaction Surfaces (§18), start H.1 outbound webhooks
 
 NEXT:    Phase H — Interaction surfaces (§18)
 
@@ -443,11 +443,11 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**G.8 — Cooperative cancellation** (§42.26):
+**Phase H — Interaction Surfaces (§18)** — start with H.1 outbound webhook delivery:
 
-1. Cancel propagation through graph / UAEP execution loops.
-2. `TaskState.CANCELLED` transition from RUNNING with checkpoint cleanup stub.
-3. Integration test: cancel mid-graph → nodes stop, task reaches CANCELLED.
+1. Real HTTP delivery for Slack/Teams notification adapter (opt-in env).
+2. Wire `LoggingNotificationAdapter` → `WebhookNotificationAdapter` behind factory.
+3. Integration test with httpx mock server.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,6 +455,7 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
+- **G.8:** Cooperative cancellation — `CancellationCoordinator`, skip pending nodes in `GraphExecutor`, UAEP step boundary check, `TaskState.CANCELLED` + checkpoint cleanup stub.
 - **G.7:** Graph failure recovery — `should_skip_graph_node`, skip completed nodes in `GraphExecutor`, checkpoint on graph fail, resume from `node_states`.
 - **G.6:** Debug API — `GET …/events`, `GET …/checkpoints`, `POST …/human-response` with injectable `RuntimeEventPersistence` / `TaskCheckpointPersistence`.
 - **G.5:** pluggable `RuntimeEventPersistence` + memory/SQLite backends.

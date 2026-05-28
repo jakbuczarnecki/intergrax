@@ -173,7 +173,7 @@ async def test_graph_executor_skips_completed_nodes_on_resume():
         retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=0)),
     )
 
-    executions, _, graph = await executor.execute(graph, task)
+    executions, _, graph, _ = await executor.execute(graph, task)
     assert len(executions) == 1
     assert graph.node_by_id("n1").status == ExecutionNodeStatus.COMPLETED
     assert graph.node_by_id("n2").status == ExecutionNodeStatus.FAILED
@@ -184,7 +184,7 @@ async def test_graph_executor_skips_completed_nodes_on_resume():
     task.sync_metadata()
 
     resumed_graph = _build_graph(task.task_id)
-    executions, _, graph = await executor.execute(resumed_graph, task)
+    executions, _, graph, _ = await executor.execute(resumed_graph, task)
 
     assert len(executions) == 2
     assert executions[0].summary == "A: recover graph"

@@ -30,6 +30,10 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, Rou
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
 from intergrax.runtime.task.task_metadata_bridge import execution_options_from_metadata
+from intergrax.runtime.cancellation.coordinator import (
+    CANCELLATION_REQUESTED_KEY,
+    CancellationCoordinator,
+)
 from intergrax.runtime.long_running.checkpoint_builder import should_skip_uaep_step
 from intergrax.runtime.long_running.runtime_checkpoint import (
     RUNTIME_CHECKPOINT_KEY,
@@ -164,6 +168,14 @@ class UAEPExecutor:
         human_approved = task_options.human.is_resumed or bool(request.metadata.get("human_approved"))
 
         for index, step in enumerate(steps):
+            if CancellationCoordinator.is_requested(request.metadata):
+                validation = ValidationResult(valid=False, errors=["task_cancelled"])
+                answer = self._build_answer(exec_ctx, last_output, run_id)
+                if answer.route is None:
+                    answer.route = RouteInfo(extra={})
+                answer.route.extra[CANCELLATION_REQUESTED_KEY] = True
+                return answer, validation, runtime_context, None
+
             exec_ctx.phase = ExecutionPhase.STEP_EXECUTION
             hook_step = hook_base.model_copy(
                 update={"step_id": step.step_id, "phase": ExecutionPhase.STEP_EXECUTION},

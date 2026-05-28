@@ -25,6 +25,7 @@ from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator, Hum
 from intergrax.runtime.human.escalation import EscalationRouter
 from intergrax.runtime.human.models import HumanResponseVerdict, EscalationTarget
 from intergrax.runtime.human.store import SQLiteHumanDecisionStore
+from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
@@ -355,7 +356,7 @@ class NexusLoop:
                 f"status={getattr(node, 'status', None)}",
             )
 
-        executions, retry_records, graph = await self._graph_executor.execute(
+        executions, retry_records, graph, graph_cancelled = await self._graph_executor.execute(
             graph,
             task,
             plan_criteria=plan.validation_criteria,
@@ -363,6 +364,39 @@ class NexusLoop:
             on_node_start=_on_node_start,
             on_node_complete=_on_node_complete,
         )
+
+        if graph_cancelled or CancellationCoordinator.is_requested(task.metadata):
+            await self._publish_runtime_event(
+                runtime_event_from_task_state(
+                    task,
+                    run_id=task.task_id,
+                    message="task cancellation propagated",
+                ).model_copy(
+                    update={
+                        "event_type": RuntimeEventType.CANCELLED,
+                        "phase": ExecutionPhase.COMPLETION,
+                        "payload": {
+                            "reason": task.metadata.get("cancellation_reason", ""),
+                        },
+                    }
+                )
+            )
+            lifecycle.transition(task, TaskState.VALIDATING)
+            lifecycle.transition(task, TaskState.CANCELLED)
+            CancellationCoordinator.clear_checkpoint_state(task)
+            CancellationCoordinator.clear(task)
+            if isinstance(trace_emitter, PersistingTaskTraceEmitter):
+                self._finalize_persisting_trace(trace_emitter, executions)
+            return await self._finish_task(
+                task,
+                trace_emitter,
+                answer=self._composer.compose_summary(executions),
+                executions=executions,
+                validation=ValidationResult(valid=False, errors=["task_cancelled"]),
+                plan=plan,
+                retry_records=retry_records,
+                graph_id=graph.graph_id,
+            )
 
         if executions and executions[-1].status == AgentExecutionStatus.NEEDS_INPUT:
             paused = executions[-1]

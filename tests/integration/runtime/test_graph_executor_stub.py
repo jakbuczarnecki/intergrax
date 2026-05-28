@@ -97,7 +97,7 @@ async def test_graph_executor_runs_two_agents_sequentially():
     )
 
     executor = GraphExecutor(registry)
-    executions, retries, graph = await executor.execute(graph, task)
+    executions, retries, graph, _ = await executor.execute(graph, task)
 
     assert retries == []
     assert len(executions) == 2
