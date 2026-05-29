@@ -30,6 +30,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from intergrax.debug.formatters import build_trace_payload
 from intergrax.debug.progress_service import TaskProgressService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
+from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.debug.models import (
     CheckpointItem,
     CheckpointListResponse,
@@ -318,16 +319,19 @@ def create_debug_router(
             checkpoint_id=result.summary.checkpoint_id,
         )
 
-    @router.post("/interactions/intake", response_model=InteractionIntakeResponse)
-    async def interaction_intake(
-        request: Request,
-        tenant: str = Query(default="default", description="Tenant id when payload omits team_id"),
-        execute: bool = Query(
-            default=False,
-            description="When true, run the normalized Task through NexusLoop",
-        ),
-    ) -> InteractionIntakeResponse:
-        if interaction_service is None:
+    if interaction_service is not None:
+        router.include_router(
+            create_interaction_intake_router(
+                interaction_service,
+                tags=["debug"],
+                execute_default=False,
+            ),
+            prefix="/interactions",
+        )
+    else:
+
+        @router.post("/interactions/intake", response_model=InteractionIntakeResponse)
+        async def interaction_intake_unconfigured() -> InteractionIntakeResponse:
             raise HTTPException(
                 status_code=503,
                 detail=(
@@ -335,42 +339,6 @@ def create_debug_router(
                     "Pass registry=AgentRegistry(...) to create_debug_app."
                 ),
             )
-        body = await request.body()
-        headers = {key: value for key, value in request.headers.items()}
-        content_type = request.headers.get("content-type", "")
-        try:
-            intake = await interaction_service.intake_http(
-                headers=headers,
-                body=body,
-                content_type=content_type,
-                tenant_id=tenant,
-                execute=execute,
-            )
-        except ValueError as exc:
-            message = str(exc)
-            if "signature" in message.lower() or "Slack" in message or "Teams" in message:
-                raise HTTPException(status_code=401, detail=message) from exc
-            raise HTTPException(status_code=422, detail=message) from exc
-        except TypeError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-        task = intake.task
-        response = InteractionIntakeResponse(
-            task_id=task.task_id,
-            tenant_id=task.tenant_id,
-            user_id=task.user_id,
-            capability=task.context.capability,
-            message=task.message,
-            interaction_channel=DebugInteractionIntakeService.interaction_channel(task),
-            executed=intake.executed,
-        )
-        if intake.result is not None:
-            response.state = intake.result.state.value
-            response.answer = intake.result.answer
-            response.run_id = intake.result.run_id
-            response.resume_token = intake.result.summary.resume_token
-            response.checkpoint_id = intake.result.summary.checkpoint_id
-        return response
 
     @router.get("/experiments", response_model=ExperimentListResponse)
     def list_experiments(

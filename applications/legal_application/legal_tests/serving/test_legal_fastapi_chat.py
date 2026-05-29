@@ -9,19 +9,15 @@ from fastapi.testclient import TestClient
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
-from legal_application.serving.fastapi_router import (
-    mount_legal_agent_routes,
-)
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.config import ApiConfig
-from intergrax.runtime.nexus.responses.response_schema import (
-    RouteInfo,
-    RuntimeAnswer,
-    RuntimeStats,
-    StopReason,
-)
+from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import TaskResult, TaskState
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from legal_application.serving.fastapi_router import mount_legal_agent_routes
 
 pytestmark = pytest.mark.unit
 
@@ -35,29 +31,32 @@ def client() -> TestClient:
             return AgentContract(id="legal-test", name="Dummy", description="test")
 
         def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-            raise RuntimeError("not used when AgentEngine.run is mocked")
+            raise RuntimeError("not used when UnifiedTaskRunner.run_runtime_request is mocked")
 
+    agent = _DummyAgent()
+    registry = AgentRegistry.from_agents({"legal-test": agent})
+    nexus = NexusLoop(registry)
+    task_runner = UnifiedTaskRunner(nexus)
     mount_legal_agent_routes(
         app,
-        agents={"legal-test": _DummyAgent()},
+        registry=registry,
         default_agent_id="legal-test",
-        use_nexus_loop=False,
+        task_runner=task_runner,
     )
     return TestClient(app)
 
 
 def test_legal_chat_returns_mapped_answer(client: TestClient) -> None:
-    answer = RuntimeAnswer(
-        answer="API OK",
-        stop_reason=StopReason.COMPLETED,
+    task_result = TaskResult(
+        task_id="run-api-1",
         run_id="run-api-1",
-        route=RouteInfo(strategy="legal_agent"),
-        stats=RuntimeStats(),
+        state=TaskState.COMPLETED,
+        answer="API OK",
     )
     with patch(
-        "intergrax.agents.agent_engine.AgentEngine.run",
+        "intergrax.runtime.task.unified_task_runner.UnifiedTaskRunner.run_runtime_request",
         new_callable=AsyncMock,
-        return_value=answer,
+        return_value=task_result,
     ):
         r = client.post(
             "/v1/legal/chat",
@@ -77,7 +76,10 @@ def test_legal_chat_returns_mapped_answer(client: TestClient) -> None:
 
 
 def test_legal_chat_400_without_tenant(client: TestClient) -> None:
-    with patch("intergrax.agents.agent_engine.AgentEngine.run", new_callable=AsyncMock):
+    with patch(
+        "intergrax.runtime.task.unified_task_runner.UnifiedTaskRunner.run_runtime_request",
+        new_callable=AsyncMock,
+    ):
         r = client.post(
             "/v1/legal/chat",
             json={

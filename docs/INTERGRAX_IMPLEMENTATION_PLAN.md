@@ -454,7 +454,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
-| J.1 | NexusLoop default in apps | **Done** | §41 | Legal: Nexus default + `LEGAL_USE_LEGACY_AGENT_ENGINE`; Research: `UnifiedTaskRunner` |
+| J.1 | NexusLoop default in apps | **Done** | §41 | Legal + Research: `UnifiedTaskRunner` only (legacy `AgentEngine` removed, B.14) |
 | J.2 | RunService → UnifiedTaskRunner | **Done** | §41 | `NexusTaskExecutionAdapter` + `CreateRunRequest.payload` → Task |
 | J.3 | Worker queue Task v2 | **Done** | §41 | `QueuedNexusExecutionAdapter`, `nexus.task.v2` Celery handler, checkpoint resume |
 | J.4 | Long-running scheduler | **Done** | §26 | `LongRunningScheduler`, delayed resume + HITL timeout enforcement |
@@ -579,7 +579,7 @@ Complete one **new** scaffolded agent exercise (< 1 hour) and record in experime
 - **J.4:** Long-running scheduler — in-process `LongRunningScheduler` polls checkpoint store for delayed resumes and expired HITL deadlines; `UnifiedTaskResumeExecutor` resumes via `UnifiedTaskRunner`; SQLite ledger for idempotency.
 - **J.3:** Worker queue Task v2 — `QueuedNexusExecutionAdapter` enqueues `ExecutionRequest` via Tier-0 Celery (`nexus.task.v2`); `create_nexus_celery_worker_app` bootstrap; checkpoint resume through worker payload; gate **207 passed**.
 - **J.2:** RunService → UnifiedTaskRunner — `NexusTaskExecutionAdapter` delegates to `UnifiedTaskRunner`; Legal host shares one runner for `/runs` and `/legal/chat`; `POST /runs` forwards `CreateRunRequest.payload` to Task intake.
-- **J.1:** NexusLoop default in apps — Legal HTTP uses `UnifiedTaskRunner` by default; legacy `AgentEngine` via `LEGAL_USE_LEGACY_AGENT_ENGINE`; Research host wired through `UnifiedTaskRunner`.
+- **J.1:** NexusLoop default in apps — Legal and Research HTTP use `UnifiedTaskRunner` only; legacy `AgentEngine` opt-out removed from Legal (B.14).
 
 - **I.5:** ContextManager v2 — provenance, summary tiers, typed `TaskContextAssemblyOptions` (`TaskExecutionOptions.context`), metadata bridge sync.
 - **I.4:** Agent handoff — `AgentHandoff`, `HandoffCoordinator`, graph executor path, `HANDOFF_*` events.
@@ -959,16 +959,16 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 ### B.3 Interaction surfaces (§18)
 
-| ID | Item | Canon | Priority | Agent impact | Tier | Recommendation |
-|----|------|-------|----------|--------------|------|----------------|
-| B.12 | **Production Slack / Teams webhooks** — lab has debug intake + signature stub; no production inbound adapter deployment | §18 | **Medium** | Organization Worker, HITL from chat | Tier-0 / Tier-3 | H.3–H.5 done for lab; product wiring + secrets management pending |
+| ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------|--------------|------|----------------|
+| B.12 | **Production Slack / Teams webhooks** — lab has debug intake + signature stub; no production inbound adapter deployment | §18 | **Medium** | **Done** | Organization Worker, HITL from chat | Tier-0 / Tier-3 | `POST /v1/interactions/intake` on lab app + shared `create_interaction_intake_router` (2026-05-27) |
 | B.13 | **Outbound delivery hardening** — retries, DLQ, delivery receipts for HITL notifications | §18, §42.10 | **Low** | HITL agents in prod | Tier-0 | Extend pluggable delivery with persistence |
 
 ### B.4 Legacy & composition
 
-| ID | Item | Canon | Priority | Agent impact | Tier | Recommendation |
-|----|------|-------|----------|--------------|------|----------------|
-| B.14 | **`ChatAgent` / legacy engine removal** — `LEGAL_USE_LEGACY_AGENT_ENGINE` still available | §39, §41 | **Medium** | Single execution path for all agents | Tier-1 / Tier-3 | Phase K.5 after confirming Legal on UAEP-only |
+| ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------|--------------|------|----------------|
+| B.14 | **`ChatAgent` / legacy engine removal** — `LEGAL_USE_LEGACY_AGENT_ENGINE` removed | §39, §41 | **Medium** | **Done** | Single execution path for all agents | Tier-1 / Tier-3 | Legal `fastapi_router` requires `UnifiedTaskRunner`; legacy flags removed (2026-05-27) |
 | B.15 | **Legal full E2E gate (real LLM)** — deferred acceptance with live model | — | **Low** | Legal quality assurance | Tier-2 / CI | K.6; separate from Agent OS gate |
 | B.16 | **Lab agent auto-discovery** — new agents require explicit `wiring.py` register (by design, but easy to forget) | §7.4 | **Low** | Onboarding friction | Tier-3 | Optional env-driven plugin loader **only** if many agents; else keep explicit wiring + guide |
 
@@ -985,7 +985,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 1. ~~B.08, B.10~~ — observability consistency (Done 2026-05-27)
 2. ~~B.01, B.02~~ — checkpoint / full snapshot (Done 2026-05-27)
 3. ~~B.03, B.04~~ — governance facade + AgentDecision cleanup (Done 2026-05-27)
-4. B.12, B.14  — product interaction + legacy removal (K.5, §18 prod)
+4. ~~B.12, B.14~~ — product interaction + legacy removal (Done 2026-05-27)
 5. B.05–B.07, B.09–B.11, B.13, B.15–B.18 — as capacity allows
 ```
 
@@ -993,5 +993,5 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 ---
 
-*Plan synced with codebase after B.03/B.04 paydown (2026-05-27). Gate: 238 tests.*
+*Plan synced with codebase after B.12/B.14 paydown (2026-05-27). Gate: 241 tests.*
 

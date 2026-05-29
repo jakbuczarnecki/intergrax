@@ -13,6 +13,7 @@ from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
 from intergrax.debug.store import open_default_task_checkpoint_persistence
+from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
@@ -38,6 +39,7 @@ def create_lab_application(
 
     - ``POST /v1/lab/run`` — execute arbitrary registered agents via UnifiedTaskRunner
     - ``GET /v1/lab/agents`` — list active agents and capabilities
+    - ``POST /v1/interactions/intake`` — production Slack / Teams / lab inbound webhooks (B.12)
     - ``/debug/*`` — trace, events, checkpoints, progress, experiments, HITL intake
     """
     settings = settings or LabApplicationSettings.from_env()
@@ -81,4 +83,12 @@ def create_lab_application(
         "checkpoints, runtime events, and experiments (Phase L.3)."
     )
     mount_lab_routes(app, nexus_loop=nexus_loop, prefix=settings.route_prefix)
+    if settings.include_interaction_routes:
+        app.include_router(
+            create_interaction_intake_router(
+                interaction_service,
+                execute_default=True,
+            ),
+            prefix=settings.interaction_route_prefix,
+        )
     return app

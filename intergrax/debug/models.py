@@ -206,16 +206,8 @@ class HumanResponseResult(BaseModel):
     checkpoint_id: Optional[str] = None
 
 
-class InteractionIntakeResponse(BaseModel):
-    task_id: str
-    tenant_id: str
-    user_id: str
-    capability: Optional[str] = None
-    message: str = ""
-    interaction_channel: str = ""
-    executed: bool = False
-    state: Optional[str] = None
-    answer: Optional[str] = None
-    run_id: Optional[str] = None
-    resume_token: Optional[str] = None
     checkpoint_id: Optional[str] = None
+
+
+# Re-export for debug API consumers (canonical model lives in runtime.interactions).
+from intergrax.runtime.interactions.models import InteractionIntakeResponse  # noqa: E402 F401

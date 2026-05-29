@@ -17,8 +17,11 @@ from legal_application.serving.fastapi_router import (
 from legal_application.serving.schemas import LegalChatRequestV1
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import TaskResult, TaskState
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 pytestmark = pytest.mark.unit
 
@@ -42,14 +45,21 @@ def _http_ctx(*, tenant: str, user: str) -> RequestContext:
     )
 
 
+def _service(*, identity_source: str) -> DefaultLegalAgentService:
+    agent = _DummyAgent()
+    registry = AgentRegistry.from_agents({"legal-test": agent})
+    config = LegalAgentServingConfig(
+        registry=registry,
+        default_agent_id="legal-test",
+        task_runner=UnifiedTaskRunner(NexusLoop(registry)),
+        identity_source=identity_source,  # type: ignore[arg-type]
+    )
+    return DefaultLegalAgentService(config=config)
+
+
 @pytest.mark.asyncio
 async def test_context_only_accepts_identity_from_request_context() -> None:
-    config = LegalAgentServingConfig.from_agents(
-        agents={"legal-test": _DummyAgent()},
-        default_agent_id="legal-test",
-        identity_source="context_only",
-    )
-    svc = DefaultLegalAgentService(config=config)
+    svc = _service(identity_source="context_only")
     body = LegalChatRequestV1(message="ping", session_id="s1")
     task_result = TaskResult(
         task_id="r1",
@@ -75,12 +85,7 @@ async def test_context_only_accepts_identity_from_request_context() -> None:
 
 @pytest.mark.asyncio
 async def test_context_only_401_when_context_missing_tenant() -> None:
-    config = LegalAgentServingConfig.from_agents(
-        agents={"legal-test": _DummyAgent()},
-        default_agent_id="legal-test",
-        identity_source="context_only",
-    )
-    svc = DefaultLegalAgentService(config=config)
+    svc = _service(identity_source="context_only")
     body = LegalChatRequestV1(
         message="ping",
         session_id="s1",
@@ -102,12 +107,7 @@ async def test_context_only_401_when_context_missing_tenant() -> None:
 
 @pytest.mark.asyncio
 async def test_context_only_400_on_tenant_body_mismatch() -> None:
-    config = LegalAgentServingConfig.from_agents(
-        agents={"legal-test": _DummyAgent()},
-        default_agent_id="legal-test",
-        identity_source="context_only",
-    )
-    svc = DefaultLegalAgentService(config=config)
+    svc = _service(identity_source="context_only")
     body = LegalChatRequestV1(
         message="ping",
         session_id="s1",

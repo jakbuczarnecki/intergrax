@@ -104,9 +104,8 @@ def create_legal_backend_app(
         default_agent_id=settings.legal_default_agent_id,
         prefix=settings.legal_route_prefix,
         identity_source=settings.identity_source,
-        use_nexus_loop=settings.use_nexus_loop,
         trace_store=observability.trace_store,
-        task_runner=task_runner if settings.use_nexus_loop else None,
+        task_runner=task_runner,
     )
 
     if settings.environment == ApiEnvironment.PROD:

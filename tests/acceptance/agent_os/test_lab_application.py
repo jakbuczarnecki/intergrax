@@ -90,3 +90,40 @@ def test_lab_application_runs_signoff_probe_with_trace(lab_client: TestClient):
     assert events_response.status_code == 200
     events = events_response.json()
     assert events["count"] > 0
+
+
+def test_lab_application_interaction_intake_json_only(lab_client: TestClient):
+    response = lab_client.post(
+        "/v1/interactions/intake",
+        params={"tenant": "lab", "execute": "false"},
+        json={
+            "command": "/intergrax",
+            "text": "echo.basic hello prod route",
+            "user_id": "U1",
+            "team_id": "T1",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["capability"] == "echo.basic"
+    assert body["message"] == "hello prod route"
+    assert body["interaction_channel"] == "slash_command"
+    assert body["executed"] is False
+
+
+def test_lab_application_interaction_intake_execute(lab_client: TestClient):
+    response = lab_client.post(
+        "/v1/interactions/intake",
+        params={"tenant": "lab", "execute": "true"},
+        json={
+            "command": "/intergrax",
+            "text": "echo.basic run via prod intake",
+            "user_id": "U1",
+            "team_id": "T1",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["executed"] is True
+    assert body["state"] == "completed"
+    assert "run via prod intake" in (body["answer"] or "")

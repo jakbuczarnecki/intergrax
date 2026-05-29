@@ -27,3 +27,20 @@ class InboundInteraction(BaseModel):
     interaction_id: Optional[str] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
     raw_payload: Dict[str, Any] = Field(default_factory=dict)
+
+
+class InteractionIntakeResponse(BaseModel):
+    """HTTP response for inbound Slack / Teams / lab interaction webhooks."""
+
+    task_id: str
+    tenant_id: str
+    user_id: str
+    capability: Optional[str] = None
+    message: str = ""
+    interaction_channel: str = ""
+    executed: bool = False
+    state: Optional[str] = None
+    answer: Optional[str] = None
+    run_id: Optional[str] = None
+    resume_token: Optional[str] = None
+    checkpoint_id: Optional[str] = None

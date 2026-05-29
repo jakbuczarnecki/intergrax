@@ -19,6 +19,8 @@ class LabApplicationSettings:
     include_echo: bool = True
     include_signoff_probe: bool = True
     include_research: bool = False
+    include_interaction_routes: bool = True
+    interaction_route_prefix: str = "/v1/interactions"
 
     @classmethod
     def from_env(cls) -> LabApplicationSettings:
@@ -46,7 +48,17 @@ class LabApplicationSettings:
             "true",
             "yes",
         }
+        include_interactions = (
+            os.getenv("LAB_INCLUDE_INTERACTIONS") or "true"
+        ).strip().lower() not in {
+            "0",
+            "false",
+            "no",
+        }
         prefix = (os.getenv("LAB_ROUTE_PREFIX") or "/v1/lab").strip() or "/v1/lab"
+        interaction_prefix = (
+            os.getenv("LAB_INTERACTION_ROUTE_PREFIX") or "/v1/interactions"
+        ).strip() or "/v1/interactions"
         return cls(
             environment=environment,
             route_prefix=prefix,
@@ -54,4 +66,6 @@ class LabApplicationSettings:
             include_echo=include_echo,
             include_signoff_probe=include_signoff_probe,
             include_research=include_research,
+            include_interaction_routes=include_interactions,
+            interaction_route_prefix=interaction_prefix,
         )
