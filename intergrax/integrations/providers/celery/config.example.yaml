@@ -1,0 +1,7 @@
+# Celery integration — copy to Tier-3 settings or export as env vars.
+# Env: INTERGRAX_CELERY_BROKER_URL, INTERGRAX_CELERY_BACKEND_URL, INTERGRAX_CELERY_APP_NAME
+
+app_name: intergrax
+broker_url: redis://localhost:6379/1
+backend_url: redis://localhost:6379/2
+enabled: true

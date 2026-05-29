@@ -552,7 +552,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | `redis` | key_value_cache | **Done** | `providers/redis/` — `create_redis_integration()` (KV, idempotency, rate limit, semaphore, rerank) |
 | `sqlite` | relational_store | **Done** | `providers/sqlite/` — `create_sqlite_integration()` (trace, events, checkpoints, HITL, …) |
 | `kafka` | message_bus | **Done** | `providers/kafka/` — `create_kafka_integration()` (requires `kv_store`) |
-| `celery` | message_bus | Pending | — | `queueing/providers/celery/` |
+| `celery` | message_bus | **Done** | `providers/celery/` — `create_celery_integration()` (inject `app` or broker/backend env) |
 | `google_cse` | search_provider | Pending | — | `websearch/providers/google_cse_provider.py` |
 | `bing` | search_provider | Pending | — | `websearch/providers/bing_provider.py` |
 | `slack` | notification + interaction | Pending | — | `runtime/notifications/` + `runtime/interactions/` |
@@ -702,7 +702,7 @@ providers/gcp/
 |-----------------|-------------|--------|
 | `distributed/providers/redis_kv_store.py` (+ siblings) | `redis` | **Done** — single entry `integrations/providers/redis/create_redis_integration()` |
 | `queueing/providers/kafka/` | `kafka` | **Done** — `integrations/providers/kafka/create_kafka_integration()` |
-| `queueing/providers/celery/` | `celery` | Register |
+| `queueing/providers/celery/` | `celery` | **Done** — `integrations/providers/celery/create_celery_integration()` |
 | `queueing/providers/rabbitmq/` | `rabbitmq` | Register |
 | `websearch/providers/google_cse_provider.py` | `google_cse` | Register |
 | `websearch/providers/bing_provider.py` | `bing` | Register |
@@ -1181,6 +1181,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Date | ID | Summary |
 |------|-----|---------|
+| 2026-05-29 | M.4-celery | `providers/celery/` — message bus + worker helpers; no `kv_store` |
 | 2026-05-29 | M.4-kafka | `providers/kafka/` + transport delegate; requires `kv_store` |
 | 2026-05-29 | M.4-sqlite-adopt | Runtime `open_*` + apps delegate to `integrations/providers/sqlite/` |
 | 2026-05-29 | M.4-sqlite | `providers/sqlite/` + bundle (10 domain stores); lazy bootstrap + package `__init__` |
@@ -1225,7 +1226,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
-| B.19 | **P0 provider wraps** — celery, search, slack/teams | §7.1.3 | **High** | **In progress** | Lab + first prod apps | Tier-0 | **redis + sqlite + kafka Done**; remainder M.4 |
+| B.19 | **P0 provider wraps** — search, slack/teams | §7.1.3 | **High** | **In progress** | Lab + first prod apps | Tier-0 | **redis + sqlite + kafka + celery Done**; remainder M.4 |
 | B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | Open | Multi-tenant applications | Tier-0 | Phase M.6 after M.4 |
 | B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | Open | PM / research agents | Tier-0 | Phase M.6; tools via ToolRuntime |
 | B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | Open | Org worker, scheduling agents | Tier-0 | Phase M.6 |

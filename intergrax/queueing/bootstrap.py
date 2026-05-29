@@ -5,7 +5,8 @@
 Queueing layer composition root.
 
 Kafka/RabbitMQ class registration for ``TaskQueueProviderRegistry``.
-Wiring of live instances: ``integrations.providers.kafka`` / ``runtime.transport.bootstrap``.
+Wiring of live instances: ``integrations.providers.kafka`` / ``integrations.providers.celery`` /
+``runtime.transport.bootstrap``.
 """
 
 from intergrax.queueing.providers.kafka.kafka_task_queue import KafkaTaskQueue
