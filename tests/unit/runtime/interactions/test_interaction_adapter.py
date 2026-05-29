@@ -5,7 +5,7 @@ import pytest
 from intergrax.runtime.interactions.adapters.chained_adapter import ChainedInteractionAdapter
 from intergrax.runtime.interactions.adapters.lab_json_adapter import LabJsonInteractionAdapter
 from intergrax.integrations.providers.slack.adapter import SlackInteractionAdapter
-from intergrax.runtime.interactions.adapters.teams_activity_adapter import TeamsActivityInteractionAdapter
+from intergrax.integrations.providers.teams.adapter import TeamsInteractionAdapter
 from intergrax.runtime.interactions.factory import (
     InteractionSurface,
     create_interaction_adapter,
@@ -106,7 +106,7 @@ def test_create_interaction_adapter_surfaces():
     )
     assert isinstance(
         create_interaction_adapter(resolve_interaction_settings(surface="teams")),
-        TeamsActivityInteractionAdapter,
+        TeamsInteractionAdapter,
     )
     auto = create_interaction_adapter(resolve_interaction_settings(surface="auto"))
     assert isinstance(auto, ChainedInteractionAdapter)

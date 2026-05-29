@@ -13,7 +13,6 @@ from typing import Callable, Dict, Optional
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.interactions.adapters.chained_adapter import ChainedInteractionAdapter
 from intergrax.runtime.interactions.adapters.lab_json_adapter import LabJsonInteractionAdapter
-from intergrax.runtime.interactions.adapters.teams_activity_adapter import TeamsActivityInteractionAdapter
 from intergrax.runtime.task.task import Task
 
 ENV_INTERACTION_SURFACE = "INTERGRAX_INTERACTION_SURFACE"
@@ -27,10 +26,16 @@ def _slack_interaction_adapter() -> InteractionAdapter:
     return SlackInteractionAdapter()
 
 
+def _teams_interaction_adapter() -> InteractionAdapter:
+    from intergrax.integrations.providers.teams.bundle import create_teams_interaction_surface
+
+    return create_teams_interaction_surface()
+
+
 def _default_interaction_chain() -> tuple[InteractionAdapter, ...]:
     return (
         _slack_interaction_adapter(),
-        TeamsActivityInteractionAdapter(),
+        _teams_interaction_adapter(),
         LabJsonInteractionAdapter(),
     )
 
@@ -81,7 +86,9 @@ def create_interaction_adapter(
 
         return create_slack_interaction_surface()
     if resolved.surface == InteractionSurface.TEAMS:
-        return TeamsActivityInteractionAdapter()
+        from intergrax.integrations.providers.teams.bundle import create_teams_interaction_surface
+
+        return create_teams_interaction_surface()
     return ChainedInteractionAdapter(_default_interaction_chain())
 
 

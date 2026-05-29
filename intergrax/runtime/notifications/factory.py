@@ -122,6 +122,13 @@ def create_notification_adapter(
         config = SlackIntegrationConfig.from_env(webhook_url=resolved.slack_webhook_url)
         return open_slack_notification_channel(config, delivery=delivery)
 
+    if backend == NotificationBackend.TEAMS:
+        from intergrax.integrations.providers.teams.config import TeamsIntegrationConfig
+        from intergrax.integrations.providers.teams.opens import open_teams_notification_channel
+
+        config = TeamsIntegrationConfig.from_env(webhook_url=resolved.teams_webhook_url)
+        return open_teams_notification_channel(config, delivery=delivery)
+
     url = _webhook_url_for_backend(resolved, backend)
     if not url:
         return LoggingNotificationAdapter()

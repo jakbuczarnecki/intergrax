@@ -7,8 +7,8 @@ from intergrax.runtime.long_running.notification import (
     ENV_TEAMS_WEBHOOK_URL,
     LoggingNotificationAdapter,
     NotificationAdapter,
-    TeamsNotificationAdapter,
     create_slack_notification_channel,
+    create_teams_notification_channel,
     resolve_notification_adapter,
 )
 from intergrax.runtime.long_running.partial_results import (
@@ -40,10 +40,10 @@ __all__ = [
     "ScheduledResume",
     "ScheduledResumeStatus",
     "create_slack_notification_channel",
+    "create_teams_notification_channel",
     "SQLiteTaskCheckpointStore",
     "TaskCheckpoint",
     "TaskResumeExecutor",
-    "TeamsNotificationAdapter",
     "UnifiedTaskResumeExecutor",
     "build_task_progress_view",
     "open_task_checkpoint_store",

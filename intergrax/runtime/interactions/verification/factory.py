@@ -20,7 +20,6 @@ from intergrax.runtime.interactions.verification.slack_signature import (
 )
 from intergrax.runtime.interactions.verification.teams_signature import (
     ENV_TEAMS_VERIFY_SIGNATURE,
-    TeamsSignatureVerifier,
     resolve_teams_security_token,
 )
 
@@ -80,7 +79,9 @@ def create_inbound_verifier(
             enabled=resolved.slack_verify_enabled,
         )
     if resolved.mode == InboundVerifierMode.TEAMS:
-        return TeamsSignatureVerifier(
+        from intergrax.integrations.providers.teams.bundle import create_teams_signature_verifier
+
+        return create_teams_signature_verifier(
             security_token=resolved.teams_security_token,
             enabled=resolved.teams_verify_enabled,
         )

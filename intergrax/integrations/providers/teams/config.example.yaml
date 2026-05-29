@@ -1,0 +1,6 @@
+# Teams integration — copy to Tier-3 settings or export as env vars.
+# Env: INTERGRAX_TEAMS_WEBHOOK_URL, INTERGRAX_TEAMS_SECURITY_TOKEN
+
+webhook_url: https://outlook.office.com/webhook/XXX/IncomingWebhook/YYY/ZZZ
+security_token: "<teams-outgoing-webhook-security-token>"
+enabled: true
