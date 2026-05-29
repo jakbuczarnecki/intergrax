@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI
@@ -17,7 +18,7 @@ from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
+from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecutionAdapter
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
@@ -26,7 +27,12 @@ from legal_application.host.settings import LegalBackendSettings
 from legal_application.host.wiring import build_legal_agent
 
 
-def create_legal_backend_app(*, settings: Optional[LegalBackendSettings] = None) -> FastAPI:
+def create_legal_backend_app(
+    *,
+    settings: Optional[LegalBackendSettings] = None,
+    trace_db_path: Path | None = None,
+    runtime_events_db_path: Path | None = None,
+) -> FastAPI:
     """
     Production host: Intergrax FastAPI Core (health, runs, middleware) + Legal Agent routes.
 
@@ -47,8 +53,15 @@ def create_legal_backend_app(*, settings: Optional[LegalBackendSettings] = None)
     )
     registry.register(agent, contract=contract)
 
-    trace_store = InMemoryRunTraceStore()
-    nexus_loop = NexusLoop(registry, trace_store=trace_store)
+    observability = wire_nexus_observability(
+        trace_db_path=trace_db_path,
+        runtime_events_db_path=runtime_events_db_path,
+    )
+    nexus_loop = NexusLoop(
+        registry,
+        trace_store=observability.trace_store,
+        runtime_event_store=observability.runtime_event_store,
+    )
     task_runner = UnifiedTaskRunner(nexus_loop)
     nexus_adapter = NexusTaskExecutionAdapter(task_runner)
 
@@ -92,7 +105,7 @@ def create_legal_backend_app(*, settings: Optional[LegalBackendSettings] = None)
         prefix=settings.legal_route_prefix,
         identity_source=settings.identity_source,
         use_nexus_loop=settings.use_nexus_loop,
-        trace_store=trace_store,
+        trace_store=observability.trace_store,
         task_runner=task_runner if settings.use_nexus_loop else None,
     )
 

@@ -921,32 +921,39 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 ---
 
-## Appendix B — Technical debt backlog (analysis only)
+## Appendix B — Technical debt backlog
 
-**Purpose:** consolidated backlog for review — **no implementation in this pass**.  
+**Purpose:** consolidated backlog for review and **incremental paydown**.  
 **Source:** canon §2 map, §0.5 maturity, Phase G–K gaps, lab sign-off findings (2026-05-27).  
-**How to use:** pick items by priority; apply §0.6 (Tier-1 only when reusable across agents).
+**How to use:** pick items by priority; apply §0.6 (Tier-1 only when reusable across agents).  
+**Status:** `Open` | `Done` | `Deferred`
+
+### B.0 Paydown log
+
+| Date | ID | Summary |
+|------|-----|---------|
+| 2026-05-27 | B.08, B.10 | `wire_nexus_observability` + SQLite defaults in Legal / Research / Lab factories; integration test |
 
 ### B.1 Runtime & §42 convergence
 
-| ID | Item | Canon | Priority | Agent impact | Tier | Recommendation |
-|----|------|-------|----------|--------------|------|----------------|
-| B.01 | **UAEP mid-step checkpoint** — resume inside a long-running step (not only between steps / HITL) | §42.9.3, §26 | **High** | Long-running domain agents (Legal, Research) | Tier-1 | Extend `RuntimeCheckpoint` with step-internal cursor; AgentEngine hook |
-| B.02 | **Full checkpoint snapshot** — plan + graph node states + UAEP index + pending decisions in one durable blob | §42.9.2 | **High** | Multi-agent graphs, crash recovery | Tier-1 | Unify checkpoint writer; acceptance test for graph mid-flight resume |
-| B.03 | **Policy engine facade** — single `PolicyEngine` for replay, validation, HITL, retry (today split across modules) | §42.11 | **Medium** | Indirect — consistent governance for all agents | Tier-1 | Phase K.3; no agent-specific branches |
-| B.04 | **Dual `AgentDecision` cleanup** — converge tools-agent variant with canonical §42.7 enum | §42.7 | **Medium** | Agents emitting decisions must use one contract | Tier-1 | Deprecate legacy import paths; codemod + gate |
-| B.05 | **Escalation policy production path** — `SAFETY_VIOLATION` / HITL expiry → real escalation (not stub) | §42.38, §42.10 | **Medium** | HITL-heavy agents | Tier-1 | Wire scheduler + notification templates to escalation handler |
-| B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | Extension agents via plugins | Tier-1 | Document current subset; incremental HookRegistry adoption |
-| B.07 | **§42 maturity remainder (~30%)** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | Platform stability for new agents | Tier-1 | Track as Phase G follow-up epics |
+| ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------|--------------|------|----------------|
+| B.01 | **UAEP mid-step checkpoint** — resume inside a long-running step (not only between steps / HITL) | §42.9.3, §26 | **High** | Open | Long-running domain agents (Legal, Research) | Tier-1 | Extend `RuntimeCheckpoint` with step-internal cursor; AgentEngine hook |
+| B.02 | **Full checkpoint snapshot** — plan + graph node states + UAEP index + pending decisions in one durable blob | §42.9.2 | **High** | Open | Multi-agent graphs, crash recovery | Tier-1 | Unify checkpoint writer; acceptance test for graph mid-flight resume |
+| B.03 | **Policy engine facade** — single `PolicyEngine` for replay, validation, HITL, retry (today split across modules) | §42.11 | **Medium** | Open | Indirect — consistent governance for all agents | Tier-1 | Phase K.3; no agent-specific branches |
+| B.04 | **Dual `AgentDecision` cleanup** — converge tools-agent variant with canonical §42.7 enum | §42.7 | **Medium** | Open | Agents emitting decisions must use one contract | Tier-1 | Deprecate legacy import paths; codemod + gate |
+| B.05 | **Escalation policy production path** — `SAFETY_VIOLATION` / HITL expiry → real escalation (not stub) | §42.38, §42.10 | **Medium** | Open | HITL-heavy agents | Tier-1 | Wire scheduler + notification templates to escalation handler |
+| B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | Open | Extension agents via plugins | Tier-1 | Document current subset; incremental HookRegistry adoption |
+| B.07 | **§42 maturity remainder (~30%)** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | Open | Platform stability for new agents | Tier-1 | Track as Phase G follow-up epics |
 
 ### B.2 Observability & debug surface
 
-| ID | Item | Canon | Priority | Agent impact | Tier | Recommendation |
-|----|------|-------|----------|--------------|------|----------------|
-| B.08 | **Application trace store split** — Legal / Research / default lab without `db_path` still use `InMemoryRunTraceStore` while debug API reads SQLite | §33, §42.24 | **High** | HTTP `/debug/tasks/*` returns 503 or empty in product apps | Tier-3 (+ Tier-1 reader) | Default SQLite path per app factory; or inject shared `RunTraceReader` into debug router |
-| B.09 | **Debug API trace reader** — only SQLite file path; no injectable in-memory / shared store handle | §19 | **Medium** | Lab tests, local dev without file I/O | Tier-1 | Add optional `trace_store: RunTraceReader` to `create_debug_router` |
-| B.10 | **NexusLoop runtime events in app factories** — ensure all Tier-3 factories pass `runtime_events_db_path` to Nexus (lab fixed 2026-05-27) | §42.24 | **Medium** | Events 503 on `/debug/tasks/{id}/events` | Tier-3 | Audit Legal / Research factories same as lab |
-| B.11 | **Metrics layer** — canon says event-first, trace-second, **metrics-third**; no unified metrics export | §42.1, §33 | **Low** | Ops visibility, SLOs | Tier-0 | Defer until product deployment need |
+| ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------|--------------|------|----------------|
+| B.08 | **Application trace store split** — factories used `InMemoryRunTraceStore` while debug API reads SQLite | §33, §42.24 | **High** | **Done** | HTTP `/debug/tasks/*` 503 in product apps | Tier-3 | `wire_nexus_observability` + `open_run_trace_store` (2026-05-27) |
+| B.09 | **Debug API trace reader** — only SQLite file path; no injectable in-memory / shared store handle | §19 | **Medium** | Open | Lab tests, local dev without file I/O | Tier-1 | Add optional `trace_store: RunTraceReader` to `create_debug_router` |
+| B.10 | **NexusLoop runtime events in app factories** — all Tier-3 factories pass runtime events to Nexus | §42.24 | **Medium** | **Done** | Events 503 on `/debug/tasks/{id}/events` | Tier-3 | Legal + Research default SQLite; lab when path passed (2026-05-27) |
+| B.11 | **Metrics layer** — canon says event-first, trace-second, **metrics-third**; no unified metrics export | §42.1, §33 | **Low** | Open | Ops visibility, SLOs | Tier-0 | Defer until product deployment need |
 
 ### B.3 Interaction surfaces (§18)
 
@@ -973,7 +980,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 ### B.6 Suggested priority order (for planning)
 
 ```text
-1. B.08, B.10  — observability consistency across Tier-3 apps
+1. ~~B.08, B.10~~ — observability consistency (Done 2026-05-27)
 2. B.01, B.02  — long-running / graph recovery (blocks ambitious agents)
 3. B.03, B.04  — §42 governance convergence (K.3, K.4)
 4. B.12, B.14  — product interaction + legacy removal (K.5, §18 prod)
@@ -984,5 +991,5 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 ---
 
-*Plan synced with codebase after Phase L (2026-05-27). Gate: 228+ tests.*
+*Plan synced with codebase after Phase L + B.08/B.10 paydown (2026-05-27). Gate: 231 tests.*
 

@@ -15,8 +15,7 @@ from intergrax.debug.interaction_service import DebugInteractionIntakeService
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
-from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
+from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.wiring import build_lab_registry
@@ -44,15 +43,17 @@ def create_lab_application(
     settings = settings or LabApplicationSettings.from_env()
     resolved_registry = registry or build_lab_registry(settings=settings)
     checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)
-    if db_path is not None:
-        trace_store = SQLiteRunTraceStore(db_path=db_path)
-    else:
-        trace_store = InMemoryRunTraceStore()
+    observability = wire_nexus_observability(
+        trace_db_path=db_path,
+        runtime_events_db_path=runtime_events_db_path,
+        use_in_memory_trace=db_path is None,
+        enable_runtime_events=runtime_events_db_path is not None,
+    )
     nexus_loop = NexusLoop(
         resolved_registry,
         checkpoint_store=checkpoint_store,
-        trace_store=trace_store,
-        runtime_events_db_path=runtime_events_db_path,
+        trace_store=observability.trace_store,
+        runtime_event_store=observability.runtime_event_store,
     )
     interaction_service = DebugInteractionIntakeService(
         nexus_loop=nexus_loop,
