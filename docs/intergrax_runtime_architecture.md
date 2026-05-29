@@ -183,7 +183,7 @@ Tier-0 provides capabilities that **any** runtime or agent may use. It does not 
 - Memory and conversation history primitives (`intergrax/memory/`, session storage)
 - RAG: embeddings, vector stores, document loaders (`intergrax/rag/`)
 - Tool integrations and invokers (`intergrax/tools/`, websearch, multimedia)
-- Infrastructure adapters: PostgreSQL, Redis, queues, Kafka, file storage
+- Infrastructure adapters: PostgreSQL, Redis, queues, Kafka, file storage — **catalogued in** `intergrax/integrations/` (§7.1)
 - Network and ingestion: HTTP clients, web fetch, file parsing
 - Observability primitives: logging, error models, trace persistence backends
 - Shared utilities: time, config helpers, idempotency stores
@@ -232,6 +232,7 @@ The platform MUST maintain **one canonical path** per universal concern. All tie
 | Queues | `intergrax/queueing/` | Ad-hoc background job systems |
 | Tokenization | `intergrax/tokenizers/` | Inline tiktoken/token counting duplicates |
 | File / storage adapters | Tier-0 adapters | Agent-local S3/filesystem clients bypassing adapters |
+| External integrations (DB, cache, chat, search, …) | `intergrax/integrations/` catalog + category contracts | Direct vendor SDK imports in `agents/`; LLM slugs in Integration Library |
 | Errors / classification | `intergrax/runtime/nexus/errors/` | Siloed error models per agent |
 
 This table is illustrative, not exhaustive. The rule is general:
@@ -509,7 +510,7 @@ User / API (Tier-3)
 
 | Tier | Section | Package / folder |
 |------|---------|------------------|
-| Tier-0 Platform | §7.1 | `intergrax/` adapters, rag, tools, memory, queueing, … |
+| Tier-0 Platform | §7.1 | `intergrax/` + **`intergrax/integrations/`** catalog; also rag, tools, memory, queueing, … |
 | Tier-1 Nexus | §7.2 | `intergrax/runtime/`, `intergrax/contracts/` |
 | Tier-2 Agents | §7.3 | `agents/<name>/` |
 | Tier-3 Applications | §7.4 | `applications/<name>/` |
@@ -540,6 +541,194 @@ Layer 1 (Tier-0) MUST NOT contain orchestration logic.
 Layer 1 (Tier-0) MUST NOT contain business-specific agent logic.
 
 Layer 1 (Tier-0) exposes capabilities to Nexus and agents through stable interfaces.
+
+### 7.1.1 Integration Library — Canonical Catalog
+
+Tier-0 external integrations MUST live in a **single, discoverable catalog** under:
+
+```text
+intergrax/integrations/
+├── contracts/          # category-level Protocol / ABC (backend-agnostic)
+├── registry/           # IntegrationRegistry, factory, capability lookup
+├── _shared/            # config schema, health probes, retry helpers
+└── providers/
+    └── <slug>/         # one folder per vendor / backend
+        ├── __init__.py
+        ├── adapter.py          # implements category contract(s)
+        ├── config.py           # pydantic settings + env keys
+        ├── config.example.yaml # copy-paste for Tier-3 applications
+        ├── README.md           # scope, auth, limits, smoke test
+        └── tests/
+            └── test_<slug>.py  # contract conformance (no live vendor by default)
+```
+
+**Rules:**
+
+- One **provider folder per integration** (`postgresql/`, `slack/`, `kafka/`, …).
+- Providers implement **category contracts** from `integrations/contracts/` — not ad-hoc SDK wrappers.
+- Agents and Nexus MUST NOT import vendor SDKs directly when a catalog provider exists (§5.2).
+- Existing Tier-0 modules (`queueing/`, `distributed/`, `websearch/`, `rag/`, `runtime/notifications/`, `runtime/interactions/`) remain valid; new work and refactors **register through** `IntegrationRegistry` and gradually wrap legacy providers (evolve, not rewrite).
+- **`intergrax/llm_adapters/` is out of scope** for the Integration Library — LLM providers use `LLMAdapterRegistry` (§5.2.2), not `IntegrationRegistry`. Cloud facades (`aws`, `azure`, `gcp`) MUST NOT wrap or re-export Bedrock, Azure OpenAI, Vertex, or other LLM adapters.
+- Production access from agents goes through **`ToolRuntime`** (tools) or **Tier-3 wiring** (stores, queues, notifications) — never raw clients in `agents/`.
+
+**Separation of concerns:**
+
+| Layer | Owns |
+|-------|------|
+| `integrations/contracts/` | What “a PostgreSQL adapter” or “a notification channel” MUST expose |
+| `integrations/providers/<slug>/` | How a specific vendor satisfies the contract |
+| `integrations/registry/` | Discovery, env-based factory, health aggregation |
+| Tier-3 `applications/<name>/` | Which integrations are enabled for a product environment |
+| Tier-2 `agents/<name>/` | Domain logic; declares **capability needs**, not vendor wiring |
+
+### 7.1.2 Integration Categories And Abstract Contracts
+
+Each category defines a **small, stable contract** (Protocol or ABC). Providers may implement one or more categories.
+
+| Category | Contract module (planned) | Purpose | Example providers |
+|----------|---------------------------|---------|-------------------|
+| **relational_store** | `contracts/relational_store.py` | SQL CRUD, migrations hook, tenant-scoped connections | sqlite, postgresql, mysql, oracle, mssql |
+| **document_store** | `contracts/document_store.py` | Document / wide-column CRUD | mongodb, cassandra, dynamodb |
+| **key_value_cache** | `contracts/key_value_cache.py` | Cache, distributed locks, idempotency | redis, memcached |
+| **message_bus** | `contracts/message_bus.py` | Async tasks, pub/sub, consumer groups | kafka, rabbitmq, celery, sqs, service_bus |
+| **object_storage** | `contracts/object_storage.py` | Blob read/write, presigned URLs | s3, azure_blob, gcs, filesystem |
+| **vector_store** | `contracts/vector_store.py` | Embedding index (delegates to `rag/` impl) | qdrant, pinecone, chroma, inmemory |
+| **search_provider** | `contracts/search_provider.py` | Web / enterprise search | google_cse, bing, brave, serpapi |
+| **notification_channel** | `contracts/notification_channel.py` | Outbound alerts (HITL, escalation) | slack, teams, email_smtp, webhook |
+| **interaction_surface** | `contracts/interaction_surface.py` | Inbound events → canonical Task | slack, teams, lab_json |
+| **collaboration_suite** | `contracts/collaboration_suite.py` | Mail, calendar, directory (MS365, Google) | ms365_graph, google_workspace |
+| **issue_tracker** | `contracts/issue_tracker.py` | Issues, sprints, comments | jira, azure_devops, github, linear |
+| **wiki_knowledge** | `contracts/wiki_knowledge.py` | Pages, spaces, search | confluence, notion, sharepoint |
+| **observability_backend** | `contracts/observability_backend.py` | Metrics, logs export | prometheus, elasticsearch, otel |
+| **browser_automation** | `contracts/browser_automation.py` | Headless fetch / interact | playwright, selenium |
+| **cloud_platform** | `contracts/cloud_platform.py` | Unified auth, region, credential chain; factory for native **infrastructure** services (storage, queues, secrets — not LLM) | aws, azure, gcp |
+
+Category contracts MUST be **backend-agnostic**: same method names and DTOs whether the backend is SQLite or Oracle.
+
+**Out of scope for `intergrax/integrations/` (separate Tier-0 modules):**
+
+| Concern | Canonical module | Notes |
+|---------|------------------|-------|
+| **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`) | OpenAI, Claude, Gemini, Ollama, Azure OpenAI, AWS Bedrock, … — §5.2.2 |
+| **Tokenization** | `intergrax/tokenizers/` | Not an external integration slug |
+| **RAG pipeline** | `intergrax/rag/` | Vector stores may appear in the catalog as **registry pointers** only; implementation stays in `rag/` |
+
+Do **not** add an `llm_provider` category or LLM slugs to the Integration Catalog backlog.
+
+### 7.1.3 Integration Catalog (Initial Backlog)
+
+Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** = target `integrations/providers/<slug>/`; **Planned** = not started.
+
+#### P0 — Foundation (lab + first production apps)
+
+| Slug | Category | Status | Rationale |
+|------|----------|--------|-----------|
+| `sqlite` | relational_store | **Exists** → Catalog | Default lab persistence (trace, checkpoint, experiments, HITL) |
+| `postgresql` | relational_store | Planned | Production relational store; multi-tenant apps |
+| `redis` | key_value_cache | **Exists** → Catalog | Cache, rate limits, idempotency, session (partial) |
+| `kafka` | message_bus | **Exists** → Catalog | Async worker scale-out, event streaming |
+| `celery` | message_bus | **Exists** → Catalog | Task queue already wired for Nexus worker |
+| `google_cse` | search_provider | **Exists** → Catalog | Research agents, Problem Radar |
+| `bing` | search_provider | **Exists** → Catalog | Alternate / fallback web search |
+| `slack` | notification_channel + interaction_surface | Partial → Catalog | HITL, org worker, inbound slash commands |
+| `teams` | notification_channel + interaction_surface | Partial → Catalog | Same as Slack for Microsoft tenants |
+| `webhook` | notification_channel | **Exists** → Catalog | Generic HTTP outbound (HITL stub path) |
+
+#### P1 — Common enterprise stack
+
+| Slug | Category | Status | Rationale |
+|------|----------|--------|-----------|
+| `mysql` | relational_store | Planned | Common LAMP / managed DB alternative to Postgres |
+| `rabbitmq` | message_bus | **Exists** → Catalog | Broker alternative to Kafka |
+| `prometheus` | observability_backend | Planned | Metrics-third canon (§33); SLO dashboards |
+| `jira` | issue_tracker | Planned | Task ingestion, agent workflow triggers |
+| `confluence` | wiki_knowledge | Planned | RAG source, runbooks, agent context |
+| `ms365_graph` | collaboration_suite | Planned | Mail, calendar, Teams-adjacent APIs |
+| `email_smtp` | notification_channel | Planned | HITL / reports without chat vendor lock-in |
+| `s3` | object_storage | Planned | Artifacts, large uploads, shadow/sandbox exports |
+| `filesystem` | object_storage | Partial | Local / dev; shadow workspace roots |
+| `aws` | cloud_platform | Planned | IAM/STS auth; factory for S3, SQS, DynamoDB, Secrets Manager |
+| `azure` | cloud_platform | Planned | Managed identity; factory for Blob, Service Bus, Key Vault |
+| `gcp` | cloud_platform | Planned | Service-account auth; factory for GCS, Pub/Sub, Secret Manager |
+
+#### P1.1 Cloud platforms — service mapping
+
+Platform adapters are **facades**: one credential model + region/tenant config, then delegate to **infrastructure** category providers. They do **not** configure LLM — use `LLMAdapterRegistry` separately in Tier-3. Tier-3 may set `cloud_platform: aws` and inherit defaults for object storage and queues without wiring each slug separately.
+
+| Platform slug | Auth model | Native services (category → slug) |
+|---------------|------------|-----------------------------------|
+| **`aws`** | Access key, IAM role, SSO profile, STS assume-role | object_storage → `s3`; message_bus → `sqs`; document_store → `dynamodb`; key_value_cache → `elasticache` (redis); secrets → platform helper |
+| **`azure`** | Managed identity, service principal, connection string | object_storage → `azure_blob`; message_bus → `service_bus`; relational_store → `azure_sql`; secrets → Key Vault helper |
+| **`gcp`** | Service account JSON, workload identity, ADC | object_storage → `gcs`; message_bus → `pubsub`; relational_store → `cloud_sql`; secrets → Secret Manager helper |
+
+**Rule:** service-level slugs (`s3`, `azure_blob`, `gcs`, `sqs`) remain in the catalog for **explicit** or **multi-cloud** setups. When an app declares a single cloud, `IntegrationRegistry` MAY resolve category defaults from the platform facade (e.g. `object_storage` → S3 when `cloud_platform: aws`).
+
+#### P2 — Extended / on-demand
+
+| Slug | Category | Status | Rationale |
+|------|----------|--------|-----------|
+| `oracle` | relational_store | Planned | Enterprise clients on Oracle |
+| `mssql` | relational_store | Planned | Microsoft SQL deployments |
+| `cassandra` | document_store | Planned | High-volume log / event retention |
+| `mongodb` | document_store | Planned | Flexible schema stores |
+| `memcached` | key_value_cache | Planned | Simple cache tier |
+| `sqs` | message_bus | Planned | AWS-native queues (also via `aws` facade) |
+| `azure_blob` | object_storage | Planned | Azure artifact storage (also via `azure` facade) |
+| `gcs` | object_storage | Planned | GCP artifact storage (also via `gcp` facade) |
+| `service_bus` | message_bus | Planned | Azure-native queues (via `azure` facade) |
+| `pubsub` | message_bus | Planned | GCP-native messaging (via `gcp` facade) |
+| `dynamodb` | document_store | Planned | AWS document/KV (via `aws` facade) |
+| `elasticache` | key_value_cache | Planned | Managed Redis on AWS (via `aws` facade) |
+| `elasticsearch` | observability_backend | Planned | Log search, optional RAG source |
+| `otel` | observability_backend | Planned | Unified traces/metrics export |
+| `playwright` | browser_automation | Planned | Dynamic web research beyond HTTP fetch |
+| `azure_devops` | issue_tracker | Planned | Microsoft ALM |
+| `github` | issue_tracker | Planned | Dev-centric task sources |
+| `google_workspace` | collaboration_suite | Planned | Gmail / Calendar for Google tenants |
+| `qdrant` / `pinecone` / `chroma` | vector_store | **Exists** in `rag/` | Register in catalog; do not duplicate RAG stack |
+
+New integrations require **human approval** when they introduce a new **category** (§5.2.4). New **providers** within an existing category follow the provider checklist in the implementation plan (Phase M).
+
+### 7.1.4 IntegrationRegistry And Tier-3 Composition
+
+Applications (Tier-3) **compose** integrations at startup — agents stay vendor-agnostic.
+
+```text
+applications/legal_application/settings.py
+    → declares IntegrationProfile (enabled slugs + env)
+    → IntegrationRegistry.resolve("relational_store") → PostgreSQL adapter
+    → wire_nexus_observability(trace_store=…, event_store=…)
+    → create_notification_adapter("slack")
+    → create_interaction_adapter("teams")
+```
+
+`IntegrationProfile` (planned) is declarative:
+
+```yaml
+integrations:
+  cloud_platform: aws              # optional — sets defaults for aws-native services
+  relational_store: postgresql     # or sqlite for lab; or rds via aws facade
+  key_value_cache: redis
+  message_bus: celery              # or sqs when cloud_platform: aws
+  object_storage: s3               # resolved from aws facade when omitted
+  notification_channel: slack
+  search_provider: google_cse
+  issue_tracker: jira
+```
+
+**Forbidden:** hard-coding `import redis` or `psycopg2` inside `agents/<name>/`. **Required:** depend on injected contract instances or ToolRuntime tool names registered from catalog providers.
+
+### 7.1.5 Provider Maintenance Model
+
+| Activity | Owner | Gate |
+|----------|-------|------|
+| New category contract | Platform team | Architecture review + §5.2.4 if new universal |
+| New provider in existing category | Integration team | Contract conformance tests + README |
+| Security / credential rotation | Tier-3 application | Env + secret store; never in agent code |
+| Deprecation | Platform team | Registry marks `deprecated`; 1 release warning |
+| Live vendor tests | CI optional job | `pytest -m integration_live` — secrets in CI only |
+
+Each provider README MUST document: auth model, required env vars, rate limits, idempotency behavior, and a **smoke command** runnable from lab.
 
 ---
 
@@ -3859,6 +4048,26 @@ Intergrax already has canonical LLM, logging, tracing, tools, RAG, memory, and a
 Constraint:
 
 §42 orchestration wiring integrates with — does not replace — existing Tier-0. See §5.2, §8.8, §39.8.
+
+---
+
+## 44.10 Decision: Integration Library As Single Tier-0 Catalog
+
+Decision:
+
+All reusable **external infrastructure** adapters (databases, caches, queues, chat, search, issue trackers, observability backends, cloud infrastructure facades) MUST be registered in **`intergrax/integrations/`** under category contracts (§7.1).
+
+**Excluded:** LLM providers remain in **`intergrax/llm_adapters/`** only — not in the Integration Library (§7.1.2).
+
+Reason:
+
+Multiple agent teams need the same building blocks (Redis cache, Jira tasks, Slack HITL). A catalog with universal contracts lets one platform team maintain adapters while product teams compose them in Tier-3 applications — without copying SDK code into `agents/`.
+
+Constraint:
+
+- New **providers** follow Phase M checklist in the implementation plan.
+- New **categories** require §5.2.4 human approval.
+- Legacy modules (`queueing/`, `distributed/`, etc.) are wrapped, not duplicated.
 
 ---
 

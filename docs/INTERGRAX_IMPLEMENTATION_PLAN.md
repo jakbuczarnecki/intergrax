@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-05-27, post Phase J + Phase L deliverables)  
+Status: Working draft (2026-05-29, Phase M integration catalog spec)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
 Navigation: [`README.md`](README.md)  
@@ -19,6 +19,8 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 |-------|--------|
 | Full architecture specification | `intergrax_runtime_architecture.md` |
 | Phase status, gaps, priority | **This file** |
+| Tier-0 integration catalog (what / where) | Architecture canon §7.1.1–§7.1.5 |
+| Tier-0 integration implementation (how) | **This file** Phase M |
 | Agent creation workflow | `AGENT_CREATION_GUIDE.md` |
 | Business-agent go/no-go checklist | **Appendix A** (below) |
 | Technical debt backlog (analysis only) | **Appendix B** (below) |
@@ -174,6 +176,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
+| §7.1 Integration Library | Catalog + contracts + providers | **Planned** | Phase M — `intergrax/integrations/` |
 
 | §19 Debug surface | CLI / API | **Done** | D.1 CLI + D.2 API ✅ |
 
@@ -513,6 +516,223 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 
 ---
 
+### Phase M — Integration Library (Tier-0 Catalog)
+
+**Canon:** §7.1.1–§7.1.5  
+**Goal:** One discoverable integration catalog so platform teams ship adapters and agent teams compose them in Tier-3 — without duplicating Redis/Postgres/Slack clients per agent.
+
+**Principle:** evolve existing modules (`queueing/`, `distributed/`, `websearch/`, …) into catalog providers; do not fork parallel stacks.
+
+**Out of scope:** `intergrax/llm_adapters/` — LLM providers are **not** part of the Integration Library (§7.1.2).
+|---|-------------|--------|-------|
+| M.0 | Integration backlog + categories approved | **Done** | Canon §7.1.3 catalog table |
+| M.1 | Scaffold `intergrax/integrations/` package | Pending | contracts/, registry/, providers/, _shared/ |
+| M.2 | Category contracts (P0 set) | Pending | relational_store, key_value_cache, message_bus, search_provider, notification_channel, interaction_surface, **cloud_platform** |
+| M.3 | `IntegrationRegistry` + `IntegrationProfile` | Pending | Env/YAML resolution for Tier-3; cloud_platform default resolution |
+| M.4 | P0 providers — wrap existing | Pending | sqlite, redis, kafka, celery, google_cse, bing, slack, teams, webhook |
+| M.5 | Provider conformance test harness | Pending | `tests/unit/integrations/test_contract_conformance.py` |
+| M.6 | P1 providers (on demand) | Pending | postgresql, mysql, jira, confluence, ms365_graph, prometheus, **aws, azure, gcp**, … |
+| M.7 | Agent Creation Guide § integrations | Pending | How agents declare needs vs Tier-3 wiring |
+| M.8 | Lab `IntegrationProfile` example | Pending | `applications/lab_application/` sqlite + logging + lab_json |
+
+#### M.1 — Package scaffold (step-by-step)
+
+1. Create package skeleton:
+
+```text
+intergrax/integrations/
+├── __init__.py
+├── contracts/
+│   ├── __init__.py
+│   └── base.py              # IntegrationMetadata, HealthStatus, IntegrationError
+├── registry/
+│   ├── __init__.py
+│   ├── catalog.py           # slug → provider entry (lazy import)
+│   └── factory.py           # resolve(category, slug | env)
+├── _shared/
+│   ├── config.py            # pydantic BaseIntegrationConfig
+│   └── health.py
+└── providers/
+    └── .gitkeep
+```
+
+2. Add `IntegrationMetadata` dataclass: `slug`, `categories`, `status` (`stable` | `beta` | `deprecated`), `env_prefix`.
+
+3. Register package in `pyproject.toml` / existing import paths (no new top-level dependency unless provider-specific).
+
+#### M.2 — Category contracts (step-by-step)
+
+For each category in §7.1.2, implement a **minimal** Protocol in `integrations/contracts/`:
+
+| Contract | Minimum methods | Notes |
+|----------|-----------------|-------|
+| `RelationalStore` | `connect()`, `execute()`, `fetch_all()`, `close()` | Tenant scoping via connection factory |
+| `KeyValueCache` | `get`, `set`, `delete`, `set_if_absent` | Maps to existing `IdempotencyStore` / Redis helpers |
+| `MessageBus` | `enqueue`, `get_status`, `get_result` | Re-export / implement `queueing.contracts.TaskQueue` |
+| `SearchProvider` | `search(query, *, limit)` → `SearchResult[]` | Align with `websearch/providers/base.py` |
+| `NotificationChannel` | `notify(message)` | Align with `runtime/notifications/adapter_contract.py` |
+| `InteractionSurface` | `can_handle`, `to_inbound`, `channel` | Align with `runtime/interactions/adapter_contract.py` |
+| `CloudPlatform` | `session()`, `resolve(category)`, `default_region`, health | Auth chain + factory for native services (§7.1.3 P1.1) |
+
+**Rule:** if a contract already exists elsewhere, **re-export or inherit** — do not define a third variant.
+
+#### M.3 — IntegrationRegistry (step-by-step)
+
+1. `catalog.py` — static registry:
+
+```python
+INTEGRATION_ENTRIES: dict[str, IntegrationEntry] = {
+    "sqlite": IntegrationEntry(categories=("relational_store",), factory="..."),
+    "redis": IntegrationEntry(categories=("key_value_cache",), factory="..."),
+    # ...
+}
+```
+
+2. `factory.py`:
+
+```python
+def resolve(category: str, slug: str | None = None, *, config: Mapping[str, Any] | None = None) -> Any:
+    """slug defaults from env INTERGRAX_INTEGRATION_<CATEGORY> or IntegrationProfile."""
+```
+
+3. `IntegrationProfile` — pydantic model loaded from env or YAML in Tier-3 `settings.py`.
+
+4. `health_check_all(profile)` — optional startup probe for lab/production.
+
+#### M.4 — Adding a new provider (checklist for implementers)
+
+Copy this checklist into every `providers/<slug>/README.md`:
+
+```text
+[ ] 1. Pick category contract(s) from integrations/contracts/
+[ ] 2. Create providers/<slug>/ with adapter.py, config.py, config.example.yaml
+[ ] 3. Implement contract — no business logic, no Nexus imports
+[ ] 4. Register slug in registry/catalog.py
+[ ] 5. Add unit tests with fakes or testcontainers (default: no live vendor)
+[ ] 6. Optional: pytest -m integration_live with CI secrets
+[ ] 7. Wire in one Tier-3 application as reference (lab or product)
+[ ] 8. Update canon §7.1.3 status column
+```
+
+**Example — wrapping existing Redis idempotency store:**
+
+```text
+providers/redis/
+├── adapter.py       # RedisKeyValueCache implements KeyValueCache
+├── config.py        # REDIS_URL, REDIS_PREFIX
+└── tests/
+    └── test_redis_cache.py  # fakeredis or mock
+```
+
+Delegate to `intergrax/distributed/providers/redis_idempotency_store.py` internally.
+
+**Example — new Jira provider (greenfield):**
+
+```text
+providers/jira/
+├── adapter.py       # JiraIssueTracker implements IssueTracker
+├── config.py        # JIRA_BASE_URL, JIRA_API_TOKEN
+├── config.example.yaml
+├── README.md
+└── tests/
+    └── test_jira_issue_tracker.py  # responses mocked from fixtures/
+```
+
+Expose agent tools via Tier-0 tool registration (`jira.get_issue`, `jira.create_comment`) — ToolRuntime policy in Tier-1.
+
+#### M.4b — Cloud platform providers (aws / azure / gcp)
+
+Each platform folder exposes **one auth entry point** and registers sub-service slugs:
+
+```text
+providers/aws/
+├── adapter.py       # CloudPlatform: IAM profile, region, resolve("object_storage") → S3
+├── config.py        # AWS_REGION, AWS_PROFILE, AWS_ROLE_ARN
+├── services/        # thin wrappers delegating to category contracts
+│   ├── s3.py
+│   ├── sqs.py
+│   └── dynamodb.py
+└── tests/
+
+providers/azure/
+├── adapter.py       # Managed identity + service principal
+├── services/
+│   ├── blob.py
+│   └── service_bus.py
+└── ...
+
+providers/gcp/
+├── adapter.py       # ADC + service account
+├── services/
+│   ├── gcs.py
+│   └── pubsub.py
+└── ...
+```
+
+**Checklist:** implement infrastructure services (S3, SQS, Blob, GCS, Pub/Sub, …) only. LLM wiring stays in `intergrax/llm_adapters/` — do not register Bedrock, Azure OpenAI, or Vertex under `integrations/`.
+
+#### M.5 — Migration map (legacy → catalog)
+
+| Legacy location | Target slug | Action |
+|-----------------|-------------|--------|
+| `distributed/providers/redis_*.py` | `redis` | Wrap; keep public API stable during transition |
+| `queueing/providers/kafka/` | `kafka` | Register; implement `MessageBus` |
+| `queueing/providers/celery/` | `celery` | Register |
+| `queueing/providers/rabbitmq/` | `rabbitmq` | Register |
+| `websearch/providers/google_cse_provider.py` | `google_cse` | Register |
+| `websearch/providers/bing_provider.py` | `bing` | Register |
+| `runtime/notifications/adapters/` | `slack`, `teams`, `webhook` | Register under notification_channel |
+| `runtime/interactions/adapters/` | `slack`, `teams`, `lab_json` | Register under interaction_surface |
+| `runtime/*/stores/sqlite_*.py` | `sqlite` | Single relational_store facade; apps pick SQLite backend |
+| `rag/vectorstore/providers/*` | vector slugs | Catalog entry only; implementation stays in `rag/` |
+
+**Not migrated to `integrations/`:** `intergrax/llm_adapters/` — LLM providers are a separate Tier-0 concern (§7.1.2 out-of-scope table).
+
+#### M.6 — Testing strategy
+
+| Layer | Location | Marker |
+|-------|----------|--------|
+| Contract unit tests | `tests/unit/integrations/` | default gate |
+| Provider unit tests | `intergrax/integrations/providers/<slug>/tests/` | default gate |
+| Registry / factory | `tests/unit/integrations/test_registry.py` | gate |
+| Live vendor smoke | `tests/integration/integrations/` | `integration_live` (CI optional) |
+
+Conformance test pattern: given a fake backend, assert all Protocol methods behave consistently (including error types).
+
+#### M.7 — Tier-3 composition example
+
+```python
+# applications/my_app/settings.py
+from intergrax.integrations.registry.factory import build_profile_from_env
+
+INTEGRATION_PROFILE = build_profile_from_env()  # reads INTERGRAX_INTEGRATION_* 
+
+# applications/my_app/factory.py
+from intergrax.integrations.registry.factory import resolve
+
+def create_app():
+    cloud = resolve("cloud_platform")         # aws | azure | gcp | none
+    db = resolve("relational_store")          # sqlite | postgresql | cloud default
+    cache = resolve("key_value_cache")
+    storage = resolve("object_storage")       # s3 | azure_blob | gcs from cloud when set
+    notifier = resolve("notification_channel")
+    # wire into Nexus factories, not into agents/
+```
+
+Agents reference capabilities in `AgentContract` (e.g. `needs_tools=["jira.get_issue"]`) — not integration slugs.
+
+#### M.8 — Definition of done (Phase M incremental)
+
+Each provider PR is **done** when:
+
+1. Contract conformance tests pass.
+2. Registered in `catalog.py` with metadata.
+3. README lists env vars + smoke steps.
+4. At least one Tier-3 app or lab factory can select it via `IntegrationProfile`.
+5. No new direct vendor imports added under `agents/`.
+
+---
+
 ## 4. Priority Order
 
 
@@ -521,15 +741,17 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 
 NOW:     Phase L certification **complete** — L1 achieved (Appendix A)
 
-NEXT:    Phase K — K.1/K.2 **when you approve** (Problem Radar or Vendor Discovery)
+NEXT:    Phase M — Integration Library scaffold (M.1–M.5) **parallel to** Phase K when approved
+
+         Phase K — K.1/K.2 **when you approve** (Problem Radar or Vendor Discovery)
 
 BLOCKED: No new Nexus features unless Tier-1 extension rule (§0.6) applies
 
-PARALLEL: K.3–K.5 hardening (non-business) when capacity allows
+PARALLEL: K.3–K.5 hardening; Phase M P0 provider wraps (non-breaking)
 
 ```
 
-**Rationale:** Strategic directive — prove Agent OS behavior (scaffold, lab, acceptance) before building business capabilities. Phase J unified execution entry is complete; Phase L validates the platform is reusable without runtime edits.
+**Rationale:** Business agents (K) need composable Tier-0 integrations (Jira, Slack, Postgres, Redis) without each agent team reimplementing adapters. Phase M establishes the catalog **before** scaling Tier-2 surface area.
 
 
 
@@ -937,6 +1159,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-27 | B.12, B.14 | Production `POST /v1/interactions/intake` on lab; Legal legacy `AgentEngine` removed |
 | 2026-05-27 | B.05 | Escalation notification template + scheduler wiring in lab + SAFETY_VIOLATION timeout→escalate |
 | 2026-05-27 | B.09, B.17 | Injectable `trace_store` on debug API; gate uses `pytest -m gate` (`testpaths` includes `agents/`) |
+| 2026-05-27 | B.06 | `HOOK_COVERAGE` parity map + Nexus lifecycle hooks (intake→planning→finalization) |
 
 ### B.1 Runtime & §42 convergence
 
@@ -947,7 +1170,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.03 | **Policy engine facade** — single `PolicyEngine` for replay, validation, runtime policy | §42.11 | **Medium** | **Done** | Indirect — consistent governance for all agents | Tier-1 | `PolicyEngine` + `coerce_policy_engine`; Nexus/UAEP/interrupt handler (2026-05-27) |
 | B.04 | **Dual `AgentDecision` cleanup** — converge tools-agent variant with canonical §42.7 enum | §42.7 | **Medium** | **Done** | Agents emitting decisions must use one contract | Tier-1 | `ToolPlanDecision` / `ToolsAgentRunResult`; deprecated `tools_agent` aliases (2026-05-27) |
 | B.05 | **Escalation policy production path** — `SAFETY_VIOLATION` / HITL expiry → real escalation (not stub) | §42.38, §42.10 | **Medium** | **Done** | HITL-heavy agents | Tier-1 | `escalation.v1` template, `wire_long_running_scheduler`, lab startup, SAFETY_VIOLATION timeout→escalate (2026-05-27) |
-| B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | Open | Extension agents via plugins | Tier-1 | Document current subset; incremental HookRegistry adoption |
+| B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | **Done** | Extension agents via plugins | Tier-1 | `HOOK_COVERAGE` + lifecycle hooks on NexusLoop; UAEP/graph/HITL already wired (2026-05-27) |
 | B.07 | **§42 maturity remainder (~30%)** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | Open | Platform stability for new agents | Tier-1 | Track as Phase G follow-up epics |
 
 ### B.2 Observability & debug surface
@@ -965,6 +1188,21 @@ Decision:       L1 certified — GO Phase K when product priority set
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.12 | **Production Slack / Teams webhooks** — lab has debug intake + signature stub; no production inbound adapter deployment | §18 | **Medium** | **Done** | Organization Worker, HITL from chat | Tier-0 / Tier-3 | `POST /v1/interactions/intake` on lab app + shared `create_interaction_intake_router` (2026-05-27) |
 | B.13 | **Outbound delivery hardening** — retries, DLQ, delivery receipts for HITL notifications | §18, §42.10 | **Low** | HITL agents in prod | Tier-0 | Extend pluggable delivery with persistence |
+
+### B.6 Integration Library (§7.1)
+
+| ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------|--------------|------|----------------|
+| B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | Open | All agents needing external systems | Tier-0 | Phase M.1–M.3 |
+| B.19 | **P0 provider wraps** — sqlite, redis, kafka, celery, search, slack/teams | §7.1.3 | **High** | Open | Lab + first prod apps | Tier-0 | Phase M.4; wrap existing modules |
+| B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | Open | Multi-tenant applications | Tier-0 | Phase M.6 after M.4 |
+| B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | Open | PM / research agents | Tier-0 | Phase M.6; tools via ToolRuntime |
+| B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | Open | Org worker, scheduling agents | Tier-0 | Phase M.6 |
+| B.23 | **Prometheus observability_backend** — metrics export | §33, §7.1.3 | **Low** | Open | Ops / SLO | Tier-0 | After B.11 metrics layer design |
+| B.25 | **AWS cloud_platform facade** — auth + S3/SQS/DynamoDB/Secrets Manager defaults | §7.1.3 P1.1 | **Medium** | Open | AWS-hosted applications | Tier-0 | Phase M.6; infrastructure only |
+| B.26 | **Azure cloud_platform facade** — MI + Blob/Service Bus/Key Vault | §7.1.3 P1.1 | **Medium** | Open | Azure-hosted applications | Tier-0 | Phase M.6; infrastructure only |
+| B.27 | **GCP cloud_platform facade** — ADC + GCS/Pub/Sub/Secret Manager | §7.1.3 P1.1 | **Medium** | Open | GCP-hosted applications | Tier-0 | Phase M.6; infrastructure only |
+| B.24 | **Direct vendor SDK in agents** — audit + lint rule | §5.2, §7.1.4 | **Medium** | Open | Prevents catalog bypass | Tier-2 | Document in AGENT_CREATION_GUIDE; optional ruff rule |
 
 ### B.4 Legacy & composition
 
@@ -990,12 +1228,13 @@ Decision:       L1 certified — GO Phase K when product priority set
 4. ~~B.12, B.14~~ — product interaction + legacy removal (Done 2026-05-27)
 5. ~~B.05~~ — escalation production path (Done 2026-05-27)
 6. ~~B.09, B.17~~ — debug trace injection + gate collection (Done 2026-05-27)
-7. B.06–B.07, B.11, B.13, B.15–B.18 — as capacity allows
+7. ~~B.06~~ — hook parity doc + lifecycle wiring (Done 2026-05-27)
+8. B.07, B.11, B.13, B.15–B.18 — as capacity allows
 ```
 
 **Note:** Phase K business agents (Problem Radar, Vendor Discovery) remain **product-blocked** until explicit go — technical debt above does not auto-unblock K.1/K.2.
 
 ---
 
-*Plan synced with codebase after B.09/B.17 paydown (2026-05-27). Gate: 247 tests.*
+*Plan synced with codebase after B.06 paydown (2026-05-27). Gate: 250 tests.*
 

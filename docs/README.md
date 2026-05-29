@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-05-27
+**Last updated:** 2026-05-29
 
 The `docs/` folder contains **exactly four documents**. Nothing else belongs here.
 
@@ -31,17 +31,18 @@ Agent workflow (how)     →  AGENT_CREATION_GUIDE.md
 | See current phase and what's next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §1–§4 |
 | Check readiness for business agents | Implementation plan **Appendix A** |
 | Review technical debt before Tier-1 work | Implementation plan **Appendix B** |
+| Wire external systems (DB, Slack, Jira, …) | Architecture canon §7.1, then implementation plan **Phase M** |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
 | Deep-dive UAEP / hooks / governance | Architecture canon §42 |
 
 ---
 
-## Current focus (2026-05-27)
+## Current focus (2026-05-29)
 
 | Phase | Status |
 |-------|--------|
-| Phase J — Unified execution entry | **Done** |
-| Phase L — Agent OS certification (deliverables + sign-off) | **Done** |
+| Phase L — Agent OS certification | **Done** |
+| Phase M — Integration Library (Tier-0 catalog) | **Next** — canon §7.1 + Phase M in implementation plan |
 | Phase K — Problem Radar / Vendor Discovery | **Ready to open** (product decision) |
 
 Gate: `uv run pytest tests/ -m gate -q` (**228 tests**)
