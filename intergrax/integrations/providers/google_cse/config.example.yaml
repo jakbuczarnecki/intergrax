@@ -1,0 +1,8 @@
+# Google CSE integration — copy to Tier-3 settings or export as env vars.
+# Env: INTERGRAX_GOOGLE_CSE_API_KEY, INTERGRAX_GOOGLE_CSE_CX
+# Legacy env (still supported): GOOGLE_CSE_API_KEY, GOOGLE_CSE_CX
+
+api_key: "<your-api-key>"
+cx: "<your-search-engine-id>"
+timeout_seconds: 20
+enabled: true
