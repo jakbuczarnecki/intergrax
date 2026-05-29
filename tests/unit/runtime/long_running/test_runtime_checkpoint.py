@@ -6,6 +6,7 @@ from intergrax.contracts.agent_execution_result import AgentExecutionResult, Age
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_graph,
     build_runtime_checkpoint,
+    should_resume_uaep_step,
     should_skip_graph_node,
     should_skip_uaep_step,
 )
@@ -15,6 +16,7 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
     runtime_checkpoint_from_execution_structured,
 )
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode, ExecutionNodeStatus
+from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep
 from intergrax.runtime.task.task import Task
 
 
@@ -60,6 +62,62 @@ def test_should_skip_uaep_step_when_resumed_at_same_index():
         checkpoint=ckpt,
         human_approved=True,
     )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_should_resume_uaep_step_when_mid_step_cursor_present():
+    ckpt = RuntimeCheckpoint(
+        uaep_step_index=0,
+        uaep_step_id="process",
+        uaep_step_completed=False,
+        uaep_step_cursor={"phase1_done": True},
+        last_step_output={"step_id": "process", "summary": "phase1 partial"},
+    )
+    assert should_resume_uaep_step(
+        step_index=0,
+        step_id="process",
+        checkpoint=ckpt,
+        human_approved=True,
+    )
+    assert not should_skip_uaep_step(
+        step_index=0,
+        step_id="process",
+        checkpoint=ckpt,
+        human_approved=True,
+    )
+    completed = ckpt.model_copy(update={"uaep_step_completed": True, "uaep_step_cursor": None})
+    assert should_skip_uaep_step(
+        step_index=0,
+        step_id="process",
+        checkpoint=completed,
+        human_approved=True,
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_build_runtime_checkpoint_includes_plan_and_graph_snapshots():
+    task = Task(tenant_id="t1", user_id="u1", agent_id="a1", task_id="task_full")
+    plan = NexusPlan(
+        task_id="task_full",
+        classification="single_agent",
+        steps=[PlanStep(step_id="step_1", agent_id="a1")],
+    )
+    graph = ExecutionGraph(
+        graph_id="g_full",
+        task_id="task_full",
+        nodes=[
+            ExecutionNode(node_id="n1", agent_id="a1", status=ExecutionNodeStatus.COMPLETED),
+            ExecutionNode(node_id="n2", agent_id="a2"),
+        ],
+    )
+    runtime = build_runtime_checkpoint(task, plan=plan, graph=graph)
+    assert runtime.plan_snapshot is not None
+    assert runtime.plan_snapshot["plan_id"] == plan.plan_id
+    assert runtime.graph_snapshot is not None
+    assert runtime.graph_snapshot["graph_id"] == "g_full"
+    assert runtime.node_states["n1"] == ExecutionNodeStatus.COMPLETED.value
 
 
 @pytest.mark.unit

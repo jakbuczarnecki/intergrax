@@ -6,12 +6,15 @@
 from __future__ import annotations
 
 import json
-import os
 import sqlite3
 from pathlib import Path
 from typing import List, Optional
 from uuid import uuid4
 
+from intergrax.integrations.providers.sqlite.paths import (
+    DEFAULT_TASK_CHECKPOINTS_DB,
+    ENV_TASK_CHECKPOINTS_DB,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
@@ -22,8 +25,13 @@ from intergrax.runtime.long_running.scheduled_resume import (
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.utils.time_provider import SystemTimeProvider
 
-ENV_TASK_CHECKPOINTS_DB = "INTERGRAX_TASK_CHECKPOINTS_DB"
-DEFAULT_TASK_CHECKPOINTS_DB = Path("build") / "intergrax_task_checkpoints.db"
+__all__ = [
+    "DEFAULT_TASK_CHECKPOINTS_DB",
+    "ENV_TASK_CHECKPOINTS_DB",
+    "SQLiteTaskCheckpointStore",
+    "resolve_task_checkpoints_db_path",
+    "open_task_checkpoint_store",
+]
 
 _PAUSED_TASK_STATES = (
     TaskState.WAITING_FOR_HUMAN.value,
@@ -33,18 +41,19 @@ _PAUSED_TASK_STATES = (
 
 
 def resolve_task_checkpoints_db_path(explicit: Path | None = None) -> Path:
-    if explicit is not None:
-        return explicit
-    env = os.environ.get(ENV_TASK_CHECKPOINTS_DB, "").strip()
-    if env:
-        return Path(env)
-    return DEFAULT_TASK_CHECKPOINTS_DB
+    from intergrax.integrations.providers.sqlite.paths import (
+        resolve_task_checkpoints_db_path as _resolve,
+    )
+
+    return _resolve(explicit)
 
 
 def open_task_checkpoint_store(db_path: Path | None = None) -> SQLiteTaskCheckpointStore:
-    path = db_path or resolve_task_checkpoints_db_path(None)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return SQLiteTaskCheckpointStore(db_path=path)
+    from intergrax.integrations.providers.sqlite import create_sqlite_task_checkpoint_store
+
+    if db_path is not None:
+        return create_sqlite_task_checkpoint_store(db_path=db_path)  # type: ignore[return-value]
+    return create_sqlite_task_checkpoint_store()  # type: ignore[return-value]
 
 
 class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):

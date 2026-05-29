@@ -1,0 +1,8 @@
+# Kafka integration — copy to Tier-3 settings or export as env vars.
+# Env: INTERGRAX_KAFKA_BOOTSTRAP_SERVERS, INTERGRAX_KAFKA_TOPIC, INTERGRAX_KAFKA_CONSUMER_GROUP
+# Requires kv_store (redis) when resolving message_bus.
+
+bootstrap_servers: localhost:9092
+topic: intergrax-tasks
+consumer_group: intergrax-default
+enabled: true

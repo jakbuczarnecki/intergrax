@@ -24,6 +24,7 @@ from intergrax.runtime.task.task_contract import TaskLongRunningOptions
 ORG_WORKER_CAPABILITY = "org.vendor_report"
 
 _NOTIFY_CHANNEL_BY_INTERACTION = {
+    "slack": "slack",
     "slash_command": "slack",
     "teams": "teams",
     "lab": "log",

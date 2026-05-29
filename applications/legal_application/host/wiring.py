@@ -12,7 +12,7 @@ from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.session.session_storage import SessionStorage
-from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
+from intergrax.integrations.providers.sqlite import create_sqlite_session_storage
 
 from legal_application.host.settings import LegalBackendSettings
 
@@ -45,7 +45,7 @@ def build_legal_agent(settings: LegalBackendSettings) -> LegalAgent:
 
     storage: SessionStorage
     if settings.session_sqlite_path:
-        storage = SQLiteSessionStorage(settings.session_sqlite_path)
+        storage = create_sqlite_session_storage(db_path=settings.session_sqlite_path)  # type: ignore[assignment]
     else:
         storage = InMemorySessionStorage()
 

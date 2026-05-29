@@ -138,7 +138,7 @@ def test_debug_interaction_intake_json_only():
     body = response.json()
     assert body["capability"] == "echo.basic"
     assert body["message"] == "hello lab"
-    assert body["interaction_channel"] == "slash_command"
+    assert body["interaction_channel"] == "slack"
     assert body["executed"] is False
 
 

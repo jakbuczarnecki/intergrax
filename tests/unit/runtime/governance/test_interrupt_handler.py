@@ -7,7 +7,7 @@ from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_interrupt import InterruptType
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
-from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
+from intergrax.runtime.policy.policy_engine import PolicyEngine
 
 
 @pytest.mark.unit
@@ -40,7 +40,7 @@ def test_interrupt_handler_maps_request_human_to_pause():
 @pytest.mark.unit
 @pytest.mark.gate
 def test_interrupt_handler_critical_interrupt_requires_human():
-    handler = ExecutionInterruptHandler(RuntimePolicyEngine())
+    handler = ExecutionInterruptHandler(PolicyEngine())
     decision = AgentDecision(
         type=AgentDecisionType.INTERRUPT,
         reason="critical safety issue",

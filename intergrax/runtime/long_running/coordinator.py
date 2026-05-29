@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from intergrax.runtime.human.models import EscalationOutcome
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_task,
     build_runtime_checkpoint,
@@ -14,6 +15,7 @@ from intergrax.runtime.long_running.checkpoint_builder import (
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.notifications.models import NotificationMessage
 from intergrax.runtime.long_running.notification import NotificationAdapter, resolve_notification_adapter
+from intergrax.runtime.notifications.templates.escalation import build_escalation_notification_message
 from intergrax.runtime.notifications.templates.hitl import build_hitl_pause_notification_message
 from intergrax.runtime.notifications.templates.partial_result import (
     build_partial_result_notification_message,
@@ -23,6 +25,13 @@ from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.runtime.task.task import Task, TaskState
+from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
+
+
+def _wants_human_resume(task: Task) -> bool:
+    if task.options.human.response_text:
+        return True
+    return bool(task.metadata.get(TaskMetadataKey.HUMAN_RESPONSE))
 
 
 class LongRunningCoordinator:
@@ -44,13 +53,28 @@ class LongRunningCoordinator:
         task: Task,
         store: SQLiteTaskCheckpointStore,
     ) -> Optional[TaskCheckpoint]:
-        token = task.options.long_running.resume_token
-        if not LongRunningCoordinator.is_long_running(task) or not token:
-            return None
+        if not LongRunningCoordinator.is_long_running(task):
+            if not _wants_human_resume(task):
+                return None
+            if store.get_latest(task.task_id, task.tenant_id) is None:
+                return None
+            task.options.long_running.enabled = True
 
-        checkpoint = store.get_by_token(task.task_id, task.tenant_id, token)
+        token = task.options.long_running.resume_token
+        if not token:
+            raw = task.metadata.get(TaskMetadataKey.RESUME_TOKEN)
+            token = str(raw) if raw else None
+
+        checkpoint: Optional[TaskCheckpoint] = None
+        if token:
+            checkpoint = store.get_by_token(task.task_id, task.tenant_id, token)
+        elif _wants_human_resume(task):
+            checkpoint = store.get_latest(task.task_id, task.tenant_id)
+
         if checkpoint is None:
             return None
+
+        token = checkpoint.resume_token
 
         incoming_human = task.options.human.model_copy(deep=True)
         restored = Task.model_validate(checkpoint.task_snapshot)
@@ -167,6 +191,26 @@ class LongRunningCoordinator:
         notifier = adapter or resolve_notification_adapter(channel)
         message = build_hitl_pause_notification_message(
             task,
+            progress_message=progress_message,
+            channel=channel,
+        )
+        await notifier.notify(message)
+
+    @staticmethod
+    async def notify_escalation(
+        task: Task,
+        *,
+        outcome: EscalationOutcome,
+        progress_message: str,
+        adapter: Optional[NotificationAdapter] = None,
+    ) -> None:
+        if not LongRunningCoordinator.is_long_running(task):
+            return
+        channel = task.options.long_running.notify_channel or "log"
+        notifier = adapter or resolve_notification_adapter(channel)
+        message = build_escalation_notification_message(
+            task,
+            outcome=outcome,
             progress_message=progress_message,
             channel=channel,
         )

@@ -23,6 +23,7 @@ from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler, Gove
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 from intergrax.runtime.nexus.tools.uaep_tool_gateway import BoundToolGateway
+from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -34,9 +35,14 @@ from intergrax.runtime.cancellation.coordinator import (
     CANCELLATION_REQUESTED_KEY,
     CancellationCoordinator,
 )
-from intergrax.runtime.long_running.checkpoint_builder import should_skip_uaep_step
+from intergrax.runtime.long_running.checkpoint_builder import (
+    should_resume_uaep_step,
+    should_skip_uaep_step,
+)
 from intergrax.runtime.long_running.runtime_checkpoint import (
     RUNTIME_CHECKPOINT_KEY,
+    UAEP_STEP_CURSOR_KEY,
+    PLAN_SNAPSHOT_KEY,
     RuntimeCheckpoint,
     attach_runtime_checkpoint_to_metadata,
     runtime_checkpoint_from_metadata,
@@ -89,16 +95,17 @@ class UAEPExecutor:
         *,
         middleware: Optional[MiddlewarePipeline] = None,
         event_bus: Optional[RuntimeEventBus] = None,
-        policy_engine: Optional[RuntimePolicyEngine] = None,
+        policy_engine: PolicyEngine | RuntimePolicyEngine | None = None,
         interrupt_handler: Optional[ExecutionInterruptHandler] = None,
         shadow_manager: Optional[ShadowWorkspaceManager] = None,
         sandbox_manager: Optional[SandboxSessionManager] = None,
         task_memory_store: Optional[TaskMemoryPersistence] = None,
         memory_limits: Optional[TaskMemoryLimits] = None,
     ) -> None:
+        resolved_policy = coerce_policy_engine(policy_engine)
         self._event_bus = event_bus
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
-            policy_engine=policy_engine,
+            policy_engine=resolved_policy,
         )
         self._shadow_manager = shadow_manager or ShadowWorkspaceManager()
         self._sandbox_manager = sandbox_manager or SandboxSessionManager()
@@ -211,6 +218,20 @@ class UAEPExecutor:
             ):
                 last_output = StepOutput.model_validate(runtime_ckpt.last_step_output)
                 step_result = StepExecutionResult(output=last_output)
+            elif should_resume_uaep_step(
+                step_index=index,
+                step_id=step.step_id,
+                checkpoint=runtime_ckpt,
+                human_approved=human_approved,
+            ):
+                assert runtime_ckpt is not None
+                exec_ctx.metadata[UAEP_STEP_CURSOR_KEY] = dict(runtime_ckpt.uaep_step_cursor or {})
+                step_result = await self._execute_step_with_resume(
+                    agent,
+                    step,
+                    exec_ctx,
+                    runtime_ckpt.uaep_step_cursor or {},
+                )
             else:
                 step_result = await self.execute_step(agent, step, exec_ctx)
             step_result.duration_ms = int((time.perf_counter() - started) * 1000)
@@ -254,6 +275,7 @@ class UAEPExecutor:
             await self._emit_governance(exec_ctx, resolution)
 
             if resolution.should_pause or resolution.should_fail:
+                step_cursor = exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY)
                 runtime_snapshot = self._build_runtime_checkpoint(
                     request=request,
                     contract_id=contract.id,
@@ -261,6 +283,7 @@ class UAEPExecutor:
                     step=step,
                     last_output=last_output,
                     resolution=resolution,
+                    step_cursor=step_cursor if isinstance(step_cursor, dict) else None,
                 )
                 exec_ctx.metadata[RUNTIME_CHECKPOINT_KEY] = runtime_snapshot
                 break
@@ -310,7 +333,18 @@ class UAEPExecutor:
         step: AgentStep,
         last_output: Optional[StepOutput],
         resolution: GovernanceResolution,
+        step_cursor: Optional[dict[str, Any]] = None,
     ) -> RuntimeCheckpoint:
+        step_completed = last_output is not None and step_cursor is None
+        pending_decisions: list[dict[str, Any]] = []
+        if resolution.human_request is not None:
+            pending_decisions.append(
+                {
+                    "type": "human_request",
+                    "agent_id": contract_id,
+                    "payload": resolution.human_request.model_dump(mode="json"),
+                }
+            )
         return RuntimeCheckpoint(
             plan_id=str(request.metadata.get("plan_id") or "") or None,
             graph_id=str(request.metadata.get("graph_id") or "") or None,
@@ -318,14 +352,36 @@ class UAEPExecutor:
             agent_id=contract_id,
             uaep_step_index=step_index,
             uaep_step_id=step.step_id,
+            uaep_step_completed=step_completed,
+            uaep_step_cursor=step_cursor,
             paused_phase=ExecutionPhase.HUMAN_APPROVAL.value,
+            plan_snapshot=(
+                request.metadata.get(PLAN_SNAPSHOT_KEY)
+                if isinstance(request.metadata.get(PLAN_SNAPSHOT_KEY), dict)
+                else None
+            ),
+            pending_decisions=pending_decisions,
             pending_human_request=(
-                resolution.human_request.model_dump()
+                resolution.human_request.model_dump(mode="json")
                 if resolution.human_request is not None
                 else None
             ),
             last_step_output=last_output.model_dump(mode="json") if last_output else None,
         )
+
+    async def _execute_step_with_resume(
+        self,
+        agent: Agent,
+        step: AgentStep,
+        ctx: RuntimeExecutionContext,
+        cursor: dict[str, Any],
+    ) -> StepExecutionResult:
+        resume = getattr(agent, "resume_step", None)
+        if callable(resume):
+            output = await resume(step, ctx, cursor)
+            return StepExecutionResult(output=output)
+        output = await agent.run_step(step, ctx)
+        return StepExecutionResult(output=output)
 
     async def _emit_governance(
         self,

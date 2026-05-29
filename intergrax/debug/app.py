@@ -22,6 +22,7 @@ from intergrax.runtime.events.persistence_contract import RuntimeEventPersistenc
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 
 
@@ -33,6 +34,7 @@ def create_debug_app(
     checkpoints_db_path: Path | None = None,
     runtime_event_store: RuntimeEventPersistence | None = None,
     checkpoint_store: TaskCheckpointPersistence | None = None,
+    trace_store: RunTraceReader | None = None,
     registry: Optional[AgentRegistry] = None,
     hitl_service: DebugHitlResumeService | None = None,
     interaction_service: DebugInteractionIntakeService | None = None,
@@ -41,7 +43,7 @@ def create_debug_app(
     """
     Laboratory debug API over trace, runtime events, checkpoints, and experiments.
 
-    Persistence backends are injectable (``runtime_event_store``, ``checkpoint_store``)
+    Persistence backends are injectable (``trace_store``, ``runtime_event_store``, ``checkpoint_store``)
     or resolved from explicit paths / ``INTERGRAX_*`` env vars.
     """
     resolved_checkpoint_store = open_default_task_checkpoint_persistence(
@@ -65,6 +67,7 @@ def create_debug_app(
         resolved_loop = NexusLoop(
             registry,
             checkpoint_store=resolved_checkpoint_store,
+            trace_store=trace_store,
             runtime_event_store=resolved_runtime_store,
         )
 
@@ -92,6 +95,7 @@ def create_debug_app(
             checkpoints_db_path=checkpoints_db_path,
             runtime_event_store=resolved_runtime_store,
             checkpoint_store=resolved_checkpoint_store,
+            trace_store=trace_store,
             hitl_service=resolved_hitl,
             interaction_service=resolved_interaction,
         )

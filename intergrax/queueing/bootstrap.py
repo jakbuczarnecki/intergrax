@@ -1,14 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
 
 """
 Queueing layer composition root.
 
-This module is responsible for wiring concrete task queue providers
-into the TaskQueueProviderRegistry.
-
-It is the only place where registry and concrete providers are coupled.
+Kafka/RabbitMQ class registration for ``TaskQueueProviderRegistry``.
+Wiring of live instances: ``integrations.providers.kafka`` / ``integrations.providers.celery`` /
+``runtime.transport.bootstrap``.
 """
 
 from intergrax.queueing.providers.kafka.kafka_task_queue import KafkaTaskQueue
@@ -20,9 +18,9 @@ def bootstrap_default_providers(
     registry: TaskQueueProviderRegistry,
 ) -> None:
     """
-    Register default task queue providers.
+    Register default task queue provider classes.
 
-    This function must be called during application composition phase.
+    Instance composition uses ``integrations.providers.kafka.create_kafka_integration``.
     """
     registry.register("kafka", KafkaTaskQueue)
     registry.register("rabbitmq", RabbitMQTaskQueue)

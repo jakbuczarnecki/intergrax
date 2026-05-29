@@ -1,0 +1,5 @@
+# Generic webhook integration — copy to Tier-3 settings or export as env vars.
+# Env: INTERGRAX_WEBHOOK_URL
+
+webhook_url: https://hooks.example.com/intergrax-notify
+enabled: true

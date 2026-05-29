@@ -5,7 +5,7 @@
 Runtime governance policy engine (architecture §42.11).
 
 Evaluates ``AgentDecision`` and ``ExecutionInterrupt`` against Tier-3 rules.
-Distinct from replay ``ExecutionPolicyEngine``.
+Use ``PolicyEngine`` facade for unified runtime + replay policy entry (§42.11).
 """
 
 from __future__ import annotations

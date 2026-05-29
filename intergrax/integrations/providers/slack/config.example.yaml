@@ -1,0 +1,6 @@
+# Slack integration — copy to Tier-3 settings or export as env vars.
+# Env: INTERGRAX_SLACK_WEBHOOK_URL, INTERGRAX_SLACK_SIGNING_SECRET
+
+webhook_url: https://hooks.slack.com/services/XXX/YYY/ZZZ
+signing_secret: "<slack-signing-secret>"
+enabled: true

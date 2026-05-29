@@ -8,27 +8,29 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from intergrax.integrations.providers.sqlite import create_sqlite_runtime_event_store
+from intergrax.integrations.providers.sqlite.paths import (
+    DEFAULT_RUNTIME_EVENTS_DB,
+    ENV_RUNTIME_EVENTS_DB,
+    resolve_runtime_events_db_path,
+)
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
 
-ENV_RUNTIME_EVENTS_DB = "INTERGRAX_RUNTIME_EVENTS_DB"
-DEFAULT_RUNTIME_EVENTS_DB = Path("build") / "intergrax_runtime_events.db"
-
-
-def resolve_runtime_events_db_path(explicit: Path | None = None) -> Path:
-    if explicit is not None:
-        return explicit
-    env = os.environ.get(ENV_RUNTIME_EVENTS_DB, "").strip()
-    if env:
-        return Path(env)
-    return DEFAULT_RUNTIME_EVENTS_DB
+__all__ = [
+    "DEFAULT_RUNTIME_EVENTS_DB",
+    "ENV_RUNTIME_EVENTS_DB",
+    "resolve_runtime_events_db_path",
+    "open_runtime_event_store",
+    "resolve_runtime_event_persistence",
+]
 
 
 def open_runtime_event_store(db_path: Path | None = None) -> SQLiteRuntimeEventStore:
-    """Open the default SQLite RuntimeEvent backend (lab / local persistence)."""
-    path = db_path or resolve_runtime_events_db_path(None)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return SQLiteRuntimeEventStore(db_path=path)
+    """Open SQLite runtime event store via ``integrations.providers.sqlite``."""
+    if db_path is not None:
+        return create_sqlite_runtime_event_store(db_path=db_path)  # type: ignore[return-value]
+    return create_sqlite_runtime_event_store()  # type: ignore[return-value]
 
 
 def resolve_runtime_event_persistence(

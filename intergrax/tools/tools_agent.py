@@ -60,14 +60,18 @@ class ToolTrace:
 
 
 @dataclass(slots=True)
-class AgentDecision:
+class ToolPlanDecision:
+    """Tools-agent planner output (not §42.7 ``AgentDecision`` — see ``intergrax.contracts.agent_decision``)."""
+
     final_answer: Optional[str]
     tool_plan: Optional[ToolCallPlan]
     messages: List[ChatMessage]
 
 
 @dataclass(slots=True)
-class AgentExecutionResult:
+class ToolsAgentRunResult:
+    """Completed tools-agent loop result (distinct from ``contracts.agent_execution_result``)."""
+
     final_answer: str
     tool_traces: List[ToolTrace]
     messages: List[ChatMessage]
@@ -298,7 +302,7 @@ class ToolsAgent:
         context: Optional[str] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> AgentDecision:
+    ) -> ToolPlanDecision:
         """
         Planner-only mode.
 
@@ -400,7 +404,7 @@ class ToolsAgent:
                     )
                 )
 
-            return AgentDecision(
+            return ToolPlanDecision(
                 final_answer=None,
                 tool_plan=ToolCallPlan(calls=calls),
                 messages=[],
@@ -460,7 +464,7 @@ class ToolsAgent:
                 )
             )
 
-        return AgentDecision(
+        return ToolPlanDecision(
             final_answer=None,
             tool_plan=ToolCallPlan(calls=calls),
             messages=[],
@@ -476,7 +480,7 @@ class ToolsAgent:
         output_model: Optional[Type] = None,
         run_id: Optional[str] = None,
         llm_usage_tracker: Optional[LLMUsageTracker] = None,
-    ) -> AgentExecutionResult:
+    ) -> ToolsAgentRunResult:
         """
         High-level tools orchestration entrypoint.
 
@@ -600,7 +604,7 @@ class ToolsAgent:
                         output_obj = self._build_output_structure(
                             output_model, content, tool_traces
                         )
-                        return AgentExecutionResult(
+                        return ToolsAgentRunResult(
                             final_answer=content,
                             tool_traces=tool_traces,
                             messages=messages,
@@ -613,7 +617,7 @@ class ToolsAgent:
                     output_obj = self._build_output_structure(
                         output_model, final, tool_traces
                     )
-                    return AgentExecutionResult(
+                    return ToolsAgentRunResult(
                         final_answer=final,
                         tool_traces=tool_traces,
                         messages=messages,
@@ -648,7 +652,7 @@ class ToolsAgent:
                         output_obj = self._build_output_structure(
                             output_model, final, tool_traces
                         )
-                        return AgentExecutionResult(
+                        return ToolsAgentRunResult(
                             final_answer=final,
                             tool_traces=tool_traces,
                             messages=messages,
@@ -701,7 +705,7 @@ class ToolsAgent:
             if self.memory:
                 self.memory.add("assistant", final)
             output_obj = self._build_output_structure(output_model, final, tool_traces)
-            return AgentExecutionResult(
+            return ToolsAgentRunResult(
                 final_answer=final,
                 tool_traces=tool_traces,
                 messages=messages,
@@ -756,7 +760,7 @@ class ToolsAgent:
                 output_obj = self._build_output_structure(
                     output_model, plan_text, tool_traces
                 )
-                return AgentExecutionResult(
+                return ToolsAgentRunResult(
                     final_answer=plan_text,
                     tool_traces=tool_traces,
                     messages=messages,
@@ -768,7 +772,7 @@ class ToolsAgent:
                 if self.memory:
                     self.memory.add("assistant", final)
                 output_obj = self._build_output_structure(output_model, final, tool_traces)
-                return AgentExecutionResult(
+                return ToolsAgentRunResult(
                     final_answer=final,
                     tool_traces=tool_traces,
                     messages=messages,
@@ -839,9 +843,29 @@ class ToolsAgent:
         if self.memory:
             self.memory.add("assistant", final)
         output_obj = self._build_output_structure(output_model, final, tool_traces)
-        return AgentExecutionResult(
+        return ToolsAgentRunResult(
             final_answer=final,
             tool_traces=tool_traces,
             messages=messages,
             output_structure=output_obj,
         )
+
+
+_DEPRECATED_TOOL_AGENT_ALIASES = {
+    "AgentDecision": ToolPlanDecision,
+    "AgentExecutionResult": ToolsAgentRunResult,
+}
+
+
+def __getattr__(name: str):
+    import warnings
+
+    if name in _DEPRECATED_TOOL_AGENT_ALIASES:
+        warnings.warn(
+            f"intergrax.tools.tools_agent.{name} is deprecated; "
+            f"use { _DEPRECATED_TOOL_AGENT_ALIASES[name].__name__} instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return _DEPRECATED_TOOL_AGENT_ALIASES[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

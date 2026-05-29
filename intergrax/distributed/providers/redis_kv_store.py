@@ -2,6 +2,13 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+"""
+Redis-based implementation of DistributedKVStore.
+
+Composition root: ``intergrax.integrations.providers.redis.create_redis_integration``.
+Do not instantiate directly from application code.
+"""
+
 from __future__ import annotations
 
 from typing import Optional

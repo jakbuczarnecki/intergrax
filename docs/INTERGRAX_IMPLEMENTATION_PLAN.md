@@ -1,18 +1,100 @@
 # Intergrax — Runtime Implementation Plan
 
+**The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
+Status: Working draft (2026-05-29, Phase M integration catalog spec)  
+Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
+Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
+Navigation: [`README.md`](README.md)  
 
-Status: Working draft (2026-05-27, synced post G.4 gate)  
+Principle: **evolve, not rewrite** · **reuse Tier-0** (canon §5.2)
 
-Canonical source: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
+---
 
-Baseline: [`INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md`](INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md) §14–§16  
+## Documentation model
 
-Documentation map: [`README.md`](README.md)  
+Do not maintain separate status/readiness/roadmap files. This plan is the **only** live implementation document:
 
-Principle: **evolve, not rewrite** · **reuse Tier-0** (§5.2)
+| Topic | Where |
+|-------|--------|
+| Full architecture specification | `intergrax_runtime_architecture.md` |
+| Phase status, gaps, priority | **This file** |
+| Tier-0 integration catalog (what / where) | Architecture canon §7.1.1–§7.1.5 |
+| Tier-0 integration implementation (how) | **This file** Phase M |
+| Agent creation workflow | `AGENT_CREATION_GUIDE.md` |
+| Business-agent go/no-go checklist | **Appendix A** (below) |
+| Technical debt backlog (analysis only) | **Appendix B** (below) |
 
+---
 
+## 0. Architecture at a glance
+
+Condensed from the canon. For full contracts and forbidden patterns, read `intergrax_runtime_architecture.md`.
+
+### 0.1 Strategic objective
+
+Intergrax is an **Agent Operating System / Harness AI runtime** — not a collection of business agents.
+
+Current optimization targets:
+
+- experimentation speed · agent creation speed · runtime stability
+- orchestration quality · observability · composability
+
+Business agents (Problem Radar, Vendor Discovery, Legal expansion) are **blocked** until Phase L certification sign-off (Appendix A).
+
+### 0.6 When Tier-1 (Nexus) changes are required
+
+**Default (Tier-2 agent):** register + `AgentContract` + UAEP steps — **no** edits to `intergrax/runtime/`.
+
+**Extend Tier-1** only when the need is **reusable across many future agents**, not one product:
+
+| Situation | Action |
+|-----------|--------|
+| New agent with existing capabilities, memory, graph, HITL, sandbox | **Tier-2 only** — `agents/<slug>/` |
+| New capability id, prompts, domain tools | **Tier-2** (+ Tier-0 adapter if new external integration) |
+| New orchestration primitive (e.g. new graph node type, new lifecycle state) | **Tier-1** — must serve multiple agents; update canon §42 first |
+| New platform concern (new store, queue, notification channel) | **Tier-0** — `intergrax/` shared module |
+| Agent-specific product wiring (routes, env, which agents active) | **Tier-3** — `applications/<product>/` |
+| One agent needs special-case branch in `NexusLoop` | **Anti-pattern** — refactor to contract/metadata or Tier-0 |
+
+If the answer to “will another agent need this?” is **no**, it does not belong in Nexus.
+
+### 0.2 Four tiers
+
+| Tier | Folder | Role | Analogy |
+|------|--------|------|---------|
+| **Tier-0** | `intergrax/` | Platform — LLM, storage, queues, logging, adapters | Kernel drivers |
+| **Tier-1** | `intergrax/runtime/` | **Nexus Agent OS** — orchestration, lifecycle, trace, memory, HITL | Operating system |
+| **Tier-2** | `agents/` | Reusable agent capabilities — domain logic, prompts, tools | Applications |
+| **Tier-3** | `applications/` | Execution environments — wiring, routes, integrations | Deployment config |
+
+### 0.3 Execution path
+
+```text
+HTTP / CLI / Worker
+    → Tier-3 Application (optional)
+    → UnifiedTaskRunner
+    → NexusLoop (Tier-1)
+    → AgentEngine / UAEP
+    → Tier-2 Agent (get_steps → run_step → decide_after_step)
+    → ToolRuntime / MemoryView / Validation
+    → Trace + RuntimeEvents + TaskResult
+```
+
+### 0.4 Agent OS rule
+
+New agents integrate via **`AgentRegistry.register()`** — never by editing `NexusLoop`, `GraphExecutor`, or task lifecycle code.
+
+### 0.5 Maturity dashboard
+
+| Scope | Score | Notes |
+|-------|-------|-------|
+| Canon §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** | Phases A–F |
+| §42 Unified Execution Runtime | **~65–70%** | UAEP done; §42.9 mid-step checkpoint pending |
+| Laboratory workflow | **~95%** | Debug API, experiments, lab app |
+| Agent OS certification (Phase L deliverables) | **Done** | Scaffold, guide, acceptance suite |
+| Agent OS certification (sign-off exercise) | **Done** | `agents/signoff_probe/` — see Appendix A |
+| Regression gate | **228 passed** | `pytest -m gate` |
 
 ---
 
@@ -52,7 +134,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
 
-| Pre-P4.2 regression gate | **Done** | **107 tests**, marker `gate` |
+| Pre-P4.2 regression gate | **Done** | **228 tests**, marker `gate` |
 
 
 
@@ -94,6 +176,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
+| §7.1 Integration Library | Catalog + contracts + providers | **Partial** | M.4 in progress — **redis + sqlite + kafka Done** |
 
 | §19 Debug surface | CLI / API | **Done** | D.1 CLI + D.2 API ✅ |
 
@@ -374,7 +457,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
-| J.1 | NexusLoop default in apps | **Done** | §41 | Legal: Nexus default + `LEGAL_USE_LEGACY_AGENT_ENGINE`; Research: `UnifiedTaskRunner` |
+| J.1 | NexusLoop default in apps | **Done** | §41 | Legal + Research: `UnifiedTaskRunner` only (legacy `AgentEngine` removed, B.14) |
 | J.2 | RunService → UnifiedTaskRunner | **Done** | §41 | `NexusTaskExecutionAdapter` + `CreateRunRequest.payload` → Task |
 | J.3 | Worker queue Task v2 | **Done** | §41 | `QueuedNexusExecutionAdapter`, `nexus.task.v2` Celery handler, checkpoint resume |
 | J.4 | Long-running scheduler | **Done** | §26 | `LongRunningScheduler`, delayed resume + HITL timeout enforcement |
@@ -386,12 +469,295 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
-| K.1 | Problem Radar prototype | Pending | §36 | Long-running monitor use case |
-| K.2 | Vendor Discovery prototype | Pending | §37 | Shadow + research pipeline |
+| K.1 | Problem Radar prototype | **Blocked** | §36 | After Phase L sign-off |
+| K.2 | Vendor Discovery prototype | **Blocked** | §37 | After Phase L sign-off |
 | K.3 | Policy engine facade | Pending | §42.11 | Unify replay / validation / runtime policy |
 | K.4 | Dual `AgentDecision` cleanup | Pending | §42.7 | Converge tools agent variant |
 | K.5 | ChatAgent / legacy removal | Pending | §39 | After J.1 |
 | K.6 | A.5 full Legal E2E gate | Deferred | — | Real LLM; not blocking lab |
+
+---
+
+### Phase L — Agent OS Certification
+
+**Directive:** L1 certification recorded in Appendix A. Phase K is a **product** decision, not a runtime gate.  
+**Agent workflow:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)
+
+| # | Deliverable | Status | Req | Notes |
+|---|-------------|--------|-----|-------|
+| L.1 | UAEP-first agent scaffold | **Done** | R2 | `python -m intergrax.scaffold new-agent` |
+| L.2 | Agent creation guide | **Done** | R2 | Single canonical how-to |
+| L.3 | Lab application (Tier-3) | **Done** | R1 | `applications/lab_application/` |
+| L.4 | Reference technical agents | **Done** | R5 | Echo + `agents/lab/mock_agents.py` |
+| L.5 | Agent OS acceptance suite | **Done** | R1 | `tests/acceptance/agent_os/` (+ `05b` mid-step UAEP) |
+| L.6 | Runtime independence verification | **Done** | R5 | Register + run without Nexus edits |
+| L.7 | Application composition verification | **Done** | R5 | Agents ≠ applications |
+| L.8 | Certification checklist | **Done** | R1 | Appendix A (this file) |
+| L.9 | **Sign-off exercise** | **Done** | — | `agents/signoff_probe/` — Appendix A record |
+
+**Acceptance tests (L.5):**
+
+```bash
+uv run pytest tests/acceptance/agent_os -m agent_os -q
+```
+
+| # | Scenario | Test |
+|---|----------|------|
+| 1 | Single agent | `test_acceptance_01_single_agent_execution` |
+| 2 | Sequential multi-agent | `test_acceptance_02_sequential_multi_agent` |
+| 3 | Parallel multi-agent | `test_acceptance_03_parallel_multi_agent` |
+| 4 | HITL approve/resume | `test_acceptance_04_human_approval_flow` |
+| 5 | Checkpoint recovery | `test_acceptance_05_checkpoint_recovery` |
+| 6 | Retry / alternate agent | `test_acceptance_06_retry_flow` |
+| 7 | Partial results | `test_acceptance_07_partial_results` |
+| 8 | Memory / shared context | `test_acceptance_08_memory_handoff` |
+| 9 | Sandbox tools | `test_acceptance_09_sandbox_tool_execution` |
+| 10 | Shadow workspace | `test_acceptance_10_shadow_workspace` |
+
+---
+
+### Phase M — Integration Library (Tier-0 Catalog)
+
+**Canon:** §7.1.1–§7.1.5  
+**Goal:** One discoverable integration catalog so platform teams ship adapters and agent teams compose them in Tier-3 — without duplicating Redis/Postgres/Slack clients per agent.
+
+**Principle:** evolve existing modules (`queueing/`, `distributed/`, `websearch/`, …) into catalog providers; do not fork parallel stacks.
+
+**Out of scope:** `intergrax/llm_adapters/` — LLM providers are **not** part of the Integration Library (§7.1.2).
+
+| # | Deliverable | Status | Notes |
+|---|-------------|--------|-------|
+| M.0 | Integration backlog + categories approved | **Done** | Canon §7.1.3 catalog table |
+| M.1 | Scaffold `intergrax/integrations/` package | **Done** | `contracts/`, `registry/`, `_shared/`, `providers/` |
+| M.2 | Category contracts (P0 set) | **Done** | 7 P0 contracts + re-exports for queueing/notifications/interactions |
+| M.3 | `IntegrationRegistry` + `IntegrationProfile` | **Done** | `catalog.register_integration`, `resolve`, env/mapping profile |
+| M.4 | P0 providers — wrap existing | **In progress** | See **M.4 provider tracker** below |
+| M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
+| M.6 | P1 providers (on demand) | Pending | postgresql, mysql, jira, confluence, ms365_graph, prometheus, **aws, azure, gcp**, … |
+| M.7 | Agent Creation Guide § integrations | Pending | How agents declare needs vs Tier-3 wiring |
+| M.8 | Lab `IntegrationProfile` example | Pending | `applications/lab_application/` sqlite + logging + lab_json |
+
+**M.4 delivery workflow (one provider per iteration):**
+
+1. Implement `providers/<slug>/` (wrap legacy module — no fork).
+2. Register via `register_<slug>_integration()` + `register_default_integrations()`.
+3. Unit tests under `tests/unit/integrations/providers/`.
+4. Update canon §7.1.3 status + this tracker + migration map row.
+5. Next slug in priority order.
+
+#### M.4 provider tracker
+
+| Slug | Category | Status | Package | Legacy source |
+|------|----------|--------|---------|---------------|
+| `redis` | key_value_cache | **Done** | `providers/redis/` — `create_redis_integration()` (KV, idempotency, rate limit, semaphore, rerank) |
+| `sqlite` | relational_store | **Done** | `providers/sqlite/` — `create_sqlite_integration()` (trace, events, checkpoints, HITL, …) |
+| `kafka` | message_bus | **Done** | `providers/kafka/` — `create_kafka_integration()` (requires `kv_store`) |
+| `celery` | message_bus | **Done** | `providers/celery/` — `create_celery_integration()` (inject `app` or broker/backend env) |
+| `google_cse` | search_provider | **Done** | `providers/google_cse/` — `create_google_cse_integration()` (legacy `GOOGLE_CSE_*` env) |
+| `bing` | search_provider | **Done** | `providers/bing/` — `create_bing_integration()` (legacy `BING_SEARCH_V7_API_KEY`) |
+| `slack` | notification + interaction | **Done** (+ adopcja) | `providers/slack/` — runtime wiring delegates here |
+| `teams` | notification + interaction | **Done** (+ adopcja) | `providers/teams/` — runtime wiring delegates here |
+| `webhook` | notification_channel | **Done** (+ adopcja) | `providers/webhook/` — generic HTTP + `GenericJsonPayloadFormatter` |
+| `lab_json` | interaction_surface | **Done** (+ adopcja) | `providers/lab_json/` — lab intake; runtime channel ``lab`` |
+
+#### M.1 — Package scaffold (step-by-step)
+
+1. Create package skeleton:
+
+```text
+intergrax/integrations/
+├── __init__.py
+├── contracts/
+│   ├── __init__.py
+│   └── base.py              # IntegrationMetadata, HealthStatus, IntegrationError
+├── registry/
+│   ├── __init__.py
+│   ├── catalog.py           # slug → provider entry (lazy import)
+│   └── factory.py           # resolve(category, slug | env)
+├── _shared/
+│   ├── config.py            # pydantic BaseIntegrationConfig
+│   └── health.py
+└── providers/
+    └── .gitkeep
+```
+
+2. Add `IntegrationMetadata` dataclass: `slug`, `categories`, `status` (`stable` | `beta` | `deprecated`), `env_prefix`.
+
+3. Register package in `pyproject.toml` / existing import paths (no new top-level dependency unless provider-specific).
+
+#### M.2 — Category contracts (step-by-step)
+
+For each category in §7.1.2, implement a **minimal** Protocol in `integrations/contracts/`:
+
+| Contract | Minimum methods | Notes |
+|----------|-----------------|-------|
+| `RelationalStore` | `connect()`, `execute()`, `fetch_all()`, `close()` | Tenant scoping via connection factory |
+| `KeyValueCache` | `get`, `set`, `delete`, `set_if_absent` | Maps to existing `IdempotencyStore` / Redis helpers |
+| `MessageBus` | `enqueue`, `get_status`, `get_result` | Re-export / implement `queueing.contracts.TaskQueue` |
+| `SearchProvider` | `search(query, *, limit)` → `SearchResult[]` | Align with `websearch/providers/base.py` |
+| `NotificationChannel` | `notify(message)` | Align with `runtime/notifications/adapter_contract.py` |
+| `InteractionSurface` | `can_handle`, `to_inbound`, `channel` | Align with `runtime/interactions/adapter_contract.py` |
+| `CloudPlatform` | `session()`, `resolve(category)`, `default_region`, health | Auth chain + factory for native services (§7.1.3 P1.1) |
+
+**Rule:** if a contract already exists elsewhere, **re-export or inherit** — do not define a third variant.
+
+#### M.3 — IntegrationRegistry (step-by-step)
+
+1. `catalog.py` — static registry:
+
+```python
+INTEGRATION_ENTRIES: dict[str, IntegrationEntry] = {
+    "sqlite": IntegrationEntry(categories=("relational_store",), factory="..."),
+    "redis": IntegrationEntry(categories=("key_value_cache",), factory="..."),
+    # ...
+}
+```
+
+2. `factory.py`:
+
+```python
+def resolve(category: str, slug: str | None = None, *, config: Mapping[str, Any] | None = None) -> Any:
+    """slug defaults from env INTERGRAX_INTEGRATION_<CATEGORY> or IntegrationProfile."""
+```
+
+3. `IntegrationProfile` — pydantic model loaded from env or YAML in Tier-3 `settings.py`.
+
+4. `health_check_all(profile)` — optional startup probe for lab/production.
+
+#### M.4 — Adding a new provider (checklist for implementers)
+
+Copy this checklist into every `providers/<slug>/README.md`:
+
+```text
+[ ] 1. Pick category contract(s) from integrations/contracts/
+[ ] 2. Create providers/<slug>/ with adapter.py, config.py, config.example.yaml
+[ ] 3. Implement contract — no business logic, no Nexus imports
+[ ] 4. Register slug in registry/catalog.py
+[ ] 5. Add unit tests with fakes or testcontainers (default: no live vendor)
+[ ] 6. Optional: pytest -m integration_live with CI secrets
+[ ] 7. Wire in one Tier-3 application as reference (lab or product)
+[ ] 8. Update canon §7.1.3 status column
+```
+
+**Example — wrapping existing Redis idempotency store:**
+
+```text
+providers/redis/
+├── adapter.py       # RedisKeyValueCache implements KeyValueCache
+├── config.py        # REDIS_URL, REDIS_PREFIX
+└── tests/
+    └── test_redis_cache.py  # fakeredis or mock
+```
+
+Delegate to `intergrax/distributed/providers/redis_idempotency_store.py` internally.
+
+**Example — new Jira provider (greenfield):**
+
+```text
+providers/jira/
+├── adapter.py       # JiraIssueTracker implements IssueTracker
+├── config.py        # JIRA_BASE_URL, JIRA_API_TOKEN
+├── config.example.yaml
+├── README.md
+└── tests/
+    └── test_jira_issue_tracker.py  # responses mocked from fixtures/
+```
+
+Expose agent tools via Tier-0 tool registration (`jira.get_issue`, `jira.create_comment`) — ToolRuntime policy in Tier-1.
+
+#### M.4b — Cloud platform providers (aws / azure / gcp)
+
+Each platform folder exposes **one auth entry point** and registers sub-service slugs:
+
+```text
+providers/aws/
+├── adapter.py       # CloudPlatform: IAM profile, region, resolve("object_storage") → S3
+├── config.py        # AWS_REGION, AWS_PROFILE, AWS_ROLE_ARN
+├── services/        # thin wrappers delegating to category contracts
+│   ├── s3.py
+│   ├── sqs.py
+│   └── dynamodb.py
+└── tests/
+
+providers/azure/
+├── adapter.py       # Managed identity + service principal
+├── services/
+│   ├── blob.py
+│   └── service_bus.py
+└── ...
+
+providers/gcp/
+├── adapter.py       # ADC + service account
+├── services/
+│   ├── gcs.py
+│   └── pubsub.py
+└── ...
+```
+
+**Checklist:** implement infrastructure services (S3, SQS, Blob, GCS, Pub/Sub, …) only. LLM wiring stays in `intergrax/llm_adapters/` — do not register Bedrock, Azure OpenAI, or Vertex under `integrations/`.
+
+#### M.5 — Migration map (legacy → catalog)
+
+| Legacy location | Target slug | Action |
+|-----------------|-------------|--------|
+| `distributed/providers/redis_kv_store.py` (+ siblings) | `redis` | **Done** — single entry `integrations/providers/redis/create_redis_integration()` |
+| `queueing/providers/kafka/` | `kafka` | **Done** — `integrations/providers/kafka/create_kafka_integration()` |
+| `queueing/providers/celery/` | `celery` | **Done** — `integrations/providers/celery/create_celery_integration()` |
+| `queueing/providers/rabbitmq/` | `rabbitmq` | Register |
+| `websearch/providers/google_cse_provider.py` | `google_cse` | **Done** — `integrations/providers/google_cse/create_google_cse_integration()` |
+| `websearch/providers/bing_provider.py` | `bing` | **Done** — `integrations/providers/bing/create_bing_integration()` |
+| `runtime/notifications/adapters/webhook_adapter.py` | `webhook` | **Done** — `integrations/providers/webhook/create_webhook_integration()` |
+| `runtime/notifications/adapters/` | `slack`, `teams` | **Done** — runtime delegates |
+| `runtime/interactions/adapters/lab_json_adapter.py` | `lab_json` | **Done** — `integrations/providers/lab_json/create_lab_json_integration()` |
+| `runtime/*/stores/sqlite_*.py` (+ store openers) | `sqlite` | **Done** — single entry `integrations/providers/sqlite/create_sqlite_integration()` |
+| `rag/vectorstore/providers/*` | vector slugs | Catalog entry only; implementation stays in `rag/` |
+
+**Not migrated to `integrations/`:** `intergrax/llm_adapters/` — LLM providers are a separate Tier-0 concern (§7.1.2 out-of-scope table).
+
+#### M.6 — Testing strategy
+
+| Layer | Location | Marker |
+|-------|----------|--------|
+| Contract unit tests | `tests/unit/integrations/` | default gate |
+| Provider unit tests | `intergrax/integrations/providers/<slug>/tests/` | default gate |
+| Registry / factory | `tests/unit/integrations/test_registry.py` | gate |
+| Live vendor smoke | `tests/integration/integrations/` | `integration_live` (CI optional) |
+
+Conformance test pattern: given a fake backend, assert all Protocol methods behave consistently (including error types).
+
+#### M.7 — Tier-3 composition example
+
+```python
+# applications/my_app/factory.py
+from intergrax.integrations import (
+    IntegrationCategory,
+    IntegrationProfile,
+    register_default_integrations,
+)
+
+def create_app():
+    register_default_integrations()
+    profile = IntegrationProfile.lab()  # or build_profile_from_env()
+
+    cloud = profile.resolve(IntegrationCategory.CLOUD_PLATFORM)       # aws | azure | gcp
+    db = profile.resolve(IntegrationCategory.RELATIONAL_STORE)        # sqlite | postgresql
+    cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
+    storage = profile.resolve(IntegrationCategory.OBJECT_STORAGE)
+    notifier = profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)
+    # wire into Nexus factories, not into agents/
+```
+
+Agents reference capabilities in `AgentContract` (e.g. `needs_tools=["jira.get_issue"]`) — not integration slugs.
+
+#### M.8 — Definition of done (Phase M incremental)
+
+Each provider PR is **done** when:
+
+1. Contract conformance tests pass.
+2. Registered in `catalog.py` with metadata.
+3. README lists env vars + smoke steps.
+4. At least one Tier-3 app or lab factory can select it via `IntegrationProfile`.
+5. No new direct vendor imports added under `agents/`.
 
 ---
 
@@ -401,17 +767,19 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     Phase K — reference agents (on demand)
+NOW:     Phase L certification **complete** — L1 achieved (Appendix A)
 
-NEXT:    K.1 Problem Radar · K.2 Vendor Discovery
+NEXT:    Phase M — Integration Library scaffold (M.1–M.5) **parallel to** Phase K when approved
 
-THEN:    Phase J — Unified execution entry (§41)
+         Phase K — K.1/K.2 **when you approve** (Problem Radar or Vendor Discovery)
 
-PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
+BLOCKED: No new Nexus features unless Tier-1 extension rule (§0.6) applies
+
+PARALLEL: K.3–K.5 hardening; Phase M P0 provider wraps (non-breaking)
 
 ```
 
-**Rationale:** §42.9 requires execution-layer checkpoint. §18 needs real adapters before §38 Organization Worker. Phase J reduces dual-path debt (`RuntimeEngine` vs `NexusLoop`).
+**Rationale:** Business agents (K) need composable Tier-0 integrations (Jira, Slack, Postgres, Redis) without each agent team reimplementing adapters. Phase M establishes the catalog **before** scaling Tier-2 surface area.
 
 
 
@@ -429,7 +797,7 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 3. **Test** — unit + integration, deterministic, no network
 
-4. **Documentation** — update this plan + [`experiment_guide.md`](experiment_guide.md) when workflow changes
+4. **Documentation** — update this plan + [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) when workflow changes
 
 5. **No regression** — `pytest tests/ -m gate` green; Echo through NexusLoop
 
@@ -443,21 +811,25 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**Phase K — reference agents** (§36–§37):
-
-Pick **K.1 Problem Radar** or **K.2 Vendor Discovery** when a concrete lab use case is ready.
+**Phase L — Agent OS gate sign-off:**
 
 ```bash
+uv run pytest tests/acceptance/agent_os -m agent_os -q
 uv run pytest tests/ -m gate -q
 ```
 
+Complete one **new** scaffolded agent exercise (< 1 hour) and record in experiment registry before starting K.1/K.2.
+
+**Do not start:** Problem Radar, Vendor Discovery, Legal expansion until **Appendix A** sign-off.
+
 **Recently completed:**
 
-- **J.5:** Partial results API — `GET /debug/tasks/{task_id}/progress` aggregates checkpoint partial snapshots; `RuntimeEventType.TASK_PROGRESS`; `partial_result.v1` notification template; gate **216 passed**.
+- **L.1–L.8:** Phase L Agent OS readiness — UAEP scaffold, `AGENT_CREATION_GUIDE.md`, `lab_application`, mock agents, acceptance suite (`tests/acceptance/agent_os/`), readiness docs; gate **228 passed**.
+- **J.5:** Partial results API — `GET /debug/tasks/{task_id}/progress` aggregates checkpoint partial snapshots; `RuntimeEventType.TASK_PROGRESS`; `partial_result.v1` notification template; gate **228 passed** (includes Phase L acceptance).
 - **J.4:** Long-running scheduler — in-process `LongRunningScheduler` polls checkpoint store for delayed resumes and expired HITL deadlines; `UnifiedTaskResumeExecutor` resumes via `UnifiedTaskRunner`; SQLite ledger for idempotency.
 - **J.3:** Worker queue Task v2 — `QueuedNexusExecutionAdapter` enqueues `ExecutionRequest` via Tier-0 Celery (`nexus.task.v2`); `create_nexus_celery_worker_app` bootstrap; checkpoint resume through worker payload; gate **207 passed**.
 - **J.2:** RunService → UnifiedTaskRunner — `NexusTaskExecutionAdapter` delegates to `UnifiedTaskRunner`; Legal host shares one runner for `/runs` and `/legal/chat`; `POST /runs` forwards `CreateRunRequest.payload` to Task intake.
-- **J.1:** NexusLoop default in apps — Legal HTTP uses `UnifiedTaskRunner` by default; legacy `AgentEngine` via `LEGAL_USE_LEGACY_AGENT_ENGINE`; Research host wired through `UnifiedTaskRunner`.
+- **J.1:** NexusLoop default in apps — Legal and Research HTTP use `UnifiedTaskRunner` only; legacy `AgentEngine` opt-out removed from Legal (B.14).
 
 - **I.5:** ContextManager v2 — provenance, summary tiers, typed `TaskContextAssemblyOptions` (`TaskExecutionOptions.context`), metadata bridge sync.
 - **I.4:** Agent handoff — `AgentHandoff`, `HandoffCoordinator`, graph executor path, `HANDOFF_*` events.
@@ -720,7 +1092,190 @@ Reuse:
 
 ---
 
+## Appendix A — Business agents readiness checklist
 
+Gate before Problem Radar / Vendor Discovery. Run:
 
-*Plan synced with codebase after J.2 RunService → UnifiedTaskRunner (2026-05-27). Gate: 204 tests.*
+```bash
+uv run pytest tests/acceptance/agent_os -m agent_os -q
+uv run pytest tests/ -m gate -q
+```
+
+### Agent creation & registration
+
+| # | Question | Status |
+|---|----------|--------|
+| 1 | Scaffold in minutes (`intergrax.scaffold new-agent`)? | ✅ |
+| 2 | UAEP structure generated (contract, steps, tests)? | ✅ |
+| 3 | First run in < 1 hour? | ✅ |
+| 4 | Register via `AgentRegistry` only (no Nexus edits)? | ✅ |
+| 5 | Capabilities in contract? | ✅ |
+
+### Execution & observability
+
+| # | Question | Status |
+|---|----------|--------|
+| 6 | Runs through NexusLoop / lab `/v1/lab/run`? | ✅ |
+| 7 | UnifiedTaskRunner same path as HTTP? | ✅ |
+| 8 | Graph sequential + parallel? | ✅ |
+| 9 | Trace via `/debug/tasks/{id}`? | ✅ |
+| 10 | Runtime events + checkpoints + progress? | ✅ |
+
+### Recovery, HITL, memory, isolation
+
+| # | Question | Status |
+|---|----------|--------|
+| 11 | Nexus validates output? | ✅ |
+| 12 | Retry / alternate agent on validation failure? | ✅ |
+| 13 | HITL pause + resume? | ✅ |
+| 14 | Checkpoint recovery? | ✅ |
+| 15 | Shared context in graphs? | ✅ |
+| 16 | Sandbox + shadow workspace? | ✅ |
+
+### Tooling & composition
+
+| # | Question | Status |
+|---|----------|--------|
+| 17 | Canonical agent guide exists? | ✅ |
+| 18 | Lab application (Tier-3)? | ✅ |
+| 19 | Same agent reusable across applications? | ✅ |
+| 20 | Applications contain wiring only? | ✅ |
+
+### Go / no-go
+
+| Criterion | Threshold | Current |
+|-----------|-----------|---------|
+| Checklist | ≥ 90% | **20/20** |
+| Acceptance suite | 10/10 green | ✅ |
+| Sign-off exercise | 1 new agent, < 1h, zero runtime edits | **Done** (`signoff_probe`) |
+
+**Verdict:** **L1 Agent Operating System certified** (technical). Phase K opens on product decision — not automatic runtime work.
+
+### Sign-off record
+
+```text
+Date:           2026-05-27
+Agent exercise: signoff_probe
+Capability:     signoff.probe
+Time to first run: ~15 min (scaffold + smoke test)
+Runtime files modified: none (only agents/signoff_probe/ added)
+Smoke test:     agents/signoff_probe/tests — 1 passed
+HTTP proof:     lab_application wiring + POST /v1/lab/run
+Trace proof:    GET /debug/tasks/{id}, /trace?include_runtime=true, /events
+                (test_lab_application_runs_signoff_probe_with_trace)
+Acceptance suite: pass (tests/acceptance/agent_os)
+Gate suite:     pass (228+ tests)
+Trace:          NexusLoop smoke + HTTP debug API (SQLite trace store in lab factory)
+Decision:       L1 certified — GO Phase K when product priority set
+```
+
+---
+
+## Appendix B — Technical debt backlog
+
+**Purpose:** consolidated backlog for review and **incremental paydown**.  
+**Source:** canon §2 map, §0.5 maturity, Phase G–K gaps, lab sign-off findings (2026-05-27).  
+**How to use:** pick items by priority; apply §0.6 (Tier-1 only when reusable across agents).  
+**Status:** `Open` | `Done` | `Deferred`
+
+### B.0 Paydown log
+
+| Date | ID | Summary |
+|------|-----|---------|
+| 2026-05-29 | M.4-lab_json | `providers/lab_json/` + runtime `create_interaction_adapter(LAB)` delegate — **M.4 P0 complete** |
+| 2026-05-29 | M.4-webhook | `providers/webhook/` + runtime `create_notification_adapter(WEBHOOK)` delegate |
+| 2026-05-29 | M.4-teams-adopt | Runtime notifications/interactions/verifier + long_running delegate to `providers/teams/` |
+| 2026-05-29 | M.4-teams | `providers/teams/` — dual category catalog entry |
+| 2026-05-29 | M.4-slack-adopt | Runtime notifications/interactions/verifier + long_running delegate to `providers/slack/` |
+| 2026-05-29 | M.4-slack | `providers/slack/` — dual category + resolve dispatches by category |
+| 2026-05-29 | M.4-bing | `providers/bing/` — SearchProvider adapter over legacy Bing v7 |
+| 2026-05-29 | M.4-google_cse | `providers/google_cse/` — SearchProvider adapter over legacy CSE |
+| 2026-05-29 | M.4-celery | `providers/celery/` — message bus + worker helpers; no `kv_store` |
+| 2026-05-29 | M.4-kafka | `providers/kafka/` + transport delegate; requires `kv_store` |
+| 2026-05-29 | M.4-sqlite-adopt | Runtime `open_*` + apps delegate to `integrations/providers/sqlite/` |
+| 2026-05-29 | M.4-sqlite | `providers/sqlite/` + bundle (10 domain stores); lazy bootstrap + package `__init__` |
+| 2026-05-29 | M.4-redis | Complete bundle: `create_redis_integration()` — KV, idempotency, rate limit, semaphore, rerank |
+| 2026-05-27 | B.08, B.10 | `wire_nexus_observability` + SQLite defaults in Legal / Research / Lab factories; integration test |
+| 2026-05-27 | B.01, B.02 | `RuntimeCheckpoint` full snapshot + UAEP mid-step cursor/resume; acceptance `05b` |
+| 2026-05-27 | B.12, B.14 | Production `POST /v1/interactions/intake` on lab; Legal legacy `AgentEngine` removed |
+| 2026-05-27 | B.05 | Escalation notification template + scheduler wiring in lab + SAFETY_VIOLATION timeout→escalate |
+| 2026-05-27 | B.09, B.17 | Injectable `trace_store` on debug API; gate uses `pytest -m gate` (`testpaths` includes `agents/`) |
+| 2026-05-27 | B.06 | `HOOK_COVERAGE` parity map + Nexus lifecycle hooks (intake→planning→finalization) |
+
+### B.1 Runtime & §42 convergence
+
+| ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------|--------------|------|----------------|
+| B.01 | **UAEP mid-step checkpoint** — resume inside a long-running step (not only between steps / HITL) | §42.9.3, §26 | **High** | **Done** | Long-running domain agents (Legal, Research) | Tier-1 | `uaep_step_cursor`, `should_resume_uaep_step`, optional `resume_step` (2026-05-27) |
+| B.02 | **Full checkpoint snapshot** — plan + graph node states + UAEP index + pending decisions in one durable blob | §42.9.2 | **High** | **Done** | Multi-agent graphs, crash recovery | Tier-1 | `plan_snapshot`, `graph_snapshot`, `pending_decisions` in `RuntimeCheckpoint` (2026-05-27) |
+| B.03 | **Policy engine facade** — single `PolicyEngine` for replay, validation, runtime policy | §42.11 | **Medium** | **Done** | Indirect — consistent governance for all agents | Tier-1 | `PolicyEngine` + `coerce_policy_engine`; Nexus/UAEP/interrupt handler (2026-05-27) |
+| B.04 | **Dual `AgentDecision` cleanup** — converge tools-agent variant with canonical §42.7 enum | §42.7 | **Medium** | **Done** | Agents emitting decisions must use one contract | Tier-1 | `ToolPlanDecision` / `ToolsAgentRunResult`; deprecated `tools_agent` aliases (2026-05-27) |
+| B.05 | **Escalation policy production path** — `SAFETY_VIOLATION` / HITL expiry → real escalation (not stub) | §42.38, §42.10 | **Medium** | **Done** | HITL-heavy agents | Tier-1 | `escalation.v1` template, `wire_long_running_scheduler`, lab startup, SAFETY_VIOLATION timeout→escalate (2026-05-27) |
+| B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | **Done** | Extension agents via plugins | Tier-1 | `HOOK_COVERAGE` + lifecycle hooks on NexusLoop; UAEP/graph/HITL already wired (2026-05-27) |
+| B.07 | **§42 maturity remainder (~30%)** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | Open | Platform stability for new agents | Tier-1 | Track as Phase G follow-up epics |
+
+### B.2 Observability & debug surface
+
+| ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------|--------------|------|----------------|
+| B.08 | **Application trace store split** — factories used `InMemoryRunTraceStore` while debug API reads SQLite | §33, §42.24 | **High** | **Done** | HTTP `/debug/tasks/*` 503 in product apps | Tier-3 | `wire_nexus_observability` + `open_run_trace_store` (2026-05-27) |
+| B.09 | **Debug API trace reader** — only SQLite file path; no injectable in-memory / shared store handle | §19 | **Medium** | **Done** | Lab tests, local dev without file I/O | Tier-1 | `trace_store` on `create_debug_router` / `create_debug_app`; lab passes Nexus store (2026-05-27) |
+| B.10 | **NexusLoop runtime events in app factories** — all Tier-3 factories pass runtime events to Nexus | §42.24 | **Medium** | **Done** | Events 503 on `/debug/tasks/{id}/events` | Tier-3 | Legal + Research default SQLite; lab when path passed (2026-05-27) |
+| B.11 | **Metrics layer** — canon says event-first, trace-second, **metrics-third**; no unified metrics export | §42.1, §33 | **Low** | Open | Ops visibility, SLOs | Tier-0 | Defer until product deployment need |
+
+### B.3 Interaction surfaces (§18)
+
+| ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------|--------------|------|----------------|
+| B.12 | **Production Slack / Teams webhooks** — lab has debug intake + signature stub; no production inbound adapter deployment | §18 | **Medium** | **Done** | Organization Worker, HITL from chat | Tier-0 / Tier-3 | `POST /v1/interactions/intake` on lab app + shared `create_interaction_intake_router` (2026-05-27) |
+| B.13 | **Outbound delivery hardening** — retries, DLQ, delivery receipts for HITL notifications | §18, §42.10 | **Low** | HITL agents in prod | Tier-0 | Extend pluggable delivery with persistence |
+
+### B.6 Integration Library (§7.1)
+
+| ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------|--------------|------|----------------|
+| B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
+| B.19 | **P0 provider wraps** — M.4 catalog slugs | §7.1.3 | **High** | **Done** | Lab + first prod apps | Tier-0 | All P0 slugs wrapped + runtime adoption (2026-05-29) |
+| B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | Open | Multi-tenant applications | Tier-0 | Phase M.6 after M.4 |
+| B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | Open | PM / research agents | Tier-0 | Phase M.6; tools via ToolRuntime |
+| B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | Open | Org worker, scheduling agents | Tier-0 | Phase M.6 |
+| B.23 | **Prometheus observability_backend** — metrics export | §33, §7.1.3 | **Low** | Open | Ops / SLO | Tier-0 | After B.11 metrics layer design |
+| B.25 | **AWS cloud_platform facade** — auth + S3/SQS/DynamoDB/Secrets Manager defaults | §7.1.3 P1.1 | **Medium** | Open | AWS-hosted applications | Tier-0 | Phase M.6; infrastructure only |
+| B.26 | **Azure cloud_platform facade** — MI + Blob/Service Bus/Key Vault | §7.1.3 P1.1 | **Medium** | Open | Azure-hosted applications | Tier-0 | Phase M.6; infrastructure only |
+| B.27 | **GCP cloud_platform facade** — ADC + GCS/Pub/Sub/Secret Manager | §7.1.3 P1.1 | **Medium** | Open | GCP-hosted applications | Tier-0 | Phase M.6; infrastructure only |
+| B.24 | **Direct vendor SDK in agents** — audit + lint rule | §5.2, §7.1.4 | **Medium** | Open | Prevents catalog bypass | Tier-2 | Document in AGENT_CREATION_GUIDE; optional ruff rule |
+
+### B.4 Legacy & composition
+
+| ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------|--------------|------|----------------|
+| B.14 | **`ChatAgent` / legacy engine removal** — `LEGAL_USE_LEGACY_AGENT_ENGINE` removed | §39, §41 | **Medium** | **Done** | Single execution path for all agents | Tier-1 / Tier-3 | Legal `fastapi_router` requires `UnifiedTaskRunner`; legacy flags removed (2026-05-27) |
+| B.15 | **Legal full E2E gate (real LLM)** — deferred acceptance with live model | — | **Low** | Legal quality assurance | Tier-2 / CI | K.6; separate from Agent OS gate |
+| B.16 | **Lab agent auto-discovery** — new agents require explicit `wiring.py` register (by design, but easy to forget) | §7.4 | **Low** | Onboarding friction | Tier-3 | Optional env-driven plugin loader **only** if many agents; else keep explicit wiring + guide |
+
+### B.5 Test & certification hygiene
+
+| ID | Item | Canon | Priority | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------------|------|----------------|
+| B.17 | **`agents/` gate collection** — `signoff_probe` test marks `gate` but lives under `agents/` (may not be collected by default `pytest tests/`) | — | **Low** | **Done** | Sign-off smoke not in main gate count | Test infra | `testpaths` includes `agents/`; canonical gate: `uv run pytest -m gate -q` (2026-05-27) |
+| B.18 | **HTTP observability acceptance** — extend agent_os suite to assert trace on echo + graph scenarios (signoff_probe done) | Appendix A #9–10 | **Low** | Certification confidence | Test | Copy lab trace pattern to 1–2 acceptance tests |
+
+### B.6 Suggested priority order (for planning)
+
+```text
+1. ~~B.08, B.10~~ — observability consistency (Done 2026-05-27)
+2. ~~B.01, B.02~~ — checkpoint / full snapshot (Done 2026-05-27)
+3. ~~B.03, B.04~~ — governance facade + AgentDecision cleanup (Done 2026-05-27)
+4. ~~B.12, B.14~~ — product interaction + legacy removal (Done 2026-05-27)
+5. ~~B.05~~ — escalation production path (Done 2026-05-27)
+6. ~~B.09, B.17~~ — debug trace injection + gate collection (Done 2026-05-27)
+7. ~~B.06~~ — hook parity doc + lifecycle wiring (Done 2026-05-27)
+8. B.07, B.11, B.13, B.15–B.18 — as capacity allows
+```
+
+**Note:** Phase K business agents (Problem Radar, Vendor Discovery) remain **product-blocked** until explicit go — technical debt above does not auto-unblock K.1/K.2.
+
+---
+
+*Plan synced with codebase after B.06 paydown (2026-05-27). Gate: 250 tests.*
 

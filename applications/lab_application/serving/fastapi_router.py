@@ -1,0 +1,104 @@
+# © Artur Czarnecki. All rights reserved.
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Optional
+
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from pydantic import BaseModel, Field
+
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.task.task import Task, TaskContext
+from intergrax.runtime.task.task_run_bridge import new_run_id
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+
+class LabRunRequestV1(BaseModel):
+    tenant_id: str = "lab"
+    user_id: str = "lab-user"
+    session_id: Optional[str] = None
+    message: str = Field(min_length=1)
+    capability: str = Field(min_length=1)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    graph_id: Optional[str] = None
+
+
+class LabRunResponseV1(BaseModel):
+    task_id: str
+    run_id: Optional[str] = None
+    state: str
+    answer: str = ""
+    agent_id: Optional[str] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+@dataclass
+class LabRunService:
+    task_runner: UnifiedTaskRunner
+
+    @classmethod
+    def from_nexus_loop(cls, nexus_loop: NexusLoop) -> LabRunService:
+        return cls(task_runner=UnifiedTaskRunner(nexus_loop))
+
+    async def run_task(self, body: LabRunRequestV1) -> LabRunResponseV1:
+        run_id = new_run_id()
+        task = Task(
+            task_id=run_id,
+            tenant_id=body.tenant_id,
+            user_id=body.user_id,
+            session_id=body.session_id,
+            message=body.message,
+            context=TaskContext(capability=body.capability),
+            metadata=dict(body.metadata),
+        )
+        if body.graph_id:
+            task.metadata["graph_id"] = body.graph_id
+            task.sync_metadata()
+        result = await self.task_runner.run_task(task)
+        return LabRunResponseV1(
+            task_id=result.task_id,
+            run_id=result.run_id,
+            state=result.state.value,
+            answer=result.answer,
+            agent_id=result.agent_id,
+            metadata=dict(result.metadata),
+        )
+
+
+def mount_lab_routes(
+    app: FastAPI,
+    *,
+    nexus_loop: NexusLoop,
+    prefix: str = "/v1/lab",
+) -> LabRunService:
+    service = LabRunService.from_nexus_loop(nexus_loop)
+    router = APIRouter(prefix=prefix, tags=["lab"])
+
+    @router.post("/run", response_model=LabRunResponseV1)
+    async def lab_run(body: LabRunRequestV1) -> LabRunResponseV1:
+        try:
+            return await service.run_task(body)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"lab_run_error: {exc.__class__.__name__}",
+            ) from exc
+
+    @router.get("/agents")
+    async def lab_agents() -> dict[str, list[dict[str, object]]]:
+        agents: list[dict[str, object]] = []
+        for agent_id in nexus_loop.registry.list_agent_ids():
+            agent = nexus_loop.registry.get(agent_id)
+            contract = agent.get_contract()
+            agents.append(
+                {
+                    "agent_id": contract.id,
+                    "name": contract.name,
+                    "capabilities": list(contract.capabilities),
+                }
+            )
+        return {"agents": agents}
+
+    app.include_router(router)
+    return service

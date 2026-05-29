@@ -5,11 +5,15 @@
 
 from __future__ import annotations
 
-import os
 import sqlite3
 from pathlib import Path
 from typing import List, Optional
 
+from intergrax.integrations.providers.sqlite.paths import (
+    DEFAULT_HUMAN_DECISIONS_DB,
+    ENV_HUMAN_DECISIONS_DB,
+    resolve_human_decisions_db_path,
+)
 from intergrax.runtime.human.models import (
     EscalationTarget,
     HumanDecisionRecord,
@@ -17,23 +21,21 @@ from intergrax.runtime.human.models import (
 )
 from intergrax.utils.time_provider import SystemTimeProvider
 
-ENV_HUMAN_DECISIONS_DB = "INTERGRAX_HUMAN_DECISIONS_DB"
-DEFAULT_HUMAN_DECISIONS_DB = Path("build") / "intergrax_human_decisions.db"
-
-
-def resolve_human_decisions_db_path(explicit: Path | None = None) -> Path:
-    if explicit is not None:
-        return explicit
-    env = os.environ.get(ENV_HUMAN_DECISIONS_DB, "").strip()
-    if env:
-        return Path(env)
-    return DEFAULT_HUMAN_DECISIONS_DB
+__all__ = [
+    "DEFAULT_HUMAN_DECISIONS_DB",
+    "ENV_HUMAN_DECISIONS_DB",
+    "SQLiteHumanDecisionStore",
+    "resolve_human_decisions_db_path",
+    "open_human_decision_store",
+]
 
 
 def open_human_decision_store(db_path: Path | None = None) -> SQLiteHumanDecisionStore:
-    path = db_path or resolve_human_decisions_db_path(None)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return SQLiteHumanDecisionStore(db_path=path)
+    from intergrax.integrations.providers.sqlite import create_sqlite_human_decision_store
+
+    if db_path is not None:
+        return create_sqlite_human_decision_store(db_path=db_path)  # type: ignore[return-value]
+    return create_sqlite_human_decision_store()  # type: ignore[return-value]
 
 
 class SQLiteHumanDecisionStore:

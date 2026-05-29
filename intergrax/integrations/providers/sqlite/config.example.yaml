@@ -1,0 +1,6 @@
+# SQLite integration — copy to Tier-3 settings or export as env vars.
+# Env: INTERGRAX_SQLITE_DATA_DIR (default: build/)
+# Per-store overrides: INTERGRAX_TRACE_DB, INTERGRAX_RUNTIME_EVENTS_DB, …
+
+data_dir: build
+enabled: true

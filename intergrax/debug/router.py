@@ -30,6 +30,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from intergrax.debug.formatters import build_trace_payload
 from intergrax.debug.progress_service import TaskProgressService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
+from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.debug.models import (
     CheckpointItem,
     CheckpointListResponse,
@@ -50,7 +51,7 @@ from intergrax.debug.store import (
     open_default_task_checkpoint_persistence,
     open_runtime_event_persistence,
     open_task_checkpoint_persistence,
-    open_trace_reader,
+    resolve_trace_reader,
     resolve_trace_db_path,
 )
 from intergrax.experiments.models import (
@@ -69,12 +70,21 @@ from intergrax.runtime.long_running.persistence_contract import TaskCheckpointRe
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
 
 
-def _trace_reader_factory(db_path: Path | None) -> Callable[[], RunTraceReader]:
+def _trace_reader_factory(
+    db_path: Path | None,
+    trace_store: RunTraceReader | None = None,
+) -> Callable[[], RunTraceReader]:
+    if trace_store is not None:
+        def _open_injected() -> RunTraceReader:
+            return trace_store
+
+        return _open_injected
+
     resolved = resolve_trace_db_path(str(db_path) if db_path is not None else None)
 
     def _open() -> RunTraceReader:
         try:
-            return open_trace_reader(resolved)
+            return resolve_trace_reader(db_path=resolved)
         except FileNotFoundError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -143,11 +153,12 @@ def create_debug_router(
     checkpoints_db_path: Path | None = None,
     runtime_event_store: RuntimeEventPersistence | None = None,
     checkpoint_store: TaskCheckpointReader | None = None,
+    trace_store: RunTraceReader | None = None,
     hitl_service: DebugHitlResumeService | None = None,
     interaction_service: DebugInteractionIntakeService | None = None,
 ) -> APIRouter:
     router = APIRouter(prefix="/debug", tags=["debug"])
-    get_reader = _trace_reader_factory(db_path)
+    get_reader = _trace_reader_factory(db_path, trace_store)
     get_experiments = _experiment_store_factory(experiments_db_path)
     get_runtime_events = _runtime_event_store_factory(runtime_events_db_path, runtime_event_store)
     get_checkpoints = _checkpoint_store_factory(checkpoints_db_path, checkpoint_store)
@@ -179,7 +190,7 @@ def create_debug_router(
     ) -> RunDetailResponse:
         try:
             persisted = reader.read_run(run_id, tenant)
-        except ValueError as exc:
+        except (ValueError, KeyError) as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         return RunDetailResponse.from_persisted(persisted)
 
@@ -195,7 +206,7 @@ def create_debug_router(
     ) -> TraceResponse:
         try:
             persisted = reader.read_run(run_id, tenant)
-        except ValueError as exc:
+        except (ValueError, KeyError) as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         payload = build_trace_payload(persisted, include_runtime=include_runtime)
         return TraceResponse(
@@ -318,16 +329,19 @@ def create_debug_router(
             checkpoint_id=result.summary.checkpoint_id,
         )
 
-    @router.post("/interactions/intake", response_model=InteractionIntakeResponse)
-    async def interaction_intake(
-        request: Request,
-        tenant: str = Query(default="default", description="Tenant id when payload omits team_id"),
-        execute: bool = Query(
-            default=False,
-            description="When true, run the normalized Task through NexusLoop",
-        ),
-    ) -> InteractionIntakeResponse:
-        if interaction_service is None:
+    if interaction_service is not None:
+        router.include_router(
+            create_interaction_intake_router(
+                interaction_service,
+                tags=["debug"],
+                execute_default=False,
+            ),
+            prefix="/interactions",
+        )
+    else:
+
+        @router.post("/interactions/intake", response_model=InteractionIntakeResponse)
+        async def interaction_intake_unconfigured() -> InteractionIntakeResponse:
             raise HTTPException(
                 status_code=503,
                 detail=(
@@ -335,42 +349,6 @@ def create_debug_router(
                     "Pass registry=AgentRegistry(...) to create_debug_app."
                 ),
             )
-        body = await request.body()
-        headers = {key: value for key, value in request.headers.items()}
-        content_type = request.headers.get("content-type", "")
-        try:
-            intake = await interaction_service.intake_http(
-                headers=headers,
-                body=body,
-                content_type=content_type,
-                tenant_id=tenant,
-                execute=execute,
-            )
-        except ValueError as exc:
-            message = str(exc)
-            if "signature" in message.lower() or "Slack" in message or "Teams" in message:
-                raise HTTPException(status_code=401, detail=message) from exc
-            raise HTTPException(status_code=422, detail=message) from exc
-        except TypeError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-        task = intake.task
-        response = InteractionIntakeResponse(
-            task_id=task.task_id,
-            tenant_id=task.tenant_id,
-            user_id=task.user_id,
-            capability=task.context.capability,
-            message=task.message,
-            interaction_channel=DebugInteractionIntakeService.interaction_channel(task),
-            executed=intake.executed,
-        )
-        if intake.result is not None:
-            response.state = intake.result.state.value
-            response.answer = intake.result.answer
-            response.run_id = intake.result.run_id
-            response.resume_token = intake.result.summary.resume_token
-            response.checkpoint_id = intake.result.summary.checkpoint_id
-        return response
 
     @router.get("/experiments", response_model=ExperimentListResponse)
     def list_experiments(

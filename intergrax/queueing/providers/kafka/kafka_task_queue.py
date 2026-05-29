@@ -23,11 +23,7 @@ class KafkaTaskQueue(BrokerBackedTaskQueueBase):
     """
     Kafka-backed TaskQueue implementation.
 
-    This provider is transport-only:
-    - Kafka is used for publishing tasks
-    - DistributedKVStore is used for status/result storage
-
-    Worker consumption loop must be implemented separately.
+    Composition root: ``intergrax.integrations.providers.kafka.create_kafka_integration``.
     """
 
     def __init__(

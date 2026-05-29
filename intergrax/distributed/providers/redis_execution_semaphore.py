@@ -2,6 +2,12 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+"""
+Redis-backed distributed execution semaphore.
+
+Composition root: ``intergrax.integrations.providers.redis.create_redis_execution_semaphore``.
+"""
+
 from __future__ import annotations
 
 import uuid

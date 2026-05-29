@@ -13,8 +13,6 @@ from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 LegalIdentitySource = Literal["body_or_context", "context_only"]
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.agent_engine import AgentEngine
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task_run_bridge import new_run_id, runtime_request_with_run_id
@@ -28,7 +26,7 @@ from legal_application.serving.schemas import (
 )
 from intergrax.fastapi_core.context import RequestContext, get_request_context
 from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 
 
 class LegalAgentService(Protocol):
@@ -48,10 +46,9 @@ class LegalAgentServingConfig:
 
     registry: AgentRegistry
     default_agent_id: str
+    task_runner: UnifiedTaskRunner = field(repr=False)
     identity_source: LegalIdentitySource = "body_or_context"
-    use_nexus_loop: bool = True
     trace_store: Optional[RunTraceWriter] = None
-    task_runner: Optional[UnifiedTaskRunner] = None
 
     def __post_init__(self) -> None:
         if not self.registry.has(self.default_agent_id):
@@ -67,16 +64,14 @@ class LegalAgentServingConfig:
         *,
         default_agent_id: str,
         identity_source: LegalIdentitySource = "body_or_context",
-        use_nexus_loop: bool = True,
         trace_store: Optional[RunTraceWriter] = None,
-        task_runner: Optional[UnifiedTaskRunner] = None,
+        task_runner: UnifiedTaskRunner,
     ) -> "LegalAgentServingConfig":
         registry = AgentRegistry.from_agents(dict(agents))
         return cls(
             registry=registry,
             default_agent_id=default_agent_id,
             identity_source=identity_source,
-            use_nexus_loop=use_nexus_loop,
             trace_store=trace_store,
             task_runner=task_runner,
         )
@@ -84,22 +79,10 @@ class LegalAgentServingConfig:
 
 @dataclass
 class DefaultLegalAgentService:
-    """Validate identity, drive UnifiedTaskRunner (NexusLoop) or legacy AgentEngine, map responses."""
+    """Validate identity, drive UnifiedTaskRunner (NexusLoop), map responses."""
 
     config: LegalAgentServingConfig
     mapper: LegalApiV1RuntimeMapper = field(default_factory=LegalApiV1RuntimeMapper)
-    _task_runner: Optional[UnifiedTaskRunner] = field(default=None, init=False, repr=False)
-
-    def __post_init__(self) -> None:
-        if self.config.use_nexus_loop:
-            runner = self.config.task_runner
-            if runner is None:
-                nexus = NexusLoop(
-                    self.config.registry,
-                    trace_store=self.config.trace_store,
-                )
-                runner = UnifiedTaskRunner(nexus)
-            object.__setattr__(self, "_task_runner", runner)
 
     def _data_compliance_for_request(self, runtime_req: RuntimeRequest) -> DataCompliancePolicy:
         agent = self.config.registry.get(runtime_req.agent_id or self.config.default_agent_id)
@@ -123,25 +106,19 @@ class DefaultLegalAgentService:
         )
 
         try:
-            if self._task_runner is not None:
-                from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer
-
-                run_id = new_run_id()
-                nexus_req = runtime_request_with_run_id(runtime_req, run_id)
-                result = await self._task_runner.run_runtime_request(
-                    nexus_req,
-                    tenant_id=tenant,
-                    user_id=user,
-                    run_id=run_id,
-                    capability="legal.contract_review",
-                )
-                answer = RuntimeAnswer(
-                    run_id=result.run_id or run_id,
-                    answer=result.answer,
-                )
-            else:
-                engine = AgentEngine(self.config.registry)
-                answer = await engine.run(runtime_req)
+            run_id = new_run_id()
+            nexus_req = runtime_request_with_run_id(runtime_req, run_id)
+            result = await self.config.task_runner.run_runtime_request(
+                nexus_req,
+                tenant_id=tenant,
+                user_id=user,
+                run_id=run_id,
+                capability="legal.contract_review",
+            )
+            answer = RuntimeAnswer(
+                run_id=result.run_id or run_id,
+                answer=result.answer,
+            )
         except ValueError as exc:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -256,9 +233,8 @@ def mount_legal_agent_routes(
     prefix: str = "/v1/legal",
     mapper: LegalApiV1RuntimeMapper | None = None,
     identity_source: LegalIdentitySource = "body_or_context",
-    use_nexus_loop: bool = True,
     trace_store: Optional[RunTraceWriter] = None,
-    task_runner: Optional[UnifiedTaskRunner] = None,
+    task_runner: UnifiedTaskRunner,
 ) -> DefaultLegalAgentService:
     """
     Register legal routes on ``app`` via ``dependency_overrides``.
@@ -272,7 +248,6 @@ def mount_legal_agent_routes(
             agents,
             default_agent_id=default_agent_id,
             identity_source=identity_source,
-            use_nexus_loop=use_nexus_loop,
             trace_store=trace_store,
             task_runner=task_runner,
         )
@@ -281,7 +256,6 @@ def mount_legal_agent_routes(
             registry=registry,
             default_agent_id=default_agent_id,
             identity_source=identity_source,
-            use_nexus_loop=use_nexus_loop,
             trace_store=trace_store,
             task_runner=task_runner,
         )

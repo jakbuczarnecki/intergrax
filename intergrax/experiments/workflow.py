@@ -15,14 +15,17 @@ from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 
+from intergrax.integrations.providers.sqlite import (
+    create_sqlite_experiment_store,
+    create_sqlite_trace_store,
+)
 from intergrax.experiments.models import (
     ExperimentDecision,
     ExperimentRecord,
     RegisterExperimentRequest,
 )
-from intergrax.experiments.store import SQLiteExperimentStore, open_experiment_store
+from intergrax.experiments.store import SQLiteExperimentStore
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
@@ -100,7 +103,11 @@ class ExperimentSession:
         self.tenant_id = tenant_id
         self.user_id = user_id
         self.auto_link_runs = auto_link_runs
-        self._experiment_store: SQLiteExperimentStore = open_experiment_store(experiments_db)
+        self._experiment_store: SQLiteExperimentStore = (
+            create_sqlite_experiment_store(db_path=experiments_db)  # type: ignore[assignment]
+            if experiments_db is not None
+            else create_sqlite_experiment_store()  # type: ignore[assignment]
+        )
         self._trace_db = trace_db
         if trace_db is not None:
             trace_db.parent.mkdir(parents=True, exist_ok=True)
@@ -119,7 +126,7 @@ class ExperimentSession:
     def build_nexus_loop(self, registry: AgentRegistry) -> NexusLoop:
         trace_store = None
         if self._trace_db is not None:
-            trace_store = SQLiteRunTraceStore(db_path=self._trace_db)
+            trace_store = create_sqlite_trace_store(db_path=self._trace_db)
         return NexusLoop(registry, trace_store=trace_store)
 
     async def run(
@@ -179,7 +186,7 @@ class ExperimentSession:
                 "Trace database not configured or missing. "
                 "Pass trace_db= to ExperimentSession before running."
             )
-        store = SQLiteRunTraceStore(db_path=self._trace_db)
+        store = create_sqlite_trace_store(db_path=self._trace_db)
         persisted = store.read_run(run_id, self.tenant_id)
         stats = persisted.metadata.stats if persisted.metadata else None
         llm_usage = dict(stats.llm_usage or {}) if stats else {}

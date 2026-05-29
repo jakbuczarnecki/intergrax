@@ -5,14 +5,13 @@
 """
 Distributed layer composition root.
 
-This module is responsible for wiring concrete distributed providers
-into the DistributedProviderRegistry.
-
-It is the only place where registry and concrete providers are coupled.
+Redis: use ``intergrax.integrations.providers.redis`` (``create_redis_integration``,
+``register_redis_integration``). This bootstrap only registers the KV store **class**
+for legacy ``DistributedProviderRegistry`` resolution.
 """
 
 from intergrax.distributed.registry import DistributedProviderRegistry
-from intergrax.distributed.providers.redis_kv_store import RedisKVStore
+from intergrax.integrations.providers.redis import RedisKVStore, register_redis_integration
 
 
 def bootstrap_default_providers(
@@ -23,4 +22,5 @@ def bootstrap_default_providers(
 
     This function must be called during application composition phase.
     """
+    register_redis_integration()
     registry.register("redis", RedisKVStore)
