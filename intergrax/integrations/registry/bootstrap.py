@@ -5,8 +5,6 @@
 
 from __future__ import annotations
 
-from intergrax.integrations.providers.redis.register import register_redis_integration
-
 _BOOTSTRAPPED = False
 
 
@@ -16,10 +14,14 @@ def register_default_integrations(*, override: bool = False) -> None:
 
     Call from Tier-3 application factories before ``resolve()``.
     """
+    from intergrax.integrations.providers.redis.register import register_redis_integration
+    from intergrax.integrations.providers.sqlite.register import register_sqlite_integration
+
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
         return
     register_redis_integration(override=override)
+    register_sqlite_integration(override=override)
     _BOOTSTRAPPED = True
 
 

@@ -176,7 +176,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
-| §7.1 Integration Library | Catalog + contracts + providers | **Partial** | Core **Done**; M.4 in progress — **redis Done** (2026-05-29) |
+| §7.1 Integration Library | Catalog + contracts + providers | **Partial** | Core **Done**; M.4 in progress — **redis + sqlite Done** |
 
 | §19 Debug surface | CLI / API | **Done** | D.1 CLI + D.2 API ✅ |
 
@@ -550,7 +550,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | Slug | Category | Status | Package | Legacy source |
 |------|----------|--------|---------|---------------|
 | `redis` | key_value_cache | **Done** | `providers/redis/` — `create_redis_integration()` (KV, idempotency, rate limit, semaphore, rerank) |
-| `sqlite` | relational_store | Pending | — | `runtime/*/stores/sqlite_*.py` |
+| `sqlite` | relational_store | **Done** | `providers/sqlite/` — `create_sqlite_integration()` (trace, events, checkpoints, HITL, …) |
 | `kafka` | message_bus | Pending | — | `queueing/providers/kafka/` |
 | `celery` | message_bus | Pending | — | `queueing/providers/celery/` |
 | `google_cse` | search_provider | Pending | — | `websearch/providers/google_cse_provider.py` |
@@ -708,7 +708,7 @@ providers/gcp/
 | `websearch/providers/bing_provider.py` | `bing` | Register |
 | `runtime/notifications/adapters/` | `slack`, `teams`, `webhook` | Register under notification_channel |
 | `runtime/interactions/adapters/` | `slack`, `teams`, `lab_json` | Register under interaction_surface |
-| `runtime/*/stores/sqlite_*.py` | `sqlite` | Single relational_store facade; apps pick SQLite backend |
+| `runtime/*/stores/sqlite_*.py` (+ store openers) | `sqlite` | **Done** — single entry `integrations/providers/sqlite/create_sqlite_integration()` |
 | `rag/vectorstore/providers/*` | vector slugs | Catalog entry only; implementation stays in `rag/` |
 
 **Not migrated to `integrations/`:** `intergrax/llm_adapters/` — LLM providers are a separate Tier-0 concern (§7.1.2 out-of-scope table).
@@ -727,20 +727,22 @@ Conformance test pattern: given a fake backend, assert all Protocol methods beha
 #### M.7 — Tier-3 composition example
 
 ```python
-# applications/my_app/settings.py
-from intergrax.integrations.registry.factory import build_profile_from_env
-
-INTEGRATION_PROFILE = build_profile_from_env()  # reads INTERGRAX_INTEGRATION_* 
-
 # applications/my_app/factory.py
-from intergrax.integrations.registry.factory import resolve
+from intergrax.integrations import (
+    IntegrationCategory,
+    IntegrationProfile,
+    register_default_integrations,
+)
 
 def create_app():
-    cloud = resolve("cloud_platform")         # aws | azure | gcp | none
-    db = resolve("relational_store")          # sqlite | postgresql | cloud default
-    cache = resolve("key_value_cache")
-    storage = resolve("object_storage")       # s3 | azure_blob | gcs from cloud when set
-    notifier = resolve("notification_channel")
+    register_default_integrations()
+    profile = IntegrationProfile.lab()  # or build_profile_from_env()
+
+    cloud = profile.resolve(IntegrationCategory.CLOUD_PLATFORM)       # aws | azure | gcp
+    db = profile.resolve(IntegrationCategory.RELATIONAL_STORE)        # sqlite | postgresql
+    cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
+    storage = profile.resolve(IntegrationCategory.OBJECT_STORAGE)
+    notifier = profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)
     # wire into Nexus factories, not into agents/
 ```
 
@@ -1179,7 +1181,9 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Date | ID | Summary |
 |------|-----|---------|
-| 2026-05-29 | M.4-redis | Complete bundle: `create_redis_integration()` — KV, idempotency, rate limit, semaphore, rerank; 42+ integration unit tests |
+| 2026-05-29 | M.4-sqlite-adopt | Runtime `open_*` + apps delegate to `integrations/providers/sqlite/`; `opens.py` sole instantiator |
+| 2026-05-29 | M.4-sqlite | `providers/sqlite/` + bundle (10 domain stores); lazy bootstrap + package `__init__` |
+| 2026-05-29 | M.4-redis | Complete bundle: `create_redis_integration()` — KV, idempotency, rate limit, semaphore, rerank |
 | 2026-05-27 | B.08, B.10 | `wire_nexus_observability` + SQLite defaults in Legal / Research / Lab factories; integration test |
 | 2026-05-27 | B.01, B.02 | `RuntimeCheckpoint` full snapshot + UAEP mid-step cursor/resume; acceptance `05b` |
 | 2026-05-27 | B.12, B.14 | Production `POST /v1/interactions/intake` on lab; Legal legacy `AgentEngine` removed |
@@ -1220,7 +1224,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
-| B.19 | **P0 provider wraps** — sqlite, kafka, celery, search, slack/teams | §7.1.3 | **High** | **In progress** | Lab + first prod apps | Tier-0 | **redis Done** (2026-05-29); remainder Phase M.4 |
+| B.19 | **P0 provider wraps** — kafka, celery, search, slack/teams | §7.1.3 | **High** | **In progress** | Lab + first prod apps | Tier-0 | **redis + sqlite Done**; remainder Phase M.4 |
 | B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | Open | Multi-tenant applications | Tier-0 | Phase M.6 after M.4 |
 | B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | Open | PM / research agents | Tier-0 | Phase M.6; tools via ToolRuntime |
 | B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | Open | Org worker, scheduling agents | Tier-0 | Phase M.6 |

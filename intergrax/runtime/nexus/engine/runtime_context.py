@@ -15,12 +15,11 @@ from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
 from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import LLMUsageRunRecord
 from intergrax.runtime.nexus.tools import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
+from intergrax.integrations.providers.sqlite import create_sqlite_trace_store
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 from intergrax.runtime.replay.service import ReplayService
 from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
-from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
 from intergrax.tools.registry import ToolRegistry
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -327,9 +326,7 @@ class RuntimeContext:
             if config.trace_db_path is None:
                 raise ValueError("trace_db_path must be set in production_mode.")
 
-            trace_writer = SQLiteRunTraceStore(
-                db_path=Path(config.trace_db_path)
-            )
+            trace_writer = create_sqlite_trace_store(db_path=Path(config.trace_db_path))  # type: ignore[assignment]
         
         return cls(
             config=config,

@@ -8,27 +8,30 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from intergrax.integrations.providers.sqlite.paths import (
+    DEFAULT_TASK_MEMORY_DB,
+    ENV_TASK_MEMORY_DB,
+    resolve_task_memory_db_path,
+)
 from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
 from intergrax.runtime.task_memory.stores.sqlite_task_memory_store import SQLiteTaskMemoryStore
 
-ENV_TASK_MEMORY_DB = "INTERGRAX_TASK_MEMORY_DB"
-DEFAULT_TASK_MEMORY_DB = Path("build") / "intergrax_task_memory.db"
-
-
-def resolve_task_memory_db_path(explicit: Path | None = None) -> Path:
-    if explicit is not None:
-        return explicit
-    env = os.environ.get(ENV_TASK_MEMORY_DB, "").strip()
-    if env:
-        return Path(env)
-    return DEFAULT_TASK_MEMORY_DB
+__all__ = [
+    "DEFAULT_TASK_MEMORY_DB",
+    "ENV_TASK_MEMORY_DB",
+    "resolve_task_memory_db_path",
+    "open_task_memory_store",
+    "resolve_task_memory_persistence",
+]
 
 
 def open_task_memory_store(db_path: Path | None = None) -> SQLiteTaskMemoryStore:
-    """Open the default SQLite TaskMemory backend (lab / local persistence)."""
-    path = db_path or resolve_task_memory_db_path(None)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return SQLiteTaskMemoryStore(db_path=path)
+    """Open SQLite TaskMemory via ``integrations.providers.sqlite``."""
+    from intergrax.integrations.providers.sqlite import create_sqlite_task_memory_store
+
+    if db_path is not None:
+        return create_sqlite_task_memory_store(db_path=db_path)  # type: ignore[return-value]
+    return create_sqlite_task_memory_store()  # type: ignore[return-value]
 
 
 def resolve_task_memory_persistence(

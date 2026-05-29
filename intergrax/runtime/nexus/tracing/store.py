@@ -5,26 +5,26 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
+from intergrax.integrations.providers.sqlite import create_sqlite_trace_store
+from intergrax.integrations.providers.sqlite.paths import (
+    DEFAULT_TRACE_DB,
+    ENV_TRACE_DB,
+    resolve_trace_db_path,
+)
 from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
 
-ENV_TRACE_DB = "INTERGRAX_TRACE_DB"
-DEFAULT_TRACE_DB = Path("build") / "intergrax_trace.db"
-
-
-def resolve_trace_db_path(explicit: Path | str | None = None) -> Path:
-    if explicit:
-        return Path(explicit)
-    env = os.environ.get(ENV_TRACE_DB, "").strip()
-    if env:
-        return Path(env)
-    return DEFAULT_TRACE_DB
+__all__ = [
+    "DEFAULT_TRACE_DB",
+    "ENV_TRACE_DB",
+    "resolve_trace_db_path",
+    "open_run_trace_store",
+]
 
 
 def open_run_trace_store(db_path: Path | None = None) -> SQLiteRunTraceStore:
-    """Open (and create) the default SQLite-backed run trace store."""
-    path = db_path or resolve_trace_db_path(None)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return SQLiteRunTraceStore(db_path=path)
+    """Open SQLite run trace store via ``integrations.providers.sqlite``."""
+    if db_path is not None:
+        return create_sqlite_trace_store(db_path=db_path)  # type: ignore[return-value]
+    return create_sqlite_trace_store()  # type: ignore[return-value]

@@ -623,7 +623,7 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 
 | Slug | Category | Status | Rationale |
 |------|----------|--------|-----------|
-| `sqlite` | relational_store | **Exists** → Catalog | Default lab persistence (trace, checkpoint, experiments, HITL) |
+| `sqlite` | relational_store | **Done** | `providers/sqlite/` — **single entry** `create_sqlite_integration()` (trace, events, checkpoints, HITL, task memory, experiments, idempotency, session, org) |
 | `postgresql` | relational_store | Planned | Production relational store; multi-tenant apps |
 | `redis` | key_value_cache | **Done** | `providers/redis/` — **single entry** `create_redis_integration()` wraps KV, idempotency, rate limit, semaphore, rerank cache |
 | `kafka` | message_bus | **Exists** → Catalog | Async worker scale-out, event streaming |
@@ -696,28 +696,30 @@ Applications (Tier-3) **compose** integrations at startup — agents stay vendor
 ```text
 applications/legal_application/settings.py
     → declares IntegrationProfile (enabled slugs + env)
-    → IntegrationRegistry.resolve("relational_store") → PostgreSQL adapter
+    → IntegrationRegistry.resolve(IntegrationCategory.RELATIONAL_STORE) → PostgreSQL adapter
     → wire_nexus_observability(trace_store=…, event_store=…)
     → create_notification_adapter("slack")
     → create_interaction_adapter("teams")
 ```
 
-`IntegrationProfile` uses typed slugs (`IntegrationSlug` enum). YAML/env may use strings; application code must not.
+`IntegrationProfile` uses typed slugs (`IntegrationSlug`) and typed categories (`IntegrationCategory`) in application code. YAML/env may use strings; Tier-3 Python code must not.
 
 ```python
 from intergrax.integrations import (
+    IntegrationCategory,
     IntegrationProfile,
     IntegrationSlug,
     register_default_integrations,
-    resolve,
 )
 
 register_default_integrations()
 profile = IntegrationProfile(
     key_value_cache=IntegrationSlug.REDIS,
     relational_store=IntegrationSlug.SQLITE,
+    options={IntegrationSlug.SQLITE: {"data_dir": "build/lab"}},
 )
-cache = resolve("key_value_cache", profile=profile)
+cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
+db = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
 ```
 
 Declarative YAML (Tier-3 / deployment only):
@@ -732,7 +734,7 @@ integrations:
   search_provider: google_cse
 ```
 
-**Forbidden:** hard-coding `import redis` or `psycopg2` inside `agents/<name>/`. **Required:** `register_default_integrations()` in Tier-3 factory, then `resolve()` or `create_redis_integration()` / provider factories from `integrations/providers/<slug>/`; agents use ToolRuntime for tools.
+**Forbidden:** hard-coding `import redis` or `psycopg2` inside `agents/<name>/`. **Required:** `register_default_integrations()` in Tier-3 factory, then `resolve()`, `create_redis_integration()`, `create_sqlite_integration()`, or other factories from `integrations/providers/<slug>/`; agents use ToolRuntime for tools.
 
 ### 7.1.5 Provider Maintenance Model
 

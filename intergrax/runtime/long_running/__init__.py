@@ -1,7 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.models import NotificationMessage, TaskCheckpoint
 from intergrax.runtime.long_running.notification import (
     ENV_SLACK_WEBHOOK_URL,
@@ -11,13 +10,6 @@ from intergrax.runtime.long_running.notification import (
     SlackNotificationAdapter,
     TeamsNotificationAdapter,
     resolve_notification_adapter,
-)
-from intergrax.runtime.long_running.scheduler import (
-    ENV_SCHEDULER_POLL_SECONDS,
-    DEFAULT_SCHEDULER_POLL_SECONDS,
-    LongRunningScheduler,
-    TaskResumeExecutor,
-    UnifiedTaskResumeExecutor,
 )
 from intergrax.runtime.long_running.partial_results import (
     PartialResultSnapshot,
@@ -59,3 +51,31 @@ __all__ = [
     "resolve_notification_adapter",
     "resolve_task_checkpoints_db_path",
 ]
+
+
+def __getattr__(name: str):
+    if name == "LongRunningCoordinator":
+        from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
+
+        return LongRunningCoordinator
+    if name in {"LongRunningScheduler", "TaskResumeExecutor", "UnifiedTaskResumeExecutor"}:
+        from intergrax.runtime.long_running import scheduler as _scheduler
+
+        return getattr(_scheduler, name)
+    if name in {
+        "DEFAULT_SCHEDULER_POLL_SECONDS",
+        "ENV_SCHEDULER_POLL_SECONDS",
+    }:
+        from intergrax.runtime.long_running import scheduler as _scheduler
+
+        return getattr(_scheduler, name)
+    if name in {"ScheduledResume", "ScheduledResumeStatus"}:
+        from intergrax.runtime.long_running.scheduled_resume import (
+            ScheduledResume,
+            ScheduledResumeStatus,
+        )
+
+        if name == "ScheduledResume":
+            return ScheduledResume
+        return ScheduledResumeStatus
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

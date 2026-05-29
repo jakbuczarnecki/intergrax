@@ -5,11 +5,15 @@
 
 from __future__ import annotations
 
-import os
 import sqlite3
 from pathlib import Path
 from typing import List, Optional
 
+from intergrax.integrations.providers.sqlite.paths import (
+    DEFAULT_EXPERIMENTS_DB,
+    ENV_EXPERIMENTS_DB,
+    resolve_experiments_db_path,
+)
 from intergrax.experiments.models import (
     ExperimentDecision,
     ExperimentRecord,
@@ -17,23 +21,21 @@ from intergrax.experiments.models import (
 )
 from intergrax.utils.time_provider import SystemTimeProvider
 
-ENV_EXPERIMENTS_DB = "INTERGRAX_EXPERIMENTS_DB"
-DEFAULT_EXPERIMENTS_DB = Path("build") / "intergrax_experiments.db"
-
-
-def resolve_experiments_db_path(explicit: str | None = None) -> Path:
-    if explicit:
-        return Path(explicit)
-    env = os.environ.get(ENV_EXPERIMENTS_DB, "").strip()
-    if env:
-        return Path(env)
-    return DEFAULT_EXPERIMENTS_DB
+__all__ = [
+    "DEFAULT_EXPERIMENTS_DB",
+    "ENV_EXPERIMENTS_DB",
+    "SQLiteExperimentStore",
+    "resolve_experiments_db_path",
+    "open_experiment_store",
+]
 
 
 def open_experiment_store(db_path: Path | None = None) -> SQLiteExperimentStore:
-    path = db_path or resolve_experiments_db_path(None)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return SQLiteExperimentStore(db_path=path)
+    from intergrax.integrations.providers.sqlite import create_sqlite_experiment_store
+
+    if db_path is not None:
+        return create_sqlite_experiment_store(db_path=db_path)  # type: ignore[return-value]
+    return create_sqlite_experiment_store()  # type: ignore[return-value]
 
 
 class SQLiteExperimentStore:

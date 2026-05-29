@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Mapping, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -26,18 +26,14 @@ class IntegrationProfile(BaseModel):
     """
     Typed provider selection per category for a Tier-3 application.
 
-    Use ``IntegrationSlug`` members — not raw strings — in application code::
+    Use ``IntegrationSlug`` and ``IntegrationCategory`` — not raw strings — in application code::
 
-        IntegrationProfile(
+        profile = IntegrationProfile(
             relational_store=IntegrationSlug.SQLITE,
             key_value_cache=IntegrationSlug.REDIS,
-            cloud_platform=IntegrationSlug.AWS,
+            options={IntegrationSlug.SQLITE: {"data_dir": "build/lab"}},
         )
-
-    Or a preset::
-
-        IntegrationProfile.lab()
-        IntegrationProfile.with_cloud_platform(IntegrationSlug.AWS)
+        store = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
 
     Env/YAML may still supply strings; they are coerced to ``IntegrationSlug``.
     """
@@ -111,6 +107,21 @@ class IntegrationProfile(BaseModel):
         from intergrax.integrations.registry.slugs import coerce_slug
 
         return dict(self.options.get(coerce_slug(slug), {}))
+
+    def resolve(
+        self,
+        category: IntegrationCategory,
+        *,
+        config: Optional[Mapping[str, Any]] = None,
+    ) -> Any:
+        """
+        Instantiate the provider for ``category`` using this profile.
+
+        Application code MUST pass ``IntegrationCategory`` — not category name strings.
+        """
+        from intergrax.integrations.registry.factory import resolve_from_profile
+
+        return resolve_from_profile(self, category, config=config)
 
     @classmethod
     def lab(cls) -> IntegrationProfile:

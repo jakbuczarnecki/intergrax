@@ -64,3 +64,18 @@ def test_yaml_string_coercion() -> None:
 def test_rejects_unknown_slug_string() -> None:
     with pytest.raises(ValidationError):
         IntegrationProfile(relational_store="not_a_real_backend")
+
+
+def test_profile_resolve_uses_typed_category(tmp_path) -> None:
+    from intergrax.integrations.contracts.base import IntegrationCategory
+    from intergrax.integrations.providers.sqlite.register import register_sqlite_integration
+    from intergrax.integrations.registry.catalog import clear_catalog
+
+    clear_catalog()
+    register_sqlite_integration()
+    profile = IntegrationProfile(
+        relational_store=IntegrationSlug.SQLITE,
+        options={IntegrationSlug.SQLITE: {"data_dir": str(tmp_path)}},
+    )
+    store = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
+    assert store.db_path == tmp_path / "intergrax.db"
