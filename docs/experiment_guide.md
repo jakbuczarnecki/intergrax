@@ -84,10 +84,10 @@ Inspect pause events: `HUMAN_APPROVAL_REQUESTED` / `HUMAN_APPROVAL_RECEIVED` on 
 uv run uvicorn legal_application.host.main:app --host 0.0.0.0 --port 8000
 ```
 
-Optional global loop for HTTP:
+HTTP `/v1/legal/chat` uses **NexusLoop + UnifiedTaskRunner** by default (§41). Legacy `AgentEngine` opt-out:
 
 ```bash
-set LEGAL_USE_NEXUS_LOOP=true
+set LEGAL_USE_LEGACY_AGENT_ENGINE=true
 ```
 
 ## 5. Research pipeline (multi-agent)
@@ -271,3 +271,94 @@ task = Task(
 `ContextManager` reads `task.options.context` when building `AgentContextBundle` for graph nodes.
 
 Legacy flat metadata keys (`context_summary_tier`, `context_assembly_policy`, …) are still hydrated by `task_metadata_bridge` for JSON/API compatibility, but new code should use `TaskExecutionOptions.context` directly.
+
+## 13. Unified run API (Phase J.2)
+
+FastAPI Core `POST /runs` accepts a Task payload and executes it through the same path as Legal/Research HTTP:
+
+```python
+from intergrax.runtime.task.task import Task, TaskContext
+from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
+
+payload = task_to_execution_payload(
+    Task(
+        tenant_id="t1",
+        user_id="u1",
+        message="hello",
+        context=TaskContext(capability="echo.basic"),
+    )
+)
+# POST /runs  body={"payload": payload}
+```
+
+`NexusTaskExecutionAdapter` → `UnifiedTaskRunner` → `NexusLoop.handle_task`.
+
+## 14. Worker queue (Phase J.3)
+
+For async/off-process execution, wire `QueuedNexusExecutionAdapter` instead of in-process `NexusTaskExecutionAdapter`:
+
+```python
+from intergrax.queueing.providers.celery.celery_task_queue import CeleryTaskQueue
+from intergrax.runtime.task.queued_nexus_execution_adapter import QueuedNexusExecutionAdapter
+from intergrax.runtime.task.worker_bootstrap import create_nexus_celery_worker_app
+
+app = create_nexus_celery_worker_app(
+    app_name="intergrax_worker",
+    broker_url="redis://localhost:6379/0",
+    backend_url="redis://localhost:6379/1",
+    agent_registry=registry,
+    checkpoint_store=checkpoint_store,  # optional; required for long-running resume
+)
+queue = CeleryTaskQueue(app)
+adapter = QueuedNexusExecutionAdapter(queue, run_service, wait_for_result=False)
+```
+
+Worker logical task name: `nexus.task.v2`. Payload is `encode_execution_request(ExecutionRequest)` — same Task contract as `/runs`.
+
+Lab/gate tests use `task_always_eager=True` on the Celery app and `wait_for_result=True` on the adapter for single-process verification.
+
+Run a worker process from your application composition root (the module that calls `create_nexus_celery_worker_app` and exposes the `Celery` instance).
+
+## 15. Long-running scheduler (Phase J.4)
+
+For paused long-running tasks, start an in-process scheduler alongside the API host:
+
+```python
+from intergrax.runtime.long_running.scheduler import (
+    LongRunningScheduler,
+    UnifiedTaskResumeExecutor,
+)
+from intergrax.runtime.long_running.store import open_task_checkpoint_store
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+store = open_task_checkpoint_store()
+runner = UnifiedTaskRunner(nexus_loop)
+scheduler = LongRunningScheduler(
+    store,
+    UnifiedTaskResumeExecutor(runner),
+    schedule_store=store,
+    ledger=store,
+    notification_adapter=notification_adapter,
+)
+await scheduler.start()
+```
+
+The scheduler:
+
+- enforces `HumanRequest.timeout_seconds` / `default_on_timeout` on paused checkpoints;
+- runs delayed resumes registered via `scheduler.schedule_resume(...)`;
+- notifies through the same Tier-0 notification adapters as HITL pause (log/Slack/Teams stubs).
+
+Poll interval: `INTERGRAX_SCHEDULER_POLL_SECONDS` (default 30). Checkpoint DB: `INTERGRAX_TASK_CHECKPOINTS_DB`.
+
+## 16. Partial results API (Phase J.5)
+
+Inspect long-running progress (checkpoints + runtime events):
+
+```http
+GET /debug/tasks/{task_id}/progress?tenant=t1
+```
+
+Response includes `progress_message`, `is_paused`, `partial_results[]` (per-checkpoint snapshots with UAEP/graph hints), and `progress_event_count` from `TASK_PROGRESS` runtime events.
+
+Nexus emits `RuntimeEventType.TASK_PROGRESS` on each long-running checkpoint and sends `partial_result.v1` notifications (log/Slack/Teams stubs) when the pause is not HITL-specific.

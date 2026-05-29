@@ -90,7 +90,7 @@ def create_debug_app(
             experiments_db_path=experiments_db_path,
             runtime_events_db_path=runtime_events_db_path,
             checkpoints_db_path=checkpoints_db_path,
-            runtime_event_store=runtime_event_store,
+            runtime_event_store=resolved_runtime_store,
             checkpoint_store=resolved_checkpoint_store,
             hitl_service=resolved_hitl,
             interaction_service=resolved_interaction,

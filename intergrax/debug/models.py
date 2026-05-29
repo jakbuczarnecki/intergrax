@@ -161,6 +161,33 @@ class CheckpointListResponse(BaseModel):
     checkpoints: List[CheckpointItem]
 
 
+class PartialResultItem(BaseModel):
+    checkpoint_id: str
+    progress_message: str
+    task_state: str
+    created_at_utc: str
+    uaep_step_index: Optional[int] = None
+    uaep_step_id: Optional[str] = None
+    last_step_summary: Optional[str] = None
+    partial_payload: Dict[str, Any] = Field(default_factory=dict)
+
+
+class TaskProgressResponse(BaseModel):
+    task_id: str
+    tenant_id: str
+    task_state: str
+    progress_message: str = ""
+    resume_token: Optional[str] = None
+    checkpoint_id: Optional[str] = None
+    notify_channel: Optional[str] = None
+    human_request_expires_at: Optional[str] = None
+    is_paused: bool = False
+    checkpoint_count: int = 0
+    progress_event_count: int = 0
+    partial_results: List[PartialResultItem] = Field(default_factory=list)
+    latest_partial_result: Optional[PartialResultItem] = None
+
+
 class SubmitHumanResponseRequest(BaseModel):
     response: str = Field(description="Human verdict text: approve, reject, escalate, …")
     resume_token: Optional[str] = Field(

@@ -9,6 +9,10 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.scheduled_resume import (
+    ScheduledResume,
+    ScheduledResumePersistence,
+)
 
 
 class TaskCheckpointReader(ABC):
@@ -31,10 +35,27 @@ class TaskCheckpointReader(ABC):
     ) -> Optional[TaskCheckpoint]:
         ...
 
+    @abstractmethod
+    def list_paused(self) -> List[TaskCheckpoint]:
+        """Latest checkpoint per task where state is a long-running pause."""
+        ...
 
-class TaskCheckpointPersistence(TaskCheckpointReader, ABC):
-    """Append-only checkpoint store (implementations: SQLite, …)."""
+
+class TaskCheckpointPersistence(TaskCheckpointReader, ScheduledResumePersistence, ABC):
+    """Append-only checkpoint store with optional scheduler tables."""
 
     @abstractmethod
     def save(self, checkpoint: TaskCheckpoint) -> TaskCheckpoint:
+        ...
+
+
+class SchedulerLedger(ABC):
+    """Idempotency ledger for scheduler actions."""
+
+    @abstractmethod
+    def has_action(self, ledger_key: str) -> bool:
+        ...
+
+    @abstractmethod
+    def record_action(self, ledger_key: str, *, action: str) -> None:
         ...

@@ -8,7 +8,7 @@ from fastapi import BackgroundTasks
 
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.execution.decisions.decision_record import ExecutionDecisionRecord
-from intergrax.fastapi_core.runs.models import RunResponse
+from intergrax.fastapi_core.runs.models import CreateRunRequest, RunResponse
 
 
 class RunService(Protocol):
@@ -21,7 +21,13 @@ class RunService(Protocol):
     - delegating persistence to RunStore
     """
 
-    def create_run(self, context: RequestContext, background_tasks: BackgroundTasks) -> RunResponse:
+    def create_run(
+        self,
+        context: RequestContext,
+        background_tasks: BackgroundTasks,
+        *,
+        create_request: Optional[CreateRunRequest] = None,
+    ) -> RunResponse:
         ...
 
     def get_run(self, run_id: str) -> RunResponse:

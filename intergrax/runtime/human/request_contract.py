@@ -73,8 +73,9 @@ class HumanTimeoutCoordinator:
     """
     Registers human-request deadlines on tasks.
 
-    Timeout enforcement is deferred to Phase J.4 (scheduler); G.4 only records
-    deadline metadata for notifications, checkpoints and future auto-resume.
+    Timeout enforcement is handled by ``LongRunningScheduler`` (Phase J.4); this
+    coordinator records deadline metadata for notifications, checkpoints and
+    scheduler-driven auto-resume.
     """
 
     @staticmethod

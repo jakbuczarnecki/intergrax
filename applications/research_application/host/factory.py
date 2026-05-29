@@ -20,6 +20,11 @@ def create_research_backend_app(
     settings: Optional[ResearchBackendSettings] = None,
 ) -> FastAPI:
     settings = settings or ResearchBackendSettings.from_env()
+    if not settings.use_nexus_loop:
+        raise ValueError(
+            "Research backend requires NexusLoop (§41). "
+            "Remove RESEARCH_USE_LEGACY_AGENT_ENGINE or set RESEARCH_USE_NEXUS_LOOP=true."
+        )
     app = create_app(ApiConfig(environment=ApiEnvironment.DEV))
 
     registry = build_research_registry_for_host()

@@ -77,6 +77,7 @@ class LegalBackendSettings:
     legal_route_prefix: str
     identity_source: LegalIdentitySource
     use_nexus_loop: bool
+    use_legacy_agent_engine: bool
     cors_allow_origins: FrozenSet[str]
     allowed_hosts: FrozenSet[str]
     openapi_enabled_override: Optional[bool]
@@ -97,7 +98,11 @@ class LegalBackendSettings:
         llm = os.environ.get("LEGAL_LLM_PROVIDER", "ollama").strip().lower()
         agent_id = os.environ.get("LEGAL_DEFAULT_AGENT_ID", "legal-default").strip()
         prefix = os.environ.get("LEGAL_ROUTE_PREFIX", "/v1/legal").strip() or "/v1/legal"
-        use_nexus_loop = _env_bool("LEGAL_USE_NEXUS_LOOP", environment == ApiEnvironment.DEV)
+        use_legacy_agent_engine = _env_bool("LEGAL_USE_LEGACY_AGENT_ENGINE", False)
+        if os.environ.get("LEGAL_USE_NEXUS_LOOP") is not None:
+            use_nexus_loop = _env_bool("LEGAL_USE_NEXUS_LOOP")
+        else:
+            use_nexus_loop = not use_legacy_agent_engine
 
         id_src_env = os.environ.get("LEGAL_IDENTITY_SOURCE", "").strip().lower()
         if id_src_env in {"body_or_context", "context_only"}:
@@ -155,6 +160,7 @@ class LegalBackendSettings:
             legal_route_prefix=prefix,
             identity_source=identity_source,
             use_nexus_loop=use_nexus_loop,
+            use_legacy_agent_engine=use_legacy_agent_engine,
             cors_allow_origins=cors,
             allowed_hosts=hosts,
             openapi_enabled_override=openapi_override,

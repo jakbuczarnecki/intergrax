@@ -41,6 +41,7 @@ def client() -> TestClient:
         app,
         agents={"legal-test": _DummyAgent()},
         default_agent_id="legal-test",
+        use_nexus_loop=False,
     )
     return TestClient(app)
 

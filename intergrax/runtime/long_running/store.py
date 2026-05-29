@@ -15,11 +15,21 @@ from uuid import uuid4
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
+from intergrax.runtime.long_running.scheduled_resume import (
+    ScheduledResume,
+    ScheduledResumeStatus,
+)
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.utils.time_provider import SystemTimeProvider
 
 ENV_TASK_CHECKPOINTS_DB = "INTERGRAX_TASK_CHECKPOINTS_DB"
 DEFAULT_TASK_CHECKPOINTS_DB = Path("build") / "intergrax_task_checkpoints.db"
+
+_PAUSED_TASK_STATES = (
+    TaskState.WAITING_FOR_HUMAN.value,
+    TaskState.WAITING_FOR_RESOURCES.value,
+    TaskState.NEEDS_MORE_INFORMATION.value,
+)
 
 
 def resolve_task_checkpoints_db_path(explicit: Path | None = None) -> Path:
@@ -82,6 +92,35 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 )
             except sqlite3.OperationalError:
                 pass
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS scheduled_resumes (
+                    schedule_id TEXT PRIMARY KEY,
+                    task_id TEXT NOT NULL,
+                    tenant_id TEXT NOT NULL,
+                    resume_token TEXT NOT NULL,
+                    run_at_utc TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    resume_metadata_json TEXT NOT NULL DEFAULT '{}',
+                    created_at_utc TEXT NOT NULL
+                );
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_scheduled_resumes_due
+                ON scheduled_resumes (status, run_at_utc);
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS scheduler_ledger (
+                    ledger_key TEXT PRIMARY KEY,
+                    action TEXT NOT NULL,
+                    executed_at_utc TEXT NOT NULL
+                );
+                """
+            )
 
     def save(self, checkpoint: TaskCheckpoint) -> TaskCheckpoint:
         with self._connection() as conn:
@@ -152,6 +191,120 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 (task_id, tenant_id),
             ).fetchall()
         return [self._row_to_checkpoint(row) for row in rows]
+
+    def list_paused(self) -> List[TaskCheckpoint]:
+        paused_states = _PAUSED_TASK_STATES
+        placeholders = ",".join("?" for _ in paused_states)
+        query = f"""
+            SELECT c.* FROM task_checkpoints c
+            INNER JOIN (
+                SELECT task_id, tenant_id, MAX(created_at_utc) AS max_created
+                FROM task_checkpoints
+                WHERE task_state IN ({placeholders})
+                GROUP BY task_id, tenant_id
+            ) latest
+            ON c.task_id = latest.task_id
+            AND c.tenant_id = latest.tenant_id
+            AND c.created_at_utc = latest.max_created
+            WHERE c.task_state IN ({placeholders})
+        """
+        params = paused_states + paused_states
+        with self._connection() as conn:
+            rows = conn.execute(query, params).fetchall()
+        return [self._row_to_checkpoint(row) for row in rows]
+
+    def schedule(self, entry: ScheduledResume) -> ScheduledResume:
+        with self._connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO scheduled_resumes (
+                    schedule_id, task_id, tenant_id, resume_token, run_at_utc,
+                    status, resume_metadata_json, created_at_utc
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    entry.schedule_id,
+                    entry.task_id,
+                    entry.tenant_id,
+                    entry.resume_token,
+                    entry.run_at_utc,
+                    entry.status.value,
+                    json.dumps(entry.resume_metadata),
+                    entry.created_at_utc,
+                ),
+            )
+        return entry
+
+    def list_due(
+        self,
+        *,
+        before_utc_iso: str,
+        limit: int = 100,
+    ) -> List[ScheduledResume]:
+        with self._connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT * FROM scheduled_resumes
+                WHERE status = ? AND run_at_utc <= ?
+                ORDER BY run_at_utc ASC
+                LIMIT ?
+                """,
+                (ScheduledResumeStatus.PENDING.value, before_utc_iso, limit),
+            ).fetchall()
+        return [self._row_to_scheduled_resume(row) for row in rows]
+
+    def mark_completed(self, schedule_id: str) -> None:
+        with self._connection() as conn:
+            conn.execute(
+                """
+                UPDATE scheduled_resumes
+                SET status = ?
+                WHERE schedule_id = ?
+                """,
+                (ScheduledResumeStatus.COMPLETED.value, schedule_id),
+            )
+
+    def cancel(self, schedule_id: str) -> None:
+        with self._connection() as conn:
+            conn.execute(
+                """
+                UPDATE scheduled_resumes
+                SET status = ?
+                WHERE schedule_id = ?
+                """,
+                (ScheduledResumeStatus.CANCELLED.value, schedule_id),
+            )
+
+    def has_action(self, ledger_key: str) -> bool:
+        with self._connection() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM scheduler_ledger WHERE ledger_key = ? LIMIT 1",
+                (ledger_key,),
+            ).fetchone()
+        return row is not None
+
+    def record_action(self, ledger_key: str, *, action: str) -> None:
+        with self._connection() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO scheduler_ledger (ledger_key, action, executed_at_utc)
+                VALUES (?, ?, ?)
+                """,
+                (ledger_key, action, SystemTimeProvider.utc_now().isoformat()),
+            )
+
+    @staticmethod
+    def _row_to_scheduled_resume(row: sqlite3.Row) -> ScheduledResume:
+        return ScheduledResume(
+            schedule_id=row["schedule_id"],
+            task_id=row["task_id"],
+            tenant_id=row["tenant_id"],
+            resume_token=row["resume_token"],
+            run_at_utc=row["run_at_utc"],
+            status=ScheduledResumeStatus(row["status"]),
+            resume_metadata=json.loads(row["resume_metadata_json"]),
+            created_at_utc=row["created_at_utc"],
+        )
 
     @staticmethod
     def _row_to_checkpoint(row: sqlite3.Row) -> TaskCheckpoint:
