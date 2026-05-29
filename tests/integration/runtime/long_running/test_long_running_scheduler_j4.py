@@ -95,6 +95,71 @@ class _TimeoutFailAgent(Agent):
         )
 
 
+class _TimeoutEscalateAgent(Agent):
+    runs = 0
+
+    def get_contract(self) -> AgentContract:
+        return AgentContract(
+            id="hitl_timeout_escalate",
+            name="HITL timeout escalate",
+            description="auto-escalate on timeout",
+            capabilities=["hitl.timeout_escalate"],
+            max_steps=2,
+        )
+
+    def can_handle(self, task_context: object) -> CapabilityMatchResult:
+        cap = getattr(task_context, "capability", None)
+        if cap in (None, "hitl.timeout_escalate"):
+            return CapabilityMatchResult(
+                matched=True,
+                agent_id="hitl_timeout_escalate",
+                matched_capabilities=["hitl.timeout_escalate"],
+                score=1.0,
+            )
+        return CapabilityMatchResult(matched=False, rationale="no")
+
+    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
+        config = RuntimeConfig(
+            llm_adapter=FakeLLMAdapter(fixed_text="ok"),
+            enable_rag=False,
+            production_mode=False,
+            tenant_id=request.tenant_id,
+        )
+        return RuntimeContext.build(
+            config=config,
+            session_manager=build_in_memory_session_manager(),
+        )
+
+    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+        _ = context
+        return [AgentStep(step_id="review", step_name="review", step_index=0)]
+
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        _TimeoutEscalateAgent.runs += 1
+        return StepOutput(step_id=step.step_id, summary="review")
+
+    def decide_after_step(
+        self,
+        step: AgentStep,
+        output: StepOutput | None,
+        ctx: RuntimeExecutionContext,
+    ) -> AgentDecision:
+        _ = step, output
+        if ctx.request and ctx.request.metadata.get("human_approved"):
+            return AgentDecision(type=AgentDecisionType.COMPLETE, reason="approved")
+        return AgentDecision(
+            type=AgentDecisionType.REQUEST_HUMAN,
+            reason="approval required",
+            human_request=HumanRequest(
+                request_id="hr_timeout_escalate",
+                prompt="Approve?",
+                options=["approve", "reject", "escalate"],
+                timeout_seconds=30,
+                default_on_timeout=AgentDecisionType.ESCALATE,
+            ),
+        )
+
+
 class _DelayedResumeAgent(Agent):
     runs = 0
 
@@ -160,6 +225,7 @@ class _DelayedResumeAgent(Agent):
 
 def _build_scheduler(tmp_path, agent: Agent) -> tuple[LongRunningScheduler, NexusLoop, SQLiteTaskCheckpointStore]:
     _TimeoutFailAgent.runs = 0
+    _TimeoutEscalateAgent.runs = 0
     _DelayedResumeAgent.runs = 0
     registry = AgentRegistry()
     registry.register(agent)
@@ -210,6 +276,36 @@ async def test_scheduler_enforces_human_timeout_fail(tmp_path) -> None:
 
     with patch.object(SystemTimeProvider, "utc_now", return_value=after_expiry):
         assert await scheduler.tick(now=after_expiry) == 0
+
+
+@pytest.mark.asyncio
+async def test_scheduler_enforces_human_timeout_escalate(tmp_path) -> None:
+    scheduler, loop, store = _build_scheduler(tmp_path, _TimeoutEscalateAgent())
+    paused = await loop.handle_task(
+        Task(
+            tenant_id="t1",
+            user_id="u1",
+            message="timeout escalate case",
+            context=TaskContext(capability="hitl.timeout_escalate"),
+            options=TaskExecutionOptions(
+                long_running=TaskLongRunningOptions(enabled=True),
+            ),
+        )
+    )
+    assert paused.state == TaskState.WAITING_FOR_HUMAN
+    expires_at = datetime.fromisoformat(paused.metadata["human_request_expires_at"])
+    after_expiry = expires_at + timedelta(seconds=5)
+
+    with patch.object(SystemTimeProvider, "utc_now", return_value=after_expiry):
+        processed = await scheduler.tick(now=after_expiry)
+
+    assert processed == 1
+    assert _TimeoutEscalateAgent.runs == 1
+    checkpoint = store.get_latest(paused.task_id, "t1")
+    assert checkpoint is not None
+    restored = Task.model_validate(checkpoint.task_snapshot)
+    assert restored.runtime.governance.escalation_level == 1
+    assert restored.state == TaskState.WAITING_FOR_HUMAN
 
 
 @pytest.mark.asyncio

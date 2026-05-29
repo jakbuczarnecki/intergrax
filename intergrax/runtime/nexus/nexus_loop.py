@@ -993,6 +993,14 @@ class NexusLoop:
             verdict=HumanResponseVerdict.ESCALATE.value,
         )
 
+        progress_message = "awaiting escalated human review"
+        await LongRunningCoordinator.notify_escalation(
+            task,
+            outcome=outcome,
+            progress_message=progress_message,
+            adapter=self._notification_adapter,
+        )
+
         task.options.human.response_text = None
         task.options.human.verdict = None
         task.sync_metadata()
@@ -1026,7 +1034,7 @@ class NexusLoop:
         lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
         await self._maybe_checkpoint_long_running(
             task,
-            progress_message="awaiting escalated human review",
+            progress_message=progress_message,
         )
         if isinstance(trace_emitter, PersistingTaskTraceEmitter):
             self._finalize_persisting_trace(trace_emitter, [])

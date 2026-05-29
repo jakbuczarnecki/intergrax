@@ -934,7 +934,8 @@ Decision:       L1 certified — GO Phase K when product priority set
 |------|-----|---------|
 | 2026-05-27 | B.08, B.10 | `wire_nexus_observability` + SQLite defaults in Legal / Research / Lab factories; integration test |
 | 2026-05-27 | B.01, B.02 | `RuntimeCheckpoint` full snapshot + UAEP mid-step cursor/resume; acceptance `05b` |
-| 2026-05-27 | B.03, B.04 | `PolicyEngine` facade + `ToolPlanDecision` rename (tools_agent legacy aliases) |
+| 2026-05-27 | B.12, B.14 | Production `POST /v1/interactions/intake` on lab; Legal legacy `AgentEngine` removed |
+| 2026-05-27 | B.05 | Escalation notification template + scheduler wiring in lab + SAFETY_VIOLATION timeout→escalate |
 
 ### B.1 Runtime & §42 convergence
 
@@ -944,7 +945,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.02 | **Full checkpoint snapshot** — plan + graph node states + UAEP index + pending decisions in one durable blob | §42.9.2 | **High** | **Done** | Multi-agent graphs, crash recovery | Tier-1 | `plan_snapshot`, `graph_snapshot`, `pending_decisions` in `RuntimeCheckpoint` (2026-05-27) |
 | B.03 | **Policy engine facade** — single `PolicyEngine` for replay, validation, runtime policy | §42.11 | **Medium** | **Done** | Indirect — consistent governance for all agents | Tier-1 | `PolicyEngine` + `coerce_policy_engine`; Nexus/UAEP/interrupt handler (2026-05-27) |
 | B.04 | **Dual `AgentDecision` cleanup** — converge tools-agent variant with canonical §42.7 enum | §42.7 | **Medium** | **Done** | Agents emitting decisions must use one contract | Tier-1 | `ToolPlanDecision` / `ToolsAgentRunResult`; deprecated `tools_agent` aliases (2026-05-27) |
-| B.05 | **Escalation policy production path** — `SAFETY_VIOLATION` / HITL expiry → real escalation (not stub) | §42.38, §42.10 | **Medium** | Open | HITL-heavy agents | Tier-1 | Wire scheduler + notification templates to escalation handler |
+| B.05 | **Escalation policy production path** — `SAFETY_VIOLATION` / HITL expiry → real escalation (not stub) | §42.38, §42.10 | **Medium** | **Done** | HITL-heavy agents | Tier-1 | `escalation.v1` template, `wire_long_running_scheduler`, lab startup, SAFETY_VIOLATION timeout→escalate (2026-05-27) |
 | B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | Open | Extension agents via plugins | Tier-1 | Document current subset; incremental HookRegistry adoption |
 | B.07 | **§42 maturity remainder (~30%)** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | Open | Platform stability for new agents | Tier-1 | Track as Phase G follow-up epics |
 
@@ -986,12 +987,13 @@ Decision:       L1 certified — GO Phase K when product priority set
 2. ~~B.01, B.02~~ — checkpoint / full snapshot (Done 2026-05-27)
 3. ~~B.03, B.04~~ — governance facade + AgentDecision cleanup (Done 2026-05-27)
 4. ~~B.12, B.14~~ — product interaction + legacy removal (Done 2026-05-27)
-5. B.05–B.07, B.09–B.11, B.13, B.15–B.18 — as capacity allows
+5. ~~B.05~~ — escalation production path (Done 2026-05-27)
+6. B.06–B.07, B.09–B.11, B.13, B.15–B.18 — as capacity allows
 ```
 
 **Note:** Phase K business agents (Problem Radar, Vendor Discovery) remain **product-blocked** until explicit go — technical debt above does not auto-unblock K.1/K.2.
 
 ---
 
-*Plan synced with codebase after B.12/B.14 paydown (2026-05-27). Gate: 241 tests.*
+*Plan synced with codebase after B.05 paydown (2026-05-27). Gate: 245 tests.*
 

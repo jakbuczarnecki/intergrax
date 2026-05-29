@@ -14,9 +14,10 @@ from intergrax.contracts.agent_decision import (
     AgentDecision,
     AgentDecisionType,
     HumanRequest,
+    HumanRequestUrgency,
     human_request_fields_from_payload,
 )
-from intergrax.contracts.execution_interrupt import ExecutionInterrupt, InterruptType
+from intergrax.contracts.execution_interrupt import ExecutionInterrupt, InterruptType, InterruptType
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
@@ -118,11 +119,7 @@ class ExecutionInterruptHandler:
         decision_type = interrupt.recommended_action
         human_request: Optional[HumanRequest] = None
         if policy.action == PolicyAction.REQUIRE_HUMAN:
-            human_request = HumanRequest(
-                request_id=f"hr_{uuid4().hex[:12]}",
-                prompt=f"Interrupt requires human review: {interrupt.interrupt_type.value}",
-                options=["approve", "reject"],
-            )
+            human_request = self._human_request_for_interrupt(interrupt)
         return GovernanceResolution(
             policy_decision=policy,
             agent_decision=AgentDecision(
@@ -132,6 +129,25 @@ class ExecutionInterruptHandler:
             ),
             interrupt=interrupt,
             human_request=human_request,
+        )
+
+    @staticmethod
+    def _human_request_for_interrupt(interrupt: ExecutionInterrupt) -> HumanRequest:
+        options = ["approve", "reject", "escalate"]
+        urgency = HumanRequestUrgency.NORMAL
+        timeout_seconds: Optional[int] = None
+        default_on_timeout: Optional[AgentDecisionType] = None
+        if interrupt.interrupt_type == InterruptType.SAFETY_VIOLATION:
+            urgency = HumanRequestUrgency.CRITICAL
+            timeout_seconds = 1800
+            default_on_timeout = AgentDecisionType.ESCALATE
+        return HumanRequest(
+            request_id=f"hr_{uuid4().hex[:12]}",
+            prompt=f"Interrupt requires human review: {interrupt.interrupt_type.value}",
+            options=options,
+            urgency=urgency,
+            timeout_seconds=timeout_seconds,
+            default_on_timeout=default_on_timeout,
         )
 
     @staticmethod

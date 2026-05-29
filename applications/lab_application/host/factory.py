@@ -15,9 +15,12 @@ from intergrax.debug.interaction_service import DebugInteractionIntakeService
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
+from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
+from intergrax.runtime.notifications.adapters.logging_adapter import LoggingNotificationAdapter
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.wiring import build_lab_registry
 from lab_application.serving.fastapi_router import mount_lab_routes
@@ -40,6 +43,7 @@ def create_lab_application(
     - ``POST /v1/lab/run`` — execute arbitrary registered agents via UnifiedTaskRunner
     - ``GET /v1/lab/agents`` — list active agents and capabilities
     - ``POST /v1/interactions/intake`` — production Slack / Teams / lab inbound webhooks (B.12)
+    - Long-running scheduler — HITL timeout / delayed resume (B.05)
     - ``/debug/*`` — trace, events, checkpoints, progress, experiments, HITL intake
     """
     settings = settings or LabApplicationSettings.from_env()
@@ -51,11 +55,21 @@ def create_lab_application(
         use_in_memory_trace=db_path is None,
         enable_runtime_events=runtime_events_db_path is not None,
     )
+    notification_adapter = LoggingNotificationAdapter()
     nexus_loop = NexusLoop(
         resolved_registry,
         checkpoint_store=checkpoint_store,
         trace_store=observability.trace_store,
         runtime_event_store=observability.runtime_event_store,
+        notification_adapter=notification_adapter,
+    )
+    task_runner = UnifiedTaskRunner(nexus_loop)
+    scheduler_wiring = wire_long_running_scheduler(
+        checkpoint_store=checkpoint_store,
+        task_runner=task_runner,
+        notification_adapter=notification_adapter,
+        poll_interval_seconds=settings.scheduler_poll_seconds,
+        enabled=settings.include_scheduler,
     )
     interaction_service = DebugInteractionIntakeService(
         nexus_loop=nexus_loop,
@@ -91,4 +105,14 @@ def create_lab_application(
             ),
             prefix=settings.interaction_route_prefix,
         )
+    if scheduler_wiring is not None:
+        scheduler = scheduler_wiring.scheduler
+
+        @app.on_event("startup")
+        async def _start_long_running_scheduler() -> None:
+            await scheduler.start()
+
+        @app.on_event("shutdown")
+        async def _stop_long_running_scheduler() -> None:
+            await scheduler.stop()
     return app
