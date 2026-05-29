@@ -176,7 +176,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
-| §7.1 Integration Library | Catalog + contracts + providers | **Planned** | Phase M — `intergrax/integrations/` |
+| §7.1 Integration Library | Catalog + contracts + providers | **Partial** | Core M.1–M.3 + M.5 **Done**; M.4 providers pending |
 
 | §19 Debug surface | CLI / API | **Done** | D.1 CLI + D.2 API ✅ |
 
@@ -524,13 +524,15 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 **Principle:** evolve existing modules (`queueing/`, `distributed/`, `websearch/`, …) into catalog providers; do not fork parallel stacks.
 
 **Out of scope:** `intergrax/llm_adapters/` — LLM providers are **not** part of the Integration Library (§7.1.2).
+
+| # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
 | M.0 | Integration backlog + categories approved | **Done** | Canon §7.1.3 catalog table |
-| M.1 | Scaffold `intergrax/integrations/` package | Pending | contracts/, registry/, providers/, _shared/ |
-| M.2 | Category contracts (P0 set) | Pending | relational_store, key_value_cache, message_bus, search_provider, notification_channel, interaction_surface, **cloud_platform** |
-| M.3 | `IntegrationRegistry` + `IntegrationProfile` | Pending | Env/YAML resolution for Tier-3; cloud_platform default resolution |
+| M.1 | Scaffold `intergrax/integrations/` package | **Done** | `contracts/`, `registry/`, `_shared/`, `providers/` |
+| M.2 | Category contracts (P0 set) | **Done** | 7 P0 contracts + re-exports for queueing/notifications/interactions |
+| M.3 | `IntegrationRegistry` + `IntegrationProfile` | **Done** | `catalog.register_integration`, `resolve`, env/mapping profile |
 | M.4 | P0 providers — wrap existing | Pending | sqlite, redis, kafka, celery, google_cse, bing, slack, teams, webhook |
-| M.5 | Provider conformance test harness | Pending | `tests/unit/integrations/test_contract_conformance.py` |
+| M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
 | M.6 | P1 providers (on demand) | Pending | postgresql, mysql, jira, confluence, ms365_graph, prometheus, **aws, azure, gcp**, … |
 | M.7 | Agent Creation Guide § integrations | Pending | How agents declare needs vs Tier-3 wiring |
 | M.8 | Lab `IntegrationProfile` example | Pending | `applications/lab_application/` sqlite + logging + lab_json |
@@ -1193,7 +1195,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
-| B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | Open | All agents needing external systems | Tier-0 | Phase M.1–M.3 |
+| B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
 | B.19 | **P0 provider wraps** — sqlite, redis, kafka, celery, search, slack/teams | §7.1.3 | **High** | Open | Lab + first prod apps | Tier-0 | Phase M.4; wrap existing modules |
 | B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | Open | Multi-tenant applications | Tier-0 | Phase M.6 after M.4 |
 | B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | Open | PM / research agents | Tier-0 | Phase M.6; tools via ToolRuntime |
