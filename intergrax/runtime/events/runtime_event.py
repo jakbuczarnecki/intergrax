@@ -53,6 +53,7 @@ class RuntimeEventType(str, Enum):
     HANDOFF_INITIATED = "handoff_initiated"
     HANDOFF_COMPLETED = "handoff_completed"
     TRACE_PERSISTED = "trace_persisted"
+    TASK_PROGRESS = "task_progress"
     TASK_COMPLETED = "task_completed"
     TASK_FAILED = "task_failed"
     RUNTIME_HANDLER_FAILED = "runtime_handler_failed"

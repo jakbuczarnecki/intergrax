@@ -8,7 +8,8 @@ Task endpoints:
 
 - ``GET /debug/tasks`` — list recent runs
 - ``GET /debug/tasks/{run_id}`` — run metadata
-- ``GET /debug/tasks/{run_id}/trace`` — trace timeline
+- ``GET /debug/tasks/{task_id}/checkpoints`` — checkpoint history
+- ``GET /debug/tasks/{task_id}/progress`` — long-running partial results (J.5)
 
 Experiment registry:
 
@@ -27,7 +28,7 @@ from typing import Callable, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from intergrax.debug.formatters import build_trace_payload
-from intergrax.debug.hitl_service import DebugHitlResumeService
+from intergrax.debug.progress_service import TaskProgressService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
 from intergrax.debug.models import (
     CheckpointItem,
@@ -42,6 +43,7 @@ from intergrax.debug.models import (
     RuntimeEventItem,
     RuntimeEventListResponse,
     SubmitHumanResponseRequest,
+    TaskProgressResponse,
     TraceResponse,
 )
 from intergrax.debug.store import (
@@ -149,6 +151,12 @@ def create_debug_router(
     get_experiments = _experiment_store_factory(experiments_db_path)
     get_runtime_events = _runtime_event_store_factory(runtime_events_db_path, runtime_event_store)
     get_checkpoints = _checkpoint_store_factory(checkpoints_db_path, checkpoint_store)
+    progress_service: TaskProgressService | None = None
+    if checkpoint_store is not None:
+        progress_service = TaskProgressService(
+            checkpoint_store,
+            runtime_event_store=runtime_event_store,
+        )
 
     @router.get("/tasks", response_model=RunListResponse)
     def list_tasks(
@@ -254,6 +262,24 @@ def create_debug_router(
                 for row in rows
             ],
         )
+
+    @router.get("/tasks/{task_id}/progress", response_model=TaskProgressResponse)
+    def task_progress(
+        task_id: str,
+        tenant: str = Query(default="default", description="Tenant id"),
+    ) -> TaskProgressResponse:
+        if progress_service is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Checkpoint persistence is not configured.",
+            )
+        result = progress_service.get_progress(task_id, tenant)
+        if result.checkpoint_count == 0:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No progress/checkpoints found for task '{task_id}'.",
+            )
+        return result
 
     @router.post("/tasks/{task_id}/human-response", response_model=HumanResponseResult)
     async def submit_human_response(

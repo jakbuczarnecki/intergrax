@@ -350,3 +350,15 @@ The scheduler:
 - notifies through the same Tier-0 notification adapters as HITL pause (log/Slack/Teams stubs).
 
 Poll interval: `INTERGRAX_SCHEDULER_POLL_SECONDS` (default 30). Checkpoint DB: `INTERGRAX_TASK_CHECKPOINTS_DB`.
+
+## 16. Partial results API (Phase J.5)
+
+Inspect long-running progress (checkpoints + runtime events):
+
+```http
+GET /debug/tasks/{task_id}/progress?tenant=t1
+```
+
+Response includes `progress_message`, `is_paused`, `partial_results[]` (per-checkpoint snapshots with UAEP/graph hints), and `progress_event_count` from `TASK_PROGRESS` runtime events.
+
+Nexus emits `RuntimeEventType.TASK_PROGRESS` on each long-running checkpoint and sends `partial_result.v1` notifications (log/Slack/Teams stubs) when the pause is not HITL-specific.

@@ -99,11 +99,11 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §32 HITL | Approval / reject / escalate | **Done** | F.3 + `runtime/human/` |
 
-| §26 Long-running tasks | Checkpoint / resume | **Partial** | F.4 + J.4 scheduler; UAEP mid-step pending |
+| §26 Long-running tasks | Checkpoint / resume | **Partial** | F.4 + J.4 scheduler + J.5 partial results API; UAEP mid-step pending |
 | §18 Slack / Teams | Interaction adapters | **Stub** | F.4 notification stub only; no intake / webhook |
 | §27 Memory model | Bounded task / agent memory | **Done** | I.1–I.5: TaskMemory, MemoryView, SharedTaskContext, handoff, ContextManager v2 |
 | §42.9 Pause / Resume | `RuntimeCheckpoint` | **Partial** | HITL pause ✅; full plan/graph/UAEP checkpoint pending |
-| §41 Unified entry | Single run lifecycle | **Partial** | J.1–J.3 + J.4 scheduler; partial results API pending (J.5) |
+| §41 Unified entry | Single run lifecycle | **Partial** | J.1–J.5 done; Phase J complete for lab scope |
 
 | §20–21 Shadow / Sandbox | Isolated exec | **Done** | F.1 ShadowWorkspace + F.2 SandboxRuntime ✅ |
 
@@ -378,7 +378,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | J.2 | RunService → UnifiedTaskRunner | **Done** | §41 | `NexusTaskExecutionAdapter` + `CreateRunRequest.payload` → Task |
 | J.3 | Worker queue Task v2 | **Done** | §41 | `QueuedNexusExecutionAdapter`, `nexus.task.v2` Celery handler, checkpoint resume |
 | J.4 | Long-running scheduler | **Done** | §26 | `LongRunningScheduler`, delayed resume + HITL timeout enforcement |
-| J.5 | Partial results API | Pending | §26 | Progress in debug API + notifications |
+| J.5 | Partial results API | **Done** | §26 | `GET /debug/tasks/{id}/progress`, `TASK_PROGRESS` events, notification template |
 
 ---
 
@@ -401,9 +401,9 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     J.5 — Partial results API (§26)
+NOW:     Phase K — reference agents (on demand)
 
-NEXT:    Phase K reference agents (on demand)
+NEXT:    K.1 Problem Radar · K.2 Vendor Discovery
 
 THEN:    Phase J — Unified execution entry (§41)
 
@@ -443,11 +443,9 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**J.5 — Partial results API** (§26):
+**Phase K — reference agents** (§36–§37):
 
-1. Expose long-running progress in debug API.
-2. Wire notification stubs for partial results.
-3. Integration tests; gate green.
+Pick **K.1 Problem Radar** or **K.2 Vendor Discovery** when a concrete lab use case is ready.
 
 ```bash
 uv run pytest tests/ -m gate -q
@@ -455,6 +453,7 @@ uv run pytest tests/ -m gate -q
 
 **Recently completed:**
 
+- **J.5:** Partial results API — `GET /debug/tasks/{task_id}/progress` aggregates checkpoint partial snapshots; `RuntimeEventType.TASK_PROGRESS`; `partial_result.v1` notification template; gate **216 passed**.
 - **J.4:** Long-running scheduler — in-process `LongRunningScheduler` polls checkpoint store for delayed resumes and expired HITL deadlines; `UnifiedTaskResumeExecutor` resumes via `UnifiedTaskRunner`; SQLite ledger for idempotency.
 - **J.3:** Worker queue Task v2 — `QueuedNexusExecutionAdapter` enqueues `ExecutionRequest` via Tier-0 Celery (`nexus.task.v2`); `create_nexus_celery_worker_app` bootstrap; checkpoint resume through worker payload; gate **207 passed**.
 - **J.2:** RunService → UnifiedTaskRunner — `NexusTaskExecutionAdapter` delegates to `UnifiedTaskRunner`; Legal host shares one runner for `/runs` and `/legal/chat`; `POST /runs` forwards `CreateRunRequest.payload` to Task intake.

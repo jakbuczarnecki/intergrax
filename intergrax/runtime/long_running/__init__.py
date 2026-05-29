@@ -19,7 +19,11 @@ from intergrax.runtime.long_running.scheduler import (
     TaskResumeExecutor,
     UnifiedTaskResumeExecutor,
 )
-from intergrax.runtime.long_running.scheduled_resume import ScheduledResume, ScheduledResumeStatus
+from intergrax.runtime.long_running.partial_results import (
+    PartialResultSnapshot,
+    build_task_progress_view,
+    partial_result_from_checkpoint,
+)
 from intergrax.runtime.long_running.store import (
     DEFAULT_TASK_CHECKPOINTS_DB,
     ENV_TASK_CHECKPOINTS_DB,
@@ -40,6 +44,7 @@ __all__ = [
     "LongRunningScheduler",
     "NotificationAdapter",
     "NotificationMessage",
+    "PartialResultSnapshot",
     "ScheduledResume",
     "ScheduledResumeStatus",
     "SlackNotificationAdapter",
@@ -48,7 +53,9 @@ __all__ = [
     "TaskResumeExecutor",
     "TeamsNotificationAdapter",
     "UnifiedTaskResumeExecutor",
+    "build_task_progress_view",
     "open_task_checkpoint_store",
+    "partial_result_from_checkpoint",
     "resolve_notification_adapter",
     "resolve_task_checkpoints_db_path",
 ]

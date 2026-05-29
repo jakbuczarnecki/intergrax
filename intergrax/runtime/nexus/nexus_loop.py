@@ -724,6 +724,9 @@ class NexusLoop:
             graph=graph_obj,
             last_execution=last_execution,
         )
+        from intergrax.runtime.long_running.partial_results import partial_result_from_checkpoint
+
+        partial = partial_result_from_checkpoint(checkpoint)
         await self._publish_runtime_event(
             runtime_event_from_task_state(
                 task,
@@ -741,6 +744,19 @@ class NexusLoop:
                 }
             )
         )
+        await self._publish_runtime_event(
+            runtime_event_from_task_state(
+                task,
+                run_id=task.task_id,
+                message=progress_message or "task progress",
+            ).model_copy(
+                update={
+                    "event_type": RuntimeEventType.TASK_PROGRESS,
+                    "phase": ExecutionPhase.STEP_EXECUTION,
+                    "payload": partial.model_dump(mode="json"),
+                }
+            )
+        )
         if task.runtime.governance.human_request is not None:
             await LongRunningCoordinator.notify_hitl_pause(
                 task,
@@ -748,12 +764,12 @@ class NexusLoop:
                 adapter=self._notification_adapter,
             )
         else:
-            await LongRunningCoordinator.notify_progress(
+            await LongRunningCoordinator.notify_partial_result(
                 task,
-                subject="Task paused",
-                body=progress_message,
+                progress_message=progress_message,
+                partial_payload=partial.partial_payload,
+                last_step_summary=partial.last_step_summary,
                 adapter=self._notification_adapter,
-                extra={"checkpoint_id": checkpoint.checkpoint_id},
             )
 
     async def _publish_runtime_event(
