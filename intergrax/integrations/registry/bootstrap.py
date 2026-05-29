@@ -23,6 +23,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.slack.register import register_slack_integration
     from intergrax.integrations.providers.teams.register import register_teams_integration
     from intergrax.integrations.providers.webhook.register import register_webhook_integration
+    from intergrax.integrations.providers.lab_json.register import register_lab_json_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -36,6 +37,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_slack_integration(override=override)
     register_teams_integration(override=override)
     register_webhook_integration(override=override)
+    register_lab_json_integration(override=override)
     _BOOTSTRAPPED = True
 
 

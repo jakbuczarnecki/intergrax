@@ -3,7 +3,7 @@
 import pytest
 
 from intergrax.runtime.interactions.adapters.chained_adapter import ChainedInteractionAdapter
-from intergrax.runtime.interactions.adapters.lab_json_adapter import LabJsonInteractionAdapter
+from intergrax.integrations.providers.lab_json.adapter import LabJsonIntegrationAdapter
 from intergrax.integrations.providers.slack.adapter import SlackInteractionAdapter
 from intergrax.integrations.providers.teams.adapter import TeamsInteractionAdapter
 from intergrax.runtime.interactions.factory import (
@@ -35,7 +35,7 @@ def test_parse_slash_command_text():
 @pytest.mark.unit
 @pytest.mark.gate
 def test_lab_json_adapter_to_task():
-    adapter = LabJsonInteractionAdapter()
+    adapter = LabJsonIntegrationAdapter()
     payload = {
         "tenant_id": "t1",
         "user_id": "u1",
@@ -79,7 +79,7 @@ def test_slash_command_adapter_slack_payload_to_task():
 @pytest.mark.gate
 def test_chained_adapter_prefers_slack():
     adapter = ChainedInteractionAdapter(
-        [SlackInteractionAdapter(), LabJsonInteractionAdapter()]
+        [SlackInteractionAdapter(), LabJsonIntegrationAdapter()]
     )
     task = adapter.to_task(
         {"command": "/x", "text": "cap.a do thing", "user_id": "u1", "team_id": "t1"},
@@ -94,7 +94,7 @@ def test_chained_adapter_prefers_slack():
 def test_create_interaction_adapter_surfaces():
     assert isinstance(
         create_interaction_adapter(resolve_interaction_settings(surface="lab")),
-        LabJsonInteractionAdapter,
+        LabJsonIntegrationAdapter,
     )
     assert isinstance(
         create_interaction_adapter(resolve_interaction_settings(surface="slash_command")),

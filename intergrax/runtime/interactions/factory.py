@@ -12,7 +12,6 @@ from typing import Callable, Dict, Optional
 
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.interactions.adapters.chained_adapter import ChainedInteractionAdapter
-from intergrax.runtime.interactions.adapters.lab_json_adapter import LabJsonInteractionAdapter
 from intergrax.runtime.task.task import Task
 
 ENV_INTERACTION_SURFACE = "INTERGRAX_INTERACTION_SURFACE"
@@ -32,17 +31,24 @@ def _teams_interaction_adapter() -> InteractionAdapter:
     return create_teams_interaction_surface()
 
 
+def _lab_json_interaction_adapter() -> InteractionAdapter:
+    from intergrax.integrations.providers.lab_json.bundle import create_lab_json_interaction_surface
+
+    return create_lab_json_interaction_surface()
+
+
 def _default_interaction_chain() -> tuple[InteractionAdapter, ...]:
     return (
         _slack_interaction_adapter(),
         _teams_interaction_adapter(),
-        LabJsonInteractionAdapter(),
+        _lab_json_interaction_adapter(),
     )
 
 
 class InteractionSurface(str, Enum):
     AUTO = "auto"
     LAB = "lab"
+    LAB_JSON = "lab_json"
     SLACK = "slack"
     SLASH_COMMAND = "slash_command"
     TEAMS = "teams"
@@ -79,8 +85,10 @@ def create_interaction_adapter(
         return factory()
 
     resolved = settings or resolve_interaction_settings()
-    if resolved.surface == InteractionSurface.LAB:
-        return LabJsonInteractionAdapter()
+    if resolved.surface in (InteractionSurface.LAB, InteractionSurface.LAB_JSON):
+        from intergrax.integrations.providers.lab_json.bundle import create_lab_json_interaction_surface
+
+        return create_lab_json_interaction_surface()
     if resolved.surface in (InteractionSurface.SLACK, InteractionSurface.SLASH_COMMAND):
         from intergrax.integrations.providers.slack.bundle import create_slack_interaction_surface
 
