@@ -554,7 +554,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | `kafka` | message_bus | **Done** | `providers/kafka/` — `create_kafka_integration()` (requires `kv_store`) |
 | `celery` | message_bus | **Done** | `providers/celery/` — `create_celery_integration()` (inject `app` or broker/backend env) |
 | `google_cse` | search_provider | **Done** | `providers/google_cse/` — `create_google_cse_integration()` (legacy `GOOGLE_CSE_*` env) |
-| `bing` | search_provider | Pending | — | `websearch/providers/bing_provider.py` |
+| `bing` | search_provider | **Done** | `providers/bing/` — `create_bing_integration()` (legacy `BING_SEARCH_V7_API_KEY`) |
 | `slack` | notification + interaction | Pending | — | `runtime/notifications/` + `runtime/interactions/` |
 | `teams` | notification + interaction | Pending | — | j.w. |
 | `webhook` | notification_channel | Pending | — | `runtime/notifications/adapters/webhook_adapter.py` |
@@ -705,7 +705,7 @@ providers/gcp/
 | `queueing/providers/celery/` | `celery` | **Done** — `integrations/providers/celery/create_celery_integration()` |
 | `queueing/providers/rabbitmq/` | `rabbitmq` | Register |
 | `websearch/providers/google_cse_provider.py` | `google_cse` | **Done** — `integrations/providers/google_cse/create_google_cse_integration()` |
-| `websearch/providers/bing_provider.py` | `bing` | Register |
+| `websearch/providers/bing_provider.py` | `bing` | **Done** — `integrations/providers/bing/create_bing_integration()` |
 | `runtime/notifications/adapters/` | `slack`, `teams`, `webhook` | Register under notification_channel |
 | `runtime/interactions/adapters/` | `slack`, `teams`, `lab_json` | Register under interaction_surface |
 | `runtime/*/stores/sqlite_*.py` (+ store openers) | `sqlite` | **Done** — single entry `integrations/providers/sqlite/create_sqlite_integration()` |
@@ -1181,6 +1181,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Date | ID | Summary |
 |------|-----|---------|
+| 2026-05-29 | M.4-bing | `providers/bing/` — SearchProvider adapter over legacy Bing v7 |
 | 2026-05-29 | M.4-google_cse | `providers/google_cse/` — SearchProvider adapter over legacy CSE |
 | 2026-05-29 | M.4-celery | `providers/celery/` — message bus + worker helpers; no `kv_store` |
 | 2026-05-29 | M.4-kafka | `providers/kafka/` + transport delegate; requires `kv_store` |
@@ -1227,7 +1228,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
-| B.19 | **P0 provider wraps** — bing, slack/teams | §7.1.3 | **High** | **In progress** | Lab + first prod apps | Tier-0 | **redis + sqlite + kafka + celery + google_cse Done**; remainder M.4 |
+| B.19 | **P0 provider wraps** — slack/teams, webhook, lab_json | §7.1.3 | **High** | **In progress** | Lab + first prod apps | Tier-0 | **redis + sqlite + kafka + celery + google_cse + bing Done**; remainder M.4 |
 | B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | Open | Multi-tenant applications | Tier-0 | Phase M.6 after M.4 |
 | B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | Open | PM / research agents | Tier-0 | Phase M.6; tools via ToolRuntime |
 | B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | Open | Org worker, scheduling agents | Tier-0 | Phase M.6 |

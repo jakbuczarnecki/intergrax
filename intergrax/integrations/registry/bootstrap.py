@@ -19,6 +19,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.kafka.register import register_kafka_integration
     from intergrax.integrations.providers.celery.register import register_celery_integration
     from intergrax.integrations.providers.google_cse.register import register_google_cse_integration
+    from intergrax.integrations.providers.bing.register import register_bing_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -28,6 +29,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_kafka_integration(override=override)
     register_celery_integration(override=override)
     register_google_cse_integration(override=override)
+    register_bing_integration(override=override)
     _BOOTSTRAPPED = True
 
 

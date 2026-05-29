@@ -629,7 +629,7 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 | `kafka` | message_bus | **Done** | `providers/kafka/` — `create_kafka_integration()` + `build_kafka_transport()` |
 | `celery` | message_bus | **Done** | `providers/celery/` — `create_celery_integration()` + `create_celery_worker_app()` |
 | `google_cse` | search_provider | **Done** | `providers/google_cse/` — `create_google_cse_integration()` |
-| `bing` | search_provider | **Exists** → Catalog | Alternate / fallback web search |
+| `bing` | search_provider | **Done** | `providers/bing/` — `create_bing_integration()` |
 | `slack` | notification_channel + interaction_surface | Partial → Catalog | HITL, org worker, inbound slash commands |
 | `teams` | notification_channel + interaction_surface | Partial → Catalog | Same as Slack for Microsoft tenants |
 | `webhook` | notification_channel | **Exists** → Catalog | Generic HTTP outbound (HITL stub path) |
