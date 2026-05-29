@@ -37,6 +37,7 @@ __all__ = [
     "resolve_trace_db_path",
     "open_trace_reader",
     "open_run_trace_store",
+    "resolve_trace_reader",
 ]
 
 
@@ -48,6 +49,21 @@ def open_trace_reader(db_path: Path | None = None) -> RunTraceReader:
             f"Set {ENV_TRACE_DB} or pass --db. Runs must be finalized via NexusLoop + trace_store."
         )
     return open_run_trace_store(path)
+
+
+def resolve_trace_reader(
+    *,
+    db_path: Path | None = None,
+    implementation: RunTraceReader | None = None,
+) -> RunTraceReader:
+    """
+    Resolve trace reader for debug API.
+
+    Priority: explicit implementation (shared with NexusLoop) > SQLite at db_path/env path.
+    """
+    if implementation is not None:
+        return implementation
+    return open_trace_reader(db_path)
 
 
 def open_runtime_event_persistence(

@@ -90,6 +90,8 @@ def create_lab_application(
         interaction_service=interaction_service,
         hitl_service=hitl_service,
         checkpoint_store=checkpoint_store,
+        trace_store=observability.trace_store,
+        runtime_event_store=observability.runtime_event_store,
     )
     app.title = "Intergrax Lab Application"
     app.description = (

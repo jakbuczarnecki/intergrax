@@ -78,7 +78,7 @@ python -m intergrax.scaffold new-agent <name> --capability <domain>.<action>
 Run the regression gate:
 
 ```bash
-uv run pytest tests/ -m gate -q
+uv run pytest -m gate -q
 ```
 
 ---
@@ -150,7 +150,7 @@ Intergrax is under **active development** (private R&D). Phase status, prioritie
 
 **[`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)**
 
-Regression gate: `uv run pytest tests/ -m gate -q` (228 tests)
+Regression gate: `uv run pytest -m gate -q` (247 tests; collects `tests/`, `applications/`, `agents/`)
 
 ---
 

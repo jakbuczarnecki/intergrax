@@ -8,7 +8,11 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List
 
-from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, RunSummary
+from intergrax.runtime.nexus.tracing.persistence_models import (
+    PersistedRun,
+    RunSummary,
+    SerializedTraceEvent,
+)
 
 
 class _TaskView:
@@ -72,12 +76,22 @@ def _task_from_trace_tags(tags: Dict[str, Any], run_id: str, *, tenant_id: str =
     )
 
 
+def _normalize_trace_event(raw: Any) -> Dict[str, Any]:
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, SerializedTraceEvent):
+        from dataclasses import asdict
+
+        return asdict(raw)
+    raise TypeError(f"Unsupported trace event type: {type(raw)!r}")
+
+
 def build_trace_payload(
     persisted: PersistedRun,
     *,
     include_runtime: bool = False,
 ) -> Dict[str, Any]:
-    trace_events = persisted.events
+    trace_events = [_normalize_trace_event(raw) for raw in persisted.events]
     payload: Dict[str, Any] = {
         "run_id": persisted.metadata.run_id,
         "tenant_id": persisted.metadata.tenant_id,
@@ -96,8 +110,6 @@ def build_trace_payload(
     runtime_events: List[Dict[str, Any]] = []
     task = _task_from_trace_tags({}, persisted.metadata.run_id, tenant_id=persisted.metadata.tenant_id)
     for raw in trace_events:
-        if not isinstance(raw, dict):
-            continue
         tags = raw.get("tags") or {}
         task = _task_from_trace_tags(
             {

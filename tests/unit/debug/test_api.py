@@ -92,3 +92,39 @@ def test_debug_api_missing_db():
     with TestClient(app) as client:
         response = client.get("/debug/tasks", params={"tenant": "t1"})
     assert response.status_code == 503
+
+
+@pytest.mark.gate
+def test_debug_api_uses_injected_trace_store_without_sqlite():
+    from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
+
+    store = InMemoryRunTraceStore()
+    event = TraceEvent(
+        event_id=TraceEvent.new_id(),
+        run_id="run-debug-api-mem",
+        seq=1,
+        ts_utc="2026-05-27T10:00:00+00:00",
+        level=TraceLevel.INFO,
+        component=TraceComponent.PLANNER,
+        step="task_lifecycle",
+        message="task state -> completed",
+        tags={"task_id": "run-debug-api-mem", "task_state": "completed"},
+    )
+    store.append_event(event)
+    store.finalize_run(
+        "run-debug-api-mem",
+        RunMetadata(
+            run_id="run-debug-api-mem",
+            session_id="s1",
+            user_id="u1",
+            tenant_id="t1",
+            started_at_utc="2026-05-27T10:00:00+00:00",
+            stats=RunStats(duration_ms=42, llm_usage={}),
+        ),
+    )
+    app = create_debug_app(trace_store=store)
+    with TestClient(app) as client:
+        response = client.get("/debug/tasks", params={"tenant": "t1", "limit": 10})
+    assert response.status_code == 200
+    assert response.json()["count"] == 1
+    assert response.json()["runs"][0]["run_id"] == "run-debug-api-mem"

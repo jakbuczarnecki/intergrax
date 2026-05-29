@@ -936,6 +936,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-27 | B.01, B.02 | `RuntimeCheckpoint` full snapshot + UAEP mid-step cursor/resume; acceptance `05b` |
 | 2026-05-27 | B.12, B.14 | Production `POST /v1/interactions/intake` on lab; Legal legacy `AgentEngine` removed |
 | 2026-05-27 | B.05 | Escalation notification template + scheduler wiring in lab + SAFETY_VIOLATION timeout→escalate |
+| 2026-05-27 | B.09, B.17 | Injectable `trace_store` on debug API; gate uses `pytest -m gate` (`testpaths` includes `agents/`) |
 
 ### B.1 Runtime & §42 convergence
 
@@ -954,7 +955,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.08 | **Application trace store split** — factories used `InMemoryRunTraceStore` while debug API reads SQLite | §33, §42.24 | **High** | **Done** | HTTP `/debug/tasks/*` 503 in product apps | Tier-3 | `wire_nexus_observability` + `open_run_trace_store` (2026-05-27) |
-| B.09 | **Debug API trace reader** — only SQLite file path; no injectable in-memory / shared store handle | §19 | **Medium** | Open | Lab tests, local dev without file I/O | Tier-1 | Add optional `trace_store: RunTraceReader` to `create_debug_router` |
+| B.09 | **Debug API trace reader** — only SQLite file path; no injectable in-memory / shared store handle | §19 | **Medium** | **Done** | Lab tests, local dev without file I/O | Tier-1 | `trace_store` on `create_debug_router` / `create_debug_app`; lab passes Nexus store (2026-05-27) |
 | B.10 | **NexusLoop runtime events in app factories** — all Tier-3 factories pass runtime events to Nexus | §42.24 | **Medium** | **Done** | Events 503 on `/debug/tasks/{id}/events` | Tier-3 | Legal + Research default SQLite; lab when path passed (2026-05-27) |
 | B.11 | **Metrics layer** — canon says event-first, trace-second, **metrics-third**; no unified metrics export | §42.1, §33 | **Low** | Open | Ops visibility, SLOs | Tier-0 | Defer until product deployment need |
 
@@ -977,7 +978,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | ID | Item | Canon | Priority | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------------|------|----------------|
-| B.17 | **`agents/` gate collection** — `signoff_probe` test marks `gate` but lives under `agents/` (may not be collected by default `pytest tests/`) | — | **Low** | Sign-off smoke not in main gate count | Test infra | Add `agents/**/tests` to pytest paths or move acceptance smoke to `tests/acceptance/` |
+| B.17 | **`agents/` gate collection** — `signoff_probe` test marks `gate` but lives under `agents/` (may not be collected by default `pytest tests/`) | — | **Low** | **Done** | Sign-off smoke not in main gate count | Test infra | `testpaths` includes `agents/`; canonical gate: `uv run pytest -m gate -q` (2026-05-27) |
 | B.18 | **HTTP observability acceptance** — extend agent_os suite to assert trace on echo + graph scenarios (signoff_probe done) | Appendix A #9–10 | **Low** | Certification confidence | Test | Copy lab trace pattern to 1–2 acceptance tests |
 
 ### B.6 Suggested priority order (for planning)
@@ -988,12 +989,13 @@ Decision:       L1 certified — GO Phase K when product priority set
 3. ~~B.03, B.04~~ — governance facade + AgentDecision cleanup (Done 2026-05-27)
 4. ~~B.12, B.14~~ — product interaction + legacy removal (Done 2026-05-27)
 5. ~~B.05~~ — escalation production path (Done 2026-05-27)
-6. B.06–B.07, B.09–B.11, B.13, B.15–B.18 — as capacity allows
+6. ~~B.09, B.17~~ — debug trace injection + gate collection (Done 2026-05-27)
+7. B.06–B.07, B.11, B.13, B.15–B.18 — as capacity allows
 ```
 
 **Note:** Phase K business agents (Problem Radar, Vendor Discovery) remain **product-blocked** until explicit go — technical debt above does not auto-unblock K.1/K.2.
 
 ---
 
-*Plan synced with codebase after B.05 paydown (2026-05-27). Gate: 245 tests.*
+*Plan synced with codebase after B.09/B.17 paydown (2026-05-27). Gate: 247 tests.*
 

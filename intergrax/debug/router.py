@@ -51,7 +51,7 @@ from intergrax.debug.store import (
     open_default_task_checkpoint_persistence,
     open_runtime_event_persistence,
     open_task_checkpoint_persistence,
-    open_trace_reader,
+    resolve_trace_reader,
     resolve_trace_db_path,
 )
 from intergrax.experiments.models import (
@@ -70,12 +70,21 @@ from intergrax.runtime.long_running.persistence_contract import TaskCheckpointRe
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
 
 
-def _trace_reader_factory(db_path: Path | None) -> Callable[[], RunTraceReader]:
+def _trace_reader_factory(
+    db_path: Path | None,
+    trace_store: RunTraceReader | None = None,
+) -> Callable[[], RunTraceReader]:
+    if trace_store is not None:
+        def _open_injected() -> RunTraceReader:
+            return trace_store
+
+        return _open_injected
+
     resolved = resolve_trace_db_path(str(db_path) if db_path is not None else None)
 
     def _open() -> RunTraceReader:
         try:
-            return open_trace_reader(resolved)
+            return resolve_trace_reader(db_path=resolved)
         except FileNotFoundError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -144,11 +153,12 @@ def create_debug_router(
     checkpoints_db_path: Path | None = None,
     runtime_event_store: RuntimeEventPersistence | None = None,
     checkpoint_store: TaskCheckpointReader | None = None,
+    trace_store: RunTraceReader | None = None,
     hitl_service: DebugHitlResumeService | None = None,
     interaction_service: DebugInteractionIntakeService | None = None,
 ) -> APIRouter:
     router = APIRouter(prefix="/debug", tags=["debug"])
-    get_reader = _trace_reader_factory(db_path)
+    get_reader = _trace_reader_factory(db_path, trace_store)
     get_experiments = _experiment_store_factory(experiments_db_path)
     get_runtime_events = _runtime_event_store_factory(runtime_events_db_path, runtime_event_store)
     get_checkpoints = _checkpoint_store_factory(checkpoints_db_path, checkpoint_store)
@@ -180,7 +190,7 @@ def create_debug_router(
     ) -> RunDetailResponse:
         try:
             persisted = reader.read_run(run_id, tenant)
-        except ValueError as exc:
+        except (ValueError, KeyError) as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         return RunDetailResponse.from_persisted(persisted)
 
@@ -196,7 +206,7 @@ def create_debug_router(
     ) -> TraceResponse:
         try:
             persisted = reader.read_run(run_id, tenant)
-        except ValueError as exc:
+        except (ValueError, KeyError) as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         payload = build_trace_payload(persisted, include_runtime=include_runtime)
         return TraceResponse(
