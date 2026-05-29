@@ -2,6 +2,12 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+"""
+Redis-backed IdempotencyStore implementation.
+
+Composition root: ``intergrax.integrations.providers.redis.create_redis_idempotency_store``.
+"""
+
 from __future__ import annotations
 
 import base64

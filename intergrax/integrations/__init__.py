@@ -13,6 +13,7 @@ from intergrax.integrations.contracts.base import (
     UnknownIntegrationError,
     UnknownIntegrationCategoryError,
 )
+from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.factory import (
     build_profile_from_env,
     build_profile_from_mapping,
@@ -37,6 +38,7 @@ __all__ = [
     "build_profile_from_env",
     "build_profile_from_mapping",
     "coerce_slug",
+    "register_default_integrations",
     "resolve",
     "resolve_from_profile",
 ]

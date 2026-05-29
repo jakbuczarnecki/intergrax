@@ -2,6 +2,12 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+"""
+Redis-backed cache for reranker score results.
+
+Composition root: ``intergrax.integrations.providers.redis.create_redis_rerank_cache``.
+"""
+
 from __future__ import annotations
 
 import hashlib

@@ -176,7 +176,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
-| §7.1 Integration Library | Catalog + contracts + providers | **Partial** | Core M.1–M.3 + M.5 **Done**; M.4 providers pending |
+| §7.1 Integration Library | Catalog + contracts + providers | **Partial** | Core **Done**; M.4 in progress — **redis Done** (2026-05-29) |
 
 | §19 Debug surface | CLI / API | **Done** | D.1 CLI + D.2 API ✅ |
 
@@ -531,11 +531,34 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M.1 | Scaffold `intergrax/integrations/` package | **Done** | `contracts/`, `registry/`, `_shared/`, `providers/` |
 | M.2 | Category contracts (P0 set) | **Done** | 7 P0 contracts + re-exports for queueing/notifications/interactions |
 | M.3 | `IntegrationRegistry` + `IntegrationProfile` | **Done** | `catalog.register_integration`, `resolve`, env/mapping profile |
-| M.4 | P0 providers — wrap existing | Pending | sqlite, redis, kafka, celery, google_cse, bing, slack, teams, webhook |
+| M.4 | P0 providers — wrap existing | **In progress** | See **M.4 provider tracker** below |
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
 | M.6 | P1 providers (on demand) | Pending | postgresql, mysql, jira, confluence, ms365_graph, prometheus, **aws, azure, gcp**, … |
 | M.7 | Agent Creation Guide § integrations | Pending | How agents declare needs vs Tier-3 wiring |
 | M.8 | Lab `IntegrationProfile` example | Pending | `applications/lab_application/` sqlite + logging + lab_json |
+
+**M.4 delivery workflow (one provider per iteration):**
+
+1. Implement `providers/<slug>/` (wrap legacy module — no fork).
+2. Register via `register_<slug>_integration()` + `register_default_integrations()`.
+3. Unit tests under `tests/unit/integrations/providers/`.
+4. Update canon §7.1.3 status + this tracker + migration map row.
+5. Next slug in priority order.
+
+#### M.4 provider tracker
+
+| Slug | Category | Status | Package | Legacy source |
+|------|----------|--------|---------|---------------|
+| `redis` | key_value_cache | **Done** | `providers/redis/` — `create_redis_integration()` (KV, idempotency, rate limit, semaphore, rerank) |
+| `sqlite` | relational_store | Pending | — | `runtime/*/stores/sqlite_*.py` |
+| `kafka` | message_bus | Pending | — | `queueing/providers/kafka/` |
+| `celery` | message_bus | Pending | — | `queueing/providers/celery/` |
+| `google_cse` | search_provider | Pending | — | `websearch/providers/google_cse_provider.py` |
+| `bing` | search_provider | Pending | — | `websearch/providers/bing_provider.py` |
+| `slack` | notification + interaction | Pending | — | `runtime/notifications/` + `runtime/interactions/` |
+| `teams` | notification + interaction | Pending | — | j.w. |
+| `webhook` | notification_channel | Pending | — | `runtime/notifications/adapters/webhook_adapter.py` |
+| `lab_json` | interaction_surface | Pending | — | `runtime/interactions/adapters/lab_json_adapter.py` |
 
 #### M.1 — Package scaffold (step-by-step)
 
@@ -677,7 +700,7 @@ providers/gcp/
 
 | Legacy location | Target slug | Action |
 |-----------------|-------------|--------|
-| `distributed/providers/redis_*.py` | `redis` | Wrap; keep public API stable during transition |
+| `distributed/providers/redis_kv_store.py` (+ siblings) | `redis` | **Done** — single entry `integrations/providers/redis/create_redis_integration()` |
 | `queueing/providers/kafka/` | `kafka` | Register; implement `MessageBus` |
 | `queueing/providers/celery/` | `celery` | Register |
 | `queueing/providers/rabbitmq/` | `rabbitmq` | Register |
@@ -1156,6 +1179,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Date | ID | Summary |
 |------|-----|---------|
+| 2026-05-29 | M.4-redis | Complete bundle: `create_redis_integration()` — KV, idempotency, rate limit, semaphore, rerank; 42+ integration unit tests |
 | 2026-05-27 | B.08, B.10 | `wire_nexus_observability` + SQLite defaults in Legal / Research / Lab factories; integration test |
 | 2026-05-27 | B.01, B.02 | `RuntimeCheckpoint` full snapshot + UAEP mid-step cursor/resume; acceptance `05b` |
 | 2026-05-27 | B.12, B.14 | Production `POST /v1/interactions/intake` on lab; Legal legacy `AgentEngine` removed |
@@ -1196,7 +1220,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
-| B.19 | **P0 provider wraps** — sqlite, redis, kafka, celery, search, slack/teams | §7.1.3 | **High** | Open | Lab + first prod apps | Tier-0 | Phase M.4; wrap existing modules |
+| B.19 | **P0 provider wraps** — sqlite, kafka, celery, search, slack/teams | §7.1.3 | **High** | **In progress** | Lab + first prod apps | Tier-0 | **redis Done** (2026-05-29); remainder Phase M.4 |
 | B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | Open | Multi-tenant applications | Tier-0 | Phase M.6 after M.4 |
 | B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | Open | PM / research agents | Tier-0 | Phase M.6; tools via ToolRuntime |
 | B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | Open | Org worker, scheduling agents | Tier-0 | Phase M.6 |

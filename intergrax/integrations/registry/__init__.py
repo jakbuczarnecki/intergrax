@@ -1,6 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
+from intergrax.integrations.registry.bootstrap import (
+    register_default_integrations,
+    reset_default_integrations_state,
+)
 from intergrax.integrations.registry.catalog import (
     catalog_snapshot,
     clear_catalog,
@@ -40,9 +44,11 @@ __all__ = [
     "iter_entries",
     "list_slugs",
     "metadata_for_slug",
+    "register_default_integrations",
     "register_integration",
     "resolve",
     "resolve_from_profile",
     "resolve_slug",
+    "reset_default_integrations_state",
     "unregister_integration",
 ]

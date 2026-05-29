@@ -625,7 +625,7 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 |------|----------|--------|-----------|
 | `sqlite` | relational_store | **Exists** → Catalog | Default lab persistence (trace, checkpoint, experiments, HITL) |
 | `postgresql` | relational_store | Planned | Production relational store; multi-tenant apps |
-| `redis` | key_value_cache | **Exists** → Catalog | Cache, rate limits, idempotency, session (partial) |
+| `redis` | key_value_cache | **Done** | `providers/redis/` — **single entry** `create_redis_integration()` wraps KV, idempotency, rate limit, semaphore, rerank cache |
 | `kafka` | message_bus | **Exists** → Catalog | Async worker scale-out, event streaming |
 | `celery` | message_bus | **Exists** → Catalog | Task queue already wired for Nexus worker |
 | `google_cse` | search_provider | **Exists** → Catalog | Research agents, Problem Radar |
@@ -702,21 +702,37 @@ applications/legal_application/settings.py
     → create_interaction_adapter("teams")
 ```
 
-`IntegrationProfile` (planned) is declarative:
+`IntegrationProfile` uses typed slugs (`IntegrationSlug` enum). YAML/env may use strings; application code must not.
+
+```python
+from intergrax.integrations import (
+    IntegrationProfile,
+    IntegrationSlug,
+    register_default_integrations,
+    resolve,
+)
+
+register_default_integrations()
+profile = IntegrationProfile(
+    key_value_cache=IntegrationSlug.REDIS,
+    relational_store=IntegrationSlug.SQLITE,
+)
+cache = resolve("key_value_cache", profile=profile)
+```
+
+Declarative YAML (Tier-3 / deployment only):
 
 ```yaml
 integrations:
   cloud_platform: aws              # optional — sets defaults for aws-native services
-  relational_store: postgresql     # or sqlite for lab; or rds via aws facade
+  relational_store: sqlite
   key_value_cache: redis
-  message_bus: celery              # or sqs when cloud_platform: aws
-  object_storage: s3               # resolved from aws facade when omitted
+  message_bus: celery
   notification_channel: slack
   search_provider: google_cse
-  issue_tracker: jira
 ```
 
-**Forbidden:** hard-coding `import redis` or `psycopg2` inside `agents/<name>/`. **Required:** depend on injected contract instances or ToolRuntime tool names registered from catalog providers.
+**Forbidden:** hard-coding `import redis` or `psycopg2` inside `agents/<name>/`. **Required:** `register_default_integrations()` in Tier-3 factory, then `resolve()` or `create_redis_integration()` / provider factories from `integrations/providers/<slug>/`; agents use ToolRuntime for tools.
 
 ### 7.1.5 Provider Maintenance Model
 
