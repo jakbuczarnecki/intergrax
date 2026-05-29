@@ -17,15 +17,6 @@ from intergrax.runtime.transport.bundle import TransportBundle
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 
-from intergrax.queueing.providers.kafka.confluent_kafka_message_producer import (
-    ConfluentKafkaMessageProducer,
-)
-from intergrax.queueing.providers.kafka.confluent_kafka_message_consumer import (
-    ConfluentKafkaMessageConsumer,
-)
-from intergrax.queueing.providers.kafka.kafka_task_queue import KafkaTaskQueue
-from intergrax.queueing.providers.kafka.kafka_worker import KafkaWorker
-
 from intergrax.queueing.providers.rabbitmq.rabbitmq_message_producer import (
     RabbitMQMessageProducer,
 )
@@ -59,35 +50,15 @@ def build_transport(
         if config.kafka is None:
             raise ValueError("KafkaTransportConfig must be provided")
 
-        kafka_cfg: KafkaTransportConfig = config.kafka
+        from intergrax.integrations.providers.kafka.bundle import build_kafka_transport
 
-        producer = ConfluentKafkaMessageProducer(
-            bootstrap_servers=kafka_cfg.bootstrap_servers,
-        )
-
-        consumer = ConfluentKafkaMessageConsumer(
-            bootstrap_servers=kafka_cfg.bootstrap_servers,
-            topic=queue_name,
-            group_id=consumer_group or "intergrax-default",
-            extra_config={"auto.offset.reset": "earliest"},
-        )
-
-        task_queue = KafkaTaskQueue(
-            producer=producer,
-            topic=queue_name,
+        return build_kafka_transport(
             kv_store=kv_store,
-        )
-
-        worker = KafkaWorker(
-            consumer=consumer,
-            registry=execution_registry,
-            kv_store=kv_store,
+            execution_registry=execution_registry,
             idempotency_store=idempotency_store,
-        )
-
-        return TransportBundle(
-            task_queue=task_queue,
-            worker=worker,
+            topic=queue_name,
+            consumer_group=consumer_group or "intergrax-default",
+            bootstrap_servers=config.kafka.bootstrap_servers,
         )
 
     if config.backend == "rabbitmq":

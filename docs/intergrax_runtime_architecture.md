@@ -626,7 +626,7 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 | `sqlite` | relational_store | **Done** | `providers/sqlite/` — **single entry** `create_sqlite_integration()` (trace, events, checkpoints, HITL, task memory, experiments, idempotency, session, org) |
 | `postgresql` | relational_store | Planned | Production relational store; multi-tenant apps |
 | `redis` | key_value_cache | **Done** | `providers/redis/` — **single entry** `create_redis_integration()` wraps KV, idempotency, rate limit, semaphore, rerank cache |
-| `kafka` | message_bus | **Exists** → Catalog | Async worker scale-out, event streaming |
+| `kafka` | message_bus | **Done** | `providers/kafka/` — `create_kafka_integration()` + `build_kafka_transport()` |
 | `celery` | message_bus | **Exists** → Catalog | Task queue already wired for Nexus worker |
 | `google_cse` | search_provider | **Exists** → Catalog | Research agents, Problem Radar |
 | `bing` | search_provider | **Exists** → Catalog | Alternate / fallback web search |

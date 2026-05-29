@@ -176,7 +176,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
-| §7.1 Integration Library | Catalog + contracts + providers | **Partial** | Core **Done**; M.4 in progress — **redis + sqlite Done** |
+| §7.1 Integration Library | Catalog + contracts + providers | **Partial** | M.4 in progress — **redis + sqlite + kafka Done** |
 
 | §19 Debug surface | CLI / API | **Done** | D.1 CLI + D.2 API ✅ |
 
@@ -551,7 +551,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 |------|----------|--------|---------|---------------|
 | `redis` | key_value_cache | **Done** | `providers/redis/` — `create_redis_integration()` (KV, idempotency, rate limit, semaphore, rerank) |
 | `sqlite` | relational_store | **Done** | `providers/sqlite/` — `create_sqlite_integration()` (trace, events, checkpoints, HITL, …) |
-| `kafka` | message_bus | Pending | — | `queueing/providers/kafka/` |
+| `kafka` | message_bus | **Done** | `providers/kafka/` — `create_kafka_integration()` (requires `kv_store`) |
 | `celery` | message_bus | Pending | — | `queueing/providers/celery/` |
 | `google_cse` | search_provider | Pending | — | `websearch/providers/google_cse_provider.py` |
 | `bing` | search_provider | Pending | — | `websearch/providers/bing_provider.py` |
@@ -701,7 +701,7 @@ providers/gcp/
 | Legacy location | Target slug | Action |
 |-----------------|-------------|--------|
 | `distributed/providers/redis_kv_store.py` (+ siblings) | `redis` | **Done** — single entry `integrations/providers/redis/create_redis_integration()` |
-| `queueing/providers/kafka/` | `kafka` | Register; implement `MessageBus` |
+| `queueing/providers/kafka/` | `kafka` | **Done** — `integrations/providers/kafka/create_kafka_integration()` |
 | `queueing/providers/celery/` | `celery` | Register |
 | `queueing/providers/rabbitmq/` | `rabbitmq` | Register |
 | `websearch/providers/google_cse_provider.py` | `google_cse` | Register |
@@ -1181,7 +1181,8 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Date | ID | Summary |
 |------|-----|---------|
-| 2026-05-29 | M.4-sqlite-adopt | Runtime `open_*` + apps delegate to `integrations/providers/sqlite/`; `opens.py` sole instantiator |
+| 2026-05-29 | M.4-kafka | `providers/kafka/` + transport delegate; requires `kv_store` |
+| 2026-05-29 | M.4-sqlite-adopt | Runtime `open_*` + apps delegate to `integrations/providers/sqlite/` |
 | 2026-05-29 | M.4-sqlite | `providers/sqlite/` + bundle (10 domain stores); lazy bootstrap + package `__init__` |
 | 2026-05-29 | M.4-redis | Complete bundle: `create_redis_integration()` — KV, idempotency, rate limit, semaphore, rerank |
 | 2026-05-27 | B.08, B.10 | `wire_nexus_observability` + SQLite defaults in Legal / Research / Lab factories; integration test |
@@ -1224,7 +1225,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
-| B.19 | **P0 provider wraps** — kafka, celery, search, slack/teams | §7.1.3 | **High** | **In progress** | Lab + first prod apps | Tier-0 | **redis + sqlite Done**; remainder Phase M.4 |
+| B.19 | **P0 provider wraps** — celery, search, slack/teams | §7.1.3 | **High** | **In progress** | Lab + first prod apps | Tier-0 | **redis + sqlite + kafka Done**; remainder M.4 |
 | B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | Open | Multi-tenant applications | Tier-0 | Phase M.6 after M.4 |
 | B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | Open | PM / research agents | Tier-0 | Phase M.6; tools via ToolRuntime |
 | B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | Open | Org worker, scheduling agents | Tier-0 | Phase M.6 |
