@@ -25,6 +25,7 @@ from intergrax.experiments.models import (
     RegisterExperimentRequest,
 )
 from intergrax.experiments.store import SQLiteExperimentStore
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
