@@ -55,4 +55,4 @@ curl -s -X POST http://127.0.0.1:8090/v1/lab/run \
 - **Tier-3 lab application** composes registry + Nexus + debug surface
 - Agent logic never belongs in this application — only wiring and routes
 
-See [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md).
+See [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) — single canonical guide (Step 4C for lab registration).

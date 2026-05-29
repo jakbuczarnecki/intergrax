@@ -197,4 +197,4 @@ curl -X POST localhost:8090/v1/lab/run -H "Content-Type: application/json" \
 | `RUNTIME_READY_FOR_BUSINESS_AGENTS.md` | Go/no-go checklist |
 | `AGENT_CREATION_GUIDE.md` | Canonical agent workflow |
 | `INTERGRAX_IMPLEMENTATION_PLAN.md` | Phase tracking (L active, K blocked) |
-| `experiment_guide.md` | Debug API details |
+| `AGENT_CREATION_GUIDE.md` | Single canonical agent workflow |

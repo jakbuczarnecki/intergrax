@@ -341,32 +341,25 @@ def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
         f"""\
         # {slug} agent
 
-        UAEP-first scaffold. See [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md).
+        UAEP-first scaffold. Full process: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) (single canonical guide).
 
-        ## Register
+        ## Quick start
+
+        1. Implement domain logic in `steps/`
+        2. Run smoke test: `uv run pytest agents/{slug}/tests -q`
+        3. For lab HTTP: register in `applications/lab_application/host/wiring.py` (see guide Step 4C)
+
+        ## Register (programmatic)
 
         ```python
-        from intergrax.runtime.registry import AgentRegistry
+        from intergrax.runtime.registry.agent_registry import AgentRegistry
         from {slug}.{slug}_agent import {class_name}
 
         registry = AgentRegistry()
         registry.register({class_name}())
         ```
 
-        ## Run (NexusLoop)
-
-        ```python
-        from intergrax.runtime.task import Task, TaskContext
-
-        result = await loop.handle_task(
-            Task(
-                tenant_id="t1",
-                user_id="u1",
-                message="hello",
-                context=TaskContext(capability="{capabilities[0]}"),
-            )
-        )
-        ```
+        See **Step 4** in AGENT_CREATION_GUIDE.md for all registration contexts.
 
         ## Capabilities
 
@@ -477,7 +470,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Created UAEP agent scaffold at {path}")
         print(f"  Register: from {slug}.{slug}_agent import {class_name}")
         print(f"  Test:     uv run pytest {path / 'tests'} -q")
-        print(f"  Guide:    docs/AGENT_CREATION_GUIDE.md")
+        print(f"  Guide:    docs/AGENT_CREATION_GUIDE.md  (canonical — read Step 4 for registration)")
         return 0
 
     parser.error(f"Unknown command: {args.command}")

@@ -449,7 +449,7 @@ PARALLEL: K.3–K.5 hardening (non-business) when capacity allows
 
 3. **Test** — unit + integration, deterministic, no network
 
-4. **Documentation** — update this plan + [`experiment_guide.md`](experiment_guide.md) when workflow changes
+4. **Documentation** — update this plan + [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) when workflow changes
 
 5. **No regression** — `pytest tests/ -m gate` green; Echo through NexusLoop
 
