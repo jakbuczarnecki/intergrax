@@ -11,7 +11,7 @@ The `docs/` folder contains **exactly four documents**. Nothing else belongs her
 | Document | Purpose |
 |----------|---------|
 | [**intergrax_runtime_architecture.md**](intergrax_runtime_architecture.md) | **Architecture canon** — tiers, Nexus, UAEP §42, contracts, forbidden patterns |
-| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps, priority, readiness checklist (Appendix A) |
+| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps, priority, readiness (Appendix A), technical debt backlog (Appendix B) |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | **This file** | Navigation and update rules |
 
@@ -30,6 +30,7 @@ Agent workflow (how)     →  AGENT_CREATION_GUIDE.md
 | Understand the platform | Implementation plan §0, then architecture canon §1–§5 |
 | See current phase and what's next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §1–§4 |
 | Check readiness for business agents | Implementation plan **Appendix A** |
+| Review technical debt before Tier-1 work | Implementation plan **Appendix B** |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
 | Deep-dive UAEP / hooks / governance | Architecture canon §42 |
 
@@ -40,9 +41,8 @@ Agent workflow (how)     →  AGENT_CREATION_GUIDE.md
 | Phase | Status |
 |-------|--------|
 | Phase J — Unified execution entry | **Done** |
-| Phase L — Agent OS deliverables | **Done** |
-| Phase L — Sign-off exercise | **Pending** |
-| Phase K — Problem Radar / Vendor Discovery | **Blocked** |
+| Phase L — Agent OS certification (deliverables + sign-off) | **Done** |
+| Phase K — Problem Radar / Vendor Discovery | **Ready to open** (product decision) |
 
 Gate: `uv run pytest tests/ -m gate -q` (**228 tests**)
 

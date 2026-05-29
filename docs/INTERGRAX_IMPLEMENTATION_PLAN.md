@@ -21,6 +21,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Phase status, gaps, priority | **This file** |
 | Agent creation workflow | `AGENT_CREATION_GUIDE.md` |
 | Business-agent go/no-go checklist | **Appendix A** (below) |
+| Technical debt backlog (analysis only) | **Appendix B** (below) |
 
 ---
 
@@ -37,7 +38,24 @@ Current optimization targets:
 - experimentation speed · agent creation speed · runtime stability
 - orchestration quality · observability · composability
 
-Business agents (Problem Radar, Vendor Discovery, Legal expansion) are **blocked** until Phase L sign-off (Appendix A).
+Business agents (Problem Radar, Vendor Discovery, Legal expansion) are **blocked** until Phase L certification sign-off (Appendix A).
+
+### 0.6 When Tier-1 (Nexus) changes are required
+
+**Default (Tier-2 agent):** register + `AgentContract` + UAEP steps — **no** edits to `intergrax/runtime/`.
+
+**Extend Tier-1** only when the need is **reusable across many future agents**, not one product:
+
+| Situation | Action |
+|-----------|--------|
+| New agent with existing capabilities, memory, graph, HITL, sandbox | **Tier-2 only** — `agents/<slug>/` |
+| New capability id, prompts, domain tools | **Tier-2** (+ Tier-0 adapter if new external integration) |
+| New orchestration primitive (e.g. new graph node type, new lifecycle state) | **Tier-1** — must serve multiple agents; update canon §42 first |
+| New platform concern (new store, queue, notification channel) | **Tier-0** — `intergrax/` shared module |
+| Agent-specific product wiring (routes, env, which agents active) | **Tier-3** — `applications/<product>/` |
+| One agent needs special-case branch in `NexusLoop` | **Anti-pattern** — refactor to contract/metadata or Tier-0 |
+
+If the answer to “will another agent need this?” is **no**, it does not belong in Nexus.
 
 ### 0.2 Four tiers
 
@@ -72,8 +90,8 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Canon §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** | Phases A–F |
 | §42 Unified Execution Runtime | **~65–70%** | UAEP done; §42.9 mid-step checkpoint pending |
 | Laboratory workflow | **~95%** | Debug API, experiments, lab app |
-| Agent OS readiness (Phase L deliverables) | **Done** | Scaffold, guide, acceptance suite |
-| Agent OS sign-off | **Pending** | One live < 1h agent exercise |
+| Agent OS certification (Phase L deliverables) | **Done** | Scaffold, guide, acceptance suite |
+| Agent OS certification (sign-off exercise) | **Done** | `agents/signoff_probe/` — see Appendix A |
 | Regression gate | **228 passed** | `pytest -m gate` |
 
 ---
@@ -457,9 +475,9 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ---
 
-### Phase L — Agent OS Readiness
+### Phase L — Agent OS Certification
 
-**Directive:** Do not implement business agents until Phase L sign-off (Appendix A).  
+**Directive:** L1 certification recorded in Appendix A. Phase K is a **product** decision, not a runtime gate.  
 **Agent workflow:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)
 
 | # | Deliverable | Status | Req | Notes |
@@ -471,8 +489,8 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | L.5 | Agent OS acceptance suite | **Done** | R1 | `tests/acceptance/agent_os/` |
 | L.6 | Runtime independence verification | **Done** | R5 | Register + run without Nexus edits |
 | L.7 | Application composition verification | **Done** | R5 | Agents ≠ applications |
-| L.8 | Readiness checklist | **Done** | R1 | Appendix A (this file) |
-| L.9 | **Sign-off exercise** | **Pending** | — | New scaffolded agent < 1h, zero runtime edits |
+| L.8 | Certification checklist | **Done** | R1 | Appendix A (this file) |
+| L.9 | **Sign-off exercise** | **Done** | — | `agents/signoff_probe/` — Appendix A record |
 
 **Acceptance tests (L.5):**
 
@@ -501,11 +519,11 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 
 ```text
 
-NOW:     Phase L sign-off (one new agent exercise, Appendix A)
+NOW:     Phase L certification **complete** — L1 achieved (Appendix A)
 
-NEXT:    Phase K — K.1/K.2 on demand (after sign-off)
+NEXT:    Phase K — K.1/K.2 **when you approve** (Problem Radar or Vendor Discovery)
 
-BLOCKED: Problem Radar, Vendor Discovery, Legal expansion
+BLOCKED: No new Nexus features unless Tier-1 extension rule (§0.6) applies
 
 PARALLEL: K.3–K.5 hardening (non-business) when capacity allows
 
@@ -879,23 +897,92 @@ uv run pytest tests/ -m gate -q
 |-----------|-----------|---------|
 | Checklist | ≥ 90% | **20/20** |
 | Acceptance suite | 10/10 green | ✅ |
-| Sign-off exercise | 1 new agent, < 1h, zero runtime edits | **Pending** |
+| Sign-off exercise | 1 new agent, < 1h, zero runtime edits | **Done** (`signoff_probe`) |
 
-**Verdict:** Platform **L1 lab-ready**. Business agents **NO-GO** until sign-off.
+**Verdict:** **L1 Agent Operating System certified** (technical). Phase K opens on product decision — not automatic runtime work.
 
-### Sign-off template
+### Sign-off record
 
 ```text
-Date:
-Agent exercise: <slug>
-Time to first run:
-Runtime files modified: none
-Acceptance suite: pass
-Gate suite: pass
-Decision: GO Phase K / HOLD
+Date:           2026-05-27
+Agent exercise: signoff_probe
+Capability:     signoff.probe
+Time to first run: ~15 min (scaffold + smoke test)
+Runtime files modified: none (only agents/signoff_probe/ added)
+Smoke test:     agents/signoff_probe/tests — 1 passed
+HTTP proof:     lab_application wiring + POST /v1/lab/run
+Trace proof:    GET /debug/tasks/{id}, /trace?include_runtime=true, /events
+                (test_lab_application_runs_signoff_probe_with_trace)
+Acceptance suite: pass (tests/acceptance/agent_os)
+Gate suite:     pass (228+ tests)
+Trace:          NexusLoop smoke + HTTP debug API (SQLite trace store in lab factory)
+Decision:       L1 certified — GO Phase K when product priority set
 ```
 
 ---
 
-*Plan synced with codebase after Phase L (2026-05-27). Gate: 228 tests.*
+## Appendix B — Technical debt backlog (analysis only)
+
+**Purpose:** consolidated backlog for review — **no implementation in this pass**.  
+**Source:** canon §2 map, §0.5 maturity, Phase G–K gaps, lab sign-off findings (2026-05-27).  
+**How to use:** pick items by priority; apply §0.6 (Tier-1 only when reusable across agents).
+
+### B.1 Runtime & §42 convergence
+
+| ID | Item | Canon | Priority | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------------|------|----------------|
+| B.01 | **UAEP mid-step checkpoint** — resume inside a long-running step (not only between steps / HITL) | §42.9.3, §26 | **High** | Long-running domain agents (Legal, Research) | Tier-1 | Extend `RuntimeCheckpoint` with step-internal cursor; AgentEngine hook |
+| B.02 | **Full checkpoint snapshot** — plan + graph node states + UAEP index + pending decisions in one durable blob | §42.9.2 | **High** | Multi-agent graphs, crash recovery | Tier-1 | Unify checkpoint writer; acceptance test for graph mid-flight resume |
+| B.03 | **Policy engine facade** — single `PolicyEngine` for replay, validation, HITL, retry (today split across modules) | §42.11 | **Medium** | Indirect — consistent governance for all agents | Tier-1 | Phase K.3; no agent-specific branches |
+| B.04 | **Dual `AgentDecision` cleanup** — converge tools-agent variant with canonical §42.7 enum | §42.7 | **Medium** | Agents emitting decisions must use one contract | Tier-1 | Deprecate legacy import paths; codemod + gate |
+| B.05 | **Escalation policy production path** — `SAFETY_VIOLATION` / HITL expiry → real escalation (not stub) | §42.38, §42.10 | **Medium** | HITL-heavy agents | Tier-1 | Wire scheduler + notification templates to escalation handler |
+| B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | Extension agents via plugins | Tier-1 | Document current subset; incremental HookRegistry adoption |
+| B.07 | **§42 maturity remainder (~30%)** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | Platform stability for new agents | Tier-1 | Track as Phase G follow-up epics |
+
+### B.2 Observability & debug surface
+
+| ID | Item | Canon | Priority | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------------|------|----------------|
+| B.08 | **Application trace store split** — Legal / Research / default lab without `db_path` still use `InMemoryRunTraceStore` while debug API reads SQLite | §33, §42.24 | **High** | HTTP `/debug/tasks/*` returns 503 or empty in product apps | Tier-3 (+ Tier-1 reader) | Default SQLite path per app factory; or inject shared `RunTraceReader` into debug router |
+| B.09 | **Debug API trace reader** — only SQLite file path; no injectable in-memory / shared store handle | §19 | **Medium** | Lab tests, local dev without file I/O | Tier-1 | Add optional `trace_store: RunTraceReader` to `create_debug_router` |
+| B.10 | **NexusLoop runtime events in app factories** — ensure all Tier-3 factories pass `runtime_events_db_path` to Nexus (lab fixed 2026-05-27) | §42.24 | **Medium** | Events 503 on `/debug/tasks/{id}/events` | Tier-3 | Audit Legal / Research factories same as lab |
+| B.11 | **Metrics layer** — canon says event-first, trace-second, **metrics-third**; no unified metrics export | §42.1, §33 | **Low** | Ops visibility, SLOs | Tier-0 | Defer until product deployment need |
+
+### B.3 Interaction surfaces (§18)
+
+| ID | Item | Canon | Priority | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------------|------|----------------|
+| B.12 | **Production Slack / Teams webhooks** — lab has debug intake + signature stub; no production inbound adapter deployment | §18 | **Medium** | Organization Worker, HITL from chat | Tier-0 / Tier-3 | H.3–H.5 done for lab; product wiring + secrets management pending |
+| B.13 | **Outbound delivery hardening** — retries, DLQ, delivery receipts for HITL notifications | §18, §42.10 | **Low** | HITL agents in prod | Tier-0 | Extend pluggable delivery with persistence |
+
+### B.4 Legacy & composition
+
+| ID | Item | Canon | Priority | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------------|------|----------------|
+| B.14 | **`ChatAgent` / legacy engine removal** — `LEGAL_USE_LEGACY_AGENT_ENGINE` still available | §39, §41 | **Medium** | Single execution path for all agents | Tier-1 / Tier-3 | Phase K.5 after confirming Legal on UAEP-only |
+| B.15 | **Legal full E2E gate (real LLM)** — deferred acceptance with live model | — | **Low** | Legal quality assurance | Tier-2 / CI | K.6; separate from Agent OS gate |
+| B.16 | **Lab agent auto-discovery** — new agents require explicit `wiring.py` register (by design, but easy to forget) | §7.4 | **Low** | Onboarding friction | Tier-3 | Optional env-driven plugin loader **only** if many agents; else keep explicit wiring + guide |
+
+### B.5 Test & certification hygiene
+
+| ID | Item | Canon | Priority | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------------|------|----------------|
+| B.17 | **`agents/` gate collection** — `signoff_probe` test marks `gate` but lives under `agents/` (may not be collected by default `pytest tests/`) | — | **Low** | Sign-off smoke not in main gate count | Test infra | Add `agents/**/tests` to pytest paths or move acceptance smoke to `tests/acceptance/` |
+| B.18 | **HTTP observability acceptance** — extend agent_os suite to assert trace on echo + graph scenarios (signoff_probe done) | Appendix A #9–10 | **Low** | Certification confidence | Test | Copy lab trace pattern to 1–2 acceptance tests |
+
+### B.6 Suggested priority order (for planning)
+
+```text
+1. B.08, B.10  — observability consistency across Tier-3 apps
+2. B.01, B.02  — long-running / graph recovery (blocks ambitious agents)
+3. B.03, B.04  — §42 governance convergence (K.3, K.4)
+4. B.12, B.14  — product interaction + legacy removal (K.5, §18 prod)
+5. B.05–B.07, B.09–B.11, B.13, B.15–B.18 — as capacity allows
+```
+
+**Note:** Phase K business agents (Problem Radar, Vendor Discovery) remain **product-blocked** until explicit go — technical debt above does not auto-unblock K.1/K.2.
+
+---
+
+*Plan synced with codebase after Phase L (2026-05-27). Gate: 228+ tests.*
 

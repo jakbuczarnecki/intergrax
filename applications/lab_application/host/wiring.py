@@ -33,6 +33,11 @@ def build_lab_registry(*, settings: LabApplicationSettings | None = None) -> Age
         registry.register(ValidatorMockAgent())
         registry.register(ComposerMockAgent())
 
+    if settings.include_signoff_probe:
+        from signoff_probe.signoff_probe_agent import SignoffProbeAgent
+
+        registry.register(SignoffProbeAgent())
+
     if settings.include_research:
         from research.research_agent import ResearchAgent
         from research.summary_agent import SummaryAgent

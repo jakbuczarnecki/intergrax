@@ -17,6 +17,7 @@ class LabApplicationSettings:
     route_prefix: str = "/v1/lab"
     include_mock_agents: bool = True
     include_echo: bool = True
+    include_signoff_probe: bool = True
     include_research: bool = False
 
     @classmethod
@@ -33,6 +34,13 @@ class LabApplicationSettings:
             "false",
             "no",
         }
+        include_signoff_probe = (
+            os.getenv("LAB_INCLUDE_SIGNOFF_PROBE") or "true"
+        ).strip().lower() not in {
+            "0",
+            "false",
+            "no",
+        }
         include_research = (os.getenv("LAB_INCLUDE_RESEARCH") or "false").strip().lower() in {
             "1",
             "true",
@@ -44,5 +52,6 @@ class LabApplicationSettings:
             route_prefix=prefix,
             include_mock_agents=include_mocks,
             include_echo=include_echo,
+            include_signoff_probe=include_signoff_probe,
             include_research=include_research,
         )
