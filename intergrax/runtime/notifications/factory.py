@@ -115,6 +115,13 @@ def create_notification_adapter(
     if backend == NotificationBackend.LOG:
         return LoggingNotificationAdapter()
 
+    if backend == NotificationBackend.SLACK:
+        from intergrax.integrations.providers.slack.config import SlackIntegrationConfig
+        from intergrax.integrations.providers.slack.opens import open_slack_notification_channel
+
+        config = SlackIntegrationConfig.from_env(webhook_url=resolved.slack_webhook_url)
+        return open_slack_notification_channel(config, delivery=delivery)
+
     url = _webhook_url_for_backend(resolved, backend)
     if not url:
         return LoggingNotificationAdapter()

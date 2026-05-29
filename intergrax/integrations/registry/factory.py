@@ -97,6 +97,11 @@ def resolve(
         options = profile.options_for_slug(resolved_slug)
     merged = merge_config(options, config)
 
+    if len(entry.categories) > 1:
+        if merged:
+            return entry.factory(integration_category=normalized, **merged)
+        return entry.factory(integration_category=normalized)
+
     if merged:
         return entry.factory(**merged)
     return entry.factory()

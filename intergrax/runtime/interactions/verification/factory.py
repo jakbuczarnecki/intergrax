@@ -16,7 +16,6 @@ from intergrax.runtime.interactions.verification.contract import (
 )
 from intergrax.runtime.interactions.verification.slack_signature import (
     ENV_SLACK_VERIFY_SIGNATURE,
-    SlackSignatureVerifier,
     resolve_slack_signing_secret,
 )
 from intergrax.runtime.interactions.verification.teams_signature import (
@@ -74,7 +73,9 @@ def create_inbound_verifier(
         return implementation
     resolved = settings or resolve_inbound_verifier_settings()
     if resolved.mode == InboundVerifierMode.SLACK:
-        return SlackSignatureVerifier(
+        from intergrax.integrations.providers.slack.bundle import create_slack_signature_verifier
+
+        return create_slack_signature_verifier(
             signing_secret=resolved.slack_signing_secret,
             enabled=resolved.slack_verify_enabled,
         )

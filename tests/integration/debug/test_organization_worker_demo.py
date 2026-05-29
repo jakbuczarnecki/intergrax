@@ -85,7 +85,7 @@ def test_organization_worker_demo_slack_intake_hitl_resume(tmp_path):
         assert paused.status_code == 200
         paused_body = paused.json()
         assert paused_body["capability"] == ORG_WORKER_CAPABILITY
-        assert paused_body["interaction_channel"] == "slash_command"
+        assert paused_body["interaction_channel"] == "slack"
         assert paused_body["state"] == TaskState.WAITING_FOR_HUMAN.value
         assert paused_body["resume_token"]
 
