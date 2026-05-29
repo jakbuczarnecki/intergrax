@@ -318,3 +318,35 @@ Worker logical task name: `nexus.task.v2`. Payload is `encode_execution_request(
 Lab/gate tests use `task_always_eager=True` on the Celery app and `wait_for_result=True` on the adapter for single-process verification.
 
 Run a worker process from your application composition root (the module that calls `create_nexus_celery_worker_app` and exposes the `Celery` instance).
+
+## 15. Long-running scheduler (Phase J.4)
+
+For paused long-running tasks, start an in-process scheduler alongside the API host:
+
+```python
+from intergrax.runtime.long_running.scheduler import (
+    LongRunningScheduler,
+    UnifiedTaskResumeExecutor,
+)
+from intergrax.runtime.long_running.store import open_task_checkpoint_store
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+store = open_task_checkpoint_store()
+runner = UnifiedTaskRunner(nexus_loop)
+scheduler = LongRunningScheduler(
+    store,
+    UnifiedTaskResumeExecutor(runner),
+    schedule_store=store,
+    ledger=store,
+    notification_adapter=notification_adapter,
+)
+await scheduler.start()
+```
+
+The scheduler:
+
+- enforces `HumanRequest.timeout_seconds` / `default_on_timeout` on paused checkpoints;
+- runs delayed resumes registered via `scheduler.schedule_resume(...)`;
+- notifies through the same Tier-0 notification adapters as HITL pause (log/Slack/Teams stubs).
+
+Poll interval: `INTERGRAX_SCHEDULER_POLL_SECONDS` (default 30). Checkpoint DB: `INTERGRAX_TASK_CHECKPOINTS_DB`.
