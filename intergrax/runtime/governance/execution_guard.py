@@ -14,6 +14,7 @@ from intergrax.runtime.replay.policy import ExecutionPolicyEngine, PolicyDecisio
 from intergrax.runtime.replay.regression import RegressionSignals
 from intergrax.runtime.governance.history_evaluator import HistoryAwareEvaluator
 from intergrax.runtime.governance.policy_actions import PolicyActionHandler
+from intergrax.runtime.policy.policy_engine import PolicyEngine
 
 
 @dataclass(slots=True)
@@ -41,7 +42,7 @@ class ExecutionGuard:
         replay_service: ReplayService,
         metrics_engine: ExecutionMetricsEngine,
         history_evaluator: HistoryAwareEvaluator,
-        policy_engine: ExecutionPolicyEngine,
+        policy_engine: ExecutionPolicyEngine | PolicyEngine,
         metrics_store: ExecutionMetricsStore,
         actions: List[PolicyActionHandler],
         history_window: int = 20,
@@ -49,7 +50,15 @@ class ExecutionGuard:
         self._replay = replay_service
         self._metrics_engine = metrics_engine
         self._history_eval = history_evaluator
-        self._policy_engine = policy_engine
+        if isinstance(policy_engine, PolicyEngine):
+            if policy_engine.replay is None:
+                raise ValueError(
+                    "ExecutionGuard requires PolicyEngine.with_replay_config(...) "
+                    "or an ExecutionPolicyEngine instance."
+                )
+            self._policy_engine = policy_engine.replay
+        else:
+            self._policy_engine = policy_engine
         self._metrics_store = metrics_store
         self._actions = actions
         self._history_window = history_window

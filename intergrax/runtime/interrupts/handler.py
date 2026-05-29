@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -19,6 +19,9 @@ from intergrax.contracts.agent_decision import (
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt, InterruptType
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
+
+if TYPE_CHECKING:
+    from intergrax.runtime.policy.policy_engine import PolicyEngine
 
 
 class GovernanceResolution(BaseModel):
@@ -51,11 +54,16 @@ class GovernanceResolution(BaseModel):
 class ExecutionInterruptHandler:
     """Maps ``AgentDecision`` / ``ExecutionInterrupt`` to policy-backed governance outcomes."""
 
-    def __init__(self, policy_engine: Optional[RuntimePolicyEngine] = None) -> None:
-        self._policy = policy_engine or RuntimePolicyEngine()
+    def __init__(
+        self,
+        policy_engine: PolicyEngine | RuntimePolicyEngine | None = None,
+    ) -> None:
+        from intergrax.runtime.policy.policy_engine import coerce_policy_engine
+
+        self._policy = coerce_policy_engine(policy_engine)
 
     @property
-    def policy_engine(self) -> RuntimePolicyEngine:
+    def policy_engine(self) -> PolicyEngine:
         return self._policy
 
     def resolve_decision(

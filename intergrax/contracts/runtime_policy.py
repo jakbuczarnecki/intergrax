@@ -4,7 +4,7 @@
 """
 Runtime governance policy decisions (architecture §42.11).
 
-Distinct from ``intergrax.runtime.replay.policy.ExecutionPolicyEngine`` (eval/replay).
+Distinct from replay ``ExecutionPolicyEngine`` — use ``intergrax.runtime.policy.PolicyEngine`` facade.
 """
 
 from __future__ import annotations

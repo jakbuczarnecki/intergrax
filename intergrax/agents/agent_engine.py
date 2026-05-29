@@ -16,6 +16,7 @@ from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
+from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.interrupts.handler import GovernanceResolution
@@ -41,7 +42,7 @@ class AgentEngine:
         event_bus: Optional[RuntimeEventBus] = None,
         middleware: Optional[MiddlewarePipeline] = None,
         uaep_executor: Optional[UAEPExecutor] = None,
-        policy_engine: Optional[RuntimePolicyEngine] = None,
+        policy_engine: PolicyEngine | RuntimePolicyEngine | None = None,
         shadow_manager: Optional[ShadowWorkspaceManager] = None,
         sandbox_manager: Optional[SandboxSessionManager] = None,
         task_memory_store: Optional[TaskMemoryPersistence] = None,
@@ -55,7 +56,7 @@ class AgentEngine:
         self._uaep = uaep_executor or UAEPExecutor(
             middleware=middleware,
             event_bus=event_bus,
-            policy_engine=policy_engine,
+            policy_engine=coerce_policy_engine(policy_engine),
             shadow_manager=shadow_manager,
             sandbox_manager=sandbox_manager,
             task_memory_store=task_memory_store,

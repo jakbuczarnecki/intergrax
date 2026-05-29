@@ -31,6 +31,7 @@ from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
+from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -90,7 +91,7 @@ class NexusLoop:
         trace_store: Optional[RunTraceWriter] = None,
         event_bus: Optional[RuntimeEventBus] = None,
         retry_policy: Optional[RetryPolicy] = None,
-        policy_engine: Optional[RuntimePolicyEngine] = None,
+        policy_engine: PolicyEngine | RuntimePolicyEngine | None = None,
         interrupt_handler: Optional[ExecutionInterruptHandler] = None,
         shadow_manager: Optional[ShadowWorkspaceManager] = None,
         sandbox_manager: Optional[SandboxSessionManager] = None,
@@ -120,7 +121,7 @@ class NexusLoop:
             middleware=[TraceEmittingMiddleware(self._event_bus)],
         )
         self._human_hooks = HumanApprovalHookCoordinator(self._middleware)
-        self._policy_engine = policy_engine or RuntimePolicyEngine()
+        self._policy_engine = coerce_policy_engine(policy_engine)
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=self._policy_engine,
         )
