@@ -557,7 +557,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | `bing` | search_provider | **Done** | `providers/bing/` — `create_bing_integration()` (legacy `BING_SEARCH_V7_API_KEY`) |
 | `slack` | notification + interaction | **Done** (+ adopcja) | `providers/slack/` — runtime wiring delegates here |
 | `teams` | notification + interaction | **Done** (+ adopcja) | `providers/teams/` — runtime wiring delegates here |
-| `webhook` | notification_channel | Pending | — | `runtime/notifications/adapters/webhook_adapter.py` |
+| `webhook` | notification_channel | **Done** (+ adopcja) | `providers/webhook/` — generic HTTP + `GenericJsonPayloadFormatter` |
 | `lab_json` | interaction_surface | Pending | — | `runtime/interactions/adapters/lab_json_adapter.py` |
 
 #### M.1 — Package scaffold (step-by-step)
@@ -706,7 +706,8 @@ providers/gcp/
 | `queueing/providers/rabbitmq/` | `rabbitmq` | Register |
 | `websearch/providers/google_cse_provider.py` | `google_cse` | **Done** — `integrations/providers/google_cse/create_google_cse_integration()` |
 | `websearch/providers/bing_provider.py` | `bing` | **Done** — `integrations/providers/bing/create_bing_integration()` |
-| `runtime/notifications/adapters/` | `slack`, `teams`, `webhook` | **slack + teams Done** — runtime delegates; webhook pending |
+| `runtime/notifications/adapters/webhook_adapter.py` | `webhook` | **Done** — `integrations/providers/webhook/create_webhook_integration()` |
+| `runtime/notifications/adapters/` | `slack`, `teams` | **Done** — runtime delegates |
 | `runtime/interactions/adapters/` | `slack`, `teams`, `lab_json` | **slack + teams Done** — runtime delegates; lab_json pending |
 | `runtime/*/stores/sqlite_*.py` (+ store openers) | `sqlite` | **Done** — single entry `integrations/providers/sqlite/create_sqlite_integration()` |
 | `rag/vectorstore/providers/*` | vector slugs | Catalog entry only; implementation stays in `rag/` |
@@ -1181,6 +1182,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Date | ID | Summary |
 |------|-----|---------|
+| 2026-05-29 | M.4-webhook | `providers/webhook/` + runtime `create_notification_adapter(WEBHOOK)` delegate |
 | 2026-05-29 | M.4-teams-adopt | Runtime notifications/interactions/verifier + long_running delegate to `providers/teams/` |
 | 2026-05-29 | M.4-teams | `providers/teams/` — dual category catalog entry |
 | 2026-05-29 | M.4-slack-adopt | Runtime notifications/interactions/verifier + long_running delegate to `providers/slack/` |
@@ -1232,7 +1234,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
-| B.19 | **P0 provider wraps** — webhook, lab_json | §7.1.3 | **High** | **In progress** | Lab + first prod apps | Tier-0 | **… + teams Done**; remainder M.4 |
+| B.19 | **P0 provider wraps** — lab_json | §7.1.3 | **High** | **In progress** | Lab + first prod apps | Tier-0 | **… + webhook Done**; lab_json last M.4 slug |
 | B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | Open | Multi-tenant applications | Tier-0 | Phase M.6 after M.4 |
 | B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | Open | PM / research agents | Tier-0 | Phase M.6; tools via ToolRuntime |
 | B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | Open | Org worker, scheduling agents | Tier-0 | Phase M.6 |

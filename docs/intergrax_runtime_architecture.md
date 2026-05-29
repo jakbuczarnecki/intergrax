@@ -632,7 +632,7 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 | `bing` | search_provider | **Done** | `providers/bing/` — `create_bing_integration()` |
 | `slack` | notification_channel + interaction_surface | **Done** (+ adopcja) | `providers/slack/` — runtime wiring delegates here |
 | `teams` | notification_channel + interaction_surface | **Done** (+ adopcja) | `providers/teams/` — runtime wiring delegates here |
-| `webhook` | notification_channel | **Exists** → Catalog | Generic HTTP outbound (HITL stub path) |
+| `webhook` | notification_channel | **Done** (+ adopcja) | `providers/webhook/` — generic HTTP outbound |
 
 #### P1 — Common enterprise stack
 

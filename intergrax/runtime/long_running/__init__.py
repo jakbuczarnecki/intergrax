@@ -5,10 +5,12 @@ from intergrax.runtime.long_running.models import NotificationMessage, TaskCheck
 from intergrax.runtime.long_running.notification import (
     ENV_SLACK_WEBHOOK_URL,
     ENV_TEAMS_WEBHOOK_URL,
+    ENV_WEBHOOK_URL,
     LoggingNotificationAdapter,
     NotificationAdapter,
     create_slack_notification_channel,
     create_teams_notification_channel,
+    create_webhook_notification_channel,
     resolve_notification_adapter,
 )
 from intergrax.runtime.long_running.partial_results import (
@@ -31,6 +33,7 @@ __all__ = [
     "ENV_SLACK_WEBHOOK_URL",
     "ENV_TASK_CHECKPOINTS_DB",
     "ENV_TEAMS_WEBHOOK_URL",
+    "ENV_WEBHOOK_URL",
     "LoggingNotificationAdapter",
     "LongRunningCoordinator",
     "LongRunningScheduler",
@@ -41,6 +44,7 @@ __all__ = [
     "ScheduledResumeStatus",
     "create_slack_notification_channel",
     "create_teams_notification_channel",
+    "create_webhook_notification_channel",
     "SQLiteTaskCheckpointStore",
     "TaskCheckpoint",
     "TaskResumeExecutor",

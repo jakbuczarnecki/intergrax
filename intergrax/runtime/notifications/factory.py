@@ -12,14 +12,8 @@ from typing import Callable, Optional
 
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.notifications.adapters.logging_adapter import LoggingNotificationAdapter
-from intergrax.runtime.notifications.adapters.webhook_adapter import WebhookNotificationAdapter
 from intergrax.runtime.notifications.delivery_contract import NotificationDelivery
-from intergrax.runtime.notifications.formatters import (
-    GenericJsonPayloadFormatter,
-    NotificationPayloadFormatter,
-    SlackPayloadFormatter,
-    TeamsPayloadFormatter,
-)
+from intergrax.runtime.notifications.formatters import NotificationPayloadFormatter
 
 ENV_NOTIFICATION_BACKEND = "INTERGRAX_NOTIFICATION_BACKEND"
 ENV_WEBHOOK_URL = "INTERGRAX_WEBHOOK_URL"
@@ -71,27 +65,6 @@ def resolve_notification_settings(
     )
 
 
-def _formatter_for_backend(backend: NotificationBackend) -> NotificationPayloadFormatter:
-    if backend == NotificationBackend.SLACK:
-        return SlackPayloadFormatter()
-    if backend == NotificationBackend.TEAMS:
-        return TeamsPayloadFormatter()
-    return GenericJsonPayloadFormatter()
-
-
-def _webhook_url_for_backend(
-    settings: NotificationSettings,
-    backend: NotificationBackend,
-) -> str:
-    if backend == NotificationBackend.SLACK:
-        return settings.slack_webhook_url
-    if backend == NotificationBackend.TEAMS:
-        return settings.teams_webhook_url
-    if backend == NotificationBackend.WEBHOOK:
-        return settings.webhook_url
-    return ""
-
-
 def create_notification_adapter(
     settings: Optional[NotificationSettings] = None,
     *,
@@ -129,16 +102,14 @@ def create_notification_adapter(
         config = TeamsIntegrationConfig.from_env(webhook_url=resolved.teams_webhook_url)
         return open_teams_notification_channel(config, delivery=delivery)
 
-    url = _webhook_url_for_backend(resolved, backend)
-    if not url:
-        return LoggingNotificationAdapter()
+    if backend == NotificationBackend.WEBHOOK:
+        from intergrax.integrations.providers.webhook.config import WebhookIntegrationConfig
+        from intergrax.integrations.providers.webhook.opens import open_webhook_notification_channel
 
-    return WebhookNotificationAdapter(
-        webhook_url=url,
-        formatter=formatter or _formatter_for_backend(backend),
-        delivery=delivery,
-        channel=backend.value,
-    )
+        config = WebhookIntegrationConfig.from_env(webhook_url=resolved.webhook_url)
+        return open_webhook_notification_channel(config, delivery=delivery, formatter=formatter)
+
+    return LoggingNotificationAdapter()
 
 
 def resolve_notification_adapter(

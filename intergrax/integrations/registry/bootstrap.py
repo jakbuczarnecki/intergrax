@@ -22,6 +22,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.bing.register import register_bing_integration
     from intergrax.integrations.providers.slack.register import register_slack_integration
     from intergrax.integrations.providers.teams.register import register_teams_integration
+    from intergrax.integrations.providers.webhook.register import register_webhook_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -34,6 +35,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_bing_integration(override=override)
     register_slack_integration(override=override)
     register_teams_integration(override=override)
+    register_webhook_integration(override=override)
     _BOOTSTRAPPED = True
 
 
