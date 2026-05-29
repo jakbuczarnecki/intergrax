@@ -20,6 +20,11 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.contracts.tool_request import ToolRequest
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.long_running.runtime_checkpoint import (
+    RUNTIME_CHECKPOINT_KEY,
+    UAEP_STEP_CURSOR_KEY,
+    runtime_checkpoint_from_metadata,
+)
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -150,6 +155,77 @@ class _HitlAcceptanceAgent(Agent):
             reason="approval required",
             human_request=HumanRequest(request_id="hr_acceptance", prompt="Approve?", options=["approve"]),
         )
+
+
+class _MidStepAcceptanceAgent(Agent):
+    """UAEP agent that pauses mid-step (phase 1 done, phase 2 after HITL resume)."""
+
+    phase1_runs: int = 0
+
+    def get_contract(self) -> AgentContract:
+        return AgentContract(
+            id="mid_step_acceptance",
+            name="Mid-Step Acceptance",
+            description="acceptance mid-step UAEP resume",
+            capabilities=["acceptance.mid_step"],
+            max_steps=1,
+        )
+
+    def can_handle(self, task_context: object) -> CapabilityMatchResult:
+        capability = getattr(task_context, "capability", None)
+        if capability in (None, "acceptance.mid_step"):
+            return CapabilityMatchResult(
+                matched=True,
+                agent_id="mid_step_acceptance",
+                matched_capabilities=["acceptance.mid_step"],
+                score=1.0,
+            )
+        return CapabilityMatchResult(matched=False)
+
+    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
+        config = RuntimeConfig(
+            llm_adapter=FakeLLMAdapter(fixed_text="ok"),
+            enable_rag=False,
+            production_mode=False,
+            tenant_id=request.tenant_id,
+        )
+        return RuntimeContext.build(
+            config=config,
+            session_manager=build_in_memory_session_manager(),
+        )
+
+    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+        _ = context
+        return [AgentStep(step_id="process", step_name="process", step_index=0)]
+
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        cursor = ctx.metadata.get(UAEP_STEP_CURSOR_KEY)
+        if cursor and cursor.get("phase1_done"):
+            return StepOutput(step_id=step.step_id, summary="mid-step complete")
+        _MidStepAcceptanceAgent.phase1_runs += 1
+        ctx.metadata[UAEP_STEP_CURSOR_KEY] = {"phase1_done": True}
+        return StepOutput(step_id=step.step_id, summary="phase1 partial")
+
+    def decide_after_step(
+        self,
+        step: AgentStep,
+        output: StepOutput | None,
+        ctx: RuntimeExecutionContext,
+    ) -> AgentDecision:
+        _ = step, output
+        if ctx.request and ctx.request.metadata.get("human_approved"):
+            return AgentDecision(type=AgentDecisionType.COMPLETE, reason="approved")
+        if ctx.metadata.get(UAEP_STEP_CURSOR_KEY, {}).get("phase1_done"):
+            return AgentDecision(
+                type=AgentDecisionType.REQUEST_HUMAN,
+                reason="mid-step approval",
+                human_request=HumanRequest(
+                    request_id="hr_mid_step",
+                    prompt="Continue phase 2?",
+                    options=["approve"],
+                ),
+            )
+        return AgentDecision(type=AgentDecisionType.CONTINUE, reason="continue")
 
 
 class _RetryPrimaryAgent(Agent):
@@ -595,6 +671,50 @@ async def test_acceptance_05_checkpoint_recovery(tmp_path):
     )
     assert paused.task_id == resumed.task_id
     assert resumed.state == TaskState.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_acceptance_05b_mid_step_uaep_resume(tmp_path):
+    """Mid-step UAEP cursor → HITL → resume without re-running phase 1."""
+    _MidStepAcceptanceAgent.phase1_runs = 0
+    registry = AgentRegistry()
+    registry.register(_MidStepAcceptanceAgent())
+    store = SQLiteTaskCheckpointStore(db_path=tmp_path / "mid_step.db")
+    loop = NexusLoop(registry, checkpoint_store=store)
+    task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        message="mid-step",
+        context=TaskContext(capability="acceptance.mid_step"),
+        options=TaskExecutionOptions(long_running=TaskLongRunningOptions(enabled=True)),
+    )
+    paused = await loop.handle_task(task)
+    assert paused.state == TaskState.WAITING_FOR_HUMAN
+    assert _MidStepAcceptanceAgent.phase1_runs == 1
+
+    checkpoints = store.list_for_task(task.task_id, tenant_id="t1")
+    assert checkpoints
+    runtime = checkpoints[-1].runtime
+    assert runtime is not None
+    assert runtime.uaep_step_cursor == {"phase1_done": True}
+    assert runtime.uaep_step_completed is False
+
+    resumed = await loop.handle_task(
+        Task(
+            tenant_id="t1",
+            user_id="u1",
+            message="mid-step",
+            context=TaskContext(capability="acceptance.mid_step"),
+            task_id=task.task_id,
+            metadata={"human_response": "approve"},
+        )
+    )
+    assert resumed.state == TaskState.COMPLETED
+    assert "mid-step complete" in resumed.answer
+    assert _MidStepAcceptanceAgent.phase1_runs == 1
+
+    restored_ckpt = runtime_checkpoint_from_metadata(resumed.metadata)
+    assert restored_ckpt is None or restored_ckpt.uaep_step_completed or not restored_ckpt.uaep_step_cursor
 
 
 @pytest.mark.asyncio

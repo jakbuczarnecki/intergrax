@@ -23,6 +23,13 @@ from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.runtime.task.task import Task, TaskState
+from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
+
+
+def _wants_human_resume(task: Task) -> bool:
+    if task.options.human.response_text:
+        return True
+    return bool(task.metadata.get(TaskMetadataKey.HUMAN_RESPONSE))
 
 
 class LongRunningCoordinator:
@@ -44,13 +51,28 @@ class LongRunningCoordinator:
         task: Task,
         store: SQLiteTaskCheckpointStore,
     ) -> Optional[TaskCheckpoint]:
-        token = task.options.long_running.resume_token
-        if not LongRunningCoordinator.is_long_running(task) or not token:
-            return None
+        if not LongRunningCoordinator.is_long_running(task):
+            if not _wants_human_resume(task):
+                return None
+            if store.get_latest(task.task_id, task.tenant_id) is None:
+                return None
+            task.options.long_running.enabled = True
 
-        checkpoint = store.get_by_token(task.task_id, task.tenant_id, token)
+        token = task.options.long_running.resume_token
+        if not token:
+            raw = task.metadata.get(TaskMetadataKey.RESUME_TOKEN)
+            token = str(raw) if raw else None
+
+        checkpoint: Optional[TaskCheckpoint] = None
+        if token:
+            checkpoint = store.get_by_token(task.task_id, task.tenant_id, token)
+        elif _wants_human_resume(task):
+            checkpoint = store.get_latest(task.task_id, task.tenant_id)
+
         if checkpoint is None:
             return None
+
+        token = checkpoint.resume_token
 
         incoming_human = task.options.human.model_copy(deep=True)
         restored = Task.model_validate(checkpoint.task_snapshot)

@@ -486,7 +486,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | L.2 | Agent creation guide | **Done** | R2 | Single canonical how-to |
 | L.3 | Lab application (Tier-3) | **Done** | R1 | `applications/lab_application/` |
 | L.4 | Reference technical agents | **Done** | R5 | Echo + `agents/lab/mock_agents.py` |
-| L.5 | Agent OS acceptance suite | **Done** | R1 | `tests/acceptance/agent_os/` |
+| L.5 | Agent OS acceptance suite | **Done** | R1 | `tests/acceptance/agent_os/` (+ `05b` mid-step UAEP) |
 | L.6 | Runtime independence verification | **Done** | R5 | Register + run without Nexus edits |
 | L.7 | Application composition verification | **Done** | R5 | Agents ≠ applications |
 | L.8 | Certification checklist | **Done** | R1 | Appendix A (this file) |
@@ -933,13 +933,14 @@ Decision:       L1 certified — GO Phase K when product priority set
 | Date | ID | Summary |
 |------|-----|---------|
 | 2026-05-27 | B.08, B.10 | `wire_nexus_observability` + SQLite defaults in Legal / Research / Lab factories; integration test |
+| 2026-05-27 | B.01, B.02 | `RuntimeCheckpoint` full snapshot + UAEP mid-step cursor/resume; acceptance `05b` |
 
 ### B.1 Runtime & §42 convergence
 
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
-| B.01 | **UAEP mid-step checkpoint** — resume inside a long-running step (not only between steps / HITL) | §42.9.3, §26 | **High** | Open | Long-running domain agents (Legal, Research) | Tier-1 | Extend `RuntimeCheckpoint` with step-internal cursor; AgentEngine hook |
-| B.02 | **Full checkpoint snapshot** — plan + graph node states + UAEP index + pending decisions in one durable blob | §42.9.2 | **High** | Open | Multi-agent graphs, crash recovery | Tier-1 | Unify checkpoint writer; acceptance test for graph mid-flight resume |
+| B.01 | **UAEP mid-step checkpoint** — resume inside a long-running step (not only between steps / HITL) | §42.9.3, §26 | **High** | **Done** | Long-running domain agents (Legal, Research) | Tier-1 | `uaep_step_cursor`, `should_resume_uaep_step`, optional `resume_step` (2026-05-27) |
+| B.02 | **Full checkpoint snapshot** — plan + graph node states + UAEP index + pending decisions in one durable blob | §42.9.2 | **High** | **Done** | Multi-agent graphs, crash recovery | Tier-1 | `plan_snapshot`, `graph_snapshot`, `pending_decisions` in `RuntimeCheckpoint` (2026-05-27) |
 | B.03 | **Policy engine facade** — single `PolicyEngine` for replay, validation, HITL, retry (today split across modules) | §42.11 | **Medium** | Open | Indirect — consistent governance for all agents | Tier-1 | Phase K.3; no agent-specific branches |
 | B.04 | **Dual `AgentDecision` cleanup** — converge tools-agent variant with canonical §42.7 enum | §42.7 | **Medium** | Open | Agents emitting decisions must use one contract | Tier-1 | Deprecate legacy import paths; codemod + gate |
 | B.05 | **Escalation policy production path** — `SAFETY_VIOLATION` / HITL expiry → real escalation (not stub) | §42.38, §42.10 | **Medium** | Open | HITL-heavy agents | Tier-1 | Wire scheduler + notification templates to escalation handler |
@@ -981,7 +982,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 ```text
 1. ~~B.08, B.10~~ — observability consistency (Done 2026-05-27)
-2. B.01, B.02  — long-running / graph recovery (blocks ambitious agents)
+2. ~~B.01, B.02~~ — checkpoint / full snapshot (Done 2026-05-27)
 3. B.03, B.04  — §42 governance convergence (K.3, K.4)
 4. B.12, B.14  — product interaction + legacy removal (K.5, §18 prod)
 5. B.05–B.07, B.09–B.11, B.13, B.15–B.18 — as capacity allows
@@ -991,5 +992,5 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 ---
 
-*Plan synced with codebase after Phase L + B.08/B.10 paydown (2026-05-27). Gate: 231 tests.*
+*Plan synced with codebase after B.01/B.02 paydown (2026-05-27). Gate: 234 tests.*
 

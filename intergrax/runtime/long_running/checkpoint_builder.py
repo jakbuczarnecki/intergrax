@@ -1,23 +1,26 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Build and apply RuntimeCheckpoint snapshots (Phase G.1–G.2)."""
+"""Build and apply RuntimeCheckpoint snapshots (Phase G.1–G.2, Appendix B.01–B.02)."""
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.long_running.runtime_checkpoint import (
+    PLAN_SNAPSHOT_KEY,
     RUNTIME_CHECKPOINT_KEY,
-    GraphNodeCheckpoint,
     RuntimeCheckpoint,
     attach_runtime_checkpoint_to_metadata,
     runtime_checkpoint_from_execution_structured,
-    runtime_checkpoint_from_metadata,
 )
-from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNodeStatus
+from intergrax.runtime.nexus.execution.execution_graph import (
+    ExecutionGraph,
+    ExecutionNode,
+    ExecutionNodeStatus,
+)
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.task.task import Task
 
@@ -59,6 +62,10 @@ def build_runtime_checkpoint(
         if graph_node_id is None and graph.nodes:
             graph_node_id = graph.nodes[-1].node_id
 
+    plan_snapshot = plan.model_dump(mode="json") if plan is not None else None
+    graph_snapshot = graph.model_dump(mode="json") if graph is not None else None
+    pending_decisions = _collect_pending_decisions(task, last_execution)
+
     if from_execution is not None:
         merged = from_execution.model_copy(
             update={
@@ -67,6 +74,9 @@ def build_runtime_checkpoint(
                 "graph_node_id": from_execution.graph_node_id or graph_node_id,
                 "node_states": from_execution.node_states or node_states,
                 "prior_node_outputs": from_execution.prior_node_outputs or prior_outputs,
+                "plan_snapshot": from_execution.plan_snapshot or plan_snapshot,
+                "graph_snapshot": from_execution.graph_snapshot or graph_snapshot,
+                "pending_decisions": from_execution.pending_decisions or pending_decisions,
             }
         )
         return merged
@@ -78,8 +88,11 @@ def build_runtime_checkpoint(
         agent_id=last_execution.agent_id if last_execution else task.agent_id,
         uaep_step_index=0,
         paused_phase=ExecutionPhase.HUMAN_APPROVAL.value,
+        plan_snapshot=plan_snapshot,
+        graph_snapshot=graph_snapshot,
         node_states=node_states,
         prior_node_outputs=prior_outputs,
+        pending_decisions=pending_decisions,
         pending_human_request=(
             last_execution.human_request.model_dump()
             if last_execution and last_execution.human_request
@@ -93,6 +106,8 @@ def apply_runtime_checkpoint_to_task(task: Task, runtime: RuntimeCheckpoint) -> 
         task.runtime.orchestration.plan_id = runtime.plan_id
     if runtime.graph_id:
         task.runtime.orchestration.graph_id = runtime.graph_id
+    if runtime.plan_snapshot:
+        task.metadata[PLAN_SNAPSHOT_KEY] = runtime.plan_snapshot
     attach_runtime_checkpoint_to_metadata(task.metadata, runtime)
     task.sync_metadata()
 
@@ -102,6 +117,14 @@ def apply_runtime_checkpoint_to_graph(
     runtime: RuntimeCheckpoint,
     prior_outputs: Dict[str, AgentExecutionResult],
 ) -> None:
+    if runtime.graph_snapshot and not runtime.node_states:
+        restored = ExecutionGraph.model_validate(runtime.graph_snapshot)
+        for node in graph.nodes:
+            source = restored.node_by_id(node.node_id)
+            node.status = source.status
+            if source.execution_result is not None:
+                node.execution_result = source.execution_result
+
     for node in graph.nodes:
         status_raw = runtime.node_states.get(node.node_id)
         if status_raw:
@@ -150,6 +173,31 @@ def _status_from_summary(raw: Any) -> AgentExecutionStatus:
     return AgentExecutionStatus.COMPLETED
 
 
+def _collect_pending_decisions(
+    task: Task,
+    last_execution: Optional[AgentExecutionResult],
+) -> List[Dict[str, Any]]:
+    pending: List[Dict[str, Any]] = []
+    if last_execution is not None and last_execution.human_request is not None:
+        pending.append(
+            {
+                "type": "human_request",
+                "agent_id": last_execution.agent_id,
+                "payload": last_execution.human_request.model_dump(mode="json"),
+            }
+        )
+    human_request = task.runtime.governance.human_request
+    if human_request is not None:
+        pending.append(
+            {
+                "type": "human_request",
+                "agent_id": task.agent_id,
+                "payload": human_request.model_dump(mode="json"),
+            }
+        )
+    return pending
+
+
 def should_skip_uaep_step(
     *,
     step_index: int,
@@ -163,4 +211,24 @@ def should_skip_uaep_step(
         return False
     if checkpoint.uaep_step_id and checkpoint.uaep_step_id != step_id:
         return False
+    if checkpoint.uaep_step_cursor and not checkpoint.uaep_step_completed:
+        return False
     return checkpoint.last_step_output is not None
+
+
+def should_resume_uaep_step(
+    *,
+    step_index: int,
+    step_id: str,
+    checkpoint: Optional[RuntimeCheckpoint],
+    human_approved: bool,
+) -> bool:
+    if checkpoint is None or not human_approved:
+        return False
+    if checkpoint.uaep_step_index != step_index:
+        return False
+    if checkpoint.uaep_step_id and checkpoint.uaep_step_id != step_id:
+        return False
+    if checkpoint.uaep_step_completed:
+        return False
+    return checkpoint.uaep_step_cursor is not None
