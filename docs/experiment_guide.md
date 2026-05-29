@@ -292,3 +292,29 @@ payload = task_to_execution_payload(
 ```
 
 `NexusTaskExecutionAdapter` → `UnifiedTaskRunner` → `NexusLoop.handle_task`.
+
+## 14. Worker queue (Phase J.3)
+
+For async/off-process execution, wire `QueuedNexusExecutionAdapter` instead of in-process `NexusTaskExecutionAdapter`:
+
+```python
+from intergrax.queueing.providers.celery.celery_task_queue import CeleryTaskQueue
+from intergrax.runtime.task.queued_nexus_execution_adapter import QueuedNexusExecutionAdapter
+from intergrax.runtime.task.worker_bootstrap import create_nexus_celery_worker_app
+
+app = create_nexus_celery_worker_app(
+    app_name="intergrax_worker",
+    broker_url="redis://localhost:6379/0",
+    backend_url="redis://localhost:6379/1",
+    agent_registry=registry,
+    checkpoint_store=checkpoint_store,  # optional; required for long-running resume
+)
+queue = CeleryTaskQueue(app)
+adapter = QueuedNexusExecutionAdapter(queue, run_service, wait_for_result=False)
+```
+
+Worker logical task name: `nexus.task.v2`. Payload is `encode_execution_request(ExecutionRequest)` — same Task contract as `/runs`.
+
+Lab/gate tests use `task_always_eager=True` on the Celery app and `wait_for_result=True` on the adapter for single-process verification.
+
+Run a worker process from your application composition root (the module that calls `create_nexus_celery_worker_app` and exposes the `Celery` instance).

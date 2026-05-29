@@ -1,0 +1,169 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""Nexus Task v2 worker execution core (§41, J.3)."""
+
+from __future__ import annotations
+
+import asyncio
+import concurrent.futures
+from typing import Any, Dict, Optional, Protocol, runtime_checkable
+
+from pydantic import BaseModel, Field
+
+from intergrax.fastapi_core.execution.models import ExecutionRequest
+from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task_run_bridge import (
+    task_from_execution_request,
+    task_result_to_payload,
+)
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from intergrax.runtime.task.worker_payload import decode_execution_request
+from intergrax.tools.execution_models import ToolExecutionError, ToolExecutionResult
+
+
+def _run_coro_sync(coro):
+    """Run async Nexus work from Celery's synchronous worker handler."""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        return executor.submit(asyncio.run, coro).result()
+
+
+class NexusTaskWorkerOutput(BaseModel):
+    """Worker handler output returned through Tier-0 queue plane."""
+
+    result_payload: Dict[str, Any] = Field(default_factory=dict)
+    schema_version: str = "nexus_task_worker.v1"
+
+
+@runtime_checkable
+class WorkerRunLifecycle(Protocol):
+    """Optional run lifecycle hooks invoked inside the worker process."""
+
+    def mark_running(self, run_id: str) -> None: ...
+
+    def mark_completed(self, run_id: str, result_payload: Optional[dict] = None) -> None: ...
+
+    def mark_failed(self, run_id: str, error_type: str, error_message: str) -> None: ...
+
+
+class NexusWorkerRuntime:
+    """Composition root for worker-side Nexus execution."""
+
+    def __init__(
+        self,
+        task_runner: UnifiedTaskRunner,
+        *,
+        lifecycle: Optional[WorkerRunLifecycle] = None,
+    ) -> None:
+        self._task_runner = task_runner
+        self._lifecycle = lifecycle
+
+    @classmethod
+    def from_registry(
+        cls,
+        registry: AgentRegistry,
+        *,
+        checkpoint_store: Optional[SQLiteTaskCheckpointStore] = None,
+        lifecycle: Optional[WorkerRunLifecycle] = None,
+    ) -> NexusWorkerRuntime:
+        loop = NexusLoop(registry, checkpoint_store=checkpoint_store)
+        return cls(UnifiedTaskRunner(loop), lifecycle=lifecycle)
+
+    @property
+    def task_runner(self) -> UnifiedTaskRunner:
+        return self._task_runner
+
+    def execute_payload(
+        self,
+        payload: bytes,
+        *,
+        tenant_id: str,
+        run_id: str,
+    ) -> Dict[str, Any]:
+        request = decode_execution_request(payload)
+        if request.run_id != run_id:
+            request = ExecutionRequest(
+                run_id=run_id,
+                tenant_id=request.tenant_id,
+                user_id=request.user_id,
+                input_payload=request.input_payload,
+                metadata=request.metadata,
+                config=request.config,
+            )
+        if request.tenant_id != tenant_id:
+            raise ValueError(
+                f"tenant mismatch: payload={request.tenant_id!r} worker={tenant_id!r}"
+            )
+
+        if self._lifecycle is not None:
+            self._lifecycle.mark_running(run_id)
+
+        try:
+            task = task_from_execution_request(request)
+            result = _run_coro_sync(self._task_runner.run_task(task))
+            result_payload = task_result_to_payload(result)
+            if self._lifecycle is not None:
+                self._lifecycle.mark_completed(run_id, result_payload=result_payload)
+            return result_payload
+        except Exception as exc:
+            if self._lifecycle is not None:
+                self._lifecycle.mark_failed(
+                    run_id,
+                    error_type=type(exc).__name__,
+                    error_message=str(exc),
+                )
+            raise
+
+
+def make_nexus_task_worker_handler(
+    runtime: NexusWorkerRuntime,
+):
+    """Build a TaskExecutionRegistry handler for ``nexus.task.v2``."""
+
+    def handler(
+        *,
+        tenant_id: str,
+        run_id: str,
+        payload: bytes,
+        idempotency_key: Optional[str] = None,
+    ) -> ToolExecutionResult[NexusTaskWorkerOutput]:
+        _ = idempotency_key
+        try:
+            result_payload = runtime.execute_payload(
+                payload,
+                tenant_id=tenant_id,
+                run_id=run_id,
+            )
+            return ToolExecutionResult.ok(
+                NexusTaskWorkerOutput(result_payload=result_payload)
+            )
+        except Exception as exc:
+            return ToolExecutionResult(
+                success=False,
+                output=None,
+                error=ToolExecutionError(
+                    error_code=type(exc).__name__,
+                    error_message=str(exc),
+                ),
+            )
+
+    return handler
+
+
+def register_nexus_task_worker(
+    registry,
+    runtime: NexusWorkerRuntime,
+    *,
+    logical_task_name: str = "nexus.task.v2",
+) -> None:
+    from intergrax.runtime.task.worker_payload import NEXUS_TASK_V2_LOGICAL_NAME
+
+    name = logical_task_name or NEXUS_TASK_V2_LOGICAL_NAME
+    registry.register(name, make_nexus_task_worker_handler(runtime))

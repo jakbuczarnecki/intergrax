@@ -25,10 +25,11 @@ class DummyAsyncResult:
 
 def test_enqueue_sends_generic_task():
     mock_app = Mock()
-
+    mock_task = Mock()
     mock_result = Mock()
     mock_result.id = "task-123"
-    mock_app.send_task.return_value = mock_result
+    mock_task.apply_async.return_value = mock_result
+    mock_app.tasks = {"intergrax.execute": mock_task}
 
     queue = CeleryTaskQueue(app=mock_app)
 
@@ -42,11 +43,10 @@ def test_enqueue_sends_generic_task():
 
     handle = queue.enqueue(request)
 
-    mock_app.send_task.assert_called_once()
+    mock_task.apply_async.assert_called_once()
 
-    args, kwargs = mock_app.send_task.call_args
+    _, kwargs = mock_task.apply_async.call_args
 
-    assert args[0] == "intergrax.execute"
     assert kwargs["kwargs"]["logical_task_name"] == "logical.task"
     assert handle.task_id == "task-123"
     assert handle.provider == "celery"

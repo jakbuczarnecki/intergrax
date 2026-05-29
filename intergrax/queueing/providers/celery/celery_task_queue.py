@@ -39,16 +39,15 @@ class CeleryTaskQueue(TaskQueue):
         self,
         request: TaskRequest,
     ) -> TaskHandle:
-        result = self._app.send_task(
-            "intergrax.execute",
-            kwargs={
-                "logical_task_name": request.task_name,
-                "tenant_id": request.tenant_id,
-                "run_id": request.run_id,
-                "payload": request.payload,
-                "idempotency_key": request.idempotency_key,
-            },
-        )
+        kwargs = {
+            "logical_task_name": request.task_name,
+            "tenant_id": request.tenant_id,
+            "run_id": request.run_id,
+            "payload": request.payload,
+            "idempotency_key": request.idempotency_key,
+        }
+        # Registered task entrypoint — respects task_always_eager (send_task does not).
+        result = self._app.tasks["intergrax.execute"].apply_async(kwargs=kwargs)
 
         return TaskHandle(
             task_id=result.id,
@@ -93,11 +92,11 @@ class CeleryTaskQueue(TaskQueue):
             return None
 
         if state == "SUCCESS":
-            result = async_result.result
+            from intergrax.queueing.worker.result_codec import worker_result_bytes_from_transport
 
             return TaskResult(
                 status=TaskStatus.SUCCEEDED,
-                output=result if isinstance(result, bytes) else None,
+                output=worker_result_bytes_from_transport(async_result.result),
                 error_message=None,
                 attempts=async_result.retries or 0,
             )
