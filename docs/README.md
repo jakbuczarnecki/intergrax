@@ -12,8 +12,11 @@ When documents conflict, **`intergrax_runtime_architecture.md`** is authoritativ
 |------|------|
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) | **Canon** — architecture, four tiers (§5.1), UAEP (§42) |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) | Implementation plan — what to build next |
+| [INTERGRAX_AGENT_OS_READINESS_PLAN.md](INTERGRAX_AGENT_OS_READINESS_PLAN.md) | Phase L — Agent OS readiness |
+| [RUNTIME_READY_FOR_BUSINESS_AGENTS.md](RUNTIME_READY_FOR_BUSINESS_AGENTS.md) | Go/no-go checklist before business agents |
+| [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) | Canonical workflow for new agents |
 | [INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md](INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md) | Baseline audit (§1–13) + live status (§14–16) |
-| [experiment_guide.md](experiment_guide.md) | How to run experiments (NexusLoop, applications) |
+| [experiment_guide.md](experiment_guide.md) | How to run experiments (NexusLoop, debug API) |
 
 ## Product ideas (not platform canon)
 

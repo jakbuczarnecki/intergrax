@@ -2,7 +2,7 @@
 
 
 
-Status: Working draft (2026-05-27, synced post G.4 gate)  
+Status: Working draft (2026-05-27, synced post Phase J + Phase L start)  
 
 Canonical source: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 
@@ -52,7 +52,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
 
-| Pre-P4.2 regression gate | **Done** | **107 tests**, marker `gate` |
+| Pre-P4.2 regression gate | **Done** | **gate marker** (run `pytest -m gate` for current count) |
 
 
 
@@ -386,12 +386,32 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
-| K.1 | Problem Radar prototype | Pending | §36 | Long-running monitor use case |
-| K.2 | Vendor Discovery prototype | Pending | §37 | Shadow + research pipeline |
+| K.1 | Problem Radar prototype | **Blocked** | §36 | After Phase L sign-off |
+| K.2 | Vendor Discovery prototype | **Blocked** | §37 | After Phase L sign-off |
 | K.3 | Policy engine facade | Pending | §42.11 | Unify replay / validation / runtime policy |
 | K.4 | Dual `AgentDecision` cleanup | Pending | §42.7 | Converge tools agent variant |
 | K.5 | ChatAgent / legacy removal | Pending | §39 | After J.1 |
 | K.6 | A.5 full Legal E2E gate | Deferred | — | Real LLM; not blocking lab |
+
+---
+
+### Phase L — Agent OS Readiness (ACTIVE)
+
+**Directive:** Do not implement business agents until Phase L is complete.  
+**Plan:** [`INTERGRAX_AGENT_OS_READINESS_PLAN.md`](INTERGRAX_AGENT_OS_READINESS_PLAN.md)  
+**Checklist:** [`RUNTIME_READY_FOR_BUSINESS_AGENTS.md`](RUNTIME_READY_FOR_BUSINESS_AGENTS.md)  
+**Guide:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)
+
+| # | Deliverable | Status | Req | Notes |
+|---|-------------|--------|-----|-------|
+| L.1 | UAEP-first agent scaffold | **Done** | R2 | `python -m intergrax.scaffold new-agent` |
+| L.2 | Agent creation guide | **Done** | R2 | Canonical workflow for humans + LLMs |
+| L.3 | Lab application (Tier-3) | **Done** | R1 | `applications/lab_application/` |
+| L.4 | Reference technical agents | **Done** | R5 | Echo + `agents/lab/mock_agents.py` |
+| L.5 | Agent OS acceptance suite | **Done** | R1 | `tests/acceptance/agent_os/` marker `agent_os` |
+| L.6 | Runtime independence verification | **Done** | R5 | Register + run without Nexus edits |
+| L.7 | Application composition verification | **Done** | R5 | Agents ≠ applications |
+| L.8 | Runtime readiness checklist | **Done** | R1 | `RUNTIME_READY_FOR_BUSINESS_AGENTS.md` |
 
 ---
 
@@ -401,17 +421,17 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     Phase K — reference agents (on demand)
+NOW:     Phase L — Agent OS readiness (formalize harness before business agents)
 
-NEXT:    K.1 Problem Radar · K.2 Vendor Discovery
+NEXT:    Phase L gate sign-off → Phase K (K.1/K.2 on demand)
 
-THEN:    Phase J — Unified execution entry (§41)
+BLOCKED: Problem Radar, Vendor Discovery, Legal expansion until L complete
 
-PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
+PARALLEL: K.3–K.5 hardening (non-business) when capacity allows
 
 ```
 
-**Rationale:** §42.9 requires execution-layer checkpoint. §18 needs real adapters before §38 Organization Worker. Phase J reduces dual-path debt (`RuntimeEngine` vs `NexusLoop`).
+**Rationale:** Strategic directive — prove Agent OS behavior (scaffold, lab, acceptance) before building business capabilities. Phase J unified execution entry is complete; Phase L validates the platform is reusable without runtime edits.
 
 
 
@@ -443,17 +463,21 @@ PARALLEL: I.* memory, J.* unified entry, K.* reference agents (on demand)
 
 ## 6. Recommended Next Step
 
-**Phase K — reference agents** (§36–§37):
-
-Pick **K.1 Problem Radar** or **K.2 Vendor Discovery** when a concrete lab use case is ready.
+**Phase L — Agent OS gate sign-off:**
 
 ```bash
+uv run pytest tests/acceptance/agent_os -m agent_os -q
 uv run pytest tests/ -m gate -q
 ```
 
+Complete one **new** scaffolded agent exercise (< 1 hour) and record in experiment registry before starting K.1/K.2.
+
+**Do not start:** Problem Radar, Vendor Discovery, Legal expansion until [`RUNTIME_READY_FOR_BUSINESS_AGENTS.md`](RUNTIME_READY_FOR_BUSINESS_AGENTS.md) sign-off.
+
 **Recently completed:**
 
-- **J.5:** Partial results API — `GET /debug/tasks/{task_id}/progress` aggregates checkpoint partial snapshots; `RuntimeEventType.TASK_PROGRESS`; `partial_result.v1` notification template; gate **216 passed**.
+- **L.1–L.8:** Phase L Agent OS readiness — UAEP scaffold, `AGENT_CREATION_GUIDE.md`, `lab_application`, mock agents, acceptance suite (`tests/acceptance/agent_os/`), readiness docs; gate **228 passed**.
+- **J.5:** Partial results API — `GET /debug/tasks/{task_id}/progress` aggregates checkpoint partial snapshots; `RuntimeEventType.TASK_PROGRESS`; `partial_result.v1` notification template; gate **228 passed** (includes Phase L acceptance).
 - **J.4:** Long-running scheduler — in-process `LongRunningScheduler` polls checkpoint store for delayed resumes and expired HITL deadlines; `UnifiedTaskResumeExecutor` resumes via `UnifiedTaskRunner`; SQLite ledger for idempotency.
 - **J.3:** Worker queue Task v2 — `QueuedNexusExecutionAdapter` enqueues `ExecutionRequest` via Tier-0 Celery (`nexus.task.v2`); `create_nexus_celery_worker_app` bootstrap; checkpoint resume through worker payload; gate **207 passed**.
 - **J.2:** RunService → UnifiedTaskRunner — `NexusTaskExecutionAdapter` delegates to `UnifiedTaskRunner`; Legal host shares one runner for `/runs` and `/legal/chat`; `POST /runs` forwards `CreateRunRequest.payload` to Task intake.

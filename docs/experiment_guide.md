@@ -20,10 +20,18 @@ registry = build_harness_registry(include_echo=True)
 # or: registry = AgentRegistry(); registry.register(EchoAgent())
 ```
 
-Or scaffold a new agent:
+Or scaffold a new UAEP agent (Phase L):
 
 ```bash
-python -m intergrax.scaffold new-agent research --capabilities research.web_search
+python -m intergrax.scaffold new-agent research --capability research.web_search
+```
+
+See [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) for the full workflow.
+
+Or run via **Lab Application** (Tier-3):
+
+```bash
+uv run uvicorn lab_application.host.main:app --host 127.0.0.1 --port 8090
 ```
 
 ## 2. Run via NexusLoop

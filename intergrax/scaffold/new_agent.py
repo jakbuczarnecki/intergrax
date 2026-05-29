@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Agent scaffold CLI — create new capability modules under ``agents/``."""
+"""Agent scaffold CLI — UAEP-first capability modules under ``agents/`` (Phase L.1)."""
 
 from __future__ import annotations
 
@@ -24,8 +24,18 @@ def _class_name(slug: str) -> str:
     return "".join(part.capitalize() for part in slug.split("_")) + "Agent"
 
 
-def _agent_py(slug: str, class_name: str, capabilities: list[str]) -> str:
-    caps_repr = ", ".join(repr(c) for c in capabilities)
+def _pascal_name(slug: str) -> str:
+    return "".join(part.capitalize() for part in slug.split("_"))
+
+
+def _write(path: Path, content: str, *, force: bool) -> None:
+    if path.exists() and not force:
+        raise FileExistsError(f"File already exists: {path}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+
+def _agent_py(slug: str, class_name: str, primary_capability: str) -> str:
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
@@ -33,62 +43,31 @@ def _agent_py(slug: str, class_name: str, capabilities: list[str]) -> str:
 
         from __future__ import annotations
 
+        from {slug}.capabilities import CAPABILITIES
+        from {slug}.contract import build_agent_contract
+        from {slug}.steps.pipeline import build_pipeline, run_domain_step
         from intergrax.agents.agent_contract import Agent
-        from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+        from intergrax.contracts.agent_decision import AgentDecision
+        from intergrax.contracts.agent_step import AgentStep, StepOutput
         from intergrax.contracts.capability import CapabilityMatchResult
+        from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
         from intergrax.runtime.nexus.config import RuntimeConfig
         from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-        from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-        from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
-        from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
-        from intergrax.runtime.nexus.runtime_steps.contract import RuntimeStepRunner
-        from intergrax.runtime.nexus.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
-        from intergrax.runtime.nexus.runtime_steps.setup_steps_tool import SETUP_STEPS
+        from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
         from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
         from intergrax.runtime.nexus.session.session_manager import SessionManager
-
-
-        class _{class_name}LLMStub:
-            def generate(self, messages, **kwargs) -> str:
-                for msg in reversed(messages):
-                    content = getattr(msg, "content", None) or ""
-                    if content:
-                        return f"{slug}: {{content}}"
-                return "{slug}: (empty)"
-
-
-        class {class_name}Pipeline(RuntimePipeline):
-            async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
-                await RuntimeStepRunner.execute_pipeline(
-                    [*SETUP_STEPS, PersistAndBuildAnswerStep()],
-                    state,
-                )
-                message = (state.request.message or "").strip()
-                if state.runtime_answer is not None:
-                    state.runtime_answer.answer = f"{slug}: {{message}}"
-                if state.runtime_answer is None:
-                    raise RuntimeError("{class_name}Pipeline did not produce runtime_answer.")
-                return state.runtime_answer
+        from intergrax.agents.uaep_pipeline import pipeline_agent_steps, pipeline_step_complete
 
 
         class {class_name}(Agent):
-            """Scaffolded agent — replace pipeline and domain logic as needed."""
+            """UAEP-first scaffolded agent — replace domain logic in ``steps/`` and ``prompts/``."""
 
-            def get_contract(self) -> AgentContract:
-                return AgentContract(
-                    id="{slug}",
-                    name="{class_name}",
-                    description="Scaffolded agent for Intergrax experiments.",
-                    version="0.1.0",
-                    capabilities=[{caps_repr}],
-                    allowed_tools=[],
-                    risk_level=AgentRiskLevel.LOW,
-                    max_steps=10,
-                )
+            def get_contract(self):
+                return build_agent_contract()
 
             def can_handle(self, task_context: object) -> CapabilityMatchResult:
                 capability = getattr(task_context, "capability", None)
-                supported = set(self.get_contract().capabilities)
+                supported = set(CAPABILITIES)
                 if capability is None or capability in supported:
                     return CapabilityMatchResult(
                         matched=True,
@@ -101,40 +80,307 @@ def _agent_py(slug: str, class_name: str, capabilities: list[str]) -> str:
 
             def build_context(self, request: RuntimeRequest) -> RuntimeContext:
                 config = RuntimeConfig(
-                    llm_adapter=_{class_name}LLMStub(),  # type: ignore[arg-type]
+                    llm_adapter=build_pipeline().llm_adapter,
                     enable_rag=False,
                     production_mode=False,
                     tenant_id=request.tenant_id,
                 )
-                config.pipeline = {class_name}Pipeline()
+                config.pipeline = build_pipeline().pipeline
                 session_manager = SessionManager(storage=InMemorySessionStorage())
-                return RuntimeContext.build(
-                    config=config,
-                    session_manager=session_manager,
+                return RuntimeContext.build(config=config, session_manager=session_manager)
+
+            def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+                _ = context
+                contract = self.get_contract()
+                return pipeline_agent_steps(
+                    step_id="{slug}_step",
+                    step_name="{slug}_step",
+                    trace_label="{primary_capability}",
+                    allowed_tools=list(contract.allowed_tools),
                 )
+
+            async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+                return await run_domain_step(step, ctx)
+
+            def decide_after_step(
+                self,
+                step: AgentStep,
+                output: StepOutput | None,
+                ctx: RuntimeExecutionContext,
+            ) -> AgentDecision:
+                _ = step, output, ctx
+                return pipeline_step_complete(reason="{slug} step finished")
         '''
     )
 
 
-def _readme(slug: str, capabilities: list[str]) -> str:
+def _contract_py(slug: str, class_name: str, primary_capability: str) -> str:
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+        # Intergrax framework – proprietary and confidential.
+
+        from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+        from {slug}.capabilities import CAPABILITIES
+
+
+        def build_agent_contract() -> AgentContract:
+            return AgentContract(
+                id="{slug}",
+                name="{class_name}",
+                description="Scaffolded UAEP agent for Intergrax experiments.",
+                version="0.1.0",
+                capabilities=CAPABILITIES,
+                allowed_tools=[],
+                risk_level=AgentRiskLevel.LOW,
+                max_steps=10,
+            )
+        '''
+    )
+
+
+def _capabilities_py(slug: str, capabilities: list[str]) -> str:
+    caps_lines = ",\n    ".join(repr(c) for c in capabilities)
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+        # Intergrax framework – proprietary and confidential.
+
+        """Capability ids exposed by the {slug} agent."""
+
+        CAPABILITIES: list[str] = [
+            {caps_lines}
+        ]
+        '''
+    )
+
+
+def _steps_pipeline_py(slug: str, primary_capability: str) -> str:
+    pascal = _pascal_name(slug)
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+        # Intergrax framework – proprietary and confidential.
+
+        from __future__ import annotations
+
+        from dataclasses import dataclass
+        from typing import Optional, Sequence
+
+        from intergrax.agents.uaep_pipeline import run_pipeline_step
+        from intergrax.contracts.agent_step import AgentStep, StepOutput
+        from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+        from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+        from intergrax.memory.conversational_memory import ChatMessage
+        from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+        from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
+        from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer
+        from intergrax.runtime.nexus.runtime_steps.contract import RuntimeStepRunner
+        from intergrax.runtime.nexus.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
+        from intergrax.runtime.nexus.runtime_steps.setup_steps_tool import SETUP_STEPS
+
+
+        class _{pascal}LLMStub(LLMAdapter):
+            provider = "{slug}"
+            model = "{slug}-stub"
+
+            @property
+            def context_window_tokens(self) -> int:
+                return 128_000
+
+            def generate_messages(
+                self,
+                messages: Sequence[ChatMessage],
+                *,
+                temperature: Optional[float] = None,
+                max_tokens: Optional[int] = None,
+                run_id: Optional[str] = None,
+            ) -> str:
+                for msg in reversed(messages):
+                    content = getattr(msg, "content", None) or ""
+                    if content:
+                        return f"{slug}: {{content[:200]}}"
+                return "{slug}: (empty)"
+
+
+        class _{pascal}Pipeline(RuntimePipeline):
+            async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
+                await RuntimeStepRunner.execute_pipeline(
+                    [*SETUP_STEPS, PersistAndBuildAnswerStep()],
+                    state,
+                )
+                message = (state.request.message or "").strip()
+                answer = f"{slug}: {{message}}"
+                if state.runtime_answer is not None:
+                    state.runtime_answer.answer = answer
+                if state.runtime_answer is None:
+                    raise RuntimeError("{slug} pipeline did not produce runtime_answer.")
+                return state.runtime_answer
+
+
+        @dataclass(frozen=True)
+        class PipelineBundle:
+            llm_adapter: LLMAdapter
+            pipeline: _{pascal}Pipeline
+
+
+        def build_pipeline() -> PipelineBundle:
+            return PipelineBundle(
+                llm_adapter=_{pascal}LLMStub(),
+                pipeline=_{pascal}Pipeline(),
+            )
+
+
+        async def run_domain_step(step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+            """Replace with multi-step domain logic as the agent grows."""
+            _ = step
+            return await run_pipeline_step(step, ctx)
+        '''
+    )
+
+
+def _schemas_init() -> str:
+    return dedent(
+        '''\
+        # © Artur Czarnecki. All rights reserved.
+        # Intergrax framework – proprietary and confidential.
+
+        """Pydantic request/response models for the agent."""
+        '''
+    )
+
+
+def _prompts_system_md(slug: str) -> str:
+    return dedent(
+        f"""\
+        # {slug} — system prompt (draft)
+
+        You are a scaffolded Intergrax agent. Replace this prompt with domain instructions.
+
+        Capability focus: see ``capabilities.py``.
+        """
+    )
+
+
+def _test_agent_py(slug: str, class_name: str, primary_capability: str) -> str:
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        import pytest
+
+        from {slug}.{slug}_agent import {class_name}
+        from intergrax.runtime.nexus.nexus_loop import NexusLoop
+        from intergrax.runtime.registry.agent_registry import AgentRegistry
+        from intergrax.runtime.task.task import Task, TaskContext, TaskState
+
+
+        @pytest.mark.asyncio
+        @pytest.mark.integration
+        @pytest.mark.gate
+        async def test_{slug}_agent_runs_through_nexus():
+            registry = AgentRegistry()
+            registry.register({class_name}())
+            loop = NexusLoop(registry)
+            result = await loop.handle_task(
+                Task(
+                    tenant_id="t1",
+                    user_id="u1",
+                    message="scaffold smoke",
+                    context=TaskContext(capability="{primary_capability}"),
+                )
+            )
+            assert result.state == TaskState.COMPLETED
+            assert "scaffold smoke" in result.answer
+            assert result.agent_id == "{slug}"
+        '''
+    )
+
+
+def _notebook_stub(slug: str, primary_capability: str) -> str:
+    return dedent(
+        f"""\
+        {{
+         "cells": [
+          {{
+           "cell_type": "markdown",
+           "metadata": {{}},
+           "source": ["# {slug} experiment\\n", "\\n", "Run via NexusLoop or ``applications/lab_application``."]
+          }},
+          {{
+           "cell_type": "code",
+           "execution_count": null,
+           "metadata": {{}},
+           "outputs": [],
+           "source": [
+            "from {slug}.{slug}_agent import {_class_name(slug)}\\n",
+            "from intergrax.runtime.nexus.nexus_loop import NexusLoop\\n",
+            "from intergrax.runtime.registry.agent_registry import AgentRegistry\\n",
+            "from intergrax.runtime.task.task import Task, TaskContext\\n",
+            "\\n",
+            "registry = AgentRegistry()\\n",
+            "registry.register({_class_name(slug)}())\\n",
+            "loop = NexusLoop(registry)\\n",
+            "task = Task(tenant_id='t1', user_id='u1', message='hello', context=TaskContext(capability='{primary_capability}'))\\n",
+            "result = await loop.handle_task(task)\\n",
+            "result.answer"
+           ]
+          }}
+         ],
+         "metadata": {{"kernelspec": {{"display_name": "Python 3", "language": "python", "name": "python3"}}}},
+         "nbformat": 4,
+         "nbformat_minor": 5
+        }}
+        """
+    )
+
+
+def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
     caps = ", ".join(f"`{c}`" for c in capabilities)
     return dedent(
         f"""\
         # {slug} agent
 
-        Scaffolded capability module. Register in Nexus:
+        UAEP-first scaffold. See [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md).
+
+        ## Register
 
         ```python
         from intergrax.runtime.registry import AgentRegistry
-        from {slug}.{slug}_agent import {_class_name(slug)}
+        from {slug}.{slug}_agent import {class_name}
 
         registry = AgentRegistry()
-        registry.register({_class_name(slug)}())
+        registry.register({class_name}())
         ```
 
-        Capabilities: {caps}
+        ## Run (NexusLoop)
 
-        See `docs/experiment_guide.md` for the experiment workflow.
+        ```python
+        from intergrax.runtime.task import Task, TaskContext
+
+        result = await loop.handle_task(
+            Task(
+                tenant_id="t1",
+                user_id="u1",
+                message="hello",
+                context=TaskContext(capability="{capabilities[0]}"),
+            )
+        )
+        ```
+
+        ## Capabilities
+
+        {caps}
+
+        ## Layout
+
+        - ``{slug}_agent.py`` — Agent class (UAEP)
+        - ``contract.py`` / ``capabilities.py`` — AgentContract
+        - ``steps/`` — domain execution
+        - ``prompts/`` — prompt assets
+        - ``schemas/`` — I/O models
+        - ``tests/`` — agent smoke tests
+        - ``notebooks/`` — interactive experiments
         """
     )
 
@@ -157,11 +403,20 @@ def create_agent(
 
     target.mkdir(parents=True, exist_ok=True)
 
-    agent_file = target / f"{slug}_agent.py"
-    agent_file.write_text(_agent_py(slug, class_name, capabilities), encoding="utf-8")
+    primary_capability = capabilities[0]
 
-    init_file = target / "__init__.py"
-    init_file.write_text(
+    _write(target / f"{slug}_agent.py", _agent_py(slug, class_name, primary_capability), force=force)
+    _write(target / "contract.py", _contract_py(slug, class_name, primary_capability), force=force)
+    _write(target / "capabilities.py", _capabilities_py(slug, capabilities), force=force)
+    _write(target / "steps" / "__init__.py", "", force=force)
+    _write(target / "steps" / "pipeline.py", _steps_pipeline_py(slug, primary_capability), force=force)
+    _write(target / "schemas" / "__init__.py", _schemas_init(), force=force)
+    _write(target / "prompts" / "system.md", _prompts_system_md(slug), force=force)
+    _write(target / "tests" / "__init__.py", "", force=force)
+    _write(target / "tests" / f"test_{slug}_agent.py", _test_agent_py(slug, class_name, primary_capability), force=force)
+    _write(target / "notebooks" / f"01_{slug}_experiment.ipynb", _notebook_stub(slug, primary_capability), force=force)
+    _write(
+        target / "__init__.py",
         dedent(
             f'''\
             from {slug}.{slug}_agent import {class_name}
@@ -169,11 +424,9 @@ def create_agent(
             __all__ = ["{class_name}"]
             '''
         ),
-        encoding="utf-8",
+        force=force,
     )
-
-    readme = target / "README.md"
-    readme.write_text(_readme(slug, capabilities), encoding="utf-8")
+    _write(target / "README.md", _readme(slug, class_name, capabilities), force=force)
 
     return target
 
@@ -181,17 +434,18 @@ def create_agent(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="intergrax.scaffold",
-        description="Scaffold new Intergrax agent capability modules.",
+        description="Scaffold UAEP-first Intergrax agent capability modules (Phase L.1).",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    new_agent = sub.add_parser("new-agent", help="Create agents/<name>/ from template")
-    new_agent.add_argument("name", help="Agent slug (e.g. research)")
+    new_agent = sub.add_parser("new-agent", help="Create agents/<name>/ from UAEP template")
+    new_agent.add_argument("name", help="Agent slug (e.g. document_automation)")
     new_agent.add_argument(
-        "--capabilities",
-        nargs="+",
+        "--capability",
+        dest="capabilities",
+        action="append",
         default=[],
-        help="Capability ids (default: <name>.basic)",
+        help="Capability id (repeatable; default: <name>.basic)",
     )
     new_agent.add_argument(
         "--root",
@@ -218,9 +472,12 @@ def main(argv: list[str] | None = None) -> int:
         except (ValueError, FileExistsError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
-        print(f"Created agent scaffold at {path}")
-        print(f"  python -m intergrax.scaffold new-agent {args.name}  # already done")
-        print(f"  Register: from {path.name}.{path.name}_agent import {_class_name(_slug(args.name))}")
+        slug = _slug(args.name)
+        class_name = _class_name(slug)
+        print(f"Created UAEP agent scaffold at {path}")
+        print(f"  Register: from {slug}.{slug}_agent import {class_name}")
+        print(f"  Test:     uv run pytest {path / 'tests'} -q")
+        print(f"  Guide:    docs/AGENT_CREATION_GUIDE.md")
         return 0
 
     parser.error(f"Unknown command: {args.command}")

@@ -4019,3 +4019,26 @@ The system should make it possible to quickly implement a new agent, run it thro
 
 This is the core architectural direction of Intergrax.
 
+---
+
+# 52. Phase L — Agent OS Readiness (Implementation Directive)
+
+**Status:** Active implementation phase (2026-05-27).
+
+Before implementing business agents (Problem Radar, Vendor Discovery, Legal expansion), Intergrax MUST formalize its Agent Operating System behavior:
+
+| Artifact | Purpose |
+|----------|---------|
+| `INTERGRAX_AGENT_OS_READINESS_PLAN.md` | Readiness assessment + acceptance mapping |
+| `RUNTIME_READY_FOR_BUSINESS_AGENTS.md` | Go/no-go checklist |
+| `AGENT_CREATION_GUIDE.md` | Canonical agent workflow |
+| `applications/lab_application/` | Universal Tier-3 experimentation environment |
+| `intergrax/scaffold new-agent` | UAEP-first agent scaffold |
+| `tests/acceptance/agent_os/` | Agent OS acceptance suite |
+
+**Acceptance question:** Can a developer create a new agent in < 1 hour, register it, execute through Nexus, inspect traces, and iterate **without modifying runtime infrastructure**?
+
+Business agents are **consumers** of the runtime. They must not drive runtime evolution.
+
+See implementation plan Phase L for deliverable tracking.
+
