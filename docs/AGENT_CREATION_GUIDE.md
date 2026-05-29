@@ -3,8 +3,8 @@
 **The single canonical guide for creating, registering, running, and evaluating agents.**
 
 This is the **only** step-by-step workflow document. Do not duplicate this process elsewhere.
-Architecture canon lives in [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md).
-Readiness status: [`INTERGRAX_AGENT_OS_READINESS_PLAN.md`](INTERGRAX_AGENT_OS_READINESS_PLAN.md).
+Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
+Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md)
 
 **Audience:** human developers, GPT, Claude, Gemini, Cursor agents.
 
@@ -438,7 +438,7 @@ Before starting Problem Radar, Vendor Discovery, or other business agents, compl
 2. Implement minimal domain change in `steps/`
 3. Register and run (smoke test or lab app)
 4. Confirm **no runtime files** were modified
-5. Record result in [`RUNTIME_READY_FOR_BUSINESS_AGENTS.md`](RUNTIME_READY_FOR_BUSINESS_AGENTS.md)
+5. Record result in implementation plan **Appendix A** sign-off template
 
 ```text
 Date:

@@ -15,9 +15,22 @@ The core asset is not a single chatbot or domain agent. It is the **runtime** th
 - enforce tools, governance, and observability consistently,
 - run experiments with full traceability (CLI and HTTP debug surfaces).
 
-Intergrax is developed as an **internal agent experimentation laboratory** on the path toward a broader agent platform. The canonical architecture is defined in [`docs/intergrax_runtime_architecture.md`](docs/intergrax_runtime_architecture.md).
+Intergrax is developed as an **internal agent experimentation laboratory** on the path toward a broader agent platform. See [Documentation](#documentation) below for all canonical docs.
 
-**Documentation:** [`docs/README.md`](docs/README.md) · **Implementation plan:** [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) · **Experiment workflow:** [`docs/experiment_guide.md`](docs/experiment_guide.md)
+---
+
+## Documentation
+
+All platform documentation lives in [`docs/`](docs/). Four documents, one source of truth per topic:
+
+| Document | Read when you want to… |
+|----------|------------------------|
+| [docs/README.md](docs/README.md) | Navigate docs, see current phase focus, update rules |
+| [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Full architecture canon (tiers, Nexus, UAEP §42) |
+| [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, gaps, priority, business-agent checklist (Appendix A) |
+| [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) | Create an agent: scaffold → register → run → inspect |
+
+**Quick paths:** new agent → [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md) · current phase → [IMPLEMENTATION_PLAN](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) §1–§4 · deep architecture → [runtime_architecture](docs/intergrax_runtime_architecture.md) §1–§5
 
 ---
 
@@ -59,7 +72,7 @@ new idea
 Scaffold a new agent:
 
 ```bash
-python -m intergrax.scaffold new-agent <name> --capabilities <domain>.<action>
+python -m intergrax.scaffold new-agent <name> --capability <domain>.<action>
 ```
 
 Run the regression gate:
@@ -85,6 +98,7 @@ uv run pytest tests/ -m gate -q
 
 | Application | Purpose |
 |-------------|---------|
+| `applications/lab_application/` | Universal Agent OS lab (run agents, debug API) |
 | `applications/legal_application/` | Legal agent FastAPI host |
 | `applications/research_application/` | Research pipeline HTTP host |
 
@@ -111,7 +125,7 @@ Legacy Supervisor / LangGraph orchestration is **deprecated** in favour of the N
 intergrax/              # Tier-0 platform + Tier-1 Nexus runtime, AgentEngine, UAEP
 agents/                 # Tier-2 specialized agents (echo, legal, research, …)
 applications/           # Tier-3 product hosts (legal_application, research_application)
-docs/                   # Canonical architecture, implementation plan, experiment guide
+docs/                   # Architecture canon, implementation plan, agent guide (see docs/README.md)
 notebooks/              # Runnable examples and integration demos
 tests/                  # Unit and integration tests (gate: pytest -m gate)
 ```
@@ -132,11 +146,11 @@ Shared infrastructure used by all agents:
 
 ## Status
 
-Intergrax is under **active development** (private R&D). Priorities, phases, and completion status are maintained in a single place:
+Intergrax is under **active development** (private R&D). Phase status, priorities, and the business-agent readiness checklist:
 
 **[`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)**
 
-For architectural alignment and gap tracking, see also [`docs/INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md`](docs/INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md).
+Regression gate: `uv run pytest tests/ -m gate -q` (228 tests)
 
 ---
 

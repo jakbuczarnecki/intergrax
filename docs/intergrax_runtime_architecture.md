@@ -1,6 +1,9 @@
 # INTERGRAX_RUNTIME_ARCHITECTURE.md
 
 Status: Canonical architecture and implementation guide  
+
+**Documentation (four-document model):** [`README.md`](README.md) · Implementation map: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)
+
 Audience: Humans, LLMs, Cursor AI agents, implementation agents, future maintainers  
 Purpose: Define the Intergrax runtime architecture, implementation rules, agent model, orchestration model, adapter model, experimentation model and forbidden patterns.
 
@@ -2178,7 +2181,7 @@ Agents provide **domain logic**. The runtime owns **execution governance**.
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Implementation status note:** Some §42 contracts describe the **target canonical runtime**. Existing code (e.g. `AgentEngine`, `NexusLoop`, `ToolRuntime`) implements subsets. **Scaffold modules** (contracts + `runtime/events/`, `runtime/hooks/`, `runtime/middleware/`, `runtime/policy/`) were added 2026-05-27 — see [`INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md`](INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md) §15–§16. New code MUST converge toward §42. Gaps are tracked in implementation plans; agents MUST NOT introduce patterns forbidden by §42.41.
+**Implementation status note:** Some §42 contracts describe the **target canonical runtime**. Existing code implements subsets. Gaps are tracked in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) §2 and §0.5. New code MUST converge toward §42. Agents MUST NOT introduce patterns forbidden by §42.41.
 
 ### §42 Table Of Contents
 
@@ -4029,8 +4032,7 @@ Before implementing business agents (Problem Radar, Vendor Discovery, Legal expa
 
 | Artifact | Purpose |
 |----------|---------|
-| `INTERGRAX_AGENT_OS_READINESS_PLAN.md` | Readiness assessment + acceptance mapping |
-| `RUNTIME_READY_FOR_BUSINESS_AGENTS.md` | Go/no-go checklist |
+| `INTERGRAX_IMPLEMENTATION_PLAN.md` | Phases, status, acceptance mapping, Appendix A checklist |
 | `AGENT_CREATION_GUIDE.md` | Canonical agent workflow |
 | `applications/lab_application/` | Universal Tier-3 experimentation environment |
 | `intergrax/scaffold new-agent` | UAEP-first agent scaffold |
@@ -4040,5 +4042,7 @@ Before implementing business agents (Problem Radar, Vendor Discovery, Legal expa
 
 Business agents are **consumers** of the runtime. They must not drive runtime evolution.
 
-See implementation plan Phase L for deliverable tracking.
+See implementation plan Phase L tracking (§3) and **Appendix A** in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+
+Do not update this file. Edit the canon §52 + implementation plan instead.
 

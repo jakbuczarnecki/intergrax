@@ -2,69 +2,57 @@
 
 **Last updated:** 2026-05-27
 
-When documents conflict, **`intergrax_runtime_architecture.md`** is authoritative for architecture.
-For **agent creation workflow**, **`AGENT_CREATION_GUIDE.md`** is the single source of truth.
+The `docs/` folder contains **exactly four documents**. Nothing else belongs here.
+
+---
+
+## Documents
+
+| Document | Purpose |
+|----------|---------|
+| [**intergrax_runtime_architecture.md**](intergrax_runtime_architecture.md) | **Architecture canon** — tiers, Nexus, UAEP §42, contracts, forbidden patterns |
+| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps, priority, readiness checklist (Appendix A) |
+| [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
+| **This file** | Navigation and update rules |
+
+```text
+Architecture (what)      →  intergrax_runtime_architecture.md
+Implementation (status)  →  INTERGRAX_IMPLEMENTATION_PLAN.md
+Agent workflow (how)     →  AGENT_CREATION_GUIDE.md
+```
 
 ---
 
 ## Start here
 
-| If you want to… | Read |
-|-----------------|------|
-| **Create a new agent (full process)** | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) ← **canonical** |
-| Understand architecture | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) |
-| See implementation status / phases | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) |
-| Check Agent OS readiness | [INTERGRAX_AGENT_OS_READINESS_PLAN.md](INTERGRAX_AGENT_OS_READINESS_PLAN.md) |
-| Go/no-go before business agents | [RUNTIME_READY_FOR_BUSINESS_AGENTS.md](RUNTIME_READY_FOR_BUSINESS_AGENTS.md) |
+| I want to… | Read |
+|------------|------|
+| Understand the platform | Implementation plan §0, then architecture canon §1–§5 |
+| See current phase and what's next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §1–§4 |
+| Check readiness for business agents | Implementation plan **Appendix A** |
+| Create a new agent | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
+| Deep-dive UAEP / hooks / governance | Architecture canon §42 |
 
 ---
 
-## Operational documents (`docs/`)
+## Current focus (2026-05-27)
 
-| File | Role |
-|------|------|
-| [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Single canonical guide** — scaffold, register, run, inspect, evaluate |
-| [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) | Architecture canon (four tiers, UAEP, Nexus) |
-| [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) | Implementation plan — phases and deliverables |
-| [INTERGRAX_AGENT_OS_READINESS_PLAN.md](INTERGRAX_AGENT_OS_READINESS_PLAN.md) | Phase L readiness assessment |
-| [RUNTIME_READY_FOR_BUSINESS_AGENTS.md](RUNTIME_READY_FOR_BUSINESS_AGENTS.md) | Checklist before Problem Radar / Vendor Discovery |
-| [INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md](INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md) | Baseline audit + live status |
-| [experiment_guide.md](experiment_guide.md) | Redirect → AGENT_CREATION_GUIDE.md |
+| Phase | Status |
+|-------|--------|
+| Phase J — Unified execution entry | **Done** |
+| Phase L — Agent OS deliverables | **Done** |
+| Phase L — Sign-off exercise | **Pending** |
+| Phase K — Problem Radar / Vendor Discovery | **Blocked** |
 
----
-
-## Product ideas (not platform canon)
-
-| Location | Role |
-|----------|------|
-| [key_components/](key_components/) | Planned product modules |
-| [agents/legal/](../agents/legal/) | Legal agent roadmap |
-
-## Archive (do not update)
-
-| File | Superseded by |
-|------|---------------|
-| [archive/ARCHITECTURE.md](archive/ARCHITECTURE.md) | Canon §5.1 |
-| [archive/agent_factory.md](archive/agent_factory.md) | Canon §42 (UAEP) |
-| [archive/nexus.md](archive/nexus.md) | Canon §9 (NexusLoop) |
+Gate: `uv run pytest tests/ -m gate -q` (**228 tests**)
 
 ---
 
-## Tier model (summary)
+## Update rules
 
-| Tier | Folder | Role |
-|------|--------|------|
-| Tier-0 | `intergrax/` | Platform |
-| Tier-1 | `intergrax/runtime/` | Nexus Agent OS |
-| Tier-2 | `agents/` | Agents |
-| Tier-3 | `applications/` | Applications |
+1. **Architecture** → `intergrax_runtime_architecture.md`, then sync §0 in the implementation plan.
+2. **Phase / status / readiness** → `INTERGRAX_IMPLEMENTATION_PLAN.md` only.
+3. **Agent workflow** → `AGENT_CREATION_GUIDE.md` only.
+4. **Do not add** new markdown files to `docs/` without removing or merging an existing one.
 
-**Execution:** `Task` → `NexusLoop` → `AgentEngine` (UAEP).
-
----
-
-## Rules
-
-1. Architecture changes → update canon first, then the implementation plan.
-2. **Workflow changes → update `AGENT_CREATION_GUIDE.md` only** (not experiment_guide or scattered READMEs).
-3. Product roadmaps do not override the canon.
+Product-specific roadmaps belong under `agents/<name>/` (e.g. `agents/legal/`), not in `docs/`.

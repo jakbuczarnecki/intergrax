@@ -1,18 +1,80 @@
 # Intergrax — Runtime Implementation Plan
 
+**The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
+Status: Working draft (2026-05-27, post Phase J + Phase L deliverables)  
+Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
+Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
+Navigation: [`README.md`](README.md)  
 
-Status: Working draft (2026-05-27, synced post Phase J + Phase L start)  
+Principle: **evolve, not rewrite** · **reuse Tier-0** (canon §5.2)
 
-Canonical source: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
+---
 
-Baseline: [`INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md`](INTERGRAX_IMPLEMENTATION_GAP_ANALYSIS.md) §14–§16  
+## Documentation model
 
-Documentation map: [`README.md`](README.md)  
+Do not maintain separate status/readiness/roadmap files. This plan is the **only** live implementation document:
 
-Principle: **evolve, not rewrite** · **reuse Tier-0** (§5.2)
+| Topic | Where |
+|-------|--------|
+| Full architecture specification | `intergrax_runtime_architecture.md` |
+| Phase status, gaps, priority | **This file** |
+| Agent creation workflow | `AGENT_CREATION_GUIDE.md` |
+| Business-agent go/no-go checklist | **Appendix A** (below) |
 
+---
 
+## 0. Architecture at a glance
+
+Condensed from the canon. For full contracts and forbidden patterns, read `intergrax_runtime_architecture.md`.
+
+### 0.1 Strategic objective
+
+Intergrax is an **Agent Operating System / Harness AI runtime** — not a collection of business agents.
+
+Current optimization targets:
+
+- experimentation speed · agent creation speed · runtime stability
+- orchestration quality · observability · composability
+
+Business agents (Problem Radar, Vendor Discovery, Legal expansion) are **blocked** until Phase L sign-off (Appendix A).
+
+### 0.2 Four tiers
+
+| Tier | Folder | Role | Analogy |
+|------|--------|------|---------|
+| **Tier-0** | `intergrax/` | Platform — LLM, storage, queues, logging, adapters | Kernel drivers |
+| **Tier-1** | `intergrax/runtime/` | **Nexus Agent OS** — orchestration, lifecycle, trace, memory, HITL | Operating system |
+| **Tier-2** | `agents/` | Reusable agent capabilities — domain logic, prompts, tools | Applications |
+| **Tier-3** | `applications/` | Execution environments — wiring, routes, integrations | Deployment config |
+
+### 0.3 Execution path
+
+```text
+HTTP / CLI / Worker
+    → Tier-3 Application (optional)
+    → UnifiedTaskRunner
+    → NexusLoop (Tier-1)
+    → AgentEngine / UAEP
+    → Tier-2 Agent (get_steps → run_step → decide_after_step)
+    → ToolRuntime / MemoryView / Validation
+    → Trace + RuntimeEvents + TaskResult
+```
+
+### 0.4 Agent OS rule
+
+New agents integrate via **`AgentRegistry.register()`** — never by editing `NexusLoop`, `GraphExecutor`, or task lifecycle code.
+
+### 0.5 Maturity dashboard
+
+| Scope | Score | Notes |
+|-------|-------|-------|
+| Canon §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** | Phases A–F |
+| §42 Unified Execution Runtime | **~65–70%** | UAEP done; §42.9 mid-step checkpoint pending |
+| Laboratory workflow | **~95%** | Debug API, experiments, lab app |
+| Agent OS readiness (Phase L deliverables) | **Done** | Scaffold, guide, acceptance suite |
+| Agent OS sign-off | **Pending** | One live < 1h agent exercise |
+| Regression gate | **228 passed** | `pytest -m gate` |
 
 ---
 
@@ -52,7 +114,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
 
-| Pre-P4.2 regression gate | **Done** | **gate marker** (run `pytest -m gate` for current count) |
+| Pre-P4.2 regression gate | **Done** | **228 tests**, marker `gate` |
 
 
 
@@ -395,23 +457,41 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ---
 
-### Phase L — Agent OS Readiness (ACTIVE)
+### Phase L — Agent OS Readiness
 
-**Directive:** Do not implement business agents until Phase L is complete.  
-**Plan:** [`INTERGRAX_AGENT_OS_READINESS_PLAN.md`](INTERGRAX_AGENT_OS_READINESS_PLAN.md)  
-**Checklist:** [`RUNTIME_READY_FOR_BUSINESS_AGENTS.md`](RUNTIME_READY_FOR_BUSINESS_AGENTS.md)  
-**Guide:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)
+**Directive:** Do not implement business agents until Phase L sign-off (Appendix A).  
+**Agent workflow:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)
 
 | # | Deliverable | Status | Req | Notes |
 |---|-------------|--------|-----|-------|
 | L.1 | UAEP-first agent scaffold | **Done** | R2 | `python -m intergrax.scaffold new-agent` |
-| L.2 | Agent creation guide | **Done** | R2 | Canonical workflow for humans + LLMs |
+| L.2 | Agent creation guide | **Done** | R2 | Single canonical how-to |
 | L.3 | Lab application (Tier-3) | **Done** | R1 | `applications/lab_application/` |
 | L.4 | Reference technical agents | **Done** | R5 | Echo + `agents/lab/mock_agents.py` |
-| L.5 | Agent OS acceptance suite | **Done** | R1 | `tests/acceptance/agent_os/` marker `agent_os` |
+| L.5 | Agent OS acceptance suite | **Done** | R1 | `tests/acceptance/agent_os/` |
 | L.6 | Runtime independence verification | **Done** | R5 | Register + run without Nexus edits |
 | L.7 | Application composition verification | **Done** | R5 | Agents ≠ applications |
-| L.8 | Runtime readiness checklist | **Done** | R1 | `RUNTIME_READY_FOR_BUSINESS_AGENTS.md` |
+| L.8 | Readiness checklist | **Done** | R1 | Appendix A (this file) |
+| L.9 | **Sign-off exercise** | **Pending** | — | New scaffolded agent < 1h, zero runtime edits |
+
+**Acceptance tests (L.5):**
+
+```bash
+uv run pytest tests/acceptance/agent_os -m agent_os -q
+```
+
+| # | Scenario | Test |
+|---|----------|------|
+| 1 | Single agent | `test_acceptance_01_single_agent_execution` |
+| 2 | Sequential multi-agent | `test_acceptance_02_sequential_multi_agent` |
+| 3 | Parallel multi-agent | `test_acceptance_03_parallel_multi_agent` |
+| 4 | HITL approve/resume | `test_acceptance_04_human_approval_flow` |
+| 5 | Checkpoint recovery | `test_acceptance_05_checkpoint_recovery` |
+| 6 | Retry / alternate agent | `test_acceptance_06_retry_flow` |
+| 7 | Partial results | `test_acceptance_07_partial_results` |
+| 8 | Memory / shared context | `test_acceptance_08_memory_handoff` |
+| 9 | Sandbox tools | `test_acceptance_09_sandbox_tool_execution` |
+| 10 | Shadow workspace | `test_acceptance_10_shadow_workspace` |
 
 ---
 
@@ -421,11 +501,11 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ```text
 
-NOW:     Phase L — Agent OS readiness (formalize harness before business agents)
+NOW:     Phase L sign-off (one new agent exercise, Appendix A)
 
-NEXT:    Phase L gate sign-off → Phase K (K.1/K.2 on demand)
+NEXT:    Phase K — K.1/K.2 on demand (after sign-off)
 
-BLOCKED: Problem Radar, Vendor Discovery, Legal expansion until L complete
+BLOCKED: Problem Radar, Vendor Discovery, Legal expansion
 
 PARALLEL: K.3–K.5 hardening (non-business) when capacity allows
 
@@ -472,7 +552,7 @@ uv run pytest tests/ -m gate -q
 
 Complete one **new** scaffolded agent exercise (< 1 hour) and record in experiment registry before starting K.1/K.2.
 
-**Do not start:** Problem Radar, Vendor Discovery, Legal expansion until [`RUNTIME_READY_FOR_BUSINESS_AGENTS.md`](RUNTIME_READY_FOR_BUSINESS_AGENTS.md) sign-off.
+**Do not start:** Problem Radar, Vendor Discovery, Legal expansion until **Appendix A** sign-off.
 
 **Recently completed:**
 
@@ -744,7 +824,78 @@ Reuse:
 
 ---
 
+## Appendix A — Business agents readiness checklist
 
+Gate before Problem Radar / Vendor Discovery. Run:
 
-*Plan synced with codebase after J.2 RunService → UnifiedTaskRunner (2026-05-27). Gate: 204 tests.*
+```bash
+uv run pytest tests/acceptance/agent_os -m agent_os -q
+uv run pytest tests/ -m gate -q
+```
+
+### Agent creation & registration
+
+| # | Question | Status |
+|---|----------|--------|
+| 1 | Scaffold in minutes (`intergrax.scaffold new-agent`)? | ✅ |
+| 2 | UAEP structure generated (contract, steps, tests)? | ✅ |
+| 3 | First run in < 1 hour? | ✅ |
+| 4 | Register via `AgentRegistry` only (no Nexus edits)? | ✅ |
+| 5 | Capabilities in contract? | ✅ |
+
+### Execution & observability
+
+| # | Question | Status |
+|---|----------|--------|
+| 6 | Runs through NexusLoop / lab `/v1/lab/run`? | ✅ |
+| 7 | UnifiedTaskRunner same path as HTTP? | ✅ |
+| 8 | Graph sequential + parallel? | ✅ |
+| 9 | Trace via `/debug/tasks/{id}`? | ✅ |
+| 10 | Runtime events + checkpoints + progress? | ✅ |
+
+### Recovery, HITL, memory, isolation
+
+| # | Question | Status |
+|---|----------|--------|
+| 11 | Nexus validates output? | ✅ |
+| 12 | Retry / alternate agent on validation failure? | ✅ |
+| 13 | HITL pause + resume? | ✅ |
+| 14 | Checkpoint recovery? | ✅ |
+| 15 | Shared context in graphs? | ✅ |
+| 16 | Sandbox + shadow workspace? | ✅ |
+
+### Tooling & composition
+
+| # | Question | Status |
+|---|----------|--------|
+| 17 | Canonical agent guide exists? | ✅ |
+| 18 | Lab application (Tier-3)? | ✅ |
+| 19 | Same agent reusable across applications? | ✅ |
+| 20 | Applications contain wiring only? | ✅ |
+
+### Go / no-go
+
+| Criterion | Threshold | Current |
+|-----------|-----------|---------|
+| Checklist | ≥ 90% | **20/20** |
+| Acceptance suite | 10/10 green | ✅ |
+| Sign-off exercise | 1 new agent, < 1h, zero runtime edits | **Pending** |
+
+**Verdict:** Platform **L1 lab-ready**. Business agents **NO-GO** until sign-off.
+
+### Sign-off template
+
+```text
+Date:
+Agent exercise: <slug>
+Time to first run:
+Runtime files modified: none
+Acceptance suite: pass
+Gate suite: pass
+Decision: GO Phase K / HOLD
+```
+
+---
+
+*Plan synced with codebase after Phase L (2026-05-27). Gate: 228 tests.*
 

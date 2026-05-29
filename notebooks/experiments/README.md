@@ -24,6 +24,6 @@ hypothesis → capability → register → Nexus → trace → evaluate → deci
 
 ## Related
 
-- [`docs/experiment_guide.md`](../../docs/experiment_guide.md) — CLI and HTTP workflow
+- [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) — agent workflow (CLI and HTTP)
 - `intergrax/experiments/workflow.py` — `ExperimentSession` API used by notebooks
 - `python -m intergrax.scaffold new-agent <name>` — scaffold a new agent module
