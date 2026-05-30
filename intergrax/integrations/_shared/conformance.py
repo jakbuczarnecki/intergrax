@@ -9,6 +9,7 @@ from typing import TypeVar
 
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
+from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.contracts.interaction_surface import InteractionSurface
 from intergrax.integrations.contracts.issue_tracker import IssueTracker
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
@@ -72,3 +73,7 @@ def assert_cloud_platform(instance: object) -> CloudPlatform:
 
 def assert_collaboration_suite(instance: object) -> CollaborationSuite:
     return assert_implements(instance, CollaborationSuite)
+
+
+def assert_document_store(instance: object) -> DocumentStore:
+    return assert_implements(instance, DocumentStore)

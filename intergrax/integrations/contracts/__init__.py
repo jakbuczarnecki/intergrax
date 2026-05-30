@@ -24,6 +24,11 @@ from intergrax.integrations.contracts.collaboration_suite import (
     MailMessage,
     UserRecord,
 )
+from intergrax.integrations.contracts.document_store import (
+    DocumentQueryResult,
+    DocumentRecord,
+    DocumentStore,
+)
 from intergrax.integrations.contracts.interaction_surface import (
     InteractionAdapter,
     InteractionSurface,
@@ -67,6 +72,9 @@ __all__ = [
     "CalendarEvent",
     "CalendarEventsResult",
     "CollaborationSuite",
+    "DocumentQueryResult",
+    "DocumentRecord",
+    "DocumentStore",
     "HealthStatus",
     "IntegrationCategory",
     "IntegrationEntry",

@@ -672,7 +672,7 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 |------|----------|--------|-----------|
 | `oracle` | relational_store | Planned | Enterprise clients on Oracle |
 | `mssql` | relational_store | Planned | Microsoft SQL deployments |
-| `cassandra` | document_store | Planned | High-volume log / event retention |
+| `cassandra` | document_store | Beta | High-volume log / event retention (partition-scoped CQL) |
 | `mongodb` | document_store | Planned | Flexible schema stores |
 | `memcached` | key_value_cache | Planned | Simple cache tier |
 | `sqs` | message_bus | Planned | AWS-native queues (also via `aws` facade) |
