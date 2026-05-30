@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Unit tests for Kafka integration provider (Phase M.4)."""
+"""Unit tests for RabbitMQ integration provider (Phase M.4)."""
 
 from __future__ import annotations
 
@@ -13,12 +13,12 @@ import pytest
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations._shared.conformance import assert_message_bus
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.kafka.bundle import (
-    KafkaIntegrationBundle,
-    create_kafka_integration,
-    create_kafka_message_bus,
+from intergrax.integrations.providers.rabbitmq.bundle import (
+    RabbitMQIntegrationBundle,
+    create_rabbitmq_integration,
+    create_rabbitmq_message_bus,
 )
-from intergrax.integrations.providers.kafka.register import register_kafka_integration
+from intergrax.integrations.providers.rabbitmq.register import register_rabbitmq_integration
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
@@ -29,7 +29,7 @@ from intergrax.queueing.contracts.task_queue import TaskRequest
 pytestmark = pytest.mark.unit
 
 
-def _assert_kafka_message_bus(bus: object) -> None:
+def _assert_rabbitmq_message_bus(bus: object) -> None:
     assert_message_bus(bus)
     handle = bus.enqueue(
         TaskRequest(
@@ -40,7 +40,7 @@ def _assert_kafka_message_bus(bus: object) -> None:
             idempotency_key=None,
         )
     )
-    assert handle.provider == "kafka"
+    assert handle.provider == "rabbitmq"
 
 
 class InMemoryKVStore(DistributedKVStore):
@@ -100,47 +100,50 @@ def mock_producer() -> MagicMock:
     return MagicMock()
 
 
-def test_create_kafka_integration_bundle(kv_store: InMemoryKVStore, mock_producer: MagicMock) -> None:
-    bundle = create_kafka_integration(
+def test_create_rabbitmq_integration_bundle(
+    kv_store: InMemoryKVStore,
+    mock_producer: MagicMock,
+) -> None:
+    bundle = create_rabbitmq_integration(
         kv_store=kv_store,
-        topic="lab-tasks",
+        queue="lab-tasks",
         producer=mock_producer,
         consumer=MagicMock(),
     )
 
-    assert isinstance(bundle, KafkaIntegrationBundle)
-    _assert_kafka_message_bus(bundle.message_bus)
-    assert bundle.config.topic == "lab-tasks"
+    assert isinstance(bundle, RabbitMQIntegrationBundle)
+    _assert_rabbitmq_message_bus(bundle.message_bus)
+    assert bundle.config.queue == "lab-tasks"
     assert bundle.kv_store is kv_store
 
 
-def test_create_kafka_message_bus_requires_kv_store(mock_producer: MagicMock) -> None:
+def test_create_rabbitmq_message_bus_requires_kv_store(mock_producer: MagicMock) -> None:
     with pytest.raises(ValueError, match="kv_store"):
-        create_kafka_message_bus(producer=mock_producer)
+        create_rabbitmq_message_bus(producer=mock_producer)
 
 
 def test_register_and_resolve_via_profile(
     kv_store: InMemoryKVStore,
     mock_producer: MagicMock,
 ) -> None:
-    register_kafka_integration()
-    profile = IntegrationProfile(message_bus=IntegrationSlug.KAFKA)
+    register_rabbitmq_integration()
+    profile = IntegrationProfile(message_bus=IntegrationSlug.RABBITMQ)
 
     bus = resolve(
         IntegrationCategory.MESSAGE_BUS,
         profile=profile,
-        config={"kv_store": kv_store, "producer": mock_producer, "topic": "test-topic"},
+        config={"kv_store": kv_store, "producer": mock_producer, "queue": "test-queue"},
     )
 
-    _assert_kafka_message_bus(bus)
+    _assert_rabbitmq_message_bus(bus)
 
 
-def test_register_default_integrations_includes_kafka(
+def test_register_default_integrations_includes_rabbitmq(
     kv_store: InMemoryKVStore,
     mock_producer: MagicMock,
 ) -> None:
     register_default_integrations()
-    profile = IntegrationProfile(message_bus=IntegrationSlug.KAFKA)
+    profile = IntegrationProfile(message_bus=IntegrationSlug.RABBITMQ)
 
     bus = resolve(
         IntegrationCategory.MESSAGE_BUS,
@@ -148,4 +151,4 @@ def test_register_default_integrations_includes_kafka(
         config={"kv_store": kv_store, "producer": mock_producer},
     )
 
-    _assert_kafka_message_bus(bus)
+    _assert_rabbitmq_message_bus(bus)

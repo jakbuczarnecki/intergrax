@@ -71,9 +71,11 @@ def test_cache_normalization_whitespace() -> None:
     assert result == scores
 
 
-def test_cache_ttl_expiration() -> None:
+def test_cache_ttl_expiration(monkeypatch: pytest.MonkeyPatch) -> None:
 
     cache = RerankCache(ttl_seconds=1)
+    now = 1_000.0
+    monkeypatch.setattr(time, "time", lambda: now)
 
     cache.set(
         reranker="test",
@@ -82,7 +84,7 @@ def test_cache_ttl_expiration() -> None:
         scores=[0.5],
     )
 
-    time.sleep(1.2)
+    now += 1.2
 
     result = cache.get(
         reranker="test",
