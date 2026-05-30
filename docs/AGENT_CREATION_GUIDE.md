@@ -72,7 +72,7 @@ idea
   → capability id
   → scaffold                    (python -m intergrax.scaffold new-agent …)
   → implement domain logic      (steps/, prompts/, contract.py)
-  → register                    (pick context: test / script / lab / product app)
+  → register                    (pick context: test / script / lab / product / scaffold app)
   → run                         (pytest / NexusLoop / lab HTTP)
   → inspect                     (debug API / CLI)
   → evaluate
@@ -199,10 +199,11 @@ registry.register(DocumentAutomationAgent(), contract=contract)
 |---------|-------------|-------------------|
 | **A — Smoke test** | Fastest first run; CI for the agent | Already in `agents/<slug>/tests/` (generated) |
 | **B — Script / notebook** | Interactive experiments | Your script: `registry.register(...)` |
-| **C — Lab application** | HTTP experimentation via `/v1/lab/run` | `applications/lab_application/host/wiring.py` |
-| **D — Product application** | Dedicated product host (Legal, Research, …) | `applications/<product>/host/wiring.py` |
+| **C — Lab application** | HTTP experimentation via `/v1/lab/run` | `applications/lab_application/manifest.py` + `host/wiring.py` |
+| **D — Product application** | Existing product host (Legal, Research, …) | `applications/<product>/manifest.py` + `host/wiring.py` |
+| **E — Dedicated application (scaffold)** | New deployable host (env, Docker, HTTP API) | `python -m intergrax.scaffold new-application` → § [Step 4E](#e--dedicated-application-scaffold) |
 
-There is **no auto-discovery**. Every context requires an explicit `registry.register()` call.
+There is **no auto-discovery**. Every context requires an explicit roster entry (`AgentBinding.mount` or `registry.register()`).
 
 ### A — Smoke test (recommended first run)
 
@@ -244,21 +245,22 @@ Notebook template: `agents/<slug>/notebooks/01_<slug>_experiment.ipynb`.
 
 ### C — Lab application (HTTP)
 
-**Step C.1 — Add agent to lab registry**
+**Step C.1 — Add agent to lab roster**
 
-Edit `applications/lab_application/host/wiring.py`:
+Edit `applications/lab_application/manifest.py` (and `host/agent_builders.py` if the agent needs a custom factory). The lab host assembles the registry via `build_application_registry()` in `host/wiring.py` — do not call `registry.register()` by hand unless you are in a one-off script.
+
+Example binding:
 
 ```python
-def build_lab_registry(*, settings: LabApplicationSettings | None = None) -> AgentRegistry:
-    settings = settings or LabApplicationSettings.from_env()
-    registry = AgentRegistry()
+from document_automation.document_automation_agent import DocumentAutomationAgent
+# inside build_lab_manifest() agents=[ ... ]
+AgentBinding.mount(DocumentAutomationAgent, capabilities=["documents.automation"]),
+```
 
-    # … existing Echo / mock registrations …
+Add a zero-arg builder in `host/agent_builders.py` when needed:
 
-    from document_automation.document_automation_agent import DocumentAutomationAgent
-    registry.register(DocumentAutomationAgent())
-
-    return registry
+```python
+DocumentAutomationAgent: lambda ctx, binding: DocumentAutomationAgent(),
 ```
 
 **Step C.2 — Start lab host**
@@ -290,7 +292,9 @@ Lab app also exposes `/debug/*` for trace, events, checkpoints, experiments, and
 
 ### D — Product application (Tier-3)
 
-Follow the Legal / Research pattern using the **Tier-3 composition engine**:
+Use this path when extending an **existing** product host (Legal, Research, …). For a **new** host, prefer **Step 4E** (scaffold).
+
+Manual / reference pattern:
 
 1. Keep agent logic in `agents/<slug>/`
 2. Define roster in `applications/<product>/manifest.py` — `AgentBinding.mount(AgentClass, factory=...)`
@@ -307,9 +311,152 @@ Example references:
 
 - `applications/legal_application/manifest.py` + `host/agent_factories.py`
 - `applications/lab_application/manifest.py` + `host/agent_builders.py`
-- `applications/research_application/host/wiring.py` (legacy explicit register — migrate to manifest when touched)
+- `applications/research_application/` — product-style host
 
 Applications contain **wiring only** — never agent business logic.
+
+### E — Dedicated application (scaffold)
+
+**When to use:** you need a **separate** Tier-3 host with its own `.env`, HTTP API, optional Docker image, and stable package name — not only the shared lab. Typical after agent smoke tests (Step 4A) pass.
+
+**Canon:** `docs/intergrax_runtime_architecture.md` §7.4.8–§7.4.10  
+**Phase N status:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) (Phase N table)  
+**Reference tree:** `applications/poc_template_application/` (committed scaffold example)
+
+#### E.1 — Choose scaffold profile
+
+| Profile | CLI | Host style | Default port |
+|---------|-----|------------|--------------|
+| `lab` | `--profile lab` | Debug API + `POST <prefix>/run` + `/debug/*` | 8091 |
+| `product` | `--profile product` | FastAPI Core (`/health`, `/v1/*`) + auth env stubs | 8000 |
+
+```bash
+# From repository root — lab host for experimentation
+python -m intergrax.scaffold new-application my_lab \
+  --profile lab \
+  --agents echo,my_agent \
+  --port 8091 \
+  --prefix /v1/my_lab
+
+# Product-style host (Legal-like factory layout)
+python -m intergrax.scaffold new-application my_product \
+  --profile product \
+  --agents echo \
+  --port 8000
+```
+
+`--agents` accepts built-in slugs (`echo`, `research`, `signoff_probe`) or your scaffolded agent slug under `agents/<slug>/`.
+
+The CLI prints package name, uvicorn command, pytest path, MCP mount, and Docker script paths.
+
+#### E.2 — Generated layout
+
+Creates `applications/<name>_application/` (package suffix is automatic):
+
+```text
+applications/my_lab_application/
+  manifest.py                 # ApplicationManifest.lab | .product
+  README.md                   # Three-command quickstart
+  BUILD_AND_DEPLOY.md         # Runbook: local, verify, Docker, prod checklist
+  .env.example                # MY_LAB_* (copy to .env, gitignored)
+  host/                       # factory, settings, wiring, integration_wiring
+  serving/                    # fastapi_router (+ schemas.py for product)
+  mcp/server.py               # FastMCP on same uvicorn process (/mcp)
+  docker/
+    Dockerfile, .dockerignore, docker-compose.yml
+    build-docker.sh, build-docker.bat
+  my_lab_application_tests/   # host smoke tests
+```
+
+Import as `my_lab_application.host.main:app` (folder `applications/` is on `pythonpath`).
+
+#### E.3 — Register your agent in the new host
+
+Scaffold pre-registers agents from `--agents`. To add or change the roster after creation:
+
+1. **Manifest** — `applications/<pkg>/manifest.py`:
+
+   ```python
+   AgentBinding.mount(MyAgent, capabilities=["my_domain.action"], default=True),  # product: one default
+   ```
+
+2. **Builders** (zero-arg agents) — `host/agent_builders.py`:
+
+   ```python
+   MyAgent: lambda ctx, binding: MyAgent(),
+   ```
+
+3. **Factories** (settings-driven agents, product profile) — `host/agent_factories.py` + typed factory callable.
+
+4. **Wiring** — usually unchanged; calls `build_application_registry(manifest, ctx, builders=...)`.
+
+Re-run host smoke tests after edits.
+
+#### E.4 — Configure environment
+
+```bash
+cp applications/my_lab_application/.env.example applications/my_lab_application/.env
+```
+
+Variables use the application prefix (`MY_LAB_`, `MY_PRODUCT_`, …). Do not put app-only secrets in the repository-root `.env` only.
+
+Product profile: optional dev API key via `*_BACKEND_BOOTSTRAP_API_KEY` (+ tenant/user); production requires keys or explicit `*_BACKEND_ALLOW_UNAUTHENTICATED=true` (see generated `host/settings.py`).
+
+#### E.5 — Three-command quickstart
+
+From **repository root**:
+
+```bash
+# 1. Verify
+uv run pytest applications/my_lab_application/my_lab_application_tests -q
+
+# 2. Run locally
+uv run uvicorn my_lab_application.host.main:app --host 127.0.0.1 --port 8091
+
+# 3. Container image (monorepo root context)
+applications/my_lab_application/docker/build-docker.sh
+# Windows: applications\my_lab_application\docker\build-docker.bat
+```
+
+Product profile: also `curl http://127.0.0.1:8000/health` before `POST <route_prefix>/run`.
+
+Operational detail: `applications/<pkg>/BUILD_AND_DEPLOY.md`.
+
+#### E.6 — HTTP verification
+
+**Lab profile:**
+
+```bash
+curl -s http://127.0.0.1:8091/v1/my_lab/agents
+curl -s -X POST http://127.0.0.1:8091/v1/my_lab/run \
+  -H "Content-Type: application/json" \
+  -d '{"message":"hello","capability":"echo.basic"}'
+```
+
+**Product profile:**
+
+```bash
+curl -s http://127.0.0.1:8000/health
+curl -s -X POST http://127.0.0.1:8000/v1/my_product/run \
+  -H "Content-Type: application/json" \
+  -d '{"message":"hello","capability":"echo.basic"}'
+```
+
+**MCP (both profiles):** FastMCP on `/mcp` by default — tools `list_agents`, `run_agent` (same Nexus loop as HTTP). Toggle with `<PREFIX>_INCLUDE_MCP` / `<PREFIX>_MCP_MOUNT_PATH`.
+
+#### E.7 — Integrations and deploy
+
+- **Integrations:** edit `host/integration_wiring.py` — lab scaffold uses `IntegrationProfile.lab()`; product uses `wire_nexus_observability()`. Agents still declare tools only; see [Appendix E](#appendix-e--integrations-and-tier-0-wiring).
+- **Docker:** scripts `cd` to monorepo root and build with `applications/<pkg>/docker/Dockerfile`. Override tag: `IMAGE_TAG=my-registry/my_lab:1.0.0` (sh) or `build-docker.bat my-registry/my_lab:1.0.0` (bat).
+- **Gate:** after application smoke tests, run `uv run pytest -m gate -q`.
+
+#### E.8 — Further reading
+
+| Topic | Document |
+|-------|----------|
+| Composition engine API | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
+| Application folder conventions | [`applications/USAGE.md`](../applications/USAGE.md) |
+| Tier-3 summary (manifest snippet) | [Appendix F](#appendix-f--tier-3-application-environment) |
 
 ---
 
@@ -737,13 +884,18 @@ Each provider under `intergrax/integrations/providers/<slug>/` includes an Engli
 
 When an agent needs a **dedicated host** (env, Docker, stable HTTP API) — not only the shared lab — use the Tier-3 stack under `applications/<app>/`.
 
+**Primary workflow:** [Step 4E — Dedicated application (scaffold)](#e--dedicated-application-scaffold) (CLI, three-command quickstart, Docker scripts).
+
 | Topic | Document |
 |-------|----------|
+| **Scaffold CLI** — `new-application`, lab vs product profile | [Step 4E](#e--dedicated-application-scaffold) |
 | **Composition engine** — `ApplicationManifest`, `AgentBinding.mount()`, `build_application_registry()` | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
 | **Application layout** — manifest, host, serving, `.env.example`, docker | [`applications/USAGE.md`](../applications/USAGE.md) |
+| **Deploy runbook** — per-app `BUILD_AND_DEPLOY.md` | Generated by scaffold; see `applications/poc_template_application/` |
 | Architecture rules | `docs/intergrax_runtime_architecture.md` §7.4.8–§7.4.10 |
+| Implementation plan | [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase N |
 
-Minimal pattern:
+Minimal pattern (hand-written manifest):
 
 ```python
 from echo.echo_agent import EchoAgent
@@ -756,7 +908,7 @@ ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
 registry = build_application_registry(manifest, ctx, builders=MY_BUILDERS)
 ```
 
-Use `python -m intergrax.scaffold new-application <name> --profile lab --agents <slug>` to generate this layout, or copy `lab_application` / `legal_application` as reference.
+Prefer `python -m intergrax.scaffold new-application <name> --profile lab|product --agents <slug>` over copying folders by hand.
 
 ---
 
@@ -783,7 +935,7 @@ When asked to create a new Intergrax agent:
 1. Read this guide end-to-end.
 2. Run `python -m intergrax.scaffold new-agent <slug> --capability <id>`.
 3. Edit only `agents/<slug>/` — primarily `steps/`, `prompts/`, `schemas/`, `contract.py`.
-4. Register in the appropriate context (§ Step 4). For HTTP lab runs, edit `lab_application/host/wiring.py`.
+4. Register in the appropriate context (§ Step 4). New deployable host: Step **4E** (`new-application`). Shared lab: Step **4C** (`lab_application/manifest.py`).
 5. Verify: `uv run pytest agents/<slug>/tests -q` then `uv run pytest tests/ -m gate -q`.
 6. Do **not** modify `intergrax/runtime/` unless a reusable Tier-0 gap is proven and approved.
 7. Do **not** import `intergrax.integrations.providers.*` from agent code — wire integrations in Tier-3 only (Appendix E).

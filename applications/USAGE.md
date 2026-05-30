@@ -179,7 +179,7 @@ intergrax/integrations/  Tier-0 — IntegrationProfile, providers
 | Create agent | `python -m intergrax.scaffold new-agent …` → `agents/` |
 | Register in app | `AgentBinding.mount(...)` in `applications/<app>/manifest.py` |
 | Wire backends | `IntegrationProfile` in manifest + `integration_wiring.py` |
-| Scaffold app | `python -m intergrax.scaffold new-application <name> --profile lab --agents echo` (lab) or `--profile product` (FastAPI Core host) → FastAPI + FastMCP (`/mcp`), `BUILD_AND_DEPLOY.md` |
+| Scaffold app | [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md) Step **4E** — `new-application --profile lab\|product` → FastAPI + FastMCP (`/mcp`), `BUILD_AND_DEPLOY.md`, `build-docker.sh` |
 
 ---
 
