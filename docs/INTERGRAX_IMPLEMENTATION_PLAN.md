@@ -533,8 +533,8 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M.3 | `IntegrationRegistry` + `IntegrationProfile` | **Done** | `catalog.register_integration`, `resolve`, env/mapping profile |
 | M.4 | P0 providers — wrap existing | **Done** | See **M.4 provider tracker** below |
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
-| M.6 | P1 providers (on demand) | Pending | postgresql, mysql, jira, confluence, ms365_graph, prometheus, **aws, azure, gcp**, … |
-| M.7 | Agent Creation Guide § integrations | Pending | How agents declare needs vs Tier-3 wiring |
+| M.6 | P1 providers (on demand) | In progress | **postgresql** Done; mysql, jira, confluence, ms365_graph, prometheus, **aws, azure, gcp**, … |
+| M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
 **M.4 delivery workflow (one provider per iteration):**
@@ -561,6 +561,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | `lab_json` | interaction_surface | **Done** (+ adopcja) | `providers/lab_json/` — lab intake; runtime channel ``lab`` |
 | `rabbitmq` | message_bus | **Done** (+ adopcja) | `providers/rabbitmq/` — `create_rabbitmq_integration()` (requires `kv_store`) |
 | `log` | notification_channel | **Done** (+ adopcja) | `providers/log/` — wraps `LoggingNotificationAdapter`; lab profile default |
+| `postgresql` | relational_store | **Done** (beta) | `providers/postgresql/` — `RelationalStore` via psycopg3; domain stores still SQLite-first |
 
 #### M.1 — Package scaffold (step-by-step)
 
@@ -713,6 +714,7 @@ providers/gcp/
 | `runtime/notifications/adapters/` | `slack`, `teams` | **Done** — runtime delegates |
 | `runtime/interactions/adapters/lab_json_adapter.py` | `lab_json` | **Done** — `integrations/providers/lab_json/create_lab_json_integration()` |
 | `runtime/*/stores/sqlite_*.py` (+ store openers) | `sqlite` | **Done** — single entry `integrations/providers/sqlite/create_sqlite_integration()` |
+| (new) | `postgresql` | **Done** — `integrations/providers/postgresql/`; **only** `opens.py` calls `psycopg.connect` |
 | `rag/vectorstore/providers/*` | vector slugs | Catalog entry only; implementation stays in `rag/` |
 
 **Not migrated to `integrations/`:** `intergrax/llm_adapters/` — LLM providers are a separate Tier-0 concern (§7.1.2 out-of-scope table).
@@ -728,7 +730,15 @@ providers/gcp/
 
 Conformance test pattern: given a fake backend, assert all Protocol methods behave consistently (including error types).
 
-#### M.7 — Tier-3 composition example
+#### M.7 — Agent Creation Guide (Appendix E)
+
+Documented in [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) Appendix E:
+
+- Agents: `capabilities`, `allowed_tools`, `ToolRequest` — no integration slug imports.
+- Applications: `IntegrationProfile`, `wire_lab_integrations()`, `register_default_integrations()`.
+- Env: `INTERGRAX_INTEGRATION_<CATEGORY>` overrides.
+
+Tier-3 composition example (product factory):
 
 ```python
 # applications/my_app/factory.py
@@ -750,7 +760,7 @@ def create_app():
     # wire into Nexus factories, not into agents/
 ```
 
-Agents reference capabilities in `AgentContract` (e.g. `needs_tools=["jira.get_issue"]`) — not integration slugs.
+Agents reference capabilities in `AgentContract` (e.g. `allowed_tools=["websearch.query"]`) — not integration slugs.
 
 #### M.8 — Definition of done (Phase M incremental)
 
@@ -1185,6 +1195,8 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Date | ID | Summary |
 |------|-----|---------|
+| 2026-05-30 | M.6-postgresql | `providers/postgresql/` — beta `RelationalStore` (psycopg3); catalog + tests |
+| 2026-05-30 | M.7-agent-guide-integrations | `AGENT_CREATION_GUIDE.md` Appendix E — agents vs Tier-3 wiring |
 | 2026-05-30 | M.8-lab-profile | `wire_lab_integrations()` + `providers/log/` — lab uses `IntegrationProfile.lab()` |
 | 2026-05-30 | M.4-kafka-rabbitmq-adopt | Queueing bootstrap + integration tests use `integrations/providers/{kafka,rabbitmq}/` only |
 | 2026-05-30 | M.4-rabbitmq | `providers/rabbitmq/` + runtime `build_rabbitmq_transport()` delegate |
@@ -1242,7 +1254,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
 | B.19 | **P0 provider wraps** — M.4 catalog slugs | §7.1.3 | **High** | **Done** | Lab + first prod apps | Tier-0 | All P0 slugs wrapped + runtime adoption (2026-05-29) |
-| B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | Open | Multi-tenant applications | Tier-0 | Phase M.6 after M.4 |
+| B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | **Done** (beta) | Multi-tenant applications | Tier-0 | `providers/postgresql/` — domain stores SQLite-first |
 | B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | Open | PM / research agents | Tier-0 | Phase M.6; tools via ToolRuntime |
 | B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | Open | Org worker, scheduling agents | Tier-0 | Phase M.6 |
 | B.23 | **Prometheus observability_backend** — metrics export | §33, §7.1.3 | **Low** | Open | Ops / SLO | Tier-0 | After B.11 metrics layer design |

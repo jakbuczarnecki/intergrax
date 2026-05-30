@@ -624,7 +624,7 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 | Slug | Category | Status | Rationale |
 |------|----------|--------|-----------|
 | `sqlite` | relational_store | **Done** | `providers/sqlite/` — **single entry** `create_sqlite_integration()` (trace, events, checkpoints, HITL, task memory, experiments, idempotency, session, org) |
-| `postgresql` | relational_store | Planned | Production relational store; multi-tenant apps |
+| `postgresql` | relational_store | Beta | Production relational store (`RelationalStore` via psycopg3); multi-tenant `tenant_schema` |
 | `redis` | key_value_cache | **Done** | `providers/redis/` — **single entry** `create_redis_integration()` wraps KV, idempotency, rate limit, semaphore, rerank cache |
 | `kafka` | message_bus | **Done** (+ adopcja) | `providers/kafka/` — runtime transport delegates here |
 | `celery` | message_bus | **Done** | `providers/celery/` — `create_celery_integration()` + `create_celery_worker_app()` |
