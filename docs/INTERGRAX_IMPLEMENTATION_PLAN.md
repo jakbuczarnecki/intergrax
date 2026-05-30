@@ -1023,8 +1023,8 @@ python -m intergrax.scaffold new-application my_lab \
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
 | O.0 | Architecture & catalog documented | **Done** | §7.1.6–§7.1.7, §22 | Runtime canon + `TOOLS.md` + this section (2026-05-30) |
-| O.1 | Extended `ToolContract` | Pending | §22 | Add `risk_level`, `timeout_ms`, `retry_policy`, `injects_context`, `category`, optional `description_short` |
-| O.2 | `ToolCatalog` + `ToolProfile` + `ToolWiringContext` | Pending | §7.1.6 | Mirror `IntegrationRegistry` / `IntegrationProfile`; `register_default_tools()` |
+| O.1 | Extended `ToolContract` | **Done** | §22 | `ToolRiskLevel`, `ToolRetryPolicy`, metadata fields; invoker timeout/retry/trace (2026-05-30) |
+| O.2 | `ToolCatalog` + `ToolProfile` + `ToolWiringContext` | **Done** | §7.1.6 | `intergrax/tools/registry/`; `build_registry_from_profile`; RuntimeConfig wiring (2026-05-30) |
 | O.3 | Context tools: `rag.retrieve`, `websearch.query` | Pending | §7.1.7, §22.1 | Handlers compose RAG manager + `SearchProvider`; export schemas |
 | O.4 | Reference domain: `jira.*` tools | Pending | §7.1.6 | `get_issue`, `add_comment`, `search_tasks` over `IssueTracker` |
 | O.5 | **Unified tool model migration** | Pending | §7.1.7, §22.2 | Replace `ToolInvocationPlan` booleans with `tool_ids`; shim `RagStep`/`WebsearchStep` → handlers |
@@ -1103,7 +1103,7 @@ AFTER (canonical):
 
 ```text
 
-NOW:     Phase O — Tool Library & Unified Tool Model (O.1 extended ToolContract next)
+NOW:     Phase O — Tool Library (O.3 context tools `rag.retrieve`, `websearch.query` next)
 
 PARALLEL: Phase N — N.9 full scaffold acceptance
 
@@ -1647,7 +1647,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
-| B.40 | **Tool Library scaffold** — catalog, profile, wiring context | §7.1.6 | **High** | Open | All agents using external capabilities | Tier-0 | Phase O.1–O.2 |
+| B.40 | **Tool Library scaffold** — catalog, profile, wiring context | §7.1.6 | **High** | **Done** | All agents using external capabilities | Tier-0 | Phase O.2; O.3+ provider bundles |
 | B.41 | **Context tools** — `rag.retrieve`, `websearch.query` | §7.1.7, §22.1 | **High** | Open | RAG / research agents | Tier-0 | Phase O.3; compose integrations + RAG |
 | B.42 | **Jira catalog tools** — `jira.get_issue`, `jira.search_tasks`, … | §7.1.6 | **Medium** | Open | PM / legal workflow agents | Tier-0 | Phase O.4 over `IssueTracker` |
 | B.43 | **Unified tool model** — deprecate `use_rag` / `use_websearch` flags | §7.1.7, §22.2 | **High** | Open | Consistent tool policy + MCP | Tier-1 | Phase O.5; shim then remove booleans |

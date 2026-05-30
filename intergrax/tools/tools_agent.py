@@ -181,14 +181,14 @@ def _build_openai_tools_schema(tools: ToolRegistry) -> List[Dict[str, Any]]:
     Tool name is registry key (= contract.tool_id).
     """
     schemas: List[Dict[str, Any]] = []
-    for rt in tools._tools.values():  # intentional: ToolRegistry has no list/export API yet
-        contract = rt.contract
+    for registered in tools.list():
+        contract = registered.contract
         schemas.append(
             {
                 "type": "function",
                 "function": {
                     "name": contract.tool_id,
-                    "description": contract.description,
+                    "description": contract.llm_description(),
                     "parameters": _pydantic_parameters_schema(contract.input_schema),
                 },
             }

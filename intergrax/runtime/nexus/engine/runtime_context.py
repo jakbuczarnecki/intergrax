@@ -20,7 +20,7 @@ from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 from intergrax.runtime.replay.service import ReplayService
 from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
-from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.registry import ToolRegistry, ToolWiringContext, build_registry_from_profile
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     from intergrax.runtime.nexus.config import RuntimeConfig
@@ -295,7 +295,14 @@ class RuntimeContext:
 
         # --- Runtime Tools ---
         registry = ToolRegistry()
-        
+
+        wiring_ctx = config.tool_wiring_context or ToolWiringContext()
+        if config.tool_profile is not None:
+            build_registry_from_profile(
+                config.tool_profile,
+                ctx=wiring_ctx,
+                registry=registry,
+            )
 
         executor = RegistryToolExecutor(registry)
         base_invoker = RuntimeToolInvoker(registry=registry, executor=executor)
@@ -314,7 +321,7 @@ class RuntimeContext:
 
         # Register tools from providers
         for provider in config.tool_providers:
-            provider.register_tools(registry)
+            provider.register_tools(registry, wiring_ctx)
 
         if config.production_mode and governance_service is None:
             raise ValueError(

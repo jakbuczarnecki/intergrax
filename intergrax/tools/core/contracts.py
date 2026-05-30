@@ -5,9 +5,38 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Mapping, Type
+from enum import Enum
+from typing import Mapping, Optional, Type
 
 from pydantic import BaseModel
+
+
+class ToolRiskLevel(str, Enum):
+    """Declared risk for governance, tracing, and planner filtering (§22)."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+@dataclass(frozen=True, slots=True)
+class ToolRetryPolicy:
+    """
+    Runtime-managed retry semantics for tool invocation (§22, §42.34).
+
+    ``max_attempts=1`` means no retry (default). Agents MUST NOT implement
+    their own retry loops for catalog tools.
+    """
+
+    max_attempts: int = 1
+    backoff_ms: int = 0
+
+    def __post_init__(self) -> None:
+        if self.max_attempts < 1:
+            raise ValueError("ToolRetryPolicy.max_attempts must be >= 1")
+        if self.backoff_ms < 0:
+            raise ValueError("ToolRetryPolicy.backoff_ms must be >= 0")
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,8 +44,10 @@ class ToolContract:
     """
     Formal runtime contract for a tool/skill.
 
-    This is enforced by Nexus runtime (registry + validation + trace + error mapping).
+    Enforced by Nexus runtime (registry + validation + trace + error mapping).
+    Optional metadata fields (§7.1.6, Phase O.1) default for backward compatibility.
     """
+
     tool_id: str
     name: str
     description: str
@@ -27,3 +58,21 @@ class ToolContract:
     error_mapping: Mapping[type[Exception], str]
 
     side_effects: bool
+
+    description_short: Optional[str] = None
+    risk_level: ToolRiskLevel = ToolRiskLevel.LOW
+    timeout_ms: int = 30_000
+    retry_policy: ToolRetryPolicy = ToolRetryPolicy()
+    injects_context: bool = False
+    category: str = ""
+    tags: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.timeout_ms < 1:
+            raise ValueError("ToolContract.timeout_ms must be >= 1")
+
+    def llm_description(self, *, compact: bool = False) -> str:
+        """Description exposed to LLM tool-selection surfaces (OpenAI, MCP)."""
+        if compact and self.description_short:
+            return self.description_short
+        return self.description

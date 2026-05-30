@@ -44,37 +44,44 @@ Tier-0  Integration Library (IssueTracker, SearchProvider, VectorStore, …)
 
 ---
 
-## How wiring works (target — Phase O)
+## How wiring works (Phase O.2)
 
 ```text
 Tier-3 application (tool_wiring.py)
         │
-        ├── IntegrationProfile.resolve()  ──►  integration instances
+        ├── IntegrationProfile.resolve()  ──►  ToolWiringContext.from_integration_profile()
         │
         ▼
-ToolWiringContext(integrations={…}, rag=…, websearch=…)
+ToolProfile(enabled=[...], enabled_bundles=[...])
         │
         ▼
-ToolProvider.register_tools(registry, ctx)
+register_default_tools()  ──►  build_registry_from_profile(profile, ctx)
         │
         ▼
 ToolRegistry  ──►  RuntimeToolInvoker  ──►  Agent / ToolsAgent / MCP
 ```
 
-**Example — enable Jira tools in an application:**
+**Example — enable tools from catalog profile:**
 
 ```python
-from intergrax.tools.registry import ToolRegistry
-from intergrax.tools.providers.jira.bundle import register_jira_tools
-from intergrax.integrations import IntegrationCategory, IntegrationProfile
+from intergrax.tools.registry import (
+    ToolProfile,
+    ToolWiringContext,
+    build_registry_from_profile,
+    register_default_tools,
+)
+from intergrax.integrations import IntegrationProfile, register_default_integrations
+
+register_default_integrations()
+register_default_tools()
 
 profile = IntegrationProfile(issue_tracker=IntegrationSlug.JIRA)
-tracker = profile.resolve(IntegrationCategory.ISSUE_TRACKER)
+ctx = ToolWiringContext.from_integration_profile(profile)
 
-registry = ToolRegistry()
-ctx = ToolWiringContext(issue_tracker=tracker)  # Phase O.2
-register_jira_tools(registry, ctx)
-# AgentContract.allowed_tools=["jira.search_tasks", "jira.get_issue"]
+registry = build_registry_from_profile(
+    ToolProfile(enabled_bundles=["jira"]),  # Phase O.4
+    ctx=ctx,
+)
 ```
 
 ---
@@ -85,11 +92,13 @@ These components exist in the repository **before** the full provider catalog sh
 
 | Component | Path | Status |
 |-----------|------|--------|
-| `ToolContract` | `intergrax/tools/core/contracts.py` | **Done** — minimal fields; risk/timeout/injects_context in Phase O.1 |
-| `ToolRegistry` | `intergrax/tools/registry.py` | **Done** |
+| `ToolContract` | `intergrax/tools/core/contracts.py` | **Done** — `ToolRiskLevel`, `ToolRetryPolicy`, metadata; invoker enforces timeout/retry |
+| `ToolRegistry` | `intergrax/tools/registry/runtime.py` | **Done** |
 | `ToolHandler` / `ToolExecutor` | `intergrax/tools/tool_executor.py` | **Done** |
 | `ToolExecutionRequest` / `ToolExecutionResult` | `intergrax/tools/execution_models.py` | **Done** |
-| `ToolProvider` protocol | `intergrax/tools/core/provider.py` | **Done** |
+| `ToolProvider` protocol | `intergrax/tools/core/provider.py` | **Done** — accepts optional `ToolWiringContext` |
+| `ToolCatalog` / `ToolProfile` / `ToolWiringContext` | `intergrax/tools/registry/` | **Done** — Phase O.2 |
+| `register_default_tools()` / `build_registry_from_profile()` | `intergrax/tools/registry/bootstrap.py`, `factory.py` | **Done** |
 | `RuntimeToolInvoker` | `intergrax/runtime/nexus/tools/invoker.py` | **Done** — validation, trace, error mapping |
 | `RuntimeToolGateway` | `intergrax/runtime/nexus/tools/tool_gateway.py` | **Done** — UAEP / §42.12 entry |
 | `ToolsAgent` (LLM planner) | `intergrax/tools/tools_agent.py` | **Done** — OpenAI schema from registry |
@@ -147,22 +156,22 @@ Status legend: **Done** = registered handler in catalog; **Engine only** = invok
 
 ---
 
-## Tool metadata (target contract — Phase O.1)
+## Tool metadata (contract — Phase O.1 Done)
 
-| Field | Purpose |
-|-------|---------|
-| `tool_id` | Stable registry key and `ToolRequest.tool_name` |
-| `name` | Human-readable label |
-| `description` | LLM tool-selection text (required) |
-| `description_short` | Optional compact variant for large catalogs |
-| `input_schema` / `output_schema` | Pydantic models → JSON Schema export |
-| `risk_level` | `LOW` \| `MEDIUM` \| `HIGH` \| `CRITICAL` |
-| `side_effects` | Whether invocation mutates external state |
-| `injects_context` | When true, Nexus merges output into LLM prompt (§22.1) |
-| `timeout_ms` | Runtime-enforced ceiling |
-| `retry_policy` | Runtime-managed retries (§42.34) |
-| `error_mapping` | Exception type → `RuntimeErrorCode` |
-| `category` / `tags` | Filtering for large tool sets and MCP grouping |
+| Field | Purpose | Status |
+|-------|---------|--------|
+| `tool_id` | Stable registry key and `ToolRequest.tool_name` | **Done** |
+| `name` | Human-readable label | **Done** |
+| `description` | LLM tool-selection text (required) | **Done** |
+| `description_short` | Optional compact variant for large catalogs | **Done** |
+| `input_schema` / `output_schema` | Pydantic models → JSON Schema export | **Done** |
+| `risk_level` | `ToolRiskLevel`: LOW \| MEDIUM \| HIGH \| CRITICAL | **Done** |
+| `side_effects` | Whether invocation mutates external state | **Done** |
+| `injects_context` | When true, Nexus merges output into LLM prompt (§22.1) | **Done** (contract; injection wiring Phase O.3+) |
+| `timeout_ms` | Runtime-enforced ceiling via `RuntimeToolInvoker` | **Done** |
+| `retry_policy` | `ToolRetryPolicy` — runtime-managed retries | **Done** |
+| `error_mapping` | Exception type → `RuntimeErrorCode` | **Done** |
+| `category` / `tags` | Filtering for large tool sets and MCP grouping | **Done** |
 
 ---
 

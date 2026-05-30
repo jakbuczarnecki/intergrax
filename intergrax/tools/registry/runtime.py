@@ -5,18 +5,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, List
 
 from pydantic import BaseModel
 
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.tool_executor import ToolHandler
 
+
 @dataclass(frozen=True, slots=True)
 class RegisteredTool:
     """
     Runtime binding between a formal ToolContract and its handler implementation.
     """
+
     contract: ToolContract
     handler: ToolHandler[BaseModel, BaseModel]
 
@@ -46,3 +48,12 @@ class ToolRegistry:
 
     def has(self, tool_id: str) -> bool:
         return tool_id in self._tools
+
+    def list(self) -> List[RegisteredTool]:
+        return list(self._tools.values())
+
+    def tool_ids(self) -> List[str]:
+        return sorted(self._tools)
+
+    def unregister(self, tool_id: str) -> None:
+        self._tools.pop(tool_id, None)
