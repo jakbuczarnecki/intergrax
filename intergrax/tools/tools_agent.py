@@ -17,8 +17,12 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.tools.exporters.openai import to_openai_tools
 from intergrax.tools.registry import ToolRegistry
-from intergrax.tools.tools_base import _limit_tool_output
+from intergrax.tools._shared.output import limit_tool_output
+
+# Backward-compatible alias (deprecated)
+_limit_tool_output = limit_tool_output
 
 logger = IntergraxLogging.get_logger(__name__, component="tools")
 
@@ -154,46 +158,9 @@ def _extract_json_from_text(text: str) -> Optional[dict]:
     return None
 
 
-def _pydantic_parameters_schema(model_cls: Type) -> Dict[str, Any]:
-    """
-    Returns an OpenAI-compatible JSON Schema for 'parameters':
-      {"type":"object","properties":...,"required":[...],"additionalProperties":False}
-
-    We intentionally do NOT pass through the full Pydantic schema, because it often
-    includes top-level metadata that OpenAI tools schema doesn't need.
-    """
-    raw = model_cls.model_json_schema()
-    props = raw.get("properties", {}) or {}
-    required = raw.get("required", []) or []
-
-    parameters: Dict[str, Any] = {
-        "type": "object",
-        "properties": props,
-        "required": required,
-        "additionalProperties": False,
-    }
-    return parameters
-
-
 def _build_openai_tools_schema(tools: ToolRegistry) -> List[Dict[str, Any]]:
-    """
-    Builds OpenAI-compatible 'tools' schema from system ToolRegistry.
-    Tool name is registry key (= contract.tool_id).
-    """
-    schemas: List[Dict[str, Any]] = []
-    for registered in tools.list():
-        contract = registered.contract
-        schemas.append(
-            {
-                "type": "function",
-                "function": {
-                    "name": contract.tool_id,
-                    "description": contract.llm_description(),
-                    "parameters": _pydantic_parameters_schema(contract.input_schema),
-                },
-            }
-        )
-    return schemas
+    """Build OpenAI-compatible 'tools' schema from the runtime ToolRegistry."""
+    return to_openai_tools(tools)
 
 
 # =====================================================================

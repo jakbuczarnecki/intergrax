@@ -10,8 +10,13 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.runtime_steps.tools import format_rag_context, insert_context_before_last_user
+from intergrax.runtime.nexus.tools.catalog_context import (
+    build_rag_retrieve_input,
+    invoke_catalog_context_tool,
+)
 from intergrax.runtime.nexus.tracing.rag.rag_summary import RagSummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
 
 
 class RagStep(RuntimeStep):
@@ -57,6 +62,28 @@ class RagStep(RuntimeStep):
             raise RuntimeError("RAG enabled but ContextBuilder is not configured.")
 
         record_rag_invocation_and_enforce(state)
+
+        if invoke_catalog_context_tool(
+            state,
+            RAG_RETRIEVE_TOOL_ID,
+            build_rag_retrieve_input(state),
+            step_id="rag/catalog",
+        ):
+            if state.used_rag:
+                state.trace_event(
+                    component=TraceComponent.ENGINE,
+                    step="rag",
+                    message="RAG context built via catalog tool rag.retrieve.",
+                    level=TraceLevel.INFO,
+                    payload=RagSummaryDiagV1(
+                        rag_enabled=True,
+                        used_rag=True,
+                        chunks_count=0,
+                        context_messages_count=0,
+                        warning=None,
+                    ),
+                )
+            return
 
         # Prefer result from HistoryStep (normal flow)
         built = state.context_builder_result

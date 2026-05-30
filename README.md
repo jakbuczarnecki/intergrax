@@ -269,7 +269,7 @@ The **Tool Library** (`intergrax/tools/`) provides:
 | **Unified model (target)** | RAG and web search become catalog tools (`rag.retrieve`, `websearch.query`) — replacing legacy `use_rag` / `use_websearch` pipeline flags. |
 
 **Engine today:** `ToolContract`, `ToolRegistry`, `RuntimeToolInvoker`, `ToolsAgent`.  
-**Catalog providers (Phase O.4 Done):** `rag.retrieve`, `websearch.query`, `jira.*`, `confluence.*`, `notify.send`, `metrics.query_instant`, `logs.search`, `sandbox.exec`. Next: unified model migration (O.5).
+**Catalog providers (Phase O Done):** full first-party catalog + unified tool model (`tool_ids`), OpenAI/MCP exporters, Tier-3 `tool_wiring.py` scaffold. Legacy `use_rag` / `use_websearch` flags remain as compatibility shims.
 
 ```python
 # Tier-2 agent — declare tool policy, not vendors

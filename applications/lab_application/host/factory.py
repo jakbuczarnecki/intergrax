@@ -24,6 +24,7 @@ from intergrax.applications._shared.fastapi_mcp import (
 )
 from lab_application.host.integration_wiring import wire_lab_integrations
 from lab_application.host.settings import LabApplicationSettings
+from lab_application.host.tool_wiring import wire_lab_tools
 from lab_application.host.wiring import build_lab_registry
 from lab_application.mcp.server import build_lab_mcp_server
 from lab_application.serving.fastapi_router import mount_lab_routes
@@ -115,9 +116,13 @@ def create_lab_application(
         )
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
+        tool_wiring = wire_lab_tools(
+            integration_profile=getattr(integrations, "integration_profile", None),
+        )
         mcp = build_lab_mcp_server(
             nexus_loop=nexus_loop,
             route_prefix=settings.route_prefix,
+            tool_registry=tool_wiring.registry,
         )
         extra_lifespans = [make_scheduler_lifespan(scheduler)] if scheduler else []
         app = couple_fastapi_with_mcp(

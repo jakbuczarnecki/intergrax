@@ -10,6 +10,7 @@ from legal.domain.legal_tool_plan import LegalToolPlan
 from legal.runtime.legal_tool_runtime_bridge import run_legal_tool_runtime_bridge
 from intergrax.contracts.tool_request import ToolResponse, ToolResponseStatus
 from intergrax.runtime.nexus.tools.tool_gateway import NEXUS_CAPABILITY_PLAN
+from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
 
 
 @pytest.mark.asyncio
@@ -47,3 +48,4 @@ async def test_legal_bridge_uses_tool_gateway_not_direct_runtime():
     request = gateway.invoke.await_args.args[0]
     assert request.tool_name == NEXUS_CAPABILITY_PLAN
     assert request.input["use_rag"] is True
+    assert RAG_RETRIEVE_TOOL_ID in request.input["tool_ids"]

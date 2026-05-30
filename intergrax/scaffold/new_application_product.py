@@ -307,6 +307,7 @@ def wiring_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.runtime.registry.agent_registry import AgentRegistry
         from {pkg}.host.agent_builders import {names.builders_const}
         from {pkg}.host.settings import {pascal}BackendSettings
+        from {pkg}.host.tool_wiring import wire_{short}_tools
         from {pkg}.manifest import APPLICATION_MANIFEST
 
 
@@ -323,8 +324,47 @@ def wiring_py(names: ScaffoldApplicationNames) -> str:
         ) -> AgentRegistry:
             settings = settings or {pascal}BackendSettings.from_env()
             manifest = build_{short}_manifest(settings)
-            ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
+            tool_wiring = wire_{short}_tools(
+                integration_profile=getattr(manifest, "integration_profile", None),
+            )
+            ctx = ApplicationBuildContext.for_manifest(
+                manifest,
+                settings=settings,
+                tool_profile=tool_wiring.profile,
+                tool_wiring_context=tool_wiring.wiring_context,
+            )
             return build_application_registry(manifest, ctx, builders={names.builders_const})
+        '''
+    )
+
+
+def tool_wiring_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    short = names.short
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        """Tool catalog wiring for {pkg} (Phase O.8)."""
+
+        from __future__ import annotations
+
+        from intergrax.applications._shared.tool_wiring import ApplicationToolWiring, build_application_tool_wiring
+        from intergrax.integrations.registry.profile import IntegrationProfile
+        from intergrax.tools.registry.profile import ToolProfile
+
+
+        def wire_{short}_tools(
+            *,
+            integration_profile: IntegrationProfile | None = None,
+        ) -> ApplicationToolWiring:
+            profile = ToolProfile(
+                enabled=["rag.retrieve", "websearch.query"],
+            )
+            return build_application_tool_wiring(
+                profile,
+                integration_profile=integration_profile,
+            )
         '''
     )
 

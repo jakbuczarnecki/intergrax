@@ -118,7 +118,7 @@ Status legend: **Done** = registered handler in catalog; **Planned** = Phase O b
 | `rag.retrieve` | **Done** | Retrieve documents from vector index for prompt context | `vectorstore_manager` + `embedding_manager` via `ToolWiringContext` |
 | `websearch.query` | **Done** | Run web search and return normalized snippets | `websearch_executor` or `SearchProvider` |
 
-> **Transitional:** Today these run via legacy `RagStep` / `WebsearchStep` and plan flags `use_rag` / `use_websearch`. Phase O.5 unifies them as catalog tools (§7.1.7).
+> **Transitional:** Legacy `RagStep` / `WebsearchStep` still run when plan flags or `tool_ids` request retrieval; they delegate to catalog handlers when `tool_invoker` + registry are configured (Phase O.5). LLM tool-decision prompts may still emit boolean flags — mapped to `tool_ids` automatically.
 
 ### Execution & sandbox
 
@@ -167,7 +167,7 @@ Status legend: **Done** = registered handler in catalog; **Planned** = Phase O b
 | `input_schema` / `output_schema` | Pydantic models → JSON Schema export | **Done** |
 | `risk_level` | `ToolRiskLevel`: LOW \| MEDIUM \| HIGH \| CRITICAL | **Done** |
 | `side_effects` | Whether invocation mutates external state | **Done** |
-| `injects_context` | When true, Nexus merges output into LLM prompt (§22.1) | **Done** (contract; injection wiring Phase O.3+) |
+| `injects_context` | When true, Nexus merges output into LLM prompt (§22.1) | **Done** — catalog shim in `catalog_context.py` |
 | `timeout_ms` | Runtime-enforced ceiling via `RuntimeToolInvoker` | **Done** |
 | `retry_policy` | `ToolRetryPolicy` — runtime-managed retries | **Done** |
 | `error_mapping` | Exception type → `RuntimeErrorCode` | **Done** |
@@ -177,28 +177,29 @@ Status legend: **Done** = registered handler in catalog; **Planned** = Phase O b
 
 ## Unified tool model vs legacy flags
 
-| Legacy (deprecated) | Target |
+| Legacy (deprecated) | Target (canonical) |
 |---------------------|--------|
-| `ToolInvocationPlan.use_rag` | Invoke `rag.retrieve` or list in plan `tool_ids` |
-| `ToolInvocationPlan.use_websearch` | Invoke `websearch.query` |
-| `ToolInvocationPlan.use_tools` | Explicit `tool_ids` + ToolsAgent over registry |
-| `LegalToolPlan.use_rag` / `use_websearch` | `tools: ["rag.retrieve", "websearch.query"]` |
+| `ToolInvocationPlan.use_rag` | `tool_ids=["rag.retrieve"]` |
+| `ToolInvocationPlan.use_websearch` | `tool_ids=["websearch.query"]` |
+| `ToolInvocationPlan.use_tools` | `use_tools=True` (ToolsAgent planner over registry) |
+| `LegalToolPlan.use_rag` / `use_websearch` | `tool_ids` + legacy booleans (auto-synced) |
 
-**Rule:** No new platform capability flags — ship as catalog tools. See §7.1.7 and Phase O.5.
+**Rule:** No new platform capability flags — ship as catalog tools. Legacy booleans emit deprecation trace when used without explicit `tool_ids`. See §7.1.7 and Phase O.5 (**Done**).
 
 ---
 
 ## MCP export
 
-Each application MAY mount catalog tools on MCP (`applications/<app>/mcp/server.py`). Target flow:
+Each application MAY mount catalog tools on MCP (`applications/<app>/mcp/server.py`). Implemented flow (Phase O.6):
 
 ```text
-ToolCatalog.list_enabled(ToolProfile)
+ToolRegistry (from wire_*_tools)
     → exporters.to_mcp_tools(contracts)
+    → mount_catalog_tools_on_mcp (list_catalog_tools, describe_catalog_tool)
     → FastMCP server (alongside list_agents, run_agent)
 ```
 
-Same `tool_id` values as `AgentContract.allowed_tools` and OpenAI function names.
+OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` — used by `ToolsAgent`.
 
 ---
 

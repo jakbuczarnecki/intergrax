@@ -48,6 +48,7 @@ async def run_legal_tool_runtime_bridge(
         agent_id=agent_id,
         step_id=step_id,
         input={
+            "tool_ids": plan.resolved_tool_ids(),
             "use_rag": plan.use_rag,
             "use_websearch": plan.use_websearch,
             "use_tools": plan.use_tools,

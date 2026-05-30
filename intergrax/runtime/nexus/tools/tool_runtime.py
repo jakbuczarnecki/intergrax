@@ -6,6 +6,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional, Protocol, Sequence, runtime_checkable
 
+from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
+
 if TYPE_CHECKING:
     from intergrax.contracts.tool_request import ToolRequest, ToolResponse
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -13,11 +15,65 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class ToolInvocationPlan:
-    """Runtime-neutral plan for capability step invocation."""
+    """
+    Runtime-neutral plan for capability invocation.
 
+    Canonical: ``tool_ids`` lists catalog tools (e.g. ``rag.retrieve``).
+    Legacy booleans (``use_rag``, ``use_websearch``, ``use_tools``) remain as
+    compatibility shims — normalized via :meth:`normalized`.
+    """
+
+    tool_ids: tuple[str, ...] = ()
     use_rag: bool = False
     use_websearch: bool = False
     use_tools: bool = False
+
+    def normalized(self) -> ToolInvocationPlan:
+        ids = list(self.tool_ids)
+        use_rag = self.use_rag
+        use_websearch = self.use_websearch
+
+        if use_rag and RAG_RETRIEVE_TOOL_ID not in ids:
+            ids.append(RAG_RETRIEVE_TOOL_ID)
+        if use_websearch and WEBSEARCH_QUERY_TOOL_ID not in ids:
+            ids.append(WEBSEARCH_QUERY_TOOL_ID)
+
+        if RAG_RETRIEVE_TOOL_ID in ids:
+            use_rag = True
+        if WEBSEARCH_QUERY_TOOL_ID in ids:
+            use_websearch = True
+
+        deduped = tuple(dict.fromkeys(ids))
+        return ToolInvocationPlan(
+            tool_ids=deduped,
+            use_rag=use_rag,
+            use_websearch=use_websearch,
+            use_tools=self.use_tools,
+        )
+
+    @classmethod
+    def from_legacy(
+        cls,
+        *,
+        use_rag: bool = False,
+        use_websearch: bool = False,
+        use_tools: bool = False,
+        tool_ids: Sequence[str] = (),
+    ) -> ToolInvocationPlan:
+        return cls(
+            use_rag=use_rag,
+            use_websearch=use_websearch,
+            use_tools=use_tools,
+            tool_ids=tuple(tool_ids),
+        ).normalized()
+
+    @classmethod
+    def from_tool_ids(cls, tool_ids: Sequence[str], *, use_tools: bool = False) -> ToolInvocationPlan:
+        return cls(tool_ids=tuple(tool_ids), use_tools=use_tools).normalized()
+
+    def uses_legacy_booleans_only(self) -> bool:
+        """True when plan was expressed via deprecated flags without explicit tool_ids."""
+        return (self.use_rag or self.use_websearch) and not self.tool_ids
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,6 +82,7 @@ class ToolRuntimeResult:
     used_websearch: bool
     used_tools: bool
     tool_trace_count: int
+    tool_ids: tuple[str, ...] = ()
 
 
 @runtime_checkable
@@ -39,15 +96,22 @@ class ToolRuntime:
     """
     Tier-1 runtime primitive for invoking Nexus capability steps.
 
-    Agents declare tool needs via contract; runtime executes RAG / websearch / tools steps.
+    Agents declare tool needs via contract; runtime executes catalog tools and
+    compatibility pipeline steps (RAG / websearch / tools planner).
     """
 
     @staticmethod
     def plan_from_like(source: ToolPlanLike) -> ToolInvocationPlan:
-        return ToolInvocationPlan(
+        resolver = getattr(source, "resolved_tool_ids", None)
+        if callable(resolver):
+            tool_ids = resolver()
+        else:
+            tool_ids = list(getattr(source, "tool_ids", []) or [])
+        return ToolInvocationPlan.from_legacy(
             use_rag=bool(source.use_rag),
             use_websearch=bool(source.use_websearch),
             use_tools=bool(source.use_tools),
+            tool_ids=tool_ids,
         )
 
     @staticmethod
@@ -64,7 +128,19 @@ class ToolRuntime:
         from intergrax.runtime.nexus.runtime_steps.websearch_step import WebsearchStep
         from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
-        plan = ToolAccessPolicy.apply(plan, allowed_tools=allowed_tools, state=state)
+        raw_plan = plan
+        plan = ToolAccessPolicy.apply(plan.normalized(), allowed_tools=allowed_tools, state=state)
+
+        if raw_plan.uses_legacy_booleans_only():
+            state.trace_event(
+                component=TraceComponent.PIPELINE,
+                step=trace_step,
+                message=(
+                    "Deprecated ToolInvocationPlan booleans (use_rag/use_websearch); "
+                    "prefer tool_ids e.g. ['rag.retrieve', 'websearch.query']."
+                ),
+                level=TraceLevel.WARNING,
+            )
 
         cfg = state.context.config
 
@@ -106,6 +182,7 @@ class ToolRuntime:
             used_websearch=state.used_websearch,
             used_tools=state.used_tools,
             tool_trace_count=len(state.tool_traces or []),
+            tool_ids=plan.tool_ids,
         )
 
     @staticmethod
@@ -117,6 +194,8 @@ class ToolRuntime:
         trace_step: str = "ToolRuntime",
     ) -> ToolResponse:
         """§42.12 gateway entry — prefer over direct ``invoke`` from agent code."""
+        from intergrax.runtime.nexus.tools.tool_gateway import RuntimeToolGateway
+
         gateway = RuntimeToolGateway.for_state(
             state,
             allowed_tools=allowed_tools,

@@ -62,6 +62,10 @@ class RuntimeToolInvoker:
         self._executor = executor
         self._scope_policy = scope_policy
 
+    @property
+    def registry(self) -> ToolRegistry:
+        """Read-only access to the runtime tool catalog (Phase O.5)."""
+        return self._registry
 
     def invoke(
         self,

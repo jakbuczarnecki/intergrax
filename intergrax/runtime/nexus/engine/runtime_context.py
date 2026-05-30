@@ -38,6 +38,22 @@ from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
 
+def _enrich_tool_wiring_context(wiring_ctx: ToolWiringContext, config: "RuntimeConfig") -> ToolWiringContext:
+    """Fill catalog tool dependencies from RuntimeConfig when Tier-3 omitted explicit wiring."""
+    return ToolWiringContext(
+        issue_tracker=wiring_ctx.issue_tracker,
+        search_provider=wiring_ctx.search_provider,
+        wiki_knowledge=wiring_ctx.wiki_knowledge,
+        notification_channel=wiring_ctx.notification_channel,
+        observability_backend=wiring_ctx.observability_backend,
+        rag_manager=wiring_ctx.rag_manager or getattr(config, "rag_manager", None),
+        vectorstore_manager=wiring_ctx.vectorstore_manager or config.vectorstore_manager,
+        embedding_manager=wiring_ctx.embedding_manager or config.embedding_manager,
+        websearch_executor=wiring_ctx.websearch_executor or config.websearch_executor,
+        sandbox_session=wiring_ctx.sandbox_session,
+        extras=dict(wiring_ctx.extras),
+    )
+
 
 @dataclass(frozen=False)
 class RuntimeContext:
@@ -294,9 +310,15 @@ class RuntimeContext:
         )
 
         # --- Runtime Tools ---
+        from intergrax.tools.registry.bootstrap import register_default_tools
+
+        register_default_tools()
         registry = ToolRegistry()
 
         wiring_ctx = config.tool_wiring_context or ToolWiringContext()
+        wiring_ctx = _enrich_tool_wiring_context(wiring_ctx, config)
+        config.tool_wiring_context = wiring_ctx
+
         if config.tool_profile is not None:
             build_registry_from_profile(
                 config.tool_profile,

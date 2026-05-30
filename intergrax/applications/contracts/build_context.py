@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.tools.registry.profile import ToolProfile
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 
 @dataclass(frozen=True)
@@ -24,6 +26,8 @@ class ApplicationBuildContext:
     manifest: Any
     settings: Any = None
     integration_profile: IntegrationProfile | None = None
+    tool_profile: ToolProfile | None = None
+    tool_wiring_context: ToolWiringContext | None = None
 
     @classmethod
     def for_manifest(
@@ -31,10 +35,14 @@ class ApplicationBuildContext:
         manifest: Any,
         *,
         settings: Any = None,
+        tool_profile: ToolProfile | None = None,
+        tool_wiring_context: ToolWiringContext | None = None,
     ) -> ApplicationBuildContext:
         profile = getattr(manifest, "integration_profile", None)
         return cls(
             manifest=manifest,
             settings=settings,
             integration_profile=profile,
+            tool_profile=tool_profile,
+            tool_wiring_context=tool_wiring_context,
         )

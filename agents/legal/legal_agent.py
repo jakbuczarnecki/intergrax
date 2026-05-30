@@ -104,6 +104,8 @@ class LegalAgent(Agent):
             tools_agent=cfg.tools_agent,
             tools_mode=cfg.tools_mode,
             tool_providers=tuple(cfg.tool_providers),
+            tool_profile=cfg.tool_profile,
+            tool_wiring_context=cfg.tool_wiring_context,
             websearch_executor=cfg.websearch_executor,
             websearch_config=cfg.websearch_config,
             run_budget=cfg.run_budget,

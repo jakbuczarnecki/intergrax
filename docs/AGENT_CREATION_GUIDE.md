@@ -744,6 +744,46 @@ response = await ctx.invoke_tool(
 
 The application ensures the tool runtime is backed by the correct Tier-0 provider (e.g. Google CSE vs Bing via host config, not agent code). See [TOOLS.md](TOOLS.md) for catalog tool_ids and Phase O wiring (`ToolProfile`, `ToolWiringContext`).
 
+#### Tool catalog wiring (Phase O.8 — unified model)
+
+Applications enable catalog tools via `ToolProfile` and inject dependencies via `ToolWiringContext`. Reference: `applications/lab_application/host/tool_wiring.py`.
+
+```python
+from intergrax.applications._shared.tool_wiring import build_application_tool_wiring
+from intergrax.tools.registry.profile import ToolProfile
+from intergrax.tools.registry.bootstrap import register_default_tools
+
+register_default_tools()
+tool_wiring = build_application_tool_wiring(
+    ToolProfile(enabled=["rag.retrieve", "websearch.query", "jira.search_tasks"]),
+    integration_profile=integration_profile,
+)
+
+# Pass into RuntimeConfig when building agent runtime:
+RuntimeConfig(
+    llm_adapter=...,
+    tool_profile=tool_wiring.profile,
+    tool_wiring_context=tool_wiring.wiring_context,
+    enable_rag=True,
+    enable_websearch=True,
+)
+```
+
+**Unified tool model (Phase O.5):** agents and legal tool-decision SHOULD prefer explicit `tool_ids` (`rag.retrieve`, `websearch.query`) over legacy `use_rag` / `use_websearch` booleans. Booleans still work — they map to catalog tool_ids and emit a deprecation trace.
+
+```python
+# Canonical plan surface (Tier-1 / legal bridge)
+ToolRequest(
+    tool_name="nexus.capability_plan",
+    input={
+        "tool_ids": ["rag.retrieve", "websearch.query"],
+        "use_tools": False,
+    },
+)
+```
+
+MCP hosts may expose catalog schemas via `list_catalog_tools` / `describe_catalog_tool` (see `intergrax/applications/_shared/mcp_catalog_tools.py`).
+
 ### What applications wire
 
 Tier-3 factories compose integrations once and pass concrete adapters into `NexusLoop`, schedulers, and debug services.

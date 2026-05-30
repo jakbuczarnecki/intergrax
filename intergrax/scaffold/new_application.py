@@ -206,6 +206,7 @@ def _wiring_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.runtime.registry.agent_registry import AgentRegistry
         from {pkg}.host.agent_builders import {builders_const}
         from {pkg}.host.settings import {pascal}ApplicationSettings
+        from {pkg}.host.tool_wiring import wire_{short}_tools
         from {pkg}.manifest import build_{short}_manifest
 
 
@@ -215,8 +216,47 @@ def _wiring_py(names: ScaffoldApplicationNames) -> str:
         ) -> AgentRegistry:
             settings = settings or {pascal}ApplicationSettings.from_env()
             manifest = build_{short}_manifest()
-            ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
+            tool_wiring = wire_{short}_tools(
+                integration_profile=getattr(manifest, "integration_profile", None),
+            )
+            ctx = ApplicationBuildContext.for_manifest(
+                manifest,
+                settings=settings,
+                tool_profile=tool_wiring.profile,
+                tool_wiring_context=tool_wiring.wiring_context,
+            )
             return build_application_registry(manifest, ctx, builders={builders_const})
+        '''
+    )
+
+
+def _tool_wiring_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    short = names.short
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        """Tool catalog wiring for {pkg} (Phase O.8)."""
+
+        from __future__ import annotations
+
+        from intergrax.applications._shared.tool_wiring import ApplicationToolWiring, build_application_tool_wiring
+        from intergrax.integrations.registry.profile import IntegrationProfile
+        from intergrax.tools.registry.profile import ToolProfile
+
+
+        def wire_{short}_tools(
+            *,
+            integration_profile: IntegrationProfile | None = None,
+        ) -> ApplicationToolWiring:
+            profile = ToolProfile(
+                enabled=["rag.retrieve", "websearch.query", "sandbox.exec"],
+            )
+            return build_application_tool_wiring(
+                profile,
+                integration_profile=integration_profile,
+            )
         '''
     )
 
@@ -825,6 +865,7 @@ def _create_lab_application(
     _write(target / "host" / "agent_builders.py", _agent_builders_py(names, specs), force=force)
     _write(target / "host" / "wiring.py", _wiring_py(names), force=force)
     _write(target / "host" / "integration_wiring.py", _integration_wiring_py(names), force=force)
+    _write(target / "host" / "tool_wiring.py", _tool_wiring_py(names), force=force)
     _write(target / "host" / "factory.py", _factory_py(names), force=force)
     _write(target / "host" / "main.py", _main_py(names), force=force)
 
@@ -901,6 +942,7 @@ def _create_product_application(
     _write(target / "host" / "agent_factories.py", product_tpl.agent_factories_py(names, specs), force=force)
     _write(target / "host" / "wiring.py", product_tpl.wiring_py(names), force=force)
     _write(target / "host" / "integration_wiring.py", product_tpl.integration_wiring_py(names), force=force)
+    _write(target / "host" / "tool_wiring.py", product_tpl.tool_wiring_py(names), force=force)
     _write(target / "host" / "factory.py", product_tpl.factory_py(names), force=force)
     _write(target / "host" / "main.py", product_tpl.main_py(names), force=force)
 

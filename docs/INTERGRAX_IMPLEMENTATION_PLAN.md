@@ -1028,11 +1028,11 @@ python -m intergrax.scaffold new-application my_lab \
 | O.3 | Context tools: `rag.retrieve`, `websearch.query` | **Done** | §7.1.7, §22.1 | `providers/rag/`, `providers/websearch/` (2026-05-30) |
 | O.4 | Reference domain: `jira.*` tools | **Done** | §7.1.6 | `get_issue`, `add_comment`, `search_tasks` over `IssueTracker` (2026-05-30) |
 | O.4b | Catalog domain bundles: `confluence.*`, `notify.send`, observability, `sandbox.exec` | **Done** | §7.1.6 | All first-party catalog tools registered (2026-05-30) |
-| O.5 | **Unified tool model migration** | Pending | §7.1.7, §22.2 | Replace `ToolInvocationPlan` booleans with `tool_ids`; shim `RagStep`/`WebsearchStep` → handlers |
-| O.6 | Schema exporters (OpenAI + MCP) | Pending | §7.1.6 | `tools/exporters/`; wire `applications/<app>/mcp/server.py` optional tool mount |
-| O.7 | Migrate legacy `ToolBase` → `ToolContract` | Pending | §5.2.2 | Remove duplicate `ToolRegistry` in `tools_base.py`; update `ChatAgent` |
-| O.8 | `ToolProfile` in Tier-3 scaffold | Pending | §7.4.8 | `tool_wiring.py` template; lab + poc_template reference |
-| O.9 | Agent Creation Guide Appendix E update | Pending | — | `allowed_tools` + `ToolProfile` + unified model examples |
+| O.5 | **Unified tool model migration** | **Done** | §7.1.7, §22.2 | `tool_ids` on plans; RagStep/WebsearchStep → catalog shims (2026-05-30) |
+| O.6 | Schema exporters (OpenAI + MCP) | **Done** | §7.1.6 | `tools/exporters/`; MCP catalog mount on lab/poc_template (2026-05-30) |
+| O.7 | Migrate legacy `ToolBase` → `ToolContract` | **Done** | §5.2.2 | `ChatAgent` → registry; `tools_base` deprecated (2026-05-30) |
+| O.8 | `ToolProfile` in Tier-3 scaffold | **Done** | §7.4.8 | `tool_wiring.py` template; lab + poc_template reference (2026-05-30) |
+| O.9 | Agent Creation Guide Appendix E update | **Done** | — | Unified model + ToolProfile examples (2026-05-30) |
 | O.10 | Gate tests for catalog conformance | **Done** | — | `tests/unit/tools/providers/` — all catalog bundles (2026-05-30) |
 
 #### O — Step-by-step implementation sequence
@@ -1046,12 +1046,12 @@ Execute **strictly in order** for foundation (O.1–O.4); O.5–O.10 may overlap
 | 3 | O.3 | Implement `providers/rag/` and `providers/websearch/` handlers | **Done** — `rag.retrieve`, `websearch.query` + tests |
 | 4 | O.4 | Implement `providers/jira/` bundle (3 tools) | **Done** — conformance tests with mocked `IssueTracker` |
 | 4b | O.4b | Implement remaining catalog bundles (`confluence`, `notify`, `observability`, `sandbox`) | **Done** — all tool_ids in `register_default_tools()` |
-| 5 | O.5a | Add `planned_tool_ids` to plan models; map legacy booleans → tool_ids | Existing gate green with compatibility shims |
-| 6 | O.5b | `RagStep` / `WebsearchStep` delegate to `rag.retrieve` / `websearch.query` | No duplicate retrieval logic in steps |
-| 7 | O.5c | Update `LegalToolPlan` / engine plans to tool list | Legal agent tests updated |
-| 8 | O.6 | MCP + OpenAI exporters from single catalog | One tool appears identically in ToolsAgent schema and MCP list |
-| 9 | O.7 | Remove `ToolBase` usage from production paths | `ChatAgent` uses `ToolContract` registry only |
-| 10 | O.8–O.10 | Scaffold, docs, gate | `TOOLS.md` status columns → Done; gate includes provider tests |
+| 5 | O.5a | Add `tool_ids` to plan models; map legacy booleans → tool_ids | **Done** — `ToolInvocationPlan`, `LegalToolPlan` |
+| 6 | O.5b | `RagStep` / `WebsearchStep` delegate to catalog tools | **Done** — `catalog_context.py` shim |
+| 7 | O.5c | Update `LegalToolPlan` / engine plans to tool list | **Done** — bridge passes `tool_ids` |
+| 8 | O.6 | MCP + OpenAI exporters from single catalog | **Done** — `tools/exporters/` |
+| 9 | O.7 | Remove `ToolBase` usage from production paths | **Done** — `ChatAgent` uses registry `ToolRegistry` |
+| 10 | O.8–O.10 | Scaffold, docs, gate | **Done** |
 
 #### O.4 — Adding a new tool provider (checklist)
 
@@ -1105,7 +1105,7 @@ AFTER (canonical):
 
 ```text
 
-NOW:     Phase O — Tool Library (O.5 unified tool model migration next)
+NOW:     Phase O — complete (O.5–O.9 Done); next: Phase N / product agents on unified tools
 
 PARALLEL: Phase N — N.9 full scaffold acceptance
 
@@ -1652,9 +1652,9 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.40 | **Tool Library scaffold** — catalog, profile, wiring context | §7.1.6 | **High** | **Done** | All agents using external capabilities | Tier-0 | Phase O.2; full catalog O.4 (2026-05-30) |
 | B.41 | **Context tools** — `rag.retrieve`, `websearch.query` | §7.1.7, §22.1 | **High** | **Done** | RAG / research agents | Tier-0 | Phase O.3 (2026-05-30) |
 | B.42 | **Jira catalog tools** — `jira.get_issue`, `jira.search_tasks`, … | §7.1.6 | **Medium** | **Done** | PM / legal workflow agents | Tier-0 | Phase O.4 (2026-05-30) |
-| B.43 | **Unified tool model** — deprecate `use_rag` / `use_websearch` flags | §7.1.7, §22.2 | **High** | Open | Consistent tool policy + MCP | Tier-1 | Phase O.5; shim then remove booleans |
-| B.44 | **Legacy ToolBase migration** | §5.2.2 | **Medium** | Open | Single registry | Tier-0 | Phase O.7; remove `tools_base.py` dual registry |
-| B.45 | **MCP tool export from catalog** | §7.1.6 | **Low** | Open | External MCP clients | Tier-3 | Phase O.6 |
+| B.43 | **Unified tool model** — deprecate `use_rag` / `use_websearch` flags | §7.1.7, §22.2 | **High** | **Done** | Consistent tool policy + MCP | Tier-1 | Phase O.5 (2026-05-30) |
+| B.44 | **Legacy ToolBase migration** | §5.2.2 | **Medium** | **Done** | Single registry | Tier-0 | Phase O.7; `tools_base` deprecated |
+| B.45 | **MCP tool export from catalog** | §7.1.6 | **Low** | **Done** | External MCP clients | Tier-3 | Phase O.6 |
 
 ### B.4 Legacy & composition
 
