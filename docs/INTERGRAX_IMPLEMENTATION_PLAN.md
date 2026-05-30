@@ -1025,7 +1025,7 @@ python -m intergrax.scaffold new-application my_lab \
 | O.0 | Architecture & catalog documented | **Done** | §7.1.6–§7.1.7, §22 | Runtime canon + `TOOLS.md` + this section (2026-05-30) |
 | O.1 | Extended `ToolContract` | **Done** | §22 | `ToolRiskLevel`, `ToolRetryPolicy`, metadata fields; invoker timeout/retry/trace (2026-05-30) |
 | O.2 | `ToolCatalog` + `ToolProfile` + `ToolWiringContext` | **Done** | §7.1.6 | `intergrax/tools/registry/`; `build_registry_from_profile`; RuntimeConfig wiring (2026-05-30) |
-| O.3 | Context tools: `rag.retrieve`, `websearch.query` | **Partial** | §7.1.7, §22.1 | **`rag.retrieve` Done** (2026-05-30); `websearch.query` next |
+| O.3 | Context tools: `rag.retrieve`, `websearch.query` | **Done** | §7.1.7, §22.1 | `providers/rag/`, `providers/websearch/` (2026-05-30) |
 | O.4 | Reference domain: `jira.*` tools | Pending | §7.1.6 | `get_issue`, `add_comment`, `search_tasks` over `IssueTracker` |
 | O.5 | **Unified tool model migration** | Pending | §7.1.7, §22.2 | Replace `ToolInvocationPlan` booleans with `tool_ids`; shim `RagStep`/`WebsearchStep` → handlers |
 | O.6 | Schema exporters (OpenAI + MCP) | Pending | §7.1.6 | `tools/exporters/`; wire `applications/<app>/mcp/server.py` optional tool mount |
@@ -1042,7 +1042,7 @@ Execute **strictly in order** for foundation (O.1–O.4); O.5–O.10 may overlap
 |------|-----|--------|-----------|
 | 1 | O.1 | Extend `ToolContract` + update `RuntimeToolInvoker` for new fields | Unit tests pass; backward compatible defaults |
 | 2 | O.2 | Add `tools/registry/catalog.py`, `profile.py`, `ToolWiringContext` dataclass | `register_default_tools()` no-op registry; profile enables subset |
-| 3 | O.3 | Implement `providers/rag/` and `providers/websearch/` handlers | **`rag.retrieve` Done** — `providers/rag/` + tests; `websearch.query` pending |
+| 3 | O.3 | Implement `providers/rag/` and `providers/websearch/` handlers | **Done** — `rag.retrieve`, `websearch.query` + tests |
 | 4 | O.4 | Implement `providers/jira/` bundle (3 tools) | Conformance tests with mocked `IssueTracker`; lab app wires one tool |
 | 5 | O.5a | Add `planned_tool_ids` to plan models; map legacy booleans → tool_ids | Existing gate green with compatibility shims |
 | 6 | O.5b | `RagStep` / `WebsearchStep` delegate to `rag.retrieve` / `websearch.query` | No duplicate retrieval logic in steps |
@@ -1103,7 +1103,7 @@ AFTER (canonical):
 
 ```text
 
-NOW:     Phase O — Tool Library (`websearch.query` next; `rag.retrieve` Done)
+NOW:     Phase O — Tool Library (O.4 `jira.*` tools next)
 
 PARALLEL: Phase N — N.9 full scaffold acceptance
 
@@ -1648,7 +1648,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.40 | **Tool Library scaffold** — catalog, profile, wiring context | §7.1.6 | **High** | **Done** | All agents using external capabilities | Tier-0 | Phase O.2; O.3+ provider bundles |
-| B.41 | **Context tools** — `rag.retrieve`, `websearch.query` | §7.1.7, §22.1 | **High** | **Partial** | RAG / research agents | Tier-0 | **`rag.retrieve` Done**; `websearch.query` next |
+| B.41 | **Context tools** — `rag.retrieve`, `websearch.query` | §7.1.7, §22.1 | **High** | **Done** | RAG / research agents | Tier-0 | Phase O.3 (2026-05-30) |
 | B.42 | **Jira catalog tools** — `jira.get_issue`, `jira.search_tasks`, … | §7.1.6 | **Medium** | Open | PM / legal workflow agents | Tier-0 | Phase O.4 over `IssueTracker` |
 | B.43 | **Unified tool model** — deprecate `use_rag` / `use_websearch` flags | §7.1.7, §22.2 | **High** | Open | Consistent tool policy + MCP | Tier-1 | Phase O.5; shim then remove booleans |
 | B.44 | **Legacy ToolBase migration** | §5.2.2 | **Medium** | Open | Single registry | Tier-0 | Phase O.7; remove `tools_base.py` dual registry |

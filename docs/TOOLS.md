@@ -116,7 +116,7 @@ Status legend: **Done** = registered handler in catalog; **Engine only** = invok
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
 | `rag.retrieve` | **Done** | Retrieve documents from vector index for prompt context | `vectorstore_manager` + `embedding_manager` via `ToolWiringContext` |
-| `websearch.query` | Planned (O.3) | Run web search and return normalized snippets | `SearchProvider` (`google_cse`, `bing`, …) |
+| `websearch.query` | **Done** | Run web search and return normalized snippets | `websearch_executor` or `SearchProvider` |
 
 > **Transitional:** Today these run via legacy `RagStep` / `WebsearchStep` and plan flags `use_rag` / `use_websearch`. Phase O.5 unifies them as catalog tools (§7.1.7).
 
@@ -218,7 +218,7 @@ Alphabetical reference — all target first-party tools.
 | `notify.send` | notification | Planned | `notification_channel` slug |
 | `rag.retrieve` | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `sandbox.exec` | sandbox | Engine only | `runtime/sandbox/` |
-| `websearch.query` | retrieval | Planned | `search_provider` |
+| `websearch.query` | retrieval | **Done** | `websearch_executor`, `search_provider` | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
 
 ---
 

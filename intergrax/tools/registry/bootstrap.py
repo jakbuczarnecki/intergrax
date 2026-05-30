@@ -21,8 +21,10 @@ def register_default_tools(*, override: bool = False) -> None:
         return
 
     from intergrax.tools.providers.rag.register import register_rag_tool_bundle
+    from intergrax.tools.providers.websearch.register import register_websearch_tool_bundle
 
     register_rag_tool_bundle(override=override)
+    register_websearch_tool_bundle(override=override)
     _BOOTSTRAPPED = True
 
 
