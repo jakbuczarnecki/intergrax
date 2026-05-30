@@ -650,7 +650,7 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 | `email_smtp` | notification_channel | Planned | HITL / reports without chat vendor lock-in |
 | `s3` | object_storage | Planned | Artifacts, large uploads, shadow/sandbox exports |
 | `filesystem` | object_storage | Partial | Local / dev; shadow workspace roots |
-| `aws` | cloud_platform | Planned | IAM/STS auth; factory for S3, SQS, DynamoDB, Secrets Manager |
+| `aws` | cloud_platform | Beta | IAM/STS auth; defaults for S3, SQS, DynamoDB, ElastiCache |
 | `azure` | cloud_platform | Planned | Managed identity; factory for Blob, Service Bus, Key Vault |
 | `gcp` | cloud_platform | Planned | Service-account auth; factory for GCS, Pub/Sub, Secret Manager |
 
@@ -682,7 +682,7 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 | `pubsub` | message_bus | Planned | GCP-native messaging (via `gcp` facade) |
 | `dynamodb` | document_store | Planned | AWS document/KV (via `aws` facade) |
 | `elasticache` | key_value_cache | Planned | Managed Redis on AWS (via `aws` facade) |
-| `elasticsearch` | observability_backend | Planned | Log search, optional RAG source |
+| **`elasticsearch`** | observability_backend | **Open** | Log search / aggregations (ES\|QL or `_search`); optional RAG source; complements `prometheus` |
 | `otel` | observability_backend | Planned | Unified traces/metrics export |
 | `playwright` | browser_automation | Planned | Dynamic web research beyond HTTP fetch |
 | `azure_devops` | issue_tracker | Planned | Microsoft ALM |

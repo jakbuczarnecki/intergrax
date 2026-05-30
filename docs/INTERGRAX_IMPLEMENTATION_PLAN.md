@@ -533,8 +533,8 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M.3 | `IntegrationRegistry` + `IntegrationProfile` | **Done** | `catalog.register_integration`, `resolve`, env/mapping profile |
 | M.4 | P0 providers — wrap existing | **Done** | See **M.4 provider tracker** below |
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
-| M.6 | P1 providers (on demand) | In progress | **postgresql**, **mysql**, **jira**, **confluence**, **prometheus**, **ms365_graph** Done; **aws, azure, gcp**, … |
-| M.6 P2 | Extended providers (on demand) | In progress | **`cassandra`** Done; mongodb, dynamodb, oracle, elasticsearch, otel, … — see **M.6 P2 tracker** |
+| M.6 | P1 providers (on demand) | In progress | **postgresql**, **mysql**, **jira**, **confluence**, **prometheus**, **ms365_graph**, **aws** Done; **azure, gcp**, … |
+| M.6 P2 | Extended providers (on demand) | In progress | **`cassandra`** Done; **`elasticsearch`**, mongodb, dynamodb, oracle, otel, … — see **M.6 P2 tracker** |
 | M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
@@ -567,8 +567,10 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | `jira` | issue_tracker | **Done** (beta) | `providers/jira/` — REST v3; only `opens.py` creates httpx client |
 | `confluence` | wiki_knowledge | **Done** (beta) | `providers/confluence/` — REST wiki; only `opens.py` creates httpx client |
 | `prometheus` | observability_backend | **Done** (beta) | `providers/prometheus/` — PromQL query API; only `opens.py` creates httpx client |
+| `elasticsearch` | observability_backend | **Open** | Phase M.6 P2 — log/search queries; reuses `ObservabilityBackend` + optional log-search extension |
 | `ms365_graph` | collaboration_suite | **Done** (beta) | `providers/ms365_graph/` — Graph mail/calendar/directory; only `opens.py` creates httpx client |
 | `cassandra` | document_store | **Done** (beta) | `providers/cassandra/` — CQL get/put/delete/query; only `opens.py` creates driver session |
+| `aws` | cloud_platform | **Done** (beta) | `providers/aws/` — IAM/STS auth + category defaults; only `opens.py` creates boto3 session |
 
 #### M.6 P2 — Extended provider tracker (canon §7.1.3 P2)
 
@@ -577,11 +579,11 @@ Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. 
 | Slug | Category | Status | Rationale / notes |
 |------|----------|--------|-------------------|
 | **`cassandra`** | **document_store** | **Done** (beta) | High-volume log / event retention; CQL driver via `opens.py` single entry |
+| **`elasticsearch`** | **observability_backend** | **Open** | Log search / aggregations (ES\|QL or `_search`); optional RAG source; complements `prometheus` |
 | `mongodb` | document_store | Planned | Flexible schema document stores |
 | `dynamodb` | document_store | Planned | AWS document/KV (also via `aws` facade) |
 | `oracle` | relational_store | Planned | Enterprise relational clients |
 | `mssql` | relational_store | Planned | Microsoft SQL deployments |
-| `elasticsearch` | observability_backend | Planned | Log search; optional RAG source |
 | `otel` | observability_backend | Planned | Unified traces/metrics export |
 | `memcached` | key_value_cache | Planned | Simple cache tier |
 | `elasticache` | key_value_cache | Planned | Managed Redis on AWS (via `aws` facade) |
@@ -605,7 +607,22 @@ providers/cassandra/
 └── tests/                      # testcontainers or mocked session; integration_live optional
 ```
 
-**Prerequisite:** add `DocumentStore` to M.2 contract set (currently slug exists in `IntegrationSlug` only). Runtime event / trace backends remain SQLite-first until an explicit adoption milestone names Cassandra as a target store.
+**Prerequisite (cassandra):** `DocumentStore` contract — **Done** (`contracts/document_store.py`). Runtime event / trace backends remain SQLite-first until an explicit adoption milestone names Cassandra as a target store.
+
+**Elasticsearch — suggested implementation sketch (greenfield):**
+
+```text
+providers/elasticsearch/
+├── config.py                   # INTERGRAX_ELASTICSEARCH_URL, USER, PASSWORD, INDEX_PREFIX
+├── client.py                   # REST search client (internal — no httpx outside opens.py)
+├── adapter.py                  # ElasticsearchObservabilityBackend implements ObservabilityBackend
+├── opens.py                    # ONLY place that constructs httpx client / ES connection
+├── bundle.py                   # create_elasticsearch_observability_backend()
+├── register.py
+└── tests/                      # mocked _search / ES|QL responses; integration_live optional
+```
+
+**Contract note:** start with `ObservabilityBackend` (`query_instant` / `query_range`) mapped to ES\|QL or index-scoped aggregations where feasible; add optional `search_logs(query, *, limit)` on the contract in a follow-up if PromQL-shaped methods prove awkward for log-only clusters.
 
 
 1. Create package skeleton:
@@ -643,12 +660,12 @@ For each category in §7.1.2, implement a **minimal** Protocol in `integrations/
 | `SearchProvider` | `search(query, *, limit)` → `SearchResult[]` | Align with `websearch/providers/base.py` |
 | `NotificationChannel` | `notify(message)` | Align with `runtime/notifications/adapter_contract.py` |
 | `InteractionSurface` | `can_handle`, `to_inbound`, `channel` | Align with `runtime/interactions/adapter_contract.py` |
-| `CloudPlatform` | `session()`, `resolve(category)`, `default_region`, health | Auth chain + factory for native services (§7.1.3 P1.1) |
+| `CloudPlatform` | `slug`, `default_region`, `resolve(category)`, `health` | **Done** — `contracts/cloud_platform.py`; `aws` provider (beta) |
 | `CollaborationSuite` | `get_message`, `list_messages`, `send_mail`, `list_calendar_events`, `get_user` | **Done** — `contracts/collaboration_suite.py`; `ms365_graph` provider |
 | `DocumentStore` | `get`, `put`, `delete`, `query` (partition-scoped) | **Done** — `contracts/document_store.py`; `cassandra` provider |
 | `IssueTracker` | `get_issue`, `add_comment`, `search_issues` | **Done** — `contracts/issue_tracker.py`; `jira` provider |
 | `WikiKnowledge` | `get_page`, `search_pages` | **Done** — `contracts/wiki_knowledge.py`; `confluence` provider |
-| `ObservabilityBackend` | `query_instant`, `query_range` | **Done** — `contracts/observability_backend.py`; `prometheus` provider |
+| `ObservabilityBackend` | `query_instant`, `query_range` | **Done** — `contracts/observability_backend.py`; `prometheus` provider; **`elasticsearch`** Open (M.6 P2) |
 
 **Rule:** if a contract already exists elsewhere, **re-export or inherit** — do not define a third variant.
 
@@ -769,6 +786,8 @@ providers/gcp/
 | (new) | `prometheus` | **Done** — `integrations/providers/prometheus/`; **only** `opens.py` creates httpx client |
 | (new) | `ms365_graph` | **Done** — `integrations/providers/ms365_graph/`; **only** `opens.py` creates httpx client + token fetch |
 | (new) | `cassandra` | **Done** — `integrations/providers/cassandra/`; **only** `opens.py` creates driver session |
+| (new) | `aws` | **Done** — `integrations/providers/aws/`; **only** `opens.py` creates boto3 session |
+| (new) | `elasticsearch` | **Open** — Phase M.6 P2; `providers/elasticsearch/`; reuses `ObservabilityBackend` |
 | `rag/vectorstore/providers/*` | vector slugs | Catalog entry only; implementation stays in `rag/` |
 
 **Not migrated to `integrations/`:** `intergrax/llm_adapters/` — LLM providers are a separate Tier-0 concern (§7.1.2 out-of-scope table).
@@ -1249,6 +1268,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Date | ID | Summary |
 |------|-----|---------|
+| 2026-05-29 | M.6-aws | `providers/aws/` — cloud_platform facade; STS health + category slug defaults |
 | 2026-05-29 | M.6-cassandra | `providers/cassandra/` + `contracts/document_store.py`; CQL partition-scoped CRUD |
 | 2026-05-29 | M.6-ms365_graph | `providers/ms365_graph/` + `contracts/collaboration_suite.py`; Graph mail/calendar/directory |
 | 2026-05-30 | M.6-prometheus | `providers/prometheus/` + `contracts/observability_backend.py`; PromQL query API |
@@ -1319,7 +1339,8 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | **Done** (beta) | Org worker, scheduling agents | Tier-0 | `providers/ms365_graph/`; client credentials via `opens.py` |
 | B.23 | **Prometheus observability_backend** — PromQL query API | §33, §7.1.3 | **Low** | **Done** (beta) | Ops / SLO | Tier-0 | `providers/prometheus/`; complements B.11 metrics layer design |
 | B.28 | **Cassandra document_store** — wide-column adapter for high-volume retention | §7.1.3 P2 | **Medium** | **Done** (beta) | Runtime event archive at scale; ops telemetry | Tier-0 | `providers/cassandra/`; single-entry `opens.py` |
-| B.25 | **AWS cloud_platform facade** — auth + S3/SQS/DynamoDB/Secrets Manager defaults | §7.1.3 P1.1 | **Medium** | Open | AWS-hosted applications | Tier-0 | Phase M.6; infrastructure only |
+| B.29 | **Elasticsearch observability_backend** — log search / aggregations | §7.1.3 P2 | **Medium** | **Open** | Ops log triage; optional RAG over logs | Tier-0 | Phase M.6 P2 — `providers/elasticsearch/`; single-entry `opens.py`; complements B.23 |
+| B.25 | **AWS cloud_platform facade** — auth + S3/SQS/DynamoDB/ElastiCache defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | AWS-hosted applications | Tier-0 | `providers/aws/`; infrastructure only |
 | B.26 | **Azure cloud_platform facade** — MI + Blob/Service Bus/Key Vault | §7.1.3 P1.1 | **Medium** | Open | Azure-hosted applications | Tier-0 | Phase M.6; infrastructure only |
 | B.27 | **GCP cloud_platform facade** — ADC + GCS/Pub/Sub/Secret Manager | §7.1.3 P1.1 | **Medium** | Open | GCP-hosted applications | Tier-0 | Phase M.6; infrastructure only |
 | B.24 | **Direct vendor SDK in agents** — audit + lint rule | §5.2, §7.1.4 | **Medium** | Open | Prevents catalog bypass | Tier-2 | Document in AGENT_CREATION_GUIDE; optional ruff rule |
@@ -1349,8 +1370,8 @@ Decision:       L1 certified — GO Phase K when product priority set
 5. ~~B.05~~ — escalation production path (Done 2026-05-27)
 6. ~~B.09, B.17~~ — debug trace injection + gate collection (Done 2026-05-27)
 7. ~~B.06~~ — hook parity doc + lifecycle wiring (Done 2026-05-27)
-8. B.07, B.11, B.13, B.15–B.18 — as capacity allows
-9. M.6 P1 remainder — aws / azure / gcp cloud facades
+8. B.07, B.11, B.13, B.15–B.18, **B.29** (elasticsearch) — as capacity allows
+9. M.6 P1 remainder — azure / gcp cloud facades
 ```
 
 **Note:** Phase K business agents (Problem Radar, Vendor Discovery) remain **product-blocked** until explicit go — technical debt above does not auto-unblock K.1/K.2.

@@ -678,11 +678,18 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 | `prometheus` | observability_backend | PromQL queries (`create_prometheus_observability_backend()` only) |
 | `ms365_graph` | collaboration_suite | Microsoft Graph mail/calendar (`create_ms365_graph_collaboration_suite()` only) |
 | `cassandra` | document_store | Cassandra CQL store (`create_cassandra_document_store()` only) |
+| `aws` | cloud_platform | AWS facade (`create_aws_cloud_platform()` only) |
 | `redis` | key_value_cache | Idempotency, rate limits, distributed locks |
 | `kafka`, `rabbitmq`, `celery` | message_bus | Worker queues, async Nexus execution |
 | `google_cse`, `bing` | search_provider | Research / web tools |
 | `slack`, `teams`, `webhook`, `log` | notification_channel | Long-running progress, HITL alerts |
 | `lab_json`, `slack`, `teams` | interaction_surface | Inbound webhooks / lab JSON intake |
+
+### P2 backlog (catalog slugs — not yet in default bootstrap)
+
+| Slug | Category | Notes |
+|------|----------|-------|
+| `elasticsearch` | observability_backend | Log search / aggregations; `create_elasticsearch_observability_backend()` (planned M.6 P2) |
 
 LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them separately.
 

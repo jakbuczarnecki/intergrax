@@ -33,6 +33,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.prometheus.register import register_prometheus_integration
     from intergrax.integrations.providers.ms365_graph.register import register_ms365_graph_integration
     from intergrax.integrations.providers.cassandra.register import register_cassandra_integration
+    from intergrax.integrations.providers.aws.register import register_aws_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -56,6 +57,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_prometheus_integration(override=override)
     register_ms365_graph_integration(override=override)
     register_cassandra_integration(override=override)
+    register_aws_integration(override=override)
     _BOOTSTRAPPED = True
 
 
