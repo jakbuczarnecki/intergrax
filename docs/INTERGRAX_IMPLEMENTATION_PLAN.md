@@ -533,7 +533,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M.3 | `IntegrationRegistry` + `IntegrationProfile` | **Done** | `catalog.register_integration`, `resolve`, env/mapping profile |
 | M.4 | P0 providers — wrap existing | **Done** | See **M.4 provider tracker** below |
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
-| M.6 | P1 providers (on demand) | In progress | **postgresql**, **mysql** Done; jira, confluence, ms365_graph, prometheus, **aws, azure, gcp**, … |
+| M.6 | P1 providers (on demand) | In progress | **postgresql**, **mysql**, **jira** Done; confluence, ms365_graph, prometheus, **aws, azure, gcp**, … |
 | M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
@@ -563,6 +563,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | `log` | notification_channel | **Done** (+ adopcja) | `providers/log/` — wraps `LoggingNotificationAdapter`; lab profile default |
 | `postgresql` | relational_store | **Done** (beta) | `providers/postgresql/` — `RelationalStore` via psycopg3; only `opens.py` connects |
 | `mysql` | relational_store | **Done** (beta) | `providers/mysql/` — `RelationalStore` via pymysql; only `opens.py` connects |
+| `jira` | issue_tracker | **Done** (beta) | `providers/jira/` — REST v3; only `opens.py` creates httpx client |
 
 #### M.1 — Package scaffold (step-by-step)
 
@@ -717,6 +718,7 @@ providers/gcp/
 | `runtime/*/stores/sqlite_*.py` (+ store openers) | `sqlite` | **Done** — single entry `integrations/providers/sqlite/create_sqlite_integration()` |
 | (new) | `postgresql` | **Done** — `integrations/providers/postgresql/`; **only** `opens.py` calls `psycopg.connect` |
 | (new) | `mysql` | **Done** — `integrations/providers/mysql/`; **only** `opens.py` calls `pymysql.connect` |
+| (new) | `jira` | **Done** — `integrations/providers/jira/`; **only** `opens.py` creates httpx client |
 | `rag/vectorstore/providers/*` | vector slugs | Catalog entry only; implementation stays in `rag/` |
 
 **Not migrated to `integrations/`:** `intergrax/llm_adapters/` — LLM providers are a separate Tier-0 concern (§7.1.2 out-of-scope table).
@@ -1197,6 +1199,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Date | ID | Summary |
 |------|-----|---------|
+| 2026-05-30 | M.6-jira | `providers/jira/` + `contracts/issue_tracker.py`; REST v3; single-entry `opens.py` |
 | 2026-05-30 | M.6-mysql | `providers/mysql/` — beta `RelationalStore` (pymysql); single-entry `opens.py` |
 | 2026-05-30 | M.6-postgresql | `providers/postgresql/` — beta `RelationalStore` (psycopg3); catalog + tests |
 | 2026-05-30 | M.7-agent-guide-integrations | `AGENT_CREATION_GUIDE.md` Appendix E — agents vs Tier-3 wiring |
@@ -1258,7 +1261,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
 | B.19 | **P0 provider wraps** — M.4 catalog slugs | §7.1.3 | **High** | **Done** | Lab + first prod apps | Tier-0 | All P0 slugs wrapped + runtime adoption (2026-05-29) |
 | B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | **Done** (beta) | Multi-tenant applications | Tier-0 | `providers/postgresql/` — domain stores SQLite-first |
-| B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | Open | PM / research agents | Tier-0 | Phase M.6; tools via ToolRuntime |
+| B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | **Jira Done** (beta) / Confluence Open | PM / research agents | Tier-0 | Jira: `providers/jira/`; tools via ToolRuntime (future) |
 | B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | Open | Org worker, scheduling agents | Tier-0 | Phase M.6 |
 | B.23 | **Prometheus observability_backend** — metrics export | §33, §7.1.3 | **Low** | Open | Ops / SLO | Tier-0 | After B.11 metrics layer design |
 | B.25 | **AWS cloud_platform facade** — auth + S3/SQS/DynamoDB/Secrets Manager defaults | §7.1.3 P1.1 | **Medium** | Open | AWS-hosted applications | Tier-0 | Phase M.6; infrastructure only |

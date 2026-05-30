@@ -644,7 +644,7 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 | `mysql` | relational_store | Beta | Production relational store (`RelationalStore` via pymysql); optional `tenant_database` |
 | `rabbitmq` | message_bus | **Done** (+ adopcja) | `providers/rabbitmq/` — runtime transport delegates here |
 | `prometheus` | observability_backend | Planned | Metrics-third canon (§33); SLO dashboards |
-| `jira` | issue_tracker | Planned | Task ingestion, agent workflow triggers |
+| `jira` | issue_tracker | Beta | Task ingestion via REST v3 (`get_issue`, `add_comment`, `search_issues`) |
 | `confluence` | wiki_knowledge | Planned | RAG source, runbooks, agent context |
 | `ms365_graph` | collaboration_suite | Planned | Mail, calendar, Teams-adjacent APIs |
 | `email_smtp` | notification_channel | Planned | HITL / reports without chat vendor lock-in |

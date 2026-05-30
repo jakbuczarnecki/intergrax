@@ -20,6 +20,12 @@ from intergrax.integrations.contracts.interaction_surface import (
     InteractionAdapter,
     InteractionSurface,
 )
+from intergrax.integrations.contracts.issue_tracker import (
+    IssueComment,
+    IssueRecord,
+    IssueSearchResult,
+    IssueTracker,
+)
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
 from intergrax.integrations.contracts.message_bus import (
     MessageBus,
@@ -48,6 +54,10 @@ __all__ = [
     "IntegrationStatus",
     "InteractionAdapter",
     "InteractionSurface",
+    "IssueComment",
+    "IssueRecord",
+    "IssueSearchResult",
+    "IssueTracker",
     "KeyValueCache",
     "MessageBus",
     "NotificationAdapter",
