@@ -18,9 +18,14 @@ from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from intergrax.applications._shared.fastapi_mcp import (
+    couple_fastapi_with_mcp,
+    make_scheduler_lifespan,
+)
 from lab_application.host.integration_wiring import wire_lab_integrations
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.wiring import build_lab_registry
+from lab_application.mcp.server import build_lab_mcp_server
 from lab_application.serving.fastapi_router import mount_lab_routes
 
 
@@ -108,8 +113,20 @@ def create_lab_application(
             ),
             prefix=settings.interaction_route_prefix,
         )
-    if scheduler_wiring is not None:
-        scheduler = scheduler_wiring.scheduler
+    scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
+    if settings.include_mcp:
+        mcp = build_lab_mcp_server(
+            nexus_loop=nexus_loop,
+            route_prefix=settings.route_prefix,
+        )
+        extra_lifespans = [make_scheduler_lifespan(scheduler)] if scheduler else []
+        app = couple_fastapi_with_mcp(
+            app,
+            mcp,
+            mount_path=settings.mcp_mount_path,
+            extra_lifespans=extra_lifespans,
+        )
+    elif scheduler is not None:
 
         @app.on_event("startup")
         async def _start_long_running_scheduler() -> None:

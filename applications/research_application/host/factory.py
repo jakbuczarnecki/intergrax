@@ -10,9 +10,11 @@ from fastapi import FastAPI
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
+from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
+from research_application.host.integration_wiring import wire_research_integrations
 from research_application.host.settings import ResearchBackendSettings
-from research_application.host.wiring import build_research_registry_for_host
+from research_application.host.wiring import build_research_registry
+from research_application.mcp.server import build_research_mcp_server
 from research_application.serving.fastapi_router import mount_research_routes
 
 
@@ -30,8 +32,8 @@ def create_research_backend_app(
         )
     app = create_app(ApiConfig(environment=ApiEnvironment.DEV))
 
-    registry = build_research_registry_for_host()
-    observability = wire_nexus_observability(
+    registry = build_research_registry(settings=settings)
+    observability = wire_research_integrations(
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
     )
@@ -48,4 +50,12 @@ def create_research_backend_app(
     )
 
     app.title = "Intergrax Research API (prototype)"
+
+    if settings.include_mcp:
+        mcp = build_research_mcp_server(
+            nexus_loop=nexus,
+            route_prefix=settings.route_prefix,
+        )
+        app = couple_fastapi_with_mcp(app, mcp, mount_path=settings.mcp_mount_path)
+
     return app

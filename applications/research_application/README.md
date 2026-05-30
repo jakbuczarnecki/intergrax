@@ -2,8 +2,19 @@
 
 Thin execution environment for the research → summarize multi-agent pipeline.
 
+**Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)
+
 ```bash
+cp applications/research_application/.env.example applications/research_application/.env
 uv run uvicorn research_application.host.main:app --host 0.0.0.0 --port 8010
 ```
 
 POST `/v1/research/run` with JSON body `{ "message": "your research question" }`.
+
+**MCP:** FastMCP at `/mcp` — `list_agents`, `run_agent`, `run_research_pipeline` (`RESEARCH_INCLUDE_MCP`).
+
+## Tests
+
+```bash
+uv run pytest applications/research_application/research_application_tests -q
+```

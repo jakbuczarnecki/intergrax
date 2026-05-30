@@ -139,8 +139,16 @@ uv run pytest tests/unit/applications/ -q
 ### Docker (when `docker/` exists)
 
 ```bash
-docker build -f applications/my_lab/docker/Dockerfile -t my-lab .
-docker run --env-file applications/my_lab/.env -p 8091:8091 my-lab
+# BuildKit (recommended)
+docker buildx build -f applications/my_lab_application/docker/Dockerfile \
+  --ignorefile applications/my_lab_application/docker/.dockerignore \
+  -t my-lab-application .
+
+# Classic docker: copy per-app .dockerignore to repo root first
+cp applications/my_lab_application/docker/.dockerignore .dockerignore
+docker build -f applications/my_lab_application/docker/Dockerfile -t my-lab-application .
+
+docker run --env-file applications/my_lab_application/.env -p 8091:8091 my-lab-application
 ```
 
 ---
@@ -174,7 +182,7 @@ intergrax/integrations/  Tier-0 — IntegrationProfile, providers
 | Create agent | `python -m intergrax.scaffold new-agent …` → `agents/` |
 | Register in app | `AgentBinding.mount(...)` in `applications/<app>/manifest.py` |
 | Wire backends | `IntegrationProfile` in manifest + `integration_wiring.py` |
-| Scaffold app | `python -m intergrax.scaffold new-application <name> --profile lab --agents echo` |
+| Scaffold app | `python -m intergrax.scaffold new-application <name> --profile lab --agents echo` → FastAPI + FastMCP (`/mcp`), `BUILD_AND_DEPLOY.md` |
 
 ---
 

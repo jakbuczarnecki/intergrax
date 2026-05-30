@@ -6,38 +6,28 @@
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 from pathlib import Path
 from textwrap import dedent
 
+from intergrax.applications._shared.build_deploy_doc import render_build_deploy_doc
+from intergrax.applications._shared.docker_templates import write_application_docker
 from intergrax.scaffold.agent_catalog import ScaffoldAgentSpec, resolve_agent_specs
+from intergrax.scaffold.application_names import (
+    ScaffoldApplicationNames,
+    app_slug,
+    env_prefix,
+    pascal_case,
+    short_id,
+)
 
 _PROFILES = ("lab",)
 
-
-def _app_slug(name: str) -> str:
-    slug = re.sub(r"[^a-z0-9_]+", "_", name.strip().lower())
-    slug = re.sub(r"_+", "_", slug).strip("_")
-    if not slug or slug[0].isdigit():
-        raise ValueError(f"Invalid application name: {name!r}")
-    if not slug.endswith("_application"):
-        slug = f"{slug}_application"
-    return slug
-
-
-def _short_id(app_slug: str) -> str:
-    if app_slug.endswith("_application"):
-        return app_slug[: -len("_application")]
-    return app_slug
-
-
-def _env_prefix(short: str) -> str:
-    return re.sub(r"[^A-Z0-9]", "_", short.upper()).strip("_") + "_"
-
-
-def _pascal(short: str) -> str:
-    return "".join(part.capitalize() for part in short.split("_"))
+# Backward-compatible aliases for tests/tools.
+_app_slug = app_slug
+_short_id = short_id
+_env_prefix = env_prefix
+_pascal = pascal_case
 
 
 def _write(path: Path, content: str, *, force: bool) -> None:
@@ -47,7 +37,11 @@ def _write(path: Path, content: str, *, force: bool) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def _manifest_py(pkg: str, specs: list[ScaffoldAgentSpec], route_prefix: str, env_prefix: str) -> str:
+def _manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
+    pkg = names.pkg
+    short = names.short
+    route_prefix = names.route_prefix
+    env_prefix_value = names.env_prefix
     imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
     mounts = []
     for s in specs:
@@ -55,7 +49,6 @@ def _manifest_py(pkg: str, specs: list[ScaffoldAgentSpec], route_prefix: str, en
         cap_arg = f", capabilities=[{caps}]" if s.capabilities else ""
         mounts.append(f"        AgentBinding.mount({s.class_name}{cap_arg}),")
     mounts_block = "\n".join(mounts)
-    short = _short_id(pkg)
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
@@ -71,9 +64,9 @@ def _manifest_py(pkg: str, specs: list[ScaffoldAgentSpec], route_prefix: str, en
         def build_{short}_manifest() -> ApplicationManifest:
             return ApplicationManifest.lab(
                 app_id="{short}",
-                name="{_pascal(short)} Lab Application",
+                name="{names.display} Lab Application",
                 route_prefix="{route_prefix}",
-                env_prefix="{env_prefix}",
+                env_prefix="{env_prefix_value}",
                 agents=[
         {mounts_block}
                 ],
@@ -86,7 +79,8 @@ def _manifest_py(pkg: str, specs: list[ScaffoldAgentSpec], route_prefix: str, en
     )
 
 
-def _agent_builders_py(specs: list[ScaffoldAgentSpec]) -> str:
+def _agent_builders_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
+    builders_const = names.builders_const
     imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
     entries = "\n".join(
         f"    {s.class_name}: _zero_arg_factory({s.class_name})," for s in specs
@@ -111,15 +105,19 @@ def _agent_builders_py(specs: list[ScaffoldAgentSpec]) -> str:
             return _build
 
 
-        AGENT_BUILDERS: dict[type[Agent], AgentFactory] = {{
+        {builders_const}: dict[type[Agent], AgentFactory] = {{
         {entries}
         }}
         '''
     )
 
 
-def _settings_py(pkg: str, short: str, env_prefix: str, route_prefix: str, port: int) -> str:
-    pascal = _pascal(short)
+def _settings_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    pascal = names.pascal
+    env_prefix_value = names.env_prefix
+    route_prefix = names.route_prefix
+    port = names.port
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
@@ -145,28 +143,36 @@ def _settings_py(pkg: str, short: str, env_prefix: str, route_prefix: str, port:
             include_scheduler: bool = True
             scheduler_poll_seconds: float | None = None
             interaction_surface: str = "auto"
+            include_mcp: bool = True
+            mcp_mount_path: str = "/mcp"
 
             @classmethod
             def from_env(cls) -> {pascal}ApplicationSettings:
                 env_raw = (os.getenv("INTERGRAX_ENV") or "dev").strip().lower()
                 environment = ApiEnvironment.PROD if env_raw == "prod" else ApiEnvironment.DEV
-                prefix = (os.getenv("{env_prefix}ROUTE_PREFIX") or "{route_prefix}").strip() or "{route_prefix}"
-                host = (os.getenv("{env_prefix}BACKEND_HOST") or "127.0.0.1").strip()
-                port_raw = (os.getenv("{env_prefix}BACKEND_PORT") or "{port}").strip()
+                prefix = (os.getenv("{env_prefix_value}ROUTE_PREFIX") or "{route_prefix}").strip() or "{route_prefix}"
+                host = (os.getenv("{env_prefix_value}BACKEND_HOST") or "127.0.0.1").strip()
+                port_raw = (os.getenv("{env_prefix_value}BACKEND_PORT") or "{port}").strip()
                 include_interactions = (
-                    os.getenv("{env_prefix}INCLUDE_INTERACTIONS") or "true"
+                    os.getenv("{env_prefix_value}INCLUDE_INTERACTIONS") or "true"
                 ).strip().lower() not in {{"0", "false", "no"}}
                 include_scheduler = (
-                    os.getenv("{env_prefix}INCLUDE_SCHEDULER") or "true"
+                    os.getenv("{env_prefix_value}INCLUDE_SCHEDULER") or "true"
                 ).strip().lower() not in {{"0", "false", "no"}}
                 interaction_prefix = (
-                    os.getenv("{env_prefix}INTERACTION_ROUTE_PREFIX") or "/v1/interactions"
+                    os.getenv("{env_prefix_value}INTERACTION_ROUTE_PREFIX") or "/v1/interactions"
                 ).strip() or "/v1/interactions"
                 poll_raw = (os.getenv("INTERGRAX_SCHEDULER_POLL_SECONDS") or "").strip()
                 scheduler_poll = float(poll_raw) if poll_raw else None
                 interaction_surface = (
-                    os.getenv("{env_prefix}INTERACTION_SURFACE") or "auto"
+                    os.getenv("{env_prefix_value}INTERACTION_SURFACE") or "auto"
                 ).strip().lower() or "auto"
+                include_mcp = (os.getenv("{env_prefix_value}INCLUDE_MCP") or "true").strip().lower() not in {{
+                    "0",
+                    "false",
+                    "no",
+                }}
+                mcp_mount = (os.getenv("{env_prefix_value}MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
                 return cls(
                     environment=environment,
                     route_prefix=prefix,
@@ -177,13 +183,18 @@ def _settings_py(pkg: str, short: str, env_prefix: str, route_prefix: str, port:
                     include_scheduler=include_scheduler,
                     scheduler_poll_seconds=scheduler_poll,
                     interaction_surface=interaction_surface,
+                    include_mcp=include_mcp,
+                    mcp_mount_path=mcp_mount,
                 )
         '''
     )
 
 
-def _wiring_py(pkg: str, short: str) -> str:
-    pascal = _pascal(short)
+def _wiring_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    short = names.short
+    pascal = names.pascal
+    builders_const = names.builders_const
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
@@ -193,7 +204,7 @@ def _wiring_py(pkg: str, short: str) -> str:
         from intergrax.applications._shared.wiring import build_application_registry
         from intergrax.applications.contracts.build_context import ApplicationBuildContext
         from intergrax.runtime.registry.agent_registry import AgentRegistry
-        from {pkg}.host.agent_builders import AGENT_BUILDERS
+        from {pkg}.host.agent_builders import {builders_const}
         from {pkg}.host.settings import {pascal}ApplicationSettings
         from {pkg}.manifest import build_{short}_manifest
 
@@ -205,13 +216,15 @@ def _wiring_py(pkg: str, short: str) -> str:
             settings = settings or {pascal}ApplicationSettings.from_env()
             manifest = build_{short}_manifest()
             ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
-            return build_application_registry(manifest, ctx, builders=AGENT_BUILDERS)
+            return build_application_registry(manifest, ctx, builders={builders_const})
         '''
     )
 
 
-def _integration_wiring_py(pkg: str, short: str) -> str:
-    pascal = _pascal(short)
+def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    short = names.short
+    pascal = names.pascal
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
@@ -341,9 +354,11 @@ def _integration_wiring_py(pkg: str, short: str) -> str:
     )
 
 
-def _factory_py(pkg: str, short: str) -> str:
-    pascal = _pascal(short)
-    title = f"Intergrax {_pascal(short)} Lab Application"
+def _factory_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    short = names.short
+    pascal = names.pascal
+    title = f"Intergrax {names.display} Lab Application"
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
@@ -368,7 +383,12 @@ def _factory_py(pkg: str, short: str) -> str:
         from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
         from {pkg}.host.integration_wiring import wire_{short}_integrations
         from {pkg}.host.settings import {pascal}ApplicationSettings
+        from intergrax.applications._shared.fastapi_mcp import (
+            couple_fastapi_with_mcp,
+            make_scheduler_lifespan,
+        )
         from {pkg}.host.wiring import build_{short}_registry
+        from {pkg}.mcp.server import build_{short}_mcp_server
         from {pkg}.serving.fastapi_router import mount_{short}_routes
 
 
@@ -437,8 +457,20 @@ def _factory_py(pkg: str, short: str) -> str:
                     ),
                     prefix=settings.interaction_route_prefix,
                 )
-            if scheduler_wiring is not None:
-                scheduler = scheduler_wiring.scheduler
+            scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
+            if settings.include_mcp:
+                mcp = build_{short}_mcp_server(
+                    nexus_loop=nexus_loop,
+                    route_prefix=settings.route_prefix,
+                )
+                extra_lifespans = [make_scheduler_lifespan(scheduler)] if scheduler else []
+                app = couple_fastapi_with_mcp(
+                    app,
+                    mcp,
+                    mount_path=settings.mcp_mount_path,
+                    extra_lifespans=extra_lifespans,
+                )
+            elif scheduler is not None:
 
                 @app.on_event("startup")
                 async def _start_scheduler() -> None:
@@ -452,7 +484,11 @@ def _factory_py(pkg: str, short: str) -> str:
     )
 
 
-def _main_py(pkg: str, short: str, env_prefix: str, port: int) -> str:
+def _main_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    short = names.short
+    env_prefix_value = names.env_prefix
+    port = names.port
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
@@ -471,13 +507,13 @@ def _main_py(pkg: str, short: str, env_prefix: str, port: int) -> str:
         def run() -> None:
             import uvicorn
 
-            host = os.environ.get("{env_prefix}BACKEND_HOST", "127.0.0.1")
-            port = int(os.environ.get("{env_prefix}BACKEND_PORT", "{port}"))
+            host = os.environ.get("{env_prefix_value}BACKEND_HOST", "127.0.0.1")
+            port = int(os.environ.get("{env_prefix_value}BACKEND_PORT", "{port}"))
             uvicorn.run(
                 "{pkg}.host.main:app",
                 host=host,
                 port=port,
-                reload=os.environ.get("{env_prefix}BACKEND_RELOAD", "").lower()
+                reload=os.environ.get("{env_prefix_value}BACKEND_RELOAD", "").lower()
                 in {{"1", "true", "yes"}},
             )
 
@@ -488,7 +524,10 @@ def _main_py(pkg: str, short: str, env_prefix: str, port: int) -> str:
     )
 
 
-def _serving_router_py(pkg: str, short: str, route_prefix: str) -> str:
+def _serving_router_py(names: ScaffoldApplicationNames) -> str:
+    short = names.short
+    route_prefix = names.route_prefix
+    pascal = names.pascal
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
@@ -507,7 +546,7 @@ def _serving_router_py(pkg: str, short: str, route_prefix: str) -> str:
         from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
-        class {_pascal(short)}RunRequestV1(BaseModel):
+        class {pascal}RunRequestV1(BaseModel):
             tenant_id: str = "lab"
             user_id: str = "lab-user"
             session_id: Optional[str] = None
@@ -516,7 +555,7 @@ def _serving_router_py(pkg: str, short: str, route_prefix: str) -> str:
             metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-        class {_pascal(short)}RunResponseV1(BaseModel):
+        class {pascal}RunResponseV1(BaseModel):
             task_id: str
             run_id: Optional[str] = None
             state: str
@@ -526,14 +565,14 @@ def _serving_router_py(pkg: str, short: str, route_prefix: str) -> str:
 
 
         @dataclass
-        class {_pascal(short)}RunService:
+        class {pascal}RunService:
             task_runner: UnifiedTaskRunner
 
             @classmethod
-            def from_nexus_loop(cls, nexus_loop: NexusLoop) -> {_pascal(short)}RunService:
+            def from_nexus_loop(cls, nexus_loop: NexusLoop) -> {pascal}RunService:
                 return cls(task_runner=UnifiedTaskRunner(nexus_loop))
 
-            async def run_task(self, body: {_pascal(short)}RunRequestV1) -> {_pascal(short)}RunResponseV1:
+            async def run_task(self, body: {pascal}RunRequestV1) -> {pascal}RunResponseV1:
                 run_id = new_run_id()
                 task = Task(
                     task_id=run_id,
@@ -545,7 +584,7 @@ def _serving_router_py(pkg: str, short: str, route_prefix: str) -> str:
                     metadata=dict(body.metadata),
                 )
                 result = await self.task_runner.run_task(task)
-                return {_pascal(short)}RunResponseV1(
+                return {pascal}RunResponseV1(
                     task_id=result.task_id,
                     run_id=result.run_id,
                     state=result.state.value,
@@ -560,12 +599,12 @@ def _serving_router_py(pkg: str, short: str, route_prefix: str) -> str:
             *,
             nexus_loop: NexusLoop,
             prefix: str = "{route_prefix}",
-        ) -> {_pascal(short)}RunService:
-            service = {_pascal(short)}RunService.from_nexus_loop(nexus_loop)
+        ) -> {pascal}RunService:
+            service = {pascal}RunService.from_nexus_loop(nexus_loop)
             router = APIRouter(prefix=prefix, tags=["{short}"])
 
-            @router.post("/run", response_model={_pascal(short)}RunResponseV1)
-            async def run_agent(body: {_pascal(short)}RunRequestV1) -> {_pascal(short)}RunResponseV1:
+            @router.post("/run", response_model={pascal}RunResponseV1)
+            async def run_agent(body: {pascal}RunRequestV1) -> {pascal}RunResponseV1:
                 try:
                     return await service.run_task(body)
                 except Exception as exc:
@@ -594,6 +633,41 @@ def _serving_router_py(pkg: str, short: str, route_prefix: str) -> str:
     )
 
 
+def _mcp_server_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
+    pkg = names.pkg
+    short = names.short
+    display = names.display
+    cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        """FastMCP server coupled to the {pkg} FastAPI host."""
+
+        from __future__ import annotations
+
+        from fastmcp import FastMCP
+
+        from intergrax.applications._shared.mcp_nexus_server import build_nexus_mcp_server
+        from intergrax.runtime.nexus.nexus_loop import NexusLoop
+
+
+        def build_{short}_mcp_server(
+            *,
+            nexus_loop: NexusLoop,
+            route_prefix: str,
+        ) -> FastMCP:
+            """MCP tools mirror the lab HTTP API (same NexusLoop / UnifiedTaskRunner)."""
+            _ = route_prefix
+            return build_nexus_mcp_server(
+                name="{display} MCP",
+                nexus_loop=nexus_loop,
+                default_capability="{cap}",
+            )
+        '''
+    )
+
+
 def _env_example(env_prefix: str, route_prefix: str, port: int, specs: list[ScaffoldAgentSpec]) -> str:
     caps = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
     return dedent(
@@ -606,20 +680,34 @@ def _env_example(env_prefix: str, route_prefix: str, port: int, specs: list[Scaf
         {env_prefix}INCLUDE_INTERACTIONS=true
         {env_prefix}INCLUDE_SCHEDULER=true
         {env_prefix}INTERACTION_SURFACE=auto
+        {env_prefix}INCLUDE_MCP=true
+        {env_prefix}MCP_MOUNT_PATH=/mcp
         # Example run capability for POST {route_prefix}/run
         # DEFAULT_CAPABILITY={caps}
         '''
     )
 
 
-def _readme(pkg: str, short: str, route_prefix: str, port: int, specs: list[ScaffoldAgentSpec]) -> str:
+def _agent_dirs(specs: list[ScaffoldAgentSpec]) -> list[str]:
+    return sorted({s.slug for s in specs})
+
+
+def _readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
+    pkg = names.pkg
+    short = names.short
+    display = names.display
+    env_prefix_value = names.env_prefix
+    route_prefix = names.route_prefix
+    port = names.port
     cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
     agents_list = ", ".join(s.class_name for s in specs)
     return dedent(
         f'''\
-        # {_pascal(short)} Application (Tier-3)
+        # {display} Application (Tier-3)
 
         Scaffolded lab-profile application — debug API + ``POST {route_prefix}/run``.
+
+        **Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)
 
         ## Agents
 
@@ -641,6 +729,13 @@ def _readme(pkg: str, short: str, route_prefix: str, port: int, specs: list[Scaf
           -d '{{"message":"hello","capability":"{cap}"}}'
         ```
 
+        ## MCP (FastMCP)
+
+        FastMCP is mounted on the **same** uvicorn process as FastAPI (default ``/mcp``).
+        Tools: ``list_agents``, ``run_agent`` — same Nexus loop as HTTP.
+
+        Configure via ``{env_prefix_value}INCLUDE_MCP`` and ``{env_prefix_value}MCP_MOUNT_PATH``.
+
         ## Docs
 
         - Engine: `intergrax/applications/USAGE.md`
@@ -649,7 +744,10 @@ def _readme(pkg: str, short: str, route_prefix: str, port: int, specs: list[Scaf
     )
 
 
-def _smoke_test(pkg: str, short: str, route_prefix: str, specs: list[ScaffoldAgentSpec]) -> str:
+def _smoke_test(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
+    pkg = names.pkg
+    short = names.short
+    route_prefix = names.route_prefix
     cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
     return dedent(
         f'''\
@@ -702,41 +800,78 @@ def create_application(
     if profile not in _PROFILES:
         raise ValueError(f"Unsupported profile {profile!r}; choose: {', '.join(_PROFILES)}")
 
-    pkg = _app_slug(name)
-    short = _short_id(pkg)
-    env_prefix = _env_prefix(short)
-    route_prefix = route_prefix or f"/v1/{short}"
+    names = ScaffoldApplicationNames.resolve(
+        name,
+        route_prefix=route_prefix,
+        port=port,
+    )
     specs = resolve_agent_specs(agents)
+    agent_dirs = _agent_dirs(specs)
 
-    target = root / "applications" / pkg
+    target = root / "applications" / names.pkg
     if target.exists() and not force:
         raise FileExistsError(f"Application directory already exists: {target}")
 
-    tests_pkg = f"{pkg}_tests"
-
     _write(target / "__init__.py", "", force=force)
-    _write(target / "manifest.py", _manifest_py(pkg, specs, route_prefix, env_prefix), force=force)
-    _write(target / "README.md", _readme(pkg, short, route_prefix, port, specs), force=force)
-    _write(target / ".env.example", _env_example(env_prefix, route_prefix, port, specs), force=force)
-
-    _write(target / "host" / "__init__.py", "", force=force)
-    _write(target / "host" / "settings.py", _settings_py(pkg, short, env_prefix, route_prefix, port), force=force)
-    _write(target / "host" / "agent_builders.py", _agent_builders_py(specs), force=force)
-    _write(target / "host" / "wiring.py", _wiring_py(pkg, short), force=force)
-    _write(target / "host" / "integration_wiring.py", _integration_wiring_py(pkg, short), force=force)
-    _write(target / "host" / "factory.py", _factory_py(pkg, short), force=force)
-    _write(target / "host" / "main.py", _main_py(pkg, short, env_prefix, port), force=force)
-
-    _write(target / "serving" / "__init__.py", "", force=force)
-    _write(target / "serving" / "fastapi_router.py", _serving_router_py(pkg, short, route_prefix), force=force)
-
-    _write(target / tests_pkg / "__init__.py", "", force=force)
+    _write(target / "manifest.py", _manifest_py(names, specs), force=force)
+    _write(target / "README.md", _readme(names, specs), force=force)
     _write(
-        target / tests_pkg / "host" / f"test_{short}_host_smoke.py",
-        _smoke_test(pkg, short, route_prefix, specs),
+        target / ".env.example",
+        _env_example(names.env_prefix, names.route_prefix, names.port, specs),
         force=force,
     )
-    _write(target / tests_pkg / "host" / "__init__.py", "", force=force)
+
+    _write(target / "host" / "__init__.py", "", force=force)
+    _write(target / "host" / "settings.py", _settings_py(names), force=force)
+    _write(target / "host" / "agent_builders.py", _agent_builders_py(names, specs), force=force)
+    _write(target / "host" / "wiring.py", _wiring_py(names), force=force)
+    _write(target / "host" / "integration_wiring.py", _integration_wiring_py(names), force=force)
+    _write(target / "host" / "factory.py", _factory_py(names), force=force)
+    _write(target / "host" / "main.py", _main_py(names), force=force)
+
+    _write(target / "serving" / "__init__.py", "", force=force)
+    _write(target / "serving" / "fastapi_router.py", _serving_router_py(names), force=force)
+
+    _write(target / "mcp" / "__init__.py", "", force=force)
+    _write(target / "mcp" / "server.py", _mcp_server_py(names, specs), force=force)
+
+    _write(target / names.tests_pkg / "__init__.py", "", force=force)
+    _write(
+        target / names.tests_pkg / "host" / f"test_{names.short}_host_smoke.py",
+        _smoke_test(names, specs),
+        force=force,
+    )
+    _write(target / names.tests_pkg / "host" / "__init__.py", "", force=force)
+
+    write_application_docker(
+        target,
+        pkg=names.pkg,
+        short=names.short,
+        port=names.port,
+        env_prefix=names.env_prefix,
+        agent_dirs=agent_dirs,
+        health_path=f"{names.route_prefix}/agents",
+        force=force,
+    )
+
+    cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
+    _write(
+        target / "BUILD_AND_DEPLOY.md",
+        render_build_deploy_doc(
+            pkg=names.pkg,
+            short=names.short,
+            port=names.port,
+            env_prefix=names.env_prefix,
+            route_prefix=names.route_prefix,
+            profile=profile,
+            agent_dirs=agent_dirs,
+            example_capability=cap,
+            health_path=f"{names.route_prefix}/agents",
+            tests_pkg=names.tests_pkg,
+            display=names.display,
+        ),
+        force=force,
+    )
 
     return target
 
@@ -790,14 +925,22 @@ def run_new_application(args: argparse.Namespace) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
-    pkg = _app_slug(args.name)
-    short = _short_id(pkg)
-    port = args.port
-    prefix = args.route_prefix or f"/v1/{short}"
+    names = ScaffoldApplicationNames.resolve(
+        args.name,
+        route_prefix=args.route_prefix,
+        port=args.port,
+    )
     print(f"Created Tier-3 application at {path}")
-    print(f"  Start:  uv run uvicorn {pkg}.host.main:app --host 127.0.0.1 --port {port}")
-    print(f"  Test:   uv run pytest {path / f'{pkg}_tests'} -q")
-    print(f"  Agents: GET http://127.0.0.1:{port}{prefix}/agents")
-    print(f"  Run:    POST http://127.0.0.1:{port}{prefix}/run")
+    print(f"  Package: {names.pkg}  (app_id={names.short!r}, env={names.env_prefix})")
+    print(f"  Start:  uv run uvicorn {names.pkg}.host.main:app --host 127.0.0.1 --port {names.port}")
+    print(f"  Test:   uv run pytest {path / names.tests_pkg} -q")
+    print(f"  Agents: GET http://127.0.0.1:{names.port}{names.route_prefix}/agents")
+    print(f"  Run:    POST http://127.0.0.1:{names.port}{names.route_prefix}/run")
+    print(f"  MCP:    http://127.0.0.1:{names.port}/mcp  (FastMCP, coupled to FastAPI)")
+    print(
+        f"  Docker: docker buildx build -f applications/{names.pkg}/docker/Dockerfile "
+        f"--ignorefile applications/{names.pkg}/docker/.dockerignore -t {names.docker_image} ."
+    )
+    print(f"  Deploy: applications/{names.pkg}/BUILD_AND_DEPLOY.md")
     print("  Docs:   intergrax/applications/USAGE.md · applications/USAGE.md")
     return 0

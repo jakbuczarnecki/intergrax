@@ -24,6 +24,8 @@ class LabApplicationSettings:
     include_scheduler: bool = True
     scheduler_poll_seconds: float | None = None
     interaction_surface: str = "auto"
+    include_mcp: bool = True
+    mcp_mount_path: str = "/mcp"
 
     @classmethod
     def from_env(cls) -> LabApplicationSettings:
@@ -72,6 +74,12 @@ class LabApplicationSettings:
         interaction_surface = (
             os.getenv("LAB_INTERACTION_SURFACE") or "auto"
         ).strip().lower() or "auto"
+        include_mcp = (os.getenv("LAB_INCLUDE_MCP") or "true").strip().lower() not in {
+            "0",
+            "false",
+            "no",
+        }
+        mcp_mount = (os.getenv("LAB_MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
         return cls(
             environment=environment,
             route_prefix=prefix,
@@ -84,4 +92,6 @@ class LabApplicationSettings:
             include_scheduler=include_scheduler,
             scheduler_poll_seconds=scheduler_poll,
             interaction_surface=interaction_surface,
+            include_mcp=include_mcp,
+            mcp_mount_path=mcp_mount,
         )

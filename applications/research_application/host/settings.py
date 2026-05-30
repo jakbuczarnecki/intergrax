@@ -19,6 +19,8 @@ class ResearchBackendSettings:
     port: int = 8010
     route_prefix: str = "/v1/research"
     use_nexus_loop: bool = True
+    include_mcp: bool = True
+    mcp_mount_path: str = "/mcp"
 
     @classmethod
     def from_env(cls) -> ResearchBackendSettings:
@@ -27,9 +29,13 @@ class ResearchBackendSettings:
             use_nexus_loop = _env_bool("RESEARCH_USE_NEXUS_LOOP")
         else:
             use_nexus_loop = not use_legacy
+        include_mcp = _env_bool("RESEARCH_INCLUDE_MCP", default=True)
+        mcp_mount = os.environ.get("RESEARCH_MCP_MOUNT_PATH", "/mcp").strip() or "/mcp"
         return cls(
             host=os.environ.get("RESEARCH_BACKEND_HOST", "0.0.0.0"),
             port=int(os.environ.get("RESEARCH_BACKEND_PORT", "8010")),
             route_prefix=os.environ.get("RESEARCH_ROUTE_PREFIX", "/v1/research"),
             use_nexus_loop=use_nexus_loop,
+            include_mcp=include_mcp,
+            mcp_mount_path=mcp_mount,
         )

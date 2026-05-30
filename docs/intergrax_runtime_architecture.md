@@ -1011,6 +1011,7 @@ applications/<app>/
     __init__.py
     manifest.py              # ApplicationManifest — roster, profile, features (Phase N)
     README.md
+    BUILD_AND_DEPLOY.md   # local run, tests, Docker build/push runbook (scaffold)
     .env.example
     .env                     # gitignored
     host/
@@ -1021,6 +1022,8 @@ applications/<app>/
         integration_wiring.py
     serving/
         fastapi_router.py
+    mcp/
+        server.py              # FastMCP tools; mounted on FastAPI via fastapi_mcp.couple_fastapi_with_mcp
     docker/
         Dockerfile
         docker-compose.yml   # optional — ollama, redis, volumes

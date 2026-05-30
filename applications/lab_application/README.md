@@ -2,6 +2,8 @@
 
 Universal experimentation environment for the Agent Operating System (Phase L.3).
 
+**Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)
+
 ## Purpose
 
 Run arbitrary registered agents without building a dedicated product application.
@@ -10,6 +12,7 @@ Inspect traces, checkpoints, runtime events, partial results, and experiments th
 ## Start
 
 ```bash
+cp applications/lab_application/.env.example applications/lab_application/.env
 uv run uvicorn lab_application.host.main:app --host 127.0.0.1 --port 8090
 ```
 
@@ -18,6 +21,11 @@ Or factory mode:
 ```bash
 uv run uvicorn lab_application.host.factory:create_lab_application --factory --host 127.0.0.1 --port 8090
 ```
+
+## MCP (FastMCP)
+
+FastMCP is mounted on the same uvicorn process as FastAPI (default `/mcp`).
+Tools: `list_agents`, `run_agent` — same Nexus loop as HTTP. Configure `LAB_INCLUDE_MCP`, `LAB_MCP_MOUNT_PATH`.
 
 ## Execute an agent
 
@@ -59,6 +67,12 @@ Lab composes Tier-0 backends through ``IntegrationProfile.lab()``:
 - **lab_json** — interaction surface when ``LAB_INTERACTION_SURFACE=lab_json`` (default intake uses ``auto`` for Slack/Teams parity tests)
 
 See ``applications/lab_application/host/integration_wiring.py``.
+
+## Tests
+
+```bash
+uv run pytest applications/lab_application/lab_application_tests -q
+```
 
 ## Architecture
 

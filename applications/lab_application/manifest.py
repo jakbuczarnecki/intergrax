@@ -55,6 +55,13 @@ def build_lab_manifest(settings: LabApplicationSettings) -> ApplicationManifest:
         app_id="lab",
         name="Intergrax Lab Application",
         route_prefix=settings.route_prefix,
+        env_prefix="LAB_",
+        default_port=8090,
         agents=agents,
         description="Universal Agent OS experimentation environment",
     )
+
+
+def build_lab_manifest_default() -> ApplicationManifest:
+    """Manifest with default env flags (documentation / conformance)."""
+    return build_lab_manifest(LabApplicationSettings())

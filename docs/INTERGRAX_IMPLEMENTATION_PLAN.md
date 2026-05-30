@@ -965,7 +965,7 @@ Szablony utrzymywane przez `scripts/generate_integration_usage_docs.py` (regener
 | N.2.2 | Strongly typed `AgentBinding.mount(AgentClass, factory=...)` | **Done** | §7.4.10 | `type[Agent]` + callable factory; `deserialize()` for scaffold strings only |
 | N.3 | `python -m intergrax.scaffold new-application` (profile `lab`) | **Done** | §7.4.8 | `new_application.py`, `agent_catalog.py`, `cli.py`; lab templates + smoke |
 | N.4 | Scaffold profile `product` (fastapi_core skeleton) | **Pending** | §7.4.8 | Legal-style factory; optional `--agents` list |
-| N.5 | Docker templates under `applications/<app>/docker/` | **Pending** | §7.4.8 | Dockerfile + `.dockerignore`; monorepo-root build context |
+| N.5 | Docker templates under `applications/<app>/docker/` | **Done** | §7.4.8 | Dockerfile + `.dockerignore` + `docker-compose.yml`; monorepo-root context |
 | N.6 | Reference app `poc_template_application` (committed example) | **Pending** | §7.4.8 | Living example; CI `docker build` smoke (optional workflow) |
 | N.7 | Backfill `.env.example` on existing apps | **Pending** | §7.4.8 | `lab_application`, `legal_application`, `research_application` |
 | N.8 | `AGENT_CREATION_GUIDE.md` Step 4E (dedicated application) | **Pending** | — | Link scaffold + manifest + Docker quickstart |
@@ -1013,7 +1013,7 @@ python -m intergrax.scaffold new-application my_lab \
 
 ```text
 
-NOW:     Phase N — Application Environment & Deploy Scaffold (N.5 Docker next)
+NOW:     Phase N — Application Environment & Deploy Scaffold (N.6 poc_template next)
 
 DONE:    Phase L certification — L1 achieved (Appendix A)
 
@@ -1074,17 +1074,19 @@ Each iteration follows **one deliverable at a time**:
 
 Do not batch N.1–N.5 in one PR unless explicitly agreed.
 
-### 6.2 Current next step — **N.5 Docker templates for scaffolded applications**
+### 6.2 Current next step — **N.6 Reference app `poc_template_application`**
 
-**Prerequisite:** N.3 lab scaffold — `python -m intergrax.scaffold new-application` emits host, manifest, `.env.example`, `<app>_tests/` smoke.
+**Prerequisite:** N.3 + N.5 — scaffold emits host, manifest, `.env.example`, `<app>_tests/`, and `docker/`.
 
-**Goal:** Each scaffolded app includes `applications/<app>/docker/Dockerfile` + `.dockerignore`; `docker build -f … .` from monorepo root succeeds.
+**Goal:** Committed living example under `applications/poc_template_application/` with README three-command quickstart (pytest, uvicorn, docker).
 
-**Verify (N.3 — completed):**
+**Verify (N.5 — completed):**
 
 ```bash
 uv run python -m intergrax.scaffold new-application test_lab --profile lab --agents echo --root .
-uv run pytest applications/test_lab_application/test_lab_application_tests -q
+docker buildx build -f applications/test_lab_application/docker/Dockerfile \
+  --ignorefile applications/test_lab_application/docker/.dockerignore \
+  -t test-lab-application .
 ```
 
 **Phase L — still required for any new agent work:**
@@ -1557,7 +1559,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.16 | **Lab agent auto-discovery** — new agents require explicit `wiring.py` register (by design, but easy to forget) | §7.4 | **Low** | Onboarding friction | Tier-3 | Phase N scaffold + `ApplicationManifest`; optional `new-stack` (N.10) |
 | B.28 | **Per-application `.env.example` missing** — only root `.env.example`; lab/legal vars in README only | §7.4.8 | **Medium** | **Open** | Deployable POC friction | Tier-3 | Phase N.7 backfill + scaffold generates per-app template |
 | B.29 | **`new-application` scaffold (lab)** — Tier-3 hosts hand-copied from legal/lab | §7.4.8 | **High** | **Mitigated** | Lab profile via CLI; Docker/product profiles pending | Tier-3 / platform | Phase N.5–N.4 |
-| B.30 | **No application-level Dockerfile** — only `infra/docker/docling/` | §7.4.8 | **Medium** | **Open** | Production push from app dir | Tier-3 | Phase N.5 Docker templates |
+| B.30 | **No application-level Dockerfile** — only `infra/docker/docling/` | §7.4.8 | **Medium** | **Mitigated** | Scaffold emits per-app `docker/`; backfill legal/lab/research optional | Tier-3 | Phase N.6–N.7 |
 
 ### B.5 Test & certification hygiene
 
