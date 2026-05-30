@@ -645,7 +645,7 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 | `rabbitmq` | message_bus | **Done** (+ adopcja) | `providers/rabbitmq/` — runtime transport delegates here |
 | `prometheus` | observability_backend | Planned | Metrics-third canon (§33); SLO dashboards |
 | `jira` | issue_tracker | Beta | Task ingestion via REST v3 (`get_issue`, `add_comment`, `search_issues`) |
-| `confluence` | wiki_knowledge | Planned | RAG source, runbooks, agent context |
+| `confluence` | wiki_knowledge | Beta | RAG / runbooks via REST (`get_page`, `search_pages`) |
 | `ms365_graph` | collaboration_suite | Planned | Mail, calendar, Teams-adjacent APIs |
 | `email_smtp` | notification_channel | Planned | HITL / reports without chat vendor lock-in |
 | `s3` | object_storage | Planned | Artifacts, large uploads, shadow/sandbox exports |

@@ -26,6 +26,11 @@ from intergrax.integrations.contracts.issue_tracker import (
     IssueSearchResult,
     IssueTracker,
 )
+from intergrax.integrations.contracts.wiki_knowledge import (
+    WikiKnowledge,
+    WikiPageRecord,
+    WikiSearchResult,
+)
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
 from intergrax.integrations.contracts.message_bus import (
     MessageBus,
@@ -58,6 +63,9 @@ __all__ = [
     "IssueRecord",
     "IssueSearchResult",
     "IssueTracker",
+    "WikiKnowledge",
+    "WikiPageRecord",
+    "WikiSearchResult",
     "KeyValueCache",
     "MessageBus",
     "NotificationAdapter",

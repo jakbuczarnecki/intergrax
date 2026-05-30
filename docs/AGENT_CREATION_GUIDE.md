@@ -674,6 +674,7 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 | `postgresql` | relational_store | Production SQL facade (`RelationalStore` via `create_postgresql_relational_store()` only) |
 | `mysql` | relational_store | Production SQL facade (`RelationalStore` via `create_mysql_relational_store()` only) |
 | `jira` | issue_tracker | Jira Cloud REST (`create_jira_issue_tracker()` only) |
+| `confluence` | wiki_knowledge | Confluence REST (`create_confluence_wiki_knowledge()` only) |
 | `redis` | key_value_cache | Idempotency, rate limits, distributed locks |
 | `kafka`, `rabbitmq`, `celery` | message_bus | Worker queues, async Nexus execution |
 | `google_cse`, `bing` | search_provider | Research / web tools |
