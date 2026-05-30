@@ -433,6 +433,54 @@ store.delete(["doc-1"])
 """,
         "notes": "Catalog bridge to ``intergrax/rag/`` — Pinecone SDK import only in ``opens.py``; RAG implementation unchanged.",
     },
+    {
+        "slug": "qdrant",
+        "category": "vector_store",
+        "category_enum": "VECTOR_STORE",
+        "slug_enum": "QDRANT",
+        "factory": "create_qdrant_vector_store",
+        "env": "`INTERGRAX_QDRANT_URL` or `INTERGRAX_QDRANT_HOST`/`INTERGRAX_QDRANT_PORT`; optional `INTERGRAX_QDRANT_API_KEY`, `INTERGRAX_QDRANT_COLLECTION`, `INTERGRAX_QDRANT_TENANT_ID`, `INTERGRAX_QDRANT_METRIC`",
+        "example": """\
+store = create_qdrant_vector_store(
+    collection_name="intergrax-rag",
+    tenant_id="tenant-a",
+    host="localhost",
+    port=6333,
+)
+store.add_documents(
+    [Document(page_content="Intergrax overview", metadata={"source": "docs"})],
+    [[0.01, 0.02, 0.03]],
+    ids=["doc-1"],
+)
+hits = store.query([0.01, 0.02, 0.03], top_k=5)
+store.delete(["doc-1"])
+""",
+        "notes": "Catalog bridge to ``intergrax/rag/`` — ``qdrant_client`` import only in ``opens.py``; RAG ``QdrantVectorStore`` unchanged.",
+    },
+    {
+        "slug": "chroma",
+        "category": "vector_store",
+        "category_enum": "VECTOR_STORE",
+        "slug_enum": "CHROMA",
+        "factory": "create_chroma_vector_store",
+        "env": "`INTERGRAX_CHROMA_MODE` (`embedded`|`http`); optional `INTERGRAX_CHROMA_HOST`, `INTERGRAX_CHROMA_PORT`, `INTERGRAX_CHROMA_PERSIST_DIRECTORY`, `INTERGRAX_CHROMA_COLLECTION`, `INTERGRAX_CHROMA_TENANT_ID`",
+        "example": """\
+store = create_chroma_vector_store(
+    collection_name="intergrax-rag",
+    tenant_id="tenant-a",
+    mode="embedded",
+    persist_directory=None,
+)
+store.add_documents(
+    [Document(page_content="Intergrax overview", metadata={"source": "docs"})],
+    [[0.01, 0.02, 0.03]],
+    ids=["doc-1"],
+)
+hits = store.query([0.01, 0.02, 0.03], top_k=5)
+store.delete(["doc-1"])
+""",
+        "notes": "Catalog bridge to ``intergrax/rag/`` — ``chromadb`` import only in ``opens.py``; RAG ``ChromaVectorStore`` unchanged.",
+    },
 ]
 
 

@@ -27,7 +27,8 @@ from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.retriever_manager import RetrieverManager
 from intergrax.rag.retrievers.pipeline.retriever_pipeline import RetrieverPipeline
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
-from intergrax.rag.vectorstore.providers.qdrant_vector_store import QdrantConfig, QdrantVectorStore
+from intergrax.integrations.providers.qdrant.bundle import create_qdrant_vector_store
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 
 pytestmark = [
@@ -95,11 +96,12 @@ def test_retrieval_pipeline():
 
     result = embedding_manager.embed_documents(documents)
 
-    cfg = QdrantConfig(
+    vector_store = VectorstoreManager(
+        store=create_qdrant_vector_store(
             collection_name="retrieval_integration_it_qdrant",
             tenant_id="tenant_a",
         )
-    vector_store = QdrantVectorStore(cfg)
+    )
 
 
     vector_store.add_documents(

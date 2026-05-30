@@ -12,7 +12,8 @@ from intergrax.rag.document_loaders.bootstrap.default_loader import create_defau
 from intergrax.rag.document_splitters.bootstrap.default_chunking_engine import create_default_document_splitter
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_pipeline
 from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
-from intergrax.rag.vectorstore.providers.chroma_vector_store import ChromaConfig, ChromaVectorStore
+from intergrax.integrations.providers.chroma.bundle import create_chroma_vector_store
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 
 pytestmark = pytest.mark.e2e
@@ -54,16 +55,13 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
         pipeline=create_default_embedding_pipeline(),
     )
 
-    chroma_cfg = ChromaConfig(
-        tenant_id="intergrax",
-        collection_name="hybrid_multi_source_rag",
-        persist_directory=None,  # ephemeral (test-friendly)
-        settings=None,
+    vectorstore = VectorstoreManager(
+        store=create_chroma_vector_store(
+            tenant_id="intergrax",
+            collection_name="hybrid_multi_source_rag",
+            persist_directory=None,
+        )
     )
-
-    provider = ChromaVectorStore(cfg=chroma_cfg)
-
-    vectorstore = VectorstoreManager(store=provider)
 
     # ---- Load local docs via loader.load_documents ----
     pdf_docs = doc_loader.load_documents(str(pdf_dir))

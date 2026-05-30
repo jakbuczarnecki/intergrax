@@ -685,6 +685,8 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 | `databricks` | relational_store | SQL Warehouse / Unity Catalog (`create_databricks_relational_store()` only) |
 | `mongodb` | document_store | Flexible JSON store (`create_mongodb_document_store()` only) |
 | `pinecone` | vector_store | RAG index bridge (`create_pinecone_vector_store()` only) |
+| `qdrant` | vector_store | RAG index bridge (`create_qdrant_vector_store()` only) |
+| `chroma` | vector_store | RAG index bridge (`create_chroma_vector_store()` only) |
 | `redis` | key_value_cache | Idempotency, rate limits, distributed locks |
 | `kafka`, `rabbitmq`, `celery` | message_bus | Worker queues, async Nexus execution |
 | `google_cse`, `bing` | search_provider | Research / web tools |
@@ -695,7 +697,6 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 
 | Slug | Category | Notes |
 |------|----------|-------|
-| `qdrant`, `chroma` | vector_store | Catalog bridge to `rag/` (B.33) |
 | `s3`, `azure_blob`, `gcs` | object_storage | Requires `object_storage` contract first (B.34) |
 | `notion`, `sharepoint` | wiki_knowledge | REST wiki sources (B.35) |
 | `github`, `linear` | issue_tracker | Dev workflow ingestion (B.36) |

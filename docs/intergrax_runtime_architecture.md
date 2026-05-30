@@ -685,8 +685,8 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 | **`databricks`** | relational_store | **Beta** | SQL Warehouse / Unity Catalog; lakehouse analytics via `RelationalStore` |
 | **`mongodb`** | document_store | **Beta** | Flexible JSON documents; partition-scoped CRUD via PyMongo |
 | **`pinecone`** | vector_store | **Beta** | Catalog bridge to `rag/`; `IntegrationProfile.vector_store` |
-| `qdrant` | vector_store | Planned (P2 next) | Self-hosted / cloud vectors; bridge to `rag/` |
-| `chroma` | vector_store | Planned (P2) | Local/dev vectors; bridge to `rag/` |
+| **`qdrant`** | vector_store | **Beta** | Catalog bridge to `rag/`; self-hosted / cloud vectors |
+| **`chroma`** | vector_store | **Beta** | Catalog bridge to `rag/`; embedded or HTTP Chroma |
 | `s3` | object_storage | Planned (P2) | Artifacts, sandbox exports (requires `object_storage` contract) |
 | `otel` | observability_backend | Planned | Unified traces/metrics export |
 | `playwright` | browser_automation | Planned | Dynamic web research beyond HTTP fetch |
@@ -697,7 +697,7 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 | `email_smtp` | notification_channel | Planned | Outbound mail without chat vendors |
 | `brave` / `serpapi` | search_provider | Planned | Alternative web research APIs |
 
-**Vector-store note:** `pinecone`, `qdrant`, and `chroma` implementations live in `intergrax/rag/vectorstore/`. Integration Library adds thin catalog bridges (`providers/<slug>/`) so Tier-3 can set `IntegrationProfile.vector_store` — see Phase M.6 P2 in the implementation plan.
+**Vector-store note:** `pinecone`, `qdrant`, and `chroma` implementations live in `intergrax/rag/vectorstore/`. Integration Library adds thin catalog bridges (`providers/<slug>/`) so Tier-3 can set `IntegrationProfile.vector_store`. RAG bootstrap (`create_default_vectorstore_manager()`) resolves stores via the catalog — see Phase M.6 P2 in the implementation plan.
 
 New integrations require **human approval** when they introduce a new **category** (§5.2.4). New **providers** within an existing category follow the provider checklist in the implementation plan (Phase M).
 
