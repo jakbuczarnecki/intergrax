@@ -633,7 +633,9 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 | `slack` | notification_channel + interaction_surface | **Done** (+ adopcja) | `providers/slack/` — runtime wiring delegates here |
 | `teams` | notification_channel + interaction_surface | **Done** (+ adopcja) | `providers/teams/` — runtime wiring delegates here |
 | `webhook` | notification_channel | **Done** (+ adopcja) | `providers/webhook/` — generic HTTP outbound |
+| `log` | notification_channel | **Done** (+ adopcja) | `providers/log/` — process log; lab profile default |
 | `lab_json` | interaction_surface | **Done** (+ adopcja) | `providers/lab_json/` — laboratory JSON intake |
+| `rabbitmq` | message_bus | **Done** (+ adopcja) | `providers/rabbitmq/` — runtime transport delegates here |
 
 #### P1 — Common enterprise stack
 

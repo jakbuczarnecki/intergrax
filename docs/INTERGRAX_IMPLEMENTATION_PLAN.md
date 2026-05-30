@@ -531,11 +531,11 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M.1 | Scaffold `intergrax/integrations/` package | **Done** | `contracts/`, `registry/`, `_shared/`, `providers/` |
 | M.2 | Category contracts (P0 set) | **Done** | 7 P0 contracts + re-exports for queueing/notifications/interactions |
 | M.3 | `IntegrationRegistry` + `IntegrationProfile` | **Done** | `catalog.register_integration`, `resolve`, env/mapping profile |
-| M.4 | P0 providers — wrap existing | **In progress** | See **M.4 provider tracker** below |
+| M.4 | P0 providers — wrap existing | **Done** | See **M.4 provider tracker** below |
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
 | M.6 | P1 providers (on demand) | Pending | postgresql, mysql, jira, confluence, ms365_graph, prometheus, **aws, azure, gcp**, … |
 | M.7 | Agent Creation Guide § integrations | Pending | How agents declare needs vs Tier-3 wiring |
-| M.8 | Lab `IntegrationProfile` example | Pending | `applications/lab_application/` sqlite + logging + lab_json |
+| M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
 **M.4 delivery workflow (one provider per iteration):**
 
@@ -560,6 +560,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | `webhook` | notification_channel | **Done** (+ adopcja) | `providers/webhook/` — generic HTTP + `GenericJsonPayloadFormatter` |
 | `lab_json` | interaction_surface | **Done** (+ adopcja) | `providers/lab_json/` — lab intake; runtime channel ``lab`` |
 | `rabbitmq` | message_bus | **Done** (+ adopcja) | `providers/rabbitmq/` — `create_rabbitmq_integration()` (requires `kv_store`) |
+| `log` | notification_channel | **Done** (+ adopcja) | `providers/log/` — wraps `LoggingNotificationAdapter`; lab profile default |
 
 #### M.1 — Package scaffold (step-by-step)
 
@@ -708,6 +709,7 @@ providers/gcp/
 | `websearch/providers/google_cse_provider.py` | `google_cse` | **Done** — `integrations/providers/google_cse/create_google_cse_integration()` |
 | `websearch/providers/bing_provider.py` | `bing` | **Done** — `integrations/providers/bing/create_bing_integration()` |
 | `runtime/notifications/adapters/webhook_adapter.py` | `webhook` | **Done** — `integrations/providers/webhook/create_webhook_integration()` |
+| `runtime/notifications/adapters/logging_adapter.py` | `log` | **Done** — `integrations/providers/log/`; factory delegates |
 | `runtime/notifications/adapters/` | `slack`, `teams` | **Done** — runtime delegates |
 | `runtime/interactions/adapters/lab_json_adapter.py` | `lab_json` | **Done** — `integrations/providers/lab_json/create_lab_json_integration()` |
 | `runtime/*/stores/sqlite_*.py` (+ store openers) | `sqlite` | **Done** — single entry `integrations/providers/sqlite/create_sqlite_integration()` |
@@ -1183,6 +1185,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Date | ID | Summary |
 |------|-----|---------|
+| 2026-05-30 | M.8-lab-profile | `wire_lab_integrations()` + `providers/log/` — lab uses `IntegrationProfile.lab()` |
 | 2026-05-30 | M.4-kafka-rabbitmq-adopt | Queueing bootstrap + integration tests use `integrations/providers/{kafka,rabbitmq}/` only |
 | 2026-05-30 | M.4-rabbitmq | `providers/rabbitmq/` + runtime `build_rabbitmq_transport()` delegate |
 | 2026-05-29 | M.4-lab_json | `providers/lab_json/` + runtime `create_interaction_adapter(LAB)` delegate — **M.4 P0 complete** |

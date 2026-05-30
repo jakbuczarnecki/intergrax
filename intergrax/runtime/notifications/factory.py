@@ -11,7 +11,6 @@ from enum import Enum
 from typing import Callable, Optional
 
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
-from intergrax.runtime.notifications.adapters.logging_adapter import LoggingNotificationAdapter
 from intergrax.runtime.notifications.delivery_contract import NotificationDelivery
 from intergrax.runtime.notifications.formatters import NotificationPayloadFormatter
 
@@ -86,7 +85,9 @@ def create_notification_adapter(
     resolved = settings or resolve_notification_settings()
     backend = resolved.backend
     if backend == NotificationBackend.LOG:
-        return LoggingNotificationAdapter()
+        from intergrax.integrations.providers.log.bundle import create_log_notification_channel
+
+        return create_log_notification_channel()
 
     if backend == NotificationBackend.SLACK:
         from intergrax.integrations.providers.slack.config import SlackIntegrationConfig
@@ -109,7 +110,7 @@ def create_notification_adapter(
         config = WebhookIntegrationConfig.from_env(webhook_url=resolved.webhook_url)
         return open_webhook_notification_channel(config, delivery=delivery, formatter=formatter)
 
-    return LoggingNotificationAdapter()
+    return create_log_notification_channel()
 
 
 def resolve_notification_adapter(

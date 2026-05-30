@@ -23,6 +23,7 @@ class LabApplicationSettings:
     interaction_route_prefix: str = "/v1/interactions"
     include_scheduler: bool = True
     scheduler_poll_seconds: float | None = None
+    interaction_surface: str = "auto"
 
     @classmethod
     def from_env(cls) -> LabApplicationSettings:
@@ -68,6 +69,9 @@ class LabApplicationSettings:
         }
         poll_raw = (os.getenv("INTERGRAX_SCHEDULER_POLL_SECONDS") or "").strip()
         scheduler_poll = float(poll_raw) if poll_raw else None
+        interaction_surface = (
+            os.getenv("LAB_INTERACTION_SURFACE") or "auto"
+        ).strip().lower() or "auto"
         return cls(
             environment=environment,
             route_prefix=prefix,
@@ -79,4 +83,5 @@ class LabApplicationSettings:
             interaction_route_prefix=interaction_prefix,
             include_scheduler=include_scheduler,
             scheduler_poll_seconds=scheduler_poll,
+            interaction_surface=interaction_surface,
         )

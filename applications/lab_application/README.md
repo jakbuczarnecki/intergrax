@@ -48,6 +48,17 @@ curl -s -X POST http://127.0.0.1:8090/v1/lab/run \
 | `LAB_INCLUDE_MOCK_AGENTS` | `true` | Register lab mock agents |
 | `LAB_INCLUDE_RESEARCH` | `false` | Register Research + Summary |
 | `LAB_ROUTE_PREFIX` | `/v1/lab` | Lab run API prefix |
+| `LAB_INTERACTION_SURFACE` | `auto` | `auto`, `lab_json`, `slack`, `teams` — via `IntegrationProfile` + interaction factory |
+
+## Integrations (Phase M.8)
+
+Lab composes Tier-0 backends through ``IntegrationProfile.lab()``:
+
+- **sqlite** — trace, events, checkpoints, experiments (``wire_lab_integrations()``)
+- **log** — outbound notifications (no network)
+- **lab_json** — interaction surface when ``LAB_INTERACTION_SURFACE=lab_json`` (default intake uses ``auto`` for Slack/Teams parity tests)
+
+See ``applications/lab_application/host/integration_wiring.py``.
 
 ## Architecture
 
