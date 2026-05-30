@@ -682,8 +682,8 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 | `pubsub` | message_bus | Planned | GCP-native messaging (via `gcp` facade) |
 | `dynamodb` | document_store | Planned | AWS document/KV (via `aws` facade) |
 | `elasticache` | key_value_cache | Planned | Managed Redis on AWS (via `aws` facade) |
-| **`elasticsearch`** | observability_backend | **Open** | Log search / aggregations (ES\|QL or `_search`); optional RAG source; complements `prometheus` |
-| **`databricks`** | relational_store | **Open** | SQL Warehouse / Unity Catalog; lakehouse analytics via `RelationalStore` |
+| **`elasticsearch`** | observability_backend | **Beta** | Log search / aggregations (`_search` + Lucene `query_string`); complements `prometheus` |
+| **`databricks`** | relational_store | **Beta** | SQL Warehouse / Unity Catalog; lakehouse analytics via `RelationalStore` |
 | `otel` | observability_backend | Planned | Unified traces/metrics export |
 | `playwright` | browser_automation | Planned | Dynamic web research beyond HTTP fetch |
 | `azure_devops` | issue_tracker | Planned | Microsoft ALM |

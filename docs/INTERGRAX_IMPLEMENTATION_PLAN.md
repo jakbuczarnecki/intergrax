@@ -534,7 +534,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M.4 | P0 providers — wrap existing | **Done** | See **M.4 provider tracker** below |
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
 | M.6 | P1 providers (on demand) | In progress | **postgresql**, **mysql**, **jira**, **confluence**, **prometheus**, **ms365_graph**, **aws**, **azure**, **gcp** Done; … |
-| M.6 P2 | Extended providers (on demand) | In progress | **`cassandra`** Done; **`elasticsearch`**, **`databricks`**, mongodb, dynamodb, oracle, otel, … — see **M.6 P2 tracker** |
+| M.6 P2 | Extended providers (on demand) | In progress | **`cassandra`**, **`elasticsearch`**, **`databricks`** Done (beta); mongodb, dynamodb, oracle, otel, … — see **M.6 P2 tracker** |
 | M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
@@ -564,11 +564,11 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | `log` | notification_channel | **Done** (+ adopcja) | `providers/log/` — wraps `LoggingNotificationAdapter`; lab profile default |
 | `postgresql` | relational_store | **Done** (beta) | `providers/postgresql/` — `RelationalStore` via psycopg3; only `opens.py` connects |
 | `mysql` | relational_store | **Done** (beta) | `providers/mysql/` — `RelationalStore` via pymysql; only `opens.py` connects |
-| `databricks` | relational_store | **Open** | Phase M.6 P2 — SQL Warehouse / Unity Catalog SQL; reuses `RelationalStore` |
+| `databricks` | relational_store | **Done** (beta) | `providers/databricks/` — SQL Warehouse via databricks-sql-connector; only `opens.py` connects |
 | `jira` | issue_tracker | **Done** (beta) | `providers/jira/` — REST v3; only `opens.py` creates httpx client |
 | `confluence` | wiki_knowledge | **Done** (beta) | `providers/confluence/` — REST wiki; only `opens.py` creates httpx client |
 | `prometheus` | observability_backend | **Done** (beta) | `providers/prometheus/` — PromQL query API; only `opens.py` creates httpx client |
-| `elasticsearch` | observability_backend | **Open** | Phase M.6 P2 — log/search queries; reuses `ObservabilityBackend` + optional log-search extension |
+| `elasticsearch` | observability_backend | **Done** (beta) | `providers/elasticsearch/` — `_search` aggregations; only `opens.py` creates httpx client |
 | `ms365_graph` | collaboration_suite | **Done** (beta) | `providers/ms365_graph/` — Graph mail/calendar/directory; only `opens.py` creates httpx client |
 | `cassandra` | document_store | **Done** (beta) | `providers/cassandra/` — CQL get/put/delete/query; only `opens.py` creates driver session |
 | `aws` | cloud_platform | **Done** (beta) | `providers/aws/` — IAM/STS auth + category defaults; only `opens.py` creates boto3 session |
@@ -582,8 +582,8 @@ Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. 
 | Slug | Category | Status | Rationale / notes |
 |------|----------|--------|-------------------|
 | **`cassandra`** | **document_store** | **Done** (beta) | High-volume log / event retention; CQL driver via `opens.py` single entry |
-| **`elasticsearch`** | **observability_backend** | **Open** | Log search / aggregations (ES\|QL or `_search`); optional RAG source; complements `prometheus` |
-| **`databricks`** | **relational_store** | **Open** | Lakehouse SQL Warehouse; PAT/OAuth via `opens.py`; `execute` / `fetch_all` for analytics agents |
+| **`elasticsearch`** | **observability_backend** | **Done** (beta) | Log search / aggregations (`_search` + Lucene `query_string` via ObservabilityBackend); complements `prometheus` |
+| **`databricks`** | **relational_store** | **Done** (beta) | Lakehouse SQL Warehouse; PAT via `opens.py`; `execute` / `fetch_all` for analytics agents |
 | `mongodb` | document_store | Planned | Flexible schema document stores |
 | `dynamodb` | document_store | Planned | AWS document/KV (also via `aws` facade) |
 | `oracle` | relational_store | Planned | Enterprise relational clients |
@@ -673,7 +673,7 @@ For each category in §7.1.2, implement a **minimal** Protocol in `integrations/
 
 | Contract | Minimum methods | Notes |
 |----------|-----------------|-------|
-| `RelationalStore` | `connect()`, `execute()`, `fetch_all()`, `close()` | **Done** — `contracts/relational_store.py`; sqlite/postgresql/mysql; **`databricks`** Open (M.6 P2) |
+| `RelationalStore` | `connect()`, `execute()`, `fetch_all()`, `close()` | **Done** — `contracts/relational_store.py`; sqlite/postgresql/mysql/**databricks** (beta) |
 | `KeyValueCache` | `get`, `set`, `delete`, `set_if_absent` | Maps to existing `IdempotencyStore` / Redis helpers |
 | `MessageBus` | `enqueue`, `get_status`, `get_result` | Re-export / implement `queueing.contracts.TaskQueue` |
 | `SearchProvider` | `search(query, *, limit)` → `SearchResult[]` | Align with `websearch/providers/base.py` |
@@ -684,7 +684,7 @@ For each category in §7.1.2, implement a **minimal** Protocol in `integrations/
 | `DocumentStore` | `get`, `put`, `delete`, `query` (partition-scoped) | **Done** — `contracts/document_store.py`; `cassandra` provider |
 | `IssueTracker` | `get_issue`, `add_comment`, `search_issues` | **Done** — `contracts/issue_tracker.py`; `jira` provider |
 | `WikiKnowledge` | `get_page`, `search_pages` | **Done** — `contracts/wiki_knowledge.py`; `confluence` provider |
-| `ObservabilityBackend` | `query_instant`, `query_range` | **Done** — `contracts/observability_backend.py`; `prometheus` provider; **`elasticsearch`** Open (M.6 P2) |
+| `ObservabilityBackend` | `query_instant`, `query_range` | **Done** — `contracts/observability_backend.py`; `prometheus`, **`elasticsearch`** (beta) providers |
 
 **Rule:** if a contract already exists elsewhere, **re-export or inherit** — do not define a third variant.
 
@@ -808,8 +808,8 @@ providers/gcp/
 | (new) | `aws` | **Done** — `integrations/providers/aws/`; **only** `opens.py` creates boto3 session |
 | (new) | `azure` | **Done** — `integrations/providers/azure/`; **only** `opens.py` creates Azure credential |
 | (new) | `gcp` | **Done** — `integrations/providers/gcp/`; **only** `opens.py` creates Google credentials |
-| (new) | `elasticsearch` | **Open** — Phase M.6 P2; `providers/elasticsearch/`; reuses `ObservabilityBackend` |
-| (new) | `databricks` | **Open** — Phase M.6 P2; `providers/databricks/`; reuses `RelationalStore` |
+| (new) | `elasticsearch` | **Done** — `integrations/providers/elasticsearch/`; **only** `opens.py` creates httpx client |
+| (new) | `databricks` | **Done** — `integrations/providers/databricks/`; **only** `opens.py` calls `databricks.sql.connect` |
 | `rag/vectorstore/providers/*` | vector slugs | Catalog entry only; implementation stays in `rag/` |
 
 **Not migrated to `integrations/`:** `intergrax/llm_adapters/` — LLM providers are a separate Tier-0 concern (§7.1.2 out-of-scope table).
@@ -1363,8 +1363,8 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | **Done** (beta) | Org worker, scheduling agents | Tier-0 | `providers/ms365_graph/`; client credentials via `opens.py` |
 | B.23 | **Prometheus observability_backend** — PromQL query API | §33, §7.1.3 | **Low** | **Done** (beta) | Ops / SLO | Tier-0 | `providers/prometheus/`; complements B.11 metrics layer design |
 | B.28 | **Cassandra document_store** — wide-column adapter for high-volume retention | §7.1.3 P2 | **Medium** | **Done** (beta) | Runtime event archive at scale; ops telemetry | Tier-0 | `providers/cassandra/`; single-entry `opens.py` |
-| B.29 | **Elasticsearch observability_backend** — log search / aggregations | §7.1.3 P2 | **Medium** | **Open** | Ops log triage; optional RAG over logs | Tier-0 | Phase M.6 P2 — `providers/elasticsearch/`; single-entry `opens.py`; complements B.23 |
-| B.30 | **Databricks relational_store** — SQL Warehouse / Unity Catalog SQL | §7.1.3 P2 | **Medium** | **Open** | Analytics agents, lakehouse reporting | Tier-0 | Phase M.6 P2 — `providers/databricks/`; single-entry `opens.py`; PAT/OAuth |
+| B.29 | **Elasticsearch observability_backend** — log search / aggregations | §7.1.3 P2 | **Medium** | **Done** (beta) | Ops log triage; optional RAG over logs | Tier-0 | `providers/elasticsearch/`; single-entry `opens.py`; complements B.23 |
+| B.30 | **Databricks relational_store** — SQL Warehouse / Unity Catalog SQL | §7.1.3 P2 | **Medium** | **Done** (beta) | Analytics agents, lakehouse reporting | Tier-0 | `providers/databricks/`; single-entry `opens.py`; PAT |
 | B.25 | **AWS cloud_platform facade** — auth + S3/SQS/DynamoDB/ElastiCache defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | AWS-hosted applications | Tier-0 | `providers/aws/`; infrastructure only |
 | B.26 | **Azure cloud_platform facade** — MI + Blob/Service Bus/Azure SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | Azure-hosted applications | Tier-0 | `providers/azure/`; infrastructure only |
 | B.27 | **GCP cloud_platform facade** — ADC + GCS/Pub/Sub/Cloud SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | GCP-hosted applications | Tier-0 | `providers/gcp/`; infrastructure only |
@@ -1395,13 +1395,13 @@ Decision:       L1 certified — GO Phase K when product priority set
 5. ~~B.05~~ — escalation production path (Done 2026-05-27)
 6. ~~B.09, B.17~~ — debug trace injection + gate collection (Done 2026-05-27)
 7. ~~B.06~~ — hook parity doc + lifecycle wiring (Done 2026-05-27)
-8. B.07, B.11, B.13, B.15–B.18, **B.29** (elasticsearch), **B.30** (databricks) — as capacity allows
-9. M.6 P2 — **elasticsearch**, **databricks**, service slugs (`azure_blob`, `gcs`, `s3`, …)
+8. B.07, B.11, B.13, B.15–B.18 — as capacity allows
+9. M.6 P2 — service slugs (`azure_blob`, `gcs`, `s3`, …)
 ```
 
 **Note:** Phase K business agents (Problem Radar, Vendor Discovery) remain **product-blocked** until explicit go — technical debt above does not auto-unblock K.1/K.2.
 
 ---
 
-*Plan synced with codebase after B.06 paydown (2026-05-27). Gate: 250 tests.*
+*Plan synced with codebase after B.29/B.30 (2026-05-29). Gate: 250 integration unit tests.*
 

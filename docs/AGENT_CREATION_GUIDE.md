@@ -681,18 +681,13 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 | `aws` | cloud_platform | AWS facade (`create_aws_cloud_platform()` only) |
 | `azure` | cloud_platform | Azure facade (`create_azure_cloud_platform()` only) |
 | `gcp` | cloud_platform | GCP facade (`create_gcp_cloud_platform()` only) |
+| `elasticsearch` | observability_backend | Log search / aggregations (`create_elasticsearch_observability_backend()` only) |
+| `databricks` | relational_store | SQL Warehouse / Unity Catalog (`create_databricks_relational_store()` only) |
 | `redis` | key_value_cache | Idempotency, rate limits, distributed locks |
 | `kafka`, `rabbitmq`, `celery` | message_bus | Worker queues, async Nexus execution |
 | `google_cse`, `bing` | search_provider | Research / web tools |
 | `slack`, `teams`, `webhook`, `log` | notification_channel | Long-running progress, HITL alerts |
 | `lab_json`, `slack`, `teams` | interaction_surface | Inbound webhooks / lab JSON intake |
-
-### P2 backlog (catalog slugs — not yet in default bootstrap)
-
-| Slug | Category | Notes |
-|------|----------|-------|
-| `elasticsearch` | observability_backend | Log search / aggregations; `create_elasticsearch_observability_backend()` (planned M.6 P2) |
-| `databricks` | relational_store | SQL Warehouse / Unity Catalog; `create_databricks_relational_store()` (planned M.6 P2) |
 
 LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them separately.
 
