@@ -646,7 +646,7 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 | `prometheus` | observability_backend | Beta | PromQL instant/range queries via HTTP API v1 |
 | `jira` | issue_tracker | Beta | Task ingestion via REST v3 (`get_issue`, `add_comment`, `search_issues`) |
 | `confluence` | wiki_knowledge | Beta | RAG / runbooks via REST (`get_page`, `search_pages`) |
-| `ms365_graph` | collaboration_suite | Planned | Mail, calendar, Teams-adjacent APIs |
+| `ms365_graph` | collaboration_suite | Beta | Mail, calendar, directory via Microsoft Graph (client credentials) |
 | `email_smtp` | notification_channel | Planned | HITL / reports without chat vendor lock-in |
 | `s3` | object_storage | Planned | Artifacts, large uploads, shadow/sandbox exports |
 | `filesystem` | object_storage | Partial | Local / dev; shadow workspace roots |

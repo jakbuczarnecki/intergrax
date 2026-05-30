@@ -533,7 +533,8 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M.3 | `IntegrationRegistry` + `IntegrationProfile` | **Done** | `catalog.register_integration`, `resolve`, env/mapping profile |
 | M.4 | P0 providers — wrap existing | **Done** | See **M.4 provider tracker** below |
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
-| M.6 | P1 providers (on demand) | In progress | **postgresql**, **mysql**, **jira**, **confluence**, **prometheus** Done; ms365_graph, **aws, azure, gcp**, … |
+| M.6 | P1 providers (on demand) | In progress | **postgresql**, **mysql**, **jira**, **confluence**, **prometheus**, **ms365_graph** Done; **aws, azure, gcp**, … |
+| M.6 P2 | Extended providers (on demand) | Open | **`cassandra`** (document_store), mongodb, dynamodb, oracle, elasticsearch, otel, … — see **M.6 P2 tracker** |
 | M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
@@ -566,8 +567,46 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | `jira` | issue_tracker | **Done** (beta) | `providers/jira/` — REST v3; only `opens.py` creates httpx client |
 | `confluence` | wiki_knowledge | **Done** (beta) | `providers/confluence/` — REST wiki; only `opens.py` creates httpx client |
 | `prometheus` | observability_backend | **Done** (beta) | `providers/prometheus/` — PromQL query API; only `opens.py` creates httpx client |
+| `ms365_graph` | collaboration_suite | **Done** (beta) | `providers/ms365_graph/` — Graph mail/calendar/directory; only `opens.py` creates httpx client |
+| `cassandra` | document_store | **Open** | Phase M.6 P2 — wide-column / high-volume event retention; requires `contracts/document_store.py` first |
 
-#### M.1 — Package scaffold (step-by-step)
+#### M.6 P2 — Extended provider tracker (canon §7.1.3 P2)
+
+Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. Each P2 provider follows the same workflow as M.4 (contract → `providers/<slug>/` → tests → catalog row).
+
+| Slug | Category | Status | Rationale / notes |
+|------|----------|--------|-------------------|
+| **`cassandra`** | **document_store** | **Open** | High-volume log / event retention; CQL driver via `opens.py` single entry; optional backend for runtime event archive at scale |
+| `mongodb` | document_store | Planned | Flexible schema document stores |
+| `dynamodb` | document_store | Planned | AWS document/KV (also via `aws` facade) |
+| `oracle` | relational_store | Planned | Enterprise relational clients |
+| `mssql` | relational_store | Planned | Microsoft SQL deployments |
+| `elasticsearch` | observability_backend | Planned | Log search; optional RAG source |
+| `otel` | observability_backend | Planned | Unified traces/metrics export |
+| `memcached` | key_value_cache | Planned | Simple cache tier |
+| `elasticache` | key_value_cache | Planned | Managed Redis on AWS (via `aws` facade) |
+| `sqs` / `service_bus` / `pubsub` | message_bus | Planned | Cloud-native queues (via platform facades) |
+| `azure_blob` / `gcs` | object_storage | Planned | Cloud blob storage (via platform facades) |
+| `azure_devops` / `github` | issue_tracker | Planned | Additional ALM sources |
+| `google_workspace` | collaboration_suite | Planned | Gmail / Calendar for Google tenants |
+| `playwright` | browser_automation | Planned | Dynamic web research beyond HTTP fetch |
+
+**Cassandra — suggested implementation sketch (greenfield):**
+
+```text
+contracts/document_store.py     # DocumentStore — get/put/delete/query by partition key
+providers/cassandra/
+├── config.py                   # INTERGRAX_CASSANDRA_CONTACT_POINTS, KEYSPACE, USER, PASSWORD
+├── client.py                   # CQL session (internal — no direct driver import outside opens.py)
+├── adapter.py                  # CassandraDocumentStore implements DocumentStore
+├── opens.py                    # ONLY place that constructs cassandra driver session
+├── bundle.py                   # create_cassandra_integration()
+├── register.py
+└── tests/                      # testcontainers or mocked session; integration_live optional
+```
+
+**Prerequisite:** add `DocumentStore` to M.2 contract set (currently slug exists in `IntegrationSlug` only). Runtime event / trace backends remain SQLite-first until an explicit adoption milestone names Cassandra as a target store.
+
 
 1. Create package skeleton:
 
@@ -605,6 +644,11 @@ For each category in §7.1.2, implement a **minimal** Protocol in `integrations/
 | `NotificationChannel` | `notify(message)` | Align with `runtime/notifications/adapter_contract.py` |
 | `InteractionSurface` | `can_handle`, `to_inbound`, `channel` | Align with `runtime/interactions/adapter_contract.py` |
 | `CloudPlatform` | `session()`, `resolve(category)`, `default_region`, health | Auth chain + factory for native services (§7.1.3 P1.1) |
+| `CollaborationSuite` | `get_message`, `list_messages`, `send_mail`, `list_calendar_events`, `get_user` | **Done** — `contracts/collaboration_suite.py`; `ms365_graph` provider |
+| `DocumentStore` | `get`, `put`, `delete`, `query` (partition-scoped) | **Pending (M.6 P2)** — required before `cassandra`, `mongodb`, `dynamodb` providers |
+| `IssueTracker` | `get_issue`, `add_comment`, `search_issues` | **Done** — `contracts/issue_tracker.py`; `jira` provider |
+| `WikiKnowledge` | `get_page`, `search_pages` | **Done** — `contracts/wiki_knowledge.py`; `confluence` provider |
+| `ObservabilityBackend` | `query_instant`, `query_range` | **Done** — `contracts/observability_backend.py`; `prometheus` provider |
 
 **Rule:** if a contract already exists elsewhere, **re-export or inherit** — do not define a third variant.
 
@@ -723,6 +767,8 @@ providers/gcp/
 | (new) | `jira` | **Done** — `integrations/providers/jira/`; **only** `opens.py` creates httpx client |
 | (new) | `confluence` | **Done** — `integrations/providers/confluence/`; **only** `opens.py` creates httpx client |
 | (new) | `prometheus` | **Done** — `integrations/providers/prometheus/`; **only** `opens.py` creates httpx client |
+| (new) | `ms365_graph` | **Done** — `integrations/providers/ms365_graph/`; **only** `opens.py` creates httpx client + token fetch |
+| (new) | `cassandra` | **Open** — Phase M.6 P2; `providers/cassandra/` after `contracts/document_store.py` |
 | `rag/vectorstore/providers/*` | vector slugs | Catalog entry only; implementation stays in `rag/` |
 
 **Not migrated to `integrations/`:** `intergrax/llm_adapters/` — LLM providers are a separate Tier-0 concern (§7.1.2 out-of-scope table).
@@ -1203,6 +1249,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Date | ID | Summary |
 |------|-----|---------|
+| 2026-05-29 | M.6-ms365_graph | `providers/ms365_graph/` + `contracts/collaboration_suite.py`; Graph mail/calendar/directory |
 | 2026-05-30 | M.6-prometheus | `providers/prometheus/` + `contracts/observability_backend.py`; PromQL query API |
 | 2026-05-30 | M.6-confluence | `providers/confluence/` + `contracts/wiki_knowledge.py`; REST wiki; single-entry `opens.py` |
 | 2026-05-30 | M.6-jira | `providers/jira/` + `contracts/issue_tracker.py`; REST v3; single-entry `opens.py` |
@@ -1268,8 +1315,9 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.19 | **P0 provider wraps** — M.4 catalog slugs | §7.1.3 | **High** | **Done** | Lab + first prod apps | Tier-0 | All P0 slugs wrapped + runtime adoption (2026-05-29) |
 | B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | **Done** (beta) | Multi-tenant applications | Tier-0 | `providers/postgresql/` — domain stores SQLite-first |
 | B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | **Done** (beta) | PM / research agents | Tier-0 | `providers/jira/`, `providers/confluence/`; tools via ToolRuntime (future) |
-| B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | Open | Org worker, scheduling agents | Tier-0 | Phase M.6 |
-| B.23 | **Prometheus observability_backend** — metrics export | §33, §7.1.3 | **Low** | Open | Ops / SLO | Tier-0 | After B.11 metrics layer design |
+| B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | **Done** (beta) | Org worker, scheduling agents | Tier-0 | `providers/ms365_graph/`; client credentials via `opens.py` |
+| B.23 | **Prometheus observability_backend** — PromQL query API | §33, §7.1.3 | **Low** | **Done** (beta) | Ops / SLO | Tier-0 | `providers/prometheus/`; complements B.11 metrics layer design |
+| B.28 | **Cassandra document_store** — wide-column adapter for high-volume retention | §7.1.3 P2 | **Medium** | **Open** | Runtime event archive at scale; ops telemetry | Tier-0 | Phase M.6 P2 — after `contracts/document_store.py`; single-entry `opens.py` |
 | B.25 | **AWS cloud_platform facade** — auth + S3/SQS/DynamoDB/Secrets Manager defaults | §7.1.3 P1.1 | **Medium** | Open | AWS-hosted applications | Tier-0 | Phase M.6; infrastructure only |
 | B.26 | **Azure cloud_platform facade** — MI + Blob/Service Bus/Key Vault | §7.1.3 P1.1 | **Medium** | Open | Azure-hosted applications | Tier-0 | Phase M.6; infrastructure only |
 | B.27 | **GCP cloud_platform facade** — ADC + GCS/Pub/Sub/Secret Manager | §7.1.3 P1.1 | **Medium** | Open | GCP-hosted applications | Tier-0 | Phase M.6; infrastructure only |
@@ -1300,7 +1348,8 @@ Decision:       L1 certified — GO Phase K when product priority set
 5. ~~B.05~~ — escalation production path (Done 2026-05-27)
 6. ~~B.09, B.17~~ — debug trace injection + gate collection (Done 2026-05-27)
 7. ~~B.06~~ — hook parity doc + lifecycle wiring (Done 2026-05-27)
-8. B.07, B.11, B.13, B.15–B.18 — as capacity allows
+8. B.07, B.11, B.13, B.15–B.18, **B.28** (cassandra) — as capacity allows
+9. M.6 P1 remainder — aws / azure / gcp cloud facades
 ```
 
 **Note:** Phase K business agents (Problem Radar, Vendor Discovery) remain **product-blocked** until explicit go — technical debt above does not auto-unblock K.1/K.2.

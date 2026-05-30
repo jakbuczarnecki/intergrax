@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import TypeVar
 
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
+from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
 from intergrax.integrations.contracts.interaction_surface import InteractionSurface
 from intergrax.integrations.contracts.issue_tracker import IssueTracker
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
@@ -67,3 +68,7 @@ def assert_observability_backend(instance: object) -> ObservabilityBackend:
 
 def assert_cloud_platform(instance: object) -> CloudPlatform:
     return assert_implements(instance, CloudPlatform)
+
+
+def assert_collaboration_suite(instance: object) -> CollaborationSuite:
+    return assert_implements(instance, CollaborationSuite)

@@ -16,6 +16,14 @@ from intergrax.integrations.contracts.base import (
     normalize_category,
 )
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
+from intergrax.integrations.contracts.collaboration_suite import (
+    CalendarEvent,
+    CalendarEventsResult,
+    CollaborationSuite,
+    MailListResult,
+    MailMessage,
+    UserRecord,
+)
 from intergrax.integrations.contracts.interaction_surface import (
     InteractionAdapter,
     InteractionSurface,
@@ -56,6 +64,9 @@ from intergrax.integrations.contracts.search_provider import SearchProvider
 __all__ = [
     "PROFILE_FIELD_BY_CATEGORY",
     "CloudPlatform",
+    "CalendarEvent",
+    "CalendarEventsResult",
+    "CollaborationSuite",
     "HealthStatus",
     "IntegrationCategory",
     "IntegrationEntry",
@@ -69,6 +80,8 @@ __all__ = [
     "IssueRecord",
     "IssueSearchResult",
     "IssueTracker",
+    "MailListResult",
+    "MailMessage",
     "MetricPoint",
     "MetricQueryResult",
     "MetricSeries",
@@ -87,6 +100,7 @@ __all__ = [
     "TaskRequest",
     "TaskResult",
     "TaskStatus",
+    "UserRecord",
     "UnknownIntegrationCategoryError",
     "UnknownIntegrationError",
     "categories_for_profile_field",
