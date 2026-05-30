@@ -30,6 +30,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.mysql.register import register_mysql_integration
     from intergrax.integrations.providers.jira.register import register_jira_integration
     from intergrax.integrations.providers.confluence.register import register_confluence_integration
+    from intergrax.integrations.providers.prometheus.register import register_prometheus_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -50,6 +51,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_mysql_integration(override=override)
     register_jira_integration(override=override)
     register_confluence_integration(override=override)
+    register_prometheus_integration(override=override)
     _BOOTSTRAPPED = True
 
 

@@ -10,6 +10,7 @@ from typing import TypeVar
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
 from intergrax.integrations.contracts.interaction_surface import InteractionSurface
 from intergrax.integrations.contracts.issue_tracker import IssueTracker
+from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
 from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
 from intergrax.integrations.contracts.message_bus import MessageBus
@@ -58,6 +59,10 @@ def assert_issue_tracker(instance: object) -> IssueTracker:
 
 def assert_wiki_knowledge(instance: object) -> WikiKnowledge:
     return assert_implements(instance, WikiKnowledge)
+
+
+def assert_observability_backend(instance: object) -> ObservabilityBackend:
+    return assert_implements(instance, ObservabilityBackend)
 
 
 def assert_cloud_platform(instance: object) -> CloudPlatform:

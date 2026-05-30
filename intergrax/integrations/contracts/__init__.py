@@ -26,6 +26,12 @@ from intergrax.integrations.contracts.issue_tracker import (
     IssueSearchResult,
     IssueTracker,
 )
+from intergrax.integrations.contracts.observability_backend import (
+    MetricPoint,
+    MetricQueryResult,
+    MetricSeries,
+    ObservabilityBackend,
+)
 from intergrax.integrations.contracts.wiki_knowledge import (
     WikiKnowledge,
     WikiPageRecord,
@@ -63,6 +69,10 @@ __all__ = [
     "IssueRecord",
     "IssueSearchResult",
     "IssueTracker",
+    "MetricPoint",
+    "MetricQueryResult",
+    "MetricSeries",
+    "ObservabilityBackend",
     "WikiKnowledge",
     "WikiPageRecord",
     "WikiSearchResult",
