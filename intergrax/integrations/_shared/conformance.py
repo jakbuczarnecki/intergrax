@@ -17,11 +17,10 @@ from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
 from intergrax.integrations.contracts.message_bus import MessageBus
 from intergrax.integrations.contracts.notification_channel import NotificationChannel
+from intergrax.integrations.contracts.object_storage import ObjectStorage
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.contracts.search_provider import SearchProvider
-from intergrax.integrations.contracts.vector_store import VectorStore
-
-T = TypeVar("T")
+from intergrax.integrations.contracts.object_storage import ObjectStorage
 
 
 def assert_implements(instance: object, protocol: type[T]) -> T:
@@ -78,6 +77,10 @@ def assert_collaboration_suite(instance: object) -> CollaborationSuite:
 
 def assert_document_store(instance: object) -> DocumentStore:
     return assert_implements(instance, DocumentStore)
+
+
+def assert_object_storage(instance: object) -> ObjectStorage:
+    return assert_implements(instance, ObjectStorage)
 
 
 def assert_vector_store(instance: object) -> VectorStore:

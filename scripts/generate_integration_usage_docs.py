@@ -481,6 +481,22 @@ store.delete(["doc-1"])
 """,
         "notes": "Catalog bridge to ``intergrax/rag/`` — ``chromadb`` import only in ``opens.py``; RAG ``ChromaVectorStore`` unchanged.",
     },
+    {
+        "slug": "s3",
+        "category": "object_storage",
+        "category_enum": "OBJECT_STORAGE",
+        "slug_enum": "S3",
+        "factory": "create_s3_object_storage",
+        "env": "`INTERGRAX_S3_BUCKET` (required); optional `INTERGRAX_S3_REGION`, `INTERGRAX_S3_PREFIX`, `INTERGRAX_S3_ENDPOINT_URL`, AWS credential vars",
+        "example": """\
+store = create_s3_object_storage(bucket="intergrax-artifacts", region="eu-central-1", prefix="tenant-a")
+store.put("exports/run-1.zip", file_bytes, content_type="application/zip")
+obj = store.get("exports/run-1.zip")
+url = store.presigned_url("exports/run-1.zip", expires_in_seconds=900)
+store.delete("exports/run-1.zip")
+""",
+        "notes": "boto3 S3 client only in ``opens.py``. With ``IntegrationProfile(cloud_platform=IntegrationSlug.AWS)``, ``object_storage`` resolves to ``s3`` by default.",
+    },
 ]
 
 

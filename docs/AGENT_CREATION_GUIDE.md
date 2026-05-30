@@ -687,6 +687,7 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 | `pinecone` | vector_store | RAG index bridge (`create_pinecone_vector_store()` only) |
 | `qdrant` | vector_store | RAG index bridge (`create_qdrant_vector_store()` only) |
 | `chroma` | vector_store | RAG index bridge (`create_chroma_vector_store()` only) |
+| `s3` | object_storage | Blob storage (`create_s3_object_storage()` only) |
 | `redis` | key_value_cache | Idempotency, rate limits, distributed locks |
 | `kafka`, `rabbitmq`, `celery` | message_bus | Worker queues, async Nexus execution |
 | `google_cse`, `bing` | search_provider | Research / web tools |
@@ -697,7 +698,7 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 
 | Slug | Category | Notes |
 |------|----------|-------|
-| `s3`, `azure_blob`, `gcs` | object_storage | Requires `object_storage` contract first (B.34) |
+| `azure_blob`, `gcs` | object_storage | Follow S3 bridge pattern (B.34+) |
 | `notion`, `sharepoint` | wiki_knowledge | REST wiki sources (B.35) |
 | `github`, `linear` | issue_tracker | Dev workflow ingestion (B.36) |
 | `email_smtp` | notification_channel | SMTP outbound (B.37) |

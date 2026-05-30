@@ -534,7 +534,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M.4 | P0 providers — wrap existing | **Done** | See **M.4 provider tracker** below |
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
 | M.6 | P1 providers (on demand) | In progress | **postgresql**, **mysql**, **jira**, **confluence**, **prometheus**, **ms365_graph**, **aws**, **azure**, **gcp** Done; … |
-| M.6 P2 | Extended providers (on demand) | In progress | **`cassandra`**, **`elasticsearch`**, **`databricks`**, **`mongodb`**, **`pinecone`**, **`qdrant`**, **`chroma`** Done (beta); s3 (next); see **M.6 P2 tracker** |
+| M.6 P2 | Extended providers (on demand) | In progress | **`cassandra`**, **`elasticsearch`**, **`databricks`**, **`mongodb`**, **`pinecone`**, **`qdrant`**, **`chroma`**, **`s3`** Done (beta); azure_blob/gcs (next); see **M.6 P2 tracker** |
 | M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
@@ -570,6 +570,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | `pinecone` | vector_store | **Done** (beta) | `providers/pinecone/` — catalog bridge to `rag/`; SDK only in `opens.py` |
 | `qdrant` | vector_store | **Done** (beta) | `providers/qdrant/` — catalog bridge to `rag/`; SDK only in `opens.py` |
 | `chroma` | vector_store | **Done** (beta) | `providers/chroma/` — catalog bridge to `rag/`; SDK only in `opens.py` |
+| `s3` | object_storage | **Done** (beta) | `providers/s3/` — put/get/delete/presigned_url; boto3 only in `opens.py` |
 | `jira` | issue_tracker | **Done** (beta) | `providers/jira/` — REST v3; only `opens.py` creates httpx client |
 | `confluence` | wiki_knowledge | **Done** (beta) | `providers/confluence/` — REST wiki; only `opens.py` creates httpx client |
 | `prometheus` | observability_backend | **Done** (beta) | `providers/prometheus/` — PromQL query API; only `opens.py` creates httpx client |
@@ -593,7 +594,8 @@ Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. 
 | **`pinecone`** | **vector_store** | **Done** (beta) | Catalog bridge to `rag/vectorstore/providers/pinecone_vector_store.py` |
 | **`qdrant`** | **vector_store** | **Done** (beta) | Catalog bridge to `rag/vectorstore/providers/qdrant_vector_store.py` |
 | **`chroma`** | **vector_store** | **Done** (beta) | Catalog bridge to `rag/vectorstore/providers/chroma_vector_store.py` |
-| `s3` | object_storage | Planned (P2 next) | Artifacts, sandbox exports, large uploads (also via `aws` facade); requires `object_storage` contract |
+| **`s3`** | **object_storage** | **Done** (beta) | AWS S3 blobs; boto3 only in `opens.py` |
+| `azure_blob` / `gcs` | object_storage | Planned (P2 next) | Cloud blob storage (via platform facades) |
 | `dynamodb` | document_store | Planned | AWS document/KV (also via `aws` facade) |
 | `oracle` | relational_store | Planned | Enterprise relational clients |
 | `mssql` | relational_store | Planned | Microsoft SQL deployments |
@@ -746,7 +748,7 @@ For each category in §7.1.2, implement a **minimal** Protocol in `integrations/
 | `CollaborationSuite` | `get_message`, `list_messages`, `send_mail`, `list_calendar_events`, `get_user` | **Done** — `contracts/collaboration_suite.py`; `ms365_graph` provider |
 | `DocumentStore` | `get`, `put`, `delete`, `query` (partition-scoped) | **Done** — `contracts/document_store.py`; `cassandra`, **`mongodb`** (beta) providers |
 | `VectorStore` | `add_documents`, `query`, `delete`, … | **Done** — `contracts/vector_store.py` re-exports `rag/`; **`pinecone`**, **`qdrant`**, **`chroma`** (beta) |
-| `ObjectStorage` | `put`, `get`, `delete`, `presigned_url` | **Open** — `contracts/object_storage.py` not yet in repo; blocks `s3` / `azure_blob` / `gcs` |
+| `ObjectStorage` | `put`, `get`, `delete`, `presigned_url` | **Done** — `contracts/object_storage.py`; **`s3`** (beta) |
 | `IssueTracker` | `get_issue`, `add_comment`, `search_issues` | **Done** — `contracts/issue_tracker.py`; `jira` provider |
 | `WikiKnowledge` | `get_page`, `search_pages` | **Done** — `contracts/wiki_knowledge.py`; `confluence` provider |
 | `ObservabilityBackend` | `query_instant`, `query_range` | **Done** — `contracts/observability_backend.py`; `prometheus`, **`elasticsearch`** (beta) providers |
@@ -1440,7 +1442,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.31 | **MongoDB document_store** — flexible JSON persistence | §7.1.3 P2 | **Medium** | **Done** (beta) | Agent memory, unstructured artifacts | Tier-0 | `providers/mongodb/`; PyMongo only in `opens.py`; reuses `DocumentStore` |
 | B.32 | **Pinecone vector_store bridge** — catalog entry → `rag/` | §7.1.3 P2 | **Medium** | **Done** (beta) | Production RAG agents | Tier-0 | `providers/pinecone/` thin adapter; SDK only in `opens.py` |
 | B.33 | **Qdrant + Chroma vector_store bridges** — same pattern as B.32 | §7.1.3 P2 | **Low** | **Done** (beta) | Self-hosted / dev RAG | Tier-0 | `providers/qdrant/`, `providers/chroma/`; RAG bootstrap via catalog |
-| B.34 | **Object storage contract + S3 provider** — blobs for artifacts / sandboxes | §7.1.3 P2 | **Medium** | **Open** | Large file handoff, exports | Tier-0 | `contracts/object_storage.py` then `providers/s3/`; boto3 only in `opens.py` |
+| B.34 | **Object storage contract + S3 provider** — blobs for artifacts / sandboxes | §7.1.3 P2 | **Medium** | **Done** (beta) | Large file handoff, exports | Tier-0 | `contracts/object_storage.py`, `providers/s3/`; boto3 only in `opens.py` |
 | B.35 | **Notion + SharePoint wiki_knowledge** — internal docs ingestion | §7.1.3 P3 | **Low** | **Open** | Research / runbook agents | Tier-0 | REST adapters; httpx only in `opens.py` |
 | B.36 | **GitHub + Linear issue_tracker** — dev workflow sources | §7.1.3 P3 | **Low** | **Open** | Code-aware agents | Tier-0 | REST/GraphQL; single-entry `opens.py` |
 | B.37 | **email_smtp notification_channel** — outbound mail without chat | §7.1.3 P3 | **Low** | **Open** | HITL, scheduled reports | Tier-0 | `providers/email_smtp/`; stdlib / aiosmtplib in `opens.py` |
@@ -1477,7 +1479,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 6. ~~B.09, B.17~~ — debug trace injection + gate collection (Done 2026-05-27)
 7. ~~B.06~~ — hook parity doc + lifecycle wiring (Done 2026-05-27)
 8. B.07, B.11, B.13, B.15–B.18 — as capacity allows
-9. M.6 P2 — **s3 / object_storage contract** (B.34)
+9. M.6 P2 — **azure_blob / gcs** object storage (follow S3 pattern)
 10. M.6 P2/P3 — object storage (B.34), service slugs (`azure_blob`, `gcs`, `s3`), email_smtp, notion, github, otel, playwright
 ```
 
@@ -1485,5 +1487,5 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 ---
 
-*Plan synced with codebase after B.33 Qdrant + Chroma (2026-05-29). Gate: integration unit tests + RAG bootstrap tests.*
+*Plan synced with codebase after B.34 Object storage + S3 (2026-05-29). Gate: integration unit tests.*
 

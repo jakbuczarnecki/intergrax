@@ -648,7 +648,7 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 | `confluence` | wiki_knowledge | Beta | RAG / runbooks via REST (`get_page`, `search_pages`) |
 | `ms365_graph` | collaboration_suite | Beta | Mail, calendar, directory via Microsoft Graph (client credentials) |
 | `email_smtp` | notification_channel | Planned | HITL / reports without chat vendor lock-in |
-| `s3` | object_storage | Planned | Artifacts, large uploads, shadow/sandbox exports |
+| `s3` | object_storage | **Beta** | Artifacts, large uploads, shadow/sandbox exports |
 | `filesystem` | object_storage | Partial | Local / dev; shadow workspace roots |
 | `aws` | cloud_platform | Beta | IAM/STS auth; defaults for S3, SQS, DynamoDB, ElastiCache |
 | `azure` | cloud_platform | Beta | Managed identity / service principal; defaults for Blob, Service Bus, Azure SQL |
@@ -687,7 +687,9 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 | **`pinecone`** | vector_store | **Beta** | Catalog bridge to `rag/`; `IntegrationProfile.vector_store` |
 | **`qdrant`** | vector_store | **Beta** | Catalog bridge to `rag/`; self-hosted / cloud vectors |
 | **`chroma`** | vector_store | **Beta** | Catalog bridge to `rag/`; embedded or HTTP Chroma |
-| `s3` | object_storage | Planned (P2) | Artifacts, sandbox exports (requires `object_storage` contract) |
+| **`s3`** | object_storage | **Beta** | AWS S3 put/get/delete/presigned_url via catalog |
+| `azure_blob` | object_storage | Planned (P2 next) | Azure artifact storage (also via `azure` facade) |
+| `gcs` | object_storage | Planned (P2) | GCP artifact storage (also via `gcp` facade) |
 | `otel` | observability_backend | Planned | Unified traces/metrics export |
 | `playwright` | browser_automation | Planned | Dynamic web research beyond HTTP fetch |
 | `azure_devops` | issue_tracker | Planned | Microsoft ALM |

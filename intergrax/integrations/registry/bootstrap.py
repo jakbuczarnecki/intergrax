@@ -42,6 +42,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.pinecone.register import register_pinecone_integration
     from intergrax.integrations.providers.qdrant.register import register_qdrant_integration
     from intergrax.integrations.providers.chroma.register import register_chroma_integration
+    from intergrax.integrations.providers.s3.register import register_s3_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -74,6 +75,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_pinecone_integration(override=override)
     register_qdrant_integration(override=override)
     register_chroma_integration(override=override)
+    register_s3_integration(override=override)
     _BOOTSTRAPPED = True
 
 

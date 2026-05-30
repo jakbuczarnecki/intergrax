@@ -59,6 +59,11 @@ from intergrax.integrations.contracts.message_bus import (
     TaskResult,
     TaskStatus,
 )
+from intergrax.integrations.contracts.object_storage import (
+    ObjectStorage,
+    PresignedUrlMethod,
+    StoredObject,
+)
 from intergrax.integrations.contracts.notification_channel import (
     NotificationAdapter,
     NotificationChannel,
@@ -104,6 +109,9 @@ __all__ = [
     "WikiSearchResult",
     "KeyValueCache",
     "MessageBus",
+    "ObjectStorage",
+    "PresignedUrlMethod",
+    "StoredObject",
     "NotificationAdapter",
     "NotificationChannel",
     "RelationalStore",
