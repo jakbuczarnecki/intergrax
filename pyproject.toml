@@ -110,6 +110,7 @@ dev = [
   "psycopg[binary]>=3.1",
   "pymysql>=1.1",
   "cassandra-driver>=3.29",
+  "azure-identity>=1.19",
   "docx2txt>=0.8",
   "unstructured>=0.12",
   "docling[all]==2.76.0",

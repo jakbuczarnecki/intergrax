@@ -679,6 +679,7 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 | `ms365_graph` | collaboration_suite | Microsoft Graph mail/calendar (`create_ms365_graph_collaboration_suite()` only) |
 | `cassandra` | document_store | Cassandra CQL store (`create_cassandra_document_store()` only) |
 | `aws` | cloud_platform | AWS facade (`create_aws_cloud_platform()` only) |
+| `azure` | cloud_platform | Azure facade (`create_azure_cloud_platform()` only) |
 | `redis` | key_value_cache | Idempotency, rate limits, distributed locks |
 | `kafka`, `rabbitmq`, `celery` | message_bus | Worker queues, async Nexus execution |
 | `google_cse`, `bing` | search_provider | Research / web tools |
@@ -690,6 +691,7 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 | Slug | Category | Notes |
 |------|----------|-------|
 | `elasticsearch` | observability_backend | Log search / aggregations; `create_elasticsearch_observability_backend()` (planned M.6 P2) |
+| `databricks` | relational_store | SQL Warehouse / Unity Catalog; `create_databricks_relational_store()` (planned M.6 P2) |
 
 LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them separately.
 

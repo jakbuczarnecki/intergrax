@@ -25,6 +25,7 @@ class IntegrationSlug(StrEnum):
     MYSQL = "mysql"
     ORACLE = "oracle"
     MSSQL = "mssql"
+    DATABRICKS = "databricks"
     AZURE_SQL = "azure_sql"
     CLOUD_SQL = "cloud_sql"
 
@@ -119,6 +120,7 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.MYSQL,
             IntegrationSlug.ORACLE,
             IntegrationSlug.MSSQL,
+            IntegrationSlug.DATABRICKS,
             IntegrationSlug.AZURE_SQL,
             IntegrationSlug.CLOUD_SQL,
         }
