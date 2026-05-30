@@ -33,7 +33,16 @@
         | ``RESEARCH_BACKEND_HOST`` | see ``.env.example`` | Bind address |
         | ``RESEARCH_BACKEND_PORT`` | ``8010`` | HTTP port |
 
-        Agent roster and integrations: ``manifest.py``, ``host/wiring.py``, ``host/integration_wiring.py``.
+        Agent roster and integrations: ``manifest.py``, ``host/wiring.py``, ``host/integration_wiring.py``, ``host/tool_wiring.py``.
+
+        ### Tool catalog (optional)
+
+        | Variable | Default | Role |
+        |----------|---------|------|
+        | ``RESEARCH_ENABLE_WEBSEARCH`` | ``true`` | Register ``websearch.query`` on ``RuntimeConfig`` |
+        | ``RESEARCH_ENABLED_TOOLS`` | (empty) | Comma-separated extra catalog tool_ids |
+
+        Wire ``websearch_executor`` (or integration ``SearchProvider``) in ``host/tool_wiring.py`` for live search. See [`intergrax/tools/USAGE.md`](../../intergrax/tools/USAGE.md).
 
         ---
 

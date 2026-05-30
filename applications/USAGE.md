@@ -24,6 +24,7 @@ applications/my_lab/
         agent_builders.py      # dict[type[Agent], AgentFactory] (optional)
         agent_factories.py     # typed factories for configured agents (optional)
         integration_wiring.py  # IntegrationProfile → stores/adapters
+        tool_wiring.py         # ToolProfile + ToolWiringContext → catalog registry
     serving/
         fastapi_router.py      # HTTP routes → NexusLoop / UnifiedTaskRunner
     docker/                    # Dockerfile (Phase N scaffold)
@@ -87,14 +88,39 @@ from intergrax.applications._shared.wiring import build_application_registry
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from my_lab.host.agent_builders import MY_LAB_BUILDERS
 from my_lab.host.settings import MyLabSettings
+from my_lab.host.tool_wiring import wire_my_lab_tools
 from my_lab.manifest import build_my_lab_manifest
 
 def build_my_lab_registry(*, settings: MyLabSettings | None = None):
     settings = settings or MyLabSettings.from_env()
     manifest = build_my_lab_manifest()
-    ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
+    tool_wiring = wire_my_lab_tools(integration_profile=getattr(manifest, "integration_profile", None))
+    ctx = ApplicationBuildContext.for_manifest(
+        manifest,
+        settings=settings,
+        tool_profile=tool_wiring.profile,
+        tool_wiring_context=tool_wiring.wiring_context,
+    )
     return build_application_registry(manifest, ctx, builders=MY_LAB_BUILDERS)
 ```
+
+Agent factories that need tools must read `ctx.tool_profile` / `ctx.tool_wiring_context` and pass them into agent config → `RuntimeConfig`. See `legal_application/host/agent_factories.py` and `research_application/host/agent_builders.py`.
+
+### 3b. Tool wiring template
+
+```python
+# applications/my_lab/host/tool_wiring.py
+from intergrax.applications._shared.tool_wiring import build_application_tool_wiring
+from intergrax.tools.registry.profile import ToolProfile
+
+def wire_my_lab_tools(*, integration_profile=None):
+    return build_application_tool_wiring(
+        ToolProfile(enabled=["rag.retrieve", "websearch.query"]),
+        integration_profile=integration_profile,
+    )
+```
+
+Full guide: [`intergrax/tools/USAGE.md`](../intergrax/tools/USAGE.md) · catalog: [`docs/TOOLS.md`](../docs/TOOLS.md)
 
 ### 4. Host — HTTP + Nexus
 
@@ -179,6 +205,7 @@ intergrax/integrations/  Tier-0 — IntegrationProfile, providers
 | Create agent | `python -m intergrax.scaffold new-agent …` → `agents/` |
 | Register in app | `AgentBinding.mount(...)` in `applications/<app>/manifest.py` |
 | Wire backends | `IntegrationProfile` in manifest + `integration_wiring.py` |
+| Enable catalog tools | `tool_wiring.py` + pass `tool_profile` via `ApplicationBuildContext` |
 | Scaffold app | [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md) Step **4E** — `new-application --profile lab\|product` → FastAPI + FastMCP (`/mcp`), `BUILD_AND_DEPLOY.md`, `build-docker.sh` |
 
 ---
@@ -186,5 +213,6 @@ intergrax/integrations/  Tier-0 — IntegrationProfile, providers
 ## Related docs
 
 - **Engine API (define / invoke registry):** [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)
+- **Tool catalog wiring:** [`intergrax/tools/USAGE.md`](../intergrax/tools/USAGE.md)
 - **Agent creation:** [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md)
 - **Phase N plan:** [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../docs/INTERGRAX_IMPLEMENTATION_PLAN.md)

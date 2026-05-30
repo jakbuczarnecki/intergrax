@@ -14,6 +14,7 @@ from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from research_application.host.integration_wiring import wire_research_integrations
 from research_application.host.settings import ResearchBackendSettings
 from research_application.host.wiring import build_research_registry
+from research_application.host.tool_wiring import wire_research_tools
 from research_application.mcp.server import build_research_mcp_server
 from research_application.serving.fastapi_router import mount_research_routes
 
@@ -52,9 +53,11 @@ def create_research_backend_app(
     app.title = "Intergrax Research API (prototype)"
 
     if settings.include_mcp:
+        tool_wiring = wire_research_tools(settings=settings)
         mcp = build_research_mcp_server(
             nexus_loop=nexus,
             route_prefix=settings.route_prefix,
+            tool_registry=tool_wiring.registry,
         )
         app = couple_fastapi_with_mcp(app, mcp, mount_path=settings.mcp_mount_path)
 

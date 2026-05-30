@@ -33,7 +33,11 @@
         | ``LAB_BACKEND_HOST`` | see ``.env.example`` | Bind address |
         | ``LAB_BACKEND_PORT`` | ``8090`` | HTTP port |
 
-        Agent roster and integrations: ``manifest.py``, ``host/wiring.py``, ``host/integration_wiring.py``.
+        Agent roster and integrations: ``manifest.py``, ``host/wiring.py``, ``host/integration_wiring.py``, ``host/tool_wiring.py``.
+
+        ### Tool catalog (lab defaults)
+
+        Lab enables ``rag.retrieve``, ``websearch.query``, and ``sandbox.exec`` via ``host/tool_wiring.py``. MCP exposes ``list_catalog_tools`` / ``describe_catalog_tool``. See [`intergrax/tools/USAGE.md`](../../intergrax/tools/USAGE.md).
 
         ---
 

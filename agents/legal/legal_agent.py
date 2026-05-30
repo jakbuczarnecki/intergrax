@@ -56,7 +56,7 @@ class LegalAgent(Agent):
             description="Contract analysis and legal document review.",
             version="1.0.0",
             capabilities=["legal.contract_review"],
-            allowed_tools=["rag", "websearch", "tools"],
+            allowed_tools=["rag.retrieve", "websearch.query", "rag", "websearch", "tools"],
             required_adapters=["llm"],
             risk_level=AgentRiskLevel.HIGH,
             max_steps=20,

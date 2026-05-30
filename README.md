@@ -31,6 +31,7 @@ All platform documentation lives in [`docs/`](docs/). Canonical docs — one sou
 | [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) | Create an agent: scaffold → register → run → inspect |
 | [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **Integration Library** — catalog of all wired providers (DB, queues, RAG backends, cloud, …) |
 | [TOOLS.md](docs/TOOLS.md) | **Tool Library** — LLM-facing agent tools (RAG, web search, Jira, sandbox, …) |
+| [intergrax/tools/USAGE.md](intergrax/tools/USAGE.md) | Wire catalog tools in applications and agents (quick start) |
 | [intergrax/applications/USAGE.md](intergrax/applications/USAGE.md) | Tier-3 composition engine: manifest, typed bindings, registry |
 | [applications/USAGE.md](applications/USAGE.md) | Application layout: env, Docker, host, run |
 
@@ -266,10 +267,10 @@ The **Tool Library** (`intergrax/tools/`) provides:
 | **Composable semantics** | e.g. `jira.search_tasks(project, status)` builds JQL internally; agents never see raw integration APIs. |
 | **Unified execution** | All invocations go through `ToolRuntime` — policy, trace, idempotency, and `allowed_tools` enforcement. |
 | **Dual export** | Same catalog entry → OpenAI function schema, MCP tool, and UAEP `ToolRequest`. |
-| **Unified model (target)** | RAG and web search become catalog tools (`rag.retrieve`, `websearch.query`) — replacing legacy `use_rag` / `use_websearch` pipeline flags. |
+| **Unified model** | RAG and web search are catalog tools (`rag.retrieve`, `websearch.query`) — legacy `use_rag` / `use_websearch` map automatically. |
 
 **Engine today:** `ToolContract`, `ToolRegistry`, `RuntimeToolInvoker`, `ToolsAgent`.  
-**Catalog providers (Phase O Done):** full first-party catalog + unified tool model (`tool_ids`), OpenAI/MCP exporters, Tier-3 `tool_wiring.py` scaffold. Legacy `use_rag` / `use_websearch` flags remain as compatibility shims.
+**Catalog providers (Phase O Done):** full first-party catalog wired end-to-end in reference applications (`tool_wiring.py` → `ApplicationBuildContext` → agent `RuntimeConfig`). Legacy `use_rag` / `use_websearch` remain as compatibility shims.
 
 ```python
 # Tier-2 agent — declare tool policy, not vendors
@@ -287,7 +288,7 @@ registry = build_registry_from_profile(ToolProfile(enabled_bundles=["jira", "con
 ```
 
 **Full catalog (tool_ids, status, migration from legacy flags):**  
-**[docs/TOOLS.md](docs/TOOLS.md)**
+**[docs/TOOLS.md](docs/TOOLS.md)** · **end-to-end wiring:** **[intergrax/tools/USAGE.md](intergrax/tools/USAGE.md)**
 
 Architecture: [§7.1.6–§7.1.7](docs/intergrax_runtime_architecture.md) · implementation: [Phase O](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
 

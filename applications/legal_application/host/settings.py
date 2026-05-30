@@ -83,6 +83,21 @@ class LegalBackendSettings:
     api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
     include_mcp: bool = True
     mcp_mount_path: str = "/mcp"
+    enable_rag: bool = False
+    enable_websearch: bool = False
+    use_legal_tool_decision: bool = False
+    tools_mode: str = "off"
+    extra_enabled_tool_ids: tuple[str, ...] = ()
+
+    @property
+    def enabled_tool_ids(self) -> list[str]:
+        """Catalog tool_ids enabled for this host (from env flags)."""
+        ids: list[str] = list(self.extra_enabled_tool_ids)
+        if self.enable_rag and "rag.retrieve" not in ids:
+            ids.append("rag.retrieve")
+        if self.enable_websearch and "websearch.query" not in ids:
+            ids.append("websearch.query")
+        return ids
 
     @classmethod
     def from_env(cls) -> LegalBackendSettings:
@@ -150,6 +165,21 @@ class LegalBackendSettings:
         include_mcp = _env_bool("LEGAL_INCLUDE_MCP", default=True)
         mcp_mount = os.environ.get("LEGAL_MCP_MOUNT_PATH", "/mcp").strip() or "/mcp"
 
+        enable_rag = _env_bool("LEGAL_ENABLE_RAG", default=False)
+        enable_websearch = _env_bool("LEGAL_ENABLE_WEBSEARCH", default=False)
+        use_legal_tool_decision = _env_bool("LEGAL_USE_TOOL_DECISION", default=False)
+        tools_mode = os.environ.get("LEGAL_TOOLS_MODE", "off").strip().lower() or "off"
+        extra_tools_raw = os.environ.get("LEGAL_ENABLED_TOOLS", "").strip()
+        extra_tools = tuple(x.strip() for x in extra_tools_raw.split(",") if x.strip())
+
+        # Research SKU defaults — tools opt-in via env unless explicitly enabled
+        if profile == "research" and not _env_bool("LEGAL_ENABLE_RAG", default=False) and os.environ.get("LEGAL_ENABLE_RAG") is None:
+            enable_rag = True
+        if profile == "research" and not _env_bool("LEGAL_ENABLE_WEBSEARCH", default=False) and os.environ.get("LEGAL_ENABLE_WEBSEARCH") is None:
+            enable_websearch = True
+        if profile == "research" and os.environ.get("LEGAL_USE_TOOL_DECISION") is None:
+            use_legal_tool_decision = True
+
         return cls(
             environment=environment,
             legal_product_profile=profile,
@@ -164,4 +194,9 @@ class LegalBackendSettings:
             api_keys_map=keys,
             include_mcp=include_mcp,
             mcp_mount_path=mcp_mount,
+            enable_rag=enable_rag,
+            enable_websearch=enable_websearch,
+            use_legal_tool_decision=use_legal_tool_decision,
+            tools_mode=tools_mode,
+            extra_enabled_tool_ids=extra_tools,
         )

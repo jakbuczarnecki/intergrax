@@ -25,4 +25,4 @@ def build_legal_agent_from_context(
         )
     from legal_application.host.wiring import build_legal_agent
 
-    return build_legal_agent(settings)
+    return build_legal_agent(settings, ctx=ctx)

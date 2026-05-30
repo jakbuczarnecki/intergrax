@@ -8,6 +8,7 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 
 | Document | Purpose |
 |----------|---------|
+| [intergrax/tools/USAGE.md](../intergrax/tools/USAGE.md) | **Operational guide** — wire tools in Tier-3 apps and invoke from agents |
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.6–§7.1.7, §22 | Architecture canon — Tool Library, unified tool model |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O | Phase status, backlog, delivery workflow |
 | [INTEGRATIONS.md](INTEGRATIONS.md) | Backend adapters tools compose (not called directly by agents) |
@@ -118,7 +119,9 @@ Status legend: **Done** = registered handler in catalog; **Planned** = Phase O b
 | `rag.retrieve` | **Done** | Retrieve documents from vector index for prompt context | `vectorstore_manager` + `embedding_manager` via `ToolWiringContext` |
 | `websearch.query` | **Done** | Run web search and return normalized snippets | `websearch_executor` or `SearchProvider` |
 
-> **Transitional:** Legacy `RagStep` / `WebsearchStep` still run when plan flags or `tool_ids` request retrieval; they delegate to catalog handlers when `tool_invoker` + registry are configured (Phase O.5). LLM tool-decision prompts may still emit boolean flags — mapped to `tool_ids` automatically.
+**Catalog providers:** Phase O complete — all first-party tools registered; applications wire via `host/tool_wiring.py`.
+
+**Ready-to-use hosts:** `lab_application`, `legal_application`, `research_application`, `poc_template_application` — see [`intergrax/tools/USAGE.md`](../intergrax/tools/USAGE.md).
 
 ### Execution & sandbox
 
@@ -225,7 +228,7 @@ Alphabetical reference — all target first-party tools.
 
 ## Adding a new tool
 
-1. Add handler under `intergrax/tools/providers/<domain>/` (contracts, handlers, bundle).
+1. Add handler under `intergrax/tools/providers/<domain>/` — subclass `ServiceToolHandler` (or `WiringContextToolHandler` for custom logic); put business logic in `service.py`.
 2. Compose existing integration contracts — add integration provider first if missing.
 3. Register in `register_default_tools()` (Phase O.2).
 4. Add unit tests under `tests/unit/tools/providers/<domain>/`.

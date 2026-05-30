@@ -11,7 +11,11 @@ from lab_application.host.tool_wiring import wire_lab_tools
 from lab_application.manifest import build_lab_manifest
 
 
-def build_lab_registry(*, settings: LabApplicationSettings | None = None) -> AgentRegistry:
+def build_lab_registry(
+    *,
+    settings: LabApplicationSettings | None = None,
+    integration_profile=None,
+) -> AgentRegistry:
     """
     Compose the lab agent registry from manifest + builders (Tier-3 unified wiring).
 
@@ -20,7 +24,8 @@ def build_lab_registry(*, settings: LabApplicationSettings | None = None) -> Age
     """
     settings = settings or LabApplicationSettings.from_env()
     manifest = build_lab_manifest(settings)
-    tool_wiring = wire_lab_tools(integration_profile=getattr(manifest, "integration_profile", None))
+    profile = integration_profile or getattr(manifest, "integration_profile", None)
+    tool_wiring = wire_lab_tools(integration_profile=profile)
     ctx = ApplicationBuildContext.for_manifest(
         manifest,
         settings=settings,

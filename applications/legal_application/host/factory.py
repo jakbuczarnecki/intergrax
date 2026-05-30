@@ -25,6 +25,7 @@ from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from legal_application.host.settings import LegalBackendSettings
 from legal_application.host.wiring import build_legal_registry
+from legal_application.host.tool_wiring import wire_legal_tools
 from legal_application.mcp.server import build_legal_mcp_server
 
 
@@ -110,9 +111,11 @@ def create_legal_backend_app(
         app.title = "Intergrax Legal API (dev)"
 
     if settings.include_mcp:
+        tool_wiring = wire_legal_tools(settings=settings)
         mcp = build_legal_mcp_server(
             nexus_loop=nexus_loop,
             route_prefix=settings.legal_route_prefix,
+            tool_registry=tool_wiring.registry,
         )
         app = couple_fastapi_with_mcp(app, mcp, mount_path=settings.mcp_mount_path)
 

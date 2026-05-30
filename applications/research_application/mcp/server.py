@@ -19,16 +19,22 @@ def build_research_mcp_server(
     *,
     nexus_loop: NexusLoop,
     route_prefix: str,
+    tool_registry=None,
 ) -> FastMCP:
     """MCP tools for research host — includes research pipeline tool."""
     _ = route_prefix
-    mcp = build_nexus_mcp_server(
-        name="Intergrax Research MCP",
-        nexus_loop=nexus_loop,
-        default_capability="research.pipeline",
-        default_tenant_id="research",
-        default_user_id="research-user",
-    )
+    from intergrax.tools.registry.runtime import ToolRegistry
+
+    kwargs: dict = {
+        "name": "Intergrax Research MCP",
+        "nexus_loop": nexus_loop,
+        "default_capability": "research.pipeline",
+        "default_tenant_id": "research",
+        "default_user_id": "research-user",
+    }
+    if isinstance(tool_registry, ToolRegistry):
+        kwargs["tool_registry"] = tool_registry
+    mcp = build_nexus_mcp_server(**kwargs)
     runner = UnifiedTaskRunner(nexus_loop)
 
     @mcp.tool

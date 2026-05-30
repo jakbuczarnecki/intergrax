@@ -746,7 +746,14 @@ The application ensures the tool runtime is backed by the correct Tier-0 provide
 
 #### Tool catalog wiring (Phase O.8 — unified model)
 
-Applications enable catalog tools via `ToolProfile` and inject dependencies via `ToolWiringContext`. Reference: `applications/lab_application/host/tool_wiring.py`.
+Applications enable catalog tools via `ToolProfile` and inject dependencies via `ToolWiringContext`. Reference implementations:
+
+| Application | `host/tool_wiring.py` |
+|-------------|----------------------|
+| Lab | `wire_lab_tools()` — RAG, websearch, sandbox |
+| Legal | `wire_legal_tools()` — env-driven RAG/websearch |
+| Research | `wire_research_tools()` — websearch by default |
+| POC template | `wire_poc_template_tools()` — lab-like defaults |
 
 ```python
 from intergrax.applications._shared.tool_wiring import build_application_tool_wiring

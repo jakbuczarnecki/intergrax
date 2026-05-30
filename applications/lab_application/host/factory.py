@@ -54,13 +54,16 @@ def create_lab_application(
     - ``/debug/*`` — trace, events, checkpoints, progress, experiments, HITL intake
     """
     settings = settings or LabApplicationSettings.from_env()
-    resolved_registry = registry or build_lab_registry(settings=settings)
     integrations = wire_lab_integrations(
         settings=settings,
         db_path=db_path,
         experiments_db_path=experiments_db_path,
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
+    )
+    resolved_registry = registry or build_lab_registry(
+        settings=settings,
+        integration_profile=integrations.profile,
     )
     nexus_loop = NexusLoop(
         resolved_registry,
@@ -116,9 +119,7 @@ def create_lab_application(
         )
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
-        tool_wiring = wire_lab_tools(
-            integration_profile=getattr(integrations, "integration_profile", None),
-        )
+        tool_wiring = wire_lab_tools(integration_profile=integrations.profile)
         mcp = build_lab_mcp_server(
             nexus_loop=nexus_loop,
             route_prefix=settings.route_prefix,
