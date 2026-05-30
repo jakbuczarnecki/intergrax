@@ -412,6 +412,27 @@ suite.send_mail(to=["user@contoso.com"], subject="Report", body="...")
 """,
         "notes": "OAuth client credentials in ``opens.py``.",
     },
+    {
+        "slug": "pinecone",
+        "category": "vector_store",
+        "category_enum": "VECTOR_STORE",
+        "slug_enum": "PINECONE",
+        "factory": "create_pinecone_vector_store",
+        "env": "`INTERGRAX_PINECONE_API_KEY`, `INTERGRAX_PINECONE_INDEX`; optional `INTERGRAX_PINECONE_TENANT_ID`, `INTERGRAX_PINECONE_COLLECTION`, `INTERGRAX_PINECONE_METRIC`",
+        "example": """\
+from langchain_core.documents import Document
+
+store = create_pinecone_vector_store(api_key="pc-...", index_name="intergrax-rag", tenant_id="tenant-a")
+store.add_documents(
+    [Document(page_content="Intergrax overview", metadata={"source": "docs"})],
+    [[0.01, 0.02, 0.03]],
+    ids=["doc-1"],
+)
+hits = store.query([0.01, 0.02, 0.03], top_k=5)
+store.delete(["doc-1"])
+""",
+        "notes": "Catalog bridge to ``intergrax/rag/`` — Pinecone SDK import only in ``opens.py``; RAG implementation unchanged.",
+    },
 ]
 
 

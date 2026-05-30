@@ -534,7 +534,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M.4 | P0 providers — wrap existing | **Done** | See **M.4 provider tracker** below |
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
 | M.6 | P1 providers (on demand) | In progress | **postgresql**, **mysql**, **jira**, **confluence**, **prometheus**, **ms365_graph**, **aws**, **azure**, **gcp** Done; … |
-| M.6 P2 | Extended providers (on demand) | In progress | **`cassandra`**, **`elasticsearch`**, **`databricks`**, **`mongodb`** Done (beta); **`pinecone`** (next); see **M.6 P2 tracker** + **M.6 P3 backlog** |
+| M.6 P2 | Extended providers (on demand) | In progress | **`cassandra`**, **`elasticsearch`**, **`databricks`**, **`mongodb`**, **`pinecone`** Done (beta); qdrant/chroma (next); see **M.6 P2 tracker** |
 | M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
@@ -567,7 +567,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | `mysql` | relational_store | **Done** (beta) | `providers/mysql/` — `RelationalStore` via pymysql; only `opens.py` connects |
 | `databricks` | relational_store | **Done** (beta) | `providers/databricks/` — SQL Warehouse via databricks-sql-connector; only `opens.py` connects |
 | `mongodb` | document_store | **Done** (beta) | `providers/mongodb/` — flexible JSON `DocumentStore`; PyMongo only in `opens.py` |
-| `pinecone` | vector_store | **Open** (P2 next) | Phase M.6 P2 — catalog bridge to `rag/vectorstore/providers/pinecone_vector_store.py` |
+| `pinecone` | vector_store | **Done** (beta) | `providers/pinecone/` — catalog bridge to `rag/`; SDK only in `opens.py` |
 | `jira` | issue_tracker | **Done** (beta) | `providers/jira/` — REST v3; only `opens.py` creates httpx client |
 | `confluence` | wiki_knowledge | **Done** (beta) | `providers/confluence/` — REST wiki; only `opens.py` creates httpx client |
 | `prometheus` | observability_backend | **Done** (beta) | `providers/prometheus/` — PromQL query API; only `opens.py` creates httpx client |
@@ -588,8 +588,8 @@ Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. 
 | **`elasticsearch`** | **observability_backend** | **Done** (beta) | Log search / aggregations (`_search` + Lucene `query_string` via ObservabilityBackend); complements `prometheus` |
 | **`databricks`** | **relational_store** | **Done** (beta) | Lakehouse SQL Warehouse; PAT via `opens.py`; `execute` / `fetch_all` for analytics agents |
 | **`mongodb`** | **document_store** | **Done** (beta) | Flexible JSON documents; partition-scoped get/put/delete/query via PyMongo |
-| **`pinecone`** | **vector_store** | **Open** (P2 next) | Managed embedding index; **catalog bridge** to `rag/vectorstore/providers/pinecone_vector_store.py` |
-| `qdrant` | vector_store | Planned (P2) | Self-hosted / cloud vector DB; catalog bridge to existing `rag/` provider |
+| **`pinecone`** | **vector_store** | **Done** (beta) | Catalog bridge to `rag/vectorstore/providers/pinecone_vector_store.py` |
+| `qdrant` | vector_store | Planned (P2 next) | Self-hosted / cloud vectors; bridge to `rag/` |
 | `chroma` | vector_store | Planned (P2) | Local/dev vector index; catalog bridge to existing `rag/` provider |
 | `s3` | object_storage | Planned (P2) | Artifacts, sandbox exports, large uploads (also via `aws` facade); requires `object_storage` contract |
 | `dynamodb` | document_store | Planned | AWS document/KV (also via `aws` facade) |
@@ -656,7 +656,7 @@ providers/pinecone/
 └── tests/                      # mocked delegate; guard: no pinecone import outside opens.py
 ```
 
-**Prerequisite (pinecone):** add `contracts/vector_store.py` in `integrations/` — minimal Protocol mirroring `rag/vectorstore/contracts/vector_store.py` (`add_documents`, `query`, `delete`, …) OR re-export RAG contract. Register in catalog under `IntegrationCategory.VECTOR_STORE`.
+**Prerequisite (pinecone):** `contracts/vector_store.py` — **Done** (re-exports `rag/vectorstore/contracts/vector_store.py`). Registered under `IntegrationCategory.VECTOR_STORE`.
 
 **Cassandra — suggested implementation sketch (greenfield):**
 
@@ -743,7 +743,7 @@ For each category in §7.1.2, implement a **minimal** Protocol in `integrations/
 | `CloudPlatform` | `slug`, `default_region`, `resolve(category)`, `health` | **Done** — `contracts/cloud_platform.py`; **`aws`**, **`azure`**, **`gcp`** providers (beta) |
 | `CollaborationSuite` | `get_message`, `list_messages`, `send_mail`, `list_calendar_events`, `get_user` | **Done** — `contracts/collaboration_suite.py`; `ms365_graph` provider |
 | `DocumentStore` | `get`, `put`, `delete`, `query` (partition-scoped) | **Done** — `contracts/document_store.py`; `cassandra`, **`mongodb`** (beta) providers |
-| `VectorStore` | `add_documents`, `query`, `delete`, … | **Open** — re-export / mirror `rag/vectorstore/contracts/vector_store.py`; **`pinecone`**, `qdrant`, `chroma` catalog bridges (M.6 P2) |
+| `VectorStore` | `add_documents`, `query`, `delete`, … | **Done** — `contracts/vector_store.py` re-exports `rag/`; **`pinecone`** (beta); `qdrant`, `chroma` bridges planned |
 | `ObjectStorage` | `put`, `get`, `delete`, `presigned_url` | **Open** — `contracts/object_storage.py` not yet in repo; blocks `s3` / `azure_blob` / `gcs` |
 | `IssueTracker` | `get_issue`, `add_comment`, `search_issues` | **Done** — `contracts/issue_tracker.py`; `jira` provider |
 | `WikiKnowledge` | `get_page`, `search_pages` | **Done** — `contracts/wiki_knowledge.py`; `confluence` provider |
@@ -874,7 +874,7 @@ providers/gcp/
 | (new) | `elasticsearch` | **Done** — `integrations/providers/elasticsearch/`; **only** `opens.py` creates httpx client |
 | (new) | `databricks` | **Done** — `integrations/providers/databricks/`; **only** `opens.py` calls `databricks.sql.connect` |
 | (new) | `mongodb` | **Done** — `integrations/providers/mongodb/`; **only** `opens.py` calls `pymongo.MongoClient` |
-| `rag/vectorstore/providers/pinecone_*` | `pinecone` | **Open** — Phase M.6 P2; thin `providers/pinecone/` catalog bridge; RAG impl stays in `rag/` |
+| `rag/vectorstore/providers/pinecone_*` | `pinecone` | **Done** — `providers/pinecone/` catalog bridge; RAG impl stays in `rag/` |
 | `rag/vectorstore/providers/qdrant_*` | `qdrant` | Planned — same bridge pattern as pinecone |
 | `rag/vectorstore/providers/chroma_*` | `chroma` | Planned — same bridge pattern as pinecone |
 | `rag/vectorstore/providers/*` | other vector slugs | Catalog entry only until bridge provider ships |
@@ -1435,7 +1435,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.29 | **Elasticsearch observability_backend** — log search / aggregations | §7.1.3 P2 | **Medium** | **Done** (beta) | Ops log triage; optional RAG over logs | Tier-0 | `providers/elasticsearch/`; single-entry `opens.py`; complements B.23 |
 | B.30 | **Databricks relational_store** — SQL Warehouse / Unity Catalog SQL | §7.1.3 P2 | **Medium** | **Done** (beta) | Analytics agents, lakehouse reporting | Tier-0 | `providers/databricks/`; single-entry `opens.py`; PAT |
 | B.31 | **MongoDB document_store** — flexible JSON persistence | §7.1.3 P2 | **Medium** | **Done** (beta) | Agent memory, unstructured artifacts | Tier-0 | `providers/mongodb/`; PyMongo only in `opens.py`; reuses `DocumentStore` |
-| B.32 | **Pinecone vector_store bridge** — catalog entry → `rag/` | §7.1.3 P2 | **Medium** | **Open** | Production RAG agents | Tier-0 | `providers/pinecone/` thin adapter; SDK only in `opens.py`; no RAG fork |
+| B.32 | **Pinecone vector_store bridge** — catalog entry → `rag/` | §7.1.3 P2 | **Medium** | **Done** (beta) | Production RAG agents | Tier-0 | `providers/pinecone/` thin adapter; SDK only in `opens.py` |
 | B.33 | **Qdrant + Chroma vector_store bridges** — same pattern as B.32 | §7.1.3 P2 | **Low** | **Open** | Self-hosted / dev RAG | Tier-0 | `providers/qdrant/`, `providers/chroma/` |
 | B.34 | **Object storage contract + S3 provider** — blobs for artifacts / sandboxes | §7.1.3 P2 | **Medium** | **Open** | Large file handoff, exports | Tier-0 | `contracts/object_storage.py` then `providers/s3/`; boto3 only in `opens.py` |
 | B.35 | **Notion + SharePoint wiki_knowledge** — internal docs ingestion | §7.1.3 P3 | **Low** | **Open** | Research / runbook agents | Tier-0 | REST adapters; httpx only in `opens.py` |
@@ -1474,7 +1474,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 6. ~~B.09, B.17~~ — debug trace injection + gate collection (Done 2026-05-27)
 7. ~~B.06~~ — hook parity doc + lifecycle wiring (Done 2026-05-27)
 8. B.07, B.11, B.13, B.15–B.18 — as capacity allows
-9. M.6 P2 — **pinecone** (B.32), then qdrant/chroma (B.33)
+9. M.6 P2 — **qdrant/chroma** (B.33)
 10. M.6 P2/P3 — object storage (B.34), service slugs (`azure_blob`, `gcs`, `s3`), email_smtp, notion, github, otel, playwright
 ```
 
@@ -1482,5 +1482,5 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 ---
 
-*Plan synced with codebase after B.31 MongoDB (2026-05-29). Gate: 266 integration unit tests.*
+*Plan synced with codebase after B.32 Pinecone (2026-05-29). Gate: 277 integration unit tests.*
 

@@ -684,8 +684,8 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 | **`elasticsearch`** | observability_backend | **Beta** | Log search / aggregations (`_search` + Lucene `query_string`); complements `prometheus` |
 | **`databricks`** | relational_store | **Beta** | SQL Warehouse / Unity Catalog; lakehouse analytics via `RelationalStore` |
 | **`mongodb`** | document_store | **Beta** | Flexible JSON documents; partition-scoped CRUD via PyMongo |
-| **`pinecone`** | vector_store | **Open** (P2 next) | Managed RAG index; thin catalog bridge to `rag/` |
-| `qdrant` | vector_store | Planned (P2) | Self-hosted / cloud vectors; bridge to `rag/` |
+| **`pinecone`** | vector_store | **Beta** | Catalog bridge to `rag/`; `IntegrationProfile.vector_store` |
+| `qdrant` | vector_store | Planned (P2 next) | Self-hosted / cloud vectors; bridge to `rag/` |
 | `chroma` | vector_store | Planned (P2) | Local/dev vectors; bridge to `rag/` |
 | `s3` | object_storage | Planned (P2) | Artifacts, sandbox exports (requires `object_storage` contract) |
 | `otel` | observability_backend | Planned | Unified traces/metrics export |

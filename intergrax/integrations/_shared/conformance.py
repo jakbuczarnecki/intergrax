@@ -19,6 +19,7 @@ from intergrax.integrations.contracts.message_bus import MessageBus
 from intergrax.integrations.contracts.notification_channel import NotificationChannel
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.contracts.search_provider import SearchProvider
+from intergrax.integrations.contracts.vector_store import VectorStore
 
 T = TypeVar("T")
 
@@ -77,3 +78,13 @@ def assert_collaboration_suite(instance: object) -> CollaborationSuite:
 
 def assert_document_store(instance: object) -> DocumentStore:
     return assert_implements(instance, DocumentStore)
+
+
+def assert_vector_store(instance: object) -> VectorStore:
+    from intergrax.integrations.contracts.vector_store import VectorStore
+
+    if not isinstance(instance, VectorStore):
+        raise AssertionError(
+            f"Expected instance of VectorStore, got {type(instance)!r}"
+        )
+    return instance

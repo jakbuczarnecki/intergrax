@@ -65,6 +65,11 @@ from intergrax.integrations.contracts.notification_channel import (
 )
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.contracts.search_provider import SearchProvider
+from intergrax.integrations.contracts.vector_store import (
+    MetadataFilter,
+    VectorStore,
+    VectorStoreHit,
+)
 
 __all__ = [
     "PROFILE_FIELD_BY_CATEGORY",
@@ -103,6 +108,9 @@ __all__ = [
     "NotificationChannel",
     "RelationalStore",
     "SearchProvider",
+    "MetadataFilter",
+    "VectorStore",
+    "VectorStoreHit",
     "TaskHandle",
     "TaskQueue",
     "TaskRequest",
