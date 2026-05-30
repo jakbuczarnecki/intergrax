@@ -27,6 +27,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.lab_json.register import register_lab_json_integration
     from intergrax.integrations.providers.log.register import register_log_integration
     from intergrax.integrations.providers.postgresql.register import register_postgresql_integration
+    from intergrax.integrations.providers.mysql.register import register_mysql_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -44,6 +45,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_lab_json_integration(override=override)
     register_log_integration(override=override)
     register_postgresql_integration(override=override)
+    register_mysql_integration(override=override)
     _BOOTSTRAPPED = True
 
 

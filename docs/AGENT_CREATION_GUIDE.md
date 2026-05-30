@@ -672,6 +672,7 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 |------|----------|-------------------|
 | `sqlite` | relational_store | Trace, checkpoints, runtime events, HITL (lab) |
 | `postgresql` | relational_store | Production SQL facade (`RelationalStore` via `create_postgresql_relational_store()` only) |
+| `mysql` | relational_store | Production SQL facade (`RelationalStore` via `create_mysql_relational_store()` only) |
 | `redis` | key_value_cache | Idempotency, rate limits, distributed locks |
 | `kafka`, `rabbitmq`, `celery` | message_bus | Worker queues, async Nexus execution |
 | `google_cse`, `bing` | search_provider | Research / web tools |

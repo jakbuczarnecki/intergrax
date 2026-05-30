@@ -641,7 +641,7 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 
 | Slug | Category | Status | Rationale |
 |------|----------|--------|-----------|
-| `mysql` | relational_store | Planned | Common LAMP / managed DB alternative to Postgres |
+| `mysql` | relational_store | Beta | Production relational store (`RelationalStore` via pymysql); optional `tenant_database` |
 | `rabbitmq` | message_bus | **Done** (+ adopcja) | `providers/rabbitmq/` — runtime transport delegates here |
 | `prometheus` | observability_backend | Planned | Metrics-third canon (§33); SLO dashboards |
 | `jira` | issue_tracker | Planned | Task ingestion, agent workflow triggers |
