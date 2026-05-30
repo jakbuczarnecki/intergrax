@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Tier-3 application scaffold CLI (Phase N.3) — lab profile with debug API."""
+"""Tier-3 application scaffold CLI (Phase N.3–N.4) — lab and product profiles."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from intergrax.scaffold.application_names import (
     short_id,
 )
 
-_PROFILES = ("lab",)
+_PROFILES = ("lab", "product")
 
 # Backward-compatible aliases for tests/tools.
 _app_slug = app_slug
@@ -799,30 +799,17 @@ def _smoke_test(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
     )
 
 
-def create_application(
+def _create_lab_application(
     *,
-    name: str,
-    agents: list[str],
+    names: ScaffoldApplicationNames,
+    specs: list[ScaffoldAgentSpec],
+    target: Path,
     profile: str,
-    root: Path,
-    route_prefix: str | None = None,
-    port: int = 8091,
-    force: bool = False,
-) -> Path:
-    if profile not in _PROFILES:
-        raise ValueError(f"Unsupported profile {profile!r}; choose: {', '.join(_PROFILES)}")
-
-    names = ScaffoldApplicationNames.resolve(
-        name,
-        route_prefix=route_prefix,
-        port=port,
-    )
-    specs = resolve_agent_specs(agents)
+    force: bool,
+) -> None:
     agent_dirs = _agent_dirs(specs)
-
-    target = root / "applications" / names.pkg
-    if target.exists() and not force:
-        raise FileExistsError(f"Application directory already exists: {target}")
+    cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
+    health_path = f"{names.route_prefix}/agents"
 
     _write(target / "__init__.py", "", force=force)
     _write(target / "manifest.py", _manifest_py(names, specs), force=force)
@@ -862,11 +849,10 @@ def create_application(
         port=names.port,
         env_prefix=names.env_prefix,
         agent_dirs=agent_dirs,
-        health_path=f"{names.route_prefix}/agents",
+        health_path=health_path,
         force=force,
     )
 
-    cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
     _write(
         target / "BUILD_AND_DEPLOY.md",
         render_build_deploy_doc(
@@ -878,12 +864,131 @@ def create_application(
             profile=profile,
             agent_dirs=agent_dirs,
             example_capability=cap,
-            health_path=f"{names.route_prefix}/agents",
+            health_path=health_path,
             tests_pkg=names.tests_pkg,
             display=names.display,
         ),
         force=force,
     )
+
+
+def _create_product_application(
+    *,
+    names: ScaffoldApplicationNames,
+    specs: list[ScaffoldAgentSpec],
+    target: Path,
+    profile: str,
+    force: bool,
+) -> None:
+    from intergrax.scaffold import new_application_product as product_tpl
+
+    agent_dirs = _agent_dirs(specs)
+    cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
+    health_path = "/health"
+
+    _write(target / "__init__.py", "", force=force)
+    _write(target / "manifest.py", product_tpl.manifest_py(names, specs), force=force)
+    _write(target / "README.md", product_tpl.readme(names, specs), force=force)
+    _write(
+        target / ".env.example",
+        product_tpl.env_example(names.env_prefix, names.route_prefix, names.port, specs),
+        force=force,
+    )
+
+    _write(target / "host" / "__init__.py", "", force=force)
+    _write(target / "host" / "settings.py", product_tpl.settings_py(names), force=force)
+    _write(target / "host" / "agent_builders.py", product_tpl.agent_builders_py(names, specs), force=force)
+    _write(target / "host" / "agent_factories.py", product_tpl.agent_factories_py(names, specs), force=force)
+    _write(target / "host" / "wiring.py", product_tpl.wiring_py(names), force=force)
+    _write(target / "host" / "integration_wiring.py", product_tpl.integration_wiring_py(names), force=force)
+    _write(target / "host" / "factory.py", product_tpl.factory_py(names), force=force)
+    _write(target / "host" / "main.py", product_tpl.main_py(names), force=force)
+
+    _write(target / "serving" / "__init__.py", "", force=force)
+    _write(target / "serving" / "schemas.py", product_tpl.schemas_py(names), force=force)
+    _write(target / "serving" / "fastapi_router.py", product_tpl.serving_router_py(names, specs), force=force)
+
+    _write(target / "mcp" / "__init__.py", "", force=force)
+    _write(target / "mcp" / "server.py", product_tpl.mcp_server_py(names, specs), force=force)
+
+    _write(target / names.tests_pkg / "__init__.py", "", force=force)
+    _write(
+        target / names.tests_pkg / "host" / f"test_{names.short}_host_smoke.py",
+        product_tpl.smoke_test(names, specs),
+        force=force,
+    )
+    _write(target / names.tests_pkg / "host" / "__init__.py", "", force=force)
+
+    write_application_docker(
+        target,
+        pkg=names.pkg,
+        short=names.short,
+        port=names.port,
+        env_prefix=names.env_prefix,
+        agent_dirs=agent_dirs,
+        health_path=health_path,
+        force=force,
+    )
+
+    _write(
+        target / "BUILD_AND_DEPLOY.md",
+        render_build_deploy_doc(
+            pkg=names.pkg,
+            short=names.short,
+            port=names.port,
+            env_prefix=names.env_prefix,
+            route_prefix=names.route_prefix,
+            profile=profile,
+            agent_dirs=agent_dirs,
+            example_capability=cap,
+            health_path=health_path,
+            tests_pkg=names.tests_pkg,
+            display=names.display,
+        ),
+        force=force,
+    )
+
+
+def create_application(
+    *,
+    name: str,
+    agents: list[str],
+    profile: str,
+    root: Path,
+    route_prefix: str | None = None,
+    port: int = 8091,
+    force: bool = False,
+) -> Path:
+    if profile not in _PROFILES:
+        raise ValueError(f"Unsupported profile {profile!r}; choose: {', '.join(_PROFILES)}")
+
+    names = ScaffoldApplicationNames.resolve(
+        name,
+        route_prefix=route_prefix,
+        port=port,
+    )
+    specs = resolve_agent_specs(agents)
+
+    target = root / "applications" / names.pkg
+    if target.exists() and not force:
+        raise FileExistsError(f"Application directory already exists: {target}")
+
+    if profile == "lab":
+        _create_lab_application(
+            names=names,
+            specs=specs,
+            target=target,
+            profile=profile,
+            force=force,
+        )
+    else:
+        _create_product_application(
+            names=names,
+            specs=specs,
+            target=target,
+            profile=profile,
+            force=force,
+        )
 
     return target
 
@@ -891,7 +996,7 @@ def create_application(
 def register_parser(sub: argparse._SubParsersAction) -> None:
     parser = sub.add_parser(
         "new-application",
-        help="Create applications/<name>_application/ (lab profile, Tier-3)",
+        help="Create applications/<name>_application/ (lab or product profile, Tier-3)",
     )
     parser.add_argument("name", help="Application name (e.g. my_lab → my_lab_application)")
     parser.add_argument(
@@ -903,9 +1008,14 @@ def register_parser(sub: argparse._SubParsersAction) -> None:
         "--profile",
         choices=_PROFILES,
         default="lab",
-        help="Application profile (default: lab)",
+        help="Application profile: lab (debug API) or product (FastAPI Core host)",
     )
-    parser.add_argument("--port", type=int, default=8091, help="Default HTTP port")
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help="Default HTTP port (lab default 8091, product default 8000)",
+    )
     parser.add_argument(
         "--prefix",
         dest="route_prefix",
@@ -921,8 +1031,15 @@ def register_parser(sub: argparse._SubParsersAction) -> None:
     parser.add_argument("--force", action="store_true", help="Overwrite if exists")
 
 
+def _default_port(profile: str, port: int | None) -> int:
+    if port is not None:
+        return port
+    return 8000 if profile == "product" else 8091
+
+
 def run_new_application(args: argparse.Namespace) -> int:
     agent_list = [a.strip() for a in args.agents.split(",") if a.strip()]
+    port = _default_port(args.profile, args.port)
     try:
         path = create_application(
             name=args.name,
@@ -930,7 +1047,7 @@ def run_new_application(args: argparse.Namespace) -> int:
             profile=args.profile,
             root=args.root.resolve(),
             route_prefix=args.route_prefix,
-            port=args.port,
+            port=port,
             force=args.force,
         )
     except (ValueError, FileExistsError) as exc:
@@ -940,12 +1057,14 @@ def run_new_application(args: argparse.Namespace) -> int:
     names = ScaffoldApplicationNames.resolve(
         args.name,
         route_prefix=args.route_prefix,
-        port=args.port,
+        port=port,
     )
-    print(f"Created Tier-3 application at {path}")
+    print(f"Created Tier-3 application at {path}  (profile={args.profile})")
     print(f"  Package: {names.pkg}  (app_id={names.short!r}, env={names.env_prefix})")
     print(f"  Start:  uv run uvicorn {names.pkg}.host.main:app --host 127.0.0.1 --port {names.port}")
     print(f"  Test:   uv run pytest {path / names.tests_pkg} -q")
+    if args.profile == "product":
+        print(f"  Health: GET http://127.0.0.1:{names.port}/health")
     print(f"  Agents: GET http://127.0.0.1:{names.port}{names.route_prefix}/agents")
     print(f"  Run:    POST http://127.0.0.1:{names.port}{names.route_prefix}/run")
     print(f"  MCP:    http://127.0.0.1:{names.port}/mcp  (FastMCP, coupled to FastAPI)")
