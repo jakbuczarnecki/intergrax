@@ -38,6 +38,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.gcp.register import register_gcp_integration
     from intergrax.integrations.providers.elasticsearch.register import register_elasticsearch_integration
     from intergrax.integrations.providers.databricks.register import register_databricks_integration
+    from intergrax.integrations.providers.mongodb.register import register_mongodb_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -66,6 +67,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_gcp_integration(override=override)
     register_elasticsearch_integration(override=override)
     register_databricks_integration(override=override)
+    register_mongodb_integration(override=override)
     _BOOTSTRAPPED = True
 
 

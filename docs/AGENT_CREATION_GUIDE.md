@@ -683,11 +683,27 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 | `gcp` | cloud_platform | GCP facade (`create_gcp_cloud_platform()` only) |
 | `elasticsearch` | observability_backend | Log search / aggregations (`create_elasticsearch_observability_backend()` only) |
 | `databricks` | relational_store | SQL Warehouse / Unity Catalog (`create_databricks_relational_store()` only) |
+| `mongodb` | document_store | Flexible JSON store (`create_mongodb_document_store()` only) |
 | `redis` | key_value_cache | Idempotency, rate limits, distributed locks |
 | `kafka`, `rabbitmq`, `celery` | message_bus | Worker queues, async Nexus execution |
 | `google_cse`, `bing` | search_provider | Research / web tools |
 | `slack`, `teams`, `webhook`, `log` | notification_channel | Long-running progress, HITL alerts |
 | `lab_json`, `slack`, `teams` | interaction_surface | Inbound webhooks / lab JSON intake |
+
+### Planned integrations (M.6 P2 / P3 — not yet in default bootstrap)
+
+| Slug | Category | Notes |
+|------|----------|-------|
+| `pinecone` | vector_store | Catalog bridge to `rag/` — `create_pinecone_vector_store()` (B.32) |
+| `qdrant`, `chroma` | vector_store | Same bridge pattern as pinecone (B.33) |
+| `s3`, `azure_blob`, `gcs` | object_storage | Requires `object_storage` contract first (B.34) |
+| `notion`, `sharepoint` | wiki_knowledge | REST wiki sources (B.35) |
+| `github`, `linear` | issue_tracker | Dev workflow ingestion (B.36) |
+| `email_smtp` | notification_channel | SMTP outbound (B.37) |
+| `otel` | observability_backend | OTLP export (B.38) |
+| `playwright` | browser_automation | Dynamic web (B.39) |
+
+Full prioritized backlog: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) — **M.6 P2 tracker**, **M.6 P3 backlog**, **B.31–B.39**.
 
 LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them separately.
 

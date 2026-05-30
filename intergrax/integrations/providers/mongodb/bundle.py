@@ -1,0 +1,74 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""
+Complete MongoDB integration bundle — the single composition root for MongoDB in Intergrax.
+
+Driver connections are opened only in ``opens.py``. Tier-3 code MUST use
+``create_mongodb_document_store()``, ``create_mongodb_integration()``, or
+``profile.resolve(IntegrationCategory.DOCUMENT_STORE)``.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Callable, Optional
+
+from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.integrations.providers.mongodb.adapter import MongoDBDocumentStore
+from intergrax.integrations.providers.mongodb.client import MongoCollectionClient
+from intergrax.integrations.providers.mongodb.config import MongoDBIntegrationConfig
+from intergrax.integrations.providers.mongodb.opens import open_mongodb_document_store
+
+
+@dataclass(frozen=True)
+class MongoDBIntegrationBundle:
+    config: MongoDBIntegrationConfig
+    document_store: MongoDBDocumentStore
+    collection_client: MongoCollectionClient
+
+
+def resolve_mongodb_config(**overrides: object) -> MongoDBIntegrationConfig:
+    return MongoDBIntegrationConfig.from_env(**overrides)
+
+
+def create_mongodb_integration(
+    *,
+    document_store: Optional[DocumentStore] = None,
+    collection: Optional[object] = None,
+    client: Optional[object] = None,
+    collection_factory: Optional[Callable[[], object]] = None,
+    **config_overrides: object,
+) -> MongoDBIntegrationBundle:
+    config = resolve_mongodb_config(**config_overrides)
+    store = open_mongodb_document_store(
+        config,
+        implementation=document_store,
+        collection=collection,
+        client=client,
+        collection_factory=collection_factory,
+    )
+    assert isinstance(store, MongoDBDocumentStore)
+    return MongoDBIntegrationBundle(
+        config=config,
+        document_store=store,
+        collection_client=store.mongo_client,
+    )
+
+
+def create_mongodb_document_store(
+    *,
+    document_store: Optional[DocumentStore] = None,
+    collection: Optional[object] = None,
+    client: Optional[object] = None,
+    collection_factory: Optional[Callable[[], object]] = None,
+    **config_overrides: object,
+) -> MongoDBDocumentStore:
+    """Catalog factory for ``IntegrationSlug.MONGODB`` / ``DOCUMENT_STORE``."""
+    return create_mongodb_integration(
+        document_store=document_store,
+        collection=collection,
+        client=client,
+        collection_factory=collection_factory,
+        **config_overrides,
+    ).document_store

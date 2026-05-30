@@ -673,7 +673,6 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 | `oracle` | relational_store | Planned | Enterprise clients on Oracle |
 | `mssql` | relational_store | Planned | Microsoft SQL deployments |
 | `cassandra` | document_store | Beta | High-volume log / event retention (partition-scoped CQL) |
-| `mongodb` | document_store | Planned | Flexible schema stores |
 | `memcached` | key_value_cache | Planned | Simple cache tier |
 | `sqs` | message_bus | Planned | AWS-native queues (also via `aws` facade) |
 | `azure_blob` | object_storage | Planned | Azure artifact storage (also via `azure` facade) |
@@ -684,12 +683,21 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 | `elasticache` | key_value_cache | Planned | Managed Redis on AWS (via `aws` facade) |
 | **`elasticsearch`** | observability_backend | **Beta** | Log search / aggregations (`_search` + Lucene `query_string`); complements `prometheus` |
 | **`databricks`** | relational_store | **Beta** | SQL Warehouse / Unity Catalog; lakehouse analytics via `RelationalStore` |
+| **`mongodb`** | document_store | **Beta** | Flexible JSON documents; partition-scoped CRUD via PyMongo |
+| **`pinecone`** | vector_store | **Open** (P2 next) | Managed RAG index; thin catalog bridge to `rag/` |
+| `qdrant` | vector_store | Planned (P2) | Self-hosted / cloud vectors; bridge to `rag/` |
+| `chroma` | vector_store | Planned (P2) | Local/dev vectors; bridge to `rag/` |
+| `s3` | object_storage | Planned (P2) | Artifacts, sandbox exports (requires `object_storage` contract) |
 | `otel` | observability_backend | Planned | Unified traces/metrics export |
 | `playwright` | browser_automation | Planned | Dynamic web research beyond HTTP fetch |
 | `azure_devops` | issue_tracker | Planned | Microsoft ALM |
 | `github` | issue_tracker | Planned | Dev-centric task sources |
 | `google_workspace` | collaboration_suite | Planned | Gmail / Calendar for Google tenants |
-| `qdrant` / `pinecone` / `chroma` | vector_store | **Exists** in `rag/` | Register in catalog; do not duplicate RAG stack |
+| `notion` / `sharepoint` | wiki_knowledge | Planned | Internal docs beyond Confluence |
+| `email_smtp` | notification_channel | Planned | Outbound mail without chat vendors |
+| `brave` / `serpapi` | search_provider | Planned | Alternative web research APIs |
+
+**Vector-store note:** `pinecone`, `qdrant`, and `chroma` implementations live in `intergrax/rag/vectorstore/`. Integration Library adds thin catalog bridges (`providers/<slug>/`) so Tier-3 can set `IntegrationProfile.vector_store` — see Phase M.6 P2 in the implementation plan.
 
 New integrations require **human approval** when they introduce a new **category** (§5.2.4). New **providers** within an existing category follow the provider checklist in the implementation plan (Phase M).
 
