@@ -25,6 +25,8 @@ class ToolWiringContext:
     notification_channel: Any | None = None
     observability_backend: Any | None = None
     rag_manager: Any | None = None
+    vectorstore_manager: Any | None = None
+    embedding_manager: Any | None = None
     websearch_executor: Any | None = None
     extras: dict[str, Any] = field(default_factory=dict)
 
@@ -34,6 +36,8 @@ class ToolWiringContext:
         profile: Any,
         *,
         rag_manager: Any | None = None,
+        vectorstore_manager: Any | None = None,
+        embedding_manager: Any | None = None,
         websearch_executor: Any | None = None,
         extras: Optional[Mapping[str, Any]] = None,
     ) -> ToolWiringContext:
@@ -60,6 +64,8 @@ class ToolWiringContext:
             notification_channel=_optional(IntegrationCategory.NOTIFICATION_CHANNEL),
             observability_backend=_optional(IntegrationCategory.OBSERVABILITY_BACKEND),
             rag_manager=rag_manager,
+            vectorstore_manager=vectorstore_manager,
+            embedding_manager=embedding_manager,
             websearch_executor=websearch_executor,
             extras=dict(extras or {}),
         )

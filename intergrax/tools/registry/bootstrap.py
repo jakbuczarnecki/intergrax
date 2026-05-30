@@ -19,7 +19,10 @@ def register_default_tools(*, override: bool = False) -> None:
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
         return
-    # Catalog bundles register here as they ship — see Phase O.3/O.4.
+
+    from intergrax.tools.providers.rag.register import register_rag_tool_bundle
+
+    register_rag_tool_bundle(override=override)
     _BOOTSTRAPPED = True
 
 
