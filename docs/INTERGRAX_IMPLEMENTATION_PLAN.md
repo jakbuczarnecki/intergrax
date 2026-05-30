@@ -543,8 +543,9 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 1. Implement `providers/<slug>/` (wrap legacy module — no fork).
 2. Register via `register_<slug>_integration()` + `register_default_integrations()`.
 3. Unit tests under `tests/unit/integrations/providers/`.
-4. Update canon §7.1.3 status + this tracker + migration map row.
-5. Next slug in priority order.
+4. Add `providers/<slug>/USAGE.md` — English usage guide (factory + `IntegrationProfile` + API invoke example).
+5. Update canon §7.1.3 status + this tracker + migration map row.
+6. Next slug in priority order.
 
 #### M.4 provider tracker
 
@@ -929,9 +930,11 @@ Each provider PR is **done** when:
 
 1. Contract conformance tests pass.
 2. Registered in `catalog.py` with metadata.
-3. README lists env vars + smoke steps.
+3. `providers/<slug>/USAGE.md` — English: env vars, factory call, `IntegrationProfile` resolve, minimal invoke example.
 4. At least one Tier-3 app or lab factory can select it via `IntegrationProfile`.
 5. No new direct vendor imports added under `agents/`.
+
+Szablony utrzymywane przez `scripts/generate_integration_usage_docs.py` (regeneracja po dodaniu providera).
 
 ---
 

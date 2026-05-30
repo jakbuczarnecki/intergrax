@@ -718,6 +718,8 @@ When building a new agent or application:
 
 Further detail: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase M, migration map M.5.
 
+Each provider under `intergrax/integrations/providers/<slug>/` includes an English **`USAGE.md`** with factory + `IntegrationProfile` wiring and a minimal contract API example.
+
 ---
 
 ## Anti-patterns
