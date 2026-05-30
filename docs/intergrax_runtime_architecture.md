@@ -791,7 +791,7 @@ Tier-0  Integration Library     →  vendor adapters (IssueTracker, SearchProvid
 ```text
 intergrax/tools/
 ├── core/                   # ToolContract, execution models, ToolProvider protocol (exists)
-├── registry/               # ToolCatalog, register_default_tools(), ToolProfile (Phase O)
+├── registry/               # ToolCatalog, register_default_tools(), ToolProfile (Phase O — Done)
 ├── exporters/              # OpenAI / Anthropic / MCP schema export (Phase O)
 ├── _shared/                # schema helpers, LLM description lint, JQL/query builders
 └── providers/
@@ -851,7 +851,7 @@ Every catalog tool MUST be exportable as:
 
 Single source of truth: `ToolContract` in the catalog — not parallel schema definitions per surface.
 
-**Catalog reference:** [`TOOLS.md`](TOOLS.md) · Implementation: Phase O in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+**Catalog reference:** [`TOOLS.md`](TOOLS.md) — 11 first-party tools **Done** (Phase O.4, 2026-05-30) · Implementation: Phase O in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
 
 ### 7.1.7 Unified Tool Model — Everything Is a Tool
 
@@ -1991,11 +1991,11 @@ All agent and Nexus tool invocation MUST route through **`ToolRuntime`** with po
 |---------|----------|
 | Tool contract + handler protocol | `intergrax/tools/core/`, `intergrax/tools/tool_executor.py` |
 | Catalog + providers | `intergrax/tools/providers/` (Phase O) |
-| Registry | `intergrax/tools/registry.py` |
+| Registry | `intergrax/tools/registry/` |
 | LLM planner | `intergrax/tools/tools_agent.py` |
 | Runtime enforcement | `intergrax/runtime/nexus/tools/` (`RuntimeToolInvoker`, `RuntimeToolGateway`) |
 
-**Catalog index:** [`TOOLS.md`](TOOLS.md).
+**Catalog index:** [`TOOLS.md`](TOOLS.md) — first-party catalog (11 `tool_id`s: retrieval, Jira, Confluence, notify, observability, sandbox) registered via `register_default_tools()` (Phase O.4, 2026-05-30).
 
 ## 22.1 Context-Injection Tools
 

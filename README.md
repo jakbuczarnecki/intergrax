@@ -268,19 +268,22 @@ The **Tool Library** (`intergrax/tools/`) provides:
 | **Dual export** | Same catalog entry → OpenAI function schema, MCP tool, and UAEP `ToolRequest`. |
 | **Unified model (target)** | RAG and web search become catalog tools (`rag.retrieve`, `websearch.query`) — replacing legacy `use_rag` / `use_websearch` pipeline flags. |
 
-**Engine today:** `ToolContract`, `ToolRegistry`, `RuntimeToolInvoker`, `ToolsAgent`, `sandbox.exec`.  
-**Catalog providers:** Phase O.3 **Done** — `rag.retrieve`, `websearch.query`; next: `jira.*` (O.4).
+**Engine today:** `ToolContract`, `ToolRegistry`, `RuntimeToolInvoker`, `ToolsAgent`.  
+**Catalog providers (Phase O.4 Done):** `rag.retrieve`, `websearch.query`, `jira.*`, `confluence.*`, `notify.send`, `metrics.query_instant`, `logs.search`, `sandbox.exec`. Next: unified model migration (O.5).
 
 ```python
 # Tier-2 agent — declare tool policy, not vendors
 AgentContract(
     id="pm",
-    allowed_tools=["jira.search_tasks", "jira.get_issue", "rag.retrieve"],
+    allowed_tools=["jira.search_tasks", "jira.get_issue", "rag.retrieve", "confluence.search_pages"],
 )
 
 # Tier-3 application — wire integrations into tool handlers
-# ToolWiringContext(issue_tracker=profile.resolve(ISSUE_TRACKER))
-# register_jira_tools(registry, ctx)
+from intergrax.tools.registry import ToolProfile, ToolWiringContext, build_registry_from_profile, register_default_tools
+
+register_default_tools()
+ctx = ToolWiringContext.from_integration_profile(integration_profile)
+registry = build_registry_from_profile(ToolProfile(enabled_bundles=["jira", "confluence"]), ctx=ctx)
 ```
 
 **Full catalog (tool_ids, status, migration from legacy flags):**  

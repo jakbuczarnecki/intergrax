@@ -79,7 +79,7 @@ profile = IntegrationProfile(issue_tracker=IntegrationSlug.JIRA)
 ctx = ToolWiringContext.from_integration_profile(profile)
 
 registry = build_registry_from_profile(
-    ToolProfile(enabled_bundles=["jira"]),  # Phase O.4
+    ToolProfile(enabled_bundles=["jira"]),
     ctx=ctx,
 )
 ```
@@ -109,7 +109,7 @@ These components exist in the repository **before** the full provider catalog sh
 
 ## Catalog tools
 
-Status legend: **Done** = registered handler in catalog; **Engine only** = invoked outside catalog path; **Planned** = Phase O backlog.
+Status legend: **Done** = registered handler in catalog; **Planned** = Phase O backlog (migration / exporters).
 
 ### Context & retrieval
 
@@ -124,35 +124,35 @@ Status legend: **Done** = registered handler in catalog; **Engine only** = invok
 
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
-| `sandbox.exec` | **Engine only** | Execute allowlisted operation in runtime sandbox | `intergrax/runtime/sandbox/` |
+| `sandbox.exec` | **Done** | Execute allowlisted operation in runtime sandbox | `sandbox_session` via `ToolWiringContext` |
 
 ### Issue tracker (Jira)
 
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
-| `jira.get_issue` | Planned (O.4) | Fetch single issue by key | `IssueTracker` (`jira` integration) |
-| `jira.add_comment` | Planned (O.4) | Add comment to issue | `IssueTracker` |
-| `jira.search_tasks` | Planned (O.4) | Search issues by project, status, assignee (builds JQL internally) | `IssueTracker` |
+| `jira.get_issue` | **Done** | Fetch single issue by key | `IssueTracker` (`jira` integration) |
+| `jira.add_comment` | **Done** | Add comment to issue | `IssueTracker` |
+| `jira.search_tasks` | **Done** | Search issues by project, status, assignee (builds JQL internally) | `IssueTracker` |
 
 ### Wiki / knowledge
 
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
-| `confluence.get_page` | Planned (O.6) | Fetch wiki page content | `WikiKnowledge` |
-| `confluence.search_pages` | Planned (O.6) | Search internal documentation | `WikiKnowledge` |
+| `confluence.get_page` | **Done** | Fetch wiki page content | `WikiKnowledge` |
+| `confluence.search_pages` | **Done** | Search internal documentation | `WikiKnowledge` |
 
 ### Notifications (side-effect tools)
 
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
-| `notify.send` | Planned (O.6) | Send outbound notification message | `NotificationChannel` |
+| `notify.send` | **Done** | Send outbound notification message | `NotificationChannel` |
 
 ### Observability
 
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
-| `metrics.query_instant` | Planned (O.6) | Instant metrics query | `ObservabilityBackend` (`prometheus`) |
-| `logs.search` | Planned (O.6) | Search log index | `ObservabilityBackend` (`elasticsearch`) |
+| `metrics.query_instant` | **Done** | Instant metrics query | `ObservabilityBackend` (`prometheus`) |
+| `logs.search` | **Done** | Search log index | `ObservabilityBackend` (`elasticsearch`) |
 
 ---
 
@@ -208,16 +208,16 @@ Alphabetical reference — all target first-party tools.
 
 | tool_id | Category | Status | Integration / module |
 |---------|----------|--------|----------------------|
-| `confluence.get_page` | wiki | Planned | `confluence` |
-| `confluence.search_pages` | wiki | Planned | `confluence` |
-| `jira.add_comment` | issue_tracker | Planned | `jira` |
-| `jira.get_issue` | issue_tracker | Planned | `jira` |
-| `jira.search_tasks` | issue_tracker | Planned | `jira` |
-| `logs.search` | observability | Planned | `elasticsearch` |
-| `metrics.query_instant` | observability | Planned | `prometheus` |
-| `notify.send` | notification | Planned | `notification_channel` slug |
+| `confluence.get_page` | wiki | **Done** | `confluence` | [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
+| `confluence.search_pages` | wiki | **Done** | `confluence` | [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
+| `jira.add_comment` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
+| `jira.get_issue` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
+| `jira.search_tasks` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
+| `logs.search` | observability | **Done** | `elasticsearch` | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
+| `metrics.query_instant` | observability | **Done** | `prometheus` | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
+| `notify.send` | notification | **Done** | `notification_channel` slug | [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
 | `rag.retrieve` | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
-| `sandbox.exec` | sandbox | Engine only | `runtime/sandbox/` |
+| `sandbox.exec` | sandbox | **Done** | `sandbox_session` | [USAGE](../intergrax/tools/providers/sandbox/USAGE.md) |
 | `websearch.query` | retrieval | **Done** | `websearch_executor`, `search_provider` | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
 
 ---
@@ -244,7 +244,7 @@ Tool runtime regression (existing):
 uv run pytest tests/unit/runtime/tools/ tests/unit/tools/ -q
 ```
 
-Catalog conformance (Phase O.6+):
+Catalog conformance (Phase O.4+):
 
 ```bash
 uv run pytest tests/unit/tools/providers/ -q

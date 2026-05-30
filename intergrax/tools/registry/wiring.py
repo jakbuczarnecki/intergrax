@@ -28,6 +28,7 @@ class ToolWiringContext:
     vectorstore_manager: Any | None = None
     embedding_manager: Any | None = None
     websearch_executor: Any | None = None
+    sandbox_session: Any | None = None
     extras: dict[str, Any] = field(default_factory=dict)
 
     @classmethod

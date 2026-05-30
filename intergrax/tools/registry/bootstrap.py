@@ -13,18 +13,30 @@ def register_default_tools(*, override: bool = False) -> None:
     Idempotent registration of shipped tool catalog bundles.
 
     Call from Tier-3 application factories before ``build_registry_from_profile()``.
-
-    Provider bundles (``jira``, ``rag``, ``websearch``, …) are added in Phase O.3–O.4.
     """
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
         return
 
+    from intergrax.tools.providers.confluence.register import register_confluence_tool_bundle
+    from intergrax.tools.providers.jira.register import register_jira_tool_bundle
+    from intergrax.tools.providers.notify.register import register_notify_tool_bundle
+    from intergrax.tools.providers.observability.register import register_observability_tool_bundle
     from intergrax.tools.providers.rag.register import register_rag_tool_bundle
+    from intergrax.tools.providers.sandbox.register import register_sandbox_tool_bundle
     from intergrax.tools.providers.websearch.register import register_websearch_tool_bundle
 
-    register_rag_tool_bundle(override=override)
-    register_websearch_tool_bundle(override=override)
+    for register_fn in (
+        register_rag_tool_bundle,
+        register_websearch_tool_bundle,
+        register_jira_tool_bundle,
+        register_confluence_tool_bundle,
+        register_notify_tool_bundle,
+        register_observability_tool_bundle,
+        register_sandbox_tool_bundle,
+    ):
+        register_fn(override=override)
+
     _BOOTSTRAPPED = True
 
 
