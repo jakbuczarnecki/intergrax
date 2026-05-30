@@ -23,6 +23,8 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Tier-0 integration implementation (how) | **This file** Phase M |
 | Agent creation workflow | `AGENT_CREATION_GUIDE.md` |
 | Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
+| Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
+| Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
 | Application scaffold & deploy plan | **This file** Phase N |
 | Business-agent go/no-go checklist | **Appendix A** (below) |
 | Technical debt backlog (analysis only) | **Appendix B** (below) |
@@ -958,7 +960,9 @@ Szablony utrzymywane przez `scripts/generate_integration_usage_docs.py` (regener
 |---|-------------|--------|-------|-------|
 | N.0 | Architecture & plan documented | **Done** | §7.4.8–§7.4.10 | This section + runtime canon (2026-05-30) |
 | N.1 | `ApplicationManifest` + `AgentBinding` models | **Done** | §7.4.10 | `intergrax/applications/contracts/manifest.py` |
-| N.2 | Manifest conformance harness + unit tests | **Pending** | §7.4.10 | Validate roster imports, profile shape, feature flags |
+| N.2 | Manifest conformance harness + unit tests | **Done** | §7.4.10 | `intergrax/applications/_shared/wiring.py` |
+| N.2.1 | Unified agent initialization (builders / factories / context) | **Done** | §7.4.10 | `ApplicationBuildContext`, `build_application_registry`; lab + legal migrated |
+| N.2.2 | Strongly typed `AgentBinding.mount(AgentClass, factory=...)` | **Done** | §7.4.10 | `type[Agent]` + callable factory; `deserialize()` for scaffold strings only |
 | N.3 | `python -m intergrax.scaffold new-application` (profile `lab`) | **Pending** | §7.4.8 | Templates: host, serving, manifest, `.env.example`, README, `<app>_tests/` smoke |
 | N.4 | Scaffold profile `product` (fastapi_core skeleton) | **Pending** | §7.4.8 | Legal-style factory; optional `--agents` list |
 | N.5 | Docker templates under `applications/<app>/docker/` | **Pending** | §7.4.8 | Dockerfile + `.dockerignore`; monorepo-root build context |
@@ -1009,7 +1013,7 @@ python -m intergrax.scaffold new-application my_lab \
 
 ```text
 
-NOW:     Phase N — Application Environment & Deploy Scaffold (N.2 next)
+NOW:     Phase N — Application Environment & Deploy Scaffold (N.3 next)
 
 DONE:    Phase L certification — L1 achieved (Appendix A)
 
@@ -1070,22 +1074,24 @@ Each iteration follows **one deliverable at a time**:
 
 Do not batch N.1–N.5 in one PR unless explicitly agreed.
 
-### 6.2 Current next step — **N.2 Manifest conformance harness**
+### 6.2 Current next step — **N.3 Scaffold `new-application` (profile `lab`)**
 
-**Goal:** Validate manifest → import agent classes → minimal `AgentRegistry` build (§7.4.10).
+**Prerequisite:** N.2.1 unified wiring — scaffold must emit `manifest.py`, `agent_builders.py`, and `build_*_registry()` using ``build_application_registry()``.
+
+**Goal:** `python -m intergrax.scaffold new-application` generates a deployable Tier-3 tree.
 
 **Tasks:**
 
-1. Add `intergrax/applications/_shared/conformance.py` (or `applications/_shared/` at repo root).
-2. `load_agent_from_binding(binding) -> Agent` via `importlib`.
-3. `build_registry_from_manifest(manifest) -> AgentRegistry` with optional contract overrides.
-4. Unit tests using `echo.echo_agent.EchoAgent`; mark N.2 **Done** when green.
+1. Add `intergrax/scaffold/new_application.py` with `lab` profile templates.
+2. Generated files: `host/`, `serving/`, `manifest.py`, `.env.example`, `README.md`, `<app>_tests/`.
+3. `host/wiring.py` uses `build_registry_from_manifest(manifest)`.
+4. Acceptance smoke in gate (N.9 partial).
 
 **Verify:**
 
 ```bash
-uv run pytest tests/unit/applications/ -q
-uv run pytest tests/ -m gate -q
+uv run python -m intergrax.scaffold new-application test_lab --profile lab --agents echo --root .
+uv run pytest applications/test_lab/tests -q
 ```
 
 **Phase L — still required for any new agent work:**
@@ -1467,6 +1473,8 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-30 | M.6-mysql | `providers/mysql/` — beta `RelationalStore` (pymysql); single-entry `opens.py` |
 | 2026-05-30 | M.6-postgresql | `providers/postgresql/` — beta `RelationalStore` (psycopg3); catalog + tests |
 | 2026-05-30 | M.7-agent-guide-integrations | `AGENT_CREATION_GUIDE.md` Appendix E — agents vs Tier-3 wiring |
+| 2026-05-30 | N.2.1-unified-wiring | `ApplicationBuildContext`, `builder_key`/`factory_path`, lab+legal on `build_application_registry` |
+| 2026-05-30 | N.2-conformance | `build_registry_from_manifest`, `load_agent_from_binding` + unit tests |
 | 2026-05-30 | N.1-manifest | `ApplicationManifest`, `AgentBinding`, `ApplicationFeatures` + unit tests |
 | 2026-05-30 | N.0-docs | Canon §7.4.8–§7.4.10 + Phase N plan (application environment, manifest, scaffold steps) |
 | 2026-05-30 | M.8-lab-profile | `wire_lab_integrations()` + `providers/log/` — lab uses `IntegrationProfile.lab()` |

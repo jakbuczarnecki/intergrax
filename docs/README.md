@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-05-29
 
-The `docs/` folder contains **exactly four documents**. Nothing else belongs here.
+The `docs/` folder holds the canonical platform documentation.
 
 ---
 
@@ -13,12 +13,14 @@ The `docs/` folder contains **exactly four documents**. Nothing else belongs her
 | [**intergrax_runtime_architecture.md**](intergrax_runtime_architecture.md) | **Architecture canon** — tiers, Nexus, UAEP §42, contracts, forbidden patterns |
 | [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps, priority, readiness (Appendix A), technical debt backlog (Appendix B) |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
+| [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — all implemented providers, contracts, wiring, usage links |
 | **This file** | Navigation and update rules |
 
 ```text
-Architecture (what)      →  intergrax_runtime_architecture.md
-Implementation (status)  →  INTERGRAX_IMPLEMENTATION_PLAN.md
-Agent workflow (how)     →  AGENT_CREATION_GUIDE.md
+Architecture (what)        →  intergrax_runtime_architecture.md
+Implementation (status)    →  INTERGRAX_IMPLEMENTATION_PLAN.md
+Agent workflow (how)       →  AGENT_CREATION_GUIDE.md
+Integrations (catalog)     →  INTEGRATIONS.md
 ```
 
 ---
@@ -31,7 +33,7 @@ Agent workflow (how)     →  AGENT_CREATION_GUIDE.md
 | See current phase and what's next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §1–§4 |
 | Check readiness for business agents | Implementation plan **Appendix A** |
 | Review technical debt before Tier-1 work | Implementation plan **Appendix B** |
-| Wire external systems (DB, Slack, Jira, …) | Architecture canon §7.1, then implementation plan **Phase M** |
+| Wire external systems (DB, Slack, Jira, …) | [INTEGRATIONS.md](INTEGRATIONS.md), then architecture canon §7.1 |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
 | Deep-dive UAEP / hooks / governance | Architecture canon §42 |
 
@@ -42,7 +44,7 @@ Agent workflow (how)     →  AGENT_CREATION_GUIDE.md
 | Phase | Status |
 |-------|--------|
 | Phase L — Agent OS certification | **Done** |
-| Phase M — Integration Library (Tier-0 catalog) | **Next** — canon §7.1 + Phase M in implementation plan |
+| Phase M — Integration Library (Tier-0 catalog) | **In progress** — 29 providers; see [INTEGRATIONS.md](INTEGRATIONS.md) |
 | Phase K — Problem Radar / Vendor Discovery | **Ready to open** (product decision) |
 
 Gate: `uv run pytest tests/ -m gate -q` (**228 tests**)
@@ -54,6 +56,7 @@ Gate: `uv run pytest tests/ -m gate -q` (**228 tests**)
 1. **Architecture** → `intergrax_runtime_architecture.md`, then sync §0 in the implementation plan.
 2. **Phase / status / readiness** → `INTERGRAX_IMPLEMENTATION_PLAN.md` only.
 3. **Agent workflow** → `AGENT_CREATION_GUIDE.md` only.
-4. **Do not add** new markdown files to `docs/` without removing or merging an existing one.
+4. **Integration catalog** → `INTEGRATIONS.md` when adding or changing providers.
+5. **Do not add** new markdown files to `docs/` without updating this index.
 
 Product-specific roadmaps belong under `agents/<name>/` (e.g. `agents/legal/`), not in `docs/`.

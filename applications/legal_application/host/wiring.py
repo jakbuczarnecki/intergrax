@@ -14,7 +14,27 @@ from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.session.session_storage import SessionStorage
 from intergrax.integrations.providers.sqlite import create_sqlite_session_storage
 
+from intergrax.applications._shared.wiring import build_application_registry
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.runtime.registry.agent_registry import AgentRegistry
+from legal_application.manifest import LEGAL_APPLICATION_MANIFEST
+
 from legal_application.host.settings import LegalBackendSettings
+
+
+def build_legal_manifest(settings: LegalBackendSettings) -> ApplicationManifest:
+    """Legal manifest with runtime contract id from settings."""
+    base = LEGAL_APPLICATION_MANIFEST.agents[0]
+    binding = base.model_copy(update={"contract_id": settings.legal_default_agent_id})
+    return LEGAL_APPLICATION_MANIFEST.model_copy(update={"agents": [binding]})
+
+
+def build_legal_registry(settings: LegalBackendSettings) -> AgentRegistry:
+    """Materialize Legal agent via unified Tier-3 wiring (factory_path + settings)."""
+    manifest = build_legal_manifest(settings)
+    ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
+    return build_application_registry(manifest, ctx)
 
 
 def build_legal_agent(settings: LegalBackendSettings) -> LegalAgent:

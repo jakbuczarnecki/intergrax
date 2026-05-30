@@ -31,8 +31,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 15. [Appendix C — Multi-agent graphs](#appendix-c--multi-agent-graphs)
 16. [Appendix D — Advanced execution paths](#appendix-d--advanced-execution-paths)
 17. [Appendix E — Integrations and Tier-0 wiring](#appendix-e--integrations-and-tier-0-wiring)
-18. [Anti-patterns](#anti-patterns)
-19. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+18. [Appendix F — Tier-3 application environment](#appendix-f--tier-3-application-environment)
+19. [Anti-patterns](#anti-patterns)
+20. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -289,16 +290,24 @@ Lab app also exposes `/debug/*` for trace, events, checkpoints, experiments, and
 
 ### D — Product application (Tier-3)
 
-Follow the Legal / Research pattern:
+Follow the Legal / Research pattern using the **Tier-3 composition engine**:
 
 1. Keep agent logic in `agents/<slug>/`
-2. In `applications/<product>/host/wiring.py` — import and `registry.register(...)`
-3. In `applications/<product>/host/factory.py` — build registry → `NexusLoop` → routes
+2. Define roster in `applications/<product>/manifest.py` — `AgentBinding.mount(AgentClass, factory=...)`
+3. Implement factories in `host/agent_factories.py` or `host/agent_builders.py`
+4. In `host/wiring.py` — `build_application_registry(manifest, ctx, builders=...)`
+5. In `host/factory.py` — registry → `NexusLoop` → routes
+
+**Usage guides (define / invoke / run):**
+
+- Composition engine API: [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)
+- Application folder layout: [`applications/USAGE.md`](../applications/USAGE.md)
 
 Example references:
 
-- `applications/legal_application/host/wiring.py`
-- `applications/research_application/host/wiring.py`
+- `applications/legal_application/manifest.py` + `host/agent_factories.py`
+- `applications/lab_application/manifest.py` + `host/agent_builders.py`
+- `applications/research_application/host/wiring.py` (legacy explicit register — migrate to manifest when touched)
 
 Applications contain **wiring only** — never agent business logic.
 
@@ -724,13 +733,41 @@ Each provider under `intergrax/integrations/providers/<slug>/` includes an Engli
 
 ---
 
+## Appendix F — Tier-3 application environment
+
+When an agent needs a **dedicated host** (env, Docker, stable HTTP API) — not only the shared lab — use the Tier-3 stack under `applications/<app>/`.
+
+| Topic | Document |
+|-------|----------|
+| **Composition engine** — `ApplicationManifest`, `AgentBinding.mount()`, `build_application_registry()` | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
+| **Application layout** — manifest, host, serving, `.env.example`, docker | [`applications/USAGE.md`](../applications/USAGE.md) |
+| Architecture rules | `docs/intergrax_runtime_architecture.md` §7.4.8–§7.4.10 |
+
+Minimal pattern:
+
+```python
+from echo.echo_agent import EchoAgent
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.applications._shared.wiring import build_application_registry
+
+manifest = ApplicationManifest.lab(app_id="my_lab", name="My Lab", agents=[AgentBinding.mount(EchoAgent)])
+ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
+registry = build_application_registry(manifest, ctx, builders=MY_BUILDERS)
+```
+
+Phase N scaffold (`new-application`) will generate this layout; until then, copy `lab_application` or `legal_application`.
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
 |--------|------------|
 | Put agent logic in `applications/` | Logic in `agents/`, wiring in application |
 | Modify `NexusLoop` for one agent | `registry.register()` + contract/metadata |
-| Expect lab app to auto-load new agents | Add explicit `register()` in `lab_application/host/wiring.py` |
+| Expect lab app to auto-load new agents | Add `AgentBinding.mount(...)` in `lab_application/manifest.py` + builder |
+| Use string `import_path` / `factory_path` in Python manifests | `AgentBinding.mount(AgentClass, factory=callable)` — see `intergrax/applications/USAGE.md` |
 | Duplicate LLM/trace/queue stacks | Extend Tier-0 platform |
 | Import `integrations/providers/` from `agents/` | Declare `allowed_tools`; wire slugs in Tier-3 `factory.py` |
 | Hardcode Slack/Postgres/Redis in agent steps | `ToolRequest` + application `IntegrationProfile` |

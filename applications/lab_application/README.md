@@ -67,3 +67,5 @@ See ``applications/lab_application/host/integration_wiring.py``.
 - Agent logic never belongs in this application — only wiring and routes
 
 See [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) — single canonical guide (Step 4C for lab registration).
+
+**Tier-3 wiring:** [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md) (engine) · [`applications/USAGE.md`](../USAGE.md) (application layout).

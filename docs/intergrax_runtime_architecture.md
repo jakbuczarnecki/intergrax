@@ -1058,20 +1058,32 @@ Tier-2 agents declare **`AgentContract`** (capabilities, tools, risk).
 Tier-3 applications declare an **`ApplicationManifest`** (Phase N.1 — `intergrax/applications/contracts/manifest.py`):
 
 - `app_id`, `route_prefix`, environment defaults
-- `agents[]` — import paths, optional contract id overrides, enabled flags
-- `integration_profile` — typed `IntegrationProfile` or path to YAML overlay
+- `agents[]` — roster entries via **`AgentBinding.mount(AgentClass, factory=...)`** (strongly typed); serialized scaffold uses ``deserialize(import_path=...)`` only
+- `integration_profile` — typed `IntegrationProfile`
 - `features` — scheduler, debug surface, interaction routes, default sandbox-on-task (boolean map)
 
-The manifest is the **composition contract**: which agents, which integrations, which product behaviors are active in this environment.
+The manifest is the **roster contract** (who is mounted). **Instance creation** is unified via ``build_application_registry()`` (Phase N.2.1 — ``intergrax/applications/_shared/wiring.py``):
+
+| Priority | Source | Use when |
+|----------|--------|----------|
+| 1 | ``factory=`` on ``AgentBinding.mount()`` | **Preferred** — typed callable; mypy/IDE see class + factory |
+| 2 | ``builders[type[Agent]]`` | Type-keyed map in `host/agent_builders.py`` (lab) |
+| 3 | ``builder_key`` / ``factory_path`` strings | Scaffold-generated manifests only |
+| 4 | zero-arg ``agent_type()`` | Simple agents with no Tier-3 config |
+
+``ApplicationBuildContext`` carries ``manifest``, ``settings``, and ``integration_profile`` into every factory.
 
 **Rules:**
 
 - Manifest describes **wiring**, not domain logic.
-- `host/wiring.py` MAY be generated from manifest for consistency; manual edits remain valid.
-- Conformance tests validate manifest → registry → at least one registered agent (Phase N.2).
-- `python -m intergrax.scaffold new-application` generates manifest + host skeleton (Phase N.3).
+- Secrets and heavy config stay in ``settings.from_env()`` — binding ``config`` is for lightweight options only.
+- `host/wiring.py` calls ``build_application_registry(manifest, ctx, builders=...)``.
+- Reference: ``AgentBinding.mount(EchoAgent)`` + ``LAB_AGENT_BUILDERS`` keyed by type; ``AgentBinding.mount(LegalAgent, factory=build_legal_agent_from_context)``.
+- `python -m intergrax.scaffold new-application` generates manifest + builders skeleton (Phase N.3).
 
 See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase N for step-by-step delivery.
+
+**Usage guides:** composition engine — [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md); application hosts — [`applications/USAGE.md`](../applications/USAGE.md).
 
 ---
 
