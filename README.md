@@ -29,11 +29,12 @@ All platform documentation lives in [`docs/`](docs/). Canonical docs — one sou
 | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Full architecture canon (tiers, Nexus, UAEP §42) |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, gaps, priority, business-agent checklist (Appendix A) |
 | [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) | Create an agent: scaffold → register → run → inspect |
-| [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **Integration Library** — catalog of all wired providers (DB, queues, RAG, cloud, …) |
+| [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **Integration Library** — catalog of all wired providers (DB, queues, RAG backends, cloud, …) |
+| [TOOLS.md](docs/TOOLS.md) | **Tool Library** — LLM-facing agent tools (RAG, web search, Jira, sandbox, …) |
 | [intergrax/applications/USAGE.md](intergrax/applications/USAGE.md) | Tier-3 composition engine: manifest, typed bindings, registry |
 | [applications/USAGE.md](applications/USAGE.md) | Application layout: env, Docker, host, run |
 
-**Quick paths:** new agent → [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md) · **integrations catalog** → [INTEGRATIONS](docs/INTEGRATIONS.md) · **new application** → [applications/USAGE](applications/USAGE.md) · current phase → [IMPLEMENTATION_PLAN](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) §1–§4 · deep architecture → [runtime_architecture](docs/intergrax_runtime_architecture.md) §1–§5
+**Quick paths:** new agent → [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md) · **integrations catalog** → [INTEGRATIONS](docs/INTEGRATIONS.md) · **tools catalog** → [TOOLS](docs/TOOLS.md) · **new application** → [applications/USAGE](applications/USAGE.md) · current phase → [IMPLEMENTATION_PLAN](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) §1–§4 · deep architecture → [runtime_architecture](docs/intergrax_runtime_architecture.md) §1–§5
 
 ---
 
@@ -211,7 +212,7 @@ Shared infrastructure used by all agents:
 
 - **LLM adapters** — OpenAI, Anthropic, Ollama, Gemini, and others (`intergrax/llm_adapters/`)
 - **RAG** — embeddings, vector stores, document loaders (`intergrax/rag/`)
-- **Tools** — registry, MCP-oriented integrations (`intergrax/tools/`)
+- **Tools** — registry, Tool Library catalog, MCP export (`intergrax/tools/`) — see [Tool Library](#tool-library)
 - **Memory** — conversational and session storage (`intergrax/memory/`)
 - **Integration Library** — modular catalog of external backends (DB, queues, search, vectors, cloud) — see [Integration Library](#integration-library)
 - **FastAPI core** — shared API primitives for Tier-3 hosts (`intergrax/fastapi_core/`)
@@ -250,6 +251,42 @@ profile = IntegrationProfile(
 **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)**
 
 Architecture rules: [runtime architecture §7.1](docs/intergrax_runtime_architecture.md) · implementation status: [Phase M](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
+
+---
+
+## Tool Library
+
+Agents do not call Jira, Bing, or PostgreSQL directly. They invoke **tools** — named, schema-defined operations optimized for LLM planners and MCP clients. Tools compose the [Integration Library](#integration-library) (and RAG modules) underneath.
+
+The **Tool Library** (`intergrax/tools/`) provides:
+
+| Property | Benefit |
+|----------|---------|
+| **LLM-first contracts** | Each tool has `tool_id`, description, and JSON Schema parameters — for native tool-calling models and MCP. |
+| **Composable semantics** | e.g. `jira.search_tasks(project, status)` builds JQL internally; agents never see raw integration APIs. |
+| **Unified execution** | All invocations go through `ToolRuntime` — policy, trace, idempotency, and `allowed_tools` enforcement. |
+| **Dual export** | Same catalog entry → OpenAI function schema, MCP tool, and UAEP `ToolRequest`. |
+| **Unified model (target)** | RAG and web search become catalog tools (`rag.retrieve`, `websearch.query`) — replacing legacy `use_rag` / `use_websearch` pipeline flags. |
+
+**Engine today:** `ToolContract`, `ToolRegistry`, `RuntimeToolInvoker`, `ToolsAgent`, `sandbox.exec`.  
+**Catalog providers:** Phase O — Jira, RAG, web search, and more.
+
+```python
+# Tier-2 agent — declare tool policy, not vendors
+AgentContract(
+    id="pm",
+    allowed_tools=["jira.search_tasks", "jira.get_issue", "rag.retrieve"],
+)
+
+# Tier-3 application — wire integrations into tool handlers
+# ToolWiringContext(issue_tracker=profile.resolve(ISSUE_TRACKER))
+# register_jira_tools(registry, ctx)
+```
+
+**Full catalog (tool_ids, status, migration from legacy flags):**  
+**[docs/TOOLS.md](docs/TOOLS.md)**
+
+Architecture: [§7.1.6–§7.1.7](docs/intergrax_runtime_architecture.md) · implementation: [Phase O](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
 
 ---
 

@@ -700,15 +700,17 @@ See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) for p
 
 ```text
 Tier-2  agents/           WHAT the agent needs     → capabilities, allowed_tools, ToolRequest
-Tier-3  applications/     WHICH vendor/backend     → IntegrationProfile, factory wiring
+Tier-3  applications/     WHICH vendor/backend     → IntegrationProfile, ToolProfile, factory wiring
 Tier-0  integrations/     HOW to talk to backend   → providers/<slug>/, contracts
+Tier-0  tools/              WHAT the LLM invokes     → providers/<domain>/, ToolContract (see TOOLS.md)
 ```
 
 | Layer | Declares | Example |
 |-------|----------|---------|
-| **Agent** (`AgentContract`) | Routing + tool policy | `capabilities=["research.web_search"]`, `allowed_tools=["websearch.query"]` |
-| **Application** (`factory.py`) | Provider selection | `relational_store=IntegrationSlug.SQLITE`, `notification_channel=IntegrationSlug.LOG` |
-| **Integration provider** | Adapter implementation | `create_sqlite_integration()`, `create_slack_integration()` |
+| **Agent** (`AgentContract`) | Routing + tool policy | `capabilities=["research.web_search"]`, `allowed_tools=["websearch.query", "rag.retrieve"]` |
+| **Application** (`factory.py`) | Provider + tool selection | `IntegrationProfile`, `ToolProfile`, `ToolWiringContext` |
+| **Integration provider** | Adapter implementation | `create_jira_issue_tracker()`, `create_google_cse_search_provider()` |
+| **Tool provider** | LLM-facing operation | `jira.search_tasks`, `websearch.query` — composes integrations |
 
 Agents **never** import `intergrax.integrations.providers.*` or choose integration slugs. That belongs in Tier-3 composition roots (`factory.py`, `integration_wiring.py`).
 
@@ -740,7 +742,7 @@ response = await ctx.invoke_tool(
 )
 ```
 
-The application ensures the tool runtime is backed by the correct Tier-0 provider (e.g. Google CSE vs Bing via host config, not agent code).
+The application ensures the tool runtime is backed by the correct Tier-0 provider (e.g. Google CSE vs Bing via host config, not agent code). See [TOOLS.md](TOOLS.md) for catalog tool_ids and Phase O wiring (`ToolProfile`, `ToolWiringContext`).
 
 ### What applications wire
 

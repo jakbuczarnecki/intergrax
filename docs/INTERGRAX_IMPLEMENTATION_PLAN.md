@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-05-30, Phase N application environment spec)  
+Status: Working draft (2026-05-30, Phase O Tool Library spec)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
 Navigation: [`README.md`](README.md)  
@@ -21,6 +21,8 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Phase status, gaps, priority | **This file** |
 | Tier-0 integration catalog (what / where) | Architecture canon §7.1.1–§7.1.5 |
 | Tier-0 integration implementation (how) | **This file** Phase M |
+| Tier-0 tool catalog (what / where) | Architecture canon §7.1.6–§7.1.7, §22 |
+| Tier-0 tool implementation (how) | **This file** Phase O |
 | Agent creation workflow | `AGENT_CREATION_GUIDE.md` |
 | Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
 | Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
@@ -1007,13 +1009,103 @@ python -m intergrax.scaffold new-application my_lab \
 
 ---
 
+### Phase O — Tool Library & Unified Tool Model (Tier-0)
+
+**Canon:** §7.1.6–§7.1.7, §22, §42.12  
+**Goal:** Ship a reusable **Tool Library** catalog (mirror Integration Library) and migrate legacy pipeline flags (`use_rag`, `use_websearch`) to explicit catalog tools.
+
+**Prerequisite:** Phase M.3 (`IntegrationProfile`) available; tool engine (`ToolRegistry`, `RuntimeToolInvoker`) exists.
+
+**Catalog reference:** [`TOOLS.md`](TOOLS.md)
+
+**Delivery rule:** One domain or migration slice per iteration — implement → gate → update `TOOLS.md` → next step.
+
+| # | Deliverable | Status | Canon | Notes |
+|---|-------------|--------|-------|-------|
+| O.0 | Architecture & catalog documented | **Done** | §7.1.6–§7.1.7, §22 | Runtime canon + `TOOLS.md` + this section (2026-05-30) |
+| O.1 | Extended `ToolContract` | Pending | §22 | Add `risk_level`, `timeout_ms`, `retry_policy`, `injects_context`, `category`, optional `description_short` |
+| O.2 | `ToolCatalog` + `ToolProfile` + `ToolWiringContext` | Pending | §7.1.6 | Mirror `IntegrationRegistry` / `IntegrationProfile`; `register_default_tools()` |
+| O.3 | Context tools: `rag.retrieve`, `websearch.query` | Pending | §7.1.7, §22.1 | Handlers compose RAG manager + `SearchProvider`; export schemas |
+| O.4 | Reference domain: `jira.*` tools | Pending | §7.1.6 | `get_issue`, `add_comment`, `search_tasks` over `IssueTracker` |
+| O.5 | **Unified tool model migration** | Pending | §7.1.7, §22.2 | Replace `ToolInvocationPlan` booleans with `tool_ids`; shim `RagStep`/`WebsearchStep` → handlers |
+| O.6 | Schema exporters (OpenAI + MCP) | Pending | §7.1.6 | `tools/exporters/`; wire `applications/<app>/mcp/server.py` optional tool mount |
+| O.7 | Migrate legacy `ToolBase` → `ToolContract` | Pending | §5.2.2 | Remove duplicate `ToolRegistry` in `tools_base.py`; update `ChatAgent` |
+| O.8 | `ToolProfile` in Tier-3 scaffold | Pending | §7.4.8 | `tool_wiring.py` template; lab + poc_template reference |
+| O.9 | Agent Creation Guide Appendix E update | Pending | — | `allowed_tools` + `ToolProfile` + unified model examples |
+| O.10 | Gate tests for catalog conformance | Pending | — | `tests/unit/tools/providers/` pattern |
+
+#### O — Step-by-step implementation sequence
+
+Execute **strictly in order** for foundation (O.1–O.4); O.5–O.10 may overlap after O.4 reference tools land.
+
+| Step | ID | Action | Done when |
+|------|-----|--------|-----------|
+| 1 | O.1 | Extend `ToolContract` + update `RuntimeToolInvoker` for new fields | Unit tests pass; backward compatible defaults |
+| 2 | O.2 | Add `tools/registry/catalog.py`, `profile.py`, `ToolWiringContext` dataclass | `register_default_tools()` no-op registry; profile enables subset |
+| 3 | O.3 | Implement `providers/rag/` and `providers/websearch/` handlers | Handlers callable via `RuntimeToolInvoker` in isolation tests |
+| 4 | O.4 | Implement `providers/jira/` bundle (3 tools) | Conformance tests with mocked `IssueTracker`; lab app wires one tool |
+| 5 | O.5a | Add `planned_tool_ids` to plan models; map legacy booleans → tool_ids | Existing gate green with compatibility shims |
+| 6 | O.5b | `RagStep` / `WebsearchStep` delegate to `rag.retrieve` / `websearch.query` | No duplicate retrieval logic in steps |
+| 7 | O.5c | Update `LegalToolPlan` / engine plans to tool list | Legal agent tests updated |
+| 8 | O.6 | MCP + OpenAI exporters from single catalog | One tool appears identically in ToolsAgent schema and MCP list |
+| 9 | O.7 | Remove `ToolBase` usage from production paths | `ChatAgent` uses `ToolContract` registry only |
+| 10 | O.8–O.10 | Scaffold, docs, gate | `TOOLS.md` status columns → Done; gate includes provider tests |
+
+#### O.4 — Adding a new tool provider (checklist)
+
+Copy into every `tools/providers/<domain>/USAGE.md`:
+
+```text
+[ ] 1. Define Input/Output Pydantic models (LLM-friendly field names)
+[ ] 2. Implement ToolHandler — compose integration contract(s), no vendor SDK
+[ ] 3. Build ToolContract per tool (description tuned for model selection)
+[ ] 4. register_<domain>_tools(registry, ctx: ToolWiringContext)
+[ ] 5. Register in tools/registry/catalog.py
+[ ] 6. Unit tests with fakes (no live vendor in default gate)
+[ ] 7. Wire in lab or poc_template via ToolProfile
+[ ] 8. Update TOOLS.md status + this plan tracker
+```
+
+#### O.5 — Unified tool model (migration design)
+
+**Problem:** Two parallel mechanisms — boolean plan flags dispatching pipeline steps vs `ToolRegistry` for function tools.
+
+**Target:** One registry, one invoker, one policy surface.
+
+```text
+BEFORE (legacy):
+  plan.use_rag=True        → RagStep (direct)
+  plan.use_websearch=True  → WebsearchStep (direct)
+  plan.use_tools=True      → ToolsStep → ToolRegistry
+
+AFTER (canonical):
+  plan.tool_ids=["rag.retrieve", "websearch.query", "jira.search_tasks"]
+      → ToolRuntime.invoke_request (per id)
+      → RuntimeToolInvoker → handler
+      → integration / RAG module
+```
+
+**Compatibility (O.5a):** `ToolInvocationPlan.from_legacy(use_rag=…)` maps booleans to default tool_ids. Emit deprecation trace when legacy fields used.
+
+**Context injection:** `rag.retrieve` and `websearch.query` set `injects_context=true`; invoker callback or Nexus hook merges bounded output into prompt assembly (§22.1).
+
+**Out of scope for Phase O:**
+
+- Domain-specific tools inside `agents/` (stay Tier-2; register via `ToolProvider` if reusable)
+- Replacing `ToolsAgent` planner — it remains the LLM loop over `ToolRegistry`
+- New integration categories (still Phase M / §5.2.4)
+
+---
+
 ## 4. Priority Order
 
 
 
 ```text
 
-NOW:     Phase N — Application Environment & Deploy Scaffold (N.9 full acceptance next)
+NOW:     Phase O — Tool Library & Unified Tool Model (O.1 extended ToolContract next)
+
+PARALLEL: Phase N — N.9 full scaffold acceptance
 
 DONE:    Phase L certification — L1 achieved (Appendix A)
 
@@ -1029,7 +1121,7 @@ PARALLEL: K.3–K.5 hardening; M.6 provider wraps (non-breaking)
 
 ```
 
-**Rationale:** Agent scaffold (L) and integration catalog (M) are in place. Phase N closes the gap from **agent POC → deployable Docker host** with isolated Tier-3 env and composition contracts — required for fast concept labs before product agents (K).
+**Rationale:** Integration catalog (M) answers *which backend*. Tool Library (O) answers *what agents call* — closing the gap between LLM planners and integrations. Unified tool model (O.5) removes deprecated `use_rag` / `use_websearch` dual-path before business agents (K) depend on inconsistent semantics.
 
 
 
@@ -1531,7 +1623,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
 | B.19 | **P0 provider wraps** — M.4 catalog slugs | §7.1.3 | **High** | **Done** | Lab + first prod apps | Tier-0 | All P0 slugs wrapped + runtime adoption (2026-05-29) |
 | B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | **Done** (beta) | Multi-tenant applications | Tier-0 | `providers/postgresql/` — domain stores SQLite-first |
-| B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | **Done** (beta) | PM / research agents | Tier-0 | `providers/jira/`, `providers/confluence/`; tools via ToolRuntime (future) |
+| B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | **Done** (beta) | PM / research agents | Tier-0 | `providers/jira/`, `providers/confluence/`; catalog tools Phase O.4/O.6 |
 | B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | **Done** (beta) | Org worker, scheduling agents | Tier-0 | `providers/ms365_graph/`; client credentials via `opens.py` |
 | B.23 | **Prometheus observability_backend** — PromQL query API | §33, §7.1.3 | **Low** | **Done** (beta) | Ops / SLO | Tier-0 | `providers/prometheus/`; complements B.11 metrics layer design |
 | B.28 | **Cassandra document_store** — wide-column adapter for high-volume retention | §7.1.3 P2 | **Medium** | **Done** (beta) | Runtime event archive at scale; ops telemetry | Tier-0 | `providers/cassandra/`; single-entry `opens.py` |
@@ -1550,6 +1642,17 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.26 | **Azure cloud_platform facade** — MI + Blob/Service Bus/Azure SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | Azure-hosted applications | Tier-0 | `providers/azure/`; infrastructure only |
 | B.27 | **GCP cloud_platform facade** — ADC + GCS/Pub/Sub/Cloud SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | GCP-hosted applications | Tier-0 | `providers/gcp/`; infrastructure only |
 | B.24 | **Direct vendor SDK in agents** — audit + lint rule | §5.2, §7.1.4 | **Medium** | Open | Prevents catalog bypass | Tier-2 | Document in AGENT_CREATION_GUIDE; optional ruff rule |
+
+### B.7 Tool Library (§7.1.6)
+
+| ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------|--------------|------|----------------|
+| B.40 | **Tool Library scaffold** — catalog, profile, wiring context | §7.1.6 | **High** | Open | All agents using external capabilities | Tier-0 | Phase O.1–O.2 |
+| B.41 | **Context tools** — `rag.retrieve`, `websearch.query` | §7.1.7, §22.1 | **High** | Open | RAG / research agents | Tier-0 | Phase O.3; compose integrations + RAG |
+| B.42 | **Jira catalog tools** — `jira.get_issue`, `jira.search_tasks`, … | §7.1.6 | **Medium** | Open | PM / legal workflow agents | Tier-0 | Phase O.4 over `IssueTracker` |
+| B.43 | **Unified tool model** — deprecate `use_rag` / `use_websearch` flags | §7.1.7, §22.2 | **High** | Open | Consistent tool policy + MCP | Tier-1 | Phase O.5; shim then remove booleans |
+| B.44 | **Legacy ToolBase migration** | §5.2.2 | **Medium** | Open | Single registry | Tier-0 | Phase O.7; remove `tools_base.py` dual registry |
+| B.45 | **MCP tool export from catalog** | §7.1.6 | **Low** | Open | External MCP clients | Tier-3 | Phase O.6 |
 
 ### B.4 Legacy & composition
 

@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-05-29
+**Last updated:** 2026-05-30
 
 The `docs/` folder holds the canonical platform documentation.
 
@@ -14,6 +14,7 @@ The `docs/` folder holds the canonical platform documentation.
 | [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps, priority, readiness (Appendix A), technical debt backlog (Appendix B) |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — all implemented providers, contracts, wiring, usage links |
+| [**TOOLS.md**](TOOLS.md) | **Tool catalog** — LLM-facing tools, engine status, unified tool model, planned backlog |
 | **This file** | Navigation and update rules |
 
 ```text
@@ -21,6 +22,7 @@ Architecture (what)        →  intergrax_runtime_architecture.md
 Implementation (status)    →  INTERGRAX_IMPLEMENTATION_PLAN.md
 Agent workflow (how)       →  AGENT_CREATION_GUIDE.md
 Integrations (catalog)     →  INTEGRATIONS.md
+Tools (catalog)            →  TOOLS.md
 ```
 
 ---
@@ -34,17 +36,20 @@ Integrations (catalog)     →  INTEGRATIONS.md
 | Check readiness for business agents | Implementation plan **Appendix A** |
 | Review technical debt before Tier-1 work | Implementation plan **Appendix B** |
 | Wire external systems (DB, Slack, Jira, …) | [INTEGRATIONS.md](INTEGRATIONS.md), then architecture canon §7.1 |
+| Wire agent-callable tools (RAG, web search, Jira, …) | [TOOLS.md](TOOLS.md), then architecture canon §7.1.6–§7.1.7 |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
 | Deep-dive UAEP / hooks / governance | Architecture canon §42 |
 
 ---
 
-## Current focus (2026-05-29)
+## Current focus (2026-05-30)
 
 | Phase | Status |
 |-------|--------|
 | Phase L — Agent OS certification | **Done** |
 | Phase M — Integration Library (Tier-0 catalog) | **In progress** — 29 providers; see [INTEGRATIONS.md](INTEGRATIONS.md) |
+| Phase N — Application environment scaffold | **In progress** — see implementation plan Phase N |
+| Phase O — Tool Library & unified tool model | **Started** — canon + catalog doc; implementation O.1+ pending |
 | Phase K — Problem Radar / Vendor Discovery | **Ready to open** (product decision) |
 
 Gate: `uv run pytest tests/ -m gate -q` (**228 tests**)
@@ -57,6 +62,7 @@ Gate: `uv run pytest tests/ -m gate -q` (**228 tests**)
 2. **Phase / status / readiness** → `INTERGRAX_IMPLEMENTATION_PLAN.md` only.
 3. **Agent workflow** → `AGENT_CREATION_GUIDE.md` only.
 4. **Integration catalog** → `INTEGRATIONS.md` when adding or changing providers.
-5. **Do not add** new markdown files to `docs/` without updating this index.
+5. **Tool catalog** → `TOOLS.md` when adding or changing catalog tools or tool engine contracts.
+6. **Do not add** new markdown files to `docs/` without updating this index.
 
 Product-specific roadmaps belong under `agents/<name>/` (e.g. `agents/legal/`), not in `docs/`.

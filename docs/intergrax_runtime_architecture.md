@@ -2,7 +2,7 @@
 
 Status: Canonical architecture and implementation guide  
 
-**Documentation (four-document model):** [`README.md`](README.md) · Implementation map: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)
+**Documentation (four-document model):** [`README.md`](README.md) · Implementation map: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) · Integration catalog: [`INTEGRATIONS.md`](INTEGRATIONS.md) · Tool catalog: [`TOOLS.md`](TOOLS.md)
 
 Audience: Humans, LLMs, Cursor AI agents, implementation agents, future maintainers  
 Purpose: Define the Intergrax runtime architecture, implementation rules, agent model, orchestration model, adapter model, experimentation model and forbidden patterns.
@@ -225,7 +225,7 @@ The platform MUST maintain **one canonical path** per universal concern. All tie
 | LLM calls | `intergrax/llm_adapters/` (`LLMAdapter`, registry) | Direct OpenAI/Anthropic SDK calls; second LLM wrapper in agents |
 | Logging | `intergrax/logging.py` and established log patterns | `print()`, ad-hoc loggers, duplicate logging frameworks |
 | Tracing (pipeline) | Nexus `trace_event()` / `RunTraceWriter` | Parallel untracked diagnostic streams |
-| Tools | `intergrax/tools/` (`ToolRegistry`, `ToolExecutor`) | Agent-local tool registries |
+| Tools | `intergrax/tools/` (`ToolRegistry`, `ToolExecutor`, Tool Library §7.1.6) | Agent-local tool registries; boolean `use_rag` / `use_websearch` plan flags (deprecated §22.2) |
 | RAG | `intergrax/rag/` | Duplicate embedding/retrieval stacks in agents |
 | Web search | `intergrax/websearch/` | Custom HTTP search clients in agents |
 | Memory / session | `intergrax/memory/`, Nexus session storage | Direct Redis/PostgreSQL access from agents |
@@ -514,7 +514,7 @@ User / API (Tier-3)
 
 | Tier | Section | Package / folder |
 |------|---------|------------------|
-| Tier-0 Platform | §7.1 | `intergrax/` + **`intergrax/integrations/`** catalog; also rag, tools, memory, queueing, … |
+| Tier-0 Platform | §7.1 | `intergrax/` + **`intergrax/integrations/`** + **`intergrax/tools/`** catalogs; also rag, memory, queueing, … |
 | Tier-1 Nexus | §7.2 | `intergrax/runtime/`, `intergrax/contracts/` |
 | Tier-2 Agents | §7.3 | `agents/<name>/` |
 | Tier-3 Applications | §7.4 | `applications/<name>/` |
@@ -765,6 +765,137 @@ integrations:
 | Live vendor tests | CI optional job | `pytest -m integration_live` — secrets in CI only |
 
 Each provider README MUST document: auth model, required env vars, rate limits, idempotency behavior, and a **smoke command** runnable from lab.
+
+### 7.1.6 Tool Library — Canonical Catalog
+
+Tier-0 agent-facing capabilities MUST live in a **single, discoverable Tool Library** under `intergrax/tools/`, mirroring the Integration Library pattern (§7.1.1).
+
+**Problem this solves:** Integrations answer *how to talk to a backend* (Jira REST, PostgreSQL, Bing API). LLM agents and MCP clients need *what to call* — semantically named operations with JSON schemas, descriptions, risk metadata, and trace-enforced execution. Agents MUST NOT call integration contracts directly.
+
+**Three-layer model (canonical):**
+
+```text
+Tier-2  Agent / LLM planner     →  selects tool_id + arguments (JSON schema)
+Tier-0  Tool Library            →  business semantics, validation, composition
+Tier-0  Integration Library     →  vendor adapters (IssueTracker, SearchProvider, …)
+```
+
+| Layer | Package | Consumer | Example |
+|-------|---------|----------|---------|
+| **Integration** | `intergrax/integrations/` | Tool handlers, Tier-3 wiring, RAG bootstrap | `IssueTracker.search_issues(jql)` |
+| **Tool** | `intergrax/tools/providers/<domain>/` | Agents, ToolsAgent, MCP, UAEP `ToolRequest` | `jira.search_tasks(project, status, assignee)` |
+| **Agent** | `agents/<name>/` | Nexus routing | `allowed_tools=["jira.search_tasks"]` |
+
+**Target layout:**
+
+```text
+intergrax/tools/
+├── core/                   # ToolContract, execution models, ToolProvider protocol (exists)
+├── registry/               # ToolCatalog, register_default_tools(), ToolProfile (Phase O)
+├── exporters/              # OpenAI / Anthropic / MCP schema export (Phase O)
+├── _shared/                # schema helpers, LLM description lint, JQL/query builders
+└── providers/
+    └── <domain>/           # e.g. jira/, rag/, websearch/, sandbox/
+        ├── contracts.py    # Input/Output Pydantic models per tool
+        ├── handlers.py     # ToolHandler implementations
+        ├── bundle.py       # register_*_tools(registry, ctx)
+        ├── USAGE.md
+        └── tests/
+```
+
+**Rules:**
+
+- One **domain folder** per tool family (`jira/`, `websearch/`, `rag/`, …) — not one folder per vendor SDK.
+- Tool handlers **compose** integration contracts — they MUST NOT reimplement vendor HTTP/SDK calls when a catalog integration exists.
+- Vendor SDKs remain in `integrations/providers/<slug>/opens.py` only (§7.1.1).
+- Agents and Nexus MUST NOT import `integrations/providers/*` for side effects; they invoke tools via **`ToolRuntime`** / `ToolRequest` (§22, §42.12).
+- Tool handlers receive dependencies through **`ToolWiringContext`** (Tier-3 composition): resolved integrations, RAG managers, websearch executors — injected at startup, not looked up ad hoc inside handlers.
+- **`ToolProvider.register_tools(registry, ctx)`** is the production registration contract (explicit wiring — no magic discovery).
+
+**Separation of concerns:**
+
+| Layer | Owns |
+|-------|------|
+| `tools/core/contracts.py` | What every tool MUST expose to runtime (schema, risk, side_effects) |
+| `tools/providers/<domain>/` | LLM-facing semantics + business logic above integrations |
+| `tools/registry/` | Catalog, `ToolProfile`, default registration |
+| Tier-3 `applications/<name>/` | Which tools are enabled + integration instances passed into `ToolWiringContext` |
+| Tier-2 `agents/<name>/` | `allowed_tools` allow-list — capability policy, not vendor wiring |
+| Tier-1 `runtime/nexus/tools/` | Enforcement: `RuntimeToolInvoker`, `ToolAccessPolicy`, trace, idempotency |
+
+**Tool vs integration — decision rule:**
+
+| Question | Answer → layer |
+|----------|----------------|
+| Is the consumer an LLM choosing a function call? | **Tool** |
+| Is it swapping Postgres for MySQL at deploy time? | **Integration** |
+| Does it need `description` + JSON Schema for model tool selection? | **Tool** |
+| Is it a stable backend Protocol with no LLM metadata? | **Integration** |
+
+**Out of scope for Tool Library:**
+
+| Concern | Canonical module | Notes |
+|---------|------------------|-------|
+| **LLM providers** | `intergrax/llm_adapters/` | Not tools — separate registry (§5.2.2) |
+| **Agent business logic** | `agents/<name>/` | Domain steps; may *call* tools, not define platform catalog entries |
+| **Orchestration / planning** | Tier-1 Nexus | Selects tools; does not implement tool handlers |
+| **Cursor-style skill files** | N/A | Markdown instruction packs are not Tier-0 tools unless wrapped as callable `ToolContract` |
+
+**Dual export (agent + MCP):**
+
+Every catalog tool MUST be exportable as:
+
+1. OpenAI-compatible function schema (for `ToolsAgent` / native tool-calling LLMs),
+2. MCP tool definition (for `applications/<app>/mcp/server.py`),
+3. `ToolRequest.tool_name` value (for UAEP / `RuntimeToolGateway`).
+
+Single source of truth: `ToolContract` in the catalog — not parallel schema definitions per surface.
+
+**Catalog reference:** [`TOOLS.md`](TOOLS.md) · Implementation: Phase O in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+
+### 7.1.7 Unified Tool Model — Everything Is a Tool
+
+**Target architecture (Phase O.5+):** All agent-invokable platform capabilities — including today’s pipeline flags `use_rag`, `use_websearch`, and registered function tools — converge on **one mechanism**: named tools in `ToolRegistry`, invoked through `ToolRuntime`.
+
+**Current state (transitional):** Nexus still uses `ToolInvocationPlan` with boolean flags (`use_rag`, `use_websearch`, `use_tools`) that dispatch to dedicated pipeline steps (`RagStep`, `WebsearchStep`, `ToolsStep`). This is **legacy dual-path** and MUST be migrated.
+
+**Target state:**
+
+```text
+Agent / planner
+    → planned tool_ids: ["rag.retrieve", "websearch.query", "jira.search_tasks"]
+    → ToolRuntime.invoke_request(ToolRequest)  # per tool, or batched plan
+    → RuntimeToolInvoker → ToolHandler
+    → integrations + domain logic
+```
+
+| Legacy flag / step | Target catalog tool_id | Underlying integration / module |
+|--------------------|------------------------|----------------------------------|
+| `use_rag` / `RagStep` | `rag.retrieve` | `intergrax/rag/` + `IntegrationProfile.vector_store` |
+| `use_websearch` / `WebsearchStep` | `websearch.query` | `SearchProvider` via `IntegrationProfile.search_provider` |
+| `use_tools` / `ToolsStep` | *(explicit tool_ids)* | `ToolRegistry` entries |
+| Sandbox execution | `sandbox.exec` | `intergrax/runtime/sandbox/` (already a tool_id) |
+
+**Migration rules:**
+
+1. **No new boolean capability flags** — new platform capabilities MUST ship as catalog tools with `ToolContract`.
+2. **`ToolInvocationPlan`** evolves to `planned_tools: Sequence[str]` (tool_ids) — boolean flags become deprecated aliases during transition.
+3. **`RagStep` / `WebsearchStep`** become thin **compatibility shims** that delegate to `rag.retrieve` / `websearch.query` handlers until all callers migrate.
+4. **`LegalToolPlan` / engine plan models** replace `use_rag` / `use_websearch` with `tools: list[str]` (or structured `PlannedToolCall`).
+5. **Context injection tools:** `rag.retrieve` and `websearch.query` MAY declare `injects_context: true` so Nexus knows to merge results into LLM prompt context (replaces implicit step behavior) — see §22.1.
+
+**Why unify:**
+
+- One policy surface (`ToolAccessPolicy`, `allowed_tools`, trace, idempotency, risk).
+- One schema export path for LLM tool selection and MCP.
+- Agents reason about **tools**, not parallel abstractions (flags vs registry).
+- Tier-3 enables tools via `ToolProfile` — same ergonomics as `IntegrationProfile`.
+
+**Forbidden after Phase O.5:**
+
+- Adding new `use_*` booleans to plan models for platform capabilities.
+- Agent code branching on `use_rag` instead of invoking `rag.retrieve` or listing it in `allowed_tools`.
+- Direct `RagStep` / `WebsearchStep` invocation from Tier-2 agents (must use `ToolRequest`).
 
 ---
 
@@ -1831,34 +1962,64 @@ Sandbox execution should be:
 
 # 22. Tool Runtime
 
-Tools are callable operations exposed to Nexus and agents.
+Tools are callable operations exposed to Nexus, agents, and MCP clients. They are the **only** LLM-facing execution surface for platform capabilities (§7.1.6, §7.1.7).
 
 Examples:
 
-- search web
-- read file
-- write file
-- query database
-- send Slack message
-- create document
-- call LLM
-- run browser action
-- execute script in sandbox
+- `rag.retrieve` — vector / hybrid retrieval (replaces legacy `use_rag`)
+- `websearch.query` — web research (replaces legacy `use_websearch`)
+- `jira.search_tasks` — issue search with LLM-friendly parameters
+- `sandbox.exec` — isolated script execution
+- send notification, read/write artifact, query database, browser action
 
 Tools must have:
 
-- name
-- description
-- input schema
-- output schema
-- risk level
-- permission requirement
-- timeout
-- retry policy
+- `tool_id` (stable registry key)
+- `name` and `description` (optimized for LLM tool selection)
+- `input_schema` and `output_schema` (Pydantic → JSON Schema)
+- `risk_level` and `side_effects`
+- `timeout_ms` and `retry_policy` (runtime-enforced)
+- optional `injects_context` — when true, Nexus merges output into LLM prompt context (retrieval tools)
 
-Tools should be registered in a Tool Registry.
+Tools MUST be registered in **`ToolRegistry`** via the Tool Library catalog (`intergrax/tools/providers/`, §7.1.6).
 
-All agent and Nexus tool invocation MUST route through `ToolRuntime` with policy enforcement (§42.12, §42.36). Direct adapter calls from agents are forbidden (§42.41).
+All agent and Nexus tool invocation MUST route through **`ToolRuntime`** with policy enforcement (§42.12, §42.36). Direct integration adapter calls from agents are forbidden (§42.41).
+
+**Canonical modules:**
+
+| Concern | Location |
+|---------|----------|
+| Tool contract + handler protocol | `intergrax/tools/core/`, `intergrax/tools/tool_executor.py` |
+| Catalog + providers | `intergrax/tools/providers/` (Phase O) |
+| Registry | `intergrax/tools/registry.py` |
+| LLM planner | `intergrax/tools/tools_agent.py` |
+| Runtime enforcement | `intergrax/runtime/nexus/tools/` (`RuntimeToolInvoker`, `RuntimeToolGateway`) |
+
+**Catalog index:** [`TOOLS.md`](TOOLS.md).
+
+## 22.1 Context-Injection Tools
+
+Some tools exist primarily to ** enrich the LLM prompt** rather than to perform irreversible side effects (e.g. `rag.retrieve`, `websearch.query`).
+
+When `ToolContract.injects_context = true`:
+
+1. Runtime invokes the tool through the same `RuntimeToolInvoker` path.
+2. Nexus merges a bounded preview of the tool output into `state.tools_context_parts` / message assembly (replacing implicit `RagStep` / `WebsearchStep` injection).
+3. Trace records both `tool_invocation_*` and context-injection diagnostics.
+
+Side-effect tools (`injects_context = false`) return results to the agent loop only — they do not auto-inject into the main LLM prompt unless the agent explicitly uses the output.
+
+## 22.2 Legacy Pipeline Flags (Deprecated)
+
+Until Phase O.5 migration completes, Nexus MAY still accept `ToolInvocationPlan(use_rag=…, use_websearch=…, use_tools=…)`. These flags are **deprecated aliases** that map to catalog tool_ids:
+
+```text
+use_rag=True        → rag.retrieve
+use_websearch=True  → websearch.query
+use_tools=True      → ToolsAgent planner over ToolRegistry
+```
+
+New code MUST use explicit tool_ids and `ToolRequest` — not boolean plan flags.
 
 ---
 

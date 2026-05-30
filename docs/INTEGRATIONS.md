@@ -11,6 +11,7 @@ The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1 | Architecture canon — tiers, contracts, registry rules |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase M | Phase status, backlog, delivery workflow |
 | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) Appendix E | How agents vs applications use integrations |
+| [TOOLS.md](TOOLS.md) | Agent-facing tools that compose these integrations |
 | Per-provider guides | `intergrax/integrations/providers/<slug>/USAGE.md` |
 
 ---
@@ -44,6 +45,8 @@ IntegrationProfile  ──►  IntegrationRegistry.resolve(category)
                                    ▼
                          passed into runtime / RAG / tools
 ```
+
+Agents consume integrations **through catalog tools** ([TOOLS.md](TOOLS.md)), not by importing provider adapters. Tier-3 may also pass resolved contracts into `ToolWiringContext` for tool handlers.
 
 **Example — declarative profile:**
 
