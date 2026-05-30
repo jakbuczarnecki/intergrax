@@ -680,6 +680,7 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 | `cassandra` | document_store | Cassandra CQL store (`create_cassandra_document_store()` only) |
 | `aws` | cloud_platform | AWS facade (`create_aws_cloud_platform()` only) |
 | `azure` | cloud_platform | Azure facade (`create_azure_cloud_platform()` only) |
+| `gcp` | cloud_platform | GCP facade (`create_gcp_cloud_platform()` only) |
 | `redis` | key_value_cache | Idempotency, rate limits, distributed locks |
 | `kafka`, `rabbitmq`, `celery` | message_bus | Worker queues, async Nexus execution |
 | `google_cse`, `bing` | search_provider | Research / web tools |

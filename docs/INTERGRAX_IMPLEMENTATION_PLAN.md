@@ -533,7 +533,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M.3 | `IntegrationRegistry` + `IntegrationProfile` | **Done** | `catalog.register_integration`, `resolve`, env/mapping profile |
 | M.4 | P0 providers — wrap existing | **Done** | See **M.4 provider tracker** below |
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
-| M.6 | P1 providers (on demand) | In progress | **postgresql**, **mysql**, **jira**, **confluence**, **prometheus**, **ms365_graph**, **aws**, **azure** Done; **gcp**, … |
+| M.6 | P1 providers (on demand) | In progress | **postgresql**, **mysql**, **jira**, **confluence**, **prometheus**, **ms365_graph**, **aws**, **azure**, **gcp** Done; … |
 | M.6 P2 | Extended providers (on demand) | In progress | **`cassandra`** Done; **`elasticsearch`**, **`databricks`**, mongodb, dynamodb, oracle, otel, … — see **M.6 P2 tracker** |
 | M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
@@ -573,6 +573,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | `cassandra` | document_store | **Done** (beta) | `providers/cassandra/` — CQL get/put/delete/query; only `opens.py` creates driver session |
 | `aws` | cloud_platform | **Done** (beta) | `providers/aws/` — IAM/STS auth + category defaults; only `opens.py` creates boto3 session |
 | `azure` | cloud_platform | **Done** (beta) | `providers/azure/` — MI / service principal + category defaults; only `opens.py` creates credential |
+| `gcp` | cloud_platform | **Done** (beta) | `providers/gcp/` — ADC / service account + category defaults; only `opens.py` creates credentials |
 
 #### M.6 P2 — Extended provider tracker (canon §7.1.3 P2)
 
@@ -678,7 +679,7 @@ For each category in §7.1.2, implement a **minimal** Protocol in `integrations/
 | `SearchProvider` | `search(query, *, limit)` → `SearchResult[]` | Align with `websearch/providers/base.py` |
 | `NotificationChannel` | `notify(message)` | Align with `runtime/notifications/adapter_contract.py` |
 | `InteractionSurface` | `can_handle`, `to_inbound`, `channel` | Align with `runtime/interactions/adapter_contract.py` |
-| `CloudPlatform` | `slug`, `default_region`, `resolve(category)`, `health` | **Done** — `contracts/cloud_platform.py`; `aws`, **`azure`** providers (beta) |
+| `CloudPlatform` | `slug`, `default_region`, `resolve(category)`, `health` | **Done** — `contracts/cloud_platform.py`; **`aws`**, **`azure`**, **`gcp`** providers (beta) |
 | `CollaborationSuite` | `get_message`, `list_messages`, `send_mail`, `list_calendar_events`, `get_user` | **Done** — `contracts/collaboration_suite.py`; `ms365_graph` provider |
 | `DocumentStore` | `get`, `put`, `delete`, `query` (partition-scoped) | **Done** — `contracts/document_store.py`; `cassandra` provider |
 | `IssueTracker` | `get_issue`, `add_comment`, `search_issues` | **Done** — `contracts/issue_tracker.py`; `jira` provider |
@@ -806,6 +807,7 @@ providers/gcp/
 | (new) | `cassandra` | **Done** — `integrations/providers/cassandra/`; **only** `opens.py` creates driver session |
 | (new) | `aws` | **Done** — `integrations/providers/aws/`; **only** `opens.py` creates boto3 session |
 | (new) | `azure` | **Done** — `integrations/providers/azure/`; **only** `opens.py` creates Azure credential |
+| (new) | `gcp` | **Done** — `integrations/providers/gcp/`; **only** `opens.py` creates Google credentials |
 | (new) | `elasticsearch` | **Open** — Phase M.6 P2; `providers/elasticsearch/`; reuses `ObservabilityBackend` |
 | (new) | `databricks` | **Open** — Phase M.6 P2; `providers/databricks/`; reuses `RelationalStore` |
 | `rag/vectorstore/providers/*` | vector slugs | Catalog entry only; implementation stays in `rag/` |
@@ -1288,6 +1290,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Date | ID | Summary |
 |------|-----|---------|
+| 2026-05-29 | M.6-gcp | `providers/gcp/` — cloud_platform facade; ADC/service account + category slug defaults |
 | 2026-05-29 | M.6-azure | `providers/azure/` — cloud_platform facade; token health + category slug defaults |
 | 2026-05-29 | M.6-aws | `providers/aws/` — cloud_platform facade; STS health + category slug defaults |
 | 2026-05-29 | M.6-cassandra | `providers/cassandra/` + `contracts/document_store.py`; CQL partition-scoped CRUD |
@@ -1364,7 +1367,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.30 | **Databricks relational_store** — SQL Warehouse / Unity Catalog SQL | §7.1.3 P2 | **Medium** | **Open** | Analytics agents, lakehouse reporting | Tier-0 | Phase M.6 P2 — `providers/databricks/`; single-entry `opens.py`; PAT/OAuth |
 | B.25 | **AWS cloud_platform facade** — auth + S3/SQS/DynamoDB/ElastiCache defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | AWS-hosted applications | Tier-0 | `providers/aws/`; infrastructure only |
 | B.26 | **Azure cloud_platform facade** — MI + Blob/Service Bus/Azure SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | Azure-hosted applications | Tier-0 | `providers/azure/`; infrastructure only |
-| B.27 | **GCP cloud_platform facade** — ADC + GCS/Pub/Sub/Secret Manager | §7.1.3 P1.1 | **Medium** | Open | GCP-hosted applications | Tier-0 | Phase M.6; infrastructure only |
+| B.27 | **GCP cloud_platform facade** — ADC + GCS/Pub/Sub/Cloud SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | GCP-hosted applications | Tier-0 | `providers/gcp/`; infrastructure only |
 | B.24 | **Direct vendor SDK in agents** — audit + lint rule | §5.2, §7.1.4 | **Medium** | Open | Prevents catalog bypass | Tier-2 | Document in AGENT_CREATION_GUIDE; optional ruff rule |
 
 ### B.4 Legacy & composition
@@ -1393,7 +1396,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 6. ~~B.09, B.17~~ — debug trace injection + gate collection (Done 2026-05-27)
 7. ~~B.06~~ — hook parity doc + lifecycle wiring (Done 2026-05-27)
 8. B.07, B.11, B.13, B.15–B.18, **B.29** (elasticsearch), **B.30** (databricks) — as capacity allows
-9. M.6 P1 remainder — gcp cloud facade
+9. M.6 P2 — **elasticsearch**, **databricks**, service slugs (`azure_blob`, `gcs`, `s3`, …)
 ```
 
 **Note:** Phase K business agents (Problem Radar, Vendor Discovery) remain **product-blocked** until explicit go — technical debt above does not auto-unblock K.1/K.2.

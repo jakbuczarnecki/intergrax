@@ -652,7 +652,7 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 | `filesystem` | object_storage | Partial | Local / dev; shadow workspace roots |
 | `aws` | cloud_platform | Beta | IAM/STS auth; defaults for S3, SQS, DynamoDB, ElastiCache |
 | `azure` | cloud_platform | Beta | Managed identity / service principal; defaults for Blob, Service Bus, Azure SQL |
-| `gcp` | cloud_platform | Planned | Service-account auth; factory for GCS, Pub/Sub, Secret Manager |
+| `gcp` | cloud_platform | Beta | ADC / service account; defaults for GCS, Pub/Sub, Cloud SQL |
 
 #### P1.1 Cloud platforms — service mapping
 

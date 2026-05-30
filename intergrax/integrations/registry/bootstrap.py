@@ -35,6 +35,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.cassandra.register import register_cassandra_integration
     from intergrax.integrations.providers.aws.register import register_aws_integration
     from intergrax.integrations.providers.azure.register import register_azure_integration
+    from intergrax.integrations.providers.gcp.register import register_gcp_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -60,6 +61,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_cassandra_integration(override=override)
     register_aws_integration(override=override)
     register_azure_integration(override=override)
+    register_gcp_integration(override=override)
     _BOOTSTRAPPED = True
 
 
