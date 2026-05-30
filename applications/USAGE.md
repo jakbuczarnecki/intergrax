@@ -174,7 +174,7 @@ intergrax/integrations/  Tier-0 — IntegrationProfile, providers
 | Create agent | `python -m intergrax.scaffold new-agent …` → `agents/` |
 | Register in app | `AgentBinding.mount(...)` in `applications/<app>/manifest.py` |
 | Wire backends | `IntegrationProfile` in manifest + `integration_wiring.py` |
-| Scaffold app (planned) | `python -m intergrax.scaffold new-application …` |
+| Scaffold app | `python -m intergrax.scaffold new-application <name> --profile lab --agents echo` |
 
 ---
 

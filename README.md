@@ -114,7 +114,7 @@ You can validate an agent with pytest or the shared lab first, then **promote** 
 | Scaffold | Creates | Command |
 |----------|---------|---------|
 | Agent template | `agents/<name>/` — UAEP, tests, notebook | `python -m intergrax.scaffold new-agent <name> --capability <domain>.<action>` |
-| Application template | `applications/<app>/` — manifest, host, `.env.example`, docker (Phase N) | `python -m intergrax.scaffold new-application <app> --profile lab --agents <slug>` *(planned)* |
+| Application template | `applications/<app>/` — manifest, host, `.env.example`, docker (Phase N.5) | `python -m intergrax.scaffold new-application <app> --profile lab --agents <slug>` |
 
 Both scaffolds follow the same idea: **opinionated folder layout + defaults** so you start from a working structure, not an empty repo.
 

@@ -963,13 +963,13 @@ Szablony utrzymywane przez `scripts/generate_integration_usage_docs.py` (regener
 | N.2 | Manifest conformance harness + unit tests | **Done** | §7.4.10 | `intergrax/applications/_shared/wiring.py` |
 | N.2.1 | Unified agent initialization (builders / factories / context) | **Done** | §7.4.10 | `ApplicationBuildContext`, `build_application_registry`; lab + legal migrated |
 | N.2.2 | Strongly typed `AgentBinding.mount(AgentClass, factory=...)` | **Done** | §7.4.10 | `type[Agent]` + callable factory; `deserialize()` for scaffold strings only |
-| N.3 | `python -m intergrax.scaffold new-application` (profile `lab`) | **Pending** | §7.4.8 | Templates: host, serving, manifest, `.env.example`, README, `<app>_tests/` smoke |
+| N.3 | `python -m intergrax.scaffold new-application` (profile `lab`) | **Done** | §7.4.8 | `new_application.py`, `agent_catalog.py`, `cli.py`; lab templates + smoke |
 | N.4 | Scaffold profile `product` (fastapi_core skeleton) | **Pending** | §7.4.8 | Legal-style factory; optional `--agents` list |
 | N.5 | Docker templates under `applications/<app>/docker/` | **Pending** | §7.4.8 | Dockerfile + `.dockerignore`; monorepo-root build context |
 | N.6 | Reference app `poc_template_application` (committed example) | **Pending** | §7.4.8 | Living example; CI `docker build` smoke (optional workflow) |
 | N.7 | Backfill `.env.example` on existing apps | **Pending** | §7.4.8 | `lab_application`, `legal_application`, `research_application` |
 | N.8 | `AGENT_CREATION_GUIDE.md` Step 4E (dedicated application) | **Pending** | — | Link scaffold + manifest + Docker quickstart |
-| N.9 | Acceptance `test_scaffold_application` (gate) | **Pending** | — | `tests/acceptance/agent_os/` or `tests/acceptance/applications/` |
+| N.9 | Acceptance `test_scaffold_application` (gate) | **Partial** | — | `tests/unit/applications/test_scaffold_application.py` (tree); full acceptance TBD |
 | N.10 | Optional `new-stack` (agent + application in one CLI) | **Deferred** | — | After N.3–N.5 stable |
 
 #### N — Step-by-step implementation sequence
@@ -1013,7 +1013,7 @@ python -m intergrax.scaffold new-application my_lab \
 
 ```text
 
-NOW:     Phase N — Application Environment & Deploy Scaffold (N.3 next)
+NOW:     Phase N — Application Environment & Deploy Scaffold (N.5 Docker next)
 
 DONE:    Phase L certification — L1 achieved (Appendix A)
 
@@ -1074,24 +1074,17 @@ Each iteration follows **one deliverable at a time**:
 
 Do not batch N.1–N.5 in one PR unless explicitly agreed.
 
-### 6.2 Current next step — **N.3 Scaffold `new-application` (profile `lab`)**
+### 6.2 Current next step — **N.5 Docker templates for scaffolded applications**
 
-**Prerequisite:** N.2.1 unified wiring — scaffold must emit `manifest.py`, `agent_builders.py`, and `build_*_registry()` using ``build_application_registry()``.
+**Prerequisite:** N.3 lab scaffold — `python -m intergrax.scaffold new-application` emits host, manifest, `.env.example`, `<app>_tests/` smoke.
 
-**Goal:** `python -m intergrax.scaffold new-application` generates a deployable Tier-3 tree.
+**Goal:** Each scaffolded app includes `applications/<app>/docker/Dockerfile` + `.dockerignore`; `docker build -f … .` from monorepo root succeeds.
 
-**Tasks:**
-
-1. Add `intergrax/scaffold/new_application.py` with `lab` profile templates.
-2. Generated files: `host/`, `serving/`, `manifest.py`, `.env.example`, `README.md`, `<app>_tests/`.
-3. `host/wiring.py` uses `build_registry_from_manifest(manifest)`.
-4. Acceptance smoke in gate (N.9 partial).
-
-**Verify:**
+**Verify (N.3 — completed):**
 
 ```bash
 uv run python -m intergrax.scaffold new-application test_lab --profile lab --agents echo --root .
-uv run pytest applications/test_lab/tests -q
+uv run pytest applications/test_lab_application/test_lab_application_tests -q
 ```
 
 **Phase L — still required for any new agent work:**
@@ -1563,7 +1556,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.15 | **Legal full E2E gate (real LLM)** — deferred acceptance with live model | — | **Low** | Legal quality assurance | Tier-2 / CI | K.6; separate from Agent OS gate |
 | B.16 | **Lab agent auto-discovery** — new agents require explicit `wiring.py` register (by design, but easy to forget) | §7.4 | **Low** | Onboarding friction | Tier-3 | Phase N scaffold + `ApplicationManifest`; optional `new-stack` (N.10) |
 | B.28 | **Per-application `.env.example` missing** — only root `.env.example`; lab/legal vars in README only | §7.4.8 | **Medium** | **Open** | Deployable POC friction | Tier-3 | Phase N.7 backfill + scaffold generates per-app template |
-| B.29 | **No `new-application` scaffold** — Tier-3 hosts hand-copied from legal/lab | §7.4.8 | **High** | **Open** | Slow agent→Docker loop | Tier-3 / platform | Phase N.3–N.5 |
+| B.29 | **`new-application` scaffold (lab)** — Tier-3 hosts hand-copied from legal/lab | §7.4.8 | **High** | **Mitigated** | Lab profile via CLI; Docker/product profiles pending | Tier-3 / platform | Phase N.5–N.4 |
 | B.30 | **No application-level Dockerfile** — only `infra/docker/docling/` | §7.4.8 | **Medium** | **Open** | Production push from app dir | Tier-3 | Phase N.5 Docker templates |
 
 ### B.5 Test & certification hygiene

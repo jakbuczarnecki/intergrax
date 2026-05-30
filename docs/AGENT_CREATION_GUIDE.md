@@ -756,7 +756,7 @@ ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
 registry = build_application_registry(manifest, ctx, builders=MY_BUILDERS)
 ```
 
-Phase N scaffold (`new-application`) will generate this layout; until then, copy `lab_application` or `legal_application`.
+Use `python -m intergrax.scaffold new-application <name> --profile lab --agents <slug>` to generate this layout, or copy `lab_application` / `legal_application` as reference.
 
 ---
 
