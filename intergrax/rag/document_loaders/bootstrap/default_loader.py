@@ -7,14 +7,6 @@ from __future__ import annotations
 
 from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDocumentsLoader
 from intergrax.rag.document_loaders.documents_loader import DocumentsLoader
-from intergrax.rag.document_loaders.handlers.audio_smart_document_handler import AudioSmartDocumentHandler
-from intergrax.rag.document_loaders.handlers.doc_smart_document_handler import DocSmartDocumentHandler
-from intergrax.rag.document_loaders.handlers.excel_smart_document_handler import ExcelSmartDocumentHandler
-from intergrax.rag.document_loaders.handlers.image_smart_document_handler import ImageSmartDocumentHandler
-from intergrax.rag.document_loaders.handlers.pdf_smart_document_handler import PdfSmartDocumentHandler
-from intergrax.rag.document_loaders.handlers.text_smart_document_handler import TextSmartDocumentHandler
-from intergrax.rag.document_loaders.handlers.html_document_handler import HtmlSmartDocumentHandler
-from intergrax.rag.document_loaders.handlers.video_smart_document_handler import VideoSmartDocumentHandler
 from intergrax.rag.document_loaders.pipeline.metadata_pipeline import MetadataPipeline
 from intergrax.rag.document_loaders.metadata.default_metadata_provider import DefaultMetadataProvider
 from intergrax.rag.document_loaders.pipeline.normalizer_pipeline import NormalizerPipeline
@@ -47,6 +39,15 @@ def create_default_documents_loader(
 ) -> BaseDocumentsLoader:
 
     if registry is None:
+        from intergrax.rag.document_loaders.handlers.audio_smart_document_handler import AudioSmartDocumentHandler
+        from intergrax.rag.document_loaders.handlers.doc_smart_document_handler import DocSmartDocumentHandler
+        from intergrax.rag.document_loaders.handlers.excel_smart_document_handler import ExcelSmartDocumentHandler
+        from intergrax.rag.document_loaders.handlers.html_document_handler import HtmlSmartDocumentHandler
+        from intergrax.rag.document_loaders.handlers.image_smart_document_handler import ImageSmartDocumentHandler
+        from intergrax.rag.document_loaders.handlers.pdf_smart_document_handler import PdfSmartDocumentHandler
+        from intergrax.rag.document_loaders.handlers.text_smart_document_handler import TextSmartDocumentHandler
+        from intergrax.rag.document_loaders.handlers.video_smart_document_handler import VideoSmartDocumentHandler
+
         registry = DocumentHandlerRegistry()
 
         registry.register(PdfSmartDocumentHandler())

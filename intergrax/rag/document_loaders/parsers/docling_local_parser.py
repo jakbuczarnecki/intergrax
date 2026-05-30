@@ -7,18 +7,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Sequence
 
-from docling.document_converter import DocumentConverter, FormatOption
-from docling.datamodel.base_models import (
-    BaseFormatOption,
-    ConversionStatus,
-    DoclingComponentType,
-    DocumentStream,
-    ErrorItem,
-    InputFormat,
-)
-from docling.pipeline.simple_pipeline import SimplePipeline
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
-
 from langchain_core.documents import Document
 
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG, DoclingMode

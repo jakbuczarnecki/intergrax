@@ -2,15 +2,16 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from docling.document_converter import DocumentConverter, FormatOption
-from docling.datamodel.base_models import InputFormat
-from docling.pipeline.simple_pipeline import SimplePipeline
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 
+if TYPE_CHECKING:
+    from docling.document_converter import DocumentConverter
 
-_DOC_CONVERTER: DocumentConverter | None = None
+_DOC_CONVERTER: Any = None
 
 
 def create_docling_converter() -> DocumentConverter:
@@ -31,6 +32,10 @@ def _build_docling_converter() -> DocumentConverter:
     """
     Builds DocumentConverter according to loader configuration.
     """
+    from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+    from docling.datamodel.base_models import InputFormat
+    from docling.document_converter import DocumentConverter, FormatOption
+    from docling.pipeline.simple_pipeline import SimplePipeline
 
     cfg = GLOBAL_DOCUMENT_LOADER_CONFIG
 

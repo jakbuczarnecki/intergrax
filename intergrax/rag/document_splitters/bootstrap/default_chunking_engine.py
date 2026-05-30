@@ -23,9 +23,6 @@ from intergrax.rag.document_splitters.strategies.semantic_chunking_strategy impo
 from intergrax.rag.document_splitters.strategies.parent_child_chunking_strategy import (
     ParentChildChunkingStrategy,
 )
-from intergrax.rag.document_splitters.strategies.docling_chunking_strategy import (
-    DoclingChunkingStrategy,
-)
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
 
 
@@ -45,6 +42,10 @@ def create_default_chunking_engine(
         registry.register(LangChainRecursiveChunkingStrategy())
         registry.register(SemanticChunkingStrategy(embedding_manager=create_default_embedding_manager()))
         registry.register(ParentChildChunkingStrategy())
+        from intergrax.rag.document_splitters.strategies.docling_chunking_strategy import (
+            DoclingChunkingStrategy,
+        )
+
         registry.register(DoclingChunkingStrategy())
 
     return ChunkingEngine(
