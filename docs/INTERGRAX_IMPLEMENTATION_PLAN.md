@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-05-29, Phase M integration catalog spec)  
+Status: Working draft (2026-05-30, Phase N application environment spec)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
 Navigation: [`README.md`](README.md)  
@@ -22,6 +22,8 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Tier-0 integration catalog (what / where) | Architecture canon §7.1.1–§7.1.5 |
 | Tier-0 integration implementation (how) | **This file** Phase M |
 | Agent creation workflow | `AGENT_CREATION_GUIDE.md` |
+| Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
+| Application scaffold & deploy plan | **This file** Phase N |
 | Business-agent go/no-go checklist | **Appendix A** (below) |
 | Technical debt backlog (analysis only) | **Appendix B** (below) |
 
@@ -66,7 +68,7 @@ If the answer to “will another agent need this?” is **no**, it does not belo
 | **Tier-0** | `intergrax/` | Platform — LLM, storage, queues, logging, adapters | Kernel drivers |
 | **Tier-1** | `intergrax/runtime/` | **Nexus Agent OS** — orchestration, lifecycle, trace, memory, HITL | Operating system |
 | **Tier-2** | `agents/` | Reusable agent capabilities — domain logic, prompts, tools | Applications |
-| **Tier-3** | `applications/` | Execution environments — wiring, routes, integrations | Deployment config |
+| **Tier-3** | `applications/` | Self-contained execution environments — env, Docker, wiring, routes | Deployable product/lab host |
 
 ### 0.3 Execution path
 
@@ -943,25 +945,87 @@ Szablony utrzymywane przez `scripts/generate_integration_usage_docs.py` (regener
 
 ---
 
+### Phase N — Application Environment & Deploy Scaffold (Tier-3)
+
+**Canon:** §7.4.8–§7.4.10  
+**Goal:** From agent POC to **docker-pushable** dedicated lab/product host in minutes — same ergonomics as `new-agent`, with isolated `.env.example`, manifest, and Docker.
+
+**Prerequisite:** Phase L complete; Phase M.3 (`IntegrationProfile`) available.
+
+**Delivery rule (this phase):** One step per iteration — implement → summarize → update docs → present next step (see **§6.1**).
+
+| # | Deliverable | Status | Canon | Notes |
+|---|-------------|--------|-------|-------|
+| N.0 | Architecture & plan documented | **Done** | §7.4.8–§7.4.10 | This section + runtime canon (2026-05-30) |
+| N.1 | `ApplicationManifest` + `AgentBinding` models | **Pending** | §7.4.10 | `intergrax/applications/contracts/` (or `intergrax/runtime/applications/`) |
+| N.2 | Manifest conformance harness + unit tests | **Pending** | §7.4.10 | Validate roster imports, profile shape, feature flags |
+| N.3 | `python -m intergrax.scaffold new-application` (profile `lab`) | **Pending** | §7.4.8 | Templates: host, serving, manifest, `.env.example`, README, `<app>_tests/` smoke |
+| N.4 | Scaffold profile `product` (fastapi_core skeleton) | **Pending** | §7.4.8 | Legal-style factory; optional `--agents` list |
+| N.5 | Docker templates under `applications/<app>/docker/` | **Pending** | §7.4.8 | Dockerfile + `.dockerignore`; monorepo-root build context |
+| N.6 | Reference app `poc_template_application` (committed example) | **Pending** | §7.4.8 | Living example; CI `docker build` smoke (optional workflow) |
+| N.7 | Backfill `.env.example` on existing apps | **Pending** | §7.4.8 | `lab_application`, `legal_application`, `research_application` |
+| N.8 | `AGENT_CREATION_GUIDE.md` Step 4E (dedicated application) | **Pending** | — | Link scaffold + manifest + Docker quickstart |
+| N.9 | Acceptance `test_scaffold_application` (gate) | **Pending** | — | `tests/acceptance/agent_os/` or `tests/acceptance/applications/` |
+| N.10 | Optional `new-stack` (agent + application in one CLI) | **Deferred** | — | After N.3–N.5 stable |
+
+#### N — Step-by-step implementation sequence
+
+Execute **strictly in order**; do not skip ahead without completing acceptance for the current step.
+
+| Step | ID | Action | Done when |
+|------|-----|--------|-----------|
+| 1 | N.1 | Add `ApplicationManifest`, `AgentBinding`, `ApplicationFeatures` (Pydantic) | Unit tests pass; no scaffold yet |
+| 2 | N.2 | Add `applications/_shared/conformance.py` (or mirror integrations pattern) | Manifest load + minimal registry build test |
+| 3 | N.3 | Implement `new_application.py` + `lab` profile templates | `uv run python -m intergrax.scaffold new-application test_lab --profile lab --agents echo` creates tree; smoke test green |
+| 4 | N.3b | Wire `build_parser()` subcommand; post-create hints (uvicorn, pytest, docker) | CLI prints next commands; gate test added (N.9 partial) |
+| 5 | N.5 | Add Docker/docker-compose templates to scaffold | `docker build -f applications/<app>/docker/Dockerfile .` succeeds locally |
+| 6 | N.6 | Commit `applications/poc_template_application/` from scaffold | README three-command quickstart verified |
+| 7 | N.7 | Add per-app `.env.example` to legal, research, lab | Vars match each `settings.py`; no secrets committed |
+| 8 | N.4 | Add `product` profile to scaffold | Generated app matches legal factory patterns (auth optional stub) |
+| 9 | N.8 | Update agent guide Step 4E | Cross-links to §7.4.8 and Phase N table |
+| 10 | N.9 | Full acceptance + `pytest -m gate` | Scaffold application in gate suite |
+
+**Scaffold CLI (target interface):**
+
+```bash
+python -m intergrax.scaffold new-application my_lab \
+  --profile lab \
+  --agents echo,my_agent \
+  --port 8091 \
+  --prefix /v1/my_lab
+```
+
+**Out of scope for Phase N:**
+
+- Separate `pyproject.toml` per application (stay monorepo + `pythonpath`)
+- Auto-discovery of agents in `lab_application` (keep explicit wiring; manifest is declarative, not magic)
+- Runtime sandbox (Tier-1) changes — only document distinction (§7.4.9)
+
+---
+
 ## 4. Priority Order
 
 
 
 ```text
 
-NOW:     Phase L certification **complete** — L1 achieved (Appendix A)
+NOW:     Phase N — Application Environment & Deploy Scaffold (N.1 next)
 
-NEXT:    Phase M — Integration Library scaffold (M.1–M.5) **parallel to** Phase K when approved
+DONE:    Phase L certification — L1 achieved (Appendix A)
+
+DONE:    Phase M core (M.1–M.8) — Integration Library catalog + lab profile
+
+PARALLEL: Phase M.6 P1/P2 providers (on demand, one slug per iteration)
 
          Phase K — K.1/K.2 **when you approve** (Problem Radar or Vendor Discovery)
 
 BLOCKED: No new Nexus features unless Tier-1 extension rule (§0.6) applies
 
-PARALLEL: K.3–K.5 hardening; Phase M P0 provider wraps (non-breaking)
+PARALLEL: K.3–K.5 hardening; M.6 provider wraps (non-breaking)
 
 ```
 
-**Rationale:** Business agents (K) need composable Tier-0 integrations (Jira, Slack, Postgres, Redis) without each agent team reimplementing adapters. Phase M establishes the catalog **before** scaling Tier-2 surface area.
+**Rationale:** Agent scaffold (L) and integration catalog (M) are in place. Phase N closes the gap from **agent POC → deployable Docker host** with isolated Tier-3 env and composition contracts — required for fast concept labs before product agents (K).
 
 
 
@@ -993,16 +1057,44 @@ PARALLEL: K.3–K.5 hardening; Phase M P0 provider wraps (non-breaking)
 
 ## 6. Recommended Next Step
 
-**Phase L — Agent OS gate sign-off:**
+### 6.1 Implementation cadence (Phase N and onward)
+
+Each iteration follows **one deliverable at a time**:
+
+```text
+1. Implement   — single step from Phase N table (e.g. N.1 only)
+2. Summarize   — what changed, tests run, acceptance criteria met
+3. Document    — update this plan (status column) + canon if contracts changed
+4. Next step   — name the next ID (e.g. N.2) and prerequisites
+```
+
+Do not batch N.1–N.5 in one PR unless explicitly agreed.
+
+### 6.2 Current next step — **N.1 ApplicationManifest**
+
+**Goal:** Typed Tier-3 composition contract (§7.4.10) without scaffold yet.
+
+**Tasks:**
+
+1. Create `intergrax/applications/contracts/manifest.py` with `AgentBinding`, `ApplicationFeatures`, `ApplicationManifest`.
+2. `ApplicationManifest` holds `integration_profile: IntegrationProfile` (reuse M.3).
+3. Unit tests: validate sample manifest, forbid extra fields, coerce agent list.
+4. Mark N.1 **Done** in Phase N table; proceed to N.2.
+
+**Verify:**
 
 ```bash
-uv run pytest tests/acceptance/agent_os -m agent_os -q
+uv run pytest tests/unit/applications/ -q
 uv run pytest tests/ -m gate -q
 ```
 
-Complete one **new** scaffolded agent exercise (< 1 hour) and record in experiment registry before starting K.1/K.2.
+**Phase L — still required for any new agent work:**
 
-**Do not start:** Problem Radar, Vendor Discovery, Legal expansion until **Appendix A** sign-off.
+```bash
+uv run pytest tests/acceptance/agent_os -m agent_os -q
+```
+
+**Do not start:** Problem Radar, Vendor Discovery (K.1/K.2) until product priority is set — Phase N does not block K.
 
 **Recently completed:**
 
@@ -1375,6 +1467,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-30 | M.6-mysql | `providers/mysql/` — beta `RelationalStore` (pymysql); single-entry `opens.py` |
 | 2026-05-30 | M.6-postgresql | `providers/postgresql/` — beta `RelationalStore` (psycopg3); catalog + tests |
 | 2026-05-30 | M.7-agent-guide-integrations | `AGENT_CREATION_GUIDE.md` Appendix E — agents vs Tier-3 wiring |
+| 2026-05-30 | N.0-docs | Canon §7.4.8–§7.4.10 + Phase N plan (application environment, manifest, scaffold steps) |
 | 2026-05-30 | M.8-lab-profile | `wire_lab_integrations()` + `providers/log/` — lab uses `IntegrationProfile.lab()` |
 | 2026-05-30 | M.4-kafka-rabbitmq-adopt | Queueing bootstrap + integration tests use `integrations/providers/{kafka,rabbitmq}/` only |
 | 2026-05-30 | M.4-rabbitmq | `providers/rabbitmq/` + runtime `build_rabbitmq_transport()` delegate |
@@ -1459,7 +1552,10 @@ Decision:       L1 certified — GO Phase K when product priority set
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.14 | **`ChatAgent` / legacy engine removal** — `LEGAL_USE_LEGACY_AGENT_ENGINE` removed | §39, §41 | **Medium** | **Done** | Single execution path for all agents | Tier-1 / Tier-3 | Legal `fastapi_router` requires `UnifiedTaskRunner`; legacy flags removed (2026-05-27) |
 | B.15 | **Legal full E2E gate (real LLM)** — deferred acceptance with live model | — | **Low** | Legal quality assurance | Tier-2 / CI | K.6; separate from Agent OS gate |
-| B.16 | **Lab agent auto-discovery** — new agents require explicit `wiring.py` register (by design, but easy to forget) | §7.4 | **Low** | Onboarding friction | Tier-3 | Optional env-driven plugin loader **only** if many agents; else keep explicit wiring + guide |
+| B.16 | **Lab agent auto-discovery** — new agents require explicit `wiring.py` register (by design, but easy to forget) | §7.4 | **Low** | Onboarding friction | Tier-3 | Phase N scaffold + `ApplicationManifest`; optional `new-stack` (N.10) |
+| B.28 | **Per-application `.env.example` missing** — only root `.env.example`; lab/legal vars in README only | §7.4.8 | **Medium** | **Open** | Deployable POC friction | Tier-3 | Phase N.7 backfill + scaffold generates per-app template |
+| B.29 | **No `new-application` scaffold** — Tier-3 hosts hand-copied from legal/lab | §7.4.8 | **High** | **Open** | Slow agent→Docker loop | Tier-3 / platform | Phase N.3–N.5 |
+| B.30 | **No application-level Dockerfile** — only `infra/docker/docling/` | §7.4.8 | **Medium** | **Open** | Production push from app dir | Tier-3 | Phase N.5 Docker templates |
 
 ### B.5 Test & certification hygiene
 

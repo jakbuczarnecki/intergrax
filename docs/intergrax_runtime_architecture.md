@@ -371,12 +371,16 @@ An application is not an agent. It is the **product shell** — the “Cursor AI
 
 **Includes per application (`applications/<name>/`):**
 
-- Host entrypoint (`main.py`, `factory.py`, `settings.py`)
+- Host entrypoint (`main.py`, `factory.py`, `settings.py`, `wiring.py`)
 - HTTP/CLI serving layer (routes, auth, tenant config)
-- Environment configuration (.env profiles, SKU rules, feature flags)
+- **Self-contained operational configuration** — own `.env` and `.env.example` (application-prefixed variables; see §7.4.8)
+- Environment profiles (dev/staging/prod), SKU rules, feature flags
 - Agent registry wiring: which agents are registered, with which IDs and policies
+- `IntegrationProfile` composition — which Tier-0 backends this environment uses
 - Orchestration config: default capabilities, routing hints, multi-agent topologies
-- Deployment wiring (optional Docker/k8s)
+- **Deployment package** — `docker/` (Dockerfile, optional `docker-compose.yml`) sufficient to build an image and push to production (see §7.4.8)
+
+**Self-sufficiency rule:** A Tier-3 application is a **runnable, deployable environment** on its own. A developer MUST be able to start the host and build a container using **only** files under `applications/<name>/` plus the monorepo Python dependencies (`pyproject.toml` / `uv` at repository root). Application-specific secrets and toggles MUST NOT live only in the repository-root `.env.example`.
 
 **Example environments:**
 
@@ -865,10 +869,12 @@ An agent capability module MUST NOT contain:
 - FastAPI host or `uvicorn` entrypoint
 - HTTP route definitions (`/v1/...`)
 - environment-specific settings (`.env`, SKU profiles, API keys wiring)
-- product deployment manifests (Dockerfile, k8s) unless explicitly shared infra
+- product deployment manifests (Dockerfile, k8s) — deployment belongs in **Tier-3** `applications/<name>/docker/`, not under `agents/`
 - global orchestration or cross-agent routing
 
 Agents MUST be runnable through Nexus (`AgentEngine`, `NexusLoop`) **without** starting an HTTP server.
+
+Tier-3 applications MUST own Docker/k8s manifests for **their** host — not Tier-2 agents.
 
 ### 7.4.3 What Belongs In Tier-3 (`applications/<name>/`)
 
@@ -876,12 +882,21 @@ An application is a **ready-made environment** (Tier-3) that composes Nexus + ag
 
 An application MUST contain:
 
-- host package (`main.py`, `factory.py`, `settings.py`, wiring)
+- host package (`main.py`, `factory.py`, `settings.py`, `wiring.py`)
 - serving layer (FastAPI routers, request/response mapping)
+- **`.env.example`** — documented, application-prefixed variables (committed); **`.env`** — local overrides (gitignored)
 - environment-level configuration (env vars, product profiles, tenant defaults)
-- registration of agents into `AgentRegistry`
+- registration of agents into `AgentRegistry` (explicit `registry.register()` — no auto-discovery)
+- `IntegrationProfile` wiring (or equivalent typed composition in `integration_wiring.py`)
 - orchestration config: agent roles, default capabilities, interaction topology
-- industry- or company-specific rules (env-level, not agent domain code)
+- **`README.md`** — three-command quickstart: install/deps, `uvicorn`, optional `docker build`
+- **`docker/`** — Dockerfile (and optionally compose) for production-oriented images (Phase N scaffold; see implementation plan)
+- application integration tests under `<app>_tests/` (avoids clashing with repo `tests/` package)
+
+An application SHOULD contain (when scaffolded via `new-application`):
+
+- **`manifest.py`** — `ApplicationManifest`: declarative roster, integration profile hints, feature flags (Phase N)
+- optional `integrations.yaml` — ops-friendly profile overlay (env still authoritative in code)
 
 An application MUST NOT contain:
 
@@ -938,25 +953,30 @@ New code MUST NOT import `legal_agent` as a package path.
 Recommended workflow:
 
 ```text
-1. python -m intergrax.scaffold new-agent <name> --capabilities <cap>.<action>
+1. python -m intergrax.scaffold new-agent <name> --capability <cap>.<action>
    → creates agents/<name>/
 
 2. Implement domain logic in agents/<name>/
-   → get_contract(), build_context(), pipeline
+   → get_contract(), UAEP steps, pipeline
 
-3. (Optional) Create applications/<name>_application/
-   → host + serving if HTTP/product entry is needed
+3. (Recommended for deployable POC) python -m intergrax.scaffold new-application <name>_application
+      --profile lab|product --agents <name>
+   → creates applications/<name>_application/ with host, .env.example, docker/, manifest (Phase N)
 
-4. Register agent in AgentRegistry (notebook, test, or application factory)
+   OR use universal lab_application (edit wiring.py) for quick HTTP experiments
 
-5. Run through NexusLoop → observe trace → evaluate
+4. Register agent in AgentRegistry (smoke test, notebook, or application wiring/manifest)
+
+5. Run: pytest → uvicorn → docker build → observe trace → evaluate
 ```
 
-Not every agent requires an application.
+Not every agent requires a dedicated application.
 
 Notebook-only or test-only experiments MAY use `agents/<name>/` without creating `applications/`.
 
-Create an application only when a stable host, env config, or external API surface is required.
+Create a **dedicated** Tier-3 application when you need a stable host, **isolated env/Docker**, or a production push path for a specific agent concept.
+
+Use **`lab_application`** when experimenting with many agents in one shared debug surface.
 
 ### 7.4.7 Anti-Pattern: Agent-Application Monolith
 
@@ -967,6 +987,91 @@ This was the legacy `applications/legal_agent/` layout.
 It couples capability code to deployment, makes reuse across environments harder, and violates Tier-2 / Tier-3 boundaries.
 
 If agent logic and host live together, split them before adding a second agent or second deployment target.
+
+### 7.4.8 Tier-3 Application Environment (Self-Contained Operational Package)
+
+A Tier-3 application is an **isolated, configured execution environment** — not a runtime sandbox (see §7.4.9).
+
+Each application under `applications/<app>/` MUST be operable as a **self-contained package**:
+
+| Concern | Owned by application | Notes |
+|---------|---------------------|-------|
+| Configuration | `.env.example` (committed), `.env` (local, gitignored) | Variables use an **application prefix** (e.g. `LAB_`, `LEGAL_`, `MYAPP_`). Root `.env.example` documents Tier-0/platform only. |
+| Python package | `host/`, `serving/`, `__init__.py` | Import path via `pyproject.toml` `pythonpath` (`applications`). No separate `pyproject.toml` per app required. |
+| Agent roster | `host/wiring.py` and/or `manifest.py` | Explicit `AgentRegistry.register()`; contract id overrides in factory when needed. |
+| Integrations | `integration_wiring.py` + `IntegrationProfile` | Selects sqlite/redis/slack/… — agents stay vendor-agnostic. |
+| Run locally | `README.md` + `host/main.py` | `load_dotenv()` in `main.py` loads **application directory** `.env` when present. |
+| Deploy | `docker/Dockerfile` | Multi-stage build from monorepo root; `CMD` targets `uvicorn <package>.host.main:app`. |
+| Verify | `<app>_tests/` | Host smoke + optional HTTP contract tests. |
+
+**Canonical layout (target — Phase N scaffold):**
+
+```text
+applications/<app>/
+    __init__.py
+    manifest.py              # ApplicationManifest — roster, profile, features (Phase N)
+    README.md
+    .env.example
+    .env                     # gitignored
+    host/
+        main.py              # ASGI app, load_dotenv
+        factory.py           # create_*_application()
+        settings.py          # from_env(), prefixed env keys
+        wiring.py            # build_*_registry() from manifest
+        integration_wiring.py
+    serving/
+        fastapi_router.py
+    docker/
+        Dockerfile
+        docker-compose.yml   # optional — ollama, redis, volumes
+    <app>_tests/
+        host/test_*_smoke.py
+```
+
+**Reference implementations today:**
+
+- `applications/lab_application/` — universal experimentation (`IntegrationProfile.lab()`, debug API)
+- `applications/legal_application/` — product profile (`fastapi_core`, auth, legal routes)
+- `applications/research_application/` — product-style research host
+
+**Goal:** Time from agent POC to **docker-pushable** lab host should match agent scaffold speed (implementation plan Phase N).
+
+### 7.4.9 Terminology: Application Environment vs Runtime Sandbox
+
+These terms MUST NOT be conflated in documentation, scaffold CLI, or env variable names.
+
+| Term | Tier | Meaning |
+|------|------|---------|
+| **Application environment** | Tier-3 | Product/lab **host** under `applications/<name>/` — HTTP entry, env, Docker, agent roster, integrations. |
+| **Runtime sandbox** | Tier-1 | **Task isolation** for tool/file execution — `sandbox.exec`, `SandboxSessionManager`, `metadata.sandbox` on `Task`. Optional per-task; wired through UAEP/Nexus. |
+
+Enabling runtime sandbox on a task does **not** create a new application directory.
+
+Scaffold command `new-application` creates a Tier-3 **application environment**.
+
+Task flag / metadata `sandbox=True` enables Tier-1 **runtime sandbox** inside an existing host.
+
+### 7.4.10 Application Composition Contract (Phase N)
+
+Tier-2 agents declare **`AgentContract`** (capabilities, tools, risk).
+
+Tier-3 applications declare an **`ApplicationManifest`** (planned — Phase N.1):
+
+- `app_id`, `route_prefix`, environment defaults
+- `agents[]` — import paths, optional contract id overrides, enabled flags
+- `integration_profile` — typed `IntegrationProfile` or path to YAML overlay
+- `features` — scheduler, debug surface, interaction routes, default sandbox-on-task (boolean map)
+
+The manifest is the **composition contract**: which agents, which integrations, which product behaviors are active in this environment.
+
+**Rules:**
+
+- Manifest describes **wiring**, not domain logic.
+- `host/wiring.py` MAY be generated from manifest for consistency; manual edits remain valid.
+- Conformance tests validate manifest → registry → at least one registered agent (Phase N.2).
+- `python -m intergrax.scaffold new-application` generates manifest + host skeleton (Phase N.3).
+
+See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase N for step-by-step delivery.
 
 ---
 
