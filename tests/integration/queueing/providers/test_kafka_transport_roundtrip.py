@@ -6,16 +6,43 @@ from __future__ import annotations
 
 import uuid
 import time
+from typing import Optional
+
 import pytest
 
-from intergrax.queueing.providers.kafka.confluent_kafka_message_producer import (
-    ConfluentKafkaMessageProducer,
-)
-from intergrax.queueing.providers.kafka.confluent_kafka_message_consumer import (
-    ConfluentKafkaMessageConsumer,
-)
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.integrations.providers.kafka.bundle import create_kafka_integration
 
 pytestmark = pytest.mark.integration
+
+
+class _MinimalKVStore(DistributedKVStore):
+    def get(self, tenant_id: str, key: str) -> Optional[bytes]:
+        return None
+
+    def set(
+        self,
+        tenant_id: str,
+        key: str,
+        value: bytes,
+        *,
+        ttl_seconds: Optional[int] = None,
+    ) -> None:
+        return None
+
+    def delete(self, tenant_id: str, key: str) -> None:
+        return None
+
+    def compare_and_set(
+        self,
+        tenant_id: str,
+        key: str,
+        expected: Optional[bytes],
+        new_value: bytes,
+        *,
+        ttl_seconds: Optional[int] = None,
+    ) -> bool:
+        return True
 
 
 def test_kafka_transport_roundtrip() -> None:
@@ -23,30 +50,23 @@ def test_kafka_transport_roundtrip() -> None:
     topic = f"intergrax-transport-{uuid.uuid4()}"
     group_id = f"intergrax-transport-group-{uuid.uuid4()}"
 
-    producer = ConfluentKafkaMessageProducer(
-        bootstrap_servers=broker,
-    )
-
-    consumer = ConfluentKafkaMessageConsumer(
+    bundle = create_kafka_integration(
+        kv_store=_MinimalKVStore(),
         bootstrap_servers=broker,
         topic=topic,
-        group_id=group_id,
-        extra_config={
-            "auto.offset.reset": "earliest",
-        },
+        consumer_group=group_id,
     )
 
     payload = b"transport-test-payload"
 
-    producer.publish(
+    bundle.producer.publish(
         topic=topic,
         payload=payload,
     )
 
-    # allow broker delivery
     time.sleep(0.5)
 
-    received = consumer.poll(timeout_seconds=1.0)
+    received = bundle.consumer.poll(timeout_seconds=1.0)
 
     assert received is not None
     assert received == payload

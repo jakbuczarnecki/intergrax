@@ -14,25 +14,23 @@ if str(ROOT) not in sys.path:
 
 import pytest
 
-from testing_support.builder import DeterministicRuntimeHarness, build_engine_harness, build_in_memory_session_manager, build_runtime_config_deterministic
 from intergrax.runtime.nexus.planning.engine_plan_models import EngineNextStep, PlanIntent
 from intergrax.runtime.nexus.planning.plan_sources import PlanSpec
 
-import warnings
-
-warnings.filterwarnings(
-    "ignore",
-    category=DeprecationWarning,
-    module="docling"
-)
-
 @pytest.fixture
 def session_manager_in_memory():
+    from testing_support.builder import build_in_memory_session_manager
+
     return build_in_memory_session_manager()
 
 
 @pytest.fixture
-def harness_static(session_manager_in_memory) -> DeterministicRuntimeHarness:
+def harness_static(session_manager_in_memory):
+    from testing_support.builder import (
+        DeterministicRuntimeHarness,
+        build_engine_harness,
+        build_runtime_config_deterministic,
+    )
     from intergrax.runtime.nexus.pipelines.planner_static_pipeline import PlannerStaticPipeline
 
     # Minimal deterministic plan for STATIC smoke: planner returns FINALIZE.
@@ -61,7 +59,12 @@ def harness_static(session_manager_in_memory) -> DeterministicRuntimeHarness:
 
 
 @pytest.fixture
-def harness_dynamic(session_manager_in_memory) -> DeterministicRuntimeHarness:
+def harness_dynamic(session_manager_in_memory):
+    from testing_support.builder import (
+        DeterministicRuntimeHarness,
+        build_engine_harness,
+        build_runtime_config_deterministic,
+    )
     from intergrax.runtime.nexus.pipelines.planner_dynamic_pipeline import PlannerDynamicPipeline
 
     # Deterministic two-iteration DYNAMIC: SYNTHESIZE then FINALIZE.

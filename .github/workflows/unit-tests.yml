@@ -1,22 +1,32 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
-# Mirrors: scripts\test.bat unit
-#   → pytest tests applications -m unit
+#
+# Fast regression gate on push/PR:
+#   uv sync --extra dev-ci --frozen
+#   pytest <gate paths> -m gate
+#
+# Full local suite: scripts\test.bat unit  (uv sync --extra dev)
 
-name: Unit tests
+name: Regression gate
 
 on:
   push:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: regression-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  UV_LINK_MODE: copy
+  UV_PYTHON_DOWNLOADS: never
 
 jobs:
-  unit:
+  gate:
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -28,8 +38,19 @@ jobs:
           enable-cache: true
           python-version: "3.12"
 
-      - name: Install dependencies (dev)
-        run: uv sync --extra dev
+      - name: Install dependencies (CI minimal)
+        run: uv sync --extra dev-ci --frozen
 
-      - name: Run unit tests
-        run: uv run pytest tests applications -m unit
+      - name: Run regression gate
+        run: >-
+          uv run pytest
+          tests/unit/debug
+          tests/unit/experiments
+          tests/unit/runtime
+          tests/unit/agents
+          tests/unit/contracts
+          tests/integration
+          tests/acceptance
+          applications/legal_application/legal_tests/host
+          agents/signoff_probe
+          -m gate -q --tb=line

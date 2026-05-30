@@ -4,22 +4,14 @@
 
 from __future__ import annotations
 
-from typing import Sequence, List, Optional, cast
+from typing import TYPE_CHECKING, Sequence, List, Optional, cast
 
 from langchain_core.documents import Document
 
-from docling_core.types.doc import (
-    DoclingDocument,
-    SectionHeaderItem,
-    TextItem,
-    ListItem,
-    TableItem,
-    PictureItem,
-    CodeItem,
-    FormulaItem,
-)
-
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
+
+if TYPE_CHECKING:
+    from docling_core.types.doc import DoclingDocument
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import (
     BaseChunkingStrategy,
 )
@@ -44,6 +36,15 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
         self,
         documents: Sequence[Document],
     ) -> Sequence[Document]:
+        from docling_core.types.doc import (
+            CodeItem,
+            FormulaItem,
+            ListItem,
+            PictureItem,
+            SectionHeaderItem,
+            TableItem,
+            TextItem,
+        )
 
         chunks: List[Document] = []
 

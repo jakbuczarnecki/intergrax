@@ -1,0 +1,17 @@
+# © Artur Czarnecki. All rights reserved.
+# Run from repository root: docker compose -f applications/lab_application/docker/docker-compose.yml up --build
+
+services:
+  lab:
+    build:
+      context: ../../..
+      dockerfile: applications/lab_application/docker/Dockerfile
+    image: lab-application:latest
+    ports:
+      - "8090:8090"
+    env_file:
+      - ../.env
+    environment:
+      LAB_BACKEND_HOST: "0.0.0.0"
+      LAB_BACKEND_PORT: "8090"
+      INTERGRAX_ENV: prod

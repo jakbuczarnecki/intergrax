@@ -1,0 +1,17 @@
+# © Artur Czarnecki. All rights reserved.
+# Run from repository root: docker compose -f applications/research_application/docker/docker-compose.yml up --build
+
+services:
+  research:
+    build:
+      context: ../../..
+      dockerfile: applications/research_application/docker/Dockerfile
+    image: research-application:latest
+    ports:
+      - "8010:8010"
+    env_file:
+      - ../.env
+    environment:
+      RESEARCH_BACKEND_HOST: "0.0.0.0"
+      RESEARCH_BACKEND_PORT: "8010"
+      INTERGRAX_ENV: prod

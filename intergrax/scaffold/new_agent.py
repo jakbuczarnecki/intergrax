@@ -425,56 +425,15 @@ def create_agent(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="intergrax.scaffold",
-        description="Scaffold UAEP-first Intergrax agent capability modules (Phase L.1).",
-    )
-    sub = parser.add_subparsers(dest="command", required=True)
+    from intergrax.scaffold.cli import build_parser as _build_cli_parser
 
-    new_agent = sub.add_parser("new-agent", help="Create agents/<name>/ from UAEP template")
-    new_agent.add_argument("name", help="Agent slug (e.g. document_automation)")
-    new_agent.add_argument(
-        "--capability",
-        dest="capabilities",
-        action="append",
-        default=[],
-        help="Capability id (repeatable; default: <name>.basic)",
-    )
-    new_agent.add_argument(
-        "--root",
-        type=Path,
-        default=Path.cwd(),
-        help="Repository root (default: cwd)",
-    )
-    new_agent.add_argument("--force", action="store_true", help="Overwrite if exists")
-    return parser
+    return _build_cli_parser()
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
+    from intergrax.scaffold.cli import main as _cli_main
 
-    if args.command == "new-agent":
-        try:
-            path = create_agent(
-                name=args.name,
-                capabilities=args.capabilities,
-                root=args.root.resolve(),
-                force=args.force,
-            )
-        except (ValueError, FileExistsError) as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return 1
-        slug = _slug(args.name)
-        class_name = _class_name(slug)
-        print(f"Created UAEP agent scaffold at {path}")
-        print(f"  Register: from {slug}.{slug}_agent import {class_name}")
-        print(f"  Test:     uv run pytest {path / 'tests'} -q")
-        print(f"  Guide:    docs/AGENT_CREATION_GUIDE.md  (canonical — read Step 4 for registration)")
-        return 0
-
-    parser.error(f"Unknown command: {args.command}")
-    return 2
+    return _cli_main(argv)
 
 
 if __name__ == "__main__":

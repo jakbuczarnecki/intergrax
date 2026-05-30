@@ -107,7 +107,7 @@ def test_lab_application_interaction_intake_json_only(lab_client: TestClient):
     body = response.json()
     assert body["capability"] == "echo.basic"
     assert body["message"] == "hello prod route"
-    assert body["interaction_channel"] == "slash_command"
+    assert body["interaction_channel"] == "slack"
     assert body["executed"] is False
 
 

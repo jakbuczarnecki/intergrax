@@ -24,9 +24,23 @@ from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.integrations.registry.slugs import IntegrationSlug
-from intergrax.queueing.providers.kafka.kafka_task_queue import KafkaTaskQueue
+from intergrax.queueing.contracts.task_queue import TaskRequest
 
 pytestmark = pytest.mark.unit
+
+
+def _assert_kafka_message_bus(bus: object) -> None:
+    assert_message_bus(bus)
+    handle = bus.enqueue(
+        TaskRequest(
+            tenant_id="t1",
+            run_id="r1",
+            task_name="x",
+            payload=b"p",
+            idempotency_key=None,
+        )
+    )
+    assert handle.provider == "kafka"
 
 
 class InMemoryKVStore(DistributedKVStore):
@@ -95,7 +109,7 @@ def test_create_kafka_integration_bundle(kv_store: InMemoryKVStore, mock_produce
     )
 
     assert isinstance(bundle, KafkaIntegrationBundle)
-    assert isinstance(bundle.message_bus, KafkaTaskQueue)
+    _assert_kafka_message_bus(bundle.message_bus)
     assert bundle.config.topic == "lab-tasks"
     assert bundle.kv_store is kv_store
 
@@ -118,8 +132,7 @@ def test_register_and_resolve_via_profile(
         config={"kv_store": kv_store, "producer": mock_producer, "topic": "test-topic"},
     )
 
-    assert_message_bus(bus)
-    assert isinstance(bus, KafkaTaskQueue)
+    _assert_kafka_message_bus(bus)
 
 
 def test_register_default_integrations_includes_kafka(
@@ -135,4 +148,4 @@ def test_register_default_integrations_includes_kafka(
         config={"kv_store": kv_store, "producer": mock_producer},
     )
 
-    assert isinstance(bus, KafkaTaskQueue)
+    _assert_kafka_message_bus(bus)

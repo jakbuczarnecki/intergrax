@@ -19,12 +19,13 @@ from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecutionAdapter
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
+from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from legal_application.host.settings import LegalBackendSettings
-from legal_application.host.wiring import build_legal_agent
+from legal_application.host.wiring import build_legal_registry
+from legal_application.mcp.server import build_legal_mcp_server
 
 
 def create_legal_backend_app(
@@ -46,12 +47,7 @@ def create_legal_backend_app(
 
     api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
 
-    agent = build_legal_agent(settings)
-    registry = AgentRegistry()
-    contract = agent.get_contract().model_copy(
-        update={"id": settings.legal_default_agent_id},
-    )
-    registry.register(agent, contract=contract)
+    registry = build_legal_registry(settings)
 
     observability = wire_nexus_observability(
         trace_db_path=trace_db_path,
@@ -112,5 +108,12 @@ def create_legal_backend_app(
         app.title = "Intergrax Legal API"
     else:
         app.title = "Intergrax Legal API (dev)"
+
+    if settings.include_mcp:
+        mcp = build_legal_mcp_server(
+            nexus_loop=nexus_loop,
+            route_prefix=settings.legal_route_prefix,
+        )
+        app = couple_fastapi_with_mcp(app, mcp, mount_path=settings.mcp_mount_path)
 
     return app

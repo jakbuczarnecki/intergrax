@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import json
 import uuid
 import time
 import base64
@@ -12,10 +11,10 @@ import pytest
 from typing import Optional
 
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
-from intergrax.queueing.providers.kafka.confluent_kafka_message_consumer import ConfluentKafkaMessageConsumer
-from intergrax.queueing.providers.kafka.confluent_kafka_message_producer import ConfluentKafkaMessageProducer
-from intergrax.queueing.providers.kafka.kafka_task_queue import KafkaTaskQueue
-from intergrax.queueing.providers.kafka.kafka_worker import KafkaWorker
+from intergrax.integrations.providers.kafka.bundle import (
+    create_kafka_integration,
+    create_kafka_worker,
+)
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from pydantic import BaseModel
@@ -71,19 +70,6 @@ def test_kafka_worker_end_to_end() -> None:
     topic = f"intergrax-test-{uuid.uuid4()}"
     group_id = f"intergrax-group-{uuid.uuid4()}"
 
-    producer = ConfluentKafkaMessageProducer(
-        bootstrap_servers=broker,
-    )
-
-    consumer = ConfluentKafkaMessageConsumer(
-        bootstrap_servers=broker,
-        topic=topic,
-        group_id=group_id,
-        extra_config={
-            "auto.offset.reset": "earliest",
-        },
-    )
-
     registry = TaskExecutionRegistry()
 
     def handler(
@@ -103,19 +89,24 @@ def test_kafka_worker_end_to_end() -> None:
 
     kv = InMemoryKVStore()
 
-    worker = KafkaWorker(
-        consumer=consumer,
-        registry=registry,
+    bundle = create_kafka_integration(
         kv_store=kv,
-        idempotency_store=None,
+        bootstrap_servers=broker,
+        topic=topic,
+        consumer_group=group_id,
+    )
+
+    worker = create_kafka_worker(
+        kv_store=kv,
+        execution_registry=registry,
+        bootstrap_servers=broker,
+        topic=topic,
+        consumer_group=group_id,
+        consumer=bundle.consumer,
         poll_timeout_seconds=0.2,
     )
 
-    queue = KafkaTaskQueue(
-        producer=producer,
-        topic=topic,
-        kv_store=kv,
-    )
+    queue = bundle.message_bus
 
     request = TaskRequest(
         tenant_id="tenant-A",
@@ -128,10 +119,9 @@ def test_kafka_worker_end_to_end() -> None:
     handle = queue.enqueue(request=request)
     task_id = handle.task_id
 
-    # Wait briefly for Kafka delivery
     time.sleep(0.5)
 
-    raw = consumer.poll(timeout_seconds=1.0)
+    raw = bundle.consumer.poll(timeout_seconds=1.0)
     assert raw is not None
 
     worker.process_message(raw_payload=raw)

@@ -11,10 +11,10 @@ import pytest
 from typing import Optional
 
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
-from intergrax.queueing.providers.rabbitmq.rabbitmq_message_consumer import RabbitMQMessageConsumer
-from intergrax.queueing.providers.rabbitmq.rabbitmq_message_producer import RabbitMQMessageProducer
-from intergrax.queueing.providers.rabbitmq.rabbitmq_task_queue import RabbitMQTaskQueue
-from intergrax.queueing.providers.rabbitmq.rabbitmq_worker import RabbitMQWorker
+from intergrax.integrations.providers.rabbitmq.bundle import (
+    create_rabbitmq_integration,
+    create_rabbitmq_worker,
+)
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from pydantic import BaseModel
@@ -67,19 +67,6 @@ class DummyOutput(BaseModel):
 def test_rabbitmq_worker_end_to_end() -> None:
     queue_name = f"intergrax-test-{uuid.uuid4()}"
 
-    producer = RabbitMQMessageProducer(
-        host="localhost",
-        username="intergrax",
-        password="intergrax",
-    )
-
-    consumer = RabbitMQMessageConsumer(
-        host="localhost",
-        queue=queue_name,
-        username="intergrax",
-        password="intergrax",
-    )
-
     registry = TaskExecutionRegistry()
 
     def handler(
@@ -99,19 +86,26 @@ def test_rabbitmq_worker_end_to_end() -> None:
 
     kv = InMemoryKVStore()
 
-    worker = RabbitMQWorker(
-        consumer=consumer,
-        registry=registry,
+    bundle = create_rabbitmq_integration(
         kv_store=kv,
-        idempotency_store=None,
+        host="localhost",
+        username="intergrax",
+        password="intergrax",
+        queue=queue_name,
+    )
+
+    worker = create_rabbitmq_worker(
+        kv_store=kv,
+        execution_registry=registry,
+        host="localhost",
+        username="intergrax",
+        password="intergrax",
+        queue=queue_name,
+        consumer=bundle.consumer,
         poll_timeout_seconds=0.2,
     )
 
-    queue = RabbitMQTaskQueue(
-        producer=producer,
-        queue=queue_name,
-        kv_store=kv,
-    )
+    queue = bundle.message_bus
 
     request = TaskRequest(
         tenant_id="tenant-A",
@@ -126,7 +120,7 @@ def test_rabbitmq_worker_end_to_end() -> None:
 
     time.sleep(0.5)
 
-    raw = consumer.poll(timeout_seconds=1.0)
+    raw = bundle.consumer.poll(timeout_seconds=1.0)
     assert raw is not None
 
     worker.process_message(raw_payload=raw)

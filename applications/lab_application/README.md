@@ -2,6 +2,8 @@
 
 Universal experimentation environment for the Agent Operating System (Phase L.3).
 
+**Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)
+
 ## Purpose
 
 Run arbitrary registered agents without building a dedicated product application.
@@ -10,6 +12,7 @@ Inspect traces, checkpoints, runtime events, partial results, and experiments th
 ## Start
 
 ```bash
+cp applications/lab_application/.env.example applications/lab_application/.env
 uv run uvicorn lab_application.host.main:app --host 127.0.0.1 --port 8090
 ```
 
@@ -18,6 +21,11 @@ Or factory mode:
 ```bash
 uv run uvicorn lab_application.host.factory:create_lab_application --factory --host 127.0.0.1 --port 8090
 ```
+
+## MCP (FastMCP)
+
+FastMCP is mounted on the same uvicorn process as FastAPI (default `/mcp`).
+Tools: `list_agents`, `run_agent` — same Nexus loop as HTTP. Configure `LAB_INCLUDE_MCP`, `LAB_MCP_MOUNT_PATH`.
 
 ## Execute an agent
 
@@ -48,6 +56,32 @@ curl -s -X POST http://127.0.0.1:8090/v1/lab/run \
 | `LAB_INCLUDE_MOCK_AGENTS` | `true` | Register lab mock agents |
 | `LAB_INCLUDE_RESEARCH` | `false` | Register Research + Summary |
 | `LAB_ROUTE_PREFIX` | `/v1/lab` | Lab run API prefix |
+| `LAB_INTERACTION_SURFACE` | `auto` | `auto`, `lab_json`, `slack`, `teams` — via `IntegrationProfile` + interaction factory |
+
+## Integrations (Phase M.8)
+
+Lab composes Tier-0 backends through ``IntegrationProfile.lab()``:
+
+- **sqlite** — trace, events, checkpoints, experiments (``wire_lab_integrations()``)
+- **log** — outbound notifications (no network)
+- **lab_json** — interaction surface when ``LAB_INTERACTION_SURFACE=lab_json`` (default intake uses ``auto`` for Slack/Teams parity tests)
+
+See ``applications/lab_application/host/integration_wiring.py``.
+
+## Docker
+
+```bash
+applications/lab_application/docker/build-docker.sh
+# Windows: applications\lab_application\docker\build-docker.bat
+```
+
+See [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md).
+
+## Tests
+
+```bash
+uv run pytest applications/lab_application/lab_application_tests -q
+```
 
 ## Architecture
 
@@ -56,3 +90,5 @@ curl -s -X POST http://127.0.0.1:8090/v1/lab/run \
 - Agent logic never belongs in this application — only wiring and routes
 
 See [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) — single canonical guide (Step 4C for lab registration).
+
+**Tier-3 wiring:** [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md) (engine) · [`applications/USAGE.md`](../USAGE.md) (application layout).

@@ -81,6 +81,8 @@ class LegalBackendSettings:
     openapi_enabled_override: Optional[bool]
     session_sqlite_path: Optional[str]
     api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
+    include_mcp: bool = True
+    mcp_mount_path: str = "/mcp"
 
     @classmethod
     def from_env(cls) -> LegalBackendSettings:
@@ -145,6 +147,9 @@ class LegalBackendSettings:
                     "For local disaster debugging only, set LEGAL_BACKEND_ALLOW_UNAUTHENTICATED=true."
                 )
 
+        include_mcp = _env_bool("LEGAL_INCLUDE_MCP", default=True)
+        mcp_mount = os.environ.get("LEGAL_MCP_MOUNT_PATH", "/mcp").strip() or "/mcp"
+
         return cls(
             environment=environment,
             legal_product_profile=profile,
@@ -157,4 +162,6 @@ class LegalBackendSettings:
             openapi_enabled_override=openapi_override,
             session_sqlite_path=session_db,
             api_keys_map=keys,
+            include_mcp=include_mcp,
+            mcp_mount_path=mcp_mount,
         )

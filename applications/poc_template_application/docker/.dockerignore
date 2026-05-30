@@ -1,0 +1,19 @@
+# Per-application ignore file — monorepo root as context.
+# BuildKit: docker buildx build -f applications/poc_template_application/docker/Dockerfile \
+#   --ignorefile applications/poc_template_application/docker/.dockerignore -t poc_template-application .
+# Classic: cp this file to repo-root .dockerignore, then docker build -f ...
+
+.git
+.venv
+build/
+**/__pycache__/
+*.pyc
+.pytest_cache
+notebooks/
+docs/
+tests/
+infra/
+applications/*
+!applications/poc_template_application/
+agents/*
+!agents/echo/

@@ -1,0 +1,27 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""Declarative legal product roster (Tier-3 composition contract)."""
+
+from __future__ import annotations
+
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from legal.legal_agent import LegalAgent
+from legal_application.host.agent_factories import build_legal_agent_from_context
+
+LEGAL_APPLICATION_MANIFEST = ApplicationManifest.product(
+    app_id="legal",
+    name="Intergrax Legal API",
+    route_prefix="/v1/legal",
+    env_prefix="LEGAL_",
+    default_port=8000,
+    agents=[
+        AgentBinding.mount(
+            LegalAgent,
+            factory=build_legal_agent_from_context,
+            capabilities=["legal.review"],
+            default=True,
+        ),
+    ],
+    description="Legal review host composing Tier-2 LegalAgent",
+)

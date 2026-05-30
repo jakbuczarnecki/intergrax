@@ -13,6 +13,7 @@ from intergrax.integrations._shared.conformance import (
     assert_key_value_cache,
     assert_message_bus,
     assert_notification_channel,
+    assert_object_storage,
     assert_relational_store,
     assert_search_provider,
 )
@@ -132,6 +133,36 @@ class _FakeInteractionSurface(InteractionAdapter):
         )
 
 
+class _FakeObjectStorage:
+    def put(
+        self,
+        key: str,
+        body: bytes,
+        *,
+        content_type: str = "application/octet-stream",
+        metadata: Optional[Mapping[str, str]] = None,
+    ) -> None:
+        return None
+
+    def get(self, key: str):
+        return None
+
+    def delete(self, key: str) -> None:
+        return None
+
+    def presigned_url(
+        self,
+        key: str,
+        *,
+        expires_in_seconds: int = 3600,
+        method: str = "GET",
+    ) -> str:
+        return f"https://example.com/{key}?expires={expires_in_seconds}"
+
+    def close(self) -> None:
+        return None
+
+
 class _FakeCloudPlatform:
     @property
     def slug(self) -> str:
@@ -185,6 +216,11 @@ def test_interaction_surface_conformance() -> None:
 def test_cloud_platform_conformance() -> None:
     cloud = assert_cloud_platform(_FakeCloudPlatform())
     assert cloud.resolve("object_storage") == "s3"
+
+
+def test_object_storage_conformance() -> None:
+    storage = assert_object_storage(_FakeObjectStorage())
+    assert storage.presigned_url("artifacts/run.zip") == "https://example.com/artifacts/run.zip?expires=3600"
 
 
 def test_runtime_notification_adapter_is_notification_channel() -> None:

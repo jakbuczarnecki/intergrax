@@ -4,8 +4,8 @@ from typing import List
 
 from langchain_core.documents import Document
 
-from intergrax.rag.vectorstore.providers.qdrant_vector_store import QdrantVectorStore, QdrantConfig
-from intergrax.rag.vectorstore.providers.chroma_vector_store import ChromaVectorStore, ChromaConfig
+from intergrax.integrations.providers.chroma.bundle import create_chroma_vector_store
+from intergrax.integrations.providers.qdrant.bundle import create_qdrant_vector_store
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 
 
@@ -30,21 +30,19 @@ def _emb(n: int, dim: int = 4):
 @pytest.fixture(params=["qdrant", "chroma"])
 def store(request):
     if request.param == "qdrant":
-        cfg = QdrantConfig(
+        return create_qdrant_vector_store(
             collection_name=_unique_name("it_qdrant"),
             tenant_id="tenant_a",
         )
-        return QdrantVectorStore(cfg)
 
     if request.param == "chroma":
-        cfg = ChromaConfig(
+        return create_chroma_vector_store(
             collection_name=_unique_name("it_chroma"),
             tenant_id="tenant_a",
             mode="http",
             http_host="localhost",
             http_port=8000,
         )
-        return ChromaVectorStore(cfg)
 
     raise RuntimeError("Unknown backend")
 
@@ -91,11 +89,8 @@ def test_metadata_filter(store):
 def test_tenant_isolation():
     name = _unique_name("tenant_test")
 
-    cfg_a = QdrantConfig(collection_name=name, tenant_id="A")
-    cfg_b = QdrantConfig(collection_name=name, tenant_id="B")
-
-    store_a = QdrantVectorStore(cfg_a)
-    store_b = QdrantVectorStore(cfg_b)
+    store_a = create_qdrant_vector_store(collection_name=name, tenant_id="A")
+    store_b = create_qdrant_vector_store(collection_name=name, tenant_id="B")
 
     docs = _docs(5)
     embs = _emb(5)

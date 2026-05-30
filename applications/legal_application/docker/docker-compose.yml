@@ -1,0 +1,17 @@
+# © Artur Czarnecki. All rights reserved.
+# Run from repository root: docker compose -f applications/legal_application/docker/docker-compose.yml up --build
+
+services:
+  legal:
+    build:
+      context: ../../..
+      dockerfile: applications/legal_application/docker/Dockerfile
+    image: legal-application:latest
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env
+    environment:
+      LEGAL_BACKEND_HOST: "0.0.0.0"
+      LEGAL_BACKEND_PORT: "8000"
+      INTERGRAX_ENV: prod

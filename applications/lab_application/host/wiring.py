@@ -2,47 +2,22 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.wiring import build_application_registry
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from lab_application.host.agent_builders import LAB_AGENT_BUILDERS
 from lab_application.host.settings import LabApplicationSettings
+from lab_application.manifest import build_lab_manifest
 
 
 def build_lab_registry(*, settings: LabApplicationSettings | None = None) -> AgentRegistry:
     """
-    Compose the default lab agent registry (Echo + optional mocks + optional Research).
+    Compose the lab agent registry from manifest + builders (Tier-3 unified wiring).
 
-    Applications select agents; agents remain reusable across applications (Tier-3 rule).
+    Agent roster flags come from :class:`LabApplicationSettings`; instance creation
+    uses :data:`LAB_AGENT_BUILDERS` (zero-arg agents today, factories when needed).
     """
     settings = settings or LabApplicationSettings.from_env()
-    registry = AgentRegistry()
-
-    if settings.include_echo:
-        from echo.echo_agent import EchoAgent
-
-        registry.register(EchoAgent())
-
-    if settings.include_mock_agents:
-        from lab.mock_agents import (
-            ComposerMockAgent,
-            DocumentMockAgent,
-            ResearchMockAgent,
-            ValidatorMockAgent,
-        )
-
-        registry.register(ResearchMockAgent())
-        registry.register(DocumentMockAgent())
-        registry.register(ValidatorMockAgent())
-        registry.register(ComposerMockAgent())
-
-    if settings.include_signoff_probe:
-        from signoff_probe.signoff_probe_agent import SignoffProbeAgent
-
-        registry.register(SignoffProbeAgent())
-
-    if settings.include_research:
-        from research.research_agent import ResearchAgent
-        from research.summary_agent import SummaryAgent
-
-        registry.register(ResearchAgent())
-        registry.register(SummaryAgent())
-
-    return registry
+    manifest = build_lab_manifest(settings)
+    ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
+    return build_application_registry(manifest, ctx, builders=LAB_AGENT_BUILDERS)

@@ -30,8 +30,10 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 14. [Appendix B — Shadow workspace and sandbox](#appendix-b--shadow-workspace-and-sandbox)
 15. [Appendix C — Multi-agent graphs](#appendix-c--multi-agent-graphs)
 16. [Appendix D — Advanced execution paths](#appendix-d--advanced-execution-paths)
-17. [Anti-patterns](#anti-patterns)
-18. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+17. [Appendix E — Integrations and Tier-0 wiring](#appendix-e--integrations-and-tier-0-wiring)
+18. [Appendix F — Tier-3 application environment](#appendix-f--tier-3-application-environment)
+19. [Anti-patterns](#anti-patterns)
+20. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -70,7 +72,7 @@ idea
   → capability id
   → scaffold                    (python -m intergrax.scaffold new-agent …)
   → implement domain logic      (steps/, prompts/, contract.py)
-  → register                    (pick context: test / script / lab / product app)
+  → register                    (pick context: test / script / lab / product / scaffold app)
   → run                         (pytest / NexusLoop / lab HTTP)
   → inspect                     (debug API / CLI)
   → evaluate
@@ -151,7 +153,7 @@ The scaffold is **UAEP-first**: every agent implements `get_steps` / `run_step` 
 | `prompts/` | System/user prompt templates |
 | `schemas/` | Request/response models |
 
-**Reuse Tier-0** (LLM adapters, storage, queues, notifications). Do not duplicate platform infrastructure inside the agent folder.
+**Reuse Tier-0** (LLM adapters, tools, RAG helpers). Do not duplicate platform infrastructure inside the agent folder. For **which database, cache, or Slack backend** the host uses, see [Appendix E — Integrations](#appendix-e--integrations-and-tier-0-wiring) — agents declare **tools and capabilities**, applications wire **integration slugs**.
 
 **Tool access under UAEP:**
 
@@ -197,10 +199,11 @@ registry.register(DocumentAutomationAgent(), contract=contract)
 |---------|-------------|-------------------|
 | **A — Smoke test** | Fastest first run; CI for the agent | Already in `agents/<slug>/tests/` (generated) |
 | **B — Script / notebook** | Interactive experiments | Your script: `registry.register(...)` |
-| **C — Lab application** | HTTP experimentation via `/v1/lab/run` | `applications/lab_application/host/wiring.py` |
-| **D — Product application** | Dedicated product host (Legal, Research, …) | `applications/<product>/host/wiring.py` |
+| **C — Lab application** | HTTP experimentation via `/v1/lab/run` | `applications/lab_application/manifest.py` + `host/wiring.py` |
+| **D — Product application** | Existing product host (Legal, Research, …) | `applications/<product>/manifest.py` + `host/wiring.py` |
+| **E — Dedicated application (scaffold)** | New deployable host (env, Docker, HTTP API) | `python -m intergrax.scaffold new-application` → § [Step 4E](#e--dedicated-application-scaffold) |
 
-There is **no auto-discovery**. Every context requires an explicit `registry.register()` call.
+There is **no auto-discovery**. Every context requires an explicit roster entry (`AgentBinding.mount` or `registry.register()`).
 
 ### A — Smoke test (recommended first run)
 
@@ -242,21 +245,22 @@ Notebook template: `agents/<slug>/notebooks/01_<slug>_experiment.ipynb`.
 
 ### C — Lab application (HTTP)
 
-**Step C.1 — Add agent to lab registry**
+**Step C.1 — Add agent to lab roster**
 
-Edit `applications/lab_application/host/wiring.py`:
+Edit `applications/lab_application/manifest.py` (and `host/agent_builders.py` if the agent needs a custom factory). The lab host assembles the registry via `build_application_registry()` in `host/wiring.py` — do not call `registry.register()` by hand unless you are in a one-off script.
+
+Example binding:
 
 ```python
-def build_lab_registry(*, settings: LabApplicationSettings | None = None) -> AgentRegistry:
-    settings = settings or LabApplicationSettings.from_env()
-    registry = AgentRegistry()
+from document_automation.document_automation_agent import DocumentAutomationAgent
+# inside build_lab_manifest() agents=[ ... ]
+AgentBinding.mount(DocumentAutomationAgent, capabilities=["documents.automation"]),
+```
 
-    # … existing Echo / mock registrations …
+Add a zero-arg builder in `host/agent_builders.py` when needed:
 
-    from document_automation.document_automation_agent import DocumentAutomationAgent
-    registry.register(DocumentAutomationAgent())
-
-    return registry
+```python
+DocumentAutomationAgent: lambda ctx, binding: DocumentAutomationAgent(),
 ```
 
 **Step C.2 — Start lab host**
@@ -288,18 +292,171 @@ Lab app also exposes `/debug/*` for trace, events, checkpoints, experiments, and
 
 ### D — Product application (Tier-3)
 
-Follow the Legal / Research pattern:
+Use this path when extending an **existing** product host (Legal, Research, …). For a **new** host, prefer **Step 4E** (scaffold).
+
+Manual / reference pattern:
 
 1. Keep agent logic in `agents/<slug>/`
-2. In `applications/<product>/host/wiring.py` — import and `registry.register(...)`
-3. In `applications/<product>/host/factory.py` — build registry → `NexusLoop` → routes
+2. Define roster in `applications/<product>/manifest.py` — `AgentBinding.mount(AgentClass, factory=...)`
+3. Implement factories in `host/agent_factories.py` or `host/agent_builders.py`
+4. In `host/wiring.py` — `build_application_registry(manifest, ctx, builders=...)`
+5. In `host/factory.py` — registry → `NexusLoop` → routes
+
+**Usage guides (define / invoke / run):**
+
+- Composition engine API: [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)
+- Application folder layout: [`applications/USAGE.md`](../applications/USAGE.md)
 
 Example references:
 
-- `applications/legal_application/host/wiring.py`
-- `applications/research_application/host/wiring.py`
+- `applications/legal_application/manifest.py` + `host/agent_factories.py`
+- `applications/lab_application/manifest.py` + `host/agent_builders.py`
+- `applications/research_application/` — product-style host
 
 Applications contain **wiring only** — never agent business logic.
+
+### E — Dedicated application (scaffold)
+
+**When to use:** you need a **separate** Tier-3 host with its own `.env`, HTTP API, optional Docker image, and stable package name — not only the shared lab. Typical after agent smoke tests (Step 4A) pass.
+
+**Canon:** `docs/intergrax_runtime_architecture.md` §7.4.8–§7.4.10  
+**Phase N status:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) (Phase N table)  
+**Reference tree:** `applications/poc_template_application/` (committed scaffold example)
+
+#### E.1 — Choose scaffold profile
+
+| Profile | CLI | Host style | Default port |
+|---------|-----|------------|--------------|
+| `lab` | `--profile lab` | Debug API + `POST <prefix>/run` + `/debug/*` | 8091 |
+| `product` | `--profile product` | FastAPI Core (`/health`, `/v1/*`) + auth env stubs | 8000 |
+
+```bash
+# From repository root — lab host for experimentation
+python -m intergrax.scaffold new-application my_lab \
+  --profile lab \
+  --agents echo,my_agent \
+  --port 8091 \
+  --prefix /v1/my_lab
+
+# Product-style host (Legal-like factory layout)
+python -m intergrax.scaffold new-application my_product \
+  --profile product \
+  --agents echo \
+  --port 8000
+```
+
+`--agents` accepts built-in slugs (`echo`, `research`, `signoff_probe`) or your scaffolded agent slug under `agents/<slug>/`.
+
+The CLI prints package name, uvicorn command, pytest path, MCP mount, and Docker script paths.
+
+#### E.2 — Generated layout
+
+Creates `applications/<name>_application/` (package suffix is automatic):
+
+```text
+applications/my_lab_application/
+  manifest.py                 # ApplicationManifest.lab | .product
+  README.md                   # Three-command quickstart
+  BUILD_AND_DEPLOY.md         # Runbook: local, verify, Docker, prod checklist
+  .env.example                # MY_LAB_* (copy to .env, gitignored)
+  host/                       # factory, settings, wiring, integration_wiring
+  serving/                    # fastapi_router (+ schemas.py for product)
+  mcp/server.py               # FastMCP on same uvicorn process (/mcp)
+  docker/
+    Dockerfile, .dockerignore, docker-compose.yml
+    build-docker.sh, build-docker.bat
+  my_lab_application_tests/   # host smoke tests
+```
+
+Import as `my_lab_application.host.main:app` (folder `applications/` is on `pythonpath`).
+
+#### E.3 — Register your agent in the new host
+
+Scaffold pre-registers agents from `--agents`. To add or change the roster after creation:
+
+1. **Manifest** — `applications/<pkg>/manifest.py`:
+
+   ```python
+   AgentBinding.mount(MyAgent, capabilities=["my_domain.action"], default=True),  # product: one default
+   ```
+
+2. **Builders** (zero-arg agents) — `host/agent_builders.py`:
+
+   ```python
+   MyAgent: lambda ctx, binding: MyAgent(),
+   ```
+
+3. **Factories** (settings-driven agents, product profile) — `host/agent_factories.py` + typed factory callable.
+
+4. **Wiring** — usually unchanged; calls `build_application_registry(manifest, ctx, builders=...)`.
+
+Re-run host smoke tests after edits.
+
+#### E.4 — Configure environment
+
+```bash
+cp applications/my_lab_application/.env.example applications/my_lab_application/.env
+```
+
+Variables use the application prefix (`MY_LAB_`, `MY_PRODUCT_`, …). Do not put app-only secrets in the repository-root `.env` only.
+
+Product profile: optional dev API key via `*_BACKEND_BOOTSTRAP_API_KEY` (+ tenant/user); production requires keys or explicit `*_BACKEND_ALLOW_UNAUTHENTICATED=true` (see generated `host/settings.py`).
+
+#### E.5 — Three-command quickstart
+
+From **repository root**:
+
+```bash
+# 1. Verify
+uv run pytest applications/my_lab_application/my_lab_application_tests -q
+
+# 2. Run locally
+uv run uvicorn my_lab_application.host.main:app --host 127.0.0.1 --port 8091
+
+# 3. Container image (monorepo root context)
+applications/my_lab_application/docker/build-docker.sh
+# Windows: applications\my_lab_application\docker\build-docker.bat
+```
+
+Product profile: also `curl http://127.0.0.1:8000/health` before `POST <route_prefix>/run`.
+
+Operational detail: `applications/<pkg>/BUILD_AND_DEPLOY.md`.
+
+#### E.6 — HTTP verification
+
+**Lab profile:**
+
+```bash
+curl -s http://127.0.0.1:8091/v1/my_lab/agents
+curl -s -X POST http://127.0.0.1:8091/v1/my_lab/run \
+  -H "Content-Type: application/json" \
+  -d '{"message":"hello","capability":"echo.basic"}'
+```
+
+**Product profile:**
+
+```bash
+curl -s http://127.0.0.1:8000/health
+curl -s -X POST http://127.0.0.1:8000/v1/my_product/run \
+  -H "Content-Type: application/json" \
+  -d '{"message":"hello","capability":"echo.basic"}'
+```
+
+**MCP (both profiles):** FastMCP on `/mcp` by default — tools `list_agents`, `run_agent` (same Nexus loop as HTTP). Toggle with `<PREFIX>_INCLUDE_MCP` / `<PREFIX>_MCP_MOUNT_PATH`.
+
+#### E.7 — Integrations and deploy
+
+- **Integrations:** edit `host/integration_wiring.py` — lab scaffold uses `IntegrationProfile.lab()`; product uses `wire_nexus_observability()`. Agents still declare tools only; see [Appendix E](#appendix-e--integrations-and-tier-0-wiring).
+- **Docker:** scripts `cd` to monorepo root and build with `applications/<pkg>/docker/Dockerfile`. Override tag: `IMAGE_TAG=my-registry/my_lab:1.0.0` (sh) or `build-docker.bat my-registry/my_lab:1.0.0` (bat).
+- **Gate:** after application smoke tests, run `uv run pytest -m gate -q`.
+
+#### E.8 — Further reading
+
+| Topic | Document |
+|-------|----------|
+| Composition engine API | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
+| Application folder conventions | [`applications/USAGE.md`](../applications/USAGE.md) |
+| Tier-3 summary (manifest snippet) | [Appendix F](#appendix-f--tier-3-application-environment) |
 
 ---
 
@@ -426,6 +583,7 @@ uv run pytest tests/ -m gate -q
 - [ ] Smoke test passes
 - [ ] Trace inspectable via debug API
 - [ ] No duplicated Tier-0 infrastructure
+- [ ] No integration slug imports under `agents/` (see Appendix E)
 - [ ] Agent `README.md` present (generated by scaffold)
 
 ---
@@ -533,14 +691,238 @@ See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) for p
 
 ---
 
+## Appendix E — Integrations and Tier-0 wiring
+
+**Canon:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §7.1  
+**Catalog:** `intergrax/integrations/` (Phase M)
+
+### Separation of concerns
+
+```text
+Tier-2  agents/           WHAT the agent needs     → capabilities, allowed_tools, ToolRequest
+Tier-3  applications/     WHICH vendor/backend     → IntegrationProfile, factory wiring
+Tier-0  integrations/     HOW to talk to backend   → providers/<slug>/, contracts
+```
+
+| Layer | Declares | Example |
+|-------|----------|---------|
+| **Agent** (`AgentContract`) | Routing + tool policy | `capabilities=["research.web_search"]`, `allowed_tools=["websearch.query"]` |
+| **Application** (`factory.py`) | Provider selection | `relational_store=IntegrationSlug.SQLITE`, `notification_channel=IntegrationSlug.LOG` |
+| **Integration provider** | Adapter implementation | `create_sqlite_integration()`, `create_slack_integration()` |
+
+Agents **never** import `intergrax.integrations.providers.*` or choose integration slugs. That belongs in Tier-3 composition roots (`factory.py`, `integration_wiring.py`).
+
+### What agents declare
+
+In `contract.py`, describe **behavior**, not infrastructure:
+
+```python
+AgentContract(
+    id="research",
+    capabilities=["research.web_search", "research.pipeline"],
+    allowed_tools=["websearch.query", "sandbox.exec"],  # enforced by ToolAccessPolicy
+    risk_level=AgentRiskLevel.MEDIUM,
+    max_steps=20,
+)
+```
+
+| Field | Purpose |
+|-------|---------|
+| `capabilities` | Nexus routing — which tasks this agent handles |
+| `allowed_tools` | Tool gateway allow-list — which `ToolRequest.tool_name` values are permitted |
+| `required_adapters` | Optional documentation hint for operators (not auto-wired today) |
+
+When the agent needs external data or side effects, call tools via UAEP — do not open Redis, Postgres, or Slack clients inside `agents/`:
+
+```python
+response = await ctx.invoke_tool(
+    ToolRequest(tool_name="websearch.query", agent_id=ctx.agent_id, step_id=step.step_id, input={...})
+)
+```
+
+The application ensures the tool runtime is backed by the correct Tier-0 provider (e.g. Google CSE vs Bing via host config, not agent code).
+
+### What applications wire
+
+Tier-3 factories compose integrations once and pass concrete adapters into `NexusLoop`, schedulers, and debug services.
+
+**Laboratory default** — `IntegrationProfile.lab()` (no external vendors):
+
+| Category | Default slug |
+|----------|--------------|
+| `relational_store` | `sqlite` |
+| `notification_channel` | `log` |
+| `interaction_surface` | `lab_json` |
+
+Reference implementation: `applications/lab_application/host/integration_wiring.py` → `wire_lab_integrations()`.
+
+```python
+from intergrax.integrations import IntegrationCategory, IntegrationProfile, register_default_integrations
+from lab_application.host.integration_wiring import wire_lab_integrations
+
+register_default_integrations()
+integrations = wire_lab_integrations(settings=settings, db_path=trace_db_path)
+
+nexus_loop = NexusLoop(
+    registry,
+    trace_store=integrations.trace_store,
+    notification_adapter=integrations.notification_adapter,
+    interaction_adapter=integrations.interaction_adapter,
+    checkpoint_store=integrations.checkpoint_store,
+    runtime_event_store=integrations.runtime_event_store,
+)
+```
+
+**Custom product profile** — pick slugs per category:
+
+```python
+from intergrax.integrations import (
+    IntegrationCategory,
+    IntegrationProfile,
+    IntegrationSlug,
+    register_default_integrations,
+)
+
+register_default_integrations()
+profile = IntegrationProfile(
+    relational_store=IntegrationSlug.POSTGRESQL,
+    key_value_cache=IntegrationSlug.REDIS,
+    notification_channel=IntegrationSlug.SLACK,
+    interaction_surface=IntegrationSlug.SLACK,
+    options={
+        IntegrationSlug.SQLITE: {"data_dir": "build/my_app"},
+        IntegrationSlug.REDIS: {"url": "redis://localhost:6379/0"},
+    },
+)
+
+notifier = profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)
+db_bundle = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
+```
+
+**Cloud-hosted profile** — platform defaults for object storage, message bus, etc.:
+
+```python
+profile = IntegrationProfile.with_cloud_platform(IntegrationSlug.AWS)
+cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)  # inherits cloud default slug
+```
+
+### Environment overrides
+
+Applications may override profile fields without code changes:
+
+```text
+INTERGRAX_INTEGRATION_RELATIONAL_STORE=sqlite
+INTERGRAX_INTEGRATION_NOTIFICATION_CHANNEL=log
+INTERGRAX_INTEGRATION_KEY_VALUE_CACHE=redis
+```
+
+Pattern: `INTERGRAX_INTEGRATION_<CATEGORY>` where `<CATEGORY>` is the uppercase enum name (e.g. `MESSAGE_BUS=kafka`).
+
+Use `build_profile_from_env(defaults=IntegrationProfile.lab())` to merge env overrides onto lab defaults.
+
+Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERGRAX_SQLITE_*`, `INTERGRAX_SLACK_*`) — see `intergrax/integrations/providers/<slug>/`.
+
+### P0 catalog (available today)
+
+| Slug | Category | Typical Tier-3 use |
+|------|----------|-------------------|
+| `sqlite` | relational_store | Trace, checkpoints, runtime events, HITL (lab) |
+| `postgresql` | relational_store | Production SQL facade (`RelationalStore` via `create_postgresql_relational_store()` only) |
+| `mysql` | relational_store | Production SQL facade (`RelationalStore` via `create_mysql_relational_store()` only) |
+| `jira` | issue_tracker | Jira Cloud REST (`create_jira_issue_tracker()` only) |
+| `confluence` | wiki_knowledge | Confluence REST (`create_confluence_wiki_knowledge()` only) |
+| `prometheus` | observability_backend | PromQL queries (`create_prometheus_observability_backend()` only) |
+| `ms365_graph` | collaboration_suite | Microsoft Graph mail/calendar (`create_ms365_graph_collaboration_suite()` only) |
+| `cassandra` | document_store | Cassandra CQL store (`create_cassandra_document_store()` only) |
+| `aws` | cloud_platform | AWS facade (`create_aws_cloud_platform()` only) |
+| `azure` | cloud_platform | Azure facade (`create_azure_cloud_platform()` only) |
+| `gcp` | cloud_platform | GCP facade (`create_gcp_cloud_platform()` only) |
+| `elasticsearch` | observability_backend | Log search / aggregations (`create_elasticsearch_observability_backend()` only) |
+| `databricks` | relational_store | SQL Warehouse / Unity Catalog (`create_databricks_relational_store()` only) |
+| `mongodb` | document_store | Flexible JSON store (`create_mongodb_document_store()` only) |
+| `pinecone` | vector_store | RAG index bridge (`create_pinecone_vector_store()` only) |
+| `qdrant` | vector_store | RAG index bridge (`create_qdrant_vector_store()` only) |
+| `chroma` | vector_store | RAG index bridge (`create_chroma_vector_store()` only) |
+| `s3` | object_storage | Blob storage (`create_s3_object_storage()` only) |
+| `redis` | key_value_cache | Idempotency, rate limits, distributed locks |
+| `kafka`, `rabbitmq`, `celery` | message_bus | Worker queues, async Nexus execution |
+| `google_cse`, `bing` | search_provider | Research / web tools |
+| `slack`, `teams`, `webhook`, `log` | notification_channel | Long-running progress, HITL alerts |
+| `lab_json`, `slack`, `teams` | interaction_surface | Inbound webhooks / lab JSON intake |
+
+### Planned integrations (M.6 P2 / P3 — not yet in default bootstrap)
+
+| Slug | Category | Notes |
+|------|----------|-------|
+| `azure_blob`, `gcs` | object_storage | Follow S3 bridge pattern (B.34+) |
+| `notion`, `sharepoint` | wiki_knowledge | REST wiki sources (B.35) |
+| `github`, `linear` | issue_tracker | Dev workflow ingestion (B.36) |
+| `email_smtp` | notification_channel | SMTP outbound (B.37) |
+| `otel` | observability_backend | OTLP export (B.38) |
+| `playwright` | browser_automation | Dynamic web (B.39) |
+
+Full prioritized backlog: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) — **M.6 P2 tracker**, **M.6 P3 backlog**, **B.31–B.39**.
+
+LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them separately.
+
+### Decision checklist
+
+When building a new agent or application:
+
+1. **Agent author:** list capabilities and `allowed_tools` only; implement domain logic in `steps/`.
+2. **Application author:** choose `IntegrationProfile`, call `register_default_integrations()`, resolve categories in `factory.py`.
+3. **Platform author:** add missing backends under `integrations/providers/<slug>/` — never inside `agents/`.
+4. **Verify:** agent smoke tests use minimal wiring (in-memory / defaults); application acceptance tests exercise the chosen profile.
+
+Further detail: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase M, migration map M.5.
+
+Each provider under `intergrax/integrations/providers/<slug>/` includes an English **`USAGE.md`** with factory + `IntegrationProfile` wiring and a minimal contract API example.
+
+---
+
+## Appendix F — Tier-3 application environment
+
+When an agent needs a **dedicated host** (env, Docker, stable HTTP API) — not only the shared lab — use the Tier-3 stack under `applications/<app>/`.
+
+**Primary workflow:** [Step 4E — Dedicated application (scaffold)](#e--dedicated-application-scaffold) (CLI, three-command quickstart, Docker scripts).
+
+| Topic | Document |
+|-------|----------|
+| **Scaffold CLI** — `new-application`, lab vs product profile | [Step 4E](#e--dedicated-application-scaffold) |
+| **Composition engine** — `ApplicationManifest`, `AgentBinding.mount()`, `build_application_registry()` | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
+| **Application layout** — manifest, host, serving, `.env.example`, docker | [`applications/USAGE.md`](../applications/USAGE.md) |
+| **Deploy runbook** — per-app `BUILD_AND_DEPLOY.md` | Generated by scaffold; see `applications/poc_template_application/` |
+| Architecture rules | `docs/intergrax_runtime_architecture.md` §7.4.8–§7.4.10 |
+| Implementation plan | [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase N |
+
+Minimal pattern (hand-written manifest):
+
+```python
+from echo.echo_agent import EchoAgent
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.applications._shared.wiring import build_application_registry
+
+manifest = ApplicationManifest.lab(app_id="my_lab", name="My Lab", agents=[AgentBinding.mount(EchoAgent)])
+ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
+registry = build_application_registry(manifest, ctx, builders=MY_BUILDERS)
+```
+
+Prefer `python -m intergrax.scaffold new-application <name> --profile lab|product --agents <slug>` over copying folders by hand.
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
 |--------|------------|
 | Put agent logic in `applications/` | Logic in `agents/`, wiring in application |
 | Modify `NexusLoop` for one agent | `registry.register()` + contract/metadata |
-| Expect lab app to auto-load new agents | Add explicit `register()` in `lab_application/host/wiring.py` |
+| Expect lab app to auto-load new agents | Add `AgentBinding.mount(...)` in `lab_application/manifest.py` + builder |
+| Use string `import_path` / `factory_path` in Python manifests | `AgentBinding.mount(AgentClass, factory=callable)` — see `intergrax/applications/USAGE.md` |
 | Duplicate LLM/trace/queue stacks | Extend Tier-0 platform |
+| Import `integrations/providers/` from `agents/` | Declare `allowed_tools`; wire slugs in Tier-3 `factory.py` |
+| Hardcode Slack/Postgres/Redis in agent steps | `ToolRequest` + application `IntegrationProfile` |
 | Tie agent to one product | Reusable capability in `agents/` |
 | Document this workflow in multiple files | Update **this guide only** |
 
@@ -553,7 +935,8 @@ When asked to create a new Intergrax agent:
 1. Read this guide end-to-end.
 2. Run `python -m intergrax.scaffold new-agent <slug> --capability <id>`.
 3. Edit only `agents/<slug>/` — primarily `steps/`, `prompts/`, `schemas/`, `contract.py`.
-4. Register in the appropriate context (§ Step 4). For HTTP lab runs, edit `lab_application/host/wiring.py`.
+4. Register in the appropriate context (§ Step 4). New deployable host: Step **4E** (`new-application`). Shared lab: Step **4C** (`lab_application/manifest.py`).
 5. Verify: `uv run pytest agents/<slug>/tests -q` then `uv run pytest tests/ -m gate -q`.
 6. Do **not** modify `intergrax/runtime/` unless a reusable Tier-0 gap is proven and approved.
-7. Do **not** create duplicate workflow documentation — update this file if the process changes.
+7. Do **not** import `intergrax.integrations.providers.*` from agent code — wire integrations in Tier-3 only (Appendix E).
+8. Do **not** create duplicate workflow documentation — update this file if the process changes.

@@ -21,7 +21,7 @@ Intergrax is developed as an **internal agent experimentation laboratory** on th
 
 ## Documentation
 
-All platform documentation lives in [`docs/`](docs/). Four documents, one source of truth per topic:
+All platform documentation lives in [`docs/`](docs/). Canonical docs — one source of truth per topic:
 
 | Document | Read when you want to… |
 |----------|------------------------|
@@ -29,8 +29,11 @@ All platform documentation lives in [`docs/`](docs/). Four documents, one source
 | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Full architecture canon (tiers, Nexus, UAEP §42) |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, gaps, priority, business-agent checklist (Appendix A) |
 | [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) | Create an agent: scaffold → register → run → inspect |
+| [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **Integration Library** — catalog of all wired providers (DB, queues, RAG, cloud, …) |
+| [intergrax/applications/USAGE.md](intergrax/applications/USAGE.md) | Tier-3 composition engine: manifest, typed bindings, registry |
+| [applications/USAGE.md](applications/USAGE.md) | Application layout: env, Docker, host, run |
 
-**Quick paths:** new agent → [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md) · current phase → [IMPLEMENTATION_PLAN](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) §1–§4 · deep architecture → [runtime_architecture](docs/intergrax_runtime_architecture.md) §1–§5
+**Quick paths:** new agent → [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md) · **integrations catalog** → [INTEGRATIONS](docs/INTEGRATIONS.md) · **new application** → [applications/USAGE](applications/USAGE.md) · current phase → [IMPLEMENTATION_PLAN](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) §1–§4 · deep architecture → [runtime_architecture](docs/intergrax_runtime_architecture.md) §1–§5
 
 ---
 
@@ -43,7 +46,7 @@ Intergrax is organized as a **four-tier stack**. Higher tiers compose lower tier
 | **Tier-0 — Platform** | Universal, domain-agnostic building blocks: LLM adapters, RAG, tools, memory, logging, trace persistence | `intergrax/` (outside Nexus orchestration) |
 | **Tier-1 — Nexus Runtime** | Agent OS: task lifecycle, `NexusLoop`, `AgentEngine`, UAEP, execution graph, governance, event bus | `intergrax/runtime/` |
 | **Tier-2 — Agents** | Specialized capability modules: contracts, domain logic, pipelines, agent-local governance | `agents/` |
-| **Tier-3 — Applications** | Product hosts: FastAPI entrypoints, env config, HTTP routes wiring Tier-2 agents | `applications/` |
+| **Tier-3 — Applications** | Isolated, deployable environments — compose agents into separate products (see below) | `applications/` |
 
 **Dependency rules:**
 
@@ -52,6 +55,82 @@ Intergrax is organized as a **four-tier stack**. Higher tiers compose lower tier
 - `applications/` may import from `agents/` and `intergrax/`.
 
 This separation keeps the **Harness** (runtime) stable while agents and product surfaces evolve independently.
+
+---
+
+## Applications — isolated environments you can ship
+
+**Applications** are how Intergrax turns reusable **agent capabilities** into **separate, deployable products**.  
+An agent answers *what the system can do* (legal review, research, echo tests). An application answers *how that capability is hosted, configured, and delivered* — as its own API, with its own env, Docker image, and integration profile.
+
+Think of Tier-2 agents as **specialized modules** and Tier-3 applications as **ready-made shells** — like shipping the same engine in different vehicles: a lab van, a legal product API, or a research service. Each vehicle is an **isolated environment**; they share Nexus and agents, not each other's secrets or deployment config.
+
+### What an application is
+
+| Property | Meaning |
+|----------|---------|
+| **Isolated environment** | Own `.env` / `.env.example`, settings, HTTP routes, optional `docker/` — not mixed with the repo root or other apps |
+| **Composition only** | Wires agents + integrations; **no** domain logic (that stays in `agents/<name>/`) |
+| **Deployable unit** | Built to `uvicorn` locally; `applications/<app>/docker/build-docker.sh` (or `.bat`) for image build / push |
+| **Template-born** | Created from a standard layout (scaffold `new-application` — Phase N); same ergonomics as `new-agent` for agents |
+| **Reusable agents** | The same `LegalAgent` or `EchoAgent` can power **different** applications with different config, roster, and integrations |
+
+### How it works (concept → runtime)
+
+```text
+agents/legal/              Tier-2  — LegalAgent, pipeline, prompts (reusable capability)
+agents/research/           Tier-2  — ResearchAgent, SummaryAgent
+        │
+        │  AgentBinding.mount(AgentClass, factory=...)
+        ▼
+applications/legal_application/   Tier-3  — manifest, host, .env, Docker
+applications/my_concept_lab/      Tier-3  — another product using Echo + your new agent
+        │
+        ▼
+NexusLoop + IntegrationProfile + FastAPI  →  HTTP / Docker on production
+```
+
+1. **Define agents** under `agents/` (capabilities, UAEP steps, `AgentContract`).
+2. **Declare a roster** in `applications/<app>/manifest.py` — which agents are active, with typed `AgentBinding.mount(AgentClass, factory=...)`.
+3. **Build instances** via application factories (`host/agent_factories.py`, `host/agent_builders.py`) and `build_application_registry()`.
+4. **Expose HTTP** in `host/factory.py` + `serving/`; configure Tier-0 backends through `IntegrationProfile` in `integration_wiring.py`.
+5. **Run or ship** with app-local env and Docker — without copying agent code into the application tree.
+
+The composition engine lives in **`intergrax/applications/`** (manifest contract, wiring API). Concrete hosts live in **`applications/<app_name>/`**.
+
+### Applications vs agents vs shared lab
+
+| | **Agent** (`agents/`) | **Shared lab** (`lab_application`) | **Dedicated application** (`applications/<app>/`) |
+|--|------------------------|-------------------------------------|---------------------------------------------------|
+| Purpose | Reusable capability | Experiment many agents in one debug surface | One product / POC with its own deployment |
+| Domain logic | Yes | No | No |
+| Own `.env` / Docker | No | Partial (lab defaults) | Yes — full isolation |
+| Typical use | Build & test capability | Quick HTTP + `/debug/*` | Ship legal API, concept lab, customer-facing host |
+
+You can validate an agent with pytest or the shared lab first, then **promote** it into a dedicated application when you need a stable host or production path.
+
+### Scaffold and templates
+
+| Scaffold | Creates | Command |
+|----------|---------|---------|
+| Agent template | `agents/<name>/` — UAEP, tests, notebook | `python -m intergrax.scaffold new-agent <name> --capability <domain>.<action>` |
+| Application template | `applications/<app>/` — manifest, host, `.env.example`, docker (Phase N) | `AGENT_CREATION_GUIDE.md` Step 4E; `new-application --profile lab\|product` |
+
+Both scaffolds follow the same idea: **opinionated folder layout + defaults** so you start from a working structure, not an empty repo.
+
+### Example applications in this repository
+
+| Application | What it demonstrates |
+|-------------|-------------------|
+| [`lab_application/`](applications/lab_application/) | Universal lab — multiple agents, debug API, `IntegrationProfile.lab()` |
+| [`legal_application/`](applications/legal_application/) | Product host — configured `LegalAgent`, auth, FastAPI core, typed factory |
+| [`research_application/`](applications/research_application/) | Multi-agent HTTP host — research pipeline wiring |
+
+**Usage guides (define, invoke, deploy):**
+
+- Composition engine: [`intergrax/applications/USAGE.md`](intergrax/applications/USAGE.md)
+- Application folder layout: [`applications/USAGE.md`](applications/USAGE.md)
+- Architecture rules: [`docs/intergrax_runtime_architecture.md`](docs/intergrax_runtime_architecture.md) §7.4.8–§7.4.10
 
 ---
 
@@ -75,6 +154,8 @@ Scaffold a new agent:
 python -m intergrax.scaffold new-agent <name> --capability <domain>.<action>
 ```
 
+When the agent needs its **own deployable host**, add a Tier-3 application (manifest + wiring) — see [Applications — isolated environments](#applications--isolated-environments-you-can-ship) and [`applications/USAGE.md`](applications/USAGE.md).
+
 Run the regression gate:
 
 ```bash
@@ -83,9 +164,7 @@ uv run pytest -m gate -q
 
 ---
 
-## Reference agents and applications
-
-**Tier-2 agents** (capability modules):
+## Reference agents
 
 | Agent | Capability | Path |
 |-------|------------|------|
@@ -94,15 +173,9 @@ uv run pytest -m gate -q
 | Research Summary | Summarization stage in multi-agent flow | `agents/research/` |
 | Legal | Contract analysis and legal review | `agents/legal/` |
 
-**Tier-3 applications** (HTTP / product hosts):
-
-| Application | Purpose |
-|-------------|---------|
-| `applications/lab_application/` | Universal Agent OS lab (run agents, debug API) |
-| `applications/legal_application/` | Legal agent FastAPI host |
-| `applications/research_application/` | Research pipeline HTTP host |
-
 Agents execute through **UAEP** (Unified Agent Execution Protocol): `get_steps` → `run_step` → `decide_after_step`, orchestrated by `AgentEngine` inside `NexusLoop`.
+
+Tier-3 **applications** that compose these agents are listed in [Applications — isolated environments](#applications--isolated-environments-you-can-ship).
 
 ---
 
@@ -124,7 +197,7 @@ Legacy Supervisor / LangGraph orchestration is **deprecated** in favour of the N
 ```text
 intergrax/              # Tier-0 platform + Tier-1 Nexus runtime, AgentEngine, UAEP
 agents/                 # Tier-2 specialized agents (echo, legal, research, …)
-applications/           # Tier-3 product hosts (legal_application, research_application)
+applications/           # Tier-3 isolated deployable environments (see applications/USAGE.md)
 docs/                   # Architecture canon, implementation plan, agent guide (see docs/README.md)
 notebooks/              # Runnable examples and integration demos
 tests/                  # Unit and integration tests (gate: pytest -m gate)
@@ -140,7 +213,43 @@ Shared infrastructure used by all agents:
 - **RAG** — embeddings, vector stores, document loaders (`intergrax/rag/`)
 - **Tools** — registry, MCP-oriented integrations (`intergrax/tools/`)
 - **Memory** — conversational and session storage (`intergrax/memory/`)
+- **Integration Library** — modular catalog of external backends (DB, queues, search, vectors, cloud) — see [Integration Library](#integration-library)
 - **FastAPI core** — shared API primitives for Tier-3 hosts (`intergrax/fastapi_core/`)
+
+---
+
+## Integration Library
+
+Intergrax treats external systems as **pluggable, environment-specific infrastructure** — not hard-coded dependencies inside agents.
+
+The **Integration Library** (`intergrax/integrations/`) provides:
+
+| Property | Benefit |
+|----------|---------|
+| **Universal contracts** | Agents depend on small category protocols (`RelationalStore`, `VectorStore`, `MessageBus`, …), not vendor SDKs. |
+| **Modular providers** | Each backend is a self-contained package (`providers/<slug>/`). Swap SQLite for PostgreSQL, Chroma for Qdrant, or log for Slack by changing configuration — not agent code. |
+| **Portable across environments** | The same Tier-2 agent runs in a local lab (`IntegrationProfile.lab()`), a customer VPC, or a multi-cloud stack. Tier-3 applications compose the profile at startup. |
+| **Safe boundaries** | Vendor SDKs live only in each provider’s `opens.py`. Tier-2 agents must not import provider slugs or third-party drivers. |
+
+**29 providers** are registered today — relational stores, document DBs, Redis, Kafka/Celery/RabbitMQ, S3, Pinecone/Qdrant/Chroma, web search, Slack/Teams, Jira/Confluence, observability backends, and AWS/Azure/GCP facades.
+
+```python
+# Tier-3 application — declare backends once
+from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.slugs import IntegrationSlug
+
+profile = IntegrationProfile(
+    relational_store=IntegrationSlug.POSTGRESQL,
+    vector_store=IntegrationSlug.QDRANT,
+    notification_channel=IntegrationSlug.SLACK,
+)
+# Agents receive resolved contract instances — no boto3, no pymongo in agent code
+```
+
+**Full catalog (tables, factories, env vars, per-provider guides):**  
+**[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)**
+
+Architecture rules: [runtime architecture §7.1](docs/intergrax_runtime_architecture.md) · implementation status: [Phase M](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
 
 ---
 
@@ -150,7 +259,7 @@ Intergrax is under **active development** (private R&D). Phase status, prioritie
 
 **[`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)**
 
-Regression gate: `uv run pytest -m gate -q` (247 tests; collects `tests/`, `applications/`, `agents/`)
+Regression gate: `uv run pytest -m gate -q` (248 tests; collects `tests/`, `applications/`, `agents/`)
 
 ---
 
@@ -161,7 +270,7 @@ Intergrax is for teams and developers who want to:
 - build **specialized agents** on a shared Harness rather than one-off LLM scripts,
 - orchestrate **multi-agent ecosystems** with traceable execution,
 - validate agent hypotheses in a **controlled laboratory** before productizing,
-- integrate AI capabilities into business systems via Tier-3 application hosts.
+- integrate AI capabilities into business systems via **Tier-3 application hosts** — isolated, template-based environments that compose agent specializations into separate deployable products.
 
 ---
 

@@ -371,12 +371,16 @@ An application is not an agent. It is the **product shell** — the “Cursor AI
 
 **Includes per application (`applications/<name>/`):**
 
-- Host entrypoint (`main.py`, `factory.py`, `settings.py`)
+- Host entrypoint (`main.py`, `factory.py`, `settings.py`, `wiring.py`)
 - HTTP/CLI serving layer (routes, auth, tenant config)
-- Environment configuration (.env profiles, SKU rules, feature flags)
+- **Self-contained operational configuration** — own `.env` and `.env.example` (application-prefixed variables; see §7.4.8)
+- Environment profiles (dev/staging/prod), SKU rules, feature flags
 - Agent registry wiring: which agents are registered, with which IDs and policies
+- `IntegrationProfile` composition — which Tier-0 backends this environment uses
 - Orchestration config: default capabilities, routing hints, multi-agent topologies
-- Deployment wiring (optional Docker/k8s)
+- **Deployment package** — `docker/` (Dockerfile, optional `docker-compose.yml`) sufficient to build an image and push to production (see §7.4.8)
+
+**Self-sufficiency rule:** A Tier-3 application is a **runnable, deployable environment** on its own. A developer MUST be able to start the host and build a container using **only** files under `applications/<name>/` plus the monorepo Python dependencies (`pyproject.toml` / `uv` at repository root). Application-specific secrets and toggles MUST NOT live only in the repository-root `.env.example`.
 
 **Example environments:**
 
@@ -587,7 +591,7 @@ Each category defines a **small, stable contract** (Protocol or ABC). Providers 
 
 | Category | Contract module (planned) | Purpose | Example providers |
 |----------|---------------------------|---------|-------------------|
-| **relational_store** | `contracts/relational_store.py` | SQL CRUD, migrations hook, tenant-scoped connections | sqlite, postgresql, mysql, oracle, mssql |
+| **relational_store** | `contracts/relational_store.py` | SQL CRUD, migrations hook, tenant-scoped connections | sqlite, postgresql, mysql, oracle, mssql, databricks |
 | **document_store** | `contracts/document_store.py` | Document / wide-column CRUD | mongodb, cassandra, dynamodb |
 | **key_value_cache** | `contracts/key_value_cache.py` | Cache, distributed locks, idempotency | redis, memcached |
 | **message_bus** | `contracts/message_bus.py` | Async tasks, pub/sub, consumer groups | kafka, rabbitmq, celery, sqs, service_bus |
@@ -624,33 +628,35 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 | Slug | Category | Status | Rationale |
 |------|----------|--------|-----------|
 | `sqlite` | relational_store | **Done** | `providers/sqlite/` — **single entry** `create_sqlite_integration()` (trace, events, checkpoints, HITL, task memory, experiments, idempotency, session, org) |
-| `postgresql` | relational_store | Planned | Production relational store; multi-tenant apps |
+| `postgresql` | relational_store | Beta | Production relational store (`RelationalStore` via psycopg3); multi-tenant `tenant_schema` |
 | `redis` | key_value_cache | **Done** | `providers/redis/` — **single entry** `create_redis_integration()` wraps KV, idempotency, rate limit, semaphore, rerank cache |
-| `kafka` | message_bus | **Done** | `providers/kafka/` — `create_kafka_integration()` + `build_kafka_transport()` |
+| `kafka` | message_bus | **Done** (+ adopcja) | `providers/kafka/` — runtime transport delegates here |
 | `celery` | message_bus | **Done** | `providers/celery/` — `create_celery_integration()` + `create_celery_worker_app()` |
 | `google_cse` | search_provider | **Done** | `providers/google_cse/` — `create_google_cse_integration()` |
 | `bing` | search_provider | **Done** | `providers/bing/` — `create_bing_integration()` |
 | `slack` | notification_channel + interaction_surface | **Done** (+ adopcja) | `providers/slack/` — runtime wiring delegates here |
 | `teams` | notification_channel + interaction_surface | **Done** (+ adopcja) | `providers/teams/` — runtime wiring delegates here |
 | `webhook` | notification_channel | **Done** (+ adopcja) | `providers/webhook/` — generic HTTP outbound |
+| `log` | notification_channel | **Done** (+ adopcja) | `providers/log/` — process log; lab profile default |
 | `lab_json` | interaction_surface | **Done** (+ adopcja) | `providers/lab_json/` — laboratory JSON intake |
+| `rabbitmq` | message_bus | **Done** (+ adopcja) | `providers/rabbitmq/` — runtime transport delegates here |
 
 #### P1 — Common enterprise stack
 
 | Slug | Category | Status | Rationale |
 |------|----------|--------|-----------|
-| `mysql` | relational_store | Planned | Common LAMP / managed DB alternative to Postgres |
-| `rabbitmq` | message_bus | **Exists** → Catalog | Broker alternative to Kafka |
-| `prometheus` | observability_backend | Planned | Metrics-third canon (§33); SLO dashboards |
-| `jira` | issue_tracker | Planned | Task ingestion, agent workflow triggers |
-| `confluence` | wiki_knowledge | Planned | RAG source, runbooks, agent context |
-| `ms365_graph` | collaboration_suite | Planned | Mail, calendar, Teams-adjacent APIs |
+| `mysql` | relational_store | Beta | Production relational store (`RelationalStore` via pymysql); optional `tenant_database` |
+| `rabbitmq` | message_bus | **Done** (+ adopcja) | `providers/rabbitmq/` — runtime transport delegates here |
+| `prometheus` | observability_backend | Beta | PromQL instant/range queries via HTTP API v1 |
+| `jira` | issue_tracker | Beta | Task ingestion via REST v3 (`get_issue`, `add_comment`, `search_issues`) |
+| `confluence` | wiki_knowledge | Beta | RAG / runbooks via REST (`get_page`, `search_pages`) |
+| `ms365_graph` | collaboration_suite | Beta | Mail, calendar, directory via Microsoft Graph (client credentials) |
 | `email_smtp` | notification_channel | Planned | HITL / reports without chat vendor lock-in |
-| `s3` | object_storage | Planned | Artifacts, large uploads, shadow/sandbox exports |
+| `s3` | object_storage | **Beta** | Artifacts, large uploads, shadow/sandbox exports |
 | `filesystem` | object_storage | Partial | Local / dev; shadow workspace roots |
-| `aws` | cloud_platform | Planned | IAM/STS auth; factory for S3, SQS, DynamoDB, Secrets Manager |
-| `azure` | cloud_platform | Planned | Managed identity; factory for Blob, Service Bus, Key Vault |
-| `gcp` | cloud_platform | Planned | Service-account auth; factory for GCS, Pub/Sub, Secret Manager |
+| `aws` | cloud_platform | Beta | IAM/STS auth; defaults for S3, SQS, DynamoDB, ElastiCache |
+| `azure` | cloud_platform | Beta | Managed identity / service principal; defaults for Blob, Service Bus, Azure SQL |
+| `gcp` | cloud_platform | Beta | ADC / service account; defaults for GCS, Pub/Sub, Cloud SQL |
 
 #### P1.1 Cloud platforms — service mapping
 
@@ -670,8 +676,7 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 |------|----------|--------|-----------|
 | `oracle` | relational_store | Planned | Enterprise clients on Oracle |
 | `mssql` | relational_store | Planned | Microsoft SQL deployments |
-| `cassandra` | document_store | Planned | High-volume log / event retention |
-| `mongodb` | document_store | Planned | Flexible schema stores |
+| `cassandra` | document_store | Beta | High-volume log / event retention (partition-scoped CQL) |
 | `memcached` | key_value_cache | Planned | Simple cache tier |
 | `sqs` | message_bus | Planned | AWS-native queues (also via `aws` facade) |
 | `azure_blob` | object_storage | Planned | Azure artifact storage (also via `azure` facade) |
@@ -680,13 +685,25 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 | `pubsub` | message_bus | Planned | GCP-native messaging (via `gcp` facade) |
 | `dynamodb` | document_store | Planned | AWS document/KV (via `aws` facade) |
 | `elasticache` | key_value_cache | Planned | Managed Redis on AWS (via `aws` facade) |
-| `elasticsearch` | observability_backend | Planned | Log search, optional RAG source |
+| **`elasticsearch`** | observability_backend | **Beta** | Log search / aggregations (`_search` + Lucene `query_string`); complements `prometheus` |
+| **`databricks`** | relational_store | **Beta** | SQL Warehouse / Unity Catalog; lakehouse analytics via `RelationalStore` |
+| **`mongodb`** | document_store | **Beta** | Flexible JSON documents; partition-scoped CRUD via PyMongo |
+| **`pinecone`** | vector_store | **Beta** | Catalog bridge to `rag/`; `IntegrationProfile.vector_store` |
+| **`qdrant`** | vector_store | **Beta** | Catalog bridge to `rag/`; self-hosted / cloud vectors |
+| **`chroma`** | vector_store | **Beta** | Catalog bridge to `rag/`; embedded or HTTP Chroma |
+| **`s3`** | object_storage | **Beta** | AWS S3 put/get/delete/presigned_url via catalog |
+| `azure_blob` | object_storage | Planned (P2 next) | Azure artifact storage (also via `azure` facade) |
+| `gcs` | object_storage | Planned (P2) | GCP artifact storage (also via `gcp` facade) |
 | `otel` | observability_backend | Planned | Unified traces/metrics export |
 | `playwright` | browser_automation | Planned | Dynamic web research beyond HTTP fetch |
 | `azure_devops` | issue_tracker | Planned | Microsoft ALM |
 | `github` | issue_tracker | Planned | Dev-centric task sources |
 | `google_workspace` | collaboration_suite | Planned | Gmail / Calendar for Google tenants |
-| `qdrant` / `pinecone` / `chroma` | vector_store | **Exists** in `rag/` | Register in catalog; do not duplicate RAG stack |
+| `notion` / `sharepoint` | wiki_knowledge | Planned | Internal docs beyond Confluence |
+| `email_smtp` | notification_channel | Planned | Outbound mail without chat vendors |
+| `brave` / `serpapi` | search_provider | Planned | Alternative web research APIs |
+
+**Vector-store note:** `pinecone`, `qdrant`, and `chroma` implementations live in `intergrax/rag/vectorstore/`. Integration Library adds thin catalog bridges (`providers/<slug>/`) so Tier-3 can set `IntegrationProfile.vector_store`. RAG bootstrap (`create_default_vectorstore_manager()`) resolves stores via the catalog — see Phase M.6 P2 in the implementation plan.
 
 New integrations require **human approval** when they introduce a new **category** (§5.2.4). New **providers** within an existing category follow the provider checklist in the implementation plan (Phase M).
 
@@ -852,10 +869,12 @@ An agent capability module MUST NOT contain:
 - FastAPI host or `uvicorn` entrypoint
 - HTTP route definitions (`/v1/...`)
 - environment-specific settings (`.env`, SKU profiles, API keys wiring)
-- product deployment manifests (Dockerfile, k8s) unless explicitly shared infra
+- product deployment manifests (Dockerfile, k8s) — deployment belongs in **Tier-3** `applications/<name>/docker/`, not under `agents/`
 - global orchestration or cross-agent routing
 
 Agents MUST be runnable through Nexus (`AgentEngine`, `NexusLoop`) **without** starting an HTTP server.
+
+Tier-3 applications MUST own Docker/k8s manifests for **their** host — not Tier-2 agents.
 
 ### 7.4.3 What Belongs In Tier-3 (`applications/<name>/`)
 
@@ -863,12 +882,21 @@ An application is a **ready-made environment** (Tier-3) that composes Nexus + ag
 
 An application MUST contain:
 
-- host package (`main.py`, `factory.py`, `settings.py`, wiring)
+- host package (`main.py`, `factory.py`, `settings.py`, `wiring.py`)
 - serving layer (FastAPI routers, request/response mapping)
+- **`.env.example`** — documented, application-prefixed variables (committed); **`.env`** — local overrides (gitignored)
 - environment-level configuration (env vars, product profiles, tenant defaults)
-- registration of agents into `AgentRegistry`
+- registration of agents into `AgentRegistry` (explicit `registry.register()` — no auto-discovery)
+- `IntegrationProfile` wiring (or equivalent typed composition in `integration_wiring.py`)
 - orchestration config: agent roles, default capabilities, interaction topology
-- industry- or company-specific rules (env-level, not agent domain code)
+- **`README.md`** — three-command quickstart: pytest, `uvicorn`, `docker/build-docker.sh` (or `.bat`)
+- **`docker/`** — Dockerfile, `.dockerignore`, build scripts, optional compose (Phase N scaffold; see implementation plan)
+- application integration tests under `<app>_tests/` (avoids clashing with repo `tests/` package)
+
+An application SHOULD contain (when scaffolded via `new-application`):
+
+- **`manifest.py`** — `ApplicationManifest`: declarative roster, integration profile hints, feature flags (Phase N)
+- optional `integrations.yaml` — ops-friendly profile overlay (env still authoritative in code)
 
 An application MUST NOT contain:
 
@@ -925,25 +953,30 @@ New code MUST NOT import `legal_agent` as a package path.
 Recommended workflow:
 
 ```text
-1. python -m intergrax.scaffold new-agent <name> --capabilities <cap>.<action>
+1. python -m intergrax.scaffold new-agent <name> --capability <cap>.<action>
    → creates agents/<name>/
 
 2. Implement domain logic in agents/<name>/
-   → get_contract(), build_context(), pipeline
+   → get_contract(), UAEP steps, pipeline
 
-3. (Optional) Create applications/<name>_application/
-   → host + serving if HTTP/product entry is needed
+3. (Recommended for deployable POC) python -m intergrax.scaffold new-application <name>_application
+      --profile lab|product --agents <name>
+   → creates applications/<name>_application/ with host, .env.example, docker/, manifest (Phase N)
 
-4. Register agent in AgentRegistry (notebook, test, or application factory)
+   OR use universal lab_application (edit wiring.py) for quick HTTP experiments
 
-5. Run through NexusLoop → observe trace → evaluate
+4. Register agent in AgentRegistry (smoke test, notebook, or application wiring/manifest)
+
+5. Run: pytest → uvicorn → docker build → observe trace → evaluate
 ```
 
-Not every agent requires an application.
+Not every agent requires a dedicated application.
 
 Notebook-only or test-only experiments MAY use `agents/<name>/` without creating `applications/`.
 
-Create an application only when a stable host, env config, or external API surface is required.
+Create a **dedicated** Tier-3 application when you need a stable host, **isolated env/Docker**, or a production push path for a specific agent concept.
+
+Use **`lab_application`** when experimenting with many agents in one shared debug surface.
 
 ### 7.4.7 Anti-Pattern: Agent-Application Monolith
 
@@ -954,6 +987,109 @@ This was the legacy `applications/legal_agent/` layout.
 It couples capability code to deployment, makes reuse across environments harder, and violates Tier-2 / Tier-3 boundaries.
 
 If agent logic and host live together, split them before adding a second agent or second deployment target.
+
+### 7.4.8 Tier-3 Application Environment (Self-Contained Operational Package)
+
+A Tier-3 application is an **isolated, configured execution environment** — not a runtime sandbox (see §7.4.9).
+
+Each application under `applications/<app>/` MUST be operable as a **self-contained package**:
+
+| Concern | Owned by application | Notes |
+|---------|---------------------|-------|
+| Configuration | `.env.example` (committed), `.env` (local, gitignored) | Variables use an **application prefix** (e.g. `LAB_`, `LEGAL_`, `MYAPP_`). Root `.env.example` documents Tier-0/platform only. |
+| Python package | `host/`, `serving/`, `__init__.py` | Import path via `pyproject.toml` `pythonpath` (`applications`). No separate `pyproject.toml` per app required. |
+| Agent roster | `host/wiring.py` and/or `manifest.py` | Explicit `AgentRegistry.register()`; contract id overrides in factory when needed. |
+| Integrations | `integration_wiring.py` + `IntegrationProfile` | Selects sqlite/redis/slack/… — agents stay vendor-agnostic. |
+| Run locally | `README.md` + `host/main.py` | `load_dotenv()` in `main.py` loads **application directory** `.env` when present. |
+| Deploy | `docker/Dockerfile` + `build-docker.sh` / `build-docker.bat` | Image build from monorepo root (scripts wrap BuildKit or classic `docker build`); `CMD` → `uvicorn <package>.host.main:app`. |
+| Verify | `<app>_tests/` | Host smoke + optional HTTP contract tests. |
+
+**Canonical layout (target — Phase N scaffold):**
+
+```text
+applications/<app>/
+    __init__.py
+    manifest.py              # ApplicationManifest — roster, profile, features (Phase N)
+    README.md
+    BUILD_AND_DEPLOY.md   # local run, tests, Docker build/push runbook (scaffold)
+    .env.example
+    .env                     # gitignored
+    host/
+        main.py              # ASGI app, load_dotenv
+        factory.py           # create_*_application()
+        settings.py          # from_env(), prefixed env keys
+        wiring.py            # build_*_registry() from manifest
+        integration_wiring.py
+    serving/
+        fastapi_router.py
+    mcp/
+        server.py              # FastMCP tools; mounted on FastAPI via fastapi_mcp.couple_fastapi_with_mcp
+    docker/
+        Dockerfile
+        .dockerignore
+        build-docker.sh      # image build from repo root (Linux/macOS/Git Bash)
+        build-docker.bat     # same on Windows (cmd)
+        docker-compose.yml   # optional — ollama, redis, volumes
+    <app>_tests/
+        host/test_*_smoke.py
+```
+
+**Reference implementations today:**
+
+- `applications/lab_application/` — universal experimentation (`IntegrationProfile.lab()`, debug API)
+- `applications/legal_application/` — product profile (`fastapi_core`, auth, legal routes)
+- `applications/research_application/` — product-style research host
+
+**Goal:** Time from agent POC to **docker-pushable** lab host should match agent scaffold speed (implementation plan Phase N).
+
+### 7.4.9 Terminology: Application Environment vs Runtime Sandbox
+
+These terms MUST NOT be conflated in documentation, scaffold CLI, or env variable names.
+
+| Term | Tier | Meaning |
+|------|------|---------|
+| **Application environment** | Tier-3 | Product/lab **host** under `applications/<name>/` — HTTP entry, env, Docker, agent roster, integrations. |
+| **Runtime sandbox** | Tier-1 | **Task isolation** for tool/file execution — `sandbox.exec`, `SandboxSessionManager`, `metadata.sandbox` on `Task`. Optional per-task; wired through UAEP/Nexus. |
+
+Enabling runtime sandbox on a task does **not** create a new application directory.
+
+Scaffold command `new-application` creates a Tier-3 **application environment**.
+
+Task flag / metadata `sandbox=True` enables Tier-1 **runtime sandbox** inside an existing host.
+
+### 7.4.10 Application Composition Contract (Phase N)
+
+Tier-2 agents declare **`AgentContract`** (capabilities, tools, risk).
+
+Tier-3 applications declare an **`ApplicationManifest`** (Phase N.1 — `intergrax/applications/contracts/manifest.py`):
+
+- `app_id`, `route_prefix`, environment defaults
+- `agents[]` — roster entries via **`AgentBinding.mount(AgentClass, factory=...)`** (strongly typed); serialized scaffold uses ``deserialize(import_path=...)`` only
+- `integration_profile` — typed `IntegrationProfile`
+- `features` — scheduler, debug surface, interaction routes, default sandbox-on-task (boolean map)
+
+The manifest is the **roster contract** (who is mounted). **Instance creation** is unified via ``build_application_registry()`` (Phase N.2.1 — ``intergrax/applications/_shared/wiring.py``):
+
+| Priority | Source | Use when |
+|----------|--------|----------|
+| 1 | ``factory=`` on ``AgentBinding.mount()`` | **Preferred** — typed callable; mypy/IDE see class + factory |
+| 2 | ``builders[type[Agent]]`` | Type-keyed map in `host/agent_builders.py`` (lab) |
+| 3 | ``builder_key`` / ``factory_path`` strings | Scaffold-generated manifests only |
+| 4 | zero-arg ``agent_type()`` | Simple agents with no Tier-3 config |
+
+``ApplicationBuildContext`` carries ``manifest``, ``settings``, and ``integration_profile`` into every factory.
+
+**Rules:**
+
+- Manifest describes **wiring**, not domain logic.
+- Secrets and heavy config stay in ``settings.from_env()`` — binding ``config`` is for lightweight options only.
+- `host/wiring.py` calls ``build_application_registry(manifest, ctx, builders=...)``.
+- Reference: ``AgentBinding.mount(EchoAgent)`` + ``LAB_AGENT_BUILDERS`` keyed by type; ``AgentBinding.mount(LegalAgent, factory=build_legal_agent_from_context)``.
+- `python -m intergrax.scaffold new-application` generates manifest + builders skeleton (Phase N.3).
+
+See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase N for step-by-step delivery.
+
+**Usage guides:** composition engine — [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md); application hosts — [`applications/USAGE.md`](../applications/USAGE.md).
 
 ---
 

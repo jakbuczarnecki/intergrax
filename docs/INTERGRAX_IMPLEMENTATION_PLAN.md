@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-05-29, Phase M integration catalog spec)  
+Status: Working draft (2026-05-30, Phase N application environment spec)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
 Navigation: [`README.md`](README.md)  
@@ -22,6 +22,10 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Tier-0 integration catalog (what / where) | Architecture canon §7.1.1–§7.1.5 |
 | Tier-0 integration implementation (how) | **This file** Phase M |
 | Agent creation workflow | `AGENT_CREATION_GUIDE.md` |
+| Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
+| Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
+| Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
+| Application scaffold & deploy plan | **This file** Phase N |
 | Business-agent go/no-go checklist | **Appendix A** (below) |
 | Technical debt backlog (analysis only) | **Appendix B** (below) |
 
@@ -66,7 +70,7 @@ If the answer to “will another agent need this?” is **no**, it does not belo
 | **Tier-0** | `intergrax/` | Platform — LLM, storage, queues, logging, adapters | Kernel drivers |
 | **Tier-1** | `intergrax/runtime/` | **Nexus Agent OS** — orchestration, lifecycle, trace, memory, HITL | Operating system |
 | **Tier-2** | `agents/` | Reusable agent capabilities — domain logic, prompts, tools | Applications |
-| **Tier-3** | `applications/` | Execution environments — wiring, routes, integrations | Deployment config |
+| **Tier-3** | `applications/` | Self-contained execution environments — env, Docker, wiring, routes | Deployable product/lab host |
 
 ### 0.3 Execution path
 
@@ -531,19 +535,21 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M.1 | Scaffold `intergrax/integrations/` package | **Done** | `contracts/`, `registry/`, `_shared/`, `providers/` |
 | M.2 | Category contracts (P0 set) | **Done** | 7 P0 contracts + re-exports for queueing/notifications/interactions |
 | M.3 | `IntegrationRegistry` + `IntegrationProfile` | **Done** | `catalog.register_integration`, `resolve`, env/mapping profile |
-| M.4 | P0 providers — wrap existing | **In progress** | See **M.4 provider tracker** below |
+| M.4 | P0 providers — wrap existing | **Done** | See **M.4 provider tracker** below |
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
-| M.6 | P1 providers (on demand) | Pending | postgresql, mysql, jira, confluence, ms365_graph, prometheus, **aws, azure, gcp**, … |
-| M.7 | Agent Creation Guide § integrations | Pending | How agents declare needs vs Tier-3 wiring |
-| M.8 | Lab `IntegrationProfile` example | Pending | `applications/lab_application/` sqlite + logging + lab_json |
+| M.6 | P1 providers (on demand) | In progress | **postgresql**, **mysql**, **jira**, **confluence**, **prometheus**, **ms365_graph**, **aws**, **azure**, **gcp** Done; … |
+| M.6 P2 | Extended providers (on demand) | In progress | **`cassandra`**, **`elasticsearch`**, **`databricks`**, **`mongodb`**, **`pinecone`**, **`qdrant`**, **`chroma`**, **`s3`** Done (beta); azure_blob/gcs (next); see **M.6 P2 tracker** |
+| M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
+| M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
 **M.4 delivery workflow (one provider per iteration):**
 
 1. Implement `providers/<slug>/` (wrap legacy module — no fork).
 2. Register via `register_<slug>_integration()` + `register_default_integrations()`.
 3. Unit tests under `tests/unit/integrations/providers/`.
-4. Update canon §7.1.3 status + this tracker + migration map row.
-5. Next slug in priority order.
+4. Add `providers/<slug>/USAGE.md` — English usage guide (factory + `IntegrationProfile` + API invoke example).
+5. Update canon §7.1.3 status + this tracker + migration map row.
+6. Next slug in priority order.
 
 #### M.4 provider tracker
 
@@ -551,7 +557,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 |------|----------|--------|---------|---------------|
 | `redis` | key_value_cache | **Done** | `providers/redis/` — `create_redis_integration()` (KV, idempotency, rate limit, semaphore, rerank) |
 | `sqlite` | relational_store | **Done** | `providers/sqlite/` — `create_sqlite_integration()` (trace, events, checkpoints, HITL, …) |
-| `kafka` | message_bus | **Done** | `providers/kafka/` — `create_kafka_integration()` (requires `kv_store`) |
+| `kafka` | message_bus | **Done** (+ adopcja) | `providers/kafka/` — runtime transport delegates here |
 | `celery` | message_bus | **Done** | `providers/celery/` — `create_celery_integration()` (inject `app` or broker/backend env) |
 | `google_cse` | search_provider | **Done** | `providers/google_cse/` — `create_google_cse_integration()` (legacy `GOOGLE_CSE_*` env) |
 | `bing` | search_provider | **Done** | `providers/bing/` — `create_bing_integration()` (legacy `BING_SEARCH_V7_API_KEY`) |
@@ -559,8 +565,153 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | `teams` | notification + interaction | **Done** (+ adopcja) | `providers/teams/` — runtime wiring delegates here |
 | `webhook` | notification_channel | **Done** (+ adopcja) | `providers/webhook/` — generic HTTP + `GenericJsonPayloadFormatter` |
 | `lab_json` | interaction_surface | **Done** (+ adopcja) | `providers/lab_json/` — lab intake; runtime channel ``lab`` |
+| `rabbitmq` | message_bus | **Done** (+ adopcja) | `providers/rabbitmq/` — `create_rabbitmq_integration()` (requires `kv_store`) |
+| `log` | notification_channel | **Done** (+ adopcja) | `providers/log/` — wraps `LoggingNotificationAdapter`; lab profile default |
+| `postgresql` | relational_store | **Done** (beta) | `providers/postgresql/` — `RelationalStore` via psycopg3; only `opens.py` connects |
+| `mysql` | relational_store | **Done** (beta) | `providers/mysql/` — `RelationalStore` via pymysql; only `opens.py` connects |
+| `databricks` | relational_store | **Done** (beta) | `providers/databricks/` — SQL Warehouse via databricks-sql-connector; only `opens.py` connects |
+| `mongodb` | document_store | **Done** (beta) | `providers/mongodb/` — flexible JSON `DocumentStore`; PyMongo only in `opens.py` |
+| `pinecone` | vector_store | **Done** (beta) | `providers/pinecone/` — catalog bridge to `rag/`; SDK only in `opens.py` |
+| `qdrant` | vector_store | **Done** (beta) | `providers/qdrant/` — catalog bridge to `rag/`; SDK only in `opens.py` |
+| `chroma` | vector_store | **Done** (beta) | `providers/chroma/` — catalog bridge to `rag/`; SDK only in `opens.py` |
+| `s3` | object_storage | **Done** (beta) | `providers/s3/` — put/get/delete/presigned_url; boto3 only in `opens.py` |
+| `jira` | issue_tracker | **Done** (beta) | `providers/jira/` — REST v3; only `opens.py` creates httpx client |
+| `confluence` | wiki_knowledge | **Done** (beta) | `providers/confluence/` — REST wiki; only `opens.py` creates httpx client |
+| `prometheus` | observability_backend | **Done** (beta) | `providers/prometheus/` — PromQL query API; only `opens.py` creates httpx client |
+| `elasticsearch` | observability_backend | **Done** (beta) | `providers/elasticsearch/` — `_search` aggregations; only `opens.py` creates httpx client |
+| `ms365_graph` | collaboration_suite | **Done** (beta) | `providers/ms365_graph/` — Graph mail/calendar/directory; only `opens.py` creates httpx client |
+| `cassandra` | document_store | **Done** (beta) | `providers/cassandra/` — CQL get/put/delete/query; only `opens.py` creates driver session |
+| `aws` | cloud_platform | **Done** (beta) | `providers/aws/` — IAM/STS auth + category defaults; only `opens.py` creates boto3 session |
+| `azure` | cloud_platform | **Done** (beta) | `providers/azure/` — MI / service principal + category defaults; only `opens.py` creates credential |
+| `gcp` | cloud_platform | **Done** (beta) | `providers/gcp/` — ADC / service account + category defaults; only `opens.py` creates credentials |
 
-#### M.1 — Package scaffold (step-by-step)
+#### M.6 P2 — Extended provider tracker (canon §7.1.3 P2)
+
+Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. Each P2 provider follows the same workflow as M.4 (contract → `providers/<slug>/` → tests → catalog row).
+
+| Slug | Category | Status | Rationale / notes |
+|------|----------|--------|-------------------|
+| **`cassandra`** | **document_store** | **Done** (beta) | High-volume log / event retention; CQL driver via `opens.py` single entry |
+| **`elasticsearch`** | **observability_backend** | **Done** (beta) | Log search / aggregations (`_search` + Lucene `query_string` via ObservabilityBackend); complements `prometheus` |
+| **`databricks`** | **relational_store** | **Done** (beta) | Lakehouse SQL Warehouse; PAT via `opens.py`; `execute` / `fetch_all` for analytics agents |
+| **`mongodb`** | **document_store** | **Done** (beta) | Flexible JSON documents; partition-scoped get/put/delete/query via PyMongo |
+| **`pinecone`** | **vector_store** | **Done** (beta) | Catalog bridge to `rag/vectorstore/providers/pinecone_vector_store.py` |
+| **`qdrant`** | **vector_store** | **Done** (beta) | Catalog bridge to `rag/vectorstore/providers/qdrant_vector_store.py` |
+| **`chroma`** | **vector_store** | **Done** (beta) | Catalog bridge to `rag/vectorstore/providers/chroma_vector_store.py` |
+| **`s3`** | **object_storage** | **Done** (beta) | AWS S3 blobs; boto3 only in `opens.py` |
+| `azure_blob` / `gcs` | object_storage | Planned (P2 next) | Cloud blob storage (via platform facades) |
+| `dynamodb` | document_store | Planned | AWS document/KV (also via `aws` facade) |
+| `oracle` | relational_store | Planned | Enterprise relational clients |
+| `mssql` | relational_store | Planned | Microsoft SQL deployments |
+| `otel` | observability_backend | Planned | Unified traces/metrics export |
+| `memcached` | key_value_cache | Planned | Simple cache tier |
+| `elasticache` | key_value_cache | Planned | Managed Redis on AWS (via `aws` facade) |
+| `sqs` / `service_bus` / `pubsub` | message_bus | Planned | Cloud-native queues (via platform facades) |
+| `azure_blob` / `gcs` | object_storage | Planned | Cloud blob storage (via platform facades) |
+| `email_smtp` | notification_channel | Planned | HITL / reports without chat vendor lock-in |
+| `notion` / `sharepoint` | wiki_knowledge | Planned | Additional knowledge bases beyond Confluence |
+| `github` / `linear` / `azure_devops` | issue_tracker | Planned | Dev-centric ALM sources |
+| `google_workspace` | collaboration_suite | Planned | Gmail / Calendar for Google tenants |
+| `brave` / `serpapi` | search_provider | Planned | Alternative web research APIs |
+| `playwright` | browser_automation | Planned | Dynamic web research beyond HTTP fetch |
+
+#### M.6 P3 — Recommended backlog (common in agent / orchestration platforms)
+
+Slugs below are **already in** `IntegrationSlug` unless marked *proposed*. Prioritize when a product app blocks; otherwise deliver after P2.
+
+| Priority | Slug(s) | Category | Why agents/apps need it |
+|----------|---------|----------|-------------------------|
+| **High** | `mongodb` | document_store | Session state, flexible agent memory, JSON artifacts at scale |
+| **High** | `pinecone`, `qdrant`, `chroma` | vector_store | Production RAG — unify Tier-3 `IntegrationProfile.vector_store` with existing `rag/` backends |
+| **High** | `s3`, `azure_blob`, `gcs` | object_storage | Checkpoint blobs, sandbox exports, document ingestion pipelines |
+| **High** | `email_smtp` | notification_channel | HITL and report delivery without Slack/Teams |
+| **Medium** | `notion`, `sharepoint` | wiki_knowledge | Runbooks and internal docs (Confluence complement) |
+| **Medium** | `github`, `linear` | issue_tracker | Dev workflows, PR/issue-aware agents |
+| **Medium** | `google_workspace` | collaboration_suite | Google-tenant mail/calendar parity with MS365 |
+| **Medium** | `otel` | observability_backend | Export runtime traces/metrics to Grafana Cloud, Datadog, etc. |
+| **Medium** | `playwright` | browser_automation | JS-heavy sites, authenticated flows beyond static fetch |
+| **Medium** | `brave`, `serpapi` | search_provider | Rate-limit / vendor diversity for research agents |
+| **Low** | `oracle`, `mssql`, `azure_sql`, `cloud_sql` | relational_store | Enterprise DB deployments |
+| **Low** | `dynamodb`, `memcached`, `elasticache` | document_store / KV | AWS-native persistence tiers |
+| **Future** | *weaviate*, *milvus*, *snowflake*, *vault* *proposed* | vector_store / relational / secrets | Add slug + category only after human approval (§5.2.4) |
+
+**Vector-store rule (pinecone / qdrant / chroma):** implementation **stays** in `intergrax/rag/vectorstore/`. Integration Library adds `providers/<slug>/` as a **thin registry adapter**: `opens.py` is the only module that imports vendor SDK; `bundle.create_*_vector_store()` delegates to the existing RAG provider. Tier-3 selects slug via `IntegrationProfile.vector_store`; RAG pipeline code unchanged.
+
+**MongoDB — suggested implementation sketch (greenfield):**
+
+```text
+providers/mongodb/
+├── config.py                   # INTERGRAX_MONGODB_URI, DATABASE, COLLECTION_PREFIX
+├── client.py                   # PyMongo collection wrapper (internal — no driver outside opens.py)
+├── adapter.py                  # MongoDocumentStore implements DocumentStore
+├── opens.py                    # ONLY place that constructs MongoClient
+├── bundle.py                   # create_mongodb_document_store()
+├── register.py
+└── tests/                      # mocked collection; integration_live optional
+```
+
+**Prerequisite (mongodb):** `DocumentStore` contract — **Done** (`contracts/document_store.py`). Partition key maps to MongoDB `_id` or compound `{tenant_id, key}` index.
+
+**Pinecone — suggested implementation sketch (catalog bridge):**
+
+```text
+providers/pinecone/
+├── config.py                   # INTERGRAX_PINECONE_API_KEY, INDEX, NAMESPACE, ENV
+├── adapter.py                  # Thin VectorStore registry facade (delegates to rag/)
+├── opens.py                    # ONLY place that imports pinecone SDK / builds Pinecone client
+├── bundle.py                   # create_pinecone_vector_store() → rag PineconeVectorStore
+├── register.py
+└── tests/                      # mocked delegate; guard: no pinecone import outside opens.py
+```
+
+**Prerequisite (pinecone):** `contracts/vector_store.py` — **Done** (re-exports `rag/vectorstore/contracts/vector_store.py`). Registered under `IntegrationCategory.VECTOR_STORE`.
+
+**Cassandra — suggested implementation sketch (greenfield):**
+
+```text
+contracts/document_store.py     # DocumentStore — get/put/delete/query by partition key
+providers/cassandra/
+├── config.py                   # INTERGRAX_CASSANDRA_CONTACT_POINTS, KEYSPACE, USER, PASSWORD
+├── client.py                   # CQL session (internal — no direct driver import outside opens.py)
+├── adapter.py                  # CassandraDocumentStore implements DocumentStore
+├── opens.py                    # ONLY place that constructs cassandra driver session
+├── bundle.py                   # create_cassandra_integration()
+├── register.py
+└── tests/                      # testcontainers or mocked session; integration_live optional
+```
+
+**Prerequisite (cassandra):** `DocumentStore` contract — **Done** (`contracts/document_store.py`). Runtime event / trace backends remain SQLite-first until an explicit adoption milestone names Cassandra as a target store.
+
+**Elasticsearch — suggested implementation sketch (greenfield):**
+
+```text
+providers/elasticsearch/
+├── config.py                   # INTERGRAX_ELASTICSEARCH_URL, USER, PASSWORD, INDEX_PREFIX
+├── client.py                   # REST search client (internal — no httpx outside opens.py)
+├── adapter.py                  # ElasticsearchObservabilityBackend implements ObservabilityBackend
+├── opens.py                    # ONLY place that constructs httpx client / ES connection
+├── bundle.py                   # create_elasticsearch_observability_backend()
+├── register.py
+└── tests/                      # mocked _search / ES|QL responses; integration_live optional
+```
+
+**Contract note:** start with `ObservabilityBackend` (`query_instant` / `query_range`) mapped to ES\|QL or index-scoped aggregations where feasible; add optional `search_logs(query, *, limit)` on the contract in a follow-up if PromQL-shaped methods prove awkward for log-only clusters.
+
+**Databricks — suggested implementation sketch (greenfield):**
+
+```text
+providers/databricks/
+├── config.py                   # INTERGRAX_DATABRICKS_HOST, HTTP_PATH, TOKEN, CATALOG, SCHEMA
+├── client.py                   # SQL connection wrapper (internal — no driver import outside opens.py)
+├── adapter.py                  # DatabricksRelationalStore implements RelationalStore
+├── opens.py                    # ONLY place that opens databricks-sql-connector / REST session
+├── bundle.py                   # create_databricks_relational_store()
+├── register.py
+└── tests/                      # mocked cursor / Statement Execution API; integration_live optional
+```
+
+**Contract note:** implements existing `RelationalStore` (`connect`, `execute`, `fetch_all`, `close`). Optional `tenant_schema` maps to Unity Catalog ``catalog.schema`` (default schema per connection). Not a replacement for domain runtime stores (SQLite-first) — target is analytics / reporting agents and batch read paths.
+
 
 1. Create package skeleton:
 
@@ -591,13 +742,20 @@ For each category in §7.1.2, implement a **minimal** Protocol in `integrations/
 
 | Contract | Minimum methods | Notes |
 |----------|-----------------|-------|
-| `RelationalStore` | `connect()`, `execute()`, `fetch_all()`, `close()` | Tenant scoping via connection factory |
+| `RelationalStore` | `connect()`, `execute()`, `fetch_all()`, `close()` | **Done** — `contracts/relational_store.py`; sqlite/postgresql/mysql/**databricks** (beta) |
 | `KeyValueCache` | `get`, `set`, `delete`, `set_if_absent` | Maps to existing `IdempotencyStore` / Redis helpers |
 | `MessageBus` | `enqueue`, `get_status`, `get_result` | Re-export / implement `queueing.contracts.TaskQueue` |
 | `SearchProvider` | `search(query, *, limit)` → `SearchResult[]` | Align with `websearch/providers/base.py` |
 | `NotificationChannel` | `notify(message)` | Align with `runtime/notifications/adapter_contract.py` |
 | `InteractionSurface` | `can_handle`, `to_inbound`, `channel` | Align with `runtime/interactions/adapter_contract.py` |
-| `CloudPlatform` | `session()`, `resolve(category)`, `default_region`, health | Auth chain + factory for native services (§7.1.3 P1.1) |
+| `CloudPlatform` | `slug`, `default_region`, `resolve(category)`, `health` | **Done** — `contracts/cloud_platform.py`; **`aws`**, **`azure`**, **`gcp`** providers (beta) |
+| `CollaborationSuite` | `get_message`, `list_messages`, `send_mail`, `list_calendar_events`, `get_user` | **Done** — `contracts/collaboration_suite.py`; `ms365_graph` provider |
+| `DocumentStore` | `get`, `put`, `delete`, `query` (partition-scoped) | **Done** — `contracts/document_store.py`; `cassandra`, **`mongodb`** (beta) providers |
+| `VectorStore` | `add_documents`, `query`, `delete`, … | **Done** — `contracts/vector_store.py` re-exports `rag/`; **`pinecone`**, **`qdrant`**, **`chroma`** (beta) |
+| `ObjectStorage` | `put`, `get`, `delete`, `presigned_url` | **Done** — `contracts/object_storage.py`; **`s3`** (beta) |
+| `IssueTracker` | `get_issue`, `add_comment`, `search_issues` | **Done** — `contracts/issue_tracker.py`; `jira` provider |
+| `WikiKnowledge` | `get_page`, `search_pages` | **Done** — `contracts/wiki_knowledge.py`; `confluence` provider |
+| `ObservabilityBackend` | `query_instant`, `query_range` | **Done** — `contracts/observability_backend.py`; `prometheus`, **`elasticsearch`** (beta) providers |
 
 **Rule:** if a contract already exists elsewhere, **re-export or inherit** — do not define a third variant.
 
@@ -701,16 +859,34 @@ providers/gcp/
 | Legacy location | Target slug | Action |
 |-----------------|-------------|--------|
 | `distributed/providers/redis_kv_store.py` (+ siblings) | `redis` | **Done** — single entry `integrations/providers/redis/create_redis_integration()` |
-| `queueing/providers/kafka/` | `kafka` | **Done** — `integrations/providers/kafka/create_kafka_integration()` |
+| `queueing/providers/kafka/` | `kafka` | **Done** — runtime transport + tests delegate to `integrations/providers/kafka/` |
 | `queueing/providers/celery/` | `celery` | **Done** — `integrations/providers/celery/create_celery_integration()` |
-| `queueing/providers/rabbitmq/` | `rabbitmq` | Register |
+| `queueing/providers/rabbitmq/` | `rabbitmq` | **Done** — runtime transport + tests delegate to `integrations/providers/rabbitmq/` |
 | `websearch/providers/google_cse_provider.py` | `google_cse` | **Done** — `integrations/providers/google_cse/create_google_cse_integration()` |
 | `websearch/providers/bing_provider.py` | `bing` | **Done** — `integrations/providers/bing/create_bing_integration()` |
 | `runtime/notifications/adapters/webhook_adapter.py` | `webhook` | **Done** — `integrations/providers/webhook/create_webhook_integration()` |
+| `runtime/notifications/adapters/logging_adapter.py` | `log` | **Done** — `integrations/providers/log/`; factory delegates |
 | `runtime/notifications/adapters/` | `slack`, `teams` | **Done** — runtime delegates |
 | `runtime/interactions/adapters/lab_json_adapter.py` | `lab_json` | **Done** — `integrations/providers/lab_json/create_lab_json_integration()` |
 | `runtime/*/stores/sqlite_*.py` (+ store openers) | `sqlite` | **Done** — single entry `integrations/providers/sqlite/create_sqlite_integration()` |
-| `rag/vectorstore/providers/*` | vector slugs | Catalog entry only; implementation stays in `rag/` |
+| (new) | `postgresql` | **Done** — `integrations/providers/postgresql/`; **only** `opens.py` calls `psycopg.connect` |
+| (new) | `mysql` | **Done** — `integrations/providers/mysql/`; **only** `opens.py` calls `pymysql.connect` |
+| (new) | `jira` | **Done** — `integrations/providers/jira/`; **only** `opens.py` creates httpx client |
+| (new) | `confluence` | **Done** — `integrations/providers/confluence/`; **only** `opens.py` creates httpx client |
+| (new) | `prometheus` | **Done** — `integrations/providers/prometheus/`; **only** `opens.py` creates httpx client |
+| (new) | `ms365_graph` | **Done** — `integrations/providers/ms365_graph/`; **only** `opens.py` creates httpx client + token fetch |
+| (new) | `cassandra` | **Done** — `integrations/providers/cassandra/`; **only** `opens.py` creates driver session |
+| (new) | `aws` | **Done** — `integrations/providers/aws/`; **only** `opens.py` creates boto3 session |
+| (new) | `azure` | **Done** — `integrations/providers/azure/`; **only** `opens.py` creates Azure credential |
+| (new) | `gcp` | **Done** — `integrations/providers/gcp/`; **only** `opens.py` creates Google credentials |
+| (new) | `elasticsearch` | **Done** — `integrations/providers/elasticsearch/`; **only** `opens.py` creates httpx client |
+| (new) | `databricks` | **Done** — `integrations/providers/databricks/`; **only** `opens.py` calls `databricks.sql.connect` |
+| (new) | `mongodb` | **Done** — `integrations/providers/mongodb/`; **only** `opens.py` calls `pymongo.MongoClient` |
+| `rag/vectorstore/providers/pinecone_*` | `pinecone` | **Done** — `providers/pinecone/` catalog bridge; RAG impl stays in `rag/` |
+| `rag/vectorstore/providers/qdrant_*` | `qdrant` | **Done** — `providers/qdrant/` catalog bridge; RAG impl stays in `rag/` |
+| `rag/vectorstore/providers/chroma_*` | `chroma` | **Done** — `providers/chroma/` catalog bridge; RAG impl stays in `rag/` |
+| `rag/vectorstore/bootstrap/vectorstore_bootstrap.py` | integration catalog | **Done** — `create_default_vectorstore_manager()` resolves via `IntegrationProfile.vector_store` |
+| `rag/vectorstore/providers/*` | other vector slugs | Catalog entry only until bridge provider ships |
 
 **Not migrated to `integrations/`:** `intergrax/llm_adapters/` — LLM providers are a separate Tier-0 concern (§7.1.2 out-of-scope table).
 
@@ -725,7 +901,15 @@ providers/gcp/
 
 Conformance test pattern: given a fake backend, assert all Protocol methods behave consistently (including error types).
 
-#### M.7 — Tier-3 composition example
+#### M.7 — Agent Creation Guide (Appendix E)
+
+Documented in [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) Appendix E:
+
+- Agents: `capabilities`, `allowed_tools`, `ToolRequest` — no integration slug imports.
+- Applications: `IntegrationProfile`, `wire_lab_integrations()`, `register_default_integrations()`.
+- Env: `INTERGRAX_INTEGRATION_<CATEGORY>` overrides.
+
+Tier-3 composition example (product factory):
 
 ```python
 # applications/my_app/factory.py
@@ -747,7 +931,7 @@ def create_app():
     # wire into Nexus factories, not into agents/
 ```
 
-Agents reference capabilities in `AgentContract` (e.g. `needs_tools=["jira.get_issue"]`) — not integration slugs.
+Agents reference capabilities in `AgentContract` (e.g. `allowed_tools=["websearch.query"]`) — not integration slugs.
 
 #### M.8 — Definition of done (Phase M incremental)
 
@@ -755,9 +939,71 @@ Each provider PR is **done** when:
 
 1. Contract conformance tests pass.
 2. Registered in `catalog.py` with metadata.
-3. README lists env vars + smoke steps.
+3. `providers/<slug>/USAGE.md` — English: env vars, factory call, `IntegrationProfile` resolve, minimal invoke example.
 4. At least one Tier-3 app or lab factory can select it via `IntegrationProfile`.
 5. No new direct vendor imports added under `agents/`.
+
+Szablony utrzymywane przez `scripts/generate_integration_usage_docs.py` (regeneracja po dodaniu providera).
+
+---
+
+### Phase N — Application Environment & Deploy Scaffold (Tier-3)
+
+**Canon:** §7.4.8–§7.4.10  
+**Goal:** From agent POC to **docker-pushable** dedicated lab/product host in minutes — same ergonomics as `new-agent`, with isolated `.env.example`, manifest, and Docker.
+
+**Prerequisite:** Phase L complete; Phase M.3 (`IntegrationProfile`) available.
+
+**Delivery rule (this phase):** One step per iteration — implement → summarize → update docs → present next step (see **§6.1**).
+
+| # | Deliverable | Status | Canon | Notes |
+|---|-------------|--------|-------|-------|
+| N.0 | Architecture & plan documented | **Done** | §7.4.8–§7.4.10 | This section + runtime canon (2026-05-30) |
+| N.1 | `ApplicationManifest` + `AgentBinding` models | **Done** | §7.4.10 | `intergrax/applications/contracts/manifest.py` |
+| N.2 | Manifest conformance harness + unit tests | **Done** | §7.4.10 | `intergrax/applications/_shared/wiring.py` |
+| N.2.1 | Unified agent initialization (builders / factories / context) | **Done** | §7.4.10 | `ApplicationBuildContext`, `build_application_registry`; lab + legal migrated |
+| N.2.2 | Strongly typed `AgentBinding.mount(AgentClass, factory=...)` | **Done** | §7.4.10 | `type[Agent]` + callable factory; `deserialize()` for scaffold strings only |
+| N.3 | `python -m intergrax.scaffold new-application` (profile `lab`) | **Done** | §7.4.8 | `new_application.py`, `agent_catalog.py`, `cli.py`; lab templates + smoke |
+| N.4 | Scaffold profile `product` (fastapi_core skeleton) | **Done** | §7.4.8 | `new_application_product.py`; FastAPI Core + auth stub + `/health`; `--agents` list |
+| N.5 | Docker templates under `applications/<app>/docker/` | **Done** | §7.4.8 | Dockerfile + `.dockerignore` + `docker-compose.yml` + `build-docker.sh` / `.bat`; monorepo-root context |
+| N.6 | Reference app `poc_template_application` (committed example) | **Done** | §7.4.8 | `applications/poc_template_application/`; README three-command quickstart; gate smoke |
+| N.7 | Backfill `.env.example` on existing apps | **Done** | §7.4.8 | `lab_application`, `legal_application`, `research_application`, `poc_template_application` |
+| N.8 | `AGENT_CREATION_GUIDE.md` Step 4E (dedicated application) | **Done** | — | Step 4E + Appendix F cross-links; gate doc test |
+| N.9 | Acceptance `test_scaffold_application` (gate) | **Partial** | — | Lab + product tree tests; Step 4E doc test; optional end-to-end scaffold smoke TBD |
+| N.10 | Optional `new-stack` (agent + application in one CLI) | **Deferred** | — | After N.3–N.5 stable |
+
+#### N — Step-by-step implementation sequence
+
+Execute **strictly in order**; do not skip ahead without completing acceptance for the current step.
+
+| Step | ID | Action | Done when |
+|------|-----|--------|-----------|
+| 1 | N.1 | Add `ApplicationManifest`, `AgentBinding`, `ApplicationFeatures` (Pydantic) | Unit tests pass; no scaffold yet |
+| 2 | N.2 | Add `applications/_shared/conformance.py` (or mirror integrations pattern) | Manifest load + minimal registry build test |
+| 3 | N.3 | Implement `new_application.py` + `lab` profile templates | `uv run python -m intergrax.scaffold new-application test_lab --profile lab --agents echo` creates tree; smoke test green |
+| 4 | N.3b | Wire `build_parser()` subcommand; post-create hints (uvicorn, pytest, docker) | CLI prints next commands; gate test added (N.9 partial) |
+| 5 | N.5 | Add Docker/docker-compose + build scripts to scaffold | `applications/<app>/docker/build-docker.sh` (or `.bat`) builds image from repo root |
+| 6 | N.6 | Commit `applications/poc_template_application/` from scaffold | README three-command quickstart verified |
+| 7 | N.7 | Add per-app `.env.example` to legal, research, lab | Vars match each `settings.py`; no secrets committed |
+| 8 | N.4 | Add `product` profile to scaffold | **Done** — `test_scaffold_product_application.py`; FastAPI Core + `/health` |
+| 9 | N.8 | Update agent guide Step 4E | **Done** — scaffold lab/product, Docker scripts, three-command quickstart |
+| 10 | N.9 | Full acceptance + `pytest -m gate` | Scaffold application in gate suite |
+
+**Scaffold CLI (target interface):**
+
+```bash
+python -m intergrax.scaffold new-application my_lab \
+  --profile lab \
+  --agents echo,my_agent \
+  --port 8091 \
+  --prefix /v1/my_lab
+```
+
+**Out of scope for Phase N:**
+
+- Separate `pyproject.toml` per application (stay monorepo + `pythonpath`)
+- Auto-discovery of agents in `lab_application` (keep explicit wiring; manifest is declarative, not magic)
+- Runtime sandbox (Tier-1) changes — only document distinction (§7.4.9)
 
 ---
 
@@ -767,19 +1013,23 @@ Each provider PR is **done** when:
 
 ```text
 
-NOW:     Phase L certification **complete** — L1 achieved (Appendix A)
+NOW:     Phase N — Application Environment & Deploy Scaffold (N.9 full acceptance next)
 
-NEXT:    Phase M — Integration Library scaffold (M.1–M.5) **parallel to** Phase K when approved
+DONE:    Phase L certification — L1 achieved (Appendix A)
+
+DONE:    Phase M core (M.1–M.8) — Integration Library catalog + lab profile
+
+PARALLEL: Phase M.6 P1/P2 providers (on demand, one slug per iteration)
 
          Phase K — K.1/K.2 **when you approve** (Problem Radar or Vendor Discovery)
 
 BLOCKED: No new Nexus features unless Tier-1 extension rule (§0.6) applies
 
-PARALLEL: K.3–K.5 hardening; Phase M P0 provider wraps (non-breaking)
+PARALLEL: K.3–K.5 hardening; M.6 provider wraps (non-breaking)
 
 ```
 
-**Rationale:** Business agents (K) need composable Tier-0 integrations (Jira, Slack, Postgres, Redis) without each agent team reimplementing adapters. Phase M establishes the catalog **before** scaling Tier-2 surface area.
+**Rationale:** Agent scaffold (L) and integration catalog (M) are in place. Phase N closes the gap from **agent POC → deployable Docker host** with isolated Tier-3 env and composition contracts — required for fast concept labs before product agents (K).
 
 
 
@@ -811,16 +1061,39 @@ PARALLEL: K.3–K.5 hardening; Phase M P0 provider wraps (non-breaking)
 
 ## 6. Recommended Next Step
 
-**Phase L — Agent OS gate sign-off:**
+### 6.1 Implementation cadence (Phase N and onward)
+
+Each iteration follows **one deliverable at a time**:
+
+```text
+1. Implement   — single step from Phase N table (e.g. N.1 only)
+2. Summarize   — what changed, tests run, acceptance criteria met
+3. Document    — update this plan (status column) + canon if contracts changed
+4. Next step   — name the next ID (e.g. N.2) and prerequisites
+```
+
+Do not batch N.1–N.5 in one PR unless explicitly agreed.
+
+### 6.2 Current next step — **N.9 Full scaffold acceptance (gate)**
+
+**Prerequisite:** N.8 — agent guide Step 4E documents dedicated application workflow.
+
+**Goal:** Expand `test_scaffold_application` (optional docker smoke doc-only), gate green, align N.9 status to **Done**.
+
+**Verify (N.8 — completed):**
+
+```bash
+uv run pytest tests/unit/docs/test_agent_creation_guide_step_4e.py -q
+# Guide: docs/AGENT_CREATION_GUIDE.md — Step 4E (Dedicated application scaffold)
+```
+
+**Phase L — still required for any new agent work:**
 
 ```bash
 uv run pytest tests/acceptance/agent_os -m agent_os -q
-uv run pytest tests/ -m gate -q
 ```
 
-Complete one **new** scaffolded agent exercise (< 1 hour) and record in experiment registry before starting K.1/K.2.
-
-**Do not start:** Problem Radar, Vendor Discovery, Legal expansion until **Appendix A** sign-off.
+**Do not start:** Problem Radar, Vendor Discovery (K.1/K.2) until product priority is set — Phase N does not block K.
 
 **Recently completed:**
 
@@ -1182,6 +1455,27 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Date | ID | Summary |
 |------|-----|---------|
+| 2026-05-29 | M.6-gcp | `providers/gcp/` — cloud_platform facade; ADC/service account + category slug defaults |
+| 2026-05-29 | M.6-azure | `providers/azure/` — cloud_platform facade; token health + category slug defaults |
+| 2026-05-29 | M.6-aws | `providers/aws/` — cloud_platform facade; STS health + category slug defaults |
+| 2026-05-29 | M.6-cassandra | `providers/cassandra/` + `contracts/document_store.py`; CQL partition-scoped CRUD |
+| 2026-05-29 | M.6-ms365_graph | `providers/ms365_graph/` + `contracts/collaboration_suite.py`; Graph mail/calendar/directory |
+| 2026-05-30 | M.6-prometheus | `providers/prometheus/` + `contracts/observability_backend.py`; PromQL query API |
+| 2026-05-30 | M.6-confluence | `providers/confluence/` + `contracts/wiki_knowledge.py`; REST wiki; single-entry `opens.py` |
+| 2026-05-30 | M.6-jira | `providers/jira/` + `contracts/issue_tracker.py`; REST v3; single-entry `opens.py` |
+| 2026-05-30 | M.6-mysql | `providers/mysql/` — beta `RelationalStore` (pymysql); single-entry `opens.py` |
+| 2026-05-30 | M.6-postgresql | `providers/postgresql/` — beta `RelationalStore` (psycopg3); catalog + tests |
+| 2026-05-30 | M.7-agent-guide-integrations | `AGENT_CREATION_GUIDE.md` Appendix E — agents vs Tier-3 wiring |
+| 2026-05-30 | N.2.1-unified-wiring | `ApplicationBuildContext`, `builder_key`/`factory_path`, lab+legal on `build_application_registry` |
+| 2026-05-30 | N.2-conformance | `build_registry_from_manifest`, `load_agent_from_binding` + unit tests |
+| 2026-05-30 | N.1-manifest | `ApplicationManifest`, `AgentBinding`, `ApplicationFeatures` + unit tests |
+| 2026-05-30 | N.8-agent-guide-4e | `AGENT_CREATION_GUIDE.md` Step 4E — `new-application`, Docker scripts, §7.4.8 links |
+| 2026-05-30 | N.4-product-scaffold | `--profile product` → FastAPI Core host, `agent_factories.py`, auth stub env; `new_application_product.py` |
+| 2026-05-30 | N.5-docker-build-scripts | `build-docker.sh` / `build-docker.bat` in scaffold + lab/legal/research/poc; `docker_templates.py` |
+| 2026-05-30 | N.0-docs | Canon §7.4.8–§7.4.10 + Phase N plan (application environment, manifest, scaffold steps) |
+| 2026-05-30 | M.8-lab-profile | `wire_lab_integrations()` + `providers/log/` — lab uses `IntegrationProfile.lab()` |
+| 2026-05-30 | M.4-kafka-rabbitmq-adopt | Queueing bootstrap + integration tests use `integrations/providers/{kafka,rabbitmq}/` only |
+| 2026-05-30 | M.4-rabbitmq | `providers/rabbitmq/` + runtime `build_rabbitmq_transport()` delegate |
 | 2026-05-29 | M.4-lab_json | `providers/lab_json/` + runtime `create_interaction_adapter(LAB)` delegate — **M.4 P0 complete** |
 | 2026-05-29 | M.4-webhook | `providers/webhook/` + runtime `create_notification_adapter(WEBHOOK)` delegate |
 | 2026-05-29 | M.4-teams-adopt | Runtime notifications/interactions/verifier + long_running delegate to `providers/teams/` |
@@ -1236,13 +1530,25 @@ Decision:       L1 certified — GO Phase K when product priority set
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
 | B.19 | **P0 provider wraps** — M.4 catalog slugs | §7.1.3 | **High** | **Done** | Lab + first prod apps | Tier-0 | All P0 slugs wrapped + runtime adoption (2026-05-29) |
-| B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | Open | Multi-tenant applications | Tier-0 | Phase M.6 after M.4 |
-| B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | Open | PM / research agents | Tier-0 | Phase M.6; tools via ToolRuntime |
-| B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | Open | Org worker, scheduling agents | Tier-0 | Phase M.6 |
-| B.23 | **Prometheus observability_backend** — metrics export | §33, §7.1.3 | **Low** | Open | Ops / SLO | Tier-0 | After B.11 metrics layer design |
-| B.25 | **AWS cloud_platform facade** — auth + S3/SQS/DynamoDB/Secrets Manager defaults | §7.1.3 P1.1 | **Medium** | Open | AWS-hosted applications | Tier-0 | Phase M.6; infrastructure only |
-| B.26 | **Azure cloud_platform facade** — MI + Blob/Service Bus/Key Vault | §7.1.3 P1.1 | **Medium** | Open | Azure-hosted applications | Tier-0 | Phase M.6; infrastructure only |
-| B.27 | **GCP cloud_platform facade** — ADC + GCS/Pub/Sub/Secret Manager | §7.1.3 P1.1 | **Medium** | Open | GCP-hosted applications | Tier-0 | Phase M.6; infrastructure only |
+| B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | **Done** (beta) | Multi-tenant applications | Tier-0 | `providers/postgresql/` — domain stores SQLite-first |
+| B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | **Done** (beta) | PM / research agents | Tier-0 | `providers/jira/`, `providers/confluence/`; tools via ToolRuntime (future) |
+| B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | **Done** (beta) | Org worker, scheduling agents | Tier-0 | `providers/ms365_graph/`; client credentials via `opens.py` |
+| B.23 | **Prometheus observability_backend** — PromQL query API | §33, §7.1.3 | **Low** | **Done** (beta) | Ops / SLO | Tier-0 | `providers/prometheus/`; complements B.11 metrics layer design |
+| B.28 | **Cassandra document_store** — wide-column adapter for high-volume retention | §7.1.3 P2 | **Medium** | **Done** (beta) | Runtime event archive at scale; ops telemetry | Tier-0 | `providers/cassandra/`; single-entry `opens.py` |
+| B.29 | **Elasticsearch observability_backend** — log search / aggregations | §7.1.3 P2 | **Medium** | **Done** (beta) | Ops log triage; optional RAG over logs | Tier-0 | `providers/elasticsearch/`; single-entry `opens.py`; complements B.23 |
+| B.30 | **Databricks relational_store** — SQL Warehouse / Unity Catalog SQL | §7.1.3 P2 | **Medium** | **Done** (beta) | Analytics agents, lakehouse reporting | Tier-0 | `providers/databricks/`; single-entry `opens.py`; PAT |
+| B.31 | **MongoDB document_store** — flexible JSON persistence | §7.1.3 P2 | **Medium** | **Done** (beta) | Agent memory, unstructured artifacts | Tier-0 | `providers/mongodb/`; PyMongo only in `opens.py`; reuses `DocumentStore` |
+| B.32 | **Pinecone vector_store bridge** — catalog entry → `rag/` | §7.1.3 P2 | **Medium** | **Done** (beta) | Production RAG agents | Tier-0 | `providers/pinecone/` thin adapter; SDK only in `opens.py` |
+| B.33 | **Qdrant + Chroma vector_store bridges** — same pattern as B.32 | §7.1.3 P2 | **Low** | **Done** (beta) | Self-hosted / dev RAG | Tier-0 | `providers/qdrant/`, `providers/chroma/`; RAG bootstrap via catalog |
+| B.34 | **Object storage contract + S3 provider** — blobs for artifacts / sandboxes | §7.1.3 P2 | **Medium** | **Done** (beta) | Large file handoff, exports | Tier-0 | `contracts/object_storage.py`, `providers/s3/`; boto3 only in `opens.py` |
+| B.35 | **Notion + SharePoint wiki_knowledge** — internal docs ingestion | §7.1.3 P3 | **Low** | **Open** | Research / runbook agents | Tier-0 | REST adapters; httpx only in `opens.py` |
+| B.36 | **GitHub + Linear issue_tracker** — dev workflow sources | §7.1.3 P3 | **Low** | **Open** | Code-aware agents | Tier-0 | REST/GraphQL; single-entry `opens.py` |
+| B.37 | **email_smtp notification_channel** — outbound mail without chat | §7.1.3 P3 | **Low** | **Open** | HITL, scheduled reports | Tier-0 | `providers/email_smtp/`; stdlib / aiosmtplib in `opens.py` |
+| B.38 | **OpenTelemetry observability_backend** — trace/metric export | §33, §7.1.3 P3 | **Low** | **Open** | Unified ops dashboards | Tier-0 | `providers/otel/`; OTLP exporter only in `opens.py` |
+| B.39 | **Playwright browser_automation** — dynamic web interaction | §7.1.3 P3 | **Low** | **Open** | Research on JS-heavy sites | Tier-0 | `providers/playwright/`; browser launch only in `opens.py` |
+| B.25 | **AWS cloud_platform facade** — auth + S3/SQS/DynamoDB/ElastiCache defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | AWS-hosted applications | Tier-0 | `providers/aws/`; infrastructure only |
+| B.26 | **Azure cloud_platform facade** — MI + Blob/Service Bus/Azure SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | Azure-hosted applications | Tier-0 | `providers/azure/`; infrastructure only |
+| B.27 | **GCP cloud_platform facade** — ADC + GCS/Pub/Sub/Cloud SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | GCP-hosted applications | Tier-0 | `providers/gcp/`; infrastructure only |
 | B.24 | **Direct vendor SDK in agents** — audit + lint rule | §5.2, §7.1.4 | **Medium** | Open | Prevents catalog bypass | Tier-2 | Document in AGENT_CREATION_GUIDE; optional ruff rule |
 
 ### B.4 Legacy & composition
@@ -1251,7 +1557,10 @@ Decision:       L1 certified — GO Phase K when product priority set
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.14 | **`ChatAgent` / legacy engine removal** — `LEGAL_USE_LEGACY_AGENT_ENGINE` removed | §39, §41 | **Medium** | **Done** | Single execution path for all agents | Tier-1 / Tier-3 | Legal `fastapi_router` requires `UnifiedTaskRunner`; legacy flags removed (2026-05-27) |
 | B.15 | **Legal full E2E gate (real LLM)** — deferred acceptance with live model | — | **Low** | Legal quality assurance | Tier-2 / CI | K.6; separate from Agent OS gate |
-| B.16 | **Lab agent auto-discovery** — new agents require explicit `wiring.py` register (by design, but easy to forget) | §7.4 | **Low** | Onboarding friction | Tier-3 | Optional env-driven plugin loader **only** if many agents; else keep explicit wiring + guide |
+| B.16 | **Lab agent auto-discovery** — new agents require explicit `wiring.py` register (by design, but easy to forget) | §7.4 | **Low** | Onboarding friction | Tier-3 | Phase N scaffold + `ApplicationManifest`; optional `new-stack` (N.10) |
+| B.28 | **Per-application `.env.example` missing** — only root `.env.example`; lab/legal vars in README only | §7.4.8 | **Medium** | **Done** | Deployable POC friction | Tier-3 | N.7 backfill + scaffold (2026-05-30) |
+| B.29 | **`new-application` scaffold (lab)** — Tier-3 hosts hand-copied from legal/lab | §7.4.8 | **High** | **Done** | Lab + product profiles via CLI | Tier-3 / platform | Phase N.8–N.9 docs/acceptance |
+| B.30 | **No application-level Dockerfile** — only `infra/docker/docling/` | §7.4.8 | **Medium** | **Done** | Per-app `docker/` + build scripts on lab/legal/research/poc | Tier-3 | N.5–N.7 (2026-05-30) |
 
 ### B.5 Test & certification hygiene
 
@@ -1271,11 +1580,13 @@ Decision:       L1 certified — GO Phase K when product priority set
 6. ~~B.09, B.17~~ — debug trace injection + gate collection (Done 2026-05-27)
 7. ~~B.06~~ — hook parity doc + lifecycle wiring (Done 2026-05-27)
 8. B.07, B.11, B.13, B.15–B.18 — as capacity allows
+9. M.6 P2 — **azure_blob / gcs** object storage (follow S3 pattern)
+10. M.6 P2/P3 — object storage (B.34), service slugs (`azure_blob`, `gcs`, `s3`), email_smtp, notion, github, otel, playwright
 ```
 
 **Note:** Phase K business agents (Problem Radar, Vendor Discovery) remain **product-blocked** until explicit go — technical debt above does not auto-unblock K.1/K.2.
 
 ---
 
-*Plan synced with codebase after B.06 paydown (2026-05-27). Gate: 250 tests.*
+*Plan synced with codebase after B.34 Object storage + S3 (2026-05-29). Gate: integration unit tests.*
 

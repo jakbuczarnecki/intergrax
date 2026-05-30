@@ -1,0 +1,772 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""Tier-3 application scaffold templates — product profile (Phase N.4)."""
+
+from __future__ import annotations
+
+from textwrap import dedent
+
+from intergrax.scaffold.agent_catalog import ScaffoldAgentSpec
+from intergrax.scaffold.application_names import ScaffoldApplicationNames
+
+
+def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
+    pkg = names.pkg
+    short = names.short
+    route_prefix = names.route_prefix
+    env_prefix_value = names.env_prefix
+    imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
+    factory_imports = "\n".join(
+        f"from {pkg}.host.agent_factories import build_{short}_{s.slug}_from_context"
+        for s in specs
+    )
+    mounts = []
+    for i, s in enumerate(specs):
+        caps = ", ".join(repr(c) for c in s.capabilities)
+        cap_arg = f", capabilities=[{caps}]" if s.capabilities else ""
+        default_arg = ", default=True" if i == 0 else ""
+        mounts.append(
+            f"        AgentBinding.mount("
+            f"{s.class_name}, "
+            f"factory=build_{short}_{s.slug}_from_context"
+            f"{cap_arg}{default_arg}),"
+        )
+    mounts_block = "\n".join(mounts)
+    first_cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        """Declarative agent roster for {pkg} (product profile)."""
+
+        from __future__ import annotations
+
+        from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+        {imports}
+        {factory_imports}
+
+
+        def build_{short}_manifest() -> ApplicationManifest:
+            return ApplicationManifest.product(
+                app_id="{short}",
+                name="{names.display} API",
+                route_prefix="{route_prefix}",
+                env_prefix="{env_prefix_value}",
+                default_capability="{first_cap}",
+                agents=[
+        {mounts_block}
+                ],
+                description="Scaffolded Tier-3 product host (Phase N.4)",
+            )
+
+
+        APPLICATION_MANIFEST = build_{short}_manifest()
+        '''
+    )
+
+
+def settings_py(names: ScaffoldApplicationNames) -> str:
+    pascal = names.pascal
+    pkg = names.pkg
+    env_prefix_value = names.env_prefix
+    route_prefix = names.route_prefix
+    port = names.port
+    short = names.short
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        from __future__ import annotations
+
+        import json
+        import os
+        from dataclasses import dataclass, field
+        from typing import FrozenSet, Literal, Mapping, Optional
+
+        from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
+        from intergrax.fastapi_core.config import ApiEnvironment
+
+        {pascal}IdentitySource = Literal["body_or_context", "context_only"]
+
+
+        def _env_bool(name: str, default: bool = False) -> bool:
+            raw = os.environ.get(name)
+            if raw is None:
+                return default
+            return raw.strip().lower() in {{"1", "true", "yes", "on"}}
+
+
+        def _env_csv_set(name: str) -> FrozenSet[str]:
+            raw = os.environ.get(name, "").strip()
+            if not raw:
+                return frozenset()
+            return frozenset(x.strip() for x in raw.split(",") if x.strip())
+
+
+        def _parse_api_key_map(raw: Optional[str]) -> Mapping[str, ApiKeyIdentity]:
+            if not raw or not raw.strip():
+                return {{}}
+            data = json.loads(raw)
+            if not isinstance(data, dict):
+                raise ValueError("{env_prefix_value}BACKEND_API_KEYS_JSON must be a JSON object.")
+            out: dict[str, ApiKeyIdentity] = {{}}
+            for key, val in data.items():
+                if not isinstance(val, dict):
+                    raise ValueError(f"Identity for key {{key!r}} must be an object.")
+                tenant = val.get("tenant_id")
+                if not tenant or not isinstance(tenant, str):
+                    raise ValueError(f"tenant_id required for API key {{key!r}}.")
+                user_id = val.get("user_id")
+                scopes = val.get("scopes", ("*",))
+                if isinstance(scopes, list):
+                    scopes = tuple(str(s) for s in scopes)
+                elif isinstance(scopes, tuple):
+                    scopes = tuple(str(s) for s in scopes)
+                else:
+                    scopes = ("*",)
+                out[str(key)] = ApiKeyIdentity(
+                    tenant_id=str(tenant),
+                    user_id=str(user_id) if user_id is not None else None,
+                    scopes=scopes,
+                )
+            return out
+
+
+        @dataclass(frozen=True)
+        class {pascal}BackendSettings:
+            """Environment for {pkg} (scaffolded product profile)."""
+
+            environment: ApiEnvironment
+            route_prefix: str = "{route_prefix}"
+            backend_host: str = "127.0.0.1"
+            backend_port: int = {port}
+            default_agent_id: str = "echo"
+            identity_source: {pascal}IdentitySource = "body_or_context"
+            cors_allow_origins: FrozenSet[str] = field(default_factory=frozenset)
+            allowed_hosts: FrozenSet[str] = field(default_factory=frozenset)
+            openapi_enabled_override: Optional[bool] = None
+            api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
+            include_mcp: bool = True
+            mcp_mount_path: str = "/mcp"
+
+            @classmethod
+            def from_env(cls) -> {pascal}BackendSettings:
+                env_raw = (os.getenv("{env_prefix_value}BACKEND_ENV") or os.getenv("INTERGRAX_ENV") or "dev").strip().lower()
+                try:
+                    environment = ApiEnvironment(env_raw)
+                except ValueError as exc:
+                    raise ValueError(
+                        f"{env_prefix_value}BACKEND_ENV must be one of "
+                        f"{{[e.value for e in ApiEnvironment]}}, got {{env_raw!r}}."
+                    ) from exc
+
+                prefix = (os.getenv("{env_prefix_value}ROUTE_PREFIX") or "{route_prefix}").strip() or "{route_prefix}"
+                host = (os.getenv("{env_prefix_value}BACKEND_HOST") or "127.0.0.1").strip()
+                port_raw = (os.getenv("{env_prefix_value}BACKEND_PORT") or "{port}").strip()
+                agent_id = (os.getenv("{env_prefix_value}DEFAULT_AGENT_ID") or "echo").strip() or "echo"
+
+                id_src_env = os.getenv("{env_prefix_value}IDENTITY_SOURCE", "").strip().lower()
+                if id_src_env in {{"body_or_context", "context_only"}}:
+                    identity_source = id_src_env
+                else:
+                    identity_source = "context_only" if environment == ApiEnvironment.PROD else "body_or_context"
+
+                cors = _env_csv_set("{env_prefix_value}BACKEND_CORS_ORIGINS")
+                hosts = _env_csv_set("{env_prefix_value}BACKEND_ALLOWED_HOSTS")
+
+                openapi_override: Optional[bool] = None
+                if os.getenv("{env_prefix_value}BACKEND_OPENAPI") is not None:
+                    openapi_override = _env_bool("{env_prefix_value}BACKEND_OPENAPI")
+
+                keys: Mapping[str, ApiKeyIdentity] = {{}}
+                bootstrap_key = os.getenv("{env_prefix_value}BACKEND_BOOTSTRAP_API_KEY", "").strip()
+                if bootstrap_key:
+                    tenant = os.getenv("{env_prefix_value}BACKEND_BOOTSTRAP_TENANT_ID", "").strip()
+                    user = os.getenv("{env_prefix_value}BACKEND_BOOTSTRAP_USER_ID", "").strip()
+                    if not tenant or not user:
+                        raise ValueError(
+                            "When {env_prefix_value}BACKEND_BOOTSTRAP_API_KEY is set, "
+                            "{env_prefix_value}BACKEND_BOOTSTRAP_TENANT_ID and "
+                            "{env_prefix_value}BACKEND_BOOTSTRAP_USER_ID are required."
+                        )
+                    keys = {{
+                        bootstrap_key: ApiKeyIdentity(
+                            tenant_id=tenant,
+                            user_id=user,
+                            scopes=("*",),
+                        )
+                    }}
+                json_keys = os.getenv("{env_prefix_value}BACKEND_API_KEYS_JSON", "").strip()
+                if json_keys:
+                    if keys:
+                        raise ValueError(
+                            "Use either {env_prefix_value}BACKEND_BOOTSTRAP_API_KEY or "
+                            "{env_prefix_value}BACKEND_API_KEYS_JSON, not both."
+                        )
+                    keys = _parse_api_key_map(json_keys)
+
+                if environment == ApiEnvironment.PROD and identity_source != "context_only":
+                    raise ValueError(
+                        "{env_prefix_value}BACKEND_ENV=prod requires "
+                        "{env_prefix_value}IDENTITY_SOURCE=context_only (or omit to default)."
+                    )
+                if environment == ApiEnvironment.PROD and not _env_bool(
+                    "{env_prefix_value}BACKEND_ALLOW_UNAUTHENTICATED", False
+                ):
+                    if not keys:
+                        raise ValueError(
+                            "Production {short} backend requires API keys: set "
+                            "{env_prefix_value}BACKEND_BOOTSTRAP_API_KEY (+ tenant/user) or "
+                            "{env_prefix_value}BACKEND_API_KEYS_JSON. "
+                            "For local disaster debugging only, set "
+                            "{env_prefix_value}BACKEND_ALLOW_UNAUTHENTICATED=true."
+                        )
+
+                include_mcp = _env_bool("{env_prefix_value}INCLUDE_MCP", default=True)
+                mcp_mount = (os.getenv("{env_prefix_value}MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
+
+                return cls(
+                    environment=environment,
+                    route_prefix=prefix,
+                    backend_host=host,
+                    backend_port=int(port_raw),
+                    default_agent_id=agent_id,
+                    identity_source=identity_source,
+                    cors_allow_origins=cors,
+                    allowed_hosts=hosts,
+                    openapi_enabled_override=openapi_override,
+                    api_keys_map=keys,
+                    include_mcp=include_mcp,
+                    mcp_mount_path=mcp_mount,
+                )
+        '''
+    )
+
+
+def agent_factories_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
+    pkg = names.pkg
+    short = names.short
+    pascal = names.pascal
+    imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
+    builders_const = names.builders_const
+    factories = []
+    for s in specs:
+        factories.append(
+            dedent(
+                f'''\
+                def build_{short}_{s.slug}_from_context(
+                    ctx: ApplicationBuildContext,
+                    binding: AgentBinding,
+                ) -> {s.class_name}:
+                    _ = ctx, binding
+                    factory = {builders_const}.get({s.class_name})
+                    if factory is None:
+                        raise ValueError(f"No builder registered for {{binding.import_path!r}}")
+                    return factory(ctx, binding)
+                '''
+            ).strip()
+        )
+    factories_block = "\n\n\n".join(factories)
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        from __future__ import annotations
+
+        from intergrax.applications.contracts.build_context import ApplicationBuildContext
+        from intergrax.applications.contracts.manifest import AgentBinding
+        {imports}
+        from {pkg}.host.agent_builders import {builders_const}
+
+
+        {factories_block}
+        '''
+    )
+
+
+def agent_builders_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
+    from intergrax.scaffold.new_application import _agent_builders_py
+
+    return _agent_builders_py(names, specs)
+
+
+def wiring_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    short = names.short
+    pascal = names.pascal
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        from __future__ import annotations
+
+        from intergrax.applications._shared.wiring import build_application_registry
+        from intergrax.applications.contracts.build_context import ApplicationBuildContext
+        from intergrax.applications.contracts.manifest import ApplicationManifest
+        from intergrax.runtime.registry.agent_registry import AgentRegistry
+        from {pkg}.host.agent_builders import {names.builders_const}
+        from {pkg}.host.settings import {pascal}BackendSettings
+        from {pkg}.manifest import APPLICATION_MANIFEST
+
+
+        def build_{short}_manifest(settings: {pascal}BackendSettings) -> ApplicationManifest:
+            binding = APPLICATION_MANIFEST.agents[0].model_copy(
+                update={{"contract_id": settings.default_agent_id}}
+            )
+            agents = [binding, *APPLICATION_MANIFEST.agents[1:]]
+            return APPLICATION_MANIFEST.model_copy(update={{"agents": agents}})
+
+
+        def build_{short}_registry(
+            settings: {pascal}BackendSettings | None = None,
+        ) -> AgentRegistry:
+            settings = settings or {pascal}BackendSettings.from_env()
+            manifest = build_{short}_manifest(settings)
+            ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
+            return build_application_registry(manifest, ctx, builders={names.builders_const})
+        '''
+    )
+
+
+def integration_wiring_py(names: ScaffoldApplicationNames) -> str:
+    short = names.short
+    pascal = names.pascal
+    pkg = names.pkg
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        """Observability wiring for {pkg} (product profile)."""
+
+        from __future__ import annotations
+
+        from pathlib import Path
+
+        from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores, wire_nexus_observability
+
+
+        def wire_{short}_integrations(
+            *,
+            trace_db_path: Path | None = None,
+            runtime_events_db_path: Path | None = None,
+        ) -> NexusObservabilityStores:
+            return wire_nexus_observability(
+                trace_db_path=trace_db_path,
+                runtime_events_db_path=runtime_events_db_path,
+            )
+        '''
+    )
+
+
+def factory_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    short = names.short
+    pascal = names.pascal
+    title = f"Intergrax {names.display} API"
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        """Assemble FastAPI Core + product routes for {pkg}."""
+
+        from __future__ import annotations
+
+        from pathlib import Path
+        from typing import Optional
+
+        from fastapi import FastAPI
+        from starlette.middleware.cors import CORSMiddleware
+
+        from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
+        from intergrax.fastapi_core.app_factory import create_app
+        from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
+        from intergrax.fastapi_core.config import ApiConfig
+        from intergrax.runtime.nexus.nexus_loop import NexusLoop
+        from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+        from {pkg}.host.integration_wiring import wire_{short}_integrations
+        from {pkg}.host.settings import {pascal}BackendSettings
+        from {pkg}.host.wiring import build_{short}_registry
+        from {pkg}.mcp.server import build_{short}_mcp_server
+        from {pkg}.serving.fastapi_router import mount_{short}_routes
+
+
+        def create_{short}_backend_app(
+            *,
+            settings: Optional[{pascal}BackendSettings] = None,
+            trace_db_path: Path | None = None,
+            runtime_events_db_path: Path | None = None,
+        ) -> FastAPI:
+            settings = settings or {pascal}BackendSettings.from_env()
+            api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
+
+            registry = build_{short}_registry(settings)
+            observability = wire_{short}_integrations(
+                trace_db_path=trace_db_path,
+                runtime_events_db_path=runtime_events_db_path,
+            )
+            nexus_loop = NexusLoop(
+                registry,
+                trace_store=observability.trace_store,
+                runtime_event_store=observability.runtime_event_store,
+            )
+
+            api_cfg = ApiConfig(
+                environment=settings.environment,
+                api_prefix="/v1",
+                cors_allow_origins=settings.cors_allow_origins,
+                allowed_hosts=settings.allowed_hosts,
+                api_key_config=api_key_config,
+            )
+            app = create_app(api_cfg)
+
+            if settings.openapi_enabled_override is True:
+                app.docs_url = "/docs"
+                app.redoc_url = "/redoc"
+                app.openapi_url = "/openapi.json"
+            elif settings.openapi_enabled_override is False:
+                app.docs_url = None
+                app.redoc_url = None
+                app.openapi_url = None
+
+            if settings.cors_allow_origins:
+                app.add_middleware(
+                    CORSMiddleware,
+                    allow_origins=sorted(settings.cors_allow_origins),
+                    allow_credentials=True,
+                    allow_methods=["*"],
+                    allow_headers=["*"],
+                )
+
+            mount_{short}_routes(
+                app,
+                nexus_loop=nexus_loop,
+                prefix=settings.route_prefix,
+                default_agent_id=settings.default_agent_id,
+            )
+
+            app.title = "{title}" if settings.environment.value == "prod" else "{title} (dev)"
+
+            if settings.include_mcp:
+                mcp = build_{short}_mcp_server(
+                    nexus_loop=nexus_loop,
+                    route_prefix=settings.route_prefix,
+                )
+                app = couple_fastapi_with_mcp(app, mcp, mount_path=settings.mcp_mount_path)
+
+            return app
+        '''
+    )
+
+
+def main_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    short = names.short
+    env_prefix_value = names.env_prefix
+    port = names.port
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        import os
+
+        from dotenv import load_dotenv
+
+        from {pkg}.host.factory import create_{short}_backend_app
+
+        load_dotenv()
+
+        app = create_{short}_backend_app()
+
+
+        def run() -> None:
+            import uvicorn
+
+            host = os.environ.get("{env_prefix_value}BACKEND_HOST", "127.0.0.1")
+            port = int(os.environ.get("{env_prefix_value}BACKEND_PORT", "{port}"))
+            uvicorn.run(
+                "{pkg}.host.main:app",
+                host=host,
+                port=port,
+                reload=os.environ.get("{env_prefix_value}BACKEND_RELOAD", "").lower()
+                in {{"1", "true", "yes"}},
+            )
+
+
+        if __name__ == "__main__":
+            run()
+        '''
+    )
+
+
+def schemas_py(names: ScaffoldApplicationNames) -> str:
+    pascal = names.pascal
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        from __future__ import annotations
+
+        from typing import Any, Optional
+
+        from pydantic import BaseModel, Field
+
+
+        class {pascal}RunRequestV1(BaseModel):
+            tenant_id: str = "default"
+            user_id: str = "default-user"
+            session_id: Optional[str] = None
+            message: str = Field(min_length=1)
+            capability: str = Field(min_length=1)
+            metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+        class {pascal}RunResponseV1(BaseModel):
+            task_id: str
+            run_id: Optional[str] = None
+            state: str
+            answer: str = ""
+            agent_id: Optional[str] = None
+            metadata: dict[str, Any] = Field(default_factory=dict)
+        '''
+    )
+
+
+def serving_router_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
+    short = names.short
+    pascal = names.pascal
+    pkg = names.pkg
+    route_prefix = names.route_prefix
+    default_cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        from __future__ import annotations
+
+        from dataclasses import dataclass
+
+        from fastapi import APIRouter, FastAPI, HTTPException, status
+
+        from intergrax.runtime.nexus.nexus_loop import NexusLoop
+        from intergrax.runtime.task.task import Task, TaskContext
+        from intergrax.runtime.task.task_run_bridge import new_run_id
+        from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+        from {pkg}.serving.schemas import {pascal}RunRequestV1, {pascal}RunResponseV1
+
+
+        @dataclass
+        class {pascal}RunService:
+            task_runner: UnifiedTaskRunner
+            default_agent_id: str
+
+            @classmethod
+            def from_nexus_loop(
+                cls,
+                nexus_loop: NexusLoop,
+                *,
+                default_agent_id: str,
+            ) -> {pascal}RunService:
+                return cls(
+                    task_runner=UnifiedTaskRunner(nexus_loop),
+                    default_agent_id=default_agent_id,
+                )
+
+            async def run_task(self, body: {pascal}RunRequestV1) -> {pascal}RunResponseV1:
+                run_id = new_run_id()
+                task = Task(
+                    task_id=run_id,
+                    tenant_id=body.tenant_id,
+                    user_id=body.user_id,
+                    session_id=body.session_id,
+                    agent_id=self.default_agent_id,
+                    message=body.message,
+                    context=TaskContext(capability=body.capability or "{default_cap}"),
+                )
+                result = await self.task_runner.run_task(task)
+                return {pascal}RunResponseV1(
+                    task_id=result.task_id,
+                    run_id=result.run_id,
+                    state=result.state.value,
+                    answer=result.answer,
+                    agent_id=result.agent_id,
+                    metadata=dict(result.metadata),
+                )
+
+
+        def mount_{short}_routes(
+            app: FastAPI,
+            *,
+            nexus_loop: NexusLoop,
+            prefix: str = "{route_prefix}",
+            default_agent_id: str = "echo",
+        ) -> {pascal}RunService:
+            service = {pascal}RunService.from_nexus_loop(
+                nexus_loop,
+                default_agent_id=default_agent_id,
+            )
+            router = APIRouter(prefix=prefix, tags=["{short}"])
+
+            @router.post("/run", response_model={pascal}RunResponseV1)
+            async def run_agent(body: {pascal}RunRequestV1) -> {pascal}RunResponseV1:
+                try:
+                    return await service.run_task(body)
+                except Exception as exc:
+                    raise HTTPException(
+                        status_code=status.HTTP_502_BAD_GATEWAY,
+                        detail=f"run_error: {{exc.__class__.__name__}}",
+                    ) from exc
+
+            @router.get("/agents")
+            async def list_agents() -> dict[str, list[dict[str, object]]]:
+                agents: list[dict[str, object]] = []
+                for agent_id in nexus_loop.registry.list_agent_ids():
+                    contract = nexus_loop.registry.get(agent_id).get_contract()
+                    agents.append(
+                        {{
+                            "agent_id": contract.id,
+                            "name": contract.name,
+                            "capabilities": list(contract.capabilities),
+                        }}
+                    )
+                return {{"agents": agents}}
+
+            app.include_router(router)
+            return service
+        '''
+    )
+
+
+def mcp_server_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
+    from intergrax.scaffold.new_application import _mcp_server_py
+
+    return _mcp_server_py(names, specs)
+
+
+def env_example(
+    env_prefix: str,
+    route_prefix: str,
+    port: int,
+    specs: list[ScaffoldAgentSpec],
+) -> str:
+    caps = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
+    return dedent(
+        f'''\
+        # {env_prefix}* — copy to .env (gitignored) in this application directory.
+        INTERGRAX_ENV=dev
+        {env_prefix}BACKEND_ENV=dev
+        {env_prefix}BACKEND_HOST=127.0.0.1
+        {env_prefix}BACKEND_PORT={port}
+        {env_prefix}ROUTE_PREFIX={route_prefix}
+        {env_prefix}DEFAULT_AGENT_ID=echo
+        {env_prefix}IDENTITY_SOURCE=body_or_context
+        {env_prefix}INCLUDE_MCP=true
+        {env_prefix}MCP_MOUNT_PATH=/mcp
+        # Optional dev API key (prod requires keys or ALLOW_UNAUTHENTICATED=true):
+        # {env_prefix}BACKEND_BOOTSTRAP_API_KEY=dev-key
+        # {env_prefix}BACKEND_BOOTSTRAP_TENANT_ID=dev-tenant
+        # {env_prefix}BACKEND_BOOTSTRAP_USER_ID=dev-user
+        # Example capability for POST {route_prefix}/run
+        # DEFAULT_CAPABILITY={caps}
+        '''
+    )
+
+
+def readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
+    pkg = names.pkg
+    short = names.short
+    display = names.display
+    env_prefix_value = names.env_prefix
+    route_prefix = names.route_prefix
+    port = names.port
+    cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
+    agents_list = ", ".join(s.class_name for s in specs)
+    return dedent(
+        f'''\
+        # {display} API (Tier-3)
+
+        Scaffolded **product** profile — FastAPI Core (`/health`, `/v1/*`) + ``POST {route_prefix}/run``.
+
+        **Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)
+
+        ## Three-command quickstart
+
+        From **repository root**:
+
+        ```bash
+        uv run pytest applications/{pkg}/{pkg}_tests -q
+        cp applications/{pkg}/.env.example applications/{pkg}/.env
+        uv run uvicorn {pkg}.host.main:app --host 127.0.0.1 --port {port}
+        applications/{pkg}/docker/build-docker.sh
+        ```
+
+        ## Agents
+
+        {agents_list}
+
+        ## HTTP
+
+        ```bash
+        curl -s http://127.0.0.1:{port}/health
+        curl -s http://127.0.0.1:{port}{route_prefix}/agents
+        curl -s -X POST http://127.0.0.1:{port}{route_prefix}/run \\
+          -H "Content-Type: application/json" \\
+          -d '{{"message":"hello","capability":"{cap}"}}'
+        ```
+
+        ## MCP
+
+        Default ``/mcp`` — ``list_agents``, ``run_agent``. Configure ``{env_prefix_value}INCLUDE_MCP``, ``{env_prefix_value}MCP_MOUNT_PATH``.
+
+        ## Docs
+
+        - Engine: `intergrax/applications/USAGE.md`
+        - Layout: `applications/USAGE.md`
+        '''
+    )
+
+
+def smoke_test(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
+    pkg = names.pkg
+    short = names.short
+    route_prefix = names.route_prefix
+    cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        from __future__ import annotations
+
+        import pytest
+        from fastapi.testclient import TestClient
+
+        from {pkg}.host.factory import create_{short}_backend_app
+
+        pytestmark = [pytest.mark.unit]
+
+        _PREFIX = "{route_prefix}"
+
+
+        def test_{short}_backend_health():
+            client = TestClient(create_{short}_backend_app())
+            response = client.get("/health")
+            assert response.status_code == 200
+
+
+        def test_{short}_backend_lists_agents():
+            client = TestClient(create_{short}_backend_app())
+            response = client.get(f"{{_PREFIX}}/agents")
+            assert response.status_code == 200
+            assert "agents" in response.json()
+
+
+        def test_{short}_backend_run():
+            client = TestClient(create_{short}_backend_app())
+            response = client.post(
+                f"{{_PREFIX}}/run",
+                json={{"message": "hello", "capability": "{cap}"}},
+            )
+            assert response.status_code == 200
+            assert response.json().get("state") == "completed"
+        '''
+    )

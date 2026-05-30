@@ -17,19 +17,6 @@ from intergrax.runtime.transport.bundle import TransportBundle
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 
-from intergrax.queueing.providers.rabbitmq.rabbitmq_message_producer import (
-    RabbitMQMessageProducer,
-)
-from intergrax.queueing.providers.rabbitmq.rabbitmq_message_consumer import (
-    RabbitMQMessageConsumer,
-)
-from intergrax.queueing.providers.rabbitmq.rabbitmq_task_queue import (
-    RabbitMQTaskQueue,
-)
-from intergrax.queueing.providers.rabbitmq.rabbitmq_worker import (
-    RabbitMQWorker,
-)
-
 
 def build_transport(
     *,
@@ -65,41 +52,20 @@ def build_transport(
         if config.rabbitmq is None:
             raise ValueError("RabbitMQTransportConfig must be provided")
 
+        from intergrax.integrations.providers.rabbitmq.bundle import build_rabbitmq_transport
+
         rmq_cfg: RabbitMQTransportConfig = config.rabbitmq
 
-        producer = RabbitMQMessageProducer(
-            host=rmq_cfg.host,
-            port=rmq_cfg.port,
-            virtual_host=rmq_cfg.virtual_host,
-            username=rmq_cfg.username,
-            password=rmq_cfg.password,
-        )
-
-        consumer = RabbitMQMessageConsumer(
-            host=rmq_cfg.host,
-            queue=queue_name,
-            port=rmq_cfg.port,
-            virtual_host=rmq_cfg.virtual_host,
-            username=rmq_cfg.username,
-            password=rmq_cfg.password,
-        )
-
-        task_queue = RabbitMQTaskQueue(
-            producer=producer,
-            queue=queue_name,
+        return build_rabbitmq_transport(
             kv_store=kv_store,
-        )
-
-        worker = RabbitMQWorker(
-            consumer=consumer,
-            registry=execution_registry,
-            kv_store=kv_store,
+            execution_registry=execution_registry,
             idempotency_store=idempotency_store,
-        )
-
-        return TransportBundle(
-            task_queue=task_queue,
-            worker=worker,
+            queue=queue_name,
+            host=rmq_cfg.host,
+            port=rmq_cfg.port,
+            virtual_host=rmq_cfg.virtual_host,
+            username=rmq_cfg.username,
+            password=rmq_cfg.password,
         )
 
     raise ValueError(f"Unsupported transport backend: {config.backend}")

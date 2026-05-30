@@ -14,7 +14,7 @@ from intergrax.rag.embedding.registry.embedding_provider_registry import Embeddi
 from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_pipeline
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.providers.vector_similarity_retriever import VectorSimilarityRetriever
-from intergrax.rag.vectorstore.providers.chroma_vector_store import ChromaConfig, ChromaVectorStore
+from intergrax.integrations.providers.chroma.bundle import create_chroma_vector_store
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 
@@ -29,15 +29,13 @@ pytestmark = [
 
 def test_retriever_pipeline_basic() -> None:
 
-    chroma_cfg = ChromaConfig(
-        tenant_id="intergrax",
-        collection_name="test_retrieval_pipeline_basic",
-        persist_directory=None,
-        settings=None,
+    vector_store = VectorstoreManager(
+        store=create_chroma_vector_store(
+            tenant_id="intergrax",
+            collection_name="test_retrieval_pipeline_basic",
+            persist_directory=None,
+        )
     )
-
-    vector_provider = ChromaVectorStore(cfg=chroma_cfg)
-    vector_store = VectorstoreManager(store=vector_provider)
 
     embedding_registry = EmbeddingProviderRegistry()
     embedding_provider = HFEmbeddingProvider()
