@@ -957,7 +957,7 @@ Szablony utrzymywane przez `scripts/generate_integration_usage_docs.py` (regener
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
 | N.0 | Architecture & plan documented | **Done** | §7.4.8–§7.4.10 | This section + runtime canon (2026-05-30) |
-| N.1 | `ApplicationManifest` + `AgentBinding` models | **Pending** | §7.4.10 | `intergrax/applications/contracts/` (or `intergrax/runtime/applications/`) |
+| N.1 | `ApplicationManifest` + `AgentBinding` models | **Done** | §7.4.10 | `intergrax/applications/contracts/manifest.py` |
 | N.2 | Manifest conformance harness + unit tests | **Pending** | §7.4.10 | Validate roster imports, profile shape, feature flags |
 | N.3 | `python -m intergrax.scaffold new-application` (profile `lab`) | **Pending** | §7.4.8 | Templates: host, serving, manifest, `.env.example`, README, `<app>_tests/` smoke |
 | N.4 | Scaffold profile `product` (fastapi_core skeleton) | **Pending** | §7.4.8 | Legal-style factory; optional `--agents` list |
@@ -1009,7 +1009,7 @@ python -m intergrax.scaffold new-application my_lab \
 
 ```text
 
-NOW:     Phase N — Application Environment & Deploy Scaffold (N.1 next)
+NOW:     Phase N — Application Environment & Deploy Scaffold (N.2 next)
 
 DONE:    Phase L certification — L1 achieved (Appendix A)
 
@@ -1070,16 +1070,16 @@ Each iteration follows **one deliverable at a time**:
 
 Do not batch N.1–N.5 in one PR unless explicitly agreed.
 
-### 6.2 Current next step — **N.1 ApplicationManifest**
+### 6.2 Current next step — **N.2 Manifest conformance harness**
 
-**Goal:** Typed Tier-3 composition contract (§7.4.10) without scaffold yet.
+**Goal:** Validate manifest → import agent classes → minimal `AgentRegistry` build (§7.4.10).
 
 **Tasks:**
 
-1. Create `intergrax/applications/contracts/manifest.py` with `AgentBinding`, `ApplicationFeatures`, `ApplicationManifest`.
-2. `ApplicationManifest` holds `integration_profile: IntegrationProfile` (reuse M.3).
-3. Unit tests: validate sample manifest, forbid extra fields, coerce agent list.
-4. Mark N.1 **Done** in Phase N table; proceed to N.2.
+1. Add `intergrax/applications/_shared/conformance.py` (or `applications/_shared/` at repo root).
+2. `load_agent_from_binding(binding) -> Agent` via `importlib`.
+3. `build_registry_from_manifest(manifest) -> AgentRegistry` with optional contract overrides.
+4. Unit tests using `echo.echo_agent.EchoAgent`; mark N.2 **Done** when green.
 
 **Verify:**
 
@@ -1467,6 +1467,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-30 | M.6-mysql | `providers/mysql/` — beta `RelationalStore` (pymysql); single-entry `opens.py` |
 | 2026-05-30 | M.6-postgresql | `providers/postgresql/` — beta `RelationalStore` (psycopg3); catalog + tests |
 | 2026-05-30 | M.7-agent-guide-integrations | `AGENT_CREATION_GUIDE.md` Appendix E — agents vs Tier-3 wiring |
+| 2026-05-30 | N.1-manifest | `ApplicationManifest`, `AgentBinding`, `ApplicationFeatures` + unit tests |
 | 2026-05-30 | N.0-docs | Canon §7.4.8–§7.4.10 + Phase N plan (application environment, manifest, scaffold steps) |
 | 2026-05-30 | M.8-lab-profile | `wire_lab_integrations()` + `providers/log/` — lab uses `IntegrationProfile.lab()` |
 | 2026-05-30 | M.4-kafka-rabbitmq-adopt | Queueing bootstrap + integration tests use `integrations/providers/{kafka,rabbitmq}/` only |

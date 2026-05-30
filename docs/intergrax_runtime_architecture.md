@@ -1055,7 +1055,7 @@ Task flag / metadata `sandbox=True` enables Tier-1 **runtime sandbox** inside an
 
 Tier-2 agents declare **`AgentContract`** (capabilities, tools, risk).
 
-Tier-3 applications declare an **`ApplicationManifest`** (planned — Phase N.1):
+Tier-3 applications declare an **`ApplicationManifest`** (Phase N.1 — `intergrax/applications/contracts/manifest.py`):
 
 - `app_id`, `route_prefix`, environment defaults
 - `agents[]` — import paths, optional contract id overrides, enabled flags
