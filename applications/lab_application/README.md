@@ -68,6 +68,15 @@ Lab composes Tier-0 backends through ``IntegrationProfile.lab()``:
 
 See ``applications/lab_application/host/integration_wiring.py``.
 
+## Docker
+
+```bash
+applications/lab_application/docker/build-docker.sh
+# Windows: applications\lab_application\docker\build-docker.bat
+```
+
+See [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md).
+
 ## Tests
 
 ```bash

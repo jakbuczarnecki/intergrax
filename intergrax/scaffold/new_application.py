@@ -709,6 +709,18 @@ def _readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> 
 
         **Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)
 
+        ## Three-command quickstart
+
+        From **repository root**:
+
+        ```bash
+        uv run pytest applications/{pkg}/{pkg}_tests -q
+        cp applications/{pkg}/.env.example applications/{pkg}/.env
+        uv run uvicorn {pkg}.host.main:app --host 127.0.0.1 --port {port}
+        applications/{pkg}/docker/build-docker.sh
+        # Windows: applications\\{pkg}\\docker\\build-docker.bat
+        ```
+
         ## Agents
 
         {agents_list}
@@ -937,10 +949,8 @@ def run_new_application(args: argparse.Namespace) -> int:
     print(f"  Agents: GET http://127.0.0.1:{names.port}{names.route_prefix}/agents")
     print(f"  Run:    POST http://127.0.0.1:{names.port}{names.route_prefix}/run")
     print(f"  MCP:    http://127.0.0.1:{names.port}/mcp  (FastMCP, coupled to FastAPI)")
-    print(
-        f"  Docker: docker buildx build -f applications/{names.pkg}/docker/Dockerfile "
-        f"--ignorefile applications/{names.pkg}/docker/.dockerignore -t {names.docker_image} ."
-    )
+    print(f"  Docker: applications/{names.pkg}/docker/build-docker.sh")
+    print(f"          applications\\{names.pkg}\\docker\\build-docker.bat  (Windows)")
     print(f"  Deploy: applications/{names.pkg}/BUILD_AND_DEPLOY.md")
     print("  Docs:   intergrax/applications/USAGE.md · applications/USAGE.md")
     return 0

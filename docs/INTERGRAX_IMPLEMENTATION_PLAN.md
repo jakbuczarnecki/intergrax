@@ -965,11 +965,11 @@ Szablony utrzymywane przez `scripts/generate_integration_usage_docs.py` (regener
 | N.2.2 | Strongly typed `AgentBinding.mount(AgentClass, factory=...)` | **Done** | §7.4.10 | `type[Agent]` + callable factory; `deserialize()` for scaffold strings only |
 | N.3 | `python -m intergrax.scaffold new-application` (profile `lab`) | **Done** | §7.4.8 | `new_application.py`, `agent_catalog.py`, `cli.py`; lab templates + smoke |
 | N.4 | Scaffold profile `product` (fastapi_core skeleton) | **Pending** | §7.4.8 | Legal-style factory; optional `--agents` list |
-| N.5 | Docker templates under `applications/<app>/docker/` | **Done** | §7.4.8 | Dockerfile + `.dockerignore` + `docker-compose.yml`; monorepo-root context |
-| N.6 | Reference app `poc_template_application` (committed example) | **Pending** | §7.4.8 | Living example; CI `docker build` smoke (optional workflow) |
-| N.7 | Backfill `.env.example` on existing apps | **Pending** | §7.4.8 | `lab_application`, `legal_application`, `research_application` |
+| N.5 | Docker templates under `applications/<app>/docker/` | **Done** | §7.4.8 | Dockerfile + `.dockerignore` + `docker-compose.yml` + `build-docker.sh` / `.bat`; monorepo-root context |
+| N.6 | Reference app `poc_template_application` (committed example) | **Done** | §7.4.8 | `applications/poc_template_application/`; README three-command quickstart; gate smoke |
+| N.7 | Backfill `.env.example` on existing apps | **Done** | §7.4.8 | `lab_application`, `legal_application`, `research_application`, `poc_template_application` |
 | N.8 | `AGENT_CREATION_GUIDE.md` Step 4E (dedicated application) | **Pending** | — | Link scaffold + manifest + Docker quickstart |
-| N.9 | Acceptance `test_scaffold_application` (gate) | **Partial** | — | `tests/unit/applications/test_scaffold_application.py` (tree); full acceptance TBD |
+| N.9 | Acceptance `test_scaffold_application` (gate) | **Partial** | — | Tree + `build-docker.sh`/`.bat`; full acceptance (product profile, docker smoke) TBD |
 | N.10 | Optional `new-stack` (agent + application in one CLI) | **Deferred** | — | After N.3–N.5 stable |
 
 #### N — Step-by-step implementation sequence
@@ -982,7 +982,7 @@ Execute **strictly in order**; do not skip ahead without completing acceptance f
 | 2 | N.2 | Add `applications/_shared/conformance.py` (or mirror integrations pattern) | Manifest load + minimal registry build test |
 | 3 | N.3 | Implement `new_application.py` + `lab` profile templates | `uv run python -m intergrax.scaffold new-application test_lab --profile lab --agents echo` creates tree; smoke test green |
 | 4 | N.3b | Wire `build_parser()` subcommand; post-create hints (uvicorn, pytest, docker) | CLI prints next commands; gate test added (N.9 partial) |
-| 5 | N.5 | Add Docker/docker-compose templates to scaffold | `docker build -f applications/<app>/docker/Dockerfile .` succeeds locally |
+| 5 | N.5 | Add Docker/docker-compose + build scripts to scaffold | `applications/<app>/docker/build-docker.sh` (or `.bat`) builds image from repo root |
 | 6 | N.6 | Commit `applications/poc_template_application/` from scaffold | README three-command quickstart verified |
 | 7 | N.7 | Add per-app `.env.example` to legal, research, lab | Vars match each `settings.py`; no secrets committed |
 | 8 | N.4 | Add `product` profile to scaffold | Generated app matches legal factory patterns (auth optional stub) |
@@ -1013,7 +1013,7 @@ python -m intergrax.scaffold new-application my_lab \
 
 ```text
 
-NOW:     Phase N — Application Environment & Deploy Scaffold (N.6 poc_template next)
+NOW:     Phase N — Application Environment & Deploy Scaffold (N.4 product profile next)
 
 DONE:    Phase L certification — L1 achieved (Appendix A)
 
@@ -1074,19 +1074,19 @@ Each iteration follows **one deliverable at a time**:
 
 Do not batch N.1–N.5 in one PR unless explicitly agreed.
 
-### 6.2 Current next step — **N.6 Reference app `poc_template_application`**
+### 6.2 Current next step — **N.4 Scaffold profile `product`**
 
-**Prerequisite:** N.3 + N.5 — scaffold emits host, manifest, `.env.example`, `<app>_tests/`, and `docker/`.
+**Prerequisite:** N.3 + N.6 — lab scaffold and `poc_template_application` reference verified.
 
-**Goal:** Committed living example under `applications/poc_template_application/` with README three-command quickstart (pytest, uvicorn, docker).
+**Goal:** `new-application --profile product` emits legal-style host (fastapi_core, auth stub optional).
 
-**Verify (N.5 — completed):**
+**Verify (N.6 — completed):**
 
 ```bash
-uv run python -m intergrax.scaffold new-application test_lab --profile lab --agents echo --root .
-docker buildx build -f applications/test_lab_application/docker/Dockerfile \
-  --ignorefile applications/test_lab_application/docker/.dockerignore \
-  -t test-lab-application .
+uv run pytest applications/poc_template_application/poc_template_application_tests -q
+uv run uvicorn poc_template_application.host.main:app --host 127.0.0.1 --port 8095
+applications/poc_template_application/docker/build-docker.sh
+# Windows: applications\poc_template_application\docker\build-docker.bat
 ```
 
 **Phase L — still required for any new agent work:**
@@ -1471,6 +1471,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-30 | N.2.1-unified-wiring | `ApplicationBuildContext`, `builder_key`/`factory_path`, lab+legal on `build_application_registry` |
 | 2026-05-30 | N.2-conformance | `build_registry_from_manifest`, `load_agent_from_binding` + unit tests |
 | 2026-05-30 | N.1-manifest | `ApplicationManifest`, `AgentBinding`, `ApplicationFeatures` + unit tests |
+| 2026-05-30 | N.5-docker-build-scripts | `build-docker.sh` / `build-docker.bat` in scaffold + lab/legal/research/poc; `docker_templates.py` |
 | 2026-05-30 | N.0-docs | Canon §7.4.8–§7.4.10 + Phase N plan (application environment, manifest, scaffold steps) |
 | 2026-05-30 | M.8-lab-profile | `wire_lab_integrations()` + `providers/log/` — lab uses `IntegrationProfile.lab()` |
 | 2026-05-30 | M.4-kafka-rabbitmq-adopt | Queueing bootstrap + integration tests use `integrations/providers/{kafka,rabbitmq}/` only |
@@ -1557,9 +1558,9 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.14 | **`ChatAgent` / legacy engine removal** — `LEGAL_USE_LEGACY_AGENT_ENGINE` removed | §39, §41 | **Medium** | **Done** | Single execution path for all agents | Tier-1 / Tier-3 | Legal `fastapi_router` requires `UnifiedTaskRunner`; legacy flags removed (2026-05-27) |
 | B.15 | **Legal full E2E gate (real LLM)** — deferred acceptance with live model | — | **Low** | Legal quality assurance | Tier-2 / CI | K.6; separate from Agent OS gate |
 | B.16 | **Lab agent auto-discovery** — new agents require explicit `wiring.py` register (by design, but easy to forget) | §7.4 | **Low** | Onboarding friction | Tier-3 | Phase N scaffold + `ApplicationManifest`; optional `new-stack` (N.10) |
-| B.28 | **Per-application `.env.example` missing** — only root `.env.example`; lab/legal vars in README only | §7.4.8 | **Medium** | **Open** | Deployable POC friction | Tier-3 | Phase N.7 backfill + scaffold generates per-app template |
-| B.29 | **`new-application` scaffold (lab)** — Tier-3 hosts hand-copied from legal/lab | §7.4.8 | **High** | **Mitigated** | Lab profile via CLI; Docker/product profiles pending | Tier-3 / platform | Phase N.5–N.4 |
-| B.30 | **No application-level Dockerfile** — only `infra/docker/docling/` | §7.4.8 | **Medium** | **Mitigated** | Scaffold emits per-app `docker/`; backfill legal/lab/research optional | Tier-3 | Phase N.6–N.7 |
+| B.28 | **Per-application `.env.example` missing** — only root `.env.example`; lab/legal vars in README only | §7.4.8 | **Medium** | **Done** | Deployable POC friction | Tier-3 | N.7 backfill + scaffold (2026-05-30) |
+| B.29 | **`new-application` scaffold (lab)** — Tier-3 hosts hand-copied from legal/lab | §7.4.8 | **High** | **Mitigated** | Lab profile via CLI; product profile pending (N.4) | Tier-3 / platform | Phase N.4 next |
+| B.30 | **No application-level Dockerfile** — only `infra/docker/docling/` | §7.4.8 | **Medium** | **Done** | Per-app `docker/` + build scripts on lab/legal/research/poc | Tier-3 | N.5–N.7 (2026-05-30) |
 
 ### B.5 Test & certification hygiene
 

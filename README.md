@@ -71,7 +71,7 @@ Think of Tier-2 agents as **specialized modules** and Tier-3 applications as **r
 |----------|---------|
 | **Isolated environment** | Own `.env` / `.env.example`, settings, HTTP routes, optional `docker/` — not mixed with the repo root or other apps |
 | **Composition only** | Wires agents + integrations; **no** domain logic (that stays in `agents/<name>/`) |
-| **Deployable unit** | Built to `uvicorn` locally and `docker build` / push to production from one folder |
+| **Deployable unit** | Built to `uvicorn` locally; `applications/<app>/docker/build-docker.sh` (or `.bat`) for image build / push |
 | **Template-born** | Created from a standard layout (scaffold `new-application` — Phase N); same ergonomics as `new-agent` for agents |
 | **Reusable agents** | The same `LegalAgent` or `EchoAgent` can power **different** applications with different config, roster, and integrations |
 

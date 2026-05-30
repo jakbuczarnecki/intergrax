@@ -1,4 +1,4 @@
-        # Build & deploy — Intergrax Research
+        # Build & deploy — Research Application
 
         Tier-3 application package: ``applications/research_application/``. This document is the **operational runbook** for local development, verification, and container deployment.
 
@@ -82,7 +82,21 @@ Routes are mounted under ``/v1/research``. See ``serving/`` and application READ
 
         Build context = **monorepo root** (``.``). Dockerfile lives under this application only as a path reference.
 
-        ### BuildKit (recommended)
+        ### Build scripts (recommended)
+
+        Run from **repository root** or from ``applications/research_application/docker/`` (scripts ``cd`` to repo root):
+
+        ```bash
+        # Linux / macOS / Git Bash
+        applications/research_application/docker/build-docker.sh
+
+        # Windows (cmd)
+        applications\research_application\docker\build-docker.bat
+        ```
+
+        Override image tag: ``IMAGE_TAG=my-registry/research:1.0.0`` (sh) or ``build-docker.bat my-registry/research:1.0.0`` (bat).
+
+        ### Manual — BuildKit
 
         ```bash
         docker buildx build -f applications/research_application/docker/Dockerfile \
@@ -90,7 +104,7 @@ Routes are mounted under ``/v1/research``. See ``serving/`` and application READ
           -t research-application .
         ```
 
-        ### Classic Docker
+        ### Manual — classic Docker
 
         ```bash
         cp applications/research_application/docker/.dockerignore .dockerignore
@@ -102,6 +116,7 @@ Routes are mounted under ``/v1/research``. See ``serving/`` and application READ
         - First build can take several minutes (full ``uv sync`` inside the image).
         - The image adjusts ``tool.uv.environments`` from ``win32`` to ``linux`` during build (dev lockfile targets Windows).
         - Image ``HEALTHCHECK`` probes ``/health``.
+        - Scripts use BuildKit when ``docker buildx`` is available; otherwise they fall back to ``docker build``.
 
         ---
 

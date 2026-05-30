@@ -139,17 +139,14 @@ uv run pytest tests/unit/applications/ -q
 ### Docker (when `docker/` exists)
 
 ```bash
-# BuildKit (recommended)
-docker buildx build -f applications/my_lab_application/docker/Dockerfile \
-  --ignorefile applications/my_lab_application/docker/.dockerignore \
-  -t my-lab-application .
-
-# Classic docker: copy per-app .dockerignore to repo root first
-cp applications/my_lab_application/docker/.dockerignore .dockerignore
-docker build -f applications/my_lab_application/docker/Dockerfile -t my-lab-application .
+# Recommended — per-app scripts (monorepo root context, BuildKit if available)
+applications/my_lab_application/docker/build-docker.sh
+# Windows: applications\my_lab_application\docker\build-docker.bat
 
 docker run --env-file applications/my_lab_application/.env -p 8091:8091 my-lab-application
 ```
+
+Manual build: see `applications/<app>/BUILD_AND_DEPLOY.md`.
 
 ---
 

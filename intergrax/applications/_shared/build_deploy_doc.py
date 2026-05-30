@@ -149,7 +149,21 @@ def render_build_deploy_doc(
 
         Build context = **monorepo root** (``.``). Dockerfile lives under this application only as a path reference.
 
-        ### BuildKit (recommended)
+        ### Build scripts (recommended)
+
+        Run from **repository root** or from ``applications/{pkg}/docker/`` (scripts ``cd`` to repo root):
+
+        ```bash
+        # Linux / macOS / Git Bash
+        applications/{pkg}/docker/build-docker.sh
+
+        # Windows (cmd)
+        applications\\{pkg}\\docker\\build-docker.bat
+        ```
+
+        Override image tag: ``IMAGE_TAG=my-registry/{short}:1.0.0`` (sh) or ``build-docker.bat my-registry/{short}:1.0.0`` (bat).
+
+        ### Manual — BuildKit
 
         ```bash
         docker buildx build -f applications/{pkg}/docker/Dockerfile \\
@@ -157,7 +171,7 @@ def render_build_deploy_doc(
           -t {short}-application .
         ```
 
-        ### Classic Docker
+        ### Manual — classic Docker
 
         ```bash
         cp applications/{pkg}/docker/.dockerignore .dockerignore
@@ -169,6 +183,7 @@ def render_build_deploy_doc(
         - First build can take several minutes (full ``uv sync`` inside the image).
         - The image adjusts ``tool.uv.environments`` from ``win32`` to ``linux`` during build (dev lockfile targets Windows).
         - Image ``HEALTHCHECK`` probes ``{health}``.
+        - Scripts use BuildKit when ``docker buildx`` is available; otherwise they fall back to ``docker build``.
 
         ---
 

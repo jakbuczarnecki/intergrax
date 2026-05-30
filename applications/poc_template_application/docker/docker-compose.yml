@@ -1,0 +1,17 @@
+# © Artur Czarnecki. All rights reserved.
+# Run from repository root: docker compose -f applications/poc_template_application/docker/docker-compose.yml up --build
+
+services:
+  poc_template:
+    build:
+      context: ../../..
+      dockerfile: applications/poc_template_application/docker/Dockerfile
+    image: poc_template-application:latest
+    ports:
+      - "8095:8095"
+    env_file:
+      - ../.env
+    environment:
+      POC_TEMPLATE_BACKEND_HOST: "0.0.0.0"
+      POC_TEMPLATE_BACKEND_PORT: "8095"
+      INTERGRAX_ENV: prod

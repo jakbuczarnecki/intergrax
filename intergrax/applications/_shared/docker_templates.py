@@ -133,6 +133,83 @@ def render_docker_compose(
     )
 
 
+def render_build_docker_sh(*, pkg: str, short: str, port: int) -> str:
+    """Render ``docker/build-docker.sh`` — run from anywhere; uses monorepo root as context."""
+    image = f"{short}-application"
+    return dedent(
+        f"""\
+        #!/usr/bin/env bash
+        # Build Tier-3 application image from monorepo root (Phase N).
+        set -euo pipefail
+
+        SCRIPT_DIR="$(cd "$(dirname "${{BASH_SOURCE[0]}}")" && pwd)"
+        REPO_ROOT="$(cd "${{SCRIPT_DIR}}/../../.." && pwd)"
+        PKG="{pkg}"
+        IMAGE_TAG="${{IMAGE_TAG:-{image}}}"
+        PORT="{port}"
+
+        cd "${{REPO_ROOT}}"
+
+        if docker buildx version >/dev/null 2>&1; then
+          echo "Building ${{IMAGE_TAG}} (BuildKit)..."
+          docker buildx build \\
+            -f "applications/${{PKG}}/docker/Dockerfile" \\
+            --ignorefile "applications/${{PKG}}/docker/.dockerignore" \\
+            -t "${{IMAGE_TAG}}" \\
+            .
+        else
+          echo "BuildKit not found — using docker build (consider: docker buildx install)"
+          docker build \\
+            -f "applications/${{PKG}}/docker/Dockerfile" \\
+            -t "${{IMAGE_TAG}}" \\
+            .
+        fi
+
+        echo ""
+        echo "Built: ${{IMAGE_TAG}}"
+        echo "Run:   docker run --rm --env-file applications/${{PKG}}/.env -p ${{PORT}}:${{PORT}} ${{IMAGE_TAG}}"
+        """
+    )
+
+
+def render_build_docker_bat(*, pkg: str, short: str, port: int) -> str:
+    """Render ``docker/build-docker.bat`` for Windows."""
+    image = f"{short}-application"
+    return dedent(
+        f"""\
+        @echo off
+        REM Build Tier-3 application image from monorepo root (Phase N).
+        setlocal EnableExtensions
+
+        set "PKG={pkg}"
+        set "IMAGE_TAG={image}"
+        if not "%~1"=="" set "IMAGE_TAG=%~1"
+        set "PORT={port}"
+
+        cd /d "%~dp0\\..\\..\\.."
+        if errorlevel 1 (
+          echo Failed to locate repository root.
+          exit /b 1
+        )
+
+        docker buildx version >nul 2>&1
+        if %ERRORLEVEL% equ 0 (
+          echo Building %IMAGE_TAG% ^(BuildKit^)...
+          docker buildx build -f applications/%PKG%/docker/Dockerfile --ignorefile applications/%PKG%/docker/.dockerignore -t %IMAGE_TAG% .
+        ) else (
+          echo BuildKit not found — using docker build
+          docker build -f applications/%PKG%/docker/Dockerfile -t %IMAGE_TAG% .
+        )
+        if errorlevel 1 exit /b 1
+
+        echo.
+        echo Built: %IMAGE_TAG%
+        echo Run:   docker run --rm --env-file applications/%PKG%/.env -p %PORT%:%PORT% %IMAGE_TAG%
+        endlocal
+        """
+    )
+
+
 def write_application_docker(
     target: Path,
     *,
@@ -145,7 +222,7 @@ def write_application_docker(
     uvicorn_module: str | None = None,
     force: bool = True,
 ) -> None:
-    """Write ``docker/Dockerfile``, ``.dockerignore``, and ``docker-compose.yml`` under *target*."""
+    """Write ``docker/`` files: Dockerfile, ignore, compose, and build scripts."""
     docker_dir = target / "docker"
     docker_dir.mkdir(parents=True, exist_ok=True)
     files = {
@@ -169,6 +246,8 @@ def write_application_docker(
             port=port,
             env_prefix=env_prefix,
         ),
+        docker_dir / "build-docker.sh": render_build_docker_sh(pkg=pkg, short=short, port=port),
+        docker_dir / "build-docker.bat": render_build_docker_bat(pkg=pkg, short=short, port=port),
     }
     for path, content in files.items():
         if path.exists() and not force:

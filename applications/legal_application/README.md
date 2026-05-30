@@ -20,6 +20,13 @@ uv run uvicorn legal_application.host.main:app --host 0.0.0.0 --port 8000
 
 **MCP:** FastMCP at `/mcp` (default) — `list_agents`, `run_agent` (`LEGAL_INCLUDE_MCP`, `LEGAL_MCP_MOUNT_PATH`).
 
+**Docker:**
+
+```bash
+applications/legal_application/docker/build-docker.sh
+# Windows: applications\legal_application\docker\build-docker.bat
+```
+
 **Imports:** `legal_application` (this package) + `legal` (capability). Do **not** use legacy `legal_agent` package paths.
 
 See also: [`host/README.md`](host/README.md), [`agents/legal/README.md`](../../agents/legal/README.md).

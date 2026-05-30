@@ -1,4 +1,4 @@
-        # Build & deploy — Intergrax Legal
+        # Build & deploy — Intergrax Legal API
 
         Tier-3 application package: ``applications/legal_application/``. This document is the **operational runbook** for local development, verification, and container deployment.
 
@@ -82,7 +82,21 @@ Routes are mounted under ``/v1/legal``. See ``serving/`` and application README 
 
         Build context = **monorepo root** (``.``). Dockerfile lives under this application only as a path reference.
 
-        ### BuildKit (recommended)
+        ### Build scripts (recommended)
+
+        Run from **repository root** or from ``applications/legal_application/docker/`` (scripts ``cd`` to repo root):
+
+        ```bash
+        # Linux / macOS / Git Bash
+        applications/legal_application/docker/build-docker.sh
+
+        # Windows (cmd)
+        applications\legal_application\docker\build-docker.bat
+        ```
+
+        Override image tag: ``IMAGE_TAG=my-registry/legal:1.0.0`` (sh) or ``build-docker.bat my-registry/legal:1.0.0`` (bat).
+
+        ### Manual — BuildKit
 
         ```bash
         docker buildx build -f applications/legal_application/docker/Dockerfile \
@@ -90,7 +104,7 @@ Routes are mounted under ``/v1/legal``. See ``serving/`` and application README 
           -t legal-application .
         ```
 
-        ### Classic Docker
+        ### Manual — classic Docker
 
         ```bash
         cp applications/legal_application/docker/.dockerignore .dockerignore
@@ -102,6 +116,7 @@ Routes are mounted under ``/v1/legal``. See ``serving/`` and application README 
         - First build can take several minutes (full ``uv sync`` inside the image).
         - The image adjusts ``tool.uv.environments`` from ``win32`` to ``linux`` during build (dev lockfile targets Windows).
         - Image ``HEALTHCHECK`` probes ``/health``.
+        - Scripts use BuildKit when ``docker buildx`` is available; otherwise they fall back to ``docker build``.
 
         ---
 

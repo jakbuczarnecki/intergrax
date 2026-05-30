@@ -889,8 +889,8 @@ An application MUST contain:
 - registration of agents into `AgentRegistry` (explicit `registry.register()` — no auto-discovery)
 - `IntegrationProfile` wiring (or equivalent typed composition in `integration_wiring.py`)
 - orchestration config: agent roles, default capabilities, interaction topology
-- **`README.md`** — three-command quickstart: install/deps, `uvicorn`, optional `docker build`
-- **`docker/`** — Dockerfile (and optionally compose) for production-oriented images (Phase N scaffold; see implementation plan)
+- **`README.md`** — three-command quickstart: pytest, `uvicorn`, `docker/build-docker.sh` (or `.bat`)
+- **`docker/`** — Dockerfile, `.dockerignore`, build scripts, optional compose (Phase N scaffold; see implementation plan)
 - application integration tests under `<app>_tests/` (avoids clashing with repo `tests/` package)
 
 An application SHOULD contain (when scaffolded via `new-application`):
@@ -1001,7 +1001,7 @@ Each application under `applications/<app>/` MUST be operable as a **self-contai
 | Agent roster | `host/wiring.py` and/or `manifest.py` | Explicit `AgentRegistry.register()`; contract id overrides in factory when needed. |
 | Integrations | `integration_wiring.py` + `IntegrationProfile` | Selects sqlite/redis/slack/… — agents stay vendor-agnostic. |
 | Run locally | `README.md` + `host/main.py` | `load_dotenv()` in `main.py` loads **application directory** `.env` when present. |
-| Deploy | `docker/Dockerfile` | Multi-stage build from monorepo root; `CMD` targets `uvicorn <package>.host.main:app`. |
+| Deploy | `docker/Dockerfile` + `build-docker.sh` / `build-docker.bat` | Image build from monorepo root (scripts wrap BuildKit or classic `docker build`); `CMD` → `uvicorn <package>.host.main:app`. |
 | Verify | `<app>_tests/` | Host smoke + optional HTTP contract tests. |
 
 **Canonical layout (target — Phase N scaffold):**
@@ -1026,6 +1026,9 @@ applications/<app>/
         server.py              # FastMCP tools; mounted on FastAPI via fastapi_mcp.couple_fastapi_with_mcp
     docker/
         Dockerfile
+        .dockerignore
+        build-docker.sh      # image build from repo root (Linux/macOS/Git Bash)
+        build-docker.bat     # same on Windows (cmd)
         docker-compose.yml   # optional — ollama, redis, volumes
     <app>_tests/
         host/test_*_smoke.py

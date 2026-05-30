@@ -43,10 +43,13 @@ def test_scaffold_creates_application_tree(tmp_path):
     assert (target / "docker" / "Dockerfile").exists()
     assert (target / "docker" / ".dockerignore").exists()
     assert (target / "docker" / "docker-compose.yml").exists()
+    assert (target / "docker" / "build-docker.sh").exists()
+    assert (target / "docker" / "build-docker.bat").exists()
     assert (target / "BUILD_AND_DEPLOY.md").exists()
 
     deploy_doc = (target / "BUILD_AND_DEPLOY.md").read_text(encoding="utf-8")
     assert f"applications/{pkg}/docker/Dockerfile" in deploy_doc
+    assert f"applications/{pkg}/docker/build-docker.sh" in deploy_doc
     assert "CONCEPT_LAB_" in deploy_doc
 
     dockerfile = (target / "docker" / "Dockerfile").read_text(encoding="utf-8")

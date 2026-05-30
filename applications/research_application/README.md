@@ -11,6 +11,13 @@ uv run uvicorn research_application.host.main:app --host 0.0.0.0 --port 8010
 
 POST `/v1/research/run` with JSON body `{ "message": "your research question" }`.
 
+**Docker:**
+
+```bash
+applications/research_application/docker/build-docker.sh
+# Windows: applications\research_application\docker\build-docker.bat
+```
+
 **MCP:** FastMCP at `/mcp` — `list_agents`, `run_agent`, `run_research_pipeline` (`RESEARCH_INCLUDE_MCP`).
 
 ## Tests
