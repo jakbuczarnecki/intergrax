@@ -11,6 +11,7 @@ from pathlib import Path
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.store import (
     open_runtime_event_store,
+    resolve_runtime_event_persistence,
     resolve_runtime_events_db_path,
 )
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
@@ -63,7 +64,7 @@ def wire_nexus_observability(
         resolved_events_path = None
     else:
         path = runtime_events_db_path or resolve_runtime_events_db_path(None)
-        resolved_events = open_runtime_event_store(path)
+        resolved_events = resolve_runtime_event_persistence(db_path=path)
         resolved_events_path = path
 
     return NexusObservabilityStores(

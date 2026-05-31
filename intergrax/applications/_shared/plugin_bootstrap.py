@@ -5,11 +5,17 @@
 
 from __future__ import annotations
 
-from typing import Callable, List, Optional
+from typing import Callable, List
 
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.plugins.bootstrap import PluginBootstrapResult, bootstrap_runtime_plugins
 from intergrax.runtime.plugins.contract import RuntimePlugin
+
+__all__ = [
+    "PluginBootstrapResult",
+    "attach_plugin_shutdown",
+    "bootstrap_application_plugins",
+]
 
 
 def bootstrap_application_plugins(

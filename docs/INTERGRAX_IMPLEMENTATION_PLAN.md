@@ -96,11 +96,11 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Scope | Score | Notes |
 |-------|-------|-------|
 | Canon §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** | Phases A–F |
-| §42 Unified Execution Runtime | **~82–85%** | Schema enforcement, plugin bootstrap, persistent DLQ, metrics export (2026-05-27) |
+| §42 Unified Execution Runtime | **~88–90%** | Platform infra complete; all Tier-3 hosts aligned (2026-05-27) |
 | Laboratory workflow | **~95%** | Debug API, experiments, lab app |
 | Agent OS certification (Phase L deliverables) | **Done** | Scaffold, guide, acceptance suite |
 | Agent OS certification (sign-off exercise) | **Done** | `agents/signoff_probe/` — see Appendix A |
-| Regression gate | **297 passed** | `uv run pytest -m gate -q` |
+| Regression gate | **363 passed** | `uv run pytest -m gate -q` |
 
 ---
 
@@ -136,9 +136,9 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | Architecture §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** | Phases A–F; typed task contract |
 
-| §42 Unified Execution Runtime | **~82–85%** | P4 + E + F; infra paydown complete (2026-05-27) |
+| §42 Unified Execution Runtime | **~88–90%** | Platform infra complete across Tier-3 hosts (2026-05-27) |
 | Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
-| Pre-P4.2 regression gate | **Done** | **297 tests**, marker `gate` |
+| Pre-P4.2 regression gate | **Done** | **363 tests**, marker `gate` |
 
 
 
@@ -1635,7 +1635,8 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-27 | B.12, B.14 | Production `POST /v1/interactions/intake` on lab; Legal legacy `AgentEngine` removed |
 | 2026-05-27 | B.05 | Escalation notification template + scheduler wiring in lab + SAFETY_VIOLATION timeout→escalate |
 | 2026-05-27 | B.09, B.17 | Injectable `trace_store` on debug API; gate uses `pytest -m gate` (`testpaths` includes `agents/`) |
-| 2026-05-27 | Infra paydown | SQLite DLQ ledger + debug `/notifications/*`; `ValidatingRuntimeEventPersistence`; Tier-3 plugin bootstrap (`default_lab_plugins`); resilient webhook delivery wiring |
+| 2026-05-27 | Platform stabilization | All Tier-3 hosts: validating runtime events, plugin bootstrap, resilient delivery (lab/legal/research/poc); shared `_shared/platform_wiring` + `notification_wiring` |
+| 2026-05-27 | Infra paydown | SQLite DLQ ledger + debug `/notifications/*`; `ValidatingRuntimeEventPersistence`; Tier-3 plugin bootstrap |
 | 2026-05-27 | B.07, B.11, B.13, B.18, B.24 | Schema registry + phase coverage + `RuntimePlugin`; metrics export + `GET /debug/tasks/{id}/metrics`; retry/DLQ delivery; echo + research_mock HTTP trace acceptance; agents vendor import gate test |
 
 ### B.1 Runtime & §42 convergence
@@ -1709,7 +1710,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.14 | **`ChatAgent` / legacy engine removal** — `LEGAL_USE_LEGACY_AGENT_ENGINE` removed | §39, §41 | **Medium** | **Done** | Single execution path for all agents | Tier-1 / Tier-3 | Legal `fastapi_router` requires `UnifiedTaskRunner`; legacy flags removed (2026-05-27) |
-| B.15 | **Legal full E2E gate (real LLM)** — deferred acceptance with live model | — | **Low** | Legal quality assurance | Tier-2 / CI | K.6; separate from Agent OS gate |
+| B.15 | **Legal full E2E gate (real LLM)** — deferred acceptance with live model | — | **Low** | **Deferred** | Legal quality assurance | Tier-2 / CI | K.6; separate from Agent OS gate; enable when CI budget approved |
 | B.16 | **Lab agent auto-discovery** — manifest-driven roster + scaffold | §7.4 | **Low** | **Done** | Onboarding friction | Tier-3 | Phase N: `ApplicationManifest`, `new-stack` (N.10); explicit `AgentBinding` remains by design (2026-05-30) |
 | B.28 | **Per-application `.env.example` missing** — only root `.env.example`; lab/legal vars in README only | §7.4.8 | **Medium** | **Done** | Deployable POC friction | Tier-3 | N.7 backfill + scaffold (2026-05-30) |
 | B.29 | **`new-application` scaffold (lab)** — Tier-3 hosts hand-copied from legal/lab | §7.4.8 | **High** | **Done** | Lab + product profiles via CLI; gate acceptance | Tier-3 / platform | N.10 `new-stack` optional |
@@ -1733,14 +1734,14 @@ Decision:       L1 certified — GO Phase K when product priority set
 6. ~~B.09, B.17~~ — debug trace injection + gate collection (Done 2026-05-27)
 7. ~~B.06~~ — hook parity doc + lifecycle wiring (Done 2026-05-27)
 8. ~~B.07, B.11, B.13, B.18, B.24~~ — §42 baseline, metrics export, delivery hardening, HTTP trace acceptance, vendor import guard (Done 2026-05-27)
-9. ~~Infra paydown~~ — persistent DLQ, schema enforcement, plugin bootstrap in lab (Done 2026-05-27)
-10. B.15 — Legal E2E real LLM (product/CI decision; excluded from lab gate)
-11. Phase K — Problem Radar / Vendor Discovery (product-blocked)
+9. ~~Platform stabilization~~ — all Tier-3 factories aligned (Done 2026-05-27)
+10. B.15 — Legal E2E real LLM (**Deferred** — product/CI decision)
+11. Phase K — Problem Radar / Vendor Discovery (**product-blocked**)
 ```
 
 **Note:** Phase K business agents (Problem Radar, Vendor Discovery) remain **product-blocked** until explicit go — technical debt above does not auto-unblock K.1/K.2.
 
 ---
 
-*Plan synced after infrastructure paydown complete (2026-05-27). Gate: `uv run pytest -m gate -q` — **297 passed**. Business agents (Legal E2E, Phase K) remain product-blocked.*
+*Plan synced after platform stabilization (2026-05-27). Gate: `uv run pytest -m gate -q` — **363 passed**. Business agents (Legal E2E B.15, Phase K) remain product-blocked.*
 

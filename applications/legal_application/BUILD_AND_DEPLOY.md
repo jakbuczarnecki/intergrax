@@ -33,7 +33,7 @@
         | ``LEGAL_BACKEND_HOST`` | see ``.env.example`` | Bind address |
         | ``LEGAL_BACKEND_PORT`` | ``8000`` | HTTP port |
 
-        Agent roster and integrations: ``manifest.py``, ``host/wiring.py``, ``host/integration_wiring.py``, ``host/tool_wiring.py``.
+        Agent roster and integrations: ``manifest.py``, ``host/wiring.py``, ``host/tool_wiring.py``. Runtime platform: validating event store + ``bootstrap_nexus_platform()`` (see ``applications/USAGE.md``).
 
         ### LLM provider
 

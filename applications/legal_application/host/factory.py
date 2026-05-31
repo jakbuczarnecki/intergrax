@@ -23,6 +23,8 @@ from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecuti
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
+from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
+from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from legal_application.host.settings import LegalBackendSettings
 from legal_application.host.wiring import build_legal_registry
 from legal_application.host.tool_wiring import wire_legal_tools
@@ -58,6 +60,10 @@ def create_legal_backend_app(
         registry,
         trace_store=observability.trace_store,
         runtime_event_store=observability.runtime_event_store,
+    )
+    platform = bootstrap_nexus_platform(
+        nexus_loop,
+        trace_store=observability.trace_store,  # type: ignore[arg-type]
     )
     task_runner = UnifiedTaskRunner(nexus_loop)
     nexus_adapter = NexusTaskExecutionAdapter(task_runner)
@@ -119,4 +125,5 @@ def create_legal_backend_app(
         )
         app = couple_fastapi_with_mcp(app, mcp, mount_path=settings.mcp_mount_path)
 
+    attach_plugin_shutdown(app, platform.shutdown_callbacks)
     return app

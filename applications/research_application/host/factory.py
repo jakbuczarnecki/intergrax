@@ -11,6 +11,8 @@ from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
+from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
+from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from research_application.host.integration_wiring import wire_research_integrations
 from research_application.host.settings import ResearchBackendSettings
 from research_application.host.wiring import build_research_registry
@@ -43,6 +45,10 @@ def create_research_backend_app(
         trace_store=observability.trace_store,
         runtime_event_store=observability.runtime_event_store,
     )
+    platform = bootstrap_nexus_platform(
+        nexus,
+        trace_store=observability.trace_store,  # type: ignore[arg-type]
+    )
 
     mount_research_routes(
         app,
@@ -61,4 +67,5 @@ def create_research_backend_app(
         )
         app = couple_fastapi_with_mcp(app, mcp, mount_path=settings.mcp_mount_path)
 
+    attach_plugin_shutdown(app, platform.shutdown_callbacks)
     return app

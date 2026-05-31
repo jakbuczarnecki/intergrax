@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-05-30
+**Last updated:** 2026-05-27
 
 The `docs/` folder holds the canonical platform documentation.
 

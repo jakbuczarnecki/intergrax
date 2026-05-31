@@ -37,10 +37,11 @@ Tier-0 modules added during §42 / Appendix B paydown — not always reflected i
 | `intergrax/runtime/notifications/deliveries/sqlite_delivery_ledger.py` | Persistent delivery receipts / dead letters |
 | `intergrax/runtime/plugins/bootstrap.py` | RuntimePlugin registration at startup |
 | `intergrax/runtime/plugins/default_plugins.py` | Lab default plugins (compatibility + metrics) |
-| `intergrax/applications/_shared/plugin_bootstrap.py` | Tier-3 NexusLoop plugin wiring |
+| `intergrax/applications/_shared/platform_wiring.py` | Tier-3 Nexus plugin bootstrap |
+| `intergrax/applications/_shared/notification_wiring.py` | Resilient delivery + DLQ ledger paths |
 | `intergrax/debug/router.py` | Debug API: trace, events, metrics, DLQ, experiments |
 
-Gate: **`uv run pytest -m gate -q`** — **297 passed** (2026-05-27).
+Gate: **`uv run pytest -m gate -q`** — **363 passed** (2026-05-27).
 
 ## File Index
 

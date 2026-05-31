@@ -428,6 +428,8 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.fastapi_core.config import ApiConfig
         from intergrax.runtime.nexus.nexus_loop import NexusLoop
         from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+        from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+        from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
         from {pkg}.host.integration_wiring import wire_{short}_integrations
         from {pkg}.host.settings import {pascal}BackendSettings
         from {pkg}.host.wiring import build_{short}_registry
@@ -453,6 +455,10 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 registry,
                 trace_store=observability.trace_store,
                 runtime_event_store=observability.runtime_event_store,
+            )
+            platform = bootstrap_nexus_platform(
+                nexus_loop,
+                trace_store=observability.trace_store,  # type: ignore[arg-type]
             )
 
             api_cfg = ApiConfig(
@@ -498,6 +504,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 )
                 app = couple_fastapi_with_mcp(app, mcp, mount_path=settings.mcp_mount_path)
 
+            attach_plugin_shutdown(app, platform.shutdown_callbacks)
             return app
         '''
     )

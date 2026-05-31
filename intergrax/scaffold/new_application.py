@@ -293,6 +293,11 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             resolve_interaction_settings,
         )
         from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+        from intergrax.applications._shared.notification_wiring import (
+            create_resilient_notification_adapter,
+            open_host_delivery_ledger,
+        )
+        from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
         from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
         from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
         from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
@@ -312,6 +317,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             runtime_events_db_path: Path | None
             experiments_db_path: Path | None
             checkpoints_db_path: Path | None
+            delivery_ledger: DeliveryLedger | None
 
 
         def _sqlite_config_overrides(
@@ -375,7 +381,14 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             runtime_event_store = (
                 sqlite_bundle.runtime_event_store if runtime_events_db_path is not None else None
             )
-            notification_adapter = profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)
+            delivery_ledger = open_host_delivery_ledger(
+                db_path=db_path,
+                checkpoints_db_path=checkpoints_db_path,
+            )
+            notification_adapter = create_resilient_notification_adapter(
+                profile,
+                delivery_ledger=delivery_ledger,
+            )
             interaction_adapter = create_{short}_interaction_adapter(settings)
             return {pascal}IntegrationWiring(
                 profile=profile,
@@ -389,6 +402,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
                 runtime_events_db_path=runtime_events_db_path,
                 experiments_db_path=experiments_db_path or sqlite_bundle.paths.experiments,
                 checkpoints_db_path=checkpoints_db_path or sqlite_bundle.paths.task_checkpoints,
+                delivery_ledger=delivery_ledger,
             )
         '''
     )
@@ -427,6 +441,8 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
             couple_fastapi_with_mcp,
             make_scheduler_lifespan,
         )
+        from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+        from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
         from {pkg}.host.wiring import build_{short}_registry
         from {pkg}.mcp.server import build_{short}_mcp_server
         from {pkg}.serving.fastapi_router import mount_{short}_routes
@@ -457,6 +473,10 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                 runtime_event_store=integrations.runtime_event_store,
                 notification_adapter=integrations.notification_adapter,
             )
+            platform = bootstrap_nexus_platform(
+                nexus_loop,
+                trace_store=integrations.trace_store,  # type: ignore[arg-type]
+            )
             task_runner = UnifiedTaskRunner(nexus_loop)
             scheduler_wiring = wire_long_running_scheduler(
                 checkpoint_store=integrations.checkpoint_store,
@@ -486,6 +506,7 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                 checkpoint_store=integrations.checkpoint_store,
                 trace_store=integrations.trace_store,
                 runtime_event_store=integrations.runtime_event_store,
+                delivery_ledger=integrations.delivery_ledger,
             )
             app.title = "{title}"
             mount_{short}_routes(app, nexus_loop=nexus_loop, prefix=settings.route_prefix)
@@ -519,6 +540,7 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                 @app.on_event("shutdown")
                 async def _stop_scheduler() -> None:
                     await scheduler.stop()
+            attach_plugin_shutdown(app, platform.shutdown_callbacks)
             return app
         '''
     )

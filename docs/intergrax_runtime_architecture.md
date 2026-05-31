@@ -2697,7 +2697,7 @@ Agents provide **domain logic**. The runtime owns **execution governance**.
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Implementation status note (2026-05-27):** §42 infrastructure paydown is **complete for laboratory use**. Implemented: **schema registry** + **ValidatingRuntimeEventPersistence** (schema_version + ExecutionPhase enforcement), **RuntimePlugin bootstrap** in lab factory (`default_lab_plugins`: compatibility probe + metrics export on `TASK_COMPLETED`), **unified metrics export** (`GET /debug/tasks/{run_id}/metrics`), **notification retry + SQLite DLQ** (`GET /debug/notifications/receipts`, `/dead-letters`), and **hook parity** on NexusLoop. Remaining §42 gaps are edge-case checkpoint recovery and product-specific beta provider hardening — not blockers for Agent OS L1. See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Appendix B.
+**Implementation status note (2026-05-27):** §42 platform infrastructure is **complete for laboratory and product hosts**. All Tier-3 factories (`lab`, `legal`, `research`, `poc_template`) use validating runtime event persistence, default runtime plugins, and resilient notification delivery (when webhook backend configured). Debug API covers trace, metrics, runtime events, delivery DLQ, and experiments. Remaining work is **product agents** (Phase K, Legal E2E B.15) and optional beta provider hardening in deploy configs — not runtime core gaps.
 
 ### §42 Table Of Contents
 

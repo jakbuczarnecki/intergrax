@@ -143,7 +143,7 @@ def create_my_lab_application():
     return app
 ```
 
-Lab and product scaffolds call `bootstrap_application_plugins` with `default_lab_plugins` — registers compatibility telemetry and metrics export on `TASK_COMPLETED` without modifying Nexus core.
+Lab and product scaffolds call `bootstrap_nexus_platform()` from `intergrax/applications/_shared/platform_wiring.py` — registers compatibility telemetry and metrics export on `TASK_COMPLETED`. Legal, research, lab, and poc_template hosts use this pattern.
 
 ### 5. Environment
 
