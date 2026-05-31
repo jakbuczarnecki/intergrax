@@ -538,11 +538,13 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 |---|-------------|--------|-------|
 | M-LLM.1 | Shared `_shared/` (messages, tools, retry, conformance) | **Done** | 2026-05-30 |
 | M-LLM.2 | Seven core providers hardened | **Done** | OpenAI, Claude, Azure, Gemini, Mistral, Bedrock, Ollama |
-| M-LLM.3 | Groq + vLLM (OpenAI-compatible) | **Done** | `GroqChatAdapter`, `VllmChatAdapter` |
-| M-LLM.4 | Bedrock Converse + tools | **Done** | `INTERGRAX_BEDROCK_USE_CONVERSE` |
+| M-LLM.3 | Groq + vLLM (OpenAI-compatible) | **Done** | `openai_compat_providers.py` |
+| M-LLM.4 | Bedrock Converse + tools + stream | **Done** | `INTERGRAX_BEDROCK_USE_CONVERSE`, `converse_stream` |
 | M-LLM.5 | Conformance tests in CI gate | **Done** | `tests/unit/llm_adapters/` |
-| M-LLM.6 | `LLM_ADAPTERS.md` + README section | **Done** | |
-| M-LLM.7 | Cohere / Together / Fireworks / Vertex | **Backlog** | See LLM_ADAPTERS.md roadmap |
+| M-LLM.6 | `LLM_ADAPTERS.md` + README section | **Done** | 17 providers |
+| M-LLM.7 | OpenAI-compat expansion + Vertex + `LLMProfile` | **Done** | Together, Fireworks, OpenRouter, DeepSeek, xAI, llama.cpp, Cohere, Vertex |
+| M-LLM.8 | Optional network smoke workflow | **Done** | `.github/workflows/llm-network-smoke.yml` |
+| M-LLM.9 | Azure refactor (Chat Completions base) | **Done** | Thin `AzureOpenAIChatAdapter` |
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|

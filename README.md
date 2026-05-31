@@ -212,7 +212,7 @@ tests/                  # Unit and integration tests (gate: pytest -m gate)
 
 Shared infrastructure used by all agents:
 
-- **LLM adapters** — seven providers via `LLMAdapterRegistry` (`intergrax/llm_adapters/`) — see [LLM Adapters](#llm-adapters)
+- **LLM adapters** — seventeen providers via `LLMAdapterRegistry` (`intergrax/llm_adapters/`) — see [LLM Adapters](#llm-adapters)
 - **RAG** — embeddings, vector stores, document loaders (`intergrax/rag/`)
 - **Tools** — registry, Tool Library catalog, MCP export (`intergrax/tools/`) — see [Tool Library](#tool-library)
 - **Memory** — conversational and session storage (`intergrax/memory/`)
@@ -307,7 +307,7 @@ Agents call language models through **`LLMAdapter`** — not OpenAI/Anthropic SD
 | **Usage tracking** | Per-`run_id` token and latency stats for runtime observability. |
 | **Outside integrations** | LLM providers are **not** Integration Library slugs (architecture §5.2.2). |
 
-**Nine providers today:** `openai`, `claude`, `azure_openai`, `gemini`, `mistral`, `aws_bedrock`, `ollama`, `groq`, `vllm`.
+**Seventeen providers today:** `openai`, `claude`, `azure_openai`, `gemini`, `vertex_gemini`, `mistral`, `aws_bedrock`, `ollama`, `groq`, `vllm`, `together`, `fireworks`, `openrouter`, `deepseek`, `xai`, `llama_cpp`, `cohere`.
 
 ```python
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
@@ -330,7 +330,7 @@ Intergrax is under **active development** (private R&D). Phase status, prioritie
 
 **[`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)**
 
-Regression gate: `uv run pytest -m gate -q` (**307** tests in CI paths; includes `tests/unit/llm_adapters/`)
+Regression gate: `uv run pytest -m gate -q` (**314** tests in CI paths; includes `tests/unit/llm_adapters/`)
 
 ---
 

@@ -10,7 +10,7 @@ Falls back to InvokeModel codecs when Converse is unavailable in the runtime cli
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.messages import split_system_messages
@@ -110,3 +110,21 @@ def extract_converse_tool_calls(response: Dict[str, Any]) -> List[Dict[str, Any]
 
 def converse_supported(client: Any) -> bool:
     return callable(getattr(client, "converse", None))
+
+
+def converse_stream_supported(client: Any) -> bool:
+    return callable(getattr(client, "converse_stream", None))
+
+
+def iter_converse_stream_text(events: Iterable[Any]) -> Iterable[str]:
+    """Yield text deltas from a Bedrock ``converse_stream`` event iterator."""
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        block = event.get("contentBlockDelta")
+        if not isinstance(block, dict):
+            continue
+        delta = block.get("delta") or {}
+        text = delta.get("text")
+        if isinstance(text, str) and text:
+            yield text

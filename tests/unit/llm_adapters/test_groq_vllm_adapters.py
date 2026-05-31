@@ -9,8 +9,10 @@ import pytest
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
-from intergrax.llm_adapters.providers.groq_adapter import GroqChatAdapter
-from intergrax.llm_adapters.providers.vllm_adapter import VllmChatAdapter
+from intergrax.llm_adapters.providers.openai_compat_providers import (
+    GroqChatAdapter,
+    VllmChatAdapter,
+)
 
 
 def test_groq_adapter_mocked_chat() -> None:

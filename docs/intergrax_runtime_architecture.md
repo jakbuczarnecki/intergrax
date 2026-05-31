@@ -222,7 +222,7 @@ The platform MUST maintain **one canonical path** per universal concern. All tie
 
 | Concern | Canonical Tier-0 mechanism | Forbidden |
 |---------|---------------------------|-----------|
-| LLM calls | `intergrax/llm_adapters/` (`LLMAdapter`, registry) | Direct OpenAI/Anthropic SDK calls; second LLM wrapper in agents |
+| LLM calls | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`) | Direct OpenAI/Anthropic SDK calls; second LLM wrapper in agents |
 | Logging | `intergrax/logging.py` and established log patterns | `print()`, ad-hoc loggers, duplicate logging frameworks |
 | Tracing (pipeline) | Nexus `trace_event()` / `RunTraceWriter` | Parallel untracked diagnostic streams |
 | Tools | `intergrax/tools/` (`ToolRegistry`, `ToolExecutor`, Tool Library §7.1.6) | Agent-local tool registries; boolean `use_rag` / `use_websearch` plan flags (deprecated §22.2) |
@@ -621,7 +621,7 @@ Category contracts MUST be **backend-agnostic**: same method names and DTOs whet
 
 | Concern | Canonical module | Notes |
 |---------|------------------|-------|
-| **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`) | OpenAI, Claude, Gemini, Ollama, Azure OpenAI, AWS Bedrock, … — §5.2.2 |
+| **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`) | 17 slugs: OpenAI, Claude, Azure, Gemini, Vertex, Mistral, Bedrock, Ollama, Groq, vLLM, Together, Fireworks, OpenRouter, DeepSeek, xAI, llama.cpp, Cohere — [LLM_ADAPTERS.md](LLM_ADAPTERS.md) §5.2.2 |
 | **Tokenization** | `intergrax/tokenizers/` | Not an external integration slug |
 | **RAG pipeline** | `intergrax/rag/` | Vector stores may appear in the catalog as **registry pointers** only; implementation stays in `rag/` |
 

@@ -17,8 +17,10 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.anthropic_messages import map_anthropic_messages
 from intergrax.llm_adapters._shared.bedrock_converse import (
     build_converse_request,
+    converse_stream_supported,
     converse_supported,
     extract_converse_text,
+    iter_converse_stream_text,
 )
 from intergrax.llm_adapters._shared.messages import split_system_messages
 from intergrax.llm_adapters._shared.tool_results import make_tool_result
@@ -537,6 +539,28 @@ class BedrockChatAdapter(LLMAdapter):
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
+
+            if self._use_converse and converse_stream_supported(self.client):
+                temp = temperature if temperature is not None else self.defaults.get("temperature")
+                req = build_converse_request(
+                    messages,
+                    max_tokens=max_tokens,
+                    temperature=temp,
+                )
+                resp = self._execute(
+                    lambda: self.client.converse_stream(modelId=self.config.model_id, **req)
+                )
+                stream = resp.get("stream") if isinstance(resp, dict) else resp
+                for text in iter_converse_stream_text(stream):
+                    buf.append(text)
+                    yield text
+                out_tok = int(
+                    self.estimate_tokens_for_text(
+                        "".join(buf), model_hint=self.model_name_for_token_estimation
+                    )
+                )
+                success = True
+                return
 
             system_text, convo = split_system_messages(messages)
             codec = self._get_codec(self.config.family)

@@ -16,5 +16,13 @@ class LLMProvider(str, Enum):
     AWS_BEDROCK = "aws_bedrock"
     GROQ = "groq"
     VLLM = "vllm"
+    TOGETHER = "together"
+    FIREWORKS = "fireworks"
+    OPENROUTER = "openrouter"
+    DEEPSEEK = "deepseek"
+    XAI = "xai"
+    LLAMA_CPP = "llama_cpp"
+    COHERE = "cohere"
+    VERTEX_GEMINI = "vertex_gemini"
 
 

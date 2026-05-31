@@ -1,6 +1,5 @@
 # © Artur Czarnecki. All rights reserved.
 # Integrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
 
@@ -10,7 +9,6 @@ from typing import Any, Callable, Dict, Tuple, Union
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
-# Lazy factory: (module path, class name)
 _BUILTIN_ADAPTERS: Dict[str, Tuple[str, str]] = {
     LLMProvider.OPENAI.value: (
         "intergrax.llm_adapters.providers.openai_responses_adapter",
@@ -19,6 +17,10 @@ _BUILTIN_ADAPTERS: Dict[str, Tuple[str, str]] = {
     LLMProvider.GEMINI.value: (
         "intergrax.llm_adapters.providers.gemini_adapter",
         "GeminiChatAdapter",
+    ),
+    LLMProvider.VERTEX_GEMINI.value: (
+        "intergrax.llm_adapters.providers.vertex_gemini_adapter",
+        "VertexGeminiChatAdapter",
     ),
     LLMProvider.OLLAMA.value: (
         "intergrax.llm_adapters.providers.ollama_adapter",
@@ -41,12 +43,40 @@ _BUILTIN_ADAPTERS: Dict[str, Tuple[str, str]] = {
         "BedrockChatAdapter",
     ),
     LLMProvider.GROQ.value: (
-        "intergrax.llm_adapters.providers.groq_adapter",
+        "intergrax.llm_adapters.providers.openai_compat_providers",
         "GroqChatAdapter",
     ),
     LLMProvider.VLLM.value: (
-        "intergrax.llm_adapters.providers.vllm_adapter",
+        "intergrax.llm_adapters.providers.openai_compat_providers",
         "VllmChatAdapter",
+    ),
+    LLMProvider.TOGETHER.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "TogetherChatAdapter",
+    ),
+    LLMProvider.FIREWORKS.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "FireworksChatAdapter",
+    ),
+    LLMProvider.OPENROUTER.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "OpenRouterChatAdapter",
+    ),
+    LLMProvider.DEEPSEEK.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "DeepSeekChatAdapter",
+    ),
+    LLMProvider.XAI.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "XaiChatAdapter",
+    ),
+    LLMProvider.LLAMA_CPP.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "LlamaCppChatAdapter",
+    ),
+    LLMProvider.COHERE.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "CohereChatAdapter",
     ),
 }
 
@@ -118,6 +148,5 @@ class LLMAdapterRegistry:
 
     @classmethod
     def registered_providers(cls) -> list[str]:
-        """Return provider keys with a registered or built-in factory."""
         keys = set(cls._factories.keys()) | set(_BUILTIN_ADAPTERS.keys())
         return sorted(keys)

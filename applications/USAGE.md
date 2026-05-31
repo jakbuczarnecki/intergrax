@@ -229,13 +229,33 @@ applications/<app>/      Tier-3 — manifest + registry + HTTP + env
 intergrax/applications/    Composition engine (manifest, wiring API)
         ↑
 intergrax/integrations/  Tier-0 — IntegrationProfile, providers
+intergrax/llm_adapters/    Tier-0 — LLMProfile, LLMAdapterRegistry (not Integration Library)
 ```
+
+### LLM provider in deployment
+
+Tier-3 hosts should **not** import OpenAI/Anthropic SDKs. Use the adapter registry or a declarative profile:
+
+```python
+from intergrax.llm_adapters.registry import LLMProfile, llm_profile_from_env
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+
+# Explicit (product)
+llm = LLMProfile(provider=LLMProvider.AZURE_OPENAI, model="gpt-4o-deployment").create_adapter()
+
+# Env-driven (lab / K8s)
+# INTERGRAX_LLM_PROVIDER=groq  INTERGRAX_LLM_MODEL=llama-3.3-70b-versatile
+llm = llm_profile_from_env(prefix="INTERGRAX_LLM").create_adapter()
+```
+
+Set provider API keys in `.env` / secrets (see [LLM_ADAPTERS.md](../docs/LLM_ADAPTERS.md) env tables). Optional live smoke: GitHub workflow `llm-network-smoke.yml`.
 
 | Task | Where |
 |------|--------|
 | Create agent | `python -m intergrax.scaffold new-agent …` → `agents/` |
 | Register in app | `AgentBinding.mount(...)` in `applications/<app>/manifest.py` |
 | Wire backends | `IntegrationProfile` in manifest + `integration_wiring.py` |
+| Select LLM provider | `LLMProfile` or env `INTERGRAX_LLM_PROVIDER` / `INTERGRAX_LLM_MODEL` — see [LLM_ADAPTERS.md](../docs/LLM_ADAPTERS.md) |
 | Enable catalog tools | `tool_wiring.py` + pass `tool_profile` via `ApplicationBuildContext` |
 | Scaffold app | [`TIER3_READINESS.md`](TIER3_READINESS.md) · Guide Step **4E** — `new-stack` or `new-application --profile lab\|product` |
 
@@ -244,6 +264,7 @@ intergrax/integrations/  Tier-0 — IntegrationProfile, providers
 ## Related docs
 
 - **Engine API (define / invoke registry):** [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)
+- **LLM adapters (providers, env, deployment):** [`docs/LLM_ADAPTERS.md`](../docs/LLM_ADAPTERS.md)
 - **Tool catalog wiring:** [`intergrax/tools/USAGE.md`](../intergrax/tools/USAGE.md)
 - **Agent creation:** [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md)
 - **Phase N plan:** [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
