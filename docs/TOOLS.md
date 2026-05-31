@@ -119,6 +119,7 @@ Status legend: **Done** = registered handler in catalog.
 | `rag.retrieve` | **Done** | Retrieve documents from vector index for prompt context | `vectorstore_manager` + `embedding_manager` via `ToolWiringContext` |
 | `rag.ingest_document` | **Done** | Load file → parse (integration pipeline) → chunk → embed → index | Same managers + default `DocumentsLoader` / splitter |
 | `websearch.query` | **Done** | Run web search and return normalized snippets | `websearch_executor` or `SearchProvider` |
+| `websearch.read_url` | **Done** | Fetch a URL and return extracted title + plain text | `websearch` page fetch pipeline |
 
 **Catalog providers:** Phase O complete — all first-party tools registered; applications wire via `host/tool_wiring.py`.
 
@@ -146,6 +147,7 @@ Status legend: **Done** = registered handler in catalog.
 |---------|--------|-------------|----------|
 | `confluence.get_page` | **Done** | Fetch wiki page content | `WikiKnowledge` |
 | `confluence.search_pages` | **Done** | Search internal documentation | `WikiKnowledge` |
+| `confluence.search` | **Done** | Alias of `confluence.search_pages` (shorter tool_id for LLM catalogs) | `WikiKnowledge` |
 
 ### Notifications (side-effect tools)
 
@@ -217,6 +219,7 @@ Alphabetical reference — all first-party catalog tools (Phase O complete).
 |---------|----------|--------|----------------------|
 | `confluence.get_page` | wiki | **Done** | `confluence` | [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `confluence.search_pages` | wiki | **Done** | `confluence` | [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
+| `confluence.search` | wiki | **Done** | `confluence` (alias) | [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `jira.add_comment` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
 | `jira.get_issue` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
 | `jira.search_tasks` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
@@ -227,6 +230,7 @@ Alphabetical reference — all first-party catalog tools (Phase O complete).
 | `rag.ingest_document` | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `sandbox.exec` | sandbox | **Done** | `sandbox_session` | [USAGE](../intergrax/tools/providers/sandbox/USAGE.md) |
 | `websearch.query` | retrieval | **Done** | `websearch_executor`, `search_provider` | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.read_url` | retrieval | **Done** | page fetch + text extraction | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
 
 ---
 

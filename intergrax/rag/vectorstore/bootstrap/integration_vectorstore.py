@@ -19,7 +19,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.factory import build_profile_from_env, resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
-from intergrax.rag.vectorstore.providers.inmemory_vectorstore import InMemoryVectorStore
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 
@@ -38,7 +37,9 @@ def create_vectorstore_from_integration(
     resolved_profile = profile or build_profile_from_env()
     slug = resolved_profile.slug_for_category(IntegrationCategory.VECTOR_STORE)
     if not slug:
-        return InMemoryVectorStore(tenant_id=tenant_id or "in_memory_tenant_id")
+        from intergrax.integrations.providers.vector_store.inmemory.bundle import create_inmemory_vector_store
+
+        return create_inmemory_vector_store(tenant_id=tenant_id or "in_memory_tenant_id")
 
     from intergrax.integrations.registry.slugs import coerce_slug
 

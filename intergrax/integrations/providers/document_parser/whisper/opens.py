@@ -36,6 +36,15 @@ def _resolve_audio_path(config: WhisperIntegrationConfig, source: str) -> Path:
     return audio_path
 
 
+def whisper_is_available() -> bool:
+    try:
+        import whisper  # noqa: F401
+
+        return True
+    except Exception:
+        return False
+
+
 def parse_whisper_audio(config: WhisperIntegrationConfig, source: str) -> list[ParsedDocumentFragment]:
     audio_path = _resolve_audio_path(config, source)
     transcription = transcribe_audio_file(config, audio_path)

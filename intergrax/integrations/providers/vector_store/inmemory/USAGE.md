@@ -42,4 +42,4 @@ store = create_inmemory_vector_store(tenant_id="lab")
 
 ## Notes
 
-Delegates to ``intergrax.rag.vectorstore.providers.inmemory_vectorstore`` — lab / unit tests.
+Implementation lives in `integrations/providers/vector_store/inmemory/rag_store.py`; RAG shims re-export via `rag/vectorstore/providers/inmemory_vectorstore.py`. Used for lab / unit tests and as vector-store fallback in `create_vectorstore_from_integration()`.

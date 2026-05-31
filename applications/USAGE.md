@@ -196,6 +196,12 @@ Readiness checklist: [`TIER3_READINESS.md`](TIER3_READINESS.md).
 
 ## Scaffold commands
 
+Product scaffold (`--profile product`) generates:
+
+- `manifest.py` — `IntegrationProfile(document_parser=docling)` on `ApplicationManifest`
+- `integration_wiring.py` — `wire_*_integrations(integration_profile=…)` → `wire_nexus_observability`
+- `tool_wiring.py` — default tools: `rag.retrieve`, `rag.ingest_document`, `websearch.query`, `websearch.read_url`
+
 ```bash
 # Full stack (Tier-2 agent + Tier-3 host)
 python -m intergrax.scaffold new-stack my_feature --profile lab

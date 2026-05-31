@@ -1,6 +1,6 @@
 # Intergrax Integration Library
 
-**Last updated:** 2026-05-29
+**Last updated:** 2026-05-30
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 
@@ -55,7 +55,7 @@ Catalog slugs (`IntegrationSlug.S3`) are unchanged — only the Python package p
 | **Universal contracts** | Each category (`relational_store`, `vector_store`, `message_bus`, …) defines a small Protocol. Providers implement the contract; agent logic depends on the contract only. |
 | **Modular providers** | One slug = one package under `providers/<category>/<slug>/` (category = contract name). Swap Redis for ElastiCache, SQLite for PostgreSQL, or Chroma for Pinecone by changing `IntegrationProfile` — no agent refactor. |
 | **Environment portability** | Tier-3 applications compose integrations at startup (`IntegrationProfile`, env vars). The same Tier-2 agent runs against lab defaults (`sqlite`, `log`, `lab_json`) or production stacks (`postgresql`, `slack`, `s3`, `qdrant`). |
-| **Single entry for SDKs** | Vendor SDKs (boto3, PyMongo, httpx, …) are imported only in each provider’s `opens.py`. Tier-2 agents must **not** import provider slugs or vendor libraries. |
+| **Single entry for SDKs** | Vendor SDKs (boto3, PyMongo, chromadb, redis, …) are imported only in boundary modules: `opens.py`, `rag_store.py`, `web_client.py`, `client.py`, and `_shared/p3/factories.py`. CI enforces this via `scripts/check_integration_vendor_imports.py`. Tier-2 agents must **not** import provider slugs or vendor libraries. |
 | **Catalog registration** | `register_default_integrations()` registers all shipped providers. Resolution: explicit slug → profile field → env (`INTERGRAX_INTEGRATION_<CATEGORY>`) → cloud-platform defaults. |
 
 ---
@@ -105,6 +105,31 @@ store = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
 ```python
 profile = IntegrationProfile.lab()
 # relational_store → sqlite, notification_channel → log, interaction_surface → lab_json
+```
+
+**Example — product profile with SQLite observability fallback:**
+
+Product profiles such as `IntegrationProfile.legal_product()` may omit `relational_store`. Tier-3 factories pass the profile to `wire_nexus_observability()`; when SQLite is not declared on the profile, trace and runtime-event stores fall back to default `build/` SQLite paths (same as pre-profile wiring).
+
+```python
+from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
+from intergrax.integrations.registry.profile import IntegrationProfile
+
+observability = wire_nexus_observability(
+    integration_profile=IntegrationProfile.legal_product(),
+)
+```
+
+Explicit SQLite bundle (lab / tests):
+
+```python
+from intergrax.runtime.persistence.integration_profile_wiring import open_trace_store_from_profile
+
+profile = IntegrationProfile(
+    relational_store=IntegrationSlug.SQLITE,
+    options={IntegrationSlug.SQLITE: {"data_dir": "build/lab"}},
+)
+trace_store = open_trace_store_from_profile(profile)
 ```
 
 ---
@@ -590,6 +615,13 @@ Integration catalog regression:
 
 ```bash
 uv run pytest tests/unit/integrations/ -q
+```
+
+Vendor SDK boundary (CI + local gate):
+
+```bash
+uv run python scripts/check_integration_vendor_imports.py
+uv run pytest tests/unit/integrations/test_vendor_import_governance.py -q
 ```
 
 Conformance helpers: `intergrax/integrations/_shared/conformance.py`.

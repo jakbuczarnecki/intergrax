@@ -147,7 +147,7 @@ def create_inmemory_vector_store(
     config = VectorIntegrationConfig.from_env("INTERGRAX_INMEMORY", **config_overrides)
 
     def _open() -> VectorStore:
-        from intergrax.rag.vectorstore.providers.inmemory_vectorstore import InMemoryVectorStore
+        from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
 
         return InMemoryVectorStore(tenant_id=config.tenant_id)
 

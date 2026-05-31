@@ -25,6 +25,7 @@ from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+from intergrax.integrations.registry.profile import IntegrationProfile
 from legal_application.host.settings import LegalBackendSettings
 from legal_application.host.wiring import build_legal_registry
 from legal_application.host.tool_wiring import wire_legal_tools
@@ -55,6 +56,7 @@ def create_legal_backend_app(
     observability = wire_nexus_observability(
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
+        integration_profile=IntegrationProfile.legal_product(),
     )
     nexus_loop = NexusLoop(
         registry,

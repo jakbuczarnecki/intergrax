@@ -10,7 +10,7 @@ from typing import Any, Optional, Sequence
 from langchain_core.documents import Document
 
 from intergrax.integrations.contracts.vector_store import MetadataFilter, VectorStore, VectorStoreHit
-from intergrax.rag.vectorstore.providers.inmemory_vectorstore import InMemoryVectorStore
+from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
 
 
 class _VectorStoreFacade(VectorStore):

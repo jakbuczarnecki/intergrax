@@ -10,6 +10,15 @@ from pathlib import Path
 from intergrax.integrations.providers.document_parser.yt_dlp.config import YtDlpIntegrationConfig
 
 
+def yt_dlp_is_available() -> bool:
+    try:
+        import yt_dlp  # noqa: F401
+
+        return True
+    except Exception:
+        return False
+
+
 def download_youtube_audio(config: YtDlpIntegrationConfig, youtube_url: str) -> Path:
     from yt_dlp import YoutubeDL
 

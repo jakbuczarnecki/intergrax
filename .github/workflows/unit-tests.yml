@@ -51,3 +51,6 @@ jobs:
           tests/unit/contracts
           tests/unit/llm_adapters
           -m gate -q --tb=line
+
+      - name: Integration vendor import governance
+        run: uv run python scripts/check_integration_vendor_imports.py

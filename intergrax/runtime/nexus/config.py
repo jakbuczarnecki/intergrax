@@ -251,6 +251,7 @@ class RuntimeConfig:
     # TRACING
     # ------------------------------------------------------------------
     trace_db_path: Optional[str] = None
+    integration_profile: Optional[object] = None
 
 
     # ------------------------------------------------------------------

@@ -23,12 +23,9 @@ class YtDlpUrlDocumentParser:
         return "yt_dlp"
 
     def is_available(self) -> bool:
-        try:
-            import yt_dlp  # noqa: F401
+        from intergrax.integrations.providers.document_parser.yt_dlp.opens import yt_dlp_is_available
 
-            return True
-        except Exception:
-            return False
+        return yt_dlp_is_available()
 
     def parse_file(self, source: str) -> Sequence[ParsedDocumentFragment]:
         if not (source.startswith("http://") or source.startswith("https://")):

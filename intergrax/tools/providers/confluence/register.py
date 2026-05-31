@@ -12,6 +12,7 @@ def register_confluence_tool_bundle(*, override: bool = False) -> None:
             tool_ids=(
                 "confluence.get_page",
                 "confluence.search_pages",
+                "confluence.search",
             ),
             register=register_confluence_tools,
             status=ToolBundleStatus.STABLE,

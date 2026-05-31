@@ -48,7 +48,10 @@ def open_trace_store_from_profile(
     bundle = sqlite_bundle_for_profile(profile)
     if bundle is not None:
         return bundle.trace_store
-    raise RuntimeError("relational_store is not sqlite — configure trace store explicitly")
+    from intergrax.runtime.nexus.tracing.store import open_run_trace_store, resolve_trace_db_path
+
+    path = resolve_trace_db_path(None)
+    return open_run_trace_store(path)
 
 
 def open_runtime_event_store_from_profile(
@@ -63,4 +66,7 @@ def open_runtime_event_store_from_profile(
     bundle = sqlite_bundle_for_profile(profile)
     if bundle is not None:
         return bundle.runtime_event_store
-    raise RuntimeError("relational_store is not sqlite — configure runtime event store explicitly")
+    from intergrax.runtime.events.store import resolve_runtime_event_persistence, resolve_runtime_events_db_path
+
+    path = resolve_runtime_events_db_path(None)
+    return resolve_runtime_event_persistence(db_path=path)

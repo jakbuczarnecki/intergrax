@@ -18,12 +18,9 @@ class WhisperDocumentParser:
         return "whisper"
 
     def is_available(self) -> bool:
-        try:
-            import whisper  # noqa: F401
+        from intergrax.integrations.providers.document_parser.whisper.opens import whisper_is_available
 
-            return True
-        except Exception:
-            return False
+        return whisper_is_available()
 
     def parse_file(self, source: str) -> Sequence[ParsedDocumentFragment]:
         return parse_whisper_audio(self._config, source)
