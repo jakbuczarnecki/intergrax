@@ -11,7 +11,7 @@ from typing import Optional
 import pytest
 
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
-from intergrax.integrations.providers.kafka.bundle import create_kafka_integration
+from intergrax.integrations.providers.message_bus.kafka.bundle import create_kafka_integration
 
 pytestmark = pytest.mark.integration
 

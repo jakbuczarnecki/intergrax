@@ -3,9 +3,9 @@
 import pytest
 
 from intergrax.runtime.interactions.adapters.chained_adapter import ChainedInteractionAdapter
-from intergrax.integrations.providers.lab_json.adapter import LabJsonIntegrationAdapter
-from intergrax.integrations.providers.slack.adapter import SlackInteractionAdapter
-from intergrax.integrations.providers.teams.adapter import TeamsInteractionAdapter
+from intergrax.integrations.providers.interaction_surface.lab_json.adapter import LabJsonIntegrationAdapter
+from intergrax.integrations.providers.notification_channel.slack.adapter import SlackInteractionAdapter
+from intergrax.integrations.providers.notification_channel.teams.adapter import TeamsInteractionAdapter
 from intergrax.runtime.interactions.factory import (
     InteractionSurface,
     create_interaction_adapter,

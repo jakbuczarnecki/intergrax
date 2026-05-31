@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import List, Optional
 from uuid import uuid4
 
-from intergrax.integrations.providers.sqlite.paths import (
+from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_TASK_CHECKPOINTS_DB,
     ENV_TASK_CHECKPOINTS_DB,
 )
@@ -41,7 +41,7 @@ _PAUSED_TASK_STATES = (
 
 
 def resolve_task_checkpoints_db_path(explicit: Path | None = None) -> Path:
-    from intergrax.integrations.providers.sqlite.paths import (
+    from intergrax.integrations.providers.relational_store.sqlite.paths import (
         resolve_task_checkpoints_db_path as _resolve,
     )
 
@@ -49,7 +49,7 @@ def resolve_task_checkpoints_db_path(explicit: Path | None = None) -> Path:
 
 
 def open_task_checkpoint_store(db_path: Path | None = None) -> SQLiteTaskCheckpointStore:
-    from intergrax.integrations.providers.sqlite import create_sqlite_task_checkpoint_store
+    from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_task_checkpoint_store
 
     if db_path is not None:
         return create_sqlite_task_checkpoint_store(db_path=db_path)  # type: ignore[return-value]

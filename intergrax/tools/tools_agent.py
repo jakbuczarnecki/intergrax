@@ -18,6 +18,7 @@ from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.exporters.openai import to_openai_tools
+from intergrax.tools.exporters.schema import pydantic_parameters_schema
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools._shared.output import limit_tool_output
 
@@ -382,7 +383,7 @@ class ToolsAgent:
             {
                 "name": rt.contract.tool_id,
                 "description": rt.contract.description,
-                "parameters": _pydantic_parameters_schema(rt.contract.input_schema),
+                "parameters": pydantic_parameters_schema(rt.contract.input_schema),
             }
             for rt in self.tools._tools.values()
         ]
@@ -684,7 +685,7 @@ class ToolsAgent:
             {
                 "name": rt.contract.tool_id,
                 "description": rt.contract.description,
-                "parameters": _pydantic_parameters_schema(rt.contract.input_schema),
+                "parameters": pydantic_parameters_schema(rt.contract.input_schema),
             }
             for rt in self.tools._tools.values()
         ]

@@ -8,8 +8,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from intergrax.integrations.providers.sqlite import create_sqlite_runtime_event_store
-from intergrax.integrations.providers.sqlite.paths import (
+from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_runtime_event_store
+from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_RUNTIME_EVENTS_DB,
     ENV_RUNTIME_EVENTS_DB,
     resolve_runtime_events_db_path,

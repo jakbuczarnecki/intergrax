@@ -11,7 +11,7 @@ import pytest
 from typing import Optional
 
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
-from intergrax.integrations.providers.rabbitmq.bundle import (
+from intergrax.integrations.providers.message_bus.rabbitmq.bundle import (
     create_rabbitmq_integration,
     create_rabbitmq_worker,
 )

@@ -556,19 +556,25 @@ intergrax/integrations/
 ├── registry/           # IntegrationRegistry, factory, capability lookup
 ├── _shared/            # config schema, health probes, retry helpers
 └── providers/
-    └── <slug>/         # one folder per vendor / backend
-        ├── __init__.py
-        ├── adapter.py          # implements category contract(s)
-        ├── config.py           # pydantic settings + env keys
-        ├── config.example.yaml # copy-paste for Tier-3 applications
-        ├── README.md           # scope, auth, limits, smoke test
-        └── tests/
-            └── test_<slug>.py  # contract conformance (no live vendor by default)
+    └── <category>/       # IntegrationCategory (relational_store, message_bus, …)
+        └── <slug>/       # vendor package (postgresql, s3, slack, …)
+            ├── __init__.py
+            ├── adapter.py          # implements category contract(s) (optional for thin P2 shells)
+            ├── bundle.py           # create_* factory — composition root for Tier-3
+            ├── opens.py            # ONLY module that imports vendor SDK (when full package)
+            ├── config.py           # pydantic settings + env keys
+            ├── config.example.yaml # copy-paste for Tier-3 applications (optional)
+            ├── USAGE.md            # English: env vars, IntegrationProfile, factory example
+            └── tests/              # under tests/unit/integrations/providers/<category>/ in repo root
 ```
+
+**Layout map:** `intergrax/integrations/providers/layout.py` — slug → category folder.
+
+**Documentation:** all **51** registered providers ship `providers/<category>/<slug>/USAGE.md` (English). Regenerate via `scripts/generate_integration_usage_docs.py`. Catalog index: [`docs/INTEGRATIONS.md`](INTEGRATIONS.md).
 
 **Rules:**
 
-- One **provider folder per integration** (`postgresql/`, `slack/`, `kafka/`, …).
+- One **provider folder per integration** under **`providers/<category>/<slug>/`** — category matches `IntegrationCategory` (see `providers/layout.py`).
 - Providers implement **category contracts** from `integrations/contracts/` — not ad-hoc SDK wrappers.
 - Agents and Nexus MUST NOT import vendor SDKs directly when a catalog provider exists (§5.2).
 - Existing Tier-0 modules (`queueing/`, `distributed/`, `websearch/`, `rag/`, `runtime/notifications/`, `runtime/interactions/`) remain valid; new work and refactors **register through** `IntegrationRegistry` and gradually wrap legacy providers (evolve, not rewrite).
@@ -580,7 +586,7 @@ intergrax/integrations/
 | Layer | Owns |
 |-------|------|
 | `integrations/contracts/` | What “a PostgreSQL adapter” or “a notification channel” MUST expose |
-| `integrations/providers/<slug>/` | How a specific vendor satisfies the contract |
+| `integrations/providers/<category>/<slug>/` | How a specific vendor satisfies the contract |
 | `integrations/registry/` | Discovery, env-based factory, health aggregation |
 | Tier-3 `applications/<name>/` | Which integrations are enabled for a product environment |
 | Tier-2 `agents/<name>/` | Domain logic; declares **capability needs**, not vendor wiring |
@@ -674,17 +680,19 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 
 | Slug | Category | Status | Rationale |
 |------|----------|--------|-----------|
-| `oracle` | relational_store | Planned | Enterprise clients on Oracle |
-| `mssql` | relational_store | Planned | Microsoft SQL deployments |
+| `oracle` | relational_store | Beta | Enterprise clients on Oracle |
+| `mssql` | relational_store | Beta | Microsoft SQL deployments |
+| `azure_sql` | relational_store | Beta | Azure SQL via pyodbc |
+| `cloud_sql` | relational_store | Beta | GCP Cloud SQL via pg8000 |
 | `cassandra` | document_store | Beta | High-volume log / event retention (partition-scoped CQL) |
-| `memcached` | key_value_cache | Planned | Simple cache tier |
-| `sqs` | message_bus | Planned | AWS-native queues (also via `aws` facade) |
-| `azure_blob` | object_storage | Planned | Azure artifact storage (also via `azure` facade) |
-| `gcs` | object_storage | Planned | GCP artifact storage (also via `gcp` facade) |
-| `service_bus` | message_bus | Planned | Azure-native queues (via `azure` facade) |
-| `pubsub` | message_bus | Planned | GCP-native messaging (via `gcp` facade) |
-| `dynamodb` | document_store | Planned | AWS document/KV (via `aws` facade) |
-| `elasticache` | key_value_cache | Planned | Managed Redis on AWS (via `aws` facade) |
+| `dynamodb` | document_store | Beta | AWS document/KV (via `aws` facade) |
+| `memcached` | key_value_cache | Beta | Simple cache tier |
+| `elasticache` | key_value_cache | Beta | Managed Redis on AWS (via `aws` facade) |
+| `sqs` | message_bus | Beta | AWS-native queues (also via `aws` facade) |
+| `service_bus` | message_bus | Beta | Azure-native queues (via `azure` facade) |
+| `pubsub` | message_bus | Beta | GCP-native messaging (via `gcp` facade) |
+| `azure_blob` | object_storage | Beta | Azure artifact storage (also via `azure` facade) |
+| `gcs` | object_storage | Beta | GCP artifact storage (also via `gcp` facade) |
 | **`elasticsearch`** | observability_backend | **Beta** | Log search / aggregations (`_search` + Lucene `query_string`); complements `prometheus` |
 | **`databricks`** | relational_store | **Beta** | SQL Warehouse / Unity Catalog; lakehouse analytics via `RelationalStore` |
 | **`mongodb`** | document_store | **Beta** | Flexible JSON documents; partition-scoped CRUD via PyMongo |
@@ -692,16 +700,17 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 | **`qdrant`** | vector_store | **Beta** | Catalog bridge to `rag/`; self-hosted / cloud vectors |
 | **`chroma`** | vector_store | **Beta** | Catalog bridge to `rag/`; embedded or HTTP Chroma |
 | **`s3`** | object_storage | **Beta** | AWS S3 put/get/delete/presigned_url via catalog |
-| `azure_blob` | object_storage | Planned (P2 next) | Azure artifact storage (also via `azure` facade) |
-| `gcs` | object_storage | Planned (P2) | GCP artifact storage (also via `gcp` facade) |
-| `otel` | observability_backend | Planned | Unified traces/metrics export |
-| `playwright` | browser_automation | Planned | Dynamic web research beyond HTTP fetch |
-| `azure_devops` | issue_tracker | Planned | Microsoft ALM |
-| `github` | issue_tracker | Planned | Dev-centric task sources |
-| `google_workspace` | collaboration_suite | Planned | Gmail / Calendar for Google tenants |
-| `notion` / `sharepoint` | wiki_knowledge | Planned | Internal docs beyond Confluence |
-| `email_smtp` | notification_channel | Planned | Outbound mail without chat vendors |
-| `brave` / `serpapi` | search_provider | Planned | Alternative web research APIs |
+| `otel` | observability_backend | Beta | Unified traces/metrics export |
+| `playwright` | browser_automation | Beta | Dynamic web research beyond HTTP fetch |
+| `azure_devops` | issue_tracker | Beta | Microsoft ALM |
+| `github` | issue_tracker | Beta | Dev-centric task sources |
+| `linear` | issue_tracker | Beta | Linear issues API |
+| `google_workspace` | collaboration_suite | Beta | Gmail / Calendar for Google tenants |
+| `notion` / `sharepoint` | wiki_knowledge | Beta | Internal docs beyond Confluence |
+| `email_smtp` | notification_channel | Beta | Outbound mail without chat vendors |
+| `brave` / `serpapi` | search_provider | Beta | Alternative web research APIs |
+
+P2/P3 batch implementations (2026-05-30) centralize shared logic in `intergrax/integrations/_shared/p2/` (`configs.py`, `clients.py`, `factories.py`); `providers/<slug>/` packages are thin registration shells except `azure_blob` and `s3` (full packages).
 
 **Vector-store note:** `pinecone`, `qdrant`, and `chroma` implementations live in `intergrax/rag/vectorstore/`. Integration Library adds thin catalog bridges (`providers/<slug>/`) so Tier-3 can set `IntegrationProfile.vector_store`. RAG bootstrap (`create_default_vectorstore_manager()`) resolves stores via the catalog — see Phase M.6 P2 in the implementation plan.
 
@@ -2011,7 +2020,7 @@ Side-effect tools (`injects_context = false`) return results to the agent loop o
 
 ## 22.2 Legacy Pipeline Flags (Deprecated)
 
-Until Phase O.5 migration completes, Nexus MAY still accept `ToolInvocationPlan(use_rag=…, use_websearch=…, use_tools=…)`. These flags are **deprecated aliases** that map to catalog tool_ids:
+Phase O.5 migration is **Done**. Nexus MAY still accept `ToolInvocationPlan(use_rag=…, use_websearch=…, use_tools=…)` as **deprecated aliases** that map to catalog tool_ids:
 
 ```text
 use_rag=True        → rag.retrieve

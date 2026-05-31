@@ -895,22 +895,26 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 | `s3` | object_storage | Blob storage (`create_s3_object_storage()` only) |
 | `redis` | key_value_cache | Idempotency, rate limits, distributed locks |
 | `kafka`, `rabbitmq`, `celery` | message_bus | Worker queues, async Nexus execution |
-| `google_cse`, `bing` | search_provider | Research / web tools |
-| `slack`, `teams`, `webhook`, `log` | notification_channel | Long-running progress, HITL alerts |
+| `google_cse`, `bing`, `brave`, `serpapi` | search_provider | Research / web tools |
+| `slack`, `teams`, `webhook`, `log`, `email_smtp` | notification_channel | Long-running progress, HITL alerts, SMTP mail |
 | `lab_json`, `slack`, `teams` | interaction_surface | Inbound webhooks / lab JSON intake |
+| `playwright` | browser_automation | JS-heavy pages via headless browser |
 
-### Planned integrations (M.6 P2 / P3 — not yet in default bootstrap)
+### Extended integrations (M.6 P2/P3 — registered in default bootstrap, beta)
 
 | Slug | Category | Notes |
 |------|----------|-------|
-| `azure_blob`, `gcs` | object_storage | Follow S3 bridge pattern (B.34+) |
-| `notion`, `sharepoint` | wiki_knowledge | REST wiki sources (B.35) |
-| `github`, `linear` | issue_tracker | Dev workflow ingestion (B.36) |
-| `email_smtp` | notification_channel | SMTP outbound (B.37) |
-| `otel` | observability_backend | OTLP export (B.38) |
-| `playwright` | browser_automation | Dynamic web (B.39) |
+| `azure_blob`, `gcs`, `s3` | object_storage | Blob put/get/delete/presigned URL |
+| `dynamodb`, `mongodb`, `cassandra` | document_store | Partition-scoped document CRUD |
+| `sqs`, `service_bus`, `pubsub` | message_bus | Cloud-native queues (also via platform facades) |
+| `memcached`, `elasticache`, `redis` | key_value_cache | Cache tiers |
+| `oracle`, `mssql`, `azure_sql`, `cloud_sql` | relational_store | Enterprise SQL backends |
+| `notion`, `sharepoint`, `confluence` | wiki_knowledge | Internal docs / runbooks |
+| `github`, `linear`, `azure_devops`, `jira` | issue_tracker | ALM / dev workflow sources |
+| `google_workspace`, `ms365_graph` | collaboration_suite | Mail / calendar / directory |
+| `otel`, `prometheus`, `elasticsearch` | observability_backend | Metrics and log search |
 
-Full prioritized backlog: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) — **M.6 P2 tracker**, **M.6 P3 backlog**, **B.31–B.39**.
+Full catalog (51 providers, each with English `USAGE.md`): [`INTEGRATIONS.md`](INTEGRATIONS.md). Per-slug examples: `intergrax/integrations/providers/<category>/<slug>/USAGE.md`.
 
 LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them separately.
 

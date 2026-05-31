@@ -47,9 +47,9 @@ Tools (catalog)            →  TOOLS.md
 | Phase | Status |
 |-------|--------|
 | Phase L — Agent OS certification | **Done** |
-| Phase M — Integration Library (Tier-0 catalog) | **In progress** — 29 providers; see [INTEGRATIONS.md](INTEGRATIONS.md) |
-| Phase N — Application environment scaffold | **In progress** — see implementation plan Phase N |
-| Phase O — Tool Library & unified tool model | **Started** — canon + catalog doc; implementation O.1+ pending |
+| Phase M — Integration Library (Tier-0 catalog) | **Done** (beta) — 51 providers with English `USAGE.md`; see [INTEGRATIONS.md](INTEGRATIONS.md) |
+| Phase O — Tool Library & unified tool model | **Done** — 11 catalog tools; see [TOOLS.md](TOOLS.md) |
+| Phase N — Application environment scaffold | **In progress** — N.9 gate; see implementation plan Phase N |
 | Phase K — Problem Radar / Vendor Discovery | **Ready to open** (product decision) |
 
 Gate: `uv run pytest tests/ -m gate -q` (**228 tests**)

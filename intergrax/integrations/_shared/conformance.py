@@ -7,6 +7,9 @@ from __future__ import annotations
 
 from typing import TypeVar
 
+T = TypeVar("T")
+
+from intergrax.integrations.contracts.browser_automation import BrowserAutomation
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
 from intergrax.integrations.contracts.document_store import DocumentStore
@@ -65,6 +68,10 @@ def assert_wiki_knowledge(instance: object) -> WikiKnowledge:
 
 def assert_observability_backend(instance: object) -> ObservabilityBackend:
     return assert_implements(instance, ObservabilityBackend)
+
+
+def assert_browser_automation(instance: object) -> BrowserAutomation:
+    return assert_implements(instance, BrowserAutomation)
 
 
 def assert_cloud_platform(instance: object) -> CloudPlatform:

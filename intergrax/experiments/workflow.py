@@ -15,7 +15,7 @@ from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 
-from intergrax.integrations.providers.sqlite import (
+from intergrax.integrations.providers.relational_store.sqlite import (
     create_sqlite_experiment_store,
     create_sqlite_trace_store,
 )

@@ -14,35 +14,58 @@ def register_default_integrations(*, override: bool = False) -> None:
 
     Call from Tier-3 application factories before ``resolve()``.
     """
-    from intergrax.integrations.providers.redis.register import register_redis_integration
-    from intergrax.integrations.providers.sqlite.register import register_sqlite_integration
-    from intergrax.integrations.providers.kafka.register import register_kafka_integration
-    from intergrax.integrations.providers.celery.register import register_celery_integration
-    from intergrax.integrations.providers.rabbitmq.register import register_rabbitmq_integration
-    from intergrax.integrations.providers.google_cse.register import register_google_cse_integration
-    from intergrax.integrations.providers.bing.register import register_bing_integration
-    from intergrax.integrations.providers.slack.register import register_slack_integration
-    from intergrax.integrations.providers.teams.register import register_teams_integration
-    from intergrax.integrations.providers.webhook.register import register_webhook_integration
-    from intergrax.integrations.providers.lab_json.register import register_lab_json_integration
-    from intergrax.integrations.providers.log.register import register_log_integration
-    from intergrax.integrations.providers.postgresql.register import register_postgresql_integration
-    from intergrax.integrations.providers.mysql.register import register_mysql_integration
-    from intergrax.integrations.providers.jira.register import register_jira_integration
-    from intergrax.integrations.providers.confluence.register import register_confluence_integration
-    from intergrax.integrations.providers.prometheus.register import register_prometheus_integration
-    from intergrax.integrations.providers.ms365_graph.register import register_ms365_graph_integration
-    from intergrax.integrations.providers.cassandra.register import register_cassandra_integration
-    from intergrax.integrations.providers.aws.register import register_aws_integration
-    from intergrax.integrations.providers.azure.register import register_azure_integration
-    from intergrax.integrations.providers.gcp.register import register_gcp_integration
-    from intergrax.integrations.providers.elasticsearch.register import register_elasticsearch_integration
-    from intergrax.integrations.providers.databricks.register import register_databricks_integration
-    from intergrax.integrations.providers.mongodb.register import register_mongodb_integration
-    from intergrax.integrations.providers.pinecone.register import register_pinecone_integration
-    from intergrax.integrations.providers.qdrant.register import register_qdrant_integration
-    from intergrax.integrations.providers.chroma.register import register_chroma_integration
-    from intergrax.integrations.providers.s3.register import register_s3_integration
+    from intergrax.integrations.providers.key_value_cache.redis.register import register_redis_integration
+    from intergrax.integrations.providers.relational_store.sqlite.register import register_sqlite_integration
+    from intergrax.integrations.providers.message_bus.kafka.register import register_kafka_integration
+    from intergrax.integrations.providers.message_bus.celery.register import register_celery_integration
+    from intergrax.integrations.providers.message_bus.rabbitmq.register import register_rabbitmq_integration
+    from intergrax.integrations.providers.search_provider.google_cse.register import register_google_cse_integration
+    from intergrax.integrations.providers.search_provider.bing.register import register_bing_integration
+    from intergrax.integrations.providers.notification_channel.slack.register import register_slack_integration
+    from intergrax.integrations.providers.notification_channel.teams.register import register_teams_integration
+    from intergrax.integrations.providers.notification_channel.webhook.register import register_webhook_integration
+    from intergrax.integrations.providers.interaction_surface.lab_json.register import register_lab_json_integration
+    from intergrax.integrations.providers.notification_channel.log.register import register_log_integration
+    from intergrax.integrations.providers.relational_store.postgresql.register import register_postgresql_integration
+    from intergrax.integrations.providers.relational_store.mysql.register import register_mysql_integration
+    from intergrax.integrations.providers.issue_tracker.jira.register import register_jira_integration
+    from intergrax.integrations.providers.wiki_knowledge.confluence.register import register_confluence_integration
+    from intergrax.integrations.providers.observability_backend.prometheus.register import register_prometheus_integration
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.register import register_ms365_graph_integration
+    from intergrax.integrations.providers.document_store.cassandra.register import register_cassandra_integration
+    from intergrax.integrations.providers.cloud_platform.aws.register import register_aws_integration
+    from intergrax.integrations.providers.cloud_platform.azure.register import register_azure_integration
+    from intergrax.integrations.providers.cloud_platform.gcp.register import register_gcp_integration
+    from intergrax.integrations.providers.observability_backend.elasticsearch.register import register_elasticsearch_integration
+    from intergrax.integrations.providers.relational_store.databricks.register import register_databricks_integration
+    from intergrax.integrations.providers.document_store.mongodb.register import register_mongodb_integration
+    from intergrax.integrations.providers.vector_store.pinecone.register import register_pinecone_integration
+    from intergrax.integrations.providers.vector_store.qdrant.register import register_qdrant_integration
+    from intergrax.integrations.providers.vector_store.chroma.register import register_chroma_integration
+    from intergrax.integrations.providers.object_storage.s3.register import register_s3_integration
+    from intergrax.integrations.providers.object_storage.azure_blob.register import register_azure_blob_integration
+    from intergrax.integrations.providers.object_storage.gcs.register import register_gcs_integration
+    from intergrax.integrations.providers.document_store.dynamodb.register import register_dynamodb_integration
+    from intergrax.integrations.providers.message_bus.sqs.register import register_sqs_integration
+    from intergrax.integrations.providers.message_bus.service_bus.register import register_service_bus_integration
+    from intergrax.integrations.providers.message_bus.pubsub.register import register_pubsub_integration
+    from intergrax.integrations.providers.key_value_cache.memcached.register import register_memcached_integration
+    from intergrax.integrations.providers.key_value_cache.elasticache.register import register_elasticache_integration
+    from intergrax.integrations.providers.relational_store.oracle.register import register_oracle_integration
+    from intergrax.integrations.providers.relational_store.mssql.register import register_mssql_integration
+    from intergrax.integrations.providers.relational_store.azure_sql.register import register_azure_sql_integration
+    from intergrax.integrations.providers.relational_store.cloud_sql.register import register_cloud_sql_integration
+    from intergrax.integrations.providers.notification_channel.email_smtp.register import register_email_smtp_integration
+    from intergrax.integrations.providers.observability_backend.otel.register import register_otel_integration
+    from intergrax.integrations.providers.issue_tracker.github.register import register_github_integration
+    from intergrax.integrations.providers.issue_tracker.linear.register import register_linear_integration
+    from intergrax.integrations.providers.issue_tracker.azure_devops.register import register_azure_devops_integration
+    from intergrax.integrations.providers.wiki_knowledge.notion.register import register_notion_integration
+    from intergrax.integrations.providers.wiki_knowledge.sharepoint.register import register_sharepoint_integration
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.register import register_google_workspace_integration
+    from intergrax.integrations.providers.search_provider.brave.register import register_brave_integration
+    from intergrax.integrations.providers.search_provider.serpapi.register import register_serpapi_integration
+    from intergrax.integrations.providers.browser_automation.playwright.register import register_playwright_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -76,6 +99,29 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_qdrant_integration(override=override)
     register_chroma_integration(override=override)
     register_s3_integration(override=override)
+    register_azure_blob_integration(override=override)
+    register_gcs_integration(override=override)
+    register_dynamodb_integration(override=override)
+    register_sqs_integration(override=override)
+    register_service_bus_integration(override=override)
+    register_pubsub_integration(override=override)
+    register_memcached_integration(override=override)
+    register_elasticache_integration(override=override)
+    register_oracle_integration(override=override)
+    register_mssql_integration(override=override)
+    register_azure_sql_integration(override=override)
+    register_cloud_sql_integration(override=override)
+    register_email_smtp_integration(override=override)
+    register_otel_integration(override=override)
+    register_github_integration(override=override)
+    register_linear_integration(override=override)
+    register_azure_devops_integration(override=override)
+    register_notion_integration(override=override)
+    register_sharepoint_integration(override=override)
+    register_google_workspace_integration(override=override)
+    register_brave_integration(override=override)
+    register_serpapi_integration(override=override)
+    register_playwright_integration(override=override)
     _BOOTSTRAPPED = True
 
 

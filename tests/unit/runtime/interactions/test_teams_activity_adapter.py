@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from intergrax.integrations.providers.teams.adapter import TeamsInteractionAdapter
+from intergrax.integrations.providers.notification_channel.teams.adapter import TeamsInteractionAdapter
 from intergrax.runtime.interactions.factory import create_interaction_adapter, resolve_interaction_settings
 from intergrax.runtime.interactions.metadata_keys import INTERACTION_CHANNEL_KEY
 from intergrax.runtime.interactions.parsers.teams_activity import (

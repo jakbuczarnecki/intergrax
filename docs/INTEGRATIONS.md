@@ -1,6 +1,6 @@
 # Intergrax Integration Library
 
-**Last updated:** 2026-05-29
+**Last updated:** 2026-05-30
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 
@@ -12,7 +12,37 @@ The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase M | Phase status, backlog, delivery workflow |
 | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) Appendix E | How agents vs applications use integrations |
 | [TOOLS.md](TOOLS.md) | Agent-facing tools that compose these integrations |
-| Per-provider guides | `intergrax/integrations/providers/<slug>/USAGE.md` |
+| Per-provider guides | `intergrax/integrations/providers/<category>/<slug>/USAGE.md` |
+
+---
+
+## Provider layout (by category)
+
+Integrations are grouped under **contract category** folders — the same grouping used when generating P2/P3 provider stubs:
+
+```text
+intergrax/integrations/providers/
+├── layout.py                 # slug → category map
+├── relational_store/         # sqlite, postgresql, mysql, …
+├── document_store/           # mongodb, cassandra, dynamodb
+├── key_value_cache/          # redis, memcached, elasticache
+├── message_bus/              # kafka, sqs, pubsub, …
+├── object_storage/           # s3, azure_blob, gcs
+├── vector_store/             # pinecone, qdrant, chroma
+├── search_provider/          # google_cse, bing, brave, serpapi
+├── notification_channel/     # slack, teams, email_smtp, …
+├── interaction_surface/      # lab_json (slack/teams also register here)
+├── collaboration_suite/      # ms365_graph, google_workspace
+├── issue_tracker/            # jira, github, linear, azure_devops
+├── wiki_knowledge/           # confluence, notion, sharepoint
+├── observability_backend/    # prometheus, elasticsearch, otel
+├── browser_automation/       # playwright
+└── cloud_platform/           # aws, azure, gcp
+```
+
+**Import path:** `from intergrax.integrations.providers.object_storage.s3.bundle import create_s3_object_storage`
+
+Catalog slugs (`IntegrationSlug.S3`) are unchanged — only the Python package path includes the category folder.
 
 ---
 
@@ -21,7 +51,7 @@ The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular
 | Principle | What it means |
 |-----------|---------------|
 | **Universal contracts** | Each category (`relational_store`, `vector_store`, `message_bus`, …) defines a small Protocol. Providers implement the contract; agent logic depends on the contract only. |
-| **Modular providers** | One slug = one package under `providers/<slug>/`. Swap Redis for ElastiCache, SQLite for PostgreSQL, or Chroma for Pinecone by changing `IntegrationProfile` — no agent refactor. |
+| **Modular providers** | One slug = one package under `providers/<category>/<slug>/` (category = contract name). Swap Redis for ElastiCache, SQLite for PostgreSQL, or Chroma for Pinecone by changing `IntegrationProfile` — no agent refactor. |
 | **Environment portability** | Tier-3 applications compose integrations at startup (`IntegrationProfile`, env vars). The same Tier-2 agent runs against lab defaults (`sqlite`, `log`, `lab_json`) or production stacks (`postgresql`, `slack`, `s3`, `qdrant`). |
 | **Single entry for SDKs** | Vendor SDKs (boto3, PyMongo, httpx, …) are imported only in each provider’s `opens.py`. Tier-2 agents must **not** import provider slugs or vendor libraries. |
 | **Catalog registration** | `register_default_integrations()` registers all shipped providers. Resolution: explicit slug → profile field → env (`INTERGRAX_INTEGRATION_<CATEGORY>`) → cloud-platform defaults. |
@@ -94,6 +124,7 @@ profile = IntegrationProfile.lab()
 | `issue_tracker` | `IssueTracker` | Issues, comments, search |
 | `wiki_knowledge` | `WikiKnowledge` | Runbooks, internal docs |
 | `observability_backend` | `ObservabilityBackend` | Metrics and log search |
+| `browser_automation` | `BrowserAutomation` | Dynamic web pages (JS-heavy sites) |
 | `cloud_platform` | `CloudPlatform` | Multi-service auth + category defaults |
 
 Contract modules: `intergrax/integrations/contracts/`.
@@ -114,28 +145,31 @@ Service-level slugs (`s3`, `azure_blob`, `gcs`, …) remain available for explic
 
 ---
 
-## Implemented providers (29)
+## Implemented providers (51)
 
 All providers below are registered in `register_default_integrations()`.  
 **Status:** `stable` = production-ready catalog entry; `beta` = shipped, API may evolve.
+
+P2/P3 slugs (2026-05-30) share implementations in `intergrax/integrations/_shared/p2/`; thin shells live under `providers/<category>/<slug>/`. Category folders match `IntegrationCategory` values — see `providers/layout.py`.
 
 ### Summary by category
 
 | Category | Count | Slugs |
 |----------|------:|-------|
-| `relational_store` | 4 | `sqlite`, `postgresql`, `mysql`, `databricks` |
-| `document_store` | 2 | `cassandra`, `mongodb` |
-| `key_value_cache` | 1 | `redis` |
-| `message_bus` | 3 | `kafka`, `celery`, `rabbitmq` |
-| `object_storage` | 1 | `s3` |
+| `relational_store` | 8 | `sqlite`, `postgresql`, `mysql`, `databricks`, `oracle`, `mssql`, `azure_sql`, `cloud_sql` |
+| `document_store` | 3 | `cassandra`, `mongodb`, `dynamodb` |
+| `key_value_cache` | 3 | `redis`, `memcached`, `elasticache` |
+| `message_bus` | 6 | `kafka`, `celery`, `rabbitmq`, `sqs`, `service_bus`, `pubsub` |
+| `object_storage` | 3 | `s3`, `azure_blob`, `gcs` |
 | `vector_store` | 3 | `pinecone`, `qdrant`, `chroma` |
-| `search_provider` | 2 | `google_cse`, `bing` |
-| `notification_channel` | 4 | `slack`, `teams`, `webhook`, `log` |
+| `search_provider` | 4 | `google_cse`, `bing`, `brave`, `serpapi` |
+| `notification_channel` | 5 | `slack`, `teams`, `webhook`, `log`, `email_smtp` |
 | `interaction_surface` | 3 | `slack`, `teams`, `lab_json` |
-| `collaboration_suite` | 1 | `ms365_graph` |
-| `issue_tracker` | 1 | `jira` |
-| `wiki_knowledge` | 1 | `confluence` |
-| `observability_backend` | 2 | `prometheus`, `elasticsearch` |
+| `collaboration_suite` | 2 | `ms365_graph`, `google_workspace` |
+| `issue_tracker` | 4 | `jira`, `github`, `linear`, `azure_devops` |
+| `wiki_knowledge` | 3 | `confluence`, `notion`, `sharepoint` |
+| `observability_backend` | 3 | `prometheus`, `elasticsearch`, `otel` |
+| `browser_automation` | 1 | `playwright` |
 | `cloud_platform` | 3 | `aws`, `azure`, `gcp` |
 
 ---
@@ -148,13 +182,21 @@ All providers below are registered in `register_default_integrations()`.
 | `postgresql` | beta | `create_postgresql_relational_store()` | `INTERGRAX_POSTGRESQL` | psycopg3; DSN or host/port/user/password |
 | `mysql` | beta | `create_mysql_relational_store()` | `INTERGRAX_MYSQL` | pymysql |
 | `databricks` | beta | `create_databricks_relational_store()` | `INTERGRAX_DATABRICKS` | SQL Warehouse / Unity Catalog |
+| `oracle` | beta | `create_oracle_relational_store()` | `INTERGRAX_ORACLE` | oracledb DSN |
+| `mssql` | beta | `create_mssql_relational_store()` | `INTERGRAX_MSSQL` | pyodbc |
+| `azure_sql` | beta | `create_azure_sql_relational_store()` | `INTERGRAX_AZURE_SQL` | Azure SQL via pyodbc |
+| `cloud_sql` | beta | `create_cloud_sql_relational_store()` | `INTERGRAX_CLOUD_SQL` | Cloud SQL via pg8000 |
 
 | Provider | Usage guide |
 |----------|-------------|
-| `sqlite` | [USAGE.md](../intergrax/integrations/providers/sqlite/USAGE.md) |
-| `postgresql` | [USAGE.md](../intergrax/integrations/providers/postgresql/USAGE.md) |
-| `mysql` | [USAGE.md](../intergrax/integrations/providers/mysql/USAGE.md) |
-| `databricks` | [USAGE.md](../intergrax/integrations/providers/databricks/USAGE.md) |
+| `sqlite` | [USAGE.md](../intergrax/integrations/providers/relational_store/sqlite/USAGE.md) |
+| `postgresql` | [USAGE.md](../intergrax/integrations/providers/relational_store/postgresql/USAGE.md) |
+| `mysql` | [USAGE.md](../intergrax/integrations/providers/relational_store/mysql/USAGE.md) |
+| `databricks` | [USAGE.md](../intergrax/integrations/providers/relational_store/databricks/USAGE.md) |
+| `oracle` | [USAGE.md](../intergrax/integrations/providers/relational_store/oracle/USAGE.md) |
+| `mssql` | [USAGE.md](../intergrax/integrations/providers/relational_store/mssql/USAGE.md) |
+| `azure_sql` | [USAGE.md](../intergrax/integrations/providers/relational_store/azure_sql/USAGE.md) |
+| `cloud_sql` | [USAGE.md](../intergrax/integrations/providers/relational_store/cloud_sql/USAGE.md) |
 
 ---
 
@@ -164,11 +206,13 @@ All providers below are registered in `register_default_integrations()`.
 |------|--------|-----------------|------------|-------|
 | `cassandra` | beta | `create_cassandra_document_store()` | `INTERGRAX_CASSANDRA` | CQL partition-scoped CRUD |
 | `mongodb` | beta | `create_mongodb_document_store()` | `INTERGRAX_MONGODB` | Flexible JSON documents via PyMongo |
+| `dynamodb` | beta | `create_dynamodb_document_store()` | `INTERGRAX_DYNAMODB` | AWS DynamoDB partition-scoped CRUD |
 
 | Provider | Usage guide |
 |----------|-------------|
-| `cassandra` | [USAGE.md](../intergrax/integrations/providers/cassandra/USAGE.md) |
-| `mongodb` | [USAGE.md](../intergrax/integrations/providers/mongodb/USAGE.md) |
+| `cassandra` | [USAGE.md](../intergrax/integrations/providers/document_store/cassandra/USAGE.md) |
+| `mongodb` | [USAGE.md](../intergrax/integrations/providers/document_store/mongodb/USAGE.md) |
+| `dynamodb` | [USAGE.md](../intergrax/integrations/providers/document_store/dynamodb/USAGE.md) |
 
 ---
 
@@ -177,10 +221,14 @@ All providers below are registered in `register_default_integrations()`.
 | Slug | Status | Catalog factory | Env prefix | Notes |
 |------|--------|-----------------|------------|-------|
 | `redis` | stable | `create_redis_key_value_cache()` | `INTERGRAX_REDIS` | Also idempotency, rate limit, semaphore via `create_redis_integration()` |
+| `memcached` | beta | `create_memcached_key_value_cache()` | `INTERGRAX_MEMCACHED` | pymemcache |
+| `elasticache` | beta | `create_elasticache_key_value_cache()` | `INTERGRAX_ELASTICACHE` | Redis-compatible endpoint (same adapter as memcached duck client) |
 
 | Provider | Usage guide |
 |----------|-------------|
-| `redis` | [USAGE.md](../intergrax/integrations/providers/redis/USAGE.md) |
+| `redis` | [USAGE.md](../intergrax/integrations/providers/key_value_cache/redis/USAGE.md) |
+| `memcached` | [USAGE.md](../intergrax/integrations/providers/key_value_cache/memcached/USAGE.md) |
+| `elasticache` | [USAGE.md](../intergrax/integrations/providers/key_value_cache/elasticache/USAGE.md) |
 
 ---
 
@@ -191,12 +239,18 @@ All providers below are registered in `register_default_integrations()`.
 | `kafka` | stable | `create_kafka_message_bus()` | `INTERGRAX_KAFKA` | Runtime transport delegates here |
 | `celery` | stable | `create_celery_message_bus()` | `INTERGRAX_CELERY` | Broker/backend via env or injected app |
 | `rabbitmq` | stable | `create_rabbitmq_message_bus()` | `INTERGRAX_RABBITMQ` | Requires KV store for ack semantics |
+| `sqs` | beta | `create_sqs_message_bus()` | `INTERGRAX_SQS` | AWS SQS (also via `aws` facade) |
+| `service_bus` | beta | `create_service_bus_message_bus()` | `INTERGRAX_SERVICE_BUS` | Azure Service Bus |
+| `pubsub` | beta | `create_pubsub_message_bus()` | `INTERGRAX_PUBSUB` | GCP Pub/Sub |
 
 | Provider | Usage guide |
 |----------|-------------|
-| `kafka` | [USAGE.md](../intergrax/integrations/providers/kafka/USAGE.md) |
-| `celery` | [USAGE.md](../intergrax/integrations/providers/celery/USAGE.md) |
-| `rabbitmq` | [USAGE.md](../intergrax/integrations/providers/rabbitmq/USAGE.md) |
+| `kafka` | [USAGE.md](../intergrax/integrations/providers/message_bus/kafka/USAGE.md) |
+| `celery` | [USAGE.md](../intergrax/integrations/providers/message_bus/celery/USAGE.md) |
+| `rabbitmq` | [USAGE.md](../intergrax/integrations/providers/message_bus/rabbitmq/USAGE.md) |
+| `sqs` | [USAGE.md](../intergrax/integrations/providers/message_bus/sqs/USAGE.md) |
+| `service_bus` | [USAGE.md](../intergrax/integrations/providers/message_bus/service_bus/USAGE.md) |
+| `pubsub` | [USAGE.md](../intergrax/integrations/providers/message_bus/pubsub/USAGE.md) |
 
 ---
 
@@ -205,10 +259,14 @@ All providers below are registered in `register_default_integrations()`.
 | Slug | Status | Catalog factory | Env prefix | Notes |
 |------|--------|-----------------|------------|-------|
 | `s3` | beta | `create_s3_object_storage()` | `INTERGRAX_S3` | put / get / delete / presigned_url; boto3 in `opens.py` only |
+| `azure_blob` | beta | `create_azure_blob_object_storage()` | `INTERGRAX_AZURE_BLOB` | Azure Blob; SDK only in `opens.py` |
+| `gcs` | beta | `create_gcs_object_storage()` | `INTERGRAX_GCS` | Google Cloud Storage; SDK only in factory open path |
 
 | Provider | Usage guide |
 |----------|-------------|
-| `s3` | [USAGE.md](../intergrax/integrations/providers/s3/USAGE.md) |
+| `s3` | [USAGE.md](../intergrax/integrations/providers/object_storage/s3/USAGE.md) |
+| `azure_blob` | [USAGE.md](../intergrax/integrations/providers/object_storage/azure_blob/USAGE.md) |
+| `gcs` | [USAGE.md](../intergrax/integrations/providers/object_storage/gcs/USAGE.md) |
 
 ---
 
@@ -224,9 +282,9 @@ Vector implementations remain in `intergrax/rag/vectorstore/`. Integration provi
 
 | Provider | Usage guide |
 |----------|-------------|
-| `pinecone` | [USAGE.md](../intergrax/integrations/providers/pinecone/USAGE.md) |
-| `qdrant` | [USAGE.md](../intergrax/integrations/providers/qdrant/USAGE.md) |
-| `chroma` | [USAGE.md](../intergrax/integrations/providers/chroma/USAGE.md) |
+| `pinecone` | [USAGE.md](../intergrax/integrations/providers/vector_store/pinecone/USAGE.md) |
+| `qdrant` | [USAGE.md](../intergrax/integrations/providers/vector_store/qdrant/USAGE.md) |
+| `chroma` | [USAGE.md](../intergrax/integrations/providers/vector_store/chroma/USAGE.md) |
 
 RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorstore/bootstrap/` resolves via the integration catalog when `vector_store` is configured.
 
@@ -238,11 +296,15 @@ RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorst
 |------|--------|-----------------|------------|-------|
 | `google_cse` | stable | `create_google_cse_search_provider()` | `INTERGRAX_GOOGLE_CSE` | Google Custom Search |
 | `bing` | stable | `create_bing_search_provider()` | `INTERGRAX_BING` | Bing Web Search v7 |
+| `brave` | beta | `create_brave_search_provider()` | `INTERGRAX_BRAVE` | Brave Search API |
+| `serpapi` | beta | `create_serpapi_search_provider()` | `INTERGRAX_SERPAPI` | SerpAPI organic results |
 
 | Provider | Usage guide |
 |----------|-------------|
-| `google_cse` | [USAGE.md](../intergrax/integrations/providers/google_cse/USAGE.md) |
-| `bing` | [USAGE.md](../intergrax/integrations/providers/bing/USAGE.md) |
+| `google_cse` | [USAGE.md](../intergrax/integrations/providers/search_provider/google_cse/USAGE.md) |
+| `bing` | [USAGE.md](../intergrax/integrations/providers/search_provider/bing/USAGE.md) |
+| `brave` | [USAGE.md](../intergrax/integrations/providers/search_provider/brave/USAGE.md) |
+| `serpapi` | [USAGE.md](../intergrax/integrations/providers/search_provider/serpapi/USAGE.md) |
 
 ---
 
@@ -254,13 +316,15 @@ RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorst
 | `teams` | stable | `create_teams_notification_channel()` | `INTERGRAX_TEAMS` | Also registered as `interaction_surface` |
 | `webhook` | stable | `create_webhook_notification_channel()` | `INTERGRAX_WEBHOOK` | Generic HTTP outbound |
 | `log` | stable | `create_log_notification_channel()` | `INTERGRAX_LOG` | Process log; lab profile default |
+| `email_smtp` | beta | `create_email_smtp_notification_channel()` | `INTERGRAX_EMAIL_SMTP` | Outbound SMTP mail |
 
 | Provider | Usage guide |
 |----------|-------------|
-| `slack` | [USAGE.md](../intergrax/integrations/providers/slack/USAGE.md) |
-| `teams` | [USAGE.md](../intergrax/integrations/providers/teams/USAGE.md) |
-| `webhook` | [USAGE.md](../intergrax/integrations/providers/webhook/USAGE.md) |
-| `log` | [USAGE.md](../intergrax/integrations/providers/log/USAGE.md) |
+| `slack` | [USAGE.md](../intergrax/integrations/providers/notification_channel/slack/USAGE.md) |
+| `teams` | [USAGE.md](../intergrax/integrations/providers/notification_channel/teams/USAGE.md) |
+| `webhook` | [USAGE.md](../intergrax/integrations/providers/notification_channel/webhook/USAGE.md) |
+| `log` | [USAGE.md](../intergrax/integrations/providers/notification_channel/log/USAGE.md) |
+| `email_smtp` | [USAGE.md](../intergrax/integrations/providers/notification_channel/email_smtp/USAGE.md) |
 
 ---
 
@@ -274,9 +338,9 @@ RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorst
 
 | Provider | Usage guide |
 |----------|-------------|
-| `slack` | [USAGE.md](../intergrax/integrations/providers/slack/USAGE.md) |
-| `teams` | [USAGE.md](../intergrax/integrations/providers/teams/USAGE.md) |
-| `lab_json` | [USAGE.md](../intergrax/integrations/providers/lab_json/USAGE.md) |
+| `slack` | [USAGE.md](../intergrax/integrations/providers/notification_channel/slack/USAGE.md) |
+| `teams` | [USAGE.md](../intergrax/integrations/providers/notification_channel/teams/USAGE.md) |
+| `lab_json` | [USAGE.md](../intergrax/integrations/providers/interaction_surface/lab_json/USAGE.md) |
 
 ---
 
@@ -285,10 +349,12 @@ RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorst
 | Slug | Status | Catalog factory | Env prefix | Notes |
 |------|--------|-----------------|------------|-------|
 | `ms365_graph` | beta | `create_ms365_graph_collaboration_suite()` | `INTERGRAX_MS365_GRAPH` | Mail, calendar, directory via Microsoft Graph |
+| `google_workspace` | beta | `create_google_workspace_collaboration_suite()` | `INTERGRAX_GOOGLE_WORKSPACE` | Gmail / Calendar / Directory via Google APIs |
 
 | Provider | Usage guide |
 |----------|-------------|
-| `ms365_graph` | [USAGE.md](../intergrax/integrations/providers/ms365_graph/USAGE.md) |
+| `ms365_graph` | [USAGE.md](../intergrax/integrations/providers/collaboration_suite/ms365_graph/USAGE.md) |
+| `google_workspace` | [USAGE.md](../intergrax/integrations/providers/collaboration_suite/google_workspace/USAGE.md) |
 
 ---
 
@@ -297,10 +363,16 @@ RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorst
 | Slug | Status | Catalog factory | Env prefix | Notes |
 |------|--------|-----------------|------------|-------|
 | `jira` | beta | `create_jira_issue_tracker()` | `INTERGRAX_JIRA` | REST v3 — issues, comments, search |
+| `github` | beta | `create_github_issue_tracker()` | `INTERGRAX_GITHUB` | GitHub Issues REST |
+| `linear` | beta | `create_linear_issue_tracker()` | `INTERGRAX_LINEAR` | Linear issues API |
+| `azure_devops` | beta | `create_azure_devops_issue_tracker()` | `INTERGRAX_AZURE_DEVOPS` | Azure DevOps work items |
 
 | Provider | Usage guide |
 |----------|-------------|
-| `jira` | [USAGE.md](../intergrax/integrations/providers/jira/USAGE.md) |
+| `jira` | [USAGE.md](../intergrax/integrations/providers/issue_tracker/jira/USAGE.md) |
+| `github` | [USAGE.md](../intergrax/integrations/providers/issue_tracker/github/USAGE.md) |
+| `linear` | [USAGE.md](../intergrax/integrations/providers/issue_tracker/linear/USAGE.md) |
+| `azure_devops` | [USAGE.md](../intergrax/integrations/providers/issue_tracker/azure_devops/USAGE.md) |
 
 ---
 
@@ -309,10 +381,14 @@ RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorst
 | Slug | Status | Catalog factory | Env prefix | Notes |
 |------|--------|-----------------|------------|-------|
 | `confluence` | beta | `create_confluence_wiki_knowledge()` | `INTERGRAX_CONFLUENCE` | Pages and search for RAG / runbooks |
+| `notion` | beta | `create_notion_wiki_knowledge()` | `INTERGRAX_NOTION` | Notion pages API |
+| `sharepoint` | beta | `create_sharepoint_wiki_knowledge()` | `INTERGRAX_SHAREPOINT` | SharePoint pages / search |
 
 | Provider | Usage guide |
 |----------|-------------|
-| `confluence` | [USAGE.md](../intergrax/integrations/providers/confluence/USAGE.md) |
+| `confluence` | [USAGE.md](../intergrax/integrations/providers/wiki_knowledge/confluence/USAGE.md) |
+| `notion` | [USAGE.md](../intergrax/integrations/providers/wiki_knowledge/notion/USAGE.md) |
+| `sharepoint` | [USAGE.md](../intergrax/integrations/providers/wiki_knowledge/sharepoint/USAGE.md) |
 
 ---
 
@@ -322,11 +398,21 @@ RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorst
 |------|--------|-----------------|------------|-------|
 | `prometheus` | beta | `create_prometheus_observability_backend()` | `INTERGRAX_PROMETHEUS` | PromQL instant / range queries |
 | `elasticsearch` | beta | `create_elasticsearch_observability_backend()` | `INTERGRAX_ELASTICSEARCH` | Log search and aggregations |
+| `otel` | beta | `create_otel_observability_backend()` | `INTERGRAX_OTEL` | OTLP-oriented metrics facade |
 
 | Provider | Usage guide |
 |----------|-------------|
-| `prometheus` | [USAGE.md](../intergrax/integrations/providers/prometheus/USAGE.md) |
-| `elasticsearch` | [USAGE.md](../intergrax/integrations/providers/elasticsearch/USAGE.md) |
+| `prometheus` | [USAGE.md](../intergrax/integrations/providers/observability_backend/prometheus/USAGE.md) |
+| `elasticsearch` | [USAGE.md](../intergrax/integrations/providers/observability_backend/elasticsearch/USAGE.md) |
+| `otel` | [USAGE.md](../intergrax/integrations/providers/observability_backend/otel/USAGE.md) |
+
+---
+
+### Browser automation
+
+| Slug | Status | Catalog factory | Env prefix | Notes |
+|------|--------|-----------------|------------|-------|
+| `playwright` | beta | `create_playwright_browser_automation()` | `INTERGRAX_PLAYWRIGHT` | Headless Chromium via Playwright |
 
 ---
 
@@ -340,9 +426,9 @@ RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorst
 
 | Provider | Usage guide |
 |----------|-------------|
-| `aws` | [USAGE.md](../intergrax/integrations/providers/aws/USAGE.md) |
-| `azure` | [USAGE.md](../intergrax/integrations/providers/azure/USAGE.md) |
-| `gcp` | [USAGE.md](../intergrax/integrations/providers/gcp/USAGE.md) |
+| `aws` | [USAGE.md](../intergrax/integrations/providers/cloud_platform/aws/USAGE.md) |
+| `azure` | [USAGE.md](../intergrax/integrations/providers/cloud_platform/azure/USAGE.md) |
+| `gcp` | [USAGE.md](../intergrax/integrations/providers/cloud_platform/gcp/USAGE.md) |
 
 ---
 
@@ -352,62 +438,84 @@ Alphabetical reference — all shipped integrations in one table.
 
 | Slug | Category (categories) | Status | Catalog factory | Usage |
 |------|----------------------|--------|-----------------|-------|
-| `aws` | `cloud_platform` | beta | `create_aws_cloud_platform()` | [USAGE](../intergrax/integrations/providers/aws/USAGE.md) |
-| `azure` | `cloud_platform` | beta | `create_azure_cloud_platform()` | [USAGE](../intergrax/integrations/providers/azure/USAGE.md) |
-| `bing` | `search_provider` | stable | `create_bing_search_provider()` | [USAGE](../intergrax/integrations/providers/bing/USAGE.md) |
-| `cassandra` | `document_store` | beta | `create_cassandra_document_store()` | [USAGE](../intergrax/integrations/providers/cassandra/USAGE.md) |
-| `celery` | `message_bus` | stable | `create_celery_message_bus()` | [USAGE](../intergrax/integrations/providers/celery/USAGE.md) |
-| `chroma` | `vector_store` | beta | `create_chroma_vector_store()` | [USAGE](../intergrax/integrations/providers/chroma/USAGE.md) |
-| `confluence` | `wiki_knowledge` | beta | `create_confluence_wiki_knowledge()` | [USAGE](../intergrax/integrations/providers/confluence/USAGE.md) |
-| `databricks` | `relational_store` | beta | `create_databricks_relational_store()` | [USAGE](../intergrax/integrations/providers/databricks/USAGE.md) |
-| `elasticsearch` | `observability_backend` | beta | `create_elasticsearch_observability_backend()` | [USAGE](../intergrax/integrations/providers/elasticsearch/USAGE.md) |
-| `gcp` | `cloud_platform` | beta | `create_gcp_cloud_platform()` | [USAGE](../intergrax/integrations/providers/gcp/USAGE.md) |
-| `google_cse` | `search_provider` | stable | `create_google_cse_search_provider()` | [USAGE](../intergrax/integrations/providers/google_cse/USAGE.md) |
-| `jira` | `issue_tracker` | beta | `create_jira_issue_tracker()` | [USAGE](../intergrax/integrations/providers/jira/USAGE.md) |
-| `kafka` | `message_bus` | stable | `create_kafka_message_bus()` | [USAGE](../intergrax/integrations/providers/kafka/USAGE.md) |
-| `lab_json` | `interaction_surface` | stable | `create_lab_json_interaction_surface()` | [USAGE](../intergrax/integrations/providers/lab_json/USAGE.md) |
-| `log` | `notification_channel` | stable | `create_log_notification_channel()` | [USAGE](../intergrax/integrations/providers/log/USAGE.md) |
-| `mongodb` | `document_store` | beta | `create_mongodb_document_store()` | [USAGE](../intergrax/integrations/providers/mongodb/USAGE.md) |
-| `ms365_graph` | `collaboration_suite` | beta | `create_ms365_graph_collaboration_suite()` | [USAGE](../intergrax/integrations/providers/ms365_graph/USAGE.md) |
-| `mysql` | `relational_store` | beta | `create_mysql_relational_store()` | [USAGE](../intergrax/integrations/providers/mysql/USAGE.md) |
-| `pinecone` | `vector_store` | beta | `create_pinecone_vector_store()` | [USAGE](../intergrax/integrations/providers/pinecone/USAGE.md) |
-| `postgresql` | `relational_store` | beta | `create_postgresql_relational_store()` | [USAGE](../intergrax/integrations/providers/postgresql/USAGE.md) |
-| `prometheus` | `observability_backend` | beta | `create_prometheus_observability_backend()` | [USAGE](../intergrax/integrations/providers/prometheus/USAGE.md) |
-| `qdrant` | `vector_store` | beta | `create_qdrant_vector_store()` | [USAGE](../intergrax/integrations/providers/qdrant/USAGE.md) |
-| `rabbitmq` | `message_bus` | stable | `create_rabbitmq_message_bus()` | [USAGE](../intergrax/integrations/providers/rabbitmq/USAGE.md) |
-| `redis` | `key_value_cache` | stable | `create_redis_key_value_cache()` | [USAGE](../intergrax/integrations/providers/redis/USAGE.md) |
-| `s3` | `object_storage` | beta | `create_s3_object_storage()` | [USAGE](../intergrax/integrations/providers/s3/USAGE.md) |
-| `slack` | `notification_channel`, `interaction_surface` | stable | `create_slack_catalog_factory()` | [USAGE](../intergrax/integrations/providers/slack/USAGE.md) |
-| `sqlite` | `relational_store` | stable | `create_sqlite_relational_store()` | [USAGE](../intergrax/integrations/providers/sqlite/USAGE.md) |
-| `teams` | `notification_channel`, `interaction_surface` | stable | `create_teams_catalog_factory()` | [USAGE](../intergrax/integrations/providers/teams/USAGE.md) |
-| `webhook` | `notification_channel` | stable | `create_webhook_notification_channel()` | [USAGE](../intergrax/integrations/providers/webhook/USAGE.md) |
+| `aws` | `cloud_platform` | beta | `create_aws_cloud_platform()` | [USAGE](../intergrax/integrations/providers/cloud_platform/aws/USAGE.md) |
+| `azure` | `cloud_platform` | beta | `create_azure_cloud_platform()` | [USAGE](../intergrax/integrations/providers/cloud_platform/azure/USAGE.md) |
+| `azure_blob` | `object_storage` | beta | `create_azure_blob_object_storage()` | [USAGE](../intergrax/integrations/providers/object_storage/azure_blob/USAGE.md) |
+| `azure_devops` | `issue_tracker` | beta | `create_azure_devops_issue_tracker()` | [USAGE](../intergrax/integrations/providers/issue_tracker/azure_devops/USAGE.md) |
+| `azure_sql` | `relational_store` | beta | `create_azure_sql_relational_store()` | [USAGE](../intergrax/integrations/providers/relational_store/azure_sql/USAGE.md) |
+| `bing` | `search_provider` | stable | `create_bing_search_provider()` | [USAGE](../intergrax/integrations/providers/search_provider/bing/USAGE.md) |
+| `brave` | `search_provider` | beta | `create_brave_search_provider()` | [USAGE](../intergrax/integrations/providers/search_provider/brave/USAGE.md) |
+| `cassandra` | `document_store` | beta | `create_cassandra_document_store()` | [USAGE](../intergrax/integrations/providers/document_store/cassandra/USAGE.md) |
+| `celery` | `message_bus` | stable | `create_celery_message_bus()` | [USAGE](../intergrax/integrations/providers/message_bus/celery/USAGE.md) |
+| `chroma` | `vector_store` | beta | `create_chroma_vector_store()` | [USAGE](../intergrax/integrations/providers/vector_store/chroma/USAGE.md) |
+| `cloud_sql` | `relational_store` | beta | `create_cloud_sql_relational_store()` | [USAGE](../intergrax/integrations/providers/relational_store/cloud_sql/USAGE.md) |
+| `confluence` | `wiki_knowledge` | beta | `create_confluence_wiki_knowledge()` | [USAGE](../intergrax/integrations/providers/wiki_knowledge/confluence/USAGE.md) |
+| `databricks` | `relational_store` | beta | `create_databricks_relational_store()` | [USAGE](../intergrax/integrations/providers/relational_store/databricks/USAGE.md) |
+| `dynamodb` | `document_store` | beta | `create_dynamodb_document_store()` | [USAGE](../intergrax/integrations/providers/document_store/dynamodb/USAGE.md) |
+| `elasticache` | `key_value_cache` | beta | `create_elasticache_key_value_cache()` | [USAGE](../intergrax/integrations/providers/key_value_cache/elasticache/USAGE.md) |
+| `elasticsearch` | `observability_backend` | beta | `create_elasticsearch_observability_backend()` | [USAGE](../intergrax/integrations/providers/observability_backend/elasticsearch/USAGE.md) |
+| `email_smtp` | `notification_channel` | beta | `create_email_smtp_notification_channel()` | [USAGE](../intergrax/integrations/providers/notification_channel/email_smtp/USAGE.md) |
+| `gcp` | `cloud_platform` | beta | `create_gcp_cloud_platform()` | [USAGE](../intergrax/integrations/providers/cloud_platform/gcp/USAGE.md) |
+| `gcs` | `object_storage` | beta | `create_gcs_object_storage()` | [USAGE](../intergrax/integrations/providers/object_storage/gcs/USAGE.md) |
+| `github` | `issue_tracker` | beta | `create_github_issue_tracker()` | [USAGE](../intergrax/integrations/providers/issue_tracker/github/USAGE.md) |
+| `google_cse` | `search_provider` | stable | `create_google_cse_search_provider()` | [USAGE](../intergrax/integrations/providers/search_provider/google_cse/USAGE.md) |
+| `google_workspace` | `collaboration_suite` | beta | `create_google_workspace_collaboration_suite()` | [USAGE](../intergrax/integrations/providers/collaboration_suite/google_workspace/USAGE.md) |
+| `jira` | `issue_tracker` | beta | `create_jira_issue_tracker()` | [USAGE](../intergrax/integrations/providers/issue_tracker/jira/USAGE.md) |
+| `kafka` | `message_bus` | stable | `create_kafka_message_bus()` | [USAGE](../intergrax/integrations/providers/message_bus/kafka/USAGE.md) |
+| `lab_json` | `interaction_surface` | stable | `create_lab_json_interaction_surface()` | [USAGE](../intergrax/integrations/providers/interaction_surface/lab_json/USAGE.md) |
+| `linear` | `issue_tracker` | beta | `create_linear_issue_tracker()` | [USAGE](../intergrax/integrations/providers/issue_tracker/linear/USAGE.md) |
+| `log` | `notification_channel` | stable | `create_log_notification_channel()` | [USAGE](../intergrax/integrations/providers/notification_channel/log/USAGE.md) |
+| `memcached` | `key_value_cache` | beta | `create_memcached_key_value_cache()` | [USAGE](../intergrax/integrations/providers/key_value_cache/memcached/USAGE.md) |
+| `mongodb` | `document_store` | beta | `create_mongodb_document_store()` | [USAGE](../intergrax/integrations/providers/document_store/mongodb/USAGE.md) |
+| `ms365_graph` | `collaboration_suite` | beta | `create_ms365_graph_collaboration_suite()` | [USAGE](../intergrax/integrations/providers/collaboration_suite/ms365_graph/USAGE.md) |
+| `mssql` | `relational_store` | beta | `create_mssql_relational_store()` | [USAGE](../intergrax/integrations/providers/relational_store/mssql/USAGE.md) |
+| `mysql` | `relational_store` | beta | `create_mysql_relational_store()` | [USAGE](../intergrax/integrations/providers/relational_store/mysql/USAGE.md) |
+| `notion` | `wiki_knowledge` | beta | `create_notion_wiki_knowledge()` | [USAGE](../intergrax/integrations/providers/wiki_knowledge/notion/USAGE.md) |
+| `oracle` | `relational_store` | beta | `create_oracle_relational_store()` | [USAGE](../intergrax/integrations/providers/relational_store/oracle/USAGE.md) |
+| `otel` | `observability_backend` | beta | `create_otel_observability_backend()` | [USAGE](../intergrax/integrations/providers/observability_backend/otel/USAGE.md) |
+| `pinecone` | `vector_store` | beta | `create_pinecone_vector_store()` | [USAGE](../intergrax/integrations/providers/vector_store/pinecone/USAGE.md) |
+| `playwright` | `browser_automation` | beta | `create_playwright_browser_automation()` | [USAGE](../intergrax/integrations/providers/browser_automation/playwright/USAGE.md) |
+| `postgresql` | `relational_store` | beta | `create_postgresql_relational_store()` | [USAGE](../intergrax/integrations/providers/relational_store/postgresql/USAGE.md) |
+| `prometheus` | `observability_backend` | beta | `create_prometheus_observability_backend()` | [USAGE](../intergrax/integrations/providers/observability_backend/prometheus/USAGE.md) |
+| `pubsub` | `message_bus` | beta | `create_pubsub_message_bus()` | [USAGE](../intergrax/integrations/providers/message_bus/pubsub/USAGE.md) |
+| `qdrant` | `vector_store` | beta | `create_qdrant_vector_store()` | [USAGE](../intergrax/integrations/providers/vector_store/qdrant/USAGE.md) |
+| `rabbitmq` | `message_bus` | stable | `create_rabbitmq_message_bus()` | [USAGE](../intergrax/integrations/providers/message_bus/rabbitmq/USAGE.md) |
+| `redis` | `key_value_cache` | stable | `create_redis_key_value_cache()` | [USAGE](../intergrax/integrations/providers/key_value_cache/redis/USAGE.md) |
+| `s3` | `object_storage` | beta | `create_s3_object_storage()` | [USAGE](../intergrax/integrations/providers/object_storage/s3/USAGE.md) |
+| `serpapi` | `search_provider` | beta | `create_serpapi_search_provider()` | [USAGE](../intergrax/integrations/providers/search_provider/serpapi/USAGE.md) |
+| `service_bus` | `message_bus` | beta | `create_service_bus_message_bus()` | [USAGE](../intergrax/integrations/providers/message_bus/service_bus/USAGE.md) |
+| `sharepoint` | `wiki_knowledge` | beta | `create_sharepoint_wiki_knowledge()` | [USAGE](../intergrax/integrations/providers/wiki_knowledge/sharepoint/USAGE.md) |
+| `slack` | `notification_channel`, `interaction_surface` | stable | `create_slack_catalog_factory()` | [USAGE](../intergrax/integrations/providers/notification_channel/slack/USAGE.md) |
+| `sqs` | `message_bus` | beta | `create_sqs_message_bus()` | [USAGE](../intergrax/integrations/providers/message_bus/sqs/USAGE.md) |
+| `sqlite` | `relational_store` | stable | `create_sqlite_relational_store()` | [USAGE](../intergrax/integrations/providers/relational_store/sqlite/USAGE.md) |
+| `teams` | `notification_channel`, `interaction_surface` | stable | `create_teams_catalog_factory()` | [USAGE](../intergrax/integrations/providers/notification_channel/teams/USAGE.md) |
+| `webhook` | `notification_channel` | stable | `create_webhook_notification_channel()` | [USAGE](../intergrax/integrations/providers/notification_channel/webhook/USAGE.md) |
 
 ---
 
 ## Planned providers (not yet implemented)
 
-Slugs reserved in the catalog; see [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase M.6 P2/P3 for priority.
-
 | Priority | Slugs | Category |
 |----------|-------|----------|
-| High | `azure_blob`, `gcs` | `object_storage` |
-| High | `email_smtp` | `notification_channel` |
-| Medium | `notion`, `sharepoint` | `wiki_knowledge` |
-| Medium | `github`, `linear` | `issue_tracker` |
-| Medium | `google_workspace` | `collaboration_suite` |
-| Medium | `otel` | `observability_backend` |
-| Medium | `brave`, `serpapi` | `search_provider` |
-| Medium | `playwright` | `browser_automation` |
-| Low | `sqs`, `service_bus`, `pubsub`, `dynamodb`, `elasticache`, `memcached` | various (often via cloud facades) |
+| Low | `selenium` | `browser_automation` |
+| Future | *weaviate*, *milvus*, *snowflake*, *vault* | various — requires human approval (§5.2.4) |
+
+M.6 P2/P3 backlog from the implementation plan is **Done** (beta) as of 2026-05-30. Remaining slugs above are optional follow-ups.
 
 ---
 
+All **51** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
+
+```bash
+uv run python scripts/generate_integration_usage_docs.py
+```
+
 ## Adding a new provider
 
-1. Implement `intergrax/integrations/providers/<slug>/` (config, adapter, opens, bundle, register).
+1. Implement `intergrax/integrations/providers/<category>/<slug>/` (config, adapter, opens, bundle, register).
 2. Register in `register_default_integrations()`.
 3. Add unit tests under `tests/unit/integrations/providers/`.
-4. Add `providers/<slug>/USAGE.md` (English).
+4. Add an entry to `scripts/generate_integration_usage_docs.py` and run the generator (English `USAGE.md`).
 5. Update this catalog and the implementation plan tracker.
 
 Delivery checklist: [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) — Phase M.4 workflow.

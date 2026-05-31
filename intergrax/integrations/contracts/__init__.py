@@ -15,6 +15,7 @@ from intergrax.integrations.contracts.base import (
     categories_for_profile_field,
     normalize_category,
 )
+from intergrax.integrations.contracts.browser_automation import BrowserAutomation, PageContent
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
 from intergrax.integrations.contracts.collaboration_suite import (
     CalendarEvent,
@@ -78,6 +79,8 @@ from intergrax.integrations.contracts.vector_store import (
 
 __all__ = [
     "PROFILE_FIELD_BY_CATEGORY",
+    "BrowserAutomation",
+    "PageContent",
     "CloudPlatform",
     "CalendarEvent",
     "CalendarEventsResult",

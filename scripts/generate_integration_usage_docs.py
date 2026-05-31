@@ -28,7 +28,7 @@ backend = profile.resolve(IntegrationCategory.{category_enum})
 Direct factory (preferred in application ``factory.py``):
 
 ```python
-from intergrax.integrations.providers.{slug}.bundle import {factory}
+from intergrax.integrations.providers.{category}.{slug}.bundle import {factory}
 
 backend = {factory}(**config_overrides)
 ```
@@ -276,7 +276,7 @@ notifier = create_slack_notification_channel(webhook_url="https://hooks.slack.co
 notifier.notify("Task t-1 finished")
 
 # Inbound (interaction):
-from intergrax.integrations.providers.slack.bundle import create_slack_interaction_surface
+from intergrax.integrations.providers.notification_channel.slack.bundle import create_slack_interaction_surface
 surface = create_slack_interaction_surface(signing_secret="...")
 # profile.resolve(IntegrationCategory.INTERACTION_SURFACE) when interaction_surface=SLACK
 """,
@@ -497,6 +497,370 @@ store.delete("exports/run-1.zip")
 """,
         "notes": "boto3 S3 client only in ``opens.py``. With ``IntegrationProfile(cloud_platform=IntegrationSlug.AWS)``, ``object_storage`` resolves to ``s3`` by default.",
     },
+    # --- Phase M.6 P2/P3 (2026-05-30) ---
+    {
+        "slug": "azure_blob",
+        "category": "object_storage",
+        "category_enum": "OBJECT_STORAGE",
+        "slug_enum": "AZURE_BLOB",
+        "factory": "create_azure_blob_object_storage",
+        "env": "`INTERGRAX_AZURE_BLOB_CONTAINER` (required); optional `INTERGRAX_AZURE_BLOB_PREFIX`, `INTERGRAX_AZURE_BLOB_CONNECTION_STRING`, `INTERGRAX_AZURE_BLOB_ACCOUNT_URL`",
+        "example": """\
+store = create_azure_blob_object_storage(container="artifacts", prefix="tenant-a")
+store.put("exports/run-1.zip", file_bytes, content_type="application/zip")
+obj = store.get("exports/run-1.zip")
+store.delete("exports/run-1.zip")
+""",
+        "notes": "``azure-storage-blob`` only in ``opens.py``. Default ``object_storage`` slug when ``cloud_platform=azure``.",
+    },
+    {
+        "slug": "gcs",
+        "category": "object_storage",
+        "category_enum": "OBJECT_STORAGE",
+        "slug_enum": "GCS",
+        "factory": "create_gcs_object_storage",
+        "env": "`INTERGRAX_GCS_BUCKET` (required); optional `INTERGRAX_GCS_PREFIX`, `INTERGRAX_GCS_PROJECT_ID`; GCP ADC or service account",
+        "example": """\
+store = create_gcs_object_storage(bucket="intergrax-artifacts", prefix="tenant-a")
+store.put("reports/summary.pdf", pdf_bytes, content_type="application/pdf")
+obj = store.get("reports/summary.pdf")
+url = store.presigned_url("reports/summary.pdf", expires_in_seconds=900)
+store.close()
+""",
+        "notes": "``google-cloud-storage`` opened lazily in ``_shared/p2/``. Default ``object_storage`` when ``cloud_platform=gcp``.",
+    },
+    {
+        "slug": "dynamodb",
+        "category": "document_store",
+        "category_enum": "DOCUMENT_STORE",
+        "slug_enum": "DYNAMODB",
+        "factory": "create_dynamodb_document_store",
+        "env": "`INTERGRAX_DYNAMODB_TABLE`; optional `INTERGRAX_DYNAMODB_REGION`; AWS credential vars",
+        "example": """\
+from intergrax.integrations.contracts.document_store import DocumentRecord
+
+store = create_dynamodb_document_store(table_name="intergrax-events", region="eu-central-1")
+store.put(DocumentRecord(partition_key="tenant-1", row_key="evt-1", data={"status": "ok"}))
+doc = store.get("tenant-1", "evt-1")
+result = store.query("tenant-1", limit=50, row_key_prefix="2026-")
+store.close()
+""",
+        "notes": "boto3 DynamoDB resource in ``_shared/p2/factories.py``. Default ``document_store`` when ``cloud_platform=aws``.",
+    },
+    {
+        "slug": "sqs",
+        "category": "message_bus",
+        "category_enum": "MESSAGE_BUS",
+        "slug_enum": "SQS",
+        "factory": "create_sqs_message_bus",
+        "env": "`INTERGRAX_SQS_QUEUE`; optional `INTERGRAX_SQS_REGION`; AWS credential vars",
+        "example": """\
+from intergrax.queueing.contracts.task_queue import TaskRequest
+
+bus = create_sqs_message_bus(queue_name="intergrax-tasks", region="eu-central-1")
+handle = bus.enqueue(TaskRequest(tenant_id="t1", run_id="r1", task_name="echo", payload=b"{}", idempotency_key=None))
+status = bus.get_status(handle)
+""",
+        "notes": "``CloudTaskQueue`` over boto3 SQS. Default ``message_bus`` when ``cloud_platform=aws``.",
+    },
+    {
+        "slug": "service_bus",
+        "category": "message_bus",
+        "category_enum": "MESSAGE_BUS",
+        "slug_enum": "SERVICE_BUS",
+        "factory": "create_service_bus_message_bus",
+        "env": "`INTERGRAX_SERVICE_BUS_CONNECTION_STRING`, `INTERGRAX_SERVICE_BUS_QUEUE`",
+        "example": """\
+from intergrax.queueing.contracts.task_queue import TaskRequest
+
+bus = create_service_bus_message_bus(
+    connection_string="Endpoint=sb://....servicebus.windows.net/;...",
+    queue_name="intergrax-tasks",
+)
+handle = bus.enqueue(TaskRequest(tenant_id="t1", run_id="r1", task_name="echo", payload=b"{}", idempotency_key=None))
+""",
+        "notes": "``azure-servicebus`` opened lazily. Default ``message_bus`` when ``cloud_platform=azure``.",
+    },
+    {
+        "slug": "pubsub",
+        "category": "message_bus",
+        "category_enum": "MESSAGE_BUS",
+        "slug_enum": "PUBSUB",
+        "factory": "create_pubsub_message_bus",
+        "env": "`INTERGRAX_PUBSUB_PROJECT_ID`, `INTERGRAX_PUBSUB_TOPIC`; GCP ADC or service account",
+        "example": """\
+from intergrax.queueing.contracts.task_queue import TaskRequest
+
+bus = create_pubsub_message_bus(project_id="my-project", topic="intergrax-tasks")
+handle = bus.enqueue(TaskRequest(tenant_id="t1", run_id="r1", task_name="echo", payload=b"{}", idempotency_key=None))
+""",
+        "notes": "``google-cloud-pubsub`` opened lazily. Default ``message_bus`` when ``cloud_platform=gcp``.",
+    },
+    {
+        "slug": "memcached",
+        "category": "key_value_cache",
+        "category_enum": "KEY_VALUE_CACHE",
+        "slug_enum": "MEMCACHED",
+        "factory": "create_memcached_key_value_cache",
+        "env": "`INTERGRAX_MEMCACHED_HOST` (default `localhost`), `INTERGRAX_MEMCACHED_PORT` (default `11211`)",
+        "example": """\
+cache = create_memcached_key_value_cache(host="127.0.0.1", port=11211)
+cache.set("t1", "session:42", b"payload", ttl_seconds=3600)
+value = cache.get("t1", "session:42")
+cache.delete("t1", "session:42")
+cache.close()
+""",
+        "notes": "``pymemcache`` opened lazily. Keys are tenant-scoped as ``{tenant_id}:{key}``.",
+    },
+    {
+        "slug": "elasticache",
+        "category": "key_value_cache",
+        "category_enum": "KEY_VALUE_CACHE",
+        "slug_enum": "ELASTICACHE",
+        "factory": "create_elasticache_key_value_cache",
+        "env": "Same as memcached — point ``INTERGRAX_ELASTICACHE_HOST`` / ``PORT`` at the ElastiCache Redis endpoint",
+        "example": """\
+cache = create_elasticache_key_value_cache(host="my-cluster.xxxxx.cache.amazonaws.com", port=6379)
+cache.set("t1", "lock:graph", b"1", ttl_seconds=60)
+""",
+        "notes": "Uses the memcached-style duck client adapter. For full Redis semantics prefer ``IntegrationSlug.REDIS`` with the cluster URL.",
+    },
+    {
+        "slug": "oracle",
+        "category": "relational_store",
+        "category_enum": "RELATIONAL_STORE",
+        "slug_enum": "ORACLE",
+        "factory": "create_oracle_relational_store",
+        "env": "`INTERGRAX_ORACLE_DSN` or `INTERGRAX_ORACLE_CONNECTION_STRING`",
+        "example": """\
+store = create_oracle_relational_store(dsn="user/pass@localhost:1521/ORCL")
+store.execute("INSERT INTO items (name) VALUES (:1)", ("alpha",))
+rows = store.fetch_all("SELECT name FROM items")
+store.close()
+""",
+        "notes": "``oracledb.connect`` opened lazily in ``_shared/p2/factories.py``.",
+    },
+    {
+        "slug": "mssql",
+        "category": "relational_store",
+        "category_enum": "RELATIONAL_STORE",
+        "slug_enum": "MSSQL",
+        "factory": "create_mssql_relational_store",
+        "env": "`INTERGRAX_MSSQL_DSN` or `INTERGRAX_MSSQL_CONNECTION_STRING`",
+        "example": """\
+store = create_mssql_relational_store(connection_string="Driver={ODBC Driver 18 for SQL Server};Server=...")
+store.execute("INSERT INTO items (name) VALUES (?)", ("alpha",))
+rows = store.fetch_all("SELECT name FROM items")
+store.close()
+""",
+        "notes": "``pyodbc.connect`` opened lazily.",
+    },
+    {
+        "slug": "azure_sql",
+        "category": "relational_store",
+        "category_enum": "RELATIONAL_STORE",
+        "slug_enum": "AZURE_SQL",
+        "factory": "create_azure_sql_relational_store",
+        "env": "`INTERGRAX_AZURE_SQL_CONNECTION_STRING` or DSN; optional `INTERGRAX_AZURE_SQL_SCHEMA`",
+        "example": """\
+store = create_azure_sql_relational_store(
+    connection_string="Driver={ODBC Driver 18 for SQL Server};Server=tcp:....database.windows.net;..."
+)
+rows = store.fetch_all("SELECT TOP 10 id, name FROM items")
+store.close()
+""",
+        "notes": "Default ``relational_store`` when ``cloud_platform=azure``. ``pyodbc`` opened lazily.",
+    },
+    {
+        "slug": "cloud_sql",
+        "category": "relational_store",
+        "category_enum": "RELATIONAL_STORE",
+        "slug_enum": "CLOUD_SQL",
+        "factory": "create_cloud_sql_relational_store",
+        "env": "`INTERGRAX_CLOUD_SQL_DSN` or connection string components (`HOST`, `USER`, `PASSWORD`, `DATABASE`)",
+        "example": """\
+store = create_cloud_sql_relational_store(dsn="host=127.0.0.1 user=app password=secret dbname=intergrax")
+store.execute("INSERT INTO items (name) VALUES (%s)", ("alpha",))
+rows = store.fetch_all("SELECT name FROM items")
+store.close()
+""",
+        "notes": "Default ``relational_store`` when ``cloud_platform=gcp``. ``pg8000`` opened lazily.",
+    },
+    {
+        "slug": "email_smtp",
+        "category": "notification_channel",
+        "category_enum": "NOTIFICATION_CHANNEL",
+        "slug_enum": "EMAIL_SMTP",
+        "factory": "create_email_smtp_notification_channel",
+        "env": "`INTERGRAX_EMAIL_SMTP_HOST`, `INTERGRAX_EMAIL_SMTP_PORT` (default `587`); optional `USER`, `PASSWORD`, `FROM`",
+        "example": """\
+import asyncio
+from intergrax.runtime.notifications.models import NotificationMessage
+
+channel = create_email_smtp_notification_channel(
+    smtp_host="smtp.example.com",
+    smtp_port=587,
+    user="bot@example.com",
+    password="...",
+    from_address="noreply@example.com",
+)
+asyncio.run(channel.notify(NotificationMessage(
+    tenant_id="t1",
+    channel="#alerts",
+    task_id="task-1",
+    subject="HITL approval required",
+    body="Please review run r-42.",
+    metadata={"to": "ops@example.com"},
+)))
+""",
+        "notes": "stdlib ``smtplib`` in factory open path. Implements ``NotificationAdapter`` (async ``notify``).",
+    },
+    {
+        "slug": "otel",
+        "category": "observability_backend",
+        "category_enum": "OBSERVABILITY_BACKEND",
+        "slug_enum": "OTEL",
+        "factory": "create_otel_observability_backend",
+        "env": "`INTERGRAX_OTEL_ENDPOINT` (default `http://localhost:4318`), `INTERGRAX_OTEL_SERVICE_NAME`",
+        "example": """\
+obs = create_otel_observability_backend(endpoint="http://otel-collector:4318", service_name="intergrax-nexus")
+instant = obs.query_instant("intergrax_tasks_total")
+range_result = obs.query_range("intergrax_tasks_total", start=1710000000, end=1710003600, step="15s")
+""",
+        "notes": "Beta facade over an OTLP-oriented exporter. Inject ``exporter=`` in tests; production wiring may evolve.",
+    },
+    {
+        "slug": "github",
+        "category": "issue_tracker",
+        "category_enum": "ISSUE_TRACKER",
+        "slug_enum": "GITHUB",
+        "factory": "create_github_issue_tracker",
+        "env": "`INTERGRAX_GITHUB_TOKEN`; optional `INTERGRAX_GITHUB_ORG`, `INTERGRAX_GITHUB_REPO`, `INTERGRAX_GITHUB_URL`",
+        "example": """\
+tracker = create_github_issue_tracker(token="ghp_...", org="acme", repo="platform")
+issue = tracker.get_issue("42")
+tracker.add_comment("42", "Agent: root cause identified.")
+results = tracker.search_issues("is:open label:agent", limit=20)
+""",
+        "notes": "httpx REST client opened lazily. ``search_issues`` accepts GitHub search query syntax.",
+    },
+    {
+        "slug": "linear",
+        "category": "issue_tracker",
+        "category_enum": "ISSUE_TRACKER",
+        "slug_enum": "LINEAR",
+        "factory": "create_linear_issue_tracker",
+        "env": "`INTERGRAX_LINEAR_API_KEY`; optional `INTERGRAX_LINEAR_URL`",
+        "example": """\
+tracker = create_linear_issue_tracker(api_key="lin_api_...")
+issue = tracker.get_issue("ENG-123")
+tracker.add_comment("ENG-123", "Automated triage complete.")
+results = tracker.search_issues("priority:1 state:open", limit=20)
+""",
+        "notes": "httpx REST client opened lazily.",
+    },
+    {
+        "slug": "azure_devops",
+        "category": "issue_tracker",
+        "category_enum": "ISSUE_TRACKER",
+        "slug_enum": "AZURE_DEVOPS",
+        "factory": "create_azure_devops_issue_tracker",
+        "env": "`INTERGRAX_AZURE_DEVOPS_TOKEN`; optional `INTERGRAX_AZURE_DEVOPS_ORG`, `INTERGRAX_AZURE_DEVOPS_REPO`, `INTERGRAX_AZURE_DEVOPS_URL`",
+        "example": """\
+tracker = create_azure_devops_issue_tracker(token="...", org="acme", repo="Platform")
+issue = tracker.get_issue("12345")
+tracker.add_comment("12345", "Agent update posted.")
+results = tracker.search_issues("[System.State] = 'Active'", limit=20)
+""",
+        "notes": "REST work-item facade; WIQL passed via ``search_issues``.",
+    },
+    {
+        "slug": "notion",
+        "category": "wiki_knowledge",
+        "category_enum": "WIKI_KNOWLEDGE",
+        "slug_enum": "NOTION",
+        "factory": "create_notion_wiki_knowledge",
+        "env": "`INTERGRAX_NOTION_API_KEY` (Bearer token); optional `INTERGRAX_NOTION_URL`",
+        "example": """\
+wiki = create_notion_wiki_knowledge(api_key="secret_...")
+page = wiki.get_page("page-uuid")
+results = wiki.search_pages("deployment runbook", limit=10)
+""",
+        "notes": "Notion REST API via httpx. Complements ``confluence`` for mixed knowledge bases.",
+    },
+    {
+        "slug": "sharepoint",
+        "category": "wiki_knowledge",
+        "category_enum": "WIKI_KNOWLEDGE",
+        "slug_enum": "SHAREPOINT",
+        "factory": "create_sharepoint_wiki_knowledge",
+        "env": "`INTERGRAX_SHAREPOINT_TOKEN`; optional `INTERGRAX_SHAREPOINT_SITE_URL`, `INTERGRAX_SHAREPOINT_URL`",
+        "example": """\
+wiki = create_sharepoint_wiki_knowledge(token="...", site_url="https://contoso.sharepoint.com/sites/docs")
+page = wiki.get_page("page-id")
+results = wiki.search_pages("incident response", limit=10)
+""",
+        "notes": "Microsoft Graph / SharePoint REST via httpx.",
+    },
+    {
+        "slug": "google_workspace",
+        "category": "collaboration_suite",
+        "category_enum": "COLLABORATION_SUITE",
+        "slug_enum": "GOOGLE_WORKSPACE",
+        "factory": "create_google_workspace_collaboration_suite",
+        "env": "OAuth bearer via `INTERGRAX_GOOGLE_WORKSPACE_TOKEN` or service account; optional `INTERGRAX_GOOGLE_WORKSPACE_URL`",
+        "example": """\
+suite = create_google_workspace_collaboration_suite(token="ya29....")
+user = suite.get_user("user@example.com")
+messages = suite.list_messages("user@example.com", folder="inbox", limit=10)
+suite.send_mail("user@example.com", subject="Report", body="...", to=["ops@example.com"])
+events = suite.list_calendar_events("primary", start="2026-05-01T00:00:00Z", end="2026-05-31T23:59:59Z")
+""",
+        "notes": "Gmail / Calendar / Directory REST. Google-tenant parity with ``ms365_graph``.",
+    },
+    {
+        "slug": "brave",
+        "category": "search_provider",
+        "category_enum": "SEARCH_PROVIDER",
+        "slug_enum": "BRAVE",
+        "factory": "create_brave_search_provider",
+        "env": "`INTERGRAX_BRAVE_API_KEY`",
+        "example": """\
+search = create_brave_search_provider(api_key="BSA...")
+hits = search.search("Intergrax agent orchestration", limit=5)
+for hit in hits:
+    print(hit.rank, hit.title, hit.url)
+""",
+        "notes": "Brave Web Search API via httpx. Hit normalization in ``_shared/rest_search.py``.",
+    },
+    {
+        "slug": "serpapi",
+        "category": "search_provider",
+        "category_enum": "SEARCH_PROVIDER",
+        "slug_enum": "SERPAPI",
+        "factory": "create_serpapi_search_provider",
+        "env": "`INTERGRAX_SERPAPI_API_KEY`",
+        "example": """\
+search = create_serpapi_search_provider(api_key="...")
+hits = search.search("enterprise AI agents", limit=5)
+""",
+        "notes": "SerpAPI JSON API via httpx.",
+    },
+    {
+        "slug": "playwright",
+        "category": "browser_automation",
+        "category_enum": "BROWSER_AUTOMATION",
+        "slug_enum": "PLAYWRIGHT",
+        "factory": "create_playwright_browser_automation",
+        "env": "Optional overrides: ``headless=True``, ``timeout_ms=30000`` (no required env vars)",
+        "example": """\
+browser = create_playwright_browser_automation(headless=True, timeout_ms=30000)
+page = browser.fetch_page("https://example.com/dashboard", wait_until="networkidle")
+print(page.title, page.text[:200])
+browser.close()
+""",
+        "notes": "``playwright`` Chromium launch opened lazily. Use for JS-heavy pages; prefer ``search_provider`` for simple research.",
+    },
 ]
 
 
@@ -509,10 +873,12 @@ def profile_field(category: str) -> str:
 def render(provider: dict[str, str]) -> str:
     slug = provider["slug"]
     pf = profile_field(provider["category"])
+    category_folder = pf
     header = COMMON_HEADER.format(
         profile_field=pf,
         slug_enum=provider["slug_enum"],
         category_enum=provider["category_enum"],
+        category=category_folder,
         slug=slug,
         factory=provider["factory"],
     )
@@ -530,7 +896,7 @@ def render(provider: dict[str, str]) -> str:
 ## Example
 
 ```python
-from intergrax.integrations.providers.{slug}.bundle import {provider['factory']}
+from intergrax.integrations.providers.{category_folder}.{slug}.bundle import {provider['factory']}
 
 {provider['example'].rstrip()}
 ```
@@ -542,8 +908,16 @@ from intergrax.integrations.providers.{slug}.bundle import {provider['factory']}
 
 
 def main() -> None:
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from intergrax.integrations.providers.layout import SLUG_CATEGORY
+
     for provider in PROVIDERS:
-        path = PROVIDERS_DIR / provider["slug"] / "USAGE.md"
+        slug = provider["slug"]
+        category = profile_field(provider.get("category") or SLUG_CATEGORY[slug])
+        path = PROVIDERS_DIR / category / slug / "USAGE.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(render(provider), encoding="utf-8")
         print(f"wrote {path.relative_to(ROOT)}")
 

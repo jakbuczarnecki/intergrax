@@ -104,13 +104,13 @@ These components exist in the repository **before** the full provider catalog sh
 | `RuntimeToolGateway` | `intergrax/runtime/nexus/tools/tool_gateway.py` | **Done** — UAEP / §42.12 entry |
 | `ToolsAgent` (LLM planner) | `intergrax/tools/tools_agent.py` | **Done** — OpenAI schema from registry |
 | `ToolAccessPolicy` | `intergrax/runtime/nexus/tools/tool_access_policy.py` | **Done** |
-| Legacy `ToolBase` | `intergrax/tools/tools_base.py` | **Deprecated** — migrate to `ToolContract` (Phase O.2) |
+| Legacy `ToolBase` | `intergrax/tools/tools_base.py` | **Deprecated** — use `ToolContract` (Phase O.7 Done) |
 
 ---
 
 ## Catalog tools
 
-Status legend: **Done** = registered handler in catalog; **Planned** = Phase O backlog (migration / exporters).
+Status legend: **Done** = registered handler in catalog.
 
 ### Context & retrieval
 
@@ -206,9 +206,9 @@ OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` — used by
 
 ---
 
-## Full tool index (planned catalog)
+## Full tool index
 
-Alphabetical reference — all target first-party tools.
+Alphabetical reference — all first-party catalog tools (Phase O complete).
 
 | tool_id | Category | Status | Integration / module |
 |---------|----------|--------|----------------------|

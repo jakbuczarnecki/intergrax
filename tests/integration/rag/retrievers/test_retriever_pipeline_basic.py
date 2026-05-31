@@ -14,7 +14,7 @@ from intergrax.rag.embedding.registry.embedding_provider_registry import Embeddi
 from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_pipeline
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.providers.vector_similarity_retriever import VectorSimilarityRetriever
-from intergrax.integrations.providers.chroma.bundle import create_chroma_vector_store
+from intergrax.integrations.providers.vector_store.chroma.bundle import create_chroma_vector_store
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 

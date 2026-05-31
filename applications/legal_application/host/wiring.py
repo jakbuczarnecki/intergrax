@@ -12,7 +12,7 @@ from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.session.session_storage import SessionStorage
-from intergrax.integrations.providers.sqlite import create_sqlite_session_storage
+from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_session_storage
 
 from intergrax.applications._shared.wiring import build_application_registry
 from intergrax.applications.contracts.build_context import ApplicationBuildContext

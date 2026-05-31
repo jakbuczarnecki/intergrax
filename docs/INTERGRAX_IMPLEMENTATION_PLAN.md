@@ -540,16 +540,16 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M.4 | P0 providers — wrap existing | **Done** | See **M.4 provider tracker** below |
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
 | M.6 | P1 providers (on demand) | In progress | **postgresql**, **mysql**, **jira**, **confluence**, **prometheus**, **ms365_graph**, **aws**, **azure**, **gcp** Done; … |
-| M.6 P2 | Extended providers (on demand) | In progress | **`cassandra`**, **`elasticsearch`**, **`databricks`**, **`mongodb`**, **`pinecone`**, **`qdrant`**, **`chroma`**, **`s3`** Done (beta); azure_blob/gcs (next); see **M.6 P2 tracker** |
+| M.6 P2 | Extended providers (on demand) | **Done** (beta) | All P2/P3 slugs shipped 2026-05-30 — see **M.6 P2 tracker**; `_shared/p2/` + thin `providers/<slug>/` shells |
 | M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
 **M.4 delivery workflow (one provider per iteration):**
 
-1. Implement `providers/<slug>/` (wrap legacy module — no fork).
+1. Implement `providers/<category>/<slug>/` (wrap legacy module — no fork).
 2. Register via `register_<slug>_integration()` + `register_default_integrations()`.
 3. Unit tests under `tests/unit/integrations/providers/`.
-4. Add `providers/<slug>/USAGE.md` — English usage guide (factory + `IntegrationProfile` + API invoke example).
+4. Add `providers/<slug>/USAGE.md` — English usage guide (factory + `IntegrationProfile` + API invoke example). Extend `scripts/generate_integration_usage_docs.py` and run `uv run python scripts/generate_integration_usage_docs.py`.
 5. Update canon §7.1.3 status + this tracker + migration map row.
 6. Next slug in priority order.
 
@@ -601,21 +601,19 @@ Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. 
 | **`qdrant`** | **vector_store** | **Done** (beta) | Catalog bridge to `rag/vectorstore/providers/qdrant_vector_store.py` |
 | **`chroma`** | **vector_store** | **Done** (beta) | Catalog bridge to `rag/vectorstore/providers/chroma_vector_store.py` |
 | **`s3`** | **object_storage** | **Done** (beta) | AWS S3 blobs; boto3 only in `opens.py` |
-| `azure_blob` / `gcs` | object_storage | Planned (P2 next) | Cloud blob storage (via platform facades) |
-| `dynamodb` | document_store | Planned | AWS document/KV (also via `aws` facade) |
-| `oracle` | relational_store | Planned | Enterprise relational clients |
-| `mssql` | relational_store | Planned | Microsoft SQL deployments |
-| `otel` | observability_backend | Planned | Unified traces/metrics export |
-| `memcached` | key_value_cache | Planned | Simple cache tier |
-| `elasticache` | key_value_cache | Planned | Managed Redis on AWS (via `aws` facade) |
-| `sqs` / `service_bus` / `pubsub` | message_bus | Planned | Cloud-native queues (via platform facades) |
-| `azure_blob` / `gcs` | object_storage | Planned | Cloud blob storage (via platform facades) |
-| `email_smtp` | notification_channel | Planned | HITL / reports without chat vendor lock-in |
-| `notion` / `sharepoint` | wiki_knowledge | Planned | Additional knowledge bases beyond Confluence |
-| `github` / `linear` / `azure_devops` | issue_tracker | Planned | Dev-centric ALM sources |
-| `google_workspace` | collaboration_suite | Planned | Gmail / Calendar for Google tenants |
-| `brave` / `serpapi` | search_provider | Planned | Alternative web research APIs |
-| `playwright` | browser_automation | Planned | Dynamic web research beyond HTTP fetch |
+| **`azure_blob`** | **object_storage** | **Done** (beta) | Azure Blob; `providers/azure_blob/` + shared `CatalogObjectStorage` |
+| **`gcs`** | **object_storage** | **Done** (beta) | GCS via `_shared/p2/gcs_blob.py` |
+| **`dynamodb`** | **document_store** | **Done** (beta) | boto3 table facade in `_shared/p2/factories.py` |
+| **`oracle`** / **`mssql`** / **`azure_sql`** / **`cloud_sql`** | **relational_store** | **Done** (beta) | SQL adapters via `_shared/p2/clients.py` |
+| **`memcached`** / **`elasticache`** | **key_value_cache** | **Done** (beta) | pymemcache / Redis-compatible duck client |
+| **`sqs`** / **`service_bus`** / **`pubsub`** | **message_bus** | **Done** (beta) | `CloudTaskQueue` over cloud SDK facades |
+| **`email_smtp`** | **notification_channel** | **Done** (beta) | stdlib SMTP in factory open path |
+| **`otel`** | **observability_backend** | **Done** (beta) | OTLP-oriented metrics facade (beta noop exporter default) |
+| **`github`** / **`linear`** / **`azure_devops`** | **issue_tracker** | **Done** (beta) | REST issue trackers via httpx |
+| **`notion`** / **`sharepoint`** | **wiki_knowledge** | **Done** (beta) | REST wiki adapters |
+| **`google_workspace`** | **collaboration_suite** | **Done** (beta) | Gmail / Calendar REST |
+| **`brave`** / **`serpapi`** | **search_provider** | **Done** (beta) | Shared `_shared/rest_search.py` hit mappers |
+| **`playwright`** | **browser_automation** | **Done** (beta) | `contracts/browser_automation.py` + Playwright factory |
 
 #### M.6 P3 — Recommended backlog (common in agent / orchestration platforms)
 
@@ -860,30 +858,30 @@ providers/gcp/
 
 | Legacy location | Target slug | Action |
 |-----------------|-------------|--------|
-| `distributed/providers/redis_kv_store.py` (+ siblings) | `redis` | **Done** — single entry `integrations/providers/redis/create_redis_integration()` |
-| `queueing/providers/kafka/` | `kafka` | **Done** — runtime transport + tests delegate to `integrations/providers/kafka/` |
-| `queueing/providers/celery/` | `celery` | **Done** — `integrations/providers/celery/create_celery_integration()` |
-| `queueing/providers/rabbitmq/` | `rabbitmq` | **Done** — runtime transport + tests delegate to `integrations/providers/rabbitmq/` |
-| `websearch/providers/google_cse_provider.py` | `google_cse` | **Done** — `integrations/providers/google_cse/create_google_cse_integration()` |
-| `websearch/providers/bing_provider.py` | `bing` | **Done** — `integrations/providers/bing/create_bing_integration()` |
-| `runtime/notifications/adapters/webhook_adapter.py` | `webhook` | **Done** — `integrations/providers/webhook/create_webhook_integration()` |
-| `runtime/notifications/adapters/logging_adapter.py` | `log` | **Done** — `integrations/providers/log/`; factory delegates |
+| `distributed/providers/redis_kv_store.py` (+ siblings) | `redis` | **Done** — single entry `integrations/providers/key_value_cache/redis/create_redis_integration()` |
+| `queueing/providers/kafka/` | `kafka` | **Done** — runtime transport + tests delegate to `integrations/providers/message_bus/kafka/` |
+| `queueing/providers/celery/` | `celery` | **Done** — `integrations/providers/message_bus/celery/create_celery_integration()` |
+| `queueing/providers/rabbitmq/` | `rabbitmq` | **Done** — runtime transport + tests delegate to `integrations/providers/message_bus/rabbitmq/` |
+| `websearch/providers/google_cse_provider.py` | `google_cse` | **Done** — `integrations/providers/search_provider/google_cse/create_google_cse_integration()` |
+| `websearch/providers/bing_provider.py` | `bing` | **Done** — `integrations/providers/search_provider/bing/create_bing_integration()` |
+| `runtime/notifications/adapters/webhook_adapter.py` | `webhook` | **Done** — `integrations/providers/notification_channel/webhook/create_webhook_integration()` |
+| `runtime/notifications/adapters/logging_adapter.py` | `log` | **Done** — `integrations/providers/notification_channel/log/`; factory delegates |
 | `runtime/notifications/adapters/` | `slack`, `teams` | **Done** — runtime delegates |
-| `runtime/interactions/adapters/lab_json_adapter.py` | `lab_json` | **Done** — `integrations/providers/lab_json/create_lab_json_integration()` |
-| `runtime/*/stores/sqlite_*.py` (+ store openers) | `sqlite` | **Done** — single entry `integrations/providers/sqlite/create_sqlite_integration()` |
-| (new) | `postgresql` | **Done** — `integrations/providers/postgresql/`; **only** `opens.py` calls `psycopg.connect` |
-| (new) | `mysql` | **Done** — `integrations/providers/mysql/`; **only** `opens.py` calls `pymysql.connect` |
-| (new) | `jira` | **Done** — `integrations/providers/jira/`; **only** `opens.py` creates httpx client |
-| (new) | `confluence` | **Done** — `integrations/providers/confluence/`; **only** `opens.py` creates httpx client |
-| (new) | `prometheus` | **Done** — `integrations/providers/prometheus/`; **only** `opens.py` creates httpx client |
-| (new) | `ms365_graph` | **Done** — `integrations/providers/ms365_graph/`; **only** `opens.py` creates httpx client + token fetch |
-| (new) | `cassandra` | **Done** — `integrations/providers/cassandra/`; **only** `opens.py` creates driver session |
-| (new) | `aws` | **Done** — `integrations/providers/aws/`; **only** `opens.py` creates boto3 session |
-| (new) | `azure` | **Done** — `integrations/providers/azure/`; **only** `opens.py` creates Azure credential |
-| (new) | `gcp` | **Done** — `integrations/providers/gcp/`; **only** `opens.py` creates Google credentials |
-| (new) | `elasticsearch` | **Done** — `integrations/providers/elasticsearch/`; **only** `opens.py` creates httpx client |
-| (new) | `databricks` | **Done** — `integrations/providers/databricks/`; **only** `opens.py` calls `databricks.sql.connect` |
-| (new) | `mongodb` | **Done** — `integrations/providers/mongodb/`; **only** `opens.py` calls `pymongo.MongoClient` |
+| `runtime/interactions/adapters/lab_json_adapter.py` | `lab_json` | **Done** — `integrations/providers/interaction_surface/lab_json/create_lab_json_integration()` |
+| `runtime/*/stores/sqlite_*.py` (+ store openers) | `sqlite` | **Done** — single entry `integrations/providers/relational_store/sqlite/create_sqlite_integration()` |
+| (new) | `postgresql` | **Done** — `integrations/providers/relational_store/postgresql/`; **only** `opens.py` calls `psycopg.connect` |
+| (new) | `mysql` | **Done** — `integrations/providers/relational_store/mysql/`; **only** `opens.py` calls `pymysql.connect` |
+| (new) | `jira` | **Done** — `integrations/providers/issue_tracker/jira/`; **only** `opens.py` creates httpx client |
+| (new) | `confluence` | **Done** — `integrations/providers/wiki_knowledge/confluence/`; **only** `opens.py` creates httpx client |
+| (new) | `prometheus` | **Done** — `integrations/providers/observability_backend/prometheus/`; **only** `opens.py` creates httpx client |
+| (new) | `ms365_graph` | **Done** — `integrations/providers/collaboration_suite/ms365_graph/`; **only** `opens.py` creates httpx client + token fetch |
+| (new) | `cassandra` | **Done** — `integrations/providers/document_store/cassandra/`; **only** `opens.py` creates driver session |
+| (new) | `aws` | **Done** — `integrations/providers/cloud_platform/aws/`; **only** `opens.py` creates boto3 session |
+| (new) | `azure` | **Done** — `integrations/providers/cloud_platform/azure/`; **only** `opens.py` creates Azure credential |
+| (new) | `gcp` | **Done** — `integrations/providers/cloud_platform/gcp/`; **only** `opens.py` creates Google credentials |
+| (new) | `elasticsearch` | **Done** — `integrations/providers/observability_backend/elasticsearch/`; **only** `opens.py` creates httpx client |
+| (new) | `databricks` | **Done** — `integrations/providers/relational_store/databricks/`; **only** `opens.py` calls `databricks.sql.connect` |
+| (new) | `mongodb` | **Done** — `integrations/providers/document_store/mongodb/`; **only** `opens.py` calls `pymongo.MongoClient` |
 | `rag/vectorstore/providers/pinecone_*` | `pinecone` | **Done** — `providers/pinecone/` catalog bridge; RAG impl stays in `rag/` |
 | `rag/vectorstore/providers/qdrant_*` | `qdrant` | **Done** — `providers/qdrant/` catalog bridge; RAG impl stays in `rag/` |
 | `rag/vectorstore/providers/chroma_*` | `chroma` | **Done** — `providers/chroma/` catalog bridge; RAG impl stays in `rag/` |
@@ -1558,7 +1556,8 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-30 | M.6-confluence | `providers/confluence/` + `contracts/wiki_knowledge.py`; REST wiki; single-entry `opens.py` |
 | 2026-05-30 | M.6-jira | `providers/jira/` + `contracts/issue_tracker.py`; REST v3; single-entry `opens.py` |
 | 2026-05-30 | M.6-mysql | `providers/mysql/` — beta `RelationalStore` (pymysql); single-entry `opens.py` |
-| 2026-05-30 | M.6-postgresql | `providers/postgresql/` — beta `RelationalStore` (psycopg3); catalog + tests |
+| 2026-05-30 | M.6-provider-layout | Providers grouped under `providers/<category>/<slug>/`; `layout.py` slug map; tests mirrored by category |
+| 2026-05-30 | M.6-p2-batch | P2/P3 integrations — 22 slugs (`azure_blob`, `gcs`, `dynamodb`, cloud queues, SQL variants, SMTP, OTEL, GitHub/Linear/Azure DevOps, Notion/SharePoint, Google Workspace, Brave/SerpAPI, Playwright); `_shared/p2/`; **324** integration unit tests |
 | 2026-05-30 | M.7-agent-guide-integrations | `AGENT_CREATION_GUIDE.md` Appendix E — agents vs Tier-3 wiring |
 | 2026-05-30 | N.2.1-unified-wiring | `ApplicationBuildContext`, `builder_key`/`factory_path`, lab+legal on `build_application_registry` |
 | 2026-05-30 | N.2-conformance | `build_registry_from_manifest`, `load_agent_from_binding` + unit tests |
@@ -1580,7 +1579,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-29 | M.4-google_cse | `providers/google_cse/` — SearchProvider adapter over legacy CSE |
 | 2026-05-29 | M.4-celery | `providers/celery/` — message bus + worker helpers; no `kv_store` |
 | 2026-05-29 | M.4-kafka | `providers/kafka/` + transport delegate; requires `kv_store` |
-| 2026-05-29 | M.4-sqlite-adopt | Runtime `open_*` + apps delegate to `integrations/providers/sqlite/` |
+| 2026-05-29 | M.4-sqlite-adopt | Runtime `open_*` + apps delegate to `integrations/providers/relational_store/sqlite/` |
 | 2026-05-29 | M.4-sqlite | `providers/sqlite/` + bundle (10 domain stores); lazy bootstrap + package `__init__` |
 | 2026-05-29 | M.4-redis | Complete bundle: `create_redis_integration()` — KV, idempotency, rate limit, semaphore, rerank |
 | 2026-05-27 | B.08, B.10 | `wire_nexus_observability` + SQLite defaults in Legal / Research / Lab factories; integration test |
@@ -1635,11 +1634,11 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.32 | **Pinecone vector_store bridge** — catalog entry → `rag/` | §7.1.3 P2 | **Medium** | **Done** (beta) | Production RAG agents | Tier-0 | `providers/pinecone/` thin adapter; SDK only in `opens.py` |
 | B.33 | **Qdrant + Chroma vector_store bridges** — same pattern as B.32 | §7.1.3 P2 | **Low** | **Done** (beta) | Self-hosted / dev RAG | Tier-0 | `providers/qdrant/`, `providers/chroma/`; RAG bootstrap via catalog |
 | B.34 | **Object storage contract + S3 provider** — blobs for artifacts / sandboxes | §7.1.3 P2 | **Medium** | **Done** (beta) | Large file handoff, exports | Tier-0 | `contracts/object_storage.py`, `providers/s3/`; boto3 only in `opens.py` |
-| B.35 | **Notion + SharePoint wiki_knowledge** — internal docs ingestion | §7.1.3 P3 | **Low** | **Open** | Research / runbook agents | Tier-0 | REST adapters; httpx only in `opens.py` |
-| B.36 | **GitHub + Linear issue_tracker** — dev workflow sources | §7.1.3 P3 | **Low** | **Open** | Code-aware agents | Tier-0 | REST/GraphQL; single-entry `opens.py` |
-| B.37 | **email_smtp notification_channel** — outbound mail without chat | §7.1.3 P3 | **Low** | **Open** | HITL, scheduled reports | Tier-0 | `providers/email_smtp/`; stdlib / aiosmtplib in `opens.py` |
-| B.38 | **OpenTelemetry observability_backend** — trace/metric export | §33, §7.1.3 P3 | **Low** | **Open** | Unified ops dashboards | Tier-0 | `providers/otel/`; OTLP exporter only in `opens.py` |
-| B.39 | **Playwright browser_automation** — dynamic web interaction | §7.1.3 P3 | **Low** | **Open** | Research on JS-heavy sites | Tier-0 | `providers/playwright/`; browser launch only in `opens.py` |
+| B.35 | **Notion + SharePoint wiki_knowledge** — internal docs ingestion | §7.1.3 P3 | **Low** | **Done** (beta) | Research / runbook agents | Tier-0 | REST adapters; `_shared/p2/factories.py` |
+| B.36 | **GitHub + Linear issue_tracker** — dev workflow sources | §7.1.3 P3 | **Low** | **Done** (beta) | Code-aware agents | Tier-0 | REST; thin provider shells |
+| B.37 | **email_smtp notification_channel** — outbound mail without chat | §7.1.3 P3 | **Low** | **Done** (beta) | HITL, scheduled reports | Tier-0 | stdlib SMTP in factory open path |
+| B.38 | **OpenTelemetry observability_backend** — trace/metric export | §33, §7.1.3 P3 | **Low** | **Done** (beta) | Unified ops dashboards | Tier-0 | `providers/otel/`; beta noop exporter default |
+| B.39 | **Playwright browser_automation** — dynamic web interaction | §7.1.3 P3 | **Low** | **Done** (beta) | Research on JS-heavy sites | Tier-0 | `providers/playwright/`; browser launch in factory |
 | B.25 | **AWS cloud_platform facade** — auth + S3/SQS/DynamoDB/ElastiCache defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | AWS-hosted applications | Tier-0 | `providers/aws/`; infrastructure only |
 | B.26 | **Azure cloud_platform facade** — MI + Blob/Service Bus/Azure SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | Azure-hosted applications | Tier-0 | `providers/azure/`; infrastructure only |
 | B.27 | **GCP cloud_platform facade** — ADC + GCS/Pub/Sub/Cloud SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | GCP-hosted applications | Tier-0 | `providers/gcp/`; infrastructure only |
@@ -1693,5 +1692,5 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 ---
 
-*Plan synced with codebase after B.34 Object storage + S3 (2026-05-29). Gate: integration unit tests.*
+*Plan synced with codebase after Phase O Tool Library complete + tools_agent fix (2026-05-30). Gate: `tests/unit/tools/` + integration catalog tests.*
 

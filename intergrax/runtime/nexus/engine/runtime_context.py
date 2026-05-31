@@ -15,7 +15,7 @@ from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
 from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import LLMUsageRunRecord
 from intergrax.runtime.nexus.tools import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.integrations.providers.sqlite import create_sqlite_trace_store
+from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_trace_store
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 from intergrax.runtime.replay.service import ReplayService
 from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker

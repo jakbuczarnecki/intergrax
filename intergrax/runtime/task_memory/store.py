@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from intergrax.integrations.providers.sqlite.paths import (
+from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_TASK_MEMORY_DB,
     ENV_TASK_MEMORY_DB,
     resolve_task_memory_db_path,
@@ -27,7 +27,7 @@ __all__ = [
 
 def open_task_memory_store(db_path: Path | None = None) -> SQLiteTaskMemoryStore:
     """Open SQLite TaskMemory via ``integrations.providers.sqlite``."""
-    from intergrax.integrations.providers.sqlite import create_sqlite_task_memory_store
+    from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_task_memory_store
 
     if db_path is not None:
         return create_sqlite_task_memory_store(db_path=db_path)  # type: ignore[return-value]

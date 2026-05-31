@@ -11,7 +11,7 @@ import pytest
 from typing import Optional
 
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
-from intergrax.integrations.providers.kafka.bundle import (
+from intergrax.integrations.providers.message_bus.kafka.bundle import (
     create_kafka_integration,
     create_kafka_worker,
 )

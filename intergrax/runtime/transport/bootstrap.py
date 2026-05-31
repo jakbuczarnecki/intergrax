@@ -37,7 +37,7 @@ def build_transport(
         if config.kafka is None:
             raise ValueError("KafkaTransportConfig must be provided")
 
-        from intergrax.integrations.providers.kafka.bundle import build_kafka_transport
+        from intergrax.integrations.providers.message_bus.kafka.bundle import build_kafka_transport
 
         return build_kafka_transport(
             kv_store=kv_store,
@@ -52,7 +52,7 @@ def build_transport(
         if config.rabbitmq is None:
             raise ValueError("RabbitMQTransportConfig must be provided")
 
-        from intergrax.integrations.providers.rabbitmq.bundle import build_rabbitmq_transport
+        from intergrax.integrations.providers.message_bus.rabbitmq.bundle import build_rabbitmq_transport
 
         rmq_cfg: RabbitMQTransportConfig = config.rabbitmq
 

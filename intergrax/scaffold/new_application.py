@@ -278,7 +278,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
         from typing import Optional
 
         from intergrax.integrations.contracts.base import IntegrationCategory
-        from intergrax.integrations.providers.sqlite.bundle import (
+        from intergrax.integrations.providers.relational_store.sqlite.bundle import (
             SQLiteIntegrationBundle,
             create_sqlite_integration,
         )

@@ -29,7 +29,7 @@ All platform documentation lives in [`docs/`](docs/). Canonical docs — one sou
 | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Full architecture canon (tiers, Nexus, UAEP §42) |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, gaps, priority, business-agent checklist (Appendix A) |
 | [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) | Create an agent: scaffold → register → run → inspect |
-| [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **Integration Library** — catalog of all wired providers (DB, queues, RAG backends, cloud, …) |
+| [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **Integration Library** — catalog of all 51 wired providers; each at `providers/<category>/<slug>/USAGE.md` |
 | [TOOLS.md](docs/TOOLS.md) | **Tool Library** — LLM-facing agent tools (RAG, web search, Jira, sandbox, …) |
 | [intergrax/tools/USAGE.md](intergrax/tools/USAGE.md) | Wire catalog tools in applications and agents (quick start) |
 | [intergrax/applications/USAGE.md](intergrax/applications/USAGE.md) | Tier-3 composition engine: manifest, typed bindings, registry |
@@ -233,7 +233,7 @@ The **Integration Library** (`intergrax/integrations/`) provides:
 | **Portable across environments** | The same Tier-2 agent runs in a local lab (`IntegrationProfile.lab()`), a customer VPC, or a multi-cloud stack. Tier-3 applications compose the profile at startup. |
 | **Safe boundaries** | Vendor SDKs live only in each provider’s `opens.py`. Tier-2 agents must not import provider slugs or third-party drivers. |
 
-**29 providers** are registered today — relational stores, document DBs, Redis, Kafka/Celery/RabbitMQ, S3, Pinecone/Qdrant/Chroma, web search, Slack/Teams, Jira/Confluence, observability backends, and AWS/Azure/GCP facades.
+**51 providers** are registered today — relational stores (incl. Oracle/MSSQL/Azure SQL/Cloud SQL), document DBs (MongoDB, Cassandra, DynamoDB), Redis/Memcached/ElastiCache, Kafka/Celery/RabbitMQ/SQS/Service Bus/Pub/Sub, S3/Azure Blob/GCS, Pinecone/Qdrant/Chroma, web search (Google CSE, Bing, Brave, SerpAPI), Slack/Teams/SMTP, Jira/GitHub/Linear/Azure DevOps, Confluence/Notion/SharePoint, observability backends, Playwright, and AWS/Azure/GCP facades.
 
 ```python
 # Tier-3 application — declare backends once
@@ -248,7 +248,7 @@ profile = IntegrationProfile(
 # Agents receive resolved contract instances — no boto3, no pymongo in agent code
 ```
 
-**Full catalog (tables, factories, env vars, per-provider guides):**  
+**Full catalog (51 providers, env vars, links to per-slug `USAGE.md`):**  
 **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)**
 
 Architecture rules: [runtime architecture §7.1](docs/intergrax_runtime_architecture.md) · implementation status: [Phase M](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)

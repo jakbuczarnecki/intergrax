@@ -72,14 +72,14 @@ def create_inbound_verifier(
         return implementation
     resolved = settings or resolve_inbound_verifier_settings()
     if resolved.mode == InboundVerifierMode.SLACK:
-        from intergrax.integrations.providers.slack.bundle import create_slack_signature_verifier
+        from intergrax.integrations.providers.notification_channel.slack.bundle import create_slack_signature_verifier
 
         return create_slack_signature_verifier(
             signing_secret=resolved.slack_signing_secret,
             enabled=resolved.slack_verify_enabled,
         )
     if resolved.mode == InboundVerifierMode.TEAMS:
-        from intergrax.integrations.providers.teams.bundle import create_teams_signature_verifier
+        from intergrax.integrations.providers.notification_channel.teams.bundle import create_teams_signature_verifier
 
         return create_teams_signature_verifier(
             security_token=resolved.teams_security_token,

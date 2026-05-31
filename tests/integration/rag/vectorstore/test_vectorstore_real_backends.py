@@ -4,8 +4,8 @@ from typing import List
 
 from langchain_core.documents import Document
 
-from intergrax.integrations.providers.chroma.bundle import create_chroma_vector_store
-from intergrax.integrations.providers.qdrant.bundle import create_qdrant_vector_store
+from intergrax.integrations.providers.vector_store.chroma.bundle import create_chroma_vector_store
+from intergrax.integrations.providers.vector_store.qdrant.bundle import create_qdrant_vector_store
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 
 
