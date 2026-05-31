@@ -31,7 +31,7 @@ intergrax/integrations/providers/
 ├── vector_store/             # pinecone, qdrant, chroma, weaviate, milvus, inmemory, vespa
 ├── search_provider/          # google_cse, bing, reddit, google_places, brave, serpapi, tavily, exa
 ├── notification_channel/     # slack, teams, discord, twilio, pagerduty, opsgenie, …
-├── interaction_surface/      # lab_json (slack/teams also register here)
+├── interaction_surface/      # lab_json, slash_command (slack/teams also register here)
 ├── collaboration_suite/      # ms365_graph, google_workspace
 ├── issue_tracker/            # jira, github, linear, azure_devops, gitlab
 ├── wiki_knowledge/           # confluence, notion, sharepoint
@@ -178,7 +178,7 @@ Service-level slugs (`s3`, `azure_blob`, `gcs`, …) remain available for explic
 
 ---
 
-## Implemented providers (98)
+## Implemented providers (99)
 
 All providers below are registered in `register_default_integrations()`.  
 **Status:** `stable` = production-ready catalog entry; `beta` = shipped, API may evolve.
@@ -199,7 +199,7 @@ All providers below are registered in `register_default_integrations()`.
 | `vector_store` | 7 | `pinecone`, `qdrant`, `chroma`, `weaviate`, `milvus`, `inmemory`, `vespa` |
 | `search_provider` | 8 | `google_cse`, `bing`, `reddit`, `google_places`, `brave`, `serpapi`, `tavily`, `exa` |
 | `notification_channel` | 9 | `slack`, `teams`, `webhook`, `log`, `email_smtp`, `discord`, `twilio`, `pagerduty`, `opsgenie` |
-| `interaction_surface` | 1 (+2 dual) | `lab_json`; `slack` / `teams` also register this category |
+| `interaction_surface` | 2 (+2 dual) | `lab_json`, `slash_command`; `slack` / `teams` also register this category |
 | `collaboration_suite` | 2 | `ms365_graph`, `google_workspace` |
 | `issue_tracker` | 5 | `jira`, `github`, `linear`, `azure_devops`, `gitlab` |
 | `wiki_knowledge` | 3 | `confluence`, `notion`, `sharepoint` |
@@ -211,7 +211,7 @@ All providers below are registered in `register_default_integrations()`.
 | `graph_store` | 1 | `neo4j` |
 | `cloud_platform` | 3 | `aws`, `azure`, `gcp` |
 
-**Total unique slugs:** 98.
+**Total unique slugs:** 99.
 
 ### Implementation depth (code audit)
 
@@ -231,9 +231,7 @@ Unit tests: `tests/unit/integrations/` — **335+** cases including `test_p2_pro
 
 ### Reserved in `IntegrationSlug` but not registered
 
-| Slug | Category | Notes |
-|------|----------|-------|
-| `slash_command` | interaction_surface | Generic slash-command intake |
+None — all enum slugs in `FIELD_SLUGS` are registered except cloud-platform-only defaults resolved via `IntegrationProfile.with_cloud_platform()`.
 
 ---
 
@@ -398,12 +396,14 @@ RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorst
 | `slack` | stable | `create_slack_interaction_surface()` | `INTERGRAX_SLACK` | Inbound slash commands / events |
 | `teams` | stable | `create_teams_interaction_surface()` | `INTERGRAX_TEAMS` | Microsoft Teams activity intake |
 | `lab_json` | stable | `create_lab_json_interaction_surface()` | `INTERGRAX_LAB_JSON` | Laboratory JSON webhook intake |
+| `slash_command` | beta | `create_slash_command_interaction_surface()` | `INTERGRAX_SLASH_COMMAND` | Generic slash-command payloads (Slack/Teams/CLI) |
 
 | Provider | Usage guide |
 |----------|-------------|
 | `slack` | [USAGE.md](../intergrax/integrations/providers/notification_channel/slack/USAGE.md) |
 | `teams` | [USAGE.md](../intergrax/integrations/providers/notification_channel/teams/USAGE.md) |
 | `lab_json` | [USAGE.md](../intergrax/integrations/providers/interaction_surface/lab_json/USAGE.md) |
+| `slash_command` | [USAGE.md](../intergrax/integrations/providers/interaction_surface/slash_command/USAGE.md) |
 
 ---
 
@@ -569,37 +569,55 @@ Alphabetical reference — all shipped integrations in one table.
 
 All slugs from the 2026-05 harness recommendation (high / medium / low) are registered. Shared implementation: `intergrax/integrations/_shared/p3/factories.py`. New categories: `secrets_store`, `graph_store`.
 
+## Phase M.9 harness depth — Done (beta)
+
+**Full adapters** (replacing thin-p4 shells): `langsmith`, `opensearch`, `vespa`, `gitlab`, `pagerduty`, `braintrust` — dedicated `config/client/adapter/opens/bundle` packages.
+
+**New tools:** `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`.
+
+**`slash_command`** interaction surface registered (catalog **99**).
+
+**Lab harness:** `IntegrationProfile.harness_lab()` + `wire_lab_integrations(harness=True)` — Sentry + PagerDuty + harness tool bundle.
+
+**CI:** `harness-smoke` job in `.github/workflows/unit-tests.yml` (`integrations-harness` extra).
+
+**Legacy → catalog:** notification factory resolves PagerDuty/Opsgenie via catalog; `distributed/bootstrap.resolve_redis_kv_store()` via `IntegrationProfile`.
+
+---
+
 ## Phase M.8 harness gap — Done (beta)
 
-**+14 slugs** via `intergrax/integrations/_shared/p4/factories.py`: `langsmith`, `helicone`, `posthog`, `braintrust`, `signoz`, `honeycomb`, `arize`, `phoenix`, `wandb`, `opensearch`, `pagerduty`, `opsgenie`, `gitlab`, `vespa`. Wire script: `scripts/wire_p4_harness_providers.py`. Catalog total: **98**.
+**+14 slugs** via `intergrax/integrations/_shared/p4/factories.py`: `langsmith`, `helicone`, `posthog`, `braintrust`, `signoz`, `honeycomb`, `arize`, `phoenix`, `wandb`, `opensearch`, `pagerduty`, `opsgenie`, `gitlab`, `vespa`. Wire script: `scripts/wire_p4_harness_providers.py`.
 
 ---
 
-## Recommended next integrations (harness AI gap analysis)
+## Harness AI gap analysis (closed)
 
-Audyt względem typowych stacków agentowych (LangGraph, CrewAI, LlamaIndex, enterprise VPC). **Zaimplementowane** oznacza slug w katalogu; **Brak** — warto rozważyć w kolejnej iteracji.
+Audit against typical agent stacks (LangGraph, CrewAI, LlamaIndex, enterprise VPC). **Done** means the slug is registered in the catalog; **Missing** means consider in a future iteration.
 
-| Priorytet | Slug | Kategoria | Status | Dlaczego harness |
-|-----------|------|-----------|--------|------------------|
-| **Wysoki** | `langsmith` | observability_backend | **Done** | LLM trace/debug (LangChain ecosystem) |
-| **Wysoki** | `helicone` | observability_backend | **Done** | LLM cost/latency proxy |
-| **Wysoki** | `pagerduty` / `opsgenie` | notification_channel | **Done** | On-call escalation po HITL / agent failure |
-| **Średni** | `posthog` | observability_backend | **Done** | Product analytics + feature flags |
-| **Średni** | `braintrust` | observability_backend | **Done** | Evals + regression promptów |
-| **Średni** | `gitlab` | issue_tracker | **Done** | DevOps issue flow |
-| **Średni** | `signoz` / `honeycomb` | observability_backend | **Done** | OTEL-native APM |
-| **Średni** | `arize` / `phoenix` | observability_backend | **Done** | ML/RAG eval + drift |
+| Priority | Slug | Category | Status | Why harness |
+|----------|------|----------|--------|-------------|
+| **High** | `langsmith` | observability_backend | **Done** | LLM trace/debug (LangChain ecosystem) |
+| **High** | `helicone` | observability_backend | **Done** | LLM cost/latency proxy |
+| **High** | `pagerduty` / `opsgenie` | notification_channel | **Done** | On-call escalation after HITL / agent failure |
+| **Medium** | `posthog` | observability_backend | **Done** | Product analytics + feature flags |
+| **Medium** | `braintrust` | observability_backend | **Done** | Evals + prompt regression |
+| **Medium** | `gitlab` | issue_tracker | **Done** | DevOps issue flow |
+| **Medium** | `signoz` / `honeycomb` | observability_backend | **Done** | OTEL-native APM |
+| **Medium** | `arize` / `phoenix` | observability_backend | **Done** | ML/RAG eval + drift |
 | **Future** | `opensearch`, `vespa`, `wandb` | various | **Done** (M.8) | Search/RAG scale, experiment tracking |
-| **Niski** | `reddit`, `google_places` | search_provider | **Done** | Social/geo search (full packages) |
-| **Future** | `slash_command` | interaction_surface | Brak | Generic slash intake |
+| **Low** | `reddit`, `google_places` | search_provider | **Done** | Social/geo search (full packages) |
+| **Future** | `slash_command` | interaction_surface | **Done** (M.9) | Generic slash intake |
 
-**Już silne pokrycie harness:** **98** integracji — observability (16), notification (9 incl. PagerDuty/Opsgenie), issue trackers (5 incl. GitLab), vectors (7 incl. Vespa), document parsers (7), rerank (2), plus M.7 stack (Vault, Neo4j, Temporal, Tavily, …).
+**Strong harness coverage today:** **99** integrations — observability (17), notification (9 incl. PagerDuty/Opsgenie), issue trackers (5 incl. GitLab), vectors (7 incl. Vespa), document parsers (7), rerank (2), plus M.7 stack (Vault, Neo4j, Temporal, Tavily, …).
 
-**Tool Library:** `errors.capture` — raportowanie błędów agenta przez backend observability (Sentry). Optional deps: ``uv pip install 'Intergrax-ai[integrations-harness]'``.
+**Tool Library:** `errors.capture`, `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`. Optional deps: ``uv pip install 'Intergrax-ai[integrations-harness]'``.
+
+**Next gaps (M.10+):** full adapters for remaining thin-p4 slugs (Helicone, PostHog, …), multi-backend observability profile, network smoke CI.
 
 ---
 
-All **98** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
+All **99** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
 
 ```bash
 uv run python scripts/generate_integration_usage_docs.py

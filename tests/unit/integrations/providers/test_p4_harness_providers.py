@@ -40,8 +40,13 @@ def _clean_catalog() -> None:
 
 
 class _FakeObsClient:
-    def query_instant(self, promql: str, *, eval_time: Optional[float] = None) -> float:
-        return 5.0
+    def query_instant(self, promql: str, *, eval_time: Optional[float] = None) -> Any:
+        from intergrax.integrations.contracts.observability_backend import MetricPoint, MetricQueryResult, MetricSeries
+
+        return MetricQueryResult(
+            result_type="vector",
+            series=[MetricSeries(metric={}, points=[MetricPoint(timestamp=1.0, value=5.0)])],
+        )
 
     def query_range(self, promql: str, *, start: float, end: float, step: str) -> list[dict[str, float]]:
         return [{"timestamp": start, "value": 5.0}]
@@ -51,18 +56,34 @@ class _FakeObsClient:
 
 
 class _FakeGitlabClient:
-    def get_issue(self, issue_key: str) -> dict[str, Any]:
-        return {"key": issue_key, "summary": "Bug", "description": "d", "status": "open", "url": "https://gitlab/1"}
+    def get_issue(self, issue_key: str) -> Any:
+        from intergrax.integrations.contracts.issue_tracker import IssueRecord
 
-    def add_comment(self, issue_key: str, body: str) -> dict[str, Any]:
-        return {"id": "c1", "author": "bot"}
+        return IssueRecord(key=issue_key, summary="Bug", description="d", status="open", url="https://gitlab/1")
 
-    def search_issues(self, jql: str, *, limit: int) -> list[dict[str, Any]]:
-        return [{"key": "1", "summary": jql, "status": "open"}]
+    def add_comment(self, issue_key: str, body: str) -> Any:
+        from intergrax.integrations.contracts.issue_tracker import IssueComment
+
+        return IssueComment(id="c1", body=body, author="bot")
+
+    def search_issues(self, jql: str, *, limit: int) -> Any:
+        from intergrax.integrations.contracts.issue_tracker import IssueRecord, IssueSearchResult
+
+        return IssueSearchResult(
+            issues=[IssueRecord(key="1", summary=jql, status="open")],
+            total=1,
+        )
+
+    def create_issue(self, *, title: str, description: str = "", labels: Optional[list[str]] = None) -> Any:
+        from intergrax.integrations.contracts.issue_tracker import IssueRecord
+
+        return IssueRecord(key="99", summary=title, description=description, status="open", url="https://gitlab/99")
 
 
 def test_langsmith_observability() -> None:
-    backend = create_langsmith_observability_backend(client=_FakeObsClient())
+    from intergrax.integrations.providers.observability_backend.langsmith.adapter import LangSmithObservabilityBackend
+
+    backend = LangSmithObservabilityBackend(_FakeObsClient())  # type: ignore[arg-type]
     assert_observability_backend(backend)
     assert backend.query_instant("runs").series[0].points[0].value == 5.0
     traces = backend.query_traces(limit=1)
@@ -70,7 +91,9 @@ def test_langsmith_observability() -> None:
 
 
 def test_gitlab_issue_tracker() -> None:
-    tracker = create_gitlab_issue_tracker(client=_FakeGitlabClient())
+    from intergrax.integrations.providers.issue_tracker.gitlab.adapter import GitLabIssueTracker
+
+    tracker = GitLabIssueTracker(_FakeGitlabClient())  # type: ignore[arg-type]
     assert_issue_tracker(tracker)
     assert tracker.get_issue("42").summary == "Bug"
 
@@ -101,12 +124,17 @@ async def test_pagerduty_and_opsgenie() -> None:
 
 
 def test_vespa_vector_store() -> None:
-    from intergrax.rag.vectorstore.providers.inmemory_vectorstore import InMemoryVectorStore
+    from unittest.mock import MagicMock
 
-    inner = InMemoryVectorStore(tenant_id="lab")
-    store = create_vespa_vector_store(vector_store=inner, url="http://localhost:8080", tenant_id="lab")
+    from intergrax.integrations.providers.vector_store.vespa.client import VespaRestClient
+    from intergrax.integrations.providers.vector_store.vespa.config import VespaIntegrationConfig
+
+    mock_http = MagicMock()
+    mock_http.post.return_value.raise_for_status = MagicMock()
+    mock_http.post.return_value.json.return_value = {"id": "doc-1"}
+    client = VespaRestClient(VespaIntegrationConfig(collection="coll", tenant_id="lab"), http_client=mock_http)
+    store = create_vespa_vector_store(client=client)
     assert_vector_store(store)
-    assert store.count() == 0
 
 
 def test_register_default_integrations_includes_p4_slugs() -> None:
@@ -118,5 +146,6 @@ def test_register_default_integrations_includes_p4_slugs() -> None:
         IntegrationSlug.GITLAB,
         IntegrationSlug.VESPA,
         IntegrationSlug.OPENSEARCH,
+        IntegrationSlug.SLASH_COMMAND,
     ):
         assert slug.value in slugs

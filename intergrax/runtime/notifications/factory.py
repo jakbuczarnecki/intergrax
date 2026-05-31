@@ -27,6 +27,8 @@ class NotificationBackend(str, Enum):
     WEBHOOK = "webhook"
     SLACK = "slack"
     TEAMS = "teams"
+    PAGERDUTY = "pagerduty"
+    OPSGENIE = "opsgenie"
 
 
 @dataclass(frozen=True)
@@ -109,6 +111,16 @@ def create_notification_adapter(
 
         config = WebhookIntegrationConfig.from_env(webhook_url=resolved.webhook_url)
         return open_webhook_notification_channel(config, delivery=delivery, formatter=formatter)
+
+    if backend == NotificationBackend.PAGERDUTY:
+        from intergrax.integrations.providers.notification_channel.pagerduty.bundle import create_pagerduty_notification_channel
+
+        return create_pagerduty_notification_channel()
+
+    if backend == NotificationBackend.OPSGENIE:
+        from intergrax.integrations.providers.notification_channel.opsgenie.bundle import create_opsgenie_notification_channel
+
+        return create_opsgenie_notification_channel()
 
     return create_log_notification_channel()
 

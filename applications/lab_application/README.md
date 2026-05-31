@@ -27,7 +27,21 @@ uv run uvicorn lab_application.host.factory:create_lab_application --factory --h
 FastMCP is mounted on the same uvicorn process as FastAPI (default `/mcp`).
 Tools: `list_agents`, `run_agent` — same Nexus loop as HTTP. Configure `LAB_INCLUDE_MCP`, `LAB_MCP_MOUNT_PATH`.
 
-## Execute an agent
+## Harness stack (Phase M.9)
+
+Enable the agent harness integration profile and tools:
+
+```python
+from lab_application.host.integration_wiring import wire_lab_integrations
+from lab_application.host.tool_wiring import wire_lab_tools
+
+wiring = wire_lab_integrations(settings=settings, harness=True)
+tools = wire_lab_tools(integration_profile=wiring.profile, harness=True)
+```
+
+Profile: `IntegrationProfile.harness_lab()` — Sentry (`errors.capture`), PagerDuty escalation, SQLite persistence.
+
+---
 
 ```bash
 curl -s -X POST http://127.0.0.1:8090/v1/lab/run \

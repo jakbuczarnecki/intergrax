@@ -11,7 +11,7 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 | [intergrax/tools/USAGE.md](../intergrax/tools/USAGE.md) | **Operational guide** — wire tools in Tier-3 apps and invoke from agents |
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.6–§7.1.7, §22 | Architecture canon — Tool Library, unified tool model |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O | Phase status, backlog, delivery workflow |
-| [INTEGRATIONS.md](INTEGRATIONS.md) | **98** backend adapters tools compose (not called directly by agents) |
+| [INTEGRATIONS.md](INTEGRATIONS.md) | **99** backend adapters tools compose (not called directly by agents) |
 | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) Appendix E | How agents declare `allowed_tools` vs applications wire backends |
 
 ---
@@ -165,6 +165,9 @@ Status legend: **Done** = registered handler in catalog.
 | `logs.search` | observability | **Done** | Search log index | `ObservabilityBackend` (`elasticsearch`, `opensearch`) |
 | `observability.query_traces` | observability | **Done** | Query LLM/agent traces | `ObservabilityBackend` (`langfuse`, `langsmith`, …) |
 | `errors.capture` | observability | **Done** | Report error events | `ObservabilityBackend` (`sentry`) |
+| `braintrust.log_eval` | observability | **Done** | Log eval score | `ObservabilityBackend` (`braintrust`) |
+| `gitlab.create_issue` | issue_tracker | **Done** | Create GitLab issue | `IssueTracker` (`gitlab`) |
+| `pagerduty.trigger_incident` | notification | **Done** | Trigger on-call incident | `NotificationChannel` (`pagerduty`) |
 
 ---
 
@@ -227,7 +230,10 @@ Alphabetical reference — all first-party catalog tools (Phase O complete).
 | `jira.add_comment` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
 | `jira.get_issue` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
 | `jira.search_tasks` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
+| `braintrust.log_eval` | observability | **Done** | `braintrust` | [USAGE](../intergrax/tools/providers/braintrust/USAGE.md) |
 | `errors.capture` | observability | **Done** | `sentry` | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
+| `gitlab.create_issue` | issue_tracker | **Done** | `gitlab` | [USAGE](../intergrax/tools/providers/gitlab/USAGE.md) |
+| `pagerduty.trigger_incident` | notification | **Done** | `pagerduty` | [USAGE](../intergrax/tools/providers/pagerduty/USAGE.md) |
 | `logs.search` | observability | **Done** | `elasticsearch` | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `metrics.query_instant` | observability | **Done** | `prometheus` | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `observability.query_traces` | observability | **Done** | `langfuse` / observability slug | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |

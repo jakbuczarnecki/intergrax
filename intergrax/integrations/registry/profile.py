@@ -128,6 +128,20 @@ class IntegrationProfile(BaseModel):
         return resolve_from_profile(self, category, config=config)
 
     @classmethod
+    def harness_lab(cls) -> IntegrationProfile:
+        """Lab harness stack — LangSmith traces, Sentry errors, PagerDuty escalation."""
+        return cls(
+            relational_store=IntegrationSlug.SQLITE,
+            notification_channel=IntegrationSlug.PAGERDUTY,
+            observability_backend=IntegrationSlug.SENTRY,
+            interaction_surface=IntegrationSlug.LAB_JSON,
+            options={
+                IntegrationSlug.LANGSMITH: {},
+                IntegrationSlug.SENTRY: {},
+            },
+        )
+
+    @classmethod
     def lab(cls) -> IntegrationProfile:
         """Laboratory defaults — no external vendors required."""
         return cls(

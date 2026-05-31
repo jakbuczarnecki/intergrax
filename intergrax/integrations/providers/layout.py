@@ -43,6 +43,7 @@ SLUG_CATEGORY: dict[str, str] = {
     "log": "notification_channel",
     "email_smtp": "notification_channel",
     "lab_json": "interaction_surface",
+    "slash_command": "interaction_surface",
     "ms365_graph": "collaboration_suite",
     "google_workspace": "collaboration_suite",
     "jira": "issue_tracker",

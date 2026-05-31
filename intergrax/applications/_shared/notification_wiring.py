@@ -8,7 +8,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
 from intergrax.runtime.notifications.deliveries.http_webhook_delivery import HttpWebhookDelivery
@@ -45,12 +47,48 @@ def open_host_delivery_ledger(
     return open_delivery_ledger(db_path=ledger_db)
 
 
+_CATALOG_NOTIFICATION_SLUGS: dict[str, IntegrationSlug] = {
+    "log": IntegrationSlug.LOG,
+    "slack": IntegrationSlug.SLACK,
+    "teams": IntegrationSlug.TEAMS,
+    "webhook": IntegrationSlug.WEBHOOK,
+    "pagerduty": IntegrationSlug.PAGERDUTY,
+    "opsgenie": IntegrationSlug.OPSGENIE,
+    "discord": IntegrationSlug.DISCORD,
+    "twilio": IntegrationSlug.TWILIO,
+    "email_smtp": IntegrationSlug.EMAIL_SMTP,
+}
+
+
+def create_notification_adapter_from_profile(
+    profile: IntegrationProfile,
+    *,
+    delivery_ledger: DeliveryLedger | None = None,
+) -> NotificationAdapter:
+    """Resolve notification adapter via Integration Library catalog (Phase M.9)."""
+    slug = profile.notification_channel
+    if slug is None:
+        return create_resilient_notification_adapter(profile, delivery_ledger=delivery_ledger)
+    settings = resolve_notification_settings()
+    backend_name = settings.backend.value
+    catalog_slug = _CATALOG_NOTIFICATION_SLUGS.get(backend_name)
+    if catalog_slug is not None and slug == catalog_slug:
+        channel = profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)
+        return channel  # type: ignore[return-value]
+    return create_resilient_notification_adapter(profile, delivery_ledger=delivery_ledger)
+
+
 def create_resilient_notification_adapter(
     profile: IntegrationProfile,
     *,
     delivery_ledger: DeliveryLedger | None,
 ) -> NotificationAdapter:
     settings = resolve_notification_settings()
+    backend = settings.backend.value
+    if backend in _CATALOG_NOTIFICATION_SLUGS:
+        slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
+        if slug == _CATALOG_NOTIFICATION_SLUGS[backend].value:
+            return profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)  # type: ignore[return-value]
     if settings.backend == NotificationBackend.LOG:
         return profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)  # type: ignore[return-value]
 

@@ -20,6 +20,16 @@ from intergrax.integrations.contracts.observability_backend import Observability
 from intergrax.integrations.contracts.vector_store import VectorStore
 
 
+def _lazy_bundle(module_path: str, factory_name: str) -> Callable[..., Any]:
+    def factory(*args: Any, **kwargs: Any) -> Any:
+        import importlib
+
+        module = importlib.import_module(module_path)
+        return getattr(module, factory_name)(*args, **kwargs)
+
+    return factory
+
+
 def _trace_rows(payload: Any, *, limit: int) -> TraceQueryResult:
     rows = payload.get("data") if isinstance(payload, dict) else payload
     traces: list[TraceRecord] = []
@@ -100,12 +110,29 @@ def _http_obs_factory(
     return factory
 
 
-create_langsmith_observability_backend = _http_obs_factory(
-    env_prefix="INTERGRAX_LANGSMITH",
-    provider="langsmith",
-    default_url="https://api.smith.langchain.com",
-    instant_path="/api/v1/sessions/count",
-    traces_path="/api/v1/runs",
+create_langsmith_observability_backend = _lazy_bundle(
+    "intergrax.integrations.providers.observability_backend.langsmith.bundle",
+    "create_langsmith_observability_backend",
+)
+create_braintrust_observability_backend = _lazy_bundle(
+    "intergrax.integrations.providers.observability_backend.braintrust.bundle",
+    "create_braintrust_observability_backend",
+)
+create_opensearch_observability_backend = _lazy_bundle(
+    "intergrax.integrations.providers.observability_backend.opensearch.bundle",
+    "create_opensearch_observability_backend",
+)
+create_vespa_vector_store = _lazy_bundle(
+    "intergrax.integrations.providers.vector_store.vespa.bundle",
+    "create_vespa_vector_store",
+)
+create_gitlab_issue_tracker = _lazy_bundle(
+    "intergrax.integrations.providers.issue_tracker.gitlab.bundle",
+    "create_gitlab_issue_tracker",
+)
+create_pagerduty_notification_channel = _lazy_bundle(
+    "intergrax.integrations.providers.notification_channel.pagerduty.bundle",
+    "create_pagerduty_notification_channel",
 )
 create_helicone_observability_backend = _http_obs_factory(
     env_prefix="INTERGRAX_HELICONE",
@@ -119,13 +146,6 @@ create_posthog_observability_backend = _http_obs_factory(
     provider="posthog",
     default_url="https://app.posthog.com",
     instant_path="/api/projects/@current/insights/trend/",
-)
-create_braintrust_observability_backend = _http_obs_factory(
-    env_prefix="INTERGRAX_BRAINTRUST",
-    provider="braintrust",
-    default_url="https://api.braintrust.dev",
-    instant_path="/v1/experiment/metrics",
-    traces_path="/v1/project/logs",
 )
 create_signoz_observability_backend = _http_obs_factory(
     env_prefix="INTERGRAX_SIGNOZ",
@@ -160,115 +180,6 @@ create_wandb_observability_backend = _http_obs_factory(
     default_url="https://api.wandb.ai",
     instant_path="/graphql",
 )
-
-
-def create_opensearch_observability_backend(
-    *,
-    observability_backend: Optional[ObservabilityBackend] = None,
-    client: Optional[Any] = None,
-    client_factory: Optional[Callable[[], Any]] = None,
-    **config_overrides: object,
-) -> ObservabilityBackend:
-    from intergrax.integrations.providers.observability_backend.elasticsearch.config import ElasticsearchIntegrationConfig
-    from intergrax.integrations.providers.observability_backend.elasticsearch.opens import open_elasticsearch_observability_backend
-
-    os_config = OpenSearchIntegrationConfig.from_env(**config_overrides)
-    es_config = ElasticsearchIntegrationConfig.model_validate(os_config.model_dump())
-    if observability_backend is not None:
-        return observability_backend
-    if client is not None:
-        from intergrax.integrations.providers.observability_backend.elasticsearch.adapter import ElasticsearchObservabilityBackend
-
-        return ElasticsearchObservabilityBackend(client)
-    if client_factory is not None:
-        from intergrax.integrations.providers.observability_backend.elasticsearch.adapter import ElasticsearchObservabilityBackend
-
-        return ElasticsearchObservabilityBackend(client_factory())
-    return open_elasticsearch_observability_backend(es_config)
-
-
-def create_vespa_vector_store(
-    *,
-    vector_store: Optional[VectorStore] = None,
-    client: Optional[Any] = None,
-    client_factory: Optional[Callable[[], Any]] = None,
-    **config_overrides: object,
-) -> VectorStore:
-    if vector_store is not None:
-        return vector_store
-    config = VectorIntegrationConfig.from_env("INTERGRAX_VESPA", **config_overrides)
-
-    def _open() -> Any:
-        return _open_httpx_client(config, default_url=config.require_url())
-
-    def _adapter(raw: Any) -> VectorStore:
-        from intergrax.integrations._shared.p4.vector_adapters import VespaVectorFacade
-
-        return RestVectorStoreIntegration(config, VespaVectorFacade(raw, collection=config.collection, tenant_id=config.tenant_id))
-
-    return _resolve(
-        implementation=None,
-        backend=client,
-        backend_factory=client_factory,
-        open_fn=_open,
-        adapter_fn=_adapter,
-    )
-
-
-def create_gitlab_issue_tracker(
-    *,
-    issue_tracker: Optional[IssueTracker] = None,
-    client: Optional[Any] = None,
-    client_factory: Optional[Callable[[], Any]] = None,
-    **config_overrides: object,
-) -> IssueTracker:
-    config = HttpIntegrationConfig.from_env("INTERGRAX_GITLAB", **config_overrides)
-
-    def _open() -> Any:
-        http = _open_httpx_client(config, default_url=config.base_url or "https://gitlab.com/api/v4")
-        project = config.repo or config.org
-
-        class _Client:
-            def get_issue(self, issue_key: str) -> dict[str, Any]:
-                iid = issue_key.split("#")[-1] if "#" in issue_key else issue_key
-                response = http.get(f"/projects/{project}/issues/{iid}")
-                response.raise_for_status()
-                row = response.json()
-                return {
-                    "key": str(row.get("iid") or issue_key),
-                    "summary": str(row.get("title") or ""),
-                    "description": str(row.get("description") or ""),
-                    "status": str(row.get("state") or ""),
-                    "url": str(row.get("web_url") or ""),
-                }
-
-            def add_comment(self, issue_key: str, body: str) -> dict[str, Any]:
-                iid = issue_key.split("#")[-1] if "#" in issue_key else issue_key
-                response = http.post(f"/projects/{project}/issues/{iid}/notes", json={"body": body})
-                response.raise_for_status()
-                return {"id": str(response.json().get("id") or ""), "author": "bot"}
-
-            def search_issues(self, jql: str, *, limit: int) -> list[dict[str, Any]]:
-                response = http.get(f"/projects/{project}/issues", params={"search": jql, "per_page": limit})
-                response.raise_for_status()
-                return [
-                    {
-                        "key": str(row.get("iid") or ""),
-                        "summary": str(row.get("title") or ""),
-                        "status": str(row.get("state") or ""),
-                    }
-                    for row in response.json()
-                ]
-
-        return _Client()
-
-    return _resolve(
-        implementation=issue_tracker,
-        backend=client,
-        backend_factory=client_factory,
-        open_fn=_open,
-        adapter_fn=lambda c: RestIssueTracker(c, provider="gitlab"),
-    )
 
 
 def _escalation_channel_factory(*, env_prefix: str, provider: str, default_url: str) -> Callable[..., NotificationChannel]:
@@ -313,11 +224,6 @@ def _escalation_channel_factory(*, env_prefix: str, provider: str, default_url: 
     return factory
 
 
-create_pagerduty_notification_channel = _escalation_channel_factory(
-    env_prefix="INTERGRAX_PAGERDUTY",
-    provider="pagerduty",
-    default_url="https://events.pagerduty.com",
-)
 create_opsgenie_notification_channel = _escalation_channel_factory(
     env_prefix="INTERGRAX_OPSGENIE",
     provider="opsgenie",
