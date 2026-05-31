@@ -52,7 +52,7 @@ LLM observability          →  LLM_OBSERVABILITY.md
 | Phase | Status |
 |-------|--------|
 | Phase L — Agent OS certification | **Done** |
-| Phase M — Integration Library (Tier-0 catalog) | **Done** (beta) — **73** providers with English `USAGE.md`; see [INTEGRATIONS.md](INTEGRATIONS.md) |
+| Phase M — Integration Library (Tier-0 catalog) | **Done** (beta) — **98** providers with English `USAGE.md`; see [INTEGRATIONS.md](INTEGRATIONS.md) |
 | Phase O — Tool Library & unified tool model | **Done** — 11 catalog tools; see [TOOLS.md](TOOLS.md) |
 | Phase M-LLM — LLM adapter layer | **Done** (beta) — 19 providers, resilience, tenant metrics, PR guard; see [LLM_ADAPTERS.md](LLM_ADAPTERS.md) |
 | Phase N — Application environment scaffold | **Done** (N.0–N.10) — see implementation plan Phase N |

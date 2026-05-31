@@ -101,7 +101,7 @@ def test_rag_tool_registered_via_catalog() -> None:
     register_default_tools()
     assert "rag.retrieve" in list_catalog_tool_ids()
     bundle = get_bundle("rag")
-    assert bundle.tool_ids == ("rag.retrieve", "rag.ingest_document")
+    assert bundle.tool_ids == ("rag.retrieve", "rag.ingest_document", "rag.list_collections")
 
 
 def test_rag_retrieve_via_runtime_invoker() -> None:

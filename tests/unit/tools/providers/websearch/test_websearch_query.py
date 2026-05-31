@@ -119,7 +119,11 @@ def test_websearch_query_not_configured() -> None:
 def test_websearch_tool_registered_in_catalog() -> None:
     register_default_tools()
     assert "websearch.query" in list_catalog_tool_ids()
-    assert get_bundle("websearch").tool_ids == ("websearch.query",)
+    assert get_bundle("websearch").tool_ids == (
+        "websearch.query",
+        "websearch.read_url",
+        "websearch.fetch_batch",
+    )
 
 
 def test_websearch_query_via_runtime_invoker() -> None:

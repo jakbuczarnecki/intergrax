@@ -636,7 +636,9 @@ Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. 
 
 #### M.6 P3 / M.7 — Harness integrations (Done beta, 2026-05-29)
 
-**+21 slugs** via `_shared/p3/factories.py` (incl. **`sentry`** 2026-05-29). Catalog total: **73**.
+**M.8 harness gap (Done beta):** +14 slugs via `_shared/p4/factories.py` — langsmith, helicone, posthog, braintrust, signoz, honeycomb, arize, phoenix, wandb, opensearch, pagerduty, opsgenie, gitlab, vespa. Catalog total: **98**. Tool: `errors.capture` (Sentry). Optional: `integrations-harness` extra.
+
+**M.7 harness (Done beta):** +21 slugs via `_shared/p3/factories.py` (incl. **sentry**).
 
 #### M.7 — Document parser catalog bridge (2026-05-30)
 

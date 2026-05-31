@@ -1,7 +1,7 @@
 # Observability tool bundle
 
 **Bundle id:** `observability`  
-**Tools:** `metrics.query_instant`, `logs.search`, `observability.query_traces`
+**Tools:** `metrics.query_instant`, `logs.search`, `observability.query_traces`, `errors.capture`
 
 ## Dependencies (`ToolWiringContext`)
 
@@ -28,12 +28,18 @@ registry = build_registry_from_profile(ToolProfile(enabled_bundles=["observabili
 - `metrics.query_instant` accepts PromQL (Prometheus backend).
 - `logs.search` uses Elasticsearch `_search` via the backend's `rest_client` when available.
 - `observability.query_traces` calls `ObservabilityBackend.query_traces()` (Langfuse REST when configured).
+- `errors.capture` reports an error event via `ObservabilityBackend.capture_message()` (Sentry when `observability_backend=sentry`).
 
 ## Agent allow-list
 
 ```python
 AgentContract(
-    allowed_tools=["metrics.query_instant", "logs.search", "observability.query_traces"],
+    allowed_tools=[
+        "metrics.query_instant",
+        "logs.search",
+        "observability.query_traces",
+        "errors.capture",
+    ],
     ...
 )
 ```

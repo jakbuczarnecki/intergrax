@@ -924,7 +924,7 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 | `google_workspace`, `ms365_graph` | collaboration_suite | Mail / calendar / directory |
 | `otel`, `prometheus`, `elasticsearch` | observability_backend | Metrics and log search |
 
-Full catalog (73 providers, each with English `USAGE.md`): [`INTEGRATIONS.md`](INTEGRATIONS.md). Per-slug examples: `intergrax/integrations/providers/<category>/<slug>/USAGE.md`.
+Full catalog (98 providers, each with English `USAGE.md`): [`INTEGRATIONS.md`](INTEGRATIONS.md). Per-slug examples: `intergrax/integrations/providers/<category>/<slug>/USAGE.md`.
 
 LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them separately.
 

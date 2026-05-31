@@ -201,7 +201,7 @@ def test_opens_imports_pinecone_and_builds_rag_store() -> None:
 
     with patch("intergrax.integrations.providers.vector_store.pinecone.opens._import_pinecone") as import_mock:
         with patch(
-            "intergrax.rag.vectorstore.providers.pinecone_vector_store.PineconeVectorStore",
+            "intergrax.integrations.providers.vector_store.pinecone.rag_store.PineconeVectorStore",
             return_value=mock_rag_store,
         ) as rag_cls:
             from intergrax.integrations.providers.vector_store.pinecone.opens import open_pinecone_vector_store
