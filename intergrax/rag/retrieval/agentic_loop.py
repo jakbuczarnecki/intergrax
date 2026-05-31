@@ -7,7 +7,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.retrieval.query_refiner import QueryRefiner, resolve_query_refiner
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalResult
 
@@ -23,9 +25,17 @@ class AgenticRetrievalLoop:
   Optional ``LLMAdapter`` can be added later via profile extras.
     """
 
-    def __init__(self, service: RetrievalService, profile: RagProfile) -> None:  # noqa: F821
+    def __init__(
+        self,
+        service: RetrievalService,
+        profile: RagProfile,
+        *,
+        llm: Optional[LLMAdapter] = None,
+        query_refiner: Optional[QueryRefiner] = None,
+    ) -> None:  # noqa: F821
         self._service = service
         self._profile = profile
+        self._refiner = query_refiner or resolve_query_refiner(profile, llm=llm)
 
     def run(self, request: RetrievalRequest) -> RetrievalResult:
         max_iters = max(1, int(self._profile.agentic_max_iterations))
@@ -49,7 +59,7 @@ class AgenticRetrievalLoop:
             last = result
 
             if not result.used:
-                current_query = self._refine_query(current_query, result)
+                current_query = self._refiner.refine(current_query, result)
                 continue
 
             strong = [
@@ -59,20 +69,9 @@ class AgenticRetrievalLoop:
                 result.trace.agentic_stopped = "sufficient_context"
                 return result
 
-            current_query = self._refine_query(current_query, result)
+            current_query = self._refiner.refine(current_query, result)
 
         if last is not None:
             last.trace.agentic_stopped = "max_iterations"
             return last
         return RetrievalResult(chunks=[], used=False, reason="agentic_no_result")
-
-    @staticmethod
-    def _refine_query(query: str, result: RetrievalResult) -> str:
-        if result.chunks:
-            terms = []
-            for chunk in result.chunks[:2]:
-                words = [w for w in chunk.text.split() if len(w) > 4][:3]
-                terms.extend(words)
-            if terms:
-                return f"{query} {' '.join(dict.fromkeys(terms))}"
-        return query

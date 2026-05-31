@@ -17,6 +17,8 @@ from typing import Literal, Optional
 RouteMode = Literal["off", "auto"]
 QueryExpansionMode = Literal["off", "deterministic", "llm"]
 ContextualEnrichMode = Literal["off", "on"]
+GraphIndexerMode = Literal["heuristic", "llm", "heuristic_then_llm"]
+AgenticQueryMode = Literal["deterministic", "llm"]
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -65,13 +67,19 @@ class RagProfile:
     agentic_max_iterations: int = 3
     agentic_min_chunks: int = 2
     agentic_min_score: float = 0.35
+    agentic_query_mode: AgenticQueryMode = "deterministic"
 
     # Native hybrid (BM25 + dense via store)
     native_hybrid_enabled: bool = True
+    qdrant_sparse_enabled: bool = False
 
     # GraphRAG
     graph_rag_enabled: bool = False
     graph_rag_hops: int = 1
+    graph_indexer_mode: GraphIndexerMode = "heuristic"
+
+    # Weaviate native hybrid (when client configured)
+    weaviate_native_hybrid: bool = True
 
     # Governance / ops
     embedding_model_version: Optional[str] = None
@@ -110,6 +118,16 @@ def rag_profile_from_env() -> RagProfile:
         expansion_raw = "deterministic"
     query_expansion: QueryExpansionMode = expansion_raw  # type: ignore[assignment]
 
+    graph_mode_raw = os.getenv("INTERGRAX_RAG_GRAPH_INDEXER_MODE", "heuristic").strip().lower()
+    if graph_mode_raw not in ("heuristic", "llm", "heuristic_then_llm"):
+        graph_mode_raw = "heuristic"
+    graph_indexer_mode: GraphIndexerMode = graph_mode_raw  # type: ignore[assignment]
+
+    agentic_q_raw = os.getenv("INTERGRAX_RAG_AGENTIC_QUERY_MODE", "deterministic").strip().lower()
+    if agentic_q_raw not in ("deterministic", "llm"):
+        agentic_q_raw = "deterministic"
+    agentic_query_mode: AgenticQueryMode = agentic_q_raw  # type: ignore[assignment]
+
     parser_slug = os.getenv("INTERGRAX_RAG_DOCUMENT_PARSER_SLUG", "").strip() or None
 
     return RagProfile(
@@ -137,6 +155,10 @@ def rag_profile_from_env() -> RagProfile:
         agentic_min_chunks=_env_int("INTERGRAX_RAG_AGENTIC_MIN_CHUNKS", 2),
         agentic_min_score=float(os.getenv("INTERGRAX_RAG_AGENTIC_MIN_SCORE", "0.35") or "0.35"),
         native_hybrid_enabled=_env_bool("INTERGRAX_RAG_NATIVE_HYBRID", True),
+        qdrant_sparse_enabled=_env_bool("INTERGRAX_RAG_QDRANT_SPARSE", False),
         graph_rag_enabled=_env_bool("INTERGRAX_RAG_GRAPH_ENABLED", False),
         graph_rag_hops=_env_int("INTERGRAX_RAG_GRAPH_HOPS", 1),
+        graph_indexer_mode=graph_indexer_mode,
+        agentic_query_mode=agentic_query_mode,
+        weaviate_native_hybrid=_env_bool("INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID", True),
     )

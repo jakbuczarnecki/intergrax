@@ -82,6 +82,7 @@ def create_default_rag_stack(
         retriever_manager=retriever_manager,
         reranker_manager=reranker_manager if profile.enable_rerank else None,
         profile=profile,
+        llm_for_agentic=llm_for_contextual,
     )
 
     return RagStack(

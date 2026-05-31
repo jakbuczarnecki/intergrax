@@ -46,6 +46,7 @@ def perform_rag_ingest(ctx: ToolWiringContext, params: RagIngestInput) -> RagIng
         profile=profile,
         contextual_enricher=ctx.extras.get("contextual_enricher"),
         graph_store=ctx.extras.get("graph_store"),
+        llm_for_graph=ctx.extras.get("llm_adapter"),
     )
 
     base_metadata: dict[str, Any] = dict(params.metadata)

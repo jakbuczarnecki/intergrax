@@ -8,6 +8,8 @@ from __future__ import annotations
 import time
 from typing import Any, List, Optional
 
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk, RetrievalResult, RetrievalTrace
@@ -29,11 +31,13 @@ class RetrievalService:
         reranker_manager: Optional[BaseRerankerManager] = None,
         profile: Optional[RagProfile] = None,
         query_router: Optional[QueryRouter] = None,
+        llm_for_agentic: Optional[LLMAdapter] = None,
     ) -> None:
         self._retriever_manager = retriever_manager
         self._reranker_manager = reranker_manager
         self._profile = profile or RagProfile()
         self._router = query_router or QueryRouter(self._profile)
+        self._llm_for_agentic = llm_for_agentic
 
     @property
     def profile(self) -> RagProfile:
@@ -49,7 +53,7 @@ class RetrievalService:
         if tier == "deep" and self._profile.agentic_enabled:
             from intergrax.rag.retrieval.agentic_loop import AgenticRetrievalLoop
 
-            loop = AgenticRetrievalLoop(self, self._profile)
+            loop = AgenticRetrievalLoop(self, self._profile, llm=self._llm_for_agentic)
             return loop.run(request)
 
         return self.retrieve_single_pass(request, route_tier=str(tier))

@@ -6,6 +6,7 @@ import pytest
 
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.agentic_loop import AgenticRetrievalLoop
+from intergrax.rag.retrieval.query_refiner import LlmQueryRefiner
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk, RetrievalResult, RetrievalTrace
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
@@ -35,6 +36,34 @@ class _StubService(RetrievalService):
             reason="ok",
             trace=RetrievalTrace(),
         )
+
+
+class _FakeLlmRefiner:
+    def generate_messages(self, messages, run_id: str = ""):
+        del messages, run_id
+
+        class _R:
+            content = "refined search query with more terms"
+
+        return _R()
+
+
+def test_agentic_loop_with_llm_refiner() -> None:
+    profile = RagProfile(
+        agentic_enabled=True,
+        agentic_max_iterations=3,
+        agentic_min_chunks=2,
+        agentic_min_score=0.5,
+        agentic_query_mode="llm",
+    )
+    loop = AgenticRetrievalLoop(
+        _StubService(),
+        profile,
+        query_refiner=LlmQueryRefiner(_FakeLlmRefiner()),
+    )
+    result = loop.run(RetrievalRequest(query="initial"))
+    assert result.used
+    assert len(result.chunks) >= 2
 
 
 def test_agentic_loop_refines_until_min_chunks() -> None:

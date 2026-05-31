@@ -50,6 +50,16 @@ Env examples:
 | `INTERGRAX_RAG_NATIVE_HYBRID` | BM25+dense `query_hybrid` when store supports it |
 | `INTERGRAX_RAG_AGENTIC_ENABLED` | Budgeted deep-tier query refinement loop |
 | `INTERGRAX_RAG_GRAPH_ENABLED` | Register `graph_rag` retriever + ingest graph indexing |
+| `INTERGRAX_RAG_GRAPH_INDEXER_MODE` | `heuristic` (default), `llm`, `heuristic_then_llm` — requires `llm_adapter` in extras |
+| `INTERGRAX_RAG_AGENTIC_QUERY_MODE` | `deterministic` or `llm` for deep-tier refinement |
+| `INTERGRAX_RAG_QDRANT_SPARSE` | Qdrant native sparse vectors + RRF hybrid query |
+| `INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID` | Weaviate `query.hybrid` when client is wired |
+
+Pass optional adapters via `ToolWiringContext.extras`:
+
+```python
+extras={"llm_adapter": runtime_config.llm_adapter, "graph_store": graph_store}
+```
 
 ### `rag.ingest_document`
 

@@ -17,7 +17,8 @@ from intergrax.rag.document_loaders.pipeline.parser_pipeline import TRACE_METADA
 from intergrax.rag.document_splitters.contracts.base_documents_splitter import BaseDocumentsSplitter
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.graph.contracts.graph_store import GraphStore
-from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.rag.graph.indexer.graph_indexer_factory import resolve_graph_indexer
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 
@@ -50,6 +51,7 @@ class IngestPipeline:
         profile: Optional[RagProfile] = None,
         contextual_enricher: Optional[ContextualChunkEnricher] = None,
         graph_store: Optional[GraphStore] = None,
+        llm_for_graph: Optional[LLMAdapter] = None,
         metadata_callback: Optional[Callable[..., Dict[str, Any]]] = None,
     ) -> None:
         self._loader = loader
@@ -59,6 +61,7 @@ class IngestPipeline:
         self._profile = profile or RagProfile()
         self._contextual = contextual_enricher
         self._graph_store = graph_store
+        self._llm_for_graph = llm_for_graph
         self._metadata_callback = metadata_callback
 
     def run(self, request: IngestRequest) -> IngestResult:
@@ -129,10 +132,12 @@ class IngestPipeline:
         vector_ids = list(stored_ids) if stored_ids is not None else ids
 
         if self._graph_store is not None and self._profile.graph_rag_enabled:
-            HeuristicGraphIndexer(self._graph_store).index_documents(
-                aligned_docs,
-                chunk_ids=vector_ids,
+            indexer = resolve_graph_indexer(
+                self._graph_store,
+                self._profile,
+                llm=self._llm_for_graph,
             )
+            indexer.index_documents(aligned_docs, chunk_ids=vector_ids)
 
         return IngestResult(
             used=True,

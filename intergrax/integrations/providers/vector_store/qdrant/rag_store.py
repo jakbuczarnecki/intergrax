@@ -23,8 +23,6 @@ try:
         VectorParams,
         PointStruct,
         Filter as QFilter,
-        FieldCondition,
-        MatchValue,
         PointIdsList,
     )
 except ImportError:
@@ -33,9 +31,29 @@ except ImportError:
     VectorParams = None  # type: ignore
     PointStruct = None   # type: ignore
     QFilter = None       # type: ignore
-    FieldCondition = None # type: ignore
-    MatchValue = None    # type: ignore
     PointIdsList = None  # type: ignore
+
+try:
+    from qdrant_client.http.models import (  # type: ignore[no-redef]
+        Fusion,
+        FusionQuery,
+        Prefetch,
+        SparseIndexParams,
+        SparseVector as QdrantSparseVector,
+        SparseVectorParams,
+    )
+except ImportError:
+    Fusion = None  # type: ignore
+    FusionQuery = None  # type: ignore
+    Prefetch = None  # type: ignore
+    SparseIndexParams = None  # type: ignore
+    QdrantSparseVector = None  # type: ignore
+    SparseVectorParams = None  # type: ignore
+
+from intergrax.rag.vectorstore.sparse.bm25_sparse_encoder import encode_sparse_bm25
+
+_DENSE_VECTOR_NAME = "dense"
+_SPARSE_VECTOR_NAME = "sparse"
 
 
 
@@ -55,6 +73,7 @@ class QdrantConfig:
 
     qdrant_url: Optional[str] = None
     qdrant_api_key: Optional[str] = None
+    enable_sparse_vectors: bool = False
 
 
 
@@ -72,6 +91,7 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         self._client = None
         self._dim: Optional[int] = None
         self._payloads: Dict[str, Dict[str, Any]] = {}
+        self._sparse_enabled = bool(cfg.enable_sparse_vectors)
 
         self._init_qdrant()
 
@@ -111,10 +131,21 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         }
         dist = metric_map.get(self.cfg.metric, Distance.COSINE)
 
-        self._client.create_collection(
-            collection_name=self.collection_name,
-            vectors_config=VectorParams(size=self._dim, distance=dist),
-        )
+        if self._sparse_enabled and SparseVectorParams is not None:
+            self._client.create_collection(
+                collection_name=self.collection_name,
+                vectors_config={
+                    _DENSE_VECTOR_NAME: VectorParams(size=self._dim, distance=dist),
+                },
+                sparse_vectors_config={
+                    _SPARSE_VECTOR_NAME: SparseVectorParams(index=SparseIndexParams()),
+                },
+            )
+        else:
+            self._client.create_collection(
+                collection_name=self.collection_name,
+                vectors_config=VectorParams(size=self._dim, distance=dist),
+            )
 
     def _qdrant_filter(self, where: Optional[Dict[str, Any]]) -> Optional[QFilter]:  # type: ignore
         """Lightweight helper: simple dict -> Filter(must=[FieldCondition(...)])."""
@@ -134,14 +165,32 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         metadatas: Sequence[Dict[str, Any]],
     ) -> None:
         self._ensure_qdrant_collection()
-        points = [
-            PointStruct(
-                id=ids[i],
-                vector=list(map(float, embeddings[i])),
-                payload=metadatas[i],
-            )
-            for i in range(len(ids))
-        ]
+        points = []
+        for i in range(len(ids)):
+            text = str(metadatas[i].get("text", ""))
+            if self._sparse_enabled and QdrantSparseVector is not None:
+                sparse = encode_sparse_bm25(text)
+                points.append(
+                    PointStruct(
+                        id=ids[i],
+                        vector={
+                            _DENSE_VECTOR_NAME: list(map(float, embeddings[i])),
+                            _SPARSE_VECTOR_NAME: QdrantSparseVector(
+                                indices=sparse.indices,
+                                values=sparse.values,
+                            ),
+                        },
+                        payload=metadatas[i],
+                    )
+                )
+            else:
+                points.append(
+                    PointStruct(
+                        id=ids[i],
+                        vector=list(map(float, embeddings[i])),
+                        payload=metadatas[i],
+                    )
+                )
         self._client.upsert(collection_name=self.collection_name, points=points)
 
 
@@ -230,16 +279,18 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         effective_where["tenant_id"] = self.cfg.tenant_id
 
         qfilter = self._qdrant_filter(effective_where)
+        using = _DENSE_VECTOR_NAME if self._sparse_enabled else None
         try:
             results = self._client.query_points(
                 collection_name=self.collection_name,
                 query=vector,
+                using=using,
                 query_filter=qfilter,
                 limit=top_k,
                 with_payload=True,
                 with_vectors=include_embeddings,
             )
-        except Exception:            
+        except Exception:
             return []
 
         hits: List[VectorStoreHit] = []
@@ -261,6 +312,99 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
 
         return hits
 
+    def query_hybrid(
+        self,
+        query_embedding: Sequence[float],
+        query_text: str,
+        *,
+        top_k: int,
+        metadata_filter: Optional[MetadataFilter] = None,
+        include_embeddings: bool = False,
+        alpha: float = 0.5,
+    ) -> List[VectorStoreHit]:
+        if (
+            self._sparse_enabled
+            and Prefetch is not None
+            and FusionQuery is not None
+            and QdrantSparseVector is not None
+        ):
+            hits = self._query_qdrant_fusion(
+                query_embedding,
+                query_text,
+                top_k=top_k,
+                metadata_filter=metadata_filter,
+                include_embeddings=include_embeddings,
+            )
+            if hits:
+                return hits
+        return super().query_hybrid(
+            query_embedding,
+            query_text,
+            top_k=top_k,
+            metadata_filter=metadata_filter,
+            include_embeddings=include_embeddings,
+            alpha=alpha,
+        )
+
+    def _query_qdrant_fusion(
+        self,
+        query_embedding: Sequence[float],
+        query_text: str,
+        *,
+        top_k: int,
+        metadata_filter: Optional[MetadataFilter],
+        include_embeddings: bool,
+    ) -> List[VectorStoreHit]:
+        assert self._client is not None
+        vector = list(map(float, query_embedding))
+        sparse = encode_sparse_bm25(query_text)
+
+        effective_where: Dict[str, Any] = (
+            dict(metadata_filter.conditions) if metadata_filter is not None else {}
+        )
+        effective_where["tenant_id"] = self.cfg.tenant_id
+        qfilter = self._qdrant_filter(effective_where)
+
+        prefetch_k = max(top_k * 3, top_k)
+        try:
+            results = self._client.query_points(
+                collection_name=self.collection_name,
+                prefetch=[
+                    Prefetch(
+                        query=QdrantSparseVector(indices=sparse.indices, values=sparse.values),
+                        using=_SPARSE_VECTOR_NAME,
+                        filter=qfilter,
+                        limit=prefetch_k,
+                    ),
+                    Prefetch(
+                        query=vector,
+                        using=_DENSE_VECTOR_NAME,
+                        filter=qfilter,
+                        limit=prefetch_k,
+                    ),
+                ],
+                query=FusionQuery(fusion=Fusion.RRF),
+                limit=top_k,
+                with_payload=True,
+                with_vectors=include_embeddings,
+            )
+        except Exception:
+            return []
+
+        hits: List[VectorStoreHit] = []
+        for rank, r in enumerate(results.points):
+            payload = r.payload or {}
+            hits.append(
+                VectorStoreHit(
+                    id=str(r.id),
+                    content=str(payload.get("text", "")),
+                    metadata={**payload, "qdrant_hybrid": True},
+                    similarity_score=float(r.score),
+                    rank=rank,
+                    embedding=list(r.vector) if include_embeddings and r.vector else None,
+                )
+            )
+        return hits
 
     def delete(self, ids: Sequence[str]) -> None:
         if not ids:
