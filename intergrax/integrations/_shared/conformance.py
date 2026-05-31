@@ -23,6 +23,9 @@ from intergrax.integrations.contracts.notification_channel import NotificationCh
 from intergrax.integrations.contracts.object_storage import ObjectStorage
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.contracts.search_provider import SearchProvider
+from intergrax.integrations.contracts.secrets_store import SecretsStore
+from intergrax.integrations.contracts.graph_store import GraphStore
+from intergrax.integrations.contracts.vector_store import VectorStore
 from intergrax.integrations.contracts.object_storage import ObjectStorage
 
 
@@ -91,10 +94,16 @@ def assert_object_storage(instance: object) -> ObjectStorage:
 
 
 def assert_vector_store(instance: object) -> VectorStore:
-    from intergrax.integrations.contracts.vector_store import VectorStore
-
     if not isinstance(instance, VectorStore):
         raise AssertionError(
             f"Expected instance of VectorStore, got {type(instance)!r}"
         )
     return instance
+
+
+def assert_secrets_store(instance: object) -> SecretsStore:
+    return assert_implements(instance, SecretsStore)
+
+
+def assert_graph_store(instance: object) -> GraphStore:
+    return assert_implements(instance, GraphStore)

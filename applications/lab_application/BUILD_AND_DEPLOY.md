@@ -77,6 +77,18 @@ Tools ``list_agents`` and ``run_agent`` use the same Nexus loop as HTTP.
 
 MCP endpoint: ``http://127.0.0.1:8090/mcp`` (streamable HTTP transport).
 
+### Debug / observability API
+
+Mounted on the same process (Phase L.3 + infra paydown):
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /debug/tasks/{run_id}/trace` | Trace timeline + optional runtime events |
+| `GET /debug/tasks/{run_id}/metrics` | Unified metrics export |
+| `GET /debug/tasks/{task_id}/events` | Canonical RuntimeEvent stream |
+| `GET /debug/notifications/receipts` | Successful outbound delivery receipts |
+| `GET /debug/notifications/dead-letters` | Failed notification DLQ rows |
+
         ---
 
         ## 3. Verify before deploy

@@ -28,6 +28,8 @@ class IntegrationSlug(StrEnum):
     DATABRICKS = "databricks"
     AZURE_SQL = "azure_sql"
     CLOUD_SQL = "cloud_sql"
+    SNOWFLAKE = "snowflake"
+    SUPABASE = "supabase"
 
     # document_store
     MONGODB = "mongodb"
@@ -46,18 +48,23 @@ class IntegrationSlug(StrEnum):
     SQS = "sqs"
     SERVICE_BUS = "service_bus"
     PUBSUB = "pubsub"
+    TEMPORAL = "temporal"
+    NATS = "nats"
 
     # object_storage
     S3 = "s3"
     AZURE_BLOB = "azure_blob"
     GCS = "gcs"
     FILESYSTEM = "filesystem"
+    MINIO = "minio"
 
     # vector_store (registry pointer → rag/)
     QDRANT = "qdrant"
     PINECONE = "pinecone"
     CHROMA = "chroma"
     INMEMORY = "inmemory"
+    WEAVIATE = "weaviate"
+    MILVUS = "milvus"
 
     # search_provider
     GOOGLE_CSE = "google_cse"
@@ -66,6 +73,8 @@ class IntegrationSlug(StrEnum):
     GOOGLE_PLACES = "google_places"
     BRAVE = "brave"
     SERPAPI = "serpapi"
+    TAVILY = "tavily"
+    EXA = "exa"
 
     # notification_channel
     SLACK = "slack"
@@ -73,6 +82,14 @@ class IntegrationSlug(StrEnum):
     EMAIL_SMTP = "email_smtp"
     WEBHOOK = "webhook"
     LOG = "log"
+    DISCORD = "discord"
+    TWILIO = "twilio"
+
+    # secrets_store
+    VAULT = "vault"
+
+    # graph_store
+    NEO4J = "neo4j"
 
     # interaction_surface
     LAB_JSON = "lab_json"
@@ -97,10 +114,14 @@ class IntegrationSlug(StrEnum):
     PROMETHEUS = "prometheus"
     ELASTICSEARCH = "elasticsearch"
     OTEL = "otel"
+    LANGFUSE = "langfuse"
+    DATADOG = "datadog"
+    CLICKHOUSE = "clickhouse"
 
     # browser_automation
     PLAYWRIGHT = "playwright"
     SELENIUM = "selenium"
+    FIRECRAWL = "firecrawl"
 
     # cloud_platform
     AWS = "aws"
@@ -123,6 +144,8 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.DATABRICKS,
             IntegrationSlug.AZURE_SQL,
             IntegrationSlug.CLOUD_SQL,
+            IntegrationSlug.SNOWFLAKE,
+            IntegrationSlug.SUPABASE,
         }
     ),
     "document_store": frozenset(
@@ -147,6 +170,8 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.SQS,
             IntegrationSlug.SERVICE_BUS,
             IntegrationSlug.PUBSUB,
+            IntegrationSlug.TEMPORAL,
+            IntegrationSlug.NATS,
         }
     ),
     "object_storage": frozenset(
@@ -155,6 +180,7 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.AZURE_BLOB,
             IntegrationSlug.GCS,
             IntegrationSlug.FILESYSTEM,
+            IntegrationSlug.MINIO,
         }
     ),
     "vector_store": frozenset(
@@ -163,6 +189,8 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.PINECONE,
             IntegrationSlug.CHROMA,
             IntegrationSlug.INMEMORY,
+            IntegrationSlug.WEAVIATE,
+            IntegrationSlug.MILVUS,
         }
     ),
     "search_provider": frozenset(
@@ -173,6 +201,8 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.GOOGLE_PLACES,
             IntegrationSlug.BRAVE,
             IntegrationSlug.SERPAPI,
+            IntegrationSlug.TAVILY,
+            IntegrationSlug.EXA,
         }
     ),
     "notification_channel": frozenset(
@@ -182,8 +212,12 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.EMAIL_SMTP,
             IntegrationSlug.WEBHOOK,
             IntegrationSlug.LOG,
+            IntegrationSlug.DISCORD,
+            IntegrationSlug.TWILIO,
         }
     ),
+    "secrets_store": frozenset({IntegrationSlug.VAULT}),
+    "graph_store": frozenset({IntegrationSlug.NEO4J}),
     "interaction_surface": frozenset(
         {
             IntegrationSlug.SLACK,
@@ -218,12 +252,16 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.PROMETHEUS,
             IntegrationSlug.ELASTICSEARCH,
             IntegrationSlug.OTEL,
+            IntegrationSlug.LANGFUSE,
+            IntegrationSlug.DATADOG,
+            IntegrationSlug.CLICKHOUSE,
         }
     ),
     "browser_automation": frozenset(
         {
             IntegrationSlug.PLAYWRIGHT,
             IntegrationSlug.SELENIUM,
+            IntegrationSlug.FIRECRAWL,
         }
     ),
     "cloud_platform": frozenset(

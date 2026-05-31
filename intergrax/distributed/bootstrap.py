@@ -22,5 +22,5 @@ def bootstrap_default_providers(
 
     This function must be called during application composition phase.
     """
-    register_redis_integration()
+    register_redis_integration(override=True)
     registry.register("redis", RedisKVStore)

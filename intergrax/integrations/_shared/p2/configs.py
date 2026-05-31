@@ -148,6 +148,8 @@ class HttpIntegrationConfig(BaseIntegrationConfig):
     base_url: str = ""
     api_key: str = ""
     token: str = ""
+    user: str = ""
+    password: str = ""
     org: str = ""
     repo: str = ""
     site_url: str = ""
@@ -159,6 +161,8 @@ class HttpIntegrationConfig(BaseIntegrationConfig):
             "base_url": _env(f"{prefix}_URL"),
             "api_key": _env(f"{prefix}_API_KEY"),
             "token": _env(f"{prefix}_TOKEN"),
+            "user": _env(f"{prefix}_USER"),
+            "password": _env(f"{prefix}_PASSWORD"),
             "org": _env(f"{prefix}_ORG"),
             "repo": _env(f"{prefix}_REPO"),
             "site_url": _env(f"{prefix}_SITE_URL"),

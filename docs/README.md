@@ -15,6 +15,7 @@ The `docs/` folder holds the canonical platform documentation.
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — all implemented providers, contracts, wiring, usage links |
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — LLM-facing tools, engine status, unified tool model, planned backlog |
+| [**LLM_ADAPTERS.md**](LLM_ADAPTERS.md) | **LLM adapter catalog** — providers, streaming, tools, env vars, registry |
 | **This file** | Navigation and update rules |
 
 ```text
@@ -23,6 +24,7 @@ Implementation (status)    →  INTERGRAX_IMPLEMENTATION_PLAN.md
 Agent workflow (how)       →  AGENT_CREATION_GUIDE.md
 Integrations (catalog)     →  INTEGRATIONS.md
 Tools (catalog)            →  TOOLS.md
+LLM adapters (catalog)     →  LLM_ADAPTERS.md
 ```
 
 ---
@@ -37,6 +39,7 @@ Tools (catalog)            →  TOOLS.md
 | Review technical debt before Tier-1 work | Implementation plan **Appendix B** |
 | Wire external systems (DB, Slack, Jira, …) | [INTEGRATIONS.md](INTEGRATIONS.md), then architecture canon §7.1 |
 | Wire agent-callable tools (RAG, web search, Jira, …) | [TOOLS.md](TOOLS.md), then architecture canon §7.1.6–§7.1.7 |
+| Configure LLM providers (OpenAI, Claude, Bedrock, …) | [LLM_ADAPTERS.md](LLM_ADAPTERS.md), then architecture canon §5.2.2 |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
 | Deep-dive UAEP / hooks / governance | Architecture canon §42 |
 
@@ -47,7 +50,7 @@ Tools (catalog)            →  TOOLS.md
 | Phase | Status |
 |-------|--------|
 | Phase L — Agent OS certification | **Done** |
-| Phase M — Integration Library (Tier-0 catalog) | **Done** (beta) — 51 providers with English `USAGE.md`; see [INTEGRATIONS.md](INTEGRATIONS.md) |
+| Phase M — Integration Library (Tier-0 catalog) | **Done** (beta) — **72** providers with English `USAGE.md`; see [INTEGRATIONS.md](INTEGRATIONS.md) |
 | Phase O — Tool Library & unified tool model | **Done** — 11 catalog tools; see [TOOLS.md](TOOLS.md) |
 | Phase N — Application environment scaffold | **In progress** — N.9 gate; see implementation plan Phase N |
 | Phase K — Problem Radar / Vendor Discovery | **Ready to open** (product decision) |

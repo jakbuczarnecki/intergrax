@@ -13,9 +13,10 @@ from intergrax.runtime.events.store import (
 from intergrax.runtime.events.stores.memory_runtime_event_store import (
     InMemoryRuntimeEventStore,
 )
-from intergrax.runtime.events.stores.sqlite_runtime_event_store import (
-    SQLiteRuntimeEventStore,
+from intergrax.runtime.events.stores.validating_runtime_event_store import (
+    ValidatingRuntimeEventPersistence,
 )
+from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
 
 
 def _sample_event(**updates) -> RuntimeEvent:
@@ -41,7 +42,8 @@ def test_resolve_runtime_event_persistence_disabled_by_default():
 def test_resolve_runtime_event_persistence_explicit_implementation():
     custom = InMemoryRuntimeEventStore()
     store = resolve_runtime_event_persistence(implementation=custom)
-    assert store is custom
+    assert isinstance(store, ValidatingRuntimeEventPersistence)
+    assert store._inner is custom  # type: ignore[attr-defined]
 
 
 @pytest.mark.unit
@@ -55,7 +57,8 @@ def test_open_runtime_event_store_sqlite(tmp_path):
 @pytest.mark.gate
 def test_resolve_runtime_event_persistence_with_explicit_path(tmp_path):
     store = resolve_runtime_event_persistence(db_path=tmp_path / "events.db")
-    assert isinstance(store, SQLiteRuntimeEventStore)
+    assert isinstance(store, ValidatingRuntimeEventPersistence)
+    assert isinstance(store._inner, SQLiteRuntimeEventStore)  # type: ignore[attr-defined]
 
 
 @pytest.mark.unit
@@ -64,7 +67,6 @@ def test_resolve_runtime_event_persistence_null_implementation():
     custom = NullRuntimeEventPersistence()
     store = resolve_runtime_event_persistence(implementation=custom)
     assert store is custom
-
 
 @pytest.mark.unit
 @pytest.mark.gate

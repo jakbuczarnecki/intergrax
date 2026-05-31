@@ -569,7 +569,7 @@ class ChatAgent:
             )
 
         output_obj = None
-        if (output_model is not None) and (not stream) and hasattr(self.llm, "generate_structured"):
+        if (output_model is not None) and (not stream) and self.llm.supports_structured_output():
             try:
                 output_obj = self.llm.generate_structured(
                     msgs, 

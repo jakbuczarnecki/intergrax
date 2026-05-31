@@ -76,6 +76,8 @@ from intergrax.integrations.contracts.vector_store import (
     VectorStore,
     VectorStoreHit,
 )
+from intergrax.integrations.contracts.secrets_store import SecretsStore
+from intergrax.integrations.contracts.graph_store import GraphNodeRecord, GraphQueryResult, GraphStore
 
 __all__ = [
     "PROFILE_FIELD_BY_CATEGORY",
@@ -122,6 +124,10 @@ __all__ = [
     "MetadataFilter",
     "VectorStore",
     "VectorStoreHit",
+    "SecretsStore",
+    "GraphStore",
+    "GraphNodeRecord",
+    "GraphQueryResult",
     "TaskHandle",
     "TaskQueue",
     "TaskRequest",

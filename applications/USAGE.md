@@ -127,15 +127,23 @@ Full guide: [`intergrax/tools/USAGE.md`](../intergrax/tools/USAGE.md) · catalog
 ```python
 # applications/my_lab/host/factory.py
 from my_lab.host.wiring import build_my_lab_registry
+from intergrax.applications._shared.plugin_bootstrap import bootstrap_application_plugins
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.plugins.default_plugins import default_lab_plugins
 
 def create_my_lab_application():
     settings = MyLabSettings.from_env()
     registry = build_my_lab_registry(settings=settings)
     nexus_loop = NexusLoop(registry, ...)
+    bootstrap_application_plugins(
+        default_lab_plugins(trace_store=nexus_loop.trace_store),
+        nexus_loop=nexus_loop,
+    )
     app = ...
     return app
 ```
+
+Lab and product scaffolds call `bootstrap_application_plugins` with `default_lab_plugins` — registers compatibility telemetry and metrics export on `TASK_COMPLETED` without modifying Nexus core.
 
 ### 5. Environment
 

@@ -27,6 +27,11 @@ from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.tool_wiring import wire_lab_tools
 from lab_application.host.wiring import build_lab_registry
 from lab_application.mcp.server import build_lab_mcp_server
+from intergrax.applications._shared.plugin_bootstrap import (
+    attach_plugin_shutdown,
+    bootstrap_application_plugins,
+)
+from intergrax.runtime.plugins.default_plugins import default_lab_plugins
 from lab_application.serving.fastapi_router import mount_lab_routes
 
 
@@ -72,6 +77,10 @@ def create_lab_application(
         runtime_event_store=integrations.runtime_event_store,
         notification_adapter=integrations.notification_adapter,
     )
+    plugin_bootstrap = bootstrap_application_plugins(
+        default_lab_plugins(trace_store=integrations.trace_store),
+        nexus_loop=nexus_loop,
+    )
     task_runner = UnifiedTaskRunner(nexus_loop)
     scheduler_wiring = wire_long_running_scheduler(
         checkpoint_store=integrations.checkpoint_store,
@@ -102,6 +111,7 @@ def create_lab_application(
         checkpoint_store=integrations.checkpoint_store,
         trace_store=integrations.trace_store,
         runtime_event_store=integrations.runtime_event_store,
+        delivery_ledger=integrations.delivery_ledger,
     )
     app.title = "Intergrax Lab Application"
     app.description = (
@@ -141,4 +151,5 @@ def create_lab_application(
         @app.on_event("shutdown")
         async def _stop_long_running_scheduler() -> None:
             await scheduler.stop()
+    attach_plugin_shutdown(app, plugin_bootstrap.shutdown_callbacks)
     return app

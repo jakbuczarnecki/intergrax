@@ -23,6 +23,25 @@ Deployable Nexus hosts (manifest, Docker, env) — **not** listed exhaustively i
 
 CLI: `python -m intergrax.scaffold new-stack <slug>` or `new-application --profile lab|product`.
 
+## Runtime infrastructure supplement (manual, 2026-05-27)
+
+Tier-0 modules added during §42 / Appendix B paydown — not always reflected in the auto-generated index below:
+
+| Module | Role |
+|--------|------|
+| `intergrax/runtime/schema/` | Canonical schema version registry (§42.29) |
+| `intergrax/runtime/events/schema_guard.py` | RuntimeEvent schema + phase validation |
+| `intergrax/runtime/events/stores/validating_runtime_event_store.py` | Validating persistence wrapper |
+| `intergrax/runtime/metrics/export.py` | Unified run metrics export (event → trace → metrics) |
+| `intergrax/runtime/notifications/delivery_wiring.py` | Retry + DLQ delivery composition |
+| `intergrax/runtime/notifications/deliveries/sqlite_delivery_ledger.py` | Persistent delivery receipts / dead letters |
+| `intergrax/runtime/plugins/bootstrap.py` | RuntimePlugin registration at startup |
+| `intergrax/runtime/plugins/default_plugins.py` | Lab default plugins (compatibility + metrics) |
+| `intergrax/applications/_shared/plugin_bootstrap.py` | Tier-3 NexusLoop plugin wiring |
+| `intergrax/debug/router.py` | Debug API: trace, events, metrics, DLQ, experiments |
+
+Gate: **`uv run pytest -m gate -q`** — **297 passed** (2026-05-27).
+
 ## File Index
 
 - `api\__init__.py`

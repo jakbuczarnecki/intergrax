@@ -570,7 +570,7 @@ intergrax/integrations/
 
 **Layout map:** `intergrax/integrations/providers/layout.py` — slug → category folder.
 
-**Documentation:** all **51** registered providers ship `providers/<category>/<slug>/USAGE.md` (English). Regenerate via `scripts/generate_integration_usage_docs.py`. Catalog index: [`docs/INTEGRATIONS.md`](INTEGRATIONS.md).
+**Documentation:** all **72** registered providers ship `providers/<category>/<slug>/USAGE.md` (English). Regenerate via `scripts/generate_integration_usage_docs.py`. Catalog index: [`docs/INTEGRATIONS.md`](INTEGRATIONS.md).
 
 **Rules:**
 
@@ -600,17 +600,19 @@ Each category defines a **small, stable contract** (Protocol or ABC). Providers 
 | **relational_store** | `contracts/relational_store.py` | SQL CRUD, migrations hook, tenant-scoped connections | sqlite, postgresql, mysql, oracle, mssql, databricks |
 | **document_store** | `contracts/document_store.py` | Document / wide-column CRUD | mongodb, cassandra, dynamodb |
 | **key_value_cache** | `contracts/key_value_cache.py` | Cache, distributed locks, idempotency | redis, memcached |
-| **message_bus** | `contracts/message_bus.py` | Async tasks, pub/sub, consumer groups | kafka, rabbitmq, celery, sqs, service_bus |
-| **object_storage** | `contracts/object_storage.py` | Blob read/write, presigned URLs | s3, azure_blob, gcs, filesystem |
-| **vector_store** | `contracts/vector_store.py` | Embedding index (delegates to `rag/` impl) | qdrant, pinecone, chroma, inmemory |
-| **search_provider** | `contracts/search_provider.py` | Web / enterprise search | google_cse, bing, brave, serpapi |
-| **notification_channel** | `contracts/notification_channel.py` | Outbound alerts (HITL, escalation) | slack, teams, email_smtp, webhook |
+| **message_bus** | `contracts/message_bus.py` | Async tasks, pub/sub, consumer groups | kafka, rabbitmq, celery, sqs, service_bus, pubsub, temporal, nats |
+| **object_storage** | `contracts/object_storage.py` | Blob read/write, presigned URLs | s3, azure_blob, gcs, minio, filesystem |
+| **vector_store** | `contracts/vector_store.py` | Embedding index (delegates to `rag/` impl) | qdrant, pinecone, chroma, weaviate, milvus, inmemory |
+| **search_provider** | `contracts/search_provider.py` | Web / enterprise search | google_cse, bing, brave, serpapi, tavily, exa |
+| **notification_channel** | `contracts/notification_channel.py` | Outbound alerts (HITL, escalation) | slack, teams, email_smtp, webhook, discord, twilio |
+| **secrets_store** | `contracts/secrets_store.py` | Tenant credentials, API keys | vault |
+| **graph_store** | `contracts/graph_store.py` | Agent memory graphs, dependencies | neo4j |
 | **interaction_surface** | `contracts/interaction_surface.py` | Inbound events → canonical Task | slack, teams, lab_json |
 | **collaboration_suite** | `contracts/collaboration_suite.py` | Mail, calendar, directory (MS365, Google) | ms365_graph, google_workspace |
 | **issue_tracker** | `contracts/issue_tracker.py` | Issues, sprints, comments | jira, azure_devops, github, linear |
 | **wiki_knowledge** | `contracts/wiki_knowledge.py` | Pages, spaces, search | confluence, notion, sharepoint |
-| **observability_backend** | `contracts/observability_backend.py` | Metrics, logs export | prometheus, elasticsearch, otel |
-| **browser_automation** | `contracts/browser_automation.py` | Headless fetch / interact | playwright, selenium |
+| **observability_backend** | `contracts/observability_backend.py` | Metrics, logs export | prometheus, elasticsearch, otel, langfuse, datadog, clickhouse |
+| **browser_automation** | `contracts/browser_automation.py` | Headless fetch / interact | playwright, firecrawl, selenium |
 | **cloud_platform** | `contracts/cloud_platform.py` | Unified auth, region, credential chain; factory for native **infrastructure** services (storage, queues, secrets — not LLM) | aws, azure, gcp |
 
 Category contracts MUST be **backend-agnostic**: same method names and DTOs whether the backend is SQLite or Oracle.
@@ -2695,7 +2697,7 @@ Agents provide **domain logic**. The runtime owns **execution governance**.
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Implementation status note:** Some §42 contracts describe the **target canonical runtime**. Existing code implements subsets. Gaps are tracked in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) §2 and §0.5. New code MUST converge toward §42. Agents MUST NOT introduce patterns forbidden by §42.41.
+**Implementation status note (2026-05-27):** §42 infrastructure paydown is **complete for laboratory use**. Implemented: **schema registry** + **ValidatingRuntimeEventPersistence** (schema_version + ExecutionPhase enforcement), **RuntimePlugin bootstrap** in lab factory (`default_lab_plugins`: compatibility probe + metrics export on `TASK_COMPLETED`), **unified metrics export** (`GET /debug/tasks/{run_id}/metrics`), **notification retry + SQLite DLQ** (`GET /debug/notifications/receipts`, `/dead-letters`), and **hook parity** on NexusLoop. Remaining §42 gaps are edge-case checkpoint recovery and product-specific beta provider hardening — not blockers for Agent OS L1. See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Appendix B.
 
 ### §42 Table Of Contents
 
@@ -3812,6 +3814,8 @@ RuntimeVersion:
 - Tier-3 applications pin runtime version in config
 - Nexus rejects agents with incompatible contract versions at registration time
 - Event consumers MUST ignore unknown fields
+
+**Code (2026-05-27):** `intergrax/runtime/schema/registry.py` exposes `RUNTIME_SCHEMA_REGISTRY`, `current_runtime_version()`, and `validate_schema_version()`. `intergrax/runtime/events/phase_coverage.py` maps every `RuntimeEventType` to an `ExecutionPhase`. Persistence enforces both via `ValidatingRuntimeEventPersistence` (wrapped by `resolve_runtime_event_persistence()`).
 
 ---
 

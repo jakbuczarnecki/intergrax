@@ -1,6 +1,6 @@
 # Intergrax Integration Library
 
-**Last updated:** 2026-05-30
+**Last updated:** 2026-05-29
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 
@@ -28,15 +28,17 @@ intergrax/integrations/providers/
 ├── key_value_cache/          # redis, memcached, elasticache
 ├── message_bus/              # kafka, sqs, pubsub, …
 ├── object_storage/           # s3, azure_blob, gcs
-├── vector_store/             # pinecone, qdrant, chroma
-├── search_provider/          # google_cse, bing, brave, serpapi
-├── notification_channel/     # slack, teams, email_smtp, …
+├── vector_store/             # pinecone, qdrant, chroma, weaviate, milvus, inmemory
+├── search_provider/          # google_cse, bing, brave, serpapi, tavily, exa
+├── notification_channel/     # slack, teams, discord, twilio, …
 ├── interaction_surface/      # lab_json (slack/teams also register here)
 ├── collaboration_suite/      # ms365_graph, google_workspace
 ├── issue_tracker/            # jira, github, linear, azure_devops
 ├── wiki_knowledge/           # confluence, notion, sharepoint
-├── observability_backend/    # prometheus, elasticsearch, otel
-├── browser_automation/       # playwright
+├── observability_backend/    # prometheus, elasticsearch, otel, langfuse, datadog, clickhouse
+├── browser_automation/       # playwright, firecrawl, selenium
+├── secrets_store/            # vault
+├── graph_store/              # neo4j
 └── cloud_platform/           # aws, azure, gcp
 ```
 
@@ -125,6 +127,8 @@ profile = IntegrationProfile.lab()
 | `wiki_knowledge` | `WikiKnowledge` | Runbooks, internal docs |
 | `observability_backend` | `ObservabilityBackend` | Metrics and log search |
 | `browser_automation` | `BrowserAutomation` | Dynamic web pages (JS-heavy sites) |
+| `secrets_store` | `SecretsStore` | Tenant API keys, credentials (Vault, …) |
+| `graph_store` | `GraphStore` | Agent memory, tool dependency graphs |
 | `cloud_platform` | `CloudPlatform` | Multi-service auth + category defaults |
 
 Contract modules: `intergrax/integrations/contracts/`.
@@ -145,32 +149,61 @@ Service-level slugs (`s3`, `azure_blob`, `gcs`, …) remain available for explic
 
 ---
 
-## Implemented providers (51)
+## Implemented providers (72)
 
 All providers below are registered in `register_default_integrations()`.  
 **Status:** `stable` = production-ready catalog entry; `beta` = shipped, API may evolve.
 
-P2/P3 slugs (2026-05-30) share implementations in `intergrax/integrations/_shared/p2/`; thin shells live under `providers/<category>/<slug>/`. Category folders match `IntegrationCategory` values — see `providers/layout.py`.
+- **P2** slugs delegate to `intergrax/integrations/_shared/p2/factories.py`
+- **P3 / M.7** harness slugs delegate to `intergrax/integrations/_shared/p3/factories.py` (2026-05-29)
+- Thin shells live under `providers/<category>/<slug>/` — see `providers/layout.py`
 
 ### Summary by category
 
 | Category | Count | Slugs |
 |----------|------:|-------|
-| `relational_store` | 8 | `sqlite`, `postgresql`, `mysql`, `databricks`, `oracle`, `mssql`, `azure_sql`, `cloud_sql` |
+| `relational_store` | 10 | `sqlite`, `postgresql`, `mysql`, `databricks`, `oracle`, `mssql`, `azure_sql`, `cloud_sql`, `snowflake`, `supabase` |
 | `document_store` | 3 | `cassandra`, `mongodb`, `dynamodb` |
 | `key_value_cache` | 3 | `redis`, `memcached`, `elasticache` |
-| `message_bus` | 6 | `kafka`, `celery`, `rabbitmq`, `sqs`, `service_bus`, `pubsub` |
-| `object_storage` | 3 | `s3`, `azure_blob`, `gcs` |
-| `vector_store` | 3 | `pinecone`, `qdrant`, `chroma` |
-| `search_provider` | 4 | `google_cse`, `bing`, `brave`, `serpapi` |
-| `notification_channel` | 5 | `slack`, `teams`, `webhook`, `log`, `email_smtp` |
-| `interaction_surface` | 3 | `slack`, `teams`, `lab_json` |
+| `message_bus` | 8 | `kafka`, `celery`, `rabbitmq`, `sqs`, `service_bus`, `pubsub`, `temporal`, `nats` |
+| `object_storage` | 5 | `s3`, `azure_blob`, `gcs`, `minio`, `filesystem` |
+| `vector_store` | 6 | `pinecone`, `qdrant`, `chroma`, `weaviate`, `milvus`, `inmemory` |
+| `search_provider` | 6 | `google_cse`, `bing`, `brave`, `serpapi`, `tavily`, `exa` |
+| `notification_channel` | 7 | `slack`, `teams`, `webhook`, `log`, `email_smtp`, `discord`, `twilio` |
+| `interaction_surface` | 1 (+2 dual) | `lab_json`; `slack` / `teams` also register this category |
 | `collaboration_suite` | 2 | `ms365_graph`, `google_workspace` |
 | `issue_tracker` | 4 | `jira`, `github`, `linear`, `azure_devops` |
 | `wiki_knowledge` | 3 | `confluence`, `notion`, `sharepoint` |
-| `observability_backend` | 3 | `prometheus`, `elasticsearch`, `otel` |
-| `browser_automation` | 1 | `playwright` |
+| `observability_backend` | 6 | `prometheus`, `elasticsearch`, `otel`, `langfuse`, `datadog`, `clickhouse` |
+| `browser_automation` | 3 | `playwright`, `firecrawl`, `selenium` |
+| `secrets_store` | 1 | `vault` |
+| `graph_store` | 1 | `neo4j` |
 | `cloud_platform` | 3 | `aws`, `azure`, `gcp` |
+
+**Total unique slugs:** 72.
+
+### Implementation depth (code audit)
+
+| Depth | Count | Meaning |
+|-------|------:|---------|
+| **full** | 24 | Dedicated `adapter` + `opens` (+ `config`); SDK in `opens.py` |
+| **full-partial** | 6 | `opens` / `client` without full adapter split |
+| **thin-p2** | 22 | `_shared/p2/factories.py` |
+| **thin-p3** | 20 | `_shared/p3/factories.py` (Phase M.7 harness backlog — Done beta) |
+
+**Thin-p3 slugs:** `tavily`, `exa`, `weaviate`, `milvus`, `inmemory`, `vault`, `langfuse`, `datadog`, `clickhouse`, `temporal`, `nats`, `neo4j`, `snowflake`, `supabase`, `minio`, `filesystem`, `discord`, `twilio`, `firecrawl`, `selenium`.
+
+**Vector-store bridges** (`pinecone`, `qdrant`, `chroma`): RAG implementation in `intergrax/rag/vectorstore/`.
+
+Unit tests: `tests/unit/integrations/` — **335+** cases including `test_p2_providers.py` and `test_p3_providers.py`.
+
+### Reserved in `IntegrationSlug` but not registered
+
+| Slug | Category | Notes |
+|------|----------|-------|
+| `reddit` | search_provider | Social search API |
+| `google_places` | search_provider | Places API |
+| `slash_command` | interaction_surface | Generic slash-command intake |
 
 ---
 
@@ -493,18 +526,24 @@ Alphabetical reference — all shipped integrations in one table.
 
 ---
 
-## Planned providers (not yet implemented)
+## Phase M.7 harness backlog — Done (beta)
 
-| Priority | Slugs | Category |
-|----------|-------|----------|
-| Low | `selenium` | `browser_automation` |
-| Future | *weaviate*, *milvus*, *snowflake*, *vault* | various — requires human approval (§5.2.4) |
-
-M.6 P2/P3 backlog from the implementation plan is **Done** (beta) as of 2026-05-30. Remaining slugs above are optional follow-ups.
+All slugs from the 2026-05 harness recommendation (high / medium / low) are registered. Shared implementation: `intergrax/integrations/_shared/p3/factories.py`. New categories: `secrets_store`, `graph_store`.
 
 ---
 
-All **51** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
+## Recommended next integrations (optional)
+
+| Priority | Slug (proposed) | Category | Notes |
+|----------|-----------------|----------|-------|
+| Medium | `reddit` | search_provider | Social search |
+| Medium | `google_places` | search_provider | Geo POI |
+| Low | `slash_command` | interaction_surface | Generic slash intake |
+| Future | `opensearch`, `vespa`, `arize`, `wandb` | various | RAG / MLOps depth |
+
+---
+
+All **72** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
 
 ```bash
 uv run python scripts/generate_integration_usage_docs.py

@@ -5,14 +5,18 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Sequence, Iterable, Optional, Any, Dict, Union, List
+from typing import Callable, Sequence, Iterable, Optional, Any, Dict, Union, List, TypeVar
+
+T = TypeVar("T")
 import json
 import re
 import uuid
 import time
 import tiktoken
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.call_config import LLMCallConfig, parse_call_config
+from intergrax.llm_adapters._shared.retry import call_with_retry
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.memory.conversational_memory import ChatMessage
 
 
 
@@ -44,17 +48,38 @@ class LLMAdapter(ABC):
     # Hint used by the generic token estimator (e.g. OpenAI model name).
     model_name_for_token_estimation: Optional[str] = None
 
-    def __init__(self) -> None:                
+    def __init__(self) -> None:
         self.id = uuid.uuid4().hex
         self.usage = LLMAdapterUsageLog()
+        self.call_config = LLMCallConfig()
+
+    def _apply_defaults_call_config(self, defaults: Dict[str, Any]) -> None:
+        """Merge ``LLMCallConfig`` fields from adapter constructor kwargs."""
+        self.call_config = parse_call_config(defaults)
+
+    def _execute(self, fn: Callable[[], T]) -> T:
+        """Run a provider SDK call with optional retry policy from ``call_config``."""
+        if self.call_config.max_retries > 0:
+            return call_with_retry(fn, config=self.call_config)
+        return fn()
     
     
     def validate(self) -> None:
         provider = getattr(self, "provider", None)
+        if isinstance(provider, LLMProvider):
+            provider = provider.value
         if not isinstance(provider, str) or not provider.strip():
             raise ValueError(
                 f"{self.__class__.__name__}.provider must be a non-empty string"
             )
+
+    def supports_streaming(self) -> bool:
+        """Whether stream_messages is implemented for this adapter."""
+        return True
+
+    def supports_structured_output(self) -> bool:
+        """Whether generate_structured is natively supported (not prompt-only)."""
+        return False
 
     @abstractmethod
     def generate_messages(
@@ -269,13 +294,14 @@ class LLMAdapter(ABC):
         if not joined:
             return 0
 
-        if model_hint:
-            enc = tiktoken.encoding_for_model(model_hint)
-        else:
-            # Reasonable default for many chat models.
-            enc = tiktoken.get_encoding("cl100k_base")
-
-        return len(enc.encode(joined))
+        try:
+            if model_hint:
+                enc = tiktoken.encoding_for_model(model_hint)
+            else:
+                enc = tiktoken.get_encoding("cl100k_base")
+            return len(enc.encode(joined))
+        except Exception:
+            return max(1, len(joined) // 4)
 
 
     def estimate_tokens_for_text(

@@ -32,6 +32,48 @@ def hits_from_brave_payload(query: str, payload: Mapping[str, Any], *, limit: in
     return hits
 
 
+def hits_from_tavily_payload(query: str, payload: Mapping[str, Any], *, limit: int) -> Sequence[SearchHit]:
+    results = payload.get("results") or []
+    hits: list[SearchHit] = []
+    for idx, row in enumerate(results):
+        if not isinstance(row, dict):
+            continue
+        hits.append(
+            SearchHit(
+                provider="tavily",
+                query_issued=query,
+                rank=idx + 1,
+                title=str(row.get("title") or ""),
+                url=str(row.get("url") or ""),
+                snippet=str(row.get("content") or row.get("snippet") or ""),
+            )
+        )
+        if len(hits) >= limit:
+            break
+    return hits
+
+
+def hits_from_exa_payload(query: str, payload: Mapping[str, Any], *, limit: int) -> Sequence[SearchHit]:
+    results = payload.get("results") or payload.get("data") or []
+    hits: list[SearchHit] = []
+    for idx, row in enumerate(results):
+        if not isinstance(row, dict):
+            continue
+        hits.append(
+            SearchHit(
+                provider="exa",
+                query_issued=query,
+                rank=idx + 1,
+                title=str(row.get("title") or ""),
+                url=str(row.get("url") or row.get("link") or ""),
+                snippet=str(row.get("text") or row.get("snippet") or ""),
+            )
+        )
+        if len(hits) >= limit:
+            break
+    return hits
+
+
 def hits_from_serpapi_payload(query: str, payload: Mapping[str, Any], *, limit: int) -> Sequence[SearchHit]:
     results = payload.get("organic_results") or payload.get("news_results") or []
     hits: list[SearchHit] = []

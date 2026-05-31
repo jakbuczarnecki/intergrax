@@ -66,6 +66,26 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.search_provider.brave.register import register_brave_integration
     from intergrax.integrations.providers.search_provider.serpapi.register import register_serpapi_integration
     from intergrax.integrations.providers.browser_automation.playwright.register import register_playwright_integration
+    from intergrax.integrations.providers.search_provider.tavily.register import register_tavily_integration
+    from intergrax.integrations.providers.search_provider.exa.register import register_exa_integration
+    from intergrax.integrations.providers.vector_store.weaviate.register import register_weaviate_integration
+    from intergrax.integrations.providers.vector_store.milvus.register import register_milvus_integration
+    from intergrax.integrations.providers.vector_store.inmemory.register import register_inmemory_integration
+    from intergrax.integrations.providers.secrets_store.vault.register import register_vault_integration
+    from intergrax.integrations.providers.observability_backend.langfuse.register import register_langfuse_integration
+    from intergrax.integrations.providers.observability_backend.datadog.register import register_datadog_integration
+    from intergrax.integrations.providers.observability_backend.clickhouse.register import register_clickhouse_integration
+    from intergrax.integrations.providers.message_bus.temporal.register import register_temporal_integration
+    from intergrax.integrations.providers.message_bus.nats.register import register_nats_integration
+    from intergrax.integrations.providers.graph_store.neo4j.register import register_neo4j_integration
+    from intergrax.integrations.providers.relational_store.snowflake.register import register_snowflake_integration
+    from intergrax.integrations.providers.relational_store.supabase.register import register_supabase_integration
+    from intergrax.integrations.providers.object_storage.minio.register import register_minio_integration
+    from intergrax.integrations.providers.object_storage.filesystem.register import register_filesystem_integration
+    from intergrax.integrations.providers.notification_channel.discord.register import register_discord_integration
+    from intergrax.integrations.providers.notification_channel.twilio.register import register_twilio_integration
+    from intergrax.integrations.providers.browser_automation.firecrawl.register import register_firecrawl_integration
+    from intergrax.integrations.providers.browser_automation.selenium.register import register_selenium_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -122,6 +142,26 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_brave_integration(override=override)
     register_serpapi_integration(override=override)
     register_playwright_integration(override=override)
+    register_tavily_integration(override=override)
+    register_exa_integration(override=override)
+    register_weaviate_integration(override=override)
+    register_milvus_integration(override=override)
+    register_inmemory_integration(override=override)
+    register_vault_integration(override=override)
+    register_langfuse_integration(override=override)
+    register_datadog_integration(override=override)
+    register_clickhouse_integration(override=override)
+    register_temporal_integration(override=override)
+    register_nats_integration(override=override)
+    register_neo4j_integration(override=override)
+    register_snowflake_integration(override=override)
+    register_supabase_integration(override=override)
+    register_minio_integration(override=override)
+    register_filesystem_integration(override=override)
+    register_discord_integration(override=override)
+    register_twilio_integration(override=override)
+    register_firecrawl_integration(override=override)
+    register_selenium_integration(override=override)
     _BOOTSTRAPPED = True
 
 

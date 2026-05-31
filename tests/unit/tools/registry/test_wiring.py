@@ -4,6 +4,7 @@
 import pytest
 
 from intergrax.integrations import IntegrationProfile, register_default_integrations
+from intergrax.integrations.registry.bootstrap import reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog as clear_integration_catalog
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -13,9 +14,11 @@ pytestmark = pytest.mark.unit
 @pytest.fixture(autouse=True)
 def _integrations_catalog() -> None:
     clear_integration_catalog()
-    register_default_integrations()
+    reset_default_integrations_state()
+    register_default_integrations(override=True)
     yield
     clear_integration_catalog()
+    reset_default_integrations_state()
 
 
 def test_from_integration_profile_lab_resolves_notification() -> None:

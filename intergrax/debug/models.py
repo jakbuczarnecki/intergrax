@@ -113,6 +113,49 @@ class TraceResponse(BaseModel):
     runtime_events: Optional[List[Dict[str, Any]]] = None
 
 
+class RunMetricsResponse(BaseModel):
+    run_id: str
+    tenant_id: str
+    agent_id: Optional[str] = None
+    duration_ms: int
+    event_count: int
+    cost: Optional[float] = None
+    total_tokens: Optional[int] = None
+    llm_usage: Dict[str, Any] = Field(default_factory=dict)
+    trace_summary: Dict[str, int] = Field(default_factory=dict)
+
+    @classmethod
+    def from_export(cls, export) -> RunMetricsResponse:
+        return cls(
+            run_id=export.run_id,
+            tenant_id=export.tenant_id,
+            agent_id=export.agent_id,
+            duration_ms=export.duration_ms,
+            event_count=export.event_count,
+            cost=export.cost,
+            total_tokens=export.total_tokens,
+            llm_usage=dict(export.llm_usage),
+            trace_summary=dict(export.trace_summary),
+        )
+
+
+class DeliveryReceiptItem(BaseModel):
+    delivery_id: str
+    destination: str
+    task_id: str
+    channel: str
+    status: str
+    attempts: int
+    delivered_at_utc: str
+    last_error: Optional[str] = None
+    payload_summary: Dict[str, str] = Field(default_factory=dict)
+
+
+class DeliveryReceiptListResponse(BaseModel):
+    count: int
+    receipts: List[DeliveryReceiptItem]
+
+
 class ExperimentListResponse(BaseModel):
     count: int
     experiments: List[Dict[str, Any]]

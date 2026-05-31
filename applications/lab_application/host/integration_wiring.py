@@ -25,6 +25,14 @@ from intergrax.runtime.interactions.factory import (
 )
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
+from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
+from intergrax.runtime.notifications.delivery_wiring import create_resilient_delivery, open_delivery_ledger
+from intergrax.runtime.notifications.factory import (
+    NotificationBackend,
+    create_notification_adapter,
+    resolve_notification_settings,
+)
+from intergrax.runtime.notifications.deliveries.http_webhook_delivery import HttpWebhookDelivery
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from lab_application.host.settings import LabApplicationSettings
@@ -45,6 +53,35 @@ class LabIntegrationWiring:
     runtime_events_db_path: Path | None
     experiments_db_path: Path | None
     checkpoints_db_path: Path | None
+    delivery_ledger: DeliveryLedger | None
+
+
+def _resolve_delivery_ledger_db_path(
+    *,
+    db_path: Path | None,
+    checkpoints_db_path: Path | None,
+) -> Path | None:
+    anchor = checkpoints_db_path or db_path
+    if anchor is None:
+        return None
+    return anchor.parent / "intergrax_delivery_ledger.db"
+
+
+def _create_lab_notification_adapter(
+    profile: IntegrationProfile,
+    *,
+    delivery_ledger: DeliveryLedger | None,
+) -> NotificationAdapter:
+    settings = resolve_notification_settings()
+    if settings.backend == NotificationBackend.LOG:
+        return profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)  # type: ignore[return-value]
+
+    resilient_delivery = create_resilient_delivery(
+        HttpWebhookDelivery(),
+        ledger=delivery_ledger,
+        channel=settings.backend.value,
+    )
+    return create_notification_adapter(settings, delivery=resilient_delivery)
 
 
 def _sqlite_config_overrides(
@@ -129,7 +166,20 @@ def wire_lab_integrations(
         else None
     )
 
-    notification_adapter = profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)
+    delivery_ledger_db = _resolve_delivery_ledger_db_path(
+        db_path=db_path,
+        checkpoints_db_path=checkpoints_db_path,
+    )
+    delivery_ledger = (
+        open_delivery_ledger(db_path=delivery_ledger_db)
+        if delivery_ledger_db is not None
+        else None
+    )
+
+    notification_adapter = _create_lab_notification_adapter(
+        profile,
+        delivery_ledger=delivery_ledger,
+    )
     interaction_adapter = create_lab_interaction_adapter(settings)
 
     return LabIntegrationWiring(
@@ -144,4 +194,5 @@ def wire_lab_integrations(
         runtime_events_db_path=runtime_events_db_path,
         experiments_db_path=experiments_db_path or sqlite_bundle.paths.experiments,
         checkpoints_db_path=checkpoints_db_path or sqlite_bundle.paths.task_checkpoints,
+        delivery_ledger=delivery_ledger,
     )

@@ -4,13 +4,18 @@
 
 from __future__ import annotations
 
+import json
 import os
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 
 from google import genai
 from google.genai import types
 
-from intergrax.llm_adapters.contracts.llm_adapter import ChatMessage, LLMAdapter
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.messages import split_system_messages
+from intergrax.llm_adapters._shared.tool_results import make_tool_result
+from intergrax.llm_adapters._shared.tool_schema import openai_tools_to_gemini
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
 
@@ -22,7 +27,7 @@ class GeminiChatAdapter(LLMAdapter):
     - Supports:
         - generate_messages
         - stream_messages
-    - Tools + structured output are intentionally not wired here (yet).
+    - Native tools via Gemini function calling.
     """
 
     # Conservative context window estimates (input + output).
@@ -100,7 +105,7 @@ class GeminiChatAdapter(LLMAdapter):
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-            system_text, convo = self._split_system(messages)
+            system_text, convo = split_system_messages(messages)
 
             config = self._build_generation_config(
                 system_text=system_text,
@@ -169,7 +174,7 @@ class GeminiChatAdapter(LLMAdapter):
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
-            system_text, convo = self._split_system(messages)
+            system_text, convo = split_system_messages(messages)
 
             config = self._build_generation_config(
                 system_text=system_text,
@@ -250,18 +255,159 @@ class GeminiChatAdapter(LLMAdapter):
         # Safe fallback (small) if unknown.
         return self._GEMINI_CONTEXT_WINDOWS.get(model, 32_000)
 
-    def _split_system(self, messages: Sequence[ChatMessage]) -> Tuple[str, List[ChatMessage]]:
-        system_parts: List[str] = []
-        convo: List[ChatMessage] = []
+    def supports_tools(self) -> bool:
+        return True
 
-        for m in messages:
-            if m.role == "system":
-                if m.content:
-                    system_parts.append(m.content)
+    def supports_structured_output(self) -> bool:
+        return True
+
+    def generate_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema: List[Dict[str, Any]],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        run_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        call = self.usage.begin_call(run_id=run_id)
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
+
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
+            system_text, convo = split_system_messages(messages)
+            config = self._build_generation_config(
+                system_text=system_text,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                tools=openai_tools_to_gemini(tools_schema),
+            )
+            contents = self._map_contents(convo)
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=contents,
+                config=config,
+            )
+            text, tool_calls = self._parse_gemini_response(response)
+            out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+            success = True
+            return make_tool_result(content=text, tool_calls=tool_calls, finish_reason="completed")
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+        finally:
+            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+
+    def stream_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema: List[Dict[str, Any]],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        run_id: Optional[str] = None,
+    ) -> Iterable[Dict[str, Any]]:
+        call = self.usage.begin_call(run_id=run_id)
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
+        buf: List[str] = []
+
+        try:
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
+            system_text, convo = split_system_messages(messages)
+            config = self._build_generation_config(
+                system_text=system_text,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                tools=openai_tools_to_gemini(tools_schema),
+            )
+            contents = self._map_contents(convo)
+            stream_fn = getattr(self.client.models, "generate_content_stream", None)
+            if stream_fn is None:
+                result = self.generate_with_tools(
+                    messages,
+                    tools_schema,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    tool_choice=tool_choice,
+                    run_id=run_id,
+                )
+                yield result
+                return
+
+            for chunk in stream_fn(model=self.model, contents=contents, config=config):
+                txt = getattr(chunk, "text", None)
+                if txt:
+                    buf.append(txt)
+                    yield make_tool_result(content=txt, finish_reason="partial")
+
+            success = True
+            yield make_tool_result(content="".join(buf), tool_calls=[], finish_reason="completed")
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+        finally:
+            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+
+    def generate_structured(
+        self,
+        messages: Sequence[ChatMessage],
+        output_model: type,
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
+    ):
+        schema = self._model_json_schema(output_model)
+        schema_msg = ChatMessage(
+            role="user",
+            content=(
+                "Return ONLY a single JSON object matching this JSON Schema:\n"
+                + json.dumps(schema, ensure_ascii=False)
+            ),
+        )
+        raw = self.generate_messages(
+            list(messages) + [schema_msg],
+            temperature=temperature,
+            max_tokens=max_tokens,
+            run_id=run_id,
+        )
+        json_str = self._extract_json_object(raw) or raw.strip()
+        return self._validate_with_model(output_model, json_str)
+
+    def _parse_gemini_response(self, response: Any) -> tuple[str, List[Dict[str, Any]]]:
+        text_parts: List[str] = []
+        tool_calls: List[Dict[str, Any]] = []
+        candidates = getattr(response, "candidates", None) or []
+        for cand in candidates:
+            content = getattr(cand, "content", None)
+            if content is None:
                 continue
-            convo.append(m)
-
-        return ("\n\n".join(system_parts).strip(), convo)
+            for part in getattr(content, "parts", None) or []:
+                if getattr(part, "text", None):
+                    text_parts.append(part.text or "")
+                fc = getattr(part, "function_call", None)
+                if fc is not None:
+                    name = getattr(fc, "name", "") or ""
+                    args = getattr(fc, "args", None) or {}
+                    tool_calls.append(
+                        {
+                            "id": name or "gemini_call",
+                            "type": "function",
+                            "function": {
+                                "name": name,
+                                "arguments": json.dumps(args, ensure_ascii=False),
+                            },
+                        }
+                    )
+        return "".join(text_parts), tool_calls
 
     def _build_generation_config(
         self,
@@ -269,6 +415,7 @@ class GeminiChatAdapter(LLMAdapter):
         system_text: str,
         temperature: Optional[float],
         max_tokens: Optional[int],
+        tools: Optional[List[Any]] = None,
     ) -> types.GenerateContentConfig:
         # Merge defaults (adapter-level) with call-level overrides.
         # Keep it explicit: only pass supported fields.
@@ -283,6 +430,8 @@ class GeminiChatAdapter(LLMAdapter):
             kwargs["temperature"] = float(temp)
         if out_tokens is not None:
             kwargs["max_output_tokens"] = int(out_tokens)
+        if tools:
+            kwargs["tools"] = tools
 
         return types.GenerateContentConfig(**kwargs)
 
@@ -310,13 +459,34 @@ class GeminiChatAdapter(LLMAdapter):
         return out
 
     def _to_content(self, m: ChatMessage) -> types.Content:
-        """
-        ChatMessage -> google.genai.types.*Content
-        """
-        part = types.Part(text=m.content)
+        """ChatMessage -> google.genai Content (user/model roles, tool results)."""
+        if m.role == "tool":
+            fr = types.Part.from_function_response(
+                name=m.name or "tool",
+                response={"output": m.content or ""},
+            )
+            return types.UserContent(parts=[fr])
 
+        if m.role == "assistant" and m.tool_calls:
+            parts: List[Any] = []
+            if m.content:
+                parts.append(types.Part(text=m.content))
+            for tc in m.tool_calls:
+                fn = tc.get("function") or {}
+                args_raw = fn.get("arguments") or "{}"
+                try:
+                    args_obj = json.loads(args_raw) if isinstance(args_raw, str) else args_raw
+                except json.JSONDecodeError:
+                    args_obj = {}
+                parts.append(
+                    types.Part.from_function_call(
+                        name=fn.get("name") or "",
+                        args=args_obj if isinstance(args_obj, dict) else {},
+                    )
+                )
+            return types.ModelContent(parts=parts)
+
+        part = types.Part(text=m.content or "")
         if m.role == "user":
             return types.UserContent(parts=[part])
-
-        # Treat assistant/tool as model content (tools are not wired; keep history coherent).
         return types.ModelContent(parts=[part])

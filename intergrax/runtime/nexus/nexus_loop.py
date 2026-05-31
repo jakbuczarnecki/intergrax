@@ -211,6 +211,10 @@ class NexusLoop:
     def middleware(self) -> MiddlewarePipeline:
         return self._middleware
 
+    @property
+    def policy_engine(self) -> PolicyEngine | RuntimePolicyEngine:
+        return self._policy_engine
+
     async def handle_task(self, task: Task) -> TaskResult:
         self._current_task = task
         try:

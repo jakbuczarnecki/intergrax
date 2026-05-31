@@ -23,7 +23,7 @@ from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPe
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
 
 
 def create_debug_app(
@@ -39,6 +39,7 @@ def create_debug_app(
     hitl_service: DebugHitlResumeService | None = None,
     interaction_service: DebugInteractionIntakeService | None = None,
     nexus_loop: NexusLoop | None = None,
+    delivery_ledger: DeliveryLedger | None = None,
 ) -> FastAPI:
     """
     Laboratory debug API over trace, runtime events, checkpoints, and experiments.
@@ -98,6 +99,7 @@ def create_debug_app(
             trace_store=trace_store,
             hitl_service=resolved_hitl,
             interaction_service=resolved_interaction,
+            delivery_ledger=delivery_ledger,
         )
     )
     return app

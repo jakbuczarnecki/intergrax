@@ -4,13 +4,12 @@
 
 from __future__ import annotations
 import json
+import os
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 from langchain_ollama import ChatOllama
 
-from intergrax.llm_adapters.contracts.llm_adapter import (    
-    ChatMessage,
-    LLMAdapter,
-)
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
 
@@ -80,12 +79,19 @@ class LangChainOllamaAdapter(LLMAdapter):
         # Conservative fallback if the model is unknown.
         return 8_192
 
-    def __init__(self, chat : Optional[ChatOllama] = None, context_window_tokens: int = None, **defaults):
+    ENV_MODEL = "INTERGRAX_DEFAULT_OLLAMA_MODEL"
+
+    def __init__(
+        self,
+        chat: Optional[ChatOllama] = None,
+        model: Optional[str] = None,
+        context_window_tokens: Optional[int] = None,
+        **defaults,
+    ):
         super().__init__()
 
-        self.chat = chat or ChatOllama(
-            model=self.DEFAULT_MODEL
-        )
+        resolved_model = model or os.getenv(self.ENV_MODEL) or self.DEFAULT_MODEL
+        self.chat = chat or ChatOllama(model=resolved_model)
         self.defaults = defaults
 
         if context_window_tokens is not None and context_window_tokens > 0:
@@ -272,11 +278,11 @@ class LangChainOllamaAdapter(LLMAdapter):
 
 
     def supports_tools(self) -> bool:
-        """
-        There is no native tool-calling support in this adapter.
-        The agent should use a planner-style pattern instead.
-        """
+        """Ollama uses JSON planner pattern in ToolsAgent, not native tool API."""
         return False
+
+    def supports_structured_output(self) -> bool:
+        return True
 
 
     # --- Structured output via prompt + validation ---

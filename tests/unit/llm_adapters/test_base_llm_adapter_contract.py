@@ -17,8 +17,9 @@ This enforces correctness at adapter definition time.
 from __future__ import annotations
 from typing import Sequence
 
+from typing import Optional
+
 import pytest
-from requests_cache import Optional
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter

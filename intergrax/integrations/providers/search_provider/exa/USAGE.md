@@ -1,0 +1,46 @@
+# `exa` integration — usage
+
+**Category:** ``search_provider``  
+**Catalog factory:** ``create_exa_search_provider()``
+
+> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
+> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+
+## Common pattern
+
+```python
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.registry.bootstrap import register_default_integrations
+from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.slugs import IntegrationSlug
+
+register_default_integrations()
+profile = IntegrationProfile(search_provider=IntegrationSlug.EXA)
+backend = profile.resolve(IntegrationCategory.SEARCH_PROVIDER)
+```
+
+Direct factory (preferred in application ``factory.py``):
+
+```python
+from intergrax.integrations.providers.search_provider.exa.bundle import create_exa_search_provider
+
+backend = create_exa_search_provider(**config_overrides)
+```
+
+
+## Environment variables
+
+`INTERGRAX_EXA_API_KEY`
+
+## Example
+
+```python
+from intergrax.integrations.providers.search_provider.exa.bundle import create_exa_search_provider
+
+search = create_exa_search_provider(api_key="...")
+hits = search.search("RAG patterns", limit=5)
+```
+
+## Notes
+
+Neural / semantic web search (Phase M.7).
