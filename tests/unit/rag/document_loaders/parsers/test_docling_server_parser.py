@@ -27,13 +27,12 @@ class FakeResponse:
 
 def test_docling_server_parser_parses_markdown(monkeypatch, tmp_path):
 
-    def fake_post(url, files, timeout):
+    def fake_post(url, **kwargs):
         return FakeResponse({"markdown": "# Title\n\nServer doc"})
 
-    monkeypatch.setattr(
-        "intergrax.rag.document_loaders.parsers.docling_server_parser.httpx.post",
-        fake_post
-    )
+    import httpx
+
+    monkeypatch.setattr(httpx, "post", fake_post)
 
     file = tmp_path / "doc.pdf"
     file.write_text("dummy")
@@ -49,13 +48,12 @@ def test_docling_server_parser_parses_markdown(monkeypatch, tmp_path):
 
 def test_docling_server_parser_fallback_to_text(monkeypatch, tmp_path):
 
-    def fake_post(url, files, timeout):
+    def fake_post(url, **kwargs):
         return FakeResponse({"text": "Plain text content"})
 
-    monkeypatch.setattr(
-        "intergrax.rag.document_loaders.parsers.docling_server_parser.httpx.post",
-        fake_post
-    )
+    import httpx
+
+    monkeypatch.setattr(httpx, "post", fake_post)
 
     file = tmp_path / "doc.pdf"
     file.write_text("dummy")
@@ -69,13 +67,12 @@ def test_docling_server_parser_fallback_to_text(monkeypatch, tmp_path):
 
 def test_docling_server_parser_handles_empty_payload(monkeypatch, tmp_path):
 
-    def fake_post(url, files, timeout):
+    def fake_post(url, **kwargs):
         return FakeResponse({})
 
-    monkeypatch.setattr(
-        "intergrax.rag.document_loaders.parsers.docling_server_parser.httpx.post",
-        fake_post
-    )
+    import httpx
+
+    monkeypatch.setattr(httpx, "post", fake_post)
 
     file = tmp_path / "doc.pdf"
     file.write_text("dummy")
@@ -89,13 +86,12 @@ def test_docling_server_parser_handles_empty_payload(monkeypatch, tmp_path):
 
 def test_docling_server_parser_sets_metadata(monkeypatch, tmp_path):
 
-    def fake_post(url, files, timeout):
+    def fake_post(url, **kwargs):
         return FakeResponse({"markdown": "doc"})
 
-    monkeypatch.setattr(
-        "intergrax.rag.document_loaders.parsers.docling_server_parser.httpx.post",
-        fake_post
-    )
+    import httpx
+
+    monkeypatch.setattr(httpx, "post", fake_post)
 
     file = tmp_path / "doc.pdf"
     file.write_text("dummy")
@@ -106,18 +102,11 @@ def test_docling_server_parser_sets_metadata(monkeypatch, tmp_path):
 
     md = docs[0].metadata
 
-    assert md["parser"] == parser.parser_id()
+    assert md["parser"] == "docling.server"
     assert md["position"] == 0
     assert md["source"] == str(file)
 
 
 def test_docling_server_parser_is_available():
-
     parser = DoclingServerParser()
-
-    mode = GLOBAL_DOCUMENT_LOADER_CONFIG.docling_mode
-
-    if mode == DoclingMode.SERVER:
-        assert parser.is_available() is True
-    else:
-        assert parser.is_available() is False
+    assert parser.is_available() is True

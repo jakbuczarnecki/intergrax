@@ -34,6 +34,8 @@ class IntegrationCategory(str, Enum):
     CLOUD_PLATFORM = "cloud_platform"
     SECRETS_STORE = "secrets_store"
     GRAPH_STORE = "graph_store"
+    DOCUMENT_PARSER = "document_parser"
+    RERANK_PROVIDER = "rerank_provider"
 
 
 @dataclass(frozen=True)
@@ -125,6 +127,8 @@ PROFILE_FIELD_BY_CATEGORY: dict[str, str] = {
     IntegrationCategory.CLOUD_PLATFORM.value: "cloud_platform",
     IntegrationCategory.SECRETS_STORE.value: "secrets_store",
     IntegrationCategory.GRAPH_STORE.value: "graph_store",
+    IntegrationCategory.DOCUMENT_PARSER.value: "document_parser",
+    IntegrationCategory.RERANK_PROVIDER.value: "rerank_provider",
 }
 
 

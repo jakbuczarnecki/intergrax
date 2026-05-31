@@ -87,6 +87,10 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.notification_channel.twilio.register import register_twilio_integration
     from intergrax.integrations.providers.browser_automation.firecrawl.register import register_firecrawl_integration
     from intergrax.integrations.providers.browser_automation.selenium.register import register_selenium_integration
+    from intergrax.integrations.providers.document_parser.docling.register import register_docling_integration
+    from intergrax.integrations.providers.document_parser.pymupdf.register import register_pymupdf_integration
+    from intergrax.integrations.providers.document_parser.unstructured.register import register_unstructured_integration
+    from intergrax.integrations.providers.document_parser.python_docx.register import register_python_docx_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -164,6 +168,10 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_twilio_integration(override=override)
     register_firecrawl_integration(override=override)
     register_selenium_integration(override=override)
+    register_docling_integration(override=override)
+    register_pymupdf_integration(override=override)
+    register_unstructured_integration(override=override)
+    register_python_docx_integration(override=override)
     _BOOTSTRAPPED = True
 
 

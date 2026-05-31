@@ -637,6 +637,20 @@ Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. 
 
 **+21 slugs** via `_shared/p3/factories.py` (incl. **`sentry`** 2026-05-29). Catalog total: **73**.
 
+#### M.7 — Document parser catalog bridge (2026-05-30)
+
+Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` into `integrations/providers/document_parser/`. RAG uses `CatalogDocumentParser` + `resolve_document_parser()`.
+
+| Slug | Status | Notes |
+|------|--------|-------|
+| `docling` | **Done** (beta) | local + server; `opens.py` only Docling/httpx imports |
+| `pymupdf` | **Done** (beta) | PDF + optional Tesseract OCR |
+| `unstructured` | **Done** (beta) | HTML loader |
+| `python_docx` | **Done** (beta) | Word `.docx` |
+| `openpyxl` | Planned | Excel/CSV — migrate `ExcelSmartLoader` |
+| `whisper` | Planned | Audio/video transcription |
+| `yt_dlp` | Planned | Remote media fetch |
+
 #### M.6 P3 — Legacy backlog note (superseded)
 
 Slugs below were **already in** `IntegrationSlug` unless marked *proposed*. Prioritize when a product app blocks; otherwise deliver after P2.

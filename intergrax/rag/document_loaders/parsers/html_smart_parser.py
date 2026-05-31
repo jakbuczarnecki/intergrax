@@ -1,48 +1,26 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
 
 from typing import Sequence
 
-from langchain_community.document_loaders import UnstructuredHTMLLoader
 from langchain_core.documents import Document
+
+from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
-from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
+from intergrax.rag.document_loaders.integration.catalog_parser import CatalogDocumentParser
+from intergrax.rag.document_loaders.integration.resolver import resolve_document_parser
+
 
 class HtmlSmartParser(BaseDocumentParser):
-
     @classmethod
     def parser_id(cls) -> str:
-        return "html_smart"
+        return "unstructured"
 
     def is_available(self) -> bool:
-        return True
+        return resolve_document_parser(IntegrationSlug.UNSTRUCTURED).is_available()
 
     def load(self, source: str) -> Sequence[Document]:
-
-        loader = UnstructuredHTMLLoader(source)
-
-        docs = loader.load()
-
-        result: list[Document] = []
-
-        for i, d in enumerate(docs):
-
-            metadata = build_loader_metadata(
-                source=source,
-                parser=self.parser_id(),
-                position=i,
-            )
-
-            metadata.update(d.metadata or {})
-
-            result.append(
-                Document(
-                    page_content=d.page_content,
-                    metadata=metadata,
-                )
-            )
-
-        return result
+        backend = resolve_document_parser(IntegrationSlug.UNSTRUCTURED)
+        return CatalogDocumentParser(backend).load(source)

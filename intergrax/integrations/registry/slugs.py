@@ -124,6 +124,19 @@ class IntegrationSlug(StrEnum):
     SELENIUM = "selenium"
     FIRECRAWL = "firecrawl"
 
+    # document_parser
+    DOCLING = "docling"
+    PYMUPDF = "pymupdf"
+    UNSTRUCTURED = "unstructured"
+    PYTHON_DOCX = "python_docx"
+    OPENPYXL = "openpyxl"
+    WHISPER = "whisper"
+    YT_DLP = "yt_dlp"
+
+    # rerank_provider
+    COHERE_RERANK = "cohere_rerank"
+    JINA_RERANK = "jina_rerank"
+
     # cloud_platform
     AWS = "aws"
     AZURE = "azure"
@@ -264,6 +277,23 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.PLAYWRIGHT,
             IntegrationSlug.SELENIUM,
             IntegrationSlug.FIRECRAWL,
+        }
+    ),
+    "document_parser": frozenset(
+        {
+            IntegrationSlug.DOCLING,
+            IntegrationSlug.PYMUPDF,
+            IntegrationSlug.UNSTRUCTURED,
+            IntegrationSlug.PYTHON_DOCX,
+            IntegrationSlug.OPENPYXL,
+            IntegrationSlug.WHISPER,
+            IntegrationSlug.YT_DLP,
+        }
+    ),
+    "rerank_provider": frozenset(
+        {
+            IntegrationSlug.COHERE_RERANK,
+            IntegrationSlug.JINA_RERANK,
         }
     ),
     "cloud_platform": frozenset(

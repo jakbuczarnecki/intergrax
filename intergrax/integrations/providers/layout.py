@@ -80,6 +80,15 @@ SLUG_CATEGORY: dict[str, str] = {
     "twilio": "notification_channel",
     "firecrawl": "browser_automation",
     "selenium": "browser_automation",
+    "docling": "document_parser",
+    "pymupdf": "document_parser",
+    "unstructured": "document_parser",
+    "python_docx": "document_parser",
+    "openpyxl": "document_parser",
+    "whisper": "document_parser",
+    "yt_dlp": "document_parser",
+    "cohere_rerank": "rerank_provider",
+    "jina_rerank": "rerank_provider",
 }
 
 

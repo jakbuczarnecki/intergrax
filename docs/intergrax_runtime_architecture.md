@@ -623,7 +623,7 @@ Category contracts MUST be **backend-agnostic**: same method names and DTOs whet
 |---------|------------------|-------|
 | **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`, metrics) | 19 slugs — [LLM_ADAPTERS.md](LLM_ADAPTERS.md) §5.2.2 |
 | **Tokenization** | `intergrax/tokenizers/` | Not an external integration slug |
-| **RAG pipeline** | `intergrax/rag/` | Vector stores may appear in the catalog as **registry pointers** only; implementation stays in `rag/` |
+| **RAG pipeline** | `intergrax/rag/` | Vector stores + document parsers use **catalog bridges**; orchestration stays in `rag/` |
 
 Do **not** add an `llm_provider` category or LLM slugs to the Integration Catalog backlog.
 

@@ -59,6 +59,8 @@ class IntegrationProfile(BaseModel):
     browser_automation: IntegrationSlug | None = None
     secrets_store: IntegrationSlug | None = None
     graph_store: IntegrationSlug | None = None
+    document_parser: IntegrationSlug | None = None
+    rerank_provider: IntegrationSlug | None = None
 
     options: dict[IntegrationSlug, dict[str, Any]] = Field(default_factory=dict)
 

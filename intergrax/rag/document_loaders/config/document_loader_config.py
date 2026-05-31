@@ -4,61 +4,22 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from enum import Enum
-import os
+from intergrax.integrations.providers.document_parser.docling.config import DoclingIntegrationConfig, DoclingMode
+
+# Backward-compatible aliases for legacy RAG imports.
+DoclingMode = DoclingMode
 
 
-class DoclingMode(str, Enum):
-
-    NONE = "none"
-    LOCAL = "local"
-    SERVER = "server"
-
-
-def _read_docling_mode() -> DoclingMode:
-
-    raw = os.getenv("INTERGRAX_DOCLING_MODE", "local").lower()
-
-    try:
-        return DoclingMode(raw)
-    except ValueError:
-        raise RuntimeError(
-            f"Invalid INTERGRAX_DOCLING_MODE='{raw}'. "
-            "Allowed values: none, local, server."
-        )
-
-
-@dataclass
 class DocumentLoaderConfig:
-    """
-    Global configuration for the document loader subsystem.
-    """
+    """Shim — prefer ``DoclingIntegrationConfig`` and ``IntegrationProfile.document_parser``."""
 
-    # Confidence score for builtin handlers
-    default_builtin_handler_confidence: float = 0.8
-
-    # Docling integration mode:
-    #   none   -> disabled
-    #   local  -> use local docling library
-    #   server -> use docling server (docker)
-    docling_mode: DoclingMode =  _read_docling_mode()
-
-    docling_simple_pdf_mode = True
-
-    # URL for Docling server
-    docling_server_url: str = os.getenv(
-        "INTERGRAX_DOCLING_SERVER_URL",
-        "http://localhost:8000"
-    )
-
-    # request timeout
-    docling_server_timeout_seconds: int = int(
-        os.getenv("INTERGRAX_DOCLING_TIMEOUT", "120")
-    )
-
-
-    
+    def __init__(self) -> None:
+        integration = DoclingIntegrationConfig.from_env()
+        self.docling_mode = integration.mode
+        self.docling_simple_pdf_mode = integration.simple_pdf_mode
+        self.docling_server_url = integration.server_url
+        self.docling_server_timeout_seconds = integration.timeout_seconds
+        self.default_builtin_handler_confidence = 0.8
 
 
 GLOBAL_DOCUMENT_LOADER_CONFIG = DocumentLoaderConfig()
