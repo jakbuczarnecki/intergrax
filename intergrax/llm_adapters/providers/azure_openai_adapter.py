@@ -46,6 +46,7 @@ class AzureOpenAIChatAdapter(LLMAdapter):
         **defaults,
     ):
         super().__init__()
+        self._apply_defaults_call_config(defaults)
 
         # Framework-wide defaults should be routed via GLOBAL_SETTINGS.
         # Keep these names consistent with your settings pattern.        
@@ -117,7 +118,9 @@ class AzureOpenAIChatAdapter(LLMAdapter):
                 stream=False,
             )
 
-            res: ChatCompletion = self.client.chat.completions.create(**payload)
+            res: ChatCompletion = self._execute(
+                lambda: self.client.chat.completions.create(**payload)
+            )
 
             usage = res.usage
             if usage is not None:
@@ -179,7 +182,7 @@ class AzureOpenAIChatAdapter(LLMAdapter):
                 stream=True,
             )
 
-            stream = self.client.chat.completions.create(**payload)
+            stream = self._execute(lambda: self.client.chat.completions.create(**payload))
 
             for chunk in stream:
                 c: ChatCompletionChunk = chunk
@@ -253,7 +256,9 @@ class AzureOpenAIChatAdapter(LLMAdapter):
                 tools=tools_schema,
                 tool_choice=tool_choice,
             )
-            res: ChatCompletion = self.client.chat.completions.create(**payload)
+            res: ChatCompletion = self._execute(
+                lambda: self.client.chat.completions.create(**payload)
+            )
             if res.usage:
                 in_tok = int(res.usage.prompt_tokens or 0)
                 out_tok = int(res.usage.completion_tokens or 0)
@@ -303,7 +308,7 @@ class AzureOpenAIChatAdapter(LLMAdapter):
                 tools=tools_schema,
                 tool_choice=tool_choice,
             )
-            stream = self.client.chat.completions.create(**payload)
+            stream = self._execute(lambda: self.client.chat.completions.create(**payload))
             for chunk in stream:
                 if not chunk.choices:
                     continue
@@ -366,7 +371,7 @@ class AzureOpenAIChatAdapter(LLMAdapter):
                 },
             },
         )
-        res = self.client.chat.completions.create(**payload)
+        res = self._execute(lambda: self.client.chat.completions.create(**payload))
         raw = (res.choices[0].message.content or "") if res.choices else ""
         json_str = self._extract_json_object(raw) or raw.strip()
         return self._validate_with_model(output_model, json_str)

@@ -307,7 +307,7 @@ Agents call language models through **`LLMAdapter`** — not OpenAI/Anthropic SD
 | **Usage tracking** | Per-`run_id` token and latency stats for runtime observability. |
 | **Outside integrations** | LLM providers are **not** Integration Library slugs (architecture §5.2.2). |
 
-**Seven providers today:** `openai`, `claude`, `azure_openai`, `gemini`, `mistral`, `aws_bedrock`, `ollama`.
+**Nine providers today:** `openai`, `claude`, `azure_openai`, `gemini`, `mistral`, `aws_bedrock`, `ollama`, `groq`, `vllm`.
 
 ```python
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
@@ -330,7 +330,7 @@ Intergrax is under **active development** (private R&D). Phase status, prioritie
 
 **[`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)**
 
-Regression gate: `uv run pytest -m gate -q` (297 tests; collects `tests/`, `applications/`, `agents/`)
+Regression gate: `uv run pytest -m gate -q` (**307** tests in CI paths; includes `tests/unit/llm_adapters/`)
 
 ---
 

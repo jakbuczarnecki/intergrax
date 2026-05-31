@@ -48,6 +48,28 @@ def openai_tools_to_gemini(tools_schema: List[Dict[str, Any]]) -> List[Any]:
     return [types.Tool(function_declarations=declarations)]
 
 
+def openai_tools_to_bedrock_converse(tools_schema: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Convert OpenAI tools schema to Bedrock Converse ``toolConfig.tools`` entries."""
+    out: List[Dict[str, Any]] = []
+    for t in tools_schema:
+        fn = t.get("function") or {}
+        name = fn.get("name")
+        if not name:
+            continue
+        out.append(
+            {
+                "toolSpec": {
+                    "name": name,
+                    "description": fn.get("description") or "",
+                    "inputSchema": {
+                        "json": fn.get("parameters") or {"type": "object", "properties": {}},
+                    },
+                }
+            }
+        )
+    return out
+
+
 def extract_openai_tool_calls(message: Any) -> List[Dict[str, Any]]:
     """Extract tool_calls from an OpenAI-style chat completion message object."""
     raw = getattr(message, "tool_calls", None) or []

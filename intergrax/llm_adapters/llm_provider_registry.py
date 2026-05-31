@@ -40,6 +40,14 @@ _BUILTIN_ADAPTERS: Dict[str, Tuple[str, str]] = {
         "intergrax.llm_adapters.providers.aws_bedrock_adapter",
         "BedrockChatAdapter",
     ),
+    LLMProvider.GROQ.value: (
+        "intergrax.llm_adapters.providers.groq_adapter",
+        "GroqChatAdapter",
+    ),
+    LLMProvider.VLLM.value: (
+        "intergrax.llm_adapters.providers.vllm_adapter",
+        "VllmChatAdapter",
+    ),
 }
 
 

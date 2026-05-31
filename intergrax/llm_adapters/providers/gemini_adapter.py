@@ -51,6 +51,7 @@ class GeminiChatAdapter(LLMAdapter):
         **defaults,
     ):
         super().__init__()
+        self._apply_defaults_call_config(defaults)
 
         env_model = os.getenv(self.ENV_MODEL)
         api_key = os.getenv(self.ENV_API_KEY)
@@ -123,15 +124,17 @@ class GeminiChatAdapter(LLMAdapter):
                     history=history,
                     config=config,
                 )
-                response = chat_session.send_message(prompt)
+                response = self._execute(lambda: chat_session.send_message(prompt))
                 text = response.text or ""
             else:
                 # Fallback: use generate_content with full contents list (handles odd turn ordering).
                 contents = self._map_contents(convo)
-                response = self.client.models.generate_content(
-                    model=self.model,
-                    contents=contents,
-                    config=config,
+                response = self._execute(
+                    lambda: self.client.models.generate_content(
+                        model=self.model,
+                        contents=contents,
+                        config=config,
+                    )
                 )
                 text = response.text or ""
 
@@ -342,14 +345,22 @@ class GeminiChatAdapter(LLMAdapter):
                 yield result
                 return
 
+            tool_calls_acc: List[Dict[str, Any]] = []
             for chunk in stream_fn(model=self.model, contents=contents, config=config):
                 txt = getattr(chunk, "text", None)
                 if txt:
                     buf.append(txt)
                     yield make_tool_result(content=txt, finish_reason="partial")
+                _, chunk_tools = self._parse_gemini_response(chunk)
+                if chunk_tools:
+                    tool_calls_acc = chunk_tools
 
             success = True
-            yield make_tool_result(content="".join(buf), tool_calls=[], finish_reason="completed")
+            yield make_tool_result(
+                content="".join(buf),
+                tool_calls=tool_calls_acc,
+                finish_reason="completed",
+            )
         except Exception as e:
             err_type = type(e).__name__
             raise

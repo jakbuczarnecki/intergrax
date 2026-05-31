@@ -413,7 +413,9 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             if max_tokens is not None:
                 payload["max_output_tokens"] = max_tokens
 
-            response: Response = self.client.responses.create(**payload, **self.defaults)
+            response: Response = self._execute(
+                lambda: self.client.responses.create(**payload, **self.defaults)
+            )
             if response.usage:
                 in_tok = int(response.usage.input_tokens or 0)
                 out_tok = int(response.usage.output_tokens or 0)
@@ -479,7 +481,9 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             if max_tokens is not None:
                 payload["max_output_tokens"] = max_tokens
 
-            response: Response = self.client.responses.create(**payload, **self.defaults)
+            response: Response = self._execute(
+                lambda: self.client.responses.create(**payload, **self.defaults)
+            )
 
             usage = response.usage
             if usage is not None:

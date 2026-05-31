@@ -1557,6 +1557,10 @@ llm-gemini = [
     { name = "google-genai", marker = "sys_platform == 'win32'" },
     { name = "tiktoken", marker = "sys_platform == 'win32'" },
 ]
+llm-groq = [
+    { name = "openai", marker = "sys_platform == 'win32'" },
+    { name = "tiktoken", marker = "sys_platform == 'win32'" },
+]
 llm-mistral = [
     { name = "mistralai", marker = "sys_platform == 'win32'" },
     { name = "tiktoken", marker = "sys_platform == 'win32'" },
@@ -1568,6 +1572,10 @@ llm-ollama = [
     { name = "tiktoken", marker = "sys_platform == 'win32'" },
 ]
 llm-openai = [
+    { name = "openai", marker = "sys_platform == 'win32'" },
+    { name = "tiktoken", marker = "sys_platform == 'win32'" },
+]
+llm-vllm = [
     { name = "openai", marker = "sys_platform == 'win32'" },
     { name = "tiktoken", marker = "sys_platform == 'win32'" },
 ]
@@ -1624,7 +1632,9 @@ requires-dist = [
     { name = "ollama", marker = "extra == 'llm-ollama'", specifier = ">=0.1" },
     { name = "openai", specifier = ">=1.0" },
     { name = "openai", marker = "extra == 'llm-all'", specifier = ">=1.0" },
+    { name = "openai", marker = "extra == 'llm-groq'", specifier = ">=1.0" },
     { name = "openai", marker = "extra == 'llm-openai'", specifier = ">=1.0" },
+    { name = "openai", marker = "extra == 'llm-vllm'", specifier = ">=1.0" },
     { name = "opencv-python-headless", specifier = "==4.9.0.80" },
     { name = "openpyxl", specifier = ">=3.1" },
     { name = "pandas", specifier = ">=2.1.4,<3.0.0" },
@@ -1659,9 +1669,11 @@ requires-dist = [
     { name = "tiktoken", marker = "extra == 'llm-anthropic'", specifier = ">=0.7" },
     { name = "tiktoken", marker = "extra == 'llm-bedrock'", specifier = ">=0.7" },
     { name = "tiktoken", marker = "extra == 'llm-gemini'", specifier = ">=0.7" },
+    { name = "tiktoken", marker = "extra == 'llm-groq'", specifier = ">=0.7" },
     { name = "tiktoken", marker = "extra == 'llm-mistral'", specifier = ">=0.7" },
     { name = "tiktoken", marker = "extra == 'llm-ollama'", specifier = ">=0.7" },
     { name = "tiktoken", marker = "extra == 'llm-openai'", specifier = ">=0.7" },
+    { name = "tiktoken", marker = "extra == 'llm-vllm'", specifier = ">=0.7" },
     { name = "torch", specifier = "==2.2.2", index = "https://download.pytorch.org/whl/cpu" },
     { name = "tqdm", specifier = ">=4.66" },
     { name = "trafilatura", specifier = ">=1.8" },
@@ -1672,7 +1684,7 @@ requires-dist = [
     { name = "xlrd", specifier = ">=2.0" },
     { name = "yt-dlp", specifier = ">=2024.0" },
 ]
-provides-extras = ["llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-gemini", "llm-bedrock", "llm-all", "dev", "dev-ci"]
+provides-extras = ["llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-all", "dev", "dev-ci"]
 
 [[package]]
 name = "invoke"

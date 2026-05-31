@@ -49,6 +49,7 @@ jobs:
           tests/unit/runtime
           tests/unit/agents
           tests/unit/contracts
+          tests/unit/llm_adapters
           tests/integration
           tests/acceptance
           applications/legal_application/legal_tests/host

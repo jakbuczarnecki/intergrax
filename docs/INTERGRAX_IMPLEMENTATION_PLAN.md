@@ -529,6 +529,21 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 
 **Out of scope:** `intergrax/llm_adapters/` — LLM providers are **not** part of the Integration Library (§7.1.2).
 
+### Phase M-LLM — LLM Adapter Layer (Tier-0)
+
+**Canon:** §5.2.2 · **Doc:** [LLM_ADAPTERS.md](LLM_ADAPTERS.md)  
+**Goal:** One `LLMAdapter` contract, lazy registry, streaming + native tools + structured output across commercial and self-hosted providers.
+
+| # | Deliverable | Status | Notes |
+|---|-------------|--------|-------|
+| M-LLM.1 | Shared `_shared/` (messages, tools, retry, conformance) | **Done** | 2026-05-30 |
+| M-LLM.2 | Seven core providers hardened | **Done** | OpenAI, Claude, Azure, Gemini, Mistral, Bedrock, Ollama |
+| M-LLM.3 | Groq + vLLM (OpenAI-compatible) | **Done** | `GroqChatAdapter`, `VllmChatAdapter` |
+| M-LLM.4 | Bedrock Converse + tools | **Done** | `INTERGRAX_BEDROCK_USE_CONVERSE` |
+| M-LLM.5 | Conformance tests in CI gate | **Done** | `tests/unit/llm_adapters/` |
+| M-LLM.6 | `LLM_ADAPTERS.md` + README section | **Done** | |
+| M-LLM.7 | Cohere / Together / Fireworks / Vertex | **Backlog** | See LLM_ADAPTERS.md roadmap |
+
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
 | M.0 | Integration backlog + categories approved | **Done** | Canon §7.1.3 catalog table |

@@ -22,7 +22,11 @@ from intergrax.llm_adapters._shared.bedrock_converse import (
 )
 from intergrax.llm_adapters._shared.messages import split_system_messages
 from intergrax.llm_adapters._shared.tool_results import make_tool_result
-from intergrax.llm_adapters._shared.tool_schema import openai_tools_to_anthropic
+from intergrax.llm_adapters._shared.bedrock_converse import extract_converse_tool_calls
+from intergrax.llm_adapters._shared.tool_schema import (
+    openai_tools_to_anthropic,
+    openai_tools_to_bedrock_converse,
+)
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
@@ -587,6 +591,8 @@ class BedrockChatAdapter(LLMAdapter):
 
 
     def supports_tools(self) -> bool:
+        if self._use_converse and converse_supported(self.client):
+            return True
         return self.config.family == BedrockModelFamily.ANTHROPIC
 
     def generate_with_tools(
@@ -600,7 +606,9 @@ class BedrockChatAdapter(LLMAdapter):
         run_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         if not self.supports_tools():
-            raise NotImplementedError("Tools are only supported for Anthropic models on Bedrock.")
+            raise NotImplementedError(
+                "Tools require Bedrock Converse API or an Anthropic model on InvokeModel."
+            )
 
         call = self.usage.begin_call(run_id=run_id)
         in_tok = 0
@@ -610,6 +618,24 @@ class BedrockChatAdapter(LLMAdapter):
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
+
+            if self._use_converse and converse_supported(self.client):
+                temp = temperature if temperature is not None else self.defaults.get("temperature")
+                req = build_converse_request(
+                    messages,
+                    max_tokens=max_tokens,
+                    temperature=temp,
+                    tools=openai_tools_to_bedrock_converse(tools_schema),
+                )
+                resp = self._execute(
+                    lambda: self.client.converse(modelId=self.config.model_id, **req)
+                )
+                text = extract_converse_text(resp)
+                tool_calls = extract_converse_tool_calls(resp)
+                out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+                success = True
+                return make_tool_result(content=text, tool_calls=tool_calls, finish_reason="completed")
+
             system_text, convo = split_system_messages(messages)
             codec = self._get_codec(self.config.family)
             assert isinstance(codec, AnthropicClaudeCodec)
@@ -625,11 +651,13 @@ class BedrockChatAdapter(LLMAdapter):
                 tool_choice=tool_choice,
             )
 
-            res = self.client.invoke_model(
-                modelId=self.config.model_id,
-                body=json.dumps(body).encode("utf-8"),
-                accept="application/json",
-                contentType="application/json",
+            res = self._execute(
+                lambda: self.client.invoke_model(
+                    modelId=self.config.model_id,
+                    body=json.dumps(body).encode("utf-8"),
+                    accept="application/json",
+                    contentType="application/json",
+                )
             )
             parsed = json.loads(res["body"].read().decode("utf-8"))
             text = codec.extract_text(parsed)

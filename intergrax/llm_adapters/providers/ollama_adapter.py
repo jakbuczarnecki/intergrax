@@ -89,6 +89,7 @@ class LangChainOllamaAdapter(LLMAdapter):
         **defaults,
     ):
         super().__init__()
+        self._apply_defaults_call_config(defaults)
 
         resolved_model = model or os.getenv(self.ENV_MODEL) or self.DEFAULT_MODEL
         self.chat = chat or ChatOllama(model=resolved_model)

@@ -14,5 +14,7 @@ class LLMProvider(str, Enum):
     CLAUDE = "claude"
     AZURE_OPENAI = "azure_openai"
     AWS_BEDROCK = "aws_bedrock"
+    GROQ = "groq"
+    VLLM = "vllm"
 
 

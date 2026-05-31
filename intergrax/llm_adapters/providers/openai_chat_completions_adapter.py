@@ -1,15 +1,19 @@
 # © Artur Czarnecki. All rights reserved.
 # Integrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
+
+"""
+OpenAI Chat Completions API adapter for OpenAI-compatible HTTP endpoints.
+
+Used by Groq, vLLM, and similar providers (same message/tools/stream shape).
+"""
 
 from __future__ import annotations
 
 import json
-import os
-from typing import Any, Dict, Iterable, List, Optional, Protocol, Sequence, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 
-from mistralai import Mistral
-from mistralai.models import ChatCompletionResponse
+from openai import OpenAI
+from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.messages import map_chat_completion_messages, split_system_messages
@@ -19,87 +23,33 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
 
-# -----------------------------
-# Typed streaming contracts
-# -----------------------------
-class _MistralDelta(Protocol):
-    content: Optional[str]
+class OpenAIChatCompletionsAdapter(LLMAdapter):
+    """Chat Completions via ``openai.OpenAI`` (Groq, vLLM, local gateways)."""
 
-
-class _MistralStreamChoice(Protocol):
-    delta: _MistralDelta
-
-
-class _MistralStreamChunk(Protocol):
-    choices: List[_MistralStreamChoice]
-
-
-class MistralChatAdapter(LLMAdapter):
-    """
-    Mistral adapter based on the official Mistral Python SDK (mistralai).
-
-    - Uses Mistral (official client type).
-    - Supports:
-        - generate_messages
-        - stream_messages
-    - Native tools via Mistral Chat Completions API.
-    """
-
-    _MISTRAL_CONTEXT_WINDOWS: Dict[str, int] = {
-        "mistral-small-latest": 32_000,
-        "mistral-medium-latest": 32_000,
-        "mistral-large-latest": 32_000,
-        "codestral-latest": 32_000,
-    }
-
-    DEFAULT_MODEL = "mistral-large-latest"
-
-    ENV_MODEL = "INTERGRAX_DEFAULT_MISTRAL_MODEL"
-    ENV_API_KEY = "MISTRAL_API_KEY"
+    _CONTEXT_WINDOWS: Dict[str, int] = {}
 
     def __init__(
         self,
-        client: Optional[Mistral] = None,
-        model: Optional[str] = None,
-        **defaults,
-    ):
+        *,
+        client: OpenAI,
+        model: str,
+        provider: LLMProvider,
+        context_windows: Optional[Dict[str, int]] = None,
+        **defaults: Any,
+    ) -> None:
         super().__init__()
         self._apply_defaults_call_config(defaults)
-
-        env_model = os.getenv(self.ENV_MODEL)
-        api_key = os.getenv(self.ENV_API_KEY)
-
-        resolved_model = model or env_model or self.DEFAULT_MODEL
-
-        if client is None:
-
-            if not api_key:
-                raise RuntimeError(
-                    "MISTRAL_API_KEY not found in environment variables."
-                )
-
-            client = Mistral(api_key=api_key)
-
-        self.client: Mistral = client
-        self.model: str = resolved_model
-
-        self.model_name_for_token_estimation = self.model
+        self.client = client
+        self.model = model
+        self.provider = provider
         self.defaults = defaults
-
-        self._context_window_tokens: int = self._estimate_mistral_context_window(self.model)
-
-        self.provider = LLMProvider.MISTRAL
+        self.model_name_for_token_estimation = model
+        windows = context_windows if context_windows is not None else self._CONTEXT_WINDOWS
+        self._context_window_tokens = int(windows.get(model, 32_000))
 
     @property
     def context_window_tokens(self) -> int:
-        """
-        Cached maximum context window (input + output tokens) for the configured model.
-        """
         return self._context_window_tokens
-
-    # ------------------------------------------------------------------
-    # Core API
-    # ------------------------------------------------------------------
 
     def generate_messages(
         self,
@@ -110,17 +60,12 @@ class MistralChatAdapter(LLMAdapter):
         run_id: Optional[str] = None,
     ) -> str:
         call = self.usage.begin_call(run_id=run_id)
-
         in_tok = 0
         out_tok = 0
         success = False
         err_type = None
-
         try:
-            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
-
             system_text, convo = split_system_messages(messages)
-
             payload = self._build_chat_params(
                 system_text=system_text,
                 convo=convo,
@@ -128,40 +73,22 @@ class MistralChatAdapter(LLMAdapter):
                 max_tokens=max_tokens,
                 stream=False,
             )
-
-            res: ChatCompletionResponse = self._execute(
-                lambda: self.client.chat.complete(**payload)
+            res: ChatCompletion = self._execute(
+                lambda: self.client.chat.completions.create(**payload)
             )
-
-            usage = getattr(res, "usage", None)
-            if usage is not None:
-                in_tok = int(getattr(usage, "prompt_tokens", 0) or 0)
-                out_tok = int(getattr(usage, "completion_tokens", 0) or 0)
-
+            if res.usage:
+                in_tok = int(res.usage.prompt_tokens or 0)
+                out_tok = int(res.usage.completion_tokens or 0)
             if not res.choices:
                 success = True
                 return ""
-
-            text = res.choices[0].message.content or ""
-            out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
-
             success = True
-            return text
-
+            return res.choices[0].message.content or ""
         except Exception as e:
             err_type = type(e).__name__
             raise
-
         finally:
-            self.usage.end_call(
-                call,
-                input_tokens=in_tok,
-                output_tokens=out_tok,
-                success=success,
-                error_type=err_type,
-            )
-
-
+            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
 
     def stream_messages(
         self,
@@ -172,17 +99,14 @@ class MistralChatAdapter(LLMAdapter):
         run_id: Optional[str] = None,
     ) -> Iterable[str]:
         call = self.usage.begin_call(run_id=run_id)
-
         in_tok = 0
         out_tok = 0
         success = False
         err_type = None
-
+        buf: List[str] = []
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
-
             system_text, convo = split_system_messages(messages)
-
             payload = self._build_chat_params(
                 system_text=system_text,
                 convo=convo,
@@ -190,45 +114,22 @@ class MistralChatAdapter(LLMAdapter):
                 max_tokens=max_tokens,
                 stream=True,
             )
-
-            stream: Iterable[_MistralStreamChunk] = self._execute(
-                lambda: self.client.chat.complete(**payload)
-            )
-
-            buf: List[str] = []
-
+            stream = self._execute(lambda: self.client.chat.completions.create(**payload))
             for chunk in stream:
-                if not chunk.choices:
+                c: ChatCompletionChunk = chunk
+                if not c.choices:
                     continue
-                delta = chunk.choices[0].delta
-                if delta.content:
+                delta = c.choices[0].delta
+                if delta and delta.content:
                     buf.append(delta.content)
                     yield delta.content
-
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
-
         except Exception as e:
             err_type = type(e).__name__
             raise
-
         finally:
-            self.usage.end_call(
-                call,
-                input_tokens=in_tok,
-                output_tokens=out_tok,
-                success=success,
-                error_type=err_type,
-            )
-
-
-
-    # ------------------------------------------------------------------
-    # Internals
-    # ------------------------------------------------------------------
-
-    def _estimate_mistral_context_window(self, model: str) -> int:
-        return self._MISTRAL_CONTEXT_WINDOWS.get(model, 32_000)
+            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
 
     def supports_tools(self) -> bool:
         return True
@@ -251,7 +152,6 @@ class MistralChatAdapter(LLMAdapter):
         out_tok = 0
         success = False
         err_type = None
-
         try:
             system_text, convo = split_system_messages(messages)
             payload = self._build_chat_params(
@@ -263,13 +163,12 @@ class MistralChatAdapter(LLMAdapter):
                 tools=tools_schema,
                 tool_choice=tool_choice,
             )
-            res: ChatCompletionResponse = self._execute(
-                lambda: self.client.chat.complete(**payload)
+            res: ChatCompletion = self._execute(
+                lambda: self.client.chat.completions.create(**payload)
             )
-            usage = getattr(res, "usage", None)
-            if usage is not None:
-                in_tok = int(getattr(usage, "prompt_tokens", 0) or 0)
-                out_tok = int(getattr(usage, "completion_tokens", 0) or 0)
+            if res.usage:
+                in_tok = int(res.usage.prompt_tokens or 0)
+                out_tok = int(res.usage.completion_tokens or 0)
             if not res.choices:
                 success = True
                 return make_tool_result()
@@ -278,7 +177,7 @@ class MistralChatAdapter(LLMAdapter):
             return make_tool_result(
                 content=msg.content or "",
                 tool_calls=extract_openai_tool_calls(msg),
-                finish_reason="completed",
+                finish_reason=res.choices[0].finish_reason or "completed",
             )
         except Exception as e:
             err_type = type(e).__name__
@@ -303,7 +202,6 @@ class MistralChatAdapter(LLMAdapter):
         err_type = None
         buf: List[str] = []
         tool_calls_acc: List[Dict[str, Any]] = []
-
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
             system_text, convo = split_system_messages(messages)
@@ -316,33 +214,29 @@ class MistralChatAdapter(LLMAdapter):
                 tools=tools_schema,
                 tool_choice=tool_choice,
             )
-            stream: Iterable[_MistralStreamChunk] = self._execute(
-                lambda: self.client.chat.complete(**payload)
-            )
+            stream = self._execute(lambda: self.client.chat.completions.create(**payload))
             for chunk in stream:
                 if not chunk.choices:
                     continue
                 delta = chunk.choices[0].delta
-                if delta.content:
+                if delta and delta.content:
                     buf.append(delta.content)
                     yield make_tool_result(content=delta.content, finish_reason="partial")
-                raw_tc = getattr(delta, "tool_calls", None)
-                if raw_tc:
-                    for tc in raw_tc:
-                        fn = getattr(tc, "function", None)
-                        name = getattr(fn, "name", None) if fn else None
-                        args = getattr(fn, "arguments", None) if fn else None
-                        if name:
+                if delta and delta.tool_calls:
+                    for tc in delta.tool_calls:
+                        idx = tc.index or 0
+                        while len(tool_calls_acc) <= idx:
                             tool_calls_acc.append(
-                                {
-                                    "id": getattr(tc, "id", "") or "",
-                                    "type": "function",
-                                    "function": {
-                                        "name": name,
-                                        "arguments": args if isinstance(args, str) else json.dumps(args or {}),
-                                    },
-                                }
+                                {"id": "", "type": "function", "function": {"name": "", "arguments": ""}}
                             )
+                        acc = tool_calls_acc[idx]
+                        if tc.id:
+                            acc["id"] = tc.id
+                        if tc.function:
+                            if tc.function.name:
+                                acc["function"]["name"] = tc.function.name
+                            if tc.function.arguments:
+                                acc["function"]["arguments"] += tc.function.arguments
             success = True
             yield make_tool_result(
                 content="".join(buf),
@@ -364,20 +258,25 @@ class MistralChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ):
+        system_text, convo = split_system_messages(messages)
         schema = self._model_json_schema(output_model)
-        schema_msg = ChatMessage(
-            role="user",
-            content=(
-                "Return ONLY a single JSON object matching this JSON Schema:\n"
-                + json.dumps(schema, ensure_ascii=False)
-            ),
-        )
-        raw = self.generate_messages(
-            list(messages) + [schema_msg],
+        payload = self._build_chat_params(
+            system_text=system_text,
+            convo=convo,
             temperature=temperature,
             max_tokens=max_tokens,
-            run_id=run_id,
+            stream=False,
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": getattr(output_model, "__name__", "structured_output"),
+                    "schema": schema,
+                    "strict": True,
+                },
+            },
         )
+        res = self._execute(lambda: self.client.chat.completions.create(**payload))
+        raw = (res.choices[0].message.content or "") if res.choices else ""
         json_str = self._extract_json_object(raw) or raw.strip()
         return self._validate_with_model(output_model, json_str)
 
@@ -391,26 +290,12 @@ class MistralChatAdapter(LLMAdapter):
         stream: bool,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        response_format: Optional[Dict[str, Any]] = None,
     ) -> dict:
-        """
-        Build a minimal, explicit Mistral Chat payload.
-
-        We force response_format={"type":"text"} to keep extraction deterministic
-        (content as a plain string, not a list of chunks).
-        """
-        temp = temperature if temperature is not None else self.defaults.get("temperature", None)
-        out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
-
-        mapped = self._map_messages(system_text=system_text, convo=convo)
-
-        payload: dict = {
-            "model": self.model,
-            "messages": mapped,
-            "stream": stream,
-        }
-        if not tools:
-            payload["response_format"] = {"type": "text"}
-
+        temp = temperature if temperature is not None else self.defaults.get("temperature")
+        out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens")
+        mapped = map_chat_completion_messages(system_text=system_text, convo=convo)
+        payload: dict = {"model": self.model, "messages": mapped, "stream": stream}
         if temp is not None:
             payload["temperature"] = float(temp)
         if out_tokens is not None:
@@ -419,8 +304,6 @@ class MistralChatAdapter(LLMAdapter):
             payload["tools"] = tools
         if tool_choice is not None:
             payload["tool_choice"] = tool_choice
-
+        if response_format is not None:
+            payload["response_format"] = response_format
         return payload
-
-    def _map_messages(self, *, system_text: str, convo: Sequence[ChatMessage]) -> List[dict]:
-        return map_chat_completion_messages(system_text=system_text, convo=convo)
