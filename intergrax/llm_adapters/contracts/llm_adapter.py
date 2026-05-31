@@ -15,6 +15,7 @@ import time
 import tiktoken
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.call_config import LLMCallConfig, parse_call_config
+from intergrax.llm_adapters._shared.resilience import execute_with_resilience
 from intergrax.llm_adapters._shared.retry import call_with_retry
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
@@ -57,11 +58,20 @@ class LLMAdapter(ABC):
         """Merge ``LLMCallConfig`` fields from adapter constructor kwargs."""
         self.call_config = parse_call_config(defaults)
 
+    def _provider_slug(self) -> str:
+        prov = getattr(self, "provider", None)
+        if isinstance(prov, LLMProvider):
+            return prov.value
+        return str(prov or "unknown")
+
     def _execute(self, fn: Callable[[], T]) -> T:
-        """Run a provider SDK call with optional retry policy from ``call_config``."""
-        if self.call_config.max_retries > 0:
-            return call_with_retry(fn, config=self.call_config)
-        return fn()
+        """Run a provider SDK call with rate limit, circuit breaker, and optional retry."""
+        return execute_with_resilience(
+            fn,
+            provider=self._provider_slug(),
+            config=self.call_config,
+            retry_fn=lambda f: call_with_retry(f, config=self.call_config),
+        )
     
     
     def validate(self) -> None:

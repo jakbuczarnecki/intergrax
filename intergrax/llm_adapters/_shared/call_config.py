@@ -21,6 +21,9 @@ class LLMCallConfig:
     max_retries: int = 0
     retry_backoff_sec: float = 0.5
     retry_on_status: Tuple[int, ...] = (429, 500, 502, 503, 504)
+    calls_per_minute: Optional[int] = None
+    circuit_breaker_threshold: int = 0
+    circuit_breaker_cooldown_sec: float = 30.0
 
 
 def parse_call_config(defaults: dict) -> LLMCallConfig:
@@ -32,6 +35,9 @@ def parse_call_config(defaults: dict) -> LLMCallConfig:
         "max_retries",
         "retry_backoff_sec",
         "retry_on_status",
+        "calls_per_minute",
+        "circuit_breaker_threshold",
+        "circuit_breaker_cooldown_sec",
     }
     cfg_kwargs = {k: defaults[k] for k in known if k in defaults}
     return LLMCallConfig(**cfg_kwargs)

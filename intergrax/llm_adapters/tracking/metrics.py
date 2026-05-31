@@ -2,10 +2,9 @@
 # Integrax framework – proprietary and confidential.
 
 """
-In-process LLM call metrics (Prometheus text exposition + JSON snapshot).
+In-process LLM call metrics (Prometheus text + OTLP-style JSON snapshot).
 
-Enable globally with ``INTERGRAX_LLM_METRICS_ENABLED=true`` or call
-:func:`set_metrics_enabled` from application startup.
+Enable with ``INTERGRAX_LLM_METRICS_ENABLED=true`` or :func:`set_metrics_enabled`.
 """
 
 from __future__ import annotations
@@ -13,8 +12,12 @@ from __future__ import annotations
 import os
 import threading
 from collections import defaultdict
-from dataclasses import dataclass, field
-from typing import DefaultDict, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple
+
+from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
+
+_metrics_enabled_override: Optional[bool] = None
 
 
 def _metrics_enabled() -> bool:
@@ -24,9 +27,6 @@ def _metrics_enabled() -> bool:
         "yes",
         "on",
     )
-
-
-_metrics_enabled_override: Optional[bool] = None
 
 
 def set_metrics_enabled(enabled: bool) -> None:
@@ -50,11 +50,11 @@ class _Counter:
 
 
 class LLMMetricsCollector:
-    """Thread-safe aggregator keyed by (provider, model)."""
+    """Thread-safe aggregator keyed by (tenant_id, provider, model)."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._by_key: DefaultDict[Tuple[str, str], _Counter] = defaultdict(_Counter)
+        self._by_key: DefaultDict[Tuple[str, str, str], _Counter] = defaultdict(_Counter)
 
     def record(
         self,
@@ -67,9 +67,11 @@ class LLMMetricsCollector:
         duration_ms: int,
         success: bool,
         error_type: Optional[str] = None,
+        tenant_id: Optional[str] = None,
     ) -> None:
         del run_id, error_type
-        key = (provider or "unknown", model or "unknown")
+        tenant = (tenant_id or get_llm_tenant_id() or "_platform").strip() or "_platform"
+        key = (tenant, provider or "unknown", model or "unknown")
         with self._lock:
             c = self._by_key[key]
             c.calls += 1
@@ -82,8 +84,8 @@ class LLMMetricsCollector:
     def snapshot(self) -> Dict[str, Dict[str, int]]:
         with self._lock:
             out: Dict[str, Dict[str, int]] = {}
-            for (provider, model), c in self._by_key.items():
-                out[f"{provider}:{model}"] = {
+            for (tenant, provider, model), c in self._by_key.items():
+                out[f"{tenant}:{provider}:{model}"] = {
                     "calls": c.calls,
                     "input_tokens": c.input_tokens,
                     "output_tokens": c.output_tokens,
@@ -95,14 +97,57 @@ class LLMMetricsCollector:
     def prometheus_lines(self) -> List[str]:
         lines: List[str] = []
         with self._lock:
-            for (provider, model), c in self._by_key.items():
-                labels = f'provider="{provider}",model="{model}"'
+            for (tenant, provider, model), c in self._by_key.items():
+                labels = (
+                    f'tenant_id="{tenant}",provider="{provider}",model="{model}"'
+                )
                 lines.append(f"intergrax_llm_calls_total{{{labels}}} {c.calls}")
                 lines.append(f"intergrax_llm_input_tokens_total{{{labels}}} {c.input_tokens}")
                 lines.append(f"intergrax_llm_output_tokens_total{{{labels}}} {c.output_tokens}")
                 lines.append(f"intergrax_llm_duration_ms_total{{{labels}}} {c.duration_ms}")
                 lines.append(f"intergrax_llm_errors_total{{{labels}}} {c.errors}")
         return lines
+
+    def otlp_resource_metrics(self) -> Dict[str, Any]:
+        """
+        OTLP-inspired JSON snapshot for observability backends / debug export.
+
+        Not a full OTLP protobuf encoder — stable JSON for HTTP ``/metrics/llm`` routes.
+        """
+        metrics: List[Dict[str, Any]] = []
+        with self._lock:
+            for (tenant, provider, model), c in self._by_key.items():
+                attrs = {
+                    "tenant_id": tenant,
+                    "provider": provider,
+                    "model": model,
+                }
+                for name, value in (
+                    ("llm.calls", c.calls),
+                    ("llm.input_tokens", c.input_tokens),
+                    ("llm.output_tokens", c.output_tokens),
+                    ("llm.duration_ms", c.duration_ms),
+                    ("llm.errors", c.errors),
+                ):
+                    metrics.append(
+                        {
+                            "name": name,
+                            "sum": {"asInt": int(value)},
+                            "attributes": attrs,
+                        }
+                    )
+        return {
+            "resourceMetrics": [
+                {
+                    "scopeMetrics": [
+                        {
+                            "scope": {"name": "intergrax.llm_adapters"},
+                            "metrics": metrics,
+                        }
+                    ]
+                }
+            ]
+        }
 
     def reset(self) -> None:
         with self._lock:

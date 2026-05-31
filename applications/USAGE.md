@@ -248,7 +248,7 @@ llm = LLMProfile(provider=LLMProvider.AZURE_OPENAI, model="gpt-4o-deployment").c
 llm = llm_profile_from_env(prefix="INTERGRAX_LLM").create_adapter()
 ```
 
-Set provider API keys in `.env` / secrets (see [LLM_ADAPTERS.md](../docs/LLM_ADAPTERS.md) env tables). Optional live smoke: GitHub workflow `llm-network-smoke.yml`.
+Set provider API keys in `.env` or pass `secrets=` to `LLMProfile.create_adapter()` after loading from Integration `secrets_store`. Enable metrics: `INTERGRAX_LLM_METRICS_ENABLED=true`; expose via `register_llm_metrics_routes(app)`. Set `set_llm_tenant_id(tenant_id)` before agent runs for billing labels. See [LLM_ADAPTERS.md](../docs/LLM_ADAPTERS.md).
 
 | Task | Where |
 |------|--------|

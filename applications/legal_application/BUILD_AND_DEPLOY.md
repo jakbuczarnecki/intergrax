@@ -41,7 +41,11 @@
         |----------|---------|------|
         | ``LEGAL_LLM_PROVIDER`` | ``ollama`` | :class:`~intergrax.llm_adapters.contracts.llm_provider.LLMProvider` slug |
         | ``LEGAL_LLM_MODEL`` | (empty) | Optional model/deployment override for :class:`~intergrax.llm_adapters.registry.profile.LLMProfile` |
-        | ``INTERGRAX_LLM_METRICS_ENABLED`` | ``false`` | Per-provider token/latency counters (see [LLM_ADAPTERS.md](../../docs/LLM_ADAPTERS.md)) |
+        | ``INTERGRAX_LLM_METRICS_ENABLED`` | ``false`` | Per-tenant/provider token/latency counters |
+        | ``calls_per_minute`` (in profile options) | — | Optional LLM rate limit per provider |
+        | ``circuit_breaker_threshold`` (in profile options) | — | Optional fail-fast after N errors |
+
+        Metrics HTTP (optional): ``register_llm_metrics_routes(app)`` → ``GET /metrics/llm``. See [LLM_ADAPTERS.md](../../docs/LLM_ADAPTERS.md).
 
         ### Tool catalog (optional)
 

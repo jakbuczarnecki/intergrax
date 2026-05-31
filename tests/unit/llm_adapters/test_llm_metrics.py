@@ -27,8 +27,9 @@ def test_llm_metrics_recorded_on_end_call() -> None:
     adapter.generate_messages([ChatMessage(role="user", content="x")], run_id="m1")
 
     snap = collector.snapshot()
-    assert "openai:gpt-4o-mini" in snap
-    assert snap["openai:gpt-4o-mini"]["calls"] == 1
+    match = [k for k in snap if "openai" in k and "gpt-4o-mini" in k]
+    assert match, f"expected openai:gpt-4o-mini in snapshot keys: {list(snap)}"
+    assert snap[match[0]]["calls"] == 1
     lines = collector.prometheus_lines()
     assert any("intergrax_llm_calls_total" in line for line in lines)
 

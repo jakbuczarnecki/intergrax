@@ -8,6 +8,8 @@ from __future__ import annotations
 import os
 from typing import Any, Mapping, Optional
 
+from intergrax.llm_adapters.registry.secrets import merge_secrets_into_options
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -39,13 +41,24 @@ class LLMProfile(BaseModel):
             return LLMProvider(value.strip().lower())
         raise ValueError("provider must be a non-empty LLMProvider or string slug")
 
-    def create_adapter(self, **overrides: Any) -> LLMAdapter:
+    def create_adapter(
+        self,
+        *,
+        secrets: Optional[Mapping[str, str]] = None,
+        **overrides: Any,
+    ) -> LLMAdapter:
         from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 
-        kwargs = {**self.options, **overrides}
+        kwargs = merge_secrets_into_options(self.provider, {**self.options, **overrides}, secrets)
         if self.model:
             kwargs.setdefault("model", self.model)
         return LLMAdapterRegistry.create(self.provider, **kwargs)
+
+    def with_secrets(self, secrets: Mapping[str, str]) -> LLMProfile:
+        """Return profile with secrets merged into ``options`` (api_key, etc.)."""
+        return self.model_copy(
+            update={"options": merge_secrets_into_options(self.provider, dict(self.options), secrets)}
+        )
 
     @classmethod
     def lab(cls) -> LLMProfile:
