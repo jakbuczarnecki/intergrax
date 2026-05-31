@@ -5,16 +5,18 @@
 Bridge LLM adapter metrics into Nexus runtime observability (§5.2, §7.1).
 
 Registers a runtime plugin that exports OTLP-style JSON snapshots on ``TASK_COMPLETED``.
-Prometheus ``observability_backend`` Integration can scrape ``GET /metrics/llm`` separately.
+Optional Pushgateway push and governance cost signals.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Callable, Optional
+from typing import Optional
 
+from intergrax.llm_adapters.governance.llm_cost import evaluate_llm_run_cost
 from intergrax.llm_adapters.tracking.exposition import render_otlp_json
 from intergrax.llm_adapters.tracking.metrics import get_llm_metrics_collector, is_metrics_enabled
+from intergrax.llm_adapters.tracking.prometheus_push import push_llm_metrics_to_gateway
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.plugins.contract import PolicyEngineLike, RuntimeEventBusLike, RuntimePlugin
@@ -37,18 +39,43 @@ def make_llm_metrics_runtime_plugin() -> RuntimePlugin:
             if event.event_type != RuntimeEventType.TASK_COMPLETED:
                 return
             tenant = event.tenant_id or "_platform"
+            run_id = event.run_id or ""
             collector = get_llm_metrics_collector()
             per_tenant = collector.snapshot_for_tenant(tenant)
             if not per_tenant:
                 return
+
+            cost = evaluate_llm_run_cost(tenant_id=tenant, run_id=run_id)
             otlp = render_otlp_json()
             logger.info(
-                "llm_metrics_export tenant=%s run_id=%s providers=%s",
+                "llm_metrics_export tenant=%s run_id=%s task_id=%s tokens=%s calls=%s",
                 tenant,
-                event.run_id,
-                list(per_tenant.keys()),
-                extra={"llm_metrics": per_tenant, "llm_otlp": otlp},
+                run_id,
+                event.task_id,
+                cost.total_tokens,
+                cost.total_calls,
+                extra={
+                    "run_id": run_id,
+                    "task_id": event.task_id,
+                    "tenant_id": tenant,
+                    "llm_metrics": per_tenant,
+                    "llm_otlp": otlp,
+                    "llm_cost_evaluation": {
+                        "total_tokens": cost.total_tokens,
+                        "warn": cost.warn_threshold_exceeded,
+                        "reasons": cost.reasons,
+                    },
+                },
             )
+            if cost.warn_threshold_exceeded:
+                logger.warning(
+                    "llm_governance_warn tenant=%s run_id=%s reasons=%s",
+                    tenant,
+                    run_id,
+                    cost.reasons,
+                )
+
+            push_llm_metrics_to_gateway(grouping_key=f"tenant/{tenant}")
 
         event_bus.subscribe(
             _export_llm_metrics,

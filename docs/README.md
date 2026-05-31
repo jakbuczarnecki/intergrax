@@ -16,6 +16,7 @@ The `docs/` folder holds the canonical platform documentation.
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — all implemented providers, contracts, wiring, usage links |
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — LLM-facing tools, engine status, unified tool model, planned backlog |
 | [**LLM_ADAPTERS.md**](LLM_ADAPTERS.md) | **LLM adapter catalog** — providers, streaming, tools, env vars, registry |
+| [**LLM_OBSERVABILITY.md**](LLM_OBSERVABILITY.md) | **LLM metrics** — Prometheus scrape, Pushgateway, PromQL, governance signals |
 | **This file** | Navigation and update rules |
 
 ```text
@@ -25,6 +26,7 @@ Agent workflow (how)       →  AGENT_CREATION_GUIDE.md
 Integrations (catalog)     →  INTEGRATIONS.md
 Tools (catalog)            →  TOOLS.md
 LLM adapters (catalog)     →  LLM_ADAPTERS.md
+LLM observability          →  LLM_OBSERVABILITY.md
 ```
 
 ---

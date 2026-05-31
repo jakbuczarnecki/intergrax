@@ -11,9 +11,12 @@ Tier-3 applications SHOULD load vault/Integration ``secrets_store`` values into
 from __future__ import annotations
 
 import os
-from typing import Mapping, Optional
+from typing import TYPE_CHECKING, Mapping, Optional
 
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+
+if TYPE_CHECKING:
+    from intergrax.integrations.contracts.secrets_store import SecretsStore
 
 # Provider slug -> primary API key environment variable
 _API_KEY_ENV: dict[LLMProvider, str] = {
@@ -52,6 +55,25 @@ def resolve_api_key(
         if val and val.strip():
             return val.strip()
     return None
+
+
+def default_secret_path_for_provider(provider: LLMProvider, *, prefix: str = "llm") -> str:
+    """Vault-style path: ``{prefix}/{provider}/api_key``."""
+    return f"{prefix.strip('/')}/{provider.value}/api_key"
+
+
+def load_api_key_from_secrets_store(
+    store: SecretsStore,
+    provider: LLMProvider,
+    *,
+    path: Optional[str] = None,
+) -> str:
+    """Read provider API key from Integration ``SecretsStore`` (rotation-friendly)."""
+    secret_path = path or default_secret_path_for_provider(provider)
+    value = store.get_secret(secret_path)
+    if not value or not str(value).strip():
+        raise RuntimeError(f"Empty secret at path='{secret_path}' for provider='{provider.value}'.")
+    return str(value).strip()
 
 
 def merge_secrets_into_options(

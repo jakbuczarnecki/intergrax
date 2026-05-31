@@ -6,9 +6,15 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Mapping, Optional
 
-from intergrax.llm_adapters.registry.secrets import merge_secrets_into_options
+if TYPE_CHECKING:
+    from intergrax.integrations.contracts.secrets_store import SecretsStore
+
+from intergrax.llm_adapters.registry.secrets import (
+    load_api_key_from_secrets_store,
+    merge_secrets_into_options,
+)
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -59,6 +65,17 @@ class LLMProfile(BaseModel):
         return self.model_copy(
             update={"options": merge_secrets_into_options(self.provider, dict(self.options), secrets)}
         )
+
+    def create_adapter_from_secrets_store(
+        self,
+        store: "SecretsStore",
+        *,
+        secret_path: str | None = None,
+        **overrides: Any,
+    ) -> LLMAdapter:
+        """Resolve API key from Vault/secrets integration, then create adapter."""
+        key = load_api_key_from_secrets_store(store, self.provider, path=secret_path)
+        return self.with_secrets({"api_key": key}).create_adapter(**overrides)
 
     @classmethod
     def lab(cls) -> LLMProfile:

@@ -75,6 +75,7 @@ class LLMAdapter(ABC):
             provider=self._provider_slug(),
             config=self.call_config,
             retry_fn=lambda f: call_with_retry(f, config=self.call_config),
+            tenant_id=get_llm_tenant_id(),
         )
     
     

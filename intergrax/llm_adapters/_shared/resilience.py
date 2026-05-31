@@ -9,9 +9,14 @@ import threading
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from typing import Callable, DefaultDict, Dict, TypeVar
+from typing import Callable, DefaultDict, Dict, Optional, TypeVar
 
 from intergrax.llm_adapters._shared.call_config import LLMCallConfig
+
+try:
+    from intergrax.distributed.contracts.rate_limiter import DistributedRateLimiter
+except ImportError:  # pragma: no cover
+    DistributedRateLimiter = None  # type: ignore[misc, assignment]
 
 T = TypeVar("T")
 
@@ -33,6 +38,13 @@ class _ProviderResilienceState:
 
 _lock = threading.Lock()
 _states: DefaultDict[str, _ProviderResilienceState] = defaultdict(_ProviderResilienceState)
+_distributed_limiter: Optional[DistributedRateLimiter] = None
+
+
+def set_llm_distributed_rate_limiter(limiter: Optional[DistributedRateLimiter]) -> None:
+    """Tier-3 bootstrap: Redis-backed limiter from ``create_redis_rate_limiter()``."""
+    global _distributed_limiter
+    _distributed_limiter = limiter
 
 
 def _state_key(provider: str) -> str:
@@ -98,15 +110,42 @@ def reset_provider_resilience(provider: str | None = None) -> None:
         _states.pop(_state_key(provider), None)
 
 
+def _check_distributed_rate_limit(
+    provider: str,
+    config: LLMCallConfig,
+    *,
+    tenant_id: Optional[str],
+) -> None:
+    if not config.use_distributed_rate_limit or _distributed_limiter is None:
+        return
+    limit = config.calls_per_minute
+    if not limit or limit <= 0:
+        return
+    tenant = (tenant_id or "_platform").strip() or "_platform"
+    refill = float(limit) / 60.0
+    result = _distributed_limiter.acquire(
+        tenant_id=tenant,
+        key=f"llm:{_state_key(provider)}",
+        capacity=int(limit),
+        refill_rate_per_second=refill,
+    )
+    if not result.allowed:
+        raise LLMRateLimitError(
+            f"Distributed LLM rate limit exceeded for tenant='{tenant}' provider='{provider}'."
+        )
+
+
 def execute_with_resilience(
     fn: Callable[[], T],
     *,
     provider: str,
     config: LLMCallConfig,
     retry_fn: Callable[[Callable[[], T]], T],
+    tenant_id: Optional[str] = None,
 ) -> T:
     """Apply rate limit + circuit breaker, then optional retry wrapper."""
     _check_circuit(provider, config)
+    _check_distributed_rate_limit(provider, config, tenant_id=tenant_id)
     _check_rate_limit(provider, config)
     try:
         if config.max_retries > 0:

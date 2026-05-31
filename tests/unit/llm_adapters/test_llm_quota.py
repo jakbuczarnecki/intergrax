@@ -7,6 +7,7 @@ import pytest
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.governance.quota import LLMQuotaExceeded, check_llm_tenant_quota
 from intergrax.llm_adapters.tracking.context import set_llm_tenant_id
+from intergrax.llm_adapters.tracking.context import clear_llm_tenant_id
 from intergrax.llm_adapters.tracking.metrics import get_llm_metrics_collector, record_llm_call, set_metrics_enabled
 from intergrax.llm_adapters.providers.openai_responses_adapter import OpenAIChatResponsesAdapter
 from unittest.mock import MagicMock, patch
@@ -16,8 +17,8 @@ pytestmark = pytest.mark.unit
 
 def test_check_llm_tenant_quota_raises_when_over_limit() -> None:
     set_metrics_enabled(True)
-    collector = get_llm_metrics_collector()
-    collector.reset()
+    get_llm_metrics_collector().reset()
+    clear_llm_tenant_id()
     record_llm_call(
         provider="openai",
         model="m",

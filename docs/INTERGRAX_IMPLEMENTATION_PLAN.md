@@ -548,6 +548,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M-LLM.10 | Production hardening | **Done** | Metrics, builtin conformance, `LLMProfile`, Bedrock tools stream, `cohere_native`, `azure_ai_inference` |
 | M-LLM.11 | Production ops layer | **Done** | OTLP/Prometheus routes, tenant metrics, rate limit + circuit breaker, secrets map, PR guard, extended network smoke |
 | M-LLM.12 | Nexus + governance wiring | **Done** | `llm_tenant_scope`, runtime metrics plugin, `INTERGRAX_LLM_TENANT_MAX_TOKENS` quota |
+| M-LLM.13 | Observability + secrets + distributed limits | **Done** | Pushgateway, `LLM_OBSERVABILITY.md`, Vault loader, Redis rate limit, governance warn |
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
