@@ -277,3 +277,8 @@ class ChromaVectorStore(BaseVectorStore):
 
     def count(self) -> int:
         return int(self._collection.count())
+
+    def list_collections(self) -> List[str]:
+        if self._client is None:
+            return [self.collection_name]
+        return [collection.name for collection in self._client.list_collections()]

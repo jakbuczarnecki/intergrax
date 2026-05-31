@@ -10,8 +10,7 @@ Composition root: ``intergrax.integrations.providers.key_value_cache.redis.creat
 
 from __future__ import annotations
 
-
-from redis import Redis
+from typing import Any
 
 from intergrax.distributed.contracts.rate_limiter import (
     DistributedRateLimiter,
@@ -81,8 +80,8 @@ class RedisDistributedRateLimiter(DistributedRateLimiter):
     return {allowed, tokens, retry_after}
     """
 
-    def __init__(self, redis_client: Redis) -> None:
-        self._redis: Redis = redis_client
+    def __init__(self, redis_client: Any) -> None:
+        self._redis: Any = redis_client
         self._script = self._redis.register_script(self._LUA_SCRIPT)
 
     def acquire(

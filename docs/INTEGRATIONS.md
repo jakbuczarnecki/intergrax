@@ -617,11 +617,13 @@ Integration catalog regression:
 uv run pytest tests/unit/integrations/ -q
 ```
 
-Vendor SDK boundary (CI + local gate):
+Vendor SDK boundary (CI + local gate — integrations, rag, agents):
 
 ```bash
 uv run python scripts/check_integration_vendor_imports.py
 uv run pytest tests/unit/integrations/test_vendor_import_governance.py -q
 ```
+
+Allowed vendor import modules: `opens.py`, `rag_store.py`, `client.py`, `web_client.py`, `_shared/p3/factories.py`, `_shared/p3/clients.py` (integrations); `parser_trace_exporter.py` (rag). **No** vendor imports under `agents/`.
 
 Conformance helpers: `intergrax/integrations/_shared/conformance.py`.

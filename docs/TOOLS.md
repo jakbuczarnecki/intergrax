@@ -120,6 +120,8 @@ Status legend: **Done** = registered handler in catalog.
 | `rag.ingest_document` | **Done** | Load file → parse (integration pipeline) → chunk → embed → index | Same managers + default `DocumentsLoader` / splitter |
 | `websearch.query` | **Done** | Run web search and return normalized snippets | `websearch_executor` or `SearchProvider` |
 | `websearch.read_url` | **Done** | Fetch a URL and return extracted title + plain text | `websearch` page fetch pipeline |
+| `websearch.fetch_batch` | **Done** | Fetch multiple URLs and return combined context | `websearch` page fetch pipeline |
+| `rag.list_collections` | **Done** | List vector index collection names | `vectorstore_manager` |
 
 **Catalog providers:** Phase O complete — all first-party tools registered; applications wire via `host/tool_wiring.py`.
 
@@ -161,6 +163,7 @@ Status legend: **Done** = registered handler in catalog.
 |---------|--------|-------------|----------|
 | `metrics.query_instant` | **Done** | Instant metrics query | `ObservabilityBackend` (`prometheus`) |
 | `logs.search` | **Done** | Search log index | `ObservabilityBackend` (`elasticsearch`) |
+| `observability.query_traces` | **Done** | Query recent traces/spans | `ObservabilityBackend` (`langfuse`, etc.) |
 
 ---
 
@@ -225,12 +228,15 @@ Alphabetical reference — all first-party catalog tools (Phase O complete).
 | `jira.search_tasks` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
 | `logs.search` | observability | **Done** | `elasticsearch` | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `metrics.query_instant` | observability | **Done** | `prometheus` | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
+| `observability.query_traces` | observability | **Done** | `langfuse` / observability slug | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `notify.send` | notification | **Done** | `notification_channel` slug | [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
 | `rag.retrieve` | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.ingest_document` | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.list_collections` | retrieval | **Done** | `vectorstore_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `sandbox.exec` | sandbox | **Done** | `sandbox_session` | [USAGE](../intergrax/tools/providers/sandbox/USAGE.md) |
 | `websearch.query` | retrieval | **Done** | `websearch_executor`, `search_provider` | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
 | `websearch.read_url` | retrieval | **Done** | page fetch + text extraction | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.fetch_batch` | retrieval | **Done** | batch page fetch | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
 
 ---
 

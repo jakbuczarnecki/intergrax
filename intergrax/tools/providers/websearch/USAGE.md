@@ -1,7 +1,7 @@
 # Websearch tool bundle
 
 **Bundle id:** `websearch`  
-**Tools:** `websearch.query`, `websearch.read_url`
+**Tools:** `websearch.query`, `websearch.read_url`, `websearch.fetch_batch`
 
 ## Dependencies (`ToolWiringContext`)
 

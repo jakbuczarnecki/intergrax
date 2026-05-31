@@ -11,12 +11,15 @@ from intergrax.tools.providers.rag.handler import RagRetrieveHandler
 from intergrax.tools.providers.rag.ingest_contracts import RagIngestInput, RagIngestOutput
 from intergrax.tools.providers.rag.ingest_handler import RagIngestHandler
 from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
+from intergrax.tools.providers.rag.list_collections_contracts import RagListCollectionsInput, RagListCollectionsOutput
+from intergrax.tools.providers.rag.list_collections_handler import RagListCollectionsHandler
+from intergrax.tools.providers.rag.list_collections_service import RAG_LIST_COLLECTIONS_TOOL_ID
 from intergrax.tools.providers.rag.service import RAG_TOOL_ID
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 RAG_BUNDLE_ID = "rag"
-RAG_TOOL_IDS: tuple[str, ...] = (RAG_TOOL_ID, RAG_INGEST_TOOL_ID)
+RAG_TOOL_IDS: tuple[str, ...] = (RAG_TOOL_ID, RAG_INGEST_TOOL_ID, RAG_LIST_COLLECTIONS_TOOL_ID)
 
 
 def rag_retrieve_contract() -> ToolContract:
@@ -60,6 +63,26 @@ def rag_ingest_contract() -> ToolContract:
     )
 
 
+def rag_list_collections_contract() -> ToolContract:
+    return ToolContract(
+        tool_id=RAG_LIST_COLLECTIONS_TOOL_ID,
+        name="rag.list_collections",
+        description=(
+            "List vector index collection names available in the configured vector store. "
+            "Use before ingest or retrieve when namespace selection matters."
+        ),
+        description_short="List vector store collections.",
+        input_schema=RagListCollectionsInput,
+        output_schema=RagListCollectionsOutput,
+        error_mapping={},
+        side_effects=False,
+        category="retrieval",
+        risk_level=ToolRiskLevel.LOW,
+        tags=("rag", "vectorstore", "metadata"),
+    )
+
+
 def register_rag_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
     registry.register(rag_retrieve_contract(), RagRetrieveHandler(ctx))
     registry.register(rag_ingest_contract(), RagIngestHandler(ctx))
+    registry.register(rag_list_collections_contract(), RagListCollectionsHandler(ctx))

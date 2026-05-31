@@ -80,3 +80,14 @@ class VectorStore(ABC):
         Return number of stored vectors.
         """
         raise NotImplementedError
+
+    def list_collections(self) -> List[str]:
+        """Return logical collection names exposed by this store (default: single active collection)."""
+        name = getattr(self, "collection_name", None)
+        if name is None and hasattr(self, "cfg"):
+            cfg = getattr(self, "cfg")
+            name = getattr(cfg, "collection_name", None)
+        if name:
+            return [str(name)]
+        tenant_id = getattr(self, "_tenant_id", "default")
+        return [f"inmemory:{tenant_id}"]

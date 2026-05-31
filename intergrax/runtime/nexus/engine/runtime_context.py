@@ -360,6 +360,9 @@ class RuntimeContext:
                 profile,
                 db_path=Path(config.trace_db_path),
             )  # type: ignore[assignment]
+
+        if ingestion_service is not None and trace_writer is not None:
+            ingestion_service.bind_trace_writer(trace_writer)
         
         return cls(
             config=config,

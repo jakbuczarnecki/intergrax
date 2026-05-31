@@ -37,6 +37,9 @@ class InMemoryRunTraceStore(RunTraceWriter, RunTraceReader):
         )
 
     def finalize_run(self, run_id: str, metadata: RunMetadata) -> None:
+        from intergrax.runtime.nexus.tracing.parser_trace_flush import export_parser_traces_from_events
+
+        export_parser_traces_from_events(self._events_by_run.get(run_id, []))
         self._metadata_by_run[run_id] = metadata
 
     def read_run(self, run_id: str, tenant_id: str) -> PersistedRun:

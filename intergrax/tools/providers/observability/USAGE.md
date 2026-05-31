@@ -1,13 +1,13 @@
 # Observability tool bundle
 
 **Bundle id:** `observability`  
-**Tools:** `metrics.query_instant`, `logs.search`
+**Tools:** `metrics.query_instant`, `logs.search`, `observability.query_traces`
 
 ## Dependencies (`ToolWiringContext`)
 
 | Field | Required | Purpose |
 |-------|----------|---------|
-| `observability_backend` | Yes | `ObservabilityBackend` (`prometheus` for metrics, `elasticsearch` for logs) |
+| `observability_backend` | Yes | `ObservabilityBackend` (`prometheus`, `elasticsearch`, `langfuse`, …) |
 
 Tier-3 example:
 
@@ -18,7 +18,7 @@ from intergrax.tools.registry import ToolProfile, ToolWiringContext, build_regis
 register_default_integrations()
 register_default_tools()
 
-profile = IntegrationProfile(observability_backend=IntegrationSlug.PROMETHEUS)
+profile = IntegrationProfile(observability_backend=IntegrationSlug.LANGFUSE)
 ctx = ToolWiringContext.from_integration_profile(profile)
 registry = build_registry_from_profile(ToolProfile(enabled_bundles=["observability"]), ctx=ctx)
 ```
@@ -27,9 +27,13 @@ registry = build_registry_from_profile(ToolProfile(enabled_bundles=["observabili
 
 - `metrics.query_instant` accepts PromQL (Prometheus backend).
 - `logs.search` uses Elasticsearch `_search` via the backend's `rest_client` when available.
+- `observability.query_traces` calls `ObservabilityBackend.query_traces()` (Langfuse REST when configured).
 
 ## Agent allow-list
 
 ```python
-AgentContract(allowed_tools=["metrics.query_instant", "logs.search"], ...)
+AgentContract(
+    allowed_tools=["metrics.query_instant", "logs.search", "observability.query_traces"],
+    ...
+)
 ```

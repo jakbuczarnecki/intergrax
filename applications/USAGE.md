@@ -198,9 +198,11 @@ Readiness checklist: [`TIER3_READINESS.md`](TIER3_READINESS.md).
 
 Product scaffold (`--profile product`) generates:
 
-- `manifest.py` — `IntegrationProfile(document_parser=docling)` on `ApplicationManifest`
+- `manifest.py` — `_resolve_integration_profile()` from `INTERGRAX_INTEGRATION_PROFILE_JSON` or SQLite + inmemory + Docling defaults
 - `integration_wiring.py` — `wire_*_integrations(integration_profile=…)` → `wire_nexus_observability`
-- `tool_wiring.py` — default tools: `rag.retrieve`, `rag.ingest_document`, `websearch.query`, `websearch.read_url`
+- `tool_wiring.py` — product tools: `rag.*`, `websearch.*` (incl. `fetch_batch`)
+
+Lab scaffold (`--profile lab`) uses `IntegrationProfile.lab()` and tools: `rag.retrieve`, `websearch.query`, `websearch.read_url`, `sandbox.exec`.
 
 ```bash
 # Full stack (Tier-2 agent + Tier-3 host)

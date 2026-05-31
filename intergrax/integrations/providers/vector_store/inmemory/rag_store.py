@@ -155,6 +155,9 @@ class InMemoryVectorStore(BaseVectorStore):
     def count(self) -> int:
         return len(self._vectors)
 
+    def list_collections(self) -> List[str]:
+        return [f"inmemory:{self._tenant_id}"]
+
     # ---------------------------------------------------------
 
     def _cosine_similarity(

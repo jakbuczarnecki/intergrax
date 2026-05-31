@@ -139,16 +139,20 @@ class IntegrationProfile(BaseModel):
 
     @classmethod
     def legal_product(cls) -> IntegrationProfile:
-        """Legal Tier-3 defaults — Docling parsing and optional Cohere rerank."""
+        """Legal Tier-3 defaults — SQLite observability, in-memory vectors, Docling + Cohere rerank."""
         return cls(
+            relational_store=IntegrationSlug.SQLITE,
+            vector_store=IntegrationSlug.INMEMORY,
             document_parser=IntegrationSlug.DOCLING,
             rerank_provider=IntegrationSlug.COHERE_RERANK,
         )
 
     @classmethod
     def research_product(cls) -> IntegrationProfile:
-        """Research Tier-3 defaults — Docling + web search rerank stack."""
+        """Research Tier-3 defaults — SQLite, in-memory vectors, Docling + web search rerank stack."""
         return cls(
+            relational_store=IntegrationSlug.SQLITE,
+            vector_store=IntegrationSlug.INMEMORY,
             document_parser=IntegrationSlug.DOCLING,
             search_provider=IntegrationSlug.GOOGLE_CSE,
             rerank_provider=IntegrationSlug.JINA_RERANK,

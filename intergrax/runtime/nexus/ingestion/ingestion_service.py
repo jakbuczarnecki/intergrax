@@ -125,6 +125,10 @@ class AttachmentIngestionService:
         self._splitter = splitter
         self._trace_writer = trace_writer
 
+    def bind_trace_writer(self, trace_writer: RunTraceWriter) -> None:
+        """Late-bind trace writer when created after service construction (RuntimeContext.build)."""
+        self._trace_writer = trace_writer
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------

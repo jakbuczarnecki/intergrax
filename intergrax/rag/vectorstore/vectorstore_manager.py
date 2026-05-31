@@ -100,3 +100,6 @@ class VectorstoreManager(BaseVectorstoreManager):
 
     def count(self) -> int:
         return self._store.count()
+
+    def list_collections(self) -> list[str]:
+        return list(self._store.list_collections())

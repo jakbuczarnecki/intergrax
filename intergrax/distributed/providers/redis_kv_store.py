@@ -11,9 +11,7 @@ Do not instantiate directly from application code.
 
 from __future__ import annotations
 
-from typing import Optional
-
-import redis
+from typing import Any, Optional
 
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 
@@ -28,7 +26,7 @@ class RedisKVStore(DistributedKVStore):
 
     def __init__(
         self,
-        client: redis.Redis,
+        client: Any,
         *,
         key_prefix: str = "intergrax",
     ) -> None:

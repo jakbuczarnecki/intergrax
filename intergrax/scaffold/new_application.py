@@ -58,6 +58,7 @@ def _manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
         from __future__ import annotations
 
         from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+        from intergrax.integrations.registry.profile import IntegrationProfile
         {imports}
 
 
@@ -67,6 +68,7 @@ def _manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
                 name="{names.display} Lab Application",
                 route_prefix="{route_prefix}",
                 env_prefix="{env_prefix_value}",
+                integration_profile=IntegrationProfile.lab(),
                 agents=[
         {mounts_block}
                 ],
@@ -251,7 +253,7 @@ def _tool_wiring_py(names: ScaffoldApplicationNames) -> str:
             integration_profile: IntegrationProfile | None = None,
         ) -> ApplicationToolWiring:
             profile = ToolProfile(
-                enabled=["rag.retrieve", "websearch.query", "sandbox.exec"],
+                enabled=["rag.retrieve", "websearch.query", "websearch.read_url", "sandbox.exec"],
             )
             return build_application_tool_wiring(
                 profile,

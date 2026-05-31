@@ -49,6 +49,20 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
         {factory_imports}
 
 
+        def _resolve_integration_profile() -> IntegrationProfile:
+            import json
+            import os
+
+            raw = os.environ.get("INTERGRAX_INTEGRATION_PROFILE_JSON", "").strip()
+            if raw:
+                return IntegrationProfile.model_validate_json(raw)
+            return IntegrationProfile(
+                relational_store=IntegrationSlug.SQLITE,
+                vector_store=IntegrationSlug.INMEMORY,
+                document_parser=IntegrationSlug.DOCLING,
+            )
+
+
         def build_{short}_manifest() -> ApplicationManifest:
             return ApplicationManifest.product(
                 app_id="{short}",
@@ -56,9 +70,7 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
                 route_prefix="{route_prefix}",
                 env_prefix="{env_prefix_value}",
                 default_capability="{first_cap}",
-                integration_profile=IntegrationProfile(
-                    document_parser=IntegrationSlug.DOCLING,
-                ),
+                integration_profile=_resolve_integration_profile(),
                 agents=[
         {mounts_block}
                 ],
@@ -371,8 +383,10 @@ def tool_wiring_py(names: ScaffoldApplicationNames) -> str:
                 enabled=[
                     "rag.retrieve",
                     "rag.ingest_document",
+                    "rag.list_collections",
                     "websearch.query",
                     "websearch.read_url",
+                    "websearch.fetch_batch",
                 ],
             )
             return build_application_tool_wiring(
