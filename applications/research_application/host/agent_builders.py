@@ -5,19 +5,41 @@
 from __future__ import annotations
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.factory import AgentFactory
+from intergrax.applications.contracts.manifest import AgentBinding
 from research.research_agent import ResearchAgent
 from research.summary_agent import SummaryAgent
+from research_application.host.settings import ResearchBackendSettings
 
 
-def _zero_arg_factory(agent_cls: type[Agent]) -> AgentFactory:
-    def _build(_ctx, _binding) -> Agent:
-        return agent_cls()
+def build_research_agent_from_context(
+    ctx: ApplicationBuildContext,
+    binding: AgentBinding,
+) -> ResearchAgent:
+    _ = binding
+    settings = ctx.settings
+    enable_websearch = (
+        settings.enable_websearch
+        if isinstance(settings, ResearchBackendSettings)
+        else ResearchBackendSettings().enable_websearch
+    )
+    return ResearchAgent(
+        tool_profile=ctx.tool_profile,
+        tool_wiring_context=ctx.tool_wiring_context,
+        enable_websearch=enable_websearch,
+    )
 
-    return _build
+
+def build_summary_agent_from_context(
+    ctx: ApplicationBuildContext,
+    binding: AgentBinding,
+) -> SummaryAgent:
+    _ = ctx, binding
+    return SummaryAgent()
 
 
 RESEARCH_AGENT_BUILDERS: dict[type[Agent], AgentFactory] = {
-    ResearchAgent: _zero_arg_factory(ResearchAgent),
-    SummaryAgent: _zero_arg_factory(SummaryAgent),
+    ResearchAgent: build_research_agent_from_context,
+    SummaryAgent: build_summary_agent_from_context,
 }

@@ -2,7 +2,7 @@
 
 Status: Canonical architecture and implementation guide  
 
-**Documentation (four-document model):** [`README.md`](README.md) · Implementation map: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)
+**Documentation (four-document model):** [`README.md`](README.md) · Implementation map: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) · Integration catalog: [`INTEGRATIONS.md`](INTEGRATIONS.md) · Tool catalog: [`TOOLS.md`](TOOLS.md)
 
 Audience: Humans, LLMs, Cursor AI agents, implementation agents, future maintainers  
 Purpose: Define the Intergrax runtime architecture, implementation rules, agent model, orchestration model, adapter model, experimentation model and forbidden patterns.
@@ -222,10 +222,10 @@ The platform MUST maintain **one canonical path** per universal concern. All tie
 
 | Concern | Canonical Tier-0 mechanism | Forbidden |
 |---------|---------------------------|-----------|
-| LLM calls | `intergrax/llm_adapters/` (`LLMAdapter`, registry) | Direct OpenAI/Anthropic SDK calls; second LLM wrapper in agents |
+| LLM calls | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`) | Direct OpenAI/Anthropic SDK calls; second LLM wrapper in agents |
 | Logging | `intergrax/logging.py` and established log patterns | `print()`, ad-hoc loggers, duplicate logging frameworks |
 | Tracing (pipeline) | Nexus `trace_event()` / `RunTraceWriter` | Parallel untracked diagnostic streams |
-| Tools | `intergrax/tools/` (`ToolRegistry`, `ToolExecutor`) | Agent-local tool registries |
+| Tools | `intergrax/tools/` (`ToolRegistry`, `ToolExecutor`, Tool Library §7.1.6) | Agent-local tool registries; boolean `use_rag` / `use_websearch` plan flags (deprecated §22.2) |
 | RAG | `intergrax/rag/` | Duplicate embedding/retrieval stacks in agents |
 | Web search | `intergrax/websearch/` | Custom HTTP search clients in agents |
 | Memory / session | `intergrax/memory/`, Nexus session storage | Direct Redis/PostgreSQL access from agents |
@@ -514,7 +514,7 @@ User / API (Tier-3)
 
 | Tier | Section | Package / folder |
 |------|---------|------------------|
-| Tier-0 Platform | §7.1 | `intergrax/` + **`intergrax/integrations/`** catalog; also rag, tools, memory, queueing, … |
+| Tier-0 Platform | §7.1 | `intergrax/` + **`intergrax/integrations/`** + **`intergrax/tools/`** catalogs; also rag, memory, queueing, … |
 | Tier-1 Nexus | §7.2 | `intergrax/runtime/`, `intergrax/contracts/` |
 | Tier-2 Agents | §7.3 | `agents/<name>/` |
 | Tier-3 Applications | §7.4 | `applications/<name>/` |
@@ -556,19 +556,25 @@ intergrax/integrations/
 ├── registry/           # IntegrationRegistry, factory, capability lookup
 ├── _shared/            # config schema, health probes, retry helpers
 └── providers/
-    └── <slug>/         # one folder per vendor / backend
-        ├── __init__.py
-        ├── adapter.py          # implements category contract(s)
-        ├── config.py           # pydantic settings + env keys
-        ├── config.example.yaml # copy-paste for Tier-3 applications
-        ├── README.md           # scope, auth, limits, smoke test
-        └── tests/
-            └── test_<slug>.py  # contract conformance (no live vendor by default)
+    └── <category>/       # IntegrationCategory (relational_store, message_bus, …)
+        └── <slug>/       # vendor package (postgresql, s3, slack, …)
+            ├── __init__.py
+            ├── adapter.py          # implements category contract(s) (optional for thin P2 shells)
+            ├── bundle.py           # create_* factory — composition root for Tier-3
+            ├── opens.py            # ONLY module that imports vendor SDK (when full package)
+            ├── config.py           # pydantic settings + env keys
+            ├── config.example.yaml # copy-paste for Tier-3 applications (optional)
+            ├── USAGE.md            # English: env vars, IntegrationProfile, factory example
+            └── tests/              # under tests/unit/integrations/providers/<category>/ in repo root
 ```
+
+**Layout map:** `intergrax/integrations/providers/layout.py` — slug → category folder.
+
+**Documentation:** all **73** registered providers ship `providers/<category>/<slug>/USAGE.md` (English). Regenerate via `scripts/generate_integration_usage_docs.py`. Catalog index: [`docs/INTEGRATIONS.md`](INTEGRATIONS.md).
 
 **Rules:**
 
-- One **provider folder per integration** (`postgresql/`, `slack/`, `kafka/`, …).
+- One **provider folder per integration** under **`providers/<category>/<slug>/`** — category matches `IntegrationCategory` (see `providers/layout.py`).
 - Providers implement **category contracts** from `integrations/contracts/` — not ad-hoc SDK wrappers.
 - Agents and Nexus MUST NOT import vendor SDKs directly when a catalog provider exists (§5.2).
 - Existing Tier-0 modules (`queueing/`, `distributed/`, `websearch/`, `rag/`, `runtime/notifications/`, `runtime/interactions/`) remain valid; new work and refactors **register through** `IntegrationRegistry` and gradually wrap legacy providers (evolve, not rewrite).
@@ -580,7 +586,7 @@ intergrax/integrations/
 | Layer | Owns |
 |-------|------|
 | `integrations/contracts/` | What “a PostgreSQL adapter” or “a notification channel” MUST expose |
-| `integrations/providers/<slug>/` | How a specific vendor satisfies the contract |
+| `integrations/providers/<category>/<slug>/` | How a specific vendor satisfies the contract |
 | `integrations/registry/` | Discovery, env-based factory, health aggregation |
 | Tier-3 `applications/<name>/` | Which integrations are enabled for a product environment |
 | Tier-2 `agents/<name>/` | Domain logic; declares **capability needs**, not vendor wiring |
@@ -594,17 +600,19 @@ Each category defines a **small, stable contract** (Protocol or ABC). Providers 
 | **relational_store** | `contracts/relational_store.py` | SQL CRUD, migrations hook, tenant-scoped connections | sqlite, postgresql, mysql, oracle, mssql, databricks |
 | **document_store** | `contracts/document_store.py` | Document / wide-column CRUD | mongodb, cassandra, dynamodb |
 | **key_value_cache** | `contracts/key_value_cache.py` | Cache, distributed locks, idempotency | redis, memcached |
-| **message_bus** | `contracts/message_bus.py` | Async tasks, pub/sub, consumer groups | kafka, rabbitmq, celery, sqs, service_bus |
-| **object_storage** | `contracts/object_storage.py` | Blob read/write, presigned URLs | s3, azure_blob, gcs, filesystem |
-| **vector_store** | `contracts/vector_store.py` | Embedding index (delegates to `rag/` impl) | qdrant, pinecone, chroma, inmemory |
-| **search_provider** | `contracts/search_provider.py` | Web / enterprise search | google_cse, bing, brave, serpapi |
-| **notification_channel** | `contracts/notification_channel.py` | Outbound alerts (HITL, escalation) | slack, teams, email_smtp, webhook |
+| **message_bus** | `contracts/message_bus.py` | Async tasks, pub/sub, consumer groups | kafka, rabbitmq, celery, sqs, service_bus, pubsub, temporal, nats |
+| **object_storage** | `contracts/object_storage.py` | Blob read/write, presigned URLs | s3, azure_blob, gcs, minio, filesystem |
+| **vector_store** | `contracts/vector_store.py` | Embedding index (delegates to `rag/` impl) | qdrant, pinecone, chroma, weaviate, milvus, inmemory |
+| **search_provider** | `contracts/search_provider.py` | Web / enterprise search | google_cse, bing, brave, serpapi, tavily, exa |
+| **notification_channel** | `contracts/notification_channel.py` | Outbound alerts (HITL, escalation) | slack, teams, email_smtp, webhook, discord, twilio |
+| **secrets_store** | `contracts/secrets_store.py` | Tenant credentials, API keys | vault |
+| **graph_store** | `contracts/graph_store.py` | Agent memory graphs, dependencies | neo4j |
 | **interaction_surface** | `contracts/interaction_surface.py` | Inbound events → canonical Task | slack, teams, lab_json |
 | **collaboration_suite** | `contracts/collaboration_suite.py` | Mail, calendar, directory (MS365, Google) | ms365_graph, google_workspace |
 | **issue_tracker** | `contracts/issue_tracker.py` | Issues, sprints, comments | jira, azure_devops, github, linear |
 | **wiki_knowledge** | `contracts/wiki_knowledge.py` | Pages, spaces, search | confluence, notion, sharepoint |
-| **observability_backend** | `contracts/observability_backend.py` | Metrics, logs export | prometheus, elasticsearch, otel |
-| **browser_automation** | `contracts/browser_automation.py` | Headless fetch / interact | playwright, selenium |
+| **observability_backend** | `contracts/observability_backend.py` | Metrics, logs export, error tracking | prometheus, elasticsearch, otel, langfuse, datadog, clickhouse, **sentry** |
+| **browser_automation** | `contracts/browser_automation.py` | Headless fetch / interact | playwright, firecrawl, selenium |
 | **cloud_platform** | `contracts/cloud_platform.py` | Unified auth, region, credential chain; factory for native **infrastructure** services (storage, queues, secrets — not LLM) | aws, azure, gcp |
 
 Category contracts MUST be **backend-agnostic**: same method names and DTOs whether the backend is SQLite or Oracle.
@@ -613,7 +621,7 @@ Category contracts MUST be **backend-agnostic**: same method names and DTOs whet
 
 | Concern | Canonical module | Notes |
 |---------|------------------|-------|
-| **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`) | OpenAI, Claude, Gemini, Ollama, Azure OpenAI, AWS Bedrock, … — §5.2.2 |
+| **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`, metrics) | 19 slugs — [LLM_ADAPTERS.md](LLM_ADAPTERS.md) §5.2.2 |
 | **Tokenization** | `intergrax/tokenizers/` | Not an external integration slug |
 | **RAG pipeline** | `intergrax/rag/` | Vector stores may appear in the catalog as **registry pointers** only; implementation stays in `rag/` |
 
@@ -674,17 +682,19 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 
 | Slug | Category | Status | Rationale |
 |------|----------|--------|-----------|
-| `oracle` | relational_store | Planned | Enterprise clients on Oracle |
-| `mssql` | relational_store | Planned | Microsoft SQL deployments |
+| `oracle` | relational_store | Beta | Enterprise clients on Oracle |
+| `mssql` | relational_store | Beta | Microsoft SQL deployments |
+| `azure_sql` | relational_store | Beta | Azure SQL via pyodbc |
+| `cloud_sql` | relational_store | Beta | GCP Cloud SQL via pg8000 |
 | `cassandra` | document_store | Beta | High-volume log / event retention (partition-scoped CQL) |
-| `memcached` | key_value_cache | Planned | Simple cache tier |
-| `sqs` | message_bus | Planned | AWS-native queues (also via `aws` facade) |
-| `azure_blob` | object_storage | Planned | Azure artifact storage (also via `azure` facade) |
-| `gcs` | object_storage | Planned | GCP artifact storage (also via `gcp` facade) |
-| `service_bus` | message_bus | Planned | Azure-native queues (via `azure` facade) |
-| `pubsub` | message_bus | Planned | GCP-native messaging (via `gcp` facade) |
-| `dynamodb` | document_store | Planned | AWS document/KV (via `aws` facade) |
-| `elasticache` | key_value_cache | Planned | Managed Redis on AWS (via `aws` facade) |
+| `dynamodb` | document_store | Beta | AWS document/KV (via `aws` facade) |
+| `memcached` | key_value_cache | Beta | Simple cache tier |
+| `elasticache` | key_value_cache | Beta | Managed Redis on AWS (via `aws` facade) |
+| `sqs` | message_bus | Beta | AWS-native queues (also via `aws` facade) |
+| `service_bus` | message_bus | Beta | Azure-native queues (via `azure` facade) |
+| `pubsub` | message_bus | Beta | GCP-native messaging (via `gcp` facade) |
+| `azure_blob` | object_storage | Beta | Azure artifact storage (also via `azure` facade) |
+| `gcs` | object_storage | Beta | GCP artifact storage (also via `gcp` facade) |
 | **`elasticsearch`** | observability_backend | **Beta** | Log search / aggregations (`_search` + Lucene `query_string`); complements `prometheus` |
 | **`databricks`** | relational_store | **Beta** | SQL Warehouse / Unity Catalog; lakehouse analytics via `RelationalStore` |
 | **`mongodb`** | document_store | **Beta** | Flexible JSON documents; partition-scoped CRUD via PyMongo |
@@ -692,16 +702,17 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 | **`qdrant`** | vector_store | **Beta** | Catalog bridge to `rag/`; self-hosted / cloud vectors |
 | **`chroma`** | vector_store | **Beta** | Catalog bridge to `rag/`; embedded or HTTP Chroma |
 | **`s3`** | object_storage | **Beta** | AWS S3 put/get/delete/presigned_url via catalog |
-| `azure_blob` | object_storage | Planned (P2 next) | Azure artifact storage (also via `azure` facade) |
-| `gcs` | object_storage | Planned (P2) | GCP artifact storage (also via `gcp` facade) |
-| `otel` | observability_backend | Planned | Unified traces/metrics export |
-| `playwright` | browser_automation | Planned | Dynamic web research beyond HTTP fetch |
-| `azure_devops` | issue_tracker | Planned | Microsoft ALM |
-| `github` | issue_tracker | Planned | Dev-centric task sources |
-| `google_workspace` | collaboration_suite | Planned | Gmail / Calendar for Google tenants |
-| `notion` / `sharepoint` | wiki_knowledge | Planned | Internal docs beyond Confluence |
-| `email_smtp` | notification_channel | Planned | Outbound mail without chat vendors |
-| `brave` / `serpapi` | search_provider | Planned | Alternative web research APIs |
+| `otel` | observability_backend | Beta | Unified traces/metrics export |
+| `playwright` | browser_automation | Beta | Dynamic web research beyond HTTP fetch |
+| `azure_devops` | issue_tracker | Beta | Microsoft ALM |
+| `github` | issue_tracker | Beta | Dev-centric task sources |
+| `linear` | issue_tracker | Beta | Linear issues API |
+| `google_workspace` | collaboration_suite | Beta | Gmail / Calendar for Google tenants |
+| `notion` / `sharepoint` | wiki_knowledge | Beta | Internal docs beyond Confluence |
+| `email_smtp` | notification_channel | Beta | Outbound mail without chat vendors |
+| `brave` / `serpapi` | search_provider | Beta | Alternative web research APIs |
+
+P2/P3 batch implementations (2026-05-30) centralize shared logic in `intergrax/integrations/_shared/p2/` (`configs.py`, `clients.py`, `factories.py`); `providers/<slug>/` packages are thin registration shells except `azure_blob` and `s3` (full packages).
 
 **Vector-store note:** `pinecone`, `qdrant`, and `chroma` implementations live in `intergrax/rag/vectorstore/`. Integration Library adds thin catalog bridges (`providers/<slug>/`) so Tier-3 can set `IntegrationProfile.vector_store`. RAG bootstrap (`create_default_vectorstore_manager()`) resolves stores via the catalog — see Phase M.6 P2 in the implementation plan.
 
@@ -765,6 +776,137 @@ integrations:
 | Live vendor tests | CI optional job | `pytest -m integration_live` — secrets in CI only |
 
 Each provider README MUST document: auth model, required env vars, rate limits, idempotency behavior, and a **smoke command** runnable from lab.
+
+### 7.1.6 Tool Library — Canonical Catalog
+
+Tier-0 agent-facing capabilities MUST live in a **single, discoverable Tool Library** under `intergrax/tools/`, mirroring the Integration Library pattern (§7.1.1).
+
+**Problem this solves:** Integrations answer *how to talk to a backend* (Jira REST, PostgreSQL, Bing API). LLM agents and MCP clients need *what to call* — semantically named operations with JSON schemas, descriptions, risk metadata, and trace-enforced execution. Agents MUST NOT call integration contracts directly.
+
+**Three-layer model (canonical):**
+
+```text
+Tier-2  Agent / LLM planner     →  selects tool_id + arguments (JSON schema)
+Tier-0  Tool Library            →  business semantics, validation, composition
+Tier-0  Integration Library     →  vendor adapters (IssueTracker, SearchProvider, …)
+```
+
+| Layer | Package | Consumer | Example |
+|-------|---------|----------|---------|
+| **Integration** | `intergrax/integrations/` | Tool handlers, Tier-3 wiring, RAG bootstrap | `IssueTracker.search_issues(jql)` |
+| **Tool** | `intergrax/tools/providers/<domain>/` | Agents, ToolsAgent, MCP, UAEP `ToolRequest` | `jira.search_tasks(project, status, assignee)` |
+| **Agent** | `agents/<name>/` | Nexus routing | `allowed_tools=["jira.search_tasks"]` |
+
+**Target layout:**
+
+```text
+intergrax/tools/
+├── core/                   # ToolContract, execution models, ToolProvider protocol (exists)
+├── registry/               # ToolCatalog, register_default_tools(), ToolProfile (Phase O — Done)
+├── exporters/              # OpenAI / Anthropic / MCP schema export (Phase O)
+├── _shared/                # schema helpers, LLM description lint, JQL/query builders
+└── providers/
+    └── <domain>/           # e.g. jira/, rag/, websearch/, sandbox/
+        ├── contracts.py    # Input/Output Pydantic models per tool
+        ├── handlers.py     # ToolHandler implementations
+        ├── bundle.py       # register_*_tools(registry, ctx)
+        ├── USAGE.md
+        └── tests/
+```
+
+**Rules:**
+
+- One **domain folder** per tool family (`jira/`, `websearch/`, `rag/`, …) — not one folder per vendor SDK.
+- Tool handlers **compose** integration contracts — they MUST NOT reimplement vendor HTTP/SDK calls when a catalog integration exists.
+- Vendor SDKs remain in `integrations/providers/<slug>/opens.py` only (§7.1.1).
+- Agents and Nexus MUST NOT import `integrations/providers/*` for side effects; they invoke tools via **`ToolRuntime`** / `ToolRequest` (§22, §42.12).
+- Tool handlers receive dependencies through **`ToolWiringContext`** (Tier-3 composition): resolved integrations, RAG managers, websearch executors — injected at startup, not looked up ad hoc inside handlers.
+- **`ToolProvider.register_tools(registry, ctx)`** is the production registration contract (explicit wiring — no magic discovery).
+
+**Separation of concerns:**
+
+| Layer | Owns |
+|-------|------|
+| `tools/core/contracts.py` | What every tool MUST expose to runtime (schema, risk, side_effects) |
+| `tools/providers/<domain>/` | LLM-facing semantics + business logic above integrations |
+| `tools/registry/` | Catalog, `ToolProfile`, default registration |
+| Tier-3 `applications/<name>/` | Which tools are enabled + integration instances passed into `ToolWiringContext` |
+| Tier-2 `agents/<name>/` | `allowed_tools` allow-list — capability policy, not vendor wiring |
+| Tier-1 `runtime/nexus/tools/` | Enforcement: `RuntimeToolInvoker`, `ToolAccessPolicy`, trace, idempotency |
+
+**Tool vs integration — decision rule:**
+
+| Question | Answer → layer |
+|----------|----------------|
+| Is the consumer an LLM choosing a function call? | **Tool** |
+| Is it swapping Postgres for MySQL at deploy time? | **Integration** |
+| Does it need `description` + JSON Schema for model tool selection? | **Tool** |
+| Is it a stable backend Protocol with no LLM metadata? | **Integration** |
+
+**Out of scope for Tool Library:**
+
+| Concern | Canonical module | Notes |
+|---------|------------------|-------|
+| **LLM providers** | `intergrax/llm_adapters/` | Not tools — separate registry (§5.2.2) |
+| **Agent business logic** | `agents/<name>/` | Domain steps; may *call* tools, not define platform catalog entries |
+| **Orchestration / planning** | Tier-1 Nexus | Selects tools; does not implement tool handlers |
+| **Cursor-style skill files** | N/A | Markdown instruction packs are not Tier-0 tools unless wrapped as callable `ToolContract` |
+
+**Dual export (agent + MCP):**
+
+Every catalog tool MUST be exportable as:
+
+1. OpenAI-compatible function schema (for `ToolsAgent` / native tool-calling LLMs),
+2. MCP tool definition (for `applications/<app>/mcp/server.py`),
+3. `ToolRequest.tool_name` value (for UAEP / `RuntimeToolGateway`).
+
+Single source of truth: `ToolContract` in the catalog — not parallel schema definitions per surface.
+
+**Catalog reference:** [`TOOLS.md`](TOOLS.md) — 11 first-party tools **Done** (Phase O.4, 2026-05-30) · Implementation: Phase O in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+
+### 7.1.7 Unified Tool Model — Everything Is a Tool
+
+**Target architecture (Phase O.5+):** All agent-invokable platform capabilities — including today’s pipeline flags `use_rag`, `use_websearch`, and registered function tools — converge on **one mechanism**: named tools in `ToolRegistry`, invoked through `ToolRuntime`.
+
+**Current state (transitional):** Nexus still uses `ToolInvocationPlan` with boolean flags (`use_rag`, `use_websearch`, `use_tools`) that dispatch to dedicated pipeline steps (`RagStep`, `WebsearchStep`, `ToolsStep`). This is **legacy dual-path** and MUST be migrated.
+
+**Target state:**
+
+```text
+Agent / planner
+    → planned tool_ids: ["rag.retrieve", "websearch.query", "jira.search_tasks"]
+    → ToolRuntime.invoke_request(ToolRequest)  # per tool, or batched plan
+    → RuntimeToolInvoker → ToolHandler
+    → integrations + domain logic
+```
+
+| Legacy flag / step | Target catalog tool_id | Underlying integration / module |
+|--------------------|------------------------|----------------------------------|
+| `use_rag` / `RagStep` | `rag.retrieve` | `intergrax/rag/` + `IntegrationProfile.vector_store` |
+| `use_websearch` / `WebsearchStep` | `websearch.query` | `SearchProvider` via `IntegrationProfile.search_provider` |
+| `use_tools` / `ToolsStep` | *(explicit tool_ids)* | `ToolRegistry` entries |
+| Sandbox execution | `sandbox.exec` | `intergrax/runtime/sandbox/` (already a tool_id) |
+
+**Migration rules:**
+
+1. **No new boolean capability flags** — new platform capabilities MUST ship as catalog tools with `ToolContract`.
+2. **`ToolInvocationPlan`** evolves to `planned_tools: Sequence[str]` (tool_ids) — boolean flags become deprecated aliases during transition.
+3. **`RagStep` / `WebsearchStep`** become thin **compatibility shims** that delegate to `rag.retrieve` / `websearch.query` handlers until all callers migrate.
+4. **`LegalToolPlan` / engine plan models** replace `use_rag` / `use_websearch` with `tools: list[str]` (or structured `PlannedToolCall`).
+5. **Context injection tools:** `rag.retrieve` and `websearch.query` MAY declare `injects_context: true` so Nexus knows to merge results into LLM prompt context (replaces implicit step behavior) — see §22.1.
+
+**Why unify:**
+
+- One policy surface (`ToolAccessPolicy`, `allowed_tools`, trace, idempotency, risk).
+- One schema export path for LLM tool selection and MCP.
+- Agents reason about **tools**, not parallel abstractions (flags vs registry).
+- Tier-3 enables tools via `ToolProfile` — same ergonomics as `IntegrationProfile`.
+
+**Forbidden after Phase O.5:**
+
+- Adding new `use_*` booleans to plan models for platform capabilities.
+- Agent code branching on `use_rag` instead of invoking `rag.retrieve` or listing it in `allowed_tools`.
+- Direct `RagStep` / `WebsearchStep` invocation from Tier-2 agents (must use `ToolRequest`).
 
 ---
 
@@ -1831,34 +1973,64 @@ Sandbox execution should be:
 
 # 22. Tool Runtime
 
-Tools are callable operations exposed to Nexus and agents.
+Tools are callable operations exposed to Nexus, agents, and MCP clients. They are the **only** LLM-facing execution surface for platform capabilities (§7.1.6, §7.1.7).
 
 Examples:
 
-- search web
-- read file
-- write file
-- query database
-- send Slack message
-- create document
-- call LLM
-- run browser action
-- execute script in sandbox
+- `rag.retrieve` — vector / hybrid retrieval (replaces legacy `use_rag`)
+- `websearch.query` — web research (replaces legacy `use_websearch`)
+- `jira.search_tasks` — issue search with LLM-friendly parameters
+- `sandbox.exec` — isolated script execution
+- send notification, read/write artifact, query database, browser action
 
 Tools must have:
 
-- name
-- description
-- input schema
-- output schema
-- risk level
-- permission requirement
-- timeout
-- retry policy
+- `tool_id` (stable registry key)
+- `name` and `description` (optimized for LLM tool selection)
+- `input_schema` and `output_schema` (Pydantic → JSON Schema)
+- `risk_level` and `side_effects`
+- `timeout_ms` and `retry_policy` (runtime-enforced)
+- optional `injects_context` — when true, Nexus merges output into LLM prompt context (retrieval tools)
 
-Tools should be registered in a Tool Registry.
+Tools MUST be registered in **`ToolRegistry`** via the Tool Library catalog (`intergrax/tools/providers/`, §7.1.6).
 
-All agent and Nexus tool invocation MUST route through `ToolRuntime` with policy enforcement (§42.12, §42.36). Direct adapter calls from agents are forbidden (§42.41).
+All agent and Nexus tool invocation MUST route through **`ToolRuntime`** with policy enforcement (§42.12, §42.36). Direct integration adapter calls from agents are forbidden (§42.41).
+
+**Canonical modules:**
+
+| Concern | Location |
+|---------|----------|
+| Tool contract + handler protocol | `intergrax/tools/core/`, `intergrax/tools/tool_executor.py` |
+| Catalog + providers | `intergrax/tools/providers/` (Phase O) |
+| Registry | `intergrax/tools/registry/` |
+| LLM planner | `intergrax/tools/tools_agent.py` |
+| Runtime enforcement | `intergrax/runtime/nexus/tools/` (`RuntimeToolInvoker`, `RuntimeToolGateway`) |
+
+**Catalog index:** [`TOOLS.md`](TOOLS.md) — first-party catalog (11 `tool_id`s: retrieval, Jira, Confluence, notify, observability, sandbox) registered via `register_default_tools()` (Phase O.4, 2026-05-30).
+
+## 22.1 Context-Injection Tools
+
+Some tools exist primarily to ** enrich the LLM prompt** rather than to perform irreversible side effects (e.g. `rag.retrieve`, `websearch.query`).
+
+When `ToolContract.injects_context = true`:
+
+1. Runtime invokes the tool through the same `RuntimeToolInvoker` path.
+2. Nexus merges a bounded preview of the tool output into `state.tools_context_parts` / message assembly (replacing implicit `RagStep` / `WebsearchStep` injection).
+3. Trace records both `tool_invocation_*` and context-injection diagnostics.
+
+Side-effect tools (`injects_context = false`) return results to the agent loop only — they do not auto-inject into the main LLM prompt unless the agent explicitly uses the output.
+
+## 22.2 Legacy Pipeline Flags (Deprecated)
+
+Phase O.5 migration is **Done**. Nexus MAY still accept `ToolInvocationPlan(use_rag=…, use_websearch=…, use_tools=…)` as **deprecated aliases** that map to catalog tool_ids:
+
+```text
+use_rag=True        → rag.retrieve
+use_websearch=True  → websearch.query
+use_tools=True      → ToolsAgent planner over ToolRegistry
+```
+
+New code MUST use explicit tool_ids and `ToolRequest` — not boolean plan flags.
 
 ---
 
@@ -2525,7 +2697,7 @@ Agents provide **domain logic**. The runtime owns **execution governance**.
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Implementation status note:** Some §42 contracts describe the **target canonical runtime**. Existing code implements subsets. Gaps are tracked in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) §2 and §0.5. New code MUST converge toward §42. Agents MUST NOT introduce patterns forbidden by §42.41.
+**Implementation status note (2026-05-27):** §42 platform infrastructure is **complete for laboratory and product hosts**. All Tier-3 factories (`lab`, `legal`, `research`, `poc_template`) use validating runtime event persistence, default runtime plugins, and resilient notification delivery (when webhook backend configured). Debug API covers trace, metrics, runtime events, delivery DLQ, and experiments. Remaining work is **product agents** (Phase K, Legal E2E B.15) and optional beta provider hardening in deploy configs — not runtime core gaps.
 
 ### §42 Table Of Contents
 
@@ -3642,6 +3814,8 @@ RuntimeVersion:
 - Tier-3 applications pin runtime version in config
 - Nexus rejects agents with incompatible contract versions at registration time
 - Event consumers MUST ignore unknown fields
+
+**Code (2026-05-27):** `intergrax/runtime/schema/registry.py` exposes `RUNTIME_SCHEMA_REGISTRY`, `current_runtime_version()`, and `validate_schema_version()`. `intergrax/runtime/events/phase_coverage.py` maps every `RuntimeEventType` to an `ExecutionPhase`. Persistence enforces both via `ValidatingRuntimeEventPersistence` (wrapped by `resolve_runtime_event_persistence()`).
 
 ---
 

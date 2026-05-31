@@ -33,7 +33,29 @@
         | ``LEGAL_BACKEND_HOST`` | see ``.env.example`` | Bind address |
         | ``LEGAL_BACKEND_PORT`` | ``8000`` | HTTP port |
 
-        Agent roster and integrations: ``manifest.py``, ``host/wiring.py``, ``host/integration_wiring.py``.
+        Agent roster and integrations: ``manifest.py``, ``host/wiring.py``, ``host/tool_wiring.py``. Runtime platform: validating event store + ``bootstrap_nexus_platform()`` (see ``applications/USAGE.md``).
+
+        ### LLM provider
+
+        | Variable | Default | Role |
+        |----------|---------|------|
+        | ``LEGAL_LLM_PROVIDER`` | ``ollama`` | :class:`~intergrax.llm_adapters.contracts.llm_provider.LLMProvider` slug |
+        | ``LEGAL_LLM_MODEL`` | (empty) | Optional model/deployment override for :class:`~intergrax.llm_adapters.registry.profile.LLMProfile` |
+        | ``INTERGRAX_LLM_METRICS_ENABLED`` | ``false`` | Per-provider token/latency counters (see [LLM_ADAPTERS.md](../../docs/LLM_ADAPTERS.md)) |
+
+        ### Tool catalog (optional)
+
+        | Variable | Default | Role |
+        |----------|---------|------|
+        | ``LEGAL_ENABLE_RAG`` | ``false`` | Register ``rag.retrieve`` on ``RuntimeConfig`` |
+        | ``LEGAL_ENABLE_WEBSEARCH`` | ``false`` | Register ``websearch.query`` |
+        | ``LEGAL_USE_TOOL_DECISION`` | ``false`` | LLM tool-decision step before Nexus bridge |
+        | ``LEGAL_TOOLS_MODE`` | ``off`` | ToolsAgent planner mode when tools enabled |
+        | ``LEGAL_ENABLED_TOOLS`` | (empty) | Comma-separated extra catalog tool_ids |
+
+        ``LEGAL_PRODUCT_PROFILE=research`` enables RAG, websearch, and tool-decision by default (override with env).
+
+        Wire vectorstore / websearch backends in ``host/tool_wiring.py`` when enabling RAG/websearch in production. See [`intergrax/tools/USAGE.md`](../../intergrax/tools/USAGE.md).
 
         ---
 

@@ -7,6 +7,7 @@ from intergrax.applications.contracts.build_context import ApplicationBuildConte
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from research_application.host.agent_builders import RESEARCH_AGENT_BUILDERS
 from research_application.host.settings import ResearchBackendSettings
+from research_application.host.tool_wiring import wire_research_tools
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
 
@@ -16,7 +17,13 @@ def build_research_registry(
 ) -> AgentRegistry:
     """Compose research + summary agents via unified Tier-3 wiring."""
     settings = settings or ResearchBackendSettings.from_env()
-    ctx = ApplicationBuildContext.for_manifest(RESEARCH_APPLICATION_MANIFEST, settings=settings)
+    tool_wiring = wire_research_tools(settings=settings)
+    ctx = ApplicationBuildContext.for_manifest(
+        RESEARCH_APPLICATION_MANIFEST,
+        settings=settings,
+        tool_profile=tool_wiring.profile,
+        tool_wiring_context=tool_wiring.wiring_context,
+    )
     return build_application_registry(
         RESEARCH_APPLICATION_MANIFEST,
         ctx,

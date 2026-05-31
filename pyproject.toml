@@ -93,6 +93,30 @@ torch = { index = "pytorch-cpu" }
 
 
 [project.optional-dependencies]
+# Minimal LLM provider subsets (core package still installs all providers by default).
+llm-openai = ["openai>=1.0", "tiktoken>=0.7"]
+llm-anthropic = ["anthropic>=0.25", "tiktoken>=0.7"]
+llm-mistral = ["mistralai>=0.4", "tiktoken>=0.7"]
+llm-ollama = ["ollama>=0.1", "langchain-ollama>=0.2", "langchain-core>=0.3", "tiktoken>=0.7"]
+llm-gemini = ["google-genai>=0.3", "tiktoken>=0.7"]
+llm-bedrock = ["boto3>=1.34", "botocore>=1.34", "mypy-boto3-bedrock-runtime>=1.34", "tiktoken>=0.7"]
+llm-groq = ["openai>=1.0", "tiktoken>=0.7"]
+llm-vllm = ["openai>=1.0", "tiktoken>=0.7"]
+llm-compat = ["openai>=1.0", "tiktoken>=0.7"]
+llm-vertex = ["google-genai>=0.3", "tiktoken>=0.7"]
+llm-cohere-native = ["cohere>=5.5", "tiktoken>=0.7"]
+llm-all = [
+  "openai>=1.0",
+  "anthropic>=0.25",
+  "mistralai>=0.4",
+  "ollama>=0.1",
+  "google-genai>=0.3",
+  "boto3>=1.34",
+  "botocore>=1.34",
+  "mypy-boto3-bedrock-runtime>=1.34",
+  "langchain-ollama>=0.2",
+  "tiktoken>=0.7",
+]
 dev = [
   "pytest>=8.4,<9",
   "pytest-asyncio>=0.23,<0.24",

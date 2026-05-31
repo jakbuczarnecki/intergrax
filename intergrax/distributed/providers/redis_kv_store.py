@@ -5,7 +5,7 @@
 """
 Redis-based implementation of DistributedKVStore.
 
-Composition root: ``intergrax.integrations.providers.redis.create_redis_integration``.
+Composition root: ``intergrax.integrations.providers.key_value_cache.redis.create_redis_integration``.
 Do not instantiate directly from application code.
 """
 

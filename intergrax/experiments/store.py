@@ -9,7 +9,7 @@ import sqlite3
 from pathlib import Path
 from typing import List, Optional
 
-from intergrax.integrations.providers.sqlite.paths import (
+from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_EXPERIMENTS_DB,
     ENV_EXPERIMENTS_DB,
     resolve_experiments_db_path,
@@ -31,7 +31,7 @@ __all__ = [
 
 
 def open_experiment_store(db_path: Path | None = None) -> SQLiteExperimentStore:
-    from intergrax.integrations.providers.sqlite import create_sqlite_experiment_store
+    from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_experiment_store
 
     if db_path is not None:
         return create_sqlite_experiment_store(db_path=db_path)  # type: ignore[return-value]

@@ -24,8 +24,11 @@ from intergrax.applications._shared.fastapi_mcp import (
 )
 from lab_application.host.integration_wiring import wire_lab_integrations
 from lab_application.host.settings import LabApplicationSettings
+from lab_application.host.tool_wiring import wire_lab_tools
 from lab_application.host.wiring import build_lab_registry
 from lab_application.mcp.server import build_lab_mcp_server
+from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from lab_application.serving.fastapi_router import mount_lab_routes
 
 
@@ -53,7 +56,6 @@ def create_lab_application(
     - ``/debug/*`` — trace, events, checkpoints, progress, experiments, HITL intake
     """
     settings = settings or LabApplicationSettings.from_env()
-    resolved_registry = registry or build_lab_registry(settings=settings)
     integrations = wire_lab_integrations(
         settings=settings,
         db_path=db_path,
@@ -61,12 +63,20 @@ def create_lab_application(
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
     )
+    resolved_registry = registry or build_lab_registry(
+        settings=settings,
+        integration_profile=integrations.profile,
+    )
     nexus_loop = NexusLoop(
         resolved_registry,
         checkpoint_store=integrations.checkpoint_store,
         trace_store=integrations.trace_store,
         runtime_event_store=integrations.runtime_event_store,
         notification_adapter=integrations.notification_adapter,
+    )
+    plugin_bootstrap = bootstrap_nexus_platform(
+        nexus_loop,
+        trace_store=integrations.trace_store,  # type: ignore[arg-type]
     )
     task_runner = UnifiedTaskRunner(nexus_loop)
     scheduler_wiring = wire_long_running_scheduler(
@@ -98,6 +108,7 @@ def create_lab_application(
         checkpoint_store=integrations.checkpoint_store,
         trace_store=integrations.trace_store,
         runtime_event_store=integrations.runtime_event_store,
+        delivery_ledger=integrations.delivery_ledger,
     )
     app.title = "Intergrax Lab Application"
     app.description = (
@@ -115,9 +126,11 @@ def create_lab_application(
         )
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
+        tool_wiring = wire_lab_tools(integration_profile=integrations.profile)
         mcp = build_lab_mcp_server(
             nexus_loop=nexus_loop,
             route_prefix=settings.route_prefix,
+            tool_registry=tool_wiring.registry,
         )
         extra_lifespans = [make_scheduler_lifespan(scheduler)] if scheduler else []
         app = couple_fastapi_with_mcp(
@@ -135,4 +148,5 @@ def create_lab_application(
         @app.on_event("shutdown")
         async def _stop_long_running_scheduler() -> None:
             await scheduler.stop()
+    attach_plugin_shutdown(app, plugin_bootstrap.shutdown_callbacks)
     return app

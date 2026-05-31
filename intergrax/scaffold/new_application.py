@@ -206,6 +206,7 @@ def _wiring_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.runtime.registry.agent_registry import AgentRegistry
         from {pkg}.host.agent_builders import {builders_const}
         from {pkg}.host.settings import {pascal}ApplicationSettings
+        from {pkg}.host.tool_wiring import wire_{short}_tools
         from {pkg}.manifest import build_{short}_manifest
 
 
@@ -215,8 +216,47 @@ def _wiring_py(names: ScaffoldApplicationNames) -> str:
         ) -> AgentRegistry:
             settings = settings or {pascal}ApplicationSettings.from_env()
             manifest = build_{short}_manifest()
-            ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
+            tool_wiring = wire_{short}_tools(
+                integration_profile=getattr(manifest, "integration_profile", None),
+            )
+            ctx = ApplicationBuildContext.for_manifest(
+                manifest,
+                settings=settings,
+                tool_profile=tool_wiring.profile,
+                tool_wiring_context=tool_wiring.wiring_context,
+            )
             return build_application_registry(manifest, ctx, builders={builders_const})
+        '''
+    )
+
+
+def _tool_wiring_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    short = names.short
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        """Tool catalog wiring for {pkg} (Phase O.8)."""
+
+        from __future__ import annotations
+
+        from intergrax.applications._shared.tool_wiring import ApplicationToolWiring, build_application_tool_wiring
+        from intergrax.integrations.registry.profile import IntegrationProfile
+        from intergrax.tools.registry.profile import ToolProfile
+
+
+        def wire_{short}_tools(
+            *,
+            integration_profile: IntegrationProfile | None = None,
+        ) -> ApplicationToolWiring:
+            profile = ToolProfile(
+                enabled=["rag.retrieve", "websearch.query", "sandbox.exec"],
+            )
+            return build_application_tool_wiring(
+                profile,
+                integration_profile=integration_profile,
+            )
         '''
     )
 
@@ -238,7 +278,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
         from typing import Optional
 
         from intergrax.integrations.contracts.base import IntegrationCategory
-        from intergrax.integrations.providers.sqlite.bundle import (
+        from intergrax.integrations.providers.relational_store.sqlite.bundle import (
             SQLiteIntegrationBundle,
             create_sqlite_integration,
         )
@@ -253,6 +293,11 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             resolve_interaction_settings,
         )
         from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+        from intergrax.applications._shared.notification_wiring import (
+            create_resilient_notification_adapter,
+            open_host_delivery_ledger,
+        )
+        from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
         from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
         from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
         from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
@@ -272,6 +317,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             runtime_events_db_path: Path | None
             experiments_db_path: Path | None
             checkpoints_db_path: Path | None
+            delivery_ledger: DeliveryLedger | None
 
 
         def _sqlite_config_overrides(
@@ -335,7 +381,14 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             runtime_event_store = (
                 sqlite_bundle.runtime_event_store if runtime_events_db_path is not None else None
             )
-            notification_adapter = profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)
+            delivery_ledger = open_host_delivery_ledger(
+                db_path=db_path,
+                checkpoints_db_path=checkpoints_db_path,
+            )
+            notification_adapter = create_resilient_notification_adapter(
+                profile,
+                delivery_ledger=delivery_ledger,
+            )
             interaction_adapter = create_{short}_interaction_adapter(settings)
             return {pascal}IntegrationWiring(
                 profile=profile,
@@ -349,6 +402,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
                 runtime_events_db_path=runtime_events_db_path,
                 experiments_db_path=experiments_db_path or sqlite_bundle.paths.experiments,
                 checkpoints_db_path=checkpoints_db_path or sqlite_bundle.paths.task_checkpoints,
+                delivery_ledger=delivery_ledger,
             )
         '''
     )
@@ -387,6 +441,8 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
             couple_fastapi_with_mcp,
             make_scheduler_lifespan,
         )
+        from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+        from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
         from {pkg}.host.wiring import build_{short}_registry
         from {pkg}.mcp.server import build_{short}_mcp_server
         from {pkg}.serving.fastapi_router import mount_{short}_routes
@@ -417,6 +473,10 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                 runtime_event_store=integrations.runtime_event_store,
                 notification_adapter=integrations.notification_adapter,
             )
+            platform = bootstrap_nexus_platform(
+                nexus_loop,
+                trace_store=integrations.trace_store,  # type: ignore[arg-type]
+            )
             task_runner = UnifiedTaskRunner(nexus_loop)
             scheduler_wiring = wire_long_running_scheduler(
                 checkpoint_store=integrations.checkpoint_store,
@@ -446,6 +506,7 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                 checkpoint_store=integrations.checkpoint_store,
                 trace_store=integrations.trace_store,
                 runtime_event_store=integrations.runtime_event_store,
+                delivery_ledger=integrations.delivery_ledger,
             )
             app.title = "{title}"
             mount_{short}_routes(app, nexus_loop=nexus_loop, prefix=settings.route_prefix)
@@ -479,6 +540,7 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                 @app.on_event("shutdown")
                 async def _stop_scheduler() -> None:
                     await scheduler.stop()
+            attach_plugin_shutdown(app, platform.shutdown_callbacks)
             return app
         '''
     )
@@ -752,6 +814,7 @@ def _readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> 
 
         - Engine: `intergrax/applications/USAGE.md`
         - Layout: `applications/USAGE.md`
+        - Agent + app: `python -m intergrax.scaffold new-stack <slug> --profile lab`
         '''
     )
 
@@ -825,6 +888,7 @@ def _create_lab_application(
     _write(target / "host" / "agent_builders.py", _agent_builders_py(names, specs), force=force)
     _write(target / "host" / "wiring.py", _wiring_py(names), force=force)
     _write(target / "host" / "integration_wiring.py", _integration_wiring_py(names), force=force)
+    _write(target / "host" / "tool_wiring.py", _tool_wiring_py(names), force=force)
     _write(target / "host" / "factory.py", _factory_py(names), force=force)
     _write(target / "host" / "main.py", _main_py(names), force=force)
 
@@ -901,6 +965,7 @@ def _create_product_application(
     _write(target / "host" / "agent_factories.py", product_tpl.agent_factories_py(names, specs), force=force)
     _write(target / "host" / "wiring.py", product_tpl.wiring_py(names), force=force)
     _write(target / "host" / "integration_wiring.py", product_tpl.integration_wiring_py(names), force=force)
+    _write(target / "host" / "tool_wiring.py", product_tpl.tool_wiring_py(names), force=force)
     _write(target / "host" / "factory.py", product_tpl.factory_py(names), force=force)
     _write(target / "host" / "main.py", product_tpl.main_py(names), force=force)
 

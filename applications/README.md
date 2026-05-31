@@ -2,6 +2,7 @@
 
 Configured execution environments that compose Nexus, agents, and integrations for HTTP/Docker deployment.
 
+**Ready to scaffold?** [`TIER3_READINESS.md`](TIER3_READINESS.md)  
 **Usage guide:** [`USAGE.md`](USAGE.md)  
 **Composition engine:** [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)
 

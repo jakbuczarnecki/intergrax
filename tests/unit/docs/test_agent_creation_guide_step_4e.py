@@ -15,6 +15,7 @@ def test_agent_creation_guide_documents_step_4e_scaffold() -> None:
     text = _GUIDE.read_text(encoding="utf-8")
     assert "### E — Dedicated application (scaffold)" in text
     assert "new-application" in text
+    assert "new-stack" in text
     assert "--profile product" in text
     assert "build-docker.sh" in text
     assert "intergrax_runtime_architecture.md" in text

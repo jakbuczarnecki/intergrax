@@ -9,7 +9,7 @@ import sqlite3
 from pathlib import Path
 from typing import List, Optional
 
-from intergrax.integrations.providers.sqlite.paths import (
+from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_HUMAN_DECISIONS_DB,
     ENV_HUMAN_DECISIONS_DB,
     resolve_human_decisions_db_path,
@@ -31,7 +31,7 @@ __all__ = [
 
 
 def open_human_decision_store(db_path: Path | None = None) -> SQLiteHumanDecisionStore:
-    from intergrax.integrations.providers.sqlite import create_sqlite_human_decision_store
+    from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_human_decision_store
 
     if db_path is not None:
         return create_sqlite_human_decision_store(db_path=db_path)  # type: ignore[return-value]

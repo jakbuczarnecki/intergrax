@@ -124,8 +124,46 @@ ctx = ApplicationBuildContext.for_manifest(manifest, settings=app_settings)
 | `manifest` | Full `ApplicationManifest` |
 | `settings` | Application settings dataclass (`LabApplicationSettings`, `LegalBackendSettings`, …) |
 | `integration_profile` | Copied from `manifest.integration_profile` |
+| `tool_profile` | Enabled catalog `tool_id`s / bundles (`ToolProfile`) |
+| `tool_wiring_context` | Integration + runtime deps for tool handlers |
 
-Factories should read **secrets and product config from `ctx.settings`**, not from `os.environ` directly inside Tier-2 agents.
+Factories should read **secrets and product config from `ctx.settings`**, and pass **`ctx.tool_profile` / `ctx.tool_wiring_context`** into agent config when the agent uses catalog tools.
+
+---
+
+## Tool catalog wiring (Tier-3)
+
+Every application SHOULD provide `host/tool_wiring.py`:
+
+```python
+from intergrax.applications._shared.tool_wiring import build_application_tool_wiring
+from intergrax.tools.registry.profile import ToolProfile
+
+def wire_my_app_tools(*, settings, integration_profile=None):
+    return build_application_tool_wiring(
+        ToolProfile(enabled=["rag.retrieve", "websearch.query"]),
+        integration_profile=integration_profile,
+        websearch_executor=getattr(settings, "websearch_executor", None),
+    )
+```
+
+In `host/wiring.py`:
+
+```python
+tool_wiring = wire_my_app_tools(settings=settings, integration_profile=profile)
+ctx = ApplicationBuildContext.for_manifest(
+    manifest,
+    settings=settings,
+    tool_profile=tool_wiring.profile,
+    tool_wiring_context=tool_wiring.wiring_context,
+)
+```
+
+Agent factory → agent config → `RuntimeConfig(tool_profile=..., tool_wiring_context=...)`.
+
+MCP hosts pass `tool_registry=tool_wiring.registry` to mount `list_catalog_tools` / `describe_catalog_tool`.
+
+See [`intergrax/tools/USAGE.md`](../tools/USAGE.md) and [`docs/TOOLS.md`](../../docs/TOOLS.md).
 
 ---
 
@@ -254,10 +292,11 @@ uv run pytest tests/acceptance/agent_os/test_lab_application.py -q
 
 ## Reference implementations
 
-| Application | Manifest | Builders / factory |
-|-------------|----------|-------------------|
-| Lab | `applications/lab_application/manifest.py` | `host/agent_builders.py` (`dict[type[Agent], …]`) |
-| Legal | `applications/legal_application/manifest.py` | `host/agent_factories.py` (`factory=` on mount) |
+| Application | Manifest | Builders / factory | Tool wiring |
+|-------------|----------|-------------------|-------------|
+| Lab | `applications/lab_application/manifest.py` | `host/agent_builders.py` | `host/tool_wiring.py` |
+| Legal | `applications/legal_application/manifest.py` | `host/agent_factories.py` | `host/tool_wiring.py` |
+| Research | `applications/research_application/manifest.py` | `host/agent_builders.py` | `host/tool_wiring.py` |
 
 ---
 

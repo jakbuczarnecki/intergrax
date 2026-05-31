@@ -5,7 +5,7 @@
 """
 Redis-backed token bucket rate limiter.
 
-Composition root: ``intergrax.integrations.providers.redis.create_redis_rate_limiter``.
+Composition root: ``intergrax.integrations.providers.key_value_cache.redis.create_redis_rate_limiter``.
 """
 
 from __future__ import annotations

@@ -8,9 +8,7 @@ from typing import Any, Dict, List, Optional
 import time
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter, LLMRunStats
-
-from dataclasses import dataclass, asdict
-from typing import Any, Dict, List, Optional, Tuple
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
 
 @dataclass(frozen=True)
@@ -144,9 +142,12 @@ class LLMUsageTracker:
             if ad is None:
                 continue
 
+            provider = ad.provider
+            if isinstance(provider, LLMProvider):
+                provider = provider.value
             meta = LLMAdapterMeta(
                 adapter_type=ad.__class__.__name__,
-                provider=ad.provider,
+                provider=str(provider),
                 model=ad.model,
             )
 

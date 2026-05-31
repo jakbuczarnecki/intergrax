@@ -20,19 +20,19 @@ InteractionAdapterFactory = Callable[[], InteractionAdapter]
 
 
 def _slack_interaction_adapter() -> InteractionAdapter:
-    from intergrax.integrations.providers.slack.adapter import SlackInteractionAdapter
+    from intergrax.integrations.providers.notification_channel.slack.adapter import SlackInteractionAdapter
 
     return SlackInteractionAdapter()
 
 
 def _teams_interaction_adapter() -> InteractionAdapter:
-    from intergrax.integrations.providers.teams.bundle import create_teams_interaction_surface
+    from intergrax.integrations.providers.notification_channel.teams.bundle import create_teams_interaction_surface
 
     return create_teams_interaction_surface()
 
 
 def _lab_json_interaction_adapter() -> InteractionAdapter:
-    from intergrax.integrations.providers.lab_json.bundle import create_lab_json_interaction_surface
+    from intergrax.integrations.providers.interaction_surface.lab_json.bundle import create_lab_json_interaction_surface
 
     return create_lab_json_interaction_surface()
 
@@ -86,15 +86,15 @@ def create_interaction_adapter(
 
     resolved = settings or resolve_interaction_settings()
     if resolved.surface in (InteractionSurface.LAB, InteractionSurface.LAB_JSON):
-        from intergrax.integrations.providers.lab_json.bundle import create_lab_json_interaction_surface
+        from intergrax.integrations.providers.interaction_surface.lab_json.bundle import create_lab_json_interaction_surface
 
         return create_lab_json_interaction_surface()
     if resolved.surface in (InteractionSurface.SLACK, InteractionSurface.SLASH_COMMAND):
-        from intergrax.integrations.providers.slack.bundle import create_slack_interaction_surface
+        from intergrax.integrations.providers.notification_channel.slack.bundle import create_slack_interaction_surface
 
         return create_slack_interaction_surface()
     if resolved.surface == InteractionSurface.TEAMS:
-        from intergrax.integrations.providers.teams.bundle import create_teams_interaction_surface
+        from intergrax.integrations.providers.notification_channel.teams.bundle import create_teams_interaction_surface
 
         return create_teams_interaction_surface()
     return ChainedInteractionAdapter(_default_interaction_chain())

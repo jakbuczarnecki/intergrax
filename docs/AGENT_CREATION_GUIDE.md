@@ -330,6 +330,16 @@ Applications contain **wiring only** — never agent business logic.
 | `lab` | `--profile lab` | Debug API + `POST <prefix>/run` + `/debug/*` | 8091 |
 | `product` | `--profile product` | FastAPI Core (`/health`, `/v1/*`) + auth env stubs | 8000 |
 
+**Full stack (agent + application):**
+
+```bash
+python -m intergrax.scaffold new-stack my_feature \
+  --profile lab \
+  --capability my_feature.basic
+```
+
+Creates `agents/my_feature/` and `applications/my_feature_application/` in one step.
+
 ```bash
 # From repository root — lab host for experimentation
 python -m intergrax.scaffold new-application my_lab \
@@ -700,15 +710,17 @@ See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) for p
 
 ```text
 Tier-2  agents/           WHAT the agent needs     → capabilities, allowed_tools, ToolRequest
-Tier-3  applications/     WHICH vendor/backend     → IntegrationProfile, factory wiring
+Tier-3  applications/     WHICH vendor/backend     → IntegrationProfile, ToolProfile, factory wiring
 Tier-0  integrations/     HOW to talk to backend   → providers/<slug>/, contracts
+Tier-0  tools/              WHAT the LLM invokes     → providers/<domain>/, ToolContract (see TOOLS.md)
 ```
 
 | Layer | Declares | Example |
 |-------|----------|---------|
-| **Agent** (`AgentContract`) | Routing + tool policy | `capabilities=["research.web_search"]`, `allowed_tools=["websearch.query"]` |
-| **Application** (`factory.py`) | Provider selection | `relational_store=IntegrationSlug.SQLITE`, `notification_channel=IntegrationSlug.LOG` |
-| **Integration provider** | Adapter implementation | `create_sqlite_integration()`, `create_slack_integration()` |
+| **Agent** (`AgentContract`) | Routing + tool policy | `capabilities=["research.web_search"]`, `allowed_tools=["websearch.query", "rag.retrieve"]` |
+| **Application** (`factory.py`) | Provider + tool selection | `IntegrationProfile`, `ToolProfile`, `ToolWiringContext` |
+| **Integration provider** | Adapter implementation | `create_jira_issue_tracker()`, `create_google_cse_search_provider()` |
+| **Tool provider** | LLM-facing operation | `jira.search_tasks`, `websearch.query` — composes integrations |
 
 Agents **never** import `intergrax.integrations.providers.*` or choose integration slugs. That belongs in Tier-3 composition roots (`factory.py`, `integration_wiring.py`).
 
@@ -740,7 +752,54 @@ response = await ctx.invoke_tool(
 )
 ```
 
-The application ensures the tool runtime is backed by the correct Tier-0 provider (e.g. Google CSE vs Bing via host config, not agent code).
+The application ensures the tool runtime is backed by the correct Tier-0 provider (e.g. Google CSE vs Bing via host config, not agent code). See [TOOLS.md](TOOLS.md) for catalog tool_ids and Phase O wiring (`ToolProfile`, `ToolWiringContext`).
+
+#### Tool catalog wiring (Phase O.8 — unified model)
+
+Applications enable catalog tools via `ToolProfile` and inject dependencies via `ToolWiringContext`. Reference implementations:
+
+| Application | `host/tool_wiring.py` |
+|-------------|----------------------|
+| Lab | `wire_lab_tools()` — RAG, websearch, sandbox |
+| Legal | `wire_legal_tools()` — env-driven RAG/websearch |
+| Research | `wire_research_tools()` — websearch by default |
+| POC template | `wire_poc_template_tools()` — lab-like defaults |
+
+```python
+from intergrax.applications._shared.tool_wiring import build_application_tool_wiring
+from intergrax.tools.registry.profile import ToolProfile
+from intergrax.tools.registry.bootstrap import register_default_tools
+
+register_default_tools()
+tool_wiring = build_application_tool_wiring(
+    ToolProfile(enabled=["rag.retrieve", "websearch.query", "jira.search_tasks"]),
+    integration_profile=integration_profile,
+)
+
+# Pass into RuntimeConfig when building agent runtime:
+RuntimeConfig(
+    llm_adapter=...,
+    tool_profile=tool_wiring.profile,
+    tool_wiring_context=tool_wiring.wiring_context,
+    enable_rag=True,
+    enable_websearch=True,
+)
+```
+
+**Unified tool model (Phase O.5):** agents and legal tool-decision SHOULD prefer explicit `tool_ids` (`rag.retrieve`, `websearch.query`) over legacy `use_rag` / `use_websearch` booleans. Booleans still work — they map to catalog tool_ids and emit a deprecation trace.
+
+```python
+# Canonical plan surface (Tier-1 / legal bridge)
+ToolRequest(
+    tool_name="nexus.capability_plan",
+    input={
+        "tool_ids": ["rag.retrieve", "websearch.query"],
+        "use_tools": False,
+    },
+)
+```
+
+MCP hosts may expose catalog schemas via `list_catalog_tools` / `describe_catalog_tool` (see `intergrax/applications/_shared/mcp_catalog_tools.py`).
 
 ### What applications wire
 
@@ -846,22 +905,26 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 | `s3` | object_storage | Blob storage (`create_s3_object_storage()` only) |
 | `redis` | key_value_cache | Idempotency, rate limits, distributed locks |
 | `kafka`, `rabbitmq`, `celery` | message_bus | Worker queues, async Nexus execution |
-| `google_cse`, `bing` | search_provider | Research / web tools |
-| `slack`, `teams`, `webhook`, `log` | notification_channel | Long-running progress, HITL alerts |
+| `google_cse`, `bing`, `brave`, `serpapi` | search_provider | Research / web tools |
+| `slack`, `teams`, `webhook`, `log`, `email_smtp` | notification_channel | Long-running progress, HITL alerts, SMTP mail |
 | `lab_json`, `slack`, `teams` | interaction_surface | Inbound webhooks / lab JSON intake |
+| `playwright` | browser_automation | JS-heavy pages via headless browser |
 
-### Planned integrations (M.6 P2 / P3 — not yet in default bootstrap)
+### Extended integrations (M.6 P2/P3 — registered in default bootstrap, beta)
 
 | Slug | Category | Notes |
 |------|----------|-------|
-| `azure_blob`, `gcs` | object_storage | Follow S3 bridge pattern (B.34+) |
-| `notion`, `sharepoint` | wiki_knowledge | REST wiki sources (B.35) |
-| `github`, `linear` | issue_tracker | Dev workflow ingestion (B.36) |
-| `email_smtp` | notification_channel | SMTP outbound (B.37) |
-| `otel` | observability_backend | OTLP export (B.38) |
-| `playwright` | browser_automation | Dynamic web (B.39) |
+| `azure_blob`, `gcs`, `s3` | object_storage | Blob put/get/delete/presigned URL |
+| `dynamodb`, `mongodb`, `cassandra` | document_store | Partition-scoped document CRUD |
+| `sqs`, `service_bus`, `pubsub` | message_bus | Cloud-native queues (also via platform facades) |
+| `memcached`, `elasticache`, `redis` | key_value_cache | Cache tiers |
+| `oracle`, `mssql`, `azure_sql`, `cloud_sql` | relational_store | Enterprise SQL backends |
+| `notion`, `sharepoint`, `confluence` | wiki_knowledge | Internal docs / runbooks |
+| `github`, `linear`, `azure_devops`, `jira` | issue_tracker | ALM / dev workflow sources |
+| `google_workspace`, `ms365_graph` | collaboration_suite | Mail / calendar / directory |
+| `otel`, `prometheus`, `elasticsearch` | observability_backend | Metrics and log search |
 
-Full prioritized backlog: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) — **M.6 P2 tracker**, **M.6 P3 backlog**, **B.31–B.39**.
+Full catalog (73 providers, each with English `USAGE.md`): [`INTEGRATIONS.md`](INTEGRATIONS.md). Per-slug examples: `intergrax/integrations/providers/<category>/<slug>/USAGE.md`.
 
 LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them separately.
 
@@ -936,7 +999,7 @@ When asked to create a new Intergrax agent:
 2. Run `python -m intergrax.scaffold new-agent <slug> --capability <id>`.
 3. Edit only `agents/<slug>/` — primarily `steps/`, `prompts/`, `schemas/`, `contract.py`.
 4. Register in the appropriate context (§ Step 4). New deployable host: Step **4E** (`new-application`). Shared lab: Step **4C** (`lab_application/manifest.py`).
-5. Verify: `uv run pytest agents/<slug>/tests -q` then `uv run pytest tests/ -m gate -q`.
+5. Verify: `uv run pytest agents/<slug>/tests -q` then `uv run pytest -m gate -q`; optionally `python scripts/check_agents_vendor_imports.py` (Appendix B.24).
 6. Do **not** modify `intergrax/runtime/` unless a reusable Tier-0 gap is proven and approved.
 7. Do **not** import `intergrax.integrations.providers.*` from agent code — wire integrations in Tier-3 only (Appendix E).
 8. Do **not** create duplicate workflow documentation — update this file if the process changes.

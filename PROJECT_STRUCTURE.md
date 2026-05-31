@@ -7,6 +7,42 @@ This document was generated automatically by the Intergrax Project Structure Doc
 - Enable new developers to understand architectural roles quickly.
 - Serve as context for LLM agents (e.g., ChatGPT, Intergrax agents) to reason about and improve the project.
 
+## Tier-3 application hosts (manual supplement)
+
+Deployable Nexus hosts (manifest, Docker, env) — **not** listed exhaustively in the auto-generated index below:
+
+| Path | Role |
+|------|------|
+| [`applications/TIER3_READINESS.md`](applications/TIER3_READINESS.md) | Scaffold readiness checklist |
+| [`applications/USAGE.md`](applications/USAGE.md) | Layout and operations |
+| [`intergrax/applications/`](intergrax/applications/) | Composition engine (`ApplicationManifest`, wiring) |
+| `applications/lab_application/` | Universal lab + debug API |
+| `applications/legal_application/` | Product legal host |
+| `applications/research_application/` | Research pipeline host |
+| `applications/poc_template_application/` | Scaffold reference |
+
+CLI: `python -m intergrax.scaffold new-stack <slug>` or `new-application --profile lab|product`.
+
+## Runtime infrastructure supplement (manual, 2026-05-27)
+
+Tier-0 modules added during §42 / Appendix B paydown — not always reflected in the auto-generated index below:
+
+| Module | Role |
+|--------|------|
+| `intergrax/runtime/schema/` | Canonical schema version registry (§42.29) |
+| `intergrax/runtime/events/schema_guard.py` | RuntimeEvent schema + phase validation |
+| `intergrax/runtime/events/stores/validating_runtime_event_store.py` | Validating persistence wrapper |
+| `intergrax/runtime/metrics/export.py` | Unified run metrics export (event → trace → metrics) |
+| `intergrax/runtime/notifications/delivery_wiring.py` | Retry + DLQ delivery composition |
+| `intergrax/runtime/notifications/deliveries/sqlite_delivery_ledger.py` | Persistent delivery receipts / dead letters |
+| `intergrax/runtime/plugins/bootstrap.py` | RuntimePlugin registration at startup |
+| `intergrax/runtime/plugins/default_plugins.py` | Lab default plugins (compatibility + metrics) |
+| `intergrax/applications/_shared/platform_wiring.py` | Tier-3 Nexus plugin bootstrap |
+| `intergrax/applications/_shared/notification_wiring.py` | Resilient delivery + DLQ ledger paths |
+| `intergrax/debug/router.py` | Debug API: trace, events, metrics, DLQ, experiments |
+
+Gate: **`uv run pytest -m gate -q`** — **363 passed** (2026-05-27).
+
 ## File Index
 
 - `api\__init__.py`

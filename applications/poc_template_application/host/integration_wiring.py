@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.sqlite.bundle import (
+from intergrax.integrations.providers.relational_store.sqlite.bundle import (
     SQLiteIntegrationBundle,
     create_sqlite_integration,
 )
@@ -24,7 +24,12 @@ from intergrax.runtime.interactions.factory import (
     resolve_interaction_settings,
 )
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.applications._shared.notification_wiring import (
+    create_resilient_notification_adapter,
+    open_host_delivery_ledger,
+)
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
+from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from poc_template_application.host.settings import PocTemplateApplicationSettings
@@ -43,6 +48,7 @@ class PocTemplateIntegrationWiring:
     runtime_events_db_path: Path | None
     experiments_db_path: Path | None
     checkpoints_db_path: Path | None
+    delivery_ledger: DeliveryLedger | None
 
 
 def _sqlite_config_overrides(
@@ -106,7 +112,14 @@ def wire_poc_template_integrations(
     runtime_event_store = (
         sqlite_bundle.runtime_event_store if runtime_events_db_path is not None else None
     )
-    notification_adapter = profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)
+    delivery_ledger = open_host_delivery_ledger(
+        db_path=db_path,
+        checkpoints_db_path=checkpoints_db_path,
+    )
+    notification_adapter = create_resilient_notification_adapter(
+        profile,
+        delivery_ledger=delivery_ledger,
+    )
     interaction_adapter = create_poc_template_interaction_adapter(settings)
     return PocTemplateIntegrationWiring(
         profile=profile,
@@ -120,4 +133,5 @@ def wire_poc_template_integrations(
         runtime_events_db_path=runtime_events_db_path,
         experiments_db_path=experiments_db_path or sqlite_bundle.paths.experiments,
         checkpoints_db_path=checkpoints_db_path or sqlite_bundle.paths.task_checkpoints,
+        delivery_ledger=delivery_ledger,
     )

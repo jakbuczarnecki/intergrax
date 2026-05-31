@@ -5,7 +5,7 @@
 """
 Redis-backed IdempotencyStore implementation.
 
-Composition root: ``intergrax.integrations.providers.redis.create_redis_idempotency_store``.
+Composition root: ``intergrax.integrations.providers.key_value_cache.redis.create_redis_idempotency_store``.
 """
 
 from __future__ import annotations

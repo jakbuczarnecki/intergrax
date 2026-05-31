@@ -57,6 +57,8 @@ class IntegrationProfile(BaseModel):
     wiki_knowledge: IntegrationSlug | None = None
     observability_backend: IntegrationSlug | None = None
     browser_automation: IntegrationSlug | None = None
+    secrets_store: IntegrationSlug | None = None
+    graph_store: IntegrationSlug | None = None
 
     options: dict[IntegrationSlug, dict[str, Any]] = Field(default_factory=dict)
 

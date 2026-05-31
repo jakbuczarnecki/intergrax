@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-05-30, Phase N application environment spec)  
+Status: Working draft (2026-05-30, Phase O Tool Library spec)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
 Navigation: [`README.md`](README.md)  
@@ -21,6 +21,8 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Phase status, gaps, priority | **This file** |
 | Tier-0 integration catalog (what / where) | Architecture canon §7.1.1–§7.1.5 |
 | Tier-0 integration implementation (how) | **This file** Phase M |
+| Tier-0 tool catalog (what / where) | Architecture canon §7.1.6–§7.1.7, §22 |
+| Tier-0 tool implementation (how) | **This file** Phase O |
 | Agent creation workflow | `AGENT_CREATION_GUIDE.md` |
 | Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
 | Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
@@ -94,11 +96,11 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Scope | Score | Notes |
 |-------|-------|-------|
 | Canon §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** | Phases A–F |
-| §42 Unified Execution Runtime | **~65–70%** | UAEP done; §42.9 mid-step checkpoint pending |
+| §42 Unified Execution Runtime | **~88–90%** | Platform infra complete; all Tier-3 hosts aligned (2026-05-27) |
 | Laboratory workflow | **~95%** | Debug API, experiments, lab app |
 | Agent OS certification (Phase L deliverables) | **Done** | Scaffold, guide, acceptance suite |
 | Agent OS certification (sign-off exercise) | **Done** | `agents/signoff_probe/` — see Appendix A |
-| Regression gate | **228 passed** | `pytest -m gate` |
+| Regression gate | **363 passed** | `uv run pytest -m gate -q` |
 
 ---
 
@@ -134,11 +136,9 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | Architecture §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** | Phases A–F; typed task contract |
 
-| §42 Unified Execution Runtime | **~65–70%** | P4 + E + F; §42.9/18/27/40 gaps |
-
+| §42 Unified Execution Runtime | **~88–90%** | Platform infra complete across Tier-3 hosts (2026-05-27) |
 | Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
-
-| Pre-P4.2 regression gate | **Done** | **228 tests**, marker `gate` |
+| Pre-P4.2 regression gate | **Done** | **363 tests**, marker `gate` |
 
 
 
@@ -176,7 +176,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §33 Observability | Trace + events | **Partial** | Trace store ✅; P4.1 dual-emit ✅; D.1 CLI ✅ |
 
-| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial (~65–70%)** | P4 + E + F ✅ |
+| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial (~88–90%)** | P4 + E + F ✅; platform infra aligned (2026-05-27) |
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
@@ -529,6 +529,24 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 
 **Out of scope:** `intergrax/llm_adapters/` — LLM providers are **not** part of the Integration Library (§7.1.2).
 
+### Phase M-LLM — LLM Adapter Layer (Tier-0)
+
+**Canon:** §5.2.2 · **Doc:** [LLM_ADAPTERS.md](LLM_ADAPTERS.md)  
+**Goal:** One `LLMAdapter` contract, lazy registry, streaming + native tools + structured output across commercial and self-hosted providers.
+
+| # | Deliverable | Status | Notes |
+|---|-------------|--------|-------|
+| M-LLM.1 | Shared `_shared/` (messages, tools, retry, conformance) | **Done** | 2026-05-30 |
+| M-LLM.2 | Seven core providers hardened | **Done** | OpenAI, Claude, Azure, Gemini, Mistral, Bedrock, Ollama |
+| M-LLM.3 | Groq + vLLM (OpenAI-compatible) | **Done** | `openai_compat_providers.py` |
+| M-LLM.4 | Bedrock Converse + tools + stream | **Done** | `INTERGRAX_BEDROCK_USE_CONVERSE`, `converse_stream` |
+| M-LLM.5 | Conformance tests in CI gate | **Done** | `tests/unit/llm_adapters/` |
+| M-LLM.6 | `LLM_ADAPTERS.md` + README section | **Done** | 19 providers |
+| M-LLM.7 | OpenAI-compat expansion + Vertex + `LLMProfile` | **Done** | Together, Fireworks, OpenRouter, DeepSeek, xAI, llama.cpp, Cohere, Vertex |
+| M-LLM.8 | Optional network smoke workflow | **Done** | Weekly schedule + `workflow_dispatch` |
+| M-LLM.9 | Azure refactor (Chat Completions base) | **Done** | Thin `AzureOpenAIChatAdapter` |
+| M-LLM.10 | Production hardening | **Done** | Metrics, builtin conformance, Legal `LLMProfile`, Bedrock tools stream, `cohere_native`, `azure_ai_inference` |
+
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
 | M.0 | Integration backlog + categories approved | **Done** | Canon §7.1.3 catalog table |
@@ -537,17 +555,17 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M.3 | `IntegrationRegistry` + `IntegrationProfile` | **Done** | `catalog.register_integration`, `resolve`, env/mapping profile |
 | M.4 | P0 providers — wrap existing | **Done** | See **M.4 provider tracker** below |
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
-| M.6 | P1 providers (on demand) | In progress | **postgresql**, **mysql**, **jira**, **confluence**, **prometheus**, **ms365_graph**, **aws**, **azure**, **gcp** Done; … |
-| M.6 P2 | Extended providers (on demand) | In progress | **`cassandra`**, **`elasticsearch`**, **`databricks`**, **`mongodb`**, **`pinecone`**, **`qdrant`**, **`chroma`**, **`s3`** Done (beta); azure_blob/gcs (next); see **M.6 P2 tracker** |
+| M.6 | P1 providers (on demand) | **Done** (beta) | postgresql, mysql, jira, confluence, prometheus, ms365_graph, aws, azure, gcp — see M.4/M.6 trackers |
+| M.6 P2 | Extended providers (on demand) | **Done** (beta) | All P2/P3 slugs shipped 2026-05-30 — see **M.6 P2 tracker**; `_shared/p2/` + thin `providers/<slug>/` shells |
 | M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
 **M.4 delivery workflow (one provider per iteration):**
 
-1. Implement `providers/<slug>/` (wrap legacy module — no fork).
+1. Implement `providers/<category>/<slug>/` (wrap legacy module — no fork).
 2. Register via `register_<slug>_integration()` + `register_default_integrations()`.
 3. Unit tests under `tests/unit/integrations/providers/`.
-4. Add `providers/<slug>/USAGE.md` — English usage guide (factory + `IntegrationProfile` + API invoke example).
+4. Add `providers/<slug>/USAGE.md` — English usage guide (factory + `IntegrationProfile` + API invoke example). Extend `scripts/generate_integration_usage_docs.py` and run `uv run python scripts/generate_integration_usage_docs.py`.
 5. Update canon §7.1.3 status + this tracker + migration map row.
 6. Next slug in priority order.
 
@@ -599,25 +617,27 @@ Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. 
 | **`qdrant`** | **vector_store** | **Done** (beta) | Catalog bridge to `rag/vectorstore/providers/qdrant_vector_store.py` |
 | **`chroma`** | **vector_store** | **Done** (beta) | Catalog bridge to `rag/vectorstore/providers/chroma_vector_store.py` |
 | **`s3`** | **object_storage** | **Done** (beta) | AWS S3 blobs; boto3 only in `opens.py` |
-| `azure_blob` / `gcs` | object_storage | Planned (P2 next) | Cloud blob storage (via platform facades) |
-| `dynamodb` | document_store | Planned | AWS document/KV (also via `aws` facade) |
-| `oracle` | relational_store | Planned | Enterprise relational clients |
-| `mssql` | relational_store | Planned | Microsoft SQL deployments |
-| `otel` | observability_backend | Planned | Unified traces/metrics export |
-| `memcached` | key_value_cache | Planned | Simple cache tier |
-| `elasticache` | key_value_cache | Planned | Managed Redis on AWS (via `aws` facade) |
-| `sqs` / `service_bus` / `pubsub` | message_bus | Planned | Cloud-native queues (via platform facades) |
-| `azure_blob` / `gcs` | object_storage | Planned | Cloud blob storage (via platform facades) |
-| `email_smtp` | notification_channel | Planned | HITL / reports without chat vendor lock-in |
-| `notion` / `sharepoint` | wiki_knowledge | Planned | Additional knowledge bases beyond Confluence |
-| `github` / `linear` / `azure_devops` | issue_tracker | Planned | Dev-centric ALM sources |
-| `google_workspace` | collaboration_suite | Planned | Gmail / Calendar for Google tenants |
-| `brave` / `serpapi` | search_provider | Planned | Alternative web research APIs |
-| `playwright` | browser_automation | Planned | Dynamic web research beyond HTTP fetch |
+| **`azure_blob`** | **object_storage** | **Done** (beta) | Azure Blob; `providers/azure_blob/` + shared `CatalogObjectStorage` |
+| **`gcs`** | **object_storage** | **Done** (beta) | GCS via `_shared/p2/gcs_blob.py` |
+| **`dynamodb`** | **document_store** | **Done** (beta) | boto3 table facade in `_shared/p2/factories.py` |
+| **`oracle`** / **`mssql`** / **`azure_sql`** / **`cloud_sql`** | **relational_store** | **Done** (beta) | SQL adapters via `_shared/p2/clients.py` |
+| **`memcached`** / **`elasticache`** | **key_value_cache** | **Done** (beta) | pymemcache / Redis-compatible duck client |
+| **`sqs`** / **`service_bus`** / **`pubsub`** | **message_bus** | **Done** (beta) | `CloudTaskQueue` over cloud SDK facades |
+| **`email_smtp`** | **notification_channel** | **Done** (beta) | stdlib SMTP in factory open path |
+| **`otel`** | **observability_backend** | **Done** (beta) | OTLP-oriented metrics facade (beta noop exporter default) |
+| **`github`** / **`linear`** / **`azure_devops`** | **issue_tracker** | **Done** (beta) | REST issue trackers via httpx |
+| **`notion`** / **`sharepoint`** | **wiki_knowledge** | **Done** (beta) | REST wiki adapters |
+| **`google_workspace`** | **collaboration_suite** | **Done** (beta) | Gmail / Calendar REST |
+| **`brave`** / **`serpapi`** | **search_provider** | **Done** (beta) | Shared `_shared/rest_search.py` hit mappers |
+| **`playwright`** | **browser_automation** | **Done** (beta) | `contracts/browser_automation.py` + Playwright factory |
 
-#### M.6 P3 — Recommended backlog (common in agent / orchestration platforms)
+#### M.6 P3 / M.7 — Harness integrations (Done beta, 2026-05-29)
 
-Slugs below are **already in** `IntegrationSlug` unless marked *proposed*. Prioritize when a product app blocks; otherwise deliver after P2.
+**+21 slugs** via `_shared/p3/factories.py` (incl. **`sentry`** 2026-05-29). Catalog total: **73**.
+
+#### M.6 P3 — Legacy backlog note (superseded)
+
+Slugs below were **already in** `IntegrationSlug` unless marked *proposed*. Prioritize when a product app blocks; otherwise deliver after P2.
 
 | Priority | Slug(s) | Category | Why agents/apps need it |
 |----------|---------|----------|-------------------------|
@@ -858,30 +878,30 @@ providers/gcp/
 
 | Legacy location | Target slug | Action |
 |-----------------|-------------|--------|
-| `distributed/providers/redis_kv_store.py` (+ siblings) | `redis` | **Done** — single entry `integrations/providers/redis/create_redis_integration()` |
-| `queueing/providers/kafka/` | `kafka` | **Done** — runtime transport + tests delegate to `integrations/providers/kafka/` |
-| `queueing/providers/celery/` | `celery` | **Done** — `integrations/providers/celery/create_celery_integration()` |
-| `queueing/providers/rabbitmq/` | `rabbitmq` | **Done** — runtime transport + tests delegate to `integrations/providers/rabbitmq/` |
-| `websearch/providers/google_cse_provider.py` | `google_cse` | **Done** — `integrations/providers/google_cse/create_google_cse_integration()` |
-| `websearch/providers/bing_provider.py` | `bing` | **Done** — `integrations/providers/bing/create_bing_integration()` |
-| `runtime/notifications/adapters/webhook_adapter.py` | `webhook` | **Done** — `integrations/providers/webhook/create_webhook_integration()` |
-| `runtime/notifications/adapters/logging_adapter.py` | `log` | **Done** — `integrations/providers/log/`; factory delegates |
+| `distributed/providers/redis_kv_store.py` (+ siblings) | `redis` | **Done** — single entry `integrations/providers/key_value_cache/redis/create_redis_integration()` |
+| `queueing/providers/kafka/` | `kafka` | **Done** — runtime transport + tests delegate to `integrations/providers/message_bus/kafka/` |
+| `queueing/providers/celery/` | `celery` | **Done** — `integrations/providers/message_bus/celery/create_celery_integration()` |
+| `queueing/providers/rabbitmq/` | `rabbitmq` | **Done** — runtime transport + tests delegate to `integrations/providers/message_bus/rabbitmq/` |
+| `websearch/providers/google_cse_provider.py` | `google_cse` | **Done** — `integrations/providers/search_provider/google_cse/create_google_cse_integration()` |
+| `websearch/providers/bing_provider.py` | `bing` | **Done** — `integrations/providers/search_provider/bing/create_bing_integration()` |
+| `runtime/notifications/adapters/webhook_adapter.py` | `webhook` | **Done** — `integrations/providers/notification_channel/webhook/create_webhook_integration()` |
+| `runtime/notifications/adapters/logging_adapter.py` | `log` | **Done** — `integrations/providers/notification_channel/log/`; factory delegates |
 | `runtime/notifications/adapters/` | `slack`, `teams` | **Done** — runtime delegates |
-| `runtime/interactions/adapters/lab_json_adapter.py` | `lab_json` | **Done** — `integrations/providers/lab_json/create_lab_json_integration()` |
-| `runtime/*/stores/sqlite_*.py` (+ store openers) | `sqlite` | **Done** — single entry `integrations/providers/sqlite/create_sqlite_integration()` |
-| (new) | `postgresql` | **Done** — `integrations/providers/postgresql/`; **only** `opens.py` calls `psycopg.connect` |
-| (new) | `mysql` | **Done** — `integrations/providers/mysql/`; **only** `opens.py` calls `pymysql.connect` |
-| (new) | `jira` | **Done** — `integrations/providers/jira/`; **only** `opens.py` creates httpx client |
-| (new) | `confluence` | **Done** — `integrations/providers/confluence/`; **only** `opens.py` creates httpx client |
-| (new) | `prometheus` | **Done** — `integrations/providers/prometheus/`; **only** `opens.py` creates httpx client |
-| (new) | `ms365_graph` | **Done** — `integrations/providers/ms365_graph/`; **only** `opens.py` creates httpx client + token fetch |
-| (new) | `cassandra` | **Done** — `integrations/providers/cassandra/`; **only** `opens.py` creates driver session |
-| (new) | `aws` | **Done** — `integrations/providers/aws/`; **only** `opens.py` creates boto3 session |
-| (new) | `azure` | **Done** — `integrations/providers/azure/`; **only** `opens.py` creates Azure credential |
-| (new) | `gcp` | **Done** — `integrations/providers/gcp/`; **only** `opens.py` creates Google credentials |
-| (new) | `elasticsearch` | **Done** — `integrations/providers/elasticsearch/`; **only** `opens.py` creates httpx client |
-| (new) | `databricks` | **Done** — `integrations/providers/databricks/`; **only** `opens.py` calls `databricks.sql.connect` |
-| (new) | `mongodb` | **Done** — `integrations/providers/mongodb/`; **only** `opens.py` calls `pymongo.MongoClient` |
+| `runtime/interactions/adapters/lab_json_adapter.py` | `lab_json` | **Done** — `integrations/providers/interaction_surface/lab_json/create_lab_json_integration()` |
+| `runtime/*/stores/sqlite_*.py` (+ store openers) | `sqlite` | **Done** — single entry `integrations/providers/relational_store/sqlite/create_sqlite_integration()` |
+| (new) | `postgresql` | **Done** — `integrations/providers/relational_store/postgresql/`; **only** `opens.py` calls `psycopg.connect` |
+| (new) | `mysql` | **Done** — `integrations/providers/relational_store/mysql/`; **only** `opens.py` calls `pymysql.connect` |
+| (new) | `jira` | **Done** — `integrations/providers/issue_tracker/jira/`; **only** `opens.py` creates httpx client |
+| (new) | `confluence` | **Done** — `integrations/providers/wiki_knowledge/confluence/`; **only** `opens.py` creates httpx client |
+| (new) | `prometheus` | **Done** — `integrations/providers/observability_backend/prometheus/`; **only** `opens.py` creates httpx client |
+| (new) | `ms365_graph` | **Done** — `integrations/providers/collaboration_suite/ms365_graph/`; **only** `opens.py` creates httpx client + token fetch |
+| (new) | `cassandra` | **Done** — `integrations/providers/document_store/cassandra/`; **only** `opens.py` creates driver session |
+| (new) | `aws` | **Done** — `integrations/providers/cloud_platform/aws/`; **only** `opens.py` creates boto3 session |
+| (new) | `azure` | **Done** — `integrations/providers/cloud_platform/azure/`; **only** `opens.py` creates Azure credential |
+| (new) | `gcp` | **Done** — `integrations/providers/cloud_platform/gcp/`; **only** `opens.py` creates Google credentials |
+| (new) | `elasticsearch` | **Done** — `integrations/providers/observability_backend/elasticsearch/`; **only** `opens.py` creates httpx client |
+| (new) | `databricks` | **Done** — `integrations/providers/relational_store/databricks/`; **only** `opens.py` calls `databricks.sql.connect` |
+| (new) | `mongodb` | **Done** — `integrations/providers/document_store/mongodb/`; **only** `opens.py` calls `pymongo.MongoClient` |
 | `rag/vectorstore/providers/pinecone_*` | `pinecone` | **Done** — `providers/pinecone/` catalog bridge; RAG impl stays in `rag/` |
 | `rag/vectorstore/providers/qdrant_*` | `qdrant` | **Done** — `providers/qdrant/` catalog bridge; RAG impl stays in `rag/` |
 | `rag/vectorstore/providers/chroma_*` | `chroma` | **Done** — `providers/chroma/` catalog bridge; RAG impl stays in `rag/` |
@@ -969,8 +989,8 @@ Szablony utrzymywane przez `scripts/generate_integration_usage_docs.py` (regener
 | N.6 | Reference app `poc_template_application` (committed example) | **Done** | §7.4.8 | `applications/poc_template_application/`; README three-command quickstart; gate smoke |
 | N.7 | Backfill `.env.example` on existing apps | **Done** | §7.4.8 | `lab_application`, `legal_application`, `research_application`, `poc_template_application` |
 | N.8 | `AGENT_CREATION_GUIDE.md` Step 4E (dedicated application) | **Done** | — | Step 4E + Appendix F cross-links; gate doc test |
-| N.9 | Acceptance `test_scaffold_application` (gate) | **Partial** | — | Lab + product tree tests; Step 4E doc test; optional end-to-end scaffold smoke TBD |
-| N.10 | Optional `new-stack` (agent + application in one CLI) | **Deferred** | — | After N.3–N.5 stable |
+| N.9 | Acceptance `test_scaffold_application` (gate) | **Done** | — | `test_scaffold_acceptance.py` — lab/product E2E, CLI profiles, docker scripts |
+| N.10 | Optional `new-stack` (agent + application in one CLI) | **Done** | — | `intergrax/scaffold/new_stack.py`; gate test in `test_scaffold_acceptance.py` |
 
 #### N — Step-by-step implementation sequence
 
@@ -987,7 +1007,7 @@ Execute **strictly in order**; do not skip ahead without completing acceptance f
 | 7 | N.7 | Add per-app `.env.example` to legal, research, lab | Vars match each `settings.py`; no secrets committed |
 | 8 | N.4 | Add `product` profile to scaffold | **Done** — `test_scaffold_product_application.py`; FastAPI Core + `/health` |
 | 9 | N.8 | Update agent guide Step 4E | **Done** — scaffold lab/product, Docker scripts, three-command quickstart |
-| 10 | N.9 | Full acceptance + `pytest -m gate` | Scaffold application in gate suite |
+| 10 | N.9 | Full acceptance + `pytest -m gate` | **Done** — runtime E2E + `test_scaffold_acceptance.py` |
 
 **Scaffold CLI (target interface):**
 
@@ -1005,6 +1025,117 @@ python -m intergrax.scaffold new-application my_lab \
 - Auto-discovery of agents in `lab_application` (keep explicit wiring; manifest is declarative, not magic)
 - Runtime sandbox (Tier-1) changes — only document distinction (§7.4.9)
 
+#### Tier-3 application layer — readiness (2026-05-30)
+
+**Status: ready** to generate new applications via scaffold. Checklist: [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md).
+
+| Track | ID | Status | Notes |
+|-------|-----|--------|-------|
+| Engine | N.1–N.2.2 | **Done** | manifest, `build_application_registry`, conformance |
+| Scaffold | N.3–N.4, N.10 | **Done** | `lab` + `product` + `new-stack` |
+| Deploy | N.5–N.7 | **Done** | Docker scripts, `BUILD_AND_DEPLOY`, `.env.example` |
+| Docs + gate | N.8–N.9 | **Done** | Step 4E, `test_scaffold_acceptance`, legal/research/lab manifest tests |
+| Hardening | A.1–A.2 | **Done** | `test_legal_manifest_wiring`, tool_wiring assertions on scaffold |
+| Optional CI Docker | B.1 | **Done** | `tests/integration/applications/test_poc_template_docker_build.py` (not in gate) |
+| Product maturity | — | **Reference** | `legal_application` chat routes — extend scaffold `product` manually |
+
+**Verify:**
+
+```bash
+uv run pytest tests/unit/applications/ -q
+uv run pytest -m gate -q
+```
+
+---
+
+### Phase O — Tool Library & Unified Tool Model (Tier-0)
+
+**Canon:** §7.1.6–§7.1.7, §22, §42.12  
+**Goal:** Ship a reusable **Tool Library** catalog (mirror Integration Library) and migrate legacy pipeline flags (`use_rag`, `use_websearch`) to explicit catalog tools.
+
+**Prerequisite:** Phase M.3 (`IntegrationProfile`) available; tool engine (`ToolRegistry`, `RuntimeToolInvoker`) exists.
+
+**Catalog reference:** [`TOOLS.md`](TOOLS.md)
+
+**Delivery rule:** One domain or migration slice per iteration — implement → gate → update `TOOLS.md` → next step.
+
+| # | Deliverable | Status | Canon | Notes |
+|---|-------------|--------|-------|-------|
+| O.0 | Architecture & catalog documented | **Done** | §7.1.6–§7.1.7, §22 | Runtime canon + `TOOLS.md` + this section (2026-05-30) |
+| O.1 | Extended `ToolContract` | **Done** | §22 | `ToolRiskLevel`, `ToolRetryPolicy`, metadata fields; invoker timeout/retry/trace (2026-05-30) |
+| O.2 | `ToolCatalog` + `ToolProfile` + `ToolWiringContext` | **Done** | §7.1.6 | `intergrax/tools/registry/`; `build_registry_from_profile`; RuntimeConfig wiring (2026-05-30) |
+| O.3 | Context tools: `rag.retrieve`, `websearch.query` | **Done** | §7.1.7, §22.1 | `providers/rag/`, `providers/websearch/` (2026-05-30) |
+| O.4 | Reference domain: `jira.*` tools | **Done** | §7.1.6 | `get_issue`, `add_comment`, `search_tasks` over `IssueTracker` (2026-05-30) |
+| O.4b | Catalog domain bundles: `confluence.*`, `notify.send`, observability, `sandbox.exec` | **Done** | §7.1.6 | All first-party catalog tools registered (2026-05-30) |
+| O.5 | **Unified tool model migration** | **Done** | §7.1.7, §22.2 | `tool_ids` on plans; RagStep/WebsearchStep → catalog shims (2026-05-30) |
+| O.6 | Schema exporters (OpenAI + MCP) | **Done** | §7.1.6 | `tools/exporters/`; MCP catalog mount on lab/poc_template (2026-05-30) |
+| O.7 | Migrate legacy `ToolBase` → `ToolContract` | **Done** | §5.2.2 | `ChatAgent` → registry; `tools_base` deprecated (2026-05-30) |
+| O.8 | `ToolProfile` in Tier-3 scaffold | **Done** | §7.4.8 | `tool_wiring.py` template; lab + poc_template reference (2026-05-30) |
+| O.9 | Agent Creation Guide Appendix E update | **Done** | — | Unified model + ToolProfile examples (2026-05-30) |
+| O.10 | Gate tests for catalog conformance | **Done** | — | `tests/unit/tools/providers/` — all catalog bundles (2026-05-30) |
+
+#### O — Step-by-step implementation sequence
+
+Execute **strictly in order** for foundation (O.1–O.4); O.5–O.10 may overlap after O.4 reference tools land.
+
+| Step | ID | Action | Done when |
+|------|-----|--------|-----------|
+| 1 | O.1 | Extend `ToolContract` + update `RuntimeToolInvoker` for new fields | Unit tests pass; backward compatible defaults |
+| 2 | O.2 | Add `tools/registry/catalog.py`, `profile.py`, `ToolWiringContext` dataclass | `register_default_tools()` no-op registry; profile enables subset |
+| 3 | O.3 | Implement `providers/rag/` and `providers/websearch/` handlers | **Done** — `rag.retrieve`, `websearch.query` + tests |
+| 4 | O.4 | Implement `providers/jira/` bundle (3 tools) | **Done** — conformance tests with mocked `IssueTracker` |
+| 4b | O.4b | Implement remaining catalog bundles (`confluence`, `notify`, `observability`, `sandbox`) | **Done** — all tool_ids in `register_default_tools()` |
+| 5 | O.5a | Add `tool_ids` to plan models; map legacy booleans → tool_ids | **Done** — `ToolInvocationPlan`, `LegalToolPlan` |
+| 6 | O.5b | `RagStep` / `WebsearchStep` delegate to catalog tools | **Done** — `catalog_context.py` shim |
+| 7 | O.5c | Update `LegalToolPlan` / engine plans to tool list | **Done** — bridge passes `tool_ids` |
+| 8 | O.6 | MCP + OpenAI exporters from single catalog | **Done** — `tools/exporters/` |
+| 9 | O.7 | Remove `ToolBase` usage from production paths | **Done** — `ChatAgent` uses registry `ToolRegistry` |
+| 10 | O.8–O.10 | Scaffold, docs, gate | **Done** |
+
+#### O.4 — Adding a new tool provider (checklist)
+
+Copy into every `tools/providers/<domain>/USAGE.md`:
+
+```text
+[ ] 1. Define Input/Output Pydantic models (LLM-friendly field names)
+[ ] 2. Implement ToolHandler — compose integration contract(s), no vendor SDK
+[ ] 3. Build ToolContract per tool (description tuned for model selection)
+[ ] 4. register_<domain>_tools(registry, ctx: ToolWiringContext)
+[ ] 5. Register in tools/registry/catalog.py
+[ ] 6. Unit tests with fakes (no live vendor in default gate)
+[ ] 7. Wire in lab or poc_template via ToolProfile
+[ ] 8. Update TOOLS.md status + this plan tracker
+```
+
+#### O.5 — Unified tool model (migration design)
+
+**Problem:** Two parallel mechanisms — boolean plan flags dispatching pipeline steps vs `ToolRegistry` for function tools.
+
+**Target:** One registry, one invoker, one policy surface.
+
+```text
+BEFORE (legacy):
+  plan.use_rag=True        → RagStep (direct)
+  plan.use_websearch=True  → WebsearchStep (direct)
+  plan.use_tools=True      → ToolsStep → ToolRegistry
+
+AFTER (canonical):
+  plan.tool_ids=["rag.retrieve", "websearch.query", "jira.search_tasks"]
+      → ToolRuntime.invoke_request (per id)
+      → RuntimeToolInvoker → handler
+      → integration / RAG module
+```
+
+**Compatibility (O.5a):** `ToolInvocationPlan.from_legacy(use_rag=…)` maps booleans to default tool_ids. Emit deprecation trace when legacy fields used.
+
+**Context injection:** `rag.retrieve` and `websearch.query` set `injects_context=true`; invoker callback or Nexus hook merges bounded output into prompt assembly (§22.1).
+
+**Out of scope for Phase O:**
+
+- Domain-specific tools inside `agents/` (stay Tier-2; register via `ToolProvider` if reusable)
+- Replacing `ToolsAgent` planner — it remains the LLM loop over `ToolRegistry`
+- New integration categories (still Phase M / §5.2.4)
+
 ---
 
 ## 4. Priority Order
@@ -1013,7 +1144,9 @@ python -m intergrax.scaffold new-application my_lab \
 
 ```text
 
-NOW:     Phase N — Application Environment & Deploy Scaffold (N.9 full acceptance next)
+NOW:     Phase O — complete (O.5–O.9 Done); product agents (K) or M.6 providers on demand
+
+DONE:    Phase N — Application Environment & Deploy Scaffold (N.0–N.10)
 
 DONE:    Phase L certification — L1 achieved (Appendix A)
 
@@ -1029,7 +1162,7 @@ PARALLEL: K.3–K.5 hardening; M.6 provider wraps (non-breaking)
 
 ```
 
-**Rationale:** Agent scaffold (L) and integration catalog (M) are in place. Phase N closes the gap from **agent POC → deployable Docker host** with isolated Tier-3 env and composition contracts — required for fast concept labs before product agents (K).
+**Rationale:** Integration catalog (M) answers *which backend*. Tool Library (O) answers *what agents call* — closing the gap between LLM planners and integrations. Unified tool model (O.5) removes deprecated `use_rag` / `use_websearch` dual-path before business agents (K) depend on inconsistent semantics.
 
 
 
@@ -1074,17 +1207,22 @@ Each iteration follows **one deliverable at a time**:
 
 Do not batch N.1–N.5 in one PR unless explicitly agreed.
 
-### 6.2 Current next step — **N.9 Full scaffold acceptance (gate)**
+### 6.2 Tier-3 application layer — **ready for new applications**
 
-**Prerequisite:** N.8 — agent guide Step 4E documents dedicated application workflow.
+Phase N deliverables **N.0–N.10** are complete. Use [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md) before scaffolding.
 
-**Goal:** Expand `test_scaffold_application` (optional docker smoke doc-only), gate green, align N.9 status to **Done**.
-
-**Verify (N.8 — completed):**
+**Generate:**
 
 ```bash
-uv run pytest tests/unit/docs/test_agent_creation_guide_step_4e.py -q
-# Guide: docs/AGENT_CREATION_GUIDE.md — Step 4E (Dedicated application scaffold)
+python -m intergrax.scaffold new-stack <slug> --profile lab --capability <slug>.basic
+```
+
+**Verify:**
+
+```bash
+uv run pytest tests/unit/applications/ -q
+uv run pytest tests/unit/applications/test_scaffold_acceptance.py -q
+uv run pytest -m gate -q
 ```
 
 **Phase L — still required for any new agent work:**
@@ -1464,11 +1602,14 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-30 | M.6-confluence | `providers/confluence/` + `contracts/wiki_knowledge.py`; REST wiki; single-entry `opens.py` |
 | 2026-05-30 | M.6-jira | `providers/jira/` + `contracts/issue_tracker.py`; REST v3; single-entry `opens.py` |
 | 2026-05-30 | M.6-mysql | `providers/mysql/` — beta `RelationalStore` (pymysql); single-entry `opens.py` |
-| 2026-05-30 | M.6-postgresql | `providers/postgresql/` — beta `RelationalStore` (psycopg3); catalog + tests |
+| 2026-05-30 | M.6-provider-layout | Providers grouped under `providers/<category>/<slug>/`; `layout.py` slug map; tests mirrored by category |
+| 2026-05-30 | M.6-p2-batch | P2/P3 integrations — 22 slugs (`azure_blob`, `gcs`, `dynamodb`, cloud queues, SQL variants, SMTP, OTEL, GitHub/Linear/Azure DevOps, Notion/SharePoint, Google Workspace, Brave/SerpAPI, Playwright); `_shared/p2/`; **324** integration unit tests |
 | 2026-05-30 | M.7-agent-guide-integrations | `AGENT_CREATION_GUIDE.md` Appendix E — agents vs Tier-3 wiring |
 | 2026-05-30 | N.2.1-unified-wiring | `ApplicationBuildContext`, `builder_key`/`factory_path`, lab+legal on `build_application_registry` |
 | 2026-05-30 | N.2-conformance | `build_registry_from_manifest`, `load_agent_from_binding` + unit tests |
 | 2026-05-30 | N.1-manifest | `ApplicationManifest`, `AgentBinding`, `ApplicationFeatures` + unit tests |
+| 2026-05-30 | N.10-new-stack | `scaffold new-stack` — agent + application; `TIER3_READINESS.md` |
+| 2026-05-30 | N.9-scaffold-acceptance | `test_scaffold_acceptance.py` — lab/product runtime E2E; fix product `agent_factories.py` indent |
 | 2026-05-30 | N.8-agent-guide-4e | `AGENT_CREATION_GUIDE.md` Step 4E — `new-application`, Docker scripts, §7.4.8 links |
 | 2026-05-30 | N.4-product-scaffold | `--profile product` → FastAPI Core host, `agent_factories.py`, auth stub env; `new_application_product.py` |
 | 2026-05-30 | N.5-docker-build-scripts | `build-docker.sh` / `build-docker.bat` in scaffold + lab/legal/research/poc; `docker_templates.py` |
@@ -1486,7 +1627,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-29 | M.4-google_cse | `providers/google_cse/` — SearchProvider adapter over legacy CSE |
 | 2026-05-29 | M.4-celery | `providers/celery/` — message bus + worker helpers; no `kv_store` |
 | 2026-05-29 | M.4-kafka | `providers/kafka/` + transport delegate; requires `kv_store` |
-| 2026-05-29 | M.4-sqlite-adopt | Runtime `open_*` + apps delegate to `integrations/providers/sqlite/` |
+| 2026-05-29 | M.4-sqlite-adopt | Runtime `open_*` + apps delegate to `integrations/providers/relational_store/sqlite/` |
 | 2026-05-29 | M.4-sqlite | `providers/sqlite/` + bundle (10 domain stores); lazy bootstrap + package `__init__` |
 | 2026-05-29 | M.4-redis | Complete bundle: `create_redis_integration()` — KV, idempotency, rate limit, semaphore, rerank |
 | 2026-05-27 | B.08, B.10 | `wire_nexus_observability` + SQLite defaults in Legal / Research / Lab factories; integration test |
@@ -1494,7 +1635,9 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-27 | B.12, B.14 | Production `POST /v1/interactions/intake` on lab; Legal legacy `AgentEngine` removed |
 | 2026-05-27 | B.05 | Escalation notification template + scheduler wiring in lab + SAFETY_VIOLATION timeout→escalate |
 | 2026-05-27 | B.09, B.17 | Injectable `trace_store` on debug API; gate uses `pytest -m gate` (`testpaths` includes `agents/`) |
-| 2026-05-27 | B.06 | `HOOK_COVERAGE` parity map + Nexus lifecycle hooks (intake→planning→finalization) |
+| 2026-05-27 | Platform stabilization | All Tier-3 hosts: validating runtime events, plugin bootstrap, resilient delivery (lab/legal/research/poc); shared `_shared/platform_wiring` + `notification_wiring` |
+| 2026-05-27 | Infra paydown | SQLite DLQ ledger + debug `/notifications/*`; `ValidatingRuntimeEventPersistence`; Tier-3 plugin bootstrap |
+| 2026-05-27 | B.07, B.11, B.13, B.18, B.24 | Schema registry + phase coverage + `RuntimePlugin`; metrics export + `GET /debug/tasks/{id}/metrics`; retry/DLQ delivery; echo + research_mock HTTP trace acceptance; agents vendor import gate test |
 
 ### B.1 Runtime & §42 convergence
 
@@ -1506,7 +1649,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.04 | **Dual `AgentDecision` cleanup** — converge tools-agent variant with canonical §42.7 enum | §42.7 | **Medium** | **Done** | Agents emitting decisions must use one contract | Tier-1 | `ToolPlanDecision` / `ToolsAgentRunResult`; deprecated `tools_agent` aliases (2026-05-27) |
 | B.05 | **Escalation policy production path** — `SAFETY_VIOLATION` / HITL expiry → real escalation (not stub) | §42.38, §42.10 | **Medium** | **Done** | HITL-heavy agents | Tier-1 | `escalation.v1` template, `wire_long_running_scheduler`, lab startup, SAFETY_VIOLATION timeout→escalate (2026-05-27) |
 | B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | **Done** | Extension agents via plugins | Tier-1 | `HOOK_COVERAGE` + lifecycle hooks on NexusLoop; UAEP/graph/HITL already wired (2026-05-27) |
-| B.07 | **§42 maturity remainder (~30%)** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | Open | Platform stability for new agents | Tier-1 | Track as Phase G follow-up epics |
+| B.07 | **§42 maturity remainder** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | **Done** (baseline) | Platform stability for new agents | Tier-1 | `runtime/schema/registry.py`, `events/phase_coverage.py`, `plugins/contract.py` (2026-05-27) |
 
 ### B.2 Observability & debug surface
 
@@ -1515,14 +1658,14 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.08 | **Application trace store split** — factories used `InMemoryRunTraceStore` while debug API reads SQLite | §33, §42.24 | **High** | **Done** | HTTP `/debug/tasks/*` 503 in product apps | Tier-3 | `wire_nexus_observability` + `open_run_trace_store` (2026-05-27) |
 | B.09 | **Debug API trace reader** — only SQLite file path; no injectable in-memory / shared store handle | §19 | **Medium** | **Done** | Lab tests, local dev without file I/O | Tier-1 | `trace_store` on `create_debug_router` / `create_debug_app`; lab passes Nexus store (2026-05-27) |
 | B.10 | **NexusLoop runtime events in app factories** — all Tier-3 factories pass runtime events to Nexus | §42.24 | **Medium** | **Done** | Events 503 on `/debug/tasks/{id}/events` | Tier-3 | Legal + Research default SQLite; lab when path passed (2026-05-27) |
-| B.11 | **Metrics layer** — canon says event-first, trace-second, **metrics-third**; no unified metrics export | §42.1, §33 | **Low** | Open | Ops visibility, SLOs | Tier-0 | Defer until product deployment need |
+| B.11 | **Metrics layer** — event-first, trace-second, **metrics-third** unified export | §42.1, §33 | **Low** | **Done** | Ops visibility, SLOs | Tier-0 | `runtime/metrics/export.py` + `GET /debug/tasks/{run_id}/metrics` (2026-05-27) |
 
 ### B.3 Interaction surfaces (§18)
 
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.12 | **Production Slack / Teams webhooks** — lab has debug intake + signature stub; no production inbound adapter deployment | §18 | **Medium** | **Done** | Organization Worker, HITL from chat | Tier-0 / Tier-3 | `POST /v1/interactions/intake` on lab app + shared `create_interaction_intake_router` (2026-05-27) |
-| B.13 | **Outbound delivery hardening** — retries, DLQ, delivery receipts for HITL notifications | §18, §42.10 | **Low** | HITL agents in prod | Tier-0 | Extend pluggable delivery with persistence |
+| B.13 | **Outbound delivery hardening** — retries, DLQ, delivery receipts for HITL notifications | §18, §42.10 | **Low** | **Done** | HITL agents in prod | Tier-0 | `RetryingNotificationDelivery` + `SQLiteDeliveryLedger` + debug `/debug/notifications/*` (2026-05-27) |
 
 ### B.6 Integration Library (§7.1)
 
@@ -1531,7 +1674,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.18 | **Integration catalog package** — `intergrax/integrations/` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
 | B.19 | **P0 provider wraps** — M.4 catalog slugs | §7.1.3 | **High** | **Done** | Lab + first prod apps | Tier-0 | All P0 slugs wrapped + runtime adoption (2026-05-29) |
 | B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | **Done** (beta) | Multi-tenant applications | Tier-0 | `providers/postgresql/` — domain stores SQLite-first |
-| B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | **Done** (beta) | PM / research agents | Tier-0 | `providers/jira/`, `providers/confluence/`; tools via ToolRuntime (future) |
+| B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | **Done** (beta) | PM / research agents | Tier-0 | Integrations + catalog tools (Phase O.4, 2026-05-30) |
 | B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | **Done** (beta) | Org worker, scheduling agents | Tier-0 | `providers/ms365_graph/`; client credentials via `opens.py` |
 | B.23 | **Prometheus observability_backend** — PromQL query API | §33, §7.1.3 | **Low** | **Done** (beta) | Ops / SLO | Tier-0 | `providers/prometheus/`; complements B.11 metrics layer design |
 | B.28 | **Cassandra document_store** — wide-column adapter for high-volume retention | §7.1.3 P2 | **Medium** | **Done** (beta) | Runtime event archive at scale; ops telemetry | Tier-0 | `providers/cassandra/`; single-entry `opens.py` |
@@ -1541,25 +1684,36 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.32 | **Pinecone vector_store bridge** — catalog entry → `rag/` | §7.1.3 P2 | **Medium** | **Done** (beta) | Production RAG agents | Tier-0 | `providers/pinecone/` thin adapter; SDK only in `opens.py` |
 | B.33 | **Qdrant + Chroma vector_store bridges** — same pattern as B.32 | §7.1.3 P2 | **Low** | **Done** (beta) | Self-hosted / dev RAG | Tier-0 | `providers/qdrant/`, `providers/chroma/`; RAG bootstrap via catalog |
 | B.34 | **Object storage contract + S3 provider** — blobs for artifacts / sandboxes | §7.1.3 P2 | **Medium** | **Done** (beta) | Large file handoff, exports | Tier-0 | `contracts/object_storage.py`, `providers/s3/`; boto3 only in `opens.py` |
-| B.35 | **Notion + SharePoint wiki_knowledge** — internal docs ingestion | §7.1.3 P3 | **Low** | **Open** | Research / runbook agents | Tier-0 | REST adapters; httpx only in `opens.py` |
-| B.36 | **GitHub + Linear issue_tracker** — dev workflow sources | §7.1.3 P3 | **Low** | **Open** | Code-aware agents | Tier-0 | REST/GraphQL; single-entry `opens.py` |
-| B.37 | **email_smtp notification_channel** — outbound mail without chat | §7.1.3 P3 | **Low** | **Open** | HITL, scheduled reports | Tier-0 | `providers/email_smtp/`; stdlib / aiosmtplib in `opens.py` |
-| B.38 | **OpenTelemetry observability_backend** — trace/metric export | §33, §7.1.3 P3 | **Low** | **Open** | Unified ops dashboards | Tier-0 | `providers/otel/`; OTLP exporter only in `opens.py` |
-| B.39 | **Playwright browser_automation** — dynamic web interaction | §7.1.3 P3 | **Low** | **Open** | Research on JS-heavy sites | Tier-0 | `providers/playwright/`; browser launch only in `opens.py` |
+| B.35 | **Notion + SharePoint wiki_knowledge** — internal docs ingestion | §7.1.3 P3 | **Low** | **Done** (beta) | Research / runbook agents | Tier-0 | REST adapters; `_shared/p2/factories.py` |
+| B.36 | **GitHub + Linear issue_tracker** — dev workflow sources | §7.1.3 P3 | **Low** | **Done** (beta) | Code-aware agents | Tier-0 | REST; thin provider shells |
+| B.37 | **email_smtp notification_channel** — outbound mail without chat | §7.1.3 P3 | **Low** | **Done** (beta) | HITL, scheduled reports | Tier-0 | stdlib SMTP in factory open path |
+| B.38 | **OpenTelemetry observability_backend** — trace/metric export | §33, §7.1.3 P3 | **Low** | **Done** (beta) | Unified ops dashboards | Tier-0 | `providers/otel/`; beta noop exporter default |
+| B.39 | **Playwright browser_automation** — dynamic web interaction | §7.1.3 P3 | **Low** | **Done** (beta) | Research on JS-heavy sites | Tier-0 | `providers/playwright/`; browser launch in factory |
 | B.25 | **AWS cloud_platform facade** — auth + S3/SQS/DynamoDB/ElastiCache defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | AWS-hosted applications | Tier-0 | `providers/aws/`; infrastructure only |
 | B.26 | **Azure cloud_platform facade** — MI + Blob/Service Bus/Azure SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | Azure-hosted applications | Tier-0 | `providers/azure/`; infrastructure only |
 | B.27 | **GCP cloud_platform facade** — ADC + GCS/Pub/Sub/Cloud SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | GCP-hosted applications | Tier-0 | `providers/gcp/`; infrastructure only |
-| B.24 | **Direct vendor SDK in agents** — audit + lint rule | §5.2, §7.1.4 | **Medium** | Open | Prevents catalog bypass | Tier-2 | Document in AGENT_CREATION_GUIDE; optional ruff rule |
+| B.24 | **Direct vendor SDK in agents** — audit + lint rule | §5.2, §7.1.4 | **Medium** | **Done** | Prevents catalog bypass | Tier-2 | `scripts/check_agents_vendor_imports.py` + gate test `test_vendor_import_guard_b24` (2026-05-27) |
+
+### B.7 Tool Library (§7.1.6)
+
+| ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
+|----|------|-------|----------|--------|--------------|------|----------------|
+| B.40 | **Tool Library scaffold** — catalog, profile, wiring context | §7.1.6 | **High** | **Done** | All agents using external capabilities | Tier-0 | Phase O.2; apps wire tools O.8 (2026-05-30) |
+| B.41 | **Context tools** — `rag.retrieve`, `websearch.query` | §7.1.7, §22.1 | **High** | **Done** | RAG / research agents | Tier-0 | Phase O.3 (2026-05-30) |
+| B.42 | **Jira catalog tools** — `jira.get_issue`, `jira.search_tasks`, … | §7.1.6 | **Medium** | **Done** | PM / legal workflow agents | Tier-0 | Phase O.4 (2026-05-30) |
+| B.43 | **Unified tool model** — deprecate `use_rag` / `use_websearch` flags | §7.1.7, §22.2 | **High** | **Done** | Consistent tool policy + MCP | Tier-1 | Phase O.5 (2026-05-30) |
+| B.44 | **Legacy ToolBase migration** | §5.2.2 | **Medium** | **Done** | Single registry | Tier-0 | Phase O.7; `tools_base` deprecated |
+| B.45 | **MCP tool export from catalog** | §7.1.6 | **Low** | **Done** | External MCP clients | Tier-3 | Phase O.6 |
 
 ### B.4 Legacy & composition
 
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
 | B.14 | **`ChatAgent` / legacy engine removal** — `LEGAL_USE_LEGACY_AGENT_ENGINE` removed | §39, §41 | **Medium** | **Done** | Single execution path for all agents | Tier-1 / Tier-3 | Legal `fastapi_router` requires `UnifiedTaskRunner`; legacy flags removed (2026-05-27) |
-| B.15 | **Legal full E2E gate (real LLM)** — deferred acceptance with live model | — | **Low** | Legal quality assurance | Tier-2 / CI | K.6; separate from Agent OS gate |
-| B.16 | **Lab agent auto-discovery** — new agents require explicit `wiring.py` register (by design, but easy to forget) | §7.4 | **Low** | Onboarding friction | Tier-3 | Phase N scaffold + `ApplicationManifest`; optional `new-stack` (N.10) |
+| B.15 | **Legal full E2E gate (real LLM)** — deferred acceptance with live model | — | **Low** | **Deferred** | Legal quality assurance | Tier-2 / CI | K.6; separate from Agent OS gate; enable when CI budget approved |
+| B.16 | **Lab agent auto-discovery** — manifest-driven roster + scaffold | §7.4 | **Low** | **Done** | Onboarding friction | Tier-3 | Phase N: `ApplicationManifest`, `new-stack` (N.10); explicit `AgentBinding` remains by design (2026-05-30) |
 | B.28 | **Per-application `.env.example` missing** — only root `.env.example`; lab/legal vars in README only | §7.4.8 | **Medium** | **Done** | Deployable POC friction | Tier-3 | N.7 backfill + scaffold (2026-05-30) |
-| B.29 | **`new-application` scaffold (lab)** — Tier-3 hosts hand-copied from legal/lab | §7.4.8 | **High** | **Done** | Lab + product profiles via CLI | Tier-3 / platform | Phase N.8–N.9 docs/acceptance |
+| B.29 | **`new-application` scaffold (lab)** — Tier-3 hosts hand-copied from legal/lab | §7.4.8 | **High** | **Done** | Lab + product profiles via CLI; gate acceptance | Tier-3 / platform | N.10 `new-stack` optional |
 | B.30 | **No application-level Dockerfile** — only `infra/docker/docling/` | §7.4.8 | **Medium** | **Done** | Per-app `docker/` + build scripts on lab/legal/research/poc | Tier-3 | N.5–N.7 (2026-05-30) |
 
 ### B.5 Test & certification hygiene
@@ -1567,7 +1721,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | ID | Item | Canon | Priority | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------------|------|----------------|
 | B.17 | **`agents/` gate collection** — `signoff_probe` test marks `gate` but lives under `agents/` (may not be collected by default `pytest tests/`) | — | **Low** | **Done** | Sign-off smoke not in main gate count | Test infra | `testpaths` includes `agents/`; canonical gate: `uv run pytest -m gate -q` (2026-05-27) |
-| B.18 | **HTTP observability acceptance** — extend agent_os suite to assert trace on echo + graph scenarios (signoff_probe done) | Appendix A #9–10 | **Low** | Certification confidence | Test | Copy lab trace pattern to 1–2 acceptance tests |
+| B.18 | **HTTP observability acceptance** — trace on echo + multi-agent mock (graph path) | Appendix A #9–10 | **Low** | **Done** | Certification confidence | Test | `test_lab_application_runs_echo_with_trace_observability`, `test_lab_application_runs_research_mock_with_graph_trace` (2026-05-27) |
 
 ### B.6 Suggested priority order (for planning)
 
@@ -1579,14 +1733,15 @@ Decision:       L1 certified — GO Phase K when product priority set
 5. ~~B.05~~ — escalation production path (Done 2026-05-27)
 6. ~~B.09, B.17~~ — debug trace injection + gate collection (Done 2026-05-27)
 7. ~~B.06~~ — hook parity doc + lifecycle wiring (Done 2026-05-27)
-8. B.07, B.11, B.13, B.15–B.18 — as capacity allows
-9. M.6 P2 — **azure_blob / gcs** object storage (follow S3 pattern)
-10. M.6 P2/P3 — object storage (B.34), service slugs (`azure_blob`, `gcs`, `s3`), email_smtp, notion, github, otel, playwright
+8. ~~B.07, B.11, B.13, B.18, B.24~~ — §42 baseline, metrics export, delivery hardening, HTTP trace acceptance, vendor import guard (Done 2026-05-27)
+9. ~~Platform stabilization~~ — all Tier-3 factories aligned (Done 2026-05-27)
+10. B.15 — Legal E2E real LLM (**Deferred** — product/CI decision)
+11. Phase K — Problem Radar / Vendor Discovery (**product-blocked**)
 ```
 
 **Note:** Phase K business agents (Problem Radar, Vendor Discovery) remain **product-blocked** until explicit go — technical debt above does not auto-unblock K.1/K.2.
 
 ---
 
-*Plan synced with codebase after B.34 Object storage + S3 (2026-05-29). Gate: integration unit tests.*
+*Plan synced after platform stabilization (2026-05-27). Gate: `uv run pytest -m gate -q` — **363 passed**. Business agents (Legal E2E B.15, Phase K) remain product-blocked.*
 

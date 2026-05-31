@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.integrations.providers.log.adapter import LogNotificationAdapter
+from intergrax.integrations.providers.notification_channel.log.adapter import LogNotificationAdapter
 from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from lab_application.host.integration_wiring import (

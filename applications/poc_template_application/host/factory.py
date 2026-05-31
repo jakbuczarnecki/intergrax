@@ -18,8 +18,11 @@ from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from poc_template_application.host.integration_wiring import wire_poc_template_integrations
 from poc_template_application.host.settings import PocTemplateApplicationSettings
+from poc_template_application.host.tool_wiring import wire_poc_template_tools
 from intergrax.applications._shared.fastapi_mcp import (
     couple_fastapi_with_mcp,
     make_scheduler_lifespan,
@@ -54,6 +57,10 @@ def create_poc_template_application(
         runtime_event_store=integrations.runtime_event_store,
         notification_adapter=integrations.notification_adapter,
     )
+    platform = bootstrap_nexus_platform(
+        nexus_loop,
+        trace_store=integrations.trace_store,  # type: ignore[arg-type]
+    )
     task_runner = UnifiedTaskRunner(nexus_loop)
     scheduler_wiring = wire_long_running_scheduler(
         checkpoint_store=integrations.checkpoint_store,
@@ -83,6 +90,7 @@ def create_poc_template_application(
         checkpoint_store=integrations.checkpoint_store,
         trace_store=integrations.trace_store,
         runtime_event_store=integrations.runtime_event_store,
+        delivery_ledger=integrations.delivery_ledger,
     )
     app.title = "Intergrax Poc Template Lab Application"
     mount_poc_template_routes(app, nexus_loop=nexus_loop, prefix=settings.route_prefix)
@@ -96,9 +104,13 @@ def create_poc_template_application(
         )
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
+        tool_wiring = wire_poc_template_tools(
+            integration_profile=getattr(integrations, "integration_profile", None),
+        )
         mcp = build_poc_template_mcp_server(
             nexus_loop=nexus_loop,
             route_prefix=settings.route_prefix,
+            tool_registry=tool_wiring.registry,
         )
         extra_lifespans = [make_scheduler_lifespan(scheduler)] if scheduler else []
         app = couple_fastapi_with_mcp(
@@ -116,4 +128,5 @@ def create_poc_template_application(
         @app.on_event("shutdown")
         async def _stop_scheduler() -> None:
             await scheduler.stop()
+    attach_plugin_shutdown(app, platform.shutdown_callbacks)
     return app

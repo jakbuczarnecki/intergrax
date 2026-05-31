@@ -29,11 +29,14 @@ All platform documentation lives in [`docs/`](docs/). Canonical docs — one sou
 | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Full architecture canon (tiers, Nexus, UAEP §42) |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, gaps, priority, business-agent checklist (Appendix A) |
 | [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) | Create an agent: scaffold → register → run → inspect |
-| [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **Integration Library** — catalog of all wired providers (DB, queues, RAG, cloud, …) |
+| [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **Integration Library** — catalog of all **73** wired providers; each at `providers/<category>/<slug>/USAGE.md` |
+| [TOOLS.md](docs/TOOLS.md) | **Tool Library** — LLM-facing agent tools (RAG, web search, Jira, sandbox, …) |
+| [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) | **LLM adapters** — OpenAI, Claude, Gemini, Ollama, Azure, Mistral, Bedrock |
+| [intergrax/tools/USAGE.md](intergrax/tools/USAGE.md) | Wire catalog tools in applications and agents (quick start) |
 | [intergrax/applications/USAGE.md](intergrax/applications/USAGE.md) | Tier-3 composition engine: manifest, typed bindings, registry |
 | [applications/USAGE.md](applications/USAGE.md) | Application layout: env, Docker, host, run |
 
-**Quick paths:** new agent → [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md) · **integrations catalog** → [INTEGRATIONS](docs/INTEGRATIONS.md) · **new application** → [applications/USAGE](applications/USAGE.md) · current phase → [IMPLEMENTATION_PLAN](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) §1–§4 · deep architecture → [runtime_architecture](docs/intergrax_runtime_architecture.md) §1–§5
+**Quick paths:** new agent → [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md) · **integrations catalog** → [INTEGRATIONS](docs/INTEGRATIONS.md) · **tools catalog** → [TOOLS](docs/TOOLS.md) · **LLM providers** → [LLM_ADAPTERS](docs/LLM_ADAPTERS.md) · **new application** → [applications/USAGE](applications/USAGE.md) · current phase → [IMPLEMENTATION_PLAN](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) §1–§4 · deep architecture → [runtime_architecture](docs/intergrax_runtime_architecture.md) §1–§5
 
 ---
 
@@ -209,9 +212,9 @@ tests/                  # Unit and integration tests (gate: pytest -m gate)
 
 Shared infrastructure used by all agents:
 
-- **LLM adapters** — OpenAI, Anthropic, Ollama, Gemini, and others (`intergrax/llm_adapters/`)
+- **LLM adapters** — nineteen providers via `LLMAdapterRegistry` (`intergrax/llm_adapters/`) — see [LLM Adapters](#llm-adapters)
 - **RAG** — embeddings, vector stores, document loaders (`intergrax/rag/`)
-- **Tools** — registry, MCP-oriented integrations (`intergrax/tools/`)
+- **Tools** — registry, Tool Library catalog, MCP export (`intergrax/tools/`) — see [Tool Library](#tool-library)
 - **Memory** — conversational and session storage (`intergrax/memory/`)
 - **Integration Library** — modular catalog of external backends (DB, queues, search, vectors, cloud) — see [Integration Library](#integration-library)
 - **FastAPI core** — shared API primitives for Tier-3 hosts (`intergrax/fastapi_core/`)
@@ -231,7 +234,7 @@ The **Integration Library** (`intergrax/integrations/`) provides:
 | **Portable across environments** | The same Tier-2 agent runs in a local lab (`IntegrationProfile.lab()`), a customer VPC, or a multi-cloud stack. Tier-3 applications compose the profile at startup. |
 | **Safe boundaries** | Vendor SDKs live only in each provider’s `opens.py`. Tier-2 agents must not import provider slugs or third-party drivers. |
 
-**29 providers** are registered today — relational stores, document DBs, Redis, Kafka/Celery/RabbitMQ, S3, Pinecone/Qdrant/Chroma, web search, Slack/Teams, Jira/Confluence, observability backends, and AWS/Azure/GCP facades.
+**73 providers** are registered today — relational stores (incl. Oracle/MSSQL/Azure SQL/Cloud SQL), document DBs (MongoDB, Cassandra, DynamoDB), Redis/Memcached/ElastiCache, Kafka/Celery/RabbitMQ/SQS/Service Bus/Pub/Sub, S3/Azure Blob/GCS, Pinecone/Qdrant/Chroma, web search (Google CSE, Bing, Brave, SerpAPI), Slack/Teams/SMTP, Jira/GitHub/Linear/Azure DevOps, Confluence/Notion/SharePoint, observability backends, Playwright, and AWS/Azure/GCP facades.
 
 ```python
 # Tier-3 application — declare backends once
@@ -246,10 +249,78 @@ profile = IntegrationProfile(
 # Agents receive resolved contract instances — no boto3, no pymongo in agent code
 ```
 
-**Full catalog (tables, factories, env vars, per-provider guides):**  
+**Full catalog (73 providers, env vars, links to per-slug `USAGE.md`):**  
 **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)**
 
 Architecture rules: [runtime architecture §7.1](docs/intergrax_runtime_architecture.md) · implementation status: [Phase M](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
+
+---
+
+## Tool Library
+
+Agents do not call Jira, Bing, or PostgreSQL directly. They invoke **tools** — named, schema-defined operations optimized for LLM planners and MCP clients. Tools compose the [Integration Library](#integration-library) (and RAG modules) underneath.
+
+The **Tool Library** (`intergrax/tools/`) provides:
+
+| Property | Benefit |
+|----------|---------|
+| **LLM-first contracts** | Each tool has `tool_id`, description, and JSON Schema parameters — for native tool-calling models and MCP. |
+| **Composable semantics** | e.g. `jira.search_tasks(project, status)` builds JQL internally; agents never see raw integration APIs. |
+| **Unified execution** | All invocations go through `ToolRuntime` — policy, trace, idempotency, and `allowed_tools` enforcement. |
+| **Dual export** | Same catalog entry → OpenAI function schema, MCP tool, and UAEP `ToolRequest`. |
+| **Unified model** | RAG and web search are catalog tools (`rag.retrieve`, `websearch.query`) — legacy `use_rag` / `use_websearch` map automatically. |
+
+**Engine today:** `ToolContract`, `ToolRegistry`, `RuntimeToolInvoker`, `ToolsAgent`.  
+**Catalog providers (Phase O Done):** full first-party catalog wired end-to-end in reference applications (`tool_wiring.py` → `ApplicationBuildContext` → agent `RuntimeConfig`). Legacy `use_rag` / `use_websearch` remain as compatibility shims.
+
+```python
+# Tier-2 agent — declare tool policy, not vendors
+AgentContract(
+    id="pm",
+    allowed_tools=["jira.search_tasks", "jira.get_issue", "rag.retrieve", "confluence.search_pages"],
+)
+
+# Tier-3 application — wire integrations into tool handlers
+from intergrax.tools.registry import ToolProfile, ToolWiringContext, build_registry_from_profile, register_default_tools
+
+register_default_tools()
+ctx = ToolWiringContext.from_integration_profile(integration_profile)
+registry = build_registry_from_profile(ToolProfile(enabled_bundles=["jira", "confluence"]), ctx=ctx)
+```
+
+**Full catalog (tool_ids, status, migration from legacy flags):**  
+**[docs/TOOLS.md](docs/TOOLS.md)** · **end-to-end wiring:** **[intergrax/tools/USAGE.md](intergrax/tools/USAGE.md)**
+
+Architecture: [§7.1.6–§7.1.7](docs/intergrax_runtime_architecture.md) · implementation: [Phase O](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
+
+---
+
+## LLM adapters
+
+Agents call language models through **`LLMAdapter`** — not OpenAI/Anthropic SDKs directly. The adapter layer keeps chat, **streaming**, native **tools**, and **structured JSON** consistent across providers.
+
+| Property | Benefit |
+|----------|---------|
+| **Unified contract** | `generate_messages`, `stream_messages`, optional `generate_with_tools` / `generate_structured`. |
+| **Lazy registry** | `LLMAdapterRegistry.create("openai")` loads only the provider you need. |
+| **Tool-ready** | OpenAI, Claude, Azure, Gemini, Mistral, and Bedrock (Anthropic) support native tool loops for `ToolsAgent`. |
+| **Usage tracking** | Per-`run_id` token and latency stats for runtime observability. |
+| **Outside integrations** | LLM providers are **not** Integration Library slugs (architecture §5.2.2). |
+
+**Nineteen providers today:** core (`openai`, `claude`, `azure_openai`, `azure_ai_inference`, `gemini`, `vertex_gemini`, `mistral`, `aws_bedrock`, `ollama`) plus OpenAI-compatible hosts (`groq`, `vllm`, `together`, `fireworks`, `openrouter`, `deepseek`, `xai`, `llama_cpp`, `cohere`, `cohere_native`).
+
+```python
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
+
+llm = LLMAdapterRegistry.create(LLMProvider.OPENAI, model="gpt-4o-mini")
+text = llm.generate_messages([...], run_id=task_id)
+```
+
+**Full catalog (env vars, streaming/tools matrix, Bedrock Converse, optional `pyproject` extras):**  
+**[docs/LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md)**
+
+Architecture: [§5.2.2](docs/intergrax_runtime_architecture.md)
 
 ---
 
@@ -259,7 +330,7 @@ Intergrax is under **active development** (private R&D). Phase status, prioritie
 
 **[`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)**
 
-Regression gate: `uv run pytest -m gate -q` (248 tests; collects `tests/`, `applications/`, `agents/`)
+Regression gate: `uv run pytest -m gate -q` (**363** tests; collects `tests/`, `applications/`, `agents/`)
 
 ---
 

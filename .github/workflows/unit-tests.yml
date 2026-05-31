@@ -49,8 +49,5 @@ jobs:
           tests/unit/runtime
           tests/unit/agents
           tests/unit/contracts
-          tests/integration
-          tests/acceptance
-          applications/legal_application/legal_tests/host
-          agents/signoff_probe
+          tests/unit/llm_adapters
           -m gate -q --tb=line

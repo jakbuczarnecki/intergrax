@@ -33,7 +33,11 @@
         | ``LAB_BACKEND_HOST`` | see ``.env.example`` | Bind address |
         | ``LAB_BACKEND_PORT`` | ``8090`` | HTTP port |
 
-        Agent roster and integrations: ``manifest.py``, ``host/wiring.py``, ``host/integration_wiring.py``.
+        Agent roster and integrations: ``manifest.py``, ``host/wiring.py``, ``host/integration_wiring.py``, ``host/tool_wiring.py``.
+
+        ### Tool catalog (lab defaults)
+
+        Lab enables ``rag.retrieve``, ``websearch.query``, and ``sandbox.exec`` via ``host/tool_wiring.py``. MCP exposes ``list_catalog_tools`` / ``describe_catalog_tool``. See [`intergrax/tools/USAGE.md`](../../intergrax/tools/USAGE.md).
 
         ---
 
@@ -72,6 +76,18 @@ When ``LAB_INCLUDE_MCP=true`` (default), FastMCP is mounted at
 Tools ``list_agents`` and ``run_agent`` use the same Nexus loop as HTTP.
 
 MCP endpoint: ``http://127.0.0.1:8090/mcp`` (streamable HTTP transport).
+
+### Debug / observability API
+
+Mounted on the same process (Phase L.3 + infra paydown):
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /debug/tasks/{run_id}/trace` | Trace timeline + optional runtime events |
+| `GET /debug/tasks/{run_id}/metrics` | Unified metrics export |
+| `GET /debug/tasks/{task_id}/events` | Canonical RuntimeEvent stream |
+| `GET /debug/notifications/receipts` | Successful outbound delivery receipts |
+| `GET /debug/notifications/dead-letters` | Failed notification DLQ rows |
 
         ---
 

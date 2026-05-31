@@ -254,7 +254,7 @@ def agent_factories_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgen
     for s in specs:
         factories.append(
             dedent(
-                f'''\
+                f"""
                 def build_{short}_{s.slug}_from_context(
                     ctx: ApplicationBuildContext,
                     binding: AgentBinding,
@@ -264,24 +264,28 @@ def agent_factories_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgen
                     if factory is None:
                         raise ValueError(f"No builder registered for {{binding.import_path!r}}")
                     return factory(ctx, binding)
-                '''
+                """
             ).strip()
         )
     factories_block = "\n\n\n".join(factories)
-    return dedent(
-        f'''\
-        # © Artur Czarnecki. All rights reserved.
+    return (
+        dedent(
+            f"""
+            # © Artur Czarnecki. All rights reserved.
 
-        from __future__ import annotations
+            from __future__ import annotations
 
-        from intergrax.applications.contracts.build_context import ApplicationBuildContext
-        from intergrax.applications.contracts.manifest import AgentBinding
-        {imports}
-        from {pkg}.host.agent_builders import {builders_const}
+            from intergrax.applications.contracts.build_context import ApplicationBuildContext
+            from intergrax.applications.contracts.manifest import AgentBinding
+            {imports}
+            from {pkg}.host.agent_builders import {builders_const}
 
 
-        {factories_block}
-        '''
+            """
+        ).strip()
+        + "\n\n\n"
+        + factories_block
+        + "\n"
     )
 
 
@@ -307,6 +311,7 @@ def wiring_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.runtime.registry.agent_registry import AgentRegistry
         from {pkg}.host.agent_builders import {names.builders_const}
         from {pkg}.host.settings import {pascal}BackendSettings
+        from {pkg}.host.tool_wiring import wire_{short}_tools
         from {pkg}.manifest import APPLICATION_MANIFEST
 
 
@@ -323,8 +328,47 @@ def wiring_py(names: ScaffoldApplicationNames) -> str:
         ) -> AgentRegistry:
             settings = settings or {pascal}BackendSettings.from_env()
             manifest = build_{short}_manifest(settings)
-            ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
+            tool_wiring = wire_{short}_tools(
+                integration_profile=getattr(manifest, "integration_profile", None),
+            )
+            ctx = ApplicationBuildContext.for_manifest(
+                manifest,
+                settings=settings,
+                tool_profile=tool_wiring.profile,
+                tool_wiring_context=tool_wiring.wiring_context,
+            )
             return build_application_registry(manifest, ctx, builders={names.builders_const})
+        '''
+    )
+
+
+def tool_wiring_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    short = names.short
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        """Tool catalog wiring for {pkg} (Phase O.8)."""
+
+        from __future__ import annotations
+
+        from intergrax.applications._shared.tool_wiring import ApplicationToolWiring, build_application_tool_wiring
+        from intergrax.integrations.registry.profile import IntegrationProfile
+        from intergrax.tools.registry.profile import ToolProfile
+
+
+        def wire_{short}_tools(
+            *,
+            integration_profile: IntegrationProfile | None = None,
+        ) -> ApplicationToolWiring:
+            profile = ToolProfile(
+                enabled=["rag.retrieve", "websearch.query"],
+            )
+            return build_application_tool_wiring(
+                profile,
+                integration_profile=integration_profile,
+            )
         '''
     )
 
@@ -384,6 +428,8 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.fastapi_core.config import ApiConfig
         from intergrax.runtime.nexus.nexus_loop import NexusLoop
         from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+        from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+        from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
         from {pkg}.host.integration_wiring import wire_{short}_integrations
         from {pkg}.host.settings import {pascal}BackendSettings
         from {pkg}.host.wiring import build_{short}_registry
@@ -409,6 +455,10 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 registry,
                 trace_store=observability.trace_store,
                 runtime_event_store=observability.runtime_event_store,
+            )
+            platform = bootstrap_nexus_platform(
+                nexus_loop,
+                trace_store=observability.trace_store,  # type: ignore[arg-type]
             )
 
             api_cfg = ApiConfig(
@@ -454,6 +504,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 )
                 app = couple_fastapi_with_mcp(app, mcp, mount_path=settings.mcp_mount_path)
 
+            attach_plugin_shutdown(app, platform.shutdown_callbacks)
             return app
         '''
     )
@@ -718,10 +769,17 @@ def readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> s
 
         Default ``/mcp`` — ``list_agents``, ``run_agent``. Configure ``{env_prefix_value}INCLUDE_MCP``, ``{env_prefix_value}MCP_MOUNT_PATH``.
 
+        ## Extending beyond the generic product skeleton
+
+        This host uses ``POST {route_prefix}/run`` and ``/agents``. For chat-style routes,
+        API-key auth, and domain-specific serving (like Legal), copy patterns from
+        ``applications/legal_application/serving/`` after the scaffold — do not put agent logic here.
+
         ## Docs
 
         - Engine: `intergrax/applications/USAGE.md`
         - Layout: `applications/USAGE.md`
+        - Full stack (agent + app): `python -m intergrax.scaffold new-stack <slug>`
         '''
     )
 

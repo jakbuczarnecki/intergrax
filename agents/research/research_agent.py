@@ -19,6 +19,8 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.tools.registry.profile import ToolProfile
+from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.memory.conversational_memory import ChatMessage
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
@@ -73,7 +75,18 @@ class ResearchPipeline(RuntimePipeline):
 
 
 class ResearchAgent(Agent):
-    """Prototype research agent — stub web search results (Phase C.5)."""
+    """Prototype research agent — stub pipeline with optional catalog websearch."""
+
+    def __init__(
+        self,
+        *,
+        tool_profile: ToolProfile | None = None,
+        tool_wiring_context: ToolWiringContext | None = None,
+        enable_websearch: bool = False,
+    ) -> None:
+        self._tool_profile = tool_profile
+        self._tool_wiring_context = tool_wiring_context
+        self._enable_websearch = enable_websearch
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -82,7 +95,7 @@ class ResearchAgent(Agent):
             description="Prototype agent producing stub research findings.",
             version="0.1.0",
             capabilities=["research.web_search", "research.pipeline"],
-            allowed_tools=["web_search"],
+            allowed_tools=["websearch.query", "rag.retrieve"],
             risk_level=AgentRiskLevel.LOW,
             max_steps=10,
             validation_rules=["non_empty_summary"],
@@ -102,12 +115,19 @@ class ResearchAgent(Agent):
         return CapabilityMatchResult(matched=False, rationale="not a research capability")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
+        has_web = bool(
+            self._enable_websearch
+            and self._tool_profile
+            and self._tool_profile.is_tool_enabled("websearch.query")
+        )
         config = RuntimeConfig(
             llm_adapter=_ResearchLLMStub(),
             enable_rag=False,
-            enable_websearch=False,
+            enable_websearch=has_web,
             production_mode=False,
             tenant_id=request.tenant_id,
+            tool_profile=self._tool_profile,
+            tool_wiring_context=self._tool_wiring_context,
         )
         config.pipeline = ResearchPipeline()
         session_manager = SessionManager(storage=InMemorySessionStorage())

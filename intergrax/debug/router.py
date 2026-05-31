@@ -9,7 +9,12 @@ Task endpoints:
 - ``GET /debug/tasks`` — list recent runs
 - ``GET /debug/tasks/{run_id}`` — run metadata
 - ``GET /debug/tasks/{task_id}/checkpoints`` — checkpoint history
-- ``GET /debug/tasks/{task_id}/progress`` — long-running partial results (J.5)
+- ``GET /debug/tasks/{run_id}/metrics`` — unified run metrics export
+
+Notification delivery ledger (B.13):
+
+- ``GET /debug/notifications/receipts`` — successful delivery receipts
+- ``GET /debug/notifications/dead-letters`` — dead-letter queue rows
 
 Experiment registry:
 
@@ -31,15 +36,19 @@ from intergrax.debug.formatters import build_trace_payload
 from intergrax.debug.progress_service import TaskProgressService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
 from intergrax.runtime.interactions.router import create_interaction_intake_router
+from intergrax.runtime.metrics.export import export_run_metrics
 from intergrax.debug.models import (
     CheckpointItem,
     CheckpointListResponse,
+    DeliveryReceiptItem,
+    DeliveryReceiptListResponse,
     ExperimentDeletedResponse,
     ExperimentListResponse,
     HumanResponseResult,
     InteractionIntakeResponse,
     RunDetailResponse,
     RunListResponse,
+    RunMetricsResponse,
     RunSummaryItem,
     RuntimeEventItem,
     RuntimeEventListResponse,
@@ -67,6 +76,7 @@ from intergrax.experiments.store import (
 )
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointReader
+from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
 
 
@@ -156,6 +166,7 @@ def create_debug_router(
     trace_store: RunTraceReader | None = None,
     hitl_service: DebugHitlResumeService | None = None,
     interaction_service: DebugInteractionIntakeService | None = None,
+    delivery_ledger: DeliveryLedger | None = None,
 ) -> APIRouter:
     router = APIRouter(prefix="/debug", tags=["debug"])
     get_reader = _trace_reader_factory(db_path, trace_store)
@@ -215,6 +226,18 @@ def create_debug_router(
             trace_events=list(payload["trace_events"]),
             runtime_events=payload.get("runtime_events"),
         )
+
+    @router.get("/tasks/{run_id}/metrics", response_model=RunMetricsResponse)
+    def task_metrics(
+        run_id: str,
+        tenant: str = Query(default="default", description="Tenant id"),
+        reader: RunTraceReader = Depends(get_reader),
+    ) -> RunMetricsResponse:
+        try:
+            persisted = reader.read_run(run_id, tenant)
+        except (ValueError, KeyError) as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return RunMetricsResponse.from_export(export_run_metrics(persisted))
 
     @router.get("/tasks/{task_id}/events", response_model=RuntimeEventListResponse)
     def task_runtime_events(
@@ -407,5 +430,40 @@ def create_debug_router(
             return store.link_run(experiment_id, run_id)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    def _receipt_items(receipts) -> DeliveryReceiptListResponse:
+        return DeliveryReceiptListResponse(
+            count=len(receipts),
+            receipts=[
+                DeliveryReceiptItem(
+                    delivery_id=item.delivery_id,
+                    destination=item.destination,
+                    task_id=item.task_id,
+                    channel=item.channel,
+                    status=item.status,
+                    attempts=item.attempts,
+                    delivered_at_utc=item.delivered_at_utc,
+                    last_error=item.last_error,
+                    payload_summary=dict(item.payload_summary),
+                )
+                for item in receipts
+            ],
+        )
+
+    @router.get("/notifications/receipts", response_model=DeliveryReceiptListResponse)
+    def list_delivery_receipts(
+        limit: int = Query(default=50, ge=1, le=500),
+    ) -> DeliveryReceiptListResponse:
+        if delivery_ledger is None:
+            raise HTTPException(status_code=503, detail="Delivery ledger is not configured.")
+        return _receipt_items(delivery_ledger.list_receipts(limit=limit))
+
+    @router.get("/notifications/dead-letters", response_model=DeliveryReceiptListResponse)
+    def list_delivery_dead_letters(
+        limit: int = Query(default=50, ge=1, le=500),
+    ) -> DeliveryReceiptListResponse:
+        if delivery_ledger is None:
+            raise HTTPException(status_code=503, detail="Delivery ledger is not configured.")
+        return _receipt_items(delivery_ledger.list_dead_letters(limit=limit))
 
     return router

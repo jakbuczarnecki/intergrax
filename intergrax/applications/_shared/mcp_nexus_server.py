@@ -9,10 +9,12 @@ from typing import Any
 
 from fastmcp import FastMCP
 
+from intergrax.applications._shared.mcp_catalog_tools import mount_catalog_tools_on_mcp
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from intergrax.tools.registry.runtime import ToolRegistry
 
 
 def build_nexus_mcp_server(
@@ -22,6 +24,7 @@ def build_nexus_mcp_server(
     default_capability: str,
     default_tenant_id: str = "mcp",
     default_user_id: str = "mcp-user",
+    tool_registry: ToolRegistry | None = None,
 ) -> FastMCP:
     """
     Register ``list_agents`` and ``run_agent`` on a FastMCP instance.
@@ -76,5 +79,8 @@ def build_nexus_mcp_server(
             "agent_id": result.agent_id,
             "metadata": dict(result.metadata),
         }
+
+    if tool_registry is not None:
+        mount_catalog_tools_on_mcp(mcp, tool_registry)
 
     return mcp

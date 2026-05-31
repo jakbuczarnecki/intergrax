@@ -85,27 +85,27 @@ def create_notification_adapter(
     resolved = settings or resolve_notification_settings()
     backend = resolved.backend
     if backend == NotificationBackend.LOG:
-        from intergrax.integrations.providers.log.bundle import create_log_notification_channel
+        from intergrax.integrations.providers.notification_channel.log.bundle import create_log_notification_channel
 
         return create_log_notification_channel()
 
     if backend == NotificationBackend.SLACK:
-        from intergrax.integrations.providers.slack.config import SlackIntegrationConfig
-        from intergrax.integrations.providers.slack.opens import open_slack_notification_channel
+        from intergrax.integrations.providers.notification_channel.slack.config import SlackIntegrationConfig
+        from intergrax.integrations.providers.notification_channel.slack.opens import open_slack_notification_channel
 
         config = SlackIntegrationConfig.from_env(webhook_url=resolved.slack_webhook_url)
         return open_slack_notification_channel(config, delivery=delivery)
 
     if backend == NotificationBackend.TEAMS:
-        from intergrax.integrations.providers.teams.config import TeamsIntegrationConfig
-        from intergrax.integrations.providers.teams.opens import open_teams_notification_channel
+        from intergrax.integrations.providers.notification_channel.teams.config import TeamsIntegrationConfig
+        from intergrax.integrations.providers.notification_channel.teams.opens import open_teams_notification_channel
 
         config = TeamsIntegrationConfig.from_env(webhook_url=resolved.teams_webhook_url)
         return open_teams_notification_channel(config, delivery=delivery)
 
     if backend == NotificationBackend.WEBHOOK:
-        from intergrax.integrations.providers.webhook.config import WebhookIntegrationConfig
-        from intergrax.integrations.providers.webhook.opens import open_webhook_notification_channel
+        from intergrax.integrations.providers.notification_channel.webhook.config import WebhookIntegrationConfig
+        from intergrax.integrations.providers.notification_channel.webhook.opens import open_webhook_notification_channel
 
         config = WebhookIntegrationConfig.from_env(webhook_url=resolved.webhook_url)
         return open_webhook_notification_channel(config, delivery=delivery, formatter=formatter)

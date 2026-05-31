@@ -22,6 +22,7 @@ from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.provider import ToolProvider
+from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
 from intergrax.tools.tools_agent import ToolsAgent
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
@@ -165,6 +166,10 @@ class RuntimeConfig:
     idempotency_store: Optional[IdempotencyStore] = None
     
     tool_providers: Sequence[ToolProvider] = ()
+
+    tool_profile: Optional[ToolProfile] = None
+
+    tool_wiring_context: Optional[ToolWiringContext] = None
 
      # Optional capability-level tool authorization policy.
     # If None → all tools are allowed (backward compatible behavior).

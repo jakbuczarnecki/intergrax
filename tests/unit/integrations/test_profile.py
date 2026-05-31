@@ -68,7 +68,7 @@ def test_rejects_unknown_slug_string() -> None:
 
 def test_profile_resolve_uses_typed_category(tmp_path) -> None:
     from intergrax.integrations.contracts.base import IntegrationCategory
-    from intergrax.integrations.providers.sqlite.register import register_sqlite_integration
+    from intergrax.integrations.providers.relational_store.sqlite.register import register_sqlite_integration
     from intergrax.integrations.registry.catalog import clear_catalog
 
     clear_catalog()

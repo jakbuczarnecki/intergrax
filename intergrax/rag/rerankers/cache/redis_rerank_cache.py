@@ -5,7 +5,7 @@
 """
 Redis-backed cache for reranker score results.
 
-Composition root: ``intergrax.integrations.providers.redis.create_redis_rerank_cache``.
+Composition root: ``intergrax.integrations.providers.key_value_cache.redis.create_redis_rerank_cache``.
 """
 
 from __future__ import annotations

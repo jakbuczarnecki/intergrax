@@ -15,12 +15,12 @@ from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
 from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import LLMUsageRunRecord
 from intergrax.runtime.nexus.tools import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.integrations.providers.sqlite import create_sqlite_trace_store
+from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_trace_store
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 from intergrax.runtime.replay.service import ReplayService
 from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
-from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.registry import ToolRegistry, ToolWiringContext, build_registry_from_profile
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     from intergrax.runtime.nexus.config import RuntimeConfig
@@ -37,6 +37,22 @@ from intergrax.runtime.nexus.prompts.websearch_prompt_builder import DefaultWebS
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
+
+def _enrich_tool_wiring_context(wiring_ctx: ToolWiringContext, config: "RuntimeConfig") -> ToolWiringContext:
+    """Fill catalog tool dependencies from RuntimeConfig when Tier-3 omitted explicit wiring."""
+    return ToolWiringContext(
+        issue_tracker=wiring_ctx.issue_tracker,
+        search_provider=wiring_ctx.search_provider,
+        wiki_knowledge=wiring_ctx.wiki_knowledge,
+        notification_channel=wiring_ctx.notification_channel,
+        observability_backend=wiring_ctx.observability_backend,
+        rag_manager=wiring_ctx.rag_manager or getattr(config, "rag_manager", None),
+        vectorstore_manager=wiring_ctx.vectorstore_manager or config.vectorstore_manager,
+        embedding_manager=wiring_ctx.embedding_manager or config.embedding_manager,
+        websearch_executor=wiring_ctx.websearch_executor or config.websearch_executor,
+        sandbox_session=wiring_ctx.sandbox_session,
+        extras=dict(wiring_ctx.extras),
+    )
 
 
 @dataclass(frozen=False)
@@ -294,8 +310,21 @@ class RuntimeContext:
         )
 
         # --- Runtime Tools ---
+        from intergrax.tools.registry.bootstrap import register_default_tools
+
+        register_default_tools()
         registry = ToolRegistry()
-        
+
+        wiring_ctx = config.tool_wiring_context or ToolWiringContext()
+        wiring_ctx = _enrich_tool_wiring_context(wiring_ctx, config)
+        config.tool_wiring_context = wiring_ctx
+
+        if config.tool_profile is not None:
+            build_registry_from_profile(
+                config.tool_profile,
+                ctx=wiring_ctx,
+                registry=registry,
+            )
 
         executor = RegistryToolExecutor(registry)
         base_invoker = RuntimeToolInvoker(registry=registry, executor=executor)
@@ -314,7 +343,7 @@ class RuntimeContext:
 
         # Register tools from providers
         for provider in config.tool_providers:
-            provider.register_tools(registry)
+            provider.register_tools(registry, wiring_ctx)
 
         if config.production_mode and governance_service is None:
             raise ValueError(

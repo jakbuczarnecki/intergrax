@@ -15,8 +15,8 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.rag.answers.contracts.base_answer_manager import BaseAnswerManager
+from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tools_agent import ToolsAgent, ToolsAgentConfig
-from intergrax.tools.tools_base import ToolRegistry
 
 warnings.warn(
     "intergrax.chat_agent.ChatAgent is deprecated; use Nexus RuntimeEngine / NoPlannerPipeline instead.",
@@ -420,9 +420,9 @@ class ChatAgent:
         if allowed_tools:
             backup_registry = self._tools_registry
             filtered = ToolRegistry()
-            for t in self._tools_registry.list():
-                if t.name in allowed_tools:
-                    filtered.register(t)
+            for registered in self._tools_registry.list():
+                if registered.contract.tool_id in allowed_tools:
+                    filtered.register(registered.contract, registered.handler)
             self._tools_registry = filtered
             self._tools_agent.tools = filtered
 
@@ -569,7 +569,7 @@ class ChatAgent:
             )
 
         output_obj = None
-        if (output_model is not None) and (not stream) and hasattr(self.llm, "generate_structured"):
+        if (output_model is not None) and (not stream) and self.llm.supports_structured_output():
             try:
                 output_obj = self.llm.generate_structured(
                     msgs, 

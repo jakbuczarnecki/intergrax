@@ -23,7 +23,7 @@ class KafkaTaskQueue(BrokerBackedTaskQueueBase):
     """
     Kafka-backed TaskQueue implementation.
 
-    Composition root: ``intergrax.integrations.providers.kafka.create_kafka_integration``.
+    Composition root: ``intergrax.integrations.providers.message_bus.kafka.create_kafka_integration``.
     """
 
     def __init__(

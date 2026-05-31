@@ -32,6 +32,8 @@ class IntegrationCategory(str, Enum):
     OBSERVABILITY_BACKEND = "observability_backend"
     BROWSER_AUTOMATION = "browser_automation"
     CLOUD_PLATFORM = "cloud_platform"
+    SECRETS_STORE = "secrets_store"
+    GRAPH_STORE = "graph_store"
 
 
 @dataclass(frozen=True)
@@ -121,6 +123,8 @@ PROFILE_FIELD_BY_CATEGORY: dict[str, str] = {
     IntegrationCategory.OBSERVABILITY_BACKEND.value: "observability_backend",
     IntegrationCategory.BROWSER_AUTOMATION.value: "browser_automation",
     IntegrationCategory.CLOUD_PLATFORM.value: "cloud_platform",
+    IntegrationCategory.SECRETS_STORE.value: "secrets_store",
+    IntegrationCategory.GRAPH_STORE.value: "graph_store",
 }
 
 

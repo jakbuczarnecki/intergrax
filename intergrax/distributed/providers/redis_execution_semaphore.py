@@ -5,7 +5,7 @@
 """
 Redis-backed distributed execution semaphore.
 
-Composition root: ``intergrax.integrations.providers.redis.create_redis_execution_semaphore``.
+Composition root: ``intergrax.integrations.providers.key_value_cache.redis.create_redis_execution_semaphore``.
 """
 
 from __future__ import annotations

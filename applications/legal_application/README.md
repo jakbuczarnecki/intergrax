@@ -18,7 +18,9 @@ uv run python -m legal_application.host.main
 uv run uvicorn legal_application.host.main:app --host 0.0.0.0 --port 8000
 ```
 
-**MCP:** FastMCP at `/mcp` (default) — `list_agents`, `run_agent` (`LEGAL_INCLUDE_MCP`, `LEGAL_MCP_MOUNT_PATH`).
+**MCP:** FastMCP at `/mcp` (default) — `list_agents`, `run_agent`, `list_catalog_tools`, `describe_catalog_tool` (`LEGAL_INCLUDE_MCP`, `LEGAL_MCP_MOUNT_PATH`).
+
+**Tools:** env-driven catalog (`LEGAL_ENABLE_RAG`, `LEGAL_ENABLE_WEBSEARCH`, `LEGAL_USE_TOOL_DECISION`). Wiring: `host/tool_wiring.py`. See [`intergrax/tools/USAGE.md`](../../intergrax/tools/USAGE.md) and [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md#tool-catalog-optional).
 
 **Docker:**
 

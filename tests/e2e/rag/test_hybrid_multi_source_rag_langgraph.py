@@ -12,7 +12,7 @@ from intergrax.rag.document_loaders.bootstrap.default_loader import create_defau
 from intergrax.rag.document_splitters.bootstrap.default_chunking_engine import create_default_document_splitter
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_pipeline
 from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
-from intergrax.integrations.providers.chroma.bundle import create_chroma_vector_store
+from intergrax.integrations.providers.vector_store.chroma.bundle import create_chroma_vector_store
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 

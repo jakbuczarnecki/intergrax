@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from typing import Optional, Protocol, Type, runtime_checkable
 
 from pydantic import BaseModel
@@ -61,6 +62,10 @@ class RuntimeToolInvoker:
         self._executor = executor
         self._scope_policy = scope_policy
 
+    @property
+    def registry(self) -> ToolRegistry:
+        """Read-only access to the runtime tool catalog (Phase O.5)."""
+        return self._registry
 
     def invoke(
         self,
@@ -157,54 +162,123 @@ class RuntimeToolInvoker:
                 step_id=str(request.step_id),
                 side_effects=contract.side_effects,
                 input_payload=request.input.model_dump(),
+                risk_level=contract.risk_level.value,
+                injects_context=contract.injects_context,
+                category=contract.category,
+                timeout_ms=contract.timeout_ms,
             ),
         )
 
-        # 4) execute + normalize
-        try:
+        # 4) execute + normalize (timeout + runtime-managed retries)
+        return self._execute_with_policy(
+            state=state,
+            contract=contract,
+            request=request,
+        )
+
+    def _execute_with_policy(
+        self,
+        *,
+        state: "RuntimeState",
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> ToolExecutionResult[BaseModel]:
+        policy = contract.retry_policy
+        attempts = policy.max_attempts
+        last_exc: Optional[Exception] = None
+
+        for attempt in range(1, attempts + 1):
+            if attempt > 1 and policy.backoff_ms > 0:
+                time.sleep(policy.backoff_ms / 1000.0)
+
             start_perf = time.perf_counter()
-            
-            raw_out = self._executor.execute(request)
+            try:
+                raw_out = self._execute_once(contract, request)
+                out = self._validate_output(contract.output_schema, raw_out)
+                duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
 
-            # output enforcement (typed)
-            out = self._validate_output(contract.output_schema, raw_out)
+                state.trace_event(
+                    component=TraceComponent.TOOLS,
+                    step="tool_invocation_end",
+                    message="Tool invocation finished.",
+                    level=TraceLevel.INFO,
+                    payload=ToolInvocationEndDiagV1(
+                        tool_id=contract.tool_id,
+                        step_id=str(request.step_id),
+                        success=True,
+                        output_preview=self._preview_output(out),
+                        duration_ms=duration_ms,
+                    ),
+                )
+                return ToolExecutionResult.ok(out)
 
-            duration_ms = int((time.perf_counter() - start_perf) * 1000)
-            if duration_ms < 0:
-                duration_ms = 0
-            
-            state.trace_event(
-                component=TraceComponent.TOOLS,
-                step="tool_invocation_end",
-                message="Tool invocation finished.",
-                level=TraceLevel.INFO,
-                payload=ToolInvocationEndDiagV1(
-                    tool_id=contract.tool_id,
-                    step_id=str(request.step_id),
-                    success=True,
-                    output_preview=self._preview_output(out),
-                    duration_ms=duration_ms,
-                ),
-            )
-            return ToolExecutionResult.ok(out)
+            except FuturesTimeoutError:
+                duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
+                msg = f"Tool execution timed out after {contract.timeout_ms}ms"
+                state.trace_event(
+                    component=TraceComponent.TOOLS,
+                    step="tool_invocation_error",
+                    message="Tool invocation timed out.",
+                    level=TraceLevel.ERROR,
+                    payload=ToolInvocationErrorDiagV1(
+                        tool_id=contract.tool_id,
+                        step_id=str(request.step_id),
+                        error_code=RuntimeErrorCode.TIMEOUT,
+                        error_message=msg,
+                    ),
+                )
+                return ToolExecutionResult.fail(RuntimeErrorCode.TIMEOUT, msg)
 
-        except Exception as exc:
-            code = self._map_error(contract, exc)
-            msg = f"{type(exc).__name__}: {exc}"
+            except Exception as exc:
+                last_exc = exc
+                if attempt < attempts:
+                    state.trace_event(
+                        component=TraceComponent.TOOLS,
+                        step="tool_invocation_retry",
+                        message=f"Tool invocation failed (attempt {attempt}/{attempts}); retrying.",
+                        level=TraceLevel.WARNING,
+                        payload=ToolInvocationErrorDiagV1(
+                            tool_id=contract.tool_id,
+                            step_id=str(request.step_id),
+                            error_code=self._map_error(contract, exc),
+                            error_message=f"{type(exc).__name__}: {exc}",
+                        ),
+                    )
+                    continue
 
-            state.trace_event(
-                component=TraceComponent.TOOLS,
-                step="tool_invocation_error",
-                message="Tool invocation failed.",
-                level=TraceLevel.ERROR,
-                payload=ToolInvocationErrorDiagV1(
-                    tool_id=contract.tool_id,
-                    step_id=str(request.step_id),
-                    error_code=code,
-                    error_message=msg,
-                ),
-            )
-            return ToolExecutionResult.fail(code, msg)
+                code = self._map_error(contract, exc)
+                msg = f"{type(exc).__name__}: {exc}"
+                duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
+
+                state.trace_event(
+                    component=TraceComponent.TOOLS,
+                    step="tool_invocation_error",
+                    message="Tool invocation failed.",
+                    level=TraceLevel.ERROR,
+                    payload=ToolInvocationErrorDiagV1(
+                        tool_id=contract.tool_id,
+                        step_id=str(request.step_id),
+                        error_code=code,
+                        error_message=msg,
+                    ),
+                )
+                return ToolExecutionResult.fail(code, msg)
+
+        # Unreachable if attempts >= 1; satisfies type checker.
+        if last_exc is not None:
+            code = self._map_error(contract, last_exc)
+            return ToolExecutionResult.fail(code, str(last_exc))
+        return ToolExecutionResult.fail(RuntimeErrorCode.TOOL_ERROR, "Tool execution failed.")
+
+    def _execute_once(
+        self,
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> BaseModel:
+        timeout_s = contract.timeout_ms / 1000.0
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(self._executor.execute, request)
+            return future.result(timeout=timeout_s)
 
     @staticmethod
     def _map_error(contract: ToolContract, exc: Exception) -> RuntimeErrorCode:

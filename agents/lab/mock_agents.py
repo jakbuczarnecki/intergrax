@@ -38,6 +38,7 @@ from intergrax.runtime.nexus.session.session_manager import SessionManager
 
 class _StubLLM(LLMAdapter):
     def __init__(self, *, provider: str, prefix: str) -> None:
+        super().__init__()
         self.provider = provider
         self.model = f"{provider}-stub"
 
@@ -53,11 +54,15 @@ class _StubLLM(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> str:
-        for msg in reversed(messages):
-            content = getattr(msg, "content", None) or ""
-            if content:
-                return f"{self.provider}: {content[:120]}"
-        return f"{self.provider}: (empty)"
+        call = self.usage.begin_call(run_id=run_id)
+        try:
+            for msg in reversed(messages):
+                content = getattr(msg, "content", None) or ""
+                if content:
+                    return f"{self.provider}: {content[:120]}"
+            return f"{self.provider}: (empty)"
+        finally:
+            self.usage.end_call(call, input_tokens=0, output_tokens=1, success=True)
 
 
 class _MockPipeline(RuntimePipeline):

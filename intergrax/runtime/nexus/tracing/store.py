@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from intergrax.integrations.providers.sqlite import create_sqlite_trace_store
-from intergrax.integrations.providers.sqlite.paths import (
+from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_trace_store
+from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_TRACE_DB,
     ENV_TRACE_DB,
     resolve_trace_db_path,

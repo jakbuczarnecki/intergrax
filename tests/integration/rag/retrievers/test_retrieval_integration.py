@@ -27,7 +27,7 @@ from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.retriever_manager import RetrieverManager
 from intergrax.rag.retrievers.pipeline.retriever_pipeline import RetrieverPipeline
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
-from intergrax.integrations.providers.qdrant.bundle import create_qdrant_vector_store
+from intergrax.integrations.providers.vector_store.qdrant.bundle import create_qdrant_vector_store
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 

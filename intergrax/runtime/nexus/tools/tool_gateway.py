@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Optional, Sequence
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
 from intergrax.runtime.nexus.tools.tool_runtime import ToolInvocationPlan, ToolRuntime
+from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
 
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -106,15 +107,23 @@ class RuntimeToolGateway:
         payload = request.input
 
         if name in {NEXUS_CAPABILITY_PLAN, "capability_plan"}:
-            return ToolInvocationPlan(
+            tool_ids = payload.get("tool_ids")
+            if isinstance(tool_ids, (list, tuple)):
+                return ToolInvocationPlan.from_legacy(
+                    use_rag=bool(payload.get("use_rag", False)),
+                    use_websearch=bool(payload.get("use_websearch", False)),
+                    use_tools=bool(payload.get("use_tools", False)),
+                    tool_ids=[str(item) for item in tool_ids],
+                )
+            return ToolInvocationPlan.from_legacy(
                 use_rag=bool(payload.get("use_rag", False)),
                 use_websearch=bool(payload.get("use_websearch", False)),
                 use_tools=bool(payload.get("use_tools", False)),
             )
-        if name in {NEXUS_RAG, "rag"}:
-            return ToolInvocationPlan(use_rag=True)
-        if name in {NEXUS_WEBSEARCH, "websearch"}:
-            return ToolInvocationPlan(use_websearch=True)
+        if name in {NEXUS_RAG, "rag", RAG_RETRIEVE_TOOL_ID}:
+            return ToolInvocationPlan.from_tool_ids([RAG_RETRIEVE_TOOL_ID])
+        if name in {NEXUS_WEBSEARCH, "websearch", WEBSEARCH_QUERY_TOOL_ID}:
+            return ToolInvocationPlan.from_tool_ids([WEBSEARCH_QUERY_TOOL_ID])
         if name in {NEXUS_TOOLS, "tools"}:
             return ToolInvocationPlan(use_tools=True)
         return ToolInvocationPlan()

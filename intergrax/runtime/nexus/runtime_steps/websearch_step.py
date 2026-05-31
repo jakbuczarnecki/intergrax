@@ -10,8 +10,13 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.runtime_steps.tools import insert_context_before_last_user
+from intergrax.runtime.nexus.tools.catalog_context import (
+    build_websearch_query_input,
+    invoke_catalog_context_tool,
+)
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.runtime.nexus.tracing.websearch.websearch_summary import WebsearchSummaryDiagV1
+from intergrax.tools.unified.constants import WEBSEARCH_QUERY_TOOL_ID
 from intergrax.websearch.schemas.web_search_result import WebSearchResult
 
 
@@ -77,6 +82,32 @@ class WebsearchStep(RuntimeStep):
             return
 
         record_websearch_invocation_and_enforce(state)
+
+        if invoke_catalog_context_tool(
+            state,
+            WEBSEARCH_QUERY_TOOL_ID,
+            build_websearch_query_input(state),
+            step_id="websearch/catalog",
+        ):
+            state.trace_event(
+                component=TraceComponent.ENGINE,
+                step="websearch",
+                message="Web search executed via catalog tool websearch.query.",
+                level=TraceLevel.INFO,
+                payload=WebsearchSummaryDiagV1(
+                    enabled=True,
+                    configured=True,
+                    used_websearch=bool(state.used_websearch),
+                    results_count=0,
+                    context_blocks_count=1 if state.used_websearch else 0,
+                    no_evidence=not state.used_websearch,
+                    error_type=None,
+                    error_message=None,
+                    context_preview_chars=0,
+                    context_preview="",
+                ),
+            )
+            return
 
         web_results: list[WebSearchResult] = []
         context_messages: list[ChatMessage] = []

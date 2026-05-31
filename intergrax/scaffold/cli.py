@@ -12,6 +12,8 @@ from pathlib import Path
 from intergrax.scaffold.new_agent import create_agent, _slug as agent_slug, _class_name
 from intergrax.scaffold.new_application import register_parser as register_application_parser
 from intergrax.scaffold.new_application import run_new_application
+from intergrax.scaffold.new_stack import register_parser as register_new_stack_parser
+from intergrax.scaffold.new_stack import run_new_stack
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -39,6 +41,7 @@ def build_parser() -> argparse.ArgumentParser:
     new_agent.add_argument("--force", action="store_true", help="Overwrite if exists")
 
     register_application_parser(sub)
+    register_new_stack_parser(sub)
     return parser
 
 
@@ -67,6 +70,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "new-application":
         return run_new_application(args)
+
+    if args.command == "new-stack":
+        return run_new_stack(args)
 
     parser.error(f"Unknown command: {args.command}")
     return 2

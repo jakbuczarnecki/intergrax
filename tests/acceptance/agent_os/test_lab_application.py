@@ -46,6 +46,69 @@ def test_lab_application_runs_echo_agent(lab_client: TestClient):
     assert body["agent_id"] == "echo"
 
 
+def test_lab_application_runs_echo_with_trace_observability(lab_client: TestClient):
+    run_response = lab_client.post(
+        "/v1/lab/run",
+        json={
+            "tenant_id": "lab",
+            "user_id": "tester",
+            "message": "echo observability proof",
+            "capability": "echo.basic",
+        },
+    )
+    assert run_response.status_code == 200
+    run_body = run_response.json()
+    assert run_body["state"] == "completed"
+    assert run_body["agent_id"] == "echo"
+
+    task_id = run_body["task_id"]
+    tenant = "lab"
+
+    trace_response = lab_client.get(
+        f"/debug/tasks/{task_id}/trace",
+        params={"tenant": tenant, "include_runtime": "true"},
+    )
+    assert trace_response.status_code == 200
+    trace = trace_response.json()
+    assert len(trace["trace_events"]) > 0
+    assert trace["runtime_events"]
+
+    metrics_response = lab_client.get(
+        f"/debug/tasks/{task_id}/metrics",
+        params={"tenant": tenant},
+    )
+    assert metrics_response.status_code == 200
+    metrics = metrics_response.json()
+    assert metrics["event_count"] > 0
+    assert metrics["duration_ms"] >= 0
+
+
+def test_lab_application_runs_research_mock_with_graph_trace(lab_client: TestClient):
+    run_response = lab_client.post(
+        "/v1/lab/run",
+        json={
+            "tenant_id": "lab",
+            "user_id": "tester",
+            "message": "research mock graph path",
+            "capability": "lab.research_mock",
+        },
+    )
+    assert run_response.status_code == 200
+    run_body = run_response.json()
+    assert run_body["state"] == "completed"
+    assert run_body["agent_id"] == "research_mock"
+
+    task_id = run_body["task_id"]
+    tenant = "lab"
+    trace_response = lab_client.get(
+        f"/debug/tasks/{task_id}/trace",
+        params={"tenant": tenant},
+    )
+    assert trace_response.status_code == 200
+    trace = trace_response.json()
+    assert len(trace["trace_events"]) > 0
+
+
 def test_lab_application_runs_signoff_probe_with_trace(lab_client: TestClient):
     run_response = lab_client.post(
         "/v1/lab/run",

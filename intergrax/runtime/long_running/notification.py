@@ -41,7 +41,7 @@ def create_slack_notification_channel(
     **config_overrides: object,
 ) -> NotificationAdapter:
     """Re-export — composition root is ``integrations.providers.slack``."""
-    from intergrax.integrations.providers.slack.bundle import (
+    from intergrax.integrations.providers.notification_channel.slack.bundle import (
         create_slack_notification_channel as _create,
     )
 
@@ -55,7 +55,7 @@ def create_teams_notification_channel(
     **config_overrides: object,
 ) -> NotificationAdapter:
     """Re-export — composition root is ``integrations.providers.teams``."""
-    from intergrax.integrations.providers.teams.bundle import (
+    from intergrax.integrations.providers.notification_channel.teams.bundle import (
         create_teams_notification_channel as _create,
     )
 
@@ -69,7 +69,7 @@ def create_webhook_notification_channel(
     **config_overrides: object,
 ) -> NotificationAdapter:
     """Re-export — composition root is ``integrations.providers.webhook``."""
-    from intergrax.integrations.providers.webhook.bundle import (
+    from intergrax.integrations.providers.notification_channel.webhook.bundle import (
         create_webhook_notification_channel as _create,
     )
 

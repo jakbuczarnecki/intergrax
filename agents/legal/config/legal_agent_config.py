@@ -31,6 +31,8 @@ from intergrax.runtime.governance.service import GovernanceService
 from intergrax.runtime.nexus.budget.budget_models import BudgetPolicy, RunBudget
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.tools.core.provider import ToolProvider
+from intergrax.tools.registry.profile import ToolProfile
+from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.tools.tools_agent import ToolsAgent
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
@@ -93,6 +95,14 @@ class LegalAgentConfig(BaseModel):
     tools_agent: Optional[ToolsAgent] = None
     tools_mode: ToolChoiceMode = "off"
     tool_providers: List[ToolProvider] = Field(default_factory=list)
+    tool_profile: Optional[ToolProfile] = Field(
+        default=None,
+        description="Catalog tools enabled for Nexus RuntimeConfig (Phase O.5+).",
+    )
+    tool_wiring_context: Optional[ToolWiringContext] = Field(
+        default=None,
+        description="Dependencies for catalog tool handlers (integrations, RAG managers).",
+    )
 
     use_legal_tool_decision: bool = Field(
         default=False,

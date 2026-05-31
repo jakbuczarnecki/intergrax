@@ -16,7 +16,11 @@ class ToolInvocationStartDiagV1(DiagnosticPayload):
     tool_id: str
     step_id: str
     side_effects: bool
-    input_payload: Dict[str, Any]    
+    input_payload: Dict[str, Any]
+    risk_level: str = "low"
+    injects_context: bool = False
+    category: str = ""
+    timeout_ms: int = 30_000
 
     def redact(self) -> ToolInvocationStartDiagV1:
         """
@@ -31,6 +35,10 @@ class ToolInvocationStartDiagV1(DiagnosticPayload):
             step_id=self.step_id,
             side_effects=self.side_effects,
             input_payload={"_redacted": True},
+            risk_level=self.risk_level,
+            injects_context=self.injects_context,
+            category=self.category,
+            timeout_ms=self.timeout_ms,
         )
 
     @classmethod
@@ -42,7 +50,11 @@ class ToolInvocationStartDiagV1(DiagnosticPayload):
             "tool_id": self.tool_id,
             "step_id": self.step_id,
             "side_effects": self.side_effects,
-            "input_payload": dict(self.input_payload),            
+            "input_payload": dict(self.input_payload),
+            "risk_level": self.risk_level,
+            "injects_context": self.injects_context,
+            "category": self.category,
+            "timeout_ms": self.timeout_ms,
         }
 
 

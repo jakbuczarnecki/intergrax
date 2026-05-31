@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.integrations.providers.log.adapter import LogNotificationAdapter
+from intergrax.integrations.providers.notification_channel.log.adapter import LogNotificationAdapter
 from intergrax.runtime.notifications.factory import create_notification_adapter, resolve_notification_settings
 
 pytestmark = pytest.mark.unit

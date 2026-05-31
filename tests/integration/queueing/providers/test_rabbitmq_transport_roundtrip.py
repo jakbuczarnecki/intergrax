@@ -11,7 +11,7 @@ from typing import Optional
 import pytest
 
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
-from intergrax.integrations.providers.rabbitmq.bundle import create_rabbitmq_integration
+from intergrax.integrations.providers.message_bus.rabbitmq.bundle import create_rabbitmq_integration
 
 pytestmark = pytest.mark.integration
 

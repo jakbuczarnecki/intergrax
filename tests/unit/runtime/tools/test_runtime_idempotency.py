@@ -35,7 +35,7 @@ class DummyProvider(ToolProvider):
     def __init__(self, handler):
         self._handler = handler
 
-    def register_tools(self, registry):
+    def register_tools(self, registry, ctx=None):
         contract = ToolContract(
             tool_id="double",
             name="double",

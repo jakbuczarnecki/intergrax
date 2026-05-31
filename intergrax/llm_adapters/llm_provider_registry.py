@@ -1,19 +1,93 @@
 # © Artur Czarnecki. All rights reserved.
 # Integrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from typing import Any, Callable, Dict, Union
 
-from intergrax.llm_adapters.providers.aws_bedrock_adapter import BedrockChatAdapter
-from intergrax.llm_adapters.providers.azure_openai_adapter import AzureOpenAIChatAdapter
-from intergrax.llm_adapters.providers.claude_adapter import ClaudeChatAdapter
-from intergrax.llm_adapters.providers.gemini_adapter import GeminiChatAdapter
+import importlib
+from typing import Any, Callable, Dict, Tuple, Union
+
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.providers.mistral_adapter import MistralChatAdapter
-from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
-from intergrax.llm_adapters.providers.openai_responses_adapter import OpenAIChatResponsesAdapter
+
+_BUILTIN_ADAPTERS: Dict[str, Tuple[str, str]] = {
+    LLMProvider.OPENAI.value: (
+        "intergrax.llm_adapters.providers.openai_responses_adapter",
+        "OpenAIChatResponsesAdapter",
+    ),
+    LLMProvider.GEMINI.value: (
+        "intergrax.llm_adapters.providers.gemini_adapter",
+        "GeminiChatAdapter",
+    ),
+    LLMProvider.VERTEX_GEMINI.value: (
+        "intergrax.llm_adapters.providers.vertex_gemini_adapter",
+        "VertexGeminiChatAdapter",
+    ),
+    LLMProvider.OLLAMA.value: (
+        "intergrax.llm_adapters.providers.ollama_adapter",
+        "LangChainOllamaAdapter",
+    ),
+    LLMProvider.CLAUDE.value: (
+        "intergrax.llm_adapters.providers.claude_adapter",
+        "ClaudeChatAdapter",
+    ),
+    LLMProvider.MISTRAL.value: (
+        "intergrax.llm_adapters.providers.mistral_adapter",
+        "MistralChatAdapter",
+    ),
+    LLMProvider.AZURE_OPENAI.value: (
+        "intergrax.llm_adapters.providers.azure_openai_adapter",
+        "AzureOpenAIChatAdapter",
+    ),
+    LLMProvider.AWS_BEDROCK.value: (
+        "intergrax.llm_adapters.providers.aws_bedrock_adapter",
+        "BedrockChatAdapter",
+    ),
+    LLMProvider.GROQ.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "GroqChatAdapter",
+    ),
+    LLMProvider.VLLM.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "VllmChatAdapter",
+    ),
+    LLMProvider.TOGETHER.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "TogetherChatAdapter",
+    ),
+    LLMProvider.FIREWORKS.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "FireworksChatAdapter",
+    ),
+    LLMProvider.OPENROUTER.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "OpenRouterChatAdapter",
+    ),
+    LLMProvider.DEEPSEEK.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "DeepSeekChatAdapter",
+    ),
+    LLMProvider.XAI.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "XaiChatAdapter",
+    ),
+    LLMProvider.LLAMA_CPP.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "LlamaCppChatAdapter",
+    ),
+    LLMProvider.COHERE.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "CohereChatAdapter",
+    ),
+    LLMProvider.COHERE_NATIVE.value: (
+        "intergrax.llm_adapters.providers.cohere_native_adapter",
+        "CohereNativeChatAdapter",
+    ),
+    LLMProvider.AZURE_AI_INFERENCE.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "AzureAiInferenceChatAdapter",
+    ),
+}
+
 
 class LLMAdapterRegistry:
     _factories: Dict[str, Callable[..., LLMAdapter]] = {}
@@ -33,6 +107,22 @@ class LLMAdapterRegistry:
         return key.lower()
 
     @classmethod
+    def _ensure_builtin(cls, key: str) -> None:
+        if key in cls._factories:
+            return
+        spec = _BUILTIN_ADAPTERS.get(key)
+        if spec is None:
+            return
+        module_path, class_name = spec
+        module = importlib.import_module(module_path)
+        adapter_cls = getattr(module, class_name)
+
+        def factory(**kwargs: Any) -> LLMAdapter:
+            return adapter_cls(**kwargs)
+
+        cls._factories[key] = factory
+
+    @classmethod
     def register(
         cls,
         provider: Union[str, LLMProvider],
@@ -48,6 +138,7 @@ class LLMAdapterRegistry:
     @classmethod
     def create(cls, provider: Union[str, LLMProvider], **kwargs) -> LLMAdapter:
         key = cls._normalize_provider(provider)
+        cls._ensure_builtin(key)
 
         if key not in cls._factories:
             raise ValueError(f"LLM adapter not registered for provider='{key}'")
@@ -63,12 +154,7 @@ class LLMAdapterRegistry:
         adapter.validate()
         return adapter
 
-
-# Default adapter registrations
-LLMAdapterRegistry.register(LLMProvider.OPENAI, lambda **kw: OpenAIChatResponsesAdapter(**kw))
-LLMAdapterRegistry.register(LLMProvider.GEMINI, lambda **kw: GeminiChatAdapter(**kw))
-LLMAdapterRegistry.register(LLMProvider.OLLAMA, lambda **kw: LangChainOllamaAdapter(**kw))
-LLMAdapterRegistry.register(LLMProvider.CLAUDE, lambda **kw: ClaudeChatAdapter(**kw))
-LLMAdapterRegistry.register(LLMProvider.MISTRAL, lambda **kw: MistralChatAdapter(**kw))
-LLMAdapterRegistry.register(LLMProvider.AZURE_OPENAI, lambda **kw: AzureOpenAIChatAdapter(**kw))
-LLMAdapterRegistry.register(LLMProvider.AWS_BEDROCK, lambda **kw: BedrockChatAdapter(**kw))
+    @classmethod
+    def registered_providers(cls) -> list[str]:
+        keys = set(cls._factories.keys()) | set(_BUILTIN_ADAPTERS.keys())
+        return sorted(keys)

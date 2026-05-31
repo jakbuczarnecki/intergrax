@@ -1,0 +1,23 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+from intergrax.tools.core.handler import ServiceToolHandler
+from intergrax.tools.providers.observability.contracts import (
+    LogsSearchInput,
+    LogsSearchOutput,
+    MetricsQueryInstantInput,
+    MetricsQueryInstantOutput,
+)
+from intergrax.tools.providers.observability.service import logs_search, metrics_query_instant
+
+
+class MetricsQueryInstantHandler(
+    ServiceToolHandler[MetricsQueryInstantInput, MetricsQueryInstantOutput]
+):
+    _service = metrics_query_instant
+
+
+class LogsSearchHandler(ServiceToolHandler[LogsSearchInput, LogsSearchOutput]):
+    _service = logs_search
