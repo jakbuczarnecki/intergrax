@@ -19,7 +19,7 @@ from intergrax.integrations.contracts.collaboration_suite import (
 )
 from intergrax.integrations.contracts.document_store import DocumentQueryResult, DocumentRecord
 from intergrax.integrations.contracts.issue_tracker import IssueComment, IssueRecord, IssueSearchResult
-from intergrax.integrations.contracts.observability_backend import MetricPoint, MetricQueryResult, MetricSeries
+from intergrax.integrations.contracts.observability_backend import MetricPoint, MetricQueryResult, MetricSeries, TraceQueryResult
 from intergrax.integrations.contracts.wiki_knowledge import WikiPageRecord, WikiSearchResult
 from intergrax.websearch.schemas.search_hit import SearchHit
 
@@ -215,6 +215,13 @@ class OtelObservabilityBackend:
             if isinstance(row, dict)
         ]
         return MetricQueryResult(result_type="matrix", series=[MetricSeries(metric={}, points=points)])
+
+
+    def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult:
+        _ = limit, name
+        from intergrax.integrations.contracts.observability_backend import TraceQueryResult
+
+        return TraceQueryResult()
 
 
 class RestIssueTracker:

@@ -8,10 +8,12 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 
 | Document | Purpose |
 |----------|---------|
+| Phase **M-RAG** | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) — RAG engine phases M-RAG.1–M-RAG.17 |
+| RAG stack canon | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) — Tier-0 retrieval architecture |
 | [intergrax/tools/USAGE.md](../intergrax/tools/USAGE.md) | **Operational guide** — wire tools in Tier-3 apps and invoke from agents |
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.6–§7.1.7, §22 | Architecture canon — Tool Library, unified tool model |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O | Phase status, backlog, delivery workflow |
-| [INTEGRATIONS.md](INTEGRATIONS.md) | **73** backend adapters tools compose (not called directly by agents) |
+| [INTEGRATIONS.md](INTEGRATIONS.md) | **99** backend adapters tools compose (not called directly by agents) |
 | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) Appendix E | How agents declare `allowed_tools` vs applications wire backends |
 
 ---
@@ -116,12 +118,18 @@ Status legend: **Done** = registered handler in catalog.
 
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
-| `rag.retrieve` | **Done** | Retrieve documents from vector index for prompt context | `vectorstore_manager` + `embedding_manager` via `ToolWiringContext` |
+| `rag.retrieve` | **Done** | Hybrid retrieval + optional rerank via `RetrievalService` / `RagProfile` | `vectorstore_manager`, `embedding_manager`, optional `retrieval_service` |
+| `rag.ingest_document` | **Done** | `IngestPipeline`: parse (catalog/handler registry) → chunk (strategy id) → embed → index | Same managers + optional `contextual_enricher` |
 | `websearch.query` | **Done** | Run web search and return normalized snippets | `websearch_executor` or `SearchProvider` |
+| `websearch.read_url` | **Done** | Fetch a URL and return extracted title + plain text | `websearch` page fetch pipeline |
+| `websearch.fetch_batch` | **Done** | Fetch multiple URLs and return combined context | `websearch` page fetch pipeline |
+| `rag.list_collections` | **Done** | List vector index collection names | `vectorstore_manager` |
 
 **Catalog providers:** Phase O complete — all first-party tools registered; applications wire via `host/tool_wiring.py`.
 
 **Ready-to-use hosts:** `lab_application`, `legal_application`, `research_application`, `poc_template_application` — see [`intergrax/tools/USAGE.md`](../intergrax/tools/USAGE.md).
+
+**Product env flags:** `LEGAL_ENABLE_RAG` / `LEGAL_ENABLE_RAG_INGEST`, `RESEARCH_ENABLE_RAG` / `RESEARCH_ENABLE_RAG_INGEST` — wire vectorstore + embedding managers in `host/tool_wiring.py`.
 
 ### Execution & sandbox
 
@@ -143,6 +151,7 @@ Status legend: **Done** = registered handler in catalog.
 |---------|--------|-------------|----------|
 | `confluence.get_page` | **Done** | Fetch wiki page content | `WikiKnowledge` |
 | `confluence.search_pages` | **Done** | Search internal documentation | `WikiKnowledge` |
+| `confluence.search` | **Done** | Alias of `confluence.search_pages` (shorter tool_id for LLM catalogs) | `WikiKnowledge` |
 
 ### Notifications (side-effect tools)
 
@@ -154,8 +163,13 @@ Status legend: **Done** = registered handler in catalog.
 
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
-| `metrics.query_instant` | **Done** | Instant metrics query | `ObservabilityBackend` (`prometheus`) |
-| `logs.search` | **Done** | Search log index | `ObservabilityBackend` (`elasticsearch`) |
+| `metrics.query_instant` | observability | **Done** | Instant metrics query | `ObservabilityBackend` |
+| `logs.search` | observability | **Done** | Search log index | `ObservabilityBackend` (`elasticsearch`, `opensearch`) |
+| `observability.query_traces` | observability | **Done** | Query LLM/agent traces | `ObservabilityBackend` (`langfuse`, `langsmith`, …) |
+| `errors.capture` | observability | **Done** | Report error events | `ObservabilityBackend` (`sentry`) |
+| `braintrust.log_eval` | observability | **Done** | Log eval score | `ObservabilityBackend` (`braintrust`) |
+| `gitlab.create_issue` | issue_tracker | **Done** | Create GitLab issue | `IssueTracker` (`gitlab`) |
+| `pagerduty.trigger_incident` | notification | **Done** | Trigger on-call incident | `NotificationChannel` (`pagerduty`) |
 
 ---
 
@@ -214,15 +228,25 @@ Alphabetical reference — all first-party catalog tools (Phase O complete).
 |---------|----------|--------|----------------------|
 | `confluence.get_page` | wiki | **Done** | `confluence` | [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `confluence.search_pages` | wiki | **Done** | `confluence` | [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
+| `confluence.search` | wiki | **Done** | `confluence` (alias) | [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `jira.add_comment` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
 | `jira.get_issue` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
 | `jira.search_tasks` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
+| `braintrust.log_eval` | observability | **Done** | `braintrust` | [USAGE](../intergrax/tools/providers/braintrust/USAGE.md) |
+| `errors.capture` | observability | **Done** | `sentry` | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
+| `gitlab.create_issue` | issue_tracker | **Done** | `gitlab` | [USAGE](../intergrax/tools/providers/gitlab/USAGE.md) |
+| `pagerduty.trigger_incident` | notification | **Done** | `pagerduty` | [USAGE](../intergrax/tools/providers/pagerduty/USAGE.md) |
 | `logs.search` | observability | **Done** | `elasticsearch` | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `metrics.query_instant` | observability | **Done** | `prometheus` | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
+| `observability.query_traces` | observability | **Done** | `langfuse` / observability slug | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `notify.send` | notification | **Done** | `notification_channel` slug | [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
 | `rag.retrieve` | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.ingest_document` | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.list_collections` | retrieval | **Done** | `vectorstore_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `sandbox.exec` | sandbox | **Done** | `sandbox_session` | [USAGE](../intergrax/tools/providers/sandbox/USAGE.md) |
 | `websearch.query` | retrieval | **Done** | `websearch_executor`, `search_provider` | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.read_url` | retrieval | **Done** | page fetch + text extraction | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.fetch_batch` | retrieval | **Done** | batch page fetch | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
 
 ---
 

@@ -16,6 +16,7 @@ The `docs/` folder holds the canonical platform documentation.
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — all implemented providers, contracts, wiring, usage links |
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — LLM-facing tools, engine status, unified tool model, planned backlog |
 | [**LLM_ADAPTERS.md**](LLM_ADAPTERS.md) | **LLM adapter catalog** — providers, streaming, tools, env vars, registry |
+| [**LLM_OBSERVABILITY.md**](LLM_OBSERVABILITY.md) | **LLM metrics** — Prometheus scrape, Pushgateway, PromQL, governance signals |
 | **This file** | Navigation and update rules |
 
 ```text
@@ -25,6 +26,7 @@ Agent workflow (how)       →  AGENT_CREATION_GUIDE.md
 Integrations (catalog)     →  INTEGRATIONS.md
 Tools (catalog)            →  TOOLS.md
 LLM adapters (catalog)     →  LLM_ADAPTERS.md
+LLM observability          →  LLM_OBSERVABILITY.md
 ```
 
 ---
@@ -39,6 +41,7 @@ LLM adapters (catalog)     →  LLM_ADAPTERS.md
 | Review technical debt before Tier-1 work | Implementation plan **Appendix B** |
 | Wire external systems (DB, Slack, Jira, …) | [INTEGRATIONS.md](INTEGRATIONS.md), then architecture canon §7.1 |
 | Wire agent-callable tools (RAG, web search, Jira, …) | [TOOLS.md](TOOLS.md), then architecture canon §7.1.6–§7.1.7 |
+| RAG engine (RetrievalService, RagProfile, M-RAG plan) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase M-RAG · [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) RAG stack |
 | Configure LLM providers (OpenAI, Claude, Bedrock, …) | [LLM_ADAPTERS.md](LLM_ADAPTERS.md), then architecture canon §5.2.2 |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
 | Deep-dive UAEP / hooks / governance | Architecture canon §42 |
@@ -50,13 +53,13 @@ LLM adapters (catalog)     →  LLM_ADAPTERS.md
 | Phase | Status |
 |-------|--------|
 | Phase L — Agent OS certification | **Done** |
-| Phase M — Integration Library (Tier-0 catalog) | **Done** (beta) — **73** providers with English `USAGE.md`; see [INTEGRATIONS.md](INTEGRATIONS.md) |
+| Phase M — Integration Library (Tier-0 catalog) | **Done** (beta) — **99** providers with English `USAGE.md`; see [INTEGRATIONS.md](INTEGRATIONS.md) |
 | Phase O — Tool Library & unified tool model | **Done** — 11 catalog tools; see [TOOLS.md](TOOLS.md) |
-| Phase M-LLM — LLM adapter layer | **Done** (beta) — 19 providers, metrics, conformance; see [LLM_ADAPTERS.md](LLM_ADAPTERS.md) |
+| Phase M-LLM — LLM adapter layer | **Done** (beta) — 19 providers, resilience, tenant metrics, PR guard; see [LLM_ADAPTERS.md](LLM_ADAPTERS.md) |
 | Phase N — Application environment scaffold | **Done** (N.0–N.10) — see implementation plan Phase N |
 | Phase K — Problem Radar / Vendor Discovery | **Ready to open** (product decision) |
 
-Gate: `uv run pytest -m gate -q` — **363 passed** (full gate); CI workflow runs **335** of them (~20s pytest; see `.github/workflows/unit-tests.yml`)
+Gate: `uv run pytest -m gate -q` — **397 passed** (full gate; CI paths match — see `.github/workflows/unit-tests.yml`)
 
 ---
 

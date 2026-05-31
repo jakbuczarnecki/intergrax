@@ -14,7 +14,7 @@ from intergrax.integrations._shared.vector_store_bridge import VectorStoreBridge
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation, PageContent
 from intergrax.integrations.contracts.graph_store import GraphNodeRecord, GraphQueryResult, GraphStore
-from intergrax.integrations.contracts.observability_backend import MetricPoint, MetricQueryResult, MetricSeries
+from intergrax.integrations.contracts.observability_backend import MetricPoint, MetricQueryResult, MetricSeries, TraceQueryResult, TraceRecord
 from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.integrations.contracts.search_provider import SearchProvider
 from intergrax.integrations.contracts.vector_store import VectorStore
@@ -121,6 +121,12 @@ class HttpObservabilityBackend:
             series=[MetricSeries(metric={"provider": self._provider}, points=points)],
         )
 
+    def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult:
+        query_fn = getattr(self._client, "query_traces", None)
+        if query_fn is None:
+            return TraceQueryResult()
+        return query_fn(limit=limit, name=name)
+
 
 class SentryObservabilityBackend:
     """
@@ -155,6 +161,10 @@ class SentryObservabilityBackend:
             result_type="matrix",
             series=[MetricSeries(metric={"provider": "sentry"}, points=points)],
         )
+
+    def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult:
+        _ = limit, name
+        return TraceQueryResult()
 
     def capture_exception(self, exc: BaseException, *, tags: Optional[dict[str, str]] = None) -> str:
         return str(self._client.capture_exception(exc, tags=tags or {}))

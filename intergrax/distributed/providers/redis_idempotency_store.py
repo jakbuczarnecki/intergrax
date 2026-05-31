@@ -12,10 +12,9 @@ from __future__ import annotations
 
 import base64
 import pickle
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel
-from redis import Redis
 
 from intergrax.contracts.idempotency_store import (
     IdempotencyStore,
@@ -40,8 +39,8 @@ class RedisIdempotencyStore(IdempotencyStore):
     - optional lease-based crash recovery
     """
 
-    def __init__(self, redis_client: Redis) -> None:
-        self._redis: Redis = redis_client
+    def __init__(self, redis_client: Any) -> None:
+        self._redis: Any = redis_client
 
         # Lua script: record_started with optional lease
         self._record_started_script = self._redis.register_script(

@@ -19,7 +19,7 @@ from intergrax.integrations.providers.search_provider.google_cse.opens import (
     open_google_cse_search_provider,
     open_google_cse_web_search_provider,
 )
-from intergrax.websearch.providers.google_cse_provider import GoogleCSEProvider
+from intergrax.integrations.providers.search_provider.google_cse.web_client import GoogleCSEProvider
 
 
 @dataclass(frozen=True)

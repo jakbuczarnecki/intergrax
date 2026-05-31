@@ -70,6 +70,27 @@ class HybridRetriever(BaseRetriever):
         top_k = int(query.top_k)
         prefetch_k = max(top_k, top_k * self._prefetch_factor)
 
+        if hasattr(self._vs, "query_hybrid") and query.query_text:
+            hits = self._vs.query_hybrid(
+                q_vec,
+                query.query_text,
+                top_k=prefetch_k,
+                metadata_filter=query.metadata_filter,
+                include_embeddings=query.include_embeddings,
+                alpha=self._alpha,
+            )
+            return [
+                RetrieverCandidate(
+                    id=hit.id,
+                    content=hit.content,
+                    metadata=hit.metadata,
+                    score=float(hit.similarity_score),
+                    embedding=hit.embedding,
+                    rank=hit.rank,
+                )
+                for hit in hits[:top_k]
+            ]
+
         hits = self._vs.query(
             query_embedding=q_vec,
             top_k=prefetch_k,
@@ -78,16 +99,9 @@ class HybridRetriever(BaseRetriever):
         )
 
         candidates: List[RetrieverCandidate] = []
-
         for hit in hits:
-
             lexical = self._lexical_score(query_tokens, hit.content)
-
-            hybrid_score = (
-                self._alpha * hit.similarity_score
-                + (1 - self._alpha) * lexical
-            )
-
+            hybrid_score = self._alpha * hit.similarity_score + (1 - self._alpha) * lexical
             candidates.append(
                 RetrieverCandidate(
                     id=hit.id,
@@ -99,9 +113,5 @@ class HybridRetriever(BaseRetriever):
                 )
             )
 
-        candidates.sort(
-            key=lambda x: x.score,
-            reverse=True,
-        )
-
+        candidates.sort(key=lambda x: x.score, reverse=True)
         return candidates[:top_k]

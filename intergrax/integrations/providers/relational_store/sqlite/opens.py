@@ -67,3 +67,9 @@ def open_session_storage_at(path: Path) -> SQLiteSessionStorage:
 
 def open_organization_profile_store_at(path: Path) -> SQLiteOrganizationProfileStore:
     return SQLiteOrganizationProfileStore(db_path=str(_ensure_parent(path)))
+
+
+def open_delivery_ledger_at(path: Path):
+    from intergrax.runtime.notifications.deliveries.sqlite_delivery_ledger import SQLiteDeliveryLedger
+
+    return SQLiteDeliveryLedger(db_path=_ensure_parent(path))

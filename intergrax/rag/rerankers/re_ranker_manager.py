@@ -50,9 +50,11 @@ class ReRankerManager(BaseRerankerManager):
         query: Optional[str],
         candidates: List[RerankerCandidate],
         limit: Optional[int] = None,
+        reranker_id: Optional[str] = None,
     ) -> List[RerankerResult]:
 
         return self._engine.rerank(
+            reranker_name=reranker_id,
             query=query,
             candidates=candidates,
             limit=limit,

@@ -12,6 +12,7 @@ from intergrax.tools.registry.profile import ToolProfile
 def wire_lab_tools(
     *,
     integration_profile: IntegrationProfile | None = None,
+    harness: bool = False,
 ) -> ApplicationToolWiring:
     """
     Laboratory tool wiring — context retrieval tools enabled by default.
@@ -19,9 +20,18 @@ def wire_lab_tools(
     Pass ``integration_profile`` from ``wire_lab_integrations()`` when issue/wiki
     tools should resolve integration contracts automatically.
     """
-    profile = ToolProfile(
-        enabled=["rag.retrieve", "websearch.query", "sandbox.exec"],
-    )
+    enabled = ["rag.retrieve", "websearch.query", "sandbox.exec"]
+    if harness:
+        enabled.extend(
+            [
+                "errors.capture",
+                "observability.query_traces",
+                "pagerduty.trigger_incident",
+                "gitlab.create_issue",
+                "braintrust.log_eval",
+            ]
+        )
+    profile = ToolProfile(enabled=enabled)
     return build_application_tool_wiring(
         profile,
         integration_profile=integration_profile,

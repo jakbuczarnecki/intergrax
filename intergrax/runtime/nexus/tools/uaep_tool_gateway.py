@@ -11,6 +11,7 @@ from typing import Optional, Sequence
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
+from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.tools.tool_gateway import RuntimeToolGateway
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_TOOL_NAME
 
@@ -29,10 +30,12 @@ class BoundToolGateway:
         *,
         allowed_tools: Optional[Sequence[str]] = None,
         trace_step: str = "UAEPToolGateway",
+        middleware: Optional[MiddlewarePipeline] = None,
     ) -> None:
         self._exec_ctx = exec_ctx
         self._allowed_tools = allowed_tools
         self._trace_step = trace_step
+        self._middleware = middleware
 
     async def invoke(self, request: ToolRequest) -> ToolResponse:
         if request.tool_name == SANDBOX_TOOL_NAME:
@@ -49,6 +52,7 @@ class BoundToolGateway:
             state,
             allowed_tools=self._allowed_tools,
             trace_step=self._trace_step,
+            middleware=self._middleware,
         )
         return await gateway.invoke(request)
 

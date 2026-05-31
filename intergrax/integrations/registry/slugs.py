@@ -65,6 +65,7 @@ class IntegrationSlug(StrEnum):
     INMEMORY = "inmemory"
     WEAVIATE = "weaviate"
     MILVUS = "milvus"
+    VESPA = "vespa"
 
     # search_provider
     GOOGLE_CSE = "google_cse"
@@ -84,6 +85,8 @@ class IntegrationSlug(StrEnum):
     LOG = "log"
     DISCORD = "discord"
     TWILIO = "twilio"
+    PAGERDUTY = "pagerduty"
+    OPSGENIE = "opsgenie"
 
     # secrets_store
     VAULT = "vault"
@@ -104,6 +107,7 @@ class IntegrationSlug(StrEnum):
     AZURE_DEVOPS = "azure_devops"
     GITHUB = "github"
     LINEAR = "linear"
+    GITLAB = "gitlab"
 
     # wiki_knowledge
     CONFLUENCE = "confluence"
@@ -118,11 +122,34 @@ class IntegrationSlug(StrEnum):
     DATADOG = "datadog"
     CLICKHOUSE = "clickhouse"
     SENTRY = "sentry"
+    LANGSMITH = "langsmith"
+    HELICONE = "helicone"
+    POSTHOG = "posthog"
+    BRAINTRUST = "braintrust"
+    SIGNOZ = "signoz"
+    HONEYCOMB = "honeycomb"
+    ARIZE = "arize"
+    PHOENIX = "phoenix"
+    WANDB = "wandb"
+    OPENSEARCH = "opensearch"
 
     # browser_automation
     PLAYWRIGHT = "playwright"
     SELENIUM = "selenium"
     FIRECRAWL = "firecrawl"
+
+    # document_parser
+    DOCLING = "docling"
+    PYMUPDF = "pymupdf"
+    UNSTRUCTURED = "unstructured"
+    PYTHON_DOCX = "python_docx"
+    OPENPYXL = "openpyxl"
+    WHISPER = "whisper"
+    YT_DLP = "yt_dlp"
+
+    # rerank_provider
+    COHERE_RERANK = "cohere_rerank"
+    JINA_RERANK = "jina_rerank"
 
     # cloud_platform
     AWS = "aws"
@@ -192,6 +219,7 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.INMEMORY,
             IntegrationSlug.WEAVIATE,
             IntegrationSlug.MILVUS,
+            IntegrationSlug.VESPA,
         }
     ),
     "search_provider": frozenset(
@@ -215,6 +243,8 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.LOG,
             IntegrationSlug.DISCORD,
             IntegrationSlug.TWILIO,
+            IntegrationSlug.PAGERDUTY,
+            IntegrationSlug.OPSGENIE,
         }
     ),
     "secrets_store": frozenset({IntegrationSlug.VAULT}),
@@ -239,6 +269,7 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.AZURE_DEVOPS,
             IntegrationSlug.GITHUB,
             IntegrationSlug.LINEAR,
+            IntegrationSlug.GITLAB,
         }
     ),
     "wiki_knowledge": frozenset(
@@ -257,6 +288,16 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.DATADOG,
             IntegrationSlug.CLICKHOUSE,
             IntegrationSlug.SENTRY,
+            IntegrationSlug.LANGSMITH,
+            IntegrationSlug.HELICONE,
+            IntegrationSlug.POSTHOG,
+            IntegrationSlug.BRAINTRUST,
+            IntegrationSlug.SIGNOZ,
+            IntegrationSlug.HONEYCOMB,
+            IntegrationSlug.ARIZE,
+            IntegrationSlug.PHOENIX,
+            IntegrationSlug.WANDB,
+            IntegrationSlug.OPENSEARCH,
         }
     ),
     "browser_automation": frozenset(
@@ -264,6 +305,23 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.PLAYWRIGHT,
             IntegrationSlug.SELENIUM,
             IntegrationSlug.FIRECRAWL,
+        }
+    ),
+    "document_parser": frozenset(
+        {
+            IntegrationSlug.DOCLING,
+            IntegrationSlug.PYMUPDF,
+            IntegrationSlug.UNSTRUCTURED,
+            IntegrationSlug.PYTHON_DOCX,
+            IntegrationSlug.OPENPYXL,
+            IntegrationSlug.WHISPER,
+            IntegrationSlug.YT_DLP,
+        }
+    ),
+    "rerank_provider": frozenset(
+        {
+            IntegrationSlug.COHERE_RERANK,
+            IntegrationSlug.JINA_RERANK,
         }
     ),
     "cloud_platform": frozenset(

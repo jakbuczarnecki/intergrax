@@ -9,6 +9,8 @@ import time
 from typing import TYPE_CHECKING, Optional, Sequence
 
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
+from intergrax.runtime.hooks.tool_hooks import run_tool_call_hooks, tool_hook_context
+from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
 from intergrax.runtime.nexus.tools.tool_runtime import ToolInvocationPlan, ToolRuntime
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
@@ -39,10 +41,12 @@ class RuntimeToolGateway:
         state: "RuntimeState",
         allowed_tools: Optional[Sequence[str]] = None,
         trace_step: str = "ToolGateway",
+        middleware: Optional[MiddlewarePipeline] = None,
     ) -> None:
         self._state = state
         self._allowed_tools = list(allowed_tools) if allowed_tools is not None else None
         self._trace_step = trace_step
+        self._middleware = middleware
 
     @classmethod
     def for_state(
@@ -51,10 +55,25 @@ class RuntimeToolGateway:
         *,
         allowed_tools: Optional[Sequence[str]] = None,
         trace_step: str = "ToolGateway",
+        middleware: Optional[MiddlewarePipeline] = None,
     ) -> "RuntimeToolGateway":
-        return cls(state=state, allowed_tools=allowed_tools, trace_step=trace_step)
+        return cls(
+            state=state,
+            allowed_tools=allowed_tools,
+            trace_step=trace_step,
+            middleware=middleware,
+        )
 
     async def invoke(self, request: ToolRequest) -> ToolResponse:
+        hook_ctx = tool_hook_context(self._state, request, step_id=self._trace_step)
+        return await run_tool_call_hooks(
+            self._middleware,
+            hook_ctx,
+            request,
+            invoke=lambda: self._invoke_inner(request),
+        )
+
+    async def _invoke_inner(self, request: ToolRequest) -> ToolResponse:
         started = time.perf_counter()
         if request.tool_name not in _KNOWN_CAPABILITY_TOOLS:
             if not ToolAccessPolicy.is_tool_allowed(request.tool_name, self._allowed_tools):

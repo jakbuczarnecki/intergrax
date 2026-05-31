@@ -4,44 +4,21 @@
 
 from __future__ import annotations
 from pathlib import Path
-from yt_dlp import YoutubeDL
 from typing import Optional
+
+from intergrax.integrations.providers.document_parser.whisper.config import WhisperIntegrationConfig
+from intergrax.integrations.providers.document_parser.whisper.opens import transcribe_media_to_vtt
+from intergrax.integrations.providers.document_parser.yt_dlp.config import YtDlpIntegrationConfig
+from intergrax.integrations.providers.document_parser.yt_dlp.opens import download_youtube_video
 from tqdm.auto import tqdm
 import cv2
 import os
 import json
 
 
-def yt_download_video(youtube_url: str, out_dir:str | Path)->Path:
-    out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    outtmpl = str(out_dir/"vid_%(id)s.%(ext)s")
-    ydl_opts = {
-        # "format": "bv*+ba/b[ext=mp4]/b",
-        "format": "bestvideo+bestaudio/best",
-        "outtmpl": outtmpl,
-        "merge_output_format":"mp4",
-        "noplaylist":True,
-        "quiet": True,
-        "no_warnings": True        
-    }
-
-    with YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(youtube_url, download=True)
-
-    video_id = info.get("id")
-    filepath = out_dir / f"vid_{video_id}.mp4"
-
-    if not filepath.exists():
-        ext = info.get("ext", "mp4")
-        alt = out_dir / f"vid_{video_id}.{ext}"
-        if alt.exists():
-            filepath = alt
-        else:
-            raise FileNotFoundError("Cannot find downloaded video file.")
-        
-    return filepath
+def yt_download_video(youtube_url: str, out_dir: str | Path) -> Path:
+    config = YtDlpIntegrationConfig(out_dir=Path(out_dir))
+    return download_youtube_video(config, youtube_url)
 
 
 
@@ -63,18 +40,8 @@ def transcribe_to_vtt(
         return f"{h:02d}:{m:02d}:{sec:06.3f}"
 
     if not output_vtt_path.exists():
-        import webvtt
-        import whisper
-        model = whisper.load_model(model_size)
-        result = model.transcribe(str(input_media_path), language=language)
-
-        vtt = webvtt.WebVTT()
-        for seq in tqdm(result.get("segments", []), desc="Transcripting", unit="frame"):
-            start = _sec_to_vtt_ts(seq['start'])
-            end = _sec_to_vtt_ts(seq['end'])
-            text = " ".join(seq.get('text', "").split())
-            vtt.captions.append(webvtt.Caption(start,end, text))
-        vtt.save(str(output_vtt_path))
+        config = WhisperIntegrationConfig(model=model_size, language=language or "en", translate=False)
+        return transcribe_media_to_vtt(config, input_media_path, output_vtt_path)
     return output_vtt_path
 
 

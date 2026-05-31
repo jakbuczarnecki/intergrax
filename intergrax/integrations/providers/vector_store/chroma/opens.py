@@ -29,7 +29,7 @@ def _import_chromadb() -> Any:
 
 
 def _build_rag_config(config: ChromaIntegrationConfig) -> Any:
-    from intergrax.rag.vectorstore.providers.chroma_vector_store import ChromaConfig
+    from intergrax.integrations.providers.vector_store.chroma.rag_store import ChromaConfig
 
     return ChromaConfig(
         collection_name=config.collection_name,
@@ -51,7 +51,7 @@ def _open_rag_store(
     if store_factory is not None:
         return store_factory()
     _import_chromadb()
-    from intergrax.rag.vectorstore.providers.chroma_vector_store import ChromaVectorStore
+    from intergrax.integrations.providers.vector_store.chroma.rag_store import ChromaVectorStore
 
     return ChromaVectorStore(_build_rag_config(config))
 

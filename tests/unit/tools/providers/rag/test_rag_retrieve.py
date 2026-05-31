@@ -17,6 +17,7 @@ from intergrax.tools.registry.bootstrap import register_default_tools, reset_def
 from intergrax.tools.registry.catalog import clear_tool_catalog, get_bundle, list_catalog_tool_ids
 from intergrax.tools.registry.factory import build_registry_from_profile
 from intergrax.tools.registry.profile import ToolProfile
+from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.tools.registry.runtime import ToolRegistry
@@ -76,6 +77,7 @@ def test_rag_retrieve_returns_chunks() -> None:
     ctx = ToolWiringContext(
         vectorstore_manager=FakeVectorstoreManager(hits),
         embedding_manager=FakeEmbeddingManager(),
+        rag_profile=RagProfile(enable_rerank=False, route_mode="off", retriever_id="vector_similarity"),
     )
 
     out = perform_rag_retrieve(
@@ -101,7 +103,7 @@ def test_rag_tool_registered_via_catalog() -> None:
     register_default_tools()
     assert "rag.retrieve" in list_catalog_tool_ids()
     bundle = get_bundle("rag")
-    assert bundle.tool_ids == ("rag.retrieve",)
+    assert bundle.tool_ids == ("rag.retrieve", "rag.ingest_document", "rag.list_collections")
 
 
 def test_rag_retrieve_via_runtime_invoker() -> None:
@@ -117,6 +119,7 @@ def test_rag_retrieve_via_runtime_invoker() -> None:
     ctx = ToolWiringContext(
         vectorstore_manager=FakeVectorstoreManager(hits),
         embedding_manager=FakeEmbeddingManager(),
+        rag_profile=RagProfile(enable_rerank=False, route_mode="off", retriever_id="vector_similarity"),
     )
     registry = ToolRegistry()
     register_rag_tools(registry, ctx)

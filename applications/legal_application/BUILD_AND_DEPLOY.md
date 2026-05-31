@@ -41,13 +41,18 @@
         |----------|---------|------|
         | ``LEGAL_LLM_PROVIDER`` | ``ollama`` | :class:`~intergrax.llm_adapters.contracts.llm_provider.LLMProvider` slug |
         | ``LEGAL_LLM_MODEL`` | (empty) | Optional model/deployment override for :class:`~intergrax.llm_adapters.registry.profile.LLMProfile` |
-        | ``INTERGRAX_LLM_METRICS_ENABLED`` | ``false`` | Per-provider token/latency counters (see [LLM_ADAPTERS.md](../../docs/LLM_ADAPTERS.md)) |
+        | ``INTERGRAX_LLM_METRICS_ENABLED`` | ``false`` | Per-tenant/provider token/latency counters |
+        | ``calls_per_minute`` (in profile options) | — | Optional LLM rate limit per provider |
+        | ``circuit_breaker_threshold`` (in profile options) | — | Optional fail-fast after N errors |
+
+        Metrics HTTP (optional): ``register_llm_metrics_routes(app)`` → ``GET /metrics/llm``. See [LLM_ADAPTERS.md](../../docs/LLM_ADAPTERS.md).
 
         ### Tool catalog (optional)
 
         | Variable | Default | Role |
         |----------|---------|------|
         | ``LEGAL_ENABLE_RAG`` | ``false`` | Register ``rag.retrieve`` on ``RuntimeConfig`` |
+        | ``LEGAL_ENABLE_RAG_INGEST`` | ``false`` | Register ``rag.ingest_document`` (index local files) |
         | ``LEGAL_ENABLE_WEBSEARCH`` | ``false`` | Register ``websearch.query`` |
         | ``LEGAL_USE_TOOL_DECISION`` | ``false`` | LLM tool-decision step before Nexus bridge |
         | ``LEGAL_TOOLS_MODE`` | ``off`` | ToolsAgent planner mode when tools enabled |
@@ -55,7 +60,7 @@
 
         ``LEGAL_PRODUCT_PROFILE=research`` enables RAG, websearch, and tool-decision by default (override with env).
 
-        Wire vectorstore / websearch backends in ``host/tool_wiring.py`` when enabling RAG/websearch in production. See [`intergrax/tools/USAGE.md`](../../intergrax/tools/USAGE.md).
+        Wire vectorstore / websearch backends in ``host/tool_wiring.py`` when enabling RAG/websearch in production. Set ``INTERGRAX_INTEGRATION_DOCUMENT_PARSER=docling`` (and optional ``INTERGRAX_INTEGRATION_RERANK_PROVIDER``) for ingestion/rerank governance. See [`intergrax/tools/USAGE.md`](../../intergrax/tools/USAGE.md).
 
         ---
 

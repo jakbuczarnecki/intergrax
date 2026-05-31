@@ -145,6 +145,32 @@ def create_my_lab_application():
 
 Lab and product scaffolds call `bootstrap_nexus_platform()` from `intergrax/applications/_shared/platform_wiring.py` — registers compatibility telemetry and metrics export on `TASK_COMPLETED`. Legal, research, lab, and poc_template hosts use this pattern.
 
+### 4b. Slack / Teams interaction intake (§18)
+
+Product and lab hosts can expose **`POST {interaction_route_prefix}/intake`** (default `/v1/interactions/intake`) for inbound Slack, Teams, or lab JSON payloads:
+
+```python
+from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
+from intergrax.runtime.interactions.router import create_interaction_intake_router
+
+interaction_service = wire_interaction_intake_service(
+    nexus_loop,
+    interaction_surface=settings.interaction_surface,  # auto | slack | teams | lab
+)
+app.include_router(
+    create_interaction_intake_router(interaction_service, execute_default=True),
+    prefix=settings.interaction_route_prefix,
+)
+```
+
+| Host | Env flag | Surface env |
+|------|----------|-------------|
+| lab | `LAB_INCLUDE_INTERACTIONS` | `LAB_INTERACTION_SURFACE` |
+| legal | `LEGAL_INCLUDE_INTERACTIONS` | `LEGAL_INTERACTION_SURFACE` |
+| research | `RESEARCH_INCLUDE_INTERACTIONS` | `RESEARCH_INTERACTION_SURFACE` |
+
+Configure signing secrets per vendor (see integration provider `USAGE.md` for slack/teams).
+
 ### 5. Environment
 
 - Commit **`host/settings.py`** + **`.env.example`** with `MY_LAB_*` variables.
@@ -196,6 +222,14 @@ Readiness checklist: [`TIER3_READINESS.md`](TIER3_READINESS.md).
 
 ## Scaffold commands
 
+Product scaffold (`--profile product`) generates:
+
+- `manifest.py` — `_resolve_integration_profile()` from `INTERGRAX_INTEGRATION_PROFILE_JSON` or SQLite + inmemory + Docling defaults
+- `integration_wiring.py` — `wire_*_integrations(integration_profile=…)` → `wire_nexus_observability`
+- `tool_wiring.py` — product tools: `rag.*`, `websearch.*` (incl. `fetch_batch`)
+
+Lab scaffold (`--profile lab`) uses `IntegrationProfile.lab()` and tools: `rag.retrieve`, `websearch.query`, `websearch.read_url`, `sandbox.exec`.
+
 ```bash
 # Full stack (Tier-2 agent + Tier-3 host)
 python -m intergrax.scaffold new-stack my_feature --profile lab
@@ -240,15 +274,15 @@ Tier-3 hosts should **not** import OpenAI/Anthropic SDKs. Use the adapter regist
 from intergrax.llm_adapters.registry import LLMProfile, llm_profile_from_env
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
-# Explicit (product)
-llm = LLMProfile(provider=LLMProvider.AZURE_OPENAI, model="gpt-4o-deployment").create_adapter()
+# Explicit (any Tier-3 host)
+llm = LLMProfile(provider=LLMProvider.GROQ, model="llama-3.3-70b-versatile").create_adapter()
 
-# Env-driven (lab / K8s)
+# Env-driven (lab / K8s / deploy)
 # INTERGRAX_LLM_PROVIDER=groq  INTERGRAX_LLM_MODEL=llama-3.3-70b-versatile
 llm = llm_profile_from_env(prefix="INTERGRAX_LLM").create_adapter()
 ```
 
-Set provider API keys in `.env` / secrets (see [LLM_ADAPTERS.md](../docs/LLM_ADAPTERS.md) env tables). Optional live smoke: GitHub workflow `llm-network-smoke.yml`.
+Set API keys via env or `secrets=` on `LLMProfile.create_adapter()`. Enable `INTERGRAX_LLM_METRICS_ENABLED=true`; optional `register_llm_metrics_routes(app)`. Nexus hosts using `bootstrap_nexus_platform()` get automatic tenant-scoped LLM metrics on task completion — no manual `set_llm_tenant_id` required. Optional quota: `INTERGRAX_LLM_TENANT_MAX_TOKENS`. See [LLM_ADAPTERS.md](../docs/LLM_ADAPTERS.md).
 
 | Task | Where |
 |------|--------|

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from intergrax.integrations.contracts.observability_backend import MetricQueryResult
+from intergrax.integrations.contracts.observability_backend import MetricQueryResult, TraceQueryResult
 from intergrax.integrations.providers.observability_backend.elasticsearch.client import ElasticsearchRestClient
 
 
@@ -38,3 +38,7 @@ class ElasticsearchObservabilityBackend:
         step: str = "15s",
     ) -> MetricQueryResult:
         return self._client.query_range(promql, start=start, end=end, step=step)
+
+    def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult:
+        _ = limit, name
+        return TraceQueryResult()

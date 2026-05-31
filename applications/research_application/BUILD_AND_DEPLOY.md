@@ -40,7 +40,11 @@
         | Variable | Default | Role |
         |----------|---------|------|
         | ``RESEARCH_ENABLE_WEBSEARCH`` | ``true`` | Register ``websearch.query`` on ``RuntimeConfig`` |
+        | ``RESEARCH_ENABLE_RAG`` | ``false`` | Register ``rag.retrieve`` |
+        | ``RESEARCH_ENABLE_RAG_INGEST`` | ``false`` | Register ``rag.ingest_document`` |
         | ``RESEARCH_ENABLED_TOOLS`` | (empty) | Comma-separated extra catalog tool_ids |
+
+        ``IntegrationProfile.research_product()`` sets ``document_parser=docling``, ``search_provider=google_cse``, ``rerank_provider=jina_rerank``. Override via ``INTERGRAX_INTEGRATION_*`` env vars (see repo-root ``.env.example``).
 
         Wire ``websearch_executor`` (or integration ``SearchProvider``) in ``host/tool_wiring.py`` for live search. See [`intergrax/tools/USAGE.md`](../../intergrax/tools/USAGE.md).
 

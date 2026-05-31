@@ -96,7 +96,7 @@ def test_qdrant_opens_imports_client_and_builds_rag_store() -> None:
 
     with patch("intergrax.integrations.providers.vector_store.qdrant.opens._import_qdrant_client") as import_mock:
         with patch(
-            "intergrax.rag.vectorstore.providers.qdrant_vector_store.QdrantVectorStore",
+            "intergrax.integrations.providers.vector_store.qdrant.rag_store.QdrantVectorStore",
             return_value=mock_rag_store,
         ) as rag_cls:
             from intergrax.integrations.providers.vector_store.qdrant.opens import open_qdrant_vector_store
@@ -115,7 +115,7 @@ def test_chroma_opens_imports_chromadb_and_builds_rag_store() -> None:
 
     with patch("intergrax.integrations.providers.vector_store.chroma.opens._import_chromadb") as import_mock:
         with patch(
-            "intergrax.rag.vectorstore.providers.chroma_vector_store.ChromaVectorStore",
+            "intergrax.integrations.providers.vector_store.chroma.rag_store.ChromaVectorStore",
             return_value=mock_rag_store,
         ) as rag_cls:
             from intergrax.integrations.providers.vector_store.chroma.opens import open_chroma_vector_store

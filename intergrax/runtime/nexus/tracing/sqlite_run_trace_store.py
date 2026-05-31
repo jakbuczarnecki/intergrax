@@ -107,6 +107,20 @@ class SQLiteRunTraceStore(RunTraceWriter, RunTraceReader):
         if run_id != metadata.run_id:
             raise ValueError("run_id mismatch in finalize_run.")
 
+        from intergrax.runtime.nexus.tracing.parser_trace_flush import export_parser_traces_from_events
+
+        with self._get_connection() as conn:
+            event_rows = conn.execute(
+                """
+                SELECT event_json
+                FROM run_events
+                WHERE run_id = ?
+                ORDER BY seq ASC
+                """,
+                (run_id,),
+            ).fetchall()
+        export_parser_traces_from_events(json.loads(row[0]) for row in event_rows)
+
         stats_json: str = json.dumps(asdict(metadata.stats))
 
         error_json: Optional[str] = None

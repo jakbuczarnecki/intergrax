@@ -18,6 +18,8 @@ from intergrax.rag.retrievers.providers.vector_similarity_retriever import Vecto
 from intergrax.rag.retrievers.registry.retriever_registry import RetrieverRegistry
 from intergrax.rag.retrievers.retriever_manager import RetrieverManager
 from intergrax.rag.retrievers.pipeline.retriever_pipeline import RetrieverPipeline
+from intergrax.rag.graph.contracts.graph_store import GraphStore
+from intergrax.rag.retrievers.providers.graph_rag_retriever import GraphRagRetriever
 from intergrax.rag.vectorstore.bootstrap.vectorstore_bootstrap import create_default_vectorstore_manager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 
@@ -28,6 +30,7 @@ def create_default_retriever_registry(
     embedding_manager: BaseEmbeddingManager | None = None,
     registry: RetrieverRegistry | None = None,    
     toc_vector_store: BaseVectorstoreManager | None = None,
+    graph_store: GraphStore | None = None,
 ) -> RetrieverRegistry:
     """
     Create RetrieverRegistry with built-in retriever providers registered.
@@ -91,6 +94,14 @@ def create_default_retriever_registry(
                 ],
             )
         )
+        if graph_store is not None:
+            registry.register(
+                GraphRagRetriever(
+                    vector_store=vector_store,
+                    embedding_manager=embedding_manager,
+                    graph_store=graph_store,
+                )
+            )
 
     return registry
 

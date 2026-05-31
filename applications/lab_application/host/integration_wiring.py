@@ -75,13 +75,15 @@ def _sqlite_config_overrides(
 def build_lab_integration_profile(
     *,
     sqlite_overrides: dict[str, Path] | None = None,
+    harness: bool = False,
 ) -> IntegrationProfile:
-    profile = IntegrationProfile.lab()
+    profile = IntegrationProfile.harness_lab() if harness else IntegrationProfile.lab()
     if not sqlite_overrides:
         return profile
     return profile.model_copy(
         update={
             "options": {
+                **profile.options,
                 IntegrationSlug.SQLITE: dict(sqlite_overrides),
             }
         }
@@ -105,11 +107,13 @@ def wire_lab_integrations(
     experiments_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
+    harness: bool = False,
 ) -> LabIntegrationWiring:
     """
     Single composition root for lab persistence, notifications, and interaction surface.
 
     Uses ``IntegrationProfile.lab()`` (sqlite + log + lab_json) with optional SQLite path overrides.
+    Set ``harness=True`` for LangSmith/Sentry/PagerDuty harness stack (Phase M.9).
     """
     register_default_integrations()
 
@@ -119,7 +123,7 @@ def wire_lab_integrations(
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
     )
-    profile = build_lab_integration_profile(sqlite_overrides=sqlite_overrides or None)
+    profile = build_lab_integration_profile(sqlite_overrides=sqlite_overrides or None, harness=harness)
     sqlite_bundle = create_sqlite_integration(**sqlite_overrides)
 
     if db_path is None:

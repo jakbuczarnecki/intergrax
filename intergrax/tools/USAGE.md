@@ -34,7 +34,7 @@ Pass `tool_profile` and `tool_wiring_context` into agent config → `RuntimeConf
 
 | Application | `host/tool_wiring.py` | Default tools |
 |-------------|----------------------|---------------|
-| `lab_application` | `wire_lab_tools()` | `rag.retrieve`, `websearch.query`, `sandbox.exec` |
+| `lab_application` | `wire_lab_tools()` | `rag.retrieve`, `websearch.query`, `websearch.read_url`, `sandbox.exec` |
 | `legal_application` | `wire_legal_tools()` | env-driven (`LEGAL_ENABLE_RAG`, …) |
 | `research_application` | `wire_research_tools()` | `websearch.query` when enabled |
 | `poc_template_application` | `wire_poc_template_tools()` | lab-like defaults |

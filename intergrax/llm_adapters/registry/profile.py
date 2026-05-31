@@ -6,7 +6,15 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Mapping, Optional
+
+if TYPE_CHECKING:
+    from intergrax.integrations.contracts.secrets_store import SecretsStore
+
+from intergrax.llm_adapters.registry.secrets import (
+    load_api_key_from_secrets_store,
+    merge_secrets_into_options,
+)
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -39,13 +47,35 @@ class LLMProfile(BaseModel):
             return LLMProvider(value.strip().lower())
         raise ValueError("provider must be a non-empty LLMProvider or string slug")
 
-    def create_adapter(self, **overrides: Any) -> LLMAdapter:
+    def create_adapter(
+        self,
+        *,
+        secrets: Optional[Mapping[str, str]] = None,
+        **overrides: Any,
+    ) -> LLMAdapter:
         from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 
-        kwargs = {**self.options, **overrides}
+        kwargs = merge_secrets_into_options(self.provider, {**self.options, **overrides}, secrets)
         if self.model:
             kwargs.setdefault("model", self.model)
         return LLMAdapterRegistry.create(self.provider, **kwargs)
+
+    def with_secrets(self, secrets: Mapping[str, str]) -> LLMProfile:
+        """Return profile with secrets merged into ``options`` (api_key, etc.)."""
+        return self.model_copy(
+            update={"options": merge_secrets_into_options(self.provider, dict(self.options), secrets)}
+        )
+
+    def create_adapter_from_secrets_store(
+        self,
+        store: "SecretsStore",
+        *,
+        secret_path: str | None = None,
+        **overrides: Any,
+    ) -> LLMAdapter:
+        """Resolve API key from Vault/secrets integration, then create adapter."""
+        key = load_api_key_from_secrets_store(store, self.provider, path=secret_path)
+        return self.with_secrets({"api_key": key}).create_adapter(**overrides)
 
     @classmethod
     def lab(cls) -> LLMProfile:

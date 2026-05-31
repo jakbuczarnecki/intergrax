@@ -36,6 +36,7 @@ from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVec
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
 from intergrax.runtime.nexus.context.context_builder import RetrievedChunk
 from intergrax.runtime.nexus.ingestion.attachments import AttachmentResolver
+from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 
 
 
@@ -88,6 +89,7 @@ class AttachmentIngestionService:
         vectorstore_manager: BaseVectorstoreManager,
         loader: Optional[BaseDocumentsLoader] = None,
         splitter: Optional[BaseDocumentsSplitter] = None,
+        trace_writer: Optional[RunTraceWriter] = None,
     ) -> None:
         """
         Args:
@@ -121,6 +123,11 @@ class AttachmentIngestionService:
             splitter = create_default_document_splitter()
         self._loader = loader
         self._splitter = splitter
+        self._trace_writer = trace_writer
+
+    def bind_trace_writer(self, trace_writer: RunTraceWriter) -> None:
+        """Late-bind trace writer when created after service construction (RuntimeContext.build)."""
+        self._trace_writer = trace_writer
 
     # ------------------------------------------------------------------
     # Public API
@@ -134,6 +141,7 @@ class AttachmentIngestionService:
         user_id: str,
         tenant_id: Optional[str] = None,
         workspace_id: Optional[str] = None,
+        run_id: Optional[str] = None,
     ) -> List[IngestionResult]:
         """
         Ingest all provided attachments in the context of a specific session.
@@ -157,6 +165,7 @@ class AttachmentIngestionService:
                 user_id=user_id,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
+                run_id=run_id,
             )
             results.append(result)
 
@@ -298,6 +307,7 @@ class AttachmentIngestionService:
         user_id: str,
         tenant_id: Optional[str],
         workspace_id: Optional[str],
+        run_id: Optional[str] = None,
     ) -> IngestionResult:
         """
         End-to-end ingestion pipeline for a single AttachmentRef.
@@ -336,6 +346,23 @@ class AttachmentIngestionService:
             use_default_metadata=True,
             call_custom_metadata=_metadata_callback,
         )
+
+        if docs and self._trace_writer is not None:
+            from intergrax.rag.document_loaders.pipeline.parser_pipeline import TRACE_METADATA_KEY
+            from intergrax.runtime.nexus.tracing.parser_trace_span import maybe_append_parser_trace
+
+            first_meta = docs[0].metadata or {}
+            trace = dict(first_meta.get(TRACE_METADATA_KEY) or {})
+            if trace:
+                maybe_append_parser_trace(
+                    self._trace_writer,
+                    run_id=run_id,
+                    source=str(path),
+                    trace=trace,
+                    session_id=session_id,
+                    user_id=user_id,
+                    tenant_id=tenant_id or "",
+                )
 
         if not docs:
             return IngestionResult(
@@ -436,6 +463,16 @@ class AttachmentIngestionService:
         else:
             vector_ids = list(stored_ids)
 
+        parser_trace: Dict[str, Any] = {}
+        parser_id: str | None = None
+        if aligned_docs:
+            first_meta = aligned_docs[0].metadata or {}
+            from intergrax.rag.document_loaders.pipeline.parser_pipeline import TRACE_METADATA_KEY
+
+            if TRACE_METADATA_KEY in first_meta:
+                parser_trace = dict(first_meta.get(TRACE_METADATA_KEY) or {})
+                parser_id = parser_trace.get("parser_id") or first_meta.get("integration_parser_id")
+
         return IngestionResult(
             attachment_id=attachment.id,
             attachment_type=attachment.type,
@@ -447,5 +484,7 @@ class AttachmentIngestionService:
                 "user_id": user_id,
                 "tenant_id": tenant_id,
                 "workspace_id": workspace_id,
+                "integration_parser_id": parser_id,
+                "integration_parser_trace": parser_trace,
             },
         )

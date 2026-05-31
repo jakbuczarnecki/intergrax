@@ -1,60 +1,41 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Sequence
 
 from langchain_core.documents import Document
 
-from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG, DoclingMode
+from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
-from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
-from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
-from intergrax.rag.document_loaders.parsers.docling_converter_factory import create_docling_converter
+from intergrax.rag.document_loaders.integration.catalog_parser import CatalogDocumentParser
+from intergrax.rag.document_loaders.integration.resolver import resolve_document_parser
 
 
 class DoclingLocalParser(BaseDocumentParser):
-    """
-    Local Docling backend parser.
-
-    This parser uses a locally installed Docling runtime
-    to convert documents into LangChain Document objects.
-
-    Actual Docling integration will be implemented in a later step.
-    """
-
     @classmethod
     def parser_id(cls) -> str:
         return "docling.local"
 
-    @classmethod
-    def is_available(cls) -> bool:
-        cfg = GLOBAL_DOCUMENT_LOADER_CONFIG
-        return cfg.docling_mode == DoclingMode.LOCAL
+    def is_available(self) -> bool:
+        backend = resolve_document_parser(IntegrationSlug.DOCLING, mode="local")
+        return backend.is_available()
 
     def load(self, source: str) -> Sequence[Document]:
+        backend = resolve_document_parser(IntegrationSlug.DOCLING, mode="local")
+        return CatalogDocumentParser(backend).load(source)
 
-        converter = create_docling_converter()
 
-        result = converter.convert(Path(source))
+class DoclingServerParser(BaseDocumentParser):
+    @classmethod
+    def parser_id(cls) -> str:
+        return "docling.server"
 
-        doc = result.document
+    def is_available(self) -> bool:
+        backend = resolve_document_parser(IntegrationSlug.DOCLING, mode="server")
+        return backend.is_available()
 
-        text = doc.export_to_markdown() or ""
-
-        metadata = build_loader_metadata(
-            source=source,
-            parser=self.parser_id(),
-            position=0,            
-        )
-        metadata[DocumentMetadataKey.DOCLING_DOCUMENT_META] = doc
-
-        return [
-            Document(
-                page_content=text,
-                metadata=metadata,
-            )
-        ]
+    def load(self, source: str) -> Sequence[Document]:
+        backend = resolve_document_parser(IntegrationSlug.DOCLING, mode="server")
+        return CatalogDocumentParser(backend).load(source)

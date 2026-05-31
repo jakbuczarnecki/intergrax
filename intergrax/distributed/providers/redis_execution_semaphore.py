@@ -11,9 +11,7 @@ Composition root: ``intergrax.integrations.providers.key_value_cache.redis.creat
 from __future__ import annotations
 
 import uuid
-from typing import Optional
-
-import redis
+from typing import Any, Optional
 
 from intergrax.distributed.contracts.execution_semaphore import (
     DistributedExecutionSemaphore,
@@ -32,7 +30,7 @@ class RedisExecutionSemaphore(DistributedExecutionSemaphore):
     def __init__(
         self,
         *,
-        client: redis.Redis,
+        client: Any,
         ttl_seconds: int = 300,
     ) -> None:
         self._client = client

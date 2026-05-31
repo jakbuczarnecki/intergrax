@@ -43,8 +43,24 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
         from __future__ import annotations
 
         from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+        from intergrax.integrations.registry.profile import IntegrationProfile
+        from intergrax.integrations.registry.slugs import IntegrationSlug
         {imports}
         {factory_imports}
+
+
+        def _resolve_integration_profile() -> IntegrationProfile:
+            import json
+            import os
+
+            raw = os.environ.get("INTERGRAX_INTEGRATION_PROFILE_JSON", "").strip()
+            if raw:
+                return IntegrationProfile.model_validate_json(raw)
+            return IntegrationProfile(
+                relational_store=IntegrationSlug.SQLITE,
+                vector_store=IntegrationSlug.INMEMORY,
+                document_parser=IntegrationSlug.DOCLING,
+            )
 
 
         def build_{short}_manifest() -> ApplicationManifest:
@@ -54,6 +70,7 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
                 route_prefix="{route_prefix}",
                 env_prefix="{env_prefix_value}",
                 default_capability="{first_cap}",
+                integration_profile=_resolve_integration_profile(),
                 agents=[
         {mounts_block}
                 ],
@@ -363,11 +380,18 @@ def tool_wiring_py(names: ScaffoldApplicationNames) -> str:
             integration_profile: IntegrationProfile | None = None,
         ) -> ApplicationToolWiring:
             profile = ToolProfile(
-                enabled=["rag.retrieve", "websearch.query"],
+                enabled=[
+                    "rag.retrieve",
+                    "rag.ingest_document",
+                    "rag.list_collections",
+                    "websearch.query",
+                    "websearch.read_url",
+                    "websearch.fetch_batch",
+                ],
             )
             return build_application_tool_wiring(
                 profile,
-                integration_profile=integration_profile,
+                integration_profile=integration_profile or IntegrationProfile(),
             )
         '''
     )
@@ -387,6 +411,7 @@ def integration_wiring_py(names: ScaffoldApplicationNames) -> str:
 
         from pathlib import Path
 
+        from intergrax.integrations.registry.profile import IntegrationProfile
         from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores, wire_nexus_observability
 
 
@@ -394,10 +419,12 @@ def integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             *,
             trace_db_path: Path | None = None,
             runtime_events_db_path: Path | None = None,
+            integration_profile: IntegrationProfile | None = None,
         ) -> NexusObservabilityStores:
             return wire_nexus_observability(
                 trace_db_path=trace_db_path,
                 runtime_events_db_path=runtime_events_db_path,
+                integration_profile=integration_profile or IntegrationProfile(),
             )
         '''
     )

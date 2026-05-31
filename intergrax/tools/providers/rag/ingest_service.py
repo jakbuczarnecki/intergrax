@@ -1,0 +1,87 @@
+# © Artur Czarnecki. All rights reserved.
+# Integrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Optional
+
+from intergrax.rag.ingest.ingest_pipeline import IngestPipeline, IngestRequest
+from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.tools.providers.rag.ingest_contracts import RagIngestInput, RagIngestOutput
+from intergrax.tools.registry.wiring import ToolWiringContext
+
+RAG_INGEST_TOOL_ID = "rag.ingest_document"
+
+
+def perform_rag_ingest(ctx: ToolWiringContext, params: RagIngestInput) -> RagIngestOutput:
+    vectorstore = ctx.vectorstore_manager
+    embedding_manager = ctx.embedding_manager
+    if vectorstore is None or embedding_manager is None:
+        return RagIngestOutput(used=False, reason="vectorstore_or_embedding_not_configured")
+
+    path = Path(params.source_path)
+    if not path.exists():
+        return RagIngestOutput(used=False, reason="source_not_found")
+
+    loader = ctx.extras.get("documents_loader")
+    splitter = ctx.extras.get("documents_splitter")
+    if loader is None:
+        from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_documents_loader
+
+        loader = create_default_documents_loader()
+    if splitter is None:
+        from intergrax.rag.document_splitters.bootstrap.default_chunking_engine import (
+            create_default_document_splitter,
+        )
+
+        splitter = create_default_document_splitter()
+
+    profile = ctx.rag_profile or RagProfile()
+    pipeline = IngestPipeline(
+        loader=loader,
+        splitter=splitter,
+        embedding_manager=embedding_manager,
+        vectorstore=vectorstore,
+        profile=profile,
+        contextual_enricher=ctx.extras.get("contextual_enricher"),
+        graph_store=ctx.extras.get("graph_store"),
+        llm_for_graph=ctx.extras.get("llm_adapter"),
+    )
+
+    base_metadata: dict[str, Any] = dict(params.metadata)
+    if params.session_id is not None:
+        base_metadata["session_id"] = params.session_id
+    if params.user_id is not None:
+        base_metadata["user_id"] = params.user_id
+    if params.tenant_id is not None:
+        base_metadata["tenant_id"] = params.tenant_id
+    if params.workspace_id is not None:
+        base_metadata["workspace_id"] = params.workspace_id
+
+    strategy_id: Optional[str] = base_metadata.pop("chunking_strategy_id", None)
+
+    result = pipeline.run(
+        IngestRequest(
+            source_path=str(path),
+            base_metadata=base_metadata,
+            chunking_strategy_id=strategy_id,
+        )
+    )
+
+    if not result.used:
+        return RagIngestOutput(
+            used=False,
+            reason=result.reason,
+            parser_id=result.parser_id,
+            parser_trace=result.parser_trace,
+        )
+
+    return RagIngestOutput(
+        used=True,
+        num_chunks=result.num_chunks,
+        vector_ids=result.vector_ids,
+        reason=result.reason,
+        parser_id=result.parser_id,
+        parser_trace=result.parser_trace,
+    )

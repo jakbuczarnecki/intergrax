@@ -222,11 +222,11 @@ The platform MUST maintain **one canonical path** per universal concern. All tie
 
 | Concern | Canonical Tier-0 mechanism | Forbidden |
 |---------|---------------------------|-----------|
-| LLM calls | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`) | Direct OpenAI/Anthropic SDK calls; second LLM wrapper in agents |
+| LLM calls | `intergrax/llm_adapters/` (`LLMAdapter`, registry, `LLMProfile`, metrics, resilience, Nexus `llm_tenant_scope`) | Direct vendor SDKs in agents; duplicate LLM stacks |
 | Logging | `intergrax/logging.py` and established log patterns | `print()`, ad-hoc loggers, duplicate logging frameworks |
 | Tracing (pipeline) | Nexus `trace_event()` / `RunTraceWriter` | Parallel untracked diagnostic streams |
 | Tools | `intergrax/tools/` (`ToolRegistry`, `ToolExecutor`, Tool Library §7.1.6) | Agent-local tool registries; boolean `use_rag` / `use_websearch` plan flags (deprecated §22.2) |
-| RAG | `intergrax/rag/` | Duplicate embedding/retrieval stacks in agents |
+| RAG | `intergrax/rag/` (`RagProfile`, `RetrievalService`, `IngestPipeline`) | Duplicate embedding/retrieval stacks; dense-only `vectorstore.query` bypass in agents/Nexus |
 | Web search | `intergrax/websearch/` | Custom HTTP search clients in agents |
 | Memory / session | `intergrax/memory/`, Nexus session storage | Direct Redis/PostgreSQL access from agents |
 | Queues | `intergrax/queueing/` | Ad-hoc background job systems |
@@ -570,7 +570,7 @@ intergrax/integrations/
 
 **Layout map:** `intergrax/integrations/providers/layout.py` — slug → category folder.
 
-**Documentation:** all **73** registered providers ship `providers/<category>/<slug>/USAGE.md` (English). Regenerate via `scripts/generate_integration_usage_docs.py`. Catalog index: [`docs/INTEGRATIONS.md`](INTEGRATIONS.md).
+**Documentation:** all **99** registered providers ship `providers/<category>/<slug>/USAGE.md` (English). Regenerate via `scripts/generate_integration_usage_docs.py`. Catalog index: [`docs/INTEGRATIONS.md`](INTEGRATIONS.md).
 
 **Rules:**
 
@@ -611,7 +611,7 @@ Each category defines a **small, stable contract** (Protocol or ABC). Providers 
 | **collaboration_suite** | `contracts/collaboration_suite.py` | Mail, calendar, directory (MS365, Google) | ms365_graph, google_workspace |
 | **issue_tracker** | `contracts/issue_tracker.py` | Issues, sprints, comments | jira, azure_devops, github, linear |
 | **wiki_knowledge** | `contracts/wiki_knowledge.py` | Pages, spaces, search | confluence, notion, sharepoint |
-| **observability_backend** | `contracts/observability_backend.py` | Metrics, logs export, error tracking | prometheus, elasticsearch, otel, langfuse, datadog, clickhouse, **sentry** |
+| **observability_backend** | `contracts/observability_backend.py` | Metrics, logs, traces, error tracking | prometheus, elasticsearch, otel, langfuse, datadog, clickhouse, sentry, langsmith, helicone, posthog, braintrust, signoz, honeycomb, arize, phoenix, wandb, opensearch |
 | **browser_automation** | `contracts/browser_automation.py` | Headless fetch / interact | playwright, firecrawl, selenium |
 | **cloud_platform** | `contracts/cloud_platform.py` | Unified auth, region, credential chain; factory for native **infrastructure** services (storage, queues, secrets — not LLM) | aws, azure, gcp |
 
@@ -623,7 +623,30 @@ Category contracts MUST be **backend-agnostic**: same method names and DTOs whet
 |---------|------------------|-------|
 | **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`, metrics) | 19 slugs — [LLM_ADAPTERS.md](LLM_ADAPTERS.md) §5.2.2 |
 | **Tokenization** | `intergrax/tokenizers/` | Not an external integration slug |
-| **RAG pipeline** | `intergrax/rag/` | Vector stores may appear in the catalog as **registry pointers** only; implementation stays in `rag/` |
+| **RAG pipeline** | `intergrax/rag/` | Vector stores + document parsers use **catalog bridges**; orchestration stays in `rag/` |
+
+#### RAG stack (Tier-0, Phase M-RAG)
+
+Modular layers — all strategy IDs and integration slugs are **configurable** via `RagProfile` / env (`INTERGRAX_RAG_*`), never hardcoded to a single parser (e.g. Docling) or vector backend:
+
+| Layer | Module | Role |
+|-------|--------|------|
+| Profile | `rag/profiles/rag_profile.py` | Retriever, reranker, routing, chunking, contextual enrich, query expansion |
+| Ingest | `rag/ingest/ingest_pipeline.py` | Loader → chunk (strategy id) → optional contextual enrich → embed → index |
+| Retrieval | `rag/retrieval/retrieval_service.py` | **Single entry** for `rag.retrieve`, Nexus `ContextBuilder`, diagnostics |
+| Routing | `rag/routing/query_router.py` | `fast` / `standard` / `deep` tiers (adaptive cost) |
+| Retrievers | `rag/retrievers/` | Registry: vector, hybrid, fusion (RRF), MMR, parent–child, hierarchical, multi-query |
+| Rerankers | `rag/rerankers/` | Registry + integration slugs (`cohere_rerank`, `jina_rerank`) |
+| Evaluation | `rag/evaluation/metrics.py`, `golden_harness.py` | Offline `recall@k`, MRR; golden regression (`tests/fixtures/rag_golden/`) |
+| Hybrid (BM25+dense) | `rag/vectorstore/hybrid/`, `sparse/lexical_index.py` | `query_hybrid` on InMemory/Qdrant/Weaviate; `HybridRetriever` delegates |
+| GraphRAG | `rag/graph/`, retriever `graph_rag` | `GraphStore` contract; heuristic indexer; optional on ingest |
+| Agentic deep tier | `rag/retrieval/agentic_loop.py`, `query_refiner.py` | Budgeted loop; `agentic_query_mode=deterministic\|llm` with injected adapter |
+| Qdrant sparse | `integrations/.../qdrant/rag_store.py` | Optional native sparse + RRF (`INTERGRAX_RAG_QDRANT_SPARSE`) |
+| Weaviate hybrid | `integrations/.../weaviate/rag_store.py` | Native `query.hybrid` when client configured |
+| Graph indexer | `rag/graph/indexer/` | `heuristic`, `llm`, or `heuristic_then_llm` via `INTERGRAX_RAG_GRAPH_INDEXER_MODE` |
+| Bootstrap | `rag/bootstrap/rag_stack_bootstrap.py` | `create_default_rag_stack()` for Tier-3 `ToolWiringContext` |
+
+**Wiring rule:** `ToolWiringContext` and `RuntimeConfig` expose `retrieval_service`, `rag_profile`, `retriever_manager`, `reranker_manager`. Document parsers resolve via `IntegrationProfile` + `INTERGRAX_RAG_DOCUMENT_PARSER_SLUG` (optional); default loader uses handler registry (smart parsers + catalog fallback).
 
 Do **not** add an `llm_provider` category or LLM slugs to the Integration Catalog backlog.
 

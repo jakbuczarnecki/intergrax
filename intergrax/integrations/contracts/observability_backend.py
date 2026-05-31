@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Protocol, Sequence, runtime_checkable
+from typing import Any, Optional, Protocol, Sequence, runtime_checkable
 
 from pydantic import BaseModel, Field
 
@@ -23,6 +23,17 @@ class MetricSeries(BaseModel):
 class MetricQueryResult(BaseModel):
     result_type: str
     series: Sequence[MetricSeries] = Field(default_factory=list)
+
+
+class TraceRecord(BaseModel):
+    trace_id: str = ""
+    name: str = ""
+    timestamp: Optional[str] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class TraceQueryResult(BaseModel):
+    traces: Sequence[TraceRecord] = Field(default_factory=list)
 
 
 @runtime_checkable
@@ -45,3 +56,11 @@ class ObservabilityBackend(Protocol):
         step: str = "15s",
     ) -> MetricQueryResult:
         """Run a range PromQL query (Prometheus ``/api/v1/query_range``)."""
+
+    def query_traces(
+        self,
+        *,
+        limit: int = 20,
+        name: Optional[str] = None,
+    ) -> TraceQueryResult:
+        """Query recent traces/spans from the backend (Langfuse, OTEL, etc.)."""

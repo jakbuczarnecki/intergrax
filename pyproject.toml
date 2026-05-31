@@ -78,7 +78,11 @@ dependencies = [
 ]
 
 [tool.uv]
-environments = ["sys_platform == 'win32'"]
+# Resolve for CI (linux) and local dev (win32). Do not restrict to a single OS.
+environments = [
+  "sys_platform == 'linux'",
+  "sys_platform == 'win32'",
+]
 
 [[tool.uv.index]]
 name = "pypi"
@@ -143,6 +147,10 @@ dev-ci = [
   "pytest-asyncio>=0.23,<0.24",
   "redis>=5.0",
   "celery>=5.3",
+]
+integrations-sentry = ["sentry-sdk>=2.0"]
+integrations-harness = [
+  "sentry-sdk>=2.0",
 ]
 
 [tool.pytest.ini_options]

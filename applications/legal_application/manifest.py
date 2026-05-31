@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.integrations.registry.profile import IntegrationProfile
 from legal.legal_agent import LegalAgent
 from legal_application.host.agent_factories import build_legal_agent_from_context
 
@@ -15,6 +16,7 @@ LEGAL_APPLICATION_MANIFEST = ApplicationManifest.product(
     route_prefix="/v1/legal",
     env_prefix="LEGAL_",
     default_port=8000,
+    integration_profile=IntegrationProfile.legal_product(),
     agents=[
         AgentBinding.mount(
             LegalAgent,

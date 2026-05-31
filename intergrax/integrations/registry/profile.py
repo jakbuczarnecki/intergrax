@@ -59,6 +59,8 @@ class IntegrationProfile(BaseModel):
     browser_automation: IntegrationSlug | None = None
     secrets_store: IntegrationSlug | None = None
     graph_store: IntegrationSlug | None = None
+    document_parser: IntegrationSlug | None = None
+    rerank_provider: IntegrationSlug | None = None
 
     options: dict[IntegrationSlug, dict[str, Any]] = Field(default_factory=dict)
 
@@ -126,12 +128,48 @@ class IntegrationProfile(BaseModel):
         return resolve_from_profile(self, category, config=config)
 
     @classmethod
+    def harness_lab(cls) -> IntegrationProfile:
+        """Lab harness stack — LangSmith traces, Sentry errors, PagerDuty escalation."""
+        return cls(
+            relational_store=IntegrationSlug.SQLITE,
+            notification_channel=IntegrationSlug.PAGERDUTY,
+            observability_backend=IntegrationSlug.SENTRY,
+            interaction_surface=IntegrationSlug.LAB_JSON,
+            options={
+                IntegrationSlug.LANGSMITH: {},
+                IntegrationSlug.SENTRY: {},
+            },
+        )
+
+    @classmethod
     def lab(cls) -> IntegrationProfile:
         """Laboratory defaults — no external vendors required."""
         return cls(
             relational_store=IntegrationSlug.SQLITE,
             notification_channel=IntegrationSlug.LOG,
             interaction_surface=IntegrationSlug.LAB_JSON,
+            document_parser=IntegrationSlug.DOCLING,
+        )
+
+    @classmethod
+    def legal_product(cls) -> IntegrationProfile:
+        """Legal Tier-3 defaults — SQLite observability, in-memory vectors, Docling + Cohere rerank."""
+        return cls(
+            relational_store=IntegrationSlug.SQLITE,
+            vector_store=IntegrationSlug.INMEMORY,
+            document_parser=IntegrationSlug.DOCLING,
+            rerank_provider=IntegrationSlug.COHERE_RERANK,
+        )
+
+    @classmethod
+    def research_product(cls) -> IntegrationProfile:
+        """Research Tier-3 defaults — SQLite, in-memory vectors, Docling + web search rerank stack."""
+        return cls(
+            relational_store=IntegrationSlug.SQLITE,
+            vector_store=IntegrationSlug.INMEMORY,
+            document_parser=IntegrationSlug.DOCLING,
+            search_provider=IntegrationSlug.GOOGLE_CSE,
+            rerank_provider=IntegrationSlug.JINA_RERANK,
         )
 
     @classmethod

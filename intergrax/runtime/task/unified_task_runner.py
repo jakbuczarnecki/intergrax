@@ -8,6 +8,7 @@ from typing import Optional
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import Task, TaskResult
+from intergrax.llm_adapters.tracking.context import llm_tenant_scope
 from intergrax.runtime.task.task_run_bridge import (
     new_run_id,
     runtime_request_with_run_id,
@@ -30,7 +31,8 @@ class UnifiedTaskRunner:
         return self._nexus_loop
 
     async def run_task(self, task: Task) -> TaskResult:
-        return await self._nexus_loop.handle_task(task)
+        with llm_tenant_scope(task.tenant_id):
+            return await self._nexus_loop.handle_task(task)
 
     async def run_runtime_request(
         self,

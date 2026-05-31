@@ -136,7 +136,27 @@ def test_observability_tools_registered_in_catalog() -> None:
     ids = list_catalog_tool_ids()
     assert "metrics.query_instant" in ids
     assert "logs.search" in ids
-    assert get_bundle("observability").tool_ids == ("metrics.query_instant", "logs.search")
+    assert "errors.capture" in ids
+    assert "observability.query_traces" in ids
+    assert get_bundle("observability").tool_ids == (
+        "metrics.query_instant",
+        "logs.search",
+        "observability.query_traces",
+        "errors.capture",
+    )
+
+
+def test_errors_capture_tool() -> None:
+    class _SentryLike:
+        def capture_message(self, message: str, *, level: str) -> str:
+            return "evt-99"
+
+    from intergrax.tools.providers.observability.contracts import ErrorsCaptureInput
+    from intergrax.tools.providers.observability.service import errors_capture
+
+    ctx = ToolWiringContext(observability_backend=_SentryLike())
+    out = errors_capture(ctx, ErrorsCaptureInput(message="agent loop failed", level="error"))
+    assert out.event_id == "evt-99"
 
 
 def test_build_registry_enables_observability_bundle() -> None:

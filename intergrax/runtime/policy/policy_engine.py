@@ -74,3 +74,16 @@ def coerce_policy_engine(engine: PolicyEngineInput) -> PolicyEngine:
     if isinstance(engine, PolicyEngine):
         return engine
     return PolicyEngine(runtime=engine)
+
+
+def coerce_replay_policy_engine(
+    engine: ExecutionPolicyEngine | PolicyEngine,
+) -> PolicyEngine:
+    """Normalize replay governance input to a facade with ``evaluate_replay`` configured."""
+    if isinstance(engine, PolicyEngine):
+        if engine.replay is None:
+            raise ValueError(
+                "PolicyEngine requires replay configuration; use PolicyEngine.with_replay_config(...)"
+            )
+        return engine
+    return PolicyEngine(replay=engine)

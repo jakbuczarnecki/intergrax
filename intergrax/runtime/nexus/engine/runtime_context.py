@@ -15,7 +15,8 @@ from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
 from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import LLMUsageRunRecord
 from intergrax.runtime.nexus.tools import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_trace_store
+from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.runtime.persistence.integration_profile_wiring import open_trace_store_from_profile
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 from intergrax.runtime.replay.service import ReplayService
 from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
@@ -354,8 +355,14 @@ class RuntimeContext:
         if config.production_mode:
             if config.trace_db_path is None:
                 raise ValueError("trace_db_path must be set in production_mode.")
+            profile = getattr(config, "integration_profile", None) or IntegrationProfile.lab()
+            trace_writer = open_trace_store_from_profile(
+                profile,
+                db_path=Path(config.trace_db_path),
+            )  # type: ignore[assignment]
 
-            trace_writer = create_sqlite_trace_store(db_path=Path(config.trace_db_path))  # type: ignore[assignment]
+        if ingestion_service is not None and trace_writer is not None:
+            ingestion_service.bind_trace_writer(trace_writer)
         
         return cls(
             config=config,

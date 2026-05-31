@@ -23,8 +23,11 @@ from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecuti
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
+from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+from intergrax.runtime.interactions.router import create_interaction_intake_router
+from intergrax.integrations.registry.profile import IntegrationProfile
 from legal_application.host.settings import LegalBackendSettings
 from legal_application.host.wiring import build_legal_registry
 from legal_application.host.tool_wiring import wire_legal_tools
@@ -55,6 +58,7 @@ def create_legal_backend_app(
     observability = wire_nexus_observability(
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
+        integration_profile=IntegrationProfile.legal_product(),
     )
     nexus_loop = NexusLoop(
         registry,
@@ -110,6 +114,19 @@ def create_legal_backend_app(
         trace_store=observability.trace_store,
         task_runner=task_runner,
     )
+
+    if settings.include_interaction_routes:
+        interaction_service = wire_interaction_intake_service(
+            nexus_loop,
+            interaction_surface=settings.interaction_surface,
+        )
+        app.include_router(
+            create_interaction_intake_router(
+                interaction_service,
+                execute_default=settings.interaction_execute_default,
+            ),
+            prefix=settings.interaction_route_prefix,
+        )
 
     if settings.environment == ApiEnvironment.PROD:
         app.title = "Intergrax Legal API"

@@ -96,11 +96,11 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Scope | Score | Notes |
 |-------|-------|-------|
 | Canon §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** | Phases A–F |
-| §42 Unified Execution Runtime | **~88–90%** | Platform infra complete; all Tier-3 hosts aligned (2026-05-27) |
+| §42 Unified Execution Runtime | **~92–95%** | Tool/agent-selection hooks wired; product interaction intake (2026-05-27) |
 | Laboratory workflow | **~95%** | Debug API, experiments, lab app |
 | Agent OS certification (Phase L deliverables) | **Done** | Scaffold, guide, acceptance suite |
 | Agent OS certification (sign-off exercise) | **Done** | `agents/signoff_probe/` — see Appendix A |
-| Regression gate | **363 passed** | `uv run pytest -m gate -q` |
+| Regression gate | **397 passed** | `uv run pytest -m gate -q` |
 
 ---
 
@@ -136,9 +136,9 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | Architecture §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** | Phases A–F; typed task contract |
 
-| §42 Unified Execution Runtime | **~88–90%** | Platform infra complete across Tier-3 hosts (2026-05-27) |
+| §42 Unified Execution Runtime | **~92–95%** | Hooks B.06 + product Slack/Teams intake on legal/research (2026-05-27) |
 | Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
-| Pre-P4.2 regression gate | **Done** | **363 tests**, marker `gate` |
+| Pre-P4.2 regression gate | **Done** | **397 tests**, marker `gate` |
 
 
 
@@ -174,23 +174,23 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §31 Retry | Runtime-managed | **Done** | `RetryEngine` |
 
-| §33 Observability | Trace + events | **Partial** | Trace store ✅; P4.1 dual-emit ✅; D.1 CLI ✅ |
+| §33 Observability | Trace + events | **Done** (lab scope) | Trace + runtime events + metrics export (`B.08`–`B.11`); OTel provider beta |
 
-| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial (~88–90%)** | P4 + E + F ✅; platform infra aligned (2026-05-27) |
+| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial (~92–95%)** | Tool + agent-selection hooks; remaining: decision/interrupt/retry hooks |
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
-| §7.1 Integration Library | Catalog + contracts + providers | **Partial** | M.4 in progress — **redis + sqlite + kafka Done** |
+| §7.1 Integration Library | Catalog + contracts + providers | **Done** (beta) | Phase M core + M.6 P1/P2/P3; on-demand slugs only |
 
 | §19 Debug surface | CLI / API | **Done** | D.1 CLI + D.2 API ✅ |
 
 | §32 HITL | Approval / reject / escalate | **Done** | F.3 + `runtime/human/` |
 
-| §26 Long-running tasks | Checkpoint / resume | **Partial** | F.4 + J.4 scheduler + J.5 partial results API; UAEP mid-step pending |
-| §18 Slack / Teams | Interaction adapters | **Stub** | F.4 notification stub only; no intake / webhook |
+| §26 Long-running tasks | Checkpoint / resume | **Done** (baseline) | Scheduler + partial results API + UAEP mid-step (`B.01`, `B.02`) |
+| §18 Slack / Teams | Interaction adapters | **Done** (product baseline) | Outbound + `POST /v1/interactions/intake` on lab/legal/research/poc; verifier via env |
 | §27 Memory model | Bounded task / agent memory | **Done** | I.1–I.5: TaskMemory, MemoryView, SharedTaskContext, handoff, ContextManager v2 |
-| §42.9 Pause / Resume | `RuntimeCheckpoint` | **Partial** | HITL pause ✅; full plan/graph/UAEP checkpoint pending |
-| §41 Unified entry | Single run lifecycle | **Partial** | J.1–J.5 done; Phase J complete for lab scope |
+| §42.9 Pause / Resume | `RuntimeCheckpoint` | **Done** (baseline) | HITL pause + full snapshot (`plan_snapshot`, `graph_snapshot`, UAEP cursor) |
+| §41 Unified entry | Single run lifecycle | **Done** (lab scope) | `UnifiedTaskRunner` on all Tier-3 hosts; legacy `AgentEngine` opt-out removed |
 
 | §20–21 Shadow / Sandbox | Isolated exec | **Done** | F.1 ShadowWorkspace + F.2 SandboxRuntime ✅ |
 
@@ -475,10 +475,10 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 |---|-------------|--------|-------|-------|
 | K.1 | Problem Radar prototype | **Blocked** | §36 | After Phase L sign-off |
 | K.2 | Vendor Discovery prototype | **Blocked** | §37 | After Phase L sign-off |
-| K.3 | Policy engine facade | Pending | §42.11 | Unify replay / validation / runtime policy |
-| K.4 | Dual `AgentDecision` cleanup | Pending | §42.7 | Converge tools agent variant |
-| K.5 | ChatAgent / legacy removal | Pending | §39 | After J.1 |
-| K.6 | A.5 full Legal E2E gate | Deferred | — | Real LLM; not blocking lab |
+| K.3 | Policy engine facade | **Done** | §42.11 | `PolicyEngine` + `coerce_replay_policy_engine`; `ExecutionGuard` uses `evaluate_replay` (2026-05-27) |
+| K.4 | Dual `AgentDecision` cleanup | **Done** | §42.7 | `ToolPlanDecision`; deprecated `tools_agent.AgentDecision` alias (2026-05-27) |
+| K.5 | ChatAgent / legacy removal | **Done** | §39 | Production paths use Nexus only; `check_production_chat_agent_imports.py` gate (2026-05-27) |
+| K.6 | A.5 full Legal E2E gate | **Deferred** | — | Real LLM; not blocking lab — product/CI decision |
 
 ---
 
@@ -545,7 +545,35 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M-LLM.7 | OpenAI-compat expansion + Vertex + `LLMProfile` | **Done** | Together, Fireworks, OpenRouter, DeepSeek, xAI, llama.cpp, Cohere, Vertex |
 | M-LLM.8 | Optional network smoke workflow | **Done** | Weekly schedule + `workflow_dispatch` |
 | M-LLM.9 | Azure refactor (Chat Completions base) | **Done** | Thin `AzureOpenAIChatAdapter` |
-| M-LLM.10 | Production hardening | **Done** | Metrics, builtin conformance, Legal `LLMProfile`, Bedrock tools stream, `cohere_native`, `azure_ai_inference` |
+| M-LLM.10 | Production hardening | **Done** | Metrics, builtin conformance, `LLMProfile`, Bedrock tools stream, `cohere_native`, `azure_ai_inference` |
+| M-LLM.11 | Production ops layer | **Done** | OTLP/Prometheus routes, tenant metrics, rate limit + circuit breaker, secrets map, PR guard, extended network smoke |
+| M-LLM.12 | Nexus + governance wiring | **Done** | `llm_tenant_scope`, runtime metrics plugin, `INTERGRAX_LLM_TENANT_MAX_TOKENS` quota |
+| M-LLM.13 | Observability + secrets + distributed limits | **Done** | Pushgateway, `LLM_OBSERVABILITY.md`, Vault loader, Redis rate limit, governance warn |
+
+### Phase M-RAG — RAG Engine (Tier-0)
+
+**Canon:** §5.2.2 · **Architecture:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) (RAG stack)  
+**Goal:** One configurable retrieval path for `rag.retrieve`, Nexus `ContextBuilder`, and ingest — no duplicate dense-only shortcuts; parsers/chunkers/rerankers selected via profile and Integration Library slugs (never hardcoded to a single vendor).
+
+| # | Deliverable | Status | Notes |
+|---|-------------|--------|-------|
+| M-RAG.1 | `RagProfile` + env (`INTERGRAX_RAG_*`) | **Done** | `intergrax/rag/profiles/rag_profile.py` |
+| M-RAG.2 | `RetrievalService` (route → retrieve → rerank) | **Done** | `intergrax/rag/retrieval/`; wired to `rag.retrieve` + Nexus |
+| M-RAG.3 | Adaptive `QueryRouter` (fast / standard / deep) | **Done** | `intergrax/rag/routing/query_router.py` |
+| M-RAG.4 | `IngestPipeline` + configurable chunking strategy | **Done** | `intergrax/rag/ingest/`; `rag.ingest_document` |
+| M-RAG.5 | Contextual chunk enricher (optional LLM) | **Done** | `INTERGRAX_RAG_CONTEXTUAL_ENRICH`; injected `LLMAdapter` |
+| M-RAG.6 | Query expansion (`deterministic` / `llm`) | **Done** | `MultiQueryRetriever` + `query_expander.py` |
+| M-RAG.7 | Evaluation metrics (`recall@k`, MRR) | **Done** | `intergrax/rag/evaluation/metrics.py` |
+| M-RAG.8 | `create_default_rag_stack()` bootstrap | **Done** | `intergrax/rag/bootstrap/rag_stack_bootstrap.py` |
+| M-RAG.9 | Tool/Nexus wiring (`retrieval_service`, profile on `ToolWiringContext`) | **Done** | `RuntimeConfig.retrieval_service` |
+| M-RAG.10 | Native sparse / BM25 in vector backends | **Done** | `LexicalHybridSupport` + `query_hybrid` on InMemory/Qdrant/Weaviate; RRF fusion |
+| M-RAG.11 | RAG eval CI gate + golden datasets | **Done** | `tests/fixtures/rag_golden/`, `golden_harness.py`, `rag-guard.yml` |
+| M-RAG.12 | GraphRAG (`GraphStore` contract) | **Done** (beta) | `graph/` + `graph_rag` retriever + heuristic indexer |
+| M-RAG.13 | Platform agentic retrieval loop (budgeted) | **Done** | `AgenticRetrievalLoop` on deep tier + `INTERGRAX_RAG_AGENTIC_*` |
+| M-RAG.14 | Qdrant native sparse vectors + RRF fusion | **Done** | `INTERGRAX_RAG_QDRANT_SPARSE`, `bm25_sparse_encoder.py` |
+| M-RAG.15 | Weaviate native `query.hybrid` | **Done** | Live client + `INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID`; fallback to in-memory |
+| M-RAG.16 | LLM graph indexer (optional adapter) | **Done** | `INTERGRAX_RAG_GRAPH_INDEXER_MODE=llm\|heuristic_then_llm` |
+| M-RAG.17 | LLM agentic query refinement | **Done** | `INTERGRAX_RAG_AGENTIC_QUERY_MODE=llm` + injected `LLMAdapter` |
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
@@ -633,7 +661,37 @@ Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. 
 
 #### M.6 P3 / M.7 — Harness integrations (Done beta, 2026-05-29)
 
-**+21 slugs** via `_shared/p3/factories.py` (incl. **`sentry`** 2026-05-29). Catalog total: **73**.
+**M.9 harness depth (Done beta):** full adapters (LangSmith, OpenSearch, Vespa, GitLab, PagerDuty, Braintrust), tools (`gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`), `slash_command`, lab harness profile, CI harness-smoke job. Catalog: **99**.
+
+**M.8 harness gap (Done beta):** +14 slugs via `_shared/p4/factories.py`
+
+**M.7 harness (Done beta):** +21 slugs via `_shared/p3/factories.py` (incl. **sentry**).
+
+#### M.7 — Document parser catalog bridge (2026-05-30)
+
+Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` into `integrations/providers/document_parser/`. RAG uses `CatalogDocumentParser` + `resolve_document_parser()`.
+
+**Wave 2 (2026-05-30):** `openpyxl`, `whisper`, `yt_dlp`; `cohere_rerank` / `jina_rerank`; Bing/Google CSE implementations under `integrations/.../web_client.py` (websearch re-exports); `ParserPipeline` ingestion trace; tool `rag.ingest_document`; `IntegrationProfile.legal_product()` / `research_product()` / `lab()` with `document_parser=docling`; lab `GET /v1/lab/integrations/docling/health`.
+
+**Wave 3 (2026-05-30):** `reddit`, `google_places` search providers; Chroma/Qdrant/Pinecone SDK in `integrations/.../rag_store.py` (RAG shims); runtime SQLite delivery ledger via `sqlite/opens`; `rag.ingest_document` env flags for legal/research; parser trace export to Langfuse/Sentry.
+
+**Wave 4 (2026-05-30):** `inmemory` vector store SDK in `integrations/.../inmemory/rag_store.py`; SQLite observability via `integration_profile_wiring` + `wire_nexus_observability(integration_profile=…)` with default-path fallback; parser pipeline spans appended to `RunTraceWriter` (`parser_trace_span.py`); vendor import governance script + CI gate; Phase Q scaffold defaults (`IntegrationProfile`, `ToolProfile` with `websearch.read_url`).
+
+**Wave 5 (2026-05-30):** Phase P wave 3 tools (`websearch.fetch_batch`, `rag.list_collections`, `observability.query_traces`); full `IntegrationProfile` on legal/research products; Weaviate/Milvus `rag_store.py`; Redis SDK cleanup in distributed/rag shims; governance extended to `agents/` + `rag/`; parser trace export on `RunTraceWriter.finalize_run`; Phase Q scaffold wave 2 (lab vs product ToolProfile, env profile override).
+
+| Slug | Status | Notes |
+|------|--------|-------|
+| `docling` | **Done** (beta) | local + server; `opens.py` only Docling/httpx imports |
+| `pymupdf` | **Done** (beta) | PDF + optional Tesseract OCR |
+| `unstructured` | **Done** (beta) | HTML loader |
+| `python_docx` | **Done** (beta) | Word `.docx` |
+| `openpyxl` | **Done** (beta) | Excel/CSV via pandas |
+| `whisper` | **Done** (beta) | Audio + YouTube (uses yt_dlp opens) |
+| `yt_dlp` | **Done** (beta) | YouTube audio/video download |
+| `cohere_rerank` | **Done** (beta) | RAG rerank via integration resolver |
+| `jina_rerank` | **Done** (beta) | RAG rerank via integration resolver |
+| `reddit` | **Done** (beta) | Reddit OAuth2 search |
+| `google_places` | **Done** (beta) | Google Places text search |
 
 #### M.6 P3 — Legacy backlog note (superseded)
 
@@ -1073,6 +1131,8 @@ uv run pytest -m gate -q
 | O.8 | `ToolProfile` in Tier-3 scaffold | **Done** | §7.4.8 | `tool_wiring.py` template; lab + poc_template reference (2026-05-30) |
 | O.9 | Agent Creation Guide Appendix E update | **Done** | — | Unified model + ToolProfile examples (2026-05-30) |
 | O.10 | Gate tests for catalog conformance | **Done** | — | `tests/unit/tools/providers/` — all catalog bundles (2026-05-30) |
+| O.11 | Phase P wave 2 context tools: `websearch.read_url`, `confluence.search` | **Done** | §7.1.7, §22.1 | `providers/websearch/read_url_*`, confluence alias (2026-05-30) |
+| O.12 | Phase P wave 3 tools: `websearch.fetch_batch`, `rag.list_collections`, `observability.query_traces` | **Done** | §7.1.7, §22.1 | Extended `ObservabilityBackend.query_traces`, vector `list_collections` (2026-05-30) |
 
 #### O — Step-by-step implementation sequence
 
@@ -1144,21 +1204,19 @@ AFTER (canonical):
 
 ```text
 
-NOW:     Phase O — complete (O.5–O.9 Done); product agents (K) or M.6 providers on demand
+NOW:     Product decision — Phase K.1/K.2 (Problem Radar / Vendor Discovery) **when approved**
 
-DONE:    Phase N — Application Environment & Deploy Scaffold (N.0–N.10)
+DONE:    Phase K hardening — K.3–K.5 (policy facade, AgentDecision cleanup, ChatAgent production guard)
 
-DONE:    Phase L certification — L1 achieved (Appendix A)
+DONE:    Phase O, N, L, M core, M-LLM — platform + catalog + scaffold
 
-DONE:    Phase M core (M.1–M.8) — Integration Library catalog + lab profile
+DONE:    Platform stabilization + Appendix B technical paydown (except B.15 E2E)
 
-PARALLEL: Phase M.6 P1/P2 providers (on demand, one slug per iteration)
+PARALLEL: M.6 additional provider slugs (on demand, one slug per iteration)
 
-         Phase K — K.1/K.2 **when you approve** (Problem Radar or Vendor Discovery)
+BLOCKED: K.1/K.2 business agents until product priority; K.6 / B.15 Legal live LLM E2E
 
 BLOCKED: No new Nexus features unless Tier-1 extension rule (§0.6) applies
-
-PARALLEL: K.3–K.5 hardening; M.6 provider wraps (non-breaking)
 
 ```
 
@@ -1638,6 +1696,8 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-27 | Platform stabilization | All Tier-3 hosts: validating runtime events, plugin bootstrap, resilient delivery (lab/legal/research/poc); shared `_shared/platform_wiring` + `notification_wiring` |
 | 2026-05-27 | Infra paydown | SQLite DLQ ledger + debug `/notifications/*`; `ValidatingRuntimeEventPersistence`; Tier-3 plugin bootstrap |
 | 2026-05-27 | B.07, B.11, B.13, B.18, B.24 | Schema registry + phase coverage + `RuntimePlugin`; metrics export + `GET /debug/tasks/{id}/metrics`; retry/DLQ delivery; echo + research_mock HTTP trace acceptance; agents vendor import gate test |
+| 2026-05-27 | K.3–K.5 | `coerce_replay_policy_engine` + `ExecutionGuard.evaluate_replay`; ChatAgent production import guard; CI gate paths aligned with full gate (**394** tests) |
+| 2026-05-27 | B.06, §18 | `BEFORE/AFTER_TOOL_CALL` + agent-selection hooks; product interaction intake on legal/research (**397** gate) |
 
 ### B.1 Runtime & §42 convergence
 
@@ -1648,7 +1708,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.03 | **Policy engine facade** — single `PolicyEngine` for replay, validation, runtime policy | §42.11 | **Medium** | **Done** | Indirect — consistent governance for all agents | Tier-1 | `PolicyEngine` + `coerce_policy_engine`; Nexus/UAEP/interrupt handler (2026-05-27) |
 | B.04 | **Dual `AgentDecision` cleanup** — converge tools-agent variant with canonical §42.7 enum | §42.7 | **Medium** | **Done** | Agents emitting decisions must use one contract | Tier-1 | `ToolPlanDecision` / `ToolsAgentRunResult`; deprecated `tools_agent` aliases (2026-05-27) |
 | B.05 | **Escalation policy production path** — `SAFETY_VIOLATION` / HITL expiry → real escalation (not stub) | §42.38, §42.10 | **Medium** | **Done** | HITL-heavy agents | Tier-1 | `escalation.v1` template, `wire_long_running_scheduler`, lab startup, SAFETY_VIOLATION timeout→escalate (2026-05-27) |
-| B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | **Done** | Extension agents via plugins | Tier-1 | `HOOK_COVERAGE` + lifecycle hooks on NexusLoop; UAEP/graph/HITL already wired (2026-05-27) |
+| B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | **Done** | Extension agents via plugins | Tier-1 | Lifecycle + **tool call** + **agent selection** hooks; decision/interrupt/retry hooks remain optional (2026-05-27) |
 | B.07 | **§42 maturity remainder** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | **Done** (baseline) | Platform stability for new agents | Tier-1 | `runtime/schema/registry.py`, `events/phase_coverage.py`, `plugins/contract.py` (2026-05-27) |
 
 ### B.2 Observability & debug surface
@@ -1664,7 +1724,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
-| B.12 | **Production Slack / Teams webhooks** — lab has debug intake + signature stub; no production inbound adapter deployment | §18 | **Medium** | **Done** | Organization Worker, HITL from chat | Tier-0 / Tier-3 | `POST /v1/interactions/intake` on lab app + shared `create_interaction_intake_router` (2026-05-27) |
+| B.12 | **Production Slack / Teams webhooks** — inbound intake on product hosts | §18 | **Medium** | **Done** | Organization Worker, HITL from chat | Tier-0 / Tier-3 | `POST /v1/interactions/intake` on lab/legal/research/poc via `wire_interaction_intake_service` (2026-05-27) |
 | B.13 | **Outbound delivery hardening** — retries, DLQ, delivery receipts for HITL notifications | §18, §42.10 | **Low** | **Done** | HITL agents in prod | Tier-0 | `RetryingNotificationDelivery` + `SQLiteDeliveryLedger` + debug `/debug/notifications/*` (2026-05-27) |
 
 ### B.6 Integration Library (§7.1)
@@ -1743,5 +1803,5 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 ---
 
-*Plan synced after platform stabilization (2026-05-27). Gate: `uv run pytest -m gate -q` — **363 passed**. Business agents (Legal E2E B.15, Phase K) remain product-blocked.*
+*Plan synced after §42 hook parity + product interaction intake (2026-05-27). Gate: **397 passed**. Business agents (K.1/K.2) and Legal live LLM E2E (K.6/B.15) remain product-blocked.*
 

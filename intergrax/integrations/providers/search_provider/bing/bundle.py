@@ -19,7 +19,7 @@ from intergrax.integrations.providers.search_provider.bing.opens import (
     open_bing_search_provider,
     open_bing_web_search_provider,
 )
-from intergrax.websearch.providers.bing_provider import BingWebProvider
+from intergrax.integrations.providers.search_provider.bing.web_client import BingWebProvider
 
 
 @dataclass(frozen=True)

@@ -7,7 +7,12 @@ import pytest
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.runtime_policy import PolicyAction
-from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
+from intergrax.runtime.policy.policy_engine import (
+    PolicyEngine,
+    coerce_policy_engine,
+    coerce_replay_policy_engine,
+)
+from intergrax.runtime.replay.policy import ExecutionPolicyEngine
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.replay.policy import PolicyDecisionType
 from intergrax.runtime.replay.policy_config import ExecutionPolicyConfig
@@ -33,6 +38,14 @@ def test_policy_engine_evaluate_decision_delegates_to_runtime():
     )
     result = engine.evaluate_decision(decision, context={"require_human_on_critical": True})
     assert result.action == PolicyAction.REQUIRE_HUMAN
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_coerce_replay_policy_engine_from_execution_engine():
+    config = ExecutionPolicyConfig()
+    facade = coerce_replay_policy_engine(ExecutionPolicyEngine(config))
+    assert facade.replay is not None
 
 
 @pytest.mark.unit

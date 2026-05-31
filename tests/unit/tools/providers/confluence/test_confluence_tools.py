@@ -82,7 +82,11 @@ def test_confluence_tools_registered_in_catalog() -> None:
     register_default_tools()
     assert "confluence.get_page" in list_catalog_tool_ids()
     assert "confluence.search_pages" in list_catalog_tool_ids()
-    assert get_bundle("confluence").tool_ids == ("confluence.get_page", "confluence.search_pages")
+    assert get_bundle("confluence").tool_ids == (
+        "confluence.get_page",
+        "confluence.search_pages",
+        "confluence.search",
+    )
 
 
 def test_confluence_get_page_via_runtime_invoker() -> None:

@@ -1,7 +1,9 @@
 # Confluence tool bundle
 
 **Bundle id:** `confluence`  
-**Tools:** `confluence.get_page`, `confluence.search_pages`
+**Tools:** `confluence.get_page`, `confluence.search_pages`, `confluence.search`
+
+`confluence.search` is a stable alias of `confluence.search_pages` (same handler) — use the shorter id in large LLM tool catalogs.
 
 ## Dependencies (`ToolWiringContext`)
 
@@ -26,5 +28,8 @@ registry = build_registry_from_profile(ToolProfile(enabled_bundles=["confluence"
 ## Agent allow-list
 
 ```python
-AgentContract(allowed_tools=["confluence.get_page", "confluence.search_pages"], ...)
+AgentContract(
+    allowed_tools=["confluence.get_page", "confluence.search_pages", "confluence.search"],
+    ...
+)
 ```

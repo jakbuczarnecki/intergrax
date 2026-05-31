@@ -39,3 +39,7 @@ class RagRetrieveOutput(BaseModel):
     chunks: list[RagChunkResult] = Field(default_factory=list)
     context_text: str = ""
     reason: str = ""
+    diagnostics: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Retrieval trace: retriever_id, route_tier, reranker_id, latencies.",
+    )

@@ -4,9 +4,10 @@
 
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.query.query_expander import DeterministicQueryExpander, QueryExpander
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
@@ -24,32 +25,21 @@ class MultiQueryRetriever(BaseRetriever):
         *,
         prefetch_factor: int = 5,
         num_queries: int = 3,
+        query_expander: Optional[QueryExpander] = None,
     ) -> None:
 
         self._vs = vector_store
         self._em = embedding_manager
         self._prefetch_factor = int(prefetch_factor)
         self._num_queries = int(num_queries)
+        self._expander = query_expander or DeterministicQueryExpander()
 
     @classmethod
     def name(cls) -> str:
         return "multiquery"
 
     def _generate_queries(self, query: str) -> List[str]:
-        """
-        Simple deterministic query expansion.
-        Placeholder for future LLM-based expansion.
-        """
-
-        variants = {query}
-
-        words = query.split()
-
-        if len(words) > 2:
-            variants.add(" ".join(words[:2]))
-            variants.add(" ".join(words[-2:]))
-
-        return list(variants)[: self._num_queries]
+        return self._expander.expand(query, num_queries=self._num_queries)
 
     def retrieve(
         self,

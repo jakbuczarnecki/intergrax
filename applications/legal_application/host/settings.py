@@ -83,7 +83,12 @@ class LegalBackendSettings:
     api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
     include_mcp: bool = True
     mcp_mount_path: str = "/mcp"
+    include_interaction_routes: bool = True
+    interaction_route_prefix: str = "/v1/interactions"
+    interaction_surface: str = "auto"
+    interaction_execute_default: bool = True
     enable_rag: bool = False
+    enable_rag_ingest: bool = False
     enable_websearch: bool = False
     use_legal_tool_decision: bool = False
     tools_mode: str = "off"
@@ -96,6 +101,8 @@ class LegalBackendSettings:
         ids: list[str] = list(self.extra_enabled_tool_ids)
         if self.enable_rag and "rag.retrieve" not in ids:
             ids.append("rag.retrieve")
+        if self.enable_rag_ingest and "rag.ingest_document" not in ids:
+            ids.append("rag.ingest_document")
         if self.enable_websearch and "websearch.query" not in ids:
             ids.append("websearch.query")
         return ids
@@ -166,8 +173,17 @@ class LegalBackendSettings:
 
         include_mcp = _env_bool("LEGAL_INCLUDE_MCP", default=True)
         mcp_mount = os.environ.get("LEGAL_MCP_MOUNT_PATH", "/mcp").strip() or "/mcp"
+        include_interactions = _env_bool("LEGAL_INCLUDE_INTERACTIONS", default=True)
+        interaction_prefix = (
+            os.environ.get("LEGAL_INTERACTION_ROUTE_PREFIX") or "/v1/interactions"
+        ).strip() or "/v1/interactions"
+        interaction_surface = (
+            os.environ.get("LEGAL_INTERACTION_SURFACE") or "auto"
+        ).strip().lower() or "auto"
+        interaction_execute = _env_bool("LEGAL_INTERACTION_EXECUTE_DEFAULT", default=True)
 
         enable_rag = _env_bool("LEGAL_ENABLE_RAG", default=False)
+        enable_rag_ingest = _env_bool("LEGAL_ENABLE_RAG_INGEST", default=False)
         enable_websearch = _env_bool("LEGAL_ENABLE_WEBSEARCH", default=False)
         use_legal_tool_decision = _env_bool("LEGAL_USE_TOOL_DECISION", default=False)
         tools_mode = os.environ.get("LEGAL_TOOLS_MODE", "off").strip().lower() or "off"
@@ -197,7 +213,12 @@ class LegalBackendSettings:
             api_keys_map=keys,
             include_mcp=include_mcp,
             mcp_mount_path=mcp_mount,
+            include_interaction_routes=include_interactions,
+            interaction_route_prefix=interaction_prefix,
+            interaction_surface=interaction_surface,
+            interaction_execute_default=interaction_execute,
             enable_rag=enable_rag,
+            enable_rag_ingest=enable_rag_ingest,
             enable_websearch=enable_websearch,
             use_legal_tool_decision=use_legal_tool_decision,
             tools_mode=tools_mode,

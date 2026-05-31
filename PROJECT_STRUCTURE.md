@@ -41,7 +41,7 @@ Tier-0 modules added during §42 / Appendix B paydown — not always reflected i
 | `intergrax/applications/_shared/notification_wiring.py` | Resilient delivery + DLQ ledger paths |
 | `intergrax/debug/router.py` | Debug API: trace, events, metrics, DLQ, experiments |
 
-Gate: **`uv run pytest -m gate -q`** — **363 passed** (2026-05-27).
+Gate: **`uv run pytest -m gate -q`** — **397 passed** (2026-05-27, §42 hooks + product interaction intake).
 
 ## File Index
 

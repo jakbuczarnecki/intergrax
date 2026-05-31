@@ -9,6 +9,7 @@ Only this module may import ``qdrant_client`` before constructing the RAG store.
 
 from __future__ import annotations
 
+import os
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
@@ -29,9 +30,11 @@ def _import_qdrant_client() -> Any:
 
 
 def _build_rag_config(config: QdrantIntegrationConfig) -> Any:
-    from intergrax.rag.vectorstore.providers.qdrant_vector_store import QdrantConfig
+    from intergrax.integrations.providers.vector_store.qdrant.rag_store import QdrantConfig
 
     url = config.resolved_url()
+    sparse_raw = os.getenv("INTERGRAX_RAG_QDRANT_SPARSE", "").strip().lower()
+    enable_sparse = sparse_raw in ("1", "true", "yes", "on")
     return QdrantConfig(
         collection_name=config.collection_name,
         tenant_id=config.tenant_id,
@@ -39,6 +42,7 @@ def _build_rag_config(config: QdrantIntegrationConfig) -> Any:
         batch_size=config.batch_size,
         qdrant_url=url,
         qdrant_api_key=config.api_key or None,
+        enable_sparse_vectors=enable_sparse,
     )
 
 
@@ -50,7 +54,7 @@ def _open_rag_store(
     if store_factory is not None:
         return store_factory()
     _import_qdrant_client()
-    from intergrax.rag.vectorstore.providers.qdrant_vector_store import QdrantVectorStore
+    from intergrax.integrations.providers.vector_store.qdrant.rag_store import QdrantVectorStore
 
     return QdrantVectorStore(_build_rag_config(config))
 

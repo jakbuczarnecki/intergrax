@@ -1,13 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Integrax framework – proprietary and confidential.
 
-"""Retrieval logic for ``rag.retrieve`` — composes Tier-0 RAG managers from wiring context."""
+"""Retrieval logic for ``rag.retrieve`` — uses Tier-0 :class:`RetrievalService`."""
 
 from __future__ import annotations
 
 from typing import Any, List, Optional, Sequence
 
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.retrieval.resolve import resolve_retrieval_service
+from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
+from intergrax.rag.retrieval.retrieval_result import RetrievalChunk
+from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 from intergrax.tools.providers.rag.contracts import RagChunkResult, RagRetrieveInput, RagRetrieveOutput
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -20,43 +24,66 @@ class RagRetrieveConfigurationError(RuntimeError):
 
 def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> RagRetrieveOutput:
     """
-    Retrieve document chunks for ``params.query`` using vector store + embeddings.
-
-    Requires ``ctx.vectorstore_manager`` and ``ctx.embedding_manager``.
+    Retrieve document chunks via unified :class:`RetrievalService` (hybrid + rerank per profile).
     """
-    vectorstore = ctx.vectorstore_manager
-    embedding_manager = ctx.embedding_manager
-
-    if vectorstore is None:
+    if ctx.vectorstore_manager is None:
         return RagRetrieveOutput(used=False, reason="vectorstore_manager_not_configured")
-    if embedding_manager is None:
+    if ctx.embedding_manager is None:
         return RagRetrieveOutput(used=False, reason="embedding_manager_not_configured")
+
+    profile = ctx.rag_profile or RagProfile()
+    service = resolve_retrieval_service(
+        vectorstore_manager=ctx.vectorstore_manager,
+        embedding_manager=ctx.embedding_manager,
+        retriever_manager=ctx.retriever_manager,
+        reranker_manager=ctx.reranker_manager,
+        profile=profile,
+        retrieval_service=ctx.retrieval_service,
+    )
+    if service is None:
+        return RagRetrieveOutput(used=False, reason="retrieval_service_not_configured")
 
     where = _build_metadata_scope(params)
     metadata_filter = MetadataFilter(conditions=where) if where else None
 
-    query_embedding = _embed_query(embedding_manager, params.query)
-    hits = vectorstore.query(
-        query_embedding=query_embedding,
-        top_k=int(params.top_k),
-        metadata_filter=metadata_filter,
-        include_embeddings=False,
+    result = service.retrieve(
+        RetrievalRequest(
+            query=params.query,
+            top_k=int(params.top_k) if params.top_k else None,
+            metadata_filter=metadata_filter,
+            score_threshold=params.score_threshold,
+        )
     )
 
-    chunks = _map_hits(hits)
-    if params.score_threshold is not None:
-        threshold = float(params.score_threshold)
-        chunks = [chunk for chunk in chunks if chunk.score >= threshold]
+    if not result.used:
+        return RagRetrieveOutput(used=False, reason=result.reason)
 
-    if not chunks:
-        return RagRetrieveOutput(used=False, reason="no_hits")
-
-    context_text = format_rag_context_text(chunks)
+    chunks = [_to_rag_chunk(c) for c in result.chunks]
+    max_chars = profile.max_context_chars
+    context_text = format_rag_context_text(chunks, max_chars=max_chars)
+    diagnostics = {
+        "retriever_id": result.trace.retriever_id,
+        "route_tier": result.trace.route_tier,
+        "reranker_id": result.trace.reranker_id,
+        "rerank_enabled": result.trace.rerank_enabled,
+        "retrieval_latency_ms": result.trace.retrieval_latency_ms,
+        "rerank_latency_ms": result.trace.rerank_latency_ms,
+    }
     return RagRetrieveOutput(
         used=True,
         chunks=chunks,
         context_text=context_text,
         reason="ok",
+        diagnostics=diagnostics,
+    )
+
+
+def _to_rag_chunk(c: RetrievalChunk) -> RagChunkResult:
+    return RagChunkResult(
+        id=c.id,
+        text=c.text,
+        score=c.score,
+        metadata=dict(c.metadata or {}),
     )
 
 
@@ -71,50 +98,6 @@ def _build_metadata_scope(params: RagRetrieveInput) -> dict[str, Any]:
     if params.workspace_id is not None:
         where["workspace_id"] = params.workspace_id
     return where
-
-
-def _embed_query(embedding_manager: Any, query_text: str) -> Sequence[float]:
-    try:
-        query_embedding = embedding_manager.embed_one(query_text)
-    except Exception:
-        query_embedding = embedding_manager.embed_texts([query_text])
-
-    if hasattr(query_embedding, "ndim"):
-        try:
-            if query_embedding.ndim > 1:
-                query_embedding = query_embedding[0]
-        except Exception:
-            pass
-    elif (
-        isinstance(query_embedding, (list, tuple))
-        and query_embedding
-        and isinstance(query_embedding[0], (list, tuple))
-    ):
-        query_embedding = query_embedding[0]
-    return query_embedding
-
-
-def _map_hits(hits: List[VectorStoreHit]) -> List[RagChunkResult]:
-    chunks: List[RagChunkResult] = []
-    for hit in hits or []:
-        if not isinstance(hit, VectorStoreHit):
-            continue
-        text = (hit.content or "").strip()
-        if not text:
-            continue
-        try:
-            score = float(hit.similarity_score)
-        except Exception:
-            score = 0.0
-        chunks.append(
-            RagChunkResult(
-                id=str(hit.id or "unknown"),
-                text=text,
-                score=score,
-                metadata=dict(hit.metadata or {}),
-            )
-        )
-    return chunks
 
 
 def format_rag_context_text(

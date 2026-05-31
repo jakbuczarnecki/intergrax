@@ -1,6 +1,6 @@
 # Intergrax Integration Library
 
-**Last updated:** 2026-05-29
+**Last updated:** 2026-05-30
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 
@@ -28,14 +28,16 @@ intergrax/integrations/providers/
 ├── key_value_cache/          # redis, memcached, elasticache
 ├── message_bus/              # kafka, sqs, pubsub, …
 ├── object_storage/           # s3, azure_blob, gcs
-├── vector_store/             # pinecone, qdrant, chroma, weaviate, milvus, inmemory
-├── search_provider/          # google_cse, bing, brave, serpapi, tavily, exa
-├── notification_channel/     # slack, teams, discord, twilio, …
-├── interaction_surface/      # lab_json (slack/teams also register here)
+├── vector_store/             # pinecone, qdrant, chroma, weaviate, milvus, inmemory, vespa
+├── search_provider/          # google_cse, bing, reddit, google_places, brave, serpapi, tavily, exa
+├── notification_channel/     # slack, teams, discord, twilio, pagerduty, opsgenie, …
+├── interaction_surface/      # lab_json, slash_command (slack/teams also register here)
 ├── collaboration_suite/      # ms365_graph, google_workspace
-├── issue_tracker/            # jira, github, linear, azure_devops
+├── issue_tracker/            # jira, github, linear, azure_devops, gitlab
 ├── wiki_knowledge/           # confluence, notion, sharepoint
-├── observability_backend/    # prometheus, elasticsearch, otel, langfuse, datadog, clickhouse, sentry
+├── observability_backend/    # prometheus, elasticsearch, otel, langfuse, datadog, clickhouse, sentry, langsmith, …
+├── document_parser/          # docling, pymupdf, unstructured, python_docx, openpyxl, whisper, yt_dlp
+├── rerank_provider/          # cohere_rerank, jina_rerank
 ├── browser_automation/       # playwright, firecrawl, selenium
 ├── secrets_store/            # vault
 ├── graph_store/              # neo4j
@@ -55,7 +57,7 @@ Catalog slugs (`IntegrationSlug.S3`) are unchanged — only the Python package p
 | **Universal contracts** | Each category (`relational_store`, `vector_store`, `message_bus`, …) defines a small Protocol. Providers implement the contract; agent logic depends on the contract only. |
 | **Modular providers** | One slug = one package under `providers/<category>/<slug>/` (category = contract name). Swap Redis for ElastiCache, SQLite for PostgreSQL, or Chroma for Pinecone by changing `IntegrationProfile` — no agent refactor. |
 | **Environment portability** | Tier-3 applications compose integrations at startup (`IntegrationProfile`, env vars). The same Tier-2 agent runs against lab defaults (`sqlite`, `log`, `lab_json`) or production stacks (`postgresql`, `slack`, `s3`, `qdrant`). |
-| **Single entry for SDKs** | Vendor SDKs (boto3, PyMongo, httpx, …) are imported only in each provider’s `opens.py`. Tier-2 agents must **not** import provider slugs or vendor libraries. |
+| **Single entry for SDKs** | Vendor SDKs (boto3, PyMongo, chromadb, redis, …) are imported only in boundary modules: `opens.py`, `rag_store.py`, `web_client.py`, `client.py`, and `_shared/p2|p3|p4/factories.py`. CI enforces this via `scripts/check_integration_vendor_imports.py`. Tier-2 agents must **not** import provider slugs or vendor libraries. |
 | **Catalog registration** | `register_default_integrations()` registers all shipped providers. Resolution: explicit slug → profile field → env (`INTERGRAX_INTEGRATION_<CATEGORY>`) → cloud-platform defaults. |
 
 ---
@@ -107,6 +109,31 @@ profile = IntegrationProfile.lab()
 # relational_store → sqlite, notification_channel → log, interaction_surface → lab_json
 ```
 
+**Example — product profile with SQLite observability fallback:**
+
+Product profiles such as `IntegrationProfile.legal_product()` may omit `relational_store`. Tier-3 factories pass the profile to `wire_nexus_observability()`; when SQLite is not declared on the profile, trace and runtime-event stores fall back to default `build/` SQLite paths (same as pre-profile wiring).
+
+```python
+from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
+from intergrax.integrations.registry.profile import IntegrationProfile
+
+observability = wire_nexus_observability(
+    integration_profile=IntegrationProfile.legal_product(),
+)
+```
+
+Explicit SQLite bundle (lab / tests):
+
+```python
+from intergrax.runtime.persistence.integration_profile_wiring import open_trace_store_from_profile
+
+profile = IntegrationProfile(
+    relational_store=IntegrationSlug.SQLITE,
+    options={IntegrationSlug.SQLITE: {"data_dir": "build/lab"}},
+)
+trace_store = open_trace_store_from_profile(profile)
+```
+
 ---
 
 ## Category contracts
@@ -129,6 +156,8 @@ profile = IntegrationProfile.lab()
 | `browser_automation` | `BrowserAutomation` | Dynamic web pages (JS-heavy sites) |
 | `secrets_store` | `SecretsStore` | Tenant API keys, credentials (Vault, …) |
 | `graph_store` | `GraphStore` | Agent memory, tool dependency graphs |
+| `document_parser` | `DocumentParser` | Document/media parsing (Docling, PyMuPDF, Unstructured, python-docx, openpyxl, whisper, yt_dlp) |
+| `rerank_provider` | `RerankProvider` | Vendor reranking APIs (cohere_rerank, jina_rerank) — consumed by RAG `rerankers/` |
 | `cloud_platform` | `CloudPlatform` | Multi-service auth + category defaults |
 
 Contract modules: `intergrax/integrations/contracts/`.
@@ -149,7 +178,7 @@ Service-level slugs (`s3`, `azure_blob`, `gcs`, …) remain available for explic
 
 ---
 
-## Implemented providers (73)
+## Implemented providers (99)
 
 All providers below are registered in `register_default_integrations()`.  
 **Status:** `stable` = production-ready catalog entry; `beta` = shipped, API may evolve.
@@ -167,31 +196,34 @@ All providers below are registered in `register_default_integrations()`.
 | `key_value_cache` | 3 | `redis`, `memcached`, `elasticache` |
 | `message_bus` | 8 | `kafka`, `celery`, `rabbitmq`, `sqs`, `service_bus`, `pubsub`, `temporal`, `nats` |
 | `object_storage` | 5 | `s3`, `azure_blob`, `gcs`, `minio`, `filesystem` |
-| `vector_store` | 6 | `pinecone`, `qdrant`, `chroma`, `weaviate`, `milvus`, `inmemory` |
-| `search_provider` | 6 | `google_cse`, `bing`, `brave`, `serpapi`, `tavily`, `exa` |
-| `notification_channel` | 7 | `slack`, `teams`, `webhook`, `log`, `email_smtp`, `discord`, `twilio` |
-| `interaction_surface` | 1 (+2 dual) | `lab_json`; `slack` / `teams` also register this category |
+| `vector_store` | 7 | `pinecone`, `qdrant`, `chroma`, `weaviate`, `milvus`, `inmemory`, `vespa` |
+| `search_provider` | 8 | `google_cse`, `bing`, `reddit`, `google_places`, `brave`, `serpapi`, `tavily`, `exa` |
+| `notification_channel` | 9 | `slack`, `teams`, `webhook`, `log`, `email_smtp`, `discord`, `twilio`, `pagerduty`, `opsgenie` |
+| `interaction_surface` | 2 (+2 dual) | `lab_json`, `slash_command`; `slack` / `teams` also register this category |
 | `collaboration_suite` | 2 | `ms365_graph`, `google_workspace` |
-| `issue_tracker` | 4 | `jira`, `github`, `linear`, `azure_devops` |
+| `issue_tracker` | 5 | `jira`, `github`, `linear`, `azure_devops`, `gitlab` |
 | `wiki_knowledge` | 3 | `confluence`, `notion`, `sharepoint` |
-| `observability_backend` | 7 | `prometheus`, `elasticsearch`, `otel`, `langfuse`, `datadog`, `clickhouse`, **`sentry`** |
+| `observability_backend` | 17 | `prometheus`, `elasticsearch`, `otel`, `langfuse`, `datadog`, `clickhouse`, `sentry`, `langsmith`, `helicone`, `posthog`, `braintrust`, `signoz`, `honeycomb`, `arize`, `phoenix`, `wandb`, `opensearch` |
+| `document_parser` | 7 | `docling`, `pymupdf`, `unstructured`, `python_docx`, `openpyxl`, `whisper`, `yt_dlp` |
+| `rerank_provider` | 2 | `cohere_rerank`, `jina_rerank` |
 | `browser_automation` | 3 | `playwright`, `firecrawl`, `selenium` |
 | `secrets_store` | 1 | `vault` |
 | `graph_store` | 1 | `neo4j` |
 | `cloud_platform` | 3 | `aws`, `azure`, `gcp` |
 
-**Total unique slugs:** 73.
+**Total unique slugs:** 99.
 
 ### Implementation depth (code audit)
 
 | Depth | Count | Meaning |
 |-------|------:|---------|
-| **full** | 24 | Dedicated `adapter` + `opens` (+ `config`); SDK in `opens.py` |
-| **full-partial** | 6 | `opens` / `client` without full adapter split |
+| **full** | 30+ | Dedicated adapter + opens (+ config) |
+| **full-partial** | 6 | opens/client without full adapter split |
 | **thin-p2** | 22 | `_shared/p2/factories.py` |
-| **thin-p3** | 21 | `_shared/p3/factories.py` (Phase M.7 harness + **sentry**) |
+| **thin-p3** | 21 | `_shared/p3/factories.py` (M.7 harness + sentry) |
+| **thin-p4** | 14 | `_shared/p4/factories.py` (M.8 harness gap) |
 
-**Thin-p3 slugs:** `tavily`, `exa`, `weaviate`, `milvus`, `inmemory`, `vault`, `langfuse`, `datadog`, `clickhouse`, **`sentry`**, `temporal`, `nats`, `neo4j`, `snowflake`, `supabase`, `minio`, `filesystem`, `discord`, `twilio`, `firecrawl`, `selenium`.
+**Thin-p4 slugs:** `langsmith`, `helicone`, `posthog`, `braintrust`, `signoz`, `honeycomb`, `arize`, `phoenix`, `wandb`, `opensearch`, `pagerduty`, `opsgenie`, `gitlab`, `vespa`.
 
 **Vector-store bridges** (`pinecone`, `qdrant`, `chroma`): RAG implementation in `intergrax/rag/vectorstore/`.
 
@@ -199,11 +231,7 @@ Unit tests: `tests/unit/integrations/` — **335+** cases including `test_p2_pro
 
 ### Reserved in `IntegrationSlug` but not registered
 
-| Slug | Category | Notes |
-|------|----------|-------|
-| `reddit` | search_provider | Social search API |
-| `google_places` | search_provider | Places API |
-| `slash_command` | interaction_surface | Generic slash-command intake |
+None — all enum slugs in `FIELD_SLUGS` are registered except cloud-platform-only defaults resolved via `IntegrationProfile.with_cloud_platform()`.
 
 ---
 
@@ -368,12 +396,14 @@ RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorst
 | `slack` | stable | `create_slack_interaction_surface()` | `INTERGRAX_SLACK` | Inbound slash commands / events |
 | `teams` | stable | `create_teams_interaction_surface()` | `INTERGRAX_TEAMS` | Microsoft Teams activity intake |
 | `lab_json` | stable | `create_lab_json_interaction_surface()` | `INTERGRAX_LAB_JSON` | Laboratory JSON webhook intake |
+| `slash_command` | beta | `create_slash_command_interaction_surface()` | `INTERGRAX_SLASH_COMMAND` | Generic slash-command payloads (Slack/Teams/CLI) |
 
 | Provider | Usage guide |
 |----------|-------------|
 | `slack` | [USAGE.md](../intergrax/integrations/providers/notification_channel/slack/USAGE.md) |
 | `teams` | [USAGE.md](../intergrax/integrations/providers/notification_channel/teams/USAGE.md) |
 | `lab_json` | [USAGE.md](../intergrax/integrations/providers/interaction_surface/lab_json/USAGE.md) |
+| `slash_command` | [USAGE.md](../intergrax/integrations/providers/interaction_surface/slash_command/USAGE.md) |
 
 ---
 
@@ -539,32 +569,55 @@ Alphabetical reference — all shipped integrations in one table.
 
 All slugs from the 2026-05 harness recommendation (high / medium / low) are registered. Shared implementation: `intergrax/integrations/_shared/p3/factories.py`. New categories: `secrets_store`, `graph_store`.
 
----
+## Phase M.9 harness depth — Done (beta)
 
-## Recommended next integrations (harness AI gap analysis)
+**Full adapters** (replacing thin-p4 shells): `langsmith`, `opensearch`, `vespa`, `gitlab`, `pagerduty`, `braintrust` — dedicated `config/client/adapter/opens/bundle` packages.
 
-Audyt względem typowych stacków agentowych (LangGraph, CrewAI, LlamaIndex, enterprise VPC). **Zaimplementowane** oznacza slug w katalogu; **Brak** — warto rozważyć w kolejnej iteracji.
+**New tools:** `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`.
 
-| Priorytet | Slug | Kategoria | Status | Dlaczego harness |
-|-----------|------|-----------|--------|------------------|
-| **Wysoki** | `sentry` | observability_backend | **Done** | Error tracking, release health, agent failure alerts |
-| **Wysoki** | `langsmith` | observability_backend | Brak | LLM trace/debug (LangChain ecosystem) — obok `langfuse` |
-| **Wysoki** | `helicone` | observability_backend | Brak | LLM cost/latency proxy — popularny w prod agentach |
-| **Wysoki** | `pagerduty` / `opsgenie` | notification_channel | Brak | On-call escalation po HITL / agent failure |
-| **Średni** | `posthog` | observability_backend | Brak | Product analytics + feature flags dla agent apps |
-| **Średni** | `braintrust` | observability_backend | Brak | Evals + regression dla promptów agentów |
-| **Średni** | `gitlab` | issue_tracker | Brak | DevOps issue flow (mamy GitHub/Azure DevOps) |
-| **Średni** | `signoz` / `honeycomb` | observability_backend | Brak | OTEL-native APM (częściowo pokryte przez `otel`) |
-| **Średni** | `arize` / `phoenix` | observability_backend | Brak | ML/RAG eval + drift (w planie jako `arize`) |
-| **Niski** | `reddit` | search_provider | Reserved | Social research |
-| **Niski** | `google_places` | search_provider | Reserved | Geo POI |
-| **Future** | `opensearch`, `vespa`, `wandb` | various | Brak | Search/RAG scale, experiment tracking |
+**`slash_command`** interaction surface registered (catalog **99**).
 
-**Już silne pokrycie harness:** 73 integracje — SQL (10), kolejki (8), blob (5), wektory (6), search (6), observability (7 incl. Sentry), Vault, Neo4j, Temporal/NATS, Firecrawl, Tavily/Exa, Discord/Twilio.
+**Lab harness:** `IntegrationProfile.harness_lab()` + `wire_lab_integrations(harness=True)` — Sentry + PagerDuty + harness tool bundle.
+
+**CI:** `harness-smoke` job in `.github/workflows/unit-tests.yml` (`integrations-harness` extra).
+
+**Legacy → catalog:** notification factory resolves PagerDuty/Opsgenie via catalog; `distributed/bootstrap.resolve_redis_kv_store()` via `IntegrationProfile`.
 
 ---
 
-All **73** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
+## Phase M.8 harness gap — Done (beta)
+
+**+14 slugs** via `intergrax/integrations/_shared/p4/factories.py`: `langsmith`, `helicone`, `posthog`, `braintrust`, `signoz`, `honeycomb`, `arize`, `phoenix`, `wandb`, `opensearch`, `pagerduty`, `opsgenie`, `gitlab`, `vespa`. Wire script: `scripts/wire_p4_harness_providers.py`.
+
+---
+
+## Harness AI gap analysis (closed)
+
+Audit against typical agent stacks (LangGraph, CrewAI, LlamaIndex, enterprise VPC). **Done** means the slug is registered in the catalog; **Missing** means consider in a future iteration.
+
+| Priority | Slug | Category | Status | Why harness |
+|----------|------|----------|--------|-------------|
+| **High** | `langsmith` | observability_backend | **Done** | LLM trace/debug (LangChain ecosystem) |
+| **High** | `helicone` | observability_backend | **Done** | LLM cost/latency proxy |
+| **High** | `pagerduty` / `opsgenie` | notification_channel | **Done** | On-call escalation after HITL / agent failure |
+| **Medium** | `posthog` | observability_backend | **Done** | Product analytics + feature flags |
+| **Medium** | `braintrust` | observability_backend | **Done** | Evals + prompt regression |
+| **Medium** | `gitlab` | issue_tracker | **Done** | DevOps issue flow |
+| **Medium** | `signoz` / `honeycomb` | observability_backend | **Done** | OTEL-native APM |
+| **Medium** | `arize` / `phoenix` | observability_backend | **Done** | ML/RAG eval + drift |
+| **Future** | `opensearch`, `vespa`, `wandb` | various | **Done** (M.8) | Search/RAG scale, experiment tracking |
+| **Low** | `reddit`, `google_places` | search_provider | **Done** | Social/geo search (full packages) |
+| **Future** | `slash_command` | interaction_surface | **Done** (M.9) | Generic slash intake |
+
+**Strong harness coverage today:** **99** integrations — observability (17), notification (9 incl. PagerDuty/Opsgenie), issue trackers (5 incl. GitLab), vectors (7 incl. Vespa), document parsers (7), rerank (2), plus M.7 stack (Vault, Neo4j, Temporal, Tavily, …).
+
+**Tool Library:** `errors.capture`, `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`. Optional deps: ``uv pip install 'Intergrax-ai[integrations-harness]'``.
+
+**Next gaps (M.10+):** full adapters for remaining thin-p4 slugs (Helicone, PostHog, …), multi-backend observability profile, network smoke CI.
+
+---
+
+All **99** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
 
 ```bash
 uv run python scripts/generate_integration_usage_docs.py
@@ -589,5 +642,14 @@ Integration catalog regression:
 ```bash
 uv run pytest tests/unit/integrations/ -q
 ```
+
+Vendor SDK boundary (CI + local gate — integrations, rag, agents):
+
+```bash
+uv run python scripts/check_integration_vendor_imports.py
+uv run pytest tests/unit/integrations/test_vendor_import_governance.py -q
+```
+
+Allowed vendor import modules: `opens.py`, `rag_store.py`, `client.py`, `web_client.py`, `_shared/p3/factories.py`, `_shared/p3/clients.py` (integrations); `parser_trace_exporter.py` (rag). **No** vendor imports under `agents/`.
 
 Conformance helpers: `intergrax/integrations/_shared/conformance.py`.

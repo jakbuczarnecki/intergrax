@@ -23,11 +23,16 @@ from intergrax.rag.rerankers.providers.embedding_cosine_reranker import (
     EmbeddingCosineReranker,
 )
 
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.slugs import IntegrationSlug
+
 
 def create_default_reranker_registry(
     *,
     embedding_manager: BaseEmbeddingManager | None = None,
     registry: RerankerRegistry | None = None,
+    integration_profile: IntegrationProfile | None = None,
 ) -> RerankerRegistry:
     """
     Create RerankerRegistry with built-in reranker providers registered.
@@ -56,13 +61,14 @@ def create_default_reranker_registry(
             SemanticReranker()
         )
 
-        registry.register(
-            CohereReranker()
-        )
+        preferred = None
+        if integration_profile is not None:
+            preferred = integration_profile.slug_for_category(IntegrationCategory.RERANK_PROVIDER)
 
-        registry.register(
-            JinaReranker()
-        )
+        if preferred in (None, IntegrationSlug.COHERE_RERANK.value):
+            registry.register(CohereReranker())
+        if preferred in (None, IntegrationSlug.JINA_RERANK.value):
+            registry.register(JinaReranker())
 
     return registry
 

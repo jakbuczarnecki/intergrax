@@ -55,7 +55,7 @@ def test_audio_handler_builds_parser():
     parsers = handler.build_parsers()
 
     assert len(parsers) >= 1
-    assert parsers[0].parser_id() == "audio_smart"
+    assert parsers[0].parser_id() == "whisper"
 
 
 def test_audio_handler_load(monkeypatch, tmp_path: Path):

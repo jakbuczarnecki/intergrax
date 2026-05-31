@@ -14,6 +14,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 
 CONFLUENCE_GET_PAGE_TOOL_ID = "confluence.get_page"
 CONFLUENCE_SEARCH_PAGES_TOOL_ID = "confluence.search_pages"
+CONFLUENCE_SEARCH_TOOL_ID = "confluence.search"
 
 
 def _require_wiki(ctx: ToolWiringContext):

@@ -46,7 +46,7 @@ from intergrax.integrations.contracts.graph_store import GraphStore
 from intergrax.integrations.contracts.message_bus import MessageBus
 from intergrax.integrations.contracts.notification_channel import NotificationChannel
 from intergrax.integrations.contracts.object_storage import ObjectStorage
-from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+from intergrax.integrations.contracts.observability_backend import ObservabilityBackend, TraceQueryResult, TraceRecord
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.contracts.search_provider import SearchProvider
 from intergrax.integrations.contracts.secrets_store import SecretsStore
@@ -147,7 +147,7 @@ def create_inmemory_vector_store(
     config = VectorIntegrationConfig.from_env("INTERGRAX_INMEMORY", **config_overrides)
 
     def _open() -> VectorStore:
-        from intergrax.rag.vectorstore.providers.inmemory_vectorstore import InMemoryVectorStore
+        from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
 
         return InMemoryVectorStore(tenant_id=config.tenant_id)
 
@@ -164,35 +164,11 @@ def create_weaviate_vector_store(
 ) -> VectorStore:
     if vector_store is not None:
         return vector_store
-    if client is not None:
-        config = VectorIntegrationConfig.from_env("INTERGRAX_WEAVIATE", **config_overrides)
-        from intergrax.integrations._shared.p3.vector_adapters import WeaviateVectorFacade
-
-        return RestVectorStoreIntegration(config, WeaviateVectorFacade(client, collection=config.collection, tenant_id=config.tenant_id))
     config = VectorIntegrationConfig.from_env("INTERGRAX_WEAVIATE", **config_overrides)
+    from intergrax.integrations.providers.vector_store.weaviate.opens import open_weaviate_rag_store
 
-    def _open() -> Any:
-        try:
-            import weaviate
-        except ImportError as exc:
-            raise IntegrationConfigurationError("Weaviate requires weaviate-client") from exc
-        url = config.require_url()
-        if config.api_key:
-            return weaviate.connect_to_weaviate_cloud(cluster_url=url, auth_credentials=weaviate.auth.AuthApiKey(config.api_key))
-        return weaviate.connect_to_local(host=url.replace("http://", "").replace("https://", ""))
-
-    def _adapter(raw: Any) -> VectorStore:
-        from intergrax.integrations._shared.p3.vector_adapters import WeaviateVectorFacade
-
-        return RestVectorStoreIntegration(config, WeaviateVectorFacade(raw, collection=config.collection, tenant_id=config.tenant_id))
-
-    return _resolve(
-        implementation=None,
-        backend=client,
-        backend_factory=client_factory,
-        open_fn=_open,
-        adapter_fn=_adapter,
-    )
+    inner = open_weaviate_rag_store(config, client=client, client_factory=client_factory)
+    return RestVectorStoreIntegration(config, inner)
 
 
 def create_milvus_vector_store(
@@ -204,32 +180,11 @@ def create_milvus_vector_store(
 ) -> VectorStore:
     if vector_store is not None:
         return vector_store
-    if client is not None:
-        config = VectorIntegrationConfig.from_env("INTERGRAX_MILVUS", **config_overrides)
-        from intergrax.integrations._shared.p3.vector_adapters import MilvusVectorFacade
-
-        return RestVectorStoreIntegration(config, MilvusVectorFacade(client, collection=config.collection, tenant_id=config.tenant_id))
     config = VectorIntegrationConfig.from_env("INTERGRAX_MILVUS", **config_overrides)
+    from intergrax.integrations.providers.vector_store.milvus.opens import open_milvus_rag_store
 
-    def _open() -> Any:
-        try:
-            from pymilvus import MilvusClient
-        except ImportError as exc:
-            raise IntegrationConfigurationError("Milvus requires pymilvus") from exc
-        return MilvusClient(uri=config.require_url(), token=config.api_key or None)
-
-    def _adapter(raw: Any) -> VectorStore:
-        from intergrax.integrations._shared.p3.vector_adapters import MilvusVectorFacade
-
-        return RestVectorStoreIntegration(config, MilvusVectorFacade(raw, collection=config.collection, tenant_id=config.tenant_id))
-
-    return _resolve(
-        implementation=None,
-        backend=client,
-        backend_factory=client_factory,
-        open_fn=_open,
-        adapter_fn=_adapter,
-    )
+    inner = open_milvus_rag_store(config, client=client, client_factory=client_factory)
+    return RestVectorStoreIntegration(config, inner)
 
 
 # --- secrets_store ---
@@ -324,6 +279,28 @@ def create_langfuse_observability_backend(
                 )
                 response.raise_for_status()
                 return list(response.json().get("series") or [])
+
+            def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult:
+                params: dict[str, object] = {"limit": limit}
+                if name:
+                    params["name"] = name
+                response = http.get("/api/public/traces", params=params)
+                response.raise_for_status()
+                payload = response.json()
+                rows = payload.get("data") if isinstance(payload, dict) else payload
+                traces: list[TraceRecord] = []
+                for item in list(rows or [])[:limit]:
+                    if not isinstance(item, dict):
+                        continue
+                    traces.append(
+                        TraceRecord(
+                            trace_id=str(item.get("id") or item.get("traceId") or ""),
+                            name=str(item.get("name") or ""),
+                            timestamp=str(item.get("timestamp") or item.get("createdAt") or "") or None,
+                            metadata={k: v for k, v in item.items() if k not in {"id", "traceId", "name", "timestamp", "createdAt"}},
+                        )
+                    )
+                return TraceQueryResult(traces=traces)
 
         return _Client()
 

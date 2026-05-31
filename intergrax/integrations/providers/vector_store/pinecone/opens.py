@@ -31,7 +31,7 @@ def _import_pinecone() -> Any:
 
 
 def _build_rag_config(config: PineconeIntegrationConfig) -> Any:
-    from intergrax.rag.vectorstore.providers.pinecone_vector_store import PineconeConfig
+    from intergrax.integrations.providers.vector_store.pinecone.rag_store import PineconeConfig
 
     if not config.api_key:
         raise IntegrationConfigurationError(
@@ -57,7 +57,7 @@ def _open_rag_store(
     if store_factory is not None:
         return store_factory()
     _import_pinecone()
-    from intergrax.rag.vectorstore.providers.pinecone_vector_store import PineconeVectorStore
+    from intergrax.integrations.providers.vector_store.pinecone.rag_store import PineconeVectorStore
 
     rag_config = _build_rag_config(config)
     return PineconeVectorStore(rag_config)

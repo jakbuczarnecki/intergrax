@@ -12,9 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import List, Optional
-
-import redis
+from typing import Any, List, Optional
 
 from intergrax.rag.rerankers.cache.base_rerank_cache import BaseRerankCache
 
@@ -27,7 +25,7 @@ class RedisRerankCache(BaseRerankCache):
     def __init__(
         self,
         *,
-        redis_client: redis.Redis,
+        redis_client: Any,
         ttl_seconds: int = 3600,
         key_prefix: str = "rerank",
     ) -> None:

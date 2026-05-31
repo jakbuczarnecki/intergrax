@@ -16,7 +16,8 @@ from intergrax.rag.vectorstore.bootstrap.integration_vectorstore import (
     create_vectorstore_from_integration,
     create_vectorstore_manager,
 )
-from intergrax.rag.vectorstore.providers.inmemory_vectorstore import InMemoryVectorStore
+from intergrax.integrations._shared.p3.clients import RestVectorStoreIntegration
+from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 pytestmark = pytest.mark.unit
@@ -24,7 +25,8 @@ pytestmark = pytest.mark.unit
 
 def test_create_vectorstore_from_integration_falls_back_to_inmemory() -> None:
     store = create_vectorstore_from_integration(profile=IntegrationProfile())
-    assert isinstance(store, InMemoryVectorStore)
+    assert isinstance(store, RestVectorStoreIntegration)
+    assert isinstance(store.rag_store, InMemoryVectorStore)
 
 
 def test_create_vectorstore_manager_wraps_resolved_store() -> None:

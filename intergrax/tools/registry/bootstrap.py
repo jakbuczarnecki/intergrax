@@ -18,6 +18,9 @@ def register_default_tools(*, override: bool = False) -> None:
     if _BOOTSTRAPPED and not override:
         return
 
+    from intergrax.tools.providers.braintrust.register import register_braintrust_tool_bundle
+    from intergrax.tools.providers.gitlab.register import register_gitlab_tool_bundle
+    from intergrax.tools.providers.pagerduty.register import register_pagerduty_tool_bundle
     from intergrax.tools.providers.confluence.register import register_confluence_tool_bundle
     from intergrax.tools.providers.jira.register import register_jira_tool_bundle
     from intergrax.tools.providers.notify.register import register_notify_tool_bundle
@@ -30,9 +33,12 @@ def register_default_tools(*, override: bool = False) -> None:
         register_rag_tool_bundle,
         register_websearch_tool_bundle,
         register_jira_tool_bundle,
+        register_gitlab_tool_bundle,
         register_confluence_tool_bundle,
         register_notify_tool_bundle,
+        register_pagerduty_tool_bundle,
         register_observability_tool_bundle,
+        register_braintrust_tool_bundle,
         register_sandbox_tool_bundle,
     ):
         register_fn(override=override)
