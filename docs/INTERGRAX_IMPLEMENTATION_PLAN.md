@@ -176,7 +176,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §33 Observability | Trace + events | **Partial** | Trace store ✅; P4.1 dual-emit ✅; D.1 CLI ✅ |
 
-| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial (~65–70%)** | P4 + E + F ✅ |
+| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial (~88–90%)** | P4 + E + F ✅; platform infra aligned (2026-05-27) |
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |

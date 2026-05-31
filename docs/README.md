@@ -53,10 +53,10 @@ LLM adapters (catalog)     →  LLM_ADAPTERS.md
 | Phase M — Integration Library (Tier-0 catalog) | **Done** (beta) — **73** providers with English `USAGE.md`; see [INTEGRATIONS.md](INTEGRATIONS.md) |
 | Phase O — Tool Library & unified tool model | **Done** — 11 catalog tools; see [TOOLS.md](TOOLS.md) |
 | Phase M-LLM — LLM adapter layer | **Done** (beta) — 19 providers, metrics, conformance; see [LLM_ADAPTERS.md](LLM_ADAPTERS.md) |
-| Phase N — Application environment scaffold | **In progress** — N.9 gate; see implementation plan Phase N |
+| Phase N — Application environment scaffold | **Done** (N.0–N.10) — see implementation plan Phase N |
 | Phase K — Problem Radar / Vendor Discovery | **Ready to open** (product decision) |
 
-Gate: `uv run pytest tests/ -m gate -q` (**307 tests** in CI paths; includes LLM adapter conformance)
+Gate: `uv run pytest -m gate -q` — **363 passed** (full gate); CI workflow runs **335** of them (~20s pytest; see `.github/workflows/unit-tests.yml`)
 
 ---
 
