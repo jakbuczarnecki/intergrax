@@ -254,7 +254,7 @@ def agent_factories_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgen
     for s in specs:
         factories.append(
             dedent(
-                f'''\
+                f"""
                 def build_{short}_{s.slug}_from_context(
                     ctx: ApplicationBuildContext,
                     binding: AgentBinding,
@@ -264,24 +264,28 @@ def agent_factories_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgen
                     if factory is None:
                         raise ValueError(f"No builder registered for {{binding.import_path!r}}")
                     return factory(ctx, binding)
-                '''
+                """
             ).strip()
         )
     factories_block = "\n\n\n".join(factories)
-    return dedent(
-        f'''\
-        # © Artur Czarnecki. All rights reserved.
+    return (
+        dedent(
+            f"""
+            # © Artur Czarnecki. All rights reserved.
 
-        from __future__ import annotations
+            from __future__ import annotations
 
-        from intergrax.applications.contracts.build_context import ApplicationBuildContext
-        from intergrax.applications.contracts.manifest import AgentBinding
-        {imports}
-        from {pkg}.host.agent_builders import {builders_const}
+            from intergrax.applications.contracts.build_context import ApplicationBuildContext
+            from intergrax.applications.contracts.manifest import AgentBinding
+            {imports}
+            from {pkg}.host.agent_builders import {builders_const}
 
 
-        {factories_block}
-        '''
+            """
+        ).strip()
+        + "\n\n\n"
+        + factories_block
+        + "\n"
     )
 
 

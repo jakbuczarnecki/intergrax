@@ -969,7 +969,7 @@ Szablony utrzymywane przez `scripts/generate_integration_usage_docs.py` (regener
 | N.6 | Reference app `poc_template_application` (committed example) | **Done** | §7.4.8 | `applications/poc_template_application/`; README three-command quickstart; gate smoke |
 | N.7 | Backfill `.env.example` on existing apps | **Done** | §7.4.8 | `lab_application`, `legal_application`, `research_application`, `poc_template_application` |
 | N.8 | `AGENT_CREATION_GUIDE.md` Step 4E (dedicated application) | **Done** | — | Step 4E + Appendix F cross-links; gate doc test |
-| N.9 | Acceptance `test_scaffold_application` (gate) | **Partial** | — | Lab + product tree tests; Step 4E doc test; optional end-to-end scaffold smoke TBD |
+| N.9 | Acceptance `test_scaffold_application` (gate) | **Done** | — | `test_scaffold_acceptance.py` — lab/product E2E, CLI profiles, docker scripts |
 | N.10 | Optional `new-stack` (agent + application in one CLI) | **Deferred** | — | After N.3–N.5 stable |
 
 #### N — Step-by-step implementation sequence
@@ -987,7 +987,7 @@ Execute **strictly in order**; do not skip ahead without completing acceptance f
 | 7 | N.7 | Add per-app `.env.example` to legal, research, lab | Vars match each `settings.py`; no secrets committed |
 | 8 | N.4 | Add `product` profile to scaffold | **Done** — `test_scaffold_product_application.py`; FastAPI Core + `/health` |
 | 9 | N.8 | Update agent guide Step 4E | **Done** — scaffold lab/product, Docker scripts, three-command quickstart |
-| 10 | N.9 | Full acceptance + `pytest -m gate` | Scaffold application in gate suite |
+| 10 | N.9 | Full acceptance + `pytest -m gate` | **Done** — runtime E2E + `test_scaffold_acceptance.py` |
 
 **Scaffold CLI (target interface):**
 
@@ -1103,9 +1103,9 @@ AFTER (canonical):
 
 ```text
 
-NOW:     Phase O — complete (O.5–O.9 Done); next: Phase N / product agents on unified tools
+NOW:     Phase O — complete (O.5–O.9 Done); product agents (K) or M.6 providers on demand
 
-PARALLEL: Phase N — N.9 full scaffold acceptance
+DONE:    Phase N — Application Environment & Deploy Scaffold (N.0–N.9)
 
 DONE:    Phase L certification — L1 achieved (Appendix A)
 
@@ -1166,17 +1166,15 @@ Each iteration follows **one deliverable at a time**:
 
 Do not batch N.1–N.5 in one PR unless explicitly agreed.
 
-### 6.2 Current next step — **N.9 Full scaffold acceptance (gate)**
+### 6.2 Phase N — **complete** (core deliverables N.0–N.9)
 
-**Prerequisite:** N.8 — agent guide Step 4E documents dedicated application workflow.
+**Optional follow-up:** N.10 `new-stack` (agent + application in one CLI) when onboarding demands it.
 
-**Goal:** Expand `test_scaffold_application` (optional docker smoke doc-only), gate green, align N.9 status to **Done**.
-
-**Verify (N.8 — completed):**
+**Verify (N.9 — completed):**
 
 ```bash
-uv run pytest tests/unit/docs/test_agent_creation_guide_step_4e.py -q
-# Guide: docs/AGENT_CREATION_GUIDE.md — Step 4E (Dedicated application scaffold)
+uv run pytest tests/unit/applications/test_scaffold_acceptance.py -q
+uv run pytest -m gate -q
 ```
 
 **Phase L — still required for any new agent work:**
@@ -1562,6 +1560,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-30 | N.2.1-unified-wiring | `ApplicationBuildContext`, `builder_key`/`factory_path`, lab+legal on `build_application_registry` |
 | 2026-05-30 | N.2-conformance | `build_registry_from_manifest`, `load_agent_from_binding` + unit tests |
 | 2026-05-30 | N.1-manifest | `ApplicationManifest`, `AgentBinding`, `ApplicationFeatures` + unit tests |
+| 2026-05-30 | N.9-scaffold-acceptance | `test_scaffold_acceptance.py` — lab/product runtime E2E; fix product `agent_factories.py` indent |
 | 2026-05-30 | N.8-agent-guide-4e | `AGENT_CREATION_GUIDE.md` Step 4E — `new-application`, Docker scripts, §7.4.8 links |
 | 2026-05-30 | N.4-product-scaffold | `--profile product` → FastAPI Core host, `agent_factories.py`, auth stub env; `new_application_product.py` |
 | 2026-05-30 | N.5-docker-build-scripts | `build-docker.sh` / `build-docker.bat` in scaffold + lab/legal/research/poc; `docker_templates.py` |
@@ -1663,7 +1662,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.15 | **Legal full E2E gate (real LLM)** — deferred acceptance with live model | — | **Low** | Legal quality assurance | Tier-2 / CI | K.6; separate from Agent OS gate |
 | B.16 | **Lab agent auto-discovery** — new agents require explicit `wiring.py` register (by design, but easy to forget) | §7.4 | **Low** | Onboarding friction | Tier-3 | Phase N scaffold + `ApplicationManifest`; optional `new-stack` (N.10) |
 | B.28 | **Per-application `.env.example` missing** — only root `.env.example`; lab/legal vars in README only | §7.4.8 | **Medium** | **Done** | Deployable POC friction | Tier-3 | N.7 backfill + scaffold (2026-05-30) |
-| B.29 | **`new-application` scaffold (lab)** — Tier-3 hosts hand-copied from legal/lab | §7.4.8 | **High** | **Done** | Lab + product profiles via CLI | Tier-3 / platform | Phase N.8–N.9 docs/acceptance |
+| B.29 | **`new-application` scaffold (lab)** — Tier-3 hosts hand-copied from legal/lab | §7.4.8 | **High** | **Done** | Lab + product profiles via CLI; gate acceptance | Tier-3 / platform | N.10 `new-stack` optional |
 | B.30 | **No application-level Dockerfile** — only `infra/docker/docling/` | §7.4.8 | **Medium** | **Done** | Per-app `docker/` + build scripts on lab/legal/research/poc | Tier-3 | N.5–N.7 (2026-05-30) |
 
 ### B.5 Test & certification hygiene
