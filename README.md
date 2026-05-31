@@ -330,7 +330,7 @@ Intergrax is under **active development** (private R&D). Phase status, prioritie
 
 **[`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)**
 
-Regression gate: `uv run pytest -m gate -q` (**389** tests; collects `tests/`, `applications/`, `agents/`)
+Regression gate: `uv run pytest -m gate -q` (**394** tests; collects `tests/`, `applications/`, `agents/`)
 
 ---
 

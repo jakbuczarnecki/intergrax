@@ -50,7 +50,18 @@ jobs:
           tests/unit/agents
           tests/unit/contracts
           tests/unit/llm_adapters
+          tests/unit/applications
+          tests/unit/docs
+          tests/integration
+          tests/acceptance
+          applications/legal_application/legal_tests/host
+          applications/lab_application/lab_application_tests
+          applications/research_application/research_application_tests
+          agents/signoff_probe
           -m gate -q --tb=line
 
-      - name: Integration vendor import governance
-        run: uv run python scripts/check_integration_vendor_imports.py
+      - name: Governance import audits
+        run: >-
+          uv run python scripts/check_agents_vendor_imports.py
+          && uv run python scripts/check_production_chat_agent_imports.py
+          && uv run python scripts/check_integration_vendor_imports.py

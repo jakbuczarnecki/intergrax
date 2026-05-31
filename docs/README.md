@@ -58,7 +58,7 @@ LLM observability          →  LLM_OBSERVABILITY.md
 | Phase N — Application environment scaffold | **Done** (N.0–N.10) — see implementation plan Phase N |
 | Phase K — Problem Radar / Vendor Discovery | **Ready to open** (product decision) |
 
-Gate: `uv run pytest -m gate -q` — **363 passed** (full gate); CI workflow runs **335** of them (~20s pytest; see `.github/workflows/unit-tests.yml`)
+Gate: `uv run pytest -m gate -q` — **394 passed** (full gate; CI paths match — see `.github/workflows/unit-tests.yml`)
 
 ---
 

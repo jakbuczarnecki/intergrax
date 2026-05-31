@@ -999,7 +999,7 @@ When asked to create a new Intergrax agent:
 2. Run `python -m intergrax.scaffold new-agent <slug> --capability <id>`.
 3. Edit only `agents/<slug>/` — primarily `steps/`, `prompts/`, `schemas/`, `contract.py`.
 4. Register in the appropriate context (§ Step 4). New deployable host: Step **4E** (`new-application`). Shared lab: Step **4C** (`lab_application/manifest.py`).
-5. Verify: `uv run pytest agents/<slug>/tests -q` then `uv run pytest -m gate -q`; optionally `python scripts/check_agents_vendor_imports.py` (Appendix B.24).
+5. Verify: `uv run pytest agents/<slug>/tests -q` then `uv run pytest -m gate -q`; optionally `python scripts/check_agents_vendor_imports.py` (B.24) and `python scripts/check_production_chat_agent_imports.py` (K.5).
 6. Do **not** modify `intergrax/runtime/` unless a reusable Tier-0 gap is proven and approved.
 7. Do **not** import `intergrax.integrations.providers.*` from agent code — wire integrations in Tier-3 only (Appendix E).
 8. Do **not** create duplicate workflow documentation — update this file if the process changes.

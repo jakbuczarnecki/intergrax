@@ -100,7 +100,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Laboratory workflow | **~95%** | Debug API, experiments, lab app |
 | Agent OS certification (Phase L deliverables) | **Done** | Scaffold, guide, acceptance suite |
 | Agent OS certification (sign-off exercise) | **Done** | `agents/signoff_probe/` — see Appendix A |
-| Regression gate | **363 passed** | `uv run pytest -m gate -q` |
+| Regression gate | **394 passed** | `uv run pytest -m gate -q` |
 
 ---
 
@@ -138,7 +138,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §42 Unified Execution Runtime | **~88–90%** | Platform infra complete across Tier-3 hosts (2026-05-27) |
 | Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
-| Pre-P4.2 regression gate | **Done** | **363 tests**, marker `gate` |
+| Pre-P4.2 regression gate | **Done** | **394 tests**, marker `gate` |
 
 
 
@@ -174,23 +174,23 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §31 Retry | Runtime-managed | **Done** | `RetryEngine` |
 
-| §33 Observability | Trace + events | **Partial** | Trace store ✅; P4.1 dual-emit ✅; D.1 CLI ✅ |
+| §33 Observability | Trace + events | **Done** (lab scope) | Trace + runtime events + metrics export (`B.08`–`B.11`); OTel provider beta |
 
 | §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial (~88–90%)** | P4 + E + F ✅; platform infra aligned (2026-05-27) |
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
-| §7.1 Integration Library | Catalog + contracts + providers | **Partial** | M.4 in progress — **redis + sqlite + kafka Done** |
+| §7.1 Integration Library | Catalog + contracts + providers | **Done** (beta) | Phase M core + M.6 P1/P2/P3; on-demand slugs only |
 
 | §19 Debug surface | CLI / API | **Done** | D.1 CLI + D.2 API ✅ |
 
 | §32 HITL | Approval / reject / escalate | **Done** | F.3 + `runtime/human/` |
 
-| §26 Long-running tasks | Checkpoint / resume | **Partial** | F.4 + J.4 scheduler + J.5 partial results API; UAEP mid-step pending |
+| §26 Long-running tasks | Checkpoint / resume | **Done** (baseline) | Scheduler + partial results API + UAEP mid-step (`B.01`, `B.02`) |
 | §18 Slack / Teams | Interaction adapters | **Stub** | F.4 notification stub only; no intake / webhook |
 | §27 Memory model | Bounded task / agent memory | **Done** | I.1–I.5: TaskMemory, MemoryView, SharedTaskContext, handoff, ContextManager v2 |
-| §42.9 Pause / Resume | `RuntimeCheckpoint` | **Partial** | HITL pause ✅; full plan/graph/UAEP checkpoint pending |
-| §41 Unified entry | Single run lifecycle | **Partial** | J.1–J.5 done; Phase J complete for lab scope |
+| §42.9 Pause / Resume | `RuntimeCheckpoint` | **Done** (baseline) | HITL pause + full snapshot (`plan_snapshot`, `graph_snapshot`, UAEP cursor) |
+| §41 Unified entry | Single run lifecycle | **Done** (lab scope) | `UnifiedTaskRunner` on all Tier-3 hosts; legacy `AgentEngine` opt-out removed |
 
 | §20–21 Shadow / Sandbox | Isolated exec | **Done** | F.1 ShadowWorkspace + F.2 SandboxRuntime ✅ |
 
@@ -475,10 +475,10 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 |---|-------------|--------|-------|-------|
 | K.1 | Problem Radar prototype | **Blocked** | §36 | After Phase L sign-off |
 | K.2 | Vendor Discovery prototype | **Blocked** | §37 | After Phase L sign-off |
-| K.3 | Policy engine facade | Pending | §42.11 | Unify replay / validation / runtime policy |
-| K.4 | Dual `AgentDecision` cleanup | Pending | §42.7 | Converge tools agent variant |
-| K.5 | ChatAgent / legacy removal | Pending | §39 | After J.1 |
-| K.6 | A.5 full Legal E2E gate | Deferred | — | Real LLM; not blocking lab |
+| K.3 | Policy engine facade | **Done** | §42.11 | `PolicyEngine` + `coerce_replay_policy_engine`; `ExecutionGuard` uses `evaluate_replay` (2026-05-27) |
+| K.4 | Dual `AgentDecision` cleanup | **Done** | §42.7 | `ToolPlanDecision`; deprecated `tools_agent.AgentDecision` alias (2026-05-27) |
+| K.5 | ChatAgent / legacy removal | **Done** | §39 | Production paths use Nexus only; `check_production_chat_agent_imports.py` gate (2026-05-27) |
+| K.6 | A.5 full Legal E2E gate | **Deferred** | — | Real LLM; not blocking lab — product/CI decision |
 
 ---
 
@@ -1175,21 +1175,19 @@ AFTER (canonical):
 
 ```text
 
-NOW:     Phase O — complete (O.5–O.9 Done); product agents (K) or M.6 providers on demand
+NOW:     Product decision — Phase K.1/K.2 (Problem Radar / Vendor Discovery) **when approved**
 
-DONE:    Phase N — Application Environment & Deploy Scaffold (N.0–N.10)
+DONE:    Phase K hardening — K.3–K.5 (policy facade, AgentDecision cleanup, ChatAgent production guard)
 
-DONE:    Phase L certification — L1 achieved (Appendix A)
+DONE:    Phase O, N, L, M core, M-LLM — platform + catalog + scaffold
 
-DONE:    Phase M core (M.1–M.8) — Integration Library catalog + lab profile
+DONE:    Platform stabilization + Appendix B technical paydown (except B.15 E2E)
 
-PARALLEL: Phase M.6 P1/P2 providers (on demand, one slug per iteration)
+PARALLEL: M.6 additional provider slugs (on demand, one slug per iteration)
 
-         Phase K — K.1/K.2 **when you approve** (Problem Radar or Vendor Discovery)
+BLOCKED: K.1/K.2 business agents until product priority; K.6 / B.15 Legal live LLM E2E
 
 BLOCKED: No new Nexus features unless Tier-1 extension rule (§0.6) applies
-
-PARALLEL: K.3–K.5 hardening; M.6 provider wraps (non-breaking)
 
 ```
 
@@ -1669,6 +1667,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-27 | Platform stabilization | All Tier-3 hosts: validating runtime events, plugin bootstrap, resilient delivery (lab/legal/research/poc); shared `_shared/platform_wiring` + `notification_wiring` |
 | 2026-05-27 | Infra paydown | SQLite DLQ ledger + debug `/notifications/*`; `ValidatingRuntimeEventPersistence`; Tier-3 plugin bootstrap |
 | 2026-05-27 | B.07, B.11, B.13, B.18, B.24 | Schema registry + phase coverage + `RuntimePlugin`; metrics export + `GET /debug/tasks/{id}/metrics`; retry/DLQ delivery; echo + research_mock HTTP trace acceptance; agents vendor import gate test |
+| 2026-05-27 | K.3–K.5 | `coerce_replay_policy_engine` + `ExecutionGuard.evaluate_replay`; ChatAgent production import guard; CI gate paths aligned with full gate (**394** tests) |
 
 ### B.1 Runtime & §42 convergence
 
@@ -1774,5 +1773,5 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 ---
 
-*Plan synced after platform stabilization (2026-05-27). Gate: `uv run pytest -m gate -q` — **363 passed**. Business agents (Legal E2E B.15, Phase K) remain product-blocked.*
+*Plan synced after Phase K hardening (2026-05-27). Gate: `uv run pytest -m gate -q` — **394 passed** (CI paths aligned with full gate). Business agents (K.1/K.2) and Legal live LLM E2E (K.6/B.15) remain product-blocked.*
 
