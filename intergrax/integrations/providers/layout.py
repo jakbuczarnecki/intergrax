@@ -89,6 +89,22 @@ SLUG_CATEGORY: dict[str, str] = {
     "yt_dlp": "document_parser",
     "cohere_rerank": "rerank_provider",
     "jina_rerank": "rerank_provider",
+    "langsmith": "observability_backend",
+    "helicone": "observability_backend",
+    "posthog": "observability_backend",
+    "braintrust": "observability_backend",
+    "signoz": "observability_backend",
+    "honeycomb": "observability_backend",
+    "arize": "observability_backend",
+    "phoenix": "observability_backend",
+    "wandb": "observability_backend",
+    "opensearch": "observability_backend",
+    "pagerduty": "notification_channel",
+    "opsgenie": "notification_channel",
+    "gitlab": "issue_tracker",
+    "vespa": "vector_store",
+    "reddit": "search_provider",
+    "google_places": "search_provider",
 }
 
 

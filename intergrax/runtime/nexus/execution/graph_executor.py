@@ -214,9 +214,41 @@ class GraphExecutor:
                     "context": node_task.context.model_copy(update={"capability": node.capability}),
                 }
             )
+
+        selection_ctx = HookContext(
+            task_id=task.task_id,
+            run_id=task.task_id,
+            node_id=node.node_id,
+            agent_id=node.agent_id,
+            phase=ExecutionPhase.AGENT_SELECTION,
+            runtime_state={"capability": node.capability or task.context.capability},
+        )
+        before_selection = await self._middleware.run_before(
+            HookPoint.BEFORE_AGENT_SELECTION,
+            selection_ctx,
+        )
+        if before_selection.action != HookAction.ALLOW:
+            failed = AgentExecutionResult(
+                agent_id=node.agent_id or "",
+                run_id=task.task_id,
+                status=AgentExecutionStatus.FAILED,
+                summary="",
+                errors=[before_selection.reason or "agent_selection_blocked_by_hook"],
+            )
+            node.execution_result = failed
+            node.status = ExecutionNodeStatus.FAILED
+            if on_node_complete is not None:
+                on_node_complete(node)
+            return failed, [], True, False, []
+
         agent = self._router.route(node_task)
         contract = agent.get_contract()
         node_task = node_task.model_copy(update={"agent_id": contract.id})
+
+        await self._middleware.run_after(
+            HookPoint.AFTER_AGENT_SELECTION,
+            selection_ctx.model_copy(update={"agent_id": contract.id}),
+        )
 
         def validate_fn(
             execution: AgentExecutionResult,

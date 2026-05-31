@@ -21,7 +21,8 @@ def test_hook_parity_documents_wired_lifecycle_points() -> None:
     assert HookPoint.AFTER_PLANNING in wired
     assert HookPoint.BEFORE_HUMAN_APPROVAL in wired
     assert HookPoint.BEFORE_STEP in wired
-    assert hook_coverage(HookPoint.BEFORE_TOOL_CALL) == HookCoverage.NOT_WIRED
+    assert hook_coverage(HookPoint.BEFORE_TOOL_CALL) == HookCoverage.WIRED
+    assert hook_coverage(HookPoint.BEFORE_AGENT_SELECTION) == HookCoverage.WIRED
 
 
 @pytest.mark.asyncio

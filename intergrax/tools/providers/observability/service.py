@@ -6,6 +6,8 @@ from __future__ import annotations
 from typing import Any
 
 from intergrax.tools.providers.observability.contracts import (
+    ErrorsCaptureInput,
+    ErrorsCaptureOutput,
     LogHitOutput,
     LogsSearchInput,
     LogsSearchOutput,
@@ -22,6 +24,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 METRICS_QUERY_INSTANT_TOOL_ID = "metrics.query_instant"
 LOGS_SEARCH_TOOL_ID = "logs.search"
 TRACES_QUERY_TOOL_ID = "observability.query_traces"
+ERRORS_CAPTURE_TOOL_ID = "errors.capture"
 
 
 def metrics_query_instant(
@@ -82,6 +85,19 @@ def traces_query(ctx: ToolWiringContext, params: TracesQueryInput) -> TracesQuer
         for record in result.traces
     ]
     return TracesQueryOutput(traces=traces, total=len(traces))
+
+
+def errors_capture(ctx: ToolWiringContext, params: ErrorsCaptureInput) -> ErrorsCaptureOutput:
+    backend = ctx.observability_backend
+    if backend is None:
+        raise RuntimeError("observability_backend_not_configured")
+
+    capture_message = getattr(backend, "capture_message", None)
+    if capture_message is None:
+        raise RuntimeError("observability_backend_does_not_support_error_capture")
+
+    event_id = str(capture_message(params.message, level=params.level))
+    return ErrorsCaptureOutput(event_id=event_id, provider="observability")
 
 
 def _search_log_documents(rest_client: Any, query: str, limit: int) -> dict[str, Any]:

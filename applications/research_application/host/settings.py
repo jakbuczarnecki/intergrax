@@ -21,6 +21,10 @@ class ResearchBackendSettings:
     use_nexus_loop: bool = True
     include_mcp: bool = True
     mcp_mount_path: str = "/mcp"
+    include_interaction_routes: bool = True
+    interaction_route_prefix: str = "/v1/interactions"
+    interaction_surface: str = "auto"
+    interaction_execute_default: bool = True
     enable_websearch: bool = True
     enable_rag: bool = False
     enable_rag_ingest: bool = False
@@ -52,6 +56,14 @@ class ResearchBackendSettings:
         enable_rag_ingest = _env_bool("RESEARCH_ENABLE_RAG_INGEST", default=False)
         extra_tools_raw = os.environ.get("RESEARCH_ENABLED_TOOLS", "").strip()
         extra_tools = tuple(x.strip() for x in extra_tools_raw.split(",") if x.strip())
+        include_interactions = _env_bool("RESEARCH_INCLUDE_INTERACTIONS", default=True)
+        interaction_prefix = (
+            os.environ.get("RESEARCH_INTERACTION_ROUTE_PREFIX") or "/v1/interactions"
+        ).strip() or "/v1/interactions"
+        interaction_surface = (
+            os.environ.get("RESEARCH_INTERACTION_SURFACE") or "auto"
+        ).strip().lower() or "auto"
+        interaction_execute = _env_bool("RESEARCH_INTERACTION_EXECUTE_DEFAULT", default=True)
         return cls(
             host=os.environ.get("RESEARCH_BACKEND_HOST", "0.0.0.0"),
             port=int(os.environ.get("RESEARCH_BACKEND_PORT", "8010")),
@@ -59,6 +71,10 @@ class ResearchBackendSettings:
             use_nexus_loop=use_nexus_loop,
             include_mcp=include_mcp,
             mcp_mount_path=mcp_mount,
+            include_interaction_routes=include_interactions,
+            interaction_route_prefix=interaction_prefix,
+            interaction_surface=interaction_surface,
+            interaction_execute_default=interaction_execute,
             enable_websearch=enable_websearch,
             enable_rag=enable_rag,
             enable_rag_ingest=enable_rag_ingest,

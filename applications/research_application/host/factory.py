@@ -11,8 +11,10 @@ from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
+from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+from intergrax.runtime.interactions.router import create_interaction_intake_router
 from research_application.host.integration_wiring import wire_research_integrations
 from research_application.host.settings import ResearchBackendSettings
 from research_application.host.wiring import build_research_registry
@@ -55,6 +57,19 @@ def create_research_backend_app(
         nexus_loop=nexus,
         prefix=settings.route_prefix,
     )
+
+    if settings.include_interaction_routes:
+        interaction_service = wire_interaction_intake_service(
+            nexus,
+            interaction_surface=settings.interaction_surface,
+        )
+        app.include_router(
+            create_interaction_intake_router(
+                interaction_service,
+                execute_default=settings.interaction_execute_default,
+            ),
+            prefix=settings.interaction_route_prefix,
+        )
 
     app.title = "Intergrax Research API (prototype)"
 

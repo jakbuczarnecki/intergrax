@@ -145,6 +145,32 @@ def create_my_lab_application():
 
 Lab and product scaffolds call `bootstrap_nexus_platform()` from `intergrax/applications/_shared/platform_wiring.py` — registers compatibility telemetry and metrics export on `TASK_COMPLETED`. Legal, research, lab, and poc_template hosts use this pattern.
 
+### 4b. Slack / Teams interaction intake (§18)
+
+Product and lab hosts can expose **`POST {interaction_route_prefix}/intake`** (default `/v1/interactions/intake`) for inbound Slack, Teams, or lab JSON payloads:
+
+```python
+from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
+from intergrax.runtime.interactions.router import create_interaction_intake_router
+
+interaction_service = wire_interaction_intake_service(
+    nexus_loop,
+    interaction_surface=settings.interaction_surface,  # auto | slack | teams | lab
+)
+app.include_router(
+    create_interaction_intake_router(interaction_service, execute_default=True),
+    prefix=settings.interaction_route_prefix,
+)
+```
+
+| Host | Env flag | Surface env |
+|------|----------|-------------|
+| lab | `LAB_INCLUDE_INTERACTIONS` | `LAB_INTERACTION_SURFACE` |
+| legal | `LEGAL_INCLUDE_INTERACTIONS` | `LEGAL_INTERACTION_SURFACE` |
+| research | `RESEARCH_INCLUDE_INTERACTIONS` | `RESEARCH_INTERACTION_SURFACE` |
+
+Configure signing secrets per vendor (see integration provider `USAGE.md` for slack/teams).
+
 ### 5. Environment
 
 - Commit **`host/settings.py`** + **`.env.example`** with `MY_LAB_*` variables.

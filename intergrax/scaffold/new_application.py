@@ -430,7 +430,7 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
 
         from intergrax.debug.app import create_debug_app
         from intergrax.debug.hitl_service import DebugHitlResumeService
-        from intergrax.debug.interaction_service import DebugInteractionIntakeService
+        from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
         from intergrax.runtime.interactions.router import create_interaction_intake_router
         from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
         from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
@@ -487,10 +487,9 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                 poll_interval_seconds=settings.scheduler_poll_seconds,
                 enabled=settings.include_scheduler,
             )
-            interaction_service = DebugInteractionIntakeService(
-                nexus_loop=nexus_loop,
-                adapter=integrations.interaction_adapter,
-                verifier=create_inbound_verifier(),
+            interaction_service = wire_interaction_intake_service(
+                nexus_loop,
+                interaction_surface=settings.interaction_surface,
             )
             hitl_service = DebugHitlResumeService(
                 resolved_registry,

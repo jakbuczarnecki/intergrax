@@ -171,6 +171,7 @@ class UAEPExecutor:
         exec_ctx.tool_gateway = BoundToolGateway(
             exec_ctx,
             allowed_tools=list(contract.allowed_tools),
+            middleware=self._middleware,
         )
 
         await self._guard_hook(

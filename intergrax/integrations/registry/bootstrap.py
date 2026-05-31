@@ -98,6 +98,20 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.rerank_provider.jina_rerank.register import register_jina_rerank_integration
     from intergrax.integrations.providers.search_provider.reddit.register import register_reddit_integration
     from intergrax.integrations.providers.search_provider.google_places.register import register_google_places_integration
+    from intergrax.integrations.providers.observability_backend.langsmith.register import register_langsmith_integration
+    from intergrax.integrations.providers.observability_backend.helicone.register import register_helicone_integration
+    from intergrax.integrations.providers.observability_backend.posthog.register import register_posthog_integration
+    from intergrax.integrations.providers.observability_backend.braintrust.register import register_braintrust_integration
+    from intergrax.integrations.providers.observability_backend.signoz.register import register_signoz_integration
+    from intergrax.integrations.providers.observability_backend.honeycomb.register import register_honeycomb_integration
+    from intergrax.integrations.providers.observability_backend.arize.register import register_arize_integration
+    from intergrax.integrations.providers.observability_backend.phoenix.register import register_phoenix_integration
+    from intergrax.integrations.providers.observability_backend.wandb.register import register_wandb_integration
+    from intergrax.integrations.providers.observability_backend.opensearch.register import register_opensearch_integration
+    from intergrax.integrations.providers.notification_channel.pagerduty.register import register_pagerduty_integration
+    from intergrax.integrations.providers.notification_channel.opsgenie.register import register_opsgenie_integration
+    from intergrax.integrations.providers.issue_tracker.gitlab.register import register_gitlab_integration
+    from intergrax.integrations.providers.vector_store.vespa.register import register_vespa_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -186,6 +200,20 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_jina_rerank_integration(override=override)
     register_reddit_integration(override=override)
     register_google_places_integration(override=override)
+    register_langsmith_integration(override=override)
+    register_helicone_integration(override=override)
+    register_posthog_integration(override=override)
+    register_braintrust_integration(override=override)
+    register_signoz_integration(override=override)
+    register_honeycomb_integration(override=override)
+    register_arize_integration(override=override)
+    register_phoenix_integration(override=override)
+    register_wandb_integration(override=override)
+    register_opensearch_integration(override=override)
+    register_pagerduty_integration(override=override)
+    register_opsgenie_integration(override=override)
+    register_gitlab_integration(override=override)
+    register_vespa_integration(override=override)
     _BOOTSTRAPPED = True
 
 
