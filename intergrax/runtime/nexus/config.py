@@ -8,6 +8,10 @@ from typing import Any, Dict, FrozenSet, Optional, Literal, Sequence
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.retrieval.retrieval_service import RetrievalService
+from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
+from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.runtime.nexus.budget.budget_models import BudgetPolicy, RunBudget
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
@@ -70,6 +74,12 @@ class RuntimeConfig:
 
     # Vectorstore manager providing semantic search over stored chunks.
     vectorstore_manager: Optional[BaseVectorstoreManager] = None
+
+    # Optional full RAG stack (unified retrieval for Nexus ContextBuilder).
+    retriever_manager: Optional[BaseRetrieverManager] = None
+    reranker_manager: Optional[BaseRerankerManager] = None
+    rag_profile: Optional[RagProfile] = None
+    retrieval_service: Optional[RetrievalService] = None
 
     # ------------------------------------------------------------------
     # FEATURE FLAGS

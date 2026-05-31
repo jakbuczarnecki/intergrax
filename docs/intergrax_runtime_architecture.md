@@ -226,7 +226,7 @@ The platform MUST maintain **one canonical path** per universal concern. All tie
 | Logging | `intergrax/logging.py` and established log patterns | `print()`, ad-hoc loggers, duplicate logging frameworks |
 | Tracing (pipeline) | Nexus `trace_event()` / `RunTraceWriter` | Parallel untracked diagnostic streams |
 | Tools | `intergrax/tools/` (`ToolRegistry`, `ToolExecutor`, Tool Library §7.1.6) | Agent-local tool registries; boolean `use_rag` / `use_websearch` plan flags (deprecated §22.2) |
-| RAG | `intergrax/rag/` | Duplicate embedding/retrieval stacks in agents |
+| RAG | `intergrax/rag/` (`RagProfile`, `RetrievalService`, `IngestPipeline`) | Duplicate embedding/retrieval stacks; dense-only `vectorstore.query` bypass in agents/Nexus |
 | Web search | `intergrax/websearch/` | Custom HTTP search clients in agents |
 | Memory / session | `intergrax/memory/`, Nexus session storage | Direct Redis/PostgreSQL access from agents |
 | Queues | `intergrax/queueing/` | Ad-hoc background job systems |
@@ -624,6 +624,23 @@ Category contracts MUST be **backend-agnostic**: same method names and DTOs whet
 | **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`, metrics) | 19 slugs — [LLM_ADAPTERS.md](LLM_ADAPTERS.md) §5.2.2 |
 | **Tokenization** | `intergrax/tokenizers/` | Not an external integration slug |
 | **RAG pipeline** | `intergrax/rag/` | Vector stores + document parsers use **catalog bridges**; orchestration stays in `rag/` |
+
+#### RAG stack (Tier-0, Phase M-RAG)
+
+Modular layers — all strategy IDs and integration slugs are **configurable** via `RagProfile` / env (`INTERGRAX_RAG_*`), never hardcoded to a single parser (e.g. Docling) or vector backend:
+
+| Layer | Module | Role |
+|-------|--------|------|
+| Profile | `rag/profiles/rag_profile.py` | Retriever, reranker, routing, chunking, contextual enrich, query expansion |
+| Ingest | `rag/ingest/ingest_pipeline.py` | Loader → chunk (strategy id) → optional contextual enrich → embed → index |
+| Retrieval | `rag/retrieval/retrieval_service.py` | **Single entry** for `rag.retrieve`, Nexus `ContextBuilder`, diagnostics |
+| Routing | `rag/routing/query_router.py` | `fast` / `standard` / `deep` tiers (adaptive cost) |
+| Retrievers | `rag/retrievers/` | Registry: vector, hybrid, fusion (RRF), MMR, parent–child, hierarchical, multi-query |
+| Rerankers | `rag/rerankers/` | Registry + integration slugs (`cohere_rerank`, `jina_rerank`) |
+| Evaluation | `rag/evaluation/metrics.py` | Offline `recall@k`, MRR for CI (datasets planned M-RAG.11) |
+| Bootstrap | `rag/bootstrap/rag_stack_bootstrap.py` | `create_default_rag_stack()` for Tier-3 `ToolWiringContext` |
+
+**Wiring rule:** `ToolWiringContext` and `RuntimeConfig` expose `retrieval_service`, `rag_profile`, `retriever_manager`, `reranker_manager`. Document parsers resolve via `IntegrationProfile` + `INTERGRAX_RAG_DOCUMENT_PARSER_SLUG` (optional); default loader uses handler registry (smart parsers + catalog fallback).
 
 Do **not** add an `llm_provider` category or LLM slugs to the Integration Catalog backlog.
 

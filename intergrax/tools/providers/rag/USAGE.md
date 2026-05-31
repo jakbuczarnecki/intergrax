@@ -7,18 +7,28 @@
 
 | Field | Required | Purpose |
 |-------|----------|---------|
-| `vectorstore_manager` | Yes | Semantic search over indexed chunks |
-| `embedding_manager` | Yes (retrieve/ingest) | Query embedding for vector search |
+| `vectorstore_manager` | Yes | Vector index for chunks |
+| `embedding_manager` | Yes (retrieve/ingest) | Embeddings for query + ingest |
+| `rag_profile` | No | `RagProfile` or env `INTERGRAX_RAG_*` (retriever, reranker, routing) |
+| `retrieval_service` | No | Pre-built `RetrievalService`; else composed from managers + profile |
+| `retriever_manager` / `reranker_manager` | No | Override Tier-0 registries |
 
-Tier-3 example:
+Tier-3 example (full stack):
 
 ```python
+from intergrax.rag.bootstrap.rag_stack_bootstrap import create_default_rag_stack
 from intergrax.tools.registry import ToolProfile, ToolWiringContext, build_registry_from_profile, register_default_tools
 
 register_default_tools()
+stack = create_default_rag_stack(integration_profile=integration_profile)
 ctx = ToolWiringContext(
-    vectorstore_manager=runtime_config.vectorstore_manager,
-    embedding_manager=runtime_config.embedding_manager,
+    vectorstore_manager=stack.vectorstore_manager,
+    embedding_manager=stack.embedding_manager,
+    retriever_manager=stack.retriever_manager,
+    reranker_manager=stack.reranker_manager,
+    rag_profile=stack.profile,
+    retrieval_service=stack.retrieval_service,
+    extras={"contextual_enricher": stack.contextual_enricher},
 )
 registry = build_registry_from_profile(
     ToolProfile(enabled=["rag.retrieve", "rag.ingest_document", "rag.list_collections"]),
@@ -26,13 +36,21 @@ registry = build_registry_from_profile(
 )
 ```
 
+### `rag.retrieve`
+
+Uses **`RetrievalService`**: adaptive route tier → registered retriever (default `hybrid`) → optional reranker → scoped metadata filter. Output includes `diagnostics` (`retriever_id`, `route_tier`, latencies).
+
+Env examples: `INTERGRAX_RAG_RETRIEVER_ID=hybrid`, `INTERGRAX_RAG_ENABLE_RERANK=true`, `INTERGRAX_RAG_ROUTE_MODE=auto`.
+
 ### `rag.ingest_document`
 
-Loads a local file through the default RAG document handler pipeline (integration-backed parsers), splits, embeds, and stores chunks. Response includes `parser_id` and `integration_parser_trace` from `ParserPipeline`.
+Uses **`IngestPipeline`**: configurable loader/splitter (extras or defaults), chunking strategy from `RagProfile.chunking_strategy_id` or metadata `chunking_strategy_id`, optional contextual enrich when `INTERGRAX_RAG_CONTEXTUAL_ENRICH=on` and `contextual_enricher` is wired with an `LLMAdapter`.
+
+Parsers are **not** fixed to Docling — handlers use smart parsers + `ParserPipeline` catalog fallback; set `INTERGRAX_RAG_DOCUMENT_PARSER_SLUG` to force an integration parser slug.
 
 ### `rag.list_collections`
 
-Returns collection names from the active vector store (`VectorStore.list_collections()`). Useful before ingest/retrieve when multiple namespaces exist.
+Returns collection names from the active vector store (`VectorStore.list_collections()`).
 
 ## Agent allow-list
 

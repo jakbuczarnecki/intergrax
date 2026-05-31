@@ -550,6 +550,27 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M-LLM.12 | Nexus + governance wiring | **Done** | `llm_tenant_scope`, runtime metrics plugin, `INTERGRAX_LLM_TENANT_MAX_TOKENS` quota |
 | M-LLM.13 | Observability + secrets + distributed limits | **Done** | Pushgateway, `LLM_OBSERVABILITY.md`, Vault loader, Redis rate limit, governance warn |
 
+### Phase M-RAG — RAG Engine (Tier-0)
+
+**Canon:** §5.2.2 · **Architecture:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) (RAG stack)  
+**Goal:** One configurable retrieval path for `rag.retrieve`, Nexus `ContextBuilder`, and ingest — no duplicate dense-only shortcuts; parsers/chunkers/rerankers selected via profile and Integration Library slugs (never hardcoded to a single vendor).
+
+| # | Deliverable | Status | Notes |
+|---|-------------|--------|-------|
+| M-RAG.1 | `RagProfile` + env (`INTERGRAX_RAG_*`) | **Done** | `intergrax/rag/profiles/rag_profile.py` |
+| M-RAG.2 | `RetrievalService` (route → retrieve → rerank) | **Done** | `intergrax/rag/retrieval/`; wired to `rag.retrieve` + Nexus |
+| M-RAG.3 | Adaptive `QueryRouter` (fast / standard / deep) | **Done** | `intergrax/rag/routing/query_router.py` |
+| M-RAG.4 | `IngestPipeline` + configurable chunking strategy | **Done** | `intergrax/rag/ingest/`; `rag.ingest_document` |
+| M-RAG.5 | Contextual chunk enricher (optional LLM) | **Done** | `INTERGRAX_RAG_CONTEXTUAL_ENRICH`; injected `LLMAdapter` |
+| M-RAG.6 | Query expansion (`deterministic` / `llm`) | **Done** | `MultiQueryRetriever` + `query_expander.py` |
+| M-RAG.7 | Evaluation metrics (`recall@k`, MRR) | **Done** | `intergrax/rag/evaluation/metrics.py` |
+| M-RAG.8 | `create_default_rag_stack()` bootstrap | **Done** | `intergrax/rag/bootstrap/rag_stack_bootstrap.py` |
+| M-RAG.9 | Tool/Nexus wiring (`retrieval_service`, profile on `ToolWiringContext`) | **Done** | `RuntimeConfig.retrieval_service` |
+| M-RAG.10 | Native sparse / BM25 in vector backends | **Planned** | Qdrant/Weaviate hybrid indexes via integration `rag_store` |
+| M-RAG.11 | RAG eval CI gate + golden datasets | **Planned** | Build on `evaluation/metrics.py` |
+| M-RAG.12 | GraphRAG (`GraphStore` contract) | **Future** | §5.2.4 approval before new category store |
+| M-RAG.13 | Platform agentic retrieval loop (budgeted) | **Future** | Nexus plugin or `RetrievalService` deep tier |
+
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
 | M.0 | Integration backlog + categories approved | **Done** | Canon §7.1.3 catalog table |

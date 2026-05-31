@@ -27,6 +27,10 @@ class ToolWiringContext:
     rag_manager: Any | None = None
     vectorstore_manager: Any | None = None
     embedding_manager: Any | None = None
+    retriever_manager: Any | None = None
+    reranker_manager: Any | None = None
+    rag_profile: Any | None = None
+    retrieval_service: Any | None = None
     websearch_executor: Any | None = None
     sandbox_session: Any | None = None
     extras: dict[str, Any] = field(default_factory=dict)
@@ -39,6 +43,10 @@ class ToolWiringContext:
         rag_manager: Any | None = None,
         vectorstore_manager: Any | None = None,
         embedding_manager: Any | None = None,
+        retriever_manager: Any | None = None,
+        reranker_manager: Any | None = None,
+        rag_profile: Any | None = None,
+        retrieval_service: Any | None = None,
         websearch_executor: Any | None = None,
         extras: Optional[Mapping[str, Any]] = None,
     ) -> ToolWiringContext:
@@ -67,6 +75,10 @@ class ToolWiringContext:
             rag_manager=rag_manager,
             vectorstore_manager=vectorstore_manager,
             embedding_manager=embedding_manager,
+            retriever_manager=retriever_manager,
+            reranker_manager=reranker_manager,
+            rag_profile=rag_profile,
+            retrieval_service=retrieval_service,
             websearch_executor=websearch_executor,
             extras=dict(extras or {}),
         )

@@ -116,8 +116,8 @@ Status legend: **Done** = registered handler in catalog.
 
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
-| `rag.retrieve` | **Done** | Retrieve documents from vector index for prompt context | `vectorstore_manager` + `embedding_manager` via `ToolWiringContext` |
-| `rag.ingest_document` | **Done** | Load file → parse (integration pipeline) → chunk → embed → index | Same managers + default `DocumentsLoader` / splitter |
+| `rag.retrieve` | **Done** | Hybrid retrieval + optional rerank via `RetrievalService` / `RagProfile` | `vectorstore_manager`, `embedding_manager`, optional `retrieval_service` |
+| `rag.ingest_document` | **Done** | `IngestPipeline`: parse (catalog/handler registry) → chunk (strategy id) → embed → index | Same managers + optional `contextual_enricher` |
 | `websearch.query` | **Done** | Run web search and return normalized snippets | `websearch_executor` or `SearchProvider` |
 | `websearch.read_url` | **Done** | Fetch a URL and return extracted title + plain text | `websearch` page fetch pipeline |
 | `websearch.fetch_batch` | **Done** | Fetch multiple URLs and return combined context | `websearch` page fetch pipeline |

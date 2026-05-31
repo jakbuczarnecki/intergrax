@@ -28,6 +28,9 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 from typing import TYPE_CHECKING
 
+from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.retrieval.resolve import resolve_retrieval_service
+from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.llm.messages import ChatMessage
@@ -232,54 +235,43 @@ class ContextBuilder:
 
         metadata_filter = MetadataFilter(conditions=where) if where else None
 
-        # 2) Get embedding manager from runtime config
         embedding_manager = self._config.embedding_manager
         if embedding_manager is None:
-            # Without an embedding manager we cannot perform semantic search.
             return [], "no_embedding_manager_in_config"
 
-        # 3) Compute query embedding using IntergraxEmbeddingManager API
-        try:
-            query_embedding = embedding_manager.embed_one(query_text)
-        except Exception:
-            query_embedding = embedding_manager.embed_texts([query_text])
+        profile = self._config.rag_profile or RagProfile(final_top_k=max_docs)
+        service = self._config.retrieval_service
+        if service is None:
+            service = resolve_retrieval_service(
+                vectorstore_manager=self._vectorstore,
+                embedding_manager=embedding_manager,
+                retriever_manager=self._config.retriever_manager,
+                reranker_manager=self._config.reranker_manager,
+                profile=profile,
+            )
+        if service is None:
+            return [], "retrieval_service_not_configured"
 
-        # Normalize embeddings shape for vector store:
-        # - numpy array: convert 2D batch-of-1 into 1D vector
-        # - plain list: unwrap batch-of-1 into a single vector
-        if hasattr(query_embedding, "ndim"):
-            try:
-                if query_embedding.ndim > 1:
-                    query_embedding = query_embedding[0]
-            except Exception:
-                pass
-        elif (
-            isinstance(query_embedding, (list, tuple))
-            and query_embedding
-            and isinstance(query_embedding[0], (list, tuple))
-        ):
-            query_embedding = query_embedding[0]
-
-        # 4) Call vector store with the normalized Tier-1 contract
-        hits = self._vectorstore.query(
-            query_embedding=query_embedding,
-            top_k=max_docs,
-            metadata_filter=metadata_filter,
-            include_embeddings=False,
+        result = service.retrieve(
+            RetrievalRequest(
+                query=query_text,
+                top_k=max_docs,
+                metadata_filter=metadata_filter,
+                score_threshold=score_threshold,
+            )
         )
+        if not result.used:
+            return [], result.reason
 
-        # 5) Normalize hits into RetrievedChunk objects
-        retrieved_chunks = self._map_hits_to_chunks(hits)
-
-        # Apply score_threshold as an extra safety net
-        if score_threshold is not None:
-            filtered_chunks: List[RetrievedChunk] = []
-            for ch in retrieved_chunks:
-                if ch.score >= score_threshold:
-                    filtered_chunks.append(ch)
-            retrieved_chunks = filtered_chunks
-
-        # 6) Build RAG debug info (backend-agnostic view)            
+        retrieved_chunks = [
+            RetrievedChunk(
+                id=c.id,
+                text=c.text,
+                metadata=dict(c.metadata or {}),
+                score=c.score,
+            )
+            for c in result.chunks
+        ]
         return retrieved_chunks, None
 
 

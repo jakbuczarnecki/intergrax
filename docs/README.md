@@ -41,6 +41,7 @@ LLM observability          →  LLM_OBSERVABILITY.md
 | Review technical debt before Tier-1 work | Implementation plan **Appendix B** |
 | Wire external systems (DB, Slack, Jira, …) | [INTEGRATIONS.md](INTEGRATIONS.md), then architecture canon §7.1 |
 | Wire agent-callable tools (RAG, web search, Jira, …) | [TOOLS.md](TOOLS.md), then architecture canon §7.1.6–§7.1.7 |
+| RAG engine (RetrievalService, RagProfile, M-RAG plan) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase M-RAG · [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) RAG stack |
 | Configure LLM providers (OpenAI, Claude, Bedrock, …) | [LLM_ADAPTERS.md](LLM_ADAPTERS.md), then architecture canon §5.2.2 |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
 | Deep-dive UAEP / hooks / governance | Architecture canon §42 |
