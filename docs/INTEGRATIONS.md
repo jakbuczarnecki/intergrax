@@ -29,7 +29,7 @@ intergrax/integrations/providers/
 ├── message_bus/              # kafka, sqs, pubsub, …
 ├── object_storage/           # s3, azure_blob, gcs
 ├── vector_store/             # pinecone, qdrant, chroma, weaviate, milvus, inmemory
-├── search_provider/          # google_cse, bing, brave, serpapi, tavily, exa
+├── search_provider/          # google_cse, bing, reddit, google_places, brave, serpapi, tavily, exa
 ├── notification_channel/     # slack, teams, discord, twilio, …
 ├── interaction_surface/      # lab_json (slack/teams also register here)
 ├── collaboration_suite/      # ms365_graph, google_workspace
@@ -170,7 +170,7 @@ All providers below are registered in `register_default_integrations()`.
 | `message_bus` | 8 | `kafka`, `celery`, `rabbitmq`, `sqs`, `service_bus`, `pubsub`, `temporal`, `nats` |
 | `object_storage` | 5 | `s3`, `azure_blob`, `gcs`, `minio`, `filesystem` |
 | `vector_store` | 6 | `pinecone`, `qdrant`, `chroma`, `weaviate`, `milvus`, `inmemory` |
-| `search_provider` | 6 | `google_cse`, `bing`, `brave`, `serpapi`, `tavily`, `exa` |
+| `search_provider` | 8 | `google_cse`, `bing`, `reddit`, `google_places`, `brave`, `serpapi`, `tavily`, `exa` |
 | `notification_channel` | 7 | `slack`, `teams`, `webhook`, `log`, `email_smtp`, `discord`, `twilio` |
 | `interaction_surface` | 1 (+2 dual) | `lab_json`; `slack` / `teams` also register this category |
 | `collaboration_suite` | 2 | `ms365_graph`, `google_workspace` |

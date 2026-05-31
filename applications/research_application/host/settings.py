@@ -22,6 +22,8 @@ class ResearchBackendSettings:
     include_mcp: bool = True
     mcp_mount_path: str = "/mcp"
     enable_websearch: bool = True
+    enable_rag: bool = False
+    enable_rag_ingest: bool = False
     extra_enabled_tool_ids: tuple[str, ...] = ()
     websearch_executor: object | None = None
 
@@ -30,6 +32,10 @@ class ResearchBackendSettings:
         ids: list[str] = list(self.extra_enabled_tool_ids)
         if self.enable_websearch and "websearch.query" not in ids:
             ids.append("websearch.query")
+        if self.enable_rag and "rag.retrieve" not in ids:
+            ids.append("rag.retrieve")
+        if self.enable_rag_ingest and "rag.ingest_document" not in ids:
+            ids.append("rag.ingest_document")
         return ids
 
     @classmethod
@@ -42,6 +48,8 @@ class ResearchBackendSettings:
         include_mcp = _env_bool("RESEARCH_INCLUDE_MCP", default=True)
         mcp_mount = os.environ.get("RESEARCH_MCP_MOUNT_PATH", "/mcp").strip() or "/mcp"
         enable_websearch = _env_bool("RESEARCH_ENABLE_WEBSEARCH", default=True)
+        enable_rag = _env_bool("RESEARCH_ENABLE_RAG", default=False)
+        enable_rag_ingest = _env_bool("RESEARCH_ENABLE_RAG_INGEST", default=False)
         extra_tools_raw = os.environ.get("RESEARCH_ENABLED_TOOLS", "").strip()
         extra_tools = tuple(x.strip() for x in extra_tools_raw.split(",") if x.strip())
         return cls(
@@ -52,5 +60,7 @@ class ResearchBackendSettings:
             include_mcp=include_mcp,
             mcp_mount_path=mcp_mount,
             enable_websearch=enable_websearch,
+            enable_rag=enable_rag,
+            enable_rag_ingest=enable_rag_ingest,
             extra_enabled_tool_ids=extra_tools,
         )

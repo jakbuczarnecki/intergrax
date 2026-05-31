@@ -643,6 +643,8 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 
 **Wave 2 (2026-05-30):** `openpyxl`, `whisper`, `yt_dlp`; `cohere_rerank` / `jina_rerank`; Bing/Google CSE implementations under `integrations/.../web_client.py` (websearch re-exports); `ParserPipeline` ingestion trace; tool `rag.ingest_document`; `IntegrationProfile.legal_product()` / `research_product()` / `lab()` with `document_parser=docling`; lab `GET /v1/lab/integrations/docling/health`.
 
+**Wave 3 (2026-05-30):** `reddit`, `google_places` search providers; Chroma/Qdrant/Pinecone SDK in `integrations/.../rag_store.py` (RAG shims); runtime SQLite delivery ledger via `sqlite/opens`; `rag.ingest_document` env flags for legal/research; parser trace export to Langfuse/Sentry.
+
 | Slug | Status | Notes |
 |------|--------|-------|
 | `docling` | **Done** (beta) | local + server; `opens.py` only Docling/httpx imports |
@@ -654,6 +656,8 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 | `yt_dlp` | **Done** (beta) | YouTube audio/video download |
 | `cohere_rerank` | **Done** (beta) | RAG rerank via integration resolver |
 | `jina_rerank` | **Done** (beta) | RAG rerank via integration resolver |
+| `reddit` | **Done** (beta) | Reddit OAuth2 search |
+| `google_places` | **Done** (beta) | Google Places text search |
 
 #### M.6 P3 — Legacy backlog note (superseded)
 

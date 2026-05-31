@@ -84,6 +84,7 @@ class LegalBackendSettings:
     include_mcp: bool = True
     mcp_mount_path: str = "/mcp"
     enable_rag: bool = False
+    enable_rag_ingest: bool = False
     enable_websearch: bool = False
     use_legal_tool_decision: bool = False
     tools_mode: str = "off"
@@ -96,6 +97,8 @@ class LegalBackendSettings:
         ids: list[str] = list(self.extra_enabled_tool_ids)
         if self.enable_rag and "rag.retrieve" not in ids:
             ids.append("rag.retrieve")
+        if self.enable_rag_ingest and "rag.ingest_document" not in ids:
+            ids.append("rag.ingest_document")
         if self.enable_websearch and "websearch.query" not in ids:
             ids.append("websearch.query")
         return ids
@@ -168,6 +171,7 @@ class LegalBackendSettings:
         mcp_mount = os.environ.get("LEGAL_MCP_MOUNT_PATH", "/mcp").strip() or "/mcp"
 
         enable_rag = _env_bool("LEGAL_ENABLE_RAG", default=False)
+        enable_rag_ingest = _env_bool("LEGAL_ENABLE_RAG_INGEST", default=False)
         enable_websearch = _env_bool("LEGAL_ENABLE_WEBSEARCH", default=False)
         use_legal_tool_decision = _env_bool("LEGAL_USE_TOOL_DECISION", default=False)
         tools_mode = os.environ.get("LEGAL_TOOLS_MODE", "off").strip().lower() or "off"
@@ -198,6 +202,7 @@ class LegalBackendSettings:
             include_mcp=include_mcp,
             mcp_mount_path=mcp_mount,
             enable_rag=enable_rag,
+            enable_rag_ingest=enable_rag_ingest,
             enable_websearch=enable_websearch,
             use_legal_tool_decision=use_legal_tool_decision,
             tools_mode=tools_mode,

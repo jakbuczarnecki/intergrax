@@ -96,6 +96,8 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.document_parser.yt_dlp.register import register_yt_dlp_integration
     from intergrax.integrations.providers.rerank_provider.cohere_rerank.register import register_cohere_rerank_integration
     from intergrax.integrations.providers.rerank_provider.jina_rerank.register import register_jina_rerank_integration
+    from intergrax.integrations.providers.search_provider.reddit.register import register_reddit_integration
+    from intergrax.integrations.providers.search_provider.google_places.register import register_google_places_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -182,6 +184,8 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_yt_dlp_integration(override=override)
     register_cohere_rerank_integration(override=override)
     register_jina_rerank_integration(override=override)
+    register_reddit_integration(override=override)
+    register_google_places_integration(override=override)
     _BOOTSTRAPPED = True
 
 

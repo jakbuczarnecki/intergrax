@@ -8,10 +8,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
+from intergrax.integrations.providers.relational_store.sqlite.opens import open_delivery_ledger_at
 from intergrax.runtime.notifications.deliveries.delivery_ledger import InMemoryDeliveryLedger
 from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
 from intergrax.runtime.notifications.deliveries.retry_delivery import RetryingNotificationDelivery
-from intergrax.runtime.notifications.deliveries.sqlite_delivery_ledger import SQLiteDeliveryLedger
 from intergrax.runtime.notifications.delivery_contract import NotificationDelivery
 
 
@@ -22,7 +22,7 @@ def open_delivery_ledger(
 ) -> DeliveryLedger:
     if in_memory or db_path is None:
         return InMemoryDeliveryLedger()
-    return SQLiteDeliveryLedger(db_path=db_path)
+    return open_delivery_ledger_at(db_path)
 
 
 def create_resilient_delivery(

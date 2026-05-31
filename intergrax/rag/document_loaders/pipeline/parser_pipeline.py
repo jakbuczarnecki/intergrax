@@ -53,7 +53,7 @@ class ParserPipeline:
                             "num_documents": len(docs),
                         }
                     )
-                    return self._attach_trace(docs, attempts)
+                    return self._attach_trace(source, docs, attempts)
 
                 attempts.append(
                     {"parser_id": parser_id, "status": "empty", "latency_ms": elapsed_ms}
@@ -83,13 +83,20 @@ class ParserPipeline:
         raise RuntimeError("No available document parser could process the source.")
 
     @staticmethod
-    def _attach_trace(docs: Sequence[Document], attempts: list[dict[str, Any]]) -> Sequence[Document]:
+    def _attach_trace(
+        source: str,
+        docs: Sequence[Document],
+        attempts: list[dict[str, Any]],
+    ) -> Sequence[Document]:
         winning = attempts[-1] if attempts else {}
         trace = {
             "attempts": attempts,
             "parser_id": winning.get("parser_id"),
             "latency_ms": winning.get("latency_ms"),
         }
+        from intergrax.rag.document_loaders.observability.parser_trace_exporter import export_parser_trace
+
+        export_parser_trace(source=source, trace=trace)
         enriched: list[Document] = []
         for doc in docs:
             metadata = dict(doc.metadata or {})

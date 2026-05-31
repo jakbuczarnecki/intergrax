@@ -52,6 +52,7 @@
         | Variable | Default | Role |
         |----------|---------|------|
         | ``LEGAL_ENABLE_RAG`` | ``false`` | Register ``rag.retrieve`` on ``RuntimeConfig`` |
+        | ``LEGAL_ENABLE_RAG_INGEST`` | ``false`` | Register ``rag.ingest_document`` (index local files) |
         | ``LEGAL_ENABLE_WEBSEARCH`` | ``false`` | Register ``websearch.query`` |
         | ``LEGAL_USE_TOOL_DECISION`` | ``false`` | LLM tool-decision step before Nexus bridge |
         | ``LEGAL_TOOLS_MODE`` | ``off`` | ToolsAgent planner mode when tools enabled |
@@ -59,7 +60,7 @@
 
         ``LEGAL_PRODUCT_PROFILE=research`` enables RAG, websearch, and tool-decision by default (override with env).
 
-        Wire vectorstore / websearch backends in ``host/tool_wiring.py`` when enabling RAG/websearch in production. See [`intergrax/tools/USAGE.md`](../../intergrax/tools/USAGE.md).
+        Wire vectorstore / websearch backends in ``host/tool_wiring.py`` when enabling RAG/websearch in production. Set ``INTERGRAX_INTEGRATION_DOCUMENT_PARSER=docling`` (and optional ``INTERGRAX_INTEGRATION_RERANK_PROVIDER``) for ingestion/rerank governance. See [`intergrax/tools/USAGE.md`](../../intergrax/tools/USAGE.md).
 
         ---
 

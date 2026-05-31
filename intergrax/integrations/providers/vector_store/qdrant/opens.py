@@ -29,7 +29,7 @@ def _import_qdrant_client() -> Any:
 
 
 def _build_rag_config(config: QdrantIntegrationConfig) -> Any:
-    from intergrax.rag.vectorstore.providers.qdrant_vector_store import QdrantConfig
+    from intergrax.integrations.providers.vector_store.qdrant.rag_store import QdrantConfig
 
     url = config.resolved_url()
     return QdrantConfig(
@@ -50,7 +50,7 @@ def _open_rag_store(
     if store_factory is not None:
         return store_factory()
     _import_qdrant_client()
-    from intergrax.rag.vectorstore.providers.qdrant_vector_store import QdrantVectorStore
+    from intergrax.integrations.providers.vector_store.qdrant.rag_store import QdrantVectorStore
 
     return QdrantVectorStore(_build_rag_config(config))
 
