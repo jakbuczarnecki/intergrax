@@ -140,3 +140,25 @@ class SeleniumIntegrationConfig(BaseIntegrationConfig):
         }
         payload.update(overrides)
         return cls.model_validate(payload)
+
+
+class SentryIntegrationConfig(BaseIntegrationConfig):
+    dsn: str = ""
+    org: str = ""
+    project: str = ""
+    auth_token: str = ""
+    environment: str = "production"
+    base_url: str = "https://sentry.io"
+
+    @classmethod
+    def from_env(cls, **overrides: object) -> SentryIntegrationConfig:
+        payload = {
+            "dsn": _env("INTERGRAX_SENTRY_DSN"),
+            "org": _env("INTERGRAX_SENTRY_ORG"),
+            "project": _env("INTERGRAX_SENTRY_PROJECT"),
+            "auth_token": _env("INTERGRAX_SENTRY_AUTH_TOKEN"),
+            "environment": _env("INTERGRAX_SENTRY_ENVIRONMENT", "production") or "production",
+            "base_url": _env("INTERGRAX_SENTRY_URL", "https://sentry.io") or "https://sentry.io",
+        }
+        payload.update(overrides)
+        return cls.model_validate(payload)

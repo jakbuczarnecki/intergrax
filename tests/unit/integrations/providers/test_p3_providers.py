@@ -224,6 +224,28 @@ def test_firecrawl_and_selenium() -> None:
     assert page2.title == "Title"
 
 
+def test_sentry_observability() -> None:
+    class _FakeSentryClient:
+        def query_instant(self, promql: str, *, eval_time: Optional[float] = None) -> float:
+            return 7.0
+
+        def query_range(self, promql: str, *, start: float, end: float, step: str) -> list[dict[str, float]]:
+            return [{"timestamp": start, "value": 7.0}]
+
+        def capture_exception(self, exc: BaseException, *, tags: dict[str, str]) -> str:
+            return "event-1"
+
+        def capture_message(self, message: str, *, level: str) -> str:
+            return "msg-1"
+
+    from intergrax.integrations.providers.observability_backend.sentry.bundle import create_sentry_observability_backend
+
+    backend = create_sentry_observability_backend(client=_FakeSentryClient())
+    assert_observability_backend(backend)
+    assert backend.query_instant("is:unresolved").series[0].points[0].value == 7.0
+    assert backend.capture_message("agent failed") == "msg-1"
+
+
 def test_register_default_integrations_includes_p3_slugs() -> None:
     register_default_integrations()
     slugs = set(catalog_snapshot().keys())
@@ -233,5 +255,6 @@ def test_register_default_integrations_includes_p3_slugs() -> None:
         IntegrationSlug.NEO4J,
         IntegrationSlug.INMEMORY,
         IntegrationSlug.FIRECRAWL,
+        IntegrationSlug.SENTRY,
     ):
         assert slug.value in slugs

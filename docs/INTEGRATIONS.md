@@ -35,7 +35,7 @@ intergrax/integrations/providers/
 ├── collaboration_suite/      # ms365_graph, google_workspace
 ├── issue_tracker/            # jira, github, linear, azure_devops
 ├── wiki_knowledge/           # confluence, notion, sharepoint
-├── observability_backend/    # prometheus, elasticsearch, otel, langfuse, datadog, clickhouse
+├── observability_backend/    # prometheus, elasticsearch, otel, langfuse, datadog, clickhouse, sentry
 ├── browser_automation/       # playwright, firecrawl, selenium
 ├── secrets_store/            # vault
 ├── graph_store/              # neo4j
@@ -125,7 +125,7 @@ profile = IntegrationProfile.lab()
 | `collaboration_suite` | `CollaborationSuite` | Mail, calendar, directory |
 | `issue_tracker` | `IssueTracker` | Issues, comments, search |
 | `wiki_knowledge` | `WikiKnowledge` | Runbooks, internal docs |
-| `observability_backend` | `ObservabilityBackend` | Metrics and log search |
+| `observability_backend` | `ObservabilityBackend` | Metrics, log search, error tracking (Sentry) |
 | `browser_automation` | `BrowserAutomation` | Dynamic web pages (JS-heavy sites) |
 | `secrets_store` | `SecretsStore` | Tenant API keys, credentials (Vault, …) |
 | `graph_store` | `GraphStore` | Agent memory, tool dependency graphs |
@@ -149,7 +149,7 @@ Service-level slugs (`s3`, `azure_blob`, `gcs`, …) remain available for explic
 
 ---
 
-## Implemented providers (72)
+## Implemented providers (73)
 
 All providers below are registered in `register_default_integrations()`.  
 **Status:** `stable` = production-ready catalog entry; `beta` = shipped, API may evolve.
@@ -174,13 +174,13 @@ All providers below are registered in `register_default_integrations()`.
 | `collaboration_suite` | 2 | `ms365_graph`, `google_workspace` |
 | `issue_tracker` | 4 | `jira`, `github`, `linear`, `azure_devops` |
 | `wiki_knowledge` | 3 | `confluence`, `notion`, `sharepoint` |
-| `observability_backend` | 6 | `prometheus`, `elasticsearch`, `otel`, `langfuse`, `datadog`, `clickhouse` |
+| `observability_backend` | 7 | `prometheus`, `elasticsearch`, `otel`, `langfuse`, `datadog`, `clickhouse`, **`sentry`** |
 | `browser_automation` | 3 | `playwright`, `firecrawl`, `selenium` |
 | `secrets_store` | 1 | `vault` |
 | `graph_store` | 1 | `neo4j` |
 | `cloud_platform` | 3 | `aws`, `azure`, `gcp` |
 
-**Total unique slugs:** 72.
+**Total unique slugs:** 73.
 
 ### Implementation depth (code audit)
 
@@ -189,9 +189,9 @@ All providers below are registered in `register_default_integrations()`.
 | **full** | 24 | Dedicated `adapter` + `opens` (+ `config`); SDK in `opens.py` |
 | **full-partial** | 6 | `opens` / `client` without full adapter split |
 | **thin-p2** | 22 | `_shared/p2/factories.py` |
-| **thin-p3** | 20 | `_shared/p3/factories.py` (Phase M.7 harness backlog — Done beta) |
+| **thin-p3** | 21 | `_shared/p3/factories.py` (Phase M.7 harness + **sentry**) |
 
-**Thin-p3 slugs:** `tavily`, `exa`, `weaviate`, `milvus`, `inmemory`, `vault`, `langfuse`, `datadog`, `clickhouse`, `temporal`, `nats`, `neo4j`, `snowflake`, `supabase`, `minio`, `filesystem`, `discord`, `twilio`, `firecrawl`, `selenium`.
+**Thin-p3 slugs:** `tavily`, `exa`, `weaviate`, `milvus`, `inmemory`, `vault`, `langfuse`, `datadog`, `clickhouse`, **`sentry`**, `temporal`, `nats`, `neo4j`, `snowflake`, `supabase`, `minio`, `filesystem`, `discord`, `twilio`, `firecrawl`, `selenium`.
 
 **Vector-store bridges** (`pinecone`, `qdrant`, `chroma`): RAG implementation in `intergrax/rag/vectorstore/`.
 
@@ -432,12 +432,20 @@ RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorst
 | `prometheus` | beta | `create_prometheus_observability_backend()` | `INTERGRAX_PROMETHEUS` | PromQL instant / range queries |
 | `elasticsearch` | beta | `create_elasticsearch_observability_backend()` | `INTERGRAX_ELASTICSEARCH` | Log search and aggregations |
 | `otel` | beta | `create_otel_observability_backend()` | `INTERGRAX_OTEL` | OTLP-oriented metrics facade |
+| `langfuse` | beta | `create_langfuse_observability_backend()` | `INTERGRAX_LANGFUSE` | LLM/agent trace export |
+| `datadog` | beta | `create_datadog_observability_backend()` | `INTERGRAX_DATADOG` | APM metrics API |
+| `clickhouse` | beta | `create_clickhouse_observability_backend()` | `INTERGRAX_CLICKHOUSE` | High-volume event analytics |
+| `sentry` | beta | `create_sentry_observability_backend()` | `INTERGRAX_SENTRY` | Error tracking + issue stats; `capture_exception` / `capture_message` |
 
 | Provider | Usage guide |
 |----------|-------------|
 | `prometheus` | [USAGE.md](../intergrax/integrations/providers/observability_backend/prometheus/USAGE.md) |
 | `elasticsearch` | [USAGE.md](../intergrax/integrations/providers/observability_backend/elasticsearch/USAGE.md) |
 | `otel` | [USAGE.md](../intergrax/integrations/providers/observability_backend/otel/USAGE.md) |
+| `langfuse` | [USAGE.md](../intergrax/integrations/providers/observability_backend/langfuse/USAGE.md) |
+| `datadog` | [USAGE.md](../intergrax/integrations/providers/observability_backend/datadog/USAGE.md) |
+| `clickhouse` | [USAGE.md](../intergrax/integrations/providers/observability_backend/clickhouse/USAGE.md) |
+| `sentry` | [USAGE.md](../intergrax/integrations/providers/observability_backend/sentry/USAGE.md) |
 
 ---
 
@@ -516,6 +524,7 @@ Alphabetical reference — all shipped integrations in one table.
 | `redis` | `key_value_cache` | stable | `create_redis_key_value_cache()` | [USAGE](../intergrax/integrations/providers/key_value_cache/redis/USAGE.md) |
 | `s3` | `object_storage` | beta | `create_s3_object_storage()` | [USAGE](../intergrax/integrations/providers/object_storage/s3/USAGE.md) |
 | `serpapi` | `search_provider` | beta | `create_serpapi_search_provider()` | [USAGE](../intergrax/integrations/providers/search_provider/serpapi/USAGE.md) |
+| `sentry` | `observability_backend` | beta | `create_sentry_observability_backend()` | [USAGE](../intergrax/integrations/providers/observability_backend/sentry/USAGE.md) |
 | `service_bus` | `message_bus` | beta | `create_service_bus_message_bus()` | [USAGE](../intergrax/integrations/providers/message_bus/service_bus/USAGE.md) |
 | `sharepoint` | `wiki_knowledge` | beta | `create_sharepoint_wiki_knowledge()` | [USAGE](../intergrax/integrations/providers/wiki_knowledge/sharepoint/USAGE.md) |
 | `slack` | `notification_channel`, `interaction_surface` | stable | `create_slack_catalog_factory()` | [USAGE](../intergrax/integrations/providers/notification_channel/slack/USAGE.md) |
@@ -532,18 +541,30 @@ All slugs from the 2026-05 harness recommendation (high / medium / low) are regi
 
 ---
 
-## Recommended next integrations (optional)
+## Recommended next integrations (harness AI gap analysis)
 
-| Priority | Slug (proposed) | Category | Notes |
-|----------|-----------------|----------|-------|
-| Medium | `reddit` | search_provider | Social search |
-| Medium | `google_places` | search_provider | Geo POI |
-| Low | `slash_command` | interaction_surface | Generic slash intake |
-| Future | `opensearch`, `vespa`, `arize`, `wandb` | various | RAG / MLOps depth |
+Audyt względem typowych stacków agentowych (LangGraph, CrewAI, LlamaIndex, enterprise VPC). **Zaimplementowane** oznacza slug w katalogu; **Brak** — warto rozważyć w kolejnej iteracji.
+
+| Priorytet | Slug | Kategoria | Status | Dlaczego harness |
+|-----------|------|-----------|--------|------------------|
+| **Wysoki** | `sentry` | observability_backend | **Done** | Error tracking, release health, agent failure alerts |
+| **Wysoki** | `langsmith` | observability_backend | Brak | LLM trace/debug (LangChain ecosystem) — obok `langfuse` |
+| **Wysoki** | `helicone` | observability_backend | Brak | LLM cost/latency proxy — popularny w prod agentach |
+| **Wysoki** | `pagerduty` / `opsgenie` | notification_channel | Brak | On-call escalation po HITL / agent failure |
+| **Średni** | `posthog` | observability_backend | Brak | Product analytics + feature flags dla agent apps |
+| **Średni** | `braintrust` | observability_backend | Brak | Evals + regression dla promptów agentów |
+| **Średni** | `gitlab` | issue_tracker | Brak | DevOps issue flow (mamy GitHub/Azure DevOps) |
+| **Średni** | `signoz` / `honeycomb` | observability_backend | Brak | OTEL-native APM (częściowo pokryte przez `otel`) |
+| **Średni** | `arize` / `phoenix` | observability_backend | Brak | ML/RAG eval + drift (w planie jako `arize`) |
+| **Niski** | `reddit` | search_provider | Reserved | Social research |
+| **Niski** | `google_places` | search_provider | Reserved | Geo POI |
+| **Future** | `opensearch`, `vespa`, `wandb` | various | Brak | Search/RAG scale, experiment tracking |
+
+**Już silne pokrycie harness:** 73 integracje — SQL (10), kolejki (8), blob (5), wektory (6), search (6), observability (7 incl. Sentry), Vault, Neo4j, Temporal/NATS, Firecrawl, Tavily/Exa, Discord/Twilio.
 
 ---
 
-All **72** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
+All **73** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
 
 ```bash
 uv run python scripts/generate_integration_usage_docs.py

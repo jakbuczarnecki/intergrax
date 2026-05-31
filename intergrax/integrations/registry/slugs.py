@@ -117,6 +117,7 @@ class IntegrationSlug(StrEnum):
     LANGFUSE = "langfuse"
     DATADOG = "datadog"
     CLICKHOUSE = "clickhouse"
+    SENTRY = "sentry"
 
     # browser_automation
     PLAYWRIGHT = "playwright"
@@ -255,6 +256,7 @@ FIELD_SLUGS: dict[str, frozenset[IntegrationSlug]] = {
             IntegrationSlug.LANGFUSE,
             IntegrationSlug.DATADOG,
             IntegrationSlug.CLICKHOUSE,
+            IntegrationSlug.SENTRY,
         }
     ),
     "browser_automation": frozenset(

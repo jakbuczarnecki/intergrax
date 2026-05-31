@@ -68,6 +68,7 @@ SLUG_CATEGORY: dict[str, str] = {
     "langfuse": "observability_backend",
     "datadog": "observability_backend",
     "clickhouse": "observability_backend",
+    "sentry": "observability_backend",
     "temporal": "message_bus",
     "nats": "message_bus",
     "neo4j": "graph_store",

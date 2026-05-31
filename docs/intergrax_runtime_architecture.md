@@ -570,7 +570,7 @@ intergrax/integrations/
 
 **Layout map:** `intergrax/integrations/providers/layout.py` — slug → category folder.
 
-**Documentation:** all **72** registered providers ship `providers/<category>/<slug>/USAGE.md` (English). Regenerate via `scripts/generate_integration_usage_docs.py`. Catalog index: [`docs/INTEGRATIONS.md`](INTEGRATIONS.md).
+**Documentation:** all **73** registered providers ship `providers/<category>/<slug>/USAGE.md` (English). Regenerate via `scripts/generate_integration_usage_docs.py`. Catalog index: [`docs/INTEGRATIONS.md`](INTEGRATIONS.md).
 
 **Rules:**
 
@@ -611,7 +611,7 @@ Each category defines a **small, stable contract** (Protocol or ABC). Providers 
 | **collaboration_suite** | `contracts/collaboration_suite.py` | Mail, calendar, directory (MS365, Google) | ms365_graph, google_workspace |
 | **issue_tracker** | `contracts/issue_tracker.py` | Issues, sprints, comments | jira, azure_devops, github, linear |
 | **wiki_knowledge** | `contracts/wiki_knowledge.py` | Pages, spaces, search | confluence, notion, sharepoint |
-| **observability_backend** | `contracts/observability_backend.py` | Metrics, logs export | prometheus, elasticsearch, otel, langfuse, datadog, clickhouse |
+| **observability_backend** | `contracts/observability_backend.py` | Metrics, logs export, error tracking | prometheus, elasticsearch, otel, langfuse, datadog, clickhouse, **sentry** |
 | **browser_automation** | `contracts/browser_automation.py` | Headless fetch / interact | playwright, firecrawl, selenium |
 | **cloud_platform** | `contracts/cloud_platform.py` | Unified auth, region, credential chain; factory for native **infrastructure** services (storage, queues, secrets — not LLM) | aws, azure, gcp |
 

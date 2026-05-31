@@ -632,7 +632,7 @@ Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. 
 
 #### M.6 P3 / M.7 — Harness integrations (Done beta, 2026-05-29)
 
-**+20 slugs** via `_shared/p3/factories.py`: `tavily`, `exa`, `weaviate`, `milvus`, `inmemory`, `vault`, `langfuse`, `datadog`, `clickhouse`, `temporal`, `nats`, `neo4j`, `snowflake`, `supabase`, `minio`, `filesystem`, `discord`, `twilio`, `firecrawl`, `selenium`. New categories: `secrets_store`, `graph_store`. Catalog total: **72**.
+**+21 slugs** via `_shared/p3/factories.py` (incl. **`sentry`** 2026-05-29). Catalog total: **73**.
 
 #### M.6 P3 — Legacy backlog note (superseded)
 

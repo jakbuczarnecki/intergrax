@@ -24,6 +24,7 @@ SPECS = [
     ("langfuse", "OBSERVABILITY_BACKEND", "LANGFUSE", "create_langfuse_observability_backend", "INTERGRAX_LANGFUSE"),
     ("datadog", "OBSERVABILITY_BACKEND", "DATADOG", "create_datadog_observability_backend", "INTERGRAX_DATADOG"),
     ("clickhouse", "OBSERVABILITY_BACKEND", "CLICKHOUSE", "create_clickhouse_observability_backend", "INTERGRAX_CLICKHOUSE"),
+    ("sentry", "OBSERVABILITY_BACKEND", "SENTRY", "create_sentry_observability_backend", "INTERGRAX_SENTRY"),
     ("temporal", "MESSAGE_BUS", "TEMPORAL", "create_temporal_message_bus", "INTERGRAX_TEMPORAL"),
     ("nats", "MESSAGE_BUS", "NATS", "create_nats_message_bus", "INTERGRAX_NATS"),
     ("neo4j", "GRAPH_STORE", "NEO4J", "create_neo4j_graph_store", "INTERGRAX_NEO4J"),

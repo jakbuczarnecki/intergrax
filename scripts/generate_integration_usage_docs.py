@@ -952,6 +952,24 @@ browser.close()
         "notes": "High-volume agent event analytics (HTTP SQL facade).",
     },
     {
+        "slug": "sentry",
+        "category": "observability_backend",
+        "category_enum": "OBSERVABILITY_BACKEND",
+        "slug_enum": "SENTRY",
+        "factory": "create_sentry_observability_backend",
+        "env": "`INTERGRAX_SENTRY_DSN`, `INTERGRAX_SENTRY_ORG`, `INTERGRAX_SENTRY_AUTH_TOKEN`, optional `INTERGRAX_SENTRY_PROJECT`, `INTERGRAX_SENTRY_ENVIRONMENT`",
+        "example": """\
+obs = create_sentry_observability_backend(
+    dsn="https://...@sentry.io/...",
+    org="my-org",
+    auth_token="sntrys_...",
+)
+obs.capture_message("agent run failed", level="error")
+count = obs.query_instant("is:unresolved").series[0].points[0].value
+""",
+        "notes": "Error tracking + issue stats. ``sentry-sdk`` for capture; REST API for issue counts. Complements ``otel``/``langfuse``.",
+    },
+    {
         "slug": "temporal",
         "category": "message_bus",
         "category_enum": "MESSAGE_BUS",

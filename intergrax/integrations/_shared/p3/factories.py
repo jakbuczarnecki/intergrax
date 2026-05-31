@@ -25,6 +25,7 @@ from intergrax.integrations._shared.p3.clients import (
     Neo4jGraphStore,
     RestVectorStoreIntegration,
     SeleniumBrowserAutomation,
+    SentryObservabilityBackend,
     VaultSecretsStore,
     build_rest_search_provider,
     exa_hits,
@@ -35,6 +36,7 @@ from intergrax.integrations._shared.p3.configs import (
     FirecrawlIntegrationConfig,
     MinioIntegrationConfig,
     SeleniumIntegrationConfig,
+    SentryIntegrationConfig,
     VaultIntegrationConfig,
     VectorIntegrationConfig,
 )
@@ -431,6 +433,72 @@ def create_clickhouse_observability_backend(
     )
 
 
+def create_sentry_observability_backend(
+    *,
+    observability_backend: Optional[ObservabilityBackend] = None,
+    client: Optional[Any] = None,
+    client_factory: Optional[Callable[[], Any]] = None,
+    **config_overrides: object,
+) -> ObservabilityBackend:
+    config = SentryIntegrationConfig.from_env(**config_overrides)
+
+    def _open() -> Any:
+        sdk: Any = None
+        if config.dsn:
+            try:
+                import sentry_sdk
+            except ImportError as exc:
+                raise IntegrationConfigurationError(
+                    "Sentry SDK reporting requires sentry-sdk. Install with: uv pip install sentry-sdk"
+                ) from exc
+            sentry_sdk.init(dsn=config.dsn, environment=config.environment, traces_sample_rate=1.0)
+            sdk = sentry_sdk
+
+        http = None
+        if config.auth_token and config.org:
+            http = _open_httpx_client(
+                HttpIntegrationConfig(base_url=config.base_url, token=config.auth_token),
+                default_url=config.base_url,
+            )
+
+        class _Client:
+            def query_instant(self, promql: str, *, eval_time: Optional[float] = None) -> float:
+                if http is None:
+                    return 0.0
+                query = promql if promql.strip() else "is:unresolved"
+                response = http.get(
+                    f"/api/0/organizations/{config.org}/issues/",
+                    params={"query": query, "statsPeriod": "24h"},
+                )
+                response.raise_for_status()
+                payload = response.json()
+                if isinstance(payload, list):
+                    return float(len(payload))
+                return float(payload.get("count") or 0)
+
+            def query_range(self, promql: str, *, start: float, end: float, step: str) -> list[dict[str, float]]:
+                return [{"timestamp": start, "value": self.query_instant(promql)}]
+
+            def capture_exception(self, exc: BaseException, *, tags: dict[str, str]) -> str:
+                if sdk is None:
+                    return ""
+                for key, value in tags.items():
+                    sdk.set_tag(key, value)
+                return str(sdk.capture_exception(exc))
+
+            def capture_message(self, message: str, *, level: str) -> str:
+                if sdk is None:
+                    return ""
+                return str(sdk.capture_message(message, level=level))
+
+        return _Client()
+
+    if observability_backend is not None:
+        return observability_backend
+    resolved = client if client is not None else (client_factory() if client_factory else _open())
+    return SentryObservabilityBackend(resolved)
+
+
 # --- message_bus ---
 
 
@@ -800,6 +868,7 @@ __all__ = [
     "create_nats_message_bus",
     "create_neo4j_graph_store",
     "create_selenium_browser_automation",
+    "create_sentry_observability_backend",
     "create_snowflake_relational_store",
     "create_supabase_relational_store",
     "create_tavily_search_provider",

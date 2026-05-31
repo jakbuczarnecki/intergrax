@@ -122,6 +122,47 @@ class HttpObservabilityBackend:
         )
 
 
+class SentryObservabilityBackend:
+    """
+    Error tracking + issue stats facade for Sentry.
+
+    Implements ``ObservabilityBackend`` (issue counts via REST) and exposes
+    ``capture_exception`` / ``capture_message`` for runtime error reporting.
+    """
+
+    def __init__(self, client: Any) -> None:
+        self._client = client
+
+    def query_instant(self, promql: str, *, eval_time: Optional[float] = None) -> MetricQueryResult:
+        value = float(self._client.query_instant(promql, eval_time=eval_time))
+        ts = float(eval_time or 0.0)
+        return MetricQueryResult(
+            result_type="vector",
+            series=[MetricSeries(metric={"provider": "sentry"}, points=[MetricPoint(timestamp=ts, value=value)])],
+        )
+
+    def query_range(
+        self,
+        promql: str,
+        *,
+        start: float,
+        end: float,
+        step: str = "15s",
+    ) -> MetricQueryResult:
+        rows = self._client.query_range(promql, start=start, end=end, step=step)
+        points = [MetricPoint(timestamp=float(r["timestamp"]), value=float(r["value"])) for r in rows]
+        return MetricQueryResult(
+            result_type="matrix",
+            series=[MetricSeries(metric={"provider": "sentry"}, points=points)],
+        )
+
+    def capture_exception(self, exc: BaseException, *, tags: Optional[dict[str, str]] = None) -> str:
+        return str(self._client.capture_exception(exc, tags=tags or {}))
+
+    def capture_message(self, message: str, *, level: str = "info") -> str:
+        return str(self._client.capture_message(message, level=level))
+
+
 class RestVectorStoreIntegration(VectorStoreBridge):
     """Catalog bridge when inner store is already a ``VectorStore`` (Weaviate/Milvus HTTP facades)."""
 

@@ -75,6 +75,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.observability_backend.langfuse.register import register_langfuse_integration
     from intergrax.integrations.providers.observability_backend.datadog.register import register_datadog_integration
     from intergrax.integrations.providers.observability_backend.clickhouse.register import register_clickhouse_integration
+    from intergrax.integrations.providers.observability_backend.sentry.register import register_sentry_integration
     from intergrax.integrations.providers.message_bus.temporal.register import register_temporal_integration
     from intergrax.integrations.providers.message_bus.nats.register import register_nats_integration
     from intergrax.integrations.providers.graph_store.neo4j.register import register_neo4j_integration
@@ -151,6 +152,7 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_langfuse_integration(override=override)
     register_datadog_integration(override=override)
     register_clickhouse_integration(override=override)
+    register_sentry_integration(override=override)
     register_temporal_integration(override=override)
     register_nats_integration(override=override)
     register_neo4j_integration(override=override)
