@@ -78,6 +78,14 @@ _BUILTIN_ADAPTERS: Dict[str, Tuple[str, str]] = {
         "intergrax.llm_adapters.providers.openai_compat_providers",
         "CohereChatAdapter",
     ),
+    LLMProvider.COHERE_NATIVE.value: (
+        "intergrax.llm_adapters.providers.cohere_native_adapter",
+        "CohereNativeChatAdapter",
+    ),
+    LLMProvider.AZURE_AI_INFERENCE.value: (
+        "intergrax.llm_adapters.providers.openai_compat_providers",
+        "AzureAiInferenceChatAdapter",
+    ),
 }
 
 

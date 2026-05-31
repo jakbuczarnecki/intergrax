@@ -88,6 +88,7 @@ class LegalBackendSettings:
     use_legal_tool_decision: bool = False
     tools_mode: str = "off"
     extra_enabled_tool_ids: tuple[str, ...] = ()
+    legal_llm_model: Optional[str] = None
 
     @property
     def enabled_tool_ids(self) -> list[str]:
@@ -111,6 +112,7 @@ class LegalBackendSettings:
 
         profile = os.environ.get("LEGAL_PRODUCT_PROFILE", "strict_legal").strip()
         llm = os.environ.get("LEGAL_LLM_PROVIDER", "ollama").strip().lower()
+        llm_model = os.environ.get("LEGAL_LLM_MODEL", "").strip() or None
         agent_id = os.environ.get("LEGAL_DEFAULT_AGENT_ID", "legal-default").strip()
         prefix = os.environ.get("LEGAL_ROUTE_PREFIX", "/v1/legal").strip() or "/v1/legal"
 
@@ -184,6 +186,7 @@ class LegalBackendSettings:
             environment=environment,
             legal_product_profile=profile,
             legal_llm_provider=llm,
+            legal_llm_model=llm_model,
             legal_default_agent_id=agent_id,
             legal_route_prefix=prefix,
             identity_source=identity_source,

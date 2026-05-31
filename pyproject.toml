@@ -104,6 +104,7 @@ llm-groq = ["openai>=1.0", "tiktoken>=0.7"]
 llm-vllm = ["openai>=1.0", "tiktoken>=0.7"]
 llm-compat = ["openai>=1.0", "tiktoken>=0.7"]
 llm-vertex = ["google-genai>=0.3", "tiktoken>=0.7"]
+llm-cohere-native = ["cohere>=5.5", "tiktoken>=0.7"]
 llm-all = [
   "openai>=1.0",
   "anthropic>=0.25",

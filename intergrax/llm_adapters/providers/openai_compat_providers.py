@@ -6,6 +6,10 @@
 from __future__ import annotations
 
 import os
+from typing import Optional
+
+from openai import OpenAI
+
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.providers.openai_compat_factory import (
     OpenAICompatProviderConfig,
@@ -144,3 +148,42 @@ class CohereChatAdapter(_CompatAdapterBase):
         default_model="command-r-plus",
         context_windows={"command-r-plus": 128_000},
     )
+
+
+class AzureAiInferenceChatAdapter(_CompatAdapterBase):
+    _CONFIG = OpenAICompatProviderConfig(
+        provider=LLMProvider.AZURE_AI_INFERENCE,
+        api_key_env="AZURE_AI_INFERENCE_API_KEY",
+        model_env="INTERGRAX_DEFAULT_AZURE_AI_INFERENCE_MODEL",
+        base_url_env="INTERGRAX_DEFAULT_AZURE_AI_INFERENCE_BASE_URL",
+        default_base_url="",
+        default_model="gpt-4o-mini",
+        context_windows={},
+        missing_api_key_message=(
+            "AZURE_AI_INFERENCE_API_KEY and INTERGRAX_DEFAULT_AZURE_AI_INFERENCE_BASE_URL are required."
+        ),
+    )
+
+    def __init__(
+        self,
+        client: Optional[OpenAI] = None,
+        model: Optional[str] = None,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        **defaults,
+    ) -> None:
+        resolved_base = (
+            base_url or os.getenv(self._CONFIG.base_url_env) or self._CONFIG.default_base_url
+        ).strip()
+        if not resolved_base and client is None:
+            raise RuntimeError(
+                "INTERGRAX_DEFAULT_AZURE_AI_INFERENCE_BASE_URL must be set "
+                "(e.g. https://<resource>.services.ai.azure.com/models/openai/v1)."
+            )
+        super().__init__(
+            client=client,
+            model=model,
+            base_url=resolved_base,
+            api_key=api_key,
+            **defaults,
+        )

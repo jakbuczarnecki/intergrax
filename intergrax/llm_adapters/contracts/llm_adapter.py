@@ -337,17 +337,32 @@ class LLMAdapterUsageLog:
         self._run_stats: Dict[str, LLMRunStats] = {}
 
 
-    def begin_call(self, run_id: Optional[str] = None) -> LLMCallStats:
+    def begin_call(
+        self,
+        run_id: Optional[str] = None,
+        *,
+        adapter: Optional[LLMAdapter] = None,
+    ) -> LLMCallStats:
         """
         Begin one LLM call (not the whole runtime.run()).
 
         Returns a per-call context object, safe for nested/parallel use
         because it is local to the caller.
+
+        When ``adapter`` is passed, provider/model are attached for observability metrics.
         """
         rid = run_id or "general"
         if rid not in self._run_stats:
             self._run_stats[rid] = LLMRunStats()
-        return LLMCallStats(run_id=rid)
+        call = LLMCallStats(run_id=rid)
+        if adapter is not None:
+            prov = getattr(adapter, "provider", None)
+            if isinstance(prov, LLMProvider):
+                call.provider = prov.value
+            elif isinstance(prov, str):
+                call.provider = prov
+            call.model = str(getattr(adapter, "model", "") or "")
+        return call
 
 
     def end_call(
@@ -385,7 +400,21 @@ class LLMAdapterUsageLog:
 
         if not call.success:
             st.errors += 1
-    
+
+        if getattr(call, "provider", None):
+            from intergrax.llm_adapters.tracking.metrics import record_llm_call
+
+            record_llm_call(
+                provider=call.provider,
+                model=call.model or "",
+                run_id=call.run_id,
+                input_tokens=call.input_tokens,
+                output_tokens=call.output_tokens,
+                duration_ms=call.duration_ms,
+                success=call.success,
+                error_type=call.error_type,
+            )
+
     def get_run_stats(self, run_id: Optional[str] = None) -> LLMRunStats:
         """
         Get aggregated stats for a given run_id.
@@ -476,6 +505,10 @@ class LLMCallStats:
 
     success: bool = True
     error_type: Optional[str] = None
+
+    # observability (set when begin_call(..., adapter=self))
+    provider: str = ""
+    model: str = ""
 
 
 @dataclass

@@ -52,7 +52,7 @@ LLM adapters (catalog)     →  LLM_ADAPTERS.md
 | Phase L — Agent OS certification | **Done** |
 | Phase M — Integration Library (Tier-0 catalog) | **Done** (beta) — **73** providers with English `USAGE.md`; see [INTEGRATIONS.md](INTEGRATIONS.md) |
 | Phase O — Tool Library & unified tool model | **Done** — 11 catalog tools; see [TOOLS.md](TOOLS.md) |
-| Phase M-LLM — LLM adapter layer | **Done** (beta) — 17 providers; see [LLM_ADAPTERS.md](LLM_ADAPTERS.md) |
+| Phase M-LLM — LLM adapter layer | **Done** (beta) — 19 providers, metrics, conformance; see [LLM_ADAPTERS.md](LLM_ADAPTERS.md) |
 | Phase N — Application environment scaffold | **In progress** — N.9 gate; see implementation plan Phase N |
 | Phase K — Problem Radar / Vendor Discovery | **Ready to open** (product decision) |
 

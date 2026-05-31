@@ -8,7 +8,7 @@ from __future__ import annotations
 from legal.config.legal_agent_product_profiles import LegalAgentProductProfile
 from legal.legal_agent import LegalAgent
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
+from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.session.session_storage import SessionStorage
@@ -52,7 +52,8 @@ def build_legal_agent(
     """
     Session storage: SQLite when ``LEGAL_SESSION_SQLITE_PATH`` is set; otherwise in-memory (dev only).
 
-    LLM provider from ``LEGAL_LLM_PROVIDER`` (must be a :class:`~intergrax.llm_adapters.contracts.llm_provider.LLMProvider` value).
+    LLM from :class:`~intergrax.llm_adapters.registry.profile.LLMProfile` using
+    ``LEGAL_LLM_PROVIDER`` and optional ``LEGAL_LLM_MODEL``.
 
     Tier-2 configuration from :class:`~legal.config.legal_agent_product_profiles.LegalAgentProductProfile`.
     Tool catalog from ``ctx.tool_profile`` / ``ctx.tool_wiring_context`` when provided.
@@ -73,7 +74,12 @@ def build_legal_agent(
             f"Choose one of: {[p.value for p in LLMProvider]}."
         ) from exc
 
-    llm = LLMAdapterRegistry.create(provider)
+    llm_profile = LLMProfile(
+        provider=provider,
+        model=settings.legal_llm_model,
+        options={"max_retries": 2},
+    )
+    llm = llm_profile.create_adapter()
 
     storage: SessionStorage
     if settings.session_sqlite_path:

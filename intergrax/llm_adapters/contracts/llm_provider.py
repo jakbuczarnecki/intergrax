@@ -23,6 +23,8 @@ class LLMProvider(str, Enum):
     XAI = "xai"
     LLAMA_CPP = "llama_cpp"
     COHERE = "cohere"
+    COHERE_NATIVE = "cohere_native"
     VERTEX_GEMINI = "vertex_gemini"
+    AZURE_AI_INFERENCE = "azure_ai_inference"
 
 

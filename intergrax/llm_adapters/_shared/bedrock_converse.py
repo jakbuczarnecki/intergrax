@@ -128,3 +128,45 @@ def iter_converse_stream_text(events: Iterable[Any]) -> Iterable[str]:
         text = delta.get("text")
         if isinstance(text, str) and text:
             yield text
+
+
+def parse_converse_stream_tool_event(
+    event: Dict[str, Any],
+    *,
+    active_tools: Dict[str, Dict[str, Any]],
+) -> Optional[Dict[str, Any]]:
+    """
+    Update ``active_tools`` from a single Converse stream event.
+
+    Returns a completed OpenAI-style tool_call dict when a tool block finishes, else None.
+    """
+    start = event.get("contentBlockStart")
+    if isinstance(start, dict):
+        tu = (start.get("start") or {}).get("toolUse")
+        if isinstance(tu, dict):
+            tid = tu.get("toolUseId") or ""
+            active_tools[tid] = {
+                "id": tid,
+                "type": "function",
+                "function": {"name": tu.get("name") or "", "arguments": ""},
+            }
+
+    block = event.get("contentBlockDelta")
+    if isinstance(block, dict):
+        delta = block.get("delta") or {}
+        tu_delta = delta.get("toolUse")
+        if isinstance(tu_delta, dict):
+            tid = tu_delta.get("toolUseId") or ""
+            if tid in active_tools:
+                chunk = tu_delta.get("input") or ""
+                if isinstance(chunk, str):
+                    active_tools[tid]["function"]["arguments"] += chunk
+
+    stop = event.get("contentBlockStop")
+    if isinstance(stop, dict):
+        tu = (stop.get("stop") or {}).get("toolUse")
+        if isinstance(tu, dict):
+            tid = tu.get("toolUseId") or ""
+            if tid in active_tools:
+                return active_tools.pop(tid)
+    return None

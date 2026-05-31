@@ -541,10 +541,11 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M-LLM.3 | Groq + vLLM (OpenAI-compatible) | **Done** | `openai_compat_providers.py` |
 | M-LLM.4 | Bedrock Converse + tools + stream | **Done** | `INTERGRAX_BEDROCK_USE_CONVERSE`, `converse_stream` |
 | M-LLM.5 | Conformance tests in CI gate | **Done** | `tests/unit/llm_adapters/` |
-| M-LLM.6 | `LLM_ADAPTERS.md` + README section | **Done** | 17 providers |
+| M-LLM.6 | `LLM_ADAPTERS.md` + README section | **Done** | 19 providers |
 | M-LLM.7 | OpenAI-compat expansion + Vertex + `LLMProfile` | **Done** | Together, Fireworks, OpenRouter, DeepSeek, xAI, llama.cpp, Cohere, Vertex |
-| M-LLM.8 | Optional network smoke workflow | **Done** | `.github/workflows/llm-network-smoke.yml` |
+| M-LLM.8 | Optional network smoke workflow | **Done** | Weekly schedule + `workflow_dispatch` |
 | M-LLM.9 | Azure refactor (Chat Completions base) | **Done** | Thin `AzureOpenAIChatAdapter` |
+| M-LLM.10 | Production hardening | **Done** | Metrics, builtin conformance, Legal `LLMProfile`, Bedrock tools stream, `cohere_native`, `azure_ai_inference` |
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|

@@ -21,6 +21,7 @@ from intergrax.llm_adapters._shared.bedrock_converse import (
     converse_supported,
     extract_converse_text,
     iter_converse_stream_text,
+    parse_converse_stream_tool_event,
 )
 from intergrax.llm_adapters._shared.messages import split_system_messages
 from intergrax.llm_adapters._shared.tool_results import make_tool_result
@@ -451,7 +452,7 @@ class BedrockChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> str:
-        call = self.usage.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id, adapter=self)
 
         in_tok = 0
         out_tok = 0
@@ -528,7 +529,7 @@ class BedrockChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        call = self.usage.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id, adapter=self)
 
         in_tok = 0
         out_tok = 0
@@ -634,7 +635,7 @@ class BedrockChatAdapter(LLMAdapter):
                 "Tools require Bedrock Converse API or an Anthropic model on InvokeModel."
             )
 
-        call = self.usage.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id, adapter=self)
         in_tok = 0
         out_tok = 0
         success = False
@@ -705,18 +706,85 @@ class BedrockChatAdapter(LLMAdapter):
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
     ) -> Iterable[Dict[str, Any]]:
-        result = self.generate_with_tools(
-            messages,
-            tools_schema,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            tool_choice=tool_choice,
-            run_id=run_id,
-        )
-        content = result.get("content") or ""
-        if content:
-            yield make_tool_result(content=content, finish_reason="partial")
-        yield result
+        if not self.supports_tools():
+            raise NotImplementedError("Tools are not supported for this Bedrock configuration.")
+
+        call = self.usage.begin_call(run_id=run_id, adapter=self)
+        in_tok = 0
+        out_tok = 0
+        success = False
+        err_type = None
+        buf: List[str] = []
+        tool_calls: List[Dict[str, Any]] = []
+
+        try:
+            in_tok = int(
+                self.estimate_tokens_for_messages(
+                    messages, model_hint=self.model_name_for_token_estimation
+                )
+            )
+
+            if self._use_converse and converse_stream_supported(self.client):
+                temp = temperature if temperature is not None else self.defaults.get("temperature")
+                req = build_converse_request(
+                    messages,
+                    max_tokens=max_tokens,
+                    temperature=temp,
+                    tools=openai_tools_to_bedrock_converse(tools_schema),
+                )
+                resp = self._execute(
+                    lambda: self.client.converse_stream(modelId=self.config.model_id, **req)
+                )
+                stream = resp.get("stream") if isinstance(resp, dict) else resp
+                active_tools: Dict[str, Dict[str, Any]] = {}
+                for event in stream:
+                    for text in iter_converse_stream_text([event]):
+                        buf.append(text)
+                        yield make_tool_result(content=text, finish_reason="partial")
+                    completed = parse_converse_stream_tool_event(event, active_tools=active_tools)
+                    if completed:
+                        tool_calls.append(completed)
+
+                for tu in active_tools.values():
+                    tool_calls.append(tu)
+
+                out_tok = int(
+                    self.estimate_tokens_for_text(
+                        "".join(buf), model_hint=self.model_name_for_token_estimation
+                    )
+                )
+                success = True
+                yield make_tool_result(
+                    content="".join(buf),
+                    tool_calls=tool_calls,
+                    finish_reason="completed",
+                )
+                return
+
+            result = self.generate_with_tools(
+                messages,
+                tools_schema,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                tool_choice=tool_choice,
+                run_id=run_id,
+            )
+            content = result.get("content") or ""
+            if content:
+                yield make_tool_result(content=content, finish_reason="partial")
+            yield result
+            success = True
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+        finally:
+            self.usage.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
 
     # ------------------------------------------------------------------
     # Extensibility

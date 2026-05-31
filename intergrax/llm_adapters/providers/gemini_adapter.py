@@ -96,7 +96,7 @@ class GeminiChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> str:
-        call = self.usage.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id, adapter=self)
 
         in_tok = 0
         out_tok = 0
@@ -165,7 +165,7 @@ class GeminiChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> Iterable[str]:
-        call = self.usage.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id, adapter=self)
 
         in_tok = 0
         out_tok = 0
@@ -274,7 +274,7 @@ class GeminiChatAdapter(LLMAdapter):
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        call = self.usage.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id, adapter=self)
         in_tok = 0
         out_tok = 0
         success = False
@@ -315,7 +315,7 @@ class GeminiChatAdapter(LLMAdapter):
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
     ) -> Iterable[Dict[str, Any]]:
-        call = self.usage.begin_call(run_id=run_id)
+        call = self.usage.begin_call(run_id=run_id, adapter=self)
         in_tok = 0
         out_tok = 0
         success = False

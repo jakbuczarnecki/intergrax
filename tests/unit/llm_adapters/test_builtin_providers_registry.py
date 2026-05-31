@@ -14,4 +14,5 @@ def test_all_llm_provider_enum_values_are_registered() -> None:
 
 
 def test_registered_provider_count() -> None:
-    assert len(LLMAdapterRegistry.registered_providers()) == len(LLMProvider)
+    assert len(LLMAdapterRegistry.registered_providers()) == 19
+    assert len(LLMProvider) == 19

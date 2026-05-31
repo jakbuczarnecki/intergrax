@@ -38,7 +38,8 @@ Full list in `.env.example` (Legal backend host section).
 |----------|---------|
 | `LEGAL_BACKEND_ENV` | `dev` \| `stage` \| `prod` |
 | `LEGAL_PRODUCT_PROFILE` | `strict_legal` \| `safe` \| `research` \| `fast` |
-| `LEGAL_LLM_PROVIDER` | `ollama`, `openai`, `claude`, … |
+| `LEGAL_LLM_PROVIDER` | `ollama`, `openai`, `claude`, `groq`, … (see `LLMProvider`) |
+| `LEGAL_LLM_MODEL` | Optional model/deployment override |
 | `LEGAL_DEFAULT_AGENT_ID` | Key in the agent map (default `legal-default`) |
 | `LEGAL_ROUTE_PREFIX` | Router prefix (default `/v1/legal`) |
 | `LEGAL_IDENTITY_SOURCE` | `body_or_context` (dev) / `context_only` (enforced in prod) |
