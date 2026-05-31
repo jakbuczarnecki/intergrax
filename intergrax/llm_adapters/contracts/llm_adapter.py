@@ -66,6 +66,10 @@ class LLMAdapter(ABC):
 
     def _execute(self, fn: Callable[[], T]) -> T:
         """Run a provider SDK call with rate limit, circuit breaker, and optional retry."""
+        from intergrax.llm_adapters.governance.quota import check_llm_tenant_quota
+        from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
+
+        check_llm_tenant_quota(get_llm_tenant_id())
         return execute_with_resilience(
             fn,
             provider=self._provider_slug(),

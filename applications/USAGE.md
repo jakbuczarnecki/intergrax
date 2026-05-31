@@ -240,15 +240,15 @@ Tier-3 hosts should **not** import OpenAI/Anthropic SDKs. Use the adapter regist
 from intergrax.llm_adapters.registry import LLMProfile, llm_profile_from_env
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
-# Explicit (product)
-llm = LLMProfile(provider=LLMProvider.AZURE_OPENAI, model="gpt-4o-deployment").create_adapter()
+# Explicit (any Tier-3 host)
+llm = LLMProfile(provider=LLMProvider.GROQ, model="llama-3.3-70b-versatile").create_adapter()
 
-# Env-driven (lab / K8s)
+# Env-driven (lab / K8s / deploy)
 # INTERGRAX_LLM_PROVIDER=groq  INTERGRAX_LLM_MODEL=llama-3.3-70b-versatile
 llm = llm_profile_from_env(prefix="INTERGRAX_LLM").create_adapter()
 ```
 
-Set provider API keys in `.env` or pass `secrets=` to `LLMProfile.create_adapter()` after loading from Integration `secrets_store`. Enable metrics: `INTERGRAX_LLM_METRICS_ENABLED=true`; expose via `register_llm_metrics_routes(app)`. Set `set_llm_tenant_id(tenant_id)` before agent runs for billing labels. See [LLM_ADAPTERS.md](../docs/LLM_ADAPTERS.md).
+Set API keys via env or `secrets=` on `LLMProfile.create_adapter()`. Enable `INTERGRAX_LLM_METRICS_ENABLED=true`; optional `register_llm_metrics_routes(app)`. Nexus hosts using `bootstrap_nexus_platform()` get automatic tenant-scoped LLM metrics on task completion — no manual `set_llm_tenant_id` required. Optional quota: `INTERGRAX_LLM_TENANT_MAX_TOKENS`. See [LLM_ADAPTERS.md](../docs/LLM_ADAPTERS.md).
 
 | Task | Where |
 |------|--------|

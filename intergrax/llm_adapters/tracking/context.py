@@ -5,8 +5,9 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import Optional
+from typing import Iterator, Optional
 
 _llm_tenant_id: ContextVar[str] = ContextVar("intergrax_llm_tenant_id", default="")
 
@@ -22,3 +23,17 @@ def get_llm_tenant_id() -> str:
 
 def clear_llm_tenant_id() -> None:
     _llm_tenant_id.set("")
+
+
+@contextmanager
+def llm_tenant_scope(tenant_id: Optional[str]) -> Iterator[None]:
+    """Bind tenant for LLM metrics for the duration of a Nexus task/run."""
+    previous = get_llm_tenant_id()
+    set_llm_tenant_id(tenant_id)
+    try:
+        yield
+    finally:
+        if previous:
+            set_llm_tenant_id(previous)
+        else:
+            clear_llm_tenant_id()

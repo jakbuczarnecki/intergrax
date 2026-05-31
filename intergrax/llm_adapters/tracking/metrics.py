@@ -81,6 +81,33 @@ class LLMMetricsCollector:
             if not success:
                 c.errors += 1
 
+    def tenant_total_tokens(self, tenant_id: str) -> int:
+        """Sum input+output tokens for one tenant across all providers/models."""
+        tenant = (tenant_id or "_platform").strip() or "_platform"
+        with self._lock:
+            total = 0
+            for (t, _provider, _model), c in self._by_key.items():
+                if t == tenant:
+                    total += c.input_tokens + c.output_tokens
+            return total
+
+    def snapshot_for_tenant(self, tenant_id: str) -> Dict[str, Dict[str, int]]:
+        """Snapshot limited to one tenant (for governance / observability export)."""
+        tenant = (tenant_id or "_platform").strip() or "_platform"
+        with self._lock:
+            out: Dict[str, Dict[str, int]] = {}
+            for (t, provider, model), c in self._by_key.items():
+                if t != tenant:
+                    continue
+                out[f"{provider}:{model}"] = {
+                    "calls": c.calls,
+                    "input_tokens": c.input_tokens,
+                    "output_tokens": c.output_tokens,
+                    "duration_ms": c.duration_ms,
+                    "errors": c.errors,
+                }
+            return out
+
     def snapshot(self) -> Dict[str, Dict[str, int]]:
         with self._lock:
             out: Dict[str, Dict[str, int]] = {}

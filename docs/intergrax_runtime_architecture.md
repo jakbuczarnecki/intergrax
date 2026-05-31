@@ -222,7 +222,7 @@ The platform MUST maintain **one canonical path** per universal concern. All tie
 
 | Concern | Canonical Tier-0 mechanism | Forbidden |
 |---------|---------------------------|-----------|
-| LLM calls | `intergrax/llm_adapters/` (`LLMAdapter`, registry, `LLMProfile`, metrics, resilience) | Direct vendor SDKs in agents; duplicate LLM stacks |
+| LLM calls | `intergrax/llm_adapters/` (`LLMAdapter`, registry, `LLMProfile`, metrics, resilience, Nexus `llm_tenant_scope`) | Direct vendor SDKs in agents; duplicate LLM stacks |
 | Logging | `intergrax/logging.py` and established log patterns | `print()`, ad-hoc loggers, duplicate logging frameworks |
 | Tracing (pipeline) | Nexus `trace_event()` / `RunTraceWriter` | Parallel untracked diagnostic streams |
 | Tools | `intergrax/tools/` (`ToolRegistry`, `ToolExecutor`, Tool Library §7.1.6) | Agent-local tool registries; boolean `use_rag` / `use_websearch` plan flags (deprecated §22.2) |
