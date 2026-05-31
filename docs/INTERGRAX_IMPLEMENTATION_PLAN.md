@@ -970,7 +970,7 @@ Szablony utrzymywane przez `scripts/generate_integration_usage_docs.py` (regener
 | N.7 | Backfill `.env.example` on existing apps | **Done** | §7.4.8 | `lab_application`, `legal_application`, `research_application`, `poc_template_application` |
 | N.8 | `AGENT_CREATION_GUIDE.md` Step 4E (dedicated application) | **Done** | — | Step 4E + Appendix F cross-links; gate doc test |
 | N.9 | Acceptance `test_scaffold_application` (gate) | **Done** | — | `test_scaffold_acceptance.py` — lab/product E2E, CLI profiles, docker scripts |
-| N.10 | Optional `new-stack` (agent + application in one CLI) | **Deferred** | — | After N.3–N.5 stable |
+| N.10 | Optional `new-stack` (agent + application in one CLI) | **Done** | — | `intergrax/scaffold/new_stack.py`; gate test in `test_scaffold_acceptance.py` |
 
 #### N — Step-by-step implementation sequence
 
@@ -1004,6 +1004,27 @@ python -m intergrax.scaffold new-application my_lab \
 - Separate `pyproject.toml` per application (stay monorepo + `pythonpath`)
 - Auto-discovery of agents in `lab_application` (keep explicit wiring; manifest is declarative, not magic)
 - Runtime sandbox (Tier-1) changes — only document distinction (§7.4.9)
+
+#### Tier-3 application layer — readiness (2026-05-30)
+
+**Status: ready** to generate new applications via scaffold. Checklist: [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md).
+
+| Track | ID | Status | Notes |
+|-------|-----|--------|-------|
+| Engine | N.1–N.2.2 | **Done** | manifest, `build_application_registry`, conformance |
+| Scaffold | N.3–N.4, N.10 | **Done** | `lab` + `product` + `new-stack` |
+| Deploy | N.5–N.7 | **Done** | Docker scripts, `BUILD_AND_DEPLOY`, `.env.example` |
+| Docs + gate | N.8–N.9 | **Done** | Step 4E, `test_scaffold_acceptance`, legal/research/lab manifest tests |
+| Hardening | A.1–A.2 | **Done** | `test_legal_manifest_wiring`, tool_wiring assertions on scaffold |
+| Optional CI Docker | B.1 | **Done** | `tests/integration/applications/test_poc_template_docker_build.py` (not in gate) |
+| Product maturity | — | **Reference** | `legal_application` chat routes — extend scaffold `product` manually |
+
+**Verify:**
+
+```bash
+uv run pytest tests/unit/applications/ -q
+uv run pytest -m gate -q
+```
 
 ---
 
@@ -1105,7 +1126,7 @@ AFTER (canonical):
 
 NOW:     Phase O — complete (O.5–O.9 Done); product agents (K) or M.6 providers on demand
 
-DONE:    Phase N — Application Environment & Deploy Scaffold (N.0–N.9)
+DONE:    Phase N — Application Environment & Deploy Scaffold (N.0–N.10)
 
 DONE:    Phase L certification — L1 achieved (Appendix A)
 
@@ -1166,13 +1187,20 @@ Each iteration follows **one deliverable at a time**:
 
 Do not batch N.1–N.5 in one PR unless explicitly agreed.
 
-### 6.2 Phase N — **complete** (core deliverables N.0–N.9)
+### 6.2 Tier-3 application layer — **ready for new applications**
 
-**Optional follow-up:** N.10 `new-stack` (agent + application in one CLI) when onboarding demands it.
+Phase N deliverables **N.0–N.10** are complete. Use [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md) before scaffolding.
 
-**Verify (N.9 — completed):**
+**Generate:**
 
 ```bash
+python -m intergrax.scaffold new-stack <slug> --profile lab --capability <slug>.basic
+```
+
+**Verify:**
+
+```bash
+uv run pytest tests/unit/applications/ -q
 uv run pytest tests/unit/applications/test_scaffold_acceptance.py -q
 uv run pytest -m gate -q
 ```
@@ -1560,6 +1588,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-05-30 | N.2.1-unified-wiring | `ApplicationBuildContext`, `builder_key`/`factory_path`, lab+legal on `build_application_registry` |
 | 2026-05-30 | N.2-conformance | `build_registry_from_manifest`, `load_agent_from_binding` + unit tests |
 | 2026-05-30 | N.1-manifest | `ApplicationManifest`, `AgentBinding`, `ApplicationFeatures` + unit tests |
+| 2026-05-30 | N.10-new-stack | `scaffold new-stack` — agent + application; `TIER3_READINESS.md` |
 | 2026-05-30 | N.9-scaffold-acceptance | `test_scaffold_acceptance.py` — lab/product runtime E2E; fix product `agent_factories.py` indent |
 | 2026-05-30 | N.8-agent-guide-4e | `AGENT_CREATION_GUIDE.md` Step 4E — `new-application`, Docker scripts, §7.4.8 links |
 | 2026-05-30 | N.4-product-scaffold | `--profile product` → FastAPI Core host, `agent_factories.py`, auth stub env; `new_application_product.py` |

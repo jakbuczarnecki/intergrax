@@ -792,6 +792,7 @@ def _readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> 
 
         - Engine: `intergrax/applications/USAGE.md`
         - Layout: `applications/USAGE.md`
+        - Agent + app: `python -m intergrax.scaffold new-stack <slug> --profile lab`
         '''
     )
 

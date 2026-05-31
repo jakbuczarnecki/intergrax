@@ -20,6 +20,17 @@ from tests.unit.applications.scaffold_runtime_helper import (
 pytestmark = [pytest.mark.unit, pytest.mark.agent_os, pytest.mark.gate]
 
 
+def _assert_tool_wiring_in_host(target, pkg: str, short: str) -> None:
+    wiring = (target / "host" / "wiring.py").read_text(encoding="utf-8")
+    tool_wiring = (target / "host" / "tool_wiring.py").read_text(encoding="utf-8")
+    assert f"wire_{short}_tools" in wiring
+    assert "tool_profile=tool_wiring.profile" in wiring
+    assert "tool_wiring_context=tool_wiring.wiring_context" in wiring
+    assert "ApplicationBuildContext.for_manifest" in wiring
+    assert "build_application_tool_wiring" in tool_wiring
+    assert "ToolProfile" in tool_wiring
+
+
 def test_scaffold_profiles_exposed_on_cli() -> None:
     assert "lab" in _PROFILES
     assert "product" in _PROFILES
@@ -67,6 +78,7 @@ def test_scaffold_lab_profile_runtime_e2e(tmp_path) -> None:
     assert "applications/${PKG}/docker/Dockerfile" in sh
     readme = (target / "README.md").read_text(encoding="utf-8")
     assert "build-docker.sh" in readme
+    _assert_tool_wiring_in_host(target, pkg, short)
 
 
 def test_scaffold_product_profile_runtime_e2e(tmp_path) -> None:
@@ -106,6 +118,7 @@ def test_scaffold_product_profile_runtime_e2e(tmp_path) -> None:
     bat = (target / "docker" / "build-docker.bat").read_text(encoding="utf-8")
     assert pkg in bat
     assert "../../.." in (target / "docker" / "build-docker.sh").read_text(encoding="utf-8")
+    _assert_tool_wiring_in_host(target, pkg, short)
 
 
 def test_scaffold_generated_smoke_tests_are_importable(tmp_path) -> None:
@@ -150,6 +163,35 @@ def test_scaffold_generated_smoke_tests_are_importable(tmp_path) -> None:
     smoke2_text = smoke2.read_text(encoding="utf-8")
     assert f"create_{short2}_backend_app" in smoke2_text
     assert f"test_{short2}_backend_health" in smoke2_text
+
+
+def test_new_stack_cli_creates_agent_and_application(tmp_path) -> None:
+    root = tmp_path / "repo"
+    (root / "applications").mkdir(parents=True)
+    from intergrax.scaffold.new_stack import run_new_stack
+    import argparse
+
+    code = run_new_stack(
+        argparse.Namespace(
+            name="stack_demo",
+            capabilities=[],
+            profile="lab",
+            port=None,
+            route_prefix=None,
+            agent_only=False,
+            app_only=False,
+            root=root,
+            force=False,
+        )
+    )
+    assert code == 0
+    assert (root / "agents" / "stack_demo").is_dir()
+    assert (root / "applications" / "stack_demo_application" / "manifest.py").is_file()
+    _assert_tool_wiring_in_host(
+        root / "applications" / "stack_demo_application",
+        "stack_demo_application",
+        "stack_demo",
+    )
 
 
 def test_scaffold_rejects_unknown_profile(tmp_path) -> None:

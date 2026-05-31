@@ -174,6 +174,29 @@ docker run --env-file applications/my_lab_application/.env -p 8091:8091 my-lab-a
 
 Manual build: see `applications/<app>/BUILD_AND_DEPLOY.md`.
 
+### Docker and CI
+
+| Context | Expectation |
+|---------|------------|
+| **Gate (`pytest -m gate`)** | Validates scaffold tree, `build-docker.sh` / `.bat` content, runtime E2E — **no** `docker build` |
+| **Optional integration** | `tests/integration/applications/test_poc_template_docker_build.py` when Docker is installed |
+| **Production** | Run per-app `applications/<pkg>/docker/build-docker.sh` from repo root |
+
+Readiness checklist: [`TIER3_READINESS.md`](TIER3_READINESS.md).
+
+---
+
+## Scaffold commands
+
+```bash
+# Full stack (Tier-2 agent + Tier-3 host)
+python -m intergrax.scaffold new-stack my_feature --profile lab
+
+# Application only
+python -m intergrax.scaffold new-application my_lab --profile lab --agents echo
+python -m intergrax.scaffold new-application my_product --profile product --agents echo --port 8000
+```
+
 ---
 
 ## Reference applications
@@ -206,7 +229,7 @@ intergrax/integrations/  Tier-0 — IntegrationProfile, providers
 | Register in app | `AgentBinding.mount(...)` in `applications/<app>/manifest.py` |
 | Wire backends | `IntegrationProfile` in manifest + `integration_wiring.py` |
 | Enable catalog tools | `tool_wiring.py` + pass `tool_profile` via `ApplicationBuildContext` |
-| Scaffold app | [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md) Step **4E** — `new-application --profile lab\|product` → FastAPI + FastMCP (`/mcp`), `BUILD_AND_DEPLOY.md`, `build-docker.sh` |
+| Scaffold app | [`TIER3_READINESS.md`](TIER3_READINESS.md) · Guide Step **4E** — `new-stack` or `new-application --profile lab\|product` |
 
 ---
 

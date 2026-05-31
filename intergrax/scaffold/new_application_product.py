@@ -762,10 +762,17 @@ def readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> s
 
         Default ``/mcp`` — ``list_agents``, ``run_agent``. Configure ``{env_prefix_value}INCLUDE_MCP``, ``{env_prefix_value}MCP_MOUNT_PATH``.
 
+        ## Extending beyond the generic product skeleton
+
+        This host uses ``POST {route_prefix}/run`` and ``/agents``. For chat-style routes,
+        API-key auth, and domain-specific serving (like Legal), copy patterns from
+        ``applications/legal_application/serving/`` after the scaffold — do not put agent logic here.
+
         ## Docs
 
         - Engine: `intergrax/applications/USAGE.md`
         - Layout: `applications/USAGE.md`
+        - Full stack (agent + app): `python -m intergrax.scaffold new-stack <slug>`
         '''
     )
 

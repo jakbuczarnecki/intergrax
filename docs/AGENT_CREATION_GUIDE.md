@@ -330,6 +330,16 @@ Applications contain **wiring only** — never agent business logic.
 | `lab` | `--profile lab` | Debug API + `POST <prefix>/run` + `/debug/*` | 8091 |
 | `product` | `--profile product` | FastAPI Core (`/health`, `/v1/*`) + auth env stubs | 8000 |
 
+**Full stack (agent + application):**
+
+```bash
+python -m intergrax.scaffold new-stack my_feature \
+  --profile lab \
+  --capability my_feature.basic
+```
+
+Creates `agents/my_feature/` and `applications/my_feature_application/` in one step.
+
 ```bash
 # From repository root — lab host for experimentation
 python -m intergrax.scaffold new-application my_lab \

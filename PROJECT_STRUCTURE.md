@@ -7,6 +7,22 @@ This document was generated automatically by the Intergrax Project Structure Doc
 - Enable new developers to understand architectural roles quickly.
 - Serve as context for LLM agents (e.g., ChatGPT, Intergrax agents) to reason about and improve the project.
 
+## Tier-3 application hosts (manual supplement)
+
+Deployable Nexus hosts (manifest, Docker, env) — **not** listed exhaustively in the auto-generated index below:
+
+| Path | Role |
+|------|------|
+| [`applications/TIER3_READINESS.md`](applications/TIER3_READINESS.md) | Scaffold readiness checklist |
+| [`applications/USAGE.md`](applications/USAGE.md) | Layout and operations |
+| [`intergrax/applications/`](intergrax/applications/) | Composition engine (`ApplicationManifest`, wiring) |
+| `applications/lab_application/` | Universal lab + debug API |
+| `applications/legal_application/` | Product legal host |
+| `applications/research_application/` | Research pipeline host |
+| `applications/poc_template_application/` | Scaffold reference |
+
+CLI: `python -m intergrax.scaffold new-stack <slug>` or `new-application --profile lab|product`.
+
 ## File Index
 
 - `api\__init__.py`
