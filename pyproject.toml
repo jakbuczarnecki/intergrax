@@ -78,7 +78,11 @@ dependencies = [
 ]
 
 [tool.uv]
-environments = ["sys_platform == 'win32'"]
+# Resolve for CI (linux) and local dev (win32). Do not restrict to a single OS.
+environments = [
+  "sys_platform == 'linux'",
+  "sys_platform == 'win32'",
+]
 
 [[tool.uv.index]]
 name = "pypi"
