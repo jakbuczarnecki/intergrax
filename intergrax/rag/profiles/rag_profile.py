@@ -60,6 +60,19 @@ class RagProfile:
     contextual_enrich: ContextualEnrichMode = "off"
     query_expansion: QueryExpansionMode = "deterministic"
 
+    # Agentic deep retrieval (M-RAG.13)
+    agentic_enabled: bool = False
+    agentic_max_iterations: int = 3
+    agentic_min_chunks: int = 2
+    agentic_min_score: float = 0.35
+
+    # Native hybrid (BM25 + dense via store)
+    native_hybrid_enabled: bool = True
+
+    # GraphRAG
+    graph_rag_enabled: bool = False
+    graph_rag_hops: int = 1
+
     # Governance / ops
     embedding_model_version: Optional[str] = None
     max_context_chars: int = 4000
@@ -70,6 +83,8 @@ class RagProfile:
         if route_tier == "fast":
             return self.fast_retriever_id
         if route_tier == "deep":
+            if self.graph_rag_enabled:
+                return "graph_rag"
             return self.deep_retriever_id
         return self.retriever_id
 
@@ -117,4 +132,11 @@ def rag_profile_from_env() -> RagProfile:
         query_expansion=query_expansion,
         embedding_model_version=os.getenv("INTERGRAX_RAG_EMBEDDING_MODEL_VERSION", "").strip() or None,
         max_context_chars=_env_int("INTERGRAX_RAG_MAX_CONTEXT_CHARS", 4000),
+        agentic_enabled=_env_bool("INTERGRAX_RAG_AGENTIC_ENABLED", False),
+        agentic_max_iterations=_env_int("INTERGRAX_RAG_AGENTIC_MAX_ITERATIONS", 3),
+        agentic_min_chunks=_env_int("INTERGRAX_RAG_AGENTIC_MIN_CHUNKS", 2),
+        agentic_min_score=float(os.getenv("INTERGRAX_RAG_AGENTIC_MIN_SCORE", "0.35") or "0.35"),
+        native_hybrid_enabled=_env_bool("INTERGRAX_RAG_NATIVE_HYBRID", True),
+        graph_rag_enabled=_env_bool("INTERGRAX_RAG_GRAPH_ENABLED", False),
+        graph_rag_hops=_env_int("INTERGRAX_RAG_GRAPH_HOPS", 1),
     )

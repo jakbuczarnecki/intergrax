@@ -11,6 +11,8 @@ from typing import Optional
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.contextual.chunk_enricher import ContextualChunkEnricher
+from intergrax.rag.graph.contracts.graph_store import GraphStore
+from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.profiles.rag_profile import RagProfile, rag_profile_from_env
@@ -45,6 +47,7 @@ def create_default_rag_stack(
     embedding_manager: Optional[BaseEmbeddingManager] = None,
     profile: Optional[RagProfile] = None,
     llm_for_contextual: Optional[LLMAdapter] = None,
+    graph_store: Optional[GraphStore] = None,
 ) -> RagStack:
     profile = profile or rag_profile_from_env()
     if vectorstore_manager is None:
@@ -52,9 +55,13 @@ def create_default_rag_stack(
     if embedding_manager is None:
         embedding_manager = create_default_embedding_manager()
 
+    if graph_store is None and profile.graph_rag_enabled:
+        graph_store = InMemoryGraphStore()
+
     retriever_manager = create_default_retriever_manager(
         vector_store=vectorstore_manager,
         embedding_manager=embedding_manager,
+        graph_store=graph_store,
     )
     registry = create_default_reranker_registry(
         embedding_manager=embedding_manager,
@@ -85,4 +92,5 @@ def create_default_rag_stack(
         reranker_manager=reranker_manager,
         retrieval_service=retrieval_service,
         contextual_enricher=contextual,
+        graph_store=graph_store,
     )

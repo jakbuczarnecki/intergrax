@@ -13,6 +13,7 @@ from langchain_core.documents import Document
 from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMetadataKey
 from intergrax.rag.vectorstore.config.vector_config import Metric
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.vectorstore.hybrid.lexical_hybrid import LexicalHybridSupport
 from intergrax.rag.vectorstore.providers.base_vector_store import BaseVectorStore
 
 try:
@@ -57,18 +58,20 @@ class QdrantConfig:
 
 
 
-class QdrantVectorStore(BaseVectorStore):
+class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
     """
     Literal extraction of Qdrant initialization logic from VectorstoreManager.
     No behavioral changes.
     """
 
     def __init__(self, cfg: QdrantConfig) -> None:
+        LexicalHybridSupport.__init__(self)
         self.cfg = cfg
         self.collection_name = f"{cfg.collection_name}__tenant__{cfg.tenant_id}"
 
         self._client = None
         self._dim: Optional[int] = None
+        self._payloads: Dict[str, Dict[str, Any]] = {}
 
         self._init_qdrant()
 
@@ -194,6 +197,9 @@ class QdrantVectorStore(BaseVectorStore):
                 metas_batch[i] = dict(metas_batch[i], text=d.page_content or "")
 
             self._upsert_qdrant(ids_batch, embeddings_batch, metas_batch)
+            for doc_id, meta in zip(ids_batch, metas_batch):
+                self._payloads[str(doc_id)] = dict(meta)
+                self._index_lexical(str(doc_id), str(meta.get("text", "")))
     
 
     def query(

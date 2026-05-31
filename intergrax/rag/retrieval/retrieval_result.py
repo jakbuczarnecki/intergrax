@@ -24,6 +24,8 @@ class RetrievalTrace:
     candidates_after_rerank: int = 0
     retrieval_latency_ms: Optional[float] = None
     rerank_latency_ms: Optional[float] = None
+    agentic_iteration: Optional[int] = None
+    agentic_stopped: Optional[str] = None
 
 
 @dataclass

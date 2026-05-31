@@ -20,7 +20,7 @@ class WeaviateConfig:
 
 
 class WeaviateVectorStore(BaseVectorStore):
-    """Weaviate-backed vector store — CRUD delegates to in-memory until full SDK mapping lands."""
+    """Weaviate-backed store; hybrid BM25+dense via inner lexical-capable store until full SDK mapping."""
 
     def __init__(self, cfg: WeaviateConfig, *, client: Any = None) -> None:
         self.cfg = cfg
@@ -50,6 +50,25 @@ class WeaviateVectorStore(BaseVectorStore):
             top_k=top_k,
             metadata_filter=metadata_filter,
             include_embeddings=include_embeddings,
+        )
+
+    def query_hybrid(
+        self,
+        query_embedding: Sequence[float],
+        query_text: str,
+        *,
+        top_k: int,
+        metadata_filter: Optional[MetadataFilter] = None,
+        include_embeddings: bool = False,
+        alpha: float = 0.5,
+    ) -> List[VectorStoreHit]:
+        return self._inner.query_hybrid(
+            query_embedding,
+            query_text,
+            top_k=top_k,
+            metadata_filter=metadata_filter,
+            include_embeddings=include_embeddings,
+            alpha=alpha,
         )
 
     def delete(self, ids: Sequence[str]) -> None:

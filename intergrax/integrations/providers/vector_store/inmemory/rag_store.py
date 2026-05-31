@@ -12,10 +12,11 @@ from langchain_core.documents import Document
 
 from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMetadataKey
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.vectorstore.hybrid.lexical_hybrid import LexicalHybridSupport
 from intergrax.rag.vectorstore.providers.base_vector_store import BaseVectorStore
 
 
-class InMemoryVectorStore(BaseVectorStore):
+class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
     """
     In-memory VectorStore provider.
 
@@ -28,6 +29,7 @@ class InMemoryVectorStore(BaseVectorStore):
     """
 
     def __init__(self, tenant_id: str) -> None:
+        LexicalHybridSupport.__init__(self)
         self._tenant_id = tenant_id
         self._vectors: Dict[str, List[float]] = {}
         self._payloads: Dict[str, Dict[str, Any]] = {}
@@ -72,6 +74,7 @@ class InMemoryVectorStore(BaseVectorStore):
 
             self._vectors[ids_list[i]] = vector
             self._payloads[ids_list[i]] = payload
+            self._index_lexical(ids_list[i], payload.get("text", ""))
 
     # ---------------------------------------------------------
 
@@ -149,6 +152,7 @@ class InMemoryVectorStore(BaseVectorStore):
         for id_ in ids:
             self._vectors.pop(id_, None)
             self._payloads.pop(id_, None)
+            self._lexical_index.remove(id_)
 
     # ---------------------------------------------------------
 

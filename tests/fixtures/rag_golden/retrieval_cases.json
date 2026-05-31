@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "name": "keyword_and_semantic",
+      "documents": [
+        {
+          "id": "doc-intergrax",
+          "text": "Intergrax Harness is a Tier-0 agent runtime with unified RAG RetrievalService and Tool Library."
+        },
+        {
+          "id": "doc-weather",
+          "text": "Tomorrow in Warsaw the weather will be sunny with light wind."
+        }
+      ],
+      "query": "Intergrax RAG retrieval",
+      "relevant_ids": ["doc-intergrax"],
+      "k": 2,
+      "min_recall": 1.0
+    },
+    {
+      "name": "exact_sku",
+      "documents": [
+        {
+          "id": "sku-42",
+          "text": "Product SKU-42 manual: installation steps for rack mounting."
+        },
+        {
+          "id": "sku-99",
+          "text": "Product SKU-99 is discontinued."
+        }
+      ],
+      "query": "SKU-42",
+      "relevant_ids": ["sku-42"],
+      "k": 2,
+      "min_recall": 1.0
+    }
+  ]
+}

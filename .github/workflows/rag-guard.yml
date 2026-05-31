@@ -1,0 +1,39 @@
+# © Artur Czarnecki. All rights reserved.
+# PR guard: RAG Tier-0 changes must pass golden retrieval + core unit tests.
+
+name: RAG guard
+
+on:
+  pull_request:
+    paths:
+      - "intergrax/rag/**"
+      - "intergrax/tools/providers/rag/**"
+      - "intergrax/integrations/providers/vector_store/**"
+      - "tests/unit/rag/**"
+      - "tests/fixtures/rag_golden/**"
+
+env:
+  UV_LINK_MODE: copy
+  UV_PYTHON_DOWNLOADS: never
+
+jobs:
+  rag-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - run: uv sync --extra dev-ci --frozen
+
+      - name: RAG unit + golden regression
+        run: >-
+          uv run pytest
+          tests/unit/rag/
+          tests/unit/tools/providers/rag/
+          -q --tb=line

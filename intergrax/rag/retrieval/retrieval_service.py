@@ -15,8 +15,6 @@ from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrie
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.rerankers.contracts.reranker_types import RerankerCandidate
 from intergrax.rag.routing.query_router import QueryRouter
-
-
 class RetrievalService:
     """
     Single Tier-0 retrieval pipeline: route → retrieve → optional rerank → filter.
@@ -42,12 +40,32 @@ class RetrievalService:
         return self._profile
 
     def retrieve(self, request: RetrievalRequest) -> RetrievalResult:
+        query = (request.query or "").strip()
+        if not query:
+            trace = RetrievalTrace()
+            return RetrievalResult(chunks=[], used=False, reason="empty_query", trace=trace)
+
+        tier = request.route_tier_override or self._router.route(query)
+        if tier == "deep" and self._profile.agentic_enabled:
+            from intergrax.rag.retrieval.agentic_loop import AgenticRetrievalLoop
+
+            loop = AgenticRetrievalLoop(self, self._profile)
+            return loop.run(request)
+
+        return self.retrieve_single_pass(request, route_tier=str(tier))
+
+    def retrieve_single_pass(
+        self,
+        request: RetrievalRequest,
+        *,
+        route_tier: Optional[str] = None,
+    ) -> RetrievalResult:
         trace = RetrievalTrace()
         query = (request.query or "").strip()
         if not query:
             return RetrievalResult(chunks=[], used=False, reason="empty_query", trace=trace)
 
-        tier = request.route_tier_override or self._router.route(query)
+        tier = route_tier or request.route_tier_override or self._router.route(query)
         trace.route_tier = str(tier)
 
         retriever_id = request.retriever_id or self._profile.effective_retriever(route_tier=str(tier))

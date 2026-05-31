@@ -40,7 +40,16 @@ registry = build_registry_from_profile(
 
 Uses **`RetrievalService`**: adaptive route tier → registered retriever (default `hybrid`) → optional reranker → scoped metadata filter. Output includes `diagnostics` (`retriever_id`, `route_tier`, latencies).
 
-Env examples: `INTERGRAX_RAG_RETRIEVER_ID=hybrid`, `INTERGRAX_RAG_ENABLE_RERANK=true`, `INTERGRAX_RAG_ROUTE_MODE=auto`.
+Env examples:
+
+| Variable | Purpose |
+|----------|---------|
+| `INTERGRAX_RAG_RETRIEVER_ID` | Default retriever (`hybrid`, `fusion`, `graph_rag`, …) |
+| `INTERGRAX_RAG_ENABLE_RERANK` | Cross-encoder / cosine rerank after retrieval |
+| `INTERGRAX_RAG_ROUTE_MODE` | `auto` → fast/standard/deep tiers |
+| `INTERGRAX_RAG_NATIVE_HYBRID` | BM25+dense `query_hybrid` when store supports it |
+| `INTERGRAX_RAG_AGENTIC_ENABLED` | Budgeted deep-tier query refinement loop |
+| `INTERGRAX_RAG_GRAPH_ENABLED` | Register `graph_rag` retriever + ingest graph indexing |
 
 ### `rag.ingest_document`
 

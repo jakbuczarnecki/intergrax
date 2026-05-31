@@ -16,6 +16,8 @@ from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDo
 from intergrax.rag.document_loaders.pipeline.parser_pipeline import TRACE_METADATA_KEY
 from intergrax.rag.document_splitters.contracts.base_documents_splitter import BaseDocumentsSplitter
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.graph.contracts.graph_store import GraphStore
+from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 
@@ -47,6 +49,7 @@ class IngestPipeline:
         vectorstore: BaseVectorstoreManager,
         profile: Optional[RagProfile] = None,
         contextual_enricher: Optional[ContextualChunkEnricher] = None,
+        graph_store: Optional[GraphStore] = None,
         metadata_callback: Optional[Callable[..., Dict[str, Any]]] = None,
     ) -> None:
         self._loader = loader
@@ -55,6 +58,7 @@ class IngestPipeline:
         self._vectorstore = vectorstore
         self._profile = profile or RagProfile()
         self._contextual = contextual_enricher
+        self._graph_store = graph_store
         self._metadata_callback = metadata_callback
 
     def run(self, request: IngestRequest) -> IngestResult:
@@ -123,6 +127,12 @@ class IngestPipeline:
             base_metadata=base_metadata,
         )
         vector_ids = list(stored_ids) if stored_ids is not None else ids
+
+        if self._graph_store is not None and self._profile.graph_rag_enabled:
+            HeuristicGraphIndexer(self._graph_store).index_documents(
+                aligned_docs,
+                chunk_ids=vector_ids,
+            )
 
         return IngestResult(
             used=True,

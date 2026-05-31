@@ -566,10 +566,10 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M-RAG.7 | Evaluation metrics (`recall@k`, MRR) | **Done** | `intergrax/rag/evaluation/metrics.py` |
 | M-RAG.8 | `create_default_rag_stack()` bootstrap | **Done** | `intergrax/rag/bootstrap/rag_stack_bootstrap.py` |
 | M-RAG.9 | Tool/Nexus wiring (`retrieval_service`, profile on `ToolWiringContext`) | **Done** | `RuntimeConfig.retrieval_service` |
-| M-RAG.10 | Native sparse / BM25 in vector backends | **Planned** | Qdrant/Weaviate hybrid indexes via integration `rag_store` |
-| M-RAG.11 | RAG eval CI gate + golden datasets | **Planned** | Build on `evaluation/metrics.py` |
-| M-RAG.12 | GraphRAG (`GraphStore` contract) | **Future** | §5.2.4 approval before new category store |
-| M-RAG.13 | Platform agentic retrieval loop (budgeted) | **Future** | Nexus plugin or `RetrievalService` deep tier |
+| M-RAG.10 | Native sparse / BM25 in vector backends | **Done** | `LexicalHybridSupport` + `query_hybrid` on InMemory/Qdrant/Weaviate; RRF fusion |
+| M-RAG.11 | RAG eval CI gate + golden datasets | **Done** | `tests/fixtures/rag_golden/`, `golden_harness.py`, `rag-guard.yml` |
+| M-RAG.12 | GraphRAG (`GraphStore` contract) | **Done** (beta) | `graph/` + `graph_rag` retriever + heuristic indexer |
+| M-RAG.13 | Platform agentic retrieval loop (budgeted) | **Done** | `AgenticRetrievalLoop` on deep tier + `INTERGRAX_RAG_AGENTIC_*` |
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|

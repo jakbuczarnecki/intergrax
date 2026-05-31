@@ -637,7 +637,10 @@ Modular layers — all strategy IDs and integration slugs are **configurable** v
 | Routing | `rag/routing/query_router.py` | `fast` / `standard` / `deep` tiers (adaptive cost) |
 | Retrievers | `rag/retrievers/` | Registry: vector, hybrid, fusion (RRF), MMR, parent–child, hierarchical, multi-query |
 | Rerankers | `rag/rerankers/` | Registry + integration slugs (`cohere_rerank`, `jina_rerank`) |
-| Evaluation | `rag/evaluation/metrics.py` | Offline `recall@k`, MRR for CI (datasets planned M-RAG.11) |
+| Evaluation | `rag/evaluation/metrics.py`, `golden_harness.py` | Offline `recall@k`, MRR; golden regression (`tests/fixtures/rag_golden/`) |
+| Hybrid (BM25+dense) | `rag/vectorstore/hybrid/`, `sparse/lexical_index.py` | `query_hybrid` on InMemory/Qdrant/Weaviate; `HybridRetriever` delegates |
+| GraphRAG | `rag/graph/`, retriever `graph_rag` | `GraphStore` contract; heuristic indexer; optional on ingest |
+| Agentic deep tier | `rag/retrieval/agentic_loop.py` | Budgeted query refinement when `INTERGRAX_RAG_AGENTIC_ENABLED=true` |
 | Bootstrap | `rag/bootstrap/rag_stack_bootstrap.py` | `create_default_rag_stack()` for Tier-3 `ToolWiringContext` |
 
 **Wiring rule:** `ToolWiringContext` and `RuntimeConfig` expose `retrieval_service`, `rag_profile`, `retriever_manager`, `reranker_manager`. Document parsers resolve via `IntegrationProfile` + `INTERGRAX_RAG_DOCUMENT_PARSER_SLUG` (optional); default loader uses handler registry (smart parsers + catalog fallback).

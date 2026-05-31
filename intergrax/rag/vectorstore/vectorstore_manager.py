@@ -95,6 +95,34 @@ class VectorstoreManager(BaseVectorstoreManager):
             include_embeddings=include_embeddings,
         )
 
+    def query_hybrid(
+        self,
+        query_embedding: Sequence[float],
+        query_text: str,
+        *,
+        top_k: int,
+        metadata_filter: Optional[MetadataFilter] = None,
+        include_embeddings: bool = False,
+        alpha: float = 0.5,
+    ) -> Sequence[VectorStoreHit]:
+        if isinstance(query_embedding, np.ndarray):
+            query_embedding = query_embedding.tolist()
+        if hasattr(self._store, "query_hybrid"):
+            return self._store.query_hybrid(
+                query_embedding,
+                query_text,
+                top_k=top_k,
+                metadata_filter=metadata_filter,
+                include_embeddings=include_embeddings,
+                alpha=alpha,
+            )
+        return self.query(
+            query_embedding=query_embedding,
+            top_k=top_k,
+            metadata_filter=metadata_filter,
+            include_embeddings=include_embeddings,
+        )
+
     def delete(self, ids: Sequence[str]) -> None:
         self._store.delete(ids)
 
