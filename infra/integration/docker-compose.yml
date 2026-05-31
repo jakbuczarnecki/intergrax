@@ -1,7 +1,29 @@
-version: "3.9"
+# Intergrax integration infrastructure — profile-based local stack.
+# Port matrix: infra/PORTS.md
+#
+# Examples:
+#   docker compose --profile core --profile queue --profile rag up -d
+#   ./manage.sh start default
+#   ./manage.sh start all
+
+name: intergrax
+
+x-profiles-all: &profiles_all
+  profiles:
+    - core
+    - queue
+    - rag
+    - data
+    - secrets
+    - observability
+    - cloud
+    - heavy
+    - all
 
 services:
+  # --- core ---
   redis:
+    <<: *profiles_all
     image: redis:7.2.4
     container_name: intergrax-redis
     ports:
@@ -10,25 +32,29 @@ services:
     restart: unless-stopped
 
   postgresql:
+    <<: *profiles_all
     image: postgres:16.6
     container_name: intergrax-postgresql
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: intergrax
-      POSTGRES_PASSWORD: intergrax
-      POSTGRES_DB: intergrax
+      POSTGRES_USER: ${POSTGRES_USER:-intergrax}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intergrax}
+      POSTGRES_DB: ${POSTGRES_DB:-intergrax}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U intergrax -d intergrax"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-intergrax} -d ${POSTGRES_DB:-intergrax}"]
       interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 8
+      start_period: 15s
 
+  # --- queue ---
   kafka:
+    <<: *profiles_all
     image: apache/kafka:3.7.0
     container_name: intergrax-kafka
     ports:
@@ -49,44 +75,389 @@ services:
       KAFKA_NUM_PARTITIONS: 3
     volumes:
       - kafka_data:/var/lib/kafka/data
+    restart: unless-stopped
 
   rabbitmq:
+    <<: *profiles_all
     image: rabbitmq:3.13-management
     container_name: intergrax-rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: intergrax
-      RABBITMQ_DEFAULT_PASS: intergrax
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-intergrax}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-intergrax}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
 
+  nats:
+    <<: *profiles_all
+    image: nats:2.10-alpine
+    container_name: intergrax-nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["-js", "-m", "8222"]
+    restart: unless-stopped
+
+  # --- rag ---
   qdrant:
+    <<: *profiles_all
     image: qdrant/qdrant:v1.16.2
     container_name: intergrax-qdrant
     ports:
       - "6333:6333"
+      - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
     restart: unless-stopped
 
   chroma:
+    <<: *profiles_all
     image: chromadb/chroma:1.4.1
     container_name: intergrax-chroma
     ports:
-      - "8000:8000"    
+      - "8000:8000"
     environment:
-      - IS_PERSISTENT=TRUE
-      - ANONYMIZED_TELEMETRY=False
-      - CHROMA_TELEMETRY_ENABLED=false
+      IS_PERSISTENT: "TRUE"
+      ANONYMIZED_TELEMETRY: "False"
+      CHROMA_TELEMETRY_ENABLED: "false"
     volumes:
       - chroma_data:/chroma
     restart: unless-stopped
-    
+
+  weaviate:
+    <<: *profiles_all
+    image: semitechnologies/weaviate:1.27.0
+    container_name: intergrax-weaviate
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+      ENABLE_API_BASED_MODULES: "true"
+      CLUSTER_HOSTNAME: node1
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    restart: unless-stopped
+
+  neo4j:
+    <<: *profiles_all
+    image: neo4j:5.26-community
+    container_name: intergrax-neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/intergrax}
+      NEO4J_PLUGINS: '["apoc"]'
+    volumes:
+      - neo4j_data:/data
+    restart: unless-stopped
+
+  milvus:
+    <<: *profiles_all
+    image: milvusdb/milvus:v2.4.15
+    container_name: intergrax-milvus
+    command: ["milvus", "run", "standalone"]
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    environment:
+      ETCD_USE_EMBED: "true"
+      COMMON_STORAGETYPE: local
+    volumes:
+      - milvus_data:/var/lib/milvus
+    restart: unless-stopped
+
+  ollama:
+    <<: *profiles_all
+    image: ollama/ollama:latest
+    container_name: intergrax-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  docling:
+    <<: *profiles_all
+    build:
+      context: ../docker/docling
+      dockerfile: Dockerfile
+    image: intergrax-docling:local
+    container_name: intergrax-docling
+    ports:
+      - "8081:8080"
+    environment:
+      DOCLING_CACHE_DIR: /models
+    volumes:
+      - docling_models:/models
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  # --- data ---
+  mongodb:
+    <<: *profiles_all
+    image: mongo:7.0
+    container_name: intergrax-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+
+  mysql:
+    <<: *profiles_all
+    image: mysql:8.4
+    container_name: intergrax-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-intergrax}
+      MYSQL_DATABASE: intergrax
+      MYSQL_USER: intergrax
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-intergrax}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uintergrax", "-p${MYSQL_PASSWORD:-intergrax}"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+
+  cassandra:
+    <<: *profiles_all
+    image: cassandra:4.1
+    container_name: intergrax-cassandra
+    ports:
+      - "9042:9042"
+    environment:
+      MAX_HEAP_SIZE: 512M
+      HEAP_NEWSIZE: 128M
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    restart: unless-stopped
+
+  minio:
+    <<: *profiles_all
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    container_name: intergrax-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-intergrax}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-intergrax}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+  memcached:
+    <<: *profiles_all
+    image: memcached:1.6-alpine
+    container_name: intergrax-memcached
+    ports:
+      - "11211:11211"
+    restart: unless-stopped
+
+  # --- secrets ---
+  vault:
+    <<: *profiles_all
+    image: hashicorp/vault:1.17
+    container_name: intergrax-vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-intergrax-dev-token}
+      VAULT_DEV_LISTEN_ADDRESS: ${VAULT_DEV_LISTEN_ADDRESS:-0.0.0.0:8200}
+    cap_add:
+      - IPC_LOCK
+    command: server -dev
+    restart: unless-stopped
+
+  # --- observability ---
+  elasticsearch:
+    <<: *profiles_all
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: intergrax-elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+
+  prometheus:
+    <<: *profiles_all
+    image: prom/prometheus:v2.55.0
+    container_name: intergrax-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+
+  clickhouse:
+    <<: *profiles_all
+    image: clickhouse/clickhouse-server:24.8
+    container_name: intergrax-clickhouse
+    ports:
+      - "8123:8123"
+      - "9002:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    restart: unless-stopped
+
+  langfuse:
+    <<: *profiles_all
+    image: langfuse/langfuse:2
+    container_name: intergrax-langfuse
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-intergrax}:${POSTGRES_PASSWORD:-intergrax}@postgresql:5432/langfuse
+      NEXTAUTH_SECRET: intergrax-langfuse-secret
+      SALT: intergrax-langfuse-salt
+      ENCRYPTION_KEY: intergrax-langfuse-encryption-key-32ch
+      NEXTAUTH_URL: http://localhost:3000
+      TELEMETRY_ENABLED: "false"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  phoenix:
+    <<: *profiles_all
+    image: arizephoenix/phoenix:latest
+    container_name: intergrax-phoenix
+    ports:
+      - "6006:6006"
+      - "4317:4317"
+    restart: unless-stopped
+
+  mailpit:
+    <<: *profiles_all
+    image: axllent/mailpit:v1.20
+    container_name: intergrax-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    restart: unless-stopped
+
+  # --- cloud emulators ---
+  localstack:
+    <<: *profiles_all
+    image: localstack/localstack:3.8
+    container_name: intergrax-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,sqs,dynamodb
+      DEBUG: "0"
+    volumes:
+      - localstack_data:/var/lib/localstack
+    restart: unless-stopped
+
+  azurite:
+    <<: *profiles_all
+    image: mcr.microsoft.com/azure-storage/azurite:3.33.0
+    container_name: intergrax-azurite
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
+    volumes:
+      - azurite_data:/data
+    restart: unless-stopped
+
+  pubsub-emulator:
+    <<: *profiles_all
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:489.0.0-emulators
+    container_name: intergrax-pubsub-emulator
+    ports:
+      - "8085:8085"
+    command:
+      - gcloud
+      - beta
+      - emulators
+      - pubsub
+      - start
+      - --host-port=0.0.0.0:8085
+      - --project=intergrax-local
+    restart: unless-stopped
+
+  # --- heavy (optional) ---
+  temporal:
+    <<: *profiles_all
+    image: temporalio/auto-setup:1.25.2
+    container_name: intergrax-temporal
+    ports:
+      - "7233:7233"
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-intergrax}
+      POSTGRES_PWD: ${POSTGRES_PASSWORD:-intergrax}
+      POSTGRES_SEEDS: postgresql
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  vespa:
+    <<: *profiles_all
+    image: vespaengine/vespa:8.396.18
+    container_name: intergrax-vespa
+    ports:
+      - "8089:8080"
+      - "19071:19071"
+    volumes:
+      - vespa_data:/opt/vespa/var
+    restart: unless-stopped
+
+  selenium:
+    <<: *profiles_all
+    image: selenium/standalone-chrome:4.25.0
+    container_name: intergrax-selenium
+    ports:
+      - "4444:4444"
+      - "7900:7900"
+    shm_size: 2gb
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   kafka_data:
   rabbitmq_data:
   qdrant_data:
   chroma_data:
+  weaviate_data:
+  neo4j_data:
+  milvus_data:
+  ollama_data:
+  docling_models:
+  mongodb_data:
+  mysql_data:
+  cassandra_data:
+  minio_data:
+  elasticsearch_data:
+  prometheus_data:
+  clickhouse_data:
+  localstack_data:
+  azurite_data:
+  vespa_data:

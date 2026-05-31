@@ -1,0 +1,7 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: intergrax-mongodb
+    ports:
+      - "27017:27017"
+    restart: unless-stopped

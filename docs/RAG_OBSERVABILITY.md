@@ -43,3 +43,13 @@ Exported on `TASK_COMPLETED` via structured log field `rag_metrics` (same bus ho
 CI gate: `tests/fixtures/rag_golden/retrieval_cases.json` — scenarios `retrieval`, `graph_rag`, `multi_hop`, `agentic`.
 
 Workflow: `.github/workflows/rag-guard.yml`
+
+## Local backends (infra)
+
+| Backend | Profile | Port |
+|---------|---------|------|
+| Prometheus | `observability` | 9090 |
+| Phoenix | `observability` | 6006 |
+| Langfuse | `observability` | 3000 (needs Postgres from `core`) |
+
+Start: `cd infra/integration && ./manage.sh start observability`

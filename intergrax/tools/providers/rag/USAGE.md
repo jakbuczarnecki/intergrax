@@ -13,6 +13,8 @@
 | `retrieval_service` | No | Pre-built `RetrievalService`; else composed from managers + profile |
 | `retriever_manager` / `reranker_manager` | No | Override Tier-0 registries |
 
+Local backends: `infra/integration` profile `rag` (Qdrant, Chroma, Weaviate, Neo4j, Ollama, Docling) — see [infra/PORTS.md](../../../../infra/PORTS.md).
+
 Tier-3 example (full stack):
 
 ```python

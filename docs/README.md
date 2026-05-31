@@ -18,6 +18,8 @@ The `docs/` folder holds the canonical platform documentation.
 | [**LLM_ADAPTERS.md**](LLM_ADAPTERS.md) | **LLM adapter catalog** — providers, streaming, tools, env vars, registry |
 | [**LLM_OBSERVABILITY.md**](LLM_OBSERVABILITY.md) | **LLM metrics** — Prometheus scrape, Pushgateway, PromQL, governance signals |
 | [**RAG_OBSERVABILITY.md**](RAG_OBSERVABILITY.md) | **RAG metrics** — recall@k, hybrid/agentic latencies, golden CI gate |
+| [**../infra/README.md**](../infra/README.md) | **Local Docker infra** — compose profiles, `manage.sh` |
+| [**../infra/PORTS.md**](../infra/PORTS.md) | Host port matrix for integration backends |
 | **This file** | Navigation and update rules |
 
 ```text
@@ -41,6 +43,7 @@ LLM observability          →  LLM_OBSERVABILITY.md
 | Check readiness for business agents | Implementation plan **Appendix A** |
 | Review technical debt before Tier-1 work | Implementation plan **Appendix B** |
 | Wire external systems (DB, Slack, Jira, …) | [INTEGRATIONS.md](INTEGRATIONS.md), then architecture canon §7.1 |
+| Start local Redis / Qdrant / Neo4j / … | [../infra/README.md](../infra/README.md), [../infra/PORTS.md](../infra/PORTS.md) |
 | Wire agent-callable tools (RAG, web search, Jira, …) | [TOOLS.md](TOOLS.md), then architecture canon §7.1.6–§7.1.7 |
 | RAG engine (RetrievalService, RagProfile, M-RAG plan) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase M-RAG · [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) RAG stack |
 | Configure LLM providers (OpenAI, Claude, Bedrock, …) | [LLM_ADAPTERS.md](LLM_ADAPTERS.md), then architecture canon §5.2.2 |

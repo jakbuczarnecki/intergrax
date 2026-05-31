@@ -1,0 +1,8 @@
+services:
+  mailpit:
+    image: axllent/mailpit:v1.20
+    container_name: intergrax-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    restart: unless-stopped

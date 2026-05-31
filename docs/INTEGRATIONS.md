@@ -13,6 +13,24 @@ The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular
 | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) Appendix E | How agents vs applications use integrations |
 | [TOOLS.md](TOOLS.md) | Agent-facing tools that compose these integrations |
 | Per-provider guides | `intergrax/integrations/providers/<category>/<slug>/USAGE.md` |
+| [../infra/README.md](../infra/README.md) | **Local Docker infrastructure** — compose profiles, manage scripts |
+| [../infra/PORTS.md](../infra/PORTS.md) | Host port matrix for integration tests |
+
+---
+
+## Local infrastructure (Docker)
+
+Run backing services locally before integration tests or lab hosts. Unified stack: `infra/integration/` with **compose profiles** (`core`, `queue`, `rag`, `data`, `secrets`, `observability`, `cloud`, `heavy`).
+
+```bash
+cd infra/integration && ./manage.sh start          # default profiles
+cd infra/integration && ./manage.sh start rag      # vectors + neo4j + ollama + docling
+cd infra/integration && ./manage.sh start all      # full stack
+```
+
+See [infra/PORTS.md](../infra/PORTS.md) for host ports (e.g. Redis `6379`, Qdrant `6333`, Neo4j Bolt `7687`, Weaviate `8080`, MinIO `9000`, Vault `8200`, ClickHouse HTTP `8123` / native `9002`).
+
+**SaaS-only slugs** (no local container — use mocks or API keys): `slack`, `jira`, `confluence`, `google_cse`, `pinecone`, `cohere_rerank`, `sentry` (cloud), most `observability_backend` HTTP proxies unless self-hosted image is listed in infra.
 
 ---
 
