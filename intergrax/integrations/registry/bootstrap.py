@@ -91,6 +91,11 @@ def register_default_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.document_parser.pymupdf.register import register_pymupdf_integration
     from intergrax.integrations.providers.document_parser.unstructured.register import register_unstructured_integration
     from intergrax.integrations.providers.document_parser.python_docx.register import register_python_docx_integration
+    from intergrax.integrations.providers.document_parser.openpyxl.register import register_openpyxl_integration
+    from intergrax.integrations.providers.document_parser.whisper.register import register_whisper_integration
+    from intergrax.integrations.providers.document_parser.yt_dlp.register import register_yt_dlp_integration
+    from intergrax.integrations.providers.rerank_provider.cohere_rerank.register import register_cohere_rerank_integration
+    from intergrax.integrations.providers.rerank_provider.jina_rerank.register import register_jina_rerank_integration
 
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:
@@ -172,6 +177,11 @@ def register_default_integrations(*, override: bool = False) -> None:
     register_pymupdf_integration(override=override)
     register_unstructured_integration(override=override)
     register_python_docx_integration(override=override)
+    register_openpyxl_integration(override=override)
+    register_whisper_integration(override=override)
+    register_yt_dlp_integration(override=override)
+    register_cohere_rerank_integration(override=override)
+    register_jina_rerank_integration(override=override)
     _BOOTSTRAPPED = True
 
 

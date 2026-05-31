@@ -14,7 +14,7 @@ from typing import Optional
 from intergrax.integrations.contracts.search_provider import SearchProvider
 from intergrax.integrations.providers.search_provider.bing.adapter import BingSearchProvider
 from intergrax.integrations.providers.search_provider.bing.config import BingIntegrationConfig
-from intergrax.websearch.providers.bing_provider import BingWebProvider
+from intergrax.integrations.providers.search_provider.bing.web_client import BingWebProvider
 
 
 def open_bing_web_search_provider(

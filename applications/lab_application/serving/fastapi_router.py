@@ -85,6 +85,23 @@ def mount_lab_routes(
                 detail=f"lab_run_error: {exc.__class__.__name__}",
             ) from exc
 
+    @router.get("/integrations/docling/health")
+    async def docling_server_health() -> dict[str, object]:
+        from intergrax.integrations.providers.document_parser.docling.config import (
+            DoclingIntegrationConfig,
+            DoclingMode,
+        )
+        from intergrax.integrations.providers.document_parser.docling.opens import check_docling_server_health
+
+        config = DoclingIntegrationConfig.from_env()
+        if config.mode is not DoclingMode.SERVER:
+            return {
+                "ok": config.mode is DoclingMode.LOCAL,
+                "mode": config.mode.value,
+                "detail": "server health applies only when INTERGRAX_DOCLING_MODE=server",
+            }
+        return check_docling_server_health(config)
+
     @router.get("/agents")
     async def lab_agents() -> dict[str, list[dict[str, object]]]:
         agents: list[dict[str, object]] = []

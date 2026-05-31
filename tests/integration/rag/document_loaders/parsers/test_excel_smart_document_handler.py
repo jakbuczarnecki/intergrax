@@ -55,7 +55,7 @@ def test_excel_handler_builds_parser():
     parsers = handler.build_parsers()
 
     assert len(parsers) >= 1
-    assert parsers[0].parser_id() == "excel_smart"
+    assert parsers[0].parser_id() == "openpyxl"
 
 
 def test_excel_handler_loads_csv(tmp_path: Path):

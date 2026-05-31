@@ -436,6 +436,16 @@ class AttachmentIngestionService:
         else:
             vector_ids = list(stored_ids)
 
+        parser_trace: Dict[str, Any] = {}
+        parser_id: str | None = None
+        if aligned_docs:
+            first_meta = aligned_docs[0].metadata or {}
+            from intergrax.rag.document_loaders.pipeline.parser_pipeline import TRACE_METADATA_KEY
+
+            if TRACE_METADATA_KEY in first_meta:
+                parser_trace = dict(first_meta.get(TRACE_METADATA_KEY) or {})
+                parser_id = parser_trace.get("parser_id") or first_meta.get("integration_parser_id")
+
         return IngestionResult(
             attachment_id=attachment.id,
             attachment_type=attachment.type,
@@ -447,5 +457,7 @@ class AttachmentIngestionService:
                 "user_id": user_id,
                 "tenant_id": tenant_id,
                 "workspace_id": workspace_id,
+                "integration_parser_id": parser_id,
+                "integration_parser_trace": parser_trace,
             },
         )

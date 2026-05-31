@@ -1,17 +1,18 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
 
 from typing import Sequence
-from pathlib import Path
 
 from langchain_core.documents import Document
 
-from intergrax.multimedia.audio_smart_loader import AudioSmartLoader
+from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
+from intergrax.rag.document_loaders.integration.catalog_parser import CatalogDocumentParser
+from intergrax.rag.document_loaders.integration.resolver import resolve_document_parser
+
 
 class AudioSmartParser(BaseDocumentParser):
 
@@ -23,53 +24,30 @@ class AudioSmartParser(BaseDocumentParser):
         whisper_language: str | None,
         translate: bool,
     ):
-        self._out_dir = out_dir
-        self._whisper_model = whisper_model
-        self._whisper_language = whisper_language
-        self._translate = translate
+        self._options = {
+            "model": whisper_model,
+            "language": whisper_language or "en",
+            "translate": translate,
+            "out_dir": out_dir,
+        }
 
     @classmethod
     def parser_id(cls) -> str:
-        return "audio_smart"
+        return "whisper"
 
     def is_available(self) -> bool:
-        return True
+        return resolve_document_parser(IntegrationSlug.WHISPER, **self._options).is_available()
 
     def load(self, source: str) -> Sequence[Document]:
-
-        path = Path(source)
-        ext = path.suffix.lower()
-
-        audio_format = ext.lstrip(".")
-
-        loader = AudioSmartLoader(
-            path=source,
-            out_dir=self._out_dir,
-            audio_format=audio_format,
-            whisper_model=self._whisper_model,
-            whisper_language=self._whisper_language,
-            translate=self._translate,
-        )
-
-        docs = loader.load()
-
+        backend = resolve_document_parser(IntegrationSlug.WHISPER, **self._options)
+        docs = CatalogDocumentParser(backend).load(source)
         result: list[Document] = []
-
-        for i, d in enumerate(docs):
-
+        for i, doc in enumerate(docs):
             metadata = build_loader_metadata(
                 source=source,
                 parser=self.parser_id(),
                 position=i,
             )
-
-            metadata.update(d.metadata or {})
-
-            result.append(
-                Document(
-                    page_content=d.page_content,
-                    metadata=metadata,
-                )
-            )
-
+            metadata.update(doc.metadata or {})
+            result.append(Document(page_content=doc.page_content, metadata=metadata))
         return result

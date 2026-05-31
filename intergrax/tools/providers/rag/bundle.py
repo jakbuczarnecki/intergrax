@@ -8,12 +8,15 @@ from __future__ import annotations
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.rag.contracts import RagRetrieveInput, RagRetrieveOutput
 from intergrax.tools.providers.rag.handler import RagRetrieveHandler
+from intergrax.tools.providers.rag.ingest_contracts import RagIngestInput, RagIngestOutput
+from intergrax.tools.providers.rag.ingest_handler import RagIngestHandler
+from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
 from intergrax.tools.providers.rag.service import RAG_TOOL_ID
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 RAG_BUNDLE_ID = "rag"
-RAG_TOOL_IDS: tuple[str, ...] = (RAG_TOOL_ID,)
+RAG_TOOL_IDS: tuple[str, ...] = (RAG_TOOL_ID, RAG_INGEST_TOOL_ID)
 
 
 def rag_retrieve_contract() -> ToolContract:
@@ -37,6 +40,26 @@ def rag_retrieve_contract() -> ToolContract:
     )
 
 
+def rag_ingest_contract() -> ToolContract:
+    return ToolContract(
+        tool_id=RAG_INGEST_TOOL_ID,
+        name="rag.ingest_document",
+        description=(
+            "Load a local document through the configured document parser pipeline, chunk it, "
+            "embed, and store vectors in the application index. Returns parser trace metadata."
+        ),
+        description_short="Ingest a file into the vector index.",
+        input_schema=RagIngestInput,
+        output_schema=RagIngestOutput,
+        error_mapping={},
+        side_effects=True,
+        injects_context=False,
+        category="retrieval",
+        risk_level=ToolRiskLevel.MEDIUM,
+        tags=("rag", "ingestion", "indexing"),
+    )
+
+
 def register_rag_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
-    handler = RagRetrieveHandler(ctx)
-    registry.register(rag_retrieve_contract(), handler)
+    registry.register(rag_retrieve_contract(), RagRetrieveHandler(ctx))
+    registry.register(rag_ingest_contract(), RagIngestHandler(ctx))

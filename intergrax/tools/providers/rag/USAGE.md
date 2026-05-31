@@ -1,7 +1,7 @@
 # RAG tool bundle
 
 **Bundle id:** `rag`  
-**Tools:** `rag.retrieve`
+**Tools:** `rag.retrieve`, `rag.ingest_document`
 
 ## Dependencies (`ToolWiringContext`)
 
@@ -20,8 +20,15 @@ ctx = ToolWiringContext(
     vectorstore_manager=runtime_config.vectorstore_manager,
     embedding_manager=runtime_config.embedding_manager,
 )
-registry = build_registry_from_profile(ToolProfile(enabled=["rag.retrieve"]), ctx=ctx)
+registry = build_registry_from_profile(
+    ToolProfile(enabled=["rag.retrieve", "rag.ingest_document"]),
+    ctx=ctx,
+)
 ```
+
+### `rag.ingest_document`
+
+Loads a local file through the default RAG document handler pipeline (integration-backed parsers), splits, embeds, and stores chunks. Response includes `parser_id` and `integration_parser_trace` from `ParserPipeline`.
 
 ## Invoke (via runtime)
 

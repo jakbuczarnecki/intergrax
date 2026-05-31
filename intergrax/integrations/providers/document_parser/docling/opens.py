@@ -77,6 +77,35 @@ def parse_file_server(config: DoclingIntegrationConfig, source: str) -> list[Par
     ]
 
 
+def check_docling_server_health(config: DoclingIntegrationConfig) -> dict[str, object]:
+    """Probe Docling HTTP server (GET health or HEAD on parse endpoint)."""
+    import httpx
+
+    base = config.server_url.rstrip("/")
+    health_url = f"{base}/health"
+    try:
+        response = httpx.get(health_url, timeout=min(config.timeout_seconds, 10))
+        if response.status_code < 500:
+            return {
+                "ok": response.status_code < 400,
+                "status_code": response.status_code,
+                "url": health_url,
+            }
+    except Exception as exc:
+        pass
+    parse_url = base + config.server_path
+    try:
+        response = httpx.head(parse_url, timeout=min(config.timeout_seconds, 10))
+        return {
+            "ok": response.status_code < 500,
+            "status_code": response.status_code,
+            "url": parse_url,
+            "probe": "head_parse",
+        }
+    except Exception as exc:
+        return {"ok": False, "url": health_url, "error": str(exc)}
+
+
 def parse_docling_file(
     config: DoclingIntegrationConfig,
     source: str,

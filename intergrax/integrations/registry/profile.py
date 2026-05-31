@@ -134,6 +134,24 @@ class IntegrationProfile(BaseModel):
             relational_store=IntegrationSlug.SQLITE,
             notification_channel=IntegrationSlug.LOG,
             interaction_surface=IntegrationSlug.LAB_JSON,
+            document_parser=IntegrationSlug.DOCLING,
+        )
+
+    @classmethod
+    def legal_product(cls) -> IntegrationProfile:
+        """Legal Tier-3 defaults — Docling parsing and optional Cohere rerank."""
+        return cls(
+            document_parser=IntegrationSlug.DOCLING,
+            rerank_provider=IntegrationSlug.COHERE_RERANK,
+        )
+
+    @classmethod
+    def research_product(cls) -> IntegrationProfile:
+        """Research Tier-3 defaults — Docling + web search rerank stack."""
+        return cls(
+            document_parser=IntegrationSlug.DOCLING,
+            search_provider=IntegrationSlug.GOOGLE_CSE,
+            rerank_provider=IntegrationSlug.JINA_RERANK,
         )
 
     @classmethod

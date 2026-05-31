@@ -129,8 +129,8 @@ profile = IntegrationProfile.lab()
 | `browser_automation` | `BrowserAutomation` | Dynamic web pages (JS-heavy sites) |
 | `secrets_store` | `SecretsStore` | Tenant API keys, credentials (Vault, …) |
 | `graph_store` | `GraphStore` | Agent memory, tool dependency graphs |
-| `document_parser` | `DocumentParser` | Document/media parsing (Docling, PyMuPDF, Unstructured, python-docx) |
-| `rerank_provider` | `RerankProvider` | Cross-encoder reranking APIs (Cohere, Jina) |
+| `document_parser` | `DocumentParser` | Document/media parsing (Docling, PyMuPDF, Unstructured, python-docx, openpyxl, whisper, yt_dlp) |
+| `rerank_provider` | `RerankProvider` | Vendor reranking APIs (cohere_rerank, jina_rerank) — consumed by RAG `rerankers/` |
 | `cloud_platform` | `CloudPlatform` | Multi-service auth + category defaults |
 
 Contract modules: `intergrax/integrations/contracts/`.

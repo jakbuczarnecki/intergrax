@@ -641,15 +641,19 @@ Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. 
 
 Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` into `integrations/providers/document_parser/`. RAG uses `CatalogDocumentParser` + `resolve_document_parser()`.
 
+**Wave 2 (2026-05-30):** `openpyxl`, `whisper`, `yt_dlp`; `cohere_rerank` / `jina_rerank`; Bing/Google CSE implementations under `integrations/.../web_client.py` (websearch re-exports); `ParserPipeline` ingestion trace; tool `rag.ingest_document`; `IntegrationProfile.legal_product()` / `research_product()` / `lab()` with `document_parser=docling`; lab `GET /v1/lab/integrations/docling/health`.
+
 | Slug | Status | Notes |
 |------|--------|-------|
 | `docling` | **Done** (beta) | local + server; `opens.py` only Docling/httpx imports |
 | `pymupdf` | **Done** (beta) | PDF + optional Tesseract OCR |
 | `unstructured` | **Done** (beta) | HTML loader |
 | `python_docx` | **Done** (beta) | Word `.docx` |
-| `openpyxl` | Planned | Excel/CSV — migrate `ExcelSmartLoader` |
-| `whisper` | Planned | Audio/video transcription |
-| `yt_dlp` | Planned | Remote media fetch |
+| `openpyxl` | **Done** (beta) | Excel/CSV via pandas |
+| `whisper` | **Done** (beta) | Audio + YouTube (uses yt_dlp opens) |
+| `yt_dlp` | **Done** (beta) | YouTube audio/video download |
+| `cohere_rerank` | **Done** (beta) | RAG rerank via integration resolver |
+| `jina_rerank` | **Done** (beta) | RAG rerank via integration resolver |
 
 #### M.6 P3 — Legacy backlog note (superseded)
 
