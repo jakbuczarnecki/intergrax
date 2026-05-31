@@ -45,6 +45,11 @@ class GraphStore(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def link_chunk(self, node_id: str, chunk_id: str) -> None:
+        """Associate a graph node with a retrieval chunk/document id."""
+        raise NotImplementedError
+
+    @abstractmethod
     def chunk_ids_for_nodes(self, node_ids: Set[str]) -> List[str]:
         """Map graph nodes back to source chunk/document ids."""
         raise NotImplementedError

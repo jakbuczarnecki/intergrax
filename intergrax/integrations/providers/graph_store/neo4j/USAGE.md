@@ -42,4 +42,28 @@ graph = create_neo4j_graph_store(base_url="bolt://localhost:7687", user="neo4j",
 
 ## Notes
 
-Agent memory / tool graphs. Requires ``neo4j`` driver. New category ``graph_store``.
+Agent memory / tool graphs and **GraphRAG** persistence. Requires ``neo4j`` driver. Category ``graph_store`` (existing — no new §5.2.4 category).
+
+### GraphRAG (Tier-0 RAG)
+
+Wire Neo4j as the RAG graph backend (distinct from the integration ``GraphStore`` Cypher contract):
+
+```python
+import os
+os.environ["INTERGRAX_RAG_GRAPH_ENABLED"] = "1"
+os.environ["INTERGRAX_RAG_GRAPH_STORE"] = "neo4j"
+
+from intergrax.rag.bootstrap.rag_stack_bootstrap import create_default_rag_stack
+
+stack = create_default_rag_stack()  # resolves Neo4j via Integration Library when env is set
+```
+
+Or inject explicitly:
+
+```python
+from intergrax.integrations.providers.graph_store.neo4j.bundle import create_neo4j_graph_store
+from intergrax.rag.graph.providers.neo4j_rag_graph_store import Neo4jRagGraphStore
+
+graph = Neo4jRagGraphStore(create_neo4j_graph_store(**config_overrides))
+stack = create_default_rag_stack(graph_store=graph)
+```

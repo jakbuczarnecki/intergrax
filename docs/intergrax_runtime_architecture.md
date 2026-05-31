@@ -637,12 +637,13 @@ Modular layers — all strategy IDs and integration slugs are **configurable** v
 | Routing | `rag/routing/query_router.py` | `fast` / `standard` / `deep` tiers (adaptive cost) |
 | Retrievers | `rag/retrievers/` | Registry: vector, hybrid, fusion (RRF), MMR, parent–child, hierarchical, multi-query |
 | Rerankers | `rag/rerankers/` | Registry + integration slugs (`cohere_rerank`, `jina_rerank`) |
-| Evaluation | `rag/evaluation/metrics.py`, `golden_harness.py` | Offline `recall@k`, MRR; golden regression (`tests/fixtures/rag_golden/`) |
-| Hybrid (BM25+dense) | `rag/vectorstore/hybrid/`, `sparse/lexical_index.py` | `query_hybrid` on InMemory/Qdrant/Weaviate; `HybridRetriever` delegates |
-| GraphRAG | `rag/graph/`, retriever `graph_rag` | `GraphStore` contract; heuristic indexer; optional on ingest |
-| Agentic deep tier | `rag/retrieval/agentic_loop.py`, `query_refiner.py` | Budgeted loop; `agentic_query_mode=deterministic\|llm` with injected adapter |
-| Qdrant sparse | `integrations/.../qdrant/rag_store.py` | Optional native sparse + RRF (`INTERGRAX_RAG_QDRANT_SPARSE`) |
-| Weaviate hybrid | `integrations/.../weaviate/rag_store.py` | Native `query.hybrid` when client configured |
+| Evaluation | `rag/evaluation/metrics.py`, `golden_harness.py` | Offline `recall@k`, MRR; golden regression (`tests/fixtures/rag_golden/`) — scenarios: retrieval, graph_rag, multi_hop, agentic |
+| Hybrid (BM25+dense) | `rag/vectorstore/hybrid/`, `sparse/lexical_index.py`, `sparse/sparse_encoder.py` | `query_hybrid` on InMemory/Qdrant/Weaviate; encoders: `bm25_hash` (default) or optional `splade` (`INTERGRAX_RAG_SPARSE_ENCODER`) |
+| GraphRAG | `rag/graph/`, retriever `graph_rag` | `GraphStore` contract; backends: `inmemory` (default), `neo4j` (`INTERGRAX_RAG_GRAPH_STORE`); heuristic/LLM indexer |
+| Agentic deep tier | `rag/retrieval/agentic_loop.py`, `query_refiner.py` | Budgeted loop; `agentic_query_mode=deterministic\|llm`; trace exports `agentic_total_latency_ms` |
+| Qdrant sparse | `integrations/.../qdrant/rag_store.py` | Optional native sparse + RRF (`INTERGRAX_RAG_QDRANT_SPARSE`); pluggable sparse encoder |
+| Weaviate hybrid | `integrations/.../weaviate/rag_store.py`, `schema.py` | Native `query.hybrid`; schema migration; native multi-tenancy; metadata filter translation |
+| Observability | `rag/tracking/metrics.py`, `observability_bridge.py` | `INTERGRAX_RAG_METRICS_ENABLED` — recall@k avg, hybrid/agentic latencies on `TASK_COMPLETED` |
 | Graph indexer | `rag/graph/indexer/` | `heuristic`, `llm`, or `heuristic_then_llm` via `INTERGRAX_RAG_GRAPH_INDEXER_MODE` |
 | Bootstrap | `rag/bootstrap/rag_stack_bootstrap.py` | `create_default_rag_stack()` for Tier-3 `ToolWiringContext` |
 

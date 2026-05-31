@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Integrax framework – proprietary and confidential.
 
-"""Golden retrieval regression harness (M-RAG.11)."""
+"""Golden retrieval regression harness (M-RAG.11 + extended scenarios)."""
 
 from __future__ import annotations
 
@@ -13,6 +13,8 @@ from typing import Any, Dict, List, Sequence
 from langchain_core.documents import Document
 
 from intergrax.rag.evaluation.metrics import recall_at_k
+from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
+from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
@@ -24,6 +26,7 @@ from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 @dataclass(frozen=True)
 class GoldenCaseResult:
     name: str
+    scenario: str
     recall: float
     min_recall: float
     passed: bool
@@ -46,51 +49,143 @@ def run_golden_retrieval(
     *,
     profile: RagProfile | None = None,
 ) -> GoldenRunReport:
-    profile = profile or RagProfile(enable_rerank=False, route_mode="off", retriever_id="hybrid")
     results: List[GoldenCaseResult] = []
 
     for case in cases:
-        store = InMemoryVectorStore(tenant_id="golden")
-        manager = VectorstoreManager(store=store)
+        scenario = str(case.get("scenario", "retrieval")).lower()
+        case_profile = _profile_for_case(case, profile)
+        if scenario == "graph_rag":
+            results.append(_run_graph_case(case, profile=case_profile))
+        elif scenario == "agentic":
+            results.append(_run_agentic_case(case, profile=case_profile))
+        elif scenario == "multi_hop":
+            results.append(_run_multi_hop_case(case, profile=case_profile))
+        else:
+            results.append(_run_retrieval_case(case, profile=case_profile))
+
+    return GoldenRunReport(passed=all(r.passed for r in results), results=results)
+
+
+def _profile_for_case(case: Dict[str, Any], profile: RagProfile | None) -> RagProfile:
+    base = profile or RagProfile(enable_rerank=False, route_mode="off", retriever_id="hybrid")
+    overrides = case.get("profile") or {}
+    if not overrides:
+        return base
+    fields = {f.name for f in RagProfile.__dataclass_fields__.values()}  # type: ignore[attr-defined]
+    merged = {k: v for k, v in base.__dict__.items() if k in fields}
+    merged.update({k: v for k, v in overrides.items() if k in fields})
+    return RagProfile(**merged)
+
+
+def _run_retrieval_case(case: Dict[str, Any], *, profile: RagProfile) -> GoldenCaseResult:
+    service, _graph = _build_service(case, profile=profile, graph_store=None)
+    return _evaluate_case(case, service, scenario="retrieval")
+
+
+def _run_graph_case(case: Dict[str, Any], *, profile: RagProfile) -> GoldenCaseResult:
+    graph = InMemoryGraphStore()
+    service, _ = _build_service(case, profile=profile, graph_store=graph)
+    if case.get("graph_index", True):
         docs = [
             Document(page_content=item["text"], metadata={"doc_id": item["id"]})
             for item in case["documents"]
         ]
-        texts = [d.page_content for d in docs]
-        embeddings = [[0.1, 0.2, 0.3] for _ in texts]
-        for i, d in enumerate(docs):
-            d.metadata["tenant_id"] = "golden"
         ids = [item["id"] for item in case["documents"]]
-        manager.add_documents(docs, embeddings, ids=ids)
+        HeuristicGraphIndexer(graph).index_documents(docs, chunk_ids=ids)
+    return _evaluate_case(case, service, scenario="graph_rag")
 
-        retriever_manager = create_default_retriever_manager(
-            vector_store=manager,
-            embedding_manager=_FakeEmbedder(),
-        )
-        service = RetrievalService(
-            retriever_manager=retriever_manager,
-            reranker_manager=None,
-            profile=profile,
-        )
-        response = service.retrieve(
-            RetrievalRequest(query=case["query"], top_k=int(case.get("k", 2)))
-        )
-        retrieved_ids = [c.id for c in response.chunks]
-        relevant = set(case.get("relevant_ids", []))
-        k = int(case.get("k", 2))
-        min_recall = float(case.get("min_recall", 1.0))
-        rec = recall_at_k(retrieved_ids, relevant, k)
-        results.append(
-            GoldenCaseResult(
-                name=str(case.get("name", "case")),
-                recall=rec,
-                min_recall=min_recall,
-                passed=rec >= min_recall,
-                retrieved_ids=retrieved_ids,
-            )
-        )
 
-    return GoldenRunReport(passed=all(r.passed for r in results), results=results)
+def _run_multi_hop_case(case: Dict[str, Any], *, profile: RagProfile) -> GoldenCaseResult:
+    graph = InMemoryGraphStore()
+    service, _ = _build_service(case, profile=profile, graph_store=graph)
+    docs = [
+        Document(page_content=item["text"], metadata={"doc_id": item["id"]})
+        for item in case["documents"]
+    ]
+    ids = [item["id"] for item in case["documents"]]
+    HeuristicGraphIndexer(graph).index_documents(docs, chunk_ids=ids)
+    for edge in case.get("graph_edges", []):
+        from intergrax.rag.graph.contracts.graph_store import GraphEdge, GraphNode
+
+        src = str(edge["source"])
+        tgt = str(edge["target"])
+        graph.upsert_node(GraphNode(id=src, label=src.replace("ent:", ""), node_type="entity"))
+        graph.upsert_node(GraphNode(id=tgt, label=tgt.replace("ent:", ""), node_type="entity"))
+        graph.upsert_edge(GraphEdge(source_id=src, target_id=tgt, relation=str(edge.get("relation", "related_to"))))
+        for doc_id in edge.get("chunk_ids", []):
+            graph.link_chunk(src, doc_id)
+            graph.link_chunk(tgt, doc_id)
+    return _evaluate_case(case, service, scenario="multi_hop")
+
+
+def _run_agentic_case(case: Dict[str, Any], *, profile: RagProfile) -> GoldenCaseResult:
+    agentic_profile = RagProfile(
+        **{
+            **profile.__dict__,
+            "agentic_enabled": True,
+            "route_mode": "auto",
+            "deep_query_min_words": int(case.get("deep_query_min_words", 3)),
+        }
+    )
+    service, _ = _build_service(case, profile=agentic_profile, graph_store=None)
+    return _evaluate_case(case, service, scenario="agentic")
+
+
+def _build_service(
+    case: Dict[str, Any],
+    *,
+    profile: RagProfile,
+    graph_store: InMemoryGraphStore | None,
+):
+    store = InMemoryVectorStore(tenant_id="golden")
+    manager = VectorstoreManager(store=store)
+    docs = [
+        Document(page_content=item["text"], metadata={"doc_id": item["id"]})
+        for item in case["documents"]
+    ]
+    texts = [d.page_content for d in docs]
+    embeddings = [[0.1, 0.2, 0.3] for _ in texts]
+    for d in docs:
+        d.metadata["tenant_id"] = "golden"
+    ids = [item["id"] for item in case["documents"]]
+    manager.add_documents(docs, embeddings, ids=ids)
+
+    retriever_manager = create_default_retriever_manager(
+        vector_store=manager,
+        embedding_manager=_FakeEmbedder(),
+        graph_store=graph_store,
+    )
+    service = RetrievalService(
+        retriever_manager=retriever_manager,
+        reranker_manager=None,
+        profile=profile,
+    )
+    return service, graph_store
+
+
+def _evaluate_case(
+    case: Dict[str, Any],
+    service: RetrievalService,
+    *,
+    scenario: str,
+) -> GoldenCaseResult:
+    response = service.retrieve(
+        RetrievalRequest(query=case["query"], top_k=int(case.get("k", 2)))
+    )
+    retrieved_ids = [c.id for c in response.chunks]
+    relevant = set(case.get("relevant_ids", []))
+    k = int(case.get("k", 2))
+    min_recall = float(case.get("min_recall", 1.0))
+    rec = recall_at_k(retrieved_ids, relevant, k)
+    response.trace.recall_at_k = rec
+    return GoldenCaseResult(
+        name=str(case.get("name", "case")),
+        scenario=scenario,
+        recall=rec,
+        min_recall=min_recall,
+        passed=rec >= min_recall,
+        retrieved_ids=retrieved_ids,
+    )
 
 
 class _FakeEmbedder:

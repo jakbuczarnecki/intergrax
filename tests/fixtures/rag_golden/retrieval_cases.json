@@ -1,8 +1,9 @@
 {
-  "version": 1,
+  "version": 2,
   "cases": [
     {
       "name": "keyword_and_semantic",
+      "scenario": "retrieval",
       "documents": [
         {
           "id": "doc-intergrax",
@@ -20,6 +21,7 @@
     },
     {
       "name": "exact_sku",
+      "scenario": "retrieval",
       "documents": [
         {
           "id": "sku-42",
@@ -32,6 +34,84 @@
       ],
       "query": "SKU-42",
       "relevant_ids": ["sku-42"],
+      "k": 2,
+      "min_recall": 1.0
+    },
+    {
+      "name": "graph_entity_expansion",
+      "scenario": "graph_rag",
+      "profile": {
+        "graph_rag_enabled": true,
+        "retriever_id": "graph_rag",
+        "route_mode": "off"
+      },
+      "documents": [
+        {
+          "id": "chunk-acme",
+          "text": "Acme Corp signed a partnership with Intergrax Harness for enterprise RAG."
+        },
+        {
+          "id": "chunk-unrelated",
+          "text": "Local bakery opens a new branch downtown."
+        }
+      ],
+      "query": "Acme",
+      "relevant_ids": ["chunk-acme"],
+      "k": 2,
+      "min_recall": 1.0
+    },
+    {
+      "name": "multi_hop_graph_bridge",
+      "scenario": "multi_hop",
+      "profile": {
+        "graph_rag_enabled": true,
+        "retriever_id": "graph_rag",
+        "route_mode": "off",
+        "graph_rag_hops": 2
+      },
+      "documents": [
+        {
+          "id": "chunk-alpha",
+          "text": "Project Alpha uses Neo4j GraphStore for knowledge graphs."
+        },
+        {
+          "id": "chunk-bridge",
+          "text": "Intergrax Harness connects graph stores to GraphRAG retrievers."
+        },
+        {
+          "id": "chunk-noise",
+          "text": "Unrelated sports news from yesterday."
+        }
+      ],
+      "graph_edges": [
+        {
+          "source": "ent:project_alpha",
+          "target": "ent:intergrax_harness",
+          "relation": "uses_platform",
+          "chunk_ids": ["chunk-alpha", "chunk-bridge"]
+        }
+      ],
+      "query": "Project Alpha Intergrax",
+      "relevant_ids": ["chunk-alpha", "chunk-bridge"],
+      "k": 3,
+      "min_recall": 0.5
+    },
+    {
+      "name": "agentic_deep_refinement",
+      "scenario": "agentic",
+      "deep_query_min_words": 2,
+      "documents": [
+        {
+          "id": "doc-policy",
+          "text": "Data retention policy requires 90-day log archival for compliance audits."
+        },
+        {
+          "id": "doc-menu",
+          "text": "Cafeteria menu lists soup and salad options."
+        }
+      ],
+      "query": "What is the data retention policy for compliance audit logs?",
+      "relevant_ids": ["doc-policy"],
       "k": 2,
       "min_recall": 1.0
     }

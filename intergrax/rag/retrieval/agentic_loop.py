@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import TYPE_CHECKING, Optional
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -44,6 +45,7 @@ class AgenticRetrievalLoop:
 
         current_query = request.query
         last: Optional[RetrievalResult] = None
+        t0 = time.perf_counter()
 
         for iteration in range(max_iters):
             step = RetrievalRequest(
@@ -67,11 +69,13 @@ class AgenticRetrievalLoop:
             ]
             if len(strong) >= min_chunks:
                 result.trace.agentic_stopped = "sufficient_context"
+                result.trace.agentic_total_latency_ms = (time.perf_counter() - t0) * 1000.0
                 return result
 
             current_query = self._refiner.refine(current_query, result)
 
         if last is not None:
             last.trace.agentic_stopped = "max_iterations"
+            last.trace.agentic_total_latency_ms = (time.perf_counter() - t0) * 1000.0
             return last
         return RetrievalResult(chunks=[], used=False, reason="agentic_no_result")

@@ -17,6 +17,7 @@ The `docs/` folder holds the canonical platform documentation.
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — LLM-facing tools, engine status, unified tool model, planned backlog |
 | [**LLM_ADAPTERS.md**](LLM_ADAPTERS.md) | **LLM adapter catalog** — providers, streaming, tools, env vars, registry |
 | [**LLM_OBSERVABILITY.md**](LLM_OBSERVABILITY.md) | **LLM metrics** — Prometheus scrape, Pushgateway, PromQL, governance signals |
+| [**RAG_OBSERVABILITY.md**](RAG_OBSERVABILITY.md) | **RAG metrics** — recall@k, hybrid/agentic latencies, golden CI gate |
 | **This file** | Navigation and update rules |
 
 ```text

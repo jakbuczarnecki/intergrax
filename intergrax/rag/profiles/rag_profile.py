@@ -77,6 +77,10 @@ class RagProfile:
     graph_rag_enabled: bool = False
     graph_rag_hops: int = 1
     graph_indexer_mode: GraphIndexerMode = "heuristic"
+    graph_store_backend: str = "inmemory"
+
+    # Sparse encoding for native hybrid (Qdrant sparse vectors)
+    sparse_encoder: str = "bm25_hash"
 
     # Weaviate native hybrid (when client configured)
     weaviate_native_hybrid: bool = True
@@ -159,6 +163,10 @@ def rag_profile_from_env() -> RagProfile:
         graph_rag_enabled=_env_bool("INTERGRAX_RAG_GRAPH_ENABLED", False),
         graph_rag_hops=_env_int("INTERGRAX_RAG_GRAPH_HOPS", 1),
         graph_indexer_mode=graph_indexer_mode,
+        graph_store_backend=os.getenv("INTERGRAX_RAG_GRAPH_STORE", "inmemory").strip().lower()
+        or "inmemory",
+        sparse_encoder=os.getenv("INTERGRAX_RAG_SPARSE_ENCODER", "bm25_hash").strip().lower()
+        or "bm25_hash",
         agentic_query_mode=agentic_query_mode,
         weaviate_native_hybrid=_env_bool("INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID", True),
     )

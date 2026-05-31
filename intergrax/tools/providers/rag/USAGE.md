@@ -53,7 +53,10 @@ Env examples:
 | `INTERGRAX_RAG_GRAPH_INDEXER_MODE` | `heuristic` (default), `llm`, `heuristic_then_llm` — requires `llm_adapter` in extras |
 | `INTERGRAX_RAG_AGENTIC_QUERY_MODE` | `deterministic` or `llm` for deep-tier refinement |
 | `INTERGRAX_RAG_QDRANT_SPARSE` | Qdrant native sparse vectors + RRF hybrid query |
+| `INTERGRAX_RAG_SPARSE_ENCODER` | `bm25_hash` (default) or `splade` (requires `fastembed`) |
 | `INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID` | Weaviate `query.hybrid` when client is wired |
+| `INTERGRAX_RAG_GRAPH_STORE` | `inmemory` (default) or `neo4j` for GraphRAG persistence |
+| `INTERGRAX_RAG_METRICS_ENABLED` | Export retrieval latencies, hybrid/agentic stats, recall@k avg |
 
 Pass optional adapters via `ToolWiringContext.extras`:
 

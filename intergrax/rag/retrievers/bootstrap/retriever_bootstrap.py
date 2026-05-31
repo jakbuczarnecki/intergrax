@@ -111,6 +111,7 @@ def create_default_retriever_engine(
     vector_store: BaseVectorstoreManager | None = None,
     embedding_manager: BaseEmbeddingManager | None = None,
     registry: RetrieverRegistry | None = None,
+    graph_store: GraphStore | None = None,
 ) -> RetrieverEngine:
     """
     Create RetrieverEngine with default retriever providers registered.
@@ -126,6 +127,7 @@ def create_default_retriever_engine(
         registry = create_default_retriever_registry(
             vector_store=vector_store,
             embedding_manager=embedding_manager,
+            graph_store=graph_store,
         )
 
     return RetrieverEngine(
@@ -138,6 +140,7 @@ def create_default_retriever_pipeline(
     vector_store: BaseVectorstoreManager | None = None,
     embedding_manager: BaseEmbeddingManager | None = None,
     registry: RetrieverRegistry | None = None,
+    graph_store: GraphStore | None = None,
 ) -> RetrieverPipeline:
     """
     Create RetrieverPipeline using the default retriever engine.
@@ -150,12 +153,14 @@ def create_default_retriever_pipeline(
         registry = create_default_retriever_registry(
             vector_store=vector_store,
             embedding_manager=embedding_manager,
+            graph_store=graph_store,
         )
 
     engine = create_default_retriever_engine(
         vector_store=vector_store,
         embedding_manager=embedding_manager,
         registry=registry,
+        graph_store=graph_store,
     )
 
     return RetrieverPipeline(
@@ -169,6 +174,7 @@ def create_default_retriever_manager(
     vector_store: BaseVectorstoreManager | None = None,
     embedding_manager: BaseEmbeddingManager | None = None,
     registry: RetrieverRegistry | None = None,
+    graph_store: GraphStore | None = None,
 ) -> BaseRetrieverManager:
     """
     Create RetrieverManager using the default retriever pipeline.
@@ -184,6 +190,7 @@ def create_default_retriever_manager(
         vector_store=vector_store,
         embedding_manager=embedding_manager,
         registry=registry,
+        graph_store=graph_store,
     )
 
     return RetrieverManager(
