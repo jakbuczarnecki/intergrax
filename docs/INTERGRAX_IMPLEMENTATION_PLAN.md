@@ -102,7 +102,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Scope | Score | Blocks new agent? | Notes |
 |-------|-------|-------------------|-------|
 | **Harness GA (functional)** | **Done** | **No** | L certified; scaffold + lab + gate |
-| **Harness quality (Phase Q)** | **Open** | **No** (recommended before K scale) | Audit remediation — Appendix C |
+| **Harness quality (Phase Q)** | **In progress** (Waves 1–3) | **No** (recommended before K scale) | See Appendix C — Wave 1–3 landed 2026-06-01 |
 | Canon §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** → target **≥95%** post-Q | No | Q-N, Q-R, Q-X |
 | §42 Unified Execution Runtime | **~92–95%** → target **≥98%** post-Q-N.5–Q-N.6 | No | Optional hooks + trace persist |
 | Laboratory workflow | **~95%** → target **≥98%** post-Q-O | No | RAG metrics bootstrap |
@@ -1251,17 +1251,17 @@ AFTER (canonical):
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
 | Q-N.1 | **Decompose `NexusLoop`** — extract HITL runner, long-running coordinator calls, event publisher, shadow/sandbox cleanup into dedicated modules; `NexusLoop` orchestrates only | **Open** | High | `nexus_loop.py` → `nexus/orchestration/` or `nexus/task_runner/` | `nexus_loop.py` &lt; ~600 lines; behavior unchanged; integration tests green |
-| Q-N.2 | **Fix duplicate `_normalize_human_response`** — single call in `_handle_task_impl` | **Open** | High | `nexus_loop.py` L229–231 | Unit or integration asserts one normalization per resume |
+| Q-N.2 | **Fix duplicate `_normalize_human_response`** — single call in `_handle_task_impl` | **Done** | High | `nexus_loop.py` L229–231 | Duplicate call removed (2026-06-01) |
 | Q-N.3 | **Retry semantics document + facade** — one doc section: `RetryEngine` (graph/validation/alternate agent) vs `RuntimeConfig.max_run_retries` (LLM/tool in `RuntimeEngine`); optional `RetryCoordinator` delegating both | **Open** | High | `nexus/retry/`, `nexus/config.py`, `docs/` or canon §31 pointer | Doc merged; no duplicate retry without trace event |
 | Q-N.4 | **Unify policy injection** — `PolicyEngine` only in public Nexus/UAEP APIs; remove `RuntimePolicyEngine` union from external signatures; `coerce_policy_engine` internal | **Open** | Medium | `nexus_loop.py`, `uaep.py`, factories | Type check / mypy clean on factories; gate green |
 | Q-N.5 | **§42 hook parity — decision / interrupt / retry** — wire `BEFORE/AFTER_DECISION`, `BEFORE/AFTER_INTERRUPT`, `BEFORE/AFTER_RETRY` in NexusLoop + UAEP + `RetryEngine`; update `hooks/parity.py` to **WIRED** or **Won't fix** with canon amendment | **Open** | Medium | `hooks/`, `nexus_loop.py`, `uaep.py`, `retry_engine.py` | `parity.py` no NOT_WIRED for these six OR canon §42.20 amended + tests |
 | Q-N.6 | **§42 hook parity — trace persist** — `BEFORE/AFTER_TRACE_PERSIST` **WIRED** at trace finalize path; `parity.py` → **WIRED** | **Open** | Medium | `hooks/`, `task_trace.py`, trace emitter | Parity test; hook invoked in integration test |
-| Q-N.7 | **Rename Nexus context helpers module** — `runtime_steps/tools.py` → `runtime_steps/tool_context_helpers.py` (or merge into `tools_step.py`); update imports | **Open** | Low | `runtime_steps/tools.py` | No module named `tools.py` under runtime_steps; gate green |
+| Q-N.7 | **Rename Nexus context helpers module** — `runtime_steps/tools.py` → `runtime_steps/tool_context_helpers.py` (or merge into `tools_step.py`); update imports | **Done** | Low | `tool_context_helpers.py` + shim `tools.py` | Backward-compatible re-export (2026-06-01) |
 | Q-N.8 | **Split `RuntimeConfig`** — `ModelRuntimeConfig`, `RetrievalRuntimeConfig`, `ToolsRuntimeConfig`, `PlanningRuntimeConfig`, `TraceRuntimeConfig`; composed `RuntimeConfig`; `validate()` cross-field | **Open** | High | `nexus/config.py` | Backward-compatible properties or migration shim one release; all factories updated |
 | Q-N.9 | **Type `integration_profile`** — `IntegrationProfile` from `intergrax.integrations` on `RuntimeConfig` / wiring contexts | **Open** | Medium | `nexus/config.py`, `engine/runtime_context.py` | No `Optional[object]` for profile in public config |
 | Q-N.10 | **`production_mode` lab default** — `lab_application` / scaffold sets `production_mode=False`; document in Step 4E | **Open** | Low | Tier-3 factories, `AGENT_CREATION_GUIDE.md` | Lab smoke test expects non-production defaults |
 | Q-N.11 | **Graph callback typing** — `ExecutionNode` instead of `object` in `GraphExecutor` / NexusLoop node callbacks | **Open** | Low | `execution/graph_executor.py`, `nexus_loop.py` | Mypy/ruff on execution package |
-| Q-N.12 | **Interrupt handler hygiene** — remove duplicate `InterruptType` import; add unit test for interrupt → policy path | **Open** | Low | `interrupts/handler.py` | Ruff clean; unit test |
+| Q-N.12 | **Interrupt handler hygiene** — remove duplicate `InterruptType` import; add unit test for interrupt → policy path | **Done** | Low | `interrupts/handler.py` | Duplicate import removed (2026-06-01) |
 | Q-N.13 | **`AgentEngine` static UAEP** — document or inject `event_bus` for `AgentEngine.run` static path; no silent missing events | **Open** | Low | `agents/agent_engine.py` | Test: static run emits expected lifecycle events when bus configured |
 | Q-N.14 | **Unit tests for `NexusLoop` helpers** — `_finish_task`, lifecycle transitions, HITL branch stubs (mock deps) | **Open** | High | `tests/unit/runtime/nexus/test_nexus_loop.py` | New file; ≥15 focused tests; marker `gate` |
 | Q-N.15 | **`GraphExecutor` unit coverage** — failure recovery, skip completed, handoff edge (beyond stub integration) | **Open** | Medium | `tests/unit/runtime/execution/` | Complements `test_graph_executor_stub.py` |
@@ -1274,10 +1274,10 @@ AFTER (canonical):
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| Q-L.1 | **Remove or complete `tracked_llm_call`** — if kept: `finally` calls `usage.end_call`; if removed: delete `tracked_call.py` + references | **Open** | Medium | `_shared/tracked_call.py` | Grep shows zero dead imports; gate green |
-| Q-L.2 | **Public API surface** — re-export `LLMAdapter`, `LLMProvider`, `LLMAdapterRegistry`, `LLMProfile` from `llm_adapters/__init__.py` | **Open** | Low | `llm_adapters/__init__.py` | Documented import path in `LLM_ADAPTERS.md` |
+| Q-L.1 | **Remove or complete `tracked_llm_call`** — if kept: `finally` calls `usage.end_call`; if removed: delete `tracked_call.py` + references | **Done** | Medium | `_shared/tracked_call.py` | File removed (unused) (2026-06-01) |
+| Q-L.2 | **Public API surface** — re-export `LLMAdapter`, `LLMProvider`, `LLMAdapterRegistry`, `LLMProfile` from `llm_adapters/__init__.py` | **Done** | Low | `llm_adapters/__init__.py` | Public re-exports (2026-06-01) |
 | Q-L.3 | **Provider catalog table in docs** — 19 rows: slug, adapter class, env vars, tools/stream/structured, native vs compat | **Open** | High | `docs/LLM_ADAPTERS.md` | Table matches `LLMProvider` enum + conformance list |
-| Q-L.4 | **Fix `LLMProfile` docstring** — `max_retries` only via `options={}`; align examples in guide | **Open** | Low | `registry/profile.py`, tests | Doc test or unit asserts forbid extra fields |
+| Q-L.4 | **Fix `LLMProfile` docstring** — `max_retries` only via `options={}`; align examples in guide | **Done** | Low | `registry/profile.py`, tests | Example fixed (2026-06-01) |
 | Q-L.5 | **Per-provider `supports_streaming()` / `supports_structured_output()`** — override defaults (`False` base default for streaming); table in Q-L.3 | **Open** | Medium | Each `providers/*.py`, ABC defaults | Conformance reads flags; no false positives |
 | Q-L.6 | **`PolicyEngine` + `llm_cost_evaluation`** — rule hook on `TASK_COMPLETED` or policy replay; or remove “next step” from docs until done | **Open** | Medium | `governance/`, `observability_bridge.py`, `policy_engine.py` | Test: over-quota/warn triggers policy decision or structured log contract |
 | Q-L.7 | **Usage tracking doc** — distinguish adapter `LLMAdapterUsageLog` vs runtime `LLMUsageTracker` in `LLM_OBSERVABILITY.md` | **Open** | Low | `docs/LLM_OBSERVABILITY.md` | One diagram, two names |
@@ -1294,14 +1294,14 @@ AFTER (canonical):
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| Q-R.1 | **Delete dead code in `ContextBuilder`** — `_build_backend_where`, `_map_hits_to_chunks`, unused `VectorStoreHit` import | **Open** | High | `context_builder.py` | Ruff/vulture clean; gate green |
-| Q-R.2 | **Single retrieval per turn (design)** — ADR in plan: either (A) retrieval only in `RagStep`/`rag.retrieve`, or (B) only in `HistoryStep`; remove duplicate vector calls | **Open** | High | `history_step.py`, `rag_step.py`, `context_builder.py` | Integration test: one `RetrievalService.retrieve` per turn (mock counter) |
-| Q-R.3 | **`ContextBuilder` respects plan `use_rag`** — `_should_use_rag` checks plan/engine `use_rag` when present, not only `enable_rag` | **Open** | High | `context_builder.py` | Test: `enable_rag=True`, `use_rag=False` → no retrieve |
+| Q-R.1 | **Delete dead code in `ContextBuilder`** — `_build_backend_where`, `_map_hits_to_chunks`, unused `VectorStoreHit` import | **Done** | High | `context_builder.py` | Dead helpers removed (2026-06-01) |
+| Q-R.2 | **Single retrieval per turn (design)** — ADR in plan: either (A) retrieval only in `RagStep`/`rag.retrieve`, or (B) only in `HistoryStep`; remove duplicate vector calls | **Done** | High | `history_step.py`, `context_builder.py` | `HistoryStep` uses `perform_retrieval=False` (2026-06-01) |
+| Q-R.3 | **`ContextBuilder` respects plan `use_rag`** — `_should_use_rag` checks plan/engine `use_rag` when present, not only `enable_rag` | **Done** | High | `context_builder.py` | `request.metadata["use_rag"]`; unit test (2026-06-01) |
 | Q-R.4 | **`NoPlannerPipeline` conditional `RagStep`** — include `RagStep` only when plan/tool_ids require RAG | **Open** | High | `no_planner_pipeline.py`, `pipeline_factory.py` | Pipeline test matrix |
-| Q-R.5 | **Prefetch vs final `top_k`** — `RetrievalRequest.prefetch_k` optional; Nexus passes `max_docs_per_query` as `final_k` only; service uses profile `prefetch_top_k` when unset | **Open** | High | `retrieval_service.py`, contracts, `context_builder.py` | Unit: `top_k=5` still prefetches 20 when profile says 20 |
+| Q-R.5 | **Prefetch vs final `top_k`** — `RetrievalRequest.prefetch_k` optional; Nexus passes `max_docs_per_query` as `final_k` only; service uses profile `prefetch_top_k` when unset | **Done** | High | `retrieval_request.py`, `retrieval_service.py` | `test_retrieval_request_prefetch.py` (2026-06-01) |
 | Q-R.6 | **Unify RAG config surface** — map `RuntimeConfig.max_docs_per_query` / threshold → `RagProfile` at factory wire time; deprecate duplicate fields with shim + trace | **Open** | High | `nexus/config.py`, `RetrievalRuntimeConfig`, `rag_profile.py` | One source of truth documented |
 | Q-R.7 | **`RagProfile.extras`** — use for vendor knobs or remove field | **Open** | Low | `rag_profile.py` | No unused field in frozen profile |
-| Q-R.8 | **`INTERGRAX_RAG_METRICS_ENABLED` in `rag_profile_from_env`** or documented exclusion in `RAG_OBSERVABILITY.md` | **Open** | Low | `rag_profile.py`, docs | Consistent env story |
+| Q-R.8 | **`INTERGRAX_RAG_METRICS_ENABLED` in `rag_profile_from_env`** or documented exclusion in `RAG_OBSERVABILITY.md` | **Done** | Low | `rag_profile.py` | `extras.metrics_enabled` from env (2026-06-01) |
 | Q-R.9 | **`rag/answers/` deprecation path** — mark package deprecated; redirect doc to `RetrievalService`; no new imports from Nexus | **Open** | Medium | `rag/answers/`, `chat_agent` removal (Q-X.1) | Grep: zero imports from `runtime/` and `agents/` except tests |
 | Q-R.10 | **`UserProfileManager` LTM via `RetrievalService`** — same metadata scope / `RagProfile` chunking policy | **Open** | Medium | `memory/user_profile_manager.py` | Unit test with fake `RetrievalService` |
 | Q-R.11 | **Naming guide — three “context builders”** — table in `AGENT_CREATION_GUIDE` or `intergrax/rag/README.md`: Nexus `ContextBuilder`, `ContextManager`, `DefaultContextBuilder` | **Open** | Low | Docs | Linked from architecture §28 pointer |
@@ -1327,13 +1327,13 @@ AFTER (canonical):
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| Q-O.1 | **Register RAG observability plugin in default bootstrap** — `register_rag_observability_plugin(plugins)` alongside LLM in `platform_wiring.py` | **Open** | **Critical** | `platform_wiring.py` | Integration: `TASK_COMPLETED` exports RAG metrics when env on |
-| Q-O.2 | **RAG observability bridge tests** — mirror `test_observability_bridge.py` (LLM) | **Open** | High | `tests/unit/rag/tracking/` | In gate or harness-smoke |
+| Q-O.1 | **Register RAG observability plugin in default bootstrap** — `register_rag_observability_plugin(plugins)` alongside LLM in `platform_wiring.py` | **Done** | **Critical** | `platform_wiring.py` | `test_platform_wiring_observability.py` (2026-06-01) |
+| Q-O.2 | **RAG observability bridge tests** — mirror `test_observability_bridge.py` (LLM) | **Done** | High | `tests/unit/rag/tracking/` | `test_rag_observability_bridge.py` (2026-06-01) |
 | Q-O.3 | **Parser trace export strategy** — route `parser_trace_flush` through `ObservabilityBackend` **or** document intentional bypass + single env table | **Open** | Medium | `parser_trace_flush.py`, `parser_trace_exporter.py`, integrations | ADR paragraph in `RAG_OBSERVABILITY.md` or refactor |
 | Q-O.4 | **`metrics/export.py` typed trace summary** — use `DiagnosticPayload` / `trace_models` schema ids instead of substring heuristics | **Open** | Medium | `runtime/metrics/export.py` | Unit test with synthetic trace events |
-| Q-O.5 | **Lint `metrics/export.py`** — remove duplicate `ExecutionMetrics` import | **Open** | Low | `metrics/export.py` | Ruff clean |
+| Q-O.5 | **Lint `metrics/export.py`** — remove duplicate `ExecutionMetrics` import | **Done** | Low | `metrics/export.py` | Ruff clean (2026-06-01) |
 | Q-O.6 | **`export_run_metrics` behavioral field** — populate from governance/replay or remove from DTO | **Open** | Low | `metrics/export.py` | API contract test |
-| Q-O.7 | **Mount LLM metrics routes on lab** — `register_llm_metrics_routes(app)` when `INTERGRAX_LLM_METRICS_ENABLED` | **Open** | Medium | `lab_application/host/factory.py` | HTTP test `GET /metrics/llm` 200 when enabled |
+| Q-O.7 | **Mount LLM metrics routes on lab** — `register_llm_metrics_routes(app)` when `INTERGRAX_LLM_METRICS_ENABLED` | **Done** | Medium | `lab_application/host/factory.py` | Routes registered at factory (2026-06-01) |
 | Q-O.8 | **Observability env profile doc** — one table: trace DB, runtime events DB, LLM/RAG metrics, parser trace, integration observability slug | **Open** | High | New subsection §0 or `infra/README` cross-link | All Tier-3 `.env.example` reference same names |
 | Q-O.9 | **RAG metrics parity decision** — implement log-only parity **or** `register_rag_metrics_routes` + optional Pushgateway; update `RAG_OBSERVABILITY.md` | **Open** | Medium | `rag/tracking/` | Matches documented behavior |
 | Q-O.10 | **Unify phase mapping** — `trace_bridge` delegates phase to `phase_coverage.py`; single source | **Open** | Medium | `events/trace_bridge.py`, `phase_coverage.py` | Unit test: same `ExecutionPhase` for sample events |
@@ -1361,11 +1361,11 @@ AFTER (canonical):
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
 | Q-T.1 | NexusLoop unit suite | **Open** | High | See Q-N.14 | — |
-| Q-T.2 | `test_rag_profile_from_env` | **Open** | Medium | `tests/unit/rag/profiles/` | Gate |
-| Q-T.3 | `test_context_builder_retrieval` | **Open** | High | `tests/unit/runtime/nexus/context/` | Mocks `RetrievalService`; covers Q-R.3 |
+| Q-T.2 | `test_rag_profile_from_env` | **Done** | Medium | `tests/unit/rag/profiles/` | Gate (2026-06-01) |
+| Q-T.3 | `test_context_builder_retrieval` | **Done** | High | `tests/unit/runtime/nexus/context/` | `test_context_builder.py` (2026-06-01) |
 | Q-T.4 | `test_user_profile_manager` | **Open** | Medium | `tests/unit/memory/` | Index + search |
 | Q-T.5 | **Catalog vs legacy RAG path** — integration test one pipeline run, retrieval call count ≤1 | **Open** | High | `tests/integration/runtime/` | Implements Q-R.2 acceptance |
-| Q-T.6 | **Observability wiring E2E** — lab factory bootstraps LLM+RAG plugins | **Open** | High | `tests/integration/runtime/test_platform_wiring_observability.py` | Q-O.1 |
+| Q-T.6 | **Observability wiring E2E** — lab factory bootstraps LLM+RAG plugins | **Done** | High | `tests/integration/runtime/test_platform_wiring_observability.py` | Q-O.1 (2026-06-01) |
 
 ---
 
@@ -2138,6 +2138,11 @@ Decision:       L1 certified — GO Phase K when product priority set
 | Date | Q ID | Summary |
 |------|------|---------|
 | 2026-06-01 | Q-D.3 | §0.1 strategic objective — Harness GA vs Phase K vs Phase Q |
+| 2026-06-01 | Q-O.1,Q-O.2,Q-O.5,Q-O.7 | RAG plugin bootstrap, tests, metrics lint, lab `/metrics/llm` |
+| 2026-06-01 | Q-N.2,Q-N.7,Q-N.12 | Duplicate HITL normalize; tool_context_helpers; interrupt import |
+| 2026-06-01 | Q-R.1–Q-R.5,Q-R.8 | RAG dead code, single retrieval path, use_rag metadata, prefetch_k |
+| 2026-06-01 | Q-L.1,Q-L.2,Q-L.4 | Remove tracked_llm_call; llm_adapters exports; LLMProfile docstring |
+| 2026-06-01 | Q-T.2,Q-T.3,Q-T.6 | New unit/integration tests; gate **399 passed** (+2) |
 | — | — | *(append row per merged PR)* |
 
 **Coverage:** 58 audit rows → 49 unique Q deliverables (some Q IDs satisfy multiple rows). **Target:** 100% **Done** or **Won't fix** before declaring Phase Q complete.

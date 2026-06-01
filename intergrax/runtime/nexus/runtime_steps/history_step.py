@@ -35,6 +35,7 @@ class HistoryStep(RuntimeStep):
                 session=session,
                 request=req,
                 base_history=base_history,
+                perform_retrieval=False,
             )
 
             state.context_builder_result = built

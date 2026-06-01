@@ -77,10 +77,8 @@ class RetrievalService:
         trace.retriever_id = retriever_id
         trace.hybrid_used = retriever_id in ("hybrid", "graph_rag") or self._profile.native_hybrid_enabled
 
-        prefetch_k = int(request.top_k or self._profile.prefetch_top_k)
-        final_k = int(request.top_k or self._profile.final_top_k)
-        if prefetch_k < final_k:
-            prefetch_k = max(final_k, self._profile.prefetch_top_k)
+        final_k = request.resolved_final_k(self._profile.final_top_k)
+        prefetch_k = request.resolved_prefetch_k(self._profile.prefetch_top_k, final_k)
 
         t0 = time.perf_counter()
         candidates = self._retriever_manager.retrieve(

@@ -28,7 +28,11 @@ class LLMProfile(BaseModel):
 
     Example::
 
-        profile = LLMProfile(provider=LLMProvider.GROQ, model="llama-3.3-70b-versatile", max_retries=2)
+        profile = LLMProfile(
+            provider=LLMProvider.GROQ,
+            model="llama-3.3-70b-versatile",
+            options={"max_retries": 2},
+        )
         llm = profile.create_adapter()
     """
 

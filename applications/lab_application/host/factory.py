@@ -10,6 +10,7 @@ from typing import Optional
 from fastapi import FastAPI
 
 from intergrax.debug.app import create_debug_app
+from intergrax.llm_adapters.tracking.exposition import register_llm_metrics_routes
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
 from intergrax.runtime.interactions.router import create_interaction_intake_router
@@ -164,4 +165,5 @@ def create_lab_application(
         async def _stop_long_running_scheduler() -> None:
             await scheduler.stop()
     attach_plugin_shutdown(app, plugin_bootstrap.shutdown_callbacks)
+    register_llm_metrics_routes(app)
     return app

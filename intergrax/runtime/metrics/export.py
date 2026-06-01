@@ -12,7 +12,6 @@ from intergrax.runtime.governance.contracts.metrics_record_dto import RunMetrics
 from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
 from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun
 from intergrax.runtime.replay.metrics import ExecutionMetrics
-from intergrax.runtime.replay.metrics import ExecutionMetrics
 
 
 @dataclass(slots=True)

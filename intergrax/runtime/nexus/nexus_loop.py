@@ -228,7 +228,6 @@ class NexusLoop:
 
         self._normalize_human_response(task)
         await self._maybe_restore_long_running(task)
-        self._normalize_human_response(task)
         if (
             LongRunningCoordinator.is_long_running(task)
             and HumanPauseCoordinator.is_resumed(task)

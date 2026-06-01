@@ -8,7 +8,9 @@ Tier-0 RAG metrics mirror the LLM metrics pattern (`docs/LLM_OBSERVABILITY.md`).
 export INTERGRAX_RAG_METRICS_ENABLED=true
 ```
 
-Register the runtime plugin (lab/product bootstrap):
+**Lab/product bootstrap (default):** `bootstrap_nexus_platform()` in `applications/_shared/platform_wiring.py` registers both LLM and RAG metrics plugins (Phase Q-O.1).
+
+Manual registration:
 
 ```python
 from intergrax.rag.tracking.observability_bridge import register_rag_observability_plugin

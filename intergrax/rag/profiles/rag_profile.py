@@ -169,4 +169,9 @@ def rag_profile_from_env() -> RagProfile:
         or "bm25_hash",
         agentic_query_mode=agentic_query_mode,
         weaviate_native_hybrid=_env_bool("INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID", True),
+        extras={
+            "metrics_enabled": "true"
+            if _env_bool("INTERGRAX_RAG_METRICS_ENABLED", False)
+            else "false",
+        },
     )
