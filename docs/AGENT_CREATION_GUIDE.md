@@ -1000,6 +1000,20 @@ Enable SQLite task memory in Tier-3 via `wire_task_memory` from `intergrax.appli
 
 Use `tool_ids` including `rag.retrieve` instead of legacy plan boolean `use_rag` (shim emits deprecation event).
 
+### Context engineering (Harness AI)
+
+Nexus owns **what the LLM sees** per step (`ContextManager`, `TaskContextAssemblyOptions`, `MemoryView`). See architecture §28.1. Phase **R-Context** adds `ContextBudgetPolicy` (central trim + trace events).
+
+### Integration → Tool → Skill → Agent
+
+| Layer | Declare in agent | Wire in Tier-3 |
+|-------|------------------|----------------|
+| Integration | — | `IntegrationProfile` |
+| Tool | `allowed_tools` | `ToolProfile` |
+| Skill (Phase R) | `skill_ids` on contract | `SkillProfile` |
+
+Do **not** register markdown instruction packs as `ToolContract`. Import external skills via `SkillImporter` (plan Phase R-Skill.8). Canon: §7.1.8.
+
 ---
 
 ## Anti-patterns
@@ -1015,6 +1029,8 @@ Use `tool_ids` including `rag.retrieve` instead of legacy plan boolean `use_rag`
 | Duplicate LLM/trace/queue stacks | Extend Tier-0 platform |
 | Import `integrations/providers/` from `agents/` | Declare `allowed_tools`; wire slugs in Tier-3 `factory.py` |
 | Hardcode Slack/Postgres/Redis in agent steps | `ToolRequest` + application `IntegrationProfile` |
+| Model a business workflow as one giant `ToolContract` | **Skill** pack (tool_ids + prompts) + UAEP steps on agent |
+| Copy prompt + tool lists into every new agent | Reuse `skill_ids` from Skill Library (Phase R) |
 | Tie agent to one product | Reusable capability in `agents/` |
 | Document this workflow in multiple files | Update **this guide only** |
 | Use `getattr` / `setattr` on harness paths (`runtime/nexus/`, `agents/`) | Explicit `Protocol` / typed fields; CI `scripts/check_harness_no_getattr.py` |

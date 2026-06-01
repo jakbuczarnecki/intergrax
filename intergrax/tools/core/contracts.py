@@ -42,7 +42,9 @@ class ToolRetryPolicy:
 @dataclass(frozen=True, slots=True)
 class ToolContract:
     """
-    Formal runtime contract for a tool/skill.
+    Formal runtime contract for an atomic **tool** (LLM/MCP invocable operation).
+
+    Skills (composable capability packs) are defined separately — see architecture §7.1.8.
 
     Enforced by Nexus runtime (registry + validation + trace + error mapping).
     Optional metadata fields (§7.1.6, Phase O.1) default for backward compatibility.

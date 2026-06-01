@@ -57,7 +57,7 @@ new idea
     -> define agent capability
     -> implement agent contract
     -> register agent in Nexus
-    -> connect required adapters/tools
+    -> connect integrations, tools, and (Phase R) skills
     -> run experiment
     -> observe traces, cost, quality and failures
     -> validate or reject hypothesis
@@ -85,6 +85,8 @@ Execution is governed by **§42 Unified Execution Runtime Specification** — ev
 
 Platform work MUST **extend and wire** existing Tier-0 modules — not introduce parallel universal mechanisms (§5.2).
 
+**Capability stack (Tier-0 + Tier-2):** Integration → Tool → **Skill** → Agent (§7.1.6–§7.1.8). Skills are composable packs; tools remain atomic LLM operations.
+
 ---
 
 # 3. What Intergrax Is
@@ -100,6 +102,7 @@ Intergrax IS:
 - a Capability Execution Platform
 - a runtime for testing business and technical agent hypotheses
 - a system for integrating agentic work with real organizational tools
+- a **Skill Library** for reusable capability packs (tools + prompts + policy) above the Tool Library (§7.1.8; implementation Phase R)
 
 Intergrax is designed to answer this question:
 
@@ -445,6 +448,49 @@ The package `intergrax.agent_kit.tiers` exposes `DeploymentTier` enum labels ali
 
 ---
 
+## 5.3 Harness AI Alignment (Conceptual Model)
+
+Intergrax is a **Harness AI environment** (Agent OS). Industry harness literature uses vocabulary that maps to Intergrax as follows.
+
+### 5.3.1 Core mapping
+
+| Harness AI term | Intergrax implementation |
+|-----------------|---------------------------|
+| **Scaffold** | `python -m intergrax.scaffold` (`new-agent`, `new-application`, `new-stack`; `new-skill` — Phase R-Skill.7) |
+| **Harness** | Tier-1 **Nexus** + Tier-0 platform + Tier-3 **Application** wiring (policy, tools, integrations, trace) |
+| **LLM** | Tier-0 `intergrax/llm_adapters/` — invoked per step/plan; not embedded inside Tier-2 agent class |
+| **Agent** | Tier-2 module (`agents/<name>/`) implementing `Agent` + `AgentContract` + UAEP |
+| **Runnable agent instance** | Harness + selected agent + `LLMProfile` + resolved `skill_ids` / `allowed_tools` + `RuntimePolicyBundle` for one run |
+| **Tool** | Tier-0 atomic `ToolContract` — LLM/MCP/FastAPI invocable (§7.1.6) |
+| **Skill** | Tier-0 composable **`SkillManifest`** — tools + prompts + policy fragment (§7.1.8) |
+| **Context engineering** | Tier-1 `ContextManager` + `TaskContextAssemblyOptions` + `MemoryView` + `ContextBudgetPolicy` (§28.1) |
+| **Subagent** | **Graph delegation** — Nexus `ExecutionGraph` child node, not nested OS (§42.14.3) |
+| **Policy** | `PolicyEngine`, `ToolAccessPolicy`, budgets, HITL, org profiles — composed as `RuntimePolicyBundle` (§42.11.4) |
+
+### 5.3.2 Agent composition (not harness + LLM only)
+
+```text
+Harness (Nexus + app wiring)
+    → runs Tier-2 Agent
+        → composes SkillManifest(s)  →  resolves tool_ids, prompts, policy fragments
+        → AgentEngine / UAEP steps
+        → ToolRuntime.invoke(tool_id)  →  Integration adapters
+        → LLM adapters (per step / planner)
+```
+
+Agents MUST NOT call integrations directly. Skills MUST NOT replace `ToolRuntime` or appear as fake `ToolContract` entries.
+
+### 5.3.3 Architectural decision: Skill layer (ADR)
+
+| Option | Description | Verdict |
+|--------|-------------|---------|
+| **1 — Skills = tools** | Encode instructions + multi-tool workflows as oversized tools | **Rejected** — breaks atomic LLM function schema, MCP export, risk/idempotency per operation, and external tool ecosystems |
+| **2 — Skill Library** | Fourth layer: Integration → Tool → **Skill** → Agent | **Adopted** — Phase R in implementation plan; importers for external formats (e.g. Cursor `SKILL.md`) after manifest validation |
+
+Implementation tracker: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase R, Appendix E.
+
+---
+
 # 6. High Level Architecture
 
 Intergrax consists of **four platform tiers** (see §5.1). The diagram below shows Tier-0 through Tier-3.
@@ -514,7 +560,7 @@ User / API (Tier-3)
 
 | Tier | Section | Package / folder |
 |------|---------|------------------|
-| Tier-0 Platform | §7.1 | `intergrax/` + **`intergrax/integrations/`** + **`intergrax/tools/`** catalogs; also rag, memory, queueing, … |
+| Tier-0 Platform | §7.1 | `intergrax/` + **`integrations/`** + **`tools/`** + **`skills/`** (Phase R) catalogs; rag, memory, queueing, … |
 | Tier-1 Nexus | §7.2 | `intergrax/runtime/`, `intergrax/contracts/` |
 | Tier-2 Agents | §7.3 | `agents/<name>/` |
 | Tier-3 Applications | §7.4 | `applications/<name>/` |
@@ -817,19 +863,21 @@ Tier-0 agent-facing capabilities MUST live in a **single, discoverable Tool Libr
 
 **Problem this solves:** Integrations answer *how to talk to a backend* (Jira REST, PostgreSQL, Bing API). LLM agents and MCP clients need *what to call* — semantically named operations with JSON schemas, descriptions, risk metadata, and trace-enforced execution. Agents MUST NOT call integration contracts directly.
 
-**Three-layer model (canonical):**
+**Four-layer capability model (canonical):**
 
 ```text
-Tier-2  Agent / LLM planner     →  selects tool_id + arguments (JSON schema)
-Tier-0  Tool Library            →  business semantics, validation, composition
-Tier-0  Integration Library     →  vendor adapters (IssueTracker, SearchProvider, …)
+Tier-2  Agent                 →  contract, UAEP steps, skill_ids[], domain governance
+Tier-0  Skill Library (R)     →  composable packs: tool_ids + prompts + policy fragment
+Tier-0  Tool Library          →  atomic LLM/MCP operations (JSON schema)
+Tier-0  Integration Library   →  vendor/backend Protocols (swappable at deploy)
 ```
 
 | Layer | Package | Consumer | Example |
 |-------|---------|----------|---------|
 | **Integration** | `intergrax/integrations/` | Tool handlers, Tier-3 wiring, RAG bootstrap | `IssueTracker.search_issues(jql)` |
-| **Tool** | `intergrax/tools/providers/<domain>/` | Agents, ToolsAgent, MCP, UAEP `ToolRequest` | `jira.search_tasks(project, status, assignee)` |
-| **Agent** | `agents/<name>/` | Nexus routing | `allowed_tools=["jira.search_tasks"]` |
+| **Tool** | `intergrax/tools/providers/<domain>/` | LLM tool-calling, MCP, UAEP `ToolRequest` | `jira.search_tasks(project, status, assignee)` |
+| **Skill** | `intergrax/skills/providers/<domain>/` (Phase R) | Agent composition, importers | `legal.contract_review` → tools + prompts |
+| **Agent** | `agents/<name>/` | Nexus routing | `skill_ids=["legal.contract_review"]` |
 
 **Target layout:**
 
@@ -884,7 +932,7 @@ intergrax/tools/
 | **LLM providers** | `intergrax/llm_adapters/` | Not tools — separate registry (§5.2.2) |
 | **Agent business logic** | `agents/<name>/` | Domain steps; may *call* tools, not define platform catalog entries |
 | **Orchestration / planning** | Tier-1 Nexus | Selects tools; does not implement tool handlers |
-| **Cursor-style skill files** | N/A | Markdown instruction packs are not Tier-0 tools unless wrapped as callable `ToolContract` |
+| **Cursor-style skill files** | `intergrax/skills/importers/` (Phase R) | Import via **`SkillImporter`** → validated `SkillManifest`; MUST NOT register as `ToolContract` |
 
 **Dual export (agent + MCP):**
 
@@ -941,6 +989,94 @@ Agent / planner
 - Adding new `use_*` booleans to plan models for platform capabilities.
 - Agent code branching on `use_rag` instead of invoking `rag.retrieve` or listing it in `allowed_tools`.
 - Direct `RagStep` / `WebsearchStep` invocation from Tier-2 agents (must use `ToolRequest`).
+
+### 7.1.8 Skill Library — Composable Capability Packs
+
+**Status:** Architecture **defined**; implementation **Phase R** ([`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) R-Skill.*).  
+**Catalog (when shipped):** [`SKILLS.md`](SKILLS.md) (R-Skill.6).
+
+#### Problem
+
+- **Integrations** answer *how to connect* (Postgres, Bing, Jira).
+- **Tools** answer *what single operation the LLM may invoke* (`rag.retrieve`, `websearch.query`).
+- **Agents** today often duplicate the same bundle of tool allow-lists, prompt instructions, and policy snippets — that bundle is a **skill** in harness terminology, not a tool.
+
+#### What a skill is
+
+A **skill** is a **versioned, declarative capability pack** that groups:
+
+| Field | Purpose |
+|-------|---------|
+| `skill_id`, `version` | Stable reference (`legal.contract_review@1.0.0`) |
+| `description` | Human + planner readable purpose |
+| `tool_ids` | Subset of catalog tools required for the goal |
+| `prompt_instruction_ids` | References into Prompt Registry (not raw prompt blobs in runtime) |
+| `policy_fragment_id` | Optional link to tool/memory/HITL fragment |
+| `risk_tier`, `tags` | Governance and discovery |
+
+Skills are **not** invoked by the LLM as functions. The runtime **resolves** skills at agent registration or run start into:
+
+- merged `allowed_tools` (intersected with agent contract and `ToolAccessPolicy`),
+- prompt packs for `ContextManager`,
+- optional policy fragments for `RuntimePolicyBundle`.
+
+#### What a skill is not
+
+| Anti-pattern | Why forbidden |
+|--------------|---------------|
+| Skill as `ToolContract` | Breaks atomic tool schema, MCP export, per-tool risk/retry/trace |
+| Skill as full Tier-2 agent | Too coarse; prevents composition of multiple skills per agent |
+| Unvalidated markdown dropped into prompt | No governance, no tool allow-list, not reproducible |
+| Skill calling integrations directly | Must use tools (same rule as agents) |
+
+#### Skill vs tool — decision rule
+
+| Question | Answer → layer |
+|----------|----------------|
+| Does the LLM choose it in a tool-call turn? | **Tool** |
+| Is it swapping Redis for Memcached at deploy? | **Integration** |
+| Is it a reusable pack of tools + instructions for a business goal? | **Skill** |
+| Is it domain orchestration with UAEP steps and contract? | **Agent** |
+
+#### External skill compatibility
+
+External ecosystems (e.g. Cursor `SKILL.md`, internal markdown packs) MAY be attached **only** through:
+
+```text
+External file  →  SkillImporter.validate()  →  SkillManifest  →  SkillRegistry
+```
+
+Rejected imports MUST emit `SKILL_IMPORT_FAILED` (trace) and MUST NOT partially attach tool access.
+
+#### Target layout
+
+```text
+intergrax/skills/
+├── core/           # SkillManifest, SkillContract, SkillProvider
+├── registry/       # SkillCatalog, SkillProfile, bootstrap
+├── importers/      # cursor_skill_md, …
+└── providers/
+    └── <domain>/   # manifest + USAGE.md
+```
+
+#### Agent composition
+
+```text
+AgentContract:
+    skill_ids: list[str]           # optional; resolved at register/run
+    allowed_tools: list[str]       # explicit extras OR superseded by skill union per policy
+```
+
+Resolution order (canonical):
+
+1. Start from agent `allowed_tools` and contract defaults.
+2. Union `tool_ids` from resolved `skill_ids` (validate each exists in `ToolRegistry`).
+3. Apply `ToolAccessPolicy` and Tier-3 `ToolProfile` (intersection).
+4. Attach prompt packs and policy fragments from skills to `RuntimePolicyBundle` / context build.
+
+#### Relationship to Tier-2 pipelines
+
+UAEP `get_steps` / domain pipelines remain **agent-local orchestration**. A skill MAY include an optional **`step_template_id`** (future) for shared step sequences — it does NOT execute steps itself; `AgentEngine` does.
 
 ---
 
@@ -2217,6 +2353,28 @@ Rules:
 - separate evidence from interpretation
 - preserve provenance
 
+## 28.1 Context Engineering (Harness Terminology)
+
+**Context engineering** is the deliberate design of what enters each LLM call: bounded memory reads, summary tiers, evidence vs interpretation, and provenance. In Intergrax this is implemented by Tier-1 — not by ad-hoc prompt concatenation in Tier-2 agents.
+
+### Mechanisms
+
+| Mechanism | Module | Role |
+|-----------|--------|------|
+| Per-agent context assembly | `ContextManager.build_agent_context()` | Applies `TaskContextAssemblyOptions` |
+| Summary tiers | `FULL` / `SUMMARY_ONLY` / `STRUCTURED_ONLY` / `MINIMAL` | Limits prior task noise |
+| Memory stores | Session, user LTM, task KV, shared handoff | See §27; access via `MemoryView` only |
+| Context injection tools | `rag.retrieve`, `websearch.query` (`injects_context: true`) | Evidence into prompt via tool path |
+| **Context budget** (Phase R) | `ContextBudgetPolicy` | Central `max_chars` / trim with `CONTEXT_TRIMMED` events |
+
+### Rules
+
+- Agents MUST NOT assemble unbounded chat history for LLM calls.
+- Every trim or tier downgrade MUST be traceable (provenance in `AgentContextBundle`).
+- Task context, user memory, and tool-retrieved evidence MUST remain logically separated in the bundle.
+
+Agent workflow reference: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) Appendix G.
+
 ---
 
 # 29. Validation Model
@@ -3333,6 +3491,28 @@ evaluate(AgentDecision(COMPLETE), context):
         )
 ```
 
+### 42.11.4 RuntimePolicyBundle (Operator View)
+
+Multiple policy mechanisms exist today (`PolicyEngine`, `ToolAccessPolicy`, `BudgetPolicy`, plan-loop policy, org/legal fragments). For operators and Tier-3 wiring, treat them as one composed object per application run:
+
+```text
+RuntimePolicyBundle:
+    tool_access: ToolAccessPolicy | ToolScopePolicy
+    memory_write: MemoryWritePolicy defaults
+    budget: BudgetPolicy | null
+    hitl: HumanApprovalPolicy | null
+    plan_loop: PlanLoopPolicy | null
+    domain_fragments: dict[str, object]   # e.g. legal_failure_policy_id
+```
+
+**Composition rules:**
+
+- Tier-3 application factory builds the bundle once at startup (Phase R-Policy).
+- Nexus and UAEP read from the bundle — agents MUST NOT construct parallel policy objects.
+- Skill `policy_fragment_id` (§7.1.8) merges into `domain_fragments` or tool policy — never bypasses `ToolRuntime`.
+
+Implementation: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase R-Policy.
+
 ---
 
 ## 42.12 ToolRuntime Enforcement Rules
@@ -3460,6 +3640,29 @@ Canonical placement: `TaskExecutionOptions.context` (§23 typed task contract).
 Legacy flat metadata keys remain supported via `task_metadata_bridge` for JSON/API serialization only.
 
 Handoff payloads in shared context use keys prefixed with `handoff:` (see §42.15).
+
+### 42.14.3 Graph Delegation (Subagent Equivalent)
+
+Harness literature describes **subagents** as autonomous units with their own rules, model, and memory. Intergrax implements the **same outcome** through Tier-1 orchestration — not nested harness instances.
+
+| Harness subagent | Intergrax delegation |
+|------------------|----------------------|
+| Spawn child with own context | `ExecutionGraph` node with `DelegationSpec` |
+| Isolated memory | `MemoryView` namespace `task_id/delegation/{node_id}/` |
+| Bounded parent context | `TaskContextAssemblyOptions` override on child node |
+| Traceability | `parent_run_id`, `parent_node_id` on child metadata |
+
+**Forbidden:** Tier-2 agent spawning another agent by direct import or private API. **Required:** Nexus schedules child node after parent decision or plan edge.
+
+Implementation: Phase R-Delegate in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+
+```text
+DelegationSpec:
+    child_agent_id: str
+    isolated_memory_namespace: str
+    context_assembly: TaskContextAssemblyOptions | null
+    inherit_tool_policy: bool              # default true — intersect with child contract
+```
 
 ---
 

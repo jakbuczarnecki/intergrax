@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-01, Phase Q+ Harness Hardening — post-audit contracts & legacy removal)  
+Status: Working draft (2026-06-01, Phase Q+ + **Phase R** Harness AI alignment — skills, context, delegation, policy)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
 Navigation: [`README.md`](README.md)  
@@ -33,6 +33,9 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Harness quality audit (2026-06-01) → Phase Q tracker | **This file** Phase Q + **Appendix C** |
 | Post-audit hardening (typing, legacy, monoliths) | **This file** Phase Q+ + **Appendix D** |
 | Harness GA / consolidation (no new OS features) | **This file** Phase Q / Q+ |
+| Harness AI alignment audit (2026-06-01) → Phase R | **This file** Phase R + **Appendix E** |
+| Skill / Tool / Integration layering (canon) | Architecture §5.3, §7.1.6–§7.1.8 |
+| Skill catalog (when shipped) | `SKILLS.md` (Phase R-Skill.6) |
 
 ---
 
@@ -57,6 +60,10 @@ Current optimization targets:
 
 **Harness hardening (Phase Q+):** Mandatory follow-up from **technical debt audit** (2026-06-01) — explicit Protocols (no runtime `getattr`), legacy stack removal (`tools_agent`, `supervisor`, `chains`), Nexus intake/planning decomposition, observability parity, monolith splits. **Execute before scaling Phase K business agents** unless product explicitly overrides a K item.
 
+**Harness AI alignment (Phase R):** Follow-up from **Harness AI philosophy audit** (2026-06-01) — formal **Skill Library** (Option 2 adopted), context-engineering API, graph-native delegation (subagent equivalent), unified policy bundle narrative. **Starts after Q+ Waves 1–3**; **blocks Phase K scale** until R-Skill MVP + R-Context.1 are **Done** (see Appendix E).
+
+**Skill layer decision (ADR R.0.1):** **Do not** collapse skills into tools. Tools remain **atomic LLM-invokable operations**; skills are **composable capability packs** (tools + prompts + policy + metadata) with **import adapters** for external skill formats (e.g. Cursor `SKILL.md`). See architecture §7.1.8.
+
 ### 0.6 When Tier-1 (Nexus) changes are required
 
 **Default (Tier-2 agent):** register + `AgentContract` + UAEP steps — **no** edits to `intergrax/runtime/`.
@@ -71,6 +78,10 @@ Current optimization targets:
 | New platform concern (new store, queue, notification channel) | **Tier-0** — `intergrax/` shared module |
 | Agent-specific product wiring (routes, env, which agents active) | **Tier-3** — `applications/<product>/` |
 | One agent needs special-case branch in `NexusLoop` | **Anti-pattern** — refactor to contract/metadata or Tier-0 |
+| Reusable workflow pack (tools + instructions + policy) for many agents | **Tier-0 Skill** — `intergrax/skills/` + `SkillManifest`; agent composes `skill_ids` |
+| Import external skill pack (Cursor, internal markdown) | **Tier-0** — `SkillImporter` adapter; MUST validate against `SkillManifest` |
+| Context budget / trim policy for all agents | **Tier-1** — `ContextBudgetPolicy` in `ContextManager` (Phase R-Context) |
+| Delegated child run (subagent semantics) | **Tier-1** — `ExecutionGraph` delegation node + isolated memory namespace (Phase R-Delegate) |
 
 If the answer to “will another agent need this?” is **no**, it does not belong in Nexus.
 
@@ -107,6 +118,11 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Harness GA (functional)** | **Done** | **No** | L certified; scaffold + lab + gate |
 | **Harness quality (Phase Q)** | **Done** (Wave 9) | **No** | Appendix C — gate **417 passed** (2026-06-01) |
 | **Harness hardening (Phase Q+)** | **Open** (Waves 1–2 partial — Wave 3 next) | **Yes** (recommended) | Appendix D — typing, legacy, monoliths |
+| **Harness AI alignment (Phase R)** | **Open** | **Yes** (K scale) | Appendix E — skills, context, delegate, policy |
+| Skill Library (Tier-0) | **Not started** | **Yes** (reuse / external skills) | Phase R-Skill |
+| Context engineering API | **Partial** (canon §28) | Partial | Phase R-Context |
+| Graph delegation (subagent model) | **Partial** (handoff §42.15) | No until R-Delegate | Phase R-Delegate |
+| RuntimePolicyBundle narrative | **Partial** | No | Phase R-Policy |
 | Canon §1–41 (tiers, Nexus, graph, repo split) | **~92%** → target **≥98%** post-Q+ | No | Q+-N, Q+-L, Q+-T |
 | §42 Unified Execution Runtime | **~95%** → target **≥99%** post-Q+-T | No | UAEP Protocol, no duck typing |
 | Laboratory workflow | **~96%** → target **≥99%** post-Q+-O | No | Metrics parity, planner observability |
@@ -134,6 +150,8 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 
 **Success metric:** time from idea to first running experiment **< 1 hour**.
+
+**Capability model:** Integration → Tool → **Skill** → Agent (Harness AI alignment). Skills are implemented in **Phase R** — see §0, Phase R, Appendix E, architecture §7.1.8.
 
 
 
@@ -176,6 +194,10 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | §12–16 Contracts / Registry | AgentContract, capabilities | **Done** | `intergrax/contracts/`, `runtime/registry/` |
 
 | §22 ToolRuntime | Policy gateway | **Done** | `tool_runtime.py`, `ToolAccessPolicy` |
+
+| §7.1.8 Skill Library | Composable capability packs, importers | **Open** | Phase R-Skill — `intergrax/skills/` |
+
+| §5.3 Harness AI alignment | Scaffold, skill/tool split, context, delegation | **Partial** | Canon done; code Phase R |
 
 | §23 Task lifecycle | States + trace + typed contract | **Done** | `task/`, `task_contract.py`, `TaskContextAssemblyOptions`, `task_metadata_bridge.py` |
 
@@ -1581,13 +1603,147 @@ Parallel anytime:         Q+-T.6, Q+-T.7, Q+-T.8, Q+-M.2
 
 ---
 
+### Phase R — Harness AI Alignment (post-audit 2026-06-01)
+
+**Source:** Harness AI philosophy audit (scaffold, harness, LLM, tool vs skill, context engineering, subagents, policy) — traceability in **Appendix E**.  
+**Prerequisite:** Phase **Q+ Waves 1–3 Done** (same gate as K scale).  
+**Goal:** Intergrax vocabulary and Tier-0 modules align with industry harness terminology **without** breaking Integration → Tool → Agent stack; add **Skill Library** for reuse and external compatibility.  
+**Principle:** evolve, not rewrite · skills **compose** tools (never replace `ToolRuntime`) · one R.* ID per PR · gate green.
+
+**Out of scope for Phase R:**
+
+- Nested full harness per child (Cursor 1:1 subagent OS) — use graph delegation first (R-Delegate)
+- Auto-discovery of skills from filesystem without validation
+- Mandatory migration of all Tier-2 agents to skills in one release
+
+**Phase R complete when:** Appendix E 100% **Done** or **Won't fix**; R-Skill.1–R-Skill.5 + R-Context.1 + R-Delegate.1–R-Delegate.3 + R-Policy.1 **Done**; §0.5 Phase R row **Done**; gate unchanged or increased.
+
+---
+
+#### R.0 — Canon, ADR, terminology (do first)
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| R.0.1 | **ADR: Skill layer Option 2** — reject “skills = tools only”; document four-layer model | **Done** | **Critical** | Architecture §7.1.8, §5.3 | Option 1 listed as rejected with rationale |
+| R.0.2 | **Canon sections** — §5.3 Harness mapping, §7.1.8 Skills, §28.1 Context engineering, §42.14.3 Delegation, §42.11.4 Policy bundle | **Done** | **Critical** | `intergrax_runtime_architecture.md` | Cross-linked from plan §0 |
+| R.0.3 | **Remove tool/skill conflation** in code docstrings | **Done** | High | `tools/core/contracts.py` | `ToolContract` describes **tool** only |
+| R.0.4 | **README navigation** — Phase R, skills layer in root + docs README | **Done** | Medium | `/README.md`, `docs/README.md` | GitHub landing + docs index mention skills |
+
+**Delivery rule:** Same as §6.1 — one R.* ID → PR → update Appendix E status → gate.
+
+---
+
+#### R-Skill — Skill Library (Tier-0)
+
+**Problem:** Integrations and tools are production-grade; **skills are not**. Agents duplicate prompts, tool allow-lists, and policy fragments. External harness ecosystems (Cursor skills, internal markdown packs) cannot plug in without a **validated manifest**.
+
+**Target layout:**
+
+```text
+intergrax/skills/
+├── core/                   # SkillContract, SkillManifest, SkillProvider protocol
+├── registry/               # SkillCatalog, SkillProfile, register_default_skills()
+├── importers/              # cursor_skill_md.py, … (validate → SkillManifest)
+├── _shared/
+└── providers/
+    └── <domain>/           # e.g. legal/, research/
+        ├── manifest.py     # SkillManifest instance(s)
+        ├── prompts.yaml    # or Prompt Registry refs
+        └── USAGE.md
+```
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| R-Skill.1 | **`SkillManifest` + `SkillContract`** — frozen manifest: `skill_id`, `version`, `description`, `tool_ids`, `prompt_instruction_ids`, `policy_fragment_id`, `risk_tier`, `tags` | **Open** | **Critical** | `intergrax/skills/core/contracts.py` | Pydantic/jsonschema round-trip test |
+| R-Skill.2 | **`SkillRegistry` + `SkillProfile` + `SkillCatalog`** — mirror Tool registry pattern | **Open** | **Critical** | `intergrax/skills/registry/` | `build_registry_from_profile()` |
+| R-Skill.3 | **`SkillResolver`** — given `skill_ids`, produce resolved `allowed_tools` ∪, prompt pack refs, policy fragments; **no LLM execution** in resolver | **Open** | **Critical** | `intergrax/skills/skill_resolver.py` | Unit: two skills merge tool lists with conflict rules |
+| R-Skill.4 | **Tier-3 wiring** — `SkillWiringContext`, enable skills in application factory alongside `ToolProfile` | **Open** | High | `applications/_shared/`, lab factory | Lab smoke resolves skills |
+| R-Skill.5 | **`AgentContract.skill_ids`** + validation against registry at register time | **Open** | High | `intergrax/contracts/`, `AgentRegistry` | Unknown skill_id → register error |
+| R-Skill.6 | **`docs/SKILLS.md`** — catalog, layering diagram, import rules | **Open** | Medium | `docs/SKILLS.md`, `docs/README.md` index row | Approved index entry |
+| R-Skill.7 | **Scaffold `new-skill`** | **Open** | Medium | `intergrax/scaffold/new_skill.py` | `python -m intergrax.scaffold new-skill <id>` |
+| R-Skill.8 | **`CursorSkillImporter`** — parse `SKILL.md` + frontmatter → `SkillManifest` (best-effort; reject on schema fail) | **Open** | High | `intergrax/skills/importers/cursor_skill_md.py` | Fixture test with sample SKILL.md |
+| R-Skill.9 | **Pilot skill pack** — `legal.contract_review` (tool_ids + prompt refs + policy fragment) | **Open** | High | `intergrax/skills/providers/legal/` | Legal agent lists `skill_ids`; gate test |
+| R-Skill.10 | **Nexus trace events** — `SKILL_RESOLVED`, `SKILL_IMPORT_FAILED` | **Open** | Low | `runtime/events/` | Visible in lab trace |
+
+**Skill vs tool enforcement:**
+
+| Rule | Enforcement |
+|------|-------------|
+| Skill MUST NOT be a `ToolContract` | CI: no `ToolHandler` named `skill.*` without ADR |
+| Skill MAY reference only registered `tool_id`s | `SkillResolver` validates against `ToolRegistry` |
+| LLM tool-calling surface = **tools only** | Skills expand allow-list before run, not at invoke time |
+| External skill without manifest validation | **Rejected** at import — no silent attach |
+
+---
+
+#### R-Context — Context engineering (Tier-1)
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| R-Context.1 | **`ContextBudgetPolicy`** — `max_chars`, `max_tokens_estimate`, `summary_tier` defaults; applied in `ContextManager.build_agent_context()` | **Open** | **Critical** | `runtime/nexus/context/` | Test: over-budget input trimmed with provenance |
+| R-Context.2 | **Trace events** — `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` with before/after sizes | **Open** | High | `RuntimeEventType`, context manager | Gate test |
+| R-Context.3 | **AGENT_CREATION_GUIDE** — “Context engineering” subsection links canon §28.1 | **Done** | Medium | `AGENT_CREATION_GUIDE.md` Appendix G | No duplicate truth |
+| R-Context.4 | **Finish unified tool path** — residual `use_rag` / `RagStep` callers → `rag.retrieve` | **Open** | High | Nexus pipelines, legal plan | Grep: zero new `use_rag` in agents |
+
+---
+
+#### R-Delegate — Graph-native delegation (subagent equivalent)
+
+Intergrax does **not** implement Cursor-style nested harness in Phase R. **Delegation** = Nexus graph node with isolated memory namespace and bounded context assembly.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| R-Delegate.1 | **`DelegationSpec` on `ExecutionNode`** — `child_agent_id`, `isolated_memory_namespace`, `context_assembly_override` | **Open** | High | `execution/graph_models.py`, canon §42.14.3 | Schema + validation |
+| R-Delegate.2 | **Memory namespace isolation** — child reads/writes under `task_id/delegation/{node_id}/` via `MemoryView` | **Open** | High | `MemoryView`, UAEP | Unit test |
+| R-Delegate.3 | **Trace linkage** — `parent_run_id`, `parent_node_id` on child run metadata | **Open** | Medium | trace + runtime events | Lab trace shows parent→child |
+| R-Delegate.4 | **Integration tests** — two-agent graph with delegation node | **Open** | Medium | `tests/integration/runtime/` | Gate or integration marker |
+
+---
+
+#### R-Policy — Unified policy bundle (Tier-1 + Tier-3)
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| R-Policy.1 | **`RuntimePolicyBundle`** — aggregates tool, memory, budget, HITL, plan-loop; optional `domain_fragments: dict[str, Any]` | **Open** | High | `runtime/policy/policy_bundle.py` | Frozen dataclass; documented fields |
+| R-Policy.2 | **Tier-3 composition** — lab/product factories build bundle once per app | **Open** | High | `applications/_shared/`, scaffold | Single object passed to Nexus bootstrap |
+| R-Policy.3 | **Canon §42.11.1** — “how to read policy for a run” operator section | **Open** | Medium | Architecture canon | Links existing engines |
+
+---
+
+#### Phase R — Definition of done
+
+1. R row **Done** with date in Appendix E paydown log.
+2. **Gate:** `uv run pytest -m gate -q` green.
+3. **Skills:** at least one first-party skill pack + one importer test (R-Skill.8 or Won't fix with reason).
+4. **No** new `ToolContract` entries that represent multi-step business workflows without ADR.
+5. Update Appendix E status.
+
+---
+
+#### Phase R — Recommended execution order
+
+```text
+Wave R0 (canon):           R.0.1 → R.0.2 → R.0.3 → R.0.4
+Wave R1 (skill core):      R-Skill.1 → R-Skill.2 → R-Skill.3 → R-Skill.5 → R-Skill.4
+Wave R2 (skill ecosystem): R-Skill.8 → R-Skill.7 → R-Skill.9 → R-Skill.6 → R-Skill.10
+Wave R3 (context):         R-Context.1 → R-Context.2 → R-Context.4 → R-Context.3
+Wave R4 (delegate):        R-Delegate.1 → R-Delegate.2 → R-Delegate.3 → R-Delegate.4
+Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
+```
+
+**Gate before Phase K.1/K.2 scale:** Q+ Waves 1–3 **and** R-Skill.1–R-Skill.5 **and** R-Context.1 **Done**.
+
+---
+
 ## 4. Priority Order
 
 
 
 ```text
 
-NOW:     Phase Q+ — Harness Hardening (post-audit 2026-06-01) — Waves 1–3 before K scale
+NOW:     Phase Q+ — Harness Hardening — Waves 1–3 (gate before R + K scale)
+
+NEXT:    Phase R — Harness AI alignment (skills, context, delegation, policy) — Appendix E
 
 DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9; gate 417
 
@@ -1597,15 +1753,15 @@ DONE:    Phase K hardening K.3–K.5; Appendix B paydown (except B.15)
 
 PARALLEL: M.6 additional provider slugs (on demand)
 
-AFTER Q+ Waves 1–3: Phase K.1/K.2 (Problem Radar / Vendor Discovery) — product decision
+AFTER Q+ Waves 1–3 + R-Skill core + R-Context.1: Phase K.1/K.2 — product decision
 
 DEFERRED: K.6 / B.15 Legal live LLM E2E (product/CI)
 
-RULE:    Tier-1 via §0.6; Q+ approved for Protocol/decomposition/legacy removal
+RULE:    Tier-1 via §0.6; Q+ = typing/legacy; R = Skill Library + context/delegate/policy
 
 ```
 
-**Rationale:** Phase Q removes audit findings (RAG double-fetch, RAG metrics bootstrap gap, Nexus monolith, config drift, dead code, doc drift) so Phase K agents inherit a **single semantic path** for RAG, retry, observability, and memory — not a second platform build.
+**Rationale:** Phase Q removes technical-debt audit findings. Phase R closes the **Harness AI philosophy gap** (skills as first-class composable packs, context budget API, graph delegation, policy bundle). Phase K agents should inherit **four layers** (integration → tool → skill → agent), not duplicate instruction packs per agent.
 
 
 
@@ -2379,5 +2535,50 @@ Execute in order; one PR per ID where possible.
 
 ---
 
-*Plan synced (2026-06-01). **Phase Q Done** (Appendix C). **Phase Q+ Open** (Appendix D, Waves 1–2 partial). Gate: **410 passed**. **Next:** Q+ Wave 3 (Q+-N.4–N.5, Q+-O.3–O.4), Wave 4 (Q+-P.*). Phase K after Q+ Waves 1–3.*
+---
+
+## Appendix E — Harness AI alignment traceability (Phase R)
+
+**Source:** Harness AI philosophy audit (2026-06-01) — scaffold, harness+LLM=agent, tool vs skill, context engineering, subagents, policy.  
+**Goal:** Step-by-step implementation readiness; every audit theme maps to Phase R deliverables.  
+**Status values:** `Open` | `Done` | `Won't fix` | `Deferred`
+
+### E.1 Audit theme → Phase R mapping
+
+| Audit theme | Intergrax today | Gap | Phase R IDs | Status |
+|-------------|-----------------|-----|-------------|--------|
+| Scaffold | `intergrax/scaffold` | No `new-skill` | R-Skill.7, R.0.4 | Open |
+| Harness = Nexus + platform + app wiring | Tier-1 + Tier-0 + Tier-3 | Terminology not in glossary | R.0.2 §5.3 | Done |
+| LLM separate from agent module | `llm_adapters` | “Runnable instance” undefined | R.0.2 §5.3 | Done |
+| Tool = atomic operation | `ToolContract`, `ToolRuntime` | Doc said “tool/skill” | R.0.3, R.0.1 | Done |
+| Skill = goal-oriented pack | **Missing** | No registry, no import | R-Skill.1–R-Skill.10 | Open |
+| Option 1: skills = tools | — | **Rejected** — breaks LLM/MCP atomic model | R.0.1 ADR | Done |
+| Option 2: Skill Library | — | **Adopted** | R-Skill.* | Open |
+| Context engineering | §27–28, `MemoryView`, `TaskContextAssemblyOptions` | No central budget API | R-Context.* | Open |
+| Subagents | `GraphExecutor`, handoff §42.15 | No isolated child namespace | R-Delegate.* | Open |
+| Policy | Multiple engines | No single bundle narrative | R-Policy.* | Open |
+| External skill compatibility | — | No importer | R-Skill.8 | Open |
+
+### E.2 Four-layer capability model (canonical)
+
+```text
+Integration  →  vendor/backend Protocol (Postgres, Bing, Jira REST)
+Tool         →  atomic LLM/MCP operation (rag.retrieve, jira.search_tasks)
+Skill        →  composable pack: tool_ids + prompts + policy fragment + metadata
+Agent        →  domain module: contract, UAEP steps, skill_ids[], local governance
+Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy enforcement)
+```
+
+### E.3 Phase R paydown log
+
+| Date | R ID | Summary |
+|------|------|---------|
+| 2026-06-01 | R.0.1,R.0.2,R.0.3,R.0.4 | ADR Option 2; canon §5.3, §7.1.8, §28.1, §42.11.4, §42.14.3; ToolContract docstring; plan Appendix E |
+| — | — | *(append row per merged PR)* |
+
+**Coverage target:** 100% **Done** or **Won't fix** before declaring Phase R complete and scaling Phase K.
+
+---
+
+*Plan synced (2026-06-01). **Phase Q Done** (Appendix C). **Phase Q+ Open** (Appendix D). **Phase R Open** (Appendix E). Gate: **410 passed**. **Next:** Q+ Wave 3 → R Wave R0/R1 (canon + Skill core). Phase K after Q+ Waves 1–3 + R-Skill.1–5 + R-Context.1.*
 

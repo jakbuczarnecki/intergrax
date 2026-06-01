@@ -31,10 +31,13 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 
 ---
 
-## Three-layer stack
+## Four-layer stack
 
 ```text
-Tier-2  Agent (allowed_tools, ToolRequest)
+Tier-2  Agent (skill_ids, allowed_tools, ToolRequest)
+        │
+        ▼
+Tier-0  Skill Library (Phase R) — composable packs: tool_ids + prompts + policy
         │
         ▼
 Tier-0  Tool Library (rag.retrieve, jira.search_tasks, …)
@@ -42,6 +45,8 @@ Tier-0  Tool Library (rag.retrieve, jira.search_tasks, …)
         ▼
 Tier-0  Integration Library (IssueTracker, SearchProvider, VectorStore, …)
 ```
+
+Skills are **not** tools — see architecture §7.1.8 and implementation plan Phase R. Catalog: `SKILLS.md` (when R-Skill.6 ships).
 
 **Agents declare tool_ids.** **Applications enable tools** via `ToolProfile` and inject integrations via `ToolWiringContext`. **Integrations** remain vendor-swappable without agent changes.
 
