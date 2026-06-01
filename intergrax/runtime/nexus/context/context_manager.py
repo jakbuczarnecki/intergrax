@@ -37,6 +37,11 @@ from intergrax.runtime.nexus.context.shared_task_context import (
     save_shared_task_context,
 )
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionNode
+from intergrax.runtime.nexus.context.context_budget import (
+    ContextBudgetPolicy,
+    ContextTrimResult,
+    trim_message_to_budget,
+)
 from intergrax.runtime.task.task import Task
 
 
@@ -67,9 +72,13 @@ class ContextManager:
         *,
         max_prior_chars: int = 4000,
         default_policy: Optional[TaskContextAssemblyOptions] = None,
+        budget_policy: Optional[ContextBudgetPolicy] = None,
     ) -> None:
         self._default_policy = default_policy or TaskContextAssemblyOptions(
             max_prior_chars=max_prior_chars,
+        )
+        self._budget_policy = budget_policy or ContextBudgetPolicy(
+            max_chars=max(max_prior_chars, 4000),
         )
 
     def get_shared_context(self, task: Task) -> Optional[SharedTaskContext]:
@@ -132,9 +141,27 @@ class ContextManager:
             shared_reads=shared_reads,
             policy=resolved_policy,
         )
+        trim: ContextTrimResult = trim_message_to_budget(message, self._budget_policy)
+
+        bundle_metadata = {
+            "node_id": node.node_id,
+            "capability": node.capability,
+            "depends_on": list(node.depends_on),
+            "shared_context_version": shared.version,
+            "summary_tier": resolved_policy.summary_tier.value,
+            "shared_read_keys": sorted(shared_reads.keys()),
+            "context_trimmed": trim.trimmed,
+            "context_original_chars": trim.original_chars,
+            "context_final_chars": trim.final_chars,
+        }
+        if node.delegation is not None:
+            bundle_metadata["delegation_memory_namespace"] = node.delegation.resolved_memory_namespace(
+                task_id=task.task_id,
+                node_id=node.node_id,
+            )
 
         return AgentContextBundle(
-            message=message,
+            message=trim.message,
             prior_outputs=structured,
             evidence=evidence,
             shared_context=shared,
@@ -142,14 +169,7 @@ class ContextManager:
             prior_records=records,
             provenance=provenance,
             summary_tier=resolved_policy.summary_tier,
-            metadata={
-                "node_id": node.node_id,
-                "capability": node.capability,
-                "depends_on": list(node.depends_on),
-                "shared_context_version": shared.version,
-                "summary_tier": resolved_policy.summary_tier.value,
-                "shared_read_keys": sorted(shared_reads.keys()),
-            },
+            metadata=bundle_metadata,
         )
 
     def apply_to_task(self, task: Task, bundle: AgentContextBundle) -> Task:

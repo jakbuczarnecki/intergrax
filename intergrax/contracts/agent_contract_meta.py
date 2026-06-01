@@ -35,6 +35,10 @@ class AgentContract(BaseModel):
     input_schema: Optional[Dict[str, Any]] = None
     output_schema: Optional[Dict[str, Any]] = None
     allowed_tools: List[str] = Field(default_factory=list)
+    skill_ids: List[str] = Field(
+        default_factory=list,
+        description="Composable skill packs (§7.1.8); resolved into allowed_tools at registration",
+    )
     required_adapters: List[str] = Field(default_factory=list)
     execution_mode: AgentExecutionMode = AgentExecutionMode.ASYNC
     max_steps: Optional[int] = None

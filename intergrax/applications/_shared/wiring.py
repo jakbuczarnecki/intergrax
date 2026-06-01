@@ -23,6 +23,8 @@ from intergrax.applications.contracts.errors import (
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.skills.registry.bootstrap import register_default_skills
+from intergrax.skills.registry.factory import build_registry_from_profile
 
 BuilderMap = Union[
     Mapping[type[Agent], AgentFactory],
@@ -193,12 +195,22 @@ def build_application_registry(
     if require_enabled:
         manifest.require_enabled_agents()
 
+    skill_registry = ctx.skill_registry
+    if skill_registry is None and ctx.skill_profile is not None:
+        register_default_skills()
+        skill_registry = build_registry_from_profile(ctx.skill_profile)
+
     registry = AgentRegistry()
     for binding in manifest.agents:
         if not binding.enabled:
             continue
         agent = build_agent_from_binding(binding, ctx, builders=builders)
-        registry.register(agent, contract=contract_for_binding(agent, binding))
+        registry.register(
+            agent,
+            contract=contract_for_binding(agent, binding),
+            skill_registry=skill_registry,
+            tool_registry=ctx.tool_registry,
+        )
 
     return registry
 

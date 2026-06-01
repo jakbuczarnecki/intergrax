@@ -46,7 +46,7 @@ Tier-0  Tool Library (rag.retrieve, jira.search_tasks, …)
 Tier-0  Integration Library (IssueTracker, SearchProvider, VectorStore, …)
 ```
 
-Skills are **not** tools — see architecture §7.1.8 and implementation plan Phase R. Catalog: `SKILLS.md` (when R-Skill.6 ships).
+Skills are **not** tools — see architecture §7.1.8. Catalog: [SKILLS.md](SKILLS.md).
 
 **Agents declare tool_ids.** **Applications enable tools** via `ToolProfile` and inject integrations via `ToolWiringContext`. **Integrations** remain vendor-swappable without agent changes.
 

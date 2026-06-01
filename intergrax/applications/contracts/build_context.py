@@ -9,7 +9,10 @@ from dataclasses import dataclass
 from typing import Any
 
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.skills.registry.profile import SkillProfile
+from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.tools.registry.profile import ToolProfile
+from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
@@ -28,6 +31,9 @@ class ApplicationBuildContext:
     integration_profile: IntegrationProfile | None = None
     tool_profile: ToolProfile | None = None
     tool_wiring_context: ToolWiringContext | None = None
+    skill_profile: SkillProfile | None = None
+    skill_registry: SkillRegistry | None = None
+    tool_registry: ToolRegistry | None = None
 
     @classmethod
     def for_manifest(
@@ -37,6 +43,9 @@ class ApplicationBuildContext:
         settings: Any = None,
         tool_profile: ToolProfile | None = None,
         tool_wiring_context: ToolWiringContext | None = None,
+        skill_profile: SkillProfile | None = None,
+        skill_registry: SkillRegistry | None = None,
+        tool_registry: ToolRegistry | None = None,
     ) -> ApplicationBuildContext:
         profile = getattr(manifest, "integration_profile", None)
         return cls(
@@ -45,4 +54,7 @@ class ApplicationBuildContext:
             integration_profile=profile,
             tool_profile=tool_profile,
             tool_wiring_context=tool_wiring_context,
+            skill_profile=skill_profile,
+            skill_registry=skill_registry,
+            tool_registry=tool_registry,
         )

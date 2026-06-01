@@ -32,7 +32,7 @@ All platform documentation lives in [`docs/`](docs/). Canonical docs — one sou
 | [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **Integration Library** — catalog of all **99** wired providers; each at `providers/<category>/<slug>/USAGE.md` |
 | [TOOLS.md](docs/TOOLS.md) | **Tool Library** — atomic LLM/MCP operations (RAG, web search, Jira, sandbox, …) |
 | [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) | **LLM adapters** — OpenAI, Claude, Gemini, Ollama, Azure, Mistral, Bedrock |
-| Architecture §7.1.8 | **Skill Library** (Phase R) — composable packs: tools + prompts + policy; external importers |
+| [SKILLS.md](docs/SKILLS.md) | **Skill Library** — composable packs: tools + prompts + policy; external importers |
 | [intergrax/tools/USAGE.md](intergrax/tools/USAGE.md) | Wire catalog tools in applications and agents (quick start) |
 | [intergrax/applications/USAGE.md](intergrax/applications/USAGE.md) | Tier-3 composition engine: manifest, typed bindings, registry |
 | [applications/USAGE.md](applications/USAGE.md) | Application layout: env, Docker, host, run |
@@ -343,7 +343,7 @@ AgentContract(
 )
 ```
 
-**Architecture:** [§5.3](docs/intergrax_runtime_architecture.md), [§7.1.8](docs/intergrax_runtime_architecture.md) · **implementation:** [Phase R](docs/INTERGRAX_IMPLEMENTATION_PLAN.md), [Appendix E](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-e--harness-ai-alignment-traceability-phase-r)
+**Catalog:** [SKILLS.md](docs/SKILLS.md) · **architecture:** [§7.1.8](docs/intergrax_runtime_architecture.md) · **implementation:** [Phase R](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
 
 ---
 

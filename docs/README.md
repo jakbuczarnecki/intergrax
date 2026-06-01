@@ -15,7 +15,7 @@ The `docs/` folder holds the canonical platform documentation.
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — all implemented providers, contracts, wiring, usage links |
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — atomic LLM/MCP tools, engine status, four-layer stack |
-| Architecture [**§7.1.8**](intergrax_runtime_architecture.md) | **Skill Library** — composable packs (Phase R); catalog `SKILLS.md` when R-Skill.6 ships |
+| [**SKILLS.md**](SKILLS.md) | **Skill Library** — composable capability packs, registry, importers |
 | [**../README.md**](../README.md) | **GitHub landing** — tiers, Integration/Tool/Skill/Agent stack, links to canon and plan |
 | [**LLM_ADAPTERS.md**](LLM_ADAPTERS.md) | **LLM adapter catalog** — providers, streaming, tools, env vars, Prometheus/governance |
 | [**../infra/README.md**](../infra/README.md) | **Local Docker infra** — compose profiles, `manage.sh` |

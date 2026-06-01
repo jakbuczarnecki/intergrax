@@ -35,7 +35,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Harness GA / consolidation (no new OS features) | **This file** Phase Q / Q+ |
 | Harness AI alignment audit (2026-06-01) → Phase R | **This file** Phase R + **Appendix E** |
 | Skill / Tool / Integration layering (canon) | Architecture §5.3, §7.1.6–§7.1.8 |
-| Skill catalog (when shipped) | `SKILLS.md` (Phase R-Skill.6) |
+| Skill catalog | `SKILLS.md` |
 
 ---
 
@@ -119,10 +119,10 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Harness quality (Phase Q)** | **Done** (Wave 9) | **No** | Appendix C — gate **417 passed** (2026-06-01) |
 | **Harness hardening (Phase Q+)** | **Open** (Waves 1–2 partial — Wave 3 next) | **Yes** (recommended) | Appendix D — typing, legacy, monoliths |
 | **Harness AI alignment (Phase R)** | **Open** | **Yes** (K scale) | Appendix E — skills, context, delegate, policy |
-| Skill Library (Tier-0) | **Not started** | **Yes** (reuse / external skills) | Phase R-Skill |
-| Context engineering API | **Partial** (canon §28) | Partial | Phase R-Context |
-| Graph delegation (subagent model) | **Partial** (handoff §42.15) | No until R-Delegate | Phase R-Delegate |
-| RuntimePolicyBundle narrative | **Partial** | No | Phase R-Policy |
+| Skill Library (Tier-0) | **MVP Done** | **No** (extend catalog) | R-Skill.1–9; R-Skill.10 open |
+| Context engineering API | **Partial** (budget in ContextManager) | No | R-Context.1 Done; R-Context.2 open |
+| Graph delegation (subagent model) | **Partial** (`DelegationSpec` on nodes) | No | R-Delegate.2–4 open |
+| RuntimePolicyBundle narrative | **Done** (dataclass) | No | R-Policy.1; Tier-3 wire R-Policy.2 open |
 | Canon §1–41 (tiers, Nexus, graph, repo split) | **~92%** → target **≥98%** post-Q+ | No | Q+-N, Q+-L, Q+-T |
 | §42 Unified Execution Runtime | **~95%** → target **≥99%** post-Q+-T | No | UAEP Protocol, no duck typing |
 | Laboratory workflow | **~96%** → target **≥99%** post-Q+-O | No | Metrics parity, planner observability |
@@ -195,7 +195,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §22 ToolRuntime | Policy gateway | **Done** | `tool_runtime.py`, `ToolAccessPolicy` |
 
-| §7.1.8 Skill Library | Composable capability packs, importers | **Open** | Phase R-Skill — `intergrax/skills/` |
+| §7.1.8 Skill Library | Composable capability packs, importers | **MVP Done** | `intergrax/skills/` · `docs/SKILLS.md` |
 
 | §5.3 Harness AI alignment | Scaffold, skill/tool split, context, delegation | **Partial** | Canon done; code Phase R |
 
@@ -1654,16 +1654,16 @@ intergrax/skills/
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| R-Skill.1 | **`SkillManifest` + `SkillContract`** — frozen manifest: `skill_id`, `version`, `description`, `tool_ids`, `prompt_instruction_ids`, `policy_fragment_id`, `risk_tier`, `tags` | **Open** | **Critical** | `intergrax/skills/core/contracts.py` | Pydantic/jsonschema round-trip test |
-| R-Skill.2 | **`SkillRegistry` + `SkillProfile` + `SkillCatalog`** — mirror Tool registry pattern | **Open** | **Critical** | `intergrax/skills/registry/` | `build_registry_from_profile()` |
-| R-Skill.3 | **`SkillResolver`** — given `skill_ids`, produce resolved `allowed_tools` ∪, prompt pack refs, policy fragments; **no LLM execution** in resolver | **Open** | **Critical** | `intergrax/skills/skill_resolver.py` | Unit: two skills merge tool lists with conflict rules |
-| R-Skill.4 | **Tier-3 wiring** — `SkillWiringContext`, enable skills in application factory alongside `ToolProfile` | **Open** | High | `applications/_shared/`, lab factory | Lab smoke resolves skills |
-| R-Skill.5 | **`AgentContract.skill_ids`** + validation against registry at register time | **Open** | High | `intergrax/contracts/`, `AgentRegistry` | Unknown skill_id → register error |
-| R-Skill.6 | **`docs/SKILLS.md`** — catalog, layering diagram, import rules | **Open** | Medium | `docs/SKILLS.md`, `docs/README.md` index row | Approved index entry |
-| R-Skill.7 | **Scaffold `new-skill`** | **Open** | Medium | `intergrax/scaffold/new_skill.py` | `python -m intergrax.scaffold new-skill <id>` |
-| R-Skill.8 | **`CursorSkillImporter`** — parse `SKILL.md` + frontmatter → `SkillManifest` (best-effort; reject on schema fail) | **Open** | High | `intergrax/skills/importers/cursor_skill_md.py` | Fixture test with sample SKILL.md |
-| R-Skill.9 | **Pilot skill pack** — `legal.contract_review` (tool_ids + prompt refs + policy fragment) | **Open** | High | `intergrax/skills/providers/legal/` | Legal agent lists `skill_ids`; gate test |
-| R-Skill.10 | **Nexus trace events** — `SKILL_RESOLVED`, `SKILL_IMPORT_FAILED` | **Open** | Low | `runtime/events/` | Visible in lab trace |
+| R-Skill.1 | **`SkillManifest` + `SkillContract`** — frozen manifest: `skill_id`, `version`, `description`, `tool_ids`, `prompt_instruction_ids`, `policy_fragment_id`, `risk_tier`, `tags` | **Done** | **Critical** | `intergrax/skills/core/contracts.py` | Pydantic/jsonschema round-trip test |
+| R-Skill.2 | **`SkillRegistry` + `SkillProfile` + `SkillCatalog`** — mirror Tool registry pattern | **Done** | **Critical** | `intergrax/skills/registry/` | `build_registry_from_profile()` |
+| R-Skill.3 | **`SkillResolver`** — given `skill_ids`, produce resolved `allowed_tools` ∪, prompt pack refs, policy fragments; **no LLM execution** in resolver | **Done** | **Critical** | `intergrax/skills/resolver.py` | Unit: two skills merge tool lists with conflict rules |
+| R-Skill.4 | **Tier-3 wiring** — skill profile in `ApplicationBuildContext`, `skill_wiring.py`, legal host | **Done** | High | `applications/_shared/skill_wiring.py` | Legal registry resolves skills |
+| R-Skill.5 | **`AgentContract.skill_ids`** + validation against registry at register time | **Done** | High | `intergrax/contracts/`, `AgentRegistry` | Unknown skill_id → register error |
+| R-Skill.6 | **`docs/SKILLS.md`** — catalog, layering diagram, import rules | **Done** | Medium | `docs/SKILLS.md`, `docs/README.md` index row | Approved index entry |
+| R-Skill.7 | **Scaffold `new-skill`** | **Done** | Medium | `intergrax/scaffold/new_skill.py` | `python -m intergrax.scaffold new-skill <id>` |
+| R-Skill.8 | **`CursorSkillImporter`** — parse `SKILL.md` + frontmatter → `SkillManifest` (best-effort; reject on schema fail) | **Done** | High | `intergrax/skills/importers/cursor_skill_md.py` | Fixture test with sample SKILL.md |
+| R-Skill.9 | **Pilot skill pack** — `legal.contract_review` (tool_ids + prompt refs + policy fragment) | **Done** | High | `intergrax/skills/providers/legal/` | Legal agent lists `skill_ids`; gate green |
+| R-Skill.10 | **Nexus trace events** — `SKILL_RESOLVED`, `SKILL_IMPORT_FAILED` | **Open** | Low | `runtime/events/` | Types added; emitters pending |
 
 **Skill vs tool enforcement:**
 
@@ -1680,8 +1680,8 @@ intergrax/skills/
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| R-Context.1 | **`ContextBudgetPolicy`** — `max_chars`, `max_tokens_estimate`, `summary_tier` defaults; applied in `ContextManager.build_agent_context()` | **Open** | **Critical** | `runtime/nexus/context/` | Test: over-budget input trimmed with provenance |
-| R-Context.2 | **Trace events** — `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` with before/after sizes | **Open** | High | `RuntimeEventType`, context manager | Gate test |
+| R-Context.1 | **`ContextBudgetPolicy`** — `max_chars`, `max_tokens_estimate`, `summary_tier` defaults; applied in `ContextManager.build_agent_context()` | **Done** | **Critical** | `runtime/nexus/context/context_budget.py` | Test: over-budget input trimmed |
+| R-Context.2 | **Trace events** — `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` with before/after sizes | **Open** | High | `RuntimeEventType`, context manager | Types + phase map Done; emitters pending |
 | R-Context.3 | **AGENT_CREATION_GUIDE** — “Context engineering” subsection links canon §28.1 | **Done** | Medium | `AGENT_CREATION_GUIDE.md` Appendix G | No duplicate truth |
 | R-Context.4 | **Finish unified tool path** — residual `use_rag` / `RagStep` callers → `rag.retrieve` | **Open** | High | Nexus pipelines, legal plan | Grep: zero new `use_rag` in agents |
 
@@ -1693,7 +1693,7 @@ Intergrax does **not** implement Cursor-style nested harness in Phase R. **Deleg
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| R-Delegate.1 | **`DelegationSpec` on `ExecutionNode`** — `child_agent_id`, `isolated_memory_namespace`, `context_assembly_override` | **Open** | High | `execution/graph_models.py`, canon §42.14.3 | Schema + validation |
+| R-Delegate.1 | **`DelegationSpec` on `ExecutionNode`** — `child_agent_id`, `isolated_memory_namespace`, `context_assembly_override` | **Done** | High | `contracts/delegation.py`, `execution_graph.py` | Schema + validation |
 | R-Delegate.2 | **Memory namespace isolation** — child reads/writes under `task_id/delegation/{node_id}/` via `MemoryView` | **Open** | High | `MemoryView`, UAEP | Unit test |
 | R-Delegate.3 | **Trace linkage** — `parent_run_id`, `parent_node_id` on child run metadata | **Open** | Medium | trace + runtime events | Lab trace shows parent→child |
 | R-Delegate.4 | **Integration tests** — two-agent graph with delegation node | **Open** | Medium | `tests/integration/runtime/` | Gate or integration marker |
@@ -1704,7 +1704,7 @@ Intergrax does **not** implement Cursor-style nested harness in Phase R. **Deleg
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| R-Policy.1 | **`RuntimePolicyBundle`** — aggregates tool, memory, budget, HITL, plan-loop; optional `domain_fragments: dict[str, Any]` | **Open** | High | `runtime/policy/policy_bundle.py` | Frozen dataclass; documented fields |
+| R-Policy.1 | **`RuntimePolicyBundle`** — aggregates tool, memory, budget, HITL, plan-loop; optional `domain_fragments: dict[str, Any]` | **Done** | High | `runtime/policy/policy_bundle.py` | Import via `policy_bundle` module (not `policy.__init__`) |
 | R-Policy.2 | **Tier-3 composition** — lab/product factories build bundle once per app | **Open** | High | `applications/_shared/`, scaffold | Single object passed to Nexus bootstrap |
 | R-Policy.3 | **Canon §42.11.1** — “how to read policy for a run” operator section | **Open** | Medium | Architecture canon | Links existing engines |
 
@@ -2574,11 +2574,12 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Date | R ID | Summary |
 |------|------|---------|
 | 2026-06-01 | R.0.1,R.0.2,R.0.3,R.0.4 | ADR Option 2; canon §5.3, §7.1.8, §28.1, §42.11.4, §42.14.3; ToolContract docstring; plan Appendix E |
+| 2026-06-01 | R-Skill.1–R-Skill.9,R-Context.1,R-Delegate.1,R-Policy.1 | Skill Library MVP, legal pilot, ContextBudget, DelegationSpec, gate **422 passed** |
 | — | — | *(append row per merged PR)* |
 
 **Coverage target:** 100% **Done** or **Won't fix** before declaring Phase R complete and scaling Phase K.
 
 ---
 
-*Plan synced (2026-06-01). **Phase Q Done** (Appendix C). **Phase Q+ Open** (Appendix D). **Phase R Open** (Appendix E). Gate: **410 passed**. **Next:** Q+ Wave 3 → R Wave R0/R1 (canon + Skill core). Phase K after Q+ Waves 1–3 + R-Skill.1–5 + R-Context.1.*
+*Plan synced (2026-06-01). **Phase Q Done**. **Phase Q+ Open** (Appendix D). **Phase R MVP Done** (R-Skill core, legal pilot, context budget, delegation spec). Gate: **422 passed**. **Next:** Q+ Wave 3, R-Skill.10/R-Context.2 emitters, R-Delegate.2–4, R-Policy.2.*
 
