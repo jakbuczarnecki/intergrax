@@ -39,7 +39,7 @@ from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.tracing.tools.tools_summary import ToolsSummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import DEFAULT_REDACTED_TEXT, TraceLevel
 from intergrax.tools.registry import ToolRegistry
-from intergrax.tools.tools_agent import ToolsAgent
+from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
 
 from testing_support.builder import require_ollama_reachable
 
@@ -62,7 +62,10 @@ async def test_legal_agent_completes_when_tools_step_planner_raises(
     tenant_id = "legal-tools-step-failure"
     llm_adapter = LLMAdapterRegistry.create(LLMProvider.OLLAMA)
     session_manager = SessionManager(storage=InMemorySessionStorage())
-    tools_agent = ToolsAgent(llm=llm_adapter, tools=ToolRegistry())
+    tool_planner = CatalogToolPlanner.from_registry(
+        llm=llm_adapter,
+        registry=ToolRegistry(),
+    )
 
     embedding_manager = EmbeddingManager(
         pipeline=create_default_embedding_pipeline(provider_id="ollama"),
@@ -77,7 +80,7 @@ async def test_legal_agent_completes_when_tools_step_planner_raises(
         embedding_manager=embedding_manager,
         vectorstore_manager=vectorstore_manager,
         use_legal_tool_decision=True,
-        tools_agent=tools_agent,
+        tool_planner=tool_planner,
         tools_mode="auto",
         tool_providers=[],
         use_llm_legal_route_planner=False,
@@ -113,7 +116,7 @@ async def test_legal_agent_completes_when_tools_step_planner_raises(
             side_effect=_decide_then_force_tools,
         ),
         patch.object(
-            ToolsAgent,
+            CatalogToolPlanner,
             "plan_tools",
             side_effect=RuntimeError(_FORCED_TOOLS_ERROR),
         ),

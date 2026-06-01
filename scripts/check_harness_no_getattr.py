@@ -22,7 +22,6 @@ GRANDFATHER: frozenset[str] = frozenset(
         "intergrax/runtime/nexus/ingestion/ingestion_service.py",
         "intergrax/runtime/nexus/tracing/parser_trace_flush.py",
         "intergrax/runtime/nexus/runtime_steps/tool_context_helpers.py",
-        "intergrax/runtime/metrics/export.py",
     }
 )
 

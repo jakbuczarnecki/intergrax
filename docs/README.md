@@ -63,9 +63,9 @@ LLM adapters + metrics   →  LLM_ADAPTERS.md
 | Phase M / M-LLM / M-RAG / N / O | **Done** (beta where noted) |
 | **Phase K — business agents** | **After Q+ Waves 1–3** (product decision) |
 
-**Start implementation:** Plan § Phase Q+ → Wave 2: `Q+-L.2` … `Q+-L.3`, then Wave 3 observability (`Q+-O.1`)
+**Start implementation:** Plan § Phase Q+ → Wave 3: `Q+-N.4`–`N.5`, `Q+-O.3`–`O.4`, then Wave 4 monolith splits
 
-Gate: `uv run pytest -m gate -q` — **406 passed** (2026-06-01, Wave 1 partial)
+Gate: `uv run pytest -m gate -q` — **410 passed** (2026-06-01, Waves 1–2 partial)
 
 ---
 

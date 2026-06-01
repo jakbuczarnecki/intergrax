@@ -15,6 +15,7 @@ from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.nexus.retry.retry_types import RetryDecision, RetryRecord
 
 ExecuteFn = Callable[[Agent], Awaitable[AgentExecutionResult]]
 
@@ -23,21 +24,6 @@ ExecuteFn = Callable[[Agent], Awaitable[AgentExecutionResult]]
 class RetryPolicy:
     max_retries: int = 1
     retry_alternate_agent: bool = True
-
-
-@dataclass
-class RetryRecord:
-    attempt: int
-    agent_id: str
-    reason: str
-    alternate_agent_id: Optional[str] = None
-
-
-@dataclass
-class RetryDecision:
-    should_retry: bool
-    reason: str = ""
-    alternate_agent_id: Optional[str] = None
 
 
 class RetryEngine:

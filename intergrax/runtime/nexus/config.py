@@ -40,7 +40,7 @@ from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.provider import ToolProvider
 from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
-from intergrax.tools.tools_agent import ToolsAgent
+from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
@@ -145,7 +145,7 @@ class RuntimeConfig:
     #   - merging tool results into the final answer.
     #
     # If None, tools cannot be used regardless of tools_mode.
-    tools_agent: Optional[ToolsAgent] = None
+    tool_planner: Optional[ToolPlannerProtocol] = None
 
     # High-level policy defining whether tools may or must be used:
     #   - "off": do not use tools at all.
@@ -306,7 +306,7 @@ class RuntimeConfig:
             websearch_executor=self.websearch_executor,
             websearch_config=self.websearch_config,
             enable_websearch=self.enable_websearch,
-            tools_agent=self.tools_agent,
+            tool_planner=self.tool_planner,
             tools_mode=self.tools_mode,
             tools_context_scope=self.tools_context_scope,
             tool_invoker=self.tool_invoker,

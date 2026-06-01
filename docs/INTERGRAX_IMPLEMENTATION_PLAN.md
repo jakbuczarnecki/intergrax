@@ -106,7 +106,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 |-------|-------|-------------------|-------|
 | **Harness GA (functional)** | **Done** | **No** | L certified; scaffold + lab + gate |
 | **Harness quality (Phase Q)** | **Done** (Wave 9) | **No** | Appendix C — gate **417 passed** (2026-06-01) |
-| **Harness hardening (Phase Q+)** | **Open** (Wave 1 partial — Wave 2 next) | **Yes** (recommended) | Appendix D — typing, legacy, monoliths |
+| **Harness hardening (Phase Q+)** | **Open** (Waves 1–2 partial — Wave 3 next) | **Yes** (recommended) | Appendix D — typing, legacy, monoliths |
 | Canon §1–41 (tiers, Nexus, graph, repo split) | **~92%** → target **≥98%** post-Q+ | No | Q+-N, Q+-L, Q+-T |
 | §42 Unified Execution Runtime | **~95%** → target **≥99%** post-Q+-T | No | UAEP Protocol, no duck typing |
 | Laboratory workflow | **~96%** → target **≥99%** post-Q+-O | No | Metrics parity, planner observability |
@@ -1470,7 +1470,7 @@ Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-
 |---|-------------|--------|----------|----------|------------|
 | Q+-N.1 | **`NexusIntakeRunner`** — resume/long-running preamble + HITL verdict branches extracted from `nexus_loop` | **Done** | High | `orchestration/intake_runner.py` | `nexus_loop` delegates; behavior unchanged |
 | Q+-N.2 | **`NexusPlanningRunner`** — classify → plan → pre-graph HITL; hooks + runtime events | **Done** | High | `orchestration/planning_runner.py` | `nexus_loop` slimmed; graph phase unchanged |
-| Q+-N.3 | **`RetryCoordinator`** (optional facade) — delegate `RetryEngine` + `RuntimeConfig.max_run_retries` with `RETRY_SCHEDULED` events | **Open** | Medium | `nexus/retry/coordinator.py`, architecture §31.1 | Doc + unit test; no double-retry without trace |
+| Q+-N.3 | **`RetryCoordinator`** (optional facade) — delegate `RetryEngine` + `RuntimeConfig.max_run_retries` with `RETRY_SCHEDULED` events | **Done** | Medium | `nexus/retry/coordinator.py`, architecture §31.1 | Graph emits `RETRY_SCHEDULED`; run retries use coordinator |
 | Q+-N.4 | **`GraphExecutor` integration tests** — handoff edge, validation retry + alternate agent | **Open** | Medium | `tests/integration/runtime/` | Complements Q-N.15 checkpoint unit tests |
 | Q+-N.5 | **Planner failure observability** — `engine_planner` errors → `RuntimeEventType.PLAN_FAILED` (narrow exceptions) | **Open** | Medium | `planning/engine_planner.py`, events | Test with invalid LLM JSON |
 
@@ -1482,8 +1482,8 @@ Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| Q+-O.1 | **`export_run_metrics` typed-only** — remove getattr/substring fallbacks; require `DiagnosticPayload` / schema ids | **Open** | High | `runtime/metrics/export.py` | Unit test synthetic trace; no getattr |
-| Q+-O.2 | **Wire `harness_production_mode()`** in lab + scaffold factories | **Partial** | Medium | `scaffold/new_agent.py`; lab agents TBD | Scaffold uses `harness_production_mode()`; wire Tier-2 lab agents |
+| Q+-O.1 | **`export_run_metrics` typed-only** — remove getattr/substring fallbacks; require `DiagnosticPayload` / schema ids | **Done** | High | `runtime/metrics/export.py` | `TraceEvent` / `SerializedTraceEvent` only |
+| Q+-O.2 | **Wire `harness_production_mode()`** in lab + scaffold factories | **Done** | Medium | `scaffold/new_agent.py`, Tier-2 lab agents | Lab/scaffold agents use `harness_production_mode()` |
 | Q+-O.3 | **RAG metrics HTTP decision** — implement `register_rag_metrics_routes` **or** document Won't fix + unified `/metrics` scrape | **Open** | Medium | `rag/tracking/exposition.py`, architecture §7.1.2 | Operator doc updated |
 | Q+-O.4 | **Ingestion path events** — consistent `RuntimeEvent` on ingest failures | **Open** | Low | `ingestion/ingestion_service.py` | At least one gate test |
 
@@ -1496,8 +1496,8 @@ Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
 | Q+-L.1 | **`tools_agent` deprecation enforcement** — extend `check_*_imports`; zero new production imports outside `agents/legal` migration | **Done** | **Critical** | `scripts/check_tools_agent_imports.py` | CI fails on new imports |
-| Q+-L.2 | **Legal agent → catalog `ToolRuntime`** — remove runtime dependency on `ToolsAgent` / `ToolsStep` planner loop | **Open** | **Critical** | `agents/legal/`, `runtime/nexus/config.py` | Legal gate tests green without `ToolsAgent` |
-| Q+-L.3 | **`RuntimeConfig` default tools** — no default `ToolsAgent` in `config` / `config_sections` | **Open** | High | `nexus/config.py`, `config_sections.py` | Catalog tools + `ToolRuntime` only |
+| Q+-L.2 | **Legal agent → catalog `ToolRuntime`** — remove runtime dependency on `ToolsAgent` / `ToolsStep` planner loop | **Done** | **Critical** | `agents/legal/`, `catalog_tool_planner.py` | Legal uses `CatalogToolPlanner` + `tool_planner` |
+| Q+-L.3 | **`RuntimeConfig` default tools** — no default `ToolsAgent` in `config` / `config_sections` | **Done** | High | `nexus/config.py`, `config_sections.py` | `tool_planner: ToolPlannerProtocol` only |
 | Q+-L.4 | **`supervisor` boundary** — move to `experiments/supervisor` or hard-deprecate with import guard | **Open** | Medium | `intergrax/supervisor/` | Not imported from `runtime/` or `applications/` |
 | Q+-L.5 | **`chains/langchain_qa_chain`** — experimental only or remove from default paths | **Open** | Medium | `intergrax/chains/` | Grep: no runtime/agent imports |
 | Q+-L.6 | **`rag/answers` e2e** — migrate `tests/e2e/rag` to `RetrievalService`; package import guard | **Open** | Medium | `rag/answers/`, e2e tests | E2E green without answers bootstrap |
@@ -2339,16 +2339,16 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Audit theme | Priority | Q+ IDs | Status |
 |-------------|----------|--------|--------|
-| Duplicate Tier-0 (`tools_agent`, supervisor, chains, rag/answers, openai/rag) | P0–P2 | Q+-L.1–Q+-L.7 | Partial (L.1 Done) |
+| Duplicate Tier-0 (`tools_agent`, supervisor, chains, rag/answers, openai/rag) | P0–P2 | Q+-L.1–Q+-L.7 | Partial (L.1–L.3 Done) |
 | `getattr` / duck typing (UAEP, tools, context, plans) | P0 | Q+-T.1–Q+-T.8, Q+.0.3 | Done |
 | Nexus intake/planning still in `nexus_loop` | P0–P1 | Q+-N.1, Q+-N.2 | Done |
-| No `RetryCoordinator` | P1 | Q+-N.3 | Open |
-| Observability gaps (metrics heuristics, RAG HTTP, planner errors) | P1 | Q+-O.1–Q+-O.4, Q+-N.5 | Open |
+| No `RetryCoordinator` | P1 | Q+-N.3 | Done |
+| Observability gaps (metrics heuristics, RAG HTTP, planner errors) | P1 | Q+-O.1–Q+-O.4, Q+-N.5 | Partial (O.1–O.2 Done) |
 | `task_metadata` auto-hydrate | P1 | Q+-M.1, Q+-M.2 | Partial (M.1 Done) |
 | Planning monoliths (~680/620 lines) | P2 | Q+-P.1–Q+-P.3 | Open |
 | `session_manager` monolith (~596 lines) | P2 | Q+-S.1 | Open |
 | LLM SDK getattr quarantine | P3 | Q+-I.1 | Open |
-| `harness_production_mode` not wired in lab | P1 | Q+-O.2 | Partial (scaffold) |
+| `harness_production_mode` not wired in lab | P1 | Q+-O.2 | Done |
 | Thin `GraphExecutor` handoff/retry tests | P1 | Q+-N.4 | Open |
 
 ### D.2 First implementation steps (Wave 1 — start here)
@@ -2372,11 +2372,12 @@ Execute in order; one PR per ID where possible.
 |------|-------|---------|
 | 2026-06-01 | Q+.0.1,Q+.0.2 | Appendix D + execution order added to plan |
 | 2026-06-01 | Q+.0.3,Q+-T.1–T.8,Q+-L.1,Q+-M.1,Q+-N.1,Q+-N.2,Q+-D.* | Wave 1 harness contracts; intake/planning runners; CI getattr/tools_agent gates; docs |
+| 2026-06-01 | Q+-L.2–L.3,Q+-N.3,Q+-O.1,Q+-O.2 | Legal `CatalogToolPlanner`; `tool_planner` on RuntimeConfig; RetryCoordinator; typed metrics export; lab harness mode |
 | — | — | *(append row per merged PR)* |
 
 **Coverage target:** 100% **Done** or **Won't fix** before declaring Phase Q+ complete and scaling Phase K.
 
 ---
 
-*Plan synced (2026-06-01). **Phase Q Done** (Appendix C). **Phase Q+ Open** (Appendix D, Wave 1 partial). Gate: **406 passed**. **Next:** Q+ Wave 2 (Q+-L.2–L.3), Wave 3 (Q+-O.1, Q+-N.3–N.5). Phase K after Q+ Waves 1–3.*
+*Plan synced (2026-06-01). **Phase Q Done** (Appendix C). **Phase Q+ Open** (Appendix D, Waves 1–2 partial). Gate: **410 passed**. **Next:** Q+ Wave 3 (Q+-N.4–N.5, Q+-O.3–O.4), Wave 4 (Q+-P.*). Phase K after Q+ Waves 1–3.*
 

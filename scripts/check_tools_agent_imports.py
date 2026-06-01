@@ -21,15 +21,11 @@ FORBIDDEN = (
     "import intergrax.tools.tools_agent",
 )
 
-# Allowed until Legal migration completes (Q+-L.2).
+# Tier-1 may wrap ToolsAgent inside catalog_tool_planner only.
 GRANDFATHER_PREFIXES = (
-    "agents/legal/",
     "intergrax/tools/tools_agent.py",
-    "intergrax/runtime/nexus/config.py",
-    "intergrax/runtime/nexus/config_sections.py",
-    "intergrax/runtime/nexus/runtime_steps/tools_step.py",
-    "intergrax/runtime/nexus/runtime_steps/core_llm_step.py",
-    "intergrax/runtime/nexus/planning/step_planner.py",
+    "intergrax/runtime/nexus/tools/catalog_tool_planner.py",
+    "intergrax/runtime/nexus/tools/tool_planner_protocol.py",
     "tests/",
 )
 

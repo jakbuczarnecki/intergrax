@@ -26,6 +26,7 @@ from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.task_events import NexusRuntimeEventPublisher
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
+from intergrax.runtime.nexus.retry.coordinator import RetryCoordinator
 from intergrax.runtime.nexus.retry.retry_engine import RetryRecord
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -73,11 +74,27 @@ class NexusGraphRunner:
         trace_emitter: TaskTraceEmitter,
     ) -> GraphPhaseOutcome:
         callbacks = GraphTraceCallbacks(task=task, trace_emitter=trace_emitter)
+        coordinator = RetryCoordinator(
+            max_run_retries=0,
+            retry_run_on=frozenset(),
+        )
+
+        async def on_retry(record: RetryRecord) -> None:
+            callbacks.on_retry(record)
+            await self.events.publish(
+                coordinator.scheduled_event_for_agent_retry(
+                    task,
+                    run_id=task.task_id,
+                    record=record,
+                ),
+                task=task,
+            )
+
         executions, retry_records, graph, graph_cancelled = await self.graph_executor.execute(
             graph,
             task,
             plan_criteria=plan.validation_criteria,
-            on_retry=callbacks.on_retry,
+            on_retry=on_retry,
             on_node_start=callbacks.on_node_start,
             on_node_complete=callbacks.on_node_complete,
         )

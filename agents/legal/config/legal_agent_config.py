@@ -33,7 +33,7 @@ from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.tools.core.provider import ToolProvider
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.wiring import ToolWiringContext
-from intergrax.tools.tools_agent import ToolsAgent
+from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
@@ -92,7 +92,13 @@ class LegalAgentConfig(BaseModel):
         ),
     )
 
-    tools_agent: Optional[ToolsAgent] = None
+    tool_planner: Optional[ToolPlannerProtocol] = Field(
+        default=None,
+        description=(
+            "Optional explicit tool planner. When None and tool_profile is set, "
+            "LegalAgent builds CatalogToolPlanner (catalog ToolRuntime path)."
+        ),
+    )
     tools_mode: ToolChoiceMode = "off"
     tool_providers: List[ToolProvider] = Field(default_factory=list)
     tool_profile: Optional[ToolProfile] = Field(

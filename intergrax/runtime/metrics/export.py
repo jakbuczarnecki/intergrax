@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from intergrax.runtime.governance.contracts.metrics_record_dto import RunMetricsRecord
 from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
-from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun
+from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, SerializedTraceEvent
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent
 from intergrax.runtime.replay.metrics import ExecutionMetrics
 
@@ -125,7 +125,21 @@ def _coerce_int(value: Any) -> Optional[int]:
         return None
 
 
-def _summarize_trace_events(events: List[Any]) -> Dict[str, int]:
+def _schema_id_from_serialized(event: SerializedTraceEvent) -> str:
+    return str(event.payload_schema_id or "")
+
+
+def _schema_id_from_event(event: TraceEvent | dict[str, Any]) -> str:
+    if isinstance(event, dict):
+        return str(event.get("payload_schema_id") or "")
+    if event.payload is not None:
+        return event.payload.__class__.schema_id()
+    return ""
+
+
+def _summarize_trace_events(
+    events: List[TraceEvent | SerializedTraceEvent | dict[str, Any]],
+) -> Dict[str, int]:
     graph_events = 0
     step_events = 0
     tool_events = 0
@@ -134,20 +148,20 @@ def _summarize_trace_events(events: List[Any]) -> Dict[str, int]:
         if isinstance(event, dict):
             message = str(event.get("message") or "")
             step = str(event.get("step") or "")
-            schema_id = str(event.get("payload_schema_id") or "")
+            schema_id = _schema_id_from_event(event)
             component = str(event.get("component") or "")
         elif isinstance(event, TraceEvent):
             message = event.message
             step = event.step
-            schema_id = ""
-            if event.payload is not None:
-                schema_id = str(getattr(event.payload.__class__, "schema_id", lambda: "")() or "")
+            schema_id = _schema_id_from_event(event)
             component = event.component.value
+        elif isinstance(event, SerializedTraceEvent):
+            message = event.message
+            step = event.step
+            schema_id = _schema_id_from_serialized(event)
+            component = event.component
         else:
-            message = str(getattr(event, "message", "") or "")
-            step = str(getattr(event, "step", "") or "")
-            schema_id = str(getattr(event, "payload_schema_id", "") or "")
-            component = str(getattr(event, "component", "") or "")
+            continue
         lower_msg = message.lower()
         if any(m in lower_msg for m in _GRAPH_MESSAGE_MARKERS):
             graph_events += 1

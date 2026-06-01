@@ -4,7 +4,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Awaitable, Callable, Dict, List, Optional
+import inspect
+from typing import Awaitable, Callable, Dict, List, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
@@ -43,6 +44,18 @@ from intergrax.runtime.task.task import Task
 
 ExecuteFn = Callable[[Agent, Task, ExecutionNode], Awaitable[AgentExecutionResult]]
 ValidateFn = Callable[[AgentExecutionResult, Agent, ExecutionNode], ValidationResult]
+RetryCallback = Callable[[RetryRecord], Union[None, Awaitable[None]]]
+
+
+async def _notify_retry(
+    on_retry: Optional[RetryCallback],
+    record: RetryRecord,
+) -> None:
+    if on_retry is None:
+        return
+    result = on_retry(record)
+    if inspect.isawaitable(result):
+        await result
 HandoffExtra = tuple[str, AgentExecutionResult]
 
 
@@ -83,7 +96,7 @@ class GraphExecutor:
         task: Task,
         *,
         plan_criteria: Optional[List[str]] = None,
-        on_retry: Optional[Callable[[RetryRecord], None]] = None,
+        on_retry: Optional[RetryCallback] = None,
         on_node_start: Optional[Callable[[ExecutionNode], None]] = None,
         on_node_complete: Optional[Callable[[ExecutionNode], None]] = None,
     ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
@@ -298,9 +311,8 @@ class GraphExecutor:
                 on_node_complete(node)
             return execution, retries, False, True, []
 
-        if on_retry is not None:
-            for record in retries:
-                on_retry(record)
+        for record in retries:
+            await _notify_retry(on_retry, record)
 
         node.execution_result = execution
         if execution.status == AgentExecutionStatus.NEEDS_INPUT:
@@ -416,9 +428,8 @@ class GraphExecutor:
             on_node_start=on_node_start,
             on_node_complete=on_node_complete,
         )
-        if on_retry is not None:
-            for record in handoff_retries:
-                on_retry(record)
+        for record in handoff_retries:
+            await _notify_retry(on_retry, record)
 
         if handoff_failed or handoff_execution.status != AgentExecutionStatus.COMPLETED:
             node.metadata["handoff_failed"] = True

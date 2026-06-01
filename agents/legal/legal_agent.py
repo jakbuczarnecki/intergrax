@@ -29,6 +29,7 @@ from intergrax.runtime.nexus.ingestion.ingestion_service import AttachmentIngest
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.task.task import TaskContext
+from legal.config.tool_planner_wiring import resolve_legal_tool_planner
 from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy, RuntimePolicies
 
 from legal.pipeline.legal_dynamic_pipeline import LegalDynamicPipeline
@@ -102,7 +103,7 @@ class LegalAgent(Agent):
             workspace_id=request.workspace_id,
             embedding_manager=cfg.embedding_manager,
             vectorstore_manager=cfg.vectorstore_manager,
-            tools_agent=cfg.tools_agent,
+            tool_planner=resolve_legal_tool_planner(cfg),
             tools_mode=cfg.tools_mode,
             tool_providers=tuple(cfg.tool_providers),
             tool_profile=cfg.tool_profile,

@@ -61,7 +61,7 @@ async def test_tools_step_executes_tool_and_updates_state():
     state = build_runtime_state_for_tests(run_id="run-1",)    
 
     state.cap_tools_available = True    
-    state.context.config.tools_agent = FakeToolsAgent()
+    state.context.config.tool_planner = FakeToolsAgent()
     state.context.config.tool_invoker = FakeInvoker()
     state.context.config.tools_mode = "auto"
     state.context.config.llm_adapter = FakeLLMAdapter()

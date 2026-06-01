@@ -172,7 +172,7 @@ class ToolRuntime:
                 )
 
         if plan.use_tools:
-            if cfg.tools_agent and cfg.tool_invoker and cfg.tools_mode != "off":
+            if cfg.tool_planner and cfg.tool_invoker and cfg.tools_mode != "off":
                 await ToolsStep().run(state)
             else:
                 state.trace_event(

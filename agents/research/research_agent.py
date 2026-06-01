@@ -17,6 +17,7 @@ from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.applications._shared.runtime_defaults import harness_production_mode
 from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -125,7 +126,7 @@ class ResearchAgent(Agent):
             llm_adapter=_ResearchLLMStub(),
             enable_rag=False,
             enable_websearch=has_web,
-            production_mode=False,
+            production_mode=harness_production_mode(),
             tenant_id=request.tenant_id,
             tool_profile=self._tool_profile,
             tool_wiring_context=self._tool_wiring_context,
