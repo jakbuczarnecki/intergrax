@@ -1,0 +1,8 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: intergrax-clickhouse
+    ports:
+      - "8123:8123"
+      - "9002:9000"
+    restart: unless-stopped

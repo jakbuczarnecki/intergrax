@@ -36,7 +36,7 @@ def _runtime_capability_flags(state: RuntimeState) -> tuple[bool, bool, bool]:
         and ctx.websearch_prompt_builder is not None
     )
     tools_ok = bool(
-        cfg.tools_agent is not None
+        cfg.tool_planner is not None
         and cfg.tool_invoker is not None
         and cfg.tools_mode != "off"
     )

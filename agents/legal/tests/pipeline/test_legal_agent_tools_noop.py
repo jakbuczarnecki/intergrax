@@ -44,7 +44,7 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, Run
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.tools.registry import ToolRegistry
-from intergrax.tools.tools_agent import ToolsAgent
+from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
 
 from testing_support.builder import require_ollama_reachable
 
@@ -73,7 +73,10 @@ async def test_legal_agent_tools_noop_pipeline_completes_with_tools_step_trace(
     llm_adapter = LLMAdapterRegistry.create(LLMProvider.OLLAMA)
     session_manager = SessionManager(storage=InMemorySessionStorage())
     empty_registry = ToolRegistry()
-    tools_agent = ToolsAgent(llm=llm_adapter, tools=empty_registry)
+    tool_planner = CatalogToolPlanner.from_registry(
+        llm=llm_adapter,
+        registry=empty_registry,
+    )
 
     # LegalExtractClausesStep requires AttachmentIngestionService; LegalAgent only
     # wires it when enable_rag + embedding/vectorstore are set (see build_context).
@@ -90,7 +93,7 @@ async def test_legal_agent_tools_noop_pipeline_completes_with_tools_step_trace(
         embedding_manager=embedding_manager,
         vectorstore_manager=vectorstore_manager,
         use_legal_tool_decision=True,
-        tools_agent=tools_agent,
+        tool_planner=tool_planner,
         tools_mode="auto",
         tool_providers=[],
         use_llm_legal_route_planner=False,

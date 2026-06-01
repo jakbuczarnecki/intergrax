@@ -2,7 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -33,7 +33,7 @@ from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.tools.core.provider import ToolProvider
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.wiring import ToolWiringContext
-from intergrax.tools.tools_agent import ToolsAgent
+from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
@@ -92,7 +92,13 @@ class LegalAgentConfig(BaseModel):
         ),
     )
 
-    tools_agent: Optional[ToolsAgent] = None
+    tool_planner: Optional[ToolPlannerProtocol] = Field(
+        default=None,
+        description=(
+            "Optional explicit tool planner. When None and tool_profile is set, "
+            "LegalAgent builds CatalogToolPlanner (catalog ToolRuntime path)."
+        ),
+    )
     tools_mode: ToolChoiceMode = "off"
     tool_providers: List[ToolProvider] = Field(default_factory=list)
     tool_profile: Optional[ToolProfile] = Field(
@@ -236,6 +242,11 @@ class LegalAgentConfig(BaseModel):
             "(via :class:`~intergrax.runtime.nexus.policies.runtime_policies.RuntimePolicies`) and applied "
             "when shaping Legal HTTP responses (trace serialization, tool argument exposure)."
         ),
+    )
+
+    policy_bundle: Optional[Any] = Field(
+        default=None,
+        description="Tier-3 composed policy bundle (Phase R-Policy); wired into Nexus RuntimeConfig.",
     )
 
     @model_validator(mode="after")

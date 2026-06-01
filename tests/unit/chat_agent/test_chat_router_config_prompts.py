@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.chat_agent import ChatRouterConfig
+from intergrax.legacy.chat_router import ChatRouterConfig
 
 
 pytestmark = pytest.mark.unit

@@ -7,9 +7,10 @@
 
 | Field | Required | Purpose |
 |-------|----------|---------|
-| `observability_backend` | Yes | `ObservabilityBackend` (`prometheus`, `elasticsearch`, `langfuse`, …) |
+| `observability_backend` | Yes (single-backend) | Primary `ObservabilityBackend` |
+| `observability_backends` | Optional (composite) | Map of slug → backend for role-based routing (Phase M.10 harness) |
 
-Tier-3 example:
+### Single backend
 
 ```python
 from intergrax.integrations import IntegrationProfile, IntegrationSlug, register_default_integrations
@@ -23,12 +24,34 @@ ctx = ToolWiringContext.from_integration_profile(profile)
 registry = build_registry_from_profile(ToolProfile(enabled_bundles=["observability"]), ctx=ctx)
 ```
 
+### Composite harness (Sentry errors + LangSmith traces)
+
+When `IntegrationProfile.harness_lab()` sets `observability_backend=sentry` and `options={langsmith: …}`,
+`ToolWiringContext.from_integration_profile()` fills `observability_backends`. Tools resolve by role:
+
+| Role | Tool | Preferred slug |
+|------|------|----------------|
+| `errors` | `errors.capture` | `sentry` |
+| `traces` | `observability.query_traces` | `langsmith`, `langfuse`, … |
+| `logs` | `logs.search` | `elasticsearch`, `opensearch` |
+| `eval` | `braintrust.log_eval` | `braintrust` |
+
+```python
+from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.tools.registry import ToolWiringContext
+
+ctx = ToolWiringContext.from_integration_profile(IntegrationProfile.harness_lab())
+# errors.capture → Sentry; observability.query_traces → LangSmith
+```
+
+Implementation: `intergrax/tools/providers/observability/resolve.py`.
+
 ## Notes
 
 - `metrics.query_instant` accepts PromQL (Prometheus backend).
 - `logs.search` uses Elasticsearch `_search` via the backend's `rest_client` when available.
-- `observability.query_traces` calls `ObservabilityBackend.query_traces()` (Langfuse REST when configured).
-- `errors.capture` reports an error event via `ObservabilityBackend.capture_message()` (Sentry when `observability_backend=sentry`).
+- `observability.query_traces` calls `ObservabilityBackend.query_traces()` (Langfuse/LangSmith REST when configured).
+- `errors.capture` reports an error event via `ObservabilityBackend.capture_message()` (Sentry when role resolves to `sentry`).
 
 ## Agent allow-list
 

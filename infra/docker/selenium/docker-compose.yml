@@ -1,0 +1,9 @@
+services:
+  selenium:
+    image: selenium/standalone-chrome:4.25.0
+    container_name: intergrax-selenium
+    ports:
+      - "4444:4444"
+      - "7900:7900"
+    shm_size: 2gb
+    restart: unless-stopped

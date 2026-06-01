@@ -10,9 +10,9 @@ BRAINTRUST_LOG_EVAL_TOOL_ID = "braintrust.log_eval"
 
 
 def braintrust_log_eval(ctx: ToolWiringContext, params: BraintrustLogEvalInput) -> BraintrustLogEvalOutput:
-    backend = ctx.observability_backend
-    if backend is None:
-        raise RuntimeError("observability_backend_not_configured")
+    from intergrax.tools.providers.observability.resolve import resolve_observability_backend
+
+    backend = resolve_observability_backend(ctx, role="eval")
     log_eval = getattr(backend, "log_eval", None)
     if log_eval is None:
         raise RuntimeError("observability_backend_does_not_support_eval_logging")

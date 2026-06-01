@@ -5,7 +5,15 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Mapping, Protocol, runtime_checkable
+
+
+@runtime_checkable
+class TraceEventWithTags(Protocol):
+    """Trace event carrying a tags mapping (Nexus trace persistence)."""
+
+    tags: Mapping[str, Any]
+
 
 from intergrax.rag.document_loaders.observability.parser_trace_exporter import export_parser_trace
 
@@ -22,9 +30,8 @@ def export_parser_traces_from_events(events: Iterable[Any]) -> None:
 
 
 def _event_tags(event: Any) -> dict[str, Any]:
-    if hasattr(event, "tags"):
-        raw = getattr(event, "tags")
-        return dict(raw) if isinstance(raw, dict) else {}
+    if isinstance(event, TraceEventWithTags):
+        return dict(event.tags)
     if isinstance(event, dict):
         tags = event.get("tags")
         return dict(tags) if isinstance(tags, dict) else {}

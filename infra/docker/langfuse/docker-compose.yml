@@ -1,0 +1,17 @@
+# Requires PostgreSQL with database `langfuse` — start infra/integration postgresql first.
+services:
+  langfuse:
+    image: langfuse/langfuse:2
+    container_name: intergrax-langfuse
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://intergrax:intergrax@host.docker.internal:5432/langfuse
+      NEXTAUTH_SECRET: intergrax-langfuse-secret
+      SALT: intergrax-langfuse-salt
+      ENCRYPTION_KEY: intergrax-langfuse-encryption-key-32ch
+      NEXTAUTH_URL: http://localhost:3000
+      TELEMETRY_ENABLED: "false"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

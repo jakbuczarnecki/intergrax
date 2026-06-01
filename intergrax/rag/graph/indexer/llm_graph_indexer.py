@@ -15,7 +15,6 @@ from langchain_core.documents import Document
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.graph.contracts.graph_store import GraphEdge, GraphNode, GraphStore
-from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
 
 
 class LlmGraphIndexer:
@@ -63,8 +62,7 @@ class LlmGraphIndexer:
             node_id = f"ent:{label.lower().replace(' ', '_')}"
             label_to_id[label.lower()] = node_id
             self._store.upsert_node(GraphNode(id=node_id, label=label, node_type="entity"))
-            if isinstance(self._store, InMemoryGraphStore):
-                self._store.link_chunk(node_id, chunk_id)
+            self._store.link_chunk(node_id, chunk_id)
             node_ids.append(node_id)
 
         for rel in relations[:20]:

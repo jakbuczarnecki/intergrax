@@ -7,6 +7,7 @@ from __future__ import annotations
 import pytest
 
 from intergrax.integrations.providers.notification_channel.log.adapter import LogNotificationAdapter
+from intergrax.integrations.providers.notification_channel.pagerduty.adapter import PagerDutyNotificationChannel
 from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from lab_application.host.integration_wiring import (
@@ -47,3 +48,14 @@ def test_wire_lab_integrations_in_memory_trace_when_no_db_path() -> None:
     assert isinstance(wiring.trace_store, InMemoryRunTraceStore)
     assert wiring.trace_db_path is None
     assert wiring.runtime_event_store is None
+
+
+def test_wire_lab_integrations_harness_profile_and_pagerduty(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("INTERGRAX_PAGERDUTY_ROUTING_KEY", "test-routing-key")
+    wiring = wire_lab_integrations(settings=LabApplicationSettings(), harness=True)
+
+    assert wiring.profile.notification_channel == IntegrationSlug.PAGERDUTY
+    assert wiring.profile.observability_backend == IntegrationSlug.SENTRY
+    assert IntegrationSlug.LANGSMITH in wiring.profile.options
+    assert isinstance(wiring.notification_adapter, PagerDutyNotificationChannel)
+    assert wiring.default_long_running_notify_channel == "pagerduty"

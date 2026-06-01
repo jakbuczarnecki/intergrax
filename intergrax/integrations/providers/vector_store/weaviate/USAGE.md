@@ -43,3 +43,13 @@ store = create_weaviate_vector_store(url="https://...", collection="docs")
 ## Notes
 
 Requires ``weaviate-client`` at runtime. Catalog bridge via ``VectorStoreBridge``.
+
+### RAG production hardening (M-RAG.20)
+
+``WeaviateVectorStore`` (``rag_store.py``) + ``schema.py``:
+
+- **Schema migration** — ``ensure_weaviate_collection()`` adds missing properties on existing collections.
+- **Native multi-tenancy** — one collection, per-tenant isolation via ``collection.with_tenant(tenant_id)`` (default ``multi_tenant=True``).
+- **Metadata filters** — ``MetadataFilter.conditions`` translated to Weaviate ``Filter`` (eq, contains_any, range ops).
+
+Env: ``INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID=true`` (Tier-0 RAG profile) when using hybrid retrieval.

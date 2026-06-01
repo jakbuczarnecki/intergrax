@@ -12,7 +12,6 @@ from typing import Iterable, List, Sequence
 from langchain_core.documents import Document
 
 from intergrax.rag.graph.contracts.graph_store import GraphEdge, GraphNode, GraphStore
-from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
 
 _ENTITY_RE = re.compile(r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})\b")
 
@@ -38,8 +37,7 @@ class HeuristicGraphIndexer:
         for label in entities:
             node_id = f"ent:{label.lower().replace(' ', '_')}"
             self._store.upsert_node(GraphNode(id=node_id, label=label, node_type="entity"))
-            if isinstance(self._store, InMemoryGraphStore):
-                self._store.link_chunk(node_id, chunk_id)
+            self._store.link_chunk(node_id, chunk_id)
             node_ids.append(node_id)
 
         for i in range(len(node_ids) - 1):

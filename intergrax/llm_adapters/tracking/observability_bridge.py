@@ -20,6 +20,7 @@ from intergrax.llm_adapters.tracking.prometheus_push import push_llm_metrics_to_
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.plugins.contract import PolicyEngineLike, RuntimeEventBusLike, RuntimePlugin
+from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +31,11 @@ def make_llm_metrics_runtime_plugin() -> RuntimePlugin:
     def _register(
         event_bus: RuntimeEventBusLike,
         _hook_registry: HookRegistry,
-        _policy_engine: PolicyEngineLike,
+        policy_engine: PolicyEngineLike,
     ) -> None:
         if not is_metrics_enabled():
             return
+        policy = coerce_policy_engine(policy_engine)  # type: ignore[arg-type]
 
         async def _export_llm_metrics(event: RuntimeEvent) -> None:
             if event.event_type != RuntimeEventType.TASK_COMPLETED:
@@ -45,7 +47,10 @@ def make_llm_metrics_runtime_plugin() -> RuntimePlugin:
             if not per_tenant:
                 return
 
-            cost = evaluate_llm_run_cost(tenant_id=tenant, run_id=run_id)
+            cost, governance = policy.evaluate_llm_cost_on_task_completed(
+                tenant_id=tenant,
+                run_id=run_id,
+            )
             otlp = render_otlp_json()
             logger.info(
                 "llm_metrics_export tenant=%s run_id=%s task_id=%s tokens=%s calls=%s",
@@ -64,10 +69,11 @@ def make_llm_metrics_runtime_plugin() -> RuntimePlugin:
                         "total_tokens": cost.total_tokens,
                         "warn": cost.warn_threshold_exceeded,
                         "reasons": cost.reasons,
+                        "policy_action": governance.decision.value,
                     },
                 },
             )
-            if cost.warn_threshold_exceeded:
+            if governance.decision.value == "warn" or cost.warn_threshold_exceeded:
                 logger.warning(
                     "llm_governance_warn tenant=%s run_id=%s reasons=%s",
                     tenant,

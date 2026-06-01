@@ -26,6 +26,9 @@ class RetrievalTrace:
     rerank_latency_ms: Optional[float] = None
     agentic_iteration: Optional[int] = None
     agentic_stopped: Optional[str] = None
+    agentic_total_latency_ms: Optional[float] = None
+    hybrid_used: bool = False
+    recall_at_k: Optional[float] = None
 
 
 @dataclass

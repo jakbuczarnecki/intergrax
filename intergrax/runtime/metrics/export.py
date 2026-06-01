@@ -10,9 +10,13 @@ from typing import Any, Dict, List, Optional
 
 from intergrax.runtime.governance.contracts.metrics_record_dto import RunMetricsRecord
 from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
-from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun
+from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, SerializedTraceEvent
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent
 from intergrax.runtime.replay.metrics import ExecutionMetrics
-from intergrax.runtime.replay.metrics import ExecutionMetrics
+
+_LLM_SCHEMA_MARKERS = frozenset({"llm", "llm_usage", "llm_call"})
+_TOOL_SCHEMA_MARKERS = frozenset({"tool", "tool_call"})
+_GRAPH_MESSAGE_MARKERS = frozenset({"graph"})
 
 
 @dataclass(slots=True)
@@ -33,6 +37,19 @@ def export_run_metrics(persisted: PersistedRun, *, agent_id: Optional[str] = Non
     meta = persisted.metadata
     llm_usage = dict(meta.stats.llm_usage or {})
     trace_summary = _summarize_trace_events(persisted.events)
+    behavioral: ExecutionMetrics | None = None
+    if persisted.events:
+        step_count = max(trace_summary.get("step_events", 0), 1)
+        behavioral = ExecutionMetrics(
+            step_count=step_count,
+            total_llm_calls=trace_summary.get("llm_events", 0),
+            total_tool_calls=trace_summary.get("tool_events", 0),
+            total_artifacts=0,
+            total_tokens=_coerce_int(llm_usage.get("total_tokens")) or 0,
+            duration=meta.stats.duration_ms / 1000.0 if meta.stats.duration_ms else None,
+            tool_steps_ratio=min(1.0, trace_summary.get("tool_events", 0) / step_count),
+            llm_steps_ratio=min(1.0, trace_summary.get("llm_events", 0) / step_count),
+        )
 
     return RunMetricsExport(
         run_id=meta.run_id,
@@ -44,6 +61,7 @@ def export_run_metrics(persisted: PersistedRun, *, agent_id: Optional[str] = Non
         total_tokens=_coerce_int(llm_usage.get("total_tokens")),
         llm_usage=llm_usage,
         trace_summary=trace_summary,
+        behavioral=behavioral,
     )
 
 
@@ -107,7 +125,21 @@ def _coerce_int(value: Any) -> Optional[int]:
         return None
 
 
-def _summarize_trace_events(events: List[Any]) -> Dict[str, int]:
+def _schema_id_from_serialized(event: SerializedTraceEvent) -> str:
+    return str(event.payload_schema_id or "")
+
+
+def _schema_id_from_event(event: TraceEvent | dict[str, Any]) -> str:
+    if isinstance(event, dict):
+        return str(event.get("payload_schema_id") or "")
+    if event.payload is not None:
+        return event.payload.__class__.schema_id()
+    return ""
+
+
+def _summarize_trace_events(
+    events: List[TraceEvent | SerializedTraceEvent | dict[str, Any]],
+) -> Dict[str, int]:
     graph_events = 0
     step_events = 0
     tool_events = 0
@@ -116,19 +148,36 @@ def _summarize_trace_events(events: List[Any]) -> Dict[str, int]:
         if isinstance(event, dict):
             message = str(event.get("message") or "")
             step = str(event.get("step") or "")
-            schema_id = str(event.get("payload_schema_id") or "")
+            schema_id = _schema_id_from_event(event)
+            component = str(event.get("component") or "")
+        elif isinstance(event, TraceEvent):
+            message = event.message
+            step = event.step
+            schema_id = _schema_id_from_event(event)
+            component = event.component.value
+        elif isinstance(event, SerializedTraceEvent):
+            message = event.message
+            step = event.step
+            schema_id = _schema_id_from_serialized(event)
+            component = event.component
         else:
-            message = str(getattr(event, "message", "") or "")
-            step = str(getattr(event, "step", "") or "")
-            schema_id = str(getattr(event, "payload_schema_id", "") or "")
-        if "graph" in message.lower():
+            continue
+        lower_msg = message.lower()
+        if any(m in lower_msg for m in _GRAPH_MESSAGE_MARKERS):
             graph_events += 1
         if step:
             step_events += 1
-        if schema_id and "tool" in schema_id.lower():
+        sid = schema_id.lower()
+        if sid and any(m in sid for m in _TOOL_SCHEMA_MARKERS):
             tool_events += 1
-        if schema_id and "llm" in schema_id.lower():
+        elif component in (TraceComponent.TOOLS.value, TraceComponent.STEP.value):
+            if component == TraceComponent.TOOLS.value:
+                tool_events += 1
+        if sid and any(m in sid for m in _LLM_SCHEMA_MARKERS):
             llm_events += 1
+        elif component in (TraceComponent.ENGINE.value, TraceComponent.STEP.value):
+            if "llm" in step.lower():
+                llm_events += 1
     return {
         "graph_events": graph_events,
         "step_events": step_events,

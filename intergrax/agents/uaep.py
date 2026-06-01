@@ -10,6 +10,13 @@ from typing import Any, List, Optional
 from uuid import uuid4
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.uaep_protocol import (
+    UAEPAgent,
+    UAEPAgentWithDecide,
+    UAEPAgentWithResume,
+    is_uaep_agent,
+    supports_uaep,
+)
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepExecutionResult, StepOutput
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -17,6 +24,7 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.hooks.governance_hooks import hook_context_for_task, run_hook_pair
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler, GovernanceResolution
@@ -30,7 +38,7 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RouteInfo, RuntimeRequest
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
-from intergrax.runtime.task.task_metadata_bridge import execution_options_from_metadata
+from intergrax.runtime.task.task_metadata_bridge import execution_options_for_request
 from intergrax.runtime.cancellation.coordinator import (
     CANCELLATION_REQUESTED_KEY,
     CancellationCoordinator,
@@ -56,6 +64,7 @@ from intergrax.runtime.task_memory.policy import (
     MemoryAccessPolicy,
     memory_access_policy_from_metadata,
 )
+from intergrax.runtime.task_memory.delegation_memory import apply_delegation_memory_namespace
 from intergrax.runtime.nexus.context.shared_context_bridge import hydrate_shared_context_memory
 from intergrax.runtime.nexus.context.shared_task_context import (
     DEFAULT_SHARED_MEMORY_NAMESPACE,
@@ -65,13 +74,6 @@ from intergrax.runtime.nexus.context.shared_task_context import (
 
 class UAEPBlockedError(RuntimeError):
     """Raised when middleware/hooks block UAEP execution."""
-
-
-def supports_uaep(agent: Agent) -> bool:
-    """True when agent implements the optional UAEP step protocol (§42.32)."""
-    return callable(getattr(agent, "get_steps", None)) and callable(
-        getattr(agent, "run_step", None)
-    )
 
 
 class _BusEventEmitter:
@@ -134,7 +136,7 @@ class UAEPExecutor:
         request: RuntimeRequest,
     ) -> tuple[RuntimeAnswer, ValidationResult, RuntimeContext, Optional[GovernanceResolution]]:
         contract = agent.get_contract()
-        task_options = execution_options_from_metadata(request.metadata)
+        task_options = execution_options_for_request(request)
         run_id = str(request.metadata.get("run_id") or request.metadata.get("task_id") or uuid4().hex)
         task_id = str(request.metadata.get("task_id") or run_id)
         node_id = request.metadata.get("graph_node_id")
@@ -247,6 +249,20 @@ class UAEPExecutor:
             decision = step_result.decision or self._decide_after_step(
                 agent, step, step_result.output, exec_ctx
             )
+            decision_ctx = hook_context_for_task(
+                task_id=task_id,
+                run_id=run_id,
+                agent_id=contract.id,
+                step_id=step.step_id,
+                phase=ExecutionPhase.STEP_EXECUTION,
+                runtime_state={"decision_type": decision.type.value},
+            )
+            await run_hook_pair(
+                self._middleware,
+                HookPoint.BEFORE_DECISION,
+                HookPoint.AFTER_DECISION,
+                decision_ctx,
+            )
             resolution = self._interrupt_handler.resolve_decision(
                 decision,
                 task_id=task_id,
@@ -260,6 +276,21 @@ class UAEPExecutor:
                     ),
                 },
             )
+            if resolution.interrupt is not None:
+                interrupt_ctx = hook_context_for_task(
+                    task_id=task_id,
+                    run_id=run_id,
+                    agent_id=contract.id,
+                    step_id=step.step_id,
+                    phase=ExecutionPhase.INTERRUPT_HANDLING,
+                    runtime_state={"interrupt_type": resolution.interrupt.type.value},
+                )
+                await run_hook_pair(
+                    self._middleware,
+                    HookPoint.BEFORE_INTERRUPT,
+                    HookPoint.AFTER_INTERRUPT,
+                    interrupt_ctx,
+                )
             governance = resolution
             exec_ctx.metadata["governance_resolution"] = resolution
 
@@ -377,11 +408,13 @@ class UAEPExecutor:
         ctx: RuntimeExecutionContext,
         cursor: dict[str, Any],
     ) -> StepExecutionResult:
-        resume = getattr(agent, "resume_step", None)
-        if callable(resume):
-            output = await resume(step, ctx, cursor)
+        if isinstance(agent, UAEPAgentWithResume):
+            output = await agent.resume_step(step, ctx, cursor)
             return StepExecutionResult(output=output)
-        output = await agent.run_step(step, ctx)
+        uaep_agent = agent if isinstance(agent, UAEPAgent) else None
+        if uaep_agent is None:
+            raise TypeError(f"{type(agent).__name__} is not a UAEPAgent")
+        output = await uaep_agent.run_step(step, ctx)
         return StepExecutionResult(output=output)
 
     async def _emit_governance(
@@ -418,6 +451,10 @@ class UAEPExecutor:
         step: AgentStep,
         ctx: RuntimeExecutionContext,
     ) -> StepExecutionResult:
+        if not isinstance(agent, UAEPAgent):
+            raise TypeError(
+                f"execute_step requires UAEPAgent, got {type(agent).__name__}"
+            )
         output = await agent.run_step(step, ctx)
         return StepExecutionResult(output=output)
 
@@ -427,6 +464,8 @@ class UAEPExecutor:
         runtime_context: RuntimeContext,
         max_steps: Optional[int],
     ) -> List[AgentStep]:
+        if not isinstance(agent, UAEPAgent):
+            raise TypeError(f"{type(agent).__name__} is not a UAEPAgent")
         steps = list(agent.get_steps(runtime_context))
         if not steps:
             raise ValueError(f"{type(agent).__name__}.get_steps() returned no steps.")
@@ -440,9 +479,8 @@ class UAEPExecutor:
         output: Optional[StepOutput],
         ctx: RuntimeExecutionContext,
     ) -> AgentDecision:
-        decide = getattr(agent, "decide_after_step", None)
-        if callable(decide):
-            return decide(step, output, ctx)
+        if isinstance(agent, UAEPAgentWithDecide):
+            return agent.decide_after_step(step, output, ctx)
         return AgentDecision(type=AgentDecisionType.CONTINUE)
 
     @staticmethod
@@ -498,6 +536,7 @@ class UAEPExecutor:
     @staticmethod
     def _memory_access_policy_for_request(metadata: dict[str, Any]) -> MemoryAccessPolicy:
         policy = memory_access_policy_from_metadata(metadata)
+        policy = apply_delegation_memory_namespace(policy, metadata)
         protected = frozenset({DEFAULT_SHARED_MEMORY_NAMESPACE})
         denied = (policy.write_denied_namespaces or frozenset()) | protected
         return MemoryAccessPolicy(
@@ -514,7 +553,7 @@ class UAEPExecutor:
         *,
         task_id: str,
     ) -> None:
-        if not execution_options_from_metadata(request.metadata).isolation.shadow_workspace:
+        if not execution_options_for_request(request).isolation.shadow_workspace:
             return
         tenant_id = request.tenant_id or "default"
         workspace = self._shadow_manager.open_or_create(
@@ -546,7 +585,7 @@ class UAEPExecutor:
         *,
         task_id: str,
     ) -> None:
-        if not execution_options_from_metadata(request.metadata).isolation.sandbox:
+        if not execution_options_for_request(request).isolation.sandbox:
             return
         tenant_id = request.tenant_id or "default"
         session = self._sandbox_manager.open_or_create(

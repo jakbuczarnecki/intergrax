@@ -199,9 +199,14 @@ class RuntimeState(RuntimeStateContract):
            
         self.llm_usage_tracker.register_adapter(self.context.config.llm_adapter, label="core_adapter")
 
-        tool_agent = self.context.config.tools_agent
-        if tool_agent is not None and tool_agent.llm is not None:
-            self.llm_usage_tracker.register_adapter(tool_agent.llm, label="tools_agent")
+        from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
+
+        tool_planner = self.context.config.tool_planner
+        if isinstance(tool_planner, CatalogToolPlanner):
+            self.llm_usage_tracker.register_adapter(
+                tool_planner.llm,
+                label="tool_planner",
+            )
 
         websearch_config = self.context.config.websearch_config
         if websearch_config is not None and websearch_config.llm is not None:

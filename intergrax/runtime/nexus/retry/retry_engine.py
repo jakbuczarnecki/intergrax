@@ -9,8 +9,13 @@ from typing import Awaitable, Callable, List, Optional
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.validation import ValidationResult
+from intergrax.runtime.hooks.governance_hooks import hook_context_for_task, run_hook_pair
+from intergrax.runtime.hooks.hook_point import HookPoint
+from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
+from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.nexus.retry.retry_types import RetryDecision, RetryRecord
 
 ExecuteFn = Callable[[Agent], Awaitable[AgentExecutionResult]]
 
@@ -21,21 +26,6 @@ class RetryPolicy:
     retry_alternate_agent: bool = True
 
 
-@dataclass
-class RetryRecord:
-    attempt: int
-    agent_id: str
-    reason: str
-    alternate_agent_id: Optional[str] = None
-
-
-@dataclass
-class RetryDecision:
-    should_retry: bool
-    reason: str = ""
-    alternate_agent_id: Optional[str] = None
-
-
 class RetryEngine:
     """Controlled retry with optional alternate agent (§31, Phase B.5)."""
 
@@ -44,9 +34,11 @@ class RetryEngine:
         registry: AgentRegistry,
         *,
         policy: Optional[RetryPolicy] = None,
+        middleware: Optional[MiddlewarePipeline] = None,
     ) -> None:
         self._registry = registry
         self._policy = policy or RetryPolicy()
+        self._middleware = middleware
 
     def decide(
         self,
@@ -108,6 +100,20 @@ class RetryEngine:
             )
             if not decision.should_retry or not decision.alternate_agent_id:
                 return execution, records, validation
+
+            ctx = hook_context_for_task(
+                task_id=task.task_id,
+                run_id=task.task_id,
+                agent_id=agent.get_contract().id,
+                phase=ExecutionPhase.RETRY_HANDLING,
+                runtime_state={"reason": decision.reason, "attempt": attempt + 1},
+            )
+            await run_hook_pair(
+                self._middleware,
+                HookPoint.BEFORE_RETRY,
+                HookPoint.AFTER_RETRY,
+                ctx,
+            )
 
             attempt += 1
             record = RetryRecord(

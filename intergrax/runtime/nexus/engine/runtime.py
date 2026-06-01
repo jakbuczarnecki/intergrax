@@ -48,6 +48,7 @@ from intergrax.runtime.nexus.tracing.execution.execution_concurrency_diag import
 from intergrax.runtime.nexus.tracing.persistence_models import RunError, RunMetadata, RunStats
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_abort import RuntimeRunAbortDiagV1
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_end import RuntimeRunEndDiagV1
+from intergrax.runtime.nexus.retry.coordinator import RetryCoordinator
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_retry import RuntimeRunRetryDiagV1
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_start import RuntimeRunStartDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
@@ -306,14 +307,20 @@ class RuntimeEngine:
                 except Exception as ex:
                     error_code = ErrorClassifier.classify(ex)
 
-                    retryable = error_code in state.context.config.retry_run_on
-                    if retryable and attempt < max_retries:
+                    coordinator = RetryCoordinator(
+                        max_run_retries=max_retries,
+                        retry_run_on=state.context.config.retry_run_on,
+                    )
+                    if coordinator.should_retry_run(
+                        attempt=attempt,
+                        error_code=error_code,
+                    ):
                         attempt += 1
                         state.trace_event(
                             component=TraceComponent.ENGINE,
-                            step="run_retry",
+                            step="retry_scheduled",
                             level=TraceLevel.WARNING,
-                            message="RuntimeEngine.run() retrying after failure.",
+                            message="RuntimeEngine.run() retry scheduled after failure.",
                             payload=RuntimeRunRetryDiagV1(
                                 run_id=state.run_id,
                                 attempt=attempt,

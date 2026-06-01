@@ -50,7 +50,7 @@ except ImportError:
     QdrantSparseVector = None  # type: ignore
     SparseVectorParams = None  # type: ignore
 
-from intergrax.rag.vectorstore.sparse.bm25_sparse_encoder import encode_sparse_bm25
+from intergrax.rag.vectorstore.sparse.sparse_encoder import SparseEncoder, resolve_sparse_encoder
 
 _DENSE_VECTOR_NAME = "dense"
 _SPARSE_VECTOR_NAME = "sparse"
@@ -83,7 +83,7 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
     No behavioral changes.
     """
 
-    def __init__(self, cfg: QdrantConfig) -> None:
+    def __init__(self, cfg: QdrantConfig, *, sparse_encoder: Optional[SparseEncoder] = None) -> None:
         LexicalHybridSupport.__init__(self)
         self.cfg = cfg
         self.collection_name = f"{cfg.collection_name}__tenant__{cfg.tenant_id}"
@@ -92,6 +92,7 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         self._dim: Optional[int] = None
         self._payloads: Dict[str, Dict[str, Any]] = {}
         self._sparse_enabled = bool(cfg.enable_sparse_vectors)
+        self._sparse_encoder = sparse_encoder or resolve_sparse_encoder()
 
         self._init_qdrant()
 
@@ -169,7 +170,7 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         for i in range(len(ids)):
             text = str(metadatas[i].get("text", ""))
             if self._sparse_enabled and QdrantSparseVector is not None:
-                sparse = encode_sparse_bm25(text)
+                sparse = self._sparse_encoder.encode(text)
                 points.append(
                     PointStruct(
                         id=ids[i],
@@ -357,7 +358,7 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
     ) -> List[VectorStoreHit]:
         assert self._client is not None
         vector = list(map(float, query_embedding))
-        sparse = encode_sparse_bm25(query_text)
+        sparse = self._sparse_encoder.encode(query_text)
 
         effective_where: Dict[str, Any] = (
             dict(metadata_filter.conditions) if metadata_filter is not None else {}

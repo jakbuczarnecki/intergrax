@@ -33,6 +33,7 @@ VENDOR_MODULES = frozenset(
 
 INTEGRATION_ALLOWED_SUFFIXES = (
     "/opens.py",
+    "/schema.py",
     "/rag_store.py",
     "/web_client.py",
     "/client.py",

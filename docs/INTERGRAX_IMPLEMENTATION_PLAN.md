@@ -2,7 +2,8 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-05-30, Phase O Tool Library spec)  
+Status: Working draft (2026-06-01) — **Phase Q+ / R / S Done**; gate **460 passed**  
+Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
 Navigation: [`README.md`](README.md)  
@@ -17,6 +18,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 
 | Topic | Where |
 |-------|--------|
+| Strategic goal, decision hierarchy, work cycle | [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | Full architecture specification | `intergrax_runtime_architecture.md` |
 | Phase status, gaps, priority | **This file** |
 | Tier-0 integration catalog (what / where) | Architecture canon §7.1.1–§7.1.5 |
@@ -30,6 +32,13 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Application scaffold & deploy plan | **This file** Phase N |
 | Business-agent go/no-go checklist | **Appendix A** (below) |
 | Technical debt backlog (analysis only) | **Appendix B** (below) |
+| Harness quality audit (2026-06-01) → Phase Q tracker | **This file** Phase Q + **Appendix C** |
+| Post-audit hardening (typing, legacy, monoliths) | **This file** Phase Q+ + **Appendix D** |
+| Harness GA / consolidation (no new OS features) | **This file** Phase Q / Q+ |
+| Harness AI alignment audit (2026-06-01) → Phase R | **This file** Phase R + **Appendix E** + canon [§5.3](intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model) |
+| Harness environment GA (2026-06-01) → Phase S | **This file** Phase S + **Appendix F** (K.1/K.2 **deferred**) |
+| Skill / Tool / Integration layering (canon) | Architecture §5.3, §7.1.6–§7.1.8 |
+| Skill catalog | `SKILLS.md` |
 
 ---
 
@@ -39,14 +48,26 @@ Condensed from the canon. For full contracts and forbidden patterns, read `inter
 
 ### 0.1 Strategic objective
 
-Intergrax is an **Agent Operating System / Harness AI runtime** — not a collection of business agents.
+Intergrax is an **Agent Operating System / Harness AI runtime** — not a collection of business agents. **Priority 1:** production-grade Harness AI (see [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)).
 
 Current optimization targets:
 
-- experimentation speed · agent creation speed · runtime stability
-- orchestration quality · observability · composability
+- **harness environment GA** (Phase S) · experimentation speed · agent creation speed · runtime stability
+- orchestration quality · observability · composability · skill/platform packs (Integration → Tool → Skill)
 
-Business agents (Problem Radar, Vendor Discovery, Legal expansion) are **blocked** until Phase L certification sign-off (Appendix A).
+**Harness GA (Phase L):** Agent OS certified — Appendix A **20/20**. New agents ship via scaffold without Nexus edits.
+
+**Harness environment (Phase S):** **Done** (2026-06-01) — stable stack, OTLP profile, `harness.*` skills, `HARNESS_ENVIRONMENT.md`, CI smoke. **Did not include** business agents (K.1/K.2).
+
+**Product agents (Phase K):** Problem Radar (K.1), Vendor Discovery (K.2), Legal expansion — **Deferred** until Phase S harness environment is **Done**. K.3–K.5 platform items **Done**.
+
+**Platform quality (Phase Q):** Done (2026-06-01) — first harness audit remediation; gate was **417 passed** at close (see Appendix C).
+
+**Harness hardening (Phase Q+):** **Done** (2026-06-01) — Protocols (zero grandfathered `getattr` in harness paths), legacy stack removal, Nexus decomposition, monolith splits. See Appendix D.
+
+**Harness AI alignment (Phase R):** **Done (MVP)** (2026-06-01) — **Skill Library**, context-engineering API, graph-native delegation, unified policy bundle. See Appendix E. **Phase S** hardens the **environment** agents run in; product agents follow in **Phase K**.
+
+**Skill layer decision (ADR R.0.1):** **Do not** collapse skills into tools. Tools remain **atomic LLM-invokable operations**; skills are **composable capability packs** (tools + prompts + policy + metadata) with **import adapters** for external skill formats (e.g. Cursor `SKILL.md`). See architecture §7.1.8.
 
 ### 0.6 When Tier-1 (Nexus) changes are required
 
@@ -62,6 +83,10 @@ Business agents (Problem Radar, Vendor Discovery, Legal expansion) are **blocked
 | New platform concern (new store, queue, notification channel) | **Tier-0** — `intergrax/` shared module |
 | Agent-specific product wiring (routes, env, which agents active) | **Tier-3** — `applications/<product>/` |
 | One agent needs special-case branch in `NexusLoop` | **Anti-pattern** — refactor to contract/metadata or Tier-0 |
+| Reusable workflow pack (tools + instructions + policy) for many agents | **Tier-0 Skill** — `intergrax/skills/` + `SkillManifest`; agent composes `skill_ids` |
+| Import external skill pack (Cursor, internal markdown) | **Tier-0** — `SkillImporter` adapter; MUST validate against `SkillManifest` |
+| Context budget / trim policy for all agents | **Tier-1** — `ContextBudgetPolicy` in `ContextManager` (**Done**, R-Context) |
+| Delegated child run (subagent semantics) | **Tier-1** — `ExecutionGraph` delegation node + isolated memory namespace (**Done**, R-Delegate) |
 
 If the answer to “will another agent need this?” is **no**, it does not belong in Nexus.
 
@@ -93,14 +118,22 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 
 ### 0.5 Maturity dashboard
 
-| Scope | Score | Notes |
-|-------|-------|-------|
-| Canon §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** | Phases A–F |
-| §42 Unified Execution Runtime | **~92–95%** | Tool/agent-selection hooks wired; product interaction intake (2026-05-27) |
-| Laboratory workflow | **~95%** | Debug API, experiments, lab app |
-| Agent OS certification (Phase L deliverables) | **Done** | Scaffold, guide, acceptance suite |
-| Agent OS certification (sign-off exercise) | **Done** | `agents/signoff_probe/` — see Appendix A |
-| Regression gate | **397 passed** | `uv run pytest -m gate -q` |
+| Scope | Score | Blocks new agent? | Notes |
+|-------|-------|-------------------|-------|
+| **Harness GA (functional)** | **Done** | **No** | L certified; scaffold + lab + gate |
+| **Harness quality (Phase Q)** | **Done** (Wave 9) | **No** | Appendix C — gate **417 passed** (2026-06-01) |
+| **Harness hardening (Phase Q+)** | **Done** (2026-06-01) | **No** | Appendix D — typing, legacy, monoliths, getattr audit |
+| **Harness AI alignment (Phase R)** | **Done** (MVP, 2026-06-01) | **No** | Appendix E — Skill Library, context, delegation, policy |
+| Skill Library (Tier-0) | **MVP Done** | **No** (extend catalog) | R-Skill.1–10; importers + trace events |
+| Context engineering API | **Done** | No | R-Context.1–4; `CONTEXT_*` events |
+| Graph delegation (subagent model) | **Done** | No | R-Delegate.1–4; `DelegationSpec` + memory namespace |
+| RuntimePolicyBundle narrative | **Done** (Tier-3 + Nexus RuntimeConfig/Context + ToolRuntime) | No | R-Policy.1–2; `runtime_config_bridge.py`, `tool_policy_resolution.py` |
+| Canon §1–41 (tiers, Nexus, graph, repo split) | **~98%** (post-Q+) | No | Q+-N, Q+-L, Q+-T Done |
+| §42 Unified Execution Runtime | **~99%** (post-Q+-T) | No | UAEP Protocol, harness getattr audit |
+| Laboratory workflow | **~99%** (post-Q+-O) | No | Metrics parity, planner observability |
+| Agent OS certification (Phase L) | **Done** | No | Appendix A |
+| **Harness environment GA (Phase S)** | **Done** (2026-06-01) | No (blocks K.1/K.2 only) | S-Ops + S-H + S-Doc; gate green |
+| Regression gate | **460 passed** | No | Must stay green after each harness PR |
 
 ---
 
@@ -124,21 +157,23 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 **Success metric:** time from idea to first running experiment **< 1 hour**.
 
+**Capability model:** Integration → Tool → **Skill** → Agent (Harness AI alignment). Skill Library **MVP Done** — see §0, Phase R, Appendix E, architecture §7.1.8, [SKILLS.md](SKILLS.md).
 
 
-**Current alignment:**
 
-
+**Current alignment** (synced with §0.5, 2026-06-01):
 
 | Scope | Score | Notes |
-
 |-------|-------|-------|
-
-| Architecture §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** | Phases A–F; typed task contract |
-
-| §42 Unified Execution Runtime | **~92–95%** | Hooks B.06 + product Slack/Teams intake on legal/research (2026-05-27) |
-| Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
-| Pre-P4.2 regression gate | **Done** | **397 tests**, marker `gate` |
+| Architecture §1–41 (tiers, Nexus, graph, repo split) | **~98%** | Phases A–O, N, Q+ complete |
+| §42 Unified Execution Runtime | **~99%** | UAEP Protocol, hook parity, planner split (`step_planner/`), harness getattr audit |
+| Laboratory workflow (inspect, decide) | **~99%** | D.1–D.5, metrics parity, debug API |
+| Harness quality (Phase Q) | **Done** | Appendix C — gate **417** at Phase Q close |
+| Harness hardening (Phase Q+) | **Done** | Appendix D — typing, monolith splits, zero grandfathered `getattr` |
+| Harness AI alignment (Phase R MVP) | **Done** | Appendix E — Skill Library, context, delegation, policy bundle |
+| Regression gate | **460 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
+| Harness environment GA (Phase S) | **Done** (2026-06-01) | S-H.* + S-Ops + S-Doc |
+| Product agents (Phase K) | **Deferred** | K.1/K.2 after Phase S **Done** |
 
 
 
@@ -166,6 +201,10 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §22 ToolRuntime | Policy gateway | **Done** | `tool_runtime.py`, `ToolAccessPolicy` |
 
+| §7.1.8 Skill Library | Composable capability packs, importers | **MVP Done** | `intergrax/skills/` · `docs/SKILLS.md` |
+
+| §5.3 Harness AI alignment | Scaffold, skill/tool split, context, delegation | **Done** | `scaffold/new_skill.py`, `intergrax/skills/`, Appendix E |
+
 | §23 Task lifecycle | States + trace + typed contract | **Done** | `task/`, `task_contract.py`, `TaskContextAssemblyOptions`, `task_metadata_bridge.py` |
 
 | §24–25 Execution graph | Multi-agent | **Done** | `execution/`, `GraphExecutor` |
@@ -176,7 +215,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §33 Observability | Trace + events | **Done** (lab scope) | Trace + runtime events + metrics export (`B.08`–`B.11`); OTel provider beta |
 
-| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial (~92–95%)** | Tool + agent-selection hooks; remaining: decision/interrupt/retry hooks |
+| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Done (~99%)** | UAEP Protocol, planner events, tool gateway, harness getattr audit |
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
@@ -471,10 +510,12 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ### Phase K — Hardening & Reference Agents
 
+**Gate:** Start K.1/K.2 only after **Phase S (Harness environment GA)** is **Done** (see §4). Harness prerequisites (L, Q+, R) are already met.
+
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
-| K.1 | Problem Radar prototype | **Blocked** | §36 | After Phase L sign-off |
-| K.2 | Vendor Discovery prototype | **Blocked** | §37 | After Phase L sign-off |
+| K.1 | Problem Radar prototype | **Deferred** | §36 | After Phase S; product decision |
+| K.2 | Vendor Discovery prototype | **Deferred** | §37 | After Phase S; product decision |
 | K.3 | Policy engine facade | **Done** | §42.11 | `PolicyEngine` + `coerce_replay_policy_engine`; `ExecutionGuard` uses `evaluate_replay` (2026-05-27) |
 | K.4 | Dual `AgentDecision` cleanup | **Done** | §42.7 | `ToolPlanDecision`; deprecated `tools_agent.AgentDecision` alias (2026-05-27) |
 | K.5 | ChatAgent / legacy removal | **Done** | §39 | Production paths use Nexus only; `check_production_chat_agent_imports.py` gate (2026-05-27) |
@@ -484,7 +525,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ### Phase L — Agent OS Certification
 
-**Directive:** L1 certification recorded in Appendix A. Phase K is a **product** decision, not a runtime gate.  
+**Directive:** L1 certification recorded in Appendix A. K.1/K.2 are **Phase K product work** — after harness environment GA (Phase S).  
 **Agent workflow:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)
 
 | # | Deliverable | Status | Req | Notes |
@@ -548,7 +589,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M-LLM.10 | Production hardening | **Done** | Metrics, builtin conformance, `LLMProfile`, Bedrock tools stream, `cohere_native`, `azure_ai_inference` |
 | M-LLM.11 | Production ops layer | **Done** | OTLP/Prometheus routes, tenant metrics, rate limit + circuit breaker, secrets map, PR guard, extended network smoke |
 | M-LLM.12 | Nexus + governance wiring | **Done** | `llm_tenant_scope`, runtime metrics plugin, `INTERGRAX_LLM_TENANT_MAX_TOKENS` quota |
-| M-LLM.13 | Observability + secrets + distributed limits | **Done** | Pushgateway, `LLM_OBSERVABILITY.md`, Vault loader, Redis rate limit, governance warn |
+| M-LLM.13 | Observability + secrets + distributed limits | **Done** | Pushgateway, `LLM_ADAPTERS.md` § Observability, Vault loader, Redis rate limit, governance warn |
 
 ### Phase M-RAG — RAG Engine (Tier-0)
 
@@ -574,6 +615,11 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M-RAG.15 | Weaviate native `query.hybrid` | **Done** | Live client + `INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID`; fallback to in-memory |
 | M-RAG.16 | LLM graph indexer (optional adapter) | **Done** | `INTERGRAX_RAG_GRAPH_INDEXER_MODE=llm\|heuristic_then_llm` |
 | M-RAG.17 | LLM agentic query refinement | **Done** | `INTERGRAX_RAG_AGENTIC_QUERY_MODE=llm` + injected `LLMAdapter` |
+| M-RAG.18 | Neo4j GraphRAG backend | **Done** | `Neo4jRagGraphStore` + `INTERGRAX_RAG_GRAPH_STORE=neo4j` |
+| M-RAG.19 | SPLADE / learned sparse encoder | **Done** | `sparse_encoder.py`; `INTERGRAX_RAG_SPARSE_ENCODER=splade` (optional `fastembed`) |
+| M-RAG.20 | Weaviate prod hardening | **Done** | `schema.py` — migration, multi-tenant, metadata filters |
+| M-RAG.21 | Extended golden datasets | **Done** | graph_rag, multi_hop, agentic scenarios in `retrieval_cases.json` |
+| M-RAG.22 | RAG observability metrics | **Done** | `INTERGRAX_RAG_METRICS_ENABLED`, runtime plugin on `TASK_COMPLETED` |
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
@@ -661,6 +707,10 @@ Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. 
 
 #### M.6 P3 / M.7 — Harness integrations (Done beta, 2026-05-29)
 
+**M.11 harness defaults (Done beta):** default `notify_channel` injection from lab wiring (`task_defaults.py`, `LAB_HARNESS` enricher on lab run + interaction intake).
+
+**M.10 harness Tier A (Done beta):** composite observability (`observability_backends` + role-based `resolve_observability_backend`), HITL→PagerDuty runtime path (`create_harness_notification_adapter`, `LAB_HARNESS`), integration tests.
+
 **M.9 harness depth (Done beta):** full adapters (LangSmith, OpenSearch, Vespa, GitLab, PagerDuty, Braintrust), tools (`gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`), `slash_command`, lab harness profile, CI harness-smoke job. Catalog: **99**.
 
 **M.8 harness gap (Done beta):** +14 slugs via `_shared/p4/factories.py`
@@ -711,7 +761,7 @@ Slugs below were **already in** `IntegrationSlug` unless marked *proposed*. Prio
 | **Medium** | `brave`, `serpapi` | search_provider | Rate-limit / vendor diversity for research agents |
 | **Low** | `oracle`, `mssql`, `azure_sql`, `cloud_sql` | relational_store | Enterprise DB deployments |
 | **Low** | `dynamodb`, `memcached`, `elasticache` | document_store / KV | AWS-native persistence tiers |
-| **Future** | *weaviate*, *milvus*, *snowflake*, *vault* *proposed* | vector_store / relational / secrets | Add slug + category only after human approval (§5.2.4) |
+| **Done (beta)** | `weaviate`, `milvus`, `snowflake`, `vault` | vector_store / relational_store / secrets | `integrations/providers/vector_store/weaviate/`, `vector_store/milvus/`, `relational_store/snowflake/`, `secrets/vault/` |
 
 **Vector-store rule (pinecone / qdrant / chroma):** implementation **stays** in `intergrax/rag/vectorstore/`. Integration Library adds `providers/<slug>/` as a **thin registry adapter**: `opens.py` is the only module that imports vendor SDK; `bundle.create_*_vector_store()` delegates to the existing RAG provider. Tier-3 selects slug via `IntegrationProfile.vector_store`; RAG pipeline code unchanged.
 
@@ -1198,29 +1248,606 @@ AFTER (canonical):
 
 ---
 
+### Phase Q — Harness Quality & Consolidation (audit remediation)
+
+**Source:** Harness implementation audit (2026-06-01) — Nexus, LLM, RAG, memory, observability, legacy, tests, docs.  
+**Goal:** Remove bugs, technical debt, dead code, monoliths, dual-path semantics, and documentation drift **without** new business agents or integration catalog breadth.  
+**Principle:** evolve, not rewrite · one deliverable per PR · gate green after each step · §0.6 (Tier-1 only when reusable).
+
+**Out of scope for Phase Q:**
+
+- Phase K.1/K.2 business agents (product)
+- K.6 / B.15 Legal live LLM E2E (product/CI)
+- New integration slugs (Phase M on-demand)
+- New Tier-0 universal mechanisms (§5.2.4 human approval)
+- Replacing `ToolsAgent` planner (Phase O out of scope)
+
+**Delivery rule:** Same cadence as §6.1 — implement **one Q.* ID** → summarize → update this table + Appendix C status → next ID.
+
+**Phase Q complete when:** All rows below **Done**; Appendix C 100% **Done** or **Won't fix** (documented); §0.5 Harness quality row **Done**; gate unchanged or increased.
+
+---
+
+#### Q.0 — Program governance
+
+| # | Deliverable | Status | Tier | Audit ref | Done when |
+|---|-------------|--------|------|-----------|-----------|
+| Q.0.1 | Appendix C traceability matrix (audit → Q ID) | **Done** | Docs | C-all | Appendix C below; each row has owner phase |
+| Q.0.2 | Phase Q execution order + PR sizing guide | **Done** | Docs | — | §4 + subsection **Q execution order** below |
+| Q.0.3 | Gate policy: no Q PR without `pytest -m gate` | **Done** | CI | — | Documented in Q DoD; CI unchanged paths |
+
+---
+
+#### Phase Q-N — Nexus, loops, orchestration, error handling
+
+**Components:** `intergrax/runtime/nexus/`, `intergrax/runtime/execution/`, `intergrax/runtime/hooks/`, `intergrax/runtime/interrupts/`, `intergrax/runtime/policy/`, `intergrax/runtime/nexus/retry/`, `intergrax/agents/agent_engine.py`, `intergrax/agents/uaep.py`.
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-N.1 | **Decompose `NexusLoop`** — extract HITL runner, long-running coordinator calls, event publisher, shadow/sandbox cleanup into dedicated modules; `NexusLoop` orchestrates only | **Done** | High | `nexus/orchestration/` (`graph_runner`, `task_events`, `lifecycle_bridge`, …) | `nexus_loop.py` ~586 lines; gate green |
+| Q-N.2 | **Fix duplicate `_normalize_human_response`** — single call in `_handle_task_impl` | **Done** | High | `nexus_loop.py` L229–231 | Duplicate call removed (2026-06-01) |
+| Q-N.3 | **Retry semantics document + facade** — one doc section: `RetryEngine` (graph/validation/alternate agent) vs `RuntimeConfig.max_run_retries` (LLM/tool in `RuntimeEngine`); optional `RetryCoordinator` delegating both | **Done** | High | `nexus/retry/`, `nexus/config.py`, architecture §31.1 | Doc merged; no duplicate retry without trace event |
+| Q-N.4 | **Unify policy injection** — `PolicyEngine` only in public Nexus/UAEP APIs; remove `RuntimePolicyEngine` union from external signatures; `coerce_policy_engine` internal | **Done** | Medium | `nexus_loop.py`, `uaep.py`, factories | Type check / mypy clean on factories; gate green |
+| Q-N.5 | **§42 hook parity — decision / interrupt / retry** — wire `BEFORE/AFTER_DECISION`, `BEFORE/AFTER_INTERRUPT`, `BEFORE/AFTER_RETRY` in NexusLoop + UAEP + `RetryEngine`; update `hooks/parity.py` to **WIRED** or **Won't fix** with canon amendment | **Done** | Medium | `hooks/`, `nexus_loop.py`, `uaep.py`, `retry_engine.py` | `parity.py` no NOT_WIRED for these six OR canon §42.20 amended + tests |
+| Q-N.6 | **§42 hook parity — trace persist** — `BEFORE/AFTER_TRACE_PERSIST` **WIRED** at trace finalize path; `parity.py` → **WIRED** | **Done** | Medium | `hooks/`, `task_trace.py`, trace emitter | Parity test; hook invoked in integration test |
+| Q-N.7 | **Rename Nexus context helpers module** — `runtime_steps/tools.py` → `runtime_steps/tool_context_helpers.py` (or merge into `tools_step.py`); update imports | **Done** | Low | `tool_context_helpers.py` + shim `tools.py` | Backward-compatible re-export (2026-06-01) |
+| Q-N.8 | **Split `RuntimeConfig`** — `ModelRuntimeConfig`, `RetrievalRuntimeConfig`, `ToolsRuntimeConfig`, `PlanningRuntimeConfig`, `TraceRuntimeConfig`; composed `RuntimeConfig`; `validate()` cross-field | **Done** | High | `nexus/config.py` | Backward-compatible properties or migration shim one release; all factories updated |
+| Q-N.9 | **Type `integration_profile`** — `IntegrationProfile` from `intergrax.integrations` on `RuntimeConfig` / wiring contexts | **Done** | Medium | `nexus/config.py`, `engine/runtime_context.py` | No `Optional[object]` for profile in public config |
+| Q-N.10 | **`production_mode` lab default** — `lab_application` / scaffold sets `production_mode=False`; document in Step 4E | **Done** | Low | Tier-3 factories, `AGENT_CREATION_GUIDE.md` | `harness_production_mode()` in `applications/_shared/runtime_defaults.py` |
+| Q-N.11 | **Graph callback typing** — `ExecutionNode` instead of `object` in `GraphExecutor` / NexusLoop node callbacks | **Done** | Low | `execution/graph_executor.py`, `nexus_loop.py` | Mypy/ruff on execution package |
+| Q-N.12 | **Interrupt handler hygiene** — remove duplicate `InterruptType` import; add unit test for interrupt → policy path | **Done** | Low | `interrupts/handler.py` | Duplicate import removed (2026-06-01) |
+| Q-N.13 | **`AgentEngine` static UAEP** — document or inject `event_bus` for `AgentEngine.run` static path; no silent missing events | **Done** | Low | `agents/agent_engine.py` | `_resolve_static_executor`; `tests/unit/agents/test_agent_engine_event_bus.py` |
+| Q-N.14 | **Unit tests for `NexusLoop` helpers** — `_finish_task`, lifecycle transitions, HITL branch stubs (mock deps) | **Done** | High | `tests/unit/runtime/nexus/test_nexus_loop.py` | New file; ≥15 focused tests; marker `gate` |
+| Q-N.15 | **`GraphExecutor` unit coverage** — failure recovery, skip completed, handoff edge (beyond stub integration) | **Done** | Medium | `tests/unit/runtime/execution/` | `test_graph_executor_coverage.py` + checkpoint skip in `test_runtime_checkpoint.py` |
+
+---
+
+#### Phase Q-L — LLM adapters
+
+**Components:** `intergrax/llm_adapters/`, `docs/LLM_ADAPTERS.md`, governance plugin.
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-L.1 | **Remove or complete `tracked_llm_call`** — if kept: `finally` calls `usage.end_call`; if removed: delete `tracked_call.py` + references | **Done** | Medium | `_shared/tracked_call.py` | File removed (unused) (2026-06-01) |
+| Q-L.2 | **Public API surface** — re-export `LLMAdapter`, `LLMProvider`, `LLMAdapterRegistry`, `LLMProfile` from `llm_adapters/__init__.py` | **Done** | Low | `llm_adapters/__init__.py` | Public re-exports (2026-06-01) |
+| Q-L.3 | **Provider catalog table in docs** — 19 rows: slug, adapter class, env vars, tools/stream/structured, native vs compat | **Done** | High | `docs/LLM_ADAPTERS.md` | Table matches `LLMProvider` enum + conformance list |
+| Q-L.4 | **Fix `LLMProfile` docstring** — `max_retries` only via `options={}`; align examples in guide | **Done** | Low | `registry/profile.py`, tests | Example fixed (2026-06-01) |
+| Q-L.5 | **Per-provider `supports_streaming()` / `supports_structured_output()`** — override defaults (`False` base default for streaming); table in Q-L.3 | **Done** | Medium | Each `providers/*.py`, ABC defaults | Conformance reads flags; no false positives |
+| Q-L.6 | **`PolicyEngine` + `llm_cost_evaluation`** — rule hook on `TASK_COMPLETED` or policy replay; or remove “next step” from docs until done | **Done** | Medium | `governance/`, `observability_bridge.py`, `policy_engine.py` | Test: over-quota/warn triggers policy decision or structured log contract |
+| Q-L.7 | **Usage tracking doc** — distinguish adapter `LLMAdapterUsageLog` vs runtime `LLMUsageTracker` | **Done** | Low | `docs/LLM_ADAPTERS.md` § Observability | Two-layer table |
+| Q-L.8 | **Conformance: structured output** — parametrize providers with `supports_structured_output`; mock SDK | **Done** | Medium | `tests/unit/llm_adapters/` | Added to gate subset in `llm-adapters-guard.yml` |
+| Q-L.9 | **Bedrock `context_window_tokens`** — lookup table or model metadata for common `model_id` | **Done** | Low | `providers/aws_bedrock_adapter.py` | `_CONTEXT_WINDOWS` + prefix fallback; `test_bedrock_context_window.py` |
+| Q-L.10 | **OpenAI-compat adapter init** — replace `__dict__.update` with explicit delegation or composition wrapper | **Done** | Low | `openai_compat_providers.py`, factory | `_delegate` + `__getattr__` composition |
+| Q-L.11 | **Central env appendix** — single table: `INTERGRAX_LLM_*`, secrets map, per-provider overrides | **Done** | Medium | `LLM_ADAPTERS.md` appendix | Cross-links from each `providers/*/USAGE.md` |
+
+---
+
+#### Phase Q-R — RAG pipeline & Nexus RAG integration
+
+**Components:** `intergrax/rag/`, `runtime/nexus/context/context_builder.py`, `runtime_steps/rag_step.py`, `history_step.py`, `pipelines/no_planner_pipeline.py`, `tools/providers/rag/`, `agents/legal/*` plan flags.
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-R.1 | **Delete dead code in `ContextBuilder`** — `_build_backend_where`, `_map_hits_to_chunks`, unused `VectorStoreHit` import | **Done** | High | `context_builder.py` | Dead helpers removed (2026-06-01) |
+| Q-R.2 | **Single retrieval per turn (design)** — ADR in plan: either (A) retrieval only in `RagStep`/`rag.retrieve`, or (B) only in `HistoryStep`; remove duplicate vector calls | **Done** | High | `history_step.py`, `context_builder.py` | `HistoryStep` uses `perform_retrieval=False` (2026-06-01) |
+| Q-R.3 | **`ContextBuilder` respects plan `use_rag`** — `_should_use_rag` checks plan/engine `use_rag` when present, not only `enable_rag` | **Done** | High | `context_builder.py` | `request.metadata["use_rag"]`; unit test (2026-06-01) |
+| Q-R.4 | **`NoPlannerPipeline` conditional `RagStep`** — include `RagStep` only when plan/tool_ids require RAG | **Done** | High | `no_planner_pipeline.py`, `pipeline_factory.py` | Pipeline test matrix |
+| Q-R.5 | **Prefetch vs final `top_k`** — `RetrievalRequest.prefetch_k` optional; Nexus passes `max_docs_per_query` as `final_k` only; service uses profile `prefetch_top_k` when unset | **Done** | High | `retrieval_request.py`, `retrieval_service.py` | `test_retrieval_request_prefetch.py` (2026-06-01) |
+| Q-R.6 | **Unify RAG config surface** — map `RuntimeConfig.max_docs_per_query` / threshold → `RagProfile` at factory wire time; deprecate duplicate fields with shim + trace | **Done** | High | `nexus/config.py`, `RetrievalRuntimeConfig`, `rag_profile.py` | One source of truth documented |
+| Q-R.7 | **`RagProfile.extras`** — use for vendor knobs or remove field | **Done** | Low | `rag_profile.py` | No unused field in frozen profile |
+| Q-R.8 | **`INTERGRAX_RAG_METRICS_ENABLED` in `rag_profile_from_env`** or documented exclusion | **Done** | Low | `rag_profile.py`, architecture §7.1.2 | `extras.metrics_enabled` from env (2026-06-01) |
+| Q-R.9 | **`rag/answers/` deprecation path** — mark package deprecated; redirect doc to `RetrievalService`; no new imports from Nexus | **Done** | Medium | `rag/answers/`, `chat_agent` removal (Q-X.1) | Grep: zero imports from `runtime/` and `agents/` except tests |
+| Q-R.10 | **`UserProfileManager` LTM via `RetrievalService`** — same metadata scope / `RagProfile` chunking policy | **Done** | Medium | `memory/user_profile_manager.py` | Unit test with fake `RetrievalService` |
+| Q-R.11 | **Naming guide — three “context builders”** — table in `AGENT_CREATION_GUIDE` or `intergrax/rag/README.md`: Nexus `ContextBuilder`, `ContextManager`, `DefaultContextBuilder` | **Done** | Low | Docs | Linked from architecture §28 pointer |
+| Q-R.12 | **Legacy `use_rag` plan flags** — migrate Legal/Nexus plans to `tool_ids` including `rag.retrieve`; emit deprecation `RuntimeEvent` on boolean | **Done** | Medium | `engine_plan_models.py`, `legal/*`, `tool_runtime.py` | Legal tests use `tool_ids`; booleans shim one release |
+
+---
+
+#### Phase Q-M — Memory
+
+**Components:** `intergrax/memory/`, `runtime/task_memory/`, `runtime/nexus/context/`.
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-M.1 | **Memory architecture one-pager** — four stores: session history, user LTM, task KV (`TaskMemory`), shared graph context; diagram + when to enable SQLite | **Done** | High | `docs/` section in plan §0 or `AGENT_CREATION_GUIDE` Appendix | Linked from §0.3 execution path |
+| Q-M.2 | **Task memory visibility in scaffold** — `wire_task_memory` in lab/product templates; env `INTERGRAX_TASK_MEMORY_DB` in `.env.example`; Step 4E paragraph | **Done** | Medium | `applications/*`, scaffold, guide | Scaffold acceptance asserts task memory path optional |
+| Q-M.3 | **`resolve_task_memory_persistence` defaults** — log warning when None in lab; debug API hint | **Done** | Low | `task_memory/store.py`, `lab_application` factory | Doc + single integration test |
+
+---
+
+#### Phase Q-O — Observability & metrics
+
+**Components:** `runtime/events/`, `runtime/nexus/tracing/`, `runtime/metrics/`, `debug/`, `llm_adapters/tracking/`, `rag/tracking/`, `applications/_shared/platform_wiring.py`.
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-O.1 | **Register RAG observability plugin in default bootstrap** — `register_rag_observability_plugin(plugins)` alongside LLM in `platform_wiring.py` | **Done** | **Critical** | `platform_wiring.py` | `test_platform_wiring_observability.py` (2026-06-01) |
+| Q-O.2 | **RAG observability bridge tests** — mirror `test_observability_bridge.py` (LLM) | **Done** | High | `tests/unit/rag/tracking/` | `test_rag_observability_bridge.py` (2026-06-01) |
+| Q-O.3 | **Parser trace export strategy** — route `parser_trace_flush` through `ObservabilityBackend` **or** document intentional bypass + single env table | **Done** | Medium | `parser_trace_flush.py`, `parser_trace_exporter.py`, integrations | Documented in architecture §7.1.2 RAG observability |
+| Q-O.4 | **`metrics/export.py` typed trace summary** — use `DiagnosticPayload` / `trace_models` schema ids instead of substring heuristics | **Done** | Medium | `runtime/metrics/export.py` | Unit test with synthetic trace events |
+| Q-O.5 | **Lint `metrics/export.py`** — remove duplicate `ExecutionMetrics` import | **Done** | Low | `metrics/export.py` | Ruff clean (2026-06-01) |
+| Q-O.6 | **`export_run_metrics` behavioral field** — populate from governance/replay or remove from DTO | **Done** | Low | `metrics/export.py` | `ExecutionMetrics` from trace events in `export_run_metrics` |
+| Q-O.7 | **Mount LLM metrics routes on lab** — `register_llm_metrics_routes(app)` when `INTERGRAX_LLM_METRICS_ENABLED` | **Done** | Medium | `lab_application/host/factory.py` | Routes registered at factory (2026-06-01) |
+| Q-O.8 | **Observability env profile doc** — one table: trace DB, runtime events DB, LLM/RAG metrics, parser trace, integration observability slug | **Done** | High | New subsection §0 or `infra/README` cross-link | All Tier-3 `.env.example` reference same names |
+| Q-O.9 | **RAG metrics parity decision** — implement log-only parity **or** `register_rag_metrics_routes` + optional Pushgateway | **Done** | Medium | `rag/tracking/`, architecture §7.1.2 | Matches documented behavior |
+| Q-O.10 | **Unify phase mapping** — `trace_bridge` delegates phase to `phase_coverage.py`; single source | **Done** | Medium | `events/trace_bridge.py`, `phase_coverage.py` | Unit test: same `ExecutionPhase` for sample events |
+| Q-O.11 | **Debug router type imports** — explicit imports for `DebugHitlResumeService`, `AgentRegistry` in annotations | **Done** | Low | `debug/router.py`, `debug/app.py` | Explicit imports in `debug/router.py` |
+| Q-O.12 | **`trace_bridge` unit tests** | **Done** | Medium | `tests/unit/runtime/events/test_trace_bridge.py` | Gate marker |
+| Q-O.13 | **Clarify dual Prometheus** — in-process scrape vs `integrations` PromQL backend | **Done** | Low | `docs/LLM_ADAPTERS.md` § Observability | Prevents operator confusion |
+| Q-O.14 | **Event/trace store adoption** — SQLite-first default; scale-out criteria for `cassandra` / `elasticsearch` | **Done** | Low | Architecture §33.1 + `cassandra/USAGE.md` | No separate ADR file |
+
+---
+
+#### Phase Q-X — Legacy removal & code hygiene
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-X.1 | **`ChatAgent` removal** — migrate remaining tests to `RuntimeEngine`/`NexusLoop`; delete `intergrax/chat_agent.py`; keep import guard script as negative test | **Done** | High | `chat_agent.py`, `tests/unit/chat_agent/` | Grep zero production imports; gate green |
+| Q-X.2 | **`task_metadata_bridge` shrink** — migrate callers to typed `Task` metadata; deprecate flat bridge with warning event | **Done** | Medium | `task_metadata_bridge.py`, `uaep.py` | `execution_options_for_request`; legacy warnings; Task hydrates typed fields |
+| Q-X.3 | **Copyright / naming consistency** — `Intergrax` header; fix `Integrax` typo in `chat_agent` (or file deleted in Q-X.1) | **Done** | Low | Affected files from audit | Spot-check script or ruff rule |
+| Q-X.4 | **`tools_base` deprecation timeline** — document removal after Q-R.12; no new imports | **Done** | Low | `tools/tools_base.py`, governance script | Module docstring + `DeprecationWarning` on import |
+| Q-X.5 | **Sync M.6 “Future” slugs table** — weaviate, milvus, snowflake, vault → **Done (beta)** with paths | **Done** | Low | This plan M.6 P3 section | Table matches repo `integrations/providers/` |
+
+---
+
+#### Phase Q-T — Test harness gaps
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-T.1 | NexusLoop unit suite | **Done** | High | See Q-N.14 | — |
+| Q-T.2 | `test_rag_profile_from_env` | **Done** | Medium | `tests/unit/rag/profiles/` | Gate (2026-06-01) |
+| Q-T.3 | `test_context_builder_retrieval` | **Done** | High | `tests/unit/runtime/nexus/context/` | `test_context_builder.py` (2026-06-01) |
+| Q-T.4 | `test_user_profile_manager` | **Done** | Medium | `tests/unit/memory/` | Index + search |
+| Q-T.5 | **Catalog vs legacy RAG path** — integration test one pipeline run, retrieval call count ≤1 | **Done** | High | `tests/integration/runtime/` | Implements Q-R.2 acceptance |
+| Q-T.6 | **Observability wiring E2E** — lab factory bootstraps LLM+RAG plugins | **Done** | High | `tests/integration/runtime/test_platform_wiring_observability.py` | Q-O.1 (2026-06-01) |
+
+---
+
+#### Phase Q-D — Documentation & plan sync
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-D.1 | Update `docs/README.md` current focus → Phase Q | **Done** | High | `docs/README.md` | — |
+| Q-D.2 | Canon §52 Phase L status → **Done** (pointer to Phase Q) | **Done** | Low | `intergrax_runtime_architecture.md` §52 | — |
+| Q-D.3 | §2 architecture map — §42 row points to Phase Q-N.5–Q-N.6 | **Done** | Low | This file §2 | — |
+| Q-D.4 | `AGENT_CREATION_GUIDE` — Q-M.1 memory diagram + Q-R.11 naming | **Done** | Medium | Guide appendices | — |
+| Q-D.5 | **§5.2 reuse enforcement** — document existing gates (`check_agents_vendor_imports`, `check_integration_vendor_imports`, `check_production_chat_agent_imports`) in AGENT_CREATION_GUIDE anti-patterns | **Done** | Low | Guide + `scripts/` | New agent authors see one list |
+
+---
+
+#### Phase Q — Definition of done (global)
+
+1. Deliverable row **Done** with PR link/date in Appendix C paydown log.
+2. **Gate:** `uv run pytest -m gate -q` green.
+3. **No new** duplicate Tier-0 mechanism (§5.2).
+4. **Tests** for behavior change (unit or integration); not docs-only for code fixes.
+5. Update **Appendix C** status column for audit ID.
+
+---
+
+#### Phase Q — Recommended execution order
+
+Execute in order unless a row is marked parallel. Critical path for harness stability:
+
+```text
+Wave 1 (bugs + critical):  Q-O.1 → Q-N.2 → Q-R.5 → Q-R.1
+Wave 2 (RAG semantics):    Q-R.3 → Q-R.4 → Q-R.2 → Q-T.5 → Q-R.6
+Wave 3 (observability):    Q-O.2 → Q-O.4 → Q-O.7 → Q-O.10 → Q-O.12 → Q-O.8
+Wave 4 (Nexus structure):  Q-N.14 → Q-N.1 → Q-N.3 → Q-N.8
+Wave 5 (LLM docs/debt):    Q-L.3 → Q-L.1 → Q-L.5 → Q-L.8 → Q-L.11
+Wave 6 (memory + legacy):  Q-M.1 → Q-M.2 → Q-R.10 → Q-X.1 → Q-R.9
+Wave 7 (hooks + policy):   Q-N.5 → Q-N.6 → Q-L.6 → Q-N.4
+Wave 8 (cleanup):          Q-N.7 → Q-X.2 → Q-X.3 → Q-X.5 → Q-D.*
+Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-O.13, Q-N.10–Q-N.13, Q-N.15
+```
+
+**Historical (Phase Q only):** Do not start Phase K.1/K.2 until Q Waves 1–3 were **Done** — **met** (2026-06-01). Phase S focuses on harness environment; K.1/K.2 wait until S Done.
+
+---
+
+### Phase Q+ — Harness Hardening (post-audit 2026-06-01)
+
+**Source:** Technical debt audit after Phase Q — architecture compliance, typing, observability gaps, legacy parallel stacks, Nexus/planning monoliths.  
+**Goal:** Intergrax as a **strong, typed, observable harness** comparable in discipline to Cursor / Claude Code / Google ADK-style agent labs — not merely “gate green”.  
+**Principle:** evolve, not rewrite · explicit `Protocol` / Pydantic at boundaries · **zero new `getattr` in `runtime/nexus` and `agents/`** (integrations/LLM SDK edges exempt) · one Q+.* ID per PR · gate green.
+
+**Relationship to Phase Q:** Phase Q closed the **first** audit (Appendix C). Phase Q+ closes the **second** audit (Appendix D). Do not reopen Q.* rows unless a regression is found.
+
+**Out of scope for Phase Q+:**
+
+- Phase K.1/K.2 product agents (unless explicitly prioritized — record in Appendix D)
+- K.6 / B.15 Legal live LLM E2E
+- New integration catalog slugs (Phase M on-demand)
+- Rewriting all LLM provider adapters (only isolate SDK reflection — Q+-I.*)
+- Mandatory Cassandra / multi-tenant scale-out (architecture §33.1 criteria only)
+
+**Phase Q+ complete when:** All Q+ rows **Done** or **Won't fix** (canon amendment); Appendix D 100%; §0.5 Harness hardening **Done**; gate unchanged or increased; grep gate: no new `getattr` in `runtime/nexus/` + `agents/` (CI script Q+.0.3).
+
+---
+
+#### Q+.0 — Program governance
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+.0.1 | **Appendix D** — audit topic → Q+ ID matrix (P0–P3) | **Done** | High | This file Appendix D | Every audit section mapped |
+| Q+.0.2 | **Q+ execution order** — Waves 1–5 below | **Done** | High | §4 Priority Order | Team follows wave sequence |
+| Q+.0.3 | **CI grep gate** — fail on new `getattr`/`setattr` in `intergrax/runtime/nexus/`, `intergrax/agents/` | **Done** | High | `scripts/check_harness_no_getattr.py` + gate workflow | Zero grandfathered harness paths (2026-06-01) |
+
+---
+
+#### Q+-T — Typing & explicit contracts (P0)
+
+**Audit:** loose coupling, `getattr`, `Any` on harness paths, classes not implementing Protocols.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-T.1 | **`UAEPAgent` Protocol** — `get_steps`, `run_step`, optional `resume_step`, `decide_after_step`; replace `supports_uaep()` duck typing | **Done** | **Critical** | `agents/uaep_protocol.py`, `agents/uaep.py` | Standalone `@runtime_checkable` Protocol; no `getattr` in UAEP |
+| Q+-T.2 | **`ToolInvokerProtocol`** — explicit `registry`; remove `catalog_context` invoker chain `getattr` | **Done** | **Critical** | `runtime/nexus/tools/`, `catalog_context.py` | Typed invoker only |
+| Q+-T.3 | **`RuntimeState` trace hook** — `trace_event: Optional[TraceEmitterFn]`; remove `getattr(state, "trace_event")` | **Done** | High | `tool_access_policy.py` | `TraceEmittingRuntimeState` Protocol |
+| Q+-T.4 | **`Agent.can_handle(TaskContext)`** — replace `task_context: Any` on `Agent` ABC | **Done** | High | `agents/agent_contract.py`, product agents | Production agents use `TaskContext` |
+| Q+-T.5 | **`EnginePlan` / tool plan union** — `tool_runtime` reads `tool_ids` without `getattr(source, …)` | **Done** | High | `tool_runtime.py`, `engine_plan_models.py` | `ToolPlanLike` + `EnginePlan.resolved_tool_ids()` |
+| Q+-T.6 | **`long_running_bridge`** — `RuntimeEventPublisher` accepts `RuntimeEvent` only (not `object`) | **Done** | Medium | `orchestration/long_running_bridge.py` | Align with `NexusRuntimeEventPublisher` |
+| Q+-T.7 | **`context_builder` session snapshot** — typed session view; no `getattr(session, attr)` loop | **Done** | Medium | `context/context_builder.py` | `ChatSession` fields directly |
+| Q+-T.8 | **`rag_step_policy`** — use `NexusPlan` / `EnginePlan` fields only | **Done** | Low | `pipelines/rag_step_policy.py` | `isinstance(plan, EnginePlan)` |
+
+---
+
+#### Q+-N — Nexus decomposition & retry (P0–P1)
+
+**Audit:** `nexus_loop` still owns intake/classification/planning; no `RetryCoordinator`; thin graph tests.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-N.1 | **`NexusIntakeRunner`** — resume/long-running preamble + HITL verdict branches extracted from `nexus_loop` | **Done** | High | `orchestration/intake_runner.py` | `nexus_loop` delegates; behavior unchanged |
+| Q+-N.2 | **`NexusPlanningRunner`** — classify → plan → pre-graph HITL; hooks + runtime events | **Done** | High | `orchestration/planning_runner.py` | `nexus_loop` slimmed; graph phase unchanged |
+| Q+-N.3 | **`RetryCoordinator`** (optional facade) — delegate `RetryEngine` + `RuntimeConfig.max_run_retries` with `RETRY_SCHEDULED` events | **Done** | Medium | `nexus/retry/coordinator.py`, architecture §31.1 | Graph emits `RETRY_SCHEDULED`; run retries use coordinator |
+| Q+-N.4 | **`GraphExecutor` integration tests** — handoff edge, validation retry + alternate agent | **Done** | Medium | `tests/integration/runtime/test_graph_executor_handoff_retry.py` | Handoff + alternate-agent retry |
+| Q+-N.5 | **Planner failure observability** — `engine_planner` errors → `RuntimeEventType.PLAN_FAILED` (narrow exceptions) | **Done** | Medium | `planning/engine_planner.py`, `planner_events.py` | `test_engine_planner_plan_failed.py` |
+
+---
+
+#### Q+-O — Observability parity (P1)
+
+**Audit:** metrics heuristics, RAG HTTP metrics asymmetry, lab `production_mode` not wired.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-O.1 | **`export_run_metrics` typed-only** — remove getattr/substring fallbacks; require `DiagnosticPayload` / schema ids | **Done** | High | `runtime/metrics/export.py` | `TraceEvent` / `SerializedTraceEvent` only |
+| Q+-O.2 | **Wire `harness_production_mode()`** in lab + scaffold factories | **Done** | Medium | `scaffold/new_agent.py`, Tier-2 lab agents | Lab/scaffold agents use `harness_production_mode()` |
+| Q+-O.3 | **RAG metrics HTTP decision** — implement `register_rag_metrics_routes` **or** document Won't fix + unified `/metrics` scrape | **Won't fix** (core) | Medium | architecture §7.1.2 | No default `/metrics/rag`; log + plugin scrape |
+| Q+-O.4 | **Ingestion path events** — consistent `RuntimeEvent` on ingest failures | **Done** | Low | `ingestion_events.py`, `ingestion_service.py` | `INGESTION_FAILED` + gate test |
+
+---
+
+#### Q+-L — Legacy & duplicate stacks (P0–P2)
+
+**Audit:** `tools_agent`, `supervisor`, `chains`, `openai/rag`, `rag/answers` parallel Tier-0 paths.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-L.1 | **`tools_agent` deprecation enforcement** — extend `check_*_imports`; zero new production imports outside `agents/legal` migration | **Done** | **Critical** | `scripts/check_tools_agent_imports.py` | CI fails on new imports |
+| Q+-L.2 | **Legal agent → catalog `ToolRuntime`** — remove runtime dependency on `ToolsAgent` / `ToolsStep` planner loop | **Done** | **Critical** | `agents/legal/`, `catalog_tool_planner.py` | Legal uses `CatalogToolPlanner` + `tool_planner` |
+| Q+-L.3 | **`RuntimeConfig` default tools** — no default `ToolsAgent` in `config` / `config_sections` | **Done** | High | `nexus/config.py`, `config_sections.py` | `tool_planner: ToolPlannerProtocol` only |
+| Q+-L.4 | **`supervisor` boundary** — move to `experiments/supervisor` or hard-deprecate with import guard | **Done** | Medium | `intergrax/supervisor/__init__.py`, gate import test | Not imported from runtime/applications |
+| Q+-L.5 | **`chains/langchain_qa_chain`** — experimental only or remove from default paths | **Done** | Medium | `intergrax/chains/__init__.py`, gate import test | Tests-only imports |
+| Q+-L.6 | **`rag/answers` e2e** — migrate `tests/e2e/rag` to `RetrievalService`; package import guard | **Done** | Medium | `tests/e2e/rag/test_rag_full_runtime_e2e.py` | No `rag.answers` import |
+| Q+-L.7 | **`openai/rag/rag_openai.py`** — bridge to `RetrievalService` or delete if unused | **Won't fix** | Low | `openai/rag/rag_openai.py` | Zero production imports; legacy sample only |
+
+---
+
+#### Q+-M — Task metadata & bridge (P1)
+
+**Audit:** automatic legacy hydrate on every `Task()`; bridge still central.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-M.1 | **Opt-in metadata hydrate** — `Task.from_metadata()` / factory; remove automatic `model_validator` hydrate | **Done** | High | `task/task.py`, `task_metadata_bridge.py` | Hydrate only when legacy keys / `_hydrate_legacy` |
+| Q+-M.2 | **Tier-3 uses typed `Task.options` only** — lab/scaffold run path sets contract without flat keys | **Done** | Medium | `task_intake.py`, lab `fastapi_router.py` | `graph_id` via orchestration state |
+
+---
+
+#### Q+-P — Planning monoliths (P2)
+
+**Audit:** `step_planner.py` ~683 lines, `engine_planner.py` ~623 lines — hard to extend.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-P.1 | **Split `engine_planner`** — parse / validate / LLM call modules; each &lt; ~300 lines | **Done** | Medium | `engine_planner_parse.py`, `engine_planner_messages.py`, `engine_planner_diagnostics.py`, `engine_planner_orchestrator.py` | Orchestration + traces extracted |
+| Q+-P.2 | **Split `step_planner`** — strategy registry vs executor | **Done** | Medium | `planning/step_planner/` (`config`, `step_factory`, `assembly`, `strategies`, `planner`) | Package import stable; gate tests |
+| Q+-P.3 | **Structured plan parse errors** — no silent `except Exception: pass` without trace | **Done** | Medium | `engine_planner_parse.py` | Narrow `ValueError` / `JSONDecodeError` only |
+
+---
+
+#### Q+-S — Session monolith (P2)
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-S.1 | **Decompose `session_manager`** — storage vs summarization vs org instructions | **Done** | Low | `session_profile_instructions.py`, `session_consolidation.py`, `session_lifecycle.py` | Profile, consolidation, lifecycle coordinators |
+
+---
+
+#### Q+-I — Integration / LLM SDK edges (P3)
+
+**Audit:** acceptable `getattr` inside provider SDK shims — isolate, do not spread.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-I.1 | **SDK reflection quarantine** — document per-provider `*_sdk_bridge.py`; no new getattr in `runtime/` | **Done** | Low | Architecture §5.2.2 | Vendor SDK bridges quarantined to provider modules |
+
+---
+
+#### Q+-D — Documentation (Phase Q+)
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-D.1 | Canon §9 — orchestration module list includes intake/planning runners (when done) | **Done** | Low | `intergrax_runtime_architecture.md` | — |
+| Q+-D.2 | `AGENT_CREATION_GUIDE` — anti-pattern: `getattr`, `ToolsAgent`, flat metadata | **Done** | Medium | Guide § anti-patterns | Linked from §0.6 |
+| Q+-D.3 | `docs/README.md` focus → Phase Q+ Wave 1 | **Done** | High | `docs/README.md` | Wave 2 focus |
+
+---
+
+#### Phase Q+ — Definition of done
+
+1. Q+ row **Done** with date in Appendix D paydown log.
+2. **Gate:** `uv run pytest -m gate -q` green.
+3. **No new** `getattr`/`setattr` in harness paths (Q+.0.3).
+4. **Tests** for each behavior change.
+5. Update Appendix D status.
+
+---
+
+#### Phase Q+ — Recommended execution order
+
+```text
+Wave 1 (P0 contracts):     Q+.0.3 → Q+-T.1 → Q+-T.2 → Q+-T.3 → Q+-T.4 → Q+-T.5
+Wave 2 (P0 legacy):      Q+-L.1 → Q+-L.2 → Q+-L.3 → Q+-M.1
+Wave 3 (P1 Nexus+obs):   Q+-N.1 → Q+-N.2 → Q+-O.1 → Q+-O.2 → Q+-N.3 → Q+-N.4 → Q+-N.5
+Wave 4 (P2 monoliths):     Q+-P.1 → Q+-P.2 → Q+-S.1 → Q+-L.4 → Q+-L.5 → Q+-L.6
+Wave 5 (P3 + docs):        Q+-L.7 → Q+-I.1 → Q+-O.3 → Q+-O.4 → Q+-D.*
+Parallel anytime:         Q+-T.6, Q+-T.7, Q+-T.8, Q+-M.2
+```
+
+**Gate before Phase K scale:** Waves 1–3 **Done** (typing + Legal off ToolsAgent + Nexus intake/planning split + metrics typed).
+
+---
+
+### Phase R — Harness AI Alignment (post-audit 2026-06-01)
+
+**Source:** Harness AI philosophy audit (scaffold, harness, LLM, tool vs skill, context engineering, subagents, policy) — traceability in **Appendix E**.  
+**Status:** **Done (MVP)** (2026-06-01). **Prerequisite met:** Phase **Q+ Done**.  
+**Goal:** Intergrax vocabulary and Tier-0 modules align with industry harness terminology **without** breaking Integration → Tool → Agent stack; add **Skill Library** for reuse and external compatibility.  
+**Principle:** evolve, not rewrite · skills **compose** tools (never replace `ToolRuntime`) · one R.* ID per PR · gate green.
+
+**Out of scope for Phase R:**
+
+- Nested full harness per child (Cursor 1:1 subagent OS) — use graph delegation first (R-Delegate)
+- Auto-discovery of skills from filesystem without validation
+- Mandatory migration of all Tier-2 agents to skills in one release
+
+**Phase R (MVP) complete:** Appendix E 100% **Done** or **Won't fix**; §0 Phase R row **Done**; gate **450 passed** (2026-06-01). Further skill catalog expansion is product work, not a harness gate.
+
+---
+
+#### R.0 — Canon, ADR, terminology (do first)
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| R.0.1 | **ADR: Skill layer Option 2** — reject “skills = tools only”; document four-layer model | **Done** | **Critical** | Architecture §7.1.8, §5.3 | Option 1 listed as rejected with rationale |
+| R.0.2 | **Canon sections** — §5.3 Harness mapping, §7.1.8 Skills, §28.1 Context engineering, §42.14.3 Delegation, §42.11.4 Policy bundle | **Done** | **Critical** | `intergrax_runtime_architecture.md` | Cross-linked from plan §0 |
+| R.0.3 | **Remove tool/skill conflation** in code docstrings | **Done** | High | `tools/core/contracts.py` | `ToolContract` describes **tool** only |
+| R.0.4 | **README navigation** — Phase R, skills layer in root + docs README | **Done** | Medium | `/README.md`, `docs/README.md` | GitHub landing + docs index mention skills |
+
+**Delivery rule:** Same as §6.1 — one R.* ID → PR → update Appendix E status → gate.
+
+---
+
+#### R-Skill — Skill Library (Tier-0)
+
+**Problem:** Integrations and tools are production-grade; **skills are not**. Agents duplicate prompts, tool allow-lists, and policy fragments. External harness ecosystems (Cursor skills, internal markdown packs) cannot plug in without a **validated manifest**.
+
+**Target layout:**
+
+```text
+intergrax/skills/
+├── core/                   # SkillContract, SkillManifest, SkillProvider protocol
+├── registry/               # SkillCatalog, SkillProfile, register_default_skills()
+├── importers/              # cursor_skill_md.py, … (validate → SkillManifest)
+├── _shared/
+└── providers/
+    └── <domain>/           # e.g. legal/, research/
+        ├── manifest.py     # SkillManifest instance(s)
+        ├── prompts.yaml    # or Prompt Registry refs
+        └── USAGE.md
+```
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| R-Skill.1 | **`SkillManifest` + `SkillContract`** — frozen manifest: `skill_id`, `version`, `description`, `tool_ids`, `prompt_instruction_ids`, `policy_fragment_id`, `risk_tier`, `tags` | **Done** | **Critical** | `intergrax/skills/core/contracts.py` | Pydantic/jsonschema round-trip test |
+| R-Skill.2 | **`SkillRegistry` + `SkillProfile` + `SkillCatalog`** — mirror Tool registry pattern | **Done** | **Critical** | `intergrax/skills/registry/` | `build_registry_from_profile()` |
+| R-Skill.3 | **`SkillResolver`** — given `skill_ids`, produce resolved `allowed_tools` ∪, prompt pack refs, policy fragments; **no LLM execution** in resolver | **Done** | **Critical** | `intergrax/skills/resolver.py` | Unit: two skills merge tool lists with conflict rules |
+| R-Skill.4 | **Tier-3 wiring** — skill profile in `ApplicationBuildContext`, `skill_wiring.py`, legal host | **Done** | High | `applications/_shared/skill_wiring.py` | Legal registry resolves skills |
+| R-Skill.5 | **`AgentContract.skill_ids`** + validation against registry at register time | **Done** | High | `intergrax/contracts/`, `AgentRegistry` | Unknown skill_id → register error |
+| R-Skill.6 | **`docs/SKILLS.md`** — catalog, layering diagram, import rules | **Done** | Medium | `docs/SKILLS.md`, `docs/README.md` index row | Approved index entry |
+| R-Skill.7 | **Scaffold `new-skill`** | **Done** | Medium | `intergrax/scaffold/new_skill.py` | `python -m intergrax.scaffold new-skill <id>` |
+| R-Skill.8 | **`CursorSkillImporter`** — parse `SKILL.md` + frontmatter → `SkillManifest` (best-effort; reject on schema fail) | **Done** | High | `intergrax/skills/importers/cursor_skill_md.py` | Fixture test with sample SKILL.md |
+| R-Skill.9 | **Pilot skill pack** — `legal.contract_review` (tool_ids + prompt refs + policy fragment) | **Done** | High | `intergrax/skills/providers/legal/` | Legal agent lists `skill_ids`; gate green |
+| R-Skill.10 | **Nexus trace events** — `SKILL_RESOLVED`, `SKILL_IMPORT_FAILED` | **Done** | Low | `runtime/events/context_skill_recording.py` | `record()` on register + import service |
+
+**Skill vs tool enforcement:**
+
+| Rule | Enforcement |
+|------|-------------|
+| Skill MUST NOT be a `ToolContract` | CI: no `ToolHandler` named `skill.*` without ADR |
+| Skill MAY reference only registered `tool_id`s | `SkillResolver` validates against `ToolRegistry` |
+| LLM tool-calling surface = **tools only** | Skills expand allow-list before run, not at invoke time |
+| External skill without manifest validation | **Rejected** at import — no silent attach |
+
+---
+
+#### R-Context — Context engineering (Tier-1)
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| R-Context.1 | **`ContextBudgetPolicy`** — `max_chars`, `max_tokens_estimate`, `summary_tier` defaults; applied in `ContextManager.build_agent_context()` | **Done** | **Critical** | `runtime/nexus/context/context_budget.py` | Test: over-budget input trimmed |
+| R-Context.2 | **Trace events** — `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` with before/after sizes | **Done** | High | `ContextManager` + `context_skill_recording` | Emitted when `event_bus` wired |
+| R-Context.3 | **AGENT_CREATION_GUIDE** — “Context engineering” subsection links canon §28.1 | **Done** | Medium | `AGENT_CREATION_GUIDE.md` Appendix G | No duplicate truth |
+| R-Context.4 | **Finish unified tool path** — residual `use_rag` / `RagStep` callers → `rag.retrieve` | **Done** | High | `tool_gateway.py`, legal bridge, `context_builder.py` | Bridge uses `tool_ids`; LLM booleans sync in `LegalToolPlan` only |
+
+---
+
+#### R-Delegate — Graph-native delegation (subagent equivalent)
+
+Intergrax does **not** implement Cursor-style nested harness in Phase R. **Delegation** = Nexus graph node with isolated memory namespace and bounded context assembly.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| R-Delegate.1 | **`DelegationSpec` on `ExecutionNode`** — `child_agent_id`, `isolated_memory_namespace`, `context_assembly_override` | **Done** | High | `contracts/delegation.py`, `execution_graph.py` | Schema + validation |
+| R-Delegate.2 | **Memory namespace isolation** — child reads/writes under `task_id/delegation/{node_id}/` via `MemoryView` | **Done** | High | `delegation_memory.py`, UAEP | Unit test |
+| R-Delegate.3 | **Trace linkage** — `parent_run_id`, `parent_node_id` on child run metadata | **Done** | Medium | `graph_executor.py` | Request metadata on child node |
+| R-Delegate.4 | **Integration tests** — two-agent graph with delegation node | **Done** | Medium | `test_graph_executor_delegation.py` | Gate |
+
+---
+
+#### R-Policy — Unified policy bundle (Tier-1 + Tier-3)
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| R-Policy.1 | **`RuntimePolicyBundle`** — aggregates tool, memory, budget, HITL, plan-loop; optional `domain_fragments: dict[str, Any]` | **Done** | High | `runtime/policy/policy_bundle.py` | Import via `policy_bundle` module (not `policy.__init__`) |
+| R-Policy.2 | **Tier-3 composition** — lab/product factories build bundle once per app | **Done** | High | `policy_wiring.py`, lab/legal `wiring.py` | `ApplicationBuildContext.policy_bundle` |
+| R-Policy.3 | **Canon §42.11.5** — “how to read policy for a run” operator section | **Done** | Medium | Architecture §42.11.5 | Operator runbook table |
+
+---
+
+#### Phase R — Definition of done
+
+1. R row **Done** with date in Appendix E paydown log.
+2. **Gate:** `uv run pytest -m gate -q` green.
+3. **Skills:** at least one first-party skill pack + one importer test (R-Skill.8 or Won't fix with reason).
+4. **No** new `ToolContract` entries that represent multi-step business workflows without ADR.
+5. Update Appendix E status.
+
+---
+
+#### Phase R — Recommended execution order
+
+```text
+Wave R0 (canon):           R.0.1 → R.0.2 → R.0.3 → R.0.4
+Wave R1 (skill core):      R-Skill.1 → R-Skill.2 → R-Skill.3 → R-Skill.5 → R-Skill.4
+Wave R2 (skill ecosystem): R-Skill.8 → R-Skill.7 → R-Skill.9 → R-Skill.6 → R-Skill.10
+Wave R3 (context):         R-Context.1 → R-Context.2 → R-Context.4 → R-Context.3
+Wave R4 (delegate):        R-Delegate.1 → R-Delegate.2 → R-Delegate.3 → R-Delegate.4
+Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
+```
+
+**Gate before Phase K.1/K.2 scale:** **Met** — Q+ **Done**, R-Skill.1–R-Skill.5 and R-Context.1 **Done**.
+
+---
+
+### Phase S — Harness Environment GA (post-R 2026-06-01)
+
+**Source:** Architecture audit (2026-06-01); strategic pivot — **full harness environment** before business agents.  
+**Status:** **Done** (2026-06-01). **Prerequisites met:** Phase L, Q, Q+, R (MVP).  
+**Goal:** Make the **Harness AI environment** (Tier-0 + Tier-1 + lab/product wiring) **ops-ready and complete** — stable integration paths, observability, platform skills, operator docs — using **existing** reference agents (echo, research, legal, signoff_probe), not new product agents.  
+**Principle:** evolve, not rewrite · Tier-1 only via §0.6 · one S.* ID per PR · gate green.
+
+**Explicitly out of scope for Phase S:**
+
+- **K.1 Problem Radar / K.2 Vendor Discovery** — **Phase K** (after S Done)
+- Multi-tenant SaaS (canon §50 — future)
+- Nested full harness per child — graph delegation remains default (R-Delegate)
+- `stable` on all 99 integration slugs — only the **lab harness stack** (see S-Ops.1)
+
+**Deferred from old Phase S scope → Phase K:** S-K.* (reference business agent proof).
+
+#### S.0 — Canon & strategy sync
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| S.0.1 | **Development strategy** document + docs index | **Done** | Critical | `INTERGRAX_DEVELOPMENT_STRATEGY.md`, `docs/README.md` | Linked from plan + root README |
+| S.0.2 | **Canon §2 / §50–§51** — laboratory + harness narrative | **Done** | Critical | `intergrax_runtime_architecture.md` | No contradiction with strategy |
+| S.0.3 | **Canon §52** — Phase S harness question | **Done** | High | Canon §52 | Environment GA, not K.1/K.2 |
+| S.0.4 | **Plan pivot** — Phase S = harness only; K.1/K.2 deferred | **Done** | Critical | This file §0, §4, Phase K, Appendix F | 2026-06-01 |
+
+#### S-Ops — Integration & observability (harness stack)
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| S-Ops.1 | **Integration stable track** — lab harness stack (`sqlite`, `redis`, `qdrant`, `slack`, `sentry`, …) marked `stable` in catalog | **Done** | **Critical** | `harness_lab_stack.py`, `INTEGRATIONS.md` | `test_harness_lab_stable_stack.py` |
+| S-Ops.2 | **OTLP / observability** — lab profile wires `otel` when `LAB_OTEL_ENABLED`; document noop vs export | **Done** | High | `IntegrationProfile.harness_environment()`, `.env.example` | `test_lab_harness_environment_wiring.py` |
+| S-Ops.3 | **Harness-smoke CI** — expand M.12+ coverage for stable stack (network optional) | **Done** | Medium | `.github/workflows/unit-tests.yml` | harness-smoke includes S unit tests |
+| S-Ops.4 | **Legal live LLM E2E** | **Deferred** | Low | K.6 / B.15 | Not blocking harness environment |
+
+#### S-H — Platform harness capabilities (no business agents)
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| S-H.1 | **Platform skill bundle `harness`** — ≥3 skills (e.g. `harness.tool_smoke`, `harness.context_demo`, `harness.trace_read`) | **Done** | **Critical** | `intergrax/skills/providers/harness/`, `SKILLS.md`, bootstrap | `test_harness_skill_bundle.py` |
+| S-H.2 | **Lab wiring** — `SkillProfile` + `ToolProfile` + policy bundle documented as canonical harness preset | **Done** | High | `skill_wiring.py`, `HARNESS_ENVIRONMENT.md` | lab enables `harness` bundle |
+| S-H.3 | **Cursor SKILL.md importer** in gate | **Done** | Medium | `tests/unit/skills/importers/test_cursor_skill_md.py` | `pytest.mark.gate` |
+| S-H.4 | **`rag.answers` test migration** — no deprecation warnings in gate | **Done** | Low | `tests/integration/rag/answers/` | `RetrievalService` only |
+| S-H.5 | **Echo/signoff path** — lab run proves skills + trace + policy bundle (existing agents) | **Done** | High | `tests/acceptance/agent_os/test_lab_application.py` | gate + harness wiring tests |
+
+#### S-Doc — Operator & author surfaces
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| S-Doc.1 | **`HARNESS_ENVIRONMENT.md`** — lab stack, env vars, stable integrations, OTLP, policy bundle read order | **Done** | **Critical** | `docs/HARNESS_ENVIRONMENT.md`, `docs/README.md` index | Linked from plan §6 |
+| S-Doc.2 | **Context / trace operator section** — `CONTEXT_*` events, debug API, metrics routes | **Done** | Medium | `HARNESS_ENVIRONMENT.md` | Pointers to canon §28.1 |
+
+#### Phase S — Definition of done
+
+1. **Stable** integration list for lab harness stack published and tested (S-Ops.1).
+2. **OTLP path** documented and wired for lab when env configured (S-Ops.2).
+3. **≥ 3** `harness.*` platform skills + legal/research bundles registered (S-H.1).
+4. **`HARNESS_ENVIRONMENT.md`** complete; lab wiring matches doc (S-H.2, S-Doc.1).
+5. Gate: `uv run pytest -m gate -q` green; `python scripts/check_harness_no_getattr.py` OK.
+6. §0.5 **Harness environment GA** row **Done** with date; Appendix F updated.
+7. **K.1/K.2 remain Deferred** — not required for Phase S close.
+
+#### Phase S — Recommended execution order
+
+```text
+Wave S0 (docs):      S.0.* (Done)
+Wave S1 (ops):       S-Ops.1 → S-Ops.2 → S-Ops.3
+Wave S2 (platform):  S-H.1 → S-H.2 → S-H.3
+Wave S3 (proof):     S-H.5 → S-Doc.1 → S-Doc.2
+Wave S4 (cleanup):   S-H.4
+Parallel:            S-Ops.4, domain skill growth (legal/research) — not required for S Done
+```
+
+**After Phase S Done:** Phase **K** (K.1 or K.2) may start as first business agent on a complete harness.
+
+---
+
 ## 4. Priority Order
 
 
 
 ```text
 
-NOW:     Product decision — Phase K.1/K.2 (Problem Radar / Vendor Discovery) **when approved**
+NOW:     Phase K — business agents (after S Done; product decision)
 
-DONE:    Phase K hardening — K.3–K.5 (policy facade, AgentDecision cleanup, ChatAgent production guard)
+DONE:    Phase S — Harness environment GA (2026-06-01)
 
-DONE:    Phase O, N, L, M core, M-LLM — platform + catalog + scaffold
+DONE:    Phase Q+ — Harness Hardening (Appendix D); gate 450
 
-DONE:    Platform stabilization + Appendix B technical paydown (except B.15 E2E)
+DONE:    Phase R (MVP) — Harness AI alignment (Appendix E)
 
-PARALLEL: M.6 additional provider slugs (on demand, one slug per iteration)
+DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9; gate was 417 at close
 
-BLOCKED: K.1/K.2 business agents until product priority; K.6 / B.15 Legal live LLM E2E
+DONE:    Phase L, M, M-LLM, M-RAG, N, O — harness GA (functional)
 
-BLOCKED: No new Nexus features unless Tier-1 extension rule (§0.6) applies
+DONE:    Phase K hardening K.3–K.5; Appendix B paydown (except B.15)
+
+PARALLEL: M.6 additional provider slugs (on demand); R-Skill catalog expansion
+
+DEFERRED: Phase K — K.1/K.2 business agents (after S Done); K.6 / B.15 Legal live LLM E2E — S-Ops.4
+
+RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Integration → Tool → Skill → Agent
 
 ```
 
-**Rationale:** Integration catalog (M) answers *which backend*. Tool Library (O) answers *what agents call* — closing the gap between LLM planners and integrations. Unified tool model (O.5) removes deprecated `use_rag` / `use_websearch` dual-path before business agents (K) depend on inconsistent semantics.
+**Rationale:** Q/Q+/R delivered a **certified, aligned harness**. Phase S completes the **environment** (integrations, observability, platform skills, ops docs). Business agents prove product value in **Phase K**, not before the harness is fully operable.
 
 
 
@@ -1252,18 +1879,31 @@ BLOCKED: No new Nexus features unless Tier-1 extension rule (§0.6) applies
 
 ## 6. Recommended Next Step
 
-### 6.1 Implementation cadence (Phase N and onward)
+### 6.1 Implementation cadence (Phase S — harness environment)
 
-Each iteration follows **one deliverable at a time**:
+Platform harness work (Phase Q, Q+, R MVP) is **complete**. New work follows **Phase S** — **no new business agents**:
 
 ```text
-1. Implement   — single step from Phase N table (e.g. N.1 only)
-2. Summarize   — what changed, tests run, acceptance criteria met
-3. Document    — update this plan (status column) + canon if contracts changed
-4. Next step   — name the next ID (e.g. N.2) and prerequisites
+1. Analyze     — Tier-0/Tier-3 only unless §0.6 requires Tier-1; read HARNESS_ENVIRONMENT.md (when added)
+2. Ops         — S-Ops.1 stable integration track + smoke; S-Ops.2 OTLP env on lab
+3. Platform    — S-H.1 harness.* skill bundle; S-H.2 lab SkillProfile preset
+4. Proof       — S-H.5 echo/signoff + trace test; no K.1/K.2
+5. Docs        — S-Doc.1 operator guide; update SKILLS.md / INTEGRATIONS.md
+6. Verify      — pytest -m gate; check_harness_no_getattr.py; harness-smoke CI if touched
+7. Close       — Appendix F; §0.5 Harness environment GA = Done
 ```
 
-Do not batch N.1–N.5 in one PR unless explicitly agreed.
+**After S Done:** Phase K — pick K.1 or K.2, then AGENT_CREATION_GUIDE cadence.
+
+**Parallel (non-blocking):** M.6 on-demand slugs; S-Ops.4 Legal E2E; domain skills (legal/research expansion).
+
+### 6.1a Archived — Phase Q cadence (complete 2026-06-01)
+
+Phase Q used **one Q.* deliverable per PR** → update Appendix C + paydown log. See Appendix C for Waves 1–9 and gate **417** at close. Do not reopen Q.* unless regression found (residual hardening → Appendix D).
+
+### 6.1b Phase N (complete)
+
+Tier-3 scaffold cadence remains the reference for new applications (`new-stack`); lab defaults include RAG/websearch tools and legal + research skill bundles.
 
 ### 6.2 Tier-3 application layer — **ready for new applications**
 
@@ -1289,34 +1929,9 @@ uv run pytest -m gate -q
 uv run pytest tests/acceptance/agent_os -m agent_os -q
 ```
 
-**Do not start:** Problem Radar, Vendor Discovery (K.1/K.2) until product priority is set — Phase N does not block K.
+**Start:** Phase S — S-Ops.1 (stable stack) or S-H.1 (`harness.*` skills). **Do not** start K.1/K.2 until Phase S definition of done is met.
 
-**Recently completed:**
-
-- **L.1–L.8:** Phase L Agent OS readiness — UAEP scaffold, `AGENT_CREATION_GUIDE.md`, `lab_application`, mock agents, acceptance suite (`tests/acceptance/agent_os/`), readiness docs; gate **228 passed**.
-- **J.5:** Partial results API — `GET /debug/tasks/{task_id}/progress` aggregates checkpoint partial snapshots; `RuntimeEventType.TASK_PROGRESS`; `partial_result.v1` notification template; gate **228 passed** (includes Phase L acceptance).
-- **J.4:** Long-running scheduler — in-process `LongRunningScheduler` polls checkpoint store for delayed resumes and expired HITL deadlines; `UnifiedTaskResumeExecutor` resumes via `UnifiedTaskRunner`; SQLite ledger for idempotency.
-- **J.3:** Worker queue Task v2 — `QueuedNexusExecutionAdapter` enqueues `ExecutionRequest` via Tier-0 Celery (`nexus.task.v2`); `create_nexus_celery_worker_app` bootstrap; checkpoint resume through worker payload; gate **207 passed**.
-- **J.2:** RunService → UnifiedTaskRunner — `NexusTaskExecutionAdapter` delegates to `UnifiedTaskRunner`; Legal host shares one runner for `/runs` and `/legal/chat`; `POST /runs` forwards `CreateRunRequest.payload` to Task intake.
-- **J.1:** NexusLoop default in apps — Legal and Research HTTP use `UnifiedTaskRunner` only; legacy `AgentEngine` opt-out removed from Legal (B.14).
-
-- **I.5:** ContextManager v2 — provenance, summary tiers, typed `TaskContextAssemblyOptions` (`TaskExecutionOptions.context`), metadata bridge sync.
-- **I.4:** Agent handoff — `AgentHandoff`, `HandoffCoordinator`, graph executor path, `HANDOFF_*` events.
-- **I.3:** `SharedTaskContext` — formal payload on `Task`, `ContextManager` merge, memory read bridge.
-- **I.2:** `MemoryView` gateway — `PolicyScopedMemoryView`, UAEP wiring, `MEMORY_READ`/`MEMORY_WRITE` events.
-- **I.1:** `TaskMemory` store — `TaskMemoryPersistence`, `TaskMemoryCoordinator`, in-memory + SQLite backends.
-- **H.6:** Organization Worker demo — `OrganizationWorkerAgent`, `create_organization_worker_lab_app`, E2E Slack/Teams intake → HITL → resume.
-- **H.5:** Teams parity — `TeamsActivityInteractionAdapter`, `TeamsSignatureVerifier`, debug intake tests mirroring H.3.
-- **H.4:** HITL notification templates — `HitlPauseNotificationTemplate`, `notify_hitl_pause`, Slack/Teams formatter parity for actions/urgency.
-- **H.3:** Debug API `POST /debug/interactions/intake` — JSON/form body, optional `execute`, Slack signature verifier (opt-in).
-- **H.2:** `InteractionAdapter` — inbound parsers, factory, `ChainedInteractionAdapter`.
-- **G.6:** Debug API — `GET …/events`, `GET …/checkpoints`, `POST …/human-response` with injectable `RuntimeEventPersistence` / `TaskCheckpointPersistence`.
-- **G.5:** pluggable `RuntimeEventPersistence` + memory/SQLite backends.
-- **F.5:** typed task contract — `TaskExecutionOptions` / `TaskRuntimeState` / `TaskResultSummary` + metadata bridge.
-- **F.4:** long-running task snapshots + notification adapter stubs (Slack/Teams **not** real integration).
-- **F.1–F.3:** Shadow, Sandbox, advanced HITL.
-
-
+**Historical completions:** Phases F–L, J, Q, Q+, and R (MVP) are **Done** — see phase tables (§2–§3), Appendices C–E paydown logs. Gate milestones: **417** (Phase Q close), **450** (Q+ / R MVP, 2026-06-01).
 
 ### D.2 Debug API (Done)
 
@@ -1618,7 +2233,7 @@ uv run pytest tests/ -m gate -q
 | Acceptance suite | 10/10 green | ✅ |
 | Sign-off exercise | 1 new agent, < 1h, zero runtime edits | **Done** (`signoff_probe`) |
 
-**Verdict:** **L1 Agent Operating System certified** (technical). Phase K opens on product decision — not automatic runtime work.
+**Verdict:** **L1 Agent Operating System certified** (technical). **Phase S** (harness environment GA) is next; **K.1/K.2** wait until S is **Done**.
 
 ### Sign-off record
 
@@ -1635,7 +2250,7 @@ Trace proof:    GET /debug/tasks/{id}, /trace?include_runtime=true, /events
 Acceptance suite: pass (tests/acceptance/agent_os)
 Gate suite:     pass (228+ tests)
 Trace:          NexusLoop smoke + HTTP debug API (SQLite trace store in lab factory)
-Decision:       L1 certified — GO Phase K when product priority set
+Decision:       L1 certified — GO Phase S (harness environment), then Phase K (K.1/K.2)
 ```
 
 ---
@@ -1783,7 +2398,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.17 | **`agents/` gate collection** — `signoff_probe` test marks `gate` but lives under `agents/` (may not be collected by default `pytest tests/`) | — | **Low** | **Done** | Sign-off smoke not in main gate count | Test infra | `testpaths` includes `agents/`; canonical gate: `uv run pytest -m gate -q` (2026-05-27) |
 | B.18 | **HTTP observability acceptance** — trace on echo + multi-agent mock (graph path) | Appendix A #9–10 | **Low** | **Done** | Certification confidence | Test | `test_lab_application_runs_echo_with_trace_observability`, `test_lab_application_runs_research_mock_with_graph_trace` (2026-05-27) |
 
-### B.6 Suggested priority order (for planning)
+### B.8 Suggested priority order (for planning)
 
 ```text
 1. ~~B.08, B.10~~ — observability consistency (Done 2026-05-27)
@@ -1796,12 +2411,286 @@ Decision:       L1 certified — GO Phase K when product priority set
 8. ~~B.07, B.11, B.13, B.18, B.24~~ — §42 baseline, metrics export, delivery hardening, HTTP trace acceptance, vendor import guard (Done 2026-05-27)
 9. ~~Platform stabilization~~ — all Tier-3 factories aligned (Done 2026-05-27)
 10. B.15 — Legal E2E real LLM (**Deferred** — product/CI decision)
-11. Phase K — Problem Radar / Vendor Discovery (**product-blocked**)
+11. ~~Phase Q~~ — Harness audit remediation — **Done** (Appendix C)
+12. ~~Phase Q+ / Phase R~~ — **Done** (Appendices D, E)
+13. Phase S — Harness environment GA (stable stack, OTLP, platform skills) — **Next**
+14. Phase K — K.1/K.2 business agents — **Deferred** (after S)
 ```
 
-**Note:** Phase K business agents (Problem Radar, Vendor Discovery) remain **product-blocked** until explicit go — technical debt above does not auto-unblock K.1/K.2.
+**Note:** Platform harness (Q, Q+, R MVP) is complete. Business agents are **Phase K**, not Phase S.
 
 ---
 
-*Plan synced after §42 hook parity + product interaction intake (2026-05-27). Gate: **397 passed**. Business agents (K.1/K.2) and Legal live LLM E2E (K.6/B.15) remain product-blocked.*
+## Appendix C — Harness audit traceability (Phase Q)
+
+**Purpose:** Every finding from the harness implementation audit (2026-06-01) maps to exactly one Phase Q deliverable. Update **Status** when the deliverable is **Done** / **Won't fix** (with reason).
+
+**Status values:** `Open` | `Done` | `Won't fix` | `Deferred`
+
+### C.1 Nexus, loops, orchestration, errors
+
+| Audit ID | Finding | Q ID | Status |
+|----------|---------|------|--------|
+| N-01 | `NexusLoop` monolith ~1200 lines | Q-N.1 | Done (`orchestration/`; ~586 lines) |
+| N-02 | Duplicate `_normalize_human_response` | Q-N.2 | Done |
+| N-03 | Dual retry (`RetryEngine` vs `max_run_retries`) | Q-N.3 | Done |
+| N-04 | `PolicyEngine` \| `RuntimePolicyEngine` union | Q-N.4 | Done |
+| N-05 | Hooks NOT_WIRED: decision, interrupt, retry | Q-N.5 | Done |
+| N-06 | Hooks PARTIAL: trace persist | Q-N.6 | Done |
+| N-07 | `runtime_steps/tools.py` misleading name | Q-N.7 | Done |
+| N-08 | `RuntimeConfig` monolith | Q-N.8 | Done |
+| N-09 | `integration_profile: object` | Q-N.9 | Done |
+| N-10 | `production_mode` default in lab | Q-N.10 | Done |
+| N-11 | Graph callbacks typed `object` | Q-N.11 | Done |
+| N-12 | Duplicate import `InterruptType` | Q-N.12 | Done |
+| N-13 | `AgentEngine` static UAEP / event_bus | Q-N.13 | Done |
+| N-14 | No unit tests `nexus_loop.py` | Q-N.14 | Done |
+| N-15 | Thin `GraphExecutor` unit coverage | Q-N.15 | Done |
+
+### C.2 LLM adapters
+
+| Audit ID | Finding | Q ID | Status |
+|----------|---------|------|--------|
+| L-01 | Dead `tracked_llm_call` | Q-L.1 | Done |
+| L-02 | Empty `llm_adapters/__init__.py` | Q-L.2 | Done |
+| L-03 | `LLM_ADAPTERS.md` missing provider table | Q-L.3 | Done |
+| L-04 | `LLMProfile` docstring `max_retries` wrong | Q-L.4 | Done |
+| L-05 | `supports_streaming()` default True | Q-L.5 | Done |
+| L-06 | PolicyEngine ignores `llm_cost_evaluation` | Q-L.6 | Done |
+| L-07 | Dual usage tracking naming | Q-L.7 | Done |
+| L-08 | No structured-output conformance | Q-L.8 | Done |
+| L-09 | Bedrock context_window TODO | Q-L.9 | Done |
+| L-10 | OpenAI-compat `__dict__.update` fragility | Q-L.10 | Done |
+| L-11 | Env vars scattered | Q-L.11 | Done |
+
+### C.3 RAG
+
+| Audit ID | Finding | Q ID | Status |
+|----------|---------|------|--------|
+| R-01 | Dead `_build_backend_where` / `_map_hits_to_chunks` | Q-R.1 | Done |
+| R-02 | Four parallel retrieval paths | Q-R.2 | Done |
+| R-03 | `enable_rag` vs `use_rag` in ContextBuilder | Q-R.3 | Done |
+| R-04 | `NoPlannerPipeline` always `RagStep` | Q-R.4 | Done |
+| R-05 | `top_k` collapses prefetch | Q-R.5 | Done |
+| R-06 | `RuntimeConfig` vs `RagProfile` dual config | Q-R.6 | Done |
+| R-07 | Unused `RagProfile.extras` | Q-R.7 | Done |
+| R-08 | RAG metrics env not in profile | Q-R.8 | Done |
+| R-09 | `rag/answers/` parallel stack | Q-R.9 | Done |
+| R-10 | `UserProfileManager` bypasses `RetrievalService` | Q-R.10 | Done |
+| R-11 | Three “context builder” names | Q-R.11 | Done |
+| R-12 | Legacy `use_rag` plan booleans | Q-R.12 | Done |
+
+### C.4 Memory
+
+| Audit ID | Finding | Q ID | Status |
+|----------|---------|------|--------|
+| M-01 | No single memory architecture doc | Q-M.1 | Done |
+| M-02 | Task memory not visible in scaffold | Q-M.2 | Done |
+| M-03 | Silent default when task memory None | Q-M.3 | Done |
+
+### C.5 Observability & metrics
+
+| Audit ID | Finding | Q ID | Status |
+|----------|---------|------|--------|
+| O-01 | RAG plugin not in `platform_wiring` | Q-O.1 | Done |
+| O-02 | No RAG bridge tests | Q-O.2 | Done |
+| O-03 | Parser trace bypasses `ObservabilityBackend` | Q-O.3 | Done |
+| O-04 | `metrics/export` substring heuristics | Q-O.4 | Done |
+| O-05 | Duplicate import in `metrics/export.py` | Q-O.5 | Done |
+| O-06 | `behavioral` never set in export | Q-O.6 | Done |
+| O-07 | `/metrics/llm` not on lab host | Q-O.7 | Done |
+| O-08 | Observability env scattered | Q-O.8 | Done |
+| O-09 | RAG metrics asymmetry vs LLM | Q-O.9 | Done |
+| O-10 | `trace_bridge` vs `phase_coverage` drift | Q-O.10 | Done |
+| O-11 | Debug router missing type imports | Q-O.11 | Done |
+| O-12 | No `trace_bridge` unit tests | Q-O.12 | Done |
+| O-13 | Two Prometheus concepts unclear | Q-O.13 | Done |
+| O-14 | Runtime events SQLite-first; Cassandra adoption undefined | Q-O.14 | Done |
+
+### C.6 Legacy, style, docs
+
+| Audit ID | Finding | Q ID | Status |
+|----------|---------|------|--------|
+| X-01 | Deprecated `ChatAgent` | Q-X.1 | Done |
+| X-02 | `task_metadata_bridge` legacy | Q-X.2 | Done |
+| X-03 | Copyright / Integrax typo | Q-X.3 | Done |
+| X-04 | `tools_base` deprecation | Q-X.4 | Done |
+| X-05 | M.6 Future slugs table stale | Q-X.5 | Done |
+| D-01 | `docs/README` focus outdated | Q-D.1 | Done |
+| D-02 | Canon §52 still “Active” | Q-D.2 | Done |
+| D-03 | §0.1 “blocked until L” stale | Q-D.1 (§0.1 fix) | Done |
+| D-04 | Guide missing memory/RAG naming | Q-D.4 | Done |
+| D-05 | §5.2 process gates not listed for agent authors | Q-D.5 | Done |
+
+### C.7 Tests (cross-cutting)
+
+| Audit ID | Finding | Q ID | Status |
+|----------|---------|------|--------|
+| T-01 | NexusLoop unit suite | Q-T.1 / Q-N.14 | Done |
+| T-02 | `rag_profile_from_env` tests | Q-T.2 | Done |
+| T-03 | `ContextBuilder` tests | Q-T.3 | Done |
+| T-04 | `UserProfileManager` tests | Q-T.4 | Done |
+| T-05 | Single retrieval per turn test | Q-T.5 | Done |
+| T-06 | Platform wiring observability E2E | Q-T.6 | Done |
+
+### C.8 Phase Q paydown log
+
+| Date | Q ID | Summary |
+|------|------|---------|
+| 2026-06-01 | Q-D.3 | §0.1 strategic objective — Harness GA vs Phase K vs Phase Q |
+| 2026-06-01 | Q-O.1,Q-O.2,Q-O.5,Q-O.7 | RAG plugin bootstrap, tests, metrics lint, lab `/metrics/llm` |
+| 2026-06-01 | Q-N.2,Q-N.7,Q-N.12 | Duplicate HITL normalize; tool_context_helpers; interrupt import |
+| 2026-06-01 | Q-R.1–Q-R.5,Q-R.8 | RAG dead code, single retrieval path, use_rag metadata, prefetch_k |
+| 2026-06-01 | Q-L.1,Q-L.2,Q-L.4 | Remove tracked_llm_call; llm_adapters exports; LLMProfile docstring |
+| 2026-06-01 | Q-T.2,Q-T.3,Q-T.6 | New unit/integration tests; gate **399 passed** (+2) |
+| 2026-06-01 | Q-N.1(partial),Q-N.10,Q-N.13,Q-N.15 | `hitl_runner.py`; lab `harness_production_mode`; AgentEngine `event_bus`; graph checkpoint tests |
+| 2026-06-01 | Q-L.9–Q-L.11,Q-O.6,Q-O.11,Q-O.14 | Bedrock windows, OpenAI-compat delegation, LLM env appendix, metrics behavioral, debug types, trace storage §33.1 |
+| 2026-06-01 | docs-consolidation | Merged LLM/RAG observability, retry, trace ADR into canon + `LLM_ADAPTERS.md`; removed satellite `docs/*.md` |
+| 2026-06-01 | Q-N.1,Q-X.2,Wave 9 | `graph_runner`, `task_events`, `lifecycle_bridge`; UAEP `execution_options_for_request`; gate **417 passed** |
+| 2026-06-01 | Q-X.2(partial),Q-X.4,Q-X.5 | Legacy metadata warnings; `tools_base` timeline; M.6 beta slugs; gate **415 passed** |
+| — | — | *(append row per merged PR)* |
+
+**Coverage:** 58 audit rows → 49 unique Q deliverables (some Q IDs satisfy multiple rows). **Target:** 100% **Done** or **Won't fix** — **achieved** (Phase Q complete).
+
+**Appendix B relationship:** Closed by Phase Q where mapped. Residual items tracked in **Appendix D** (Phase Q+).
+
+---
+
+## Appendix D — Post-audit hardening traceability (Phase Q+)
+
+**Source:** Technical debt audit (2026-06-01, after Phase Q Wave 9).  
+**Goal:** Cursor-/Claude Code–class harness discipline — typed contracts, single orchestration path, full observability on critical paths.
+
+**Status values:** `Open` | `Done` | `Won't fix` | `Deferred`
+
+### D.1 Audit verdict → Phase Q+ mapping
+
+| Audit theme | Priority | Q+ IDs | Status |
+|-------------|----------|--------|--------|
+| Duplicate Tier-0 (`tools_agent`, supervisor, chains, rag/answers, openai/rag) | P0–P2 | Q+-L.1–Q+-L.7 | Done (L.7 Won't fix) |
+| `getattr` / duck typing (UAEP, tools, context, plans) | P0 | Q+-T.1–Q+-T.8, Q+.0.3 | Done (zero grandfathered paths) |
+| Nexus intake/planning still in `nexus_loop` | P0–P1 | Q+-N.1, Q+-N.2 | Done |
+| No `RetryCoordinator` | P1 | Q+-N.3 | Done |
+| Observability gaps (metrics heuristics, RAG HTTP, planner errors) | P1 | Q+-O.1–Q+-O.4, Q+-N.5 | Done (O.3 Won't fix) |
+| `task_metadata` auto-hydrate | P1 | Q+-M.1, Q+-M.2 | Done |
+| Planning monoliths (~680/620 lines) | P2 | Q+-P.1–Q+-P.3 | Done |
+| `session_manager` monolith (~596 lines) | P2 | Q+-S.1 | Done |
+| LLM SDK getattr quarantine | P3 | Q+-I.1 | Done |
+| `harness_production_mode` not wired in lab | P1 | Q+-O.2 | Done |
+| Thin `GraphExecutor` handoff/retry tests | P1 | Q+-N.4 | Done |
+
+### D.2 First implementation steps (Wave 1 — start here)
+
+Execute in order; one PR per ID where possible.
+
+| Step | ID | Action | Exit criteria |
+|------|-----|--------|---------------|
+| **1** | Q+.0.3 | Add `scripts/check_harness_no_getattr.py`; wire to gate (grandfather list for existing hits) | CI enforces on new lines |
+| **2** | Q+-T.1 | Introduce `UAEPAgent` Protocol; refactor `supports_uaep` + `UAEPExecutor` | Zero getattr on agent in `uaep.py` |
+| **3** | Q+-T.2 | `ToolInvokerProtocol`; fix `catalog_context.py` | Typed registry access |
+| **4** | Q+-T.3 | `RuntimeState.trace_event` typed | `tool_access_policy` clean |
+| **5** | Q+-T.4 | `can_handle(TaskContext)` on `Agent` | All agents updated |
+| **6** | Q+-T.5 | Plan union for `tool_runtime` | No getattr on plan source |
+
+**Then Wave 2:** Q+-L.1 → Q+-L.2 → Q+-L.3 → Q+-M.1 (Legal off ToolsAgent, import gates, opt-in Task hydrate).
+
+### D.3 Phase Q+ paydown log
+
+| Date | Q+ ID | Summary |
+|------|-------|---------|
+| 2026-06-01 | Q+.0.1,Q+.0.2 | Appendix D + execution order added to plan |
+| 2026-06-01 | Q+.0.3,Q+-T.1–T.8,Q+-L.1,Q+-M.1,Q+-N.1,Q+-N.2,Q+-D.* | Wave 1 harness contracts; intake/planning runners; CI getattr/tools_agent gates; docs |
+| 2026-06-01 | Q+-L.2–L.3,Q+-N.3,Q+-O.1,Q+-O.2 | Legal `CatalogToolPlanner`; `tool_planner` on RuntimeConfig; RetryCoordinator; typed metrics export; lab harness mode |
+| 2026-06-01 | Q+-P.2,Q+-S.1,R-Policy | `step_planner/` package; `session_consolidation.py`; `runtime_config_bridge` wires `ToolScopePolicy` |
+| 2026-06-01 | Q+-P.1,Q+-S.1,R-Policy | `engine_planner_*` modules; `session_lifecycle.py`; `tool_policy_resolution` + harness getattr cleanup |
+| 2026-06-01 | R-Skill catalog | `research.literature_scan` bundle; `ResearchAgent` skill_ids wiring |
+| 2026-06-01 | Q+.0.3 (closeout) | Grandfather list cleared; `parser_trace_flush` uses `TraceEventWithTags` Protocol |
+| 2026-06-01 | **Phase Q+** | All Q+-* deliverables **Done** or **Won't fix**; gate **450 passed** |
+| 2026-06-01 | Appendix C sync, research skill | C.7 T-* / D-05 aligned; `research.literature_scan` bundle; K.1/K.2 **Ready** |
+| 2026-06-01 | Doc sync | §1 alignment table, §6 Phase K cadence, Appendix B.8 renumber, E.1 skill row; README + canon research skill examples |
+| — | — | *(append row per merged PR)* |
+
+**Coverage target:** 100% **Done** or **Won't fix** — **met** (2026-06-01).
+
+---
+
+---
+
+## Appendix E — Harness AI alignment traceability (Phase R)
+
+**Source:** Harness AI philosophy audit (2026-06-01) — scaffold, harness+LLM=agent, tool vs skill, context engineering, subagents, policy.  
+**Goal:** Step-by-step implementation readiness; every audit theme maps to Phase R deliverables.  
+**Status values:** `Open` | `Done` | `Won't fix` | `Deferred`
+
+### E.1 Audit theme → Phase R mapping
+
+| Audit theme | Intergrax today | Gap | Phase R IDs | Status |
+|-------------|-----------------|-----|-------------|--------|
+| Scaffold | `intergrax/scaffold` | No `new-skill` | R-Skill.7, R.0.4 | Done |
+| Harness = Nexus + platform + app wiring | Tier-1 + Tier-0 + Tier-3 | Terminology not in glossary | R.0.2 §5.3 | Done |
+| LLM separate from agent module | `llm_adapters` | “Runnable instance” undefined | R.0.2 §5.3 | Done |
+| Tool = atomic operation | `ToolContract`, `ToolRuntime` | Doc said “tool/skill” | R.0.3, R.0.1 | Done |
+| Skill = goal-oriented pack | Was missing (pre-R); **MVP Done** | Registry + importers + first-party packs | R-Skill.1–R-Skill.10 | Done |
+| Option 1: skills = tools | — | **Rejected** — breaks LLM/MCP atomic model | R.0.1 ADR | Done |
+| Option 2: Skill Library | — | **Adopted** | R-Skill.* | Done |
+| Context engineering | §27–28, `MemoryView`, `TaskContextAssemblyOptions` | No central budget API | R-Context.* | Done |
+| Subagents | `GraphExecutor`, handoff §42.15 | No isolated child namespace | R-Delegate.* | Done |
+| Policy | Multiple engines | No single bundle narrative | R-Policy.* | Done |
+| External skill compatibility | — | No importer | R-Skill.8 | Done |
+
+### E.2 Four-layer capability model (canonical)
+
+```text
+Integration  →  vendor/backend Protocol (Postgres, Bing, Jira REST)
+Tool         →  atomic LLM/MCP operation (rag.retrieve, jira.search_tasks)
+Skill        →  composable pack: tool_ids + prompts + policy fragment + metadata
+Agent        →  domain module: contract, UAEP steps, skill_ids[], local governance
+Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy enforcement)
+```
+
+### E.3 Phase R paydown log
+
+| Date | R ID | Summary |
+|------|------|---------|
+| 2026-06-01 | R.0.1,R.0.2,R.0.3,R.0.4 | ADR Option 2; canon §5.3, §7.1.8, §28.1, §42.11.4, §42.14.3; ToolContract docstring; plan Appendix E |
+| 2026-06-01 | R-Skill.1–R-Skill.9,R-Context.1,R-Delegate.1,R-Policy.1 | Skill Library MVP, legal pilot, ContextBudget, DelegationSpec, gate **422 passed** |
+| 2026-06-01 | R-Skill.10,R-Context.2,R-Delegate.2–4,R-Policy.2 | Event recording, delegation memory, graph integration test, policy bundle wiring |
+| 2026-06-01 | **Phase R (MVP)** | All R-* deliverables **Done** or **Won't fix**; gate **450 passed** |
+| — | — | *(append row per merged PR)* |
+
+**Coverage target:** 100% **Done** or **Won't fix** — **met** (2026-06-01). Phase S proceeds on this harness baseline.
+
+---
+
+## Appendix F — Harness environment traceability (Phase S)
+
+**Source:** Architecture audit + plan pivot (2026-06-01) — **harness environment before business agents**.  
+**Goal:** Track Phase S deliverables.  
+**Status values:** `Open` | `Done` | `Won't fix` | `Deferred`
+
+### F.1 Theme → Phase S mapping
+
+| Theme | S IDs | Status |
+|-------|-------|--------|
+| Docs / plan pivot | S.0.1–S.0.4 | **Done** |
+| Integration + OTLP | S-Ops.1–S-Ops.3 | **Done** |
+| Platform harness skills + lab proof | S-H.1–S-H.5 | **Done** |
+| Operator documentation | S-Doc.1–S-Doc.2 | **Done** |
+| Business agents (→ Phase K) | K.1, K.2 | **Deferred** (was S-K.*) |
+| Legal live LLM E2E | S-Ops.4 / K.6 | **Deferred** |
+
+### F.2 Phase S paydown log
+
+| Date | S ID | Summary |
+|------|------|---------|
+| 2026-06-01 | S.0.* | Strategy doc; canon; initial Phase S |
+| 2026-06-01 | S.0.4 | Pivot: Phase S = harness environment only; K.1/K.2 → Phase K |
+| 2026-06-01 | **Phase S** | harness_lab_stack, harness.* skills, OTEL profile, HARNESS_ENVIRONMENT.md, tests |
+| — | — | *(append row per merged PR)* |
+
+**Coverage target:** Phase S definition of done met — **yes** (2026-06-01).
+
+---
+
+*Plan synced (2026-06-01). **Phase Q / Q+ / R / S Done**. Gate: run `pytest -m gate`; harness getattr audit: **zero grandfathered paths**. **Next:** **Phase K** (K.1/K.2 when product prioritizes).*
 

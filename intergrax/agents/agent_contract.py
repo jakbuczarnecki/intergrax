@@ -12,6 +12,7 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
+from intergrax.runtime.task.task import TaskContext
 
 
 class Agent(ABC):
@@ -47,7 +48,7 @@ class Agent(ABC):
             "or register metadata via AgentRegistry."
         )
 
-    def can_handle(self, task_context: Any) -> CapabilityMatchResult:
+    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
         """Optional capability pre-check. Default: no match."""
         return CapabilityMatchResult(
             matched=False,

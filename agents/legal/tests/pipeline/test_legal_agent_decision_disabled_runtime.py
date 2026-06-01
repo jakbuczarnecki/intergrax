@@ -38,7 +38,7 @@ from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySe
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
 from intergrax.tools.registry import ToolRegistry
-from intergrax.tools.tools_agent import ToolsAgent
+from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
 
 from testing_support.builder import require_ollama_reachable
 
@@ -70,7 +70,10 @@ async def test_legal_agent_decision_disabled_runtime_rag_tools_wired_without_tie
 
     llm_adapter = LLMAdapterRegistry.create(LLMProvider.OLLAMA)
     session_manager = SessionManager(storage=InMemorySessionStorage())
-    tools_agent = ToolsAgent(llm=llm_adapter, tools=ToolRegistry())
+    tool_planner = CatalogToolPlanner.from_registry(
+        llm=llm_adapter,
+        registry=ToolRegistry(),
+    )
 
     embedding_manager = EmbeddingManager(
         pipeline=create_default_embedding_pipeline(provider_id="ollama"),
@@ -84,7 +87,7 @@ async def test_legal_agent_decision_disabled_runtime_rag_tools_wired_without_tie
         enable_rag=True,
         embedding_manager=embedding_manager,
         vectorstore_manager=vectorstore_manager,
-        tools_agent=tools_agent,
+        tool_planner=tool_planner,
         tools_mode="auto",
         tool_providers=[],
         use_legal_tool_decision=False,

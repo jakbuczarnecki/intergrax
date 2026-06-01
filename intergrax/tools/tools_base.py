@@ -40,7 +40,10 @@ class ToolBase:
     **Deprecated (Phase O.7).** Use ``ToolContract`` + ``ToolRegistry`` from
     ``intergrax.tools.registry`` instead.
 
-    Legacy base class for ad-hoc tools in ``ChatAgent``.
+    Legacy base class for ad-hoc tools in deprecated ``ChatAgent``.
+
+Removal timeline: after Phase Q-R.12 (catalog ``tool_ids`` only). Do not import
+from new agents — use ``ToolProvider`` + ``ToolRegistry`` (see ``docs/TOOLS.md``).
     """
     name: str = "tool"
     description: str = "No description"

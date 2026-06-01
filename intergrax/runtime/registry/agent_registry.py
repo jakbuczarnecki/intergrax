@@ -8,6 +8,21 @@ from typing import Dict, Iterable, List, Optional, Union
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.runtime.events.context_skill_recording import record_skill_resolved
+from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.skills.integration.contract_resolution import resolve_contract_tools
+from intergrax.skills.registry.runtime import SkillRegistry
+from intergrax.skills.resolver import SkillResolver
+from intergrax.skills.registry.profile import SkillProfile
+from intergrax.skills.registry.factory import build_registry_from_profile
+from intergrax.skills.registry.bootstrap import register_default_skills
+from intergrax.tools.registry.runtime import ToolRegistry
+
+
+def _bootstrap_default_skill_registry() -> SkillRegistry:
+    """Load first-party skill catalog when Tier-3 did not pass an explicit registry."""
+    register_default_skills()
+    return build_registry_from_profile(SkillProfile(register_all_catalog_bundles=True))
 
 
 class AgentRegistry:
@@ -21,8 +36,27 @@ class AgentRegistry:
         self._agents: Dict[str, Agent] = {}
         self._contracts: Dict[str, AgentContract] = {}
 
-    def register(self, agent: Agent, *, contract: Optional[AgentContract] = None) -> None:
+    def register(
+        self,
+        agent: Agent,
+        *,
+        contract: Optional[AgentContract] = None,
+        skill_registry: Optional[SkillRegistry] = None,
+        tool_registry: Optional[ToolRegistry] = None,
+        event_bus: Optional[RuntimeEventBus] = None,
+    ) -> None:
         meta = contract or agent.get_contract()
+        if meta.skill_ids:
+            if skill_registry is None:
+                skill_registry = _bootstrap_default_skill_registry()
+            resolver = SkillResolver(skill_registry, tool_registry)
+            meta, resolved_pack = resolve_contract_tools(
+                meta,
+                skill_resolver=resolver,
+                tool_registry=tool_registry,
+            )
+            if event_bus is not None:
+                record_skill_resolved(event_bus, agent_id=meta.id, pack=resolved_pack)
         if meta.id in self._agents:
             raise ValueError(f"Agent already registered: {meta.id}")
         self._agents[meta.id] = agent
@@ -74,6 +108,10 @@ class AgentRegistry:
     def from_agents(
         cls,
         agents: Union[Dict[str, Agent], Iterable[Agent]],
+        *,
+        skill_registry: Optional[SkillRegistry] = None,
+        tool_registry: Optional[ToolRegistry] = None,
+        event_bus: Optional[RuntimeEventBus] = None,
     ) -> "AgentRegistry":
         registry = cls()
         if isinstance(agents, dict):
@@ -81,8 +119,19 @@ class AgentRegistry:
                 contract = agent.get_contract()
                 if contract.id != agent_id:
                     contract = contract.model_copy(update={"id": agent_id})
-                registry.register(agent, contract=contract)
+                registry.register(
+                    agent,
+                    contract=contract,
+                    skill_registry=skill_registry,
+                    tool_registry=tool_registry,
+                    event_bus=event_bus,
+                )
             return registry
         for agent in agents:
-            registry.register(agent)
+            registry.register(
+                agent,
+                skill_registry=skill_registry,
+                tool_registry=tool_registry,
+                event_bus=event_bus,
+            )
         return registry

@@ -36,6 +36,7 @@ from intergrax.runtime.nexus.prompts.rag_prompt_builder import DefaultRagPromptB
 from intergrax.runtime.nexus.prompts.user_longterm_memory_prompt_builder import DefaultUserLongTermMemoryPromptBuilder, UserLongTermMemoryPromptBuilder
 from intergrax.runtime.nexus.prompts.websearch_prompt_builder import DefaultWebSearchPromptBuilder, WebSearchPromptBuilder
 from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
 
@@ -47,7 +48,7 @@ def _enrich_tool_wiring_context(wiring_ctx: ToolWiringContext, config: "RuntimeC
         wiki_knowledge=wiring_ctx.wiki_knowledge,
         notification_channel=wiring_ctx.notification_channel,
         observability_backend=wiring_ctx.observability_backend,
-        rag_manager=wiring_ctx.rag_manager or getattr(config, "rag_manager", None),
+        rag_manager=wiring_ctx.rag_manager,
         vectorstore_manager=wiring_ctx.vectorstore_manager or config.vectorstore_manager,
         embedding_manager=wiring_ctx.embedding_manager or config.embedding_manager,
         websearch_executor=wiring_ctx.websearch_executor or config.websearch_executor,
@@ -98,6 +99,8 @@ class RuntimeContext:
     artifact_store: Optional[ArtifactStore] = None
 
     execution_semaphore: Optional[DistributedExecutionSemaphore] = None
+
+    policy_bundle: Optional[RuntimePolicyBundle] = None
     max_parallel_per_tenant: Optional[int] = None
 
     async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
@@ -355,7 +358,7 @@ class RuntimeContext:
         if config.production_mode:
             if config.trace_db_path is None:
                 raise ValueError("trace_db_path must be set in production_mode.")
-            profile = getattr(config, "integration_profile", None) or IntegrationProfile.lab()
+            profile = config.integration_profile or IntegrationProfile.lab()
             trace_writer = open_trace_store_from_profile(
                 profile,
                 db_path=Path(config.trace_db_path),
@@ -367,6 +370,7 @@ class RuntimeContext:
         return cls(
             config=config,
             session_manager=session_manager,
+            policy_bundle=config.policy_bundle,
             ingestion_service=ingestion_service,
             context_builder=resolved_context_builder,
             rag_prompt_builder=resolved_rag_prompt_builder,

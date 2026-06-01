@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.delegation import DelegationSpec
 
 
 class ExecutionNodeStatus(str, Enum):
@@ -30,6 +31,7 @@ class ExecutionNode(BaseModel):
     status: ExecutionNodeStatus = ExecutionNodeStatus.PENDING
     batch_index: int = 0
     execution_result: Optional[AgentExecutionResult] = None
+    delegation: Optional[DelegationSpec] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 

@@ -45,10 +45,10 @@ class ToolsStep(RuntimeStep):
         state.tools_agent_answer = None
 
         invoker = state.context.config.tool_invoker
-        tools_agent = state.context.config.tools_agent
+        tool_planner = state.context.config.tool_planner
         tools_mode = state.context.config.tools_mode
 
-        if invoker is None or tools_agent is None or tools_mode == "off":
+        if invoker is None or tool_planner is None or tools_mode == "off":
             return
 
         warning: Optional[str] = None
@@ -57,7 +57,7 @@ class ToolsStep(RuntimeStep):
         
         try:
             
-            decision = tools_agent.plan_tools(
+            decision = tool_planner.plan_tools(
                 input_data=state.request.message,
                 context=None,
                 run_id=state.run_id,

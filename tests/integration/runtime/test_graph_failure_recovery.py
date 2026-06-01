@@ -53,9 +53,8 @@ class _GraphRecoveryAgent(Agent):
             capabilities=["graph.recovery"],
         )
 
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
-        if capability == "graph.recovery":
+    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
+        if task_context.capability == "graph.recovery":
             return CapabilityMatchResult(
                 matched=True,
                 agent_id=self._agent_id,

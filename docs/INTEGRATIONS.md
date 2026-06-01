@@ -1,6 +1,6 @@
 # Intergrax Integration Library
 
-**Last updated:** 2026-05-30
+**Last updated:** 2026-06-01 (Phase S harness stable stack)
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 
@@ -13,6 +13,48 @@ The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular
 | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) Appendix E | How agents vs applications use integrations |
 | [TOOLS.md](TOOLS.md) | Agent-facing tools that compose these integrations |
 | Per-provider guides | `intergrax/integrations/providers/<category>/<slug>/USAGE.md` |
+| [../infra/README.md](../infra/README.md) | **Local Docker infrastructure** — compose profiles, manage scripts |
+| [../infra/PORTS.md](../infra/PORTS.md) | Host port matrix for integration tests |
+| [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) | Lab harness stack, OTLP, verification |
+
+---
+
+## Harness lab stable stack (Phase S)
+
+The **lab harness environment** treats these catalog slugs as **`stable`** (production-ready for the reference lab stack). Source of truth: `intergrax/integrations/registry/harness_lab_stack.py`.
+
+| Slug | Category |
+|------|----------|
+| `sqlite` | relational_store |
+| `redis` | key_value_cache |
+| `qdrant` | vector_store |
+| `slack` | notification_channel + interaction_surface |
+| `sentry` | observability_backend |
+| `otel` | observability_backend |
+| `lab_json` | interaction_surface |
+| `log` | notification_channel |
+
+```bash
+uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -m gate -q
+```
+
+Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 99 providers stable in one release.
+
+---
+
+## Local infrastructure (Docker)
+
+Run backing services locally before integration tests or lab hosts. Unified stack: `infra/integration/` with **compose profiles** (`core`, `queue`, `rag`, `data`, `secrets`, `observability`, `cloud`, `heavy`).
+
+```bash
+cd infra/integration && ./manage.sh start          # default profiles
+cd infra/integration && ./manage.sh start rag      # vectors + neo4j + ollama + docling
+cd infra/integration && ./manage.sh start all      # full stack
+```
+
+See [infra/PORTS.md](../infra/PORTS.md) for host ports (e.g. Redis `6379`, Qdrant `6333`, Neo4j Bolt `7687`, Weaviate `8080`, MinIO `9000`, Vault `8200`, ClickHouse HTTP `8123` / native `9002`).
+
+**SaaS-only slugs** (no local container — use mocks or API keys): `slack`, `jira`, `confluence`, `google_cse`, `pinecone`, `cohere_rerank`, `sentry` (cloud), most `observability_backend` HTTP proxies unless self-hosted image is listed in infra.
 
 ---
 
@@ -577,7 +619,21 @@ All slugs from the 2026-05 harness recommendation (high / medium / low) are regi
 
 **`slash_command`** interaction surface registered (catalog **99**).
 
-**Lab harness:** `IntegrationProfile.harness_lab()` + `wire_lab_integrations(harness=True)` — Sentry + PagerDuty + harness tool bundle.
+**Lab harness:** `IntegrationProfile.harness_lab()` + `wire_lab_integrations(harness=True)` — composite observability (Sentry + LangSmith) + PagerDuty + harness tool bundle.
+
+## Phase M.10 harness Tier A — Done (beta)
+
+**Composite observability:** `ToolWiringContext.observability_backends` populated from profile primary + `options` observability slugs. Role-based resolution in `resolve_observability_backend()` — `errors.capture` → Sentry, `observability.query_traces` → LangSmith, `braintrust.log_eval` → Braintrust.
+
+**HITL → PagerDuty (runtime):** `wire_lab_integrations(harness=True)` resolves notification adapter directly from profile (`create_harness_notification_adapter`). Long-running tasks with `notify_channel="pagerduty"` escalate via `LongRunningCoordinator.notify_escalation()`. Factory: `LAB_HARNESS=true`.
+
+**Tests:** `tests/unit/tools/providers/observability/test_composite_observability.py`, `tests/integration/runtime/test_harness_hitl_pagerduty.py`.
+
+## Phase M.11 harness — Done (beta)
+
+**Default notify channel:** `make_lab_harness_task_enricher()` + `apply_default_long_running_notify_channel()` inject profile default (`pagerduty` in harness) when `long_running.enabled` and `notify_channel` unset. Wired in `create_lab_application()` for `POST /v1/lab/run` (`long_running: true`) and interaction intake.
+
+**Next gaps (M.12+):** full adapters for remaining thin-p4 slugs (Helicone, PostHog, …), network smoke CI for harness integrations.
 
 **CI:** `harness-smoke` job in `.github/workflows/unit-tests.yml` (`integrations-harness` extra).
 
@@ -612,8 +668,6 @@ Audit against typical agent stacks (LangGraph, CrewAI, LlamaIndex, enterprise VP
 **Strong harness coverage today:** **99** integrations — observability (17), notification (9 incl. PagerDuty/Opsgenie), issue trackers (5 incl. GitLab), vectors (7 incl. Vespa), document parsers (7), rerank (2), plus M.7 stack (Vault, Neo4j, Temporal, Tavily, …).
 
 **Tool Library:** `errors.capture`, `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`. Optional deps: ``uv pip install 'Intergrax-ai[integrations-harness]'``.
-
-**Next gaps (M.10+):** full adapters for remaining thin-p4 slugs (Helicone, PostHog, …), multi-backend observability profile, network smoke CI.
 
 ---
 

@@ -1,0 +1,10 @@
+services:
+  cassandra:
+    image: cassandra:4.1
+    container_name: intergrax-cassandra
+    ports:
+      - "9042:9042"
+    environment:
+      MAX_HEAP_SIZE: 512M
+      HEAP_NEWSIZE: 128M
+    restart: unless-stopped

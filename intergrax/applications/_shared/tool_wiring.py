@@ -68,6 +68,7 @@ def build_application_tool_wiring(
         wiki_knowledge=ctx.wiki_knowledge,
         notification_channel=ctx.notification_channel,
         observability_backend=ctx.observability_backend,
+        observability_backends=dict(ctx.observability_backends),
         rag_manager=ctx.rag_manager or rag_manager,
         vectorstore_manager=ctx.vectorstore_manager or vectorstore_manager,
         embedding_manager=ctx.embedding_manager or embedding_manager,

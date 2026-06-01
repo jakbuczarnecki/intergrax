@@ -73,7 +73,7 @@ async def test_tools_step_idempotent_retry():
 
     # Configure runtime properly BEFORE rebuilding context
     state.context.config.tools_mode = "auto"
-    state.context.config.tools_agent = FakeToolsAgent()
+    state.context.config.tool_planner = FakeToolsAgent()
     state.context.config.idempotency_store = store
     state.context.config.tool_providers = [DummyProvider(handler)]
 

@@ -8,7 +8,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
@@ -76,6 +75,11 @@ def create_notification_adapter_from_profile(
         channel = profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)
         return channel  # type: ignore[return-value]
     return create_resilient_notification_adapter(profile, delivery_ledger=delivery_ledger)
+
+
+def create_harness_notification_adapter(profile: IntegrationProfile) -> NotificationAdapter:
+    """Resolve notification channel directly from harness ``IntegrationProfile``."""
+    return profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)  # type: ignore[return-value]
 
 
 def create_resilient_notification_adapter(

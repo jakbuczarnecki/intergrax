@@ -40,7 +40,7 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, Run
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.tools.registry import ToolRegistry
-from intergrax.tools.tools_agent import ToolsAgent
+from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
 from intergrax.websearch.providers.base import WebSearchProvider
 from intergrax.websearch.schemas.query_spec import QuerySpec
 from intergrax.websearch.schemas.search_hit import SearchHit
@@ -85,7 +85,10 @@ async def test_legal_agent_over_decision_runs_rag_websearch_tools_in_order(
 
     llm_adapter = LLMAdapterRegistry.create(LLMProvider.OLLAMA)
     session_manager = SessionManager(storage=InMemorySessionStorage())
-    tools_agent = ToolsAgent(llm=llm_adapter, tools=ToolRegistry())
+    tool_planner = CatalogToolPlanner.from_registry(
+        llm=llm_adapter,
+        registry=ToolRegistry(),
+    )
 
     embedding_manager = EmbeddingManager(
         pipeline=create_default_embedding_pipeline(provider_id="ollama"),
@@ -104,7 +107,7 @@ async def test_legal_agent_over_decision_runs_rag_websearch_tools_in_order(
             providers=[_NoOpWebSearchProvider()],
         ),
         use_legal_tool_decision=True,
-        tools_agent=tools_agent,
+        tool_planner=tool_planner,
         tools_mode="auto",
         tool_providers=[],
         use_llm_legal_route_planner=False,

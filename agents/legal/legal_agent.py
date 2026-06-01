@@ -28,7 +28,11 @@ from intergrax.runtime.nexus.ingestion.attachments import FileSystemAttachmentRe
 from intergrax.runtime.nexus.ingestion.ingestion_service import AttachmentIngestionService
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.task.task import TaskContext
+from legal.config.tool_planner_wiring import resolve_legal_tool_planner
+from intergrax.applications._shared.runtime_config_bridge import apply_policy_bundle_to_runtime_config
 from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy, RuntimePolicies
+from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 
 from legal.pipeline.legal_dynamic_pipeline import LegalDynamicPipeline
 from legal.pipeline.legal_agent_pipeline import LegalAnalysisPipeline
@@ -56,7 +60,8 @@ class LegalAgent(Agent):
             description="Contract analysis and legal document review.",
             version="1.0.0",
             capabilities=["legal.contract_review"],
-            allowed_tools=["rag.retrieve", "websearch.query", "rag", "websearch", "tools"],
+            skill_ids=["legal.contract_review"],
+            allowed_tools=["rag", "websearch", "tools"],
             required_adapters=["llm"],
             risk_level=AgentRiskLevel.HIGH,
             max_steps=20,
@@ -64,8 +69,8 @@ class LegalAgent(Agent):
             failure_modes=["governance_abort", "budget_exceeded"],
         )
 
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
+        capability = task_context.capability
         if capability in (None, "legal.contract_review"):
             return CapabilityMatchResult(
                 matched=True,
@@ -101,7 +106,7 @@ class LegalAgent(Agent):
             workspace_id=request.workspace_id,
             embedding_manager=cfg.embedding_manager,
             vectorstore_manager=cfg.vectorstore_manager,
-            tools_agent=cfg.tools_agent,
+            tool_planner=resolve_legal_tool_planner(cfg),
             tools_mode=cfg.tools_mode,
             tool_providers=tuple(cfg.tool_providers),
             tool_profile=cfg.tool_profile,
@@ -112,6 +117,8 @@ class LegalAgent(Agent):
             budget_policy=cfg.budget_policy,
             runtime_policies=runtime_policies,
         )
+        if isinstance(cfg.policy_bundle, RuntimePolicyBundle):
+            apply_policy_bundle_to_runtime_config(runtime_config, cfg.policy_bundle)
 
         if cfg.enable_sequential_legal_pipeline:
             runtime_config.pipeline = LegalAnalysisPipeline(config=cfg)

@@ -14,7 +14,10 @@ from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.session.session_storage import SessionStorage
 from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_session_storage
 
+from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
+from intergrax.applications._shared.skill_wiring import build_application_skill_wiring
 from intergrax.applications._shared.wiring import build_application_registry
+from intergrax.skills.registry.profile import SkillProfile
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -35,11 +38,21 @@ def build_legal_registry(settings: LegalBackendSettings) -> AgentRegistry:
     """Materialize Legal agent via unified Tier-3 wiring (factory + tool catalog)."""
     manifest = build_legal_manifest(settings)
     tool_wiring = wire_legal_tools(settings=settings)
+    skill_wiring = build_application_skill_wiring(SkillProfile(enabled_bundles=["legal"]))
+    tool_registry = tool_wiring.registry
+    if not tool_wiring.profile.enabled and not tool_wiring.profile.enabled_bundles:
+        tool_registry = None
     ctx = ApplicationBuildContext.for_manifest(
         manifest,
         settings=settings,
         tool_profile=tool_wiring.profile,
         tool_wiring_context=tool_wiring.wiring_context,
+        skill_profile=skill_wiring.profile,
+        skill_registry=skill_wiring.registry,
+        tool_registry=tool_registry,
+        policy_bundle=build_runtime_policy_bundle(
+            domain_fragments={"legal.contract_review.policy": "legal.contract_review.policy"},
+        ),
     )
     return build_application_registry(manifest, ctx)
 
@@ -109,5 +122,6 @@ def build_legal_agent(
         tools_mode=settings.tools_mode,  # type: ignore[arg-type]
         tool_profile=tool_profile,
         tool_wiring_context=tool_wiring_context,
+        policy_bundle=ctx.policy_bundle if ctx is not None else None,
     )
     return LegalAgent(config=cfg)

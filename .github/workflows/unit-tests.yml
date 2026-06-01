@@ -65,6 +65,8 @@ jobs:
           uv run python scripts/check_agents_vendor_imports.py
           && uv run python scripts/check_production_chat_agent_imports.py
           && uv run python scripts/check_integration_vendor_imports.py
+          && uv run python scripts/check_harness_no_getattr.py
+          && uv run python scripts/check_tools_agent_imports.py
 
   harness-smoke:
     runs-on: ubuntu-latest
@@ -92,4 +94,10 @@ jobs:
           tests/unit/tools/providers/gitlab/
           tests/unit/tools/providers/pagerduty/
           tests/unit/tools/providers/braintrust/
+          tests/integration/runtime/test_harness_hitl_pagerduty.py
+          tests/unit/applications/test_task_defaults.py
+          tests/unit/applications/test_harness_default_notify.py
+          tests/unit/integrations/test_harness_lab_stable_stack.py
+          tests/unit/skills/test_harness_skill_bundle.py
+          tests/unit/applications/test_lab_harness_environment_wiring.py
           -q --tb=line

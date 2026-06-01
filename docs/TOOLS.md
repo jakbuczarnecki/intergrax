@@ -31,10 +31,13 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 
 ---
 
-## Three-layer stack
+## Four-layer stack
 
 ```text
-Tier-2  Agent (allowed_tools, ToolRequest)
+Tier-2  Agent (skill_ids, allowed_tools, ToolRequest)
+        │
+        ▼
+Tier-0  Skill Library (MVP Done) — composable packs: tool_ids + prompts + policy — see [SKILLS.md](SKILLS.md)
         │
         ▼
 Tier-0  Tool Library (rag.retrieve, jira.search_tasks, …)
@@ -42,6 +45,8 @@ Tier-0  Tool Library (rag.retrieve, jira.search_tasks, …)
         ▼
 Tier-0  Integration Library (IssueTracker, SearchProvider, VectorStore, …)
 ```
+
+Skills are **not** tools — see architecture §7.1.8. Catalog: [SKILLS.md](SKILLS.md).
 
 **Agents declare tool_ids.** **Applications enable tools** via `ToolProfile` and inject integrations via `ToolWiringContext`. **Integrations** remain vendor-swappable without agent changes.
 
@@ -103,9 +108,10 @@ These components exist in the repository **before** the full provider catalog sh
 | `ToolCatalog` / `ToolProfile` / `ToolWiringContext` | `intergrax/tools/registry/` | **Done** — Phase O.2 |
 | `register_default_tools()` / `build_registry_from_profile()` | `intergrax/tools/registry/bootstrap.py`, `factory.py` | **Done** |
 | `RuntimeToolInvoker` | `intergrax/runtime/nexus/tools/invoker.py` | **Done** — validation, trace, error mapping |
-| `RuntimeToolGateway` | `intergrax/runtime/nexus/tools/tool_gateway.py` | **Done** — UAEP / §42.12 entry |
+| `RuntimeToolGateway` | `intergrax/runtime/nexus/tools/tool_gateway.py` | **Done** — UAEP / §42.12 entry; `nexus.capability_plan` prefers `tool_ids` (e.g. `rag.retrieve`) over legacy `use_rag` booleans |
 | `ToolsAgent` (LLM planner) | `intergrax/tools/tools_agent.py` | **Done** — OpenAI schema from registry |
 | `ToolAccessPolicy` | `intergrax/runtime/nexus/tools/tool_access_policy.py` | **Done** |
+| `resolve_allowed_tools_from_config` | `intergrax/runtime/policy/tool_policy_resolution.py` | **Done** — merges `RuntimePolicyBundle.tool_access` (`StaticToolScopePolicy`) into `ToolRuntime` / gateway |
 | Legacy `ToolBase` | `intergrax/tools/tools_base.py` | **Deprecated** — use `ToolContract` (Phase O.7 Done) |
 
 ---
@@ -167,9 +173,13 @@ Status legend: **Done** = registered handler in catalog.
 | `logs.search` | observability | **Done** | Search log index | `ObservabilityBackend` (`elasticsearch`, `opensearch`) |
 | `observability.query_traces` | observability | **Done** | Query LLM/agent traces | `ObservabilityBackend` (`langfuse`, `langsmith`, …) |
 | `errors.capture` | observability | **Done** | Report error events | `ObservabilityBackend` (`sentry`) |
-| `braintrust.log_eval` | observability | **Done** | Log eval score | `ObservabilityBackend` (`braintrust`) |
+| `braintrust.log_eval` | observability | **Done** | Log eval score | `ObservabilityBackend` (`braintrust`, role `eval`) |
 | `gitlab.create_issue` | issue_tracker | **Done** | Create GitLab issue | `IssueTracker` (`gitlab`) |
 | `pagerduty.trigger_incident` | notification | **Done** | Trigger on-call incident | `NotificationChannel` (`pagerduty`) |
+
+### Composite observability (Phase M.10)
+
+Harness lab uses **one primary** `observability_backend` (Sentry) plus **additional slugs** in `IntegrationProfile.options` (LangSmith). `ToolWiringContext.from_integration_profile()` builds `observability_backends`; each tool picks a backend by role (`errors`, `traces`, `logs`, `eval`) via `resolve_observability_backend()`. See [observability USAGE](../intergrax/tools/providers/observability/USAGE.md).
 
 ---
 

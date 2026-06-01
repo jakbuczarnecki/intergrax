@@ -14,6 +14,9 @@ from intergrax.memory.user_profile_memory import (
 )
 from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
+from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
+from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 
@@ -42,6 +45,8 @@ class UserProfileManager:
             *,
             embedding_manager: Optional[EmbeddingManager] = None,
             vectorstore_manager: Optional[VectorstoreManager] = None,
+            retrieval_service: Optional[RetrievalService] = None,
+            rag_profile: Optional[RagProfile] = None,
             longterm_top_k: int = 6,
             longterm_score_threshold: float = 0.25,
     ) -> None:
@@ -50,6 +55,8 @@ class UserProfileManager:
         # Optional Long-Term Memory RAG dependencies
         self._embedding_manager = embedding_manager
         self._vectorstore_manager = vectorstore_manager
+        self._retrieval_service = retrieval_service
+        self._rag_profile = rag_profile or (retrieval_service.profile if retrieval_service else None)
 
         # Retrieval defaults (can be overridden per call)
         self._longterm_top_k = int(longterm_top_k)
@@ -57,8 +64,55 @@ class UserProfileManager:
 
 
     def is_longterm_rag_enabled(self) -> bool:
+        if self._retrieval_service is not None:
+            return True
         return self._embedding_manager is not None and self._vectorstore_manager is not None
-    
+
+    async def _search_longterm_via_retrieval_service(
+        self,
+        *,
+        user_id: str,
+        query: str,
+        top_k: int,
+        score_threshold: Optional[float],
+    ) -> Dict[str, Any]:
+        from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
+
+        service = self._retrieval_service
+        assert service is not None
+        request = RetrievalRequest(
+            query=query,
+            final_top_k=top_k,
+            score_threshold=score_threshold,
+            metadata_filter=MetadataFilter(conditions={"user_id": user_id, "deleted": 0}),
+        )
+        result = service.retrieve(request)
+        profile = await self._store.get_profile(user_id)
+        by_id = {e.entry_id: e for e in profile.memory_entries if not e.deleted}
+        hits: List[UserProfileMemoryEntry] = []
+        scores: List[float] = []
+        for chunk in result.chunks:
+            entry_id = str((chunk.metadata or {}).get("entry_id") or chunk.id or "")
+            entry = by_id.get(entry_id)
+            if entry is None:
+                continue
+            hits.append(entry)
+            scores.append(float(chunk.score or 0.0))
+        used = bool(hits)
+        debug = {
+            "enabled": True,
+            "used": used,
+            "reason": result.reason or ("hits" if used else "no_hits"),
+            "retrieval_service": True,
+            "route_tier": result.trace.route_tier if result.trace else None,
+            "hits_count": len(hits),
+        }
+        return {
+            "used_longterm": used,
+            "hits": hits,
+            "scores": scores,
+            "debug": debug,
+        }
 
     async def _index_upsert_entry(self, user_id: str, entry: UserProfileMemoryEntry) -> None:
         """
@@ -187,6 +241,14 @@ class UserProfileManager:
             thr = None
         else:
             thr = float(score_threshold)
+
+        if self._retrieval_service is not None:
+            return await self._search_longterm_via_retrieval_service(
+                user_id=user_id,
+                query=q,
+                top_k=k,
+                score_threshold=thr,
+            )
 
         # Embed query
         q_emb = self._embedding_manager.embed_texts([q])

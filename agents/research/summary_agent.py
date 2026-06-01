@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Optional, Sequence
 
+from intergrax.applications._shared.runtime_defaults import harness_production_mode
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.uaep_pipeline import (
     pipeline_agent_steps,
@@ -104,7 +105,7 @@ class SummaryAgent(Agent):
         config = RuntimeConfig(
             llm_adapter=_SummaryLLMStub(),
             enable_rag=False,
-            production_mode=False,
+            production_mode=harness_production_mode(),
             tenant_id=request.tenant_id,
         )
         config.pipeline = SummaryPipeline()

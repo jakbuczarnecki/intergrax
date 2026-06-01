@@ -1,16 +1,40 @@
 # Intergrax LLM Adapters
 
-**Last updated:** 2026-05-30
+**Last updated:** 2026-06-01
 
 Tier-0 LLM layer — `LLMAdapter`, registry, `LLMProfile`. Outside Integration Library (§5.2.2).
 
-**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · [LLM_OBSERVABILITY.md](LLM_OBSERVABILITY.md) · [applications/USAGE.md](../applications/USAGE.md) · Phase **M-LLM**
+**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §33 · [applications/USAGE.md](../applications/USAGE.md) · Phase **M-LLM**
 
 ---
 
 ## Providers (19)
 
-See provider table in git history / `LLMProvider` enum. OpenAI-compatible slugs share `openai_compat_factory.py`.
+OpenAI-compatible slugs share `openai_compat_factory.py`. Override `supports_streaming()` / `supports_structured_output()` per adapter (ABC defaults: streaming **false**, structured **false**).
+
+| Slug | Adapter module | Primary env | Stream | Structured | Notes |
+|------|----------------|-------------|--------|------------|-------|
+| `openai` | `openai_responses_adapter` | `OPENAI_API_KEY` | yes | yes | Native Responses API |
+| `gemini` | `gemini_adapter` | `GEMINI_API_KEY` | yes | yes | |
+| `ollama` | `ollama_adapter` | `OLLAMA_BASE_URL` | yes | partial | Local |
+| `mistral` | `mistral_adapter` | `MISTRAL_API_KEY` | yes | yes | |
+| `claude` | `claude_adapter` | `ANTHROPIC_API_KEY` | yes | yes | |
+| `azure_openai` | `azure_openai_adapter` | `AZURE_OPENAI_*` | yes | yes | |
+| `aws_bedrock` | `aws_bedrock_adapter` | `AWS_*` | yes | partial | |
+| `groq` | `openai_compat` | `GROQ_API_KEY` | compat | compat | |
+| `vllm` | `openai_compat` | `VLLM_BASE_URL` | compat | compat | |
+| `together` | `openai_compat` | `TOGETHER_API_KEY` | compat | compat | |
+| `fireworks` | `openai_compat` | `FIREWORKS_API_KEY` | compat | compat | |
+| `openrouter` | `openai_compat` | `OPENROUTER_API_KEY` | compat | compat | |
+| `deepseek` | `openai_compat` | `DEEPSEEK_API_KEY` | compat | compat | |
+| `xai` | `openai_compat` | `XAI_API_KEY` | compat | compat | |
+| `llama_cpp` | `openai_compat` | `LLAMA_CPP_BASE_URL` | compat | compat | |
+| `cohere` | `openai_compat` | `COHERE_API_KEY` | compat | compat | Chat Completions shim |
+| `cohere_native` | `cohere_native_adapter` | `COHERE_API_KEY` | yes | partial | |
+| `vertex_gemini` | `vertex_gemini_adapter` | `GOOGLE_APPLICATION_CREDENTIALS` | yes | yes | |
+| `azure_ai_inference` | `azure_ai_inference_adapter` | `AZURE_AI_*` | yes | partial | |
+
+Central env appendix: `INTERGRAX_LLM_PROVIDER`, `INTERGRAX_LLM_MODEL`, `INTERGRAX_LLM_TENANT_MAX_TOKENS`, `INTERGRAX_LLM_METRICS_ENABLED`, `INTERGRAX_LLM_PROMETHEUS_PUSHGATEWAY_URL`. Per-provider secrets: `llm/<provider>/api_key` via `SecretsStore`.
 
 ---
 
@@ -37,7 +61,74 @@ llm = profile.create_adapter(secrets={"api_key": key})  # or create_adapter_from
 | Pushgateway | `INTERGRAX_LLM_PROMETHEUS_PUSHGATEWAY_URL` |
 | Distributed rate limit | `set_llm_distributed_rate_limiter` + `use_distributed_rate_limit` |
 
-Details: [LLM_OBSERVABILITY.md](LLM_OBSERVABILITY.md).
+---
+
+## Observability (Prometheus & governance)
+
+Tier-0 metrics from `intergrax/llm_adapters/tracking/`.
+
+### Scrape (recommended)
+
+```python
+from intergrax.llm_adapters.tracking.exposition import register_llm_metrics_routes
+
+register_llm_metrics_routes(app)  # GET /metrics/llm
+```
+
+Configure Prometheus to scrape `http://<host>/metrics/llm`. Lab factory registers routes when `INTERGRAX_LLM_METRICS_ENABLED=true`.
+
+### Pushgateway (optional)
+
+```bash
+INTERGRAX_LLM_METRICS_ENABLED=true
+INTERGRAX_LLM_PROMETHEUS_PUSHGATEWAY_URL=http://pushgateway:9091
+```
+
+Pushes on each `TASK_COMPLETED` via runtime plugin (grouping `tenant/<tenant_id>`).
+
+### Example PromQL (SLO)
+
+```promql
+sum by (tenant_id) (rate(intergrax_llm_calls_total[5m]))
+sum by (provider) (rate(intergrax_llm_errors_total[5m]))
+  / sum by (provider) (rate(intergrax_llm_calls_total[5m]))
+sum by (tenant_id, model) (rate(intergrax_llm_output_tokens_total[5m]))
+```
+
+Query via Integration `observability_backend` = `prometheus` (`create_prometheus_observability_backend`).
+
+### Governance signals
+
+Correlate logs with Nexus trace using `run_id` / `task_id` in `llm_metrics_export` structured fields.
+
+### Distributed rate limit (multi-replica)
+
+```python
+from intergrax.llm_adapters._shared.resilience import set_llm_distributed_rate_limiter
+from intergrax.integrations.providers.key_value_cache.redis.bundle import create_redis_rate_limiter
+
+set_llm_distributed_rate_limiter(create_redis_rate_limiter(url="redis://..."))
+profile = LLMProfile(provider=..., options={"use_distributed_rate_limit": True, "calls_per_minute": 120})
+```
+
+Falls back to in-process limiter when Redis limiter is not set.
+
+### Usage tracking: two layers
+
+| Layer | Type | When |
+|-------|------|------|
+| **Adapter** | `LLMAdapter.usage` (`LLMAdapterUsageLog`) | Per SDK call inside `generate_messages` / tools |
+| **Runtime** | `LLMUsageTracker` on `RuntimeState` | Nexus pipeline steps aggregate into run/trace finalize |
+
+Do not merge counters without explicit bridge code.
+
+### Prometheus: scrape vs integration backend
+
+| Mode | Mechanism | Use when |
+|------|-----------|----------|
+| **In-process scrape** | `register_llm_metrics_routes(app)` → `GET /metrics/llm` | Single replica, lab, local dev |
+| **Pushgateway** | Plugin pushes on `TASK_COMPLETED` | Ephemeral workers without scrape target |
+| **PromQL backend** | Integration slug `observability_backend=prometheus` | Central queries against long-lived Prometheus |
 
 ---
 
@@ -45,6 +136,19 @@ Details: [LLM_OBSERVABILITY.md](LLM_OBSERVABILITY.md).
 
 - `LLMCallConfig`: retries, in-process rate limit, circuit breaker, optional Redis rate limit.
 - `registry/secrets.py`: env + `SecretsStore` paths (`llm/<provider>/api_key`).
+
+## Environment appendix (central)
+
+| Variable | Purpose |
+|----------|---------|
+| `INTERGRAX_LLM_PROVIDER` | Default provider slug for `LLMProfile.from_env()` |
+| `INTERGRAX_LLM_MODEL` | Default model id |
+| `INTERGRAX_LLM_METRICS_ENABLED` | Enable metrics plugin + `/metrics/llm` |
+| `INTERGRAX_LLM_PROMETHEUS_PUSHGATEWAY_URL` | Optional push on `TASK_COMPLETED` |
+| `INTERGRAX_LLM_TENANT_MAX_TOKENS` | Hard per-tenant quota |
+| `INTERGRAX_LLM_GOVERNANCE_WARN_TOKENS` | Soft warn via `PolicyEngine` on task complete |
+| `INTERGRAX_BEDROCK_USE_CONVERSE` | Bedrock Converse API toggle |
+| `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, … | Per-provider secrets (see each `providers/*/USAGE.md`) |
 
 ---
 

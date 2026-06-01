@@ -17,6 +17,7 @@ from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrie
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.rerankers.contracts.reranker_types import RerankerCandidate
 from intergrax.rag.routing.query_router import QueryRouter
+from intergrax.rag.tracking.metrics import record_retrieval
 class RetrievalService:
     """
     Single Tier-0 retrieval pipeline: route → retrieve → optional rerank → filter.
@@ -74,11 +75,10 @@ class RetrievalService:
 
         retriever_id = request.retriever_id or self._profile.effective_retriever(route_tier=str(tier))
         trace.retriever_id = retriever_id
+        trace.hybrid_used = retriever_id in ("hybrid", "graph_rag") or self._profile.native_hybrid_enabled
 
-        prefetch_k = int(request.top_k or self._profile.prefetch_top_k)
-        final_k = int(request.top_k or self._profile.final_top_k)
-        if prefetch_k < final_k:
-            prefetch_k = max(final_k, self._profile.prefetch_top_k)
+        final_k = request.resolved_final_k(self._profile.final_top_k)
+        prefetch_k = request.resolved_prefetch_k(self._profile.prefetch_top_k, final_k)
 
         t0 = time.perf_counter()
         candidates = self._retriever_manager.retrieve(
@@ -141,7 +141,34 @@ class RetrievalService:
         if not chunks:
             return RetrievalResult(chunks=[], used=False, reason="below_score_threshold", trace=trace)
 
-        return RetrievalResult(chunks=chunks, used=True, reason="ok", trace=trace)
+        result = RetrievalResult(chunks=chunks, used=True, reason="ok", trace=trace)
+        _record_retrieval_metrics(
+            request=request,
+            trace=trace,
+            hits=len(chunks),
+            tenant_id=getattr(request, "tenant_id", None),
+        )
+        return result
+
+
+def _record_retrieval_metrics(
+    *,
+    request: RetrievalRequest,
+    trace: RetrievalTrace,
+    hits: int,
+    tenant_id: Optional[str] = None,
+) -> None:
+    record_retrieval(
+        tenant_id=tenant_id or "_platform",
+        retriever_id=trace.retriever_id or "unknown",
+        route_tier=trace.route_tier or "standard",
+        retrieval_latency_ms=float(trace.retrieval_latency_ms or 0.0),
+        rerank_latency_ms=float(trace.rerank_latency_ms or 0.0),
+        agentic_iterations=int(trace.agentic_iteration or 0),
+        hybrid_used=bool(trace.hybrid_used),
+        hits=hits,
+        recall_at_k=trace.recall_at_k,
+    )
 
 
 def _candidates_to_chunks(candidates: List[Any]) -> List[RetrievalChunk]:

@@ -70,7 +70,12 @@ class LegalToolPlan(BaseModel):
         default_factory=list,
         description="Canonical catalog tool ids (rag.retrieve, websearch.query, …).",
     )
-    use_rag: bool = Field(description="Run Nexus RagStep when infrastructure allows.")
+    use_rag: bool = Field(
+        description=(
+            "LLM structured-output flag; synced to tool_ids (rag.retrieve). "
+            "Runtime bridge uses tool_ids only — not legacy Nexus booleans."
+        ),
+    )
     use_tools: bool = Field(description="Run Nexus ToolsStep when tools are configured.")
     use_websearch: bool = Field(
         description="Run Nexus WebsearchStep when websearch is configured.",

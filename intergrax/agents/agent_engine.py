@@ -7,7 +7,8 @@ from __future__ import annotations
 from typing import Dict, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.uaep import UAEPExecutor, supports_uaep
+from intergrax.agents.uaep import UAEPExecutor
+from intergrax.agents.uaep_protocol import supports_uaep
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.runtime_mapping import runtime_answer_to_agent_result
 from intergrax.contracts.validation import ValidationResult
@@ -90,16 +91,29 @@ class AgentEngine:
         return agent
 
     @staticmethod
+    def _resolve_static_executor(
+        uaep_executor: Optional[UAEPExecutor],
+        event_bus: Optional[RuntimeEventBus],
+    ) -> UAEPExecutor:
+        if uaep_executor is not None:
+            return uaep_executor
+        if event_bus is not None:
+            return UAEPExecutor(event_bus=event_bus)
+        return _DEFAULT_UAEP
+
+    @staticmethod
     async def run_agent(
         agent: Agent,
         request: RuntimeRequest,
         *,
         uaep_executor: Optional[UAEPExecutor] = None,
+        event_bus: Optional[RuntimeEventBus] = None,
     ) -> RuntimeAnswer:
+        executor = AgentEngine._resolve_static_executor(uaep_executor, event_bus)
         answer, _validation, _context, _governance = await AgentEngine._execute_agent_impl(
             agent,
             request,
-            uaep_executor or _DEFAULT_UAEP,
+            executor,
         )
         return answer
 
@@ -109,11 +123,13 @@ class AgentEngine:
         request: RuntimeRequest,
         *,
         uaep_executor: Optional[UAEPExecutor] = None,
+        event_bus: Optional[RuntimeEventBus] = None,
     ) -> AgentExecutionResult:
+        executor = AgentEngine._resolve_static_executor(uaep_executor, event_bus)
         answer, validation, _context, governance = await AgentEngine._execute_agent_impl(
             agent,
             request,
-            uaep_executor or _DEFAULT_UAEP,
+            executor,
         )
         contract = agent.get_contract()
         return runtime_answer_to_agent_result(

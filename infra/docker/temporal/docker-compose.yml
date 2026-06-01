@@ -1,0 +1,16 @@
+# Requires PostgreSQL with database `temporal` — start infra/integration postgresql first.
+services:
+  temporal:
+    image: temporalio/auto-setup:1.25.2
+    container_name: intergrax-temporal
+    ports:
+      - "7233:7233"
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: intergrax
+      POSTGRES_PWD: intergrax
+      POSTGRES_SEEDS: host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

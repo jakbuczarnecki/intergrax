@@ -13,6 +13,8 @@
 | `retrieval_service` | No | Pre-built `RetrievalService`; else composed from managers + profile |
 | `retriever_manager` / `reranker_manager` | No | Override Tier-0 registries |
 
+Local backends: `infra/integration` profile `rag` (Qdrant, Chroma, Weaviate, Neo4j, Ollama, Docling) — see [infra/PORTS.md](../../../../infra/PORTS.md).
+
 Tier-3 example (full stack):
 
 ```python
@@ -53,7 +55,10 @@ Env examples:
 | `INTERGRAX_RAG_GRAPH_INDEXER_MODE` | `heuristic` (default), `llm`, `heuristic_then_llm` — requires `llm_adapter` in extras |
 | `INTERGRAX_RAG_AGENTIC_QUERY_MODE` | `deterministic` or `llm` for deep-tier refinement |
 | `INTERGRAX_RAG_QDRANT_SPARSE` | Qdrant native sparse vectors + RRF hybrid query |
+| `INTERGRAX_RAG_SPARSE_ENCODER` | `bm25_hash` (default) or `splade` (requires `fastembed`) |
 | `INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID` | Weaviate `query.hybrid` when client is wired |
+| `INTERGRAX_RAG_GRAPH_STORE` | `inmemory` (default) or `neo4j` for GraphRAG persistence |
+| `INTERGRAX_RAG_METRICS_ENABLED` | Export retrieval latencies, hybrid/agentic stats, recall@k avg |
 
 Pass optional adapters via `ToolWiringContext.extras`:
 

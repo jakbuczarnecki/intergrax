@@ -6,12 +6,12 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.chat_agent import (
+from intergrax.legacy.chat_router import (
+    ChatRouterConfig,
     default_chat_router_system,
     default_chat_router_user,
 )
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
-from intergrax.chat_agent import ChatRouterConfig
 
 
 pytestmark = pytest.mark.unit

@@ -47,5 +47,6 @@ async def test_legal_bridge_uses_tool_gateway_not_direct_runtime():
     gateway.invoke.assert_awaited_once()
     request = gateway.invoke.await_args.args[0]
     assert request.tool_name == NEXUS_CAPABILITY_PLAN
-    assert request.input["use_rag"] is True
     assert RAG_RETRIEVE_TOOL_ID in request.input["tool_ids"]
+    assert "use_rag" not in request.input
+    assert request.input["use_tools"] is False

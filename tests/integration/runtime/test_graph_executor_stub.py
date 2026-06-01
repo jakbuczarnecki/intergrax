@@ -5,7 +5,6 @@ import pytest
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
-from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -15,6 +14,7 @@ from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext
+from intergrax.contracts.capability import CapabilityMatchResult
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 
@@ -43,9 +43,8 @@ class _SequentialStubAgent(Agent):
             capabilities=[self._capability],
         )
 
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
-        if capability == self._capability:
+    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
+        if task_context.capability == self._capability:
             return CapabilityMatchResult(
                 matched=True,
                 agent_id=self._agent_id,

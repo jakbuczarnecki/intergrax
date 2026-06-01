@@ -25,6 +25,7 @@ from intergrax.runtime.interactions.factory import (
 )
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.applications._shared.notification_wiring import (
+    create_harness_notification_adapter,
     create_resilient_notification_adapter,
     open_host_delivery_ledger,
 )
@@ -51,6 +52,7 @@ class LabIntegrationWiring:
     experiments_db_path: Path | None
     checkpoints_db_path: Path | None
     delivery_ledger: DeliveryLedger | None
+    default_long_running_notify_channel: str = "log"
 
 
 def _sqlite_config_overrides(
@@ -76,8 +78,14 @@ def build_lab_integration_profile(
     *,
     sqlite_overrides: dict[str, Path] | None = None,
     harness: bool = False,
+    otel_enabled: bool = False,
 ) -> IntegrationProfile:
-    profile = IntegrationProfile.harness_lab() if harness else IntegrationProfile.lab()
+    if harness:
+        profile = IntegrationProfile.harness_lab()
+    elif otel_enabled:
+        profile = IntegrationProfile.harness_environment()
+    else:
+        profile = IntegrationProfile.lab()
     if not sqlite_overrides:
         return profile
     return profile.model_copy(
@@ -108,12 +116,14 @@ def wire_lab_integrations(
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
     harness: bool = False,
+    otel_enabled: bool = False,
 ) -> LabIntegrationWiring:
     """
     Single composition root for lab persistence, notifications, and interaction surface.
 
     Uses ``IntegrationProfile.lab()`` (sqlite + log + lab_json) with optional SQLite path overrides.
     Set ``harness=True`` for LangSmith/Sentry/PagerDuty harness stack (Phase M.9).
+    Set ``otel_enabled=True`` (or ``LAB_OTEL_ENABLED``) for OTEL observability facade (Phase S-Ops.2).
     """
     register_default_integrations()
 
@@ -123,7 +133,11 @@ def wire_lab_integrations(
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
     )
-    profile = build_lab_integration_profile(sqlite_overrides=sqlite_overrides or None, harness=harness)
+    profile = build_lab_integration_profile(
+        sqlite_overrides=sqlite_overrides or None,
+        harness=harness,
+        otel_enabled=otel_enabled,
+    )
     sqlite_bundle = create_sqlite_integration(**sqlite_overrides)
 
     if db_path is None:
@@ -144,11 +158,21 @@ def wire_lab_integrations(
         checkpoints_db_path=checkpoints_db_path,
     )
 
-    notification_adapter = create_resilient_notification_adapter(
-        profile,
-        delivery_ledger=delivery_ledger,
+    notification_adapter = (
+        create_harness_notification_adapter(profile)
+        if harness
+        else create_resilient_notification_adapter(
+            profile,
+            delivery_ledger=delivery_ledger,
+        )
     )
     interaction_adapter = create_lab_interaction_adapter(settings)
+
+    default_notify = (
+        profile.notification_channel.value
+        if harness and profile.notification_channel is not None
+        else "log"
+    )
 
     return LabIntegrationWiring(
         profile=profile,
@@ -163,4 +187,5 @@ def wire_lab_integrations(
         experiments_db_path=experiments_db_path or sqlite_bundle.paths.experiments,
         checkpoints_db_path=checkpoints_db_path or sqlite_bundle.paths.task_checkpoints,
         delivery_ledger=delivery_ledger,
+        default_long_running_notify_channel=default_notify,
     )

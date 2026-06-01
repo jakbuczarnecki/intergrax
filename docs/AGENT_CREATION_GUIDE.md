@@ -412,6 +412,8 @@ Variables use the application prefix (`MY_LAB_`, `MY_PRODUCT_`, …). Do not put
 
 Product profile: optional dev API key via `*_BACKEND_BOOTSTRAP_API_KEY` (+ tenant/user); production requires keys or explicit `*_BACKEND_ALLOW_UNAUTHENTICATED=true` (see generated `host/settings.py`).
 
+**Lab / scaffold harness defaults (Phase Q-N.10):** Tier-3 lab hosts should wire `production_mode=False` via `intergrax.applications._shared.runtime_defaults.harness_production_mode()` so governance and shadow policies stay relaxed during local iteration. Product profiles set `production_mode=True` explicitly in `host/factory.py`.
+
 #### E.5 — Three-command quickstart
 
 From **repository root**:
@@ -975,10 +977,51 @@ Prefer `python -m intergrax.scaffold new-application <name> --profile lab|produc
 
 ---
 
+## Appendix G — Memory & RAG naming (Phase Q)
+
+### Four memory stores
+
+| Store | Module | When to use |
+|-------|--------|-------------|
+| Session history | `SessionManager` / `HistoryStep` | Turn-by-turn chat in one session |
+| User LTM | `UserProfileManager` + vector index | Stable user facts across sessions |
+| Task KV | `TaskMemory` (`INTERGRAX_TASK_MEMORY_DB`) | Per-task scratch state, UAEP steps |
+| Shared graph context | `shared_task_context` metadata | Multi-agent handoff on one Nexus task |
+
+Enable SQLite task memory in Tier-3 via `wire_task_memory` from `intergrax.applications._shared.task_memory_wiring` and `.env.example` (`INTERGRAX_TASK_MEMORY_DB`). Lab factory calls this when `LAB_*` harness is active.
+
+### Three “context builders”
+
+| Name | Location | Role |
+|------|----------|------|
+| Nexus `ContextBuilder` | `runtime/nexus/context/context_builder.py` | Assembles RAG/history/web for one runtime turn |
+| `ContextManager` | `runtime/nexus/context/context_manager.py` | Nexus task-level context orchestration |
+| `DefaultContextBuilder` | `rag/context/` (ingest/index) | Document chunking for index pipelines |
+
+Use `tool_ids` including `rag.retrieve` instead of legacy plan boolean `use_rag` (shim emits deprecation event).
+
+### Context engineering (Harness AI)
+
+Nexus owns **what the LLM sees** per step (`ContextManager`, `TaskContextAssemblyOptions`, `MemoryView`). See architecture §28.1. `ContextBudgetPolicy` provides central trim + `CONTEXT_ASSEMBLED` / `CONTEXT_TRIMMED` events (R-Context **Done**).
+
+### Integration → Tool → Skill → Agent
+
+| Layer | Declare in agent | Wire in Tier-3 |
+|-------|------------------|----------------|
+| Integration | — | `IntegrationProfile` |
+| Tool | `allowed_tools` | `ToolProfile` |
+| Skill | `skill_ids` on contract | `SkillProfile` |
+
+Do **not** register markdown instruction packs as `ToolContract`. Import external skills via `CursorSkillImporter` — see [SKILLS.md](SKILLS.md). Canon: §7.1.8.
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
 |--------|------------|
+| Import `intergrax.chat_agent` / `ChatAgent` | Nexus `RuntimeEngine` / `NoPlannerPipeline` |
+| Import `intergrax.rag.answers` from runtime | `RetrievalService` |
 | Put agent logic in `applications/` | Logic in `agents/`, wiring in application |
 | Modify `NexusLoop` for one agent | `registry.register()` + contract/metadata |
 | Expect lab app to auto-load new agents | Add `AgentBinding.mount(...)` in `lab_application/manifest.py` + builder |
@@ -986,8 +1029,26 @@ Prefer `python -m intergrax.scaffold new-application <name> --profile lab|produc
 | Duplicate LLM/trace/queue stacks | Extend Tier-0 platform |
 | Import `integrations/providers/` from `agents/` | Declare `allowed_tools`; wire slugs in Tier-3 `factory.py` |
 | Hardcode Slack/Postgres/Redis in agent steps | `ToolRequest` + application `IntegrationProfile` |
+| Model a business workflow as one giant `ToolContract` | **Skill** pack (tool_ids + prompts) + UAEP steps on agent |
+| Copy prompt + tool lists into every new agent | Reuse `skill_ids` from [Skill Library](SKILLS.md) |
 | Tie agent to one product | Reusable capability in `agents/` |
 | Document this workflow in multiple files | Update **this guide only** |
+| Use `getattr` / `setattr` on harness paths (`runtime/nexus/`, `agents/`) | Explicit `Protocol` / typed fields; CI `scripts/check_harness_no_getattr.py` |
+| Import or extend `ToolsAgent` in new agents | `CatalogToolPlanner` + `ToolRuntime` + `allowed_tools` on contract |
+| Rely on flat `Task.metadata` keys for options | Typed `Task.options` / `Task.runtime`; opt-in hydrate via `metadata_needs_hydration` |
+
+### CI and import gates (§5.2 reuse)
+
+Run before opening a harness PR (see `scripts/`):
+
+| Script | Enforces |
+|--------|----------|
+| `check_harness_no_getattr.py` | No new `getattr`/`setattr` under `runtime/nexus/` and `agents/` |
+| `check_tools_agent_imports.py` | No new production imports of legacy `ToolsAgent` |
+| `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |
+| `check_integration_vendor_imports.py` | Tier-0 does not import application/agent trees incorrectly |
+| `check_production_chat_agent_imports.py` | No `ChatAgent` on production paths |
+| `check_legacy_package_boundaries.py` | Supervisor/chains not pulled into runtime/applications |
 
 ---
 
@@ -999,7 +1060,7 @@ When asked to create a new Intergrax agent:
 2. Run `python -m intergrax.scaffold new-agent <slug> --capability <id>`.
 3. Edit only `agents/<slug>/` — primarily `steps/`, `prompts/`, `schemas/`, `contract.py`.
 4. Register in the appropriate context (§ Step 4). New deployable host: Step **4E** (`new-application`). Shared lab: Step **4C** (`lab_application/manifest.py`).
-5. Verify: `uv run pytest agents/<slug>/tests -q` then `uv run pytest -m gate -q`; optionally `python scripts/check_agents_vendor_imports.py` (B.24) and `python scripts/check_production_chat_agent_imports.py` (K.5).
+5. Verify: `uv run pytest agents/<slug>/tests -q` then `uv run pytest -m gate -q`; optionally `python scripts/check_agents_vendor_imports.py`, `python scripts/check_integration_vendor_imports.py`, and `python scripts/check_production_chat_agent_imports.py` (no `ChatAgent` in production paths).
 6. Do **not** modify `intergrax/runtime/` unless a reusable Tier-0 gap is proven and approved.
 7. Do **not** import `intergrax.integrations.providers.*` from agent code — wire integrations in Tier-3 only (Appendix E).
 8. Do **not** create duplicate workflow documentation — update this file if the process changes.

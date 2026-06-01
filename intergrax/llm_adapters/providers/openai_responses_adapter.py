@@ -110,6 +110,9 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
     def _messages_to_responses_input(self, mapped_messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         return messages_to_responses_input(mapped_messages)
 
+    def supports_streaming(self) -> bool:
+        return True
+
     def supports_structured_output(self) -> bool:
         return True
 

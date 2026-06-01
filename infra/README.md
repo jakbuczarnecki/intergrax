@@ -1,371 +1,149 @@
 # Intergrax Infrastructure Layer
 
-This directory contains infrastructure modules used by the Intergrax platform.
+Local Docker services for development, integration tests, and CI. **Decoupled from** `intergrax/` runtime code.
 
-Each infrastructure component is isolated and self-contained.
-
-Examples of infrastructure components:
-
-* Redis
-* PostgreSQL
-* Kafka
-* RabbitMQ
-* Qdrant
-* ChromaDB
-* Docling
-
-Infrastructure services are **fully decoupled from the Intergrax runtime code** (`intergrax/`).
-
-They are used for:
-
-* local development
-* CI pipelines
-* integration tests
-* production infrastructure services
+**Port matrix:** [PORTS.md](PORTS.md)
 
 ---
 
-# Directory Structure
+## Layout
 
-```
+```text
 infra/
-  docker/
-
-    redis/
-      docker-compose.yml
-
-    postgresql/
-      docker-compose.yml
-
-    kafka/
-      docker-compose.yml
-
-    qdrant/
-      docker-compose.yml
-
-    chromadb/
-      docker-compose.yml
-
-    docling/
-      Dockerfile
-      docker-compose.yml
-      service.py
-
-    manage.ps1
-    manage.sh
-```
-
-Each tool directory contains its own Docker configuration.
-
-Possible files inside a tool directory:
-
-| File               | Description                     |
-| ------------------ | ------------------------------- |
-| docker-compose.yml | Container configuration         |
-| Dockerfile         | Optional image build definition |
-| service files      | Optional service implementation |
-
----
-
-# Infrastructure Management
-
-Infrastructure lifecycle is managed using two scripts:
-
-```
-manage.ps1
-manage.sh
-```
-
-* **manage.ps1** — Windows
-* **manage.sh** — Linux / macOS / CI
-
-Both scripts provide the same functionality.
-
-Supported actions:
-
-```
-build
-start
-stop
-status
+  PORTS.md                    # Host ports + conflict resolutions
+  README.md
+  docker/                     # Per-service compose (manage.ps1 / manage.sh)
+    redis/, postgresql/, kafka/, …
+    docling/                  # Custom image (Dockerfile)
+  integration/                # Unified profile-based stack
+    docker-compose.yml
+    manage.sh / manage.ps1
+    initdb/                   # Extra Postgres DBs (langfuse, temporal)
+    prometheus/prometheus.yml
+    .env.example
 ```
 
 ---
 
-# Build Docker Images
+## Quick start (recommended — unified stack)
 
-Images are built **only for tools that contain a Dockerfile**.
+```bash
+cd infra/integration
 
-If a tool does not provide a Dockerfile, it will be skipped.
+# Default: core + queue + rag + data + secrets
+./manage.sh start
 
-## Build a single tool
+# Full platform (all profiles)
+./manage.sh start all
 
-Linux / macOS:
+# RAG only
+./manage.sh start rag
 
-```
-./manage.sh docling build
+# Build Docling image first (rag profile)
+./manage.sh build rag
+./manage.sh start rag
 ```
 
 Windows:
 
-```
-.\manage.ps1 docling build
+```powershell
+cd infra\integration
+.\manage.ps1 start
+.\manage.ps1 start all
 ```
 
 ---
 
-## Build all tools
+## Compose profiles
 
-Linux / macOS:
+| Profile | Services |
+|---------|----------|
+| `core` | redis, postgresql |
+| `queue` | kafka, rabbitmq, nats |
+| `rag` | qdrant, chroma, weaviate, neo4j, milvus, ollama, docling |
+| `data` | mongodb, mysql, cassandra, minio, memcached |
+| `secrets` | vault |
+| `observability` | elasticsearch, prometheus, clickhouse, langfuse, phoenix, mailpit |
+| `cloud` | localstack, azurite, pubsub-emulator |
+| `heavy` | temporal, vespa, selenium |
+| `all` | Enables every profile (alias) |
 
-```
-./manage.sh all build
-```
-
-Windows:
-
-```
-.\manage.ps1 all build
-```
-
-This command scans all tool directories and builds images only for those containing a Dockerfile.
+**Default profile set:** `core` + `queue` + `rag` + `data` + `secrets`.
 
 ---
 
-# Start a Service
+## Per-tool management
 
-Start a single infrastructure service.
+Start a **single** service (same images/ports as unified stack):
 
-Linux / macOS:
-
-```
+```bash
+cd infra/docker
 ./manage.sh redis start
+./manage.sh neo4j start
+./manage.ps1 weaviate start
 ```
 
-Windows:
+Docling (custom build):
 
-```
-.\manage.ps1 redis start
-```
-
-Example:
-
-```
-./manage.sh docling start
-```
-
----
-
-# Stop a Service
-
-Linux / macOS:
-
-```
-./manage.sh redis stop
-```
-
-Windows:
-
-```
-.\manage.ps1 redis stop
-```
-
----
-
-# Check Service Status
-
-Linux / macOS:
-
-```
-./manage.sh redis status
-```
-
-Windows:
-
-```
-.\manage.ps1 redis status
-```
-
-This command shows container status using:
-
-```
-docker compose ps
-```
-
----
-
-# Example Workflow
-
-Typical development workflow:
-
-### 1. Build image
-
-```
+```bash
 ./manage.sh docling build
-```
-
-### 2. Start service
-
-```
 ./manage.sh docling start
 ```
 
-### 3. Check status
+Health: Docling `http://localhost:8081/health`
 
-```
-./manage.sh docling status
-```
+---
 
-### 4. Stop service
+## Environment defaults
 
-```
-./manage.sh docling stop
+Copy `infra/integration/.env.example` to `infra/integration/.env` to override credentials.
+
+| Service | Default credentials |
+|---------|---------------------|
+| PostgreSQL | `intergrax` / `intergrax`, DB `intergrax` |
+| RabbitMQ | `intergrax` / `intergrax` |
+| MinIO | `intergrax` / `intergrax` |
+| Neo4j | `neo4j` / `intergrax` |
+| Vault dev | token `intergrax-dev-token` |
+
+---
+
+## Integration test mapping
+
+| Test area | Start profile |
+|-----------|---------------|
+| `tests/integration/distributed/*` (Redis) | `core` |
+| `tests/integration/queueing/*` (Kafka, RabbitMQ) | `queue` |
+| `tests/integration/rag/vectorstore/*` (Qdrant, Chroma) | `rag` |
+| `tests/integration/rag/embedding/test_ollama*` | `rag` (ollama) |
+| GraphRAG Neo4j | `rag` |
+| Harness conformance (Mongo, Cassandra, MinIO, Vault) | `data`, `secrets` |
+| Tools observability (ES, Prometheus) | `observability` |
+| AWS/Azure/GCP emulators | `cloud` |
+
+---
+
+## CI usage
+
+```bash
+./infra/integration/manage.sh start default
+# run pytest tests/integration/ ...
+./infra/integration/manage.sh stop default
 ```
 
 ---
 
-# CI/CD Usage
+## Design principles
 
-Infrastructure services can be controlled directly in CI pipelines.
-
-Example:
-
-```
-./infra/docker/manage.sh docling build
-./infra/docker/manage.sh docling start
-```
-
-This allows CI to:
-
-* build images
-* start infrastructure services
-* run integration tests
-* shut down services after tests
+- **Profile-based** — avoid running 30+ containers when only Redis is needed.
+- **Single port matrix** — documented in [PORTS.md](PORTS.md); conflicts resolved (ClickHouse native → host `9002`, Vespa → `8089`).
+- **Tool isolation** — each service under `infra/docker/<name>/`.
+- **Optional build** — only Docling uses `Dockerfile`; `manage build` targets Docling in unified stack.
 
 ---
 
-# Adding a New Infrastructure Service
+## Related documentation
 
-To add a new infrastructure tool:
-
-### 1. Create directory
-
-```
-infra/docker/<tool>/
-```
-
-Example:
-
-```
-infra/docker/vector-db/
-```
-
-### 2. Add docker-compose.yml
-
-```
-docker-compose.yml
-```
-
-### 3. (Optional) Add Dockerfile
-
-```
-Dockerfile
-```
-
-If a Dockerfile exists, the image can be built using:
-
-```
-manage build
-```
-
----
-
-# Example: Docling Service
-
-Location:
-
-```
-infra/docker/docling
-```
-
-Docling provides a document parsing service used by the Intergrax RAG ingestion pipeline.
-
-Capabilities:
-
-* PDF parsing
-* OCR fallback
-* structured document extraction
-* markdown export
-
-Build the image:
-
-```
-./manage.sh docling build
-```
-
-Start the service:
-
-```
-./manage.sh docling start
-```
-
-Health endpoint:
-
-```
-http://localhost:8081/health
-```
-
-Parse endpoint:
-
-```
-http://localhost:8081/parse
-```
-
----
-
-# Design Principles
-
-The infrastructure layer follows several architectural rules.
-
-### Decoupled from runtime
-
-Infrastructure services are isolated from the Intergrax runtime code.
-
-### Deterministic lifecycle
-
-All services are controlled using a single interface.
-
-### Tool isolation
-
-Each infrastructure tool lives in its own directory.
-
-### Optional build
-
-Images are built only when a Dockerfile is present.
-
----
-
-# Summary
-
-Infrastructure services are managed using:
-
-```
-manage.ps1
-manage.sh
-```
-
-Supported operations:
-
-```
-build
-start
-stop
-status
-```
-
-This ensures consistent infrastructure management across:
-
-* local development
-* CI pipelines
-* integration environments
-* production deployments
+- [docs/INTEGRATIONS.md](../docs/INTEGRATIONS.md) — provider slugs and `INTERGRAX_*` env vars
+- [docs/intergrax_runtime_architecture.md](../docs/intergrax_runtime_architecture.md) §7.1.2, §33 — RAG/LLM metrics and observability backends (Prometheus/Langfuse/Phoenix)
+- [intergrax/integrations/providers/*/USAGE.md](../intergrax/integrations/providers/) — per-provider connection examples

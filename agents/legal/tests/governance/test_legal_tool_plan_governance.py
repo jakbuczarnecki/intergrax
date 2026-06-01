@@ -39,7 +39,7 @@ from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySe
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
 from intergrax.tools.registry import ToolRegistry
-from intergrax.tools.tools_agent import ToolsAgent
+from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
 
 from testing_support.builder import require_ollama_reachable
 
@@ -69,10 +69,13 @@ def _base_legal_cfg(
     )
     vectorstore_manager = create_default_vectorstore_manager(tenant_id=tenant_id)
 
-    tools_agent = None
+    tool_planner = None
     tools_mode: str = "off"
     if with_tools:
-        tools_agent = ToolsAgent(llm=llm_adapter, tools=ToolRegistry())
+        tool_planner = CatalogToolPlanner.from_registry(
+            llm=llm_adapter,
+            registry=ToolRegistry(),
+        )
         tools_mode = "auto"
 
     return LegalAgentConfig(
@@ -83,7 +86,7 @@ def _base_legal_cfg(
         embedding_manager=embedding_manager,
         vectorstore_manager=vectorstore_manager,
         use_legal_tool_decision=True,
-        tools_agent=tools_agent,
+        tool_planner=tool_planner,
         tools_mode=tools_mode,
         tool_providers=[],
         use_llm_legal_route_planner=False,

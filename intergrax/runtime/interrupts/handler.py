@@ -17,7 +17,7 @@ from intergrax.contracts.agent_decision import (
     HumanRequestUrgency,
     human_request_fields_from_payload,
 )
-from intergrax.contracts.execution_interrupt import ExecutionInterrupt, InterruptType, InterruptType
+from intergrax.contracts.execution_interrupt import ExecutionInterrupt, InterruptType
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 

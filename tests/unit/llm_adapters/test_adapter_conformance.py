@@ -48,6 +48,9 @@ class _StubAdapter(LLMAdapter):
         yield "a"
         yield "b"
 
+    def supports_streaming(self) -> bool:
+        return True
+
     def supports_tools(self) -> bool:
         return True
 

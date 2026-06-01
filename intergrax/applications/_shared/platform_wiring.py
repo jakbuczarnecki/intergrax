@@ -16,6 +16,7 @@ from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetric
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
 from intergrax.llm_adapters.tracking.observability_bridge import register_llm_observability_plugin
+from intergrax.rag.tracking.observability_bridge import register_rag_observability_plugin
 from intergrax.runtime.plugins.default_plugins import default_lab_plugins
 
 
@@ -33,4 +34,5 @@ def bootstrap_nexus_platform(
             reader = emitter.trace_store  # type: ignore[attr-defined]
     plugins = default_lab_plugins(trace_store=reader, metrics_store=metrics_store)
     register_llm_observability_plugin(plugins)
+    register_rag_observability_plugin(plugins)
     return bootstrap_application_plugins(plugins, nexus_loop=nexus_loop)

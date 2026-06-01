@@ -127,12 +127,10 @@ class RuntimeToolGateway:
 
         if name in {NEXUS_CAPABILITY_PLAN, "capability_plan"}:
             tool_ids = payload.get("tool_ids")
-            if isinstance(tool_ids, (list, tuple)):
-                return ToolInvocationPlan.from_legacy(
-                    use_rag=bool(payload.get("use_rag", False)),
-                    use_websearch=bool(payload.get("use_websearch", False)),
+            if isinstance(tool_ids, (list, tuple)) and tool_ids:
+                return ToolInvocationPlan.from_tool_ids(
+                    [str(item) for item in tool_ids],
                     use_tools=bool(payload.get("use_tools", False)),
-                    tool_ids=[str(item) for item in tool_ids],
                 )
             return ToolInvocationPlan.from_legacy(
                 use_rag=bool(payload.get("use_rag", False)),

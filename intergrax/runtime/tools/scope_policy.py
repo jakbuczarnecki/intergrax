@@ -3,9 +3,10 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 
+@runtime_checkable
 class ToolScopePolicy(Protocol):
     """
     Defines authorization contract for tool execution.
@@ -32,6 +33,10 @@ class StaticToolScopePolicy:
 
     def __init__(self, *, allowed_tools: set[str]) -> None:
         self._allowed_tools = frozenset(allowed_tools)
+
+    def allowed_tool_ids(self) -> frozenset[str]:
+        """Explicit allow-list for ToolAccessPolicy / ToolRuntime resolution."""
+        return self._allowed_tools
 
     def is_allowed(self, *, agent_id: str, tool_id: str) -> bool:
         # agent_id currently unused in static policy

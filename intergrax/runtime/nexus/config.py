@@ -3,8 +3,23 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Dict, FrozenSet, Optional, Literal, Sequence
+from typing import Any, Dict, FrozenSet, Optional, Sequence, TYPE_CHECKING
+
+from intergrax.runtime.nexus.config_types import ToolChoiceMode, ToolsContextScope
+
+if TYPE_CHECKING:
+    from intergrax.integrations.registry.profile import IntegrationProfile
+    from intergrax.runtime.events.event_bus import RuntimeEventBus
+    from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+
+from intergrax.rag.profiles.runtime_rag_sync import sync_rag_profile_from_runtime_config
+from intergrax.runtime.nexus.config_sections import (
+    ModelRuntimeConfig,
+    PlanningRuntimeConfig,
+    RetrievalRuntimeConfig,
+    ToolsRuntimeConfig,
+    TraceRuntimeConfig,
+)
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
@@ -27,24 +42,9 @@ from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.provider import ToolProvider
 from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
-from intergrax.tools.tools_agent import ToolsAgent
+from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
-
-
-# Defines how the runtime should interact with tools.
-# - "off": tools are never used, even if a tools_agent is provided.
-# - "auto": runtime may decide to call tools when appropriate.
-# - "required": runtime must use tools to answer the request.
-ToolChoiceMode = Literal["off", "auto", "required"]
-
-
-class ToolsContextScope(str, Enum):
-    CURRENT_MESSAGE_ONLY = "current_message_only"
-    
-    CONVERSATION = "conversation"
-    
-    FULL = "full"
 
 
 @dataclass
@@ -147,7 +147,7 @@ class RuntimeConfig:
     #   - merging tool results into the final answer.
     #
     # If None, tools cannot be used regardless of tools_mode.
-    tools_agent: Optional[ToolsAgent] = None
+    tool_planner: Optional[ToolPlannerProtocol] = None
 
     # High-level policy defining whether tools may or must be used:
     #   - "off": do not use tools at all.
@@ -261,7 +261,13 @@ class RuntimeConfig:
     # TRACING
     # ------------------------------------------------------------------
     trace_db_path: Optional[str] = None
-    integration_profile: Optional[object] = None
+    integration_profile: Optional["IntegrationProfile"] = None
+
+    # Optional sync bus for planner/context events (Phase Q+-N.5, R-Context.2).
+    runtime_event_bus: Optional["RuntimeEventBus"] = None
+
+    # Tier-3 composed policy (Phase R-Policy); set via applications runtime_config_bridge.
+    policy_bundle: Optional["RuntimePolicyBundle"] = None
 
 
     # ------------------------------------------------------------------
@@ -269,6 +275,86 @@ class RuntimeConfig:
     # ------------------------------------------------------------------
     production_mode: bool = True
 
+
+    # ------------------------------------------------------------------
+    # COMPOSED SECTIONS (Phase Q-N.8)
+    # ------------------------------------------------------------------
+
+    @property
+    def model_section(self) -> ModelRuntimeConfig:
+        return ModelRuntimeConfig(
+            llm_adapter=self.llm_adapter,
+            enable_llm_usage_collection=self.enable_llm_usage_collection,
+        )
+
+    @property
+    def retrieval_section(self) -> RetrievalRuntimeConfig:
+        return RetrievalRuntimeConfig(
+            embedding_manager=self.embedding_manager,
+            vectorstore_manager=self.vectorstore_manager,
+            retriever_manager=self.retriever_manager,
+            reranker_manager=self.reranker_manager,
+            rag_profile=self.rag_profile,
+            retrieval_service=self.retrieval_service,
+            enable_rag=self.enable_rag,
+            max_docs_per_query=self.max_docs_per_query,
+            max_rag_tokens=self.max_rag_tokens,
+            rag_score_threshold=self.rag_score_threshold,
+            max_longterm_entries_per_query=self.max_longterm_entries_per_query,
+            max_longterm_tokens=self.max_longterm_tokens,
+            longterm_score_threshold=self.longterm_score_threshold,
+            enable_user_profile_memory=self.enable_user_profile_memory,
+            enable_org_profile_memory=self.enable_org_profile_memory,
+            enable_user_longterm_memory=self.enable_user_longterm_memory,
+        )
+
+    @property
+    def tools_section(self) -> ToolsRuntimeConfig:
+        return ToolsRuntimeConfig(
+            websearch_executor=self.websearch_executor,
+            websearch_config=self.websearch_config,
+            enable_websearch=self.enable_websearch,
+            tool_planner=self.tool_planner,
+            tools_mode=self.tools_mode,
+            tools_context_scope=self.tools_context_scope,
+            tool_invoker=self.tool_invoker,
+            idempotency_store=self.idempotency_store,
+            tool_providers=tuple(self.tool_providers),
+            tool_profile=self.tool_profile,
+            tool_wiring_context=self.tool_wiring_context,
+            tool_scope_policy=self.tool_scope_policy,
+        )
+
+    @property
+    def planning_section(self) -> PlanningRuntimeConfig:
+        return PlanningRuntimeConfig(
+            pipeline=self.pipeline,
+            step_planner_cfg=self.step_planner_cfg,
+            step_executor_cfg=self.step_executor_cfg,
+            planner_prompt_config=self.planner_prompt_config,
+            plan_loop_policy=self.plan_loop_policy,
+            plan_source=self.plan_source,
+        )
+
+    @property
+    def trace_section(self) -> TraceRuntimeConfig:
+        return TraceRuntimeConfig(
+            trace_db_path=self.trace_db_path,
+            integration_profile=self.integration_profile,
+            runtime_timeout_ms=self.runtime_timeout_ms,
+            max_run_retries=self.max_run_retries,
+            retry_run_on=self.retry_run_on,
+            runtime_policies=self.runtime_policies,
+            execution_slot_warn_threshold_ms=self.execution_slot_warn_threshold_ms,
+            hitl_default_message=self.hitl_default_message,
+            production_mode=self.production_mode,
+        )
+
+    def ensure_rag_profile(self) -> RagProfile:
+        """Single RAG config surface: RuntimeConfig fields → RagProfile."""
+        profile = sync_rag_profile_from_runtime_config(self)
+        self.rag_profile = profile
+        return profile
 
     # ------------------------------------------------------------------
     # VALIDATION
@@ -308,6 +394,7 @@ class RuntimeConfig:
                 raise ValueError(
                     "enable_rag=True requires embedding_manager and vectorstore_manager."
                 )
+            self.ensure_rag_profile()
             
         if self.run_budget is not None:
             if not isinstance(self.run_budget, RunBudget):

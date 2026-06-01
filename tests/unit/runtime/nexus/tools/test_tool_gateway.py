@@ -13,6 +13,7 @@ from intergrax.runtime.nexus.tools.tool_gateway import (
     RuntimeToolGateway,
 )
 from intergrax.runtime.nexus.tools.tool_runtime import ToolRuntime, ToolRuntimeResult
+from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
 
 
 @pytest.mark.asyncio
@@ -100,3 +101,41 @@ async def test_tool_gateway_single_rag_capability():
     assert plan.use_rag is True
     assert plan.use_websearch is False
     assert plan.use_tools is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_tool_gateway_capability_plan_prefers_tool_ids_without_legacy_flags():
+    state = MagicMock()
+    state.run_id = "run_4"
+    state.used_rag = False
+    state.used_websearch = False
+    state.used_tools = False
+    state.tool_traces = []
+
+    with patch.object(
+        ToolRuntime,
+        "invoke",
+        new_callable=AsyncMock,
+        return_value=ToolRuntimeResult(True, True, False, 0, tool_ids=(RAG_RETRIEVE_TOOL_ID,)),
+    ) as invoke_mock:
+        gateway = RuntimeToolGateway.for_state(state)
+        response = await gateway.invoke(
+            ToolRequest(
+                tool_name=NEXUS_CAPABILITY_PLAN,
+                agent_id="legal",
+                step_id="s1",
+                input={
+                    "tool_ids": [RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID],
+                    "use_tools": False,
+                },
+            )
+        )
+
+    assert response.status == ToolResponseStatus.SUCCESS
+    plan = invoke_mock.await_args.kwargs["plan"]
+    assert plan.use_rag is True
+    assert plan.use_websearch is True
+    assert RAG_RETRIEVE_TOOL_ID in plan.tool_ids
+    assert plan.uses_legacy_booleans_only() is False

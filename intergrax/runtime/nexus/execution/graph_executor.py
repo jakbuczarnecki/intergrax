@@ -4,7 +4,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Awaitable, Callable, Dict, List, Optional
+import inspect
+from typing import Awaitable, Callable, Dict, List, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
@@ -40,9 +41,22 @@ from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryRecord
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
+from intergrax.runtime.task_memory.delegation_memory import TaskMemoryMetadataKey
 
 ExecuteFn = Callable[[Agent, Task, ExecutionNode], Awaitable[AgentExecutionResult]]
 ValidateFn = Callable[[AgentExecutionResult, Agent, ExecutionNode], ValidationResult]
+RetryCallback = Callable[[RetryRecord], Union[None, Awaitable[None]]]
+
+
+async def _notify_retry(
+    on_retry: Optional[RetryCallback],
+    record: RetryRecord,
+) -> None:
+    if on_retry is None:
+        return
+    result = on_retry(record)
+    if inspect.isawaitable(result):
+        await result
 HandoffExtra = tuple[str, AgentExecutionResult]
 
 
@@ -68,8 +82,11 @@ class GraphExecutor:
         self._engine = engine or AgentEngine(registry)
         self._router = router or AgentRouter(registry)
         self._validation_engine = validation_engine or NexusValidationEngine()
-        self._retry_engine = retry_engine or RetryEngine(registry)
-        self._context_manager = context_manager or ContextManager()
+        self._retry_engine = retry_engine or RetryEngine(
+            registry,
+            middleware=middleware,
+        )
+        self._context_manager = context_manager or ContextManager(event_bus=event_bus)
         self._handoff = handoff_coordinator or HandoffCoordinator(registry)
         self._event_bus = event_bus
         self._middleware = middleware or MiddlewarePipeline()
@@ -80,7 +97,7 @@ class GraphExecutor:
         task: Task,
         *,
         plan_criteria: Optional[List[str]] = None,
-        on_retry: Optional[Callable[[RetryRecord], None]] = None,
+        on_retry: Optional[RetryCallback] = None,
         on_node_start: Optional[Callable[[ExecutionNode], None]] = None,
         on_node_complete: Optional[Callable[[ExecutionNode], None]] = None,
     ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
@@ -274,6 +291,19 @@ class GraphExecutor:
                 attach_runtime_checkpoint_to_metadata(request.metadata, runtime_snapshot)
             if task.options.human.is_resumed or task.metadata.get("human_approved"):
                 request.metadata["human_approved"] = True
+            if node.delegation is not None:
+                delegation = node.delegation
+                request.metadata[TaskMemoryMetadataKey.DELEGATION_MEMORY_NAMESPACE] = (
+                    delegation.resolved_memory_namespace(
+                        task_id=task.task_id,
+                        node_id=node.node_id,
+                    )
+                )
+                request.metadata["run_id"] = f"{task.task_id}:{node.node_id}"
+                if delegation.parent_run_id:
+                    request.metadata[TaskMemoryMetadataKey.PARENT_RUN_ID] = delegation.parent_run_id
+                if delegation.parent_node_id:
+                    request.metadata[TaskMemoryMetadataKey.PARENT_NODE_ID] = delegation.parent_node_id
             CancellationCoordinator.propagate(task.metadata, request.metadata)
             return await AgentEngine.run_agent_with_result(
                 current_agent,
@@ -295,9 +325,8 @@ class GraphExecutor:
                 on_node_complete(node)
             return execution, retries, False, True, []
 
-        if on_retry is not None:
-            for record in retries:
-                on_retry(record)
+        for record in retries:
+            await _notify_retry(on_retry, record)
 
         node.execution_result = execution
         if execution.status == AgentExecutionStatus.NEEDS_INPUT:
@@ -413,9 +442,8 @@ class GraphExecutor:
             on_node_start=on_node_start,
             on_node_complete=on_node_complete,
         )
-        if on_retry is not None:
-            for record in handoff_retries:
-                on_retry(record)
+        for record in handoff_retries:
+            await _notify_retry(on_retry, record)
 
         if handoff_failed or handoff_execution.status != AgentExecutionStatus.COMPLETED:
             node.metadata["handoff_failed"] = True

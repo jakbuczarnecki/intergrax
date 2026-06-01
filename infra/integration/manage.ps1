@@ -1,11 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
 
 param (
-    [Parameter(Mandatory = $true)]
-    [ValidateSet("start", "stop", "status")]
-    [string]$Action
+    [Parameter(Mandatory = $true, Position = 0)]
+    [ValidateSet("start", "stop", "status", "build")]
+    [string]$Action,
+
+    [Parameter(Position = 1)]
+    [ValidateSet("default", "minimal", "core", "queue", "rag", "data", "secrets", "observability", "cloud", "heavy", "all")]
+    [string]$Profile = "default"
 )
 
 $ComposeFile = Join-Path $PSScriptRoot "docker-compose.yml"
@@ -15,17 +17,33 @@ if (-Not (Test-Path $ComposeFile)) {
     exit 1
 }
 
+function Get-ProfileFlags {
+    param ([string]$Name)
+    switch ($Name) {
+        "all" { return @("--profile", "core", "--profile", "queue", "--profile", "rag", "--profile", "data", "--profile", "secrets", "--profile", "observability", "--profile", "cloud", "--profile", "heavy", "--profile", "all") }
+        "default" { return @("--profile", "core", "--profile", "queue", "--profile", "rag", "--profile", "data", "--profile", "secrets") }
+        "minimal" { return @("--profile", "core") }
+        default { return @("--profile", $Name) }
+    }
+}
+
+$flags = Get-ProfileFlags -Name $Profile
+
 switch ($Action) {
     "start" {
-        Write-Host "Starting Integration stack..."
-        docker compose -f $ComposeFile up -d
+        Write-Host "Starting Integration stack (profile=$Profile)..."
+        docker compose -f $ComposeFile @flags up -d
     }
     "stop" {
-        Write-Host "Stopping Integration stack..."
-        docker compose -f $ComposeFile down
+        Write-Host "Stopping Integration stack (profile=$Profile)..."
+        docker compose -f $ComposeFile @flags down
     }
     "status" {
-        Write-Host "Integration stack status:"
-        docker compose -f $ComposeFile ps
+        Write-Host "Integration stack status (profile=$Profile):"
+        docker compose -f $ComposeFile @flags ps -a
+    }
+    "build" {
+        Write-Host "Building custom images (docling)..."
+        docker compose -f $ComposeFile @flags build docling
     }
 }
