@@ -14,14 +14,8 @@ SCAN_ROOTS = (
     "intergrax/agents",
 )
 
-# Existing violations grandfathered until removed (relative paths, forward slashes).
-GRANDFATHER: frozenset[str] = frozenset(
-    {
-        "intergrax/runtime/nexus/tools/tool_runtime.py",
-        "intergrax/runtime/nexus/engine/runtime_context.py",
-        "intergrax/runtime/nexus/tracing/parser_trace_flush.py",
-    }
-)
+# Grandfather list empty — all harness paths must stay free of getattr/setattr.
+GRANDFATHER: frozenset[str] = frozenset()
 
 PATTERN = re.compile(r"\b(getattr|setattr)\s*\(")
 
@@ -52,7 +46,7 @@ def main() -> int:
         print("getattr/setattr in harness paths (not grandfathered):")
         print("\n".join(violations))
         return 1
-    print("harness getattr audit: OK")
+    print("harness getattr audit: OK (zero grandfathered paths)")
     return 0
 
 

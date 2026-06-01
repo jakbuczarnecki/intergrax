@@ -117,17 +117,17 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 |-------|-------|-------------------|-------|
 | **Harness GA (functional)** | **Done** | **No** | L certified; scaffold + lab + gate |
 | **Harness quality (Phase Q)** | **Done** (Wave 9) | **No** | Appendix C — gate **417 passed** (2026-06-01) |
-| **Harness hardening (Phase Q+)** | **Partial** (Wave 3 — planner/session/policy) | **Yes** (recommended) | Appendix D — typing, legacy, monoliths |
-| **Harness AI alignment (Phase R)** | **Done** (MVP) | **No** | Appendix E — R-Context.4 / Q+ remain |
-| Skill Library (Tier-0) | **MVP Done** | **No** (extend catalog) | R-Skill.1–9; R-Skill.10 open |
-| Context engineering API | **Partial** (budget in ContextManager) | No | R-Context.1 Done; R-Context.2 open |
-| Graph delegation (subagent model) | **Partial** (`DelegationSpec` on nodes) | No | R-Delegate.2–4 open |
+| **Harness hardening (Phase Q+)** | **Done** (2026-06-01) | **No** | Appendix D — typing, legacy, monoliths, getattr audit |
+| **Harness AI alignment (Phase R)** | **Done** (MVP, 2026-06-01) | **No** | Appendix E — Skill Library, context, delegation, policy |
+| Skill Library (Tier-0) | **MVP Done** | **No** (extend catalog) | R-Skill.1–10; importers + trace events |
+| Context engineering API | **Done** | No | R-Context.1–4; `CONTEXT_*` events |
+| Graph delegation (subagent model) | **Done** | No | R-Delegate.1–4; `DelegationSpec` + memory namespace |
 | RuntimePolicyBundle narrative | **Done** (Tier-3 + Nexus RuntimeConfig/Context + ToolRuntime) | No | R-Policy.1–2; `runtime_config_bridge.py`, `tool_policy_resolution.py` |
 | Canon §1–41 (tiers, Nexus, graph, repo split) | **~92%** → target **≥98%** post-Q+ | No | Q+-N, Q+-L, Q+-T |
 | §42 Unified Execution Runtime | **~95%** → target **≥99%** post-Q+-T | No | UAEP Protocol, no duck typing |
 | Laboratory workflow | **~96%** → target **≥99%** post-Q+-O | No | Metrics parity, planner observability |
 | Agent OS certification (Phase L) | **Done** | No | Appendix A |
-| Regression gate | **417 passed** | No | Must stay green after each Q.* PR |
+| Regression gate | **450 passed** | No | Must stay green after each Q.* PR |
 
 ---
 
@@ -197,7 +197,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §7.1.8 Skill Library | Composable capability packs, importers | **MVP Done** | `intergrax/skills/` · `docs/SKILLS.md` |
 
-| §5.3 Harness AI alignment | Scaffold, skill/tool split, context, delegation | **Partial** | Canon done; code Phase R |
+| §5.3 Harness AI alignment | Scaffold, skill/tool split, context, delegation | **Done** | `scaffold/new_skill.py`, `intergrax/skills/`, Appendix E |
 
 | §23 Task lifecycle | States + trace + typed contract | **Done** | `task/`, `task_contract.py`, `TaskContextAssemblyOptions`, `task_metadata_bridge.py` |
 
@@ -1463,7 +1463,7 @@ Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-
 |---|-------------|--------|----------|----------|------------|
 | Q+.0.1 | **Appendix D** — audit topic → Q+ ID matrix (P0–P3) | **Done** | High | This file Appendix D | Every audit section mapped |
 | Q+.0.2 | **Q+ execution order** — Waves 1–5 below | **Done** | High | §4 Priority Order | Team follows wave sequence |
-| Q+.0.3 | **CI grep gate** — fail on new `getattr`/`setattr` in `intergrax/runtime/nexus/`, `intergrax/agents/` | **Done** | High | `scripts/check_harness_no_getattr.py` + gate workflow | Script in gate; grandfather list shrinking per Q+-T |
+| Q+.0.3 | **CI grep gate** — fail on new `getattr`/`setattr` in `intergrax/runtime/nexus/`, `intergrax/agents/` | **Done** | High | `scripts/check_harness_no_getattr.py` + gate workflow | Zero grandfathered harness paths (2026-06-01) |
 
 ---
 
@@ -2495,12 +2495,12 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Audit theme | Priority | Q+ IDs | Status |
 |-------------|----------|--------|--------|
-| Duplicate Tier-0 (`tools_agent`, supervisor, chains, rag/answers, openai/rag) | P0–P2 | Q+-L.1–Q+-L.7 | Partial (L.1–L.3 Done) |
-| `getattr` / duck typing (UAEP, tools, context, plans) | P0 | Q+-T.1–Q+-T.8, Q+.0.3 | Done |
+| Duplicate Tier-0 (`tools_agent`, supervisor, chains, rag/answers, openai/rag) | P0–P2 | Q+-L.1–Q+-L.7 | Done (L.7 Won't fix) |
+| `getattr` / duck typing (UAEP, tools, context, plans) | P0 | Q+-T.1–Q+-T.8, Q+.0.3 | Done (zero grandfathered paths) |
 | Nexus intake/planning still in `nexus_loop` | P0–P1 | Q+-N.1, Q+-N.2 | Done |
 | No `RetryCoordinator` | P1 | Q+-N.3 | Done |
-| Observability gaps (metrics heuristics, RAG HTTP, planner errors) | P1 | Q+-O.1–Q+-O.4, Q+-N.5 | Partial (O.1–O.2 Done) |
-| `task_metadata` auto-hydrate | P1 | Q+-M.1, Q+-M.2 | Partial (M.1 Done) |
+| Observability gaps (metrics heuristics, RAG HTTP, planner errors) | P1 | Q+-O.1–Q+-O.4, Q+-N.5 | Done (O.3 Won't fix) |
+| `task_metadata` auto-hydrate | P1 | Q+-M.1, Q+-M.2 | Done |
 | Planning monoliths (~680/620 lines) | P2 | Q+-P.1–Q+-P.3 | Done |
 | `session_manager` monolith (~596 lines) | P2 | Q+-S.1 | Done |
 | LLM SDK getattr quarantine | P3 | Q+-I.1 | Done |
@@ -2531,6 +2531,8 @@ Execute in order; one PR per ID where possible.
 | 2026-06-01 | Q+-L.2–L.3,Q+-N.3,Q+-O.1,Q+-O.2 | Legal `CatalogToolPlanner`; `tool_planner` on RuntimeConfig; RetryCoordinator; typed metrics export; lab harness mode |
 | 2026-06-01 | Q+-P.2,Q+-S.1,R-Policy | `step_planner/` package; `session_consolidation.py`; `runtime_config_bridge` wires `ToolScopePolicy` |
 | 2026-06-01 | Q+-P.1,Q+-S.1,R-Policy | `engine_planner_*` modules; `session_lifecycle.py`; `tool_policy_resolution` + harness getattr cleanup |
+| 2026-06-01 | Q+.0.3 (closeout) | Grandfather list cleared; `parser_trace_flush` uses `TraceEventWithTags` Protocol |
+| 2026-06-01 | **Phase Q+** | All Q+-* deliverables **Done** or **Won't fix**; gate **450 passed** |
 | — | — | *(append row per merged PR)* |
 
 **Coverage target:** 100% **Done** or **Won't fix** before declaring Phase Q+ complete and scaling Phase K.
@@ -2549,17 +2551,17 @@ Execute in order; one PR per ID where possible.
 
 | Audit theme | Intergrax today | Gap | Phase R IDs | Status |
 |-------------|-----------------|-----|-------------|--------|
-| Scaffold | `intergrax/scaffold` | No `new-skill` | R-Skill.7, R.0.4 | Open |
+| Scaffold | `intergrax/scaffold` | No `new-skill` | R-Skill.7, R.0.4 | Done |
 | Harness = Nexus + platform + app wiring | Tier-1 + Tier-0 + Tier-3 | Terminology not in glossary | R.0.2 §5.3 | Done |
 | LLM separate from agent module | `llm_adapters` | “Runnable instance” undefined | R.0.2 §5.3 | Done |
 | Tool = atomic operation | `ToolContract`, `ToolRuntime` | Doc said “tool/skill” | R.0.3, R.0.1 | Done |
-| Skill = goal-oriented pack | **Missing** | No registry, no import | R-Skill.1–R-Skill.10 | Open |
+| Skill = goal-oriented pack | **Missing** | No registry, no import | R-Skill.1–R-Skill.10 | Done |
 | Option 1: skills = tools | — | **Rejected** — breaks LLM/MCP atomic model | R.0.1 ADR | Done |
-| Option 2: Skill Library | — | **Adopted** | R-Skill.* | Open |
-| Context engineering | §27–28, `MemoryView`, `TaskContextAssemblyOptions` | No central budget API | R-Context.* | Open |
-| Subagents | `GraphExecutor`, handoff §42.15 | No isolated child namespace | R-Delegate.* | Open |
-| Policy | Multiple engines | No single bundle narrative | R-Policy.* | Open |
-| External skill compatibility | — | No importer | R-Skill.8 | Open |
+| Option 2: Skill Library | — | **Adopted** | R-Skill.* | Done |
+| Context engineering | §27–28, `MemoryView`, `TaskContextAssemblyOptions` | No central budget API | R-Context.* | Done |
+| Subagents | `GraphExecutor`, handoff §42.15 | No isolated child namespace | R-Delegate.* | Done |
+| Policy | Multiple engines | No single bundle narrative | R-Policy.* | Done |
+| External skill compatibility | — | No importer | R-Skill.8 | Done |
 
 ### E.2 Four-layer capability model (canonical)
 
@@ -2578,11 +2580,12 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | 2026-06-01 | R.0.1,R.0.2,R.0.3,R.0.4 | ADR Option 2; canon §5.3, §7.1.8, §28.1, §42.11.4, §42.14.3; ToolContract docstring; plan Appendix E |
 | 2026-06-01 | R-Skill.1–R-Skill.9,R-Context.1,R-Delegate.1,R-Policy.1 | Skill Library MVP, legal pilot, ContextBudget, DelegationSpec, gate **422 passed** |
 | 2026-06-01 | R-Skill.10,R-Context.2,R-Delegate.2–4,R-Policy.2 | Event recording, delegation memory, graph integration test, policy bundle wiring |
+| 2026-06-01 | **Phase R (MVP)** | All R-* deliverables **Done** or **Won't fix**; gate **450 passed** |
 | — | — | *(append row per merged PR)* |
 
 **Coverage target:** 100% **Done** or **Won't fix** before declaring Phase R complete and scaling Phase K.
 
 ---
 
-*Plan synced (2026-06-01). **Phase Q Done**. **Phase Q+ Partial** (Appendix D — Waves 1–4 core monoliths Done). **Phase R Done (MVP)**. Gate: **449 passed**. **Next:** Q+ legacy paydown (L.4–L.7), R-Skill.7 scaffold, R-Context.2 event recording depth.*
+*Plan synced (2026-06-01). **Phase Q Done**. **Phase Q+ Done**. **Phase R Done (MVP)**. Gate: **450 passed**; harness getattr audit: **zero grandfathered paths**. **Next:** Phase K business agents (per product roadmap); optional R-Skill catalog expansion and RAG metrics plugin scrape (O.3).*
 

@@ -1,35 +1,43 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+from typing import Any
 from unittest.mock import patch
 
 import pytest
 
-from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
-from intergrax.runtime.nexus.tracing.parser_trace_span import append_parser_trace_event
-from intergrax.runtime.nexus.tracing.persistence_models import RunMetadata, RunStats
+from intergrax.runtime.nexus.tracing.parser_trace_flush import export_parser_traces_from_events
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = pytest.mark.gate
 
 
-def test_finalize_run_exports_parser_trace_spans() -> None:
-    store = InMemoryRunTraceStore()
-    append_parser_trace_event(
-        store,
-        run_id="run-1",
-        source="test.pdf",
-        trace={"parser_id": "docling", "attempts": []},
-    )
-    metadata = RunMetadata(
-        run_id="run-1",
-        session_id="s1",
-        user_id="u1",
-        tenant_id="t1",
-        started_at_utc="2026-05-30T00:00:00Z",
-        stats=RunStats(duration_ms=1, llm_usage={}),
-    )
-    with patch("intergrax.runtime.nexus.tracing.parser_trace_flush.export_parser_trace") as export_mock:
-        store.finalize_run("run-1", metadata)
-    export_mock.assert_called_once()
+@dataclass
+class _TaggedEvent:
+    tags: dict[str, Any] = field(default_factory=dict)
+
+
+def test_export_parser_traces_reads_tags_from_dataclass_event() -> None:
+    trace_payload = {"spans": [{"name": "parse"}]}
+    events = [
+        _TaggedEvent(
+            tags={
+                "integration_parser_trace": trace_payload,
+                "source": "unit_test",
+            }
+        )
+    ]
+    with patch(
+        "intergrax.runtime.nexus.tracing.parser_trace_flush.export_parser_trace"
+    ) as export_mock:
+        export_parser_traces_from_events(events)
+        export_mock.assert_called_once_with(source="unit_test", trace=trace_payload)
+
+
+def test_export_parser_traces_ignores_events_without_trace_tag() -> None:
+    with patch(
+        "intergrax.runtime.nexus.tracing.parser_trace_flush.export_parser_trace"
+    ) as export_mock:
+        export_parser_traces_from_events([{"tags": {"other": True}}])
+        export_mock.assert_not_called()

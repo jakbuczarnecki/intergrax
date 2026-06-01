@@ -28,7 +28,7 @@ Implementation (status)  →  INTERGRAX_IMPLEMENTATION_PLAN.md
 Agent workflow (how)     →  AGENT_CREATION_GUIDE.md
 Integrations (catalog)   →  INTEGRATIONS.md
 Tools (catalog)          →  TOOLS.md
-Skills (architecture)    →  intergrax_runtime_architecture.md §7.1.8 · plan Phase R
+Skills (catalog)         →  SKILLS.md
 LLM adapters + metrics   →  LLM_ADAPTERS.md
 ```
 
@@ -39,21 +39,22 @@ LLM adapters + metrics   →  LLM_ADAPTERS.md
 | I want to… | Read |
 |------------|------|
 | Understand the platform | Implementation plan §0, then architecture canon §1–§5 |
-| See current phase and what's next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4 — **Q+** → **Phase R** → Phase K |
-| Post-audit hardening tracker | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Appendix D** |
-| Harness AI alignment (skills, context) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase R**, **Appendix E** · canon §5.3, §7.1.8 |
+| See current phase and what's next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4 — **Phase K** (business agents) |
+| Post-audit hardening tracker | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Appendix D** (Q+ **Done**) |
+| Harness AI alignment (skills, context) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Appendix E** (R **Done**) · canon §5.3, §7.1.8 |
 | Check readiness for business agents | Implementation plan **Appendix A** |
 | Review technical debt before Tier-1 work | Implementation plan **Appendix B** |
 | Wire external systems (DB, Slack, Jira, …) | [INTEGRATIONS.md](INTEGRATIONS.md), then architecture canon §7.1 |
 | Start local Redis / Qdrant / Neo4j / … | [../infra/README.md](../infra/README.md), [../infra/PORTS.md](../infra/PORTS.md) |
 | Wire agent-callable tools (RAG, web search, Jira, …) | [TOOLS.md](TOOLS.md), then architecture canon §7.1.6–§7.1.7 |
-| Understand Integration vs Tool vs Skill vs Agent | Architecture §5.3, §7.1.6–§7.1.8 · plan Appendix E |
+| Understand Integration vs Tool vs Skill vs Agent | Architecture §5.3, §7.1.6–§7.1.8 · [SKILLS.md](SKILLS.md) |
 | RAG engine (RetrievalService, RagProfile, metrics) | Architecture §7.1.2 · Phase M-RAG in implementation plan |
 | Configure LLM providers (OpenAI, Claude, Bedrock, …) | [LLM_ADAPTERS.md](LLM_ADAPTERS.md), then architecture canon §5.2.2 |
 | LLM/RAG Prometheus, trace DB defaults | [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · architecture §33 |
 | Nexus retry layers | Architecture §31.1 |
 | Nexus orchestration modules | `intergrax/runtime/nexus/orchestration/` (`intake_runner`, `planning_runner`, `graph_runner`, `hitl_runner`, …) |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
+| Scaffold a new skill | `python -m intergrax.scaffold new-skill <skill_id>` |
 | Deep-dive UAEP / hooks / governance | Architecture canon §42 |
 
 ---
@@ -62,28 +63,24 @@ LLM adapters + metrics   →  LLM_ADAPTERS.md
 
 | Phase | Status |
 |-------|--------|
-| **Phase Q+ — Harness hardening** | **Open** — [Appendix D](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-d--post-audit-hardening-traceability-phase-q) |
-| **Phase R — Harness AI alignment** | **Open** — Skill Library, context budget, delegation — [Appendix E](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-e--harness-ai-alignment-traceability-phase-r) |
+| **Phase Q+ — Harness hardening** | **Done** — [Appendix D](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-d--post-audit-hardening-traceability-phase-q) |
+| **Phase R — Harness AI alignment** | **Done (MVP)** — [Appendix E](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-e--harness-ai-alignment-traceability-phase-r) |
 | Phase Q — Harness quality | **Done** (Appendix C) |
 | Phase L — Agent OS certification | **Done** |
 | Phase M / M-LLM / M-RAG / N / O | **Done** (beta where noted) |
-| **Phase K — business agents** | **After Q+ Waves 1–3 + R-Skill core + R-Context.1** |
+| **Phase K — business agents** | **Next** — product agents on certified harness |
 
-**Start implementation:** Q+ Wave 3 → **R Wave R0/R1** (`R-Skill.1`–`R-Skill.5`, `R-Context.1`)
+Gate: `uv run pytest -m gate -q` — **450 passed** (2026-06-01)
 
-Gate: `uv run pytest -m gate -q` — **410 passed** (2026-06-01, Waves 1–2 partial)
+Harness CI also runs: `python scripts/check_harness_no_getattr.py` (zero grandfathered paths)
 
 ---
 
 ## Update rules
 
 1. **Architecture** (including observability, retry semantics, trace storage, RAG metrics) → `intergrax_runtime_architecture.md`, then sync §0 in the plan.
-2. **Phase / status / readiness** → `INTERGRAX_IMPLEMENTATION_PLAN.md` only.
-3. **Agent workflow** → `AGENT_CREATION_GUIDE.md` only.
-4. **Integration catalog** → `INTEGRATIONS.md` when adding or changing providers.
-5. **Tool catalog** → `TOOLS.md` when adding or changing catalog tools or tool engine contracts.
-6. **LLM providers and LLM metrics** → `LLM_ADAPTERS.md` only.
-7. **Do not add** new markdown files to `docs/` without explicit approval and an index row here.
-
-Product-specific roadmaps belong under `agents/<name>/` (e.g. `agents/legal/`), not in `docs/`.
-
+2. **Status / phases / gaps** → `INTERGRAX_IMPLEMENTATION_PLAN.md` (§0, phase sections, appendices).
+3. **Agent author workflow** → `AGENT_CREATION_GUIDE.md`.
+4. **Integration or tool catalog changes** → `INTEGRATIONS.md` or `TOOLS.md` respectively.
+5. **Skill packs / importers** → `SKILLS.md` + plan Phase R.
+6. After each merged harness PR: run gate + getattr audit; update §0 gate count in the plan footer.

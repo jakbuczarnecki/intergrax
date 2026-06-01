@@ -1,6 +1,6 @@
 # Intergrax Skill Library
 
-**Last updated:** 2026-06-01
+**Last updated:** 2026-06-01 · Phase R MVP **Done** (see plan Appendix E)
 
 Composable **capability packs** between the [Tool Library](TOOLS.md) and Tier-2 agents. Canon: [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.8 · Implementation: [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase R.
 
