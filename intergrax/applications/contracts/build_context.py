@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.tools.registry.profile import ToolProfile
@@ -34,6 +36,8 @@ class ApplicationBuildContext:
     skill_profile: SkillProfile | None = None
     skill_registry: SkillRegistry | None = None
     tool_registry: ToolRegistry | None = None
+    policy_bundle: RuntimePolicyBundle | None = None
+    runtime_event_bus: RuntimeEventBus | None = None
 
     @classmethod
     def for_manifest(
@@ -46,6 +50,8 @@ class ApplicationBuildContext:
         skill_profile: SkillProfile | None = None,
         skill_registry: SkillRegistry | None = None,
         tool_registry: ToolRegistry | None = None,
+        policy_bundle: RuntimePolicyBundle | None = None,
+        runtime_event_bus: RuntimeEventBus | None = None,
     ) -> ApplicationBuildContext:
         profile = getattr(manifest, "integration_profile", None)
         return cls(
@@ -57,4 +63,6 @@ class ApplicationBuildContext:
             skill_profile=skill_profile,
             skill_registry=skill_registry,
             tool_registry=tool_registry,
+            policy_bundle=policy_bundle,
+            runtime_event_bus=runtime_event_bus,
         )

@@ -210,6 +210,7 @@ def build_application_registry(
             contract=contract_for_binding(agent, binding),
             skill_registry=skill_registry,
             tool_registry=ctx.tool_registry,
+            event_bus=ctx.runtime_event_bus,
         )
 
     return registry

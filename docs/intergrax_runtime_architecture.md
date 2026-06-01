@@ -993,7 +993,9 @@ Agent / planner
 ### 7.1.8 Skill Library — Composable Capability Packs
 
 **Status:** Architecture **defined**; implementation **Phase R** ([`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) R-Skill.*).  
-**Catalog (when shipped):** [`SKILLS.md`](SKILLS.md) (R-Skill.6).
+**Catalog:** [`SKILLS.md`](SKILLS.md).
+
+**Runtime events:** `SKILL_RESOLVED` / `SKILL_IMPORT_FAILED` via `runtime/events/context_skill_recording.py`; registration and import service call `RuntimeEventBus.record()`.
 
 #### Problem
 

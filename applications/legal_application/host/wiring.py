@@ -14,6 +14,7 @@ from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.session.session_storage import SessionStorage
 from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_session_storage
 
+from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
 from intergrax.applications._shared.skill_wiring import build_application_skill_wiring
 from intergrax.applications._shared.wiring import build_application_registry
 from intergrax.skills.registry.profile import SkillProfile
@@ -49,6 +50,9 @@ def build_legal_registry(settings: LegalBackendSettings) -> AgentRegistry:
         skill_profile=skill_wiring.profile,
         skill_registry=skill_wiring.registry,
         tool_registry=tool_registry,
+        policy_bundle=build_runtime_policy_bundle(
+            domain_fragments={"legal.contract_review.policy": "legal.contract_review.policy"},
+        ),
     )
     return build_application_registry(manifest, ctx)
 

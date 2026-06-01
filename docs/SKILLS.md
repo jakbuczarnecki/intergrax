@@ -78,7 +78,7 @@ manifest = CursorSkillImporter().import_file(path)
 registry.register(manifest)
 ```
 
-Invalid files raise `CursorSkillImportError` — no partial attach.
+Invalid files raise `CursorSkillImportError` — no partial attach. Use `import_cursor_skill_file(..., event_bus=bus)` to record `SKILL_IMPORT_FAILED` on the runtime event bus.
 
 ---
 

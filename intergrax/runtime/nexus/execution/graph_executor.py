@@ -41,6 +41,7 @@ from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryRecord
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
+from intergrax.runtime.task_memory.delegation_memory import TaskMemoryMetadataKey
 
 ExecuteFn = Callable[[Agent, Task, ExecutionNode], Awaitable[AgentExecutionResult]]
 ValidateFn = Callable[[AgentExecutionResult, Agent, ExecutionNode], ValidationResult]
@@ -85,7 +86,7 @@ class GraphExecutor:
             registry,
             middleware=middleware,
         )
-        self._context_manager = context_manager or ContextManager()
+        self._context_manager = context_manager or ContextManager(event_bus=event_bus)
         self._handoff = handoff_coordinator or HandoffCoordinator(registry)
         self._event_bus = event_bus
         self._middleware = middleware or MiddlewarePipeline()
@@ -290,6 +291,19 @@ class GraphExecutor:
                 attach_runtime_checkpoint_to_metadata(request.metadata, runtime_snapshot)
             if task.options.human.is_resumed or task.metadata.get("human_approved"):
                 request.metadata["human_approved"] = True
+            if node.delegation is not None:
+                delegation = node.delegation
+                request.metadata[TaskMemoryMetadataKey.DELEGATION_MEMORY_NAMESPACE] = (
+                    delegation.resolved_memory_namespace(
+                        task_id=task.task_id,
+                        node_id=node.node_id,
+                    )
+                )
+                request.metadata["run_id"] = f"{task.task_id}:{node.node_id}"
+                if delegation.parent_run_id:
+                    request.metadata[TaskMemoryMetadataKey.PARENT_RUN_ID] = delegation.parent_run_id
+                if delegation.parent_node_id:
+                    request.metadata[TaskMemoryMetadataKey.PARENT_NODE_ID] = delegation.parent_node_id
             CancellationCoordinator.propagate(task.metadata, request.metadata)
             return await AgentEngine.run_agent_with_result(
                 current_agent,

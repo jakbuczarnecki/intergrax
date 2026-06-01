@@ -64,6 +64,7 @@ from intergrax.runtime.task_memory.policy import (
     MemoryAccessPolicy,
     memory_access_policy_from_metadata,
 )
+from intergrax.runtime.task_memory.delegation_memory import apply_delegation_memory_namespace
 from intergrax.runtime.nexus.context.shared_context_bridge import hydrate_shared_context_memory
 from intergrax.runtime.nexus.context.shared_task_context import (
     DEFAULT_SHARED_MEMORY_NAMESPACE,
@@ -535,6 +536,7 @@ class UAEPExecutor:
     @staticmethod
     def _memory_access_policy_for_request(metadata: dict[str, Any]) -> MemoryAccessPolicy:
         policy = memory_access_policy_from_metadata(metadata)
+        policy = apply_delegation_memory_namespace(policy, metadata)
         protected = frozenset({DEFAULT_SHARED_MEMORY_NAMESPACE})
         denied = (policy.write_denied_namespaces or frozenset()) | protected
         return MemoryAccessPolicy(

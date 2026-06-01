@@ -118,7 +118,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Harness GA (functional)** | **Done** | **No** | L certified; scaffold + lab + gate |
 | **Harness quality (Phase Q)** | **Done** (Wave 9) | **No** | Appendix C — gate **417 passed** (2026-06-01) |
 | **Harness hardening (Phase Q+)** | **Open** (Waves 1–2 partial — Wave 3 next) | **Yes** (recommended) | Appendix D — typing, legacy, monoliths |
-| **Harness AI alignment (Phase R)** | **Open** | **Yes** (K scale) | Appendix E — skills, context, delegate, policy |
+| **Harness AI alignment (Phase R)** | **Done** (MVP) | **No** | Appendix E — R-Context.4 / Q+ remain |
 | Skill Library (Tier-0) | **MVP Done** | **No** (extend catalog) | R-Skill.1–9; R-Skill.10 open |
 | Context engineering API | **Partial** (budget in ContextManager) | No | R-Context.1 Done; R-Context.2 open |
 | Graph delegation (subagent model) | **Partial** (`DelegationSpec` on nodes) | No | R-Delegate.2–4 open |
@@ -1663,7 +1663,7 @@ intergrax/skills/
 | R-Skill.7 | **Scaffold `new-skill`** | **Done** | Medium | `intergrax/scaffold/new_skill.py` | `python -m intergrax.scaffold new-skill <id>` |
 | R-Skill.8 | **`CursorSkillImporter`** — parse `SKILL.md` + frontmatter → `SkillManifest` (best-effort; reject on schema fail) | **Done** | High | `intergrax/skills/importers/cursor_skill_md.py` | Fixture test with sample SKILL.md |
 | R-Skill.9 | **Pilot skill pack** — `legal.contract_review` (tool_ids + prompt refs + policy fragment) | **Done** | High | `intergrax/skills/providers/legal/` | Legal agent lists `skill_ids`; gate green |
-| R-Skill.10 | **Nexus trace events** — `SKILL_RESOLVED`, `SKILL_IMPORT_FAILED` | **Open** | Low | `runtime/events/` | Types added; emitters pending |
+| R-Skill.10 | **Nexus trace events** — `SKILL_RESOLVED`, `SKILL_IMPORT_FAILED` | **Done** | Low | `runtime/events/context_skill_recording.py` | `record()` on register + import service |
 
 **Skill vs tool enforcement:**
 
@@ -1681,7 +1681,7 @@ intergrax/skills/
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
 | R-Context.1 | **`ContextBudgetPolicy`** — `max_chars`, `max_tokens_estimate`, `summary_tier` defaults; applied in `ContextManager.build_agent_context()` | **Done** | **Critical** | `runtime/nexus/context/context_budget.py` | Test: over-budget input trimmed |
-| R-Context.2 | **Trace events** — `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` with before/after sizes | **Open** | High | `RuntimeEventType`, context manager | Types + phase map Done; emitters pending |
+| R-Context.2 | **Trace events** — `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` with before/after sizes | **Done** | High | `ContextManager` + `context_skill_recording` | Emitted when `event_bus` wired |
 | R-Context.3 | **AGENT_CREATION_GUIDE** — “Context engineering” subsection links canon §28.1 | **Done** | Medium | `AGENT_CREATION_GUIDE.md` Appendix G | No duplicate truth |
 | R-Context.4 | **Finish unified tool path** — residual `use_rag` / `RagStep` callers → `rag.retrieve` | **Open** | High | Nexus pipelines, legal plan | Grep: zero new `use_rag` in agents |
 
@@ -1694,9 +1694,9 @@ Intergrax does **not** implement Cursor-style nested harness in Phase R. **Deleg
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
 | R-Delegate.1 | **`DelegationSpec` on `ExecutionNode`** — `child_agent_id`, `isolated_memory_namespace`, `context_assembly_override` | **Done** | High | `contracts/delegation.py`, `execution_graph.py` | Schema + validation |
-| R-Delegate.2 | **Memory namespace isolation** — child reads/writes under `task_id/delegation/{node_id}/` via `MemoryView` | **Open** | High | `MemoryView`, UAEP | Unit test |
-| R-Delegate.3 | **Trace linkage** — `parent_run_id`, `parent_node_id` on child run metadata | **Open** | Medium | trace + runtime events | Lab trace shows parent→child |
-| R-Delegate.4 | **Integration tests** — two-agent graph with delegation node | **Open** | Medium | `tests/integration/runtime/` | Gate or integration marker |
+| R-Delegate.2 | **Memory namespace isolation** — child reads/writes under `task_id/delegation/{node_id}/` via `MemoryView` | **Done** | High | `delegation_memory.py`, UAEP | Unit test |
+| R-Delegate.3 | **Trace linkage** — `parent_run_id`, `parent_node_id` on child run metadata | **Done** | Medium | `graph_executor.py` | Request metadata on child node |
+| R-Delegate.4 | **Integration tests** — two-agent graph with delegation node | **Done** | Medium | `test_graph_executor_delegation.py` | Gate |
 
 ---
 
@@ -1705,7 +1705,7 @@ Intergrax does **not** implement Cursor-style nested harness in Phase R. **Deleg
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
 | R-Policy.1 | **`RuntimePolicyBundle`** — aggregates tool, memory, budget, HITL, plan-loop; optional `domain_fragments: dict[str, Any]` | **Done** | High | `runtime/policy/policy_bundle.py` | Import via `policy_bundle` module (not `policy.__init__`) |
-| R-Policy.2 | **Tier-3 composition** — lab/product factories build bundle once per app | **Open** | High | `applications/_shared/`, scaffold | Single object passed to Nexus bootstrap |
+| R-Policy.2 | **Tier-3 composition** — lab/product factories build bundle once per app | **Done** | High | `policy_wiring.py`, lab/legal `wiring.py` | `ApplicationBuildContext.policy_bundle` |
 | R-Policy.3 | **Canon §42.11.1** — “how to read policy for a run” operator section | **Open** | Medium | Architecture canon | Links existing engines |
 
 ---
@@ -2575,11 +2575,12 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 |------|------|---------|
 | 2026-06-01 | R.0.1,R.0.2,R.0.3,R.0.4 | ADR Option 2; canon §5.3, §7.1.8, §28.1, §42.11.4, §42.14.3; ToolContract docstring; plan Appendix E |
 | 2026-06-01 | R-Skill.1–R-Skill.9,R-Context.1,R-Delegate.1,R-Policy.1 | Skill Library MVP, legal pilot, ContextBudget, DelegationSpec, gate **422 passed** |
+| 2026-06-01 | R-Skill.10,R-Context.2,R-Delegate.2–4,R-Policy.2 | Event recording, delegation memory, graph integration test, policy bundle wiring |
 | — | — | *(append row per merged PR)* |
 
 **Coverage target:** 100% **Done** or **Won't fix** before declaring Phase R complete and scaling Phase K.
 
 ---
 
-*Plan synced (2026-06-01). **Phase Q Done**. **Phase Q+ Open** (Appendix D). **Phase R MVP Done** (R-Skill core, legal pilot, context budget, delegation spec). Gate: **422 passed**. **Next:** Q+ Wave 3, R-Skill.10/R-Context.2 emitters, R-Delegate.2–4, R-Policy.2.*
+*Plan synced (2026-06-01). **Phase Q Done**. **Phase Q+ Open** (Appendix D). **Phase R Done (MVP)**. Gate: **423 passed**. **Next:** Q+ Wave 3, R-Context.4, optional Nexus consume of `policy_bundle`.*
 

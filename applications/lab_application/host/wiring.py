@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
 from intergrax.applications._shared.wiring import build_application_registry
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -31,5 +32,6 @@ def build_lab_registry(
         settings=settings,
         tool_profile=tool_wiring.profile,
         tool_wiring_context=tool_wiring.wiring_context,
+        policy_bundle=build_runtime_policy_bundle(),
     )
     return build_application_registry(manifest, ctx, builders=LAB_AGENT_BUILDERS)
