@@ -10,6 +10,7 @@ from intergrax.runtime.nexus.config_types import ToolChoiceMode, ToolsContextSco
 if TYPE_CHECKING:
     from intergrax.integrations.registry.profile import IntegrationProfile
     from intergrax.runtime.events.event_bus import RuntimeEventBus
+    from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 
 from intergrax.rag.profiles.runtime_rag_sync import sync_rag_profile_from_runtime_config
 from intergrax.runtime.nexus.config_sections import (
@@ -264,6 +265,9 @@ class RuntimeConfig:
 
     # Optional sync bus for planner/context events (Phase Q+-N.5, R-Context.2).
     runtime_event_bus: Optional["RuntimeEventBus"] = None
+
+    # Tier-3 composed policy (Phase R-Policy); set via applications runtime_config_bridge.
+    policy_bundle: Optional["RuntimePolicyBundle"] = None
 
 
     # ------------------------------------------------------------------

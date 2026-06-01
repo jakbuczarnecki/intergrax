@@ -10,7 +10,8 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.planning.engine_plan_models import DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT, DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT, DEFAULT_PLANNER_SYSTEM_PROMPT, EnginePlan, PlannerPromptConfig
+from intergrax.runtime.nexus.planning.engine_plan_models import EnginePlan, PlannerPromptConfig
+from intergrax.runtime.nexus.planning.engine_planner_messages import EnginePlannerMessageBuilder
 from intergrax.runtime.nexus.planning.engine_planner_parse import EnginePlanJsonParser
 from intergrax.runtime.nexus.planning.plan_sources import LLMPlanSource, PlanRequest, PlanSource, PlanSourceMeta
 from intergrax.runtime.nexus.planning.step_executor_models import ReplanContext
@@ -21,7 +22,6 @@ from intergrax.runtime.nexus.tracing.plan.plan_source_contract_violation import 
 from intergrax.runtime.nexus.tracing.plan.plan_source_failed import PlannerPlanSourceFailedDiagV1
 from intergrax.runtime.nexus.tracing.plan.planner_build_debug import PlannerBuildDebugDiagV1
 from intergrax.runtime.nexus.tracing.plan.raw_plan_parse_failed import PlannerRawPlanParseFailedDiagV1
-from intergrax.runtime.nexus.tracing.plan.replan_context_injected import PlannerReplanContextInjectedDiagV1
 from intergrax.runtime.events.planner_events import record_plan_failed
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
@@ -427,20 +427,7 @@ class EnginePlanner:
     # -----------------------------
 
     def _serialize_replan_ctx(self, replan_ctx: Optional[ReplanContext]) -> Optional[str]:
-        """
-        Single source of truth for how ReplanContext is serialized for prompts/debug.
-        Must stay aligned with prompt injection semantics.
-        """
-        if replan_ctx is None:
-            return None
-
-        return json.dumps(
-            replan_ctx.to_prompt_dict(),
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-        )
-
+        return EnginePlannerMessageBuilder.serialize_replan_ctx(replan_ctx)
 
     def _build_planner_messages(
         self,
@@ -451,120 +438,13 @@ class EnginePlanner:
         prompt_config: Optional[PlannerPromptConfig] = None,
         replan_ctx: Optional[ReplanContext] = None,
     ) -> list[ChatMessage]:
-        """
-        Build minimal, low-variance planner messages.
-
-        The model must output a SINGLE JSON object that matches the schema exactly.
-        The output is parsed into EnginePlan (simplified).
-        """
-
-        # Capabilities are hard constraints (runtime will clamp again as a safety net).
-        caps = {
-            "websearch_available": state.cap_websearch_available,
-            "user_ltm_available": state.cap_user_ltm_available,
-            "rag_available": state.cap_rag_available,
-            "tools_available": state.cap_tools_available,
-            "attachments_present": bool(req.attachments and len(req.attachments or []) > 0),
-        }
-
-        # Strict JSON schema (minimal surface area, no extra keys).
-        schema = {
-            "type": "object",
-            "additionalProperties": False,
-            "required": [
-                "version",
-                "intent",
-                "next_step",
-                "reasoning_summary",
-                "ask_clarifying_question",
-                "clarifying_question",
-                "use_websearch",
-                "use_user_longterm_memory",
-                "use_rag",
-                "use_tools",
-            ],
-            "properties": {
-                "version": {"type": "string"},
-                "intent": {
-                    "type": "string",
-                    "enum": ["generic", "freshness", "project_architecture", "clarify"],
-                },
-                "next_step": {
-                    "type": "string",
-                    "enum": ["clarify", "websearch", "tools", "rag", "synthesize", "finalize"],
-                },
-                "reasoning_summary": {"type": "string"},
-                "ask_clarifying_question": {"type": "boolean"},
-                "clarifying_question": {"type": ["string", "null"]},
-                "use_websearch": {"type": "boolean"},
-                "use_user_longterm_memory": {"type": "boolean"},
-                "use_rag": {"type": "boolean"},
-                "use_tools": {"type": "boolean"},
-            },
-        }
-
-        # Main system prompt (customizable)
-        system_prompt = DEFAULT_PLANNER_SYSTEM_PROMPT()
-        if prompt_config is not None and prompt_config.system_prompt:
-            system_prompt = prompt_config.system_prompt.strip()
-
-        # Optional replanning system prompt (customizable)
-        replan_system_msg: Optional[ChatMessage] = None
-        if replan_ctx is not None:
-            replan_template = DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT()
-            if prompt_config is not None and prompt_config.replan_system_prompt:
-                replan_template = prompt_config.replan_system_prompt.strip()
-
-            replan_json = self._serialize_replan_ctx(replan_ctx)
-
-            replan_hash = hashlib.sha256(replan_json.encode("utf-8")).hexdigest()[:16]
-
-            state.trace_event(
-                component=TraceComponent.PLANNER,
-                step="engine_planner",
-                message="Replan context injected into planner prompt.",
-                level=TraceLevel.INFO,
-                payload=PlannerReplanContextInjectedDiagV1(
-                    has_replan_ctx=True,
-                    replan_reason=(replan_ctx.replan_reason or "").strip() or None,
-                    replan_hash=replan_hash,
-                    replan_json_len=len(replan_json),
-                ),
-            )
-
-            # Template MUST contain {replan_json}
-            replan_text = replan_template.format(replan_json=replan_json)
-            replan_system_msg = ChatMessage(role="system", content=replan_text)
-
-        # next_step rules prompt (customizable)
-        next_step_rules_prompt = DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT()
-        if prompt_config is not None and prompt_config.next_step_rules_prompt:
-            next_step_rules_prompt = prompt_config.next_step_rules_prompt.strip()
-
-        # User message: provide only needed context + schema.
-        user_lines: list[str] = []
-        user_lines.append("CAPABILITIES (hard constraints):")
-        user_lines.append(json.dumps(caps, ensure_ascii=False, sort_keys=True))
-        user_lines.append("")
-
-        user_lines.append("USER QUERY:")
-        user_lines.append((req.message or "").strip())
-        user_lines.append("")
-
-        # Rules for next_step (from template / config)
-        user_lines.append(next_step_rules_prompt)
-        user_lines.append("")
-
-        user_lines.append("JSON SCHEMA:")
-        user_lines.append(json.dumps(schema, ensure_ascii=False))
-        user_lines.append("")
-        user_lines.append("OUTPUT JSON:")
-
-        msgs: list[ChatMessage] = [ChatMessage(role="system", content=system_prompt)]
-        if replan_system_msg is not None:
-            msgs.append(replan_system_msg)
-        msgs.append(ChatMessage(role="user", content="\n".join(user_lines)))
-        return msgs
+        _ = config
+        return EnginePlannerMessageBuilder.build_messages(
+            req=req,
+            state=state,
+            prompt_config=prompt_config,
+            replan_ctx=replan_ctx,
+        )
 
 
 

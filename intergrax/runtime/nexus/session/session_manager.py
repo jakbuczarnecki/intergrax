@@ -23,6 +23,10 @@ from intergrax.runtime.nexus.session.session_storage import (
 from intergrax.runtime.organization.organization_profile_manager import (
     OrganizationProfileManager,
 )
+from intergrax.runtime.nexus.session.session_profile_instructions import (
+    SessionProfileInstructionResolver,
+    build_consolidation_diag,
+)
 from intergrax.runtime.user_profile.session_memory_consolidation_service import (
     SessionMemoryConsolidationService,
 )
@@ -128,6 +132,10 @@ class SessionManager:
             effective_cooldown = 0
 
         self._consolidation_cooldown_seconds: int = effective_cooldown
+        self._profile_instructions = SessionProfileInstructionResolver(
+            user_profile_manager=user_profile_manager,
+            organization_profile_manager=organization_profile_manager,
+        )
 
 
     async def get_history(
@@ -445,61 +453,12 @@ class SessionManager:
         self,
         session: ChatSession,
     ) -> Optional[str]:
-        """
-        Return a prompt-ready user profile instruction string for this session.
-
-        Behavior:
-          - If a cached value is present in session.user_profile_instructions
-            and the session is not marked as requiring a refresh, it is
-            returned (after stripping whitespace).
-          - Otherwise this method delegates to UserProfileManager, calling
-            `get_system_instructions_for_user(user_id)` which returns the
-            effective user-level system instructions (already including any
-            internal fallbacks), caches the resulting string on the session,
-            and saves the updated session.
-
-        Semantics:
-          - Instructions are effectively *snapshotted per session*.
-            If the underlying user profile changes (e.g. after consolidation),
-            the session can be marked as requiring a refresh and will then
-            re-resolve instructions on the next call.
-        """
-        # No associated user or no profile manager → no instructions.
-        if not session.user_id:
+        """Return prompt-ready user profile instructions (cached per session)."""
+        instructions = await self._profile_instructions.user_instructions_for_session(session)
+        if instructions is None:
             return None
-        if self._user_profile_manager is None:
-            return None
-
-        needs_refresh = session.needs_user_instructions_refresh
-
-        # 1) Try cached instructions from the session.
-        cached = session.user_profile_instructions
-        if not needs_refresh and isinstance(cached, str):
-            stripped = cached.strip()
-            if stripped:
-                return stripped
-
-        # 2) Fallback: resolve from the user profile manager.
-        # The manager encapsulates all logic of:
-        #   - using profile.system_instructions if set,
-        #   - or falling back to a deterministic summary if not.
-        instructions = await self._user_profile_manager.get_system_instructions_for_user(
-            session.user_id
-        )
-        if not isinstance(instructions, str):
-            return None
-
-        stripped = instructions.strip()
-        if not stripped:
-            return None
-
-        # 3) Cache on the session and persist.
-        session.user_profile_instructions = stripped
-        session.needs_user_instructions_refresh = False
-
         await self.save_session(session)
-
-        return stripped
+        return instructions
 
 
     async def search_user_longterm_memory(
@@ -533,92 +492,20 @@ class SessionManager:
         self,
         session: ChatSession,
     ) -> Optional[str]:
-        """
-        Return a prompt-ready organization profile instruction string
-        for this session.
-
-        Behavior:
-          - If a cached value is present in session.org_profile_instructions,
-            it is returned (after stripping whitespace).
-          - Otherwise this method delegates to OrganizationProfileManager, calling
-            `get_system_instructions_for_organization(organization_id, ...)`,
-            caches the resulting string on the session, and saves the updated
-            session.
-
-        Note:
-          - This method no longer uses prompt bundles; it works purely on
-            the final system-instructions string exposed by the manager.
-          - The organization identifier is derived from session.tenant_id.
-        """
-        # No associated tenant or no organization profile manager → no instructions.
-        if not session.tenant_id:
+        """Return prompt-ready organization profile instructions (cached per session)."""
+        instructions = await self._profile_instructions.org_instructions_for_session(session)
+        if instructions is None:
             return None
-        if self._organization_profile_manager is None:
-            return None
-
-        # 1) Try cached instructions from the session.
-        cached = session.org_profile_instructions
-        if isinstance(cached, str):
-            stripped = cached.strip()
-            if stripped:
-                return stripped
-
-        # 2) Fallback: resolve from the organization profile manager.
-        instructions = (
-            await self._organization_profile_manager.get_system_instructions_for_organization(
-                organization_id=session.tenant_id
-            )
-        )
-        if not isinstance(instructions, str):
-            return None
-
-        stripped = instructions.strip()
-        if not stripped:
-            return None
-
-        # 3) Cache on the session and persist.
-        session.org_profile_instructions = stripped
         await self.save_session(session)
-
-        return stripped
+        return instructions
 
     # ------------------------------------------------------------------
     # Consolidation helpers
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _build_consolidation_diag(
-        entries: Sequence[Any],
-    ) -> SessionConsolidationDiagV1:
-        """
-        Build a lightweight debug payload describing the outcome of a
-        consolidation run.
-
-        The structure is intentionally simple and JSON-serializable so it can
-        be safely stored in session.last_consolidation_debug.
-        """
-        total = len(entries)
-
-        # Try to infer entry types in a defensive way. We deliberately avoid
-        # using getattr(...) here. Instead:
-        #   - if the object exposes an 'entry_type' attribute, we use it,
-        #   - otherwise we fallback to the literal "unknown".
-        type_counts: Dict[str, int] = {}
-        for e in entries:
-            if hasattr(e, "entry_type"):
-                # We ignore type-checker complaints here because not all
-                # objects in the list are guaranteed to have this attribute.
-                entry_type = e.entry_type  # type: ignore[attr-defined]
-            else:
-                entry_type = "unknown"
-
-            key = str(entry_type)
-            type_counts[key] = type_counts.get(key, 0) + 1
-
-        return SessionConsolidationDiagV1(
-            entries_count=total,
-            entry_types=type_counts,
-        )
+    def _build_consolidation_diag(entries: Sequence[Any]) -> SessionConsolidationDiagV1:
+        return build_consolidation_diag(entries)
 
     async def _mark_session_consolidated(
         self,

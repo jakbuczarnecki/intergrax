@@ -30,7 +30,9 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.task.task import TaskContext
 from legal.config.tool_planner_wiring import resolve_legal_tool_planner
+from intergrax.applications._shared.runtime_config_bridge import apply_policy_bundle_to_runtime_config
 from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy, RuntimePolicies
+from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 
 from legal.pipeline.legal_dynamic_pipeline import LegalDynamicPipeline
 from legal.pipeline.legal_agent_pipeline import LegalAnalysisPipeline
@@ -115,6 +117,8 @@ class LegalAgent(Agent):
             budget_policy=cfg.budget_policy,
             runtime_policies=runtime_policies,
         )
+        if isinstance(cfg.policy_bundle, RuntimePolicyBundle):
+            apply_policy_bundle_to_runtime_config(runtime_config, cfg.policy_bundle)
 
         if cfg.enable_sequential_legal_pipeline:
             runtime_config.pipeline = LegalAnalysisPipeline(config=cfg)

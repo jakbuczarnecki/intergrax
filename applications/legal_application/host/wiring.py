@@ -122,5 +122,6 @@ def build_legal_agent(
         tools_mode=settings.tools_mode,  # type: ignore[arg-type]
         tool_profile=tool_profile,
         tool_wiring_context=tool_wiring_context,
+        policy_bundle=ctx.policy_bundle if ctx is not None else None,
     )
     return LegalAgent(config=cfg)

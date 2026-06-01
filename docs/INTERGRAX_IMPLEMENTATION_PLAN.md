@@ -117,12 +117,12 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 |-------|-------|-------------------|-------|
 | **Harness GA (functional)** | **Done** | **No** | L certified; scaffold + lab + gate |
 | **Harness quality (Phase Q)** | **Done** (Wave 9) | **No** | Appendix C — gate **417 passed** (2026-06-01) |
-| **Harness hardening (Phase Q+)** | **Open** (Waves 1–2 partial — Wave 3 next) | **Yes** (recommended) | Appendix D — typing, legacy, monoliths |
+| **Harness hardening (Phase Q+)** | **Partial** (Wave 3 — planner/session/policy) | **Yes** (recommended) | Appendix D — typing, legacy, monoliths |
 | **Harness AI alignment (Phase R)** | **Done** (MVP) | **No** | Appendix E — R-Context.4 / Q+ remain |
 | Skill Library (Tier-0) | **MVP Done** | **No** (extend catalog) | R-Skill.1–9; R-Skill.10 open |
 | Context engineering API | **Partial** (budget in ContextManager) | No | R-Context.1 Done; R-Context.2 open |
 | Graph delegation (subagent model) | **Partial** (`DelegationSpec` on nodes) | No | R-Delegate.2–4 open |
-| RuntimePolicyBundle narrative | **Done** (dataclass) | No | R-Policy.1; Tier-3 wire R-Policy.2 open |
+| RuntimePolicyBundle narrative | **Done** (Tier-3 + Nexus RuntimeConfig/Context) | No | R-Policy.1–2; `runtime_config_bridge.py` |
 | Canon §1–41 (tiers, Nexus, graph, repo split) | **~92%** → target **≥98%** post-Q+ | No | Q+-N, Q+-L, Q+-T |
 | §42 Unified Execution Runtime | **~95%** → target **≥99%** post-Q+-T | No | UAEP Protocol, no duck typing |
 | Laboratory workflow | **~96%** → target **≥99%** post-Q+-O | No | Metrics parity, planner observability |
@@ -1522,7 +1522,7 @@ Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-
 | Q+-L.3 | **`RuntimeConfig` default tools** — no default `ToolsAgent` in `config` / `config_sections` | **Done** | High | `nexus/config.py`, `config_sections.py` | `tool_planner: ToolPlannerProtocol` only |
 | Q+-L.4 | **`supervisor` boundary** — move to `experiments/supervisor` or hard-deprecate with import guard | **Done** | Medium | `intergrax/supervisor/__init__.py`, gate import test | Not imported from runtime/applications |
 | Q+-L.5 | **`chains/langchain_qa_chain`** — experimental only or remove from default paths | **Done** | Medium | `intergrax/chains/__init__.py`, gate import test | Tests-only imports |
-| Q+-L.6 | **`rag/answers` e2e** — migrate `tests/e2e/rag` to `RetrievalService`; package import guard | **Open** | Medium | `rag/answers/`, e2e tests | E2E green without answers bootstrap |
+| Q+-L.6 | **`rag/answers` e2e** — migrate `tests/e2e/rag` to `RetrievalService`; package import guard | **Done** | Medium | `tests/e2e/rag/test_rag_full_runtime_e2e.py` | No `rag.answers` import |
 | Q+-L.7 | **`openai/rag/rag_openai.py`** — bridge to `RetrievalService` or delete if unused | **Won't fix** | Low | `openai/rag/rag_openai.py` | Zero production imports; legacy sample only |
 
 ---
@@ -1544,7 +1544,7 @@ Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| Q+-P.1 | **Split `engine_planner`** — parse / validate / LLM call modules; each &lt; ~300 lines | **Partial** | Medium | `engine_planner_parse.py` | Parse extracted; orchestration class remains |
+| Q+-P.1 | **Split `engine_planner`** — parse / validate / LLM call modules; each &lt; ~300 lines | **Partial** | Medium | `engine_planner_parse.py`, `engine_planner_messages.py` | Parse + prompts extracted |
 | Q+-P.2 | **Split `step_planner`** — strategy registry vs executor | **Open** | Medium | `planning/step_planner/` package | Same |
 | Q+-P.3 | **Structured plan parse errors** — no silent `except Exception: pass` without trace | **Done** | Medium | `engine_planner_parse.py` | Narrow `ValueError` / `JSONDecodeError` only |
 
@@ -1554,7 +1554,7 @@ Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| Q+-S.1 | **Decompose `session_manager`** — storage vs summarization vs org instructions | **Open** | Low | `session/` submodules | `session_manager.py` &lt; ~350 lines |
+| Q+-S.1 | **Decompose `session_manager`** — storage vs summarization vs org instructions | **Partial** | Low | `session_profile_instructions.py` | Profile instructions extracted |
 
 ---
 
@@ -2582,5 +2582,5 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 
 ---
 
-*Plan synced (2026-06-01). **Phase Q Done**. **Phase Q+ Open** (Appendix D). **Phase R Done (MVP)**. Gate: **423 passed**. **Next:** Q+ Wave 3, R-Context.4, optional Nexus consume of `policy_bundle`.*
+*Plan synced (2026-06-01). **Phase Q Done**. **Phase Q+ Partial** (Appendix D). **Phase R Done (MVP)**. Gate: **438 passed**. **Next:** Q+-P.2 step_planner split, Q+-S.1 session consolidation module.*
 

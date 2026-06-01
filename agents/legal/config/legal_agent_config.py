@@ -2,7 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -242,6 +242,11 @@ class LegalAgentConfig(BaseModel):
             "(via :class:`~intergrax.runtime.nexus.policies.runtime_policies.RuntimePolicies`) and applied "
             "when shaping Legal HTTP responses (trace serialization, tool argument exposure)."
         ),
+    )
+
+    policy_bundle: Optional[Any] = Field(
+        default=None,
+        description="Tier-3 composed policy bundle (Phase R-Policy); wired into Nexus RuntimeConfig.",
     )
 
     @model_validator(mode="after")
