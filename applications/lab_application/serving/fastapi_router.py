@@ -10,7 +10,10 @@ from pydantic import BaseModel, Field
 
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_contract import TaskLongRunningOptions
+from intergrax.applications._shared.task_intake import (
+    apply_long_running_enabled,
+    apply_orchestration_graph_id,
+)
 from intergrax.runtime.task.task_run_bridge import new_run_id
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
@@ -63,20 +66,12 @@ class LabRunService:
             context=TaskContext(capability=body.capability),
             metadata=dict(body.metadata),
         )
-        if body.long_running:
-            task.options = task.options.model_copy(
-                update={
-                    "long_running": TaskLongRunningOptions(
-                        enabled=True,
-                        checkpoint_on_pause=True,
-                    )
-                },
-                deep=True,
-            )
-            task.sync_metadata()
-        if body.graph_id:
-            task.metadata["graph_id"] = body.graph_id
-            task.sync_metadata()
+        task = apply_long_running_enabled(
+            task,
+            enabled=body.long_running,
+            checkpoint_on_pause=True,
+        )
+        task = apply_orchestration_graph_id(task, body.graph_id)
         if self.task_enricher is not None:
             task = self.task_enricher(task)
         result = await self.task_runner.run_task(task)

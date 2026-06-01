@@ -1,7 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Tier-3 task intake defaults (Phase M.11 harness)."""
+"""Tier-3 task intake defaults (Phase M.11 harness).
+
+For graph id and long-running flags use :mod:`intergrax.applications._shared.task_intake`
+(Phase Q+-M.2) — not flat ``task.metadata`` keys in new hosts.
+"""
 
 from __future__ import annotations
 

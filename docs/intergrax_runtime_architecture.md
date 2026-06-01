@@ -236,6 +236,7 @@ The platform MUST maintain **one canonical path** per universal concern. All tie
 | Tokenization | `intergrax/tokenizers/` | Inline tiktoken/token counting duplicates |
 | File / storage adapters | Tier-0 adapters | Agent-local S3/filesystem clients bypassing adapters |
 | External integrations (DB, cache, chat, search, …) | `intergrax/integrations/` catalog + category contracts | Direct vendor SDK imports in `agents/`; LLM slugs in Integration Library |
+| Vendor SDK bridges | `intergrax/llm_adapters/providers/*/_sdk_bridge.py`, `integrations/providers/*/` | `getattr` reflection in `runtime/` or `agents/` (Q+-I.1 quarantine — bridges only) |
 | Errors / classification | `intergrax/runtime/nexus/errors/` | Siloed error models per agent |
 
 This table is illustrative, not exhaustive. The rule is general:

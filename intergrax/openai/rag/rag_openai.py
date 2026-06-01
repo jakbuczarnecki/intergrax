@@ -2,6 +2,13 @@
 # Integrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+"""
+Legacy OpenAI vector-store sample (Phase Q+-L.7 — not used in production).
+
+Use ``intergrax.rag.retrieval.RetrievalService`` and ``RagProfile`` instead.
+Do not import from ``runtime/``, ``applications/``, or ``agents/``.
+"""
+
 from __future__ import annotations
 
 from openai import OpenAI

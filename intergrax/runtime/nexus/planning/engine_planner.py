@@ -10,7 +10,8 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.planning.engine_plan_models import DEFAULT_PLANNER_FALLBACK_CLARIFY_QUESTION, DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT, DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT, DEFAULT_PLANNER_SYSTEM_PROMPT, EngineNextStep, EnginePlan, PlanIntent, PlannerPromptConfig
+from intergrax.runtime.nexus.planning.engine_plan_models import DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT, DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT, DEFAULT_PLANNER_SYSTEM_PROMPT, EnginePlan, PlannerPromptConfig
+from intergrax.runtime.nexus.planning.engine_planner_parse import EnginePlanJsonParser
 from intergrax.runtime.nexus.planning.plan_sources import LLMPlanSource, PlanRequest, PlanSource, PlanSourceMeta
 from intergrax.runtime.nexus.planning.step_executor_models import ReplanContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -567,172 +568,15 @@ class EnginePlanner:
 
 
 
-    # -----------------------------
-    # Parsing & validation
-    # -----------------------------
+    def _extract_json_object(self, raw: str) -> str:
+        return EnginePlanJsonParser.extract_json_object(raw)
 
-    def _extract_json_object(self, s: str) -> str:
-        """
-        Minimal safety: extract the first {...} block.
-        This is not a heuristic planner; it's just robust parsing for LLM outputs.
-        """
-        start = s.find("{")
-        end = s.rfind("}")
-        if start < 0 or end < 0 or end <= start:
-            raise ValueError("Planner did not return a JSON object.")
-        return s[start : end + 1]
-
-    
     def _parse_plan(self, raw: str, *, prompt_config: Optional[PlannerPromptConfig]) -> EnginePlan:
-        """
-        Parse strict JSON (as specified by _build_planner_messages) into EnginePlan.
-
-        Expected keys:
-        version, intent, next_step, reasoning_summary, ask_clarifying_question, clarifying_question,
-        use_websearch, use_user_longterm_memory, use_rag, use_tools
-        """
-        js = self._extract_json_object(raw)
-
-        try:
-            data = json.loads(js)
-        except Exception as e:
-            raise ValueError(f"Invalid JSON from LLM: {e}") from e
-
-        if not isinstance(data, dict):
-            raise ValueError("Planner output must be a JSON object.")
-
-        def req_bool(k: str) -> bool:
-            if k not in data:
-                raise ValueError(f"Missing required key: {k}")
-            v = data[k]
-            if isinstance(v, bool):
-                return v
-            raise ValueError(f"Key '{k}' must be boolean.")
-
-        def req_str(k: str) -> str:
-            if k not in data:
-                raise ValueError(f"Missing required key: {k}")
-            v = data[k]
-            if isinstance(v, str):
-                return v
-            raise ValueError(f"Key '{k}' must be string.")
-
-        def req_str_or_null(k: str) -> Optional[str]:
-            if k not in data:
-                raise ValueError(f"Missing required key: {k}")
-            v = data[k]
-            if v is None:
-                return None
-            if isinstance(v, str):
-                vv = v.strip()
-                return vv
-            raise ValueError(f"Key '{k}' must be string or null.")
-
-        def opt_version_str(k: str, default: str = "1.0") -> str:
-            """
-            Version is metadata. Be tolerant: accept string/number/null/missing.
-            Always return a non-empty string.
-            """
-            if k not in data:
-                return default
-
-            v = data[k]
-            if v is None:
-                return default
-
-            if isinstance(v, str):
-                s = v.strip()
-                return s or default
-
-            if isinstance(v, (int, float)):
-                return str(v)
-
-            raise ValueError(f"Key '{k}' must be string, number, or null.")
-
-        version = opt_version_str("version", default="1.0")
-
-        intent_raw = req_str("intent").strip()
-        try:
-            intent = PlanIntent(intent_raw)
-        except Exception:
-            raise ValueError(
-                f"Invalid intent '{intent_raw}'. Allowed: generic|freshness|project_architecture|clarify."
-            )
-
-        # next_step -> EngineNextStep (Enum)
-        next_step_raw = req_str("next_step").strip()
-        try:
-            next_step = EngineNextStep(next_step_raw)
-        except Exception:
-            # Tolerant: keep None and let fallback decide
-            next_step = None
-
-        reasoning_summary = req_str("reasoning_summary").strip()
-
-        ask_clarify = req_bool("ask_clarifying_question")
-        clar_q = req_str_or_null("clarifying_question")
-
-        use_web = req_bool("use_websearch")
-        use_ltm = req_bool("use_user_longterm_memory")
-        use_rag = req_bool("use_rag")
-        use_tools = req_bool("use_tools")
-
-        # Deterministic consistency rules (independent from model compliance)
-        if intent == PlanIntent.CLARIFY:
-            ask_clarify = True
-            if not clar_q:
-                # If missing, force a safe generic clarifier.
-                clar_q = self._fallback_clarify_question(prompt_config)
-            # In clarify mode, retrieval is always off
-            use_web = use_ltm = use_rag = use_tools = False
-            next_step = EngineNextStep.CLARIFY
-        else:
-            # Non-clarify must not ask clarifying question
-            if ask_clarify:
-                # If model set it true incorrectly, force clarify intent
-                intent = PlanIntent.CLARIFY
-                if not clar_q:
-                    clar_q = self._fallback_clarify_question(prompt_config)
-                use_web = use_ltm = use_rag = use_tools = False
-                next_step = EngineNextStep.CLARIFY
-                reasoning_summary = "clarify_required"
-            else:
-                clar_q = None
-                # In non-clarify, next_step must not be clarify
-                if next_step == EngineNextStep.CLARIFY:
-                    next_step = None
-
-        # Deterministic fallback for next_step (never leave None for runtime loop)
-        if next_step is None:
-            if use_web:
-                next_step = EngineNextStep.WEBSEARCH
-            elif use_tools:
-                next_step = EngineNextStep.TOOLS
-            elif use_rag or use_ltm:
-                next_step = EngineNextStep.RAG
-            else:
-                next_step = EngineNextStep.SYNTHESIZE
-
-        return EnginePlan(
-            version=version,
-            intent=intent,
-            reasoning_summary=reasoning_summary,
-            ask_clarifying_question=ask_clarify,
-            clarifying_question=clar_q,
-            next_step=next_step,
-            use_websearch=use_web,
-            use_user_longterm_memory=use_ltm,
-            use_rag=use_rag,
-            use_tools=use_tools,
-        )
-
+        return EnginePlanJsonParser.parse(raw, prompt_config=prompt_config)
 
     def _fallback_clarify_question(self, prompt_config: Optional[PlannerPromptConfig]) -> str:
-        q = DEFAULT_PLANNER_FALLBACK_CLARIFY_QUESTION()
-        if prompt_config is not None and prompt_config.fallback_clarify_question:
-            q = prompt_config.fallback_clarify_question.strip()
-        return q
-    
+        return EnginePlanJsonParser.fallback_clarify_question(prompt_config)
+
 
     def _json_shape(self, obj: object) -> dict:
         """
