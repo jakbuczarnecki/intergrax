@@ -122,7 +122,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Skill Library (Tier-0) | **MVP Done** | **No** (extend catalog) | R-Skill.1–9; R-Skill.10 open |
 | Context engineering API | **Partial** (budget in ContextManager) | No | R-Context.1 Done; R-Context.2 open |
 | Graph delegation (subagent model) | **Partial** (`DelegationSpec` on nodes) | No | R-Delegate.2–4 open |
-| RuntimePolicyBundle narrative | **Done** (Tier-3 + Nexus RuntimeConfig/Context) | No | R-Policy.1–2; `runtime_config_bridge.py` |
+| RuntimePolicyBundle narrative | **Done** (Tier-3 + Nexus RuntimeConfig/Context + ToolRuntime) | No | R-Policy.1–2; `runtime_config_bridge.py`, `tool_policy_resolution.py` |
 | Canon §1–41 (tiers, Nexus, graph, repo split) | **~92%** → target **≥98%** post-Q+ | No | Q+-N, Q+-L, Q+-T |
 | §42 Unified Execution Runtime | **~95%** → target **≥99%** post-Q+-T | No | UAEP Protocol, no duck typing |
 | Laboratory workflow | **~96%** → target **≥99%** post-Q+-O | No | Metrics parity, planner observability |
@@ -1544,7 +1544,7 @@ Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| Q+-P.1 | **Split `engine_planner`** — parse / validate / LLM call modules; each &lt; ~300 lines | **Partial** | Medium | `engine_planner_parse.py`, `engine_planner_messages.py` | Parse + prompts extracted |
+| Q+-P.1 | **Split `engine_planner`** — parse / validate / LLM call modules; each &lt; ~300 lines | **Done** | Medium | `engine_planner_parse.py`, `engine_planner_messages.py`, `engine_planner_diagnostics.py`, `engine_planner_orchestrator.py` | Orchestration + traces extracted |
 | Q+-P.2 | **Split `step_planner`** — strategy registry vs executor | **Done** | Medium | `planning/step_planner/` (`config`, `step_factory`, `assembly`, `strategies`, `planner`) | Package import stable; gate tests |
 | Q+-P.3 | **Structured plan parse errors** — no silent `except Exception: pass` without trace | **Done** | Medium | `engine_planner_parse.py` | Narrow `ValueError` / `JSONDecodeError` only |
 
@@ -1554,7 +1554,7 @@ Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| Q+-S.1 | **Decompose `session_manager`** — storage vs summarization vs org instructions | **Partial** | Low | `session_profile_instructions.py`, `session_consolidation.py` | Profile + consolidation coordinator extracted |
+| Q+-S.1 | **Decompose `session_manager`** — storage vs summarization vs org instructions | **Done** | Low | `session_profile_instructions.py`, `session_consolidation.py`, `session_lifecycle.py` | Profile, consolidation, lifecycle coordinators |
 
 ---
 
@@ -2501,8 +2501,8 @@ Decision:       L1 certified — GO Phase K when product priority set
 | No `RetryCoordinator` | P1 | Q+-N.3 | Done |
 | Observability gaps (metrics heuristics, RAG HTTP, planner errors) | P1 | Q+-O.1–Q+-O.4, Q+-N.5 | Partial (O.1–O.2 Done) |
 | `task_metadata` auto-hydrate | P1 | Q+-M.1, Q+-M.2 | Partial (M.1 Done) |
-| Planning monoliths (~680/620 lines) | P2 | Q+-P.1–Q+-P.3 | Partial (P.2 Done; `engine_planner` split partial) |
-| `session_manager` monolith (~596 lines) | P2 | Q+-S.1 | Partial (consolidation coordinator) |
+| Planning monoliths (~680/620 lines) | P2 | Q+-P.1–Q+-P.3 | Done |
+| `session_manager` monolith (~596 lines) | P2 | Q+-S.1 | Done |
 | LLM SDK getattr quarantine | P3 | Q+-I.1 | Done |
 | `harness_production_mode` not wired in lab | P1 | Q+-O.2 | Done |
 | Thin `GraphExecutor` handoff/retry tests | P1 | Q+-N.4 | Done |
@@ -2530,6 +2530,7 @@ Execute in order; one PR per ID where possible.
 | 2026-06-01 | Q+.0.3,Q+-T.1–T.8,Q+-L.1,Q+-M.1,Q+-N.1,Q+-N.2,Q+-D.* | Wave 1 harness contracts; intake/planning runners; CI getattr/tools_agent gates; docs |
 | 2026-06-01 | Q+-L.2–L.3,Q+-N.3,Q+-O.1,Q+-O.2 | Legal `CatalogToolPlanner`; `tool_planner` on RuntimeConfig; RetryCoordinator; typed metrics export; lab harness mode |
 | 2026-06-01 | Q+-P.2,Q+-S.1,R-Policy | `step_planner/` package; `session_consolidation.py`; `runtime_config_bridge` wires `ToolScopePolicy` |
+| 2026-06-01 | Q+-P.1,Q+-S.1,R-Policy | `engine_planner_*` modules; `session_lifecycle.py`; `tool_policy_resolution` + harness getattr cleanup |
 | — | — | *(append row per merged PR)* |
 
 **Coverage target:** 100% **Done** or **Won't fix** before declaring Phase Q+ complete and scaling Phase K.
@@ -2583,5 +2584,5 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 
 ---
 
-*Plan synced (2026-06-01). **Phase Q Done**. **Phase Q+ Partial** (Appendix D). **Phase R Done (MVP)**. Gate: **445 passed**. **Next:** Q+-P.1 engine_planner orchestration split; finish Q+-S.1 session storage boundary.*
+*Plan synced (2026-06-01). **Phase Q Done**. **Phase Q+ Partial** (Appendix D — Waves 1–4 core monoliths Done). **Phase R Done (MVP)**. Gate: **449 passed**. **Next:** Q+ legacy paydown (L.4–L.7), R-Skill.7 scaffold, R-Context.2 event recording depth.*
 

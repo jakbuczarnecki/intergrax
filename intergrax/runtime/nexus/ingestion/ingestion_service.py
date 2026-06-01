@@ -316,7 +316,7 @@ class AttachmentIngestionService:
                 "top_k": int(top_k),
                 "score_threshold": score_threshold,
                 "where": where,
-                "provider": getattr(self._vectorstore_manager, "provider", None),  # optional; can be removed
+                "provider": type(self._vectorstore_manager).__name__,
             },
         }
 

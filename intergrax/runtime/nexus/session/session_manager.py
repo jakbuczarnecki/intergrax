@@ -23,6 +23,7 @@ from intergrax.runtime.nexus.session.session_consolidation import (
     SessionConsolidationReason,
     SessionMemoryConsolidationCoordinator,
 )
+from intergrax.runtime.nexus.session.session_lifecycle import SessionLifecycleCoordinator
 from intergrax.runtime.nexus.session.session_profile_instructions import (
     SessionProfileInstructionResolver,
 )
@@ -125,6 +126,7 @@ class SessionManager:
             user_turns_interval=effective_interval,
             cooldown_seconds=effective_cooldown,
         )
+        self._lifecycle = SessionLifecycleCoordinator(storage)
         self._profile_instructions = SessionProfileInstructionResolver(
             user_profile_manager=user_profile_manager,
             organization_profile_manager=organization_profile_manager,
@@ -155,10 +157,10 @@ class SessionManager:
         """
         Return ChatSession metadata if it exists for a given tenant.
         """
-        return await self._storage.get_session(
+        return await self._lifecycle.get_session(
             tenant_id=tenant_id,
             session_id=session_id,
-        )  
+        )
 
     async def create_session(
         self,
@@ -177,14 +179,14 @@ class SessionManager:
           - This method only encapsulates construction + basic defaults;
             all persistence is delegated to SessionStorage.
         """
-        return await self._storage.create_session(
+        return await self._lifecycle.create_session(
             tenant_id=tenant_id,
             session_id=session_id,
             user_id=user_id,
             workspace_id=workspace_id,
             metadata=metadata,
         )
-    
+
     async def get_or_create_session(
         self,
         *,
@@ -193,39 +195,16 @@ class SessionManager:
         tenant_id: str,
         workspace_id: Optional[str] = None,
     ) -> ChatSession:
-        session = await self.get_session(
-            tenant_id=tenant_id,
-            session_id=session_id,
-        )
-
-        if session is not None:
-            if workspace_id is not None and session.workspace_id != workspace_id:
-                raise ValueError(
-                    "Session workspace mismatch for given session_id. "
-                    "Possible cross-workspace collision or access attempt."
-                )
-            return session
-
-        session = await self.create_session(
+        return await self._lifecycle.get_or_create_session(
             user_id=user_id,
             session_id=session_id,
             tenant_id=tenant_id,
             workspace_id=workspace_id,
         )
 
-        await self._storage.save_session(session)
-        return session
-
-
     async def save_session(self, session: ChatSession) -> None:
-        """
-        Persist changes to an existing ChatSession.
-
-        The manager refreshes the modification timestamp and delegates
-        the actual persistence to the storage backend.
-        """
-        session.touch()
-        await self._storage.save_session(session)
+        """Persist changes to an existing ChatSession."""
+        await self._lifecycle.save_session(session)
 
     async def close_session(
         self,
@@ -300,7 +279,7 @@ class SessionManager:
         """
         List recent sessions for a given user, ordered by recency.
         """
-        return await self._storage.list_sessions_for_user(user_id, limit=limit)
+        return await self._lifecycle.list_sessions_for_user(user_id, limit=limit)
 
     # ------------------------------------------------------------------
     # Conversation history
@@ -334,7 +313,7 @@ class SessionManager:
 
         # Try to load the session so we can apply domain-level updates
         # (user_turns counter, timestamps, etc.).
-        session = await self._storage.get_session(
+        session = await self._lifecycle.get_session(
             tenant_id=tenant_id,
             session_id=session_id,
         )

@@ -6,10 +6,40 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Optional
+from typing import Any, Iterable, List, Optional, Protocol, runtime_checkable
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+
+
+@runtime_checkable
+class ChunkWithText(Protocol):
+    text: str
+
+
+@runtime_checkable
+class ChunkWithContent(Protocol):
+    content: str
+
+
+@runtime_checkable
+class ChunkWithPageContent(Protocol):
+    page_content: str
+
+
+@runtime_checkable
+class ChunkWithChunkField(Protocol):
+    chunk: str
+
+
+@runtime_checkable
+class ChunkWithValue(Protocol):
+    value: str
+
+
+@runtime_checkable
+class ChunkWithMetadata(Protocol):
+    metadata: dict[str, Any]
 
 
 def insert_context_before_last_user(
@@ -70,24 +100,33 @@ def format_rag_context(chunks: Iterable[Any], *, max_chars: int = 4000) -> str:
 
 
 def _chunk_text(ch: Any) -> str:
-    for attr in ("text", "content", "page_content", "chunk", "value"):
-        v = getattr(ch, attr, None)
-        if isinstance(v, str) and v.strip():
-            return v
+    if isinstance(ch, str):
+        return ch.strip()
     if isinstance(ch, dict):
         for key in ("text", "content", "page_content", "chunk", "value"):
             v = ch.get(key)
             if isinstance(v, str) and v.strip():
                 return v
+        return ""
+    if isinstance(ch, ChunkWithText) and ch.text.strip():
+        return ch.text
+    if isinstance(ch, ChunkWithContent) and ch.content.strip():
+        return ch.content
+    if isinstance(ch, ChunkWithPageContent) and ch.page_content.strip():
+        return ch.page_content
+    if isinstance(ch, ChunkWithChunkField) and ch.chunk.strip():
+        return ch.chunk
+    if isinstance(ch, ChunkWithValue) and ch.value.strip():
+        return ch.value
     return ""
 
 
-def _chunk_meta(ch: Any) -> dict:
-    meta = getattr(ch, "metadata", None)
-    if isinstance(meta, dict):
-        return meta
+def _chunk_meta(ch: Any) -> dict[str, Any]:
     if isinstance(ch, dict):
         m = ch.get("metadata")
         if isinstance(m, dict):
             return m
+        return {}
+    if isinstance(ch, ChunkWithMetadata):
+        return dict(ch.metadata)
     return {}

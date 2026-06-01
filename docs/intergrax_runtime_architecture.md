@@ -3525,7 +3525,7 @@ For a single task/run, policy is **composed once** at Tier-3 startup and read do
 |------|-----------------|--------|
 | 1 | Application bundle | `ApplicationBuildContext.policy_bundle` → `RuntimePolicyBundle` (tool access, budget, HITL, plan-loop, `domain_fragments`) |
 | 2 | Agent + skills | `AgentContract.skill_ids` → resolved `allowed_tools` + `policy_fragment_ids` (`SKILL_RESOLVED` event) |
-| 3 | Nexus execution | `ToolAccessPolicy` / `ToolRuntime` enforce allow-list per step; `BudgetPolicy` on token/cost ceilings |
+| 3 | Nexus execution | `ToolAccessPolicy` / `ToolRuntime` enforce allow-list per step (`resolve_allowed_tools_from_config` reads bundle + agent contract); `BudgetPolicy` on token/cost ceilings |
 | 4 | Legal / org overlays | `domain_fragments` keys (e.g. `legal.contract_review.policy`) — org settings may clamp flags before runtime |
 | 5 | Human gates | `PolicyDecision.action == REQUIRE_HUMAN` → HITL pause; resume via checkpoint / approval metadata |
 

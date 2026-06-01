@@ -34,6 +34,10 @@ class StaticToolScopePolicy:
     def __init__(self, *, allowed_tools: set[str]) -> None:
         self._allowed_tools = frozenset(allowed_tools)
 
+    def allowed_tool_ids(self) -> frozenset[str]:
+        """Explicit allow-list for ToolAccessPolicy / ToolRuntime resolution."""
+        return self._allowed_tools
+
     def is_allowed(self, *, agent_id: str, tool_id: str) -> bool:
         # agent_id currently unused in static policy
         # kept for future extensibility

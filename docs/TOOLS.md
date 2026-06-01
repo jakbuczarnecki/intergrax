@@ -111,6 +111,7 @@ These components exist in the repository **before** the full provider catalog sh
 | `RuntimeToolGateway` | `intergrax/runtime/nexus/tools/tool_gateway.py` | **Done** — UAEP / §42.12 entry; `nexus.capability_plan` prefers `tool_ids` (e.g. `rag.retrieve`) over legacy `use_rag` booleans |
 | `ToolsAgent` (LLM planner) | `intergrax/tools/tools_agent.py` | **Done** — OpenAI schema from registry |
 | `ToolAccessPolicy` | `intergrax/runtime/nexus/tools/tool_access_policy.py` | **Done** |
+| `resolve_allowed_tools_from_config` | `intergrax/runtime/policy/tool_policy_resolution.py` | **Done** — merges `RuntimePolicyBundle.tool_access` (`StaticToolScopePolicy`) into `ToolRuntime` / gateway |
 | Legacy `ToolBase` | `intergrax/tools/tools_base.py` | **Deprecated** — use `ToolContract` (Phase O.7 Done) |
 
 ---

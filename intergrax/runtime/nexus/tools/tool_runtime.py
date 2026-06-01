@@ -128,13 +128,20 @@ class ToolRuntime:
         allowed_tools: Optional[Sequence[str]] = None,
     ) -> ToolRuntimeResult:
         from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
+        from intergrax.runtime.policy.tool_policy_resolution import resolve_allowed_tools_from_config
         from intergrax.runtime.nexus.runtime_steps.rag_step import RagStep
         from intergrax.runtime.nexus.runtime_steps.tools_step import ToolsStep
         from intergrax.runtime.nexus.runtime_steps.websearch_step import WebsearchStep
         from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
+        cfg = state.context.config
+        effective_allowed = resolve_allowed_tools_from_config(cfg, explicit=allowed_tools)
         raw_plan = plan
-        plan = ToolAccessPolicy.apply(plan.normalized(), allowed_tools=allowed_tools, state=state)
+        plan = ToolAccessPolicy.apply(
+            plan.normalized(),
+            allowed_tools=effective_allowed,
+            state=state,
+        )
 
         if raw_plan.uses_legacy_booleans_only():
             state.trace_event(
@@ -146,8 +153,6 @@ class ToolRuntime:
                 ),
                 level=TraceLevel.WARNING,
             )
-
-        cfg = state.context.config
 
         if plan.use_rag:
             if cfg.enable_rag:
@@ -200,10 +205,13 @@ class ToolRuntime:
     ) -> ToolResponse:
         """§42.12 gateway entry — prefer over direct ``invoke`` from agent code."""
         from intergrax.runtime.nexus.tools.tool_gateway import RuntimeToolGateway
+        from intergrax.runtime.policy.tool_policy_resolution import resolve_allowed_tools_from_config
 
+        cfg = state.context.config
+        effective_allowed = resolve_allowed_tools_from_config(cfg, explicit=allowed_tools)
         gateway = RuntimeToolGateway.for_state(
             state,
-            allowed_tools=allowed_tools,
+            allowed_tools=effective_allowed,
             trace_step=trace_step,
         )
         return await gateway.invoke(request)
