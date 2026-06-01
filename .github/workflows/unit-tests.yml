@@ -93,4 +93,6 @@ jobs:
           tests/unit/tools/providers/pagerduty/
           tests/unit/tools/providers/braintrust/
           tests/integration/runtime/test_harness_hitl_pagerduty.py
+          tests/unit/applications/test_task_defaults.py
+          tests/unit/applications/test_harness_default_notify.py
           -q --tb=line

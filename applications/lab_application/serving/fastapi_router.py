@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskContext
+from intergrax.runtime.task.task_contract import TaskLongRunningOptions
 from intergrax.runtime.task.task_run_bridge import new_run_id
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
@@ -22,6 +23,7 @@ class LabRunRequestV1(BaseModel):
     capability: str = Field(min_length=1)
     metadata: dict[str, Any] = Field(default_factory=dict)
     graph_id: Optional[str] = None
+    long_running: bool = False
 
 
 class LabRunResponseV1(BaseModel):
@@ -36,10 +38,19 @@ class LabRunResponseV1(BaseModel):
 @dataclass
 class LabRunService:
     task_runner: UnifiedTaskRunner
+    task_enricher: Callable[[Task], Task] | None = None
 
     @classmethod
-    def from_nexus_loop(cls, nexus_loop: NexusLoop) -> LabRunService:
-        return cls(task_runner=UnifiedTaskRunner(nexus_loop))
+    def from_nexus_loop(
+        cls,
+        nexus_loop: NexusLoop,
+        *,
+        task_enricher: Callable[[Task], Task] | None = None,
+    ) -> LabRunService:
+        return cls(
+            task_runner=UnifiedTaskRunner(nexus_loop),
+            task_enricher=task_enricher,
+        )
 
     async def run_task(self, body: LabRunRequestV1) -> LabRunResponseV1:
         run_id = new_run_id()
@@ -52,9 +63,22 @@ class LabRunService:
             context=TaskContext(capability=body.capability),
             metadata=dict(body.metadata),
         )
+        if body.long_running:
+            task.options = task.options.model_copy(
+                update={
+                    "long_running": TaskLongRunningOptions(
+                        enabled=True,
+                        checkpoint_on_pause=True,
+                    )
+                },
+                deep=True,
+            )
+            task.sync_metadata()
         if body.graph_id:
             task.metadata["graph_id"] = body.graph_id
             task.sync_metadata()
+        if self.task_enricher is not None:
+            task = self.task_enricher(task)
         result = await self.task_runner.run_task(task)
         return LabRunResponseV1(
             task_id=result.task_id,
@@ -71,8 +95,9 @@ def mount_lab_routes(
     *,
     nexus_loop: NexusLoop,
     prefix: str = "/v1/lab",
+    task_enricher: Callable[[Task], Task] | None = None,
 ) -> LabRunService:
-    service = LabRunService.from_nexus_loop(nexus_loop)
+    service = LabRunService.from_nexus_loop(nexus_loop, task_enricher=task_enricher)
     router = APIRouter(prefix=prefix, tags=["lab"])
 
     @router.post("/run", response_model=LabRunResponseV1)

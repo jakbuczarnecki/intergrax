@@ -50,6 +50,8 @@ Profile: `IntegrationProfile.harness_lab()` — **composite observability** (Sen
 
 HITL escalation path: runtime `NexusLoop` → `LongRunningCoordinator.notify_escalation()` → profile-resolved PagerDuty adapter (no `INTERGRAX_NOTIFICATION_BACKEND` override required when `harness=True`).
 
+**M.11 default notify channel:** harness hosts inject `default_long_running_notify_channel` (`pagerduty`) into long-running tasks via `make_lab_harness_task_enricher()` — lab run API (`long_running: true`) and interaction intake; no per-task `notify_channel` required.
+
 ---
 
 ```bash

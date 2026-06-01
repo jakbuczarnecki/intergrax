@@ -605,6 +605,12 @@ All slugs from the 2026-05 harness recommendation (high / medium / low) are regi
 
 **Tests:** `tests/unit/tools/providers/observability/test_composite_observability.py`, `tests/integration/runtime/test_harness_hitl_pagerduty.py`.
 
+## Phase M.11 harness — Done (beta)
+
+**Default notify channel:** `make_lab_harness_task_enricher()` + `apply_default_long_running_notify_channel()` inject profile default (`pagerduty` in harness) when `long_running.enabled` and `notify_channel` unset. Wired in `create_lab_application()` for `POST /v1/lab/run` (`long_running: true`) and interaction intake.
+
+**Next gaps (M.12+):** full adapters for remaining thin-p4 slugs (Helicone, PostHog, …), network smoke CI for harness integrations.
+
 **CI:** `harness-smoke` job in `.github/workflows/unit-tests.yml` (`integrations-harness` extra).
 
 **Legacy → catalog:** notification factory resolves PagerDuty/Opsgenie via catalog; `distributed/bootstrap.resolve_redis_kv_store()` via `IntegrationProfile`.
@@ -638,8 +644,6 @@ Audit against typical agent stacks (LangGraph, CrewAI, LlamaIndex, enterprise VP
 **Strong harness coverage today:** **99** integrations — observability (17), notification (9 incl. PagerDuty/Opsgenie), issue trackers (5 incl. GitLab), vectors (7 incl. Vespa), document parsers (7), rerank (2), plus M.7 stack (Vault, Neo4j, Temporal, Tavily, …).
 
 **Tool Library:** `errors.capture`, `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`. Optional deps: ``uv pip install 'Intergrax-ai[integrations-harness]'``.
-
-**Next gaps (M.11+):** full adapters for remaining thin-p4 slugs (Helicone, PostHog, …), network smoke CI, default `notify_channel` injection from lab wiring into task templates.
 
 ---
 

@@ -27,6 +27,7 @@ from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.tool_wiring import wire_lab_tools
 from lab_application.host.wiring import build_lab_registry
 from lab_application.mcp.server import build_lab_mcp_server
+from intergrax.applications._shared.task_defaults import make_lab_harness_task_enricher
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from lab_application.serving.fastapi_router import mount_lab_routes
@@ -87,10 +88,15 @@ def create_lab_application(
         poll_interval_seconds=settings.scheduler_poll_seconds,
         enabled=settings.include_scheduler,
     )
+    task_enricher = make_lab_harness_task_enricher(
+        default_notify_channel=integrations.default_long_running_notify_channel,
+        harness=settings.harness,
+    )
     interaction_service = DebugInteractionIntakeService(
         nexus_loop=nexus_loop,
         adapter=integrations.interaction_adapter,
         verifier=create_inbound_verifier(),
+        task_enricher=task_enricher,
     )
     hitl_service = DebugHitlResumeService(
         resolved_registry,
@@ -116,7 +122,12 @@ def create_lab_application(
         "Agent OS experimentation environment — run agents, inspect traces, "
         "checkpoints, runtime events, and experiments (Phase L.3)."
     )
-    mount_lab_routes(app, nexus_loop=nexus_loop, prefix=settings.route_prefix)
+    mount_lab_routes(
+        app,
+        nexus_loop=nexus_loop,
+        prefix=settings.route_prefix,
+        task_enricher=task_enricher,
+    )
     if settings.include_interaction_routes:
         app.include_router(
             create_interaction_intake_router(
