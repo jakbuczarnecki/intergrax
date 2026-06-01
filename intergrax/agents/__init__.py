@@ -3,9 +3,25 @@
 
 """Framework agent bridge (Tier-1 → Tier-2)."""
 
-from intergrax.agents.agent_contract import Agent
-from intergrax.agents.agent_engine import AgentEngine
-from intergrax.agents.uaep import UAEPExecutor
-from intergrax.agents.uaep_protocol import UAEPAgent, supports_uaep
+from __future__ import annotations
 
-__all__ = ["Agent", "AgentEngine", "UAEPExecutor", "supports_uaep"]
+import importlib
+
+from intergrax.agents.agent_contract import Agent
+
+__all__ = ["Agent", "AgentEngine", "UAEPExecutor", "supports_uaep", "UAEPAgent"]
+
+_LAZY: dict[str, tuple[str, str]] = {
+    "AgentEngine": ("intergrax.agents.agent_engine", "AgentEngine"),
+    "UAEPExecutor": ("intergrax.agents.uaep", "UAEPExecutor"),
+    "UAEPAgent": ("intergrax.agents.uaep_protocol", "UAEPAgent"),
+    "supports_uaep": ("intergrax.agents.uaep_protocol", "supports_uaep"),
+}
+
+
+def __getattr__(name: str) -> object:
+    spec = _LAZY.get(name)
+    if spec is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    module_path, attr = spec
+    return getattr(importlib.import_module(module_path), attr)
