@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-01, Phase Q Harness Quality — audit remediation)  
+Status: Working draft (2026-06-01, Phase Q+ Harness Hardening — post-audit contracts & legacy removal)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
 Navigation: [`README.md`](README.md)  
@@ -30,8 +30,9 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Application scaffold & deploy plan | **This file** Phase N |
 | Business-agent go/no-go checklist | **Appendix A** (below) |
 | Technical debt backlog (analysis only) | **Appendix B** (below) |
-| Harness quality audit → Phase Q tracker | **This file** Phase Q + **Appendix C** |
-| Harness GA / consolidation (no new OS features) | **This file** Phase Q |
+| Harness quality audit (2026-06-01) → Phase Q tracker | **This file** Phase Q + **Appendix C** |
+| Post-audit hardening (typing, legacy, monoliths) | **This file** Phase Q+ + **Appendix D** |
+| Harness GA / consolidation (no new OS features) | **This file** Phase Q / Q+ |
 
 ---
 
@@ -52,7 +53,9 @@ Current optimization targets:
 
 **Product agents (Phase K):** Problem Radar, Vendor Discovery, Legal expansion — **product decision**, not a runtime gate. May run **in parallel** with Phase Q.
 
-**Platform quality (Phase Q):** Mandatory consolidation from harness implementation audit (2026-06-01) — bugs, debt, monoliths, dual-path RAG, observability gaps. **Execute before scaling business agents** unless a K item is explicitly prioritized.
+**Platform quality (Phase Q):** Done (2026-06-01) — first harness audit remediation; gate **417 passed**.
+
+**Harness hardening (Phase Q+):** Mandatory follow-up from **technical debt audit** (2026-06-01) — explicit Protocols (no runtime `getattr`), legacy stack removal (`tools_agent`, `supervisor`, `chains`), Nexus intake/planning decomposition, observability parity, monolith splits. **Execute before scaling Phase K business agents** unless product explicitly overrides a K item.
 
 ### 0.6 When Tier-1 (Nexus) changes are required
 
@@ -103,9 +106,10 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 |-------|-------|-------------------|-------|
 | **Harness GA (functional)** | **Done** | **No** | L certified; scaffold + lab + gate |
 | **Harness quality (Phase Q)** | **Done** (Wave 9) | **No** | Appendix C — gate **417 passed** (2026-06-01) |
-| Canon §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** → target **≥95%** post-Q | No | Q-N, Q-R, Q-X |
-| §42 Unified Execution Runtime | **~92–95%** → target **≥98%** post-Q-N.5–Q-N.6 | No | Optional hooks + trace persist |
-| Laboratory workflow | **~95%** → target **≥98%** post-Q-O | No | RAG metrics bootstrap |
+| **Harness hardening (Phase Q+)** | **Open** (Wave 1 not started) | **Yes** (recommended) | Appendix D — typing, legacy, monoliths |
+| Canon §1–41 (tiers, Nexus, graph, repo split) | **~92%** → target **≥98%** post-Q+ | No | Q+-N, Q+-L, Q+-T |
+| §42 Unified Execution Runtime | **~95%** → target **≥99%** post-Q+-T | No | UAEP Protocol, no duck typing |
+| Laboratory workflow | **~96%** → target **≥99%** post-Q+-O | No | Metrics parity, planner observability |
 | Agent OS certification (Phase L) | **Done** | No | Appendix A |
 | Regression gate | **417 passed** | No | Must stay green after each Q.* PR |
 
@@ -1411,25 +1415,193 @@ Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-
 
 ---
 
+### Phase Q+ — Harness Hardening (post-audit 2026-06-01)
+
+**Source:** Technical debt audit after Phase Q — architecture compliance, typing, observability gaps, legacy parallel stacks, Nexus/planning monoliths.  
+**Goal:** Intergrax as a **strong, typed, observable harness** comparable in discipline to Cursor / Claude Code / Google ADK-style agent labs — not merely “gate green”.  
+**Principle:** evolve, not rewrite · explicit `Protocol` / Pydantic at boundaries · **zero new `getattr` in `runtime/nexus` and `agents/`** (integrations/LLM SDK edges exempt) · one Q+.* ID per PR · gate green.
+
+**Relationship to Phase Q:** Phase Q closed the **first** audit (Appendix C). Phase Q+ closes the **second** audit (Appendix D). Do not reopen Q.* rows unless a regression is found.
+
+**Out of scope for Phase Q+:**
+
+- Phase K.1/K.2 product agents (unless explicitly prioritized — record in Appendix D)
+- K.6 / B.15 Legal live LLM E2E
+- New integration catalog slugs (Phase M on-demand)
+- Rewriting all LLM provider adapters (only isolate SDK reflection — Q+-I.*)
+- Mandatory Cassandra / multi-tenant scale-out (architecture §33.1 criteria only)
+
+**Phase Q+ complete when:** All Q+ rows **Done** or **Won't fix** (canon amendment); Appendix D 100%; §0.5 Harness hardening **Done**; gate unchanged or increased; grep gate: no new `getattr` in `runtime/nexus/` + `agents/` (CI script Q+.0.3).
+
+---
+
+#### Q+.0 — Program governance
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+.0.1 | **Appendix D** — audit topic → Q+ ID matrix (P0–P3) | **Done** | High | This file Appendix D | Every audit section mapped |
+| Q+.0.2 | **Q+ execution order** — Waves 1–5 below | **Done** | High | §4 Priority Order | Team follows wave sequence |
+| Q+.0.3 | **CI grep gate** — fail on new `getattr`/`setattr` in `intergrax/runtime/nexus/`, `intergrax/agents/` | **Open** | High | `scripts/check_harness_no_getattr.py` + gate workflow | Script in gate; existing violations grandfathered or fixed in Q+-T |
+
+---
+
+#### Q+-T — Typing & explicit contracts (P0)
+
+**Audit:** loose coupling, `getattr`, `Any` on harness paths, classes not implementing Protocols.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-T.1 | **`UAEPAgent` Protocol** — `get_steps`, `run_step`, optional `resume_step`, `decide_after_step`; replace `supports_uaep()` duck typing | **Open** | **Critical** | `agents/uaep_protocol.py`, `agents/uaep.py` | No `getattr` on agent in UAEP; registry may set `uaep_capable` flag |
+| Q+-T.2 | **`ToolInvokerProtocol`** — explicit `registry`; remove `catalog_context` invoker chain `getattr` | **Open** | **Critical** | `runtime/nexus/tools/`, `catalog_context.py` | Typed invoker only |
+| Q+-T.3 | **`RuntimeState` trace hook** — `trace_event: Optional[TraceEmitterFn]`; remove `getattr(state, "trace_event")` | **Open** | High | `engine/runtime_state.py`, `tool_access_policy.py` | Mypy/ruff clean |
+| Q+-T.4 | **`Agent.can_handle(TaskContext)`** — replace `task_context: Any` on `Agent` ABC | **Open** | High | `agents/agent_contract.py`, implementers | All agents compile; tests green |
+| Q+-T.5 | **`EnginePlan` / tool plan union** — `tool_runtime` reads `tool_ids` without `getattr(source, …)` | **Open** | High | `tool_runtime.py`, `engine_plan_models.py` | Single plan protocol or discriminated union |
+| Q+-T.6 | **`long_running_bridge`** — `RuntimeEventPublisher` accepts `RuntimeEvent` only (not `object`) | **Open** | Medium | `orchestration/long_running_bridge.py` | Align with `NexusRuntimeEventPublisher` |
+| Q+-T.7 | **`context_builder` session snapshot** — typed session view; no `getattr(session, attr)` loop | **Open** | Medium | `context/context_builder.py` | Protocol or Pydantic snapshot |
+| Q+-T.8 | **`rag_step_policy`** — use `NexusPlan` / `EnginePlan` fields only | **Open** | Low | `pipelines/rag_step_policy.py` | No `getattr(plan, …)` |
+
+---
+
+#### Q+-N — Nexus decomposition & retry (P0–P1)
+
+**Audit:** `nexus_loop` still owns intake/classification/planning; no `RetryCoordinator`; thin graph tests.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-N.1 | **`NexusIntakeRunner`** — resume/long-running preamble + HITL verdict branches extracted from `nexus_loop` | **Open** | High | `orchestration/intake_runner.py` | `nexus_loop` delegates; behavior unchanged |
+| Q+-N.2 | **`NexusPlanningRunner`** — classify → plan → pre-graph HITL; hooks + runtime events | **Open** | High | `orchestration/planning_runner.py` | `nexus_loop` &lt; ~450 lines total |
+| Q+-N.3 | **`RetryCoordinator`** (optional facade) — delegate `RetryEngine` + `RuntimeConfig.max_run_retries` with `RETRY_SCHEDULED` events | **Open** | Medium | `nexus/retry/coordinator.py`, architecture §31.1 | Doc + unit test; no double-retry without trace |
+| Q+-N.4 | **`GraphExecutor` integration tests** — handoff edge, validation retry + alternate agent | **Open** | Medium | `tests/integration/runtime/` | Complements Q-N.15 checkpoint unit tests |
+| Q+-N.5 | **Planner failure observability** — `engine_planner` errors → `RuntimeEventType.PLAN_FAILED` (narrow exceptions) | **Open** | Medium | `planning/engine_planner.py`, events | Test with invalid LLM JSON |
+
+---
+
+#### Q+-O — Observability parity (P1)
+
+**Audit:** metrics heuristics, RAG HTTP metrics asymmetry, lab `production_mode` not wired.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-O.1 | **`export_run_metrics` typed-only** — remove getattr/substring fallbacks; require `DiagnosticPayload` / schema ids | **Open** | High | `runtime/metrics/export.py` | Unit test synthetic trace; no getattr |
+| Q+-O.2 | **Wire `harness_production_mode()`** in lab + scaffold factories | **Open** | Medium | `lab_application/host/`, `applications/_shared/` | Smoke test + `RuntimeConfig.production_mode=False` |
+| Q+-O.3 | **RAG metrics HTTP decision** — implement `register_rag_metrics_routes` **or** document Won't fix + unified `/metrics` scrape | **Open** | Medium | `rag/tracking/exposition.py`, architecture §7.1.2 | Operator doc updated |
+| Q+-O.4 | **Ingestion path events** — consistent `RuntimeEvent` on ingest failures | **Open** | Low | `ingestion/ingestion_service.py` | At least one gate test |
+
+---
+
+#### Q+-L — Legacy & duplicate stacks (P0–P2)
+
+**Audit:** `tools_agent`, `supervisor`, `chains`, `openai/rag`, `rag/answers` parallel Tier-0 paths.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-L.1 | **`tools_agent` deprecation enforcement** — extend `check_*_imports`; zero new production imports outside `agents/legal` migration | **Open** | **Critical** | `scripts/`, `tools/tools_agent.py` | CI fails on new imports |
+| Q+-L.2 | **Legal agent → catalog `ToolRuntime`** — remove runtime dependency on `ToolsAgent` / `ToolsStep` planner loop | **Open** | **Critical** | `agents/legal/`, `runtime/nexus/config.py` | Legal gate tests green without `ToolsAgent` |
+| Q+-L.3 | **`RuntimeConfig` default tools** — no default `ToolsAgent` in `config` / `config_sections` | **Open** | High | `nexus/config.py`, `config_sections.py` | Catalog tools + `ToolRuntime` only |
+| Q+-L.4 | **`supervisor` boundary** — move to `experiments/supervisor` or hard-deprecate with import guard | **Open** | Medium | `intergrax/supervisor/` | Not imported from `runtime/` or `applications/` |
+| Q+-L.5 | **`chains/langchain_qa_chain`** — experimental only or remove from default paths | **Open** | Medium | `intergrax/chains/` | Grep: no runtime/agent imports |
+| Q+-L.6 | **`rag/answers` e2e** — migrate `tests/e2e/rag` to `RetrievalService`; package import guard | **Open** | Medium | `rag/answers/`, e2e tests | E2E green without answers bootstrap |
+| Q+-L.7 | **`openai/rag/rag_openai.py`** — bridge to `RetrievalService` or delete if unused | **Open** | Low | `openai/rag/` | Grep zero production imports |
+
+---
+
+#### Q+-M — Task metadata & bridge (P1)
+
+**Audit:** automatic legacy hydrate on every `Task()`; bridge still central.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-M.1 | **Opt-in metadata hydrate** — `Task.from_metadata()` / factory; remove automatic `model_validator` hydrate | **Open** | High | `task/task.py`, `task_metadata_bridge.py` | Breaking change shim one release + warnings |
+| Q+-M.2 | **Tier-3 uses typed `Task.options` only** — lab/scaffold run path sets contract without flat keys | **Open** | Medium | `applications/_shared/task_defaults.py` | No legacy keys in new scaffold smoke |
+
+---
+
+#### Q+-P — Planning monoliths (P2)
+
+**Audit:** `step_planner.py` ~683 lines, `engine_planner.py` ~623 lines — hard to extend.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-P.1 | **Split `engine_planner`** — parse / validate / LLM call modules; each &lt; ~300 lines | **Open** | Medium | `planning/engine_planner/` package | Gate tests for planner unchanged |
+| Q+-P.2 | **Split `step_planner`** — strategy registry vs executor | **Open** | Medium | `planning/step_planner/` package | Same |
+| Q+-P.3 | **Structured plan parse errors** — no silent `except Exception: pass` without trace | **Open** | Medium | planner modules | Q+-N.5 events |
+
+---
+
+#### Q+-S — Session monolith (P2)
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-S.1 | **Decompose `session_manager`** — storage vs summarization vs org instructions | **Open** | Low | `session/` submodules | `session_manager.py` &lt; ~350 lines |
+
+---
+
+#### Q+-I — Integration / LLM SDK edges (P3)
+
+**Audit:** acceptable `getattr` inside provider SDK shims — isolate, do not spread.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-I.1 | **SDK reflection quarantine** — document per-provider `*_sdk_bridge.py`; no new getattr in `runtime/` | **Open** | Low | `llm_adapters/_shared/`, `integrations/` | Architecture §5.2.2 note |
+
+---
+
+#### Q+-D — Documentation (Phase Q+)
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| Q+-D.1 | Canon §9 — orchestration module list includes intake/planning runners (when done) | **Open** | Low | `intergrax_runtime_architecture.md` | — |
+| Q+-D.2 | `AGENT_CREATION_GUIDE` — anti-pattern: `getattr`, `ToolsAgent`, flat metadata | **Open** | Medium | Guide § anti-patterns | Linked from §0.6 |
+| Q+-D.3 | `docs/README.md` focus → Phase Q+ Wave 1 | **Open** | High | `docs/README.md` | — |
+
+---
+
+#### Phase Q+ — Definition of done
+
+1. Q+ row **Done** with date in Appendix D paydown log.
+2. **Gate:** `uv run pytest -m gate -q` green.
+3. **No new** `getattr`/`setattr` in harness paths (Q+.0.3).
+4. **Tests** for each behavior change.
+5. Update Appendix D status.
+
+---
+
+#### Phase Q+ — Recommended execution order
+
+```text
+Wave 1 (P0 contracts):     Q+.0.3 → Q+-T.1 → Q+-T.2 → Q+-T.3 → Q+-T.4 → Q+-T.5
+Wave 2 (P0 legacy):      Q+-L.1 → Q+-L.2 → Q+-L.3 → Q+-M.1
+Wave 3 (P1 Nexus+obs):   Q+-N.1 → Q+-N.2 → Q+-O.1 → Q+-O.2 → Q+-N.3 → Q+-N.4 → Q+-N.5
+Wave 4 (P2 monoliths):     Q+-P.1 → Q+-P.2 → Q+-S.1 → Q+-L.4 → Q+-L.5 → Q+-L.6
+Wave 5 (P3 + docs):        Q+-L.7 → Q+-I.1 → Q+-O.3 → Q+-O.4 → Q+-D.*
+Parallel anytime:         Q+-T.6, Q+-T.7, Q+-T.8, Q+-M.2
+```
+
+**Gate before Phase K scale:** Waves 1–3 **Done** (typing + Legal off ToolsAgent + Nexus intake/planning split + metrics typed).
+
+---
+
 ## 4. Priority Order
 
 
 
 ```text
 
-DONE:    Phase Q — Harness Quality & Consolidation (audit 2026-06-01) — Waves 1–9 complete
+NOW:     Phase Q+ — Harness Hardening (post-audit 2026-06-01) — Waves 1–3 before K scale
+
+DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9; gate 417
 
 DONE:    Phase L, M, M-LLM, M-RAG, N, O — harness GA (functional)
 
 DONE:    Phase K hardening K.3–K.5; Appendix B paydown (except B.15)
 
-PARALLEL: M.6 additional provider slugs (on demand) — only when a Q wave needs a slug
+PARALLEL: M.6 additional provider slugs (on demand)
 
-AFTER Q: Product decision — Phase K.1/K.2 (Problem Radar / Vendor Discovery)
+AFTER Q+ Waves 1–3: Phase K.1/K.2 (Problem Radar / Vendor Discovery) — product decision
 
-DEFERRED: K.6 / B.15 Legal live LLM E2E (product/CI; not Phase Q)
+DEFERRED: K.6 / B.15 Legal live LLM E2E (product/CI)
 
-RULE:    Tier-1 changes only via §0.6; Phase Q-N.1/N.5/N.8 are approved harness consolidation
+RULE:    Tier-1 via §0.6; Q+ approved for Protocol/decomposition/legacy removal
 
 ```
 
@@ -2150,11 +2322,60 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-06-01 | Q-X.2(partial),Q-X.4,Q-X.5 | Legacy metadata warnings; `tools_base` timeline; M.6 beta slugs; gate **415 passed** |
 | — | — | *(append row per merged PR)* |
 
-**Coverage:** 58 audit rows → 49 unique Q deliverables (some Q IDs satisfy multiple rows). **Target:** 100% **Done** or **Won't fix** before declaring Phase Q complete.
+**Coverage:** 58 audit rows → 49 unique Q deliverables (some Q IDs satisfy multiple rows). **Target:** 100% **Done** or **Won't fix** — **achieved** (Phase Q complete).
 
-**Appendix B relationship:** Open items B.06 (hook remainder), B.07 (baseline beyond), and observability beta notes are **closed by Phase Q** when corresponding Q-N / Q-O rows are **Done**. B.15 and K.* remain outside Phase Q.
+**Appendix B relationship:** Closed by Phase Q where mapped. Residual items tracked in **Appendix D** (Phase Q+).
 
 ---
 
-*Plan synced after harness audit (2026-06-01). **Phase Q Done** — Appendix C closed. Gate: **417 passed**. **Next:** Phase K.1/K.2 (product). Legal live LLM E2E (K.6/B.15) deferred.*
+## Appendix D — Post-audit hardening traceability (Phase Q+)
+
+**Source:** Technical debt audit (2026-06-01, after Phase Q Wave 9).  
+**Goal:** Cursor-/Claude Code–class harness discipline — typed contracts, single orchestration path, full observability on critical paths.
+
+**Status values:** `Open` | `Done` | `Won't fix` | `Deferred`
+
+### D.1 Audit verdict → Phase Q+ mapping
+
+| Audit theme | Priority | Q+ IDs | Status |
+|-------------|----------|--------|--------|
+| Duplicate Tier-0 (`tools_agent`, supervisor, chains, rag/answers, openai/rag) | P0–P2 | Q+-L.1–Q+-L.7 | Open |
+| `getattr` / duck typing (UAEP, tools, context, plans) | P0 | Q+-T.1–Q+-T.8, Q+.0.3 | Open |
+| Nexus intake/planning still in `nexus_loop` | P0–P1 | Q+-N.1, Q+-N.2 | Open |
+| No `RetryCoordinator` | P1 | Q+-N.3 | Open |
+| Observability gaps (metrics heuristics, RAG HTTP, planner errors) | P1 | Q+-O.1–Q+-O.4, Q+-N.5 | Open |
+| `task_metadata` auto-hydrate | P1 | Q+-M.1, Q+-M.2 | Open |
+| Planning monoliths (~680/620 lines) | P2 | Q+-P.1–Q+-P.3 | Open |
+| `session_manager` monolith (~596 lines) | P2 | Q+-S.1 | Open |
+| LLM SDK getattr quarantine | P3 | Q+-I.1 | Open |
+| `harness_production_mode` not wired in lab | P1 | Q+-O.2 | Open |
+| Thin `GraphExecutor` handoff/retry tests | P1 | Q+-N.4 | Open |
+
+### D.2 First implementation steps (Wave 1 — start here)
+
+Execute in order; one PR per ID where possible.
+
+| Step | ID | Action | Exit criteria |
+|------|-----|--------|---------------|
+| **1** | Q+.0.3 | Add `scripts/check_harness_no_getattr.py`; wire to gate (grandfather list for existing hits) | CI enforces on new lines |
+| **2** | Q+-T.1 | Introduce `UAEPAgent` Protocol; refactor `supports_uaep` + `UAEPExecutor` | Zero getattr on agent in `uaep.py` |
+| **3** | Q+-T.2 | `ToolInvokerProtocol`; fix `catalog_context.py` | Typed registry access |
+| **4** | Q+-T.3 | `RuntimeState.trace_event` typed | `tool_access_policy` clean |
+| **5** | Q+-T.4 | `can_handle(TaskContext)` on `Agent` | All agents updated |
+| **6** | Q+-T.5 | Plan union for `tool_runtime` | No getattr on plan source |
+
+**Then Wave 2:** Q+-L.1 → Q+-L.2 → Q+-L.3 → Q+-M.1 (Legal off ToolsAgent, import gates, opt-in Task hydrate).
+
+### D.3 Phase Q+ paydown log
+
+| Date | Q+ ID | Summary |
+|------|-------|---------|
+| 2026-06-01 | Q+.0.1,Q+.0.2 | Appendix D + execution order added to plan |
+| — | — | *(append row per merged PR)* |
+
+**Coverage target:** 100% **Done** or **Won't fix** before declaring Phase Q+ complete and scaling Phase K.
+
+---
+
+*Plan synced (2026-06-01). **Phase Q Done** (Appendix C). **Phase Q+ Open** (Appendix D). Gate: **417 passed**. **Next:** Q+ Wave 1 (Q+.0.3, Q+-T.1–T.5), then Wave 2 legacy. Phase K after Q+ Waves 1–3.*
 
