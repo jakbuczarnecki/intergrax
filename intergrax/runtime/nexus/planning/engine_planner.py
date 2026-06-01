@@ -21,6 +21,7 @@ from intergrax.runtime.nexus.tracing.plan.plan_source_failed import PlannerPlanS
 from intergrax.runtime.nexus.tracing.plan.planner_build_debug import PlannerBuildDebugDiagV1
 from intergrax.runtime.nexus.tracing.plan.raw_plan_parse_failed import PlannerRawPlanParseFailedDiagV1
 from intergrax.runtime.nexus.tracing.plan.replan_context_injected import PlannerReplanContextInjectedDiagV1
+from intergrax.runtime.events.planner_events import record_plan_failed
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
@@ -100,6 +101,7 @@ class EnginePlanner:
                 meta=meta_forced,
                 prompt_config=prompt_config,
                 state=state,
+                config=config,
             )
 
             # Capability clamp (keep semantics consistent with LLM-based planning)
@@ -146,8 +148,7 @@ class EnginePlanner:
             raw = res.raw
             meta = res.meta
         except Exception as e:
-            # production: trace with source type and error
-            self._trace_plansource_failed(state=state, error=e)
+            self._trace_plansource_failed(state=state, config=config, error=e)
             raise RuntimeError(
                 f"PlanSource failed: {type(self._plan_source).__name__}: {type(e).__name__}: {e}"
             ) from e
@@ -168,6 +169,7 @@ class EnginePlanner:
             meta=meta,
             prompt_config=prompt_config,
             state=state,
+            config=config,
         )
 
         plan = self._validate_against_capabilities(plan=plan, state=state)
@@ -198,11 +200,18 @@ class EnginePlanner:
         meta: Optional[PlanSourceMeta],
         prompt_config: Optional[PlannerPromptConfig],
         state: RuntimeState,
+        config: RuntimeConfig,
     ) -> EnginePlan:
         try:
             return self._parse_plan(raw, prompt_config=prompt_config)
-        except Exception as e:            
-            self._trace_parse_failed(state=state, meta=meta, raw=raw, error=e)
+        except (ValueError, TypeError) as e:
+            self._trace_parse_failed(
+                state=state,
+                config=config,
+                meta=meta,
+                raw=raw,
+                error=e,
+            )
             raise
 
     def _build_planner_debug(
@@ -276,8 +285,16 @@ class EnginePlanner:
         self,
         *,
         state: RuntimeState,
+        config: RuntimeConfig,
         error: Exception,
     ) -> None:
+        record_plan_failed(
+            None,
+            config=config,
+            state=state,
+            error=error,
+            failure_kind="plan_source",
+        )
         state.trace_event(
             component=TraceComponent.PLANNER,
             step="engine_planner",
@@ -371,12 +388,21 @@ class EnginePlanner:
         self,
         *,
         state: RuntimeState,
+        config: RuntimeConfig,
         meta: Optional[PlanSourceMeta],
         raw: str,
         error: Exception,
     ) -> None:
         raw_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
+        record_plan_failed(
+            None,
+            config=config,
+            state=state,
+            error=error,
+            failure_kind="parse",
+            raw_hash=raw_hash,
+        )
         state.trace_event(
             component=TraceComponent.PLANNER,
             step="engine_planner",

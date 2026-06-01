@@ -102,6 +102,22 @@ class ContextBuilder:
         if meta.get("use_rag") is True:
             return True, "rag_enabled_in_request_metadata"
 
+        from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
+
+        allowed_tools = meta.get("allowed_tools")
+        if isinstance(allowed_tools, (list, tuple, set)):
+            if RAG_RETRIEVE_TOOL_ID in allowed_tools:
+                return True, "rag_via_allowed_tools"
+            if allowed_tools and RAG_RETRIEVE_TOOL_ID not in allowed_tools:
+                return False, "rag_not_in_allowed_tools"
+
+        tool_ids = meta.get("tool_ids")
+        if isinstance(tool_ids, (list, tuple, set)):
+            if RAG_RETRIEVE_TOOL_ID in tool_ids:
+                return True, "rag_via_tool_ids"
+            if tool_ids and RAG_RETRIEVE_TOOL_ID not in tool_ids:
+                return False, "rag_not_in_tool_ids"
+
         return True, "rag_enabled_in_config"
 
     def _retrieve_for_session(

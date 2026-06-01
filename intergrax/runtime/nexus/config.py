@@ -9,6 +9,7 @@ from intergrax.runtime.nexus.config_types import ToolChoiceMode, ToolsContextSco
 
 if TYPE_CHECKING:
     from intergrax.integrations.registry.profile import IntegrationProfile
+    from intergrax.runtime.events.event_bus import RuntimeEventBus
 
 from intergrax.rag.profiles.runtime_rag_sync import sync_rag_profile_from_runtime_config
 from intergrax.runtime.nexus.config_sections import (
@@ -260,6 +261,9 @@ class RuntimeConfig:
     # ------------------------------------------------------------------
     trace_db_path: Optional[str] = None
     integration_profile: Optional["IntegrationProfile"] = None
+
+    # Optional sync bus for planner/context events (Phase Q+-N.5, R-Context.2).
+    runtime_event_bus: Optional["RuntimeEventBus"] = None
 
 
     # ------------------------------------------------------------------

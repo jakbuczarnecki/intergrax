@@ -697,7 +697,7 @@ Modular layers — all strategy IDs and integration slugs are **configurable** v
 
 Per `(tenant_id, retriever_id, route_tier)`: `calls`, `retrieval_latency_ms`, `rerank_latency_ms`, `hybrid_calls`, `agentic_iterations`, `recall_at_k_avg` (golden harness). `RetrievalResult.trace` exports `hybrid_used`, `agentic_total_latency_ms`, `recall_at_k`, route tier, stop reason. Exported on `TASK_COMPLETED` via structured log field `rag_metrics` (same bus hook as LLM).
 
-**Metrics HTTP:** Same log + optional Pushgateway pattern as LLM — no default `GET /metrics/rag` unless Tier-3 adds `register_rag_metrics_routes`.
+**Metrics HTTP (decision Q+-O.3 — Won't fix default route):** RAG counters use the same structured-log + optional Pushgateway path as LLM (`TASK_COMPLETED` payload field `rag_metrics`). Intergrax does **not** ship `register_rag_metrics_routes` / `GET /metrics/rag` in core — Tier-3 may register a custom route or scrape unified `/metrics` when the host exposes Prometheus text from the observability plugin bundle.
 
 **Parser trace:** `parser_trace_flush` / `parser_trace_exporter` may write directly to Phoenix/Langfuse without `ObservabilityBackend` (document-ingest latency). Env: `INTERGRAX_PARSER_TRACE_*` — [../infra/README.md](../infra/README.md). Nexus run traces stay on SQLite / configured trace store (§33.1).
 
@@ -3514,6 +3514,20 @@ RuntimePolicyBundle:
 - Skill `policy_fragment_id` (§7.1.8) merges into `domain_fragments` or tool policy — never bypasses `ToolRuntime`.
 
 Implementation: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase R-Policy.
+
+### 42.11.5 How to read policy for a run (operator)
+
+For a single task/run, policy is **composed once** at Tier-3 startup and read downstream — do not hunt per-agent ad-hoc rules.
+
+| Step | What to inspect | Where |
+|------|-----------------|--------|
+| 1 | Application bundle | `ApplicationBuildContext.policy_bundle` → `RuntimePolicyBundle` (tool access, budget, HITL, plan-loop, `domain_fragments`) |
+| 2 | Agent + skills | `AgentContract.skill_ids` → resolved `allowed_tools` + `policy_fragment_ids` (`SKILL_RESOLVED` event) |
+| 3 | Nexus execution | `ToolAccessPolicy` / `ToolRuntime` enforce allow-list per step; `BudgetPolicy` on token/cost ceilings |
+| 4 | Legal / org overlays | `domain_fragments` keys (e.g. `legal.contract_review.policy`) — org settings may clamp flags before runtime |
+| 5 | Human gates | `PolicyDecision.action == REQUIRE_HUMAN` → HITL pause; resume via checkpoint / approval metadata |
+
+**Trace checklist:** `RuntimeEvent` stream (`PLAN_CREATED`, `SKILL_RESOLVED`, `CONTEXT_ASSEMBLED`, tool events) + Nexus trace DB for planner/tool steps. Planner hard failures emit `PLAN_FAILED` (parse / PlanSource).
 
 ---
 
