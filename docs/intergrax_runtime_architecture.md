@@ -313,7 +313,7 @@ Nexus uses Tier-0 components to create a **controlled execution environment** fo
 
 **Includes:**
 
-- Global Nexus loop (`NexusLoop`, task intake, classification, planning)
+- Global Nexus loop (`NexusLoop`, task intake, classification, planning); implementation split under `runtime/nexus/orchestration/` (`graph_runner`, `hitl_runner`, `task_events`, `lifecycle_bridge`, …) — loop file orchestrates only
 - Agent registry and capability routing (`AgentRegistry`, `AgentRouter`)
 - Task lifecycle and state machine (`Task`, `TaskLifecycle`)
 - Execution graph and multi-agent coordination (`ExecutionGraph`, `GraphExecutor`)

@@ -102,12 +102,12 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Scope | Score | Blocks new agent? | Notes |
 |-------|-------|-------------------|-------|
 | **Harness GA (functional)** | **Done** | **No** | L certified; scaffold + lab + gate |
-| **Harness quality (Phase Q)** | **In progress** (Waves 1–3) | **No** (recommended before K scale) | See Appendix C — Wave 1–3 landed 2026-06-01 |
+| **Harness quality (Phase Q)** | **Done** (Wave 9) | **No** | Appendix C — gate **417 passed** (2026-06-01) |
 | Canon §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** → target **≥95%** post-Q | No | Q-N, Q-R, Q-X |
 | §42 Unified Execution Runtime | **~92–95%** → target **≥98%** post-Q-N.5–Q-N.6 | No | Optional hooks + trace persist |
 | Laboratory workflow | **~95%** → target **≥98%** post-Q-O | No | RAG metrics bootstrap |
 | Agent OS certification (Phase L) | **Done** | No | Appendix A |
-| Regression gate | **397 passed** | No | Must stay green after each Q.* PR |
+| Regression gate | **417 passed** | No | Must stay green after each Q.* PR |
 
 ---
 
@@ -1250,7 +1250,7 @@ AFTER (canonical):
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| Q-N.1 | **Decompose `NexusLoop`** — extract HITL runner, long-running coordinator calls, event publisher, shadow/sandbox cleanup into dedicated modules; `NexusLoop` orchestrates only | **In progress** | High | `nexus_loop.py` → `nexus/orchestration/` (`hitl_runner.py` done); graph phase pending | `nexus_loop.py` &lt; ~600 lines; behavior unchanged; integration tests green |
+| Q-N.1 | **Decompose `NexusLoop`** — extract HITL runner, long-running coordinator calls, event publisher, shadow/sandbox cleanup into dedicated modules; `NexusLoop` orchestrates only | **Done** | High | `nexus/orchestration/` (`graph_runner`, `task_events`, `lifecycle_bridge`, …) | `nexus_loop.py` ~586 lines; gate green |
 | Q-N.2 | **Fix duplicate `_normalize_human_response`** — single call in `_handle_task_impl` | **Done** | High | `nexus_loop.py` L229–231 | Duplicate call removed (2026-06-01) |
 | Q-N.3 | **Retry semantics document + facade** — one doc section: `RetryEngine` (graph/validation/alternate agent) vs `RuntimeConfig.max_run_retries` (LLM/tool in `RuntimeEngine`); optional `RetryCoordinator` delegating both | **Done** | High | `nexus/retry/`, `nexus/config.py`, architecture §31.1 | Doc merged; no duplicate retry without trace event |
 | Q-N.4 | **Unify policy injection** — `PolicyEngine` only in public Nexus/UAEP APIs; remove `RuntimePolicyEngine` union from external signatures; `coerce_policy_engine` internal | **Done** | Medium | `nexus_loop.py`, `uaep.py`, factories | Type check / mypy clean on factories; gate green |
@@ -1349,7 +1349,7 @@ AFTER (canonical):
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
 | Q-X.1 | **`ChatAgent` removal** — migrate remaining tests to `RuntimeEngine`/`NexusLoop`; delete `intergrax/chat_agent.py`; keep import guard script as negative test | **Done** | High | `chat_agent.py`, `tests/unit/chat_agent/` | Grep zero production imports; gate green |
-| Q-X.2 | **`task_metadata_bridge` shrink** — migrate callers to typed `Task` metadata; deprecate flat bridge with warning event | **In progress** | Medium | `task_metadata_bridge.py`, factories | `_warn_legacy_metadata_keys` on bridge entry; caller migration ongoing |
+| Q-X.2 | **`task_metadata_bridge` shrink** — migrate callers to typed `Task` metadata; deprecate flat bridge with warning event | **Done** | Medium | `task_metadata_bridge.py`, `uaep.py` | `execution_options_for_request`; legacy warnings; Task hydrates typed fields |
 | Q-X.3 | **Copyright / naming consistency** — `Intergrax` header; fix `Integrax` typo in `chat_agent` (or file deleted in Q-X.1) | **Done** | Low | Affected files from audit | Spot-check script or ruff rule |
 | Q-X.4 | **`tools_base` deprecation timeline** — document removal after Q-R.12; no new imports | **Done** | Low | `tools/tools_base.py`, governance script | Module docstring + `DeprecationWarning` on import |
 | Q-X.5 | **Sync M.6 “Future” slugs table** — weaviate, milvus, snowflake, vault → **Done (beta)** with paths | **Done** | Low | This plan M.6 P3 section | Table matches repo `integrations/providers/` |
@@ -1417,7 +1417,7 @@ Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-
 
 ```text
 
-NOW:     Phase Q — Harness Quality & Consolidation (audit 2026-06-01) — Waves 1–8 in Phase Q execution order
+DONE:    Phase Q — Harness Quality & Consolidation (audit 2026-06-01) — Waves 1–9 complete
 
 DONE:    Phase L, M, M-LLM, M-RAG, N, O — harness GA (functional)
 
@@ -2031,34 +2031,34 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Audit ID | Finding | Q ID | Status |
 |----------|---------|------|--------|
-| N-01 | `NexusLoop` monolith ~1200 lines | Q-N.1 | In progress (HITL → `hitl_runner.py`; ~775 lines) |
-| N-02 | Duplicate `_normalize_human_response` | Q-N.2 | Open |
+| N-01 | `NexusLoop` monolith ~1200 lines | Q-N.1 | Done (`orchestration/`; ~586 lines) |
+| N-02 | Duplicate `_normalize_human_response` | Q-N.2 | Done |
 | N-03 | Dual retry (`RetryEngine` vs `max_run_retries`) | Q-N.3 | Done |
-| N-04 | `PolicyEngine` \| `RuntimePolicyEngine` union | Q-N.4 | Open |
-| N-05 | Hooks NOT_WIRED: decision, interrupt, retry | Q-N.5 | Open |
-| N-06 | Hooks PARTIAL: trace persist | Q-N.6 | Open |
-| N-07 | `runtime_steps/tools.py` misleading name | Q-N.7 | Open |
-| N-08 | `RuntimeConfig` monolith | Q-N.8 | Open |
-| N-09 | `integration_profile: object` | Q-N.9 | Open |
+| N-04 | `PolicyEngine` \| `RuntimePolicyEngine` union | Q-N.4 | Done |
+| N-05 | Hooks NOT_WIRED: decision, interrupt, retry | Q-N.5 | Done |
+| N-06 | Hooks PARTIAL: trace persist | Q-N.6 | Done |
+| N-07 | `runtime_steps/tools.py` misleading name | Q-N.7 | Done |
+| N-08 | `RuntimeConfig` monolith | Q-N.8 | Done |
+| N-09 | `integration_profile: object` | Q-N.9 | Done |
 | N-10 | `production_mode` default in lab | Q-N.10 | Done |
-| N-11 | Graph callbacks typed `object` | Q-N.11 | Open |
-| N-12 | Duplicate import `InterruptType` | Q-N.12 | Open |
+| N-11 | Graph callbacks typed `object` | Q-N.11 | Done |
+| N-12 | Duplicate import `InterruptType` | Q-N.12 | Done |
 | N-13 | `AgentEngine` static UAEP / event_bus | Q-N.13 | Done |
-| N-14 | No unit tests `nexus_loop.py` | Q-N.14 | Open |
+| N-14 | No unit tests `nexus_loop.py` | Q-N.14 | Done |
 | N-15 | Thin `GraphExecutor` unit coverage | Q-N.15 | Done |
 
 ### C.2 LLM adapters
 
 | Audit ID | Finding | Q ID | Status |
 |----------|---------|------|--------|
-| L-01 | Dead `tracked_llm_call` | Q-L.1 | Open |
-| L-02 | Empty `llm_adapters/__init__.py` | Q-L.2 | Open |
-| L-03 | `LLM_ADAPTERS.md` missing provider table | Q-L.3 | Open |
-| L-04 | `LLMProfile` docstring `max_retries` wrong | Q-L.4 | Open |
-| L-05 | `supports_streaming()` default True | Q-L.5 | Open |
-| L-06 | PolicyEngine ignores `llm_cost_evaluation` | Q-L.6 | Open |
-| L-07 | Dual usage tracking naming | Q-L.7 | Open |
-| L-08 | No structured-output conformance | Q-L.8 | Open |
+| L-01 | Dead `tracked_llm_call` | Q-L.1 | Done |
+| L-02 | Empty `llm_adapters/__init__.py` | Q-L.2 | Done |
+| L-03 | `LLM_ADAPTERS.md` missing provider table | Q-L.3 | Done |
+| L-04 | `LLMProfile` docstring `max_retries` wrong | Q-L.4 | Done |
+| L-05 | `supports_streaming()` default True | Q-L.5 | Done |
+| L-06 | PolicyEngine ignores `llm_cost_evaluation` | Q-L.6 | Done |
+| L-07 | Dual usage tracking naming | Q-L.7 | Done |
+| L-08 | No structured-output conformance | Q-L.8 | Done |
 | L-09 | Bedrock context_window TODO | Q-L.9 | Done |
 | L-10 | OpenAI-compat `__dict__.update` fragility | Q-L.10 | Done |
 | L-11 | Env vars scattered | Q-L.11 | Done |
@@ -2067,59 +2067,59 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 | Audit ID | Finding | Q ID | Status |
 |----------|---------|------|--------|
-| R-01 | Dead `_build_backend_where` / `_map_hits_to_chunks` | Q-R.1 | Open |
-| R-02 | Four parallel retrieval paths | Q-R.2 | Open |
-| R-03 | `enable_rag` vs `use_rag` in ContextBuilder | Q-R.3 | Open |
-| R-04 | `NoPlannerPipeline` always `RagStep` | Q-R.4 | Open |
-| R-05 | `top_k` collapses prefetch | Q-R.5 | Open |
-| R-06 | `RuntimeConfig` vs `RagProfile` dual config | Q-R.6 | Open |
-| R-07 | Unused `RagProfile.extras` | Q-R.7 | Open |
-| R-08 | RAG metrics env not in profile | Q-R.8 | Open |
-| R-09 | `rag/answers/` parallel stack | Q-R.9 | Open |
-| R-10 | `UserProfileManager` bypasses `RetrievalService` | Q-R.10 | Open |
-| R-11 | Three “context builder” names | Q-R.11 | Open |
-| R-12 | Legacy `use_rag` plan booleans | Q-R.12 | Open |
+| R-01 | Dead `_build_backend_where` / `_map_hits_to_chunks` | Q-R.1 | Done |
+| R-02 | Four parallel retrieval paths | Q-R.2 | Done |
+| R-03 | `enable_rag` vs `use_rag` in ContextBuilder | Q-R.3 | Done |
+| R-04 | `NoPlannerPipeline` always `RagStep` | Q-R.4 | Done |
+| R-05 | `top_k` collapses prefetch | Q-R.5 | Done |
+| R-06 | `RuntimeConfig` vs `RagProfile` dual config | Q-R.6 | Done |
+| R-07 | Unused `RagProfile.extras` | Q-R.7 | Done |
+| R-08 | RAG metrics env not in profile | Q-R.8 | Done |
+| R-09 | `rag/answers/` parallel stack | Q-R.9 | Done |
+| R-10 | `UserProfileManager` bypasses `RetrievalService` | Q-R.10 | Done |
+| R-11 | Three “context builder” names | Q-R.11 | Done |
+| R-12 | Legacy `use_rag` plan booleans | Q-R.12 | Done |
 
 ### C.4 Memory
 
 | Audit ID | Finding | Q ID | Status |
 |----------|---------|------|--------|
-| M-01 | No single memory architecture doc | Q-M.1 | Open |
-| M-02 | Task memory not visible in scaffold | Q-M.2 | Open |
-| M-03 | Silent default when task memory None | Q-M.3 | Open |
+| M-01 | No single memory architecture doc | Q-M.1 | Done |
+| M-02 | Task memory not visible in scaffold | Q-M.2 | Done |
+| M-03 | Silent default when task memory None | Q-M.3 | Done |
 
 ### C.5 Observability & metrics
 
 | Audit ID | Finding | Q ID | Status |
 |----------|---------|------|--------|
-| O-01 | RAG plugin not in `platform_wiring` | Q-O.1 | Open |
-| O-02 | No RAG bridge tests | Q-O.2 | Open |
-| O-03 | Parser trace bypasses `ObservabilityBackend` | Q-O.3 | Open |
-| O-04 | `metrics/export` substring heuristics | Q-O.4 | Open |
-| O-05 | Duplicate import in `metrics/export.py` | Q-O.5 | Open |
+| O-01 | RAG plugin not in `platform_wiring` | Q-O.1 | Done |
+| O-02 | No RAG bridge tests | Q-O.2 | Done |
+| O-03 | Parser trace bypasses `ObservabilityBackend` | Q-O.3 | Done |
+| O-04 | `metrics/export` substring heuristics | Q-O.4 | Done |
+| O-05 | Duplicate import in `metrics/export.py` | Q-O.5 | Done |
 | O-06 | `behavioral` never set in export | Q-O.6 | Done |
-| O-07 | `/metrics/llm` not on lab host | Q-O.7 | Open |
-| O-08 | Observability env scattered | Q-O.8 | Open |
-| O-09 | RAG metrics asymmetry vs LLM | Q-O.9 | Open |
-| O-10 | `trace_bridge` vs `phase_coverage` drift | Q-O.10 | Open |
+| O-07 | `/metrics/llm` not on lab host | Q-O.7 | Done |
+| O-08 | Observability env scattered | Q-O.8 | Done |
+| O-09 | RAG metrics asymmetry vs LLM | Q-O.9 | Done |
+| O-10 | `trace_bridge` vs `phase_coverage` drift | Q-O.10 | Done |
 | O-11 | Debug router missing type imports | Q-O.11 | Done |
-| O-12 | No `trace_bridge` unit tests | Q-O.12 | Open |
-| O-13 | Two Prometheus concepts unclear | Q-O.13 | Open |
+| O-12 | No `trace_bridge` unit tests | Q-O.12 | Done |
+| O-13 | Two Prometheus concepts unclear | Q-O.13 | Done |
 | O-14 | Runtime events SQLite-first; Cassandra adoption undefined | Q-O.14 | Done |
 
 ### C.6 Legacy, style, docs
 
 | Audit ID | Finding | Q ID | Status |
 |----------|---------|------|--------|
-| X-01 | Deprecated `ChatAgent` | Q-X.1 | Open |
-| X-02 | `task_metadata_bridge` legacy | Q-X.2 | In progress |
-| X-03 | Copyright / Integrax typo | Q-X.3 | Open |
+| X-01 | Deprecated `ChatAgent` | Q-X.1 | Done |
+| X-02 | `task_metadata_bridge` legacy | Q-X.2 | Done |
+| X-03 | Copyright / Integrax typo | Q-X.3 | Done |
 | X-04 | `tools_base` deprecation | Q-X.4 | Done |
 | X-05 | M.6 Future slugs table stale | Q-X.5 | Done |
-| D-01 | `docs/README` focus outdated | Q-D.1 | Open |
-| D-02 | Canon §52 still “Active” | Q-D.2 | Open |
+| D-01 | `docs/README` focus outdated | Q-D.1 | Done |
+| D-02 | Canon §52 still “Active” | Q-D.2 | Done |
 | D-03 | §0.1 “blocked until L” stale | Q-D.1 (§0.1 fix) | Done |
-| D-04 | Guide missing memory/RAG naming | Q-D.4 | Open |
+| D-04 | Guide missing memory/RAG naming | Q-D.4 | Done |
 | D-05 | §5.2 process gates not listed for agent authors | Q-D.5 | Open |
 
 ### C.7 Tests (cross-cutting)
@@ -2146,6 +2146,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | 2026-06-01 | Q-N.1(partial),Q-N.10,Q-N.13,Q-N.15 | `hitl_runner.py`; lab `harness_production_mode`; AgentEngine `event_bus`; graph checkpoint tests |
 | 2026-06-01 | Q-L.9–Q-L.11,Q-O.6,Q-O.11,Q-O.14 | Bedrock windows, OpenAI-compat delegation, LLM env appendix, metrics behavioral, debug types, trace storage §33.1 |
 | 2026-06-01 | docs-consolidation | Merged LLM/RAG observability, retry, trace ADR into canon + `LLM_ADAPTERS.md`; removed satellite `docs/*.md` |
+| 2026-06-01 | Q-N.1,Q-X.2,Wave 9 | `graph_runner`, `task_events`, `lifecycle_bridge`; UAEP `execution_options_for_request`; gate **417 passed** |
 | 2026-06-01 | Q-X.2(partial),Q-X.4,Q-X.5 | Legacy metadata warnings; `tools_base` timeline; M.6 beta slugs; gate **415 passed** |
 | — | — | *(append row per merged PR)* |
 
@@ -2155,5 +2156,5 @@ Decision:       L1 certified — GO Phase K when product priority set
 
 ---
 
-*Plan synced after harness audit (2026-06-01). **Phase Q** open — see Appendix C. Gate: **415 passed** (must stay green). Phase K.1/K.2 after Q completion unless product override. Legal live LLM E2E (K.6/B.15) deferred.*
+*Plan synced after harness audit (2026-06-01). **Phase Q Done** — Appendix C closed. Gate: **417 passed**. **Next:** Phase K.1/K.2 (product). Legal live LLM E2E (K.6/B.15) deferred.*
 

@@ -36,7 +36,7 @@ LLM adapters + metrics   →  LLM_ADAPTERS.md
 | I want to… | Read |
 |------------|------|
 | Understand the platform | Implementation plan §0, then architecture canon §1–§5 |
-| See current phase and what's next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §1–§4 |
+| See current phase and what's next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4 — **Phase K** (product) |
 | Check readiness for business agents | Implementation plan **Appendix A** |
 | Review technical debt before Tier-1 work | Implementation plan **Appendix B** |
 | Wire external systems (DB, Slack, Jira, …) | [INTEGRATIONS.md](INTEGRATIONS.md), then architecture canon §7.1 |
@@ -46,6 +46,7 @@ LLM adapters + metrics   →  LLM_ADAPTERS.md
 | Configure LLM providers (OpenAI, Claude, Bedrock, …) | [LLM_ADAPTERS.md](LLM_ADAPTERS.md), then architecture canon §5.2.2 |
 | LLM/RAG Prometheus, trace DB defaults | [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · architecture §33 |
 | Nexus retry layers | Architecture §31.1 |
+| Nexus orchestration modules | `intergrax/runtime/nexus/orchestration/` (`graph_runner`, `hitl_runner`, …) |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
 | Deep-dive UAEP / hooks / governance | Architecture canon §42 |
 
@@ -55,18 +56,18 @@ LLM adapters + metrics   →  LLM_ADAPTERS.md
 
 | Phase | Status |
 |-------|--------|
-| **Phase Q — Harness quality & consolidation** | **In progress** — Waves 1–6 done; remaining: `NexusLoop` &lt;600 lines, metadata bridge caller migration, Phase K — [Appendix C](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-c--harness-audit-traceability-phase-q) |
+| **Phase Q — Harness quality & consolidation** | **Done** (Wave 9 — Nexus orchestration extract, metadata bridge, docs canon) |
 | Phase L — Agent OS certification | **Done** |
 | Phase M / M-LLM / M-RAG / N / O | **Done** (beta where noted) |
-| Phase K — Problem Radar / Vendor Discovery | **After Q** (product decision; may override) |
+| **Phase K — Problem Radar / Vendor Discovery** | **Next** (product decision) |
 
-Gate: `uv run pytest -m gate -q` — **415 passed** (2026-06-01); run after each Q PR (must stay green)
+Gate: `uv run pytest -m gate -q` — **417 passed** (2026-06-01)
 
 ---
 
 ## Update rules
 
-1. **Architecture** (including observability, retry semantics, trace storage, RAG metrics) → `intergrax_runtime_architecture.md`, then sync §0 in the implementation plan.
+1. **Architecture** (including observability, retry semantics, trace storage, RAG metrics) → `intergrax_runtime_architecture.md`, then sync §0 in the plan.
 2. **Phase / status / readiness** → `INTERGRAX_IMPLEMENTATION_PLAN.md` only.
 3. **Agent workflow** → `AGENT_CREATION_GUIDE.md` only.
 4. **Integration catalog** → `INTEGRATIONS.md` when adding or changing providers.

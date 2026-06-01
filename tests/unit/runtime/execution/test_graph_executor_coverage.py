@@ -23,10 +23,7 @@ def test_should_skip_completed_node_when_prior_output_exists() -> None:
         )
     }
     checkpoint = RuntimeCheckpoint(
-        checkpoint_id="c1",
-        task_id="t1",
-        resume_token="tok",
-        progress_message="",
+        node_states={"n1": ExecutionNodeStatus.COMPLETED.value},
     )
     assert should_skip_graph_node(node, checkpoint=checkpoint, prior_outputs=prior) is True
 

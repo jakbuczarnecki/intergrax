@@ -31,7 +31,7 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RouteInfo, RuntimeRequest
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
-from intergrax.runtime.task.task_metadata_bridge import execution_options_from_metadata
+from intergrax.runtime.task.task_metadata_bridge import execution_options_for_request
 from intergrax.runtime.cancellation.coordinator import (
     CANCELLATION_REQUESTED_KEY,
     CancellationCoordinator,
@@ -135,7 +135,7 @@ class UAEPExecutor:
         request: RuntimeRequest,
     ) -> tuple[RuntimeAnswer, ValidationResult, RuntimeContext, Optional[GovernanceResolution]]:
         contract = agent.get_contract()
-        task_options = execution_options_from_metadata(request.metadata)
+        task_options = execution_options_for_request(request)
         run_id = str(request.metadata.get("run_id") or request.metadata.get("task_id") or uuid4().hex)
         task_id = str(request.metadata.get("task_id") or run_id)
         node_id = request.metadata.get("graph_node_id")
@@ -544,7 +544,7 @@ class UAEPExecutor:
         *,
         task_id: str,
     ) -> None:
-        if not execution_options_from_metadata(request.metadata).isolation.shadow_workspace:
+        if not execution_options_for_request(request).isolation.shadow_workspace:
             return
         tenant_id = request.tenant_id or "default"
         workspace = self._shadow_manager.open_or_create(
@@ -576,7 +576,7 @@ class UAEPExecutor:
         *,
         task_id: str,
     ) -> None:
-        if not execution_options_from_metadata(request.metadata).isolation.sandbox:
+        if not execution_options_for_request(request).isolation.sandbox:
             return
         tenant_id = request.tenant_id or "default"
         session = self._sandbox_manager.open_or_create(

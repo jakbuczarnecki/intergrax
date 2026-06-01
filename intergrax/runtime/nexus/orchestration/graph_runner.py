@@ -1,0 +1,290 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework — proprietary and confidential.
+
+"""Execution graph phase extracted from NexusLoop (Phase Q-N.1)."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Awaitable, Callable, List, Optional
+
+from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.validation import ValidationResult
+from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
+from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.human.pause import HumanPauseCoordinator
+from intergrax.runtime.human.request_contract import human_request_event_payload
+from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
+from intergrax.runtime.nexus.execution.execution_graph import (
+    ExecutionGraph,
+    ExecutionNodeStatus,
+)
+from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
+from intergrax.runtime.nexus.orchestration.graph_trace_callbacks import GraphTraceCallbacks
+from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
+from intergrax.runtime.nexus.orchestration.task_events import NexusRuntimeEventPublisher
+from intergrax.runtime.nexus.planning.task_planner import NexusPlan
+from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
+from intergrax.runtime.nexus.retry.retry_engine import RetryRecord
+from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
+from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import Task, TaskResult, TaskState
+from intergrax.runtime.task.task_lifecycle import TaskLifecycle
+from intergrax.runtime.task.task_trace import PersistingTaskTraceEmitter, TaskTraceEmitter
+from intergrax.utils.time_provider import SystemTimeProvider
+
+FinishFn = Callable[..., Awaitable[TaskResult]]
+FinalizeFn = Callable[..., Awaitable[None]]
+CheckpointFn = Callable[..., Awaitable[None]]
+
+
+@dataclass(slots=True)
+class GraphPhaseOutcome:
+    """Result of the graph execution phase; ``early_result`` short-circuits NexusLoop."""
+
+    early_result: Optional[TaskResult] = None
+    executions: List[AgentExecutionResult] | None = None
+    retry_records: List[RetryRecord] | None = None
+    graph: Optional[ExecutionGraph] = None
+    plan: Optional[NexusPlan] = None
+    final_validation: Optional[ValidationResult] = None
+
+
+@dataclass
+class NexusGraphRunner:
+    registry: AgentRegistry
+    graph_executor: GraphExecutor
+    validation_engine: NexusValidationEngine
+    composer: FinalResponseComposer
+    hitl: NexusHitlRunner
+    events: NexusRuntimeEventPublisher
+    finish_task: FinishFn
+    finalize_trace: FinalizeFn
+    maybe_checkpoint: CheckpointFn
+
+    async def run(
+        self,
+        task: Task,
+        *,
+        plan: NexusPlan,
+        graph: ExecutionGraph,
+        lifecycle: TaskLifecycle,
+        trace_emitter: TaskTraceEmitter,
+    ) -> GraphPhaseOutcome:
+        callbacks = GraphTraceCallbacks(task=task, trace_emitter=trace_emitter)
+        executions, retry_records, graph, graph_cancelled = await self.graph_executor.execute(
+            graph,
+            task,
+            plan_criteria=plan.validation_criteria,
+            on_retry=callbacks.on_retry,
+            on_node_start=callbacks.on_node_start,
+            on_node_complete=callbacks.on_node_complete,
+        )
+
+        if graph_cancelled or CancellationCoordinator.is_requested(task.metadata):
+            return await self._handle_cancellation(
+                task,
+                plan=plan,
+                graph=graph,
+                executions=executions,
+                retry_records=retry_records,
+                lifecycle=lifecycle,
+                trace_emitter=trace_emitter,
+            )
+
+        if executions and executions[-1].status == AgentExecutionStatus.NEEDS_INPUT:
+            return await self._handle_needs_input(
+                task,
+                plan=plan,
+                graph=graph,
+                executions=executions,
+                retry_records=retry_records,
+                lifecycle=lifecycle,
+                trace_emitter=trace_emitter,
+            )
+
+        failed_nodes = [
+            n.node_id for n in graph.nodes if n.status == ExecutionNodeStatus.FAILED
+        ]
+        if failed_nodes:
+            return await self._handle_graph_failure(
+                task,
+                plan=plan,
+                graph=graph,
+                executions=executions,
+                retry_records=retry_records,
+                failed_nodes=failed_nodes,
+                lifecycle=lifecycle,
+                trace_emitter=trace_emitter,
+            )
+
+        lifecycle.transition(task, TaskState.VALIDATING)
+        final_validation = ValidationResult(valid=True)
+        if executions:
+            final_agent = self.registry.get(executions[-1].agent_id)
+            final_validation = self.validation_engine.validate(
+                executions[-1],
+                contract=final_agent.get_contract(),
+                capability=task.context.capability,
+                plan_criteria=plan.validation_criteria,
+            )
+
+        if not final_validation.valid:
+            lifecycle.transition(task, TaskState.FAILED)
+        elif len(executions) > 1 and not all(
+            e.status == AgentExecutionStatus.COMPLETED for e in executions
+        ):
+            lifecycle.transition(task, TaskState.PARTIALLY_COMPLETED)
+        elif task.runtime.orchestration.needs_more_information:
+            lifecycle.transition(task, TaskState.NEEDS_MORE_INFORMATION)
+        else:
+            lifecycle.transition(task, TaskState.COMPLETED)
+
+        if isinstance(trace_emitter, PersistingTaskTraceEmitter):
+            await self.finalize_trace(trace_emitter, executions, task_id=task.task_id)
+
+        return GraphPhaseOutcome(
+            executions=executions,
+            retry_records=retry_records,
+            graph=graph,
+            plan=plan,
+            final_validation=final_validation,
+        )
+
+    async def _handle_cancellation(
+        self,
+        task: Task,
+        *,
+        plan: NexusPlan,
+        graph: ExecutionGraph,
+        executions: List[AgentExecutionResult],
+        retry_records: List[RetryRecord],
+        lifecycle: TaskLifecycle,
+        trace_emitter: TaskTraceEmitter,
+    ) -> GraphPhaseOutcome:
+        await self.events.publish_from_task_state(
+            task,
+            message="task cancellation propagated",
+            event_type=RuntimeEventType.CANCELLED,
+            phase=ExecutionPhase.COMPLETION,
+            payload={"reason": task.metadata.get("cancellation_reason", "")},
+        )
+        lifecycle.transition(task, TaskState.VALIDATING)
+        lifecycle.transition(task, TaskState.CANCELLED)
+        CancellationCoordinator.clear_checkpoint_state(task)
+        CancellationCoordinator.clear(task)
+        if isinstance(trace_emitter, PersistingTaskTraceEmitter):
+            await self.finalize_trace(trace_emitter, executions, task_id=task.task_id)
+        early = await self.finish_task(
+            task,
+            trace_emitter,
+            answer=self.composer.compose_summary(executions),
+            executions=executions,
+            validation=ValidationResult(valid=False, errors=["task_cancelled"]),
+            plan=plan,
+            retry_records=retry_records,
+            graph_id=graph.graph_id,
+        )
+        return GraphPhaseOutcome(early_result=early)
+
+    async def _handle_needs_input(
+        self,
+        task: Task,
+        *,
+        plan: NexusPlan,
+        graph: ExecutionGraph,
+        executions: List[AgentExecutionResult],
+        retry_records: List[RetryRecord],
+        lifecycle: TaskLifecycle,
+        trace_emitter: TaskTraceEmitter,
+    ) -> GraphPhaseOutcome:
+        paused = executions[-1]
+        created_at_utc = SystemTimeProvider.utc_now().isoformat()
+        human_payload = (
+            human_request_event_payload(
+                paused.human_request,
+                created_at_utc=created_at_utc,
+            )
+            if paused.human_request
+            else {}
+        )
+        await self.events.publish_from_task_state(
+            task,
+            message="human approval requested",
+            event_type=RuntimeEventType.HUMAN_APPROVAL_REQUESTED,
+            phase=ExecutionPhase.HUMAN_APPROVAL,
+            payload={"human_request": human_payload},
+        )
+        hook_failure = await self.hitl.run_before_human_pause(
+            task,
+            trace_emitter,
+            lifecycle,
+            agent_id=paused.agent_id,
+            execution=paused,
+        )
+        if hook_failure is not None:
+            if isinstance(trace_emitter, PersistingTaskTraceEmitter):
+                await self.finalize_trace(trace_emitter, executions, task_id=task.task_id)
+            return GraphPhaseOutcome(early_result=hook_failure)
+        HumanPauseCoordinator.apply_pause(task, paused)
+        lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
+        await self.maybe_checkpoint(
+            task,
+            progress_message="awaiting human input",
+            plan=plan,
+            graph=graph,
+            last_execution=paused,
+        )
+        if isinstance(trace_emitter, PersistingTaskTraceEmitter):
+            await self.finalize_trace(trace_emitter, executions, task_id=task.task_id)
+        early = await self.finish_task(
+            task,
+            trace_emitter,
+            answer=paused.summary,
+            executions=executions,
+            validation=ValidationResult(valid=False, errors=["awaiting human input"]),
+            plan=plan,
+            retry_records=retry_records,
+            graph_id=graph.graph_id,
+        )
+        return GraphPhaseOutcome(early_result=early)
+
+    async def _handle_graph_failure(
+        self,
+        task: Task,
+        *,
+        plan: NexusPlan,
+        graph: ExecutionGraph,
+        executions: List[AgentExecutionResult],
+        retry_records: List[RetryRecord],
+        failed_nodes: List[str],
+        lifecycle: TaskLifecycle,
+        trace_emitter: TaskTraceEmitter,
+    ) -> GraphPhaseOutcome:
+        lifecycle.transition(task, TaskState.VALIDATING)
+        lifecycle.transition(task, TaskState.FAILED)
+        if LongRunningCoordinator.is_long_running(task):
+            await self.maybe_checkpoint(
+                task,
+                progress_message=f"graph failed at {failed_nodes}",
+                plan=plan,
+                graph=graph,
+                last_execution=executions[-1] if executions else None,
+            )
+        if isinstance(trace_emitter, PersistingTaskTraceEmitter):
+            await self.finalize_trace(trace_emitter, executions, task_id=task.task_id)
+        early = await self.finish_task(
+            task,
+            trace_emitter,
+            answer=self.composer.compose_summary(executions),
+            executions=executions,
+            validation=ValidationResult(
+                valid=False,
+                errors=[f"graph node failed: {failed_nodes}"],
+            ),
+            plan=plan,
+            retry_records=retry_records,
+            graph_id=graph.graph_id,
+        )
+        return GraphPhaseOutcome(early_result=early)

@@ -54,6 +54,7 @@ from intergrax.runtime.task.task_metadata_keys import (
 from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspaceMetadataKey
 
 if TYPE_CHECKING:
+    from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
     from intergrax.runtime.task.task import Task, TaskResult
 
 _LEGACY_OPTION_KEYS = frozenset(
@@ -105,7 +106,7 @@ def _verdict_to_contract_value(verdict: HumanResponseVerdict) -> str:
 
 
 def execution_options_from_metadata(metadata: Dict[str, Any]) -> TaskExecutionOptions:
-    """Parse intake options from RuntimeRequest metadata or legacy task metadata."""
+    """Parse intake options from flat metadata (legacy keys or embedded contract)."""
     embedded = metadata.get(TASK_CONTRACT_METADATA_KEY)
     if isinstance(embedded, dict) and "options" in embedded:
         return TaskExecutionOptions.model_validate(embedded["options"])
@@ -157,6 +158,12 @@ def execution_options_from_metadata(metadata: Dict[str, Any]) -> TaskExecutionOp
         long_running=long_running,
         context=context,
     )
+
+
+def execution_options_for_request(request: RuntimeRequest) -> TaskExecutionOptions:
+    """Resolve execution options from a ``RuntimeRequest`` (typed contract first)."""
+    metadata = request.metadata
+    return execution_options_from_metadata(metadata)
 
 
 def runtime_state_from_metadata(metadata: Dict[str, Any]) -> TaskRuntimeState:
