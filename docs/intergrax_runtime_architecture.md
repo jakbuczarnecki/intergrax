@@ -512,7 +512,7 @@ Intergrax consists of **four platform tiers** (see §5.1). The diagram below sho
 |           Specialized capability modules (domain)            |
 |--------------------------------------------------------------|
 | LegalAgent    ResearchAgent    UXAgent       PMAgent         |
-| TesterAgent   MarketerAgent    VendorDiscoveryAgent  ...     |
+| TesterAgent   MarketerAgent    VendorDiscoveryAgent (future K) ... |
 |  • contracts, pipelines, steps, local loops                  |
 |  • business logic; runs inside Nexus                         |
 +--------------------------------------------------------------+
@@ -877,8 +877,8 @@ Tier-0  Integration Library   →  vendor/backend Protocols (swappable at deploy
 |-------|---------|----------|---------|
 | **Integration** | `intergrax/integrations/` | Tool handlers, Tier-3 wiring, RAG bootstrap | `IssueTracker.search_issues(jql)` |
 | **Tool** | `intergrax/tools/providers/<domain>/` | LLM tool-calling, MCP, UAEP `ToolRequest` | `jira.search_tasks(project, status, assignee)` |
-| **Skill** | `intergrax/skills/providers/<domain>/` | Agent composition, importers | `legal.contract_review` → tools + prompts |
-| **Agent** | `agents/<name>/` | Nexus routing | `skill_ids=["legal.contract_review"]` |
+| **Skill** | `intergrax/skills/providers/<domain>/` | Agent composition, importers | `legal.contract_review`, `research.literature_scan` |
+| **Agent** | `agents/<name>/` | Nexus routing | `skill_ids=["legal.contract_review"]` or `["research.literature_scan"]` |
 
 **Target layout:**
 
@@ -996,6 +996,13 @@ Agent / planner
 **Status:** Architecture **defined**; implementation **MVP Done** (Phase R, 2026-06-01).  
 **Catalog:** [`SKILLS.md`](SKILLS.md) · **Harness AI terms:** §5.3 (this document).
 
+**First-party skills (2026-06-01):**
+
+| skill_id | Bundle | Typical agent |
+|----------|--------|---------------|
+| `legal.contract_review` | `legal` | `LegalAgent` |
+| `research.literature_scan` | `research` | `ResearchAgent` |
+
 **Runtime events:** `SKILL_RESOLVED` / `SKILL_IMPORT_FAILED` via `runtime/events/context_skill_recording.py`; registration and import service call `RuntimeEventBus.record()`.
 
 #### Problem
@@ -1010,9 +1017,9 @@ A **skill** is a **versioned, declarative capability pack** that groups:
 
 | Field | Purpose |
 |-------|---------|
-| `skill_id`, `version` | Stable reference (`legal.contract_review@1.0.0`) |
+| `skill_id`, `version` | Stable reference (`legal.contract_review@1.0.0`, `research.literature_scan@1.0.0`) |
 | `description` | Human + planner readable purpose |
-| `tool_ids` | Subset of catalog tools required for the goal |
+| `tool_ids` | Subset of catalog tools required for the goal (e.g. `rag.retrieve`, `websearch.query`) |
 | `prompt_instruction_ids` | References into Prompt Registry (not raw prompt blobs in runtime) |
 | `policy_fragment_id` | Optional link to tool/memory/HITL fragment |
 | `risk_tier`, `tags` | Governance and discovery |

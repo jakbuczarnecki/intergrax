@@ -155,19 +155,18 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 
 
-**Current alignment:**
-
-
+**Current alignment** (synced with §0.5, 2026-06-01):
 
 | Scope | Score | Notes |
-
 |-------|-------|-------|
-
-| Architecture §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** | Phases A–F; typed task contract |
-
-| §42 Unified Execution Runtime | **~92–95%** | Hooks B.06 + product Slack/Teams intake on legal/research (2026-05-27) |
-| Laboratory workflow (inspect, decide) | **~95%** | D.1–D.5 done |
-| Pre-P4.2 regression gate | **Done** | **397 tests**, marker `gate` |
+| Architecture §1–41 (tiers, Nexus, graph, repo split) | **~98%** | Phases A–O, N, Q+ complete |
+| §42 Unified Execution Runtime | **~99%** | UAEP Protocol, hook parity, planner split (`step_planner/`), harness getattr audit |
+| Laboratory workflow (inspect, decide) | **~99%** | D.1–D.5, metrics parity, debug API |
+| Harness quality (Phase Q) | **Done** | Appendix C — gate **417** at Phase Q close |
+| Harness hardening (Phase Q+) | **Done** | Appendix D — typing, monolith splits, zero grandfathered `getattr` |
+| Harness AI alignment (Phase R MVP) | **Done** | Appendix E — Skill Library, context, delegation, policy bundle |
+| Regression gate | **450 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
+| Next product work | **Phase K** | K.1/K.2 **Ready** — product priority, not a runtime gate |
 
 
 
@@ -1793,22 +1792,27 @@ RULE:    Tier-1 via §0.6; four layers Integration → Tool → Skill → Agent
 
 ## 6. Recommended Next Step
 
-### 6.1 Implementation cadence (Phase Q — current)
+### 6.1 Implementation cadence (Phase K — product; harness baseline met)
 
-Each iteration follows **one deliverable at a time** (same as Phase N):
+Platform harness work (Phase Q, Q+, R MVP) is **complete**. New work follows **product priority**:
 
 ```text
-1. Implement   — single Q.* ID (e.g. Q-O.1 only)
-2. Summarize   — what changed, tests run, acceptance criteria met
-3. Document    — update Phase Q status + Appendix C row + paydown log (B.0)
-4. Next step   — next ID from Phase Q execution order (Wave 1 first)
+1. Decide      — product picks K.1 (Problem Radar) and/or K.2 (Vendor Discovery), or other Tier-2 agent
+2. Scaffold    — agents/<slug>/ via AGENT_CREATION_GUIDE; compose skill_ids from SKILLS.md catalog
+3. Wire        — Tier-3 application host OR lab roster flag; SkillProfile + ToolProfile per app
+4. Verify      — pytest -m gate; scripts/check_harness_no_getattr.py; acceptance/agent_os if applicable
+5. Document    — update this plan Phase K rows + Appendix A checklist when agent ships
 ```
 
-Do not batch Wave 1 items in one PR unless explicitly agreed. **Start with Q-O.1** (RAG metrics plugin registration).
+**Parallel (non-blocking):** R-Skill catalog growth (`research.*`, `legal.*`), optional O.3 RAG metrics plugin scrape, B.15 Legal live LLM E2E when CI budget allows.
+
+### 6.1a Archived — Phase Q cadence (complete 2026-06-01)
+
+Phase Q used **one Q.* deliverable per PR** → update Appendix C + paydown log. See Appendix C for Waves 1–9 and gate **417** at close. Do not reopen Q.* unless regression found (residual hardening → Appendix D).
 
 ### 6.1b Phase N (complete)
 
-Phase N cadence remains the reference for Tier-3 scaffold work; new applications use `new-stack` without waiting for Phase Q completion, but **lab defaults** should pick up Q-M.2/Q-O.7 when those land.
+Tier-3 scaffold cadence remains the reference for new applications (`new-stack`); lab defaults include RAG/websearch tools and legal + research skill bundles.
 
 ### 6.2 Tier-3 application layer — **ready for new applications**
 
@@ -1834,34 +1838,9 @@ uv run pytest -m gate -q
 uv run pytest tests/acceptance/agent_os -m agent_os -q
 ```
 
-**Do not start:** Problem Radar, Vendor Discovery (K.1/K.2) until product priority is set — Phase N does not block K.
+**Do not start:** Problem Radar, Vendor Discovery (K.1/K.2) until product priority is set — harness baseline does not block K.
 
-**Recently completed:**
-
-- **L.1–L.8:** Phase L Agent OS readiness — UAEP scaffold, `AGENT_CREATION_GUIDE.md`, `lab_application`, mock agents, acceptance suite (`tests/acceptance/agent_os/`), readiness docs; gate **228 passed**.
-- **J.5:** Partial results API — `GET /debug/tasks/{task_id}/progress` aggregates checkpoint partial snapshots; `RuntimeEventType.TASK_PROGRESS`; `partial_result.v1` notification template; gate **228 passed** (includes Phase L acceptance).
-- **J.4:** Long-running scheduler — in-process `LongRunningScheduler` polls checkpoint store for delayed resumes and expired HITL deadlines; `UnifiedTaskResumeExecutor` resumes via `UnifiedTaskRunner`; SQLite ledger for idempotency.
-- **J.3:** Worker queue Task v2 — `QueuedNexusExecutionAdapter` enqueues `ExecutionRequest` via Tier-0 Celery (`nexus.task.v2`); `create_nexus_celery_worker_app` bootstrap; checkpoint resume through worker payload; gate **207 passed**.
-- **J.2:** RunService → UnifiedTaskRunner — `NexusTaskExecutionAdapter` delegates to `UnifiedTaskRunner`; Legal host shares one runner for `/runs` and `/legal/chat`; `POST /runs` forwards `CreateRunRequest.payload` to Task intake.
-- **J.1:** NexusLoop default in apps — Legal and Research HTTP use `UnifiedTaskRunner` only; legacy `AgentEngine` opt-out removed from Legal (B.14).
-
-- **I.5:** ContextManager v2 — provenance, summary tiers, typed `TaskContextAssemblyOptions` (`TaskExecutionOptions.context`), metadata bridge sync.
-- **I.4:** Agent handoff — `AgentHandoff`, `HandoffCoordinator`, graph executor path, `HANDOFF_*` events.
-- **I.3:** `SharedTaskContext` — formal payload on `Task`, `ContextManager` merge, memory read bridge.
-- **I.2:** `MemoryView` gateway — `PolicyScopedMemoryView`, UAEP wiring, `MEMORY_READ`/`MEMORY_WRITE` events.
-- **I.1:** `TaskMemory` store — `TaskMemoryPersistence`, `TaskMemoryCoordinator`, in-memory + SQLite backends.
-- **H.6:** Organization Worker demo — `OrganizationWorkerAgent`, `create_organization_worker_lab_app`, E2E Slack/Teams intake → HITL → resume.
-- **H.5:** Teams parity — `TeamsActivityInteractionAdapter`, `TeamsSignatureVerifier`, debug intake tests mirroring H.3.
-- **H.4:** HITL notification templates — `HitlPauseNotificationTemplate`, `notify_hitl_pause`, Slack/Teams formatter parity for actions/urgency.
-- **H.3:** Debug API `POST /debug/interactions/intake` — JSON/form body, optional `execute`, Slack signature verifier (opt-in).
-- **H.2:** `InteractionAdapter` — inbound parsers, factory, `ChainedInteractionAdapter`.
-- **G.6:** Debug API — `GET …/events`, `GET …/checkpoints`, `POST …/human-response` with injectable `RuntimeEventPersistence` / `TaskCheckpointPersistence`.
-- **G.5:** pluggable `RuntimeEventPersistence` + memory/SQLite backends.
-- **F.5:** typed task contract — `TaskExecutionOptions` / `TaskRuntimeState` / `TaskResultSummary` + metadata bridge.
-- **F.4:** long-running task snapshots + notification adapter stubs (Slack/Teams **not** real integration).
-- **F.1–F.3:** Shadow, Sandbox, advanced HITL.
-
-
+**Historical completions:** Phases F–L, J, Q, Q+, and R (MVP) are **Done** — see phase tables (§2–§3), Appendices C–E paydown logs. Gate milestones: **417** (Phase Q close), **450** (Q+ / R MVP, 2026-06-01).
 
 ### D.2 Debug API (Done)
 
@@ -2328,7 +2307,7 @@ Decision:       L1 certified — GO Phase K when product priority set
 | B.17 | **`agents/` gate collection** — `signoff_probe` test marks `gate` but lives under `agents/` (may not be collected by default `pytest tests/`) | — | **Low** | **Done** | Sign-off smoke not in main gate count | Test infra | `testpaths` includes `agents/`; canonical gate: `uv run pytest -m gate -q` (2026-05-27) |
 | B.18 | **HTTP observability acceptance** — trace on echo + multi-agent mock (graph path) | Appendix A #9–10 | **Low** | **Done** | Certification confidence | Test | `test_lab_application_runs_echo_with_trace_observability`, `test_lab_application_runs_research_mock_with_graph_trace` (2026-05-27) |
 
-### B.6 Suggested priority order (for planning)
+### B.8 Suggested priority order (for planning)
 
 ```text
 1. ~~B.08, B.10~~ — observability consistency (Done 2026-05-27)
@@ -2536,6 +2515,7 @@ Execute in order; one PR per ID where possible.
 | 2026-06-01 | Q+.0.3 (closeout) | Grandfather list cleared; `parser_trace_flush` uses `TraceEventWithTags` Protocol |
 | 2026-06-01 | **Phase Q+** | All Q+-* deliverables **Done** or **Won't fix**; gate **450 passed** |
 | 2026-06-01 | Appendix C sync, research skill | C.7 T-* / D-05 aligned; `research.literature_scan` bundle; K.1/K.2 **Ready** |
+| 2026-06-01 | Doc sync | §1 alignment table, §6 Phase K cadence, Appendix B.8 renumber, E.1 skill row; README + canon research skill examples |
 | — | — | *(append row per merged PR)* |
 
 **Coverage target:** 100% **Done** or **Won't fix** — **met** (2026-06-01).
@@ -2558,7 +2538,7 @@ Execute in order; one PR per ID where possible.
 | Harness = Nexus + platform + app wiring | Tier-1 + Tier-0 + Tier-3 | Terminology not in glossary | R.0.2 §5.3 | Done |
 | LLM separate from agent module | `llm_adapters` | “Runnable instance” undefined | R.0.2 §5.3 | Done |
 | Tool = atomic operation | `ToolContract`, `ToolRuntime` | Doc said “tool/skill” | R.0.3, R.0.1 | Done |
-| Skill = goal-oriented pack | **Missing** | No registry, no import | R-Skill.1–R-Skill.10 | Done |
+| Skill = goal-oriented pack | Was missing (pre-R); **MVP Done** | Registry + importers + first-party packs | R-Skill.1–R-Skill.10 | Done |
 | Option 1: skills = tools | — | **Rejected** — breaks LLM/MCP atomic model | R.0.1 ADR | Done |
 | Option 2: Skill Library | — | **Adopted** | R-Skill.* | Done |
 | Context engineering | §27–28, `MemoryView`, `TaskContextAssemblyOptions` | No central budget API | R-Context.* | Done |

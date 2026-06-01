@@ -341,6 +341,13 @@ AgentContract(
     skill_ids=["legal.contract_review"],
     allowed_tools=[],  # extras only; skill union applied by SkillResolver
 )
+
+# Research pipeline — literature scan pack (tools + prompts)
+AgentContract(
+    id="research",
+    skill_ids=["research.literature_scan"],
+    allowed_tools=["websearch.query", "rag.retrieve"],  # merged with skill tool_ids at register
+)
 ```
 
 **Catalog:** [SKILLS.md](docs/SKILLS.md) · **architecture:** [§7.1.8](docs/intergrax_runtime_architecture.md) · **Harness mapping:** [§5.3](docs/intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model)
