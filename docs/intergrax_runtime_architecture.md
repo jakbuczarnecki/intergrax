@@ -3511,7 +3511,7 @@ RuntimePolicyBundle:
 
 **Composition rules:**
 
-- Tier-3 application factory builds the bundle once at startup (Phase R-Policy) → `ApplicationBuildContext.policy_bundle` → `RuntimeConfig.policy_bundle` / `RuntimeContext.policy_bundle` via `applications/_shared/runtime_config_bridge.py`.
+- Tier-3 application factory builds the bundle once at startup (Phase R-Policy) → `ApplicationBuildContext.policy_bundle` → `RuntimeConfig.policy_bundle` / `RuntimeContext.policy_bundle` via `applications/_shared/runtime_config_bridge.py` (also maps `RuntimePolicyBundle.tool_access` → `RuntimeConfig.tool_scope_policy` when the bundle carries a `ToolScopePolicy` implementation).
 - Nexus and UAEP read from the bundle — agents MUST NOT construct parallel policy objects.
 - Skill `policy_fragment_id` (§7.1.8) merges into `domain_fragments` or tool policy — never bypasses `ToolRuntime`.
 

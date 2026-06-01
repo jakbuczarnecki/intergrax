@@ -1,16 +1,12 @@
 from __future__ import annotations
 
-from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, TYPE_CHECKING
-from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm.messages import ChatMessage
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.runtime.nexus.session.session_message_append_result import SessionMessageAppendResult
 from intergrax.runtime.nexus.tracing.session.session_consolidation_diag import SessionConsolidationDiagV1
-from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-from intergrax.utils.time_provider import SystemTimeProvider
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.session.chat_session import (
@@ -23,24 +19,16 @@ from intergrax.runtime.nexus.session.session_storage import (
 from intergrax.runtime.organization.organization_profile_manager import (
     OrganizationProfileManager,
 )
+from intergrax.runtime.nexus.session.session_consolidation import (
+    SessionConsolidationReason,
+    SessionMemoryConsolidationCoordinator,
+)
 from intergrax.runtime.nexus.session.session_profile_instructions import (
     SessionProfileInstructionResolver,
-    build_consolidation_diag,
 )
 from intergrax.runtime.user_profile.session_memory_consolidation_service import (
     SessionMemoryConsolidationService,
 )
-
-
-class SessionConsolidationReason(str, Enum):
-    """
-    Enumeration of session consolidation triggers.
-    Keeping this as `str` + `Enum` ensures that the value
-    is safe to serialize into metadata and logs.
-    """
-
-    MID_SESSION = "mid_session"
-    CLOSE_SESSION = "close_session"
 
 
 class SessionManager:
@@ -132,6 +120,11 @@ class SessionManager:
             effective_cooldown = 0
 
         self._consolidation_cooldown_seconds: int = effective_cooldown
+        self._consolidation = SessionMemoryConsolidationCoordinator(
+            service=session_memory_consolidation_service,
+            user_turns_interval=effective_interval,
+            cooldown_seconds=effective_cooldown,
+        )
         self._profile_instructions = SessionProfileInstructionResolver(
             user_profile_manager=user_profile_manager,
             organization_profile_manager=organization_profile_manager,
@@ -280,42 +273,23 @@ class SessionManager:
         #    We only do this if:
         #      - the service is configured, and
         #      - the session is associated with a user_id.
-        if (
-            self._session_memory_consolidation_service is not None
-            and session.user_id
-        ):
-            # Fetch full conversation history for this session. This allows the
-            # consolidation service to decide how much to trim and which parts
-            # to keep, based on its own config (max messages, char budget, etc.).
+        if self._consolidation.should_consolidate_on_close(session):
             messages = await self.get_history_for_session(session_id)
-
-            # If there's no history, there is nothing to consolidate.
             if messages:
-                stored_entries = (
-                    await self._session_memory_consolidation_service.consolidate_session(
-                        user_id=session.user_id,
-                        session_id=session_id,
-                        messages=messages,
-                        run_id=run_id,
-                    )
+                diag = await self._consolidation.consolidate(
+                    user_id=session.user_id,
+                    session_id=session_id,
+                    messages=messages,
+                    run_id=run_id,
                 )
-
-                diag = self._build_consolidation_diag(stored_entries)
-
                 if trace_state is not None:
-                    trace_state.trace_event(
-                        component=TraceComponent.ENGINE,
-                        step="SessionManager.close_session",
-                        message="Session consolidated",
-                        level=TraceLevel.DEBUG,
-                        payload=diag,
-                    )
-
-                await self._mark_session_consolidated(
+                    self._consolidation.trace_close_consolidation(trace_state, diag)
+                self._consolidation.apply_consolidation_metadata(
                     session,
                     reason=SessionConsolidationReason.CLOSE_SESSION,
                     turn=session.user_turns,
                 )
+                await self.save_session(session)
 
     async def list_sessions_for_user(
         self,
@@ -374,46 +348,23 @@ class SessionManager:
             user_turns = session.increment_user_turns()
             await self.save_session(session)
 
-            # Decide whether to trigger mid-session consolidation.
-            if (
-                self._session_memory_consolidation_service is not None
-                and session.user_id
+            if self._consolidation.should_consolidate_mid_session(
+                session,
+                user_turns=user_turns,
             ):
-                interval = self._user_turns_consolidation_interval
-                # Only trigger if:
-                #   - the interval is positive,
-                #   - we reached an exact multiple (e.g. 8, 16, 24...),
-                #   - and the cooldown since the last consolidation has passed.
-                if (
-                    interval > 0
-                    and (user_turns % interval) == 0
-                    and self._is_mid_session_consolidation_allowed(session)
-                ):
-                    # Fetch the current conversation history for this session.
-                    # The consolidation service is responsible for trimming
-                    # or summarizing as needed based on its own config.
-                    messages = await self.get_history_for_session(session_id)
-
-                    if messages:
-                        stored_entries = (
-                            await self._session_memory_consolidation_service.consolidate_session(
-                                user_id=session.user_id,
-                                session_id=session_id,
-                                messages=messages,
-                            )
-                        )
-
-                        # Build a small debug payload based on the stored entries.
-                        consolidation_diag = self._build_consolidation_diag(
-                            stored_entries
-                        )
-
-                        # Record consolidation metadata for debugging and future heuristics.
-                        await self._mark_session_consolidated(
-                            session,
-                            reason=SessionConsolidationReason.MID_SESSION,
-                            turn=user_turns,
-                        )
+                messages = await self.get_history_for_session(session_id)
+                if messages:
+                    consolidation_diag = await self._consolidation.consolidate(
+                        user_id=session.user_id,
+                        session_id=session_id,
+                        messages=messages,
+                    )
+                    self._consolidation.apply_consolidation_metadata(
+                        session,
+                        reason=SessionConsolidationReason.MID_SESSION,
+                        turn=user_turns,
+                    )
+                    await self.save_session(session)
 
         # Delegate message persistence to the storage backend. The storage
         # may apply its own retention/trimming logic (FIFO, max_messages, etc.).
@@ -498,84 +449,3 @@ class SessionManager:
             return None
         await self.save_session(session)
         return instructions
-
-    # ------------------------------------------------------------------
-    # Consolidation helpers
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _build_consolidation_diag(entries: Sequence[Any]) -> SessionConsolidationDiagV1:
-        return build_consolidation_diag(entries)
-
-    async def _mark_session_consolidated(
-        self,
-        session: ChatSession,
-        *,
-        reason: SessionConsolidationReason,
-        turn: Optional[int] = None,
-    ) -> None:
-        """
-        Mark the given session as having been consolidated into long-term
-        user memory.
-
-        Side effects:
-          - Updates typed consolidation fields on the ChatSession:
-              last_consolidated_at
-              last_consolidated_reason
-              last_consolidated_turn
-              last_consolidation_debug
-              needs_user_instructions_refresh
-          - Persists the updated session via save_session().
-
-        The debug payload is intentionally small and JSON-serializable so it
-        can be logged or inspected by tooling without additional parsing.
-        """
-        # When using typed fields we keep the timestamp as a proper datetime
-        # object in UTC. If string serialization is needed (e.g. for DB),
-        # the storage backend is responsible for that conversion.
-        now_utc = SystemTimeProvider.utc_now()
-
-        session.last_consolidated_at = now_utc
-        session.last_consolidated_reason = reason.value
-
-        # Mark that the underlying user profile may have changed
-        # (new memory entries, regenerated system_instructions).
-        # Existing sessions should refresh their cached instructions
-        # on the next call to get_user_profile_instructions_for_session().
-        session.needs_user_instructions_refresh = True
-
-        if turn is not None:
-            session.last_consolidated_turn = int(turn)
-
-        # Persist the updated consolidation metadata (and refresh modification
-        # timestamp via save_session()).
-        await self.save_session(session)
-
-    def _is_mid_session_consolidation_allowed(self, session: ChatSession) -> bool:
-        """
-        Check whether we are allowed to run a mid-session consolidation
-        for the given session based on a simple cooldown.
-
-        Logic:
-          - If cooldown <= 0 → always allowed.
-          - If there is no last_consolidated_at on the session → allowed.
-          - Otherwise, only allowed if at least `cooldown` seconds have
-            passed since the last consolidation.
-        """
-        cooldown = self._consolidation_cooldown_seconds
-
-        if cooldown <= 0:
-            return True
-
-        last_dt = session.last_consolidated_at
-        if last_dt is None:
-            return True
-
-        # Ensure we are working with an aware UTC datetime.
-        if last_dt.tzinfo is None:
-            last_dt = last_dt.replace(tzinfo=timezone.utc)
-
-        now = SystemTimeProvider.utc_now()
-        elapsed_seconds = (now - last_dt).total_seconds()
-
-        return elapsed_seconds >= cooldown

@@ -3,9 +3,10 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 
+@runtime_checkable
 class ToolScopePolicy(Protocol):
     """
     Defines authorization contract for tool execution.
