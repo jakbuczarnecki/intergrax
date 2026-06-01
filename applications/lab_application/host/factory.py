@@ -47,8 +47,8 @@ def create_lab_application(
     """
     Universal Tier-3 lab environment.
 
-    Integrations are composed via ``IntegrationProfile.lab()`` (Phase M.8):
-    sqlite persistence, log notifications, lab_json interaction surface (configurable).
+    Integrations use ``IntegrationProfile.lab_harness_preset()`` (Phase T-Ops.1):
+    sqlite, log, lab_json, OTEL (disable via ``LAB_OTEL_ENABLED=false``).
 
     Combines:
 

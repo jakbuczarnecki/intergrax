@@ -51,7 +51,7 @@ class _ResearchLLMStub(LLMAdapter):
         run_id: Optional[str] = None,
     ) -> str:
         for msg in reversed(messages):
-            content = getattr(msg, "content", None) or ""
+            content = msg.content or ""
             if content:
                 return f"research-note: {content[:200]}"
         return "research-note: (empty)"

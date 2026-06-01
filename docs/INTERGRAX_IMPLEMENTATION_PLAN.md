@@ -133,6 +133,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Laboratory workflow | **~99%** (post-Q+-O) | No | Metrics parity, planner observability |
 | Agent OS certification (Phase L) | **Done** | No | Appendix A |
 | **Harness environment GA (Phase S)** | **Done** (2026-06-01) | No (blocks K.1/K.2 only) | S-Ops + S-H + S-Doc; gate green |
+| **Harness cleanliness (Phase T)** | **Done** (2026-06-01) | No | T-Ops + T-H; gate green |
 | Regression gate | **460 passed** | No | Must stay green after each harness PR |
 
 ---
@@ -1816,6 +1817,33 @@ Parallel:            S-Ops.4, domain skill growth (legal/research) — not requi
 ```
 
 **After Phase S Done:** Phase **K** (K.1 or K.2) may start as first business agent on a complete harness.
+
+---
+
+### Phase T — Harness Cleanliness (post-S 2026-06-01)
+
+**Status:** **Done** (2026-06-01). **Prerequisites:** Phase S **Done**.  
+**Goal:** Close harness technical debt — unified lab preset, typed Tier-2 agents, native catalog planner, expanded stable stack, gate hygiene — without new business agents.
+
+| # | Deliverable | Status | Location | Acceptance |
+|---|-------------|--------|----------|------------|
+| T-Ops.1 | **`lab_harness_preset()`** — default lab profile (sqlite + log + lab_json + OTEL; optional redis/qdrant) | **Done** | `IntegrationProfile`, `integration_wiring.py`, `settings.py` | `test_lab_harness_preset.py` |
+| T-H.1 | **Echo/signoff `skill_ids`** — `harness.tool_smoke` on `AgentContract` | **Done** | `agents/echo`, `agents/signoff_probe` | `test_harness_reference_agent_skills.py` |
+| T-H.2 | **`rag.answers` gate hygiene** — gate uses `RetrievalService` only; legacy tests marked `legacy_rag_answers` | **Done** | `tests/integration/rag/answers/` | No `rag.answers` in `-m gate` |
+| T-H.3 | **Typed `TaskContext` in Tier-2 agents** — no `getattr` on capability/message content in `agents/` | **Done** | echo, research, signoff, org worker, lab mocks | `check_harness_no_getattr.py` scans `agents/` |
+| T-Ops.5 | **`CatalogToolPlanner`** without `ToolsAgent` wrapper | **Done** | `tool_planning_service.py`, `catalog_tool_planner.py` | `test_catalog_tool_planner.py` |
+| T-Ops.6 | **Tier-2 stable stack** — `postgresql` + `sentry` in `HARNESS_LAB_STABLE_SLUGS` | **Done** | `harness_lab_stack.py`, postgresql `register.py` | `test_harness_lab_stable_stack.py` |
+
+#### Phase T — Definition of done
+
+1. Lab default wiring uses `lab_harness_preset()` (OTEL on unless env disables).
+2. Echo and signoff_probe declare `harness.tool_smoke` via `skill_ids`.
+3. Gate RAG path is `RetrievalService`-only; legacy `rag.answers` tests excluded from gate.
+4. `python scripts/check_harness_no_getattr.py` passes with `agents/` in scan roots.
+5. `CatalogToolPlanner` does not import `ToolsAgent`.
+6. `postgresql` stable in catalog and harness stack list.
+
+**After Phase T Done:** Phase **K** (K.1/K.2) remains the next **product** milestone on a clean harness.
 
 ---
 

@@ -35,6 +35,7 @@ from intergrax.runtime.nexus.runtime_steps.persist_and_build_answer_step import 
 from intergrax.runtime.nexus.runtime_steps.setup_steps_tool import SETUP_STEPS
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.task.task import TaskContext
 
 
 class _StubLLM(LLMAdapter):
@@ -58,7 +59,7 @@ class _StubLLM(LLMAdapter):
         call = self.usage.begin_call(run_id=run_id)
         try:
             for msg in reversed(messages):
-                content = getattr(msg, "content", None) or ""
+                content = msg.content or ""
                 if content:
                     return f"{self.provider}: {content[:120]}"
             return f"{self.provider}: (empty)"
@@ -114,8 +115,8 @@ class _MockAgentBase(Agent):
             max_steps=5,
         )
 
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
+        capability = task_context.capability
         if capability in (None, self._capability):
             return CapabilityMatchResult(
                 matched=True,

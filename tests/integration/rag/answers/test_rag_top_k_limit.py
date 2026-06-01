@@ -33,7 +33,7 @@ from intergrax.tokenizers.bootstrap.tokenizer_bootstrap import (
 )
 
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.legacy_rag_answers]
 
 
 def test_rag_top_k_limit() -> None:

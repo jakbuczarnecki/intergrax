@@ -1,6 +1,6 @@
 # Intergrax Harness Environment
 
-**Last updated:** 2026-06-01 · Phase S (Harness environment GA)
+**Last updated:** 2026-06-01 · Phase T (Harness cleanliness)
 
 Operator and author guide for the **lab harness stack** — Tier-0 integrations, Tier-1 Nexus, Tier-3 `lab_application` wiring, platform skills, and observability. Business agents (Problem Radar, Vendor Discovery) are **Phase K** and out of scope here.
 
@@ -28,6 +28,7 @@ These slugs are **`stable`** in the catalog (see `intergrax/integrations/registr
 | Slug | Category | Role in lab |
 |------|----------|-------------|
 | `sqlite` | relational_store | Trace, events, checkpoints, experiments (when DB paths set) |
+| `postgresql` | relational_store | Tier-2 product apps (stable; optional in lab preset) |
 | `redis` | key_value_cache | Optional distributed cache / rate limits |
 | `qdrant` | vector_store | Production RAG vector backend (when enabled in profile) |
 | `slack` | notification + interaction | Product webhooks (optional) |
@@ -44,9 +45,12 @@ These slugs are **`stable`** in the catalog (see `intergrax/integrations/registr
 
 | Profile | Factory | Use when |
 |---------|---------|----------|
-| `IntegrationProfile.lab()` | Default | Local dev — sqlite + log + lab_json + docling |
-| `IntegrationProfile.harness_environment()` | `LAB_OTEL_ENABLED=true` | OTEL observability facade on sqlite/log/lab_json |
+| `IntegrationProfile.lab_harness_preset()` | **Default** (lab app) | sqlite + log + lab_json + docling + OTEL (disable via `LAB_OTEL_ENABLED=false`) |
+| `IntegrationProfile.lab()` | Legacy alias | sqlite + log + lab_json + docling (no OTEL) |
+| `IntegrationProfile.harness_environment()` | Alias | Same as `lab_harness_preset(enable_otel=True)` |
 | `IntegrationProfile.harness_lab()` | `LAB_HARNESS=true` | LangSmith + Sentry + PagerDuty vendor harness (M.9) |
+
+Optional preset flags: `enable_redis`, `enable_qdrant` on `lab_harness_preset()`.
 
 Lab wiring: `applications/lab_application/host/integration_wiring.py` → `wire_lab_integrations()`.
 
@@ -90,7 +94,7 @@ Runtime events: `GET /debug/tasks/{id}/events` when SQLite runtime events DB is 
 | `harness.context_demo` | `rag.retrieve` | Context budget exercises |
 | `harness.trace_read` | `sandbox.exec` | Isolated diagnostics |
 
-Agents should set `AgentContract.skill_ids` — not duplicate tool lists in agent code.
+Reference harness agents **must** set `AgentContract.skill_ids` — echo and signoff_probe use `harness.tool_smoke`; do not duplicate tool lists in agent code.
 
 ---
 

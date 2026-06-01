@@ -13,7 +13,8 @@ from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.memory.conversational_memory import ChatMessage
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -48,7 +49,7 @@ class _EchoLLMAdapter(LLMAdapter):
         call = self.usage.begin_call(run_id=run_id)
         try:
             for msg in reversed(messages):
-                content = getattr(msg, "content", None) or ""
+                content = msg.content or ""
                 if content:
                     return f"echo: {content}"
             return "echo: (empty)"
@@ -81,12 +82,13 @@ class EchoAgent(Agent):
             version="1.0.0",
             capabilities=["echo.basic"],
             allowed_tools=[],
+            skill_ids=["harness.tool_smoke"],
             risk_level=AgentRiskLevel.LOW,
             max_steps=5,
         )
 
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
+        capability = task_context.capability
         if capability in (None, "echo.basic"):
             return CapabilityMatchResult(
                 matched=True,

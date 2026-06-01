@@ -23,6 +23,7 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
@@ -46,8 +47,8 @@ class OrganizationWorkerAgent(Agent):
             max_steps=3,
         )
 
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
+        capability = task_context.capability
         if capability in (None, ORG_VENDOR_REPORT_CAPABILITY):
             return CapabilityMatchResult(
                 matched=True,

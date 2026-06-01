@@ -29,6 +29,7 @@ from intergrax.runtime.nexus.runtime_steps.persist_and_build_answer_step import 
 from intergrax.runtime.nexus.runtime_steps.setup_steps_tool import SETUP_STEPS
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.task.task import TaskContext
 
 
 class _SummaryLLMStub(LLMAdapter):
@@ -48,7 +49,7 @@ class _SummaryLLMStub(LLMAdapter):
         run_id: Optional[str] = None,
     ) -> str:
         for msg in reversed(messages):
-            content = getattr(msg, "content", None) or ""
+            content = msg.content or ""
             if content:
                 return f"summary-draft: {content[:300]}"
         return "summary-draft: (empty)"
@@ -89,8 +90,8 @@ class SummaryAgent(Agent):
             validation_rules=["non_empty_summary"],
         )
 
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
+        capability = task_context.capability
         if capability in (None, "research.summarize"):
             return CapabilityMatchResult(
                 matched=True,

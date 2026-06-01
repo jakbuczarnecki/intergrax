@@ -37,7 +37,8 @@ from intergrax.tokenizers.bootstrap.tokenizer_bootstrap import (
 )
 
 
-pytestmark = pytest.mark.integration
+# Legacy ``rag.answers`` stack — not in gate; use ``RetrievalService`` tests instead (Phase T-H.1).
+pytestmark = [pytest.mark.integration, pytest.mark.legacy_rag_answers]
 
 
 def test_rag_context_truncation() -> None:

@@ -157,12 +157,35 @@ class IntegrationProfile(BaseModel):
         Phase S lab harness stack — sqlite persistence, log notifications, lab JSON intake,
         OTEL observability facade (noop exporter unless ``INTERGRAX_OTEL_ENDPOINT`` targets a collector).
         """
+        return cls.lab_harness_preset(enable_otel=True)
+
+    @classmethod
+    def lab_harness_preset(
+        cls,
+        *,
+        enable_otel: bool = True,
+        enable_redis: bool = False,
+        enable_qdrant: bool = False,
+    ) -> IntegrationProfile:
+        """
+        Unified lab harness preset (Phase T-Ops.1).
+
+        Defaults: sqlite + log + lab_json + docling; OTEL on unless ``enable_otel=False``.
+        Optional redis/qdrant for distributed cache and production RAG vector backend.
+        """
+        options: dict[IntegrationSlug, dict[str, Any]] = {}
+        if enable_otel:
+            options[IntegrationSlug.OTEL] = {}
+
         return cls(
             relational_store=IntegrationSlug.SQLITE,
             notification_channel=IntegrationSlug.LOG,
             interaction_surface=IntegrationSlug.LAB_JSON,
-            observability_backend=IntegrationSlug.OTEL,
-            options={IntegrationSlug.OTEL: {}},
+            document_parser=IntegrationSlug.DOCLING,
+            observability_backend=IntegrationSlug.OTEL if enable_otel else None,
+            key_value_cache=IntegrationSlug.REDIS if enable_redis else None,
+            vector_store=IntegrationSlug.QDRANT if enable_qdrant else None,
+            options=options,
         )
 
     @classmethod

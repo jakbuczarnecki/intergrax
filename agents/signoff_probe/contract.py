@@ -13,6 +13,7 @@ def build_agent_contract() -> AgentContract:
         version="0.1.0",
         capabilities=CAPABILITIES,
         allowed_tools=[],
+        skill_ids=["harness.tool_smoke"],
         risk_level=AgentRiskLevel.LOW,
         max_steps=10,
     )

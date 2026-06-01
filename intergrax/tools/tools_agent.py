@@ -16,6 +16,7 @@ from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
+from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.exporters.openai import to_openai_tools
 from intergrax.tools.exporters.schema import pydantic_parameters_schema
@@ -62,15 +63,6 @@ class ToolTrace:
     args: Dict[str, Any]
     output_preview: str
     output: Any
-
-
-@dataclass(slots=True)
-class ToolPlanDecision:
-    """Tools-agent planner output (not §42.7 ``AgentDecision`` — see ``intergrax.contracts.agent_decision``)."""
-
-    final_answer: Optional[str]
-    tool_plan: Optional[ToolCallPlan]
-    messages: List[ChatMessage]
 
 
 @dataclass(slots=True)
@@ -277,165 +269,18 @@ class ToolsAgent:
         Uses LLM to decide WHICH tools to call and with WHAT arguments,
         but does NOT execute them.
         """
+        from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
 
-        # Build messages exactly like in run(), but without tool execution.
-        if isinstance(input_data, list):
-            base_messages: List[ChatMessage] = input_data
-            if context:
-                ctx_msg = ChatMessage(
-                    role="system",
-                    content=self.cfg.system_context_template.format(context=context),
-                )
-                if base_messages and base_messages[-1].role == "user":
-                    messages = base_messages[:-1] + [ctx_msg, base_messages[-1]]
-                else:
-                    base_messages.append(ctx_msg)
-                    messages = base_messages
-            else:
-                messages = base_messages
-        else:
-            user_input: str = input_data
-            if not user_input:
-                raise ValueError("ToolsAgent.plan_tools requires non-empty input_data.")
-
-            if self.memory:
-                # Keep legacy-compatible behavior (plan_tools previously called run()).
-                self.memory.add("user", user_input)
-                messages = self.memory.get_for_model(native_tools=self._native_tools)
-
-                if not any(m.role == "system" for m in messages):
-                    messages.insert(
-                        0,
-                        ChatMessage(role="system", content=self.cfg.system_instructions),
-                    )
-
-                if context:
-                    ctx_msg = ChatMessage(
-                        role="system",
-                        content=self.cfg.system_context_template.format(context=context),
-                    )
-                    if messages and messages[-1].role == "user":
-                        messages = messages[:-1] + [ctx_msg, messages[-1]]
-                    else:
-                        messages.append(ctx_msg)
-            else:
-                sys = ChatMessage(
-                    role="system",
-                    content=self.cfg.system_instructions
-                    + (
-                        f"\n\n{self.cfg.system_context_template.format(context=context)}"
-                        if context
-                        else ""
-                    ),
-                )
-                messages = [sys, ChatMessage(role="user", content=user_input)]
-
-        calls: List[PlannedToolCall] = []
-
-        # ===== BRANCH A: Native tools (OpenAI, etc.) =====
-        if self._native_tools:
-            tools_schema = _build_openai_tools_schema(self.tools)
-            messages = self._prune_messages_for_openai(messages)
-
-            effective_tool_choice = tool_choice if tool_choice is not None else "auto"
-
-            result = self.llm.generate_with_tools(
-                messages,
-                tools_schema,
-                temperature=self.cfg.temperature,
-                max_tokens=self.cfg.max_answer_tokens,
-                tool_choice=effective_tool_choice,
-                run_id=run_id,
-            )
-
-            tool_calls = result.get("tool_calls") or []
-
-            for tc in tool_calls:
-                fn = tc.get("function") or {}
-                name = fn.get("name") or tc.get("name")
-                args_json = fn.get("arguments") or tc.get("arguments") or "{}"
-
-                try:
-                    args = json.loads(args_json)
-                except Exception:
-                    args = {}
-
-                registered = self.tools.get(name)
-                contract = registered.contract
-                validated = contract.input_schema.model_validate(args)
-
-                calls.append(
-                    PlannedToolCall(
-                        step_id="tool",
-                        tool_id=name,
-                        input=validated,
-                    )
-                )
-
-            return ToolPlanDecision(
-                final_answer=None,
-                tool_plan=ToolCallPlan(calls=calls),
-                messages=[],
-            )
-
-        # ===== BRANCH B: JSON planner (e.g., Ollama) =====
-        tools_desc = [
-            {
-                "name": rt.contract.tool_id,
-                "description": rt.contract.description,
-                "parameters": pydantic_parameters_schema(rt.contract.input_schema),
-            }
-            for rt in self.tools._tools.values()
-        ]
-
-        plan_intro = ChatMessage(
-            role="system",
-            content=self.cfg.planner_instructions
-            + "\nTOOLS=\n"
-            + json.dumps(tools_desc, ensure_ascii=False),
+        service = ToolPlanningService(
+            self.llm,
+            self.tools,
+            config=self.cfg,
         )
-
-        if len(messages) and messages[0].role == "system":
-            messages = [messages[0], plan_intro] + messages[1:]
-        else:
-            messages = [plan_intro] + messages
-
-        plan_text = self.llm.generate_messages(
-            messages,
-            temperature=self.cfg.temperature,
-            max_tokens=self.cfg.max_answer_tokens,
+        return service.plan_tools(
+            input_data,
+            context=context,
+            tool_choice=tool_choice,
             run_id=run_id,
-        )
-
-        plan_obj = None
-        try:
-            start, end = plan_text.find("{"), plan_text.rfind("}")
-            if start != -1 and end > start:
-                plan_obj = json.loads(plan_text[start : end + 1])
-        except Exception:
-            plan_obj = None
-
-        if plan_obj and "call_tool" in plan_obj:
-            call = plan_obj["call_tool"]
-            name = call.get("name")
-            args = call.get("arguments", {}) or {}
-
-            registered = self.tools.get(name)
-            contract = registered.contract
-            validated = contract.input_schema.model_validate(args)
-
-            calls.append(
-                PlannedToolCall(
-                    step_id="tool",
-                    tool_id=name,
-                    input=validated,
-                )
-            )
-
-        return ToolPlanDecision(
-            final_answer=None,
-            tool_plan=ToolCallPlan(calls=calls),
-            messages=[],
         )
 
     def run(

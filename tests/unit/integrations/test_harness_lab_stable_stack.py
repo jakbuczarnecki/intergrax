@@ -21,6 +21,7 @@ def test_harness_lab_stable_slug_list_is_documented_set() -> None:
     slugs = list_harness_lab_stable_slugs()
     assert slugs == tuple(sorted(HARNESS_LAB_STABLE_SLUGS))
     assert "sqlite" in slugs
+    assert "postgresql" in slugs
     assert "otel" in slugs
 
 

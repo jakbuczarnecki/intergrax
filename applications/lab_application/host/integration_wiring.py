@@ -78,14 +78,18 @@ def build_lab_integration_profile(
     *,
     sqlite_overrides: dict[str, Path] | None = None,
     harness: bool = False,
-    otel_enabled: bool = False,
+    otel_enabled: bool = True,
+    enable_redis: bool = False,
+    enable_qdrant: bool = False,
 ) -> IntegrationProfile:
     if harness:
         profile = IntegrationProfile.harness_lab()
-    elif otel_enabled:
-        profile = IntegrationProfile.harness_environment()
     else:
-        profile = IntegrationProfile.lab()
+        profile = IntegrationProfile.lab_harness_preset(
+            enable_otel=otel_enabled,
+            enable_redis=enable_redis,
+            enable_qdrant=enable_qdrant,
+        )
     if not sqlite_overrides:
         return profile
     return profile.model_copy(
@@ -116,14 +120,14 @@ def wire_lab_integrations(
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
     harness: bool = False,
-    otel_enabled: bool = False,
+    otel_enabled: bool | None = None,
 ) -> LabIntegrationWiring:
     """
     Single composition root for lab persistence, notifications, and interaction surface.
 
-    Uses ``IntegrationProfile.lab()`` (sqlite + log + lab_json) with optional SQLite path overrides.
-    Set ``harness=True`` for LangSmith/Sentry/PagerDuty harness stack (Phase M.9).
-    Set ``otel_enabled=True`` (or ``LAB_OTEL_ENABLED``) for OTEL observability facade (Phase S-Ops.2).
+    Uses ``IntegrationProfile.lab_harness_preset()`` (sqlite + log + lab_json + OTEL by default).
+    Set ``harness=True`` for LangSmith/Sentry/PagerDuty vendor harness stack (Phase M.9).
+    Set ``otel_enabled=False`` to disable OTEL on the unified lab preset (Phase T-Ops.1).
     """
     register_default_integrations()
 
@@ -133,10 +137,11 @@ def wire_lab_integrations(
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
     )
+    resolved_otel = settings.otel_enabled if otel_enabled is None else otel_enabled
     profile = build_lab_integration_profile(
         sqlite_overrides=sqlite_overrides or None,
         harness=harness,
-        otel_enabled=otel_enabled,
+        otel_enabled=resolved_otel,
     )
     sqlite_bundle = create_sqlite_integration(**sqlite_overrides)
 

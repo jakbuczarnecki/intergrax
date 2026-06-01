@@ -13,6 +13,7 @@ from intergrax.integrations.registry.slugs import IntegrationSlug
 HARNESS_LAB_STABLE_SLUGS: frozenset[str] = frozenset(
     {
         IntegrationSlug.SQLITE.value,
+        IntegrationSlug.POSTGRESQL.value,
         IntegrationSlug.REDIS.value,
         IntegrationSlug.QDRANT.value,
         IntegrationSlug.SLACK.value,
