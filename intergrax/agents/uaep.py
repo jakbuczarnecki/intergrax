@@ -17,6 +17,7 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.hooks.governance_hooks import hook_context_for_task, run_hook_pair
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler, GovernanceResolution
@@ -247,6 +248,20 @@ class UAEPExecutor:
             decision = step_result.decision or self._decide_after_step(
                 agent, step, step_result.output, exec_ctx
             )
+            decision_ctx = hook_context_for_task(
+                task_id=task_id,
+                run_id=run_id,
+                agent_id=contract.id,
+                step_id=step.step_id,
+                phase=ExecutionPhase.STEP_EXECUTION,
+                runtime_state={"decision_type": decision.type.value},
+            )
+            await run_hook_pair(
+                self._middleware,
+                HookPoint.BEFORE_DECISION,
+                HookPoint.AFTER_DECISION,
+                decision_ctx,
+            )
             resolution = self._interrupt_handler.resolve_decision(
                 decision,
                 task_id=task_id,
@@ -260,6 +275,21 @@ class UAEPExecutor:
                     ),
                 },
             )
+            if resolution.interrupt is not None:
+                interrupt_ctx = hook_context_for_task(
+                    task_id=task_id,
+                    run_id=run_id,
+                    agent_id=contract.id,
+                    step_id=step.step_id,
+                    phase=ExecutionPhase.INTERRUPT_HANDLING,
+                    runtime_state={"interrupt_type": resolution.interrupt.type.value},
+                )
+                await run_hook_pair(
+                    self._middleware,
+                    HookPoint.BEFORE_INTERRUPT,
+                    HookPoint.AFTER_INTERRUPT,
+                    interrupt_ctx,
+                )
             governance = resolution
             exec_ctx.metadata["governance_resolution"] = resolution
 

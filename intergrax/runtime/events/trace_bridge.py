@@ -16,6 +16,7 @@ from typing import Any, Dict, Optional
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.events.phase_coverage import phase_for_event
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent, TraceLevel
 from intergrax.runtime.task.task import Task, TaskState
 
@@ -129,6 +130,10 @@ def trace_event_to_runtime_event(
         "message": trace.message,
         "tags": dict(trace.tags),
     }
+
+    mapped_phase = phase_for_event(event_type)
+    if mapped_phase is not None:
+        phase = mapped_phase
 
     return RuntimeEvent(
         event_id=f"rt_{trace.event_id}",

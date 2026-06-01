@@ -975,10 +975,37 @@ Prefer `python -m intergrax.scaffold new-application <name> --profile lab|produc
 
 ---
 
+## Appendix G — Memory & RAG naming (Phase Q)
+
+### Four memory stores
+
+| Store | Module | When to use |
+|-------|--------|-------------|
+| Session history | `SessionManager` / `HistoryStep` | Turn-by-turn chat in one session |
+| User LTM | `UserProfileManager` + vector index | Stable user facts across sessions |
+| Task KV | `TaskMemory` (`INTERGRAX_TASK_MEMORY_DB`) | Per-task scratch state, UAEP steps |
+| Shared graph context | `shared_task_context` metadata | Multi-agent handoff on one Nexus task |
+
+Enable SQLite task memory in Tier-3 via `wire_task_memory` and `.env.example` (`INTERGRAX_TASK_MEMORY_DB`).
+
+### Three “context builders”
+
+| Name | Location | Role |
+|------|----------|------|
+| Nexus `ContextBuilder` | `runtime/nexus/context/context_builder.py` | Assembles RAG/history/web for one runtime turn |
+| `ContextManager` | `runtime/nexus/context/context_manager.py` | Nexus task-level context orchestration |
+| `DefaultContextBuilder` | `rag/context/` (ingest/index) | Document chunking for index pipelines |
+
+Use `tool_ids` including `rag.retrieve` instead of legacy plan boolean `use_rag` (shim emits deprecation event).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
 |--------|------------|
+| Import `intergrax.chat_agent` / `ChatAgent` | Nexus `RuntimeEngine` / `NoPlannerPipeline` |
+| Import `intergrax.rag.answers` from runtime | `RetrievalService` |
 | Put agent logic in `applications/` | Logic in `agents/`, wiring in application |
 | Modify `NexusLoop` for one agent | `registry.register()` + contract/metadata |
 | Expect lab app to auto-load new agents | Add `AgentBinding.mount(...)` in `lab_application/manifest.py` + builder |
@@ -999,7 +1026,7 @@ When asked to create a new Intergrax agent:
 2. Run `python -m intergrax.scaffold new-agent <slug> --capability <id>`.
 3. Edit only `agents/<slug>/` — primarily `steps/`, `prompts/`, `schemas/`, `contract.py`.
 4. Register in the appropriate context (§ Step 4). New deployable host: Step **4E** (`new-application`). Shared lab: Step **4C** (`lab_application/manifest.py`).
-5. Verify: `uv run pytest agents/<slug>/tests -q` then `uv run pytest -m gate -q`; optionally `python scripts/check_agents_vendor_imports.py` (B.24) and `python scripts/check_production_chat_agent_imports.py` (K.5).
+5. Verify: `uv run pytest agents/<slug>/tests -q` then `uv run pytest -m gate -q`; optionally `python scripts/check_agents_vendor_imports.py`, `python scripts/check_integration_vendor_imports.py`, and `python scripts/check_production_chat_agent_imports.py` (no `ChatAgent` in production paths).
 6. Do **not** modify `intergrax/runtime/` unless a reusable Tier-0 gap is proven and approved.
 7. Do **not** import `intergrax.integrations.providers.*` from agent code — wire integrations in Tier-3 only (Appendix E).
 8. Do **not** create duplicate workflow documentation — update this file if the process changes.

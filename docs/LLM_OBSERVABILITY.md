@@ -70,3 +70,26 @@ profile = LLMProfile(provider=..., options={"use_distributed_rate_limit": True, 
 ```
 
 Falls back to in-process limiter when Redis limiter is not set.
+
+---
+
+## Usage tracking: two layers
+
+| Layer | Type | When |
+|-------|------|------|
+| **Adapter** | `LLMAdapter.usage` (`LLMAdapterUsageLog`) | Per SDK call inside `generate_messages` / tools |
+| **Runtime** | `LLMUsageTracker` on `RuntimeState` | Nexus pipeline steps aggregate into run/trace finalize |
+
+Adapter usage is provider-local; runtime usage feeds trace DB and governance export on `TASK_COMPLETED`. Do not merge the two counters without explicit bridge code.
+
+---
+
+## Prometheus: scrape vs integration backend
+
+| Mode | Mechanism | Use when |
+|------|-----------|----------|
+| **In-process scrape** | `register_llm_metrics_routes(app)` → `GET /metrics/llm` | Single replica, lab, local dev |
+| **Pushgateway** | Plugin pushes on `TASK_COMPLETED` | Ephemeral workers without scrape target |
+| **PromQL backend** | Integration slug `observability_backend=prometheus` | Central queries against long-lived Prometheus |
+
+Lab factory registers scrape routes when `INTERGRAX_LLM_METRICS_ENABLED=true` (Phase Q-O.7).

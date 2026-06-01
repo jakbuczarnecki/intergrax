@@ -90,7 +90,7 @@ class LLMAdapter(ABC):
 
     def supports_streaming(self) -> bool:
         """Whether stream_messages is implemented for this adapter."""
-        return True
+        return False
 
     def supports_structured_output(self) -> bool:
         """Whether generate_structured is natively supported (not prompt-only)."""

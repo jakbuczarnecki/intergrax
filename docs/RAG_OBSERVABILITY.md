@@ -55,3 +55,24 @@ Workflow: `.github/workflows/rag-guard.yml`
 | Langfuse | `observability` | 3000 (needs Postgres from `core`) |
 
 Start: `cd infra/integration && ./manage.sh start observability`
+
+## Metrics HTTP routes (parity decision)
+
+RAG metrics follow the **same log + optional Pushgateway pattern as LLM** (Phase Q-O.9). There is no separate `GET /metrics/rag` unless you add `register_rag_metrics_routes` in Tier-3; default harness exports `rag_metrics` on `TASK_COMPLETED` via `register_rag_observability_plugin`.
+
+## Parser trace export (ADR)
+
+`parser_trace_flush` / `parser_trace_exporter` may write directly to configured backends (Phoenix, Langfuse) **without** going through `ObservabilityBackend`. This is intentional for document-ingest latency. Env knobs: `INTERGRAX_PARSER_TRACE_*` (see `infra/README.md` observability table). Nexus run traces remain on SQLite / configured trace store.
+
+## Observability env profile (harness)
+
+| Variable | Purpose |
+|----------|---------|
+| `INTERGRAX_TRACE_DB` | Nexus run trace SQLite |
+| `INTERGRAX_RUNTIME_EVENTS_DB` | Canonical runtime events |
+| `INTERGRAX_LLM_METRICS_ENABLED` | LLM metrics plugin + `/metrics/llm` |
+| `INTERGRAX_RAG_METRICS_ENABLED` | RAG metrics plugin (`rag_profile.extras`) |
+| `INTERGRAX_PARSER_TRACE_ENABLED` | Document parser span export |
+| Integration `observability_backend` slug | PromQL / Sentry / etc. |
+
+Tier-3 `.env.example` files should list the same names (Phase Q-O.8).

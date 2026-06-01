@@ -36,8 +36,16 @@ from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
+from intergrax.runtime.hooks.governance_hooks import hook_context_for_task, run_hook_pair
 from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
-from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
+from intergrax.runtime.nexus.orchestration.human_response import (
+    normalize_human_response,
+    persist_human_decision,
+)
+from intergrax.runtime.nexus.orchestration.workspace_cleanup import (
+    cleanup_sandbox_for_task,
+    cleanup_shadow_for_task,
+)
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
@@ -96,7 +104,7 @@ class NexusLoop:
         trace_store: Optional[RunTraceWriter] = None,
         event_bus: Optional[RuntimeEventBus] = None,
         retry_policy: Optional[RetryPolicy] = None,
-        policy_engine: PolicyEngine | RuntimePolicyEngine | None = None,
+        policy_engine: PolicyEngine | None = None,
         interrupt_handler: Optional[ExecutionInterruptHandler] = None,
         shadow_manager: Optional[ShadowWorkspaceManager] = None,
         sandbox_manager: Optional[SandboxSessionManager] = None,
@@ -156,6 +164,7 @@ class NexusLoop:
         self._retry_engine = retry_engine or RetryEngine(
             registry,
             policy=retry_policy or RetryPolicy(),
+            middleware=self._middleware,
         )
         self._router = AgentRouter(registry)
         self._context_manager = context_manager or ContextManager()
@@ -212,7 +221,7 @@ class NexusLoop:
         return self._middleware
 
     @property
-    def policy_engine(self) -> PolicyEngine | RuntimePolicyEngine:
+    def policy_engine(self) -> PolicyEngine:
         return self._policy_engine
 
     async def handle_task(self, task: Task) -> TaskResult:
@@ -226,7 +235,7 @@ class NexusLoop:
         lifecycle, trace_emitter = self._resolve_lifecycle(task)
         self._trace_emitter = trace_emitter
 
-        self._normalize_human_response(task)
+        normalize_human_response(task)
         await self._maybe_restore_long_running(task)
         if (
             LongRunningCoordinator.is_long_running(task)
@@ -471,7 +480,9 @@ class NexusLoop:
             CancellationCoordinator.clear_checkpoint_state(task)
             CancellationCoordinator.clear(task)
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                self._finalize_persisting_trace(trace_emitter, executions)
+                await self._finalize_persisting_trace(
+                    trace_emitter, executions, task_id=task.task_id
+                )
             return await self._finish_task(
                 task,
                 trace_emitter,
@@ -518,7 +529,9 @@ class NexusLoop:
             )
             if hook_failure is not None:
                 if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                    self._finalize_persisting_trace(trace_emitter, executions)
+                    await self._finalize_persisting_trace(
+                    trace_emitter, executions, task_id=task.task_id
+                )
                 return hook_failure
             HumanPauseCoordinator.apply_pause(task, paused)
             lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
@@ -530,7 +543,9 @@ class NexusLoop:
                 last_execution=paused,
             )
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                self._finalize_persisting_trace(trace_emitter, executions)
+                await self._finalize_persisting_trace(
+                    trace_emitter, executions, task_id=task.task_id
+                )
             return await self._finish_task(
                 task,
                 trace_emitter,
@@ -560,7 +575,9 @@ class NexusLoop:
                     last_execution=executions[-1] if executions else None,
                 )
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                self._finalize_persisting_trace(trace_emitter, executions)
+                await self._finalize_persisting_trace(
+                    trace_emitter, executions, task_id=task.task_id
+                )
             return await self._finish_task(
                 task,
                 trace_emitter,
@@ -599,7 +616,9 @@ class NexusLoop:
             lifecycle.transition(task, TaskState.COMPLETED)
 
         if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-            self._finalize_persisting_trace(trace_emitter, executions)
+            await self._finalize_persisting_trace(
+                trace_emitter, executions, task_id=task.task_id
+            )
 
         return await self._finish_task(
             task,
@@ -758,8 +777,8 @@ class NexusLoop:
             progress_message=task.runtime.orchestration.progress_message,
         )
 
-        self._maybe_cleanup_shadow(task, executions)
-        self._maybe_cleanup_sandbox(task, executions)
+        cleanup_shadow_for_task(task, executions, shadow_manager=self._shadow_manager)
+        cleanup_sandbox_for_task(task, executions, sandbox_manager=self._sandbox_manager)
 
         task.sync_metadata()
         result = TaskResult(
@@ -918,58 +937,29 @@ class NexusLoop:
             )
         return lifecycle_with_trace(run_id=task.task_id, event_bus=self._event_bus)
 
-    @staticmethod
-    def _finalize_persisting_trace(
+    async def _finalize_persisting_trace(
+        self,
         trace_emitter: PersistingTaskTraceEmitter,
         executions: List[AgentExecutionResult],
+        *,
+        task_id: str = "",
     ) -> None:
+        ctx = hook_context_for_task(
+            task_id=task_id or trace_emitter._run_id,
+            run_id=trace_emitter._run_id,
+            phase=ExecutionPhase.TRACE_PERSISTENCE,
+        )
+        await run_hook_pair(
+            self._middleware,
+            HookPoint.BEFORE_TRACE_PERSIST,
+            HookPoint.AFTER_TRACE_PERSIST,
+            ctx,
+        )
         metrics = aggregate_execution_metrics(executions)
         trace_emitter.finalize(
             duration_ms=metrics.duration_ms,
             llm_usage=metrics.as_llm_usage(),
         )
-
-    def _maybe_cleanup_shadow(self, task: Task, executions: List[AgentExecutionResult]) -> None:
-        iso = task.options.isolation
-        if not iso.shadow_workspace:
-            return
-        if not iso.shadow_workspace_cleanup:
-            return
-
-        workspace_id = None
-        if executions:
-            workspace_id = executions[-1].structured_data.get(SHADOW_WORKSPACE_ID_KEY)
-        if workspace_id:
-            self._shadow_manager.cleanup(str(workspace_id))
-        else:
-            self._shadow_manager.cleanup_for_task(
-                tenant_id=task.tenant_id,
-                task_id=task.task_id,
-            )
-
-    def _maybe_cleanup_sandbox(self, task: Task, executions: List[AgentExecutionResult]) -> None:
-        iso = task.options.isolation
-        if not iso.sandbox:
-            return
-        if not iso.sandbox_cleanup:
-            return
-
-        session_id = None
-        if executions:
-            session_id = executions[-1].structured_data.get(SANDBOX_SESSION_ID_KEY)
-        if session_id:
-            self._sandbox_manager.cleanup(str(session_id))
-        else:
-            self._sandbox_manager.cleanup_for_task(
-                tenant_id=task.tenant_id,
-                task_id=task.task_id,
-            )
-
-    @staticmethod
-    def _normalize_human_response(task: Task) -> None:
-        response = task.options.human.response_text
-        if response and task.options.human.verdict is None:
-            HumanPauseCoordinator.record_human_response(task, str(response))
 
     def _persist_human_decision(
         self,
@@ -978,24 +968,12 @@ class NexusLoop:
         *,
         response_text: str = "",
     ) -> None:
-        if self._human_store is None:
-            return
-        human_request = HumanPauseCoordinator.human_request_from_task(task)
-        target_raw = task.runtime.governance.escalation_target
-        target = EscalationTarget(str(target_raw)) if target_raw else None
-        record = SQLiteHumanDecisionStore.build_record(
-            task_id=task.task_id,
-            tenant_id=task.tenant_id,
-            user_id=task.user_id,
-            verdict=verdict,
-            response_text=response_text or str(task.options.human.response_text or ""),
-            human_request_id=human_request.request_id if human_request else "",
-            escalation_level=HumanPauseCoordinator.escalation_level(task),
-            escalation_target=target,
-            agent_id=task.agent_id,
-            run_id=task.task_id,
+        persist_human_decision(
+            task,
+            verdict,
+            human_store=self._human_store,
+            response_text=response_text,
         )
-        self._human_store.record(record)
 
     async def _run_before_human_pause(
         self,
@@ -1015,7 +993,9 @@ class NexusLoop:
         except HumanApprovalHookError as exc:
             lifecycle.transition(task, TaskState.FAILED)
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                self._finalize_persisting_trace(trace_emitter, [])
+                await self._finalize_persisting_trace(
+                    trace_emitter, [], task_id=task.task_id
+                )
             return await self._finish_task(
                 task,
                 trace_emitter,
@@ -1047,7 +1027,9 @@ class NexusLoop:
         except NexusLifecycleHookError as exc:
             lifecycle.transition(task, TaskState.FAILED)
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                self._finalize_persisting_trace(trace_emitter, [])
+                await self._finalize_persisting_trace(
+                    trace_emitter, [], task_id=task.task_id
+                )
             return await self._finish_task(
                 task,
                 trace_emitter,
@@ -1089,7 +1071,7 @@ class NexusLoop:
         self._persist_human_decision(task, HumanResponseVerdict.REJECT)
         lifecycle.transition(task, TaskState.FAILED)
         if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-            self._finalize_persisting_trace(trace_emitter, [])
+            await self._finalize_persisting_trace(trace_emitter, [], task_id=task.task_id)
         return await self._finish_task(
             task,
             trace_emitter,
@@ -1148,7 +1130,9 @@ class NexusLoop:
         if outcome.fail_task:
             lifecycle.transition(task, TaskState.FAILED)
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                self._finalize_persisting_trace(trace_emitter, [])
+                await self._finalize_persisting_trace(
+                    trace_emitter, [], task_id=task.task_id
+                )
             return await self._finish_task(
                 task,
                 trace_emitter,
@@ -1169,7 +1153,9 @@ class NexusLoop:
         hook_failure = await self._run_before_human_pause(task, trace_emitter, lifecycle)
         if hook_failure is not None:
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                self._finalize_persisting_trace(trace_emitter, [])
+                await self._finalize_persisting_trace(
+                    trace_emitter, [], task_id=task.task_id
+                )
             return hook_failure
         lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
         await self._maybe_checkpoint_long_running(
@@ -1177,7 +1163,7 @@ class NexusLoop:
             progress_message=progress_message,
         )
         if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-            self._finalize_persisting_trace(trace_emitter, [])
+            await self._finalize_persisting_trace(trace_emitter, [], task_id=task.task_id)
         return await self._finish_task(
             task,
             trace_emitter,

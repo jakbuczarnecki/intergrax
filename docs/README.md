@@ -56,14 +56,14 @@ LLM observability          →  LLM_OBSERVABILITY.md
 
 | Phase | Status |
 |-------|--------|
-| **Phase Q — Harness quality & consolidation** | **Open** — audit remediation (Nexus, LLM, RAG, memory, observability, legacy); [Appendix C](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-c--harness-audit-traceability-phase-q) |
+| **Phase Q — Harness quality & consolidation** | **In progress** — Waves 1–4 delivered (RAG bootstrap, hooks §42, config sections, Nexus orchestration helpers, legacy ChatAgent removal); remaining: full NexusLoop split, memory docs, LLM catalog polish — [Appendix C](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-c--harness-audit-traceability-phase-q) |
 | Phase L — Agent OS certification | **Done** |
 | Phase M / M-LLM / M-RAG / N / O | **Done** (beta where noted) |
-| Phase K — Problem Radar / Vendor Discovery | **After Q Waves 1–3** (product decision; may override) |
+| Phase K — Problem Radar / Vendor Discovery | **After Q Waves 1–4** (product decision; may override) |
 
-**Start Phase Q with:** `Q-O.1` (RAG observability plugin in `platform_wiring.py`).
+**Phase Q references:** [NEXUS_RETRY_SEMANTICS.md](NEXUS_RETRY_SEMANTICS.md) · [RAG_OBSERVABILITY.md](RAG_OBSERVABILITY.md) · [LLM_OBSERVABILITY.md](LLM_OBSERVABILITY.md)
 
-Gate: `uv run pytest -m gate -q` — **397 passed** (must stay green after each Q PR)
+Gate: `uv run pytest -m gate -q` — **404 passed** (must stay green after each Q PR)
 
 ---
 

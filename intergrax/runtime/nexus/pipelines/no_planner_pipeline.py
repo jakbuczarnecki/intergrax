@@ -17,15 +17,16 @@ from intergrax.runtime.nexus.runtime_steps.setup_steps_tool import SETUP_STEPS
 from intergrax.runtime.nexus.runtime_steps.tools_step import ToolsStep
 from intergrax.runtime.nexus.runtime_steps.user_longterm_memory_step import UserLongtermMemoryStep
 from intergrax.runtime.nexus.runtime_steps.websearch_step import WebsearchStep
+from intergrax.runtime.nexus.pipelines.rag_step_policy import pipeline_should_include_rag_step
 
 
 class NoPlannerPipeline(RuntimePipeline):
 
     async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
+        retrieval_steps = [RagStep()] if pipeline_should_include_rag_step(state) else []
         steps = [
             *SETUP_STEPS,
-
-            RagStep(),
+            *retrieval_steps,
             UserLongtermMemoryStep(),
             RetrieveAttachmentsStep(),
             WebsearchStep(),

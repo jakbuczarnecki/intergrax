@@ -68,7 +68,10 @@ class GraphExecutor:
         self._engine = engine or AgentEngine(registry)
         self._router = router or AgentRouter(registry)
         self._validation_engine = validation_engine or NexusValidationEngine()
-        self._retry_engine = retry_engine or RetryEngine(registry)
+        self._retry_engine = retry_engine or RetryEngine(
+            registry,
+            middleware=middleware,
+        )
         self._context_manager = context_manager or ContextManager()
         self._handoff = handoff_coordinator or HandoffCoordinator(registry)
         self._event_bus = event_bus
