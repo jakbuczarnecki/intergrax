@@ -62,6 +62,7 @@ def create_lab_application(
         experiments_db_path=experiments_db_path,
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
+        harness=settings.harness,
     )
     resolved_registry = registry or build_lab_registry(
         settings=settings,
@@ -126,7 +127,10 @@ def create_lab_application(
         )
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
-        tool_wiring = wire_lab_tools(integration_profile=integrations.profile)
+        tool_wiring = wire_lab_tools(
+            integration_profile=integrations.profile,
+            harness=settings.harness,
+        )
         mcp = build_lab_mcp_server(
             nexus_loop=nexus_loop,
             route_prefix=settings.route_prefix,

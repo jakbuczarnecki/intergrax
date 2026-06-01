@@ -167,9 +167,13 @@ Status legend: **Done** = registered handler in catalog.
 | `logs.search` | observability | **Done** | Search log index | `ObservabilityBackend` (`elasticsearch`, `opensearch`) |
 | `observability.query_traces` | observability | **Done** | Query LLM/agent traces | `ObservabilityBackend` (`langfuse`, `langsmith`, …) |
 | `errors.capture` | observability | **Done** | Report error events | `ObservabilityBackend` (`sentry`) |
-| `braintrust.log_eval` | observability | **Done** | Log eval score | `ObservabilityBackend` (`braintrust`) |
+| `braintrust.log_eval` | observability | **Done** | Log eval score | `ObservabilityBackend` (`braintrust`, role `eval`) |
 | `gitlab.create_issue` | issue_tracker | **Done** | Create GitLab issue | `IssueTracker` (`gitlab`) |
 | `pagerduty.trigger_incident` | notification | **Done** | Trigger on-call incident | `NotificationChannel` (`pagerduty`) |
+
+### Composite observability (Phase M.10)
+
+Harness lab uses **one primary** `observability_backend` (Sentry) plus **additional slugs** in `IntegrationProfile.options` (LangSmith). `ToolWiringContext.from_integration_profile()` builds `observability_backends`; each tool picks a backend by role (`errors`, `traces`, `logs`, `eval`) via `resolve_observability_backend()`. See [observability USAGE](../intergrax/tools/providers/observability/USAGE.md).
 
 ---
 

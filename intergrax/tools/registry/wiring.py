@@ -24,6 +24,7 @@ class ToolWiringContext:
     wiki_knowledge: Any | None = None
     notification_channel: Any | None = None
     observability_backend: Any | None = None
+    observability_backends: dict[str, Any] = field(default_factory=dict)
     rag_manager: Any | None = None
     vectorstore_manager: Any | None = None
     embedding_manager: Any | None = None
@@ -56,6 +57,8 @@ class ToolWiringContext:
         Categories without a configured slug are skipped (``None``).
         """
         from intergrax.integrations.contracts.base import IntegrationCategory
+        from intergrax.integrations.registry.factory import resolve
+        from intergrax.integrations.registry.slugs import FIELD_SLUGS
 
         def _optional(category: IntegrationCategory) -> Any | None:
             slug = profile.slug_for_category(category)
@@ -66,12 +69,31 @@ class ToolWiringContext:
             except Exception:
                 return None
 
+        primary_obs = _optional(IntegrationCategory.OBSERVABILITY_BACKEND)
+        obs_backends: dict[str, Any] = {}
+        if profile.observability_backend is not None and primary_obs is not None:
+            obs_backends[profile.observability_backend.value] = primary_obs
+        for slug in profile.options:
+            if slug not in FIELD_SLUGS["observability_backend"]:
+                continue
+            if slug.value in obs_backends:
+                continue
+            try:
+                obs_backends[slug.value] = resolve(
+                    IntegrationCategory.OBSERVABILITY_BACKEND,
+                    slug=slug,
+                    profile=profile,
+                )
+            except Exception:
+                continue
+
         return cls(
             issue_tracker=_optional(IntegrationCategory.ISSUE_TRACKER),
             search_provider=_optional(IntegrationCategory.SEARCH_PROVIDER),
             wiki_knowledge=_optional(IntegrationCategory.WIKI_KNOWLEDGE),
             notification_channel=_optional(IntegrationCategory.NOTIFICATION_CHANNEL),
-            observability_backend=_optional(IntegrationCategory.OBSERVABILITY_BACKEND),
+            observability_backend=primary_obs,
+            observability_backends=obs_backends,
             rag_manager=rag_manager,
             vectorstore_manager=vectorstore_manager,
             embedding_manager=embedding_manager,

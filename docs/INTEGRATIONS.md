@@ -595,7 +595,15 @@ All slugs from the 2026-05 harness recommendation (high / medium / low) are regi
 
 **`slash_command`** interaction surface registered (catalog **99**).
 
-**Lab harness:** `IntegrationProfile.harness_lab()` + `wire_lab_integrations(harness=True)` — Sentry + PagerDuty + harness tool bundle.
+**Lab harness:** `IntegrationProfile.harness_lab()` + `wire_lab_integrations(harness=True)` — composite observability (Sentry + LangSmith) + PagerDuty + harness tool bundle.
+
+## Phase M.10 harness Tier A — Done (beta)
+
+**Composite observability:** `ToolWiringContext.observability_backends` populated from profile primary + `options` observability slugs. Role-based resolution in `resolve_observability_backend()` — `errors.capture` → Sentry, `observability.query_traces` → LangSmith, `braintrust.log_eval` → Braintrust.
+
+**HITL → PagerDuty (runtime):** `wire_lab_integrations(harness=True)` resolves notification adapter directly from profile (`create_harness_notification_adapter`). Long-running tasks with `notify_channel="pagerduty"` escalate via `LongRunningCoordinator.notify_escalation()`. Factory: `LAB_HARNESS=true`.
+
+**Tests:** `tests/unit/tools/providers/observability/test_composite_observability.py`, `tests/integration/runtime/test_harness_hitl_pagerduty.py`.
 
 **CI:** `harness-smoke` job in `.github/workflows/unit-tests.yml` (`integrations-harness` extra).
 
@@ -631,7 +639,7 @@ Audit against typical agent stacks (LangGraph, CrewAI, LlamaIndex, enterprise VP
 
 **Tool Library:** `errors.capture`, `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`. Optional deps: ``uv pip install 'Intergrax-ai[integrations-harness]'``.
 
-**Next gaps (M.10+):** full adapters for remaining thin-p4 slugs (Helicone, PostHog, …), multi-backend observability profile, network smoke CI.
+**Next gaps (M.11+):** full adapters for remaining thin-p4 slugs (Helicone, PostHog, …), network smoke CI, default `notify_channel` injection from lab wiring into task templates.
 
 ---
 

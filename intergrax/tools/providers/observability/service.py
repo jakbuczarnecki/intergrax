@@ -31,9 +31,9 @@ def metrics_query_instant(
     ctx: ToolWiringContext,
     params: MetricsQueryInstantInput,
 ) -> MetricsQueryInstantOutput:
-    backend = ctx.observability_backend
-    if backend is None:
-        raise RuntimeError("observability_backend_not_configured")
+    from intergrax.tools.providers.observability.resolve import resolve_observability_backend
+
+    backend = resolve_observability_backend(ctx, role="default")
 
     result = backend.query_instant(params.query, eval_time=params.eval_time)
     series = [
@@ -50,9 +50,9 @@ def metrics_query_instant(
 
 
 def logs_search(ctx: ToolWiringContext, params: LogsSearchInput) -> LogsSearchOutput:
-    backend = ctx.observability_backend
-    if backend is None:
-        raise RuntimeError("observability_backend_not_configured")
+    from intergrax.tools.providers.observability.resolve import resolve_observability_backend
+
+    backend = resolve_observability_backend(ctx, role="logs")
 
     rest_client = getattr(backend, "rest_client", None)
     if rest_client is None:
@@ -66,9 +66,9 @@ def logs_search(ctx: ToolWiringContext, params: LogsSearchInput) -> LogsSearchOu
 
 
 def traces_query(ctx: ToolWiringContext, params: TracesQueryInput) -> TracesQueryOutput:
-    backend = ctx.observability_backend
-    if backend is None:
-        raise RuntimeError("observability_backend_not_configured")
+    from intergrax.tools.providers.observability.resolve import resolve_observability_backend
+
+    backend = resolve_observability_backend(ctx, role="traces")
 
     query_fn = getattr(backend, "query_traces", None)
     if query_fn is None:
@@ -88,9 +88,9 @@ def traces_query(ctx: ToolWiringContext, params: TracesQueryInput) -> TracesQuer
 
 
 def errors_capture(ctx: ToolWiringContext, params: ErrorsCaptureInput) -> ErrorsCaptureOutput:
-    backend = ctx.observability_backend
-    if backend is None:
-        raise RuntimeError("observability_backend_not_configured")
+    from intergrax.tools.providers.observability.resolve import resolve_observability_backend
+
+    backend = resolve_observability_backend(ctx, role="errors")
 
     capture_message = getattr(backend, "capture_message", None)
     if capture_message is None:

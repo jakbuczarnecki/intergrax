@@ -26,6 +26,7 @@ class LabApplicationSettings:
     interaction_surface: str = "auto"
     include_mcp: bool = True
     mcp_mount_path: str = "/mcp"
+    harness: bool = False
 
     @classmethod
     def from_env(cls) -> LabApplicationSettings:
@@ -80,6 +81,11 @@ class LabApplicationSettings:
             "no",
         }
         mcp_mount = (os.getenv("LAB_MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
+        harness = (os.getenv("LAB_HARNESS") or "false").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+        }
         return cls(
             environment=environment,
             route_prefix=prefix,
@@ -94,4 +100,5 @@ class LabApplicationSettings:
             interaction_surface=interaction_surface,
             include_mcp=include_mcp,
             mcp_mount_path=mcp_mount,
+            harness=harness,
         )

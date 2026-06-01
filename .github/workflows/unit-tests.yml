@@ -92,4 +92,5 @@ jobs:
           tests/unit/tools/providers/gitlab/
           tests/unit/tools/providers/pagerduty/
           tests/unit/tools/providers/braintrust/
+          tests/integration/runtime/test_harness_hitl_pagerduty.py
           -q --tb=line

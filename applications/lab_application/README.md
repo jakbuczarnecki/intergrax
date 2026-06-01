@@ -27,9 +27,16 @@ uv run uvicorn lab_application.host.factory:create_lab_application --factory --h
 FastMCP is mounted on the same uvicorn process as FastAPI (default `/mcp`).
 Tools: `list_agents`, `run_agent` — same Nexus loop as HTTP. Configure `LAB_INCLUDE_MCP`, `LAB_MCP_MOUNT_PATH`.
 
-## Harness stack (Phase M.9)
+## Harness stack (Phase M.9 + M.10)
 
 Enable the agent harness integration profile and tools:
+
+```bash
+# factory / uvicorn — set LAB_HARNESS=true in .env
+LAB_HARNESS=true
+```
+
+Or programmatically:
 
 ```python
 from lab_application.host.integration_wiring import wire_lab_integrations
@@ -39,7 +46,9 @@ wiring = wire_lab_integrations(settings=settings, harness=True)
 tools = wire_lab_tools(integration_profile=wiring.profile, harness=True)
 ```
 
-Profile: `IntegrationProfile.harness_lab()` — Sentry (`errors.capture`), PagerDuty escalation, SQLite persistence.
+Profile: `IntegrationProfile.harness_lab()` — **composite observability** (Sentry `errors.capture` + LangSmith `observability.query_traces`), **PagerDuty** notification adapter for HITL escalation (`notify_channel="pagerduty"` on long-running tasks), SQLite persistence.
+
+HITL escalation path: runtime `NexusLoop` → `LongRunningCoordinator.notify_escalation()` → profile-resolved PagerDuty adapter (no `INTERGRAX_NOTIFICATION_BACKEND` override required when `harness=True`).
 
 ---
 
@@ -71,6 +80,7 @@ curl -s -X POST http://127.0.0.1:8090/v1/lab/run \
 | `LAB_INCLUDE_RESEARCH` | `false` | Register Research + Summary |
 | `LAB_ROUTE_PREFIX` | `/v1/lab` | Lab run API prefix |
 | `LAB_INTERACTION_SURFACE` | `auto` | `auto`, `lab_json`, `slack`, `teams` — via `IntegrationProfile` + interaction factory |
+| `LAB_HARNESS` | `false` | `true` — `IntegrationProfile.harness_lab()` (Sentry + LangSmith + PagerDuty tools) |
 
 ## Integrations (Phase M.8)
 

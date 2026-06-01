@@ -666,6 +666,8 @@ Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. 
 
 #### M.6 P3 / M.7 — Harness integrations (Done beta, 2026-05-29)
 
+**M.10 harness Tier A (Done beta):** composite observability (`observability_backends` + role-based `resolve_observability_backend`), HITL→PagerDuty runtime path (`create_harness_notification_adapter`, `LAB_HARNESS`), integration tests.
+
 **M.9 harness depth (Done beta):** full adapters (LangSmith, OpenSearch, Vespa, GitLab, PagerDuty, Braintrust), tools (`gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`), `slash_command`, lab harness profile, CI harness-smoke job. Catalog: **99**.
 
 **M.8 harness gap (Done beta):** +14 slugs via `_shared/p4/factories.py`

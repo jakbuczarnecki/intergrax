@@ -25,6 +25,7 @@ from intergrax.runtime.interactions.factory import (
 )
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.applications._shared.notification_wiring import (
+    create_harness_notification_adapter,
     create_resilient_notification_adapter,
     open_host_delivery_ledger,
 )
@@ -51,6 +52,7 @@ class LabIntegrationWiring:
     experiments_db_path: Path | None
     checkpoints_db_path: Path | None
     delivery_ledger: DeliveryLedger | None
+    default_long_running_notify_channel: str = "log"
 
 
 def _sqlite_config_overrides(
@@ -144,11 +146,21 @@ def wire_lab_integrations(
         checkpoints_db_path=checkpoints_db_path,
     )
 
-    notification_adapter = create_resilient_notification_adapter(
-        profile,
-        delivery_ledger=delivery_ledger,
+    notification_adapter = (
+        create_harness_notification_adapter(profile)
+        if harness
+        else create_resilient_notification_adapter(
+            profile,
+            delivery_ledger=delivery_ledger,
+        )
     )
     interaction_adapter = create_lab_interaction_adapter(settings)
+
+    default_notify = (
+        profile.notification_channel.value
+        if harness and profile.notification_channel is not None
+        else "log"
+    )
 
     return LabIntegrationWiring(
         profile=profile,
@@ -163,4 +175,5 @@ def wire_lab_integrations(
         experiments_db_path=experiments_db_path or sqlite_bundle.paths.experiments,
         checkpoints_db_path=checkpoints_db_path or sqlite_bundle.paths.task_checkpoints,
         delivery_ledger=delivery_ledger,
+        default_long_running_notify_channel=default_notify,
     )
