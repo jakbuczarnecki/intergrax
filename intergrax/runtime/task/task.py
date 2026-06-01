@@ -60,9 +60,15 @@ class Task(BaseModel):
 
     @model_validator(mode="after")
     def _hydrate_from_legacy_metadata(self) -> Task:
-        from intergrax.runtime.task.task_metadata_bridge import hydrate_task_from_metadata
+        from intergrax.runtime.task.task_metadata_bridge import (
+            hydrate_task_from_metadata,
+            metadata_needs_hydration,
+        )
 
-        hydrate_task_from_metadata(self)
+        if self.metadata.get("_hydrate_legacy") is False:
+            return self
+        if self.metadata.get("_hydrate_legacy") is True or metadata_needs_hydration(self):
+            hydrate_task_from_metadata(self)
         return self
 
     @property

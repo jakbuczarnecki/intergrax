@@ -7,7 +7,8 @@ from __future__ import annotations
 from typing import Dict, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.uaep import UAEPExecutor, supports_uaep
+from intergrax.agents.uaep import UAEPExecutor
+from intergrax.agents.uaep_protocol import supports_uaep
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.runtime_mapping import runtime_answer_to_agent_result
 from intergrax.contracts.validation import ValidationResult

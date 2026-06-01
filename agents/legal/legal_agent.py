@@ -28,6 +28,7 @@ from intergrax.runtime.nexus.ingestion.attachments import FileSystemAttachmentRe
 from intergrax.runtime.nexus.ingestion.ingestion_service import AttachmentIngestionService
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy, RuntimePolicies
 
 from legal.pipeline.legal_dynamic_pipeline import LegalDynamicPipeline
@@ -64,8 +65,8 @@ class LegalAgent(Agent):
             failure_modes=["governance_abort", "budget_exceeded"],
         )
 
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
+        capability = task_context.capability
         if capability in (None, "legal.contract_review"):
             return CapabilityMatchResult(
                 matched=True,

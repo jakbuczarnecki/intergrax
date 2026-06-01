@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence
+from typing import Optional, Protocol, Sequence
 
 from intergrax.runtime.nexus.tools.tool_runtime import ToolInvocationPlan
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
@@ -13,6 +13,17 @@ from intergrax.tools.unified.constants import (
     WEBSEARCH_QUERY_TOOL_ID,
     WEBSEARCH_TOOL_ALIASES,
 )
+
+
+class TraceEmittingRuntimeState(Protocol):
+    def trace_event(
+        self,
+        *,
+        component: TraceComponent,
+        step: str,
+        message: str,
+        level: TraceLevel,
+    ) -> None: ...
 
 
 class ToolAccessPolicy:
@@ -25,7 +36,7 @@ class ToolAccessPolicy:
         plan: ToolInvocationPlan,
         *,
         allowed_tools: Optional[Sequence[str]],
-        state: Optional[object] = None,
+        state: Optional[TraceEmittingRuntimeState] = None,
     ) -> ToolInvocationPlan:
         normalized = plan.normalized()
         if allowed_tools is None:
@@ -89,14 +100,14 @@ class ToolAccessPolicy:
         return tool_name in allowed
 
     @staticmethod
-    def _emit_denied(state: Optional[object], *, message: str) -> None:
+    def _emit_denied(
+        state: Optional[TraceEmittingRuntimeState], *, message: str
+    ) -> None:
         if state is None:
             return
-        trace_event = getattr(state, "trace_event", None)
-        if callable(trace_event):
-            trace_event(
-                component=TraceComponent.POLICY,
-                step="ToolAccessPolicy",
-                message=message,
-                level=TraceLevel.WARNING,
-            )
+        state.trace_event(
+            component=TraceComponent.POLICY,
+            step="ToolAccessPolicy",
+            message=message,
+            level=TraceLevel.WARNING,
+        )

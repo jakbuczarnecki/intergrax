@@ -1017,6 +1017,9 @@ Use `tool_ids` including `rag.retrieve` instead of legacy plan boolean `use_rag`
 | Hardcode Slack/Postgres/Redis in agent steps | `ToolRequest` + application `IntegrationProfile` |
 | Tie agent to one product | Reusable capability in `agents/` |
 | Document this workflow in multiple files | Update **this guide only** |
+| Use `getattr` / `setattr` on harness paths (`runtime/nexus/`, `agents/`) | Explicit `Protocol` / typed fields; CI `scripts/check_harness_no_getattr.py` |
+| Import or extend `ToolsAgent` in new agents | Catalog `ToolRuntime` + `allowed_tools` on contract (Legal migration: Phase Q+-L.2) |
+| Rely on flat `Task.metadata` keys for options | Typed `Task.options` / `Task.runtime`; opt-in hydrate via `metadata_needs_hydration` |
 
 ---
 

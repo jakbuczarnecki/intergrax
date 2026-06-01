@@ -65,6 +65,8 @@ jobs:
           uv run python scripts/check_agents_vendor_imports.py
           && uv run python scripts/check_production_chat_agent_imports.py
           && uv run python scripts/check_integration_vendor_imports.py
+          && uv run python scripts/check_harness_no_getattr.py
+          && uv run python scripts/check_tools_agent_imports.py
 
   harness-smoke:
     runs-on: ubuntu-latest

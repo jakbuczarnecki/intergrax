@@ -9,7 +9,7 @@ from typing import Awaitable, Callable, Optional, Protocol
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.notification import NotificationAdapter
@@ -20,7 +20,9 @@ from intergrax.runtime.task.task import Task
 
 
 class RuntimeEventPublisher(Protocol):
-    async def __call__(self, event: object, *, task: Optional[Task] = None) -> None: ...
+    async def __call__(
+        self, event: RuntimeEvent, *, task: Optional[Task] = None
+    ) -> None: ...
 
 
 async def maybe_restore_long_running(

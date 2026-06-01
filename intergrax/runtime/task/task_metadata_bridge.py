@@ -228,6 +228,18 @@ def _warn_legacy_metadata_keys(task: Task) -> None:
         )
 
 
+def metadata_needs_hydration(task: "Task") -> bool:
+    """True when flat metadata or embedded contract requires merging into typed fields."""
+    meta = task.metadata
+    if meta.get(TASK_CONTRACT_METADATA_KEY):
+        return True
+    if _has_legacy_keys(meta, _LEGACY_OPTION_KEYS):
+        return True
+    if _has_legacy_keys(meta, _LEGACY_RUNTIME_KEYS):
+        return True
+    return False
+
+
 def hydrate_task_from_metadata(task: Task) -> None:
     _warn_legacy_metadata_keys(task)
     """Merge legacy flat metadata into typed task fields when present."""

@@ -10,6 +10,13 @@ from typing import Any, List, Optional
 from uuid import uuid4
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.uaep_protocol import (
+    UAEPAgent,
+    UAEPAgentWithDecide,
+    UAEPAgentWithResume,
+    is_uaep_agent,
+    supports_uaep,
+)
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepExecutionResult, StepOutput
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -66,13 +73,6 @@ from intergrax.runtime.nexus.context.shared_task_context import (
 
 class UAEPBlockedError(RuntimeError):
     """Raised when middleware/hooks block UAEP execution."""
-
-
-def supports_uaep(agent: Agent) -> bool:
-    """True when agent implements the optional UAEP step protocol (§42.32)."""
-    return callable(getattr(agent, "get_steps", None)) and callable(
-        getattr(agent, "run_step", None)
-    )
 
 
 class _BusEventEmitter:
@@ -407,11 +407,13 @@ class UAEPExecutor:
         ctx: RuntimeExecutionContext,
         cursor: dict[str, Any],
     ) -> StepExecutionResult:
-        resume = getattr(agent, "resume_step", None)
-        if callable(resume):
-            output = await resume(step, ctx, cursor)
+        if isinstance(agent, UAEPAgentWithResume):
+            output = await agent.resume_step(step, ctx, cursor)
             return StepExecutionResult(output=output)
-        output = await agent.run_step(step, ctx)
+        uaep_agent = agent if isinstance(agent, UAEPAgent) else None
+        if uaep_agent is None:
+            raise TypeError(f"{type(agent).__name__} is not a UAEPAgent")
+        output = await uaep_agent.run_step(step, ctx)
         return StepExecutionResult(output=output)
 
     async def _emit_governance(
@@ -448,6 +450,10 @@ class UAEPExecutor:
         step: AgentStep,
         ctx: RuntimeExecutionContext,
     ) -> StepExecutionResult:
+        if not isinstance(agent, UAEPAgent):
+            raise TypeError(
+                f"execute_step requires UAEPAgent, got {type(agent).__name__}"
+            )
         output = await agent.run_step(step, ctx)
         return StepExecutionResult(output=output)
 
@@ -457,6 +463,8 @@ class UAEPExecutor:
         runtime_context: RuntimeContext,
         max_steps: Optional[int],
     ) -> List[AgentStep]:
+        if not isinstance(agent, UAEPAgent):
+            raise TypeError(f"{type(agent).__name__} is not a UAEPAgent")
         steps = list(agent.get_steps(runtime_context))
         if not steps:
             raise ValueError(f"{type(agent).__name__}.get_steps() returned no steps.")
@@ -470,9 +478,8 @@ class UAEPExecutor:
         output: Optional[StepOutput],
         ctx: RuntimeExecutionContext,
     ) -> AgentDecision:
-        decide = getattr(agent, "decide_after_step", None)
-        if callable(decide):
-            return decide(step, output, ctx)
+        if isinstance(agent, UAEPAgentWithDecide):
+            return agent.decide_after_step(step, output, ctx)
         return AgentDecision(type=AgentDecisionType.CONTINUE)
 
     @staticmethod

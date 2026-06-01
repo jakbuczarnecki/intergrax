@@ -37,6 +37,12 @@ async def test_nexus_loop_exposes_middleware() -> None:
     assert loop.middleware is not None
 
 
+def test_nexus_loop_wires_intake_and_planning_runners() -> None:
+    loop = NexusLoop(AgentRegistry())
+    assert type(loop._intake_runner).__name__ == "NexusIntakeRunner"
+    assert type(loop._planning_runner).__name__ == "NexusPlanningRunner"
+
+
 def test_nexus_loop_policy_engine_is_facade() -> None:
     loop = NexusLoop(AgentRegistry())
     from intergrax.runtime.policy.policy_engine import PolicyEngine

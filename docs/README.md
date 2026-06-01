@@ -47,7 +47,7 @@ LLM adapters + metrics   →  LLM_ADAPTERS.md
 | Configure LLM providers (OpenAI, Claude, Bedrock, …) | [LLM_ADAPTERS.md](LLM_ADAPTERS.md), then architecture canon §5.2.2 |
 | LLM/RAG Prometheus, trace DB defaults | [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · architecture §33 |
 | Nexus retry layers | Architecture §31.1 |
-| Nexus orchestration modules | `intergrax/runtime/nexus/orchestration/` (`graph_runner`, `hitl_runner`, …) |
+| Nexus orchestration modules | `intergrax/runtime/nexus/orchestration/` (`intake_runner`, `planning_runner`, `graph_runner`, `hitl_runner`, …) |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
 | Deep-dive UAEP / hooks / governance | Architecture canon §42 |
 
@@ -63,9 +63,9 @@ LLM adapters + metrics   →  LLM_ADAPTERS.md
 | Phase M / M-LLM / M-RAG / N / O | **Done** (beta where noted) |
 | **Phase K — business agents** | **After Q+ Waves 1–3** (product decision) |
 
-**Start implementation:** Plan § Phase Q+ → Wave 1: `Q+.0.3`, `Q+-T.1` … `Q+-T.5`
+**Start implementation:** Plan § Phase Q+ → Wave 2: `Q+-L.2` … `Q+-L.3`, then Wave 3 observability (`Q+-O.1`)
 
-Gate: `uv run pytest -m gate -q` — **417 passed** (2026-06-01)
+Gate: `uv run pytest -m gate -q` — **406 passed** (2026-06-01, Wave 1 partial)
 
 ---
 

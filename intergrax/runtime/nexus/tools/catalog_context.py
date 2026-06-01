@@ -5,27 +5,26 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.runtime_steps.tools import insert_context_before_last_user
+from intergrax.runtime.nexus.tools.context_injection_output import ContextInjectionOutput
+from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
 
 
-def _invoker_registry(state: RuntimeState) -> Any | None:
+def _resolve_invoker(state: RuntimeState) -> ToolInvokerProtocol | None:
     invoker = state.context.config.tool_invoker
     if invoker is None:
         return None
-    registry = getattr(invoker, "registry", None)
-    if registry is None:
-        registry = getattr(invoker, "_base_invoker", None)
-        if registry is not None:
-            registry = getattr(registry, "registry", None) or getattr(registry, "_registry", None)
-    return registry
+    if isinstance(invoker, ToolInvokerProtocol):
+        return invoker
+    return None
 
 
 def invoke_catalog_context_tool(
@@ -42,9 +41,8 @@ def invoke_catalog_context_tool(
     Returns True when the catalog path was attempted (success or handled failure).
     Returns False when no invoker/registry entry — caller should use legacy step logic.
     """
-    invoker = state.context.config.tool_invoker
-    registry = _invoker_registry(state)
-    if invoker is None or registry is None or not registry.has(tool_id):
+    invoker = _resolve_invoker(state)
+    if invoker is None or not invoker.registry.has(tool_id):
         return False
 
     request = ToolExecutionRequest(
@@ -58,8 +56,10 @@ def invoke_catalog_context_tool(
         return True
 
     output = result.output
-    used = bool(getattr(output, "used", True))
-    context_text = str(getattr(output, "context_text", "") or "").strip()
+    if not isinstance(output, ContextInjectionOutput):
+        return True
+    used = bool(output.used)
+    context_text = str(output.context_text or "").strip()
 
     if tool_id == RAG_RETRIEVE_TOOL_ID:
         state.used_rag = used and bool(context_text)

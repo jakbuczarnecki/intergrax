@@ -17,6 +17,7 @@ from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.tools.registry.profile import ToolProfile
@@ -101,8 +102,8 @@ class ResearchAgent(Agent):
             validation_rules=["non_empty_summary"],
         )
 
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
+        capability = task_context.capability
         supported = {"research.web_search", "research.pipeline"}
         if capability in supported or capability is None:
             return CapabilityMatchResult(

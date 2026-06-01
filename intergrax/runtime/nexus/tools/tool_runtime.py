@@ -6,6 +6,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional, Protocol, Sequence, runtime_checkable
 
+from intergrax.runtime.nexus.planning.engine_plan_models import EnginePlan
+
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
 
 if TYPE_CHECKING:
@@ -91,6 +93,10 @@ class ToolPlanLike(Protocol):
     use_websearch: bool
     use_tools: bool
 
+    @property
+    def tool_ids(self) -> Sequence[str]:
+        ...
+
 
 class ToolRuntime:
     """
@@ -102,11 +108,10 @@ class ToolRuntime:
 
     @staticmethod
     def plan_from_like(source: ToolPlanLike) -> ToolInvocationPlan:
-        resolver = getattr(source, "resolved_tool_ids", None)
-        if callable(resolver):
-            tool_ids = resolver()
+        if isinstance(source, EnginePlan):
+            tool_ids = list(source.resolved_tool_ids())
         else:
-            tool_ids = list(getattr(source, "tool_ids", []) or [])
+            tool_ids = list(source.tool_ids)
         return ToolInvocationPlan.from_legacy(
             use_rag=bool(source.use_rag),
             use_websearch=bool(source.use_websearch),

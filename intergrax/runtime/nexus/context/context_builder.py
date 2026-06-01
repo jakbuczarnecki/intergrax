@@ -112,13 +112,14 @@ class ContextBuilder:
         query_text = str(request.message or "")
 
         where: Dict[str, Any] = {}
-        for attr in ("id", "user_id", "tenant_id", "workspace_id"):
-            value = getattr(session, attr) if hasattr(session, attr) else None
-            if value is not None:
-                if attr == "id":
-                    where["session_id"] = value
-                else:
-                    where[attr] = value
+        if session.id:
+            where["session_id"] = session.id
+        if session.user_id is not None:
+            where["user_id"] = session.user_id
+        if session.tenant_id:
+            where["tenant_id"] = session.tenant_id
+        if session.workspace_id is not None:
+            where["workspace_id"] = session.workspace_id
 
         max_docs: int = int(self._config.max_docs_per_query)
         score_threshold: Optional[float] = self._config.rag_score_threshold
