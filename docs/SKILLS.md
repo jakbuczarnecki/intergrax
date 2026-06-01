@@ -17,7 +17,7 @@ Agent        →  UAEP module with skill_ids[] on AgentContract
 
 Skills are **not** invoked by the LLM. The runtime **resolves** them into `allowed_tools` and metadata before execution.
 
-**Unified RAG path (R-Context.4):** Prefer catalog tool `rag.retrieve` in resolved `allowed_tools` / `tool_ids`. Legacy request metadata `use_rag` remains for Nexus compatibility; `ContextBuilder` also enables retrieval when `rag.retrieve` is present in `allowed_tools`. New agents should not add `use_rag` flags — bind `rag.retrieve` via skills or contract tools.
+**Unified RAG path (R-Context.4 — Done):** Prefer catalog tool `rag.retrieve` in resolved `allowed_tools` / `tool_ids`. `RuntimeToolGateway` capability plans use `tool_ids` first; legal bridge passes `tool_ids` only. `LegalToolPlan.use_rag` remains for LLM structured output and syncs to `tool_ids` via Pydantic validator — not passed to Nexus. Legacy metadata `use_rag` still honored in `ContextBuilder` for older callers.
 
 ---
 

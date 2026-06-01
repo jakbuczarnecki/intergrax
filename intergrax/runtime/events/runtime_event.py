@@ -26,6 +26,7 @@ class RuntimeEventType(str, Enum):
     CONTEXT_BUILT = "context_built"
     CONTEXT_ASSEMBLED = "context_assembled"
     CONTEXT_TRIMMED = "context_trimmed"
+    INGESTION_FAILED = "ingestion_failed"
     SKILL_RESOLVED = "skill_resolved"
     SKILL_IMPORT_FAILED = "skill_import_failed"
     STEP_STARTED = "step_started"

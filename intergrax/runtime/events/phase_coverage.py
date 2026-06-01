@@ -18,6 +18,7 @@ EVENT_PHASE_COVERAGE: dict[RuntimeEventType, ExecutionPhase] = {
     RuntimeEventType.CONTEXT_BUILT: ExecutionPhase.CONTEXT_BUILDING,
     RuntimeEventType.CONTEXT_ASSEMBLED: ExecutionPhase.CONTEXT_BUILDING,
     RuntimeEventType.CONTEXT_TRIMMED: ExecutionPhase.CONTEXT_BUILDING,
+    RuntimeEventType.INGESTION_FAILED: ExecutionPhase.CONTEXT_BUILDING,
     RuntimeEventType.SKILL_RESOLVED: ExecutionPhase.AGENT_SELECTION,
     RuntimeEventType.SKILL_IMPORT_FAILED: ExecutionPhase.AGENT_SELECTION,
     RuntimeEventType.STEP_STARTED: ExecutionPhase.STEP_EXECUTION,

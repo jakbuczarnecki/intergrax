@@ -34,6 +34,8 @@ from intergrax.rag.document_splitters.contracts.base_documents_splitter import B
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.events.ingestion_events import record_ingestion_failed
 from intergrax.runtime.nexus.context.context_builder import RetrievedChunk
 from intergrax.runtime.nexus.ingestion.attachments import AttachmentResolver
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
@@ -90,6 +92,7 @@ class AttachmentIngestionService:
         loader: Optional[BaseDocumentsLoader] = None,
         splitter: Optional[BaseDocumentsSplitter] = None,
         trace_writer: Optional[RunTraceWriter] = None,
+        event_bus: Optional[RuntimeEventBus] = None,
     ) -> None:
         """
         Args:
@@ -124,6 +127,7 @@ class AttachmentIngestionService:
         self._loader = loader
         self._splitter = splitter
         self._trace_writer = trace_writer
+        self._event_bus = event_bus
 
     def bind_trace_writer(self, trace_writer: RunTraceWriter) -> None:
         """Late-bind trace writer when created after service construction (RuntimeContext.build)."""
@@ -159,14 +163,36 @@ class AttachmentIngestionService:
         results: List[IngestionResult] = []
 
         for attachment in attachments:
-            result = await self._ingest_single_attachment(
-                attachment=attachment,
-                session_id=session_id,
-                user_id=user_id,
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                run_id=run_id,
-            )
+            try:
+                result = await self._ingest_single_attachment(
+                    attachment=attachment,
+                    session_id=session_id,
+                    user_id=user_id,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    run_id=run_id,
+                )
+            except (FileNotFoundError, ValueError, OSError) as exc:
+                record_ingestion_failed(
+                    self._event_bus,
+                    attachment_id=attachment.id,
+                    session_id=session_id,
+                    user_id=user_id,
+                    tenant_id=tenant_id,
+                    run_id=run_id,
+                    error=exc,
+                )
+                result = IngestionResult(
+                    attachment_id=attachment.id,
+                    attachment_type=attachment.type,
+                    num_chunks=0,
+                    vector_ids=[],
+                    metadata={
+                        "reason": "ingestion_failed",
+                        "error_type": type(exc).__name__,
+                        "error_message": str(exc),
+                    },
+                )
             results.append(result)
 
         return results
