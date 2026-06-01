@@ -5,7 +5,9 @@ import pytest
 from intergrax.skills.importers.cursor_skill_md import CursorSkillImportError, CursorSkillImporter
 
 
-@pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
 def test_cursor_skill_importer_parses_frontmatter() -> None:
     text = """---
 name: demo.skill
@@ -22,7 +24,6 @@ risk_tier: medium
     assert manifest.tool_ids == ("rag.retrieve", "websearch.query")
 
 
-@pytest.mark.unit
 def test_cursor_skill_importer_requires_frontmatter() -> None:
     with pytest.raises(CursorSkillImportError):
         CursorSkillImporter().import_text("# no frontmatter", default_skill_id="x")

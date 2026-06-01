@@ -66,6 +66,7 @@ def create_lab_application(
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
         harness=settings.harness,
+        otel_enabled=settings.otel_enabled,
     )
     resolved_registry = registry or build_lab_registry(
         settings=settings,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from intergrax.skills.providers.harness.bundle import register_harness_skill_bundle
 from intergrax.skills.providers.legal.bundle import register_legal_skill_bundle
 from intergrax.skills.providers.research.bundle import register_research_skill_bundle
 from intergrax.skills.registry.catalog import register_skill_bundle
@@ -13,6 +14,7 @@ def register_default_skills() -> None:
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED:
         return
+    register_harness_skill_bundle()
     register_legal_skill_bundle()
     register_research_skill_bundle()
     _BOOTSTRAPPED = True

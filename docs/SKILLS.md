@@ -1,6 +1,6 @@
 # Intergrax Skill Library
 
-**Last updated:** 2026-06-01 · Phase R MVP **Done** (see plan Appendix E)
+**Last updated:** 2026-06-01 · Phase R MVP **Done** · Phase S platform `harness.*` bundle **Done**
 
 Composable **capability packs** between the [Tool Library](TOOLS.md) and Tier-2 agents. Canon: [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.8 · Harness terms: §5.3 · Tracker: [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Appendix E.
 
@@ -92,7 +92,7 @@ python -m intergrax.scaffold new-skill legal.my_skill --domain legal
 
 Register the bundle in `intergrax/skills/registry/bootstrap.py`.
 
-**Application profiles:** `legal_application` enables bundle `legal`; `research_application` enables `research`; `lab_application` enables `legal` + `research` (see `intergrax/applications/_shared/skill_wiring.py`).
+**Application profiles:** `lab_application` enables `harness` + `legal` + `research`; `legal_application` → `legal`; `research_application` → `research` (see `skill_wiring.py`, [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md)).
 
 ---
 
@@ -100,6 +100,9 @@ Register the bundle in `intergrax/skills/registry/bootstrap.py`.
 
 | skill_id | Bundle | Status |
 |----------|--------|--------|
+| `harness.tool_smoke` | `harness` | **Done** (Phase S) |
+| `harness.context_demo` | `harness` | **Done** (Phase S) |
+| `harness.trace_read` | `harness` | **Done** (Phase S) |
 | `legal.contract_review` | `legal` | **Done** |
 | `research.literature_scan` | `research` | **Done** |
 

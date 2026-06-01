@@ -17,7 +17,7 @@ def register_qdrant_integration(*, override: bool = False) -> None:
             slug=IntegrationSlug.QDRANT.value,
             categories=(IntegrationCategory.VECTOR_STORE,),
             factory=create_qdrant_vector_store,
-            status=IntegrationStatus.BETA,
+            status=IntegrationStatus.STABLE,
             env_prefix="INTERGRAX_QDRANT",
             description="Qdrant vector store catalog bridge — delegates to intergrax/rag/ QdrantVectorStore",
         ),

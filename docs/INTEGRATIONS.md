@@ -1,6 +1,6 @@
 # Intergrax Integration Library
 
-**Last updated:** 2026-05-30
+**Last updated:** 2026-06-01 (Phase S harness stable stack)
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 
@@ -15,6 +15,30 @@ The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular
 | Per-provider guides | `intergrax/integrations/providers/<category>/<slug>/USAGE.md` |
 | [../infra/README.md](../infra/README.md) | **Local Docker infrastructure** — compose profiles, manage scripts |
 | [../infra/PORTS.md](../infra/PORTS.md) | Host port matrix for integration tests |
+| [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) | Lab harness stack, OTLP, verification |
+
+---
+
+## Harness lab stable stack (Phase S)
+
+The **lab harness environment** treats these catalog slugs as **`stable`** (production-ready for the reference lab stack). Source of truth: `intergrax/integrations/registry/harness_lab_stack.py`.
+
+| Slug | Category |
+|------|----------|
+| `sqlite` | relational_store |
+| `redis` | key_value_cache |
+| `qdrant` | vector_store |
+| `slack` | notification_channel + interaction_surface |
+| `sentry` | observability_backend |
+| `otel` | observability_backend |
+| `lab_json` | interaction_surface |
+| `log` | notification_channel |
+
+```bash
+uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -m gate -q
+```
+
+Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 99 providers stable in one release.
 
 ---
 

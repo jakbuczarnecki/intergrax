@@ -16,7 +16,7 @@ def register_otel_integration(*, override: bool = False) -> None:
             slug=IntegrationSlug.OTEL.value,
             categories=(IntegrationCategory.OBSERVABILITY_BACKEND,),
             factory=create_otel_observability_backend,
-            status=IntegrationStatus.BETA,
+            status=IntegrationStatus.STABLE,
             env_prefix="INTERGRAX_OTEL",
             description="otel integration (Phase M.6 P2/P3)",
         ),

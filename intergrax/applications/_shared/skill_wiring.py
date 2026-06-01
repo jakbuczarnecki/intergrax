@@ -23,8 +23,13 @@ def build_application_skill_wiring(profile: SkillProfile) -> ApplicationSkillWir
 
 
 def lab_skill_profile() -> SkillProfile:
-    """Lab may host legal mock paths and optional research agents — enable both bundles."""
-    return SkillProfile(enabled_bundles=["legal", "research"])
+    """Lab harness preset: platform harness skills plus legal/research domain bundles."""
+    return SkillProfile(enabled_bundles=["harness", "legal", "research"])
+
+
+def harness_platform_skill_profile() -> SkillProfile:
+    """Platform-only harness skills (no domain bundles)."""
+    return SkillProfile(enabled_bundles=["harness"])
 
 
 def research_skill_profile() -> SkillProfile:

@@ -16,7 +16,7 @@ def register_sentry_integration(*, override: bool = False) -> None:
             slug=IntegrationSlug.SENTRY.value,
             categories=(IntegrationCategory.OBSERVABILITY_BACKEND,),
             factory=create_sentry_observability_backend,
-            status=IntegrationStatus.BETA,
+            status=IntegrationStatus.STABLE,
             env_prefix="INTERGRAX_SENTRY",
             description="sentry integration (Phase M.7)",
         ),

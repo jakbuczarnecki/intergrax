@@ -97,4 +97,7 @@ jobs:
           tests/integration/runtime/test_harness_hitl_pagerduty.py
           tests/unit/applications/test_task_defaults.py
           tests/unit/applications/test_harness_default_notify.py
+          tests/unit/integrations/test_harness_lab_stable_stack.py
+          tests/unit/skills/test_harness_skill_bundle.py
+          tests/unit/applications/test_lab_harness_environment_wiring.py
           -q --tb=line

@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-01 (plan §1/§6, canon §7.1.8, root README skill examples synced)
+**Last updated:** 2026-06-01 (Phase S, development strategy, canon §2/§50–§52)
 
 The `docs/` folder holds the canonical platform documentation.
 
@@ -10,12 +10,14 @@ The `docs/` folder holds the canonical platform documentation.
 
 | Document | Purpose |
 |----------|---------|
+| [**INTERGRAX_DEVELOPMENT_STRATEGY.md**](INTERGRAX_DEVELOPMENT_STRATEGY.md) | **Strategic goal** — decision hierarchy, lab vs production harness, work cycle |
 | [**intergrax_runtime_architecture.md**](intergrax_runtime_architecture.md) | **Architecture canon** — tiers, Nexus, UAEP §42, retry (§31), observability & trace storage (§33), RAG stack (§7.1.2) |
-| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; Appendix A–D, **E (Harness AI)** |
+| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; Appendix A–F |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — all implemented providers, contracts, wiring, usage links |
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — atomic LLM/MCP tools, engine status, four-layer stack |
 | [**SKILLS.md**](SKILLS.md) | **Skill Library** — composable capability packs, registry, importers |
+| [**HARNESS_ENVIRONMENT.md**](HARNESS_ENVIRONMENT.md) | **Harness environment** — lab stack, OTLP, skills preset, verification |
 | [**../README.md**](../README.md) | **GitHub landing** — tiers, Integration/Tool/Skill/Agent stack, links to canon and plan |
 | [**LLM_ADAPTERS.md**](LLM_ADAPTERS.md) | **LLM adapter catalog** — providers, streaming, tools, env vars, Prometheus/governance |
 | [**../infra/README.md**](../infra/README.md) | **Local Docker infra** — compose profiles, `manage.sh` |
@@ -23,13 +25,15 @@ The `docs/` folder holds the canonical platform documentation.
 | **This file** | Navigation and update rules |
 
 ```text
-Architecture (what)        →  intergrax_runtime_architecture.md
-Implementation (status)  →  INTERGRAX_IMPLEMENTATION_PLAN.md
-Agent workflow (how)     →  AGENT_CREATION_GUIDE.md
-Integrations (catalog)   →  INTEGRATIONS.md
-Tools (catalog)          →  TOOLS.md
-Skills (catalog)         →  SKILLS.md
-LLM adapters + metrics   →  LLM_ADAPTERS.md
+Strategy (why / priority)   →  INTERGRAX_DEVELOPMENT_STRATEGY.md
+Architecture (what)         →  intergrax_runtime_architecture.md
+Implementation (status)   →  INTERGRAX_IMPLEMENTATION_PLAN.md
+Agent workflow (how)      →  AGENT_CREATION_GUIDE.md
+Integrations (catalog)    →  INTEGRATIONS.md
+Tools (catalog)           →  TOOLS.md
+Skills (catalog)          →  SKILLS.md
+Harness environment       →  HARNESS_ENVIRONMENT.md
+LLM adapters + metrics    →  LLM_ADAPTERS.md
 ```
 
 ---
@@ -38,11 +42,13 @@ LLM adapters + metrics   →  LLM_ADAPTERS.md
 
 | I want to… | Read |
 |------------|------|
-| Understand the platform | Implementation plan §0, then architecture canon §1–§5 |
-| See current phase and what's next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4 — **Phase K** (next); Q+ and R **Done** |
+| Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) |
+| Understand the platform | Strategy doc, then implementation plan §0, then architecture canon §1–§5 |
+| See current phase and what's next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4 — **Phase S** (next); Q+, R **Done** |
 | Harness AI terminology | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §5.3 |
 | Post-audit hardening tracker | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Appendix D** (Q+ **Done**) |
 | Harness AI alignment (skills, context) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Appendix E** (R **Done**) · canon §5.3, §7.1.8 |
+| Harness environment (lab stack, OTLP, ops) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase S** + **Appendix F** · `HARNESS_ENVIRONMENT.md` (S-Doc.1) |
 | Check readiness for business agents | Implementation plan **Appendix A** |
 | Review technical debt before Tier-1 work | Implementation plan **Appendix B** |
 | Wire external systems (DB, Slack, Jira, …) | [INTEGRATIONS.md](INTEGRATIONS.md), then architecture canon §7.1 |
@@ -69,9 +75,10 @@ LLM adapters + metrics   →  LLM_ADAPTERS.md
 | Phase Q — Harness quality | **Done** (Appendix C) |
 | Phase L — Agent OS certification | **Done** |
 | Phase M / M-LLM / M-RAG / N / O | **Done** (beta where noted) |
-| **Phase K — business agents** | **Next** — product agents on certified harness |
+| **Phase S — Harness environment GA** | **Done** (2026-06-01) — [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) · [Appendix F](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-f--harness-environment-traceability-phase-s) |
+| **Phase K — Business agents** | **Next** (product) — K.1 / K.2 |
 
-Gate: `uv run pytest -m gate -q` — **450 passed** (2026-06-01)
+Gate: `uv run pytest -m gate -q` — **460 passed** (2026-06-01)
 
 Harness CI also runs: `python scripts/check_harness_no_getattr.py` (zero grandfathered paths)
 
@@ -79,10 +86,11 @@ Harness CI also runs: `python scripts/check_harness_no_getattr.py` (zero grandfa
 
 ## Update rules
 
-1. **Architecture** (including observability, retry semantics, trace storage, RAG metrics) → `intergrax_runtime_architecture.md`, then sync §0 in the plan.
-2. **Status / phases / gaps** → `INTERGRAX_IMPLEMENTATION_PLAN.md` (§0, phase sections, appendices).
-3. **Agent author workflow** → `AGENT_CREATION_GUIDE.md`.
-4. **Integration or tool catalog changes** → `INTEGRATIONS.md` or `TOOLS.md` respectively.
-5. **Skill packs / importers** → `SKILLS.md` + plan Appendix E.
-6. **Harness AI terms** → `intergrax_runtime_architecture.md` §5.3 only (single source of truth).
-7. After each merged harness PR: run gate + getattr audit; update §0 gate count in the plan footer.
+1. **Strategy** (goal, hierarchy, work cycle) → `INTERGRAX_DEVELOPMENT_STRATEGY.md`.
+2. **Architecture** (including observability, retry semantics, trace storage, RAG metrics) → `intergrax_runtime_architecture.md`, then sync §0 in the plan.
+3. **Status / phases / gaps** → `INTERGRAX_IMPLEMENTATION_PLAN.md` (§0, phase sections, appendices).
+4. **Agent author workflow** → `AGENT_CREATION_GUIDE.md`.
+5. **Integration or tool catalog changes** → `INTEGRATIONS.md` or `TOOLS.md` respectively.
+6. **Skill packs / importers** → `SKILLS.md` + plan Appendix E (and Phase S when prod proof).
+7. **Harness AI terms** → `intergrax_runtime_architecture.md` §5.3 only (single source of truth).
+8. After each merged harness PR: run gate + getattr audit; update §0 gate count in the plan footer.

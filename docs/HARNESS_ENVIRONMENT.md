@@ -1,0 +1,125 @@
+# Intergrax Harness Environment
+
+**Last updated:** 2026-06-01 · Phase S (Harness environment GA)
+
+Operator and author guide for the **lab harness stack** — Tier-0 integrations, Tier-1 Nexus, Tier-3 `lab_application` wiring, platform skills, and observability. Business agents (Problem Radar, Vendor Discovery) are **Phase K** and out of scope here.
+
+**Related:** [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase S · [SKILLS.md](SKILLS.md) · [INTEGRATIONS.md](INTEGRATIONS.md) · Architecture [§5.3](intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model)
+
+---
+
+## What “harness environment” means
+
+```text
+Tier-3  lab_application  →  IntegrationProfile + ToolProfile + SkillProfile + policy bundle
+Tier-1  NexusLoop        →  UAEP, trace, context budget, delegation, ToolRuntime
+Tier-0  integrations + tools + skills + llm_adapters
+Tier-2  agents/          →  echo, signoff_probe, research, legal (existing reference agents)
+```
+
+Phase S completes **environment** readiness so any new agent uses Integration → Tool → Skill → Agent without further platform gaps.
+
+---
+
+## Lab harness stable integration stack
+
+These slugs are **`stable`** in the catalog (see `intergrax/integrations/registry/harness_lab_stack.py`):
+
+| Slug | Category | Role in lab |
+|------|----------|-------------|
+| `sqlite` | relational_store | Trace, events, checkpoints, experiments (when DB paths set) |
+| `redis` | key_value_cache | Optional distributed cache / rate limits |
+| `qdrant` | vector_store | Production RAG vector backend (when enabled in profile) |
+| `slack` | notification + interaction | Product webhooks (optional) |
+| `sentry` | observability_backend | Error capture (harness vendor profile) |
+| `otel` | observability_backend | OTLP-oriented facade |
+| `lab_json` | interaction_surface | `POST /v1/interactions/intake` lab JSON |
+| `log` | notification_channel | Default lab notifications |
+
+**Regression:** `pytest tests/unit/integrations/test_harness_lab_stable_stack.py -m gate`
+
+---
+
+## Integration profiles
+
+| Profile | Factory | Use when |
+|---------|---------|----------|
+| `IntegrationProfile.lab()` | Default | Local dev — sqlite + log + lab_json + docling |
+| `IntegrationProfile.harness_environment()` | `LAB_OTEL_ENABLED=true` | OTEL observability facade on sqlite/log/lab_json |
+| `IntegrationProfile.harness_lab()` | `LAB_HARNESS=true` | LangSmith + Sentry + PagerDuty vendor harness (M.9) |
+
+Lab wiring: `applications/lab_application/host/integration_wiring.py` → `wire_lab_integrations()`.
+
+---
+
+## OTLP / observability (S-Ops.2)
+
+Environment variables (see `applications/lab_application/.env.example`):
+
+| Variable | Purpose |
+|----------|---------|
+| `LAB_OTEL_ENABLED` | Use `IntegrationProfile.harness_environment()` (OTEL primary backend) |
+| `INTERGRAX_OTEL_ENDPOINT` | Collector URL (default `http://localhost:4318`) |
+| `INTERGRAX_OTEL_SERVICE_NAME` | Service name tag (default `intergrax`) |
+
+Without a collector, the OTEL adapter uses a **noop exporter** — safe for CI and local gate tests.
+
+**Trace and metrics (debug API):**
+
+```bash
+uv run uvicorn lab_application.host.main:app --host 127.0.0.1 --port 8090
+# POST /v1/lab/run  →  GET /debug/tasks/{id}/trace?include_runtime=true
+# GET /debug/tasks/{id}/metrics
+```
+
+Runtime events: `GET /debug/tasks/{id}/events` when SQLite runtime events DB is wired.
+
+**Context engineering events** (Tier-1): `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` — see architecture §28.1.
+
+---
+
+## Skill preset (lab)
+
+`lab_skill_profile()` enables bundles: **`harness`**, **`legal`**, **`research`**.
+
+### Platform harness skills (Phase S-H.1)
+
+| skill_id | Tools | Purpose |
+|----------|-------|---------|
+| `harness.tool_smoke` | `rag.retrieve`, `websearch.query` | Tool catalog smoke |
+| `harness.context_demo` | `rag.retrieve` | Context budget exercises |
+| `harness.trace_read` | `sandbox.exec` | Isolated diagnostics |
+
+Agents should set `AgentContract.skill_ids` — not duplicate tool lists in agent code.
+
+---
+
+## Tool preset (lab)
+
+Default enabled tools: `rag.retrieve`, `websearch.query`, `sandbox.exec`.
+
+With `LAB_HARNESS=true`, also: `errors.capture`, `observability.query_traces`, `pagerduty.trigger_incident`, etc.
+
+---
+
+## Policy bundle
+
+`build_runtime_policy_bundle()` on lab registry build — tool scope, memory, budget, HITL fragments. Read order: architecture §42.11.5.
+
+---
+
+## Verification commands
+
+```bash
+uv run pytest -m gate -q
+python scripts/check_harness_no_getattr.py
+uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -q
+uv run pytest tests/unit/skills/test_harness_skill_bundle.py -q
+uv run pytest tests/acceptance/agent_os/test_lab_application.py -m gate -q
+```
+
+---
+
+## Phase K (deferred)
+
+Problem Radar and Vendor Discovery agents start only after Phase S definition of done is met. See implementation plan Phase K.

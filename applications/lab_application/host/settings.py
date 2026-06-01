@@ -27,6 +27,7 @@ class LabApplicationSettings:
     include_mcp: bool = True
     mcp_mount_path: str = "/mcp"
     harness: bool = False
+    otel_enabled: bool = False
 
     @classmethod
     def from_env(cls) -> LabApplicationSettings:
@@ -86,6 +87,11 @@ class LabApplicationSettings:
             "true",
             "yes",
         }
+        otel_enabled = (os.getenv("LAB_OTEL_ENABLED") or "false").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+        }
         return cls(
             environment=environment,
             route_prefix=prefix,
@@ -101,4 +107,5 @@ class LabApplicationSettings:
             include_mcp=include_mcp,
             mcp_mount_path=mcp_mount,
             harness=harness,
+            otel_enabled=otel_enabled,
         )

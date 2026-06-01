@@ -2,7 +2,7 @@
 
 Status: Canonical architecture and implementation guide  
 
-**Documentation (four-document model):** [`README.md`](README.md) · Implementation map: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) · Integration catalog: [`INTEGRATIONS.md`](INTEGRATIONS.md) · Tool catalog: [`TOOLS.md`](TOOLS.md)
+**Documentation model:** [`README.md`](README.md) · **Strategy:** [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) · Implementation map: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) · Integration catalog: [`INTEGRATIONS.md`](INTEGRATIONS.md) · Tool catalog: [`TOOLS.md`](TOOLS.md) · Skill catalog: [`SKILLS.md`](SKILLS.md)
 
 Audience: Humans, LLMs, Cursor AI agents, implementation agents, future maintainers  
 Purpose: Define the Intergrax runtime architecture, implementation rules, agent model, orchestration model, adapter model, experimentation model and forbidden patterns.
@@ -44,11 +44,18 @@ This document is an architectural and implementation guide.
 
 # 2. Executive Summary
 
-Intergrax is an AI Operating System / Agent Runtime / Harness AI environment.
+Intergrax is an AI Operating System / Agent Runtime / **Harness AI environment**.
 
-The current goal is NOT to build a finished SaaS product.
+**Strategic goal (priority 1):** build a **production-grade Harness AI** and Agent OS — orchestration, tools, skills, context, policy, trace, and composable agents at a standard comparable to modern agent platforms (Cursor, Claude Code, Codex-class harnesses, Viktor, enterprise agent runtimes). See [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md).
 
-The current goal is to build an internal agent experimentation laboratory where new agentic capabilities can be created, tested, observed, validated, improved or discarded quickly.
+**Operating model — two modes on one codebase:**
+
+| Mode | Goal |
+|------|------|
+| **Laboratory** | Rapid experimentation — create, run, observe, validate or discard agent hypotheses quickly |
+| **Production harness** | Certified runtime + reference business agents + stable integration paths + operational observability |
+
+Intergrax is **not** a finished multi-tenant SaaS product today (§4). The laboratory mode remains the **fast path for new ideas**; production harness is the **strategic destination** for agents that graduate from experiments (Phase S in the implementation plan).
 
 The ideal workflow is:
 
@@ -127,7 +134,7 @@ Intergrax is NOT:
 - a direct competitor to Viktor
 - a product-first startup at this stage
 
-Intergrax should learn from Cursor AI, Viktor, NotebookLM and modern agent runtimes, but the current goal is to build a controlled internal experimentation environment.
+Intergrax should learn from Cursor AI, Viktor, NotebookLM and modern agent runtimes. The **laboratory** optimizes for controlled experimentation; the **harness** optimizes for governed, repeatable production agent work — same runtime, different maturity gates (implementation plan Phase L → Q/Q+/R → S).
 
 ---
 
@@ -2936,7 +2943,7 @@ Agents provide **domain logic**. The runtime owns **execution governance**.
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Implementation status note (2026-05-27):** §42 platform infrastructure is **complete for laboratory and product hosts**. All Tier-3 factories (`lab`, `legal`, `research`, `poc_template`) use validating runtime event persistence, default runtime plugins, and resilient notification delivery (when webhook backend configured). Debug API covers trace, metrics, runtime events, delivery DLQ, and experiments. Remaining work is **product agents** (Phase K, Legal E2E B.15) and optional beta provider hardening in deploy configs — not runtime core gaps.
+**Implementation status note (2026-05-27):** §42 platform infrastructure is **complete for laboratory and product hosts**. All Tier-3 factories (`lab`, `legal`, `research`, `poc_template`) use validating runtime event persistence, default runtime plugins, and resilient notification delivery (when webhook backend configured). Debug API covers trace, metrics, runtime events, delivery DLQ, and experiments. Remaining work is **harness environment GA** (Phase S: stable integration stack, OTLP, platform skills, operator docs), then **Phase K** business agents (K.1/K.2), Legal E2E B.15, and optional beta provider hardening — not runtime core gaps.
 
 ### §42 Table Of Contents
 
@@ -4827,9 +4834,11 @@ Intergrax may later evolve into:
 
 But these are future possibilities.
 
-Current priority:
+**Near-term platform priority (post Phase R MVP):**
 
-> Build a reliable minimal runtime for fast agent experimentation.
+> Prove **production harness** on the certified Agent OS: reference business agents, skill catalog depth, and stable provider paths — while keeping the laboratory fast path for new hypotheses.
+
+**Long-term evolution** (§50) — marketplace, multi-tenant SaaS, visual workflow builder — remains out of scope until harness proof (Phase S) is met.
 
 ---
 
@@ -4839,7 +4848,7 @@ Intergrax is a **four-tier AI platform**: Platform (Tier-0) → Nexus Agent OS (
 
 Intergrax is a **unified, event-driven Agent OS and Harness AI runtime** governed by §42 Unified Execution Runtime Specification.
 
-The current purpose of Intergrax is to serve as an internal laboratory for rapid experimentation with agentic business functionality.
+Intergrax serves **both** as an internal **agent experimentation laboratory** and as a **Harness AI environment** for production agent work. New capabilities SHOULD start in the lab workflow (§2); capabilities that ship to users MUST consume Integration → Tool → **Skill** → Agent (§5.3, §7.1.8) on the shared Nexus harness — not private runtimes or duplicated instruction packs.
 
 Tier-1 Nexus is the global orchestration runtime (Agent OS).
 
@@ -4863,23 +4872,24 @@ This is the core architectural direction of Intergrax.
 
 # 52. Phase L — Agent OS Readiness (Implementation Directive)
 
-**Status:** **Done** (2026-05-27). Ongoing harness hardening: **Phase Q** in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) (not a blocker for new agents).
+**Status:** **Done** (2026-05-27). Follow-on harness work: **Phase Q / Q+ / R (MVP) Done**; **Phase S** (harness environment GA) is **next** — see [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
 
-Before implementing business agents (Problem Radar, Vendor Discovery, Legal expansion), Intergrax MUST formalize its Agent Operating System behavior:
+Before implementing business agents (Problem Radar, Vendor Discovery, Legal expansion), Intergrax formalized Agent Operating System behavior:
 
 | Artifact | Purpose |
 |----------|---------|
+| [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) | Strategic goal, decision hierarchy, work cycle |
 | `INTERGRAX_IMPLEMENTATION_PLAN.md` | Phases, status, acceptance mapping, Appendix A checklist |
 | `AGENT_CREATION_GUIDE.md` | Canonical agent workflow |
 | `applications/lab_application/` | Universal Tier-3 experimentation environment |
 | `intergrax/scaffold new-agent` | UAEP-first agent scaffold |
 | `tests/acceptance/agent_os/` | Agent OS acceptance suite |
 
-**Acceptance question:** Can a developer create a new agent in < 1 hour, register it, execute through Nexus, inspect traces, and iterate **without modifying runtime infrastructure**?
+**Acceptance question (L — met):** Can a developer create a new agent in < 1 hour, register it, execute through Nexus, inspect traces, and iterate **without modifying runtime infrastructure**?
 
-Business agents are **consumers** of the runtime. They must not drive runtime evolution.
+**Harness environment question (S — open):** Is the **lab harness stack** (integrations, OTLP, platform skills, operator docs) complete so any Tier-2 agent — including future K.1/K.2 — runs on a production-ready environment without further Tier-0/Tier-3 gaps?
 
-See implementation plan Phase L tracking (§3) and **Appendix A** in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+Business agents are **consumers** of the runtime. They must not drive **one-off** runtime evolution (§0.6 in the implementation plan). Platform gaps found while building K.1/K.2 that affect **many future agents** still require Tier-1/Tier-0 changes with canon updates first.
 
-Do not update this file. Edit the canon §52 + implementation plan instead.
+See implementation plan Phase L (§3), **Phase S**, and **Appendix A** in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
 

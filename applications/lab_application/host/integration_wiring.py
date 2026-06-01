@@ -78,8 +78,14 @@ def build_lab_integration_profile(
     *,
     sqlite_overrides: dict[str, Path] | None = None,
     harness: bool = False,
+    otel_enabled: bool = False,
 ) -> IntegrationProfile:
-    profile = IntegrationProfile.harness_lab() if harness else IntegrationProfile.lab()
+    if harness:
+        profile = IntegrationProfile.harness_lab()
+    elif otel_enabled:
+        profile = IntegrationProfile.harness_environment()
+    else:
+        profile = IntegrationProfile.lab()
     if not sqlite_overrides:
         return profile
     return profile.model_copy(
@@ -110,12 +116,14 @@ def wire_lab_integrations(
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
     harness: bool = False,
+    otel_enabled: bool = False,
 ) -> LabIntegrationWiring:
     """
     Single composition root for lab persistence, notifications, and interaction surface.
 
     Uses ``IntegrationProfile.lab()`` (sqlite + log + lab_json) with optional SQLite path overrides.
     Set ``harness=True`` for LangSmith/Sentry/PagerDuty harness stack (Phase M.9).
+    Set ``otel_enabled=True`` (or ``LAB_OTEL_ENABLED``) for OTEL observability facade (Phase S-Ops.2).
     """
     register_default_integrations()
 
@@ -125,7 +133,11 @@ def wire_lab_integrations(
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
     )
-    profile = build_lab_integration_profile(sqlite_overrides=sqlite_overrides or None, harness=harness)
+    profile = build_lab_integration_profile(
+        sqlite_overrides=sqlite_overrides or None,
+        harness=harness,
+        otel_enabled=otel_enabled,
+    )
     sqlite_bundle = create_sqlite_integration(**sqlite_overrides)
 
     if db_path is None:

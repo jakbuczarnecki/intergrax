@@ -15,7 +15,7 @@ The core asset is not a single chatbot or domain agent. It is the **runtime** th
 - enforce tools, skills (composable capability packs), governance, and observability consistently,
 - run experiments with full traceability (CLI and HTTP debug surfaces).
 
-Intergrax is developed as an **internal agent experimentation laboratory** on the path toward a broader agent platform. See [Documentation](#documentation) below for all canonical docs.
+Intergrax is a **Harness AI runtime** and **Agent OS**: fast **laboratory** workflows for new ideas, with a defined path to **production harness** proof (reference agents, skills, stable integrations). See [Documentation](#documentation) and [Development strategy](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md).
 
 ---
 
@@ -26,6 +26,7 @@ All platform documentation lives in [`docs/`](docs/). Canonical docs — one sou
 | Document | Read when you want to… |
 |----------|------------------------|
 | [docs/README.md](docs/README.md) | Navigate docs, see current phase focus, update rules |
+| [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Strategic goal, decision hierarchy, standard work cycle |
 | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Full architecture canon (tiers, Nexus, UAEP §42) |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, gaps, priority, business-agent checklist (Appendix A) |
 | [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) | Create an agent: scaffold → register → run → inspect |
@@ -37,7 +38,7 @@ All platform documentation lives in [`docs/`](docs/). Canonical docs — one sou
 | [intergrax/applications/USAGE.md](intergrax/applications/USAGE.md) | Tier-3 composition engine: manifest, typed bindings, registry |
 | [applications/USAGE.md](applications/USAGE.md) | Application layout: env, Docker, host, run |
 
-**Quick paths:** new agent → [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md) · **integrations** → [INTEGRATIONS](docs/INTEGRATIONS.md) · **tools** → [TOOLS](docs/TOOLS.md) · **skills** → [SKILLS](docs/SKILLS.md) · **LLM** → [LLM_ADAPTERS](docs/LLM_ADAPTERS.md) · **new application** → [applications/USAGE](applications/USAGE.md) · **current phase** → [IMPLEMENTATION_PLAN](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) §4 (**Phase K** next; Q+ and R Done) · **Harness terms** → [architecture §5.3](docs/intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model)
+**Quick paths:** strategy → [DEVELOPMENT_STRATEGY](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) · new agent → [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md) · **integrations** → [INTEGRATIONS](docs/INTEGRATIONS.md) · **tools** → [TOOLS](docs/TOOLS.md) · **skills** → [SKILLS](docs/SKILLS.md) · **LLM** → [LLM_ADAPTERS](docs/LLM_ADAPTERS.md) · **new application** → [applications/USAGE](applications/USAGE.md) · **current phase** → [IMPLEMENTATION_PLAN](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) §4 (**Phase S** next; Q+ and R Done) · **Harness terms** → [architecture §5.3](docs/intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model)
 
 ---
 
@@ -393,9 +394,10 @@ Intergrax is under **active development** (private R&D). Phase status, prioritie
 |-------|--------|
 | **Q+** | Harness hardening — **Done** (Appendix D) |
 | **R** | Harness AI alignment (Skill Library, context, delegation, policy) — **Done (MVP)** (Appendix E) |
-| **K** | Business agents — **next** (product roadmap) |
+| **S** | Harness environment GA — **Done** (2026-06-01) — [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) |
+| **K** | Business agents — **next** when product prioritizes (K.1/K.2) |
 
-Regression gate: `uv run pytest -m gate -q` — **450 passed** (2026-06-01). Also: `python scripts/check_harness_no_getattr.py`
+Regression gate: `uv run pytest -m gate -q` — **460 passed** (2026-06-01). Also: `python scripts/check_harness_no_getattr.py`
 
 ---
 

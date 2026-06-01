@@ -152,6 +152,20 @@ class IntegrationProfile(BaseModel):
         )
 
     @classmethod
+    def harness_environment(cls) -> IntegrationProfile:
+        """
+        Phase S lab harness stack — sqlite persistence, log notifications, lab JSON intake,
+        OTEL observability facade (noop exporter unless ``INTERGRAX_OTEL_ENDPOINT`` targets a collector).
+        """
+        return cls(
+            relational_store=IntegrationSlug.SQLITE,
+            notification_channel=IntegrationSlug.LOG,
+            interaction_surface=IntegrationSlug.LAB_JSON,
+            observability_backend=IntegrationSlug.OTEL,
+            options={IntegrationSlug.OTEL: {}},
+        )
+
+    @classmethod
     def legal_product(cls) -> IntegrationProfile:
         """Legal Tier-3 defaults — SQLite observability, in-memory vectors, Docling + Cohere rerank."""
         return cls(
