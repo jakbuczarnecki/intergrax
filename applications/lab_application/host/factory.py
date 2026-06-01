@@ -30,6 +30,7 @@ from lab_application.host.wiring import build_lab_registry
 from lab_application.mcp.server import build_lab_mcp_server
 from intergrax.applications._shared.task_defaults import make_lab_harness_task_enricher
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+from intergrax.applications._shared.task_memory_wiring import wire_task_memory
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from lab_application.serving.fastapi_router import mount_lab_routes
 
@@ -70,12 +71,15 @@ def create_lab_application(
         settings=settings,
         integration_profile=integrations.profile,
     )
+    task_memory = wire_task_memory(warn_if_disabled=settings.harness)
     nexus_loop = NexusLoop(
         resolved_registry,
         checkpoint_store=integrations.checkpoint_store,
         trace_store=integrations.trace_store,
         runtime_event_store=integrations.runtime_event_store,
         notification_adapter=integrations.notification_adapter,
+        task_memory_store=task_memory.store,
+        task_memory_db_path=task_memory.db_path,
     )
     plugin_bootstrap = bootstrap_nexus_platform(
         nexus_loop,

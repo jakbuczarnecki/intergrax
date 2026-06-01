@@ -25,6 +25,7 @@ from intergrax.runtime.replay.policy import (
 from intergrax.runtime.replay.policy_config import ExecutionPolicyConfig
 from intergrax.runtime.replay.regression import RegressionSignals
 from intergrax.runtime.replay.run_diff import RunDiff
+from intergrax.llm_adapters.governance.llm_cost import LLMCostEvaluation, evaluate_llm_run_cost
 
 PolicyEngineInput = Union["PolicyEngine", RuntimePolicyEngine, None]
 
@@ -65,6 +66,25 @@ class PolicyEngine:
         if self.replay is None:
             return ReplayPolicyDecision(PolicyDecisionType.ALLOW, [])
         return self.replay.evaluate(metrics, regression, diff=diff)
+
+    def evaluate_llm_cost_on_task_completed(
+        self,
+        *,
+        tenant_id: str,
+        run_id: str,
+    ) -> tuple[LLMCostEvaluation, ReplayPolicyDecision]:
+        """
+        Governance signal after task completion (Phase Q-L.6).
+
+        Returns cost evaluation and a replay-style decision (WARN when soft threshold exceeded).
+        """
+        cost = evaluate_llm_run_cost(tenant_id=tenant_id, run_id=run_id)
+        if cost.warn_threshold_exceeded:
+            return cost, ReplayPolicyDecision(
+                PolicyDecisionType.WARN,
+                [f"llm_cost:{r}" for r in cost.reasons],
+            )
+        return cost, ReplayPolicyDecision(PolicyDecisionType.ALLOW, [])
 
 
 def coerce_policy_engine(engine: PolicyEngineInput) -> PolicyEngine:

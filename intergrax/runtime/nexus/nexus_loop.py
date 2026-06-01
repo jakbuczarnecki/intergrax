@@ -42,10 +42,12 @@ from intergrax.runtime.nexus.orchestration.human_response import (
     normalize_human_response,
     persist_human_decision,
 )
-from intergrax.runtime.nexus.orchestration.workspace_cleanup import (
-    cleanup_sandbox_for_task,
-    cleanup_shadow_for_task,
+from intergrax.runtime.nexus.orchestration.long_running_bridge import (
+    maybe_checkpoint_long_running,
+    maybe_restore_long_running,
 )
+from intergrax.runtime.nexus.orchestration.task_finisher import build_nexus_task_result
+from intergrax.runtime.nexus.execution.execution_graph import ExecutionNode
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
@@ -443,7 +445,7 @@ class NexusLoop:
         def _on_node_start(node: object) -> None:
             trace_emitter.emit(task, message=f"graph node start: {getattr(node, 'node_id', node)}")
 
-        def _on_node_complete(node: object) -> None:
+        def _on_node_complete(node: ExecutionNode) -> None:
             trace_emitter.emit(
                 task,
                 message=f"graph node complete: {getattr(node, 'node_id', node)} "
@@ -697,137 +699,27 @@ class NexusLoop:
         retry_records: List[RetryRecord],
         graph_id: str,
     ) -> TaskResult:
-        primary = executions[-1] if executions else None
-        composer_meta = self._composer.compose_metadata(
-            executions,
-            classification=task.classification or "",
-            plan_id=plan.plan_id if plan else "",
-            retry_count=len(retry_records),
-        )
-
-        execution_metrics = aggregate_execution_metrics(executions)
-
-        gov_human_request = None
-        gov = task.runtime.governance
-        if gov.human_request is not None:
-            gov_human_request = human_request_event_payload(
-                gov.human_request,
-                created_at_utc=gov.human_request_created_at,
-                expires_at_utc=gov.human_request_expires_at,
-            )
-        elif executions and executions[-1].human_request:
-            gov_human_request = human_request_event_payload(
-                executions[-1].human_request,
-                created_at_utc=SystemTimeProvider.utc_now().isoformat(),
-            )
-
-        isolation = TaskIsolationSummary()
-        if primary and primary.structured_data.get(SHADOW_WORKSPACE_ID_KEY):
-            isolation.shadow_workspace_id = str(primary.structured_data[SHADOW_WORKSPACE_ID_KEY])
-            artifact_count = primary.structured_data.get("shadow_artifact_count")
-            if artifact_count is not None:
-                isolation.shadow_artifact_count = int(artifact_count)
-
-        if primary and primary.structured_data.get(SANDBOX_SESSION_ID_KEY):
-            isolation.sandbox_session_id = str(primary.structured_data[SANDBOX_SESSION_ID_KEY])
-            operation_count = primary.structured_data.get("sandbox_operation_count")
-            if operation_count is not None:
-                isolation.sandbox_operation_count = int(operation_count)
-
-        escalation_level = HumanPauseCoordinator.escalation_level(task)
-        escalation_chain = list(task.runtime.governance.escalation_chain)
-
-        summary = TaskResultSummary(
-            validation=TaskValidationSummary(
-                valid=validation.valid,
-                errors=list(validation.errors),
-                warnings=list(validation.warnings),
-            ),
-            metrics=TaskExecutionMetrics(
-                cost=execution_metrics.cost,
-                total_tokens=execution_metrics.total_tokens,
-                runtime_events=len(self._event_bus.history),
-                task_trace_events=len(trace_emitter.events),
-            ),
-            isolation=isolation,
-            orchestration=TaskOrchestrationSummary(
-                classification=composer_meta.get("classification", ""),
-                plan_id=composer_meta.get("plan_id", ""),
-                graph_id=graph_id,
-                graph_node_count=len(plan.steps) if plan else 0,
-                agent_count=composer_meta.get("agent_count", 0),
-                agent_ids=list(composer_meta.get("agent_ids") or []),
-                retry_count=composer_meta.get("retry_count", 0),
-                retries=[
-                    TaskRetryRecord(
-                        attempt=r.attempt,
-                        agent_id=r.agent_id,
-                        alternate_agent_id=r.alternate_agent_id,
-                        reason=r.reason,
-                    )
-                    for r in retry_records
-                ],
-                all_completed=bool(composer_meta.get("all_completed")),
-            ),
-            escalation_level=escalation_level,
-            escalation_chain=escalation_chain,
-            governance_human_request=gov_human_request,
-            checkpoint_id=task.runtime.orchestration.checkpoint_id,
-            resume_token=task.runtime.orchestration.resume_token,
-            progress_message=task.runtime.orchestration.progress_message,
-        )
-
-        cleanup_shadow_for_task(task, executions, shadow_manager=self._shadow_manager)
-        cleanup_sandbox_for_task(task, executions, sandbox_manager=self._sandbox_manager)
-
-        task.sync_metadata()
-        result = TaskResult(
-            task_id=task.task_id,
-            run_id=primary.run_id if primary else task.task_id,
-            state=task.state,
+        return build_nexus_task_result(
+            task,
+            trace_emitter,
             answer=answer,
-            agent_id=primary.agent_id if primary else task.agent_id,
-            execution_result=primary,
-            summary=summary,
-            metadata=dict(composer_meta),
+            executions=executions,
+            validation=validation,
+            plan=plan,
+            retry_records=retry_records,
+            graph_id=graph_id,
+            composer=self._composer,
+            event_bus=self._event_bus,
+            shadow_manager=self._shadow_manager,
+            sandbox_manager=self._sandbox_manager,
         )
-        for key in (
-            TaskMetadataKey.GOVERNANCE_HUMAN_REQUEST,
-            TaskMetadataKey.HUMAN_REQUEST_CREATED_AT,
-            TaskMetadataKey.HUMAN_REQUEST_EXPIRES_AT,
-        ):
-            if key in task.metadata:
-                result.metadata[key] = task.metadata[key]
-        result.sync_metadata()
-        return result
 
     async def _maybe_restore_long_running(self, task: Task) -> None:
-        if self._checkpoint_store is None:
-            return
-        restored = LongRunningCoordinator.restore_if_resuming(task, self._checkpoint_store)
-        if restored is None:
-            return
-        await self._publish_runtime_event(
-            runtime_event_from_task_state(
-                task,
-                run_id=task.task_id,
-                message="long-running task restored from checkpoint",
-            ).model_copy(
-                update={
-                    "event_type": RuntimeEventType.RESUMED,
-                    "phase": ExecutionPhase.HUMAN_APPROVAL,
-                    "payload": {
-                        "checkpoint_id": restored.checkpoint_id,
-                        "resume_token": restored.resume_token,
-                    },
-                }
-            )
-        )
-        await LongRunningCoordinator.notify_progress(
+        await maybe_restore_long_running(
             task,
-            subject="Task resumed",
-            body=restored.progress_message or "checkpoint restored",
-            adapter=self._notification_adapter,
+            checkpoint_store=self._checkpoint_store,
+            publish=self._publish_runtime_event,
+            notification_adapter=self._notification_adapter,
         )
 
     async def _maybe_checkpoint_long_running(
@@ -839,66 +731,16 @@ class NexusLoop:
         graph: Optional[object] = None,
         last_execution: Optional[AgentExecutionResult] = None,
     ) -> None:
-        if self._checkpoint_store is None or not LongRunningCoordinator.should_checkpoint(task):
-            return
-        from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
-
-        graph_obj = graph if isinstance(graph, ExecutionGraph) else None
-        checkpoint = LongRunningCoordinator.persist_checkpoint(
+        await maybe_checkpoint_long_running(
             task,
-            self._checkpoint_store,
+            checkpoint_store=self._checkpoint_store,
+            publish=self._publish_runtime_event,
+            notification_adapter=self._notification_adapter,
             progress_message=progress_message,
             plan=plan,
-            graph=graph_obj,
+            graph=graph,
             last_execution=last_execution,
         )
-        from intergrax.runtime.long_running.partial_results import partial_result_from_checkpoint
-
-        partial = partial_result_from_checkpoint(checkpoint)
-        await self._publish_runtime_event(
-            runtime_event_from_task_state(
-                task,
-                run_id=task.task_id,
-                message="long-running checkpoint saved",
-            ).model_copy(
-                update={
-                    "event_type": RuntimeEventType.PAUSED,
-                    "phase": ExecutionPhase.HUMAN_APPROVAL,
-                    "payload": {
-                        "checkpoint_id": checkpoint.checkpoint_id,
-                        "resume_token": checkpoint.resume_token,
-                        "progress_message": progress_message,
-                    },
-                }
-            )
-        )
-        await self._publish_runtime_event(
-            runtime_event_from_task_state(
-                task,
-                run_id=task.task_id,
-                message=progress_message or "task progress",
-            ).model_copy(
-                update={
-                    "event_type": RuntimeEventType.TASK_PROGRESS,
-                    "phase": ExecutionPhase.STEP_EXECUTION,
-                    "payload": partial.model_dump(mode="json"),
-                }
-            )
-        )
-        if task.runtime.governance.human_request is not None:
-            await LongRunningCoordinator.notify_hitl_pause(
-                task,
-                progress_message=progress_message,
-                adapter=self._notification_adapter,
-            )
-        else:
-            await LongRunningCoordinator.notify_partial_result(
-                task,
-                progress_message=progress_message,
-                partial_payload=partial.partial_payload,
-                last_step_summary=partial.last_step_summary,
-                adapter=self._notification_adapter,
-            )
 
     async def _publish_runtime_event(
         self,

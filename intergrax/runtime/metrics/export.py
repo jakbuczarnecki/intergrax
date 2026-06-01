@@ -11,7 +11,12 @@ from typing import Any, Dict, List, Optional
 from intergrax.runtime.governance.contracts.metrics_record_dto import RunMetricsRecord
 from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
 from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent
 from intergrax.runtime.replay.metrics import ExecutionMetrics
+
+_LLM_SCHEMA_MARKERS = frozenset({"llm", "llm_usage", "llm_call"})
+_TOOL_SCHEMA_MARKERS = frozenset({"tool", "tool_call"})
+_GRAPH_MESSAGE_MARKERS = frozenset({"graph"})
 
 
 @dataclass(slots=True)
@@ -116,18 +121,35 @@ def _summarize_trace_events(events: List[Any]) -> Dict[str, int]:
             message = str(event.get("message") or "")
             step = str(event.get("step") or "")
             schema_id = str(event.get("payload_schema_id") or "")
+            component = str(event.get("component") or "")
+        elif isinstance(event, TraceEvent):
+            message = event.message
+            step = event.step
+            schema_id = ""
+            if event.payload is not None:
+                schema_id = str(getattr(event.payload.__class__, "schema_id", lambda: "")() or "")
+            component = event.component.value
         else:
             message = str(getattr(event, "message", "") or "")
             step = str(getattr(event, "step", "") or "")
             schema_id = str(getattr(event, "payload_schema_id", "") or "")
-        if "graph" in message.lower():
+            component = str(getattr(event, "component", "") or "")
+        lower_msg = message.lower()
+        if any(m in lower_msg for m in _GRAPH_MESSAGE_MARKERS):
             graph_events += 1
         if step:
             step_events += 1
-        if schema_id and "tool" in schema_id.lower():
+        sid = schema_id.lower()
+        if sid and any(m in sid for m in _TOOL_SCHEMA_MARKERS):
             tool_events += 1
-        if schema_id and "llm" in schema_id.lower():
+        elif component in (TraceComponent.TOOLS.value, TraceComponent.STEP.value):
+            if component == TraceComponent.TOOLS.value:
+                tool_events += 1
+        if sid and any(m in sid for m in _LLM_SCHEMA_MARKERS):
             llm_events += 1
+        elif component in (TraceComponent.ENGINE.value, TraceComponent.STEP.value):
+            if "llm" in step.lower():
+                llm_events += 1
     return {
         "graph_events": graph_events,
         "step_events": step_events,

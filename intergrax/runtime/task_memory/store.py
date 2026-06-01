@@ -5,8 +5,11 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_TASK_MEMORY_DB,
@@ -38,6 +41,7 @@ def resolve_task_memory_persistence(
     *,
     db_path: Path | None = None,
     implementation: TaskMemoryPersistence | None = None,
+    warn_if_disabled: bool = False,
 ) -> TaskMemoryPersistence | None:
     """
     Resolve TaskMemory for composition roots (debug app, NexusLoop, tests).
@@ -49,5 +53,11 @@ def resolve_task_memory_persistence(
     if implementation is not None:
         return implementation
     if db_path is None and not os.environ.get(ENV_TASK_MEMORY_DB, "").strip():
+        if warn_if_disabled:
+            logger.warning(
+                "TaskMemory persistence disabled (set %s or pass task_memory_db_path); "
+                "UAEP step memory and /debug task-memory views will be empty.",
+                ENV_TASK_MEMORY_DB,
+            )
         return None
     return open_task_memory_store(db_path)

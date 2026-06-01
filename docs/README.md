@@ -56,14 +56,14 @@ LLM observability          →  LLM_OBSERVABILITY.md
 
 | Phase | Status |
 |-------|--------|
-| **Phase Q — Harness quality & consolidation** | **In progress** — Waves 1–4 delivered (RAG bootstrap, hooks §42, config sections, Nexus orchestration helpers, legacy ChatAgent removal); remaining: full NexusLoop split, memory docs, LLM catalog polish — [Appendix C](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-c--harness-audit-traceability-phase-q) |
+| **Phase Q — Harness quality & consolidation** | **In progress** — Waves 1–5 delivered (orchestration finisher, task memory wiring, LTM via RetrievalService, policy LLM cost, single-retrieval test); remaining: NexusLoop &lt;600 lines, scaffold template sync, Phase K agents — [Appendix C](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-c--harness-audit-traceability-phase-q) |
 | Phase L — Agent OS certification | **Done** |
 | Phase M / M-LLM / M-RAG / N / O | **Done** (beta where noted) |
 | Phase K — Problem Radar / Vendor Discovery | **After Q Waves 1–4** (product decision; may override) |
 
 **Phase Q references:** [NEXUS_RETRY_SEMANTICS.md](NEXUS_RETRY_SEMANTICS.md) · [RAG_OBSERVABILITY.md](RAG_OBSERVABILITY.md) · [LLM_OBSERVABILITY.md](LLM_OBSERVABILITY.md)
 
-Gate: `uv run pytest -m gate -q` — **404 passed** (must stay green after each Q PR)
+Gate: `uv run pytest -m gate -q` — **411 passed** (must stay green after each Q PR)
 
 ---
 

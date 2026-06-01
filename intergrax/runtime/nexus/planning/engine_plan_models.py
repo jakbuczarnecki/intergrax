@@ -8,7 +8,9 @@ from hashlib import sha256
 import hashlib
 import json
 import pprint
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
+
+from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
 
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 
@@ -53,6 +55,18 @@ class EnginePlan:
     use_user_longterm_memory: bool = False
     use_rag: bool = False
     use_tools: bool = False
+    tool_ids: List[str] = field(default_factory=list)
+
+    def resolved_tool_ids(self) -> List[str]:
+        ids = list(self.tool_ids)
+        if self.use_rag and RAG_RETRIEVE_TOOL_ID not in ids:
+            ids.append(RAG_RETRIEVE_TOOL_ID)
+        if self.use_websearch and WEBSEARCH_QUERY_TOOL_ID not in ids:
+            ids.append(WEBSEARCH_QUERY_TOOL_ID)
+        return list(dict.fromkeys(ids))
+
+    def uses_legacy_rag_flag_only(self) -> bool:
+        return self.use_rag and not self.tool_ids
 
     def fingerprint(self) -> str:
       """

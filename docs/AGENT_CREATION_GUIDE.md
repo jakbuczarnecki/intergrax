@@ -986,7 +986,7 @@ Prefer `python -m intergrax.scaffold new-application <name> --profile lab|produc
 | Task KV | `TaskMemory` (`INTERGRAX_TASK_MEMORY_DB`) | Per-task scratch state, UAEP steps |
 | Shared graph context | `shared_task_context` metadata | Multi-agent handoff on one Nexus task |
 
-Enable SQLite task memory in Tier-3 via `wire_task_memory` and `.env.example` (`INTERGRAX_TASK_MEMORY_DB`).
+Enable SQLite task memory in Tier-3 via `wire_task_memory` from `intergrax.applications._shared.task_memory_wiring` and `.env.example` (`INTERGRAX_TASK_MEMORY_DB`). Lab factory calls this when `LAB_*` harness is active.
 
 ### Three “context builders”
 
