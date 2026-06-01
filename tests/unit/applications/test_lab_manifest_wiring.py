@@ -40,3 +40,17 @@ def test_build_lab_registry_via_manifest_and_builders() -> None:
     ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
     registry = build_application_registry(manifest, ctx, builders=LAB_AGENT_BUILDERS)
     assert registry.has("echo")
+
+
+def test_build_lab_registry_with_research_resolves_skill_ids() -> None:
+    settings = LabApplicationSettings(
+        include_echo=False,
+        include_mock_agents=False,
+        include_research=True,
+    )
+    registry = build_lab_registry(settings=settings)
+    assert registry.has("research")
+    contract = registry.get_contract("research")
+    assert "research.literature_scan" in contract.skill_ids
+    assert "rag.retrieve" in contract.allowed_tools
+    assert "websearch.query" in contract.allowed_tools

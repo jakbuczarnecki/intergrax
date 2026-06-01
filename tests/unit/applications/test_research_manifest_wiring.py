@@ -23,6 +23,10 @@ def test_build_research_registry_registers_pipeline_agents() -> None:
     ids = set(registry.list_agent_ids())
     assert "research" in ids
     assert "research-summary" in ids
+    research_contract = registry.get_contract("research")
+    assert "research.literature_scan" in research_contract.skill_ids
+    assert "rag.retrieve" in research_contract.allowed_tools
+    assert "websearch.query" in research_contract.allowed_tools
 
 
 def test_build_research_registry_via_builders() -> None:

@@ -1002,7 +1002,7 @@ Use `tool_ids` including `rag.retrieve` instead of legacy plan boolean `use_rag`
 
 ### Context engineering (Harness AI)
 
-Nexus owns **what the LLM sees** per step (`ContextManager`, `TaskContextAssemblyOptions`, `MemoryView`). See architecture §28.1. Phase **R-Context** adds `ContextBudgetPolicy` (central trim + trace events).
+Nexus owns **what the LLM sees** per step (`ContextManager`, `TaskContextAssemblyOptions`, `MemoryView`). See architecture §28.1. `ContextBudgetPolicy` provides central trim + `CONTEXT_ASSEMBLED` / `CONTEXT_TRIMMED` events (R-Context **Done**).
 
 ### Integration → Tool → Skill → Agent
 
@@ -1010,9 +1010,9 @@ Nexus owns **what the LLM sees** per step (`ContextManager`, `TaskContextAssembl
 |-------|------------------|----------------|
 | Integration | — | `IntegrationProfile` |
 | Tool | `allowed_tools` | `ToolProfile` |
-| Skill (Phase R) | `skill_ids` on contract | `SkillProfile` |
+| Skill | `skill_ids` on contract | `SkillProfile` |
 
-Do **not** register markdown instruction packs as `ToolContract`. Import external skills via `SkillImporter` (plan Phase R-Skill.8). Canon: §7.1.8.
+Do **not** register markdown instruction packs as `ToolContract`. Import external skills via `CursorSkillImporter` — see [SKILLS.md](SKILLS.md). Canon: §7.1.8.
 
 ---
 
@@ -1030,12 +1030,25 @@ Do **not** register markdown instruction packs as `ToolContract`. Import externa
 | Import `integrations/providers/` from `agents/` | Declare `allowed_tools`; wire slugs in Tier-3 `factory.py` |
 | Hardcode Slack/Postgres/Redis in agent steps | `ToolRequest` + application `IntegrationProfile` |
 | Model a business workflow as one giant `ToolContract` | **Skill** pack (tool_ids + prompts) + UAEP steps on agent |
-| Copy prompt + tool lists into every new agent | Reuse `skill_ids` from Skill Library (Phase R) |
+| Copy prompt + tool lists into every new agent | Reuse `skill_ids` from [Skill Library](SKILLS.md) |
 | Tie agent to one product | Reusable capability in `agents/` |
 | Document this workflow in multiple files | Update **this guide only** |
 | Use `getattr` / `setattr` on harness paths (`runtime/nexus/`, `agents/`) | Explicit `Protocol` / typed fields; CI `scripts/check_harness_no_getattr.py` |
 | Import or extend `ToolsAgent` in new agents | `CatalogToolPlanner` + `ToolRuntime` + `allowed_tools` on contract |
 | Rely on flat `Task.metadata` keys for options | Typed `Task.options` / `Task.runtime`; opt-in hydrate via `metadata_needs_hydration` |
+
+### CI and import gates (§5.2 reuse)
+
+Run before opening a harness PR (see `scripts/`):
+
+| Script | Enforces |
+|--------|----------|
+| `check_harness_no_getattr.py` | No new `getattr`/`setattr` under `runtime/nexus/` and `agents/` |
+| `check_tools_agent_imports.py` | No new production imports of legacy `ToolsAgent` |
+| `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |
+| `check_integration_vendor_imports.py` | Tier-0 does not import application/agent trees incorrectly |
+| `check_production_chat_agent_imports.py` | No `ChatAgent` on production paths |
+| `check_legacy_package_boundaries.py` | Supervisor/chains not pulled into runtime/applications |
 
 ---
 

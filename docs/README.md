@@ -11,7 +11,7 @@ The `docs/` folder holds the canonical platform documentation.
 | Document | Purpose |
 |----------|---------|
 | [**intergrax_runtime_architecture.md**](intergrax_runtime_architecture.md) | **Architecture canon** — tiers, Nexus, UAEP §42, retry (§31), observability & trace storage (§33), RAG stack (§7.1.2) |
-| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; Appendix A–D, **E (Phase R / Harness AI)** |
+| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; Appendix A–D, **E (Harness AI)** |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — all implemented providers, contracts, wiring, usage links |
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — atomic LLM/MCP tools, engine status, four-layer stack |
@@ -39,7 +39,8 @@ LLM adapters + metrics   →  LLM_ADAPTERS.md
 | I want to… | Read |
 |------------|------|
 | Understand the platform | Implementation plan §0, then architecture canon §1–§5 |
-| See current phase and what's next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4 — **Phase K** (business agents) |
+| See current phase and what's next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4 — **Phase K** (next); Q+ and R **Done** |
+| Harness AI terminology | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §5.3 |
 | Post-audit hardening tracker | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Appendix D** (Q+ **Done**) |
 | Harness AI alignment (skills, context) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Appendix E** (R **Done**) · canon §5.3, §7.1.8 |
 | Check readiness for business agents | Implementation plan **Appendix A** |
@@ -82,5 +83,6 @@ Harness CI also runs: `python scripts/check_harness_no_getattr.py` (zero grandfa
 2. **Status / phases / gaps** → `INTERGRAX_IMPLEMENTATION_PLAN.md` (§0, phase sections, appendices).
 3. **Agent author workflow** → `AGENT_CREATION_GUIDE.md`.
 4. **Integration or tool catalog changes** → `INTEGRATIONS.md` or `TOOLS.md` respectively.
-5. **Skill packs / importers** → `SKILLS.md` + plan Phase R.
-6. After each merged harness PR: run gate + getattr audit; update §0 gate count in the plan footer.
+5. **Skill packs / importers** → `SKILLS.md` + plan Appendix E.
+6. **Harness AI terms** → `intergrax_runtime_architecture.md` §5.3 only (single source of truth).
+7. After each merged harness PR: run gate + getattr audit; update §0 gate count in the plan footer.

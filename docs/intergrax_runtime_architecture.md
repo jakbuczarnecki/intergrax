@@ -57,7 +57,7 @@ new idea
     -> define agent capability
     -> implement agent contract
     -> register agent in Nexus
-    -> connect integrations, tools, and (Phase R) skills
+    -> connect integrations, tools, and skills (Skill Library MVP)
     -> run experiment
     -> observe traces, cost, quality and failures
     -> validate or reject hypothesis
@@ -102,7 +102,7 @@ Intergrax IS:
 - a Capability Execution Platform
 - a runtime for testing business and technical agent hypotheses
 - a system for integrating agentic work with real organizational tools
-- a **Skill Library** for reusable capability packs (tools + prompts + policy) above the Tool Library (§7.1.8; implementation Phase R)
+- a **Skill Library** for reusable capability packs (tools + prompts + policy) above the Tool Library (§7.1.8; **MVP Done**, Phase R)
 
 Intergrax is designed to answer this question:
 
@@ -457,7 +457,7 @@ Intergrax is a **Harness AI environment** (Agent OS). Industry harness literatur
 
 | Harness AI term | Intergrax implementation |
 |-----------------|---------------------------|
-| **Scaffold** | `python -m intergrax.scaffold` (`new-agent`, `new-application`, `new-stack`; `new-skill` — Phase R-Skill.7) |
+| **Scaffold** | `python -m intergrax.scaffold` (`new-agent`, `new-application`, `new-stack`, `new-skill`) |
 | **Harness** | Tier-1 **Nexus** + Tier-0 platform + Tier-3 **Application** wiring (policy, tools, integrations, trace) |
 | **LLM** | Tier-0 `intergrax/llm_adapters/` — invoked per step/plan; not embedded inside Tier-2 agent class |
 | **Agent** | Tier-2 module (`agents/<name>/`) implementing `Agent` + `AgentContract` + UAEP |
@@ -486,9 +486,9 @@ Agents MUST NOT call integrations directly. Skills MUST NOT replace `ToolRuntime
 | Option | Description | Verdict |
 |--------|-------------|---------|
 | **1 — Skills = tools** | Encode instructions + multi-tool workflows as oversized tools | **Rejected** — breaks atomic LLM function schema, MCP export, risk/idempotency per operation, and external tool ecosystems |
-| **2 — Skill Library** | Fourth layer: Integration → Tool → **Skill** → Agent | **Adopted** — Phase R in implementation plan; importers for external formats (e.g. Cursor `SKILL.md`) after manifest validation |
+| **2 — Skill Library** | Fourth layer: Integration → Tool → **Skill** → Agent | **Adopted** — **MVP Done**; importers for external formats (e.g. Cursor `SKILL.md`) after manifest validation |
 
-Implementation tracker: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase R, Appendix E.
+Implementation tracker: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Appendix E · catalog [`SKILLS.md`](SKILLS.md).
 
 ---
 
@@ -561,7 +561,7 @@ User / API (Tier-3)
 
 | Tier | Section | Package / folder |
 |------|---------|------------------|
-| Tier-0 Platform | §7.1 | `intergrax/` + **`integrations/`** + **`tools/`** + **`skills/`** (Phase R) catalogs; rag, memory, queueing, … |
+| Tier-0 Platform | §7.1 | `intergrax/` + **`integrations/`** + **`tools/`** + **`skills/`** catalogs; rag, memory, queueing, … |
 | Tier-1 Nexus | §7.2 | `intergrax/runtime/`, `intergrax/contracts/` |
 | Tier-2 Agents | §7.3 | `agents/<name>/` |
 | Tier-3 Applications | §7.4 | `applications/<name>/` |
@@ -877,7 +877,7 @@ Tier-0  Integration Library   →  vendor/backend Protocols (swappable at deploy
 |-------|---------|----------|---------|
 | **Integration** | `intergrax/integrations/` | Tool handlers, Tier-3 wiring, RAG bootstrap | `IssueTracker.search_issues(jql)` |
 | **Tool** | `intergrax/tools/providers/<domain>/` | LLM tool-calling, MCP, UAEP `ToolRequest` | `jira.search_tasks(project, status, assignee)` |
-| **Skill** | `intergrax/skills/providers/<domain>/` (Phase R) | Agent composition, importers | `legal.contract_review` → tools + prompts |
+| **Skill** | `intergrax/skills/providers/<domain>/` | Agent composition, importers | `legal.contract_review` → tools + prompts |
 | **Agent** | `agents/<name>/` | Nexus routing | `skill_ids=["legal.contract_review"]` |
 
 **Target layout:**
@@ -933,7 +933,7 @@ intergrax/tools/
 | **LLM providers** | `intergrax/llm_adapters/` | Not tools — separate registry (§5.2.2) |
 | **Agent business logic** | `agents/<name>/` | Domain steps; may *call* tools, not define platform catalog entries |
 | **Orchestration / planning** | Tier-1 Nexus | Selects tools; does not implement tool handlers |
-| **Cursor-style skill files** | `intergrax/skills/importers/` (Phase R) | Import via **`SkillImporter`** → validated `SkillManifest`; MUST NOT register as `ToolContract` |
+| **Cursor-style skill files** | `intergrax/skills/importers/` | Import via **`SkillImporter`** → validated `SkillManifest`; MUST NOT register as `ToolContract` |
 
 **Dual export (agent + MCP):**
 
@@ -993,8 +993,8 @@ Agent / planner
 
 ### 7.1.8 Skill Library — Composable Capability Packs
 
-**Status:** Architecture **defined**; implementation **Phase R** ([`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) R-Skill.*).  
-**Catalog:** [`SKILLS.md`](SKILLS.md).
+**Status:** Architecture **defined**; implementation **MVP Done** (Phase R, 2026-06-01).  
+**Catalog:** [`SKILLS.md`](SKILLS.md) · **Harness AI terms:** §5.3 (this document).
 
 **Runtime events:** `SKILL_RESOLVED` / `SKILL_IMPORT_FAILED` via `runtime/events/context_skill_recording.py`; registration and import service call `RuntimeEventBus.record()`.
 
@@ -2368,7 +2368,7 @@ Rules:
 | Summary tiers | `FULL` / `SUMMARY_ONLY` / `STRUCTURED_ONLY` / `MINIMAL` | Limits prior task noise |
 | Memory stores | Session, user LTM, task KV, shared handoff | See §27; access via `MemoryView` only |
 | Context injection tools | `rag.retrieve`, `websearch.query` (`injects_context: true`) | Evidence into prompt via tool path |
-| **Context budget** (Phase R) | `ContextBudgetPolicy` | Central `max_chars` / trim with `CONTEXT_TRIMMED` events |
+| **Context budget** | `ContextBudgetPolicy` | Central `max_chars` / trim with `CONTEXT_TRIMMED` events |
 
 ### Rules
 
@@ -3511,11 +3511,11 @@ RuntimePolicyBundle:
 
 **Composition rules:**
 
-- Tier-3 application factory builds the bundle once at startup (Phase R-Policy) → `ApplicationBuildContext.policy_bundle` → `RuntimeConfig.policy_bundle` / `RuntimeContext.policy_bundle` via `applications/_shared/runtime_config_bridge.py` (also maps `RuntimePolicyBundle.tool_access` → `RuntimeConfig.tool_scope_policy` when the bundle carries a `ToolScopePolicy` implementation).
+- Tier-3 application factory builds the bundle once at startup → `ApplicationBuildContext.policy_bundle` → `RuntimeConfig.policy_bundle` / `RuntimeContext.policy_bundle` via `applications/_shared/runtime_config_bridge.py` (also maps `RuntimePolicyBundle.tool_access` → `RuntimeConfig.tool_scope_policy` when the bundle carries a `ToolScopePolicy` implementation).
 - Nexus and UAEP read from the bundle — agents MUST NOT construct parallel policy objects.
 - Skill `policy_fragment_id` (§7.1.8) merges into `domain_fragments` or tool policy — never bypasses `ToolRuntime`.
 
-Implementation: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase R-Policy.
+Implementation: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) R-Policy (Done).
 
 ### 42.11.5 How to read policy for a run (operator)
 
@@ -3672,7 +3672,7 @@ Harness literature describes **subagents** as autonomous units with their own ru
 
 **Forbidden:** Tier-2 agent spawning another agent by direct import or private API. **Required:** Nexus schedules child node after parent decision or plan edge.
 
-Implementation: Phase R-Delegate in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+Implementation: R-Delegate (**Done**) in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Appendix E.
 
 ```text
 DelegationSpec:

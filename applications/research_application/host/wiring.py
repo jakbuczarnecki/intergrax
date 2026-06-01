@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
+from intergrax.applications._shared.skill_wiring import (
+    build_application_skill_wiring,
+    research_skill_profile,
+)
 from intergrax.applications._shared.wiring import build_application_registry
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -18,11 +23,19 @@ def build_research_registry(
     """Compose research + summary agents via unified Tier-3 wiring."""
     settings = settings or ResearchBackendSettings.from_env()
     tool_wiring = wire_research_tools(settings=settings)
+    skill_wiring = build_application_skill_wiring(research_skill_profile())
+    tool_registry = tool_wiring.registry
+    if not tool_wiring.profile.enabled and not tool_wiring.profile.enabled_bundles:
+        tool_registry = None
     ctx = ApplicationBuildContext.for_manifest(
         RESEARCH_APPLICATION_MANIFEST,
         settings=settings,
         tool_profile=tool_wiring.profile,
         tool_wiring_context=tool_wiring.wiring_context,
+        skill_profile=skill_wiring.profile,
+        skill_registry=skill_wiring.registry,
+        tool_registry=tool_registry,
+        policy_bundle=build_runtime_policy_bundle(),
     )
     return build_application_registry(
         RESEARCH_APPLICATION_MANIFEST,

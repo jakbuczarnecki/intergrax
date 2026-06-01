@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-01, Phase Q+ + **Phase R** Harness AI alignment — skills, context, delegation, policy)  
+Status: Working draft (2026-06-01) — **Phase Q+ Done**, **Phase R (MVP) Done**; gate **450 passed**  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
 Navigation: [`README.md`](README.md)  
@@ -33,7 +33,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Harness quality audit (2026-06-01) → Phase Q tracker | **This file** Phase Q + **Appendix C** |
 | Post-audit hardening (typing, legacy, monoliths) | **This file** Phase Q+ + **Appendix D** |
 | Harness GA / consolidation (no new OS features) | **This file** Phase Q / Q+ |
-| Harness AI alignment audit (2026-06-01) → Phase R | **This file** Phase R + **Appendix E** |
+| Harness AI alignment audit (2026-06-01) → Phase R | **This file** Phase R + **Appendix E** + canon [§5.3](intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model) |
 | Skill / Tool / Integration layering (canon) | Architecture §5.3, §7.1.6–§7.1.8 |
 | Skill catalog | `SKILLS.md` |
 
@@ -56,11 +56,11 @@ Current optimization targets:
 
 **Product agents (Phase K):** Problem Radar, Vendor Discovery, Legal expansion — **product decision**, not a runtime gate. May run **in parallel** with Phase Q.
 
-**Platform quality (Phase Q):** Done (2026-06-01) — first harness audit remediation; gate **417 passed**.
+**Platform quality (Phase Q):** Done (2026-06-01) — first harness audit remediation; gate was **417 passed** at close (see Appendix C).
 
-**Harness hardening (Phase Q+):** Mandatory follow-up from **technical debt audit** (2026-06-01) — explicit Protocols (no runtime `getattr`), legacy stack removal (`tools_agent`, `supervisor`, `chains`), Nexus intake/planning decomposition, observability parity, monolith splits. **Execute before scaling Phase K business agents** unless product explicitly overrides a K item.
+**Harness hardening (Phase Q+):** **Done** (2026-06-01) — Protocols (zero grandfathered `getattr` in harness paths), legacy stack removal, Nexus decomposition, monolith splits. See Appendix D.
 
-**Harness AI alignment (Phase R):** Follow-up from **Harness AI philosophy audit** (2026-06-01) — formal **Skill Library** (Option 2 adopted), context-engineering API, graph-native delegation (subagent equivalent), unified policy bundle narrative. **Starts after Q+ Waves 1–3**; **blocks Phase K scale** until R-Skill MVP + R-Context.1 are **Done** (see Appendix E).
+**Harness AI alignment (Phase R):** **Done (MVP)** (2026-06-01) — **Skill Library**, context-engineering API, graph-native delegation, unified policy bundle. See Appendix E. **Phase K** may scale on this harness baseline.
 
 **Skill layer decision (ADR R.0.1):** **Do not** collapse skills into tools. Tools remain **atomic LLM-invokable operations**; skills are **composable capability packs** (tools + prompts + policy + metadata) with **import adapters** for external skill formats (e.g. Cursor `SKILL.md`). See architecture §7.1.8.
 
@@ -80,8 +80,8 @@ Current optimization targets:
 | One agent needs special-case branch in `NexusLoop` | **Anti-pattern** — refactor to contract/metadata or Tier-0 |
 | Reusable workflow pack (tools + instructions + policy) for many agents | **Tier-0 Skill** — `intergrax/skills/` + `SkillManifest`; agent composes `skill_ids` |
 | Import external skill pack (Cursor, internal markdown) | **Tier-0** — `SkillImporter` adapter; MUST validate against `SkillManifest` |
-| Context budget / trim policy for all agents | **Tier-1** — `ContextBudgetPolicy` in `ContextManager` (Phase R-Context) |
-| Delegated child run (subagent semantics) | **Tier-1** — `ExecutionGraph` delegation node + isolated memory namespace (Phase R-Delegate) |
+| Context budget / trim policy for all agents | **Tier-1** — `ContextBudgetPolicy` in `ContextManager` (**Done**, R-Context) |
+| Delegated child run (subagent semantics) | **Tier-1** — `ExecutionGraph` delegation node + isolated memory namespace (**Done**, R-Delegate) |
 
 If the answer to “will another agent need this?” is **no**, it does not belong in Nexus.
 
@@ -123,9 +123,9 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Context engineering API | **Done** | No | R-Context.1–4; `CONTEXT_*` events |
 | Graph delegation (subagent model) | **Done** | No | R-Delegate.1–4; `DelegationSpec` + memory namespace |
 | RuntimePolicyBundle narrative | **Done** (Tier-3 + Nexus RuntimeConfig/Context + ToolRuntime) | No | R-Policy.1–2; `runtime_config_bridge.py`, `tool_policy_resolution.py` |
-| Canon §1–41 (tiers, Nexus, graph, repo split) | **~92%** → target **≥98%** post-Q+ | No | Q+-N, Q+-L, Q+-T |
-| §42 Unified Execution Runtime | **~95%** → target **≥99%** post-Q+-T | No | UAEP Protocol, no duck typing |
-| Laboratory workflow | **~96%** → target **≥99%** post-Q+-O | No | Metrics parity, planner observability |
+| Canon §1–41 (tiers, Nexus, graph, repo split) | **~98%** (post-Q+) | No | Q+-N, Q+-L, Q+-T Done |
+| §42 Unified Execution Runtime | **~99%** (post-Q+-T) | No | UAEP Protocol, harness getattr audit |
+| Laboratory workflow | **~99%** (post-Q+-O) | No | Metrics parity, planner observability |
 | Agent OS certification (Phase L) | **Done** | No | Appendix A |
 | Regression gate | **450 passed** | No | Must stay green after each Q.* PR |
 
@@ -151,7 +151,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 **Success metric:** time from idea to first running experiment **< 1 hour**.
 
-**Capability model:** Integration → Tool → **Skill** → Agent (Harness AI alignment). Skills are implemented in **Phase R** — see §0, Phase R, Appendix E, architecture §7.1.8.
+**Capability model:** Integration → Tool → **Skill** → Agent (Harness AI alignment). Skill Library **MVP Done** — see §0, Phase R, Appendix E, architecture §7.1.8, [SKILLS.md](SKILLS.md).
 
 
 
@@ -209,7 +209,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §33 Observability | Trace + events | **Done** (lab scope) | Trace + runtime events + metrics export (`B.08`–`B.11`); OTel provider beta |
 
-| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial (~92–95%)** → **Phase Q-N.5–Q-N.6** | Tool + agent-selection hooks; Q closes decision/interrupt/retry + trace persist |
+| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Done (~99%)** | UAEP Protocol, planner events, tool gateway, harness getattr audit |
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
@@ -506,8 +506,8 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
-| K.1 | Problem Radar prototype | **Blocked** | §36 | After Phase L sign-off |
-| K.2 | Vendor Discovery prototype | **Blocked** | §37 | After Phase L sign-off |
+| K.1 | Problem Radar prototype | **Ready** | §36 | Harness prerequisites met (L, Q+, R); **product decision** — not started |
+| K.2 | Vendor Discovery prototype | **Ready** | §37 | Harness prerequisites met (L, Q+, R); **product decision** — not started |
 | K.3 | Policy engine facade | **Done** | §42.11 | `PolicyEngine` + `coerce_replay_policy_engine`; `ExecutionGuard` uses `evaluate_replay` (2026-05-27) |
 | K.4 | Dual `AgentDecision` cleanup | **Done** | §42.7 | `ToolPlanDecision`; deprecated `tools_agent.AgentDecision` alias (2026-05-27) |
 | K.5 | ChatAgent / legacy removal | **Done** | §39 | Production paths use Nexus only; `check_production_chat_agent_imports.py` gate (2026-05-27) |
@@ -1606,7 +1606,7 @@ Parallel anytime:         Q+-T.6, Q+-T.7, Q+-T.8, Q+-M.2
 ### Phase R — Harness AI Alignment (post-audit 2026-06-01)
 
 **Source:** Harness AI philosophy audit (scaffold, harness, LLM, tool vs skill, context engineering, subagents, policy) — traceability in **Appendix E**.  
-**Prerequisite:** Phase **Q+ Waves 1–3 Done** (same gate as K scale).  
+**Status:** **Done (MVP)** (2026-06-01). **Prerequisite met:** Phase **Q+ Done**.  
 **Goal:** Intergrax vocabulary and Tier-0 modules align with industry harness terminology **without** breaking Integration → Tool → Agent stack; add **Skill Library** for reuse and external compatibility.  
 **Principle:** evolve, not rewrite · skills **compose** tools (never replace `ToolRuntime`) · one R.* ID per PR · gate green.
 
@@ -1616,7 +1616,7 @@ Parallel anytime:         Q+-T.6, Q+-T.7, Q+-T.8, Q+-M.2
 - Auto-discovery of skills from filesystem without validation
 - Mandatory migration of all Tier-2 agents to skills in one release
 
-**Phase R complete when:** Appendix E 100% **Done** or **Won't fix**; R-Skill.1–R-Skill.5 + R-Context.1 + R-Delegate.1–R-Delegate.3 + R-Policy.1 **Done**; §0.5 Phase R row **Done**; gate unchanged or increased.
+**Phase R (MVP) complete:** Appendix E 100% **Done** or **Won't fix**; §0 Phase R row **Done**; gate **450 passed** (2026-06-01). Further skill catalog expansion is product work, not a harness gate.
 
 ---
 
@@ -1731,7 +1731,7 @@ Wave R4 (delegate):        R-Delegate.1 → R-Delegate.2 → R-Delegate.3 → R-
 Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
 ```
 
-**Gate before Phase K.1/K.2 scale:** Q+ Waves 1–3 **and** R-Skill.1–R-Skill.5 **and** R-Context.1 **Done**.
+**Gate before Phase K.1/K.2 scale:** **Met** — Q+ **Done**, R-Skill.1–R-Skill.5 and R-Context.1 **Done**.
 
 ---
 
@@ -1741,27 +1741,27 @@ Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
 
 ```text
 
-NOW:     Phase Q+ — Harness Hardening — Waves 1–3 (gate before R + K scale)
+NOW:     Phase K — business agents (product decision) on certified harness
 
-NEXT:    Phase R — Harness AI alignment (skills, context, delegation, policy) — Appendix E
+DONE:    Phase Q+ — Harness Hardening (Appendix D); gate 450
 
-DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9; gate 417
+DONE:    Phase R (MVP) — Harness AI alignment (Appendix E)
+
+DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9; gate was 417 at close
 
 DONE:    Phase L, M, M-LLM, M-RAG, N, O — harness GA (functional)
 
 DONE:    Phase K hardening K.3–K.5; Appendix B paydown (except B.15)
 
-PARALLEL: M.6 additional provider slugs (on demand)
-
-AFTER Q+ Waves 1–3 + R-Skill core + R-Context.1: Phase K.1/K.2 — product decision
+PARALLEL: M.6 additional provider slugs (on demand); R-Skill catalog expansion
 
 DEFERRED: K.6 / B.15 Legal live LLM E2E (product/CI)
 
-RULE:    Tier-1 via §0.6; Q+ = typing/legacy; R = Skill Library + context/delegate/policy
+RULE:    Tier-1 via §0.6; four layers Integration → Tool → Skill → Agent
 
 ```
 
-**Rationale:** Phase Q removes technical-debt audit findings. Phase R closes the **Harness AI philosophy gap** (skills as first-class composable packs, context budget API, graph delegation, policy bundle). Phase K agents should inherit **four layers** (integration → tool → skill → agent), not duplicate instruction packs per agent.
+**Rationale:** Q and Q+ removed technical-debt findings; Phase R (MVP) closed the **Harness AI philosophy gap**. Phase K agents should inherit **four layers** (integration → tool → skill → agent), not duplicate instruction packs per agent.
 
 
 
@@ -2341,11 +2341,12 @@ Decision:       L1 certified — GO Phase K when product priority set
 8. ~~B.07, B.11, B.13, B.18, B.24~~ — §42 baseline, metrics export, delivery hardening, HTTP trace acceptance, vendor import guard (Done 2026-05-27)
 9. ~~Platform stabilization~~ — all Tier-3 factories aligned (Done 2026-05-27)
 10. B.15 — Legal E2E real LLM (**Deferred** — product/CI decision)
-11. **Phase Q** — Harness audit remediation (Waves 1–8) — **NOW**
-12. Phase K — Problem Radar / Vendor Discovery (**after Q Waves 1–3**)
+11. ~~Phase Q~~ — Harness audit remediation — **Done** (Appendix C)
+12. ~~Phase Q+ / Phase R~~ — **Done** (Appendices D, E)
+13. Phase K — Problem Radar / Vendor Discovery — **Ready** (product decision; harness baseline met)
 ```
 
-**Note:** Phase K business agents remain **product-gated** — Phase Q is the recommended technical prerequisite (Waves 1–3).
+**Note:** Phase K business agents remain **product-gated**. Platform harness (Q, Q+, R MVP) is complete.
 
 ---
 
@@ -2448,18 +2449,18 @@ Decision:       L1 certified — GO Phase K when product priority set
 | D-02 | Canon §52 still “Active” | Q-D.2 | Done |
 | D-03 | §0.1 “blocked until L” stale | Q-D.1 (§0.1 fix) | Done |
 | D-04 | Guide missing memory/RAG naming | Q-D.4 | Done |
-| D-05 | §5.2 process gates not listed for agent authors | Q-D.5 | Open |
+| D-05 | §5.2 process gates not listed for agent authors | Q-D.5 | Done |
 
 ### C.7 Tests (cross-cutting)
 
 | Audit ID | Finding | Q ID | Status |
 |----------|---------|------|--------|
-| T-01 | NexusLoop unit suite | Q-T.1 / Q-N.14 | Open |
-| T-02 | `rag_profile_from_env` tests | Q-T.2 | Open |
-| T-03 | `ContextBuilder` tests | Q-T.3 | Open |
-| T-04 | `UserProfileManager` tests | Q-T.4 | Open |
-| T-05 | Single retrieval per turn test | Q-T.5 | Open |
-| T-06 | Platform wiring observability E2E | Q-T.6 | Open |
+| T-01 | NexusLoop unit suite | Q-T.1 / Q-N.14 | Done |
+| T-02 | `rag_profile_from_env` tests | Q-T.2 | Done |
+| T-03 | `ContextBuilder` tests | Q-T.3 | Done |
+| T-04 | `UserProfileManager` tests | Q-T.4 | Done |
+| T-05 | Single retrieval per turn test | Q-T.5 | Done |
+| T-06 | Platform wiring observability E2E | Q-T.6 | Done |
 
 ### C.8 Phase Q paydown log
 
@@ -2531,11 +2532,13 @@ Execute in order; one PR per ID where possible.
 | 2026-06-01 | Q+-L.2–L.3,Q+-N.3,Q+-O.1,Q+-O.2 | Legal `CatalogToolPlanner`; `tool_planner` on RuntimeConfig; RetryCoordinator; typed metrics export; lab harness mode |
 | 2026-06-01 | Q+-P.2,Q+-S.1,R-Policy | `step_planner/` package; `session_consolidation.py`; `runtime_config_bridge` wires `ToolScopePolicy` |
 | 2026-06-01 | Q+-P.1,Q+-S.1,R-Policy | `engine_planner_*` modules; `session_lifecycle.py`; `tool_policy_resolution` + harness getattr cleanup |
+| 2026-06-01 | R-Skill catalog | `research.literature_scan` bundle; `ResearchAgent` skill_ids wiring |
 | 2026-06-01 | Q+.0.3 (closeout) | Grandfather list cleared; `parser_trace_flush` uses `TraceEventWithTags` Protocol |
 | 2026-06-01 | **Phase Q+** | All Q+-* deliverables **Done** or **Won't fix**; gate **450 passed** |
+| 2026-06-01 | Appendix C sync, research skill | C.7 T-* / D-05 aligned; `research.literature_scan` bundle; K.1/K.2 **Ready** |
 | — | — | *(append row per merged PR)* |
 
-**Coverage target:** 100% **Done** or **Won't fix** before declaring Phase Q+ complete and scaling Phase K.
+**Coverage target:** 100% **Done** or **Won't fix** — **met** (2026-06-01).
 
 ---
 
@@ -2583,9 +2586,9 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | 2026-06-01 | **Phase R (MVP)** | All R-* deliverables **Done** or **Won't fix**; gate **450 passed** |
 | — | — | *(append row per merged PR)* |
 
-**Coverage target:** 100% **Done** or **Won't fix** before declaring Phase R complete and scaling Phase K.
+**Coverage target:** 100% **Done** or **Won't fix** — **met** (2026-06-01). Phase K may proceed on harness baseline.
 
 ---
 
-*Plan synced (2026-06-01). **Phase Q Done**. **Phase Q+ Done**. **Phase R Done (MVP)**. Gate: **450 passed**; harness getattr audit: **zero grandfathered paths**. **Next:** Phase K business agents (per product roadmap); optional R-Skill catalog expansion and RAG metrics plugin scrape (O.3).*
+*Plan synced (2026-06-01). **Phase Q / Q+ / R (MVP) Done**. Gate: **450+ passed**; harness getattr audit: **zero grandfathered paths**. **Next:** Phase K.1/K.2 when product prioritizes (status **Ready**); continue R-Skill catalog growth; optional RAG metrics plugin scrape (O.3).*
 

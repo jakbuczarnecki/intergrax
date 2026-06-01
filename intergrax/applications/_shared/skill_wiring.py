@@ -23,4 +23,9 @@ def build_application_skill_wiring(profile: SkillProfile) -> ApplicationSkillWir
 
 
 def lab_skill_profile() -> SkillProfile:
-    return SkillProfile(enabled_bundles=["legal"])
+    """Lab may host legal mock paths and optional research agents — enable both bundles."""
+    return SkillProfile(enabled_bundles=["legal", "research"])
+
+
+def research_skill_profile() -> SkillProfile:
+    return SkillProfile(enabled_bundles=["research"])

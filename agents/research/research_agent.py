@@ -92,6 +92,7 @@ class ResearchAgent(Agent):
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
+            skill_ids=["research.literature_scan"],
             id="research",
             name="Research Agent",
             description="Prototype agent producing stub research findings.",

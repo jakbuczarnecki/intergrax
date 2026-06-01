@@ -37,7 +37,7 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 Tier-2  Agent (skill_ids, allowed_tools, ToolRequest)
         │
         ▼
-Tier-0  Skill Library (Phase R) — composable packs: tool_ids + prompts + policy
+Tier-0  Skill Library (MVP Done) — composable packs: tool_ids + prompts + policy — see [SKILLS.md](SKILLS.md)
         │
         ▼
 Tier-0  Tool Library (rag.retrieve, jira.search_tasks, …)

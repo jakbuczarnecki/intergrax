@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-06-01 · Phase R MVP **Done** (see plan Appendix E)
 
-Composable **capability packs** between the [Tool Library](TOOLS.md) and Tier-2 agents. Canon: [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.8 · Implementation: [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase R.
+Composable **capability packs** between the [Tool Library](TOOLS.md) and Tier-2 agents. Canon: [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.8 · Harness terms: §5.3 · Tracker: [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Appendix E.
 
 ---
 
@@ -92,6 +92,8 @@ python -m intergrax.scaffold new-skill legal.my_skill --domain legal
 
 Register the bundle in `intergrax/skills/registry/bootstrap.py`.
 
+**Application profiles:** `legal_application` enables bundle `legal`; `research_application` enables `research`; `lab_application` enables `legal` + `research` (see `intergrax/applications/_shared/skill_wiring.py`).
+
 ---
 
 ## First-party skills
@@ -99,6 +101,7 @@ Register the bundle in `intergrax/skills/registry/bootstrap.py`.
 | skill_id | Bundle | Status |
 |----------|--------|--------|
 | `legal.contract_review` | `legal` | **Done** |
+| `research.literature_scan` | `research` | **Done** |
 
 ---
 
