@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-05-30, Phase O Tool Library spec)  
+Status: Working draft (2026-06-01, Phase Q Harness Quality — audit remediation)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
 Navigation: [`README.md`](README.md)  
@@ -30,6 +30,8 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Application scaffold & deploy plan | **This file** Phase N |
 | Business-agent go/no-go checklist | **Appendix A** (below) |
 | Technical debt backlog (analysis only) | **Appendix B** (below) |
+| Harness quality audit → Phase Q tracker | **This file** Phase Q + **Appendix C** |
+| Harness GA / consolidation (no new OS features) | **This file** Phase Q |
 
 ---
 
@@ -46,7 +48,11 @@ Current optimization targets:
 - experimentation speed · agent creation speed · runtime stability
 - orchestration quality · observability · composability
 
-Business agents (Problem Radar, Vendor Discovery, Legal expansion) are **blocked** until Phase L certification sign-off (Appendix A).
+**Harness GA (Phase L):** Agent OS certified — Appendix A **20/20**. New agents ship via scaffold without Nexus edits.
+
+**Product agents (Phase K):** Problem Radar, Vendor Discovery, Legal expansion — **product decision**, not a runtime gate. May run **in parallel** with Phase Q.
+
+**Platform quality (Phase Q):** Mandatory consolidation from harness implementation audit (2026-06-01) — bugs, debt, monoliths, dual-path RAG, observability gaps. **Execute before scaling business agents** unless a K item is explicitly prioritized.
 
 ### 0.6 When Tier-1 (Nexus) changes are required
 
@@ -93,14 +99,15 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 
 ### 0.5 Maturity dashboard
 
-| Scope | Score | Notes |
-|-------|-------|-------|
-| Canon §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** | Phases A–F |
-| §42 Unified Execution Runtime | **~92–95%** | Tool/agent-selection hooks wired; product interaction intake (2026-05-27) |
-| Laboratory workflow | **~95%** | Debug API, experiments, lab app |
-| Agent OS certification (Phase L deliverables) | **Done** | Scaffold, guide, acceptance suite |
-| Agent OS certification (sign-off exercise) | **Done** | `agents/signoff_probe/` — see Appendix A |
-| Regression gate | **397 passed** | `uv run pytest -m gate -q` |
+| Scope | Score | Blocks new agent? | Notes |
+|-------|-------|-------------------|-------|
+| **Harness GA (functional)** | **Done** | **No** | L certified; scaffold + lab + gate |
+| **Harness quality (Phase Q)** | **Open** | **No** (recommended before K scale) | Audit remediation — Appendix C |
+| Canon §1–41 (tiers, Nexus, graph, repo split) | **~88–92%** → target **≥95%** post-Q | No | Q-N, Q-R, Q-X |
+| §42 Unified Execution Runtime | **~92–95%** → target **≥98%** post-Q-N.5–Q-N.6 | No | Optional hooks + trace persist |
+| Laboratory workflow | **~95%** → target **≥98%** post-Q-O | No | RAG metrics bootstrap |
+| Agent OS certification (Phase L) | **Done** | No | Appendix A |
+| Regression gate | **397 passed** | No | Must stay green after each Q.* PR |
 
 ---
 
@@ -176,7 +183,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | §33 Observability | Trace + events | **Done** (lab scope) | Trace + runtime events + metrics export (`B.08`–`B.11`); OTel provider beta |
 
-| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial (~92–95%)** | Tool + agent-selection hooks; remaining: decision/interrupt/retry hooks |
+| §42 Execution runtime | UAEP, hooks, governance, tool gateway | **Partial (~92–95%)** → **Phase Q-N.5–Q-N.6** | Tool + agent-selection hooks; Q closes decision/interrupt/retry + trace persist |
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
@@ -1207,29 +1214,226 @@ AFTER (canonical):
 
 ---
 
+### Phase Q — Harness Quality & Consolidation (audit remediation)
+
+**Source:** Harness implementation audit (2026-06-01) — Nexus, LLM, RAG, memory, observability, legacy, tests, docs.  
+**Goal:** Remove bugs, technical debt, dead code, monoliths, dual-path semantics, and documentation drift **without** new business agents or integration catalog breadth.  
+**Principle:** evolve, not rewrite · one deliverable per PR · gate green after each step · §0.6 (Tier-1 only when reusable).
+
+**Out of scope for Phase Q:**
+
+- Phase K.1/K.2 business agents (product)
+- K.6 / B.15 Legal live LLM E2E (product/CI)
+- New integration slugs (Phase M on-demand)
+- New Tier-0 universal mechanisms (§5.2.4 human approval)
+- Replacing `ToolsAgent` planner (Phase O out of scope)
+
+**Delivery rule:** Same cadence as §6.1 — implement **one Q.* ID** → summarize → update this table + Appendix C status → next ID.
+
+**Phase Q complete when:** All rows below **Done**; Appendix C 100% **Done** or **Won't fix** (documented); §0.5 Harness quality row **Done**; gate unchanged or increased.
+
+---
+
+#### Q.0 — Program governance
+
+| # | Deliverable | Status | Tier | Audit ref | Done when |
+|---|-------------|--------|------|-----------|-----------|
+| Q.0.1 | Appendix C traceability matrix (audit → Q ID) | **Open** | Docs | C-all | Appendix C below; each row has owner phase |
+| Q.0.2 | Phase Q execution order + PR sizing guide | **Open** | Docs | — | §4 + subsection **Q execution order** below |
+| Q.0.3 | Gate policy: no Q PR without `pytest -m gate` | **Open** | CI | — | Documented in Q DoD; CI unchanged paths |
+
+---
+
+#### Phase Q-N — Nexus, loops, orchestration, error handling
+
+**Components:** `intergrax/runtime/nexus/`, `intergrax/runtime/execution/`, `intergrax/runtime/hooks/`, `intergrax/runtime/interrupts/`, `intergrax/runtime/policy/`, `intergrax/runtime/nexus/retry/`, `intergrax/agents/agent_engine.py`, `intergrax/agents/uaep.py`.
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-N.1 | **Decompose `NexusLoop`** — extract HITL runner, long-running coordinator calls, event publisher, shadow/sandbox cleanup into dedicated modules; `NexusLoop` orchestrates only | **Open** | High | `nexus_loop.py` → `nexus/orchestration/` or `nexus/task_runner/` | `nexus_loop.py` &lt; ~600 lines; behavior unchanged; integration tests green |
+| Q-N.2 | **Fix duplicate `_normalize_human_response`** — single call in `_handle_task_impl` | **Open** | High | `nexus_loop.py` L229–231 | Unit or integration asserts one normalization per resume |
+| Q-N.3 | **Retry semantics document + facade** — one doc section: `RetryEngine` (graph/validation/alternate agent) vs `RuntimeConfig.max_run_retries` (LLM/tool in `RuntimeEngine`); optional `RetryCoordinator` delegating both | **Open** | High | `nexus/retry/`, `nexus/config.py`, `docs/` or canon §31 pointer | Doc merged; no duplicate retry without trace event |
+| Q-N.4 | **Unify policy injection** — `PolicyEngine` only in public Nexus/UAEP APIs; remove `RuntimePolicyEngine` union from external signatures; `coerce_policy_engine` internal | **Open** | Medium | `nexus_loop.py`, `uaep.py`, factories | Type check / mypy clean on factories; gate green |
+| Q-N.5 | **§42 hook parity — decision / interrupt / retry** — wire `BEFORE/AFTER_DECISION`, `BEFORE/AFTER_INTERRUPT`, `BEFORE/AFTER_RETRY` in NexusLoop + UAEP + `RetryEngine`; update `hooks/parity.py` to **WIRED** or **Won't fix** with canon amendment | **Open** | Medium | `hooks/`, `nexus_loop.py`, `uaep.py`, `retry_engine.py` | `parity.py` no NOT_WIRED for these six OR canon §42.20 amended + tests |
+| Q-N.6 | **§42 hook parity — trace persist** — `BEFORE/AFTER_TRACE_PERSIST` **WIRED** at trace finalize path; `parity.py` → **WIRED** | **Open** | Medium | `hooks/`, `task_trace.py`, trace emitter | Parity test; hook invoked in integration test |
+| Q-N.7 | **Rename Nexus context helpers module** — `runtime_steps/tools.py` → `runtime_steps/tool_context_helpers.py` (or merge into `tools_step.py`); update imports | **Open** | Low | `runtime_steps/tools.py` | No module named `tools.py` under runtime_steps; gate green |
+| Q-N.8 | **Split `RuntimeConfig`** — `ModelRuntimeConfig`, `RetrievalRuntimeConfig`, `ToolsRuntimeConfig`, `PlanningRuntimeConfig`, `TraceRuntimeConfig`; composed `RuntimeConfig`; `validate()` cross-field | **Open** | High | `nexus/config.py` | Backward-compatible properties or migration shim one release; all factories updated |
+| Q-N.9 | **Type `integration_profile`** — `IntegrationProfile` from `intergrax.integrations` on `RuntimeConfig` / wiring contexts | **Open** | Medium | `nexus/config.py`, `engine/runtime_context.py` | No `Optional[object]` for profile in public config |
+| Q-N.10 | **`production_mode` lab default** — `lab_application` / scaffold sets `production_mode=False`; document in Step 4E | **Open** | Low | Tier-3 factories, `AGENT_CREATION_GUIDE.md` | Lab smoke test expects non-production defaults |
+| Q-N.11 | **Graph callback typing** — `ExecutionNode` instead of `object` in `GraphExecutor` / NexusLoop node callbacks | **Open** | Low | `execution/graph_executor.py`, `nexus_loop.py` | Mypy/ruff on execution package |
+| Q-N.12 | **Interrupt handler hygiene** — remove duplicate `InterruptType` import; add unit test for interrupt → policy path | **Open** | Low | `interrupts/handler.py` | Ruff clean; unit test |
+| Q-N.13 | **`AgentEngine` static UAEP** — document or inject `event_bus` for `AgentEngine.run` static path; no silent missing events | **Open** | Low | `agents/agent_engine.py` | Test: static run emits expected lifecycle events when bus configured |
+| Q-N.14 | **Unit tests for `NexusLoop` helpers** — `_finish_task`, lifecycle transitions, HITL branch stubs (mock deps) | **Open** | High | `tests/unit/runtime/nexus/test_nexus_loop.py` | New file; ≥15 focused tests; marker `gate` |
+| Q-N.15 | **`GraphExecutor` unit coverage** — failure recovery, skip completed, handoff edge (beyond stub integration) | **Open** | Medium | `tests/unit/runtime/execution/` | Complements `test_graph_executor_stub.py` |
+
+---
+
+#### Phase Q-L — LLM adapters
+
+**Components:** `intergrax/llm_adapters/`, `docs/LLM_ADAPTERS.md`, `docs/LLM_OBSERVABILITY.md`, governance plugin.
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-L.1 | **Remove or complete `tracked_llm_call`** — if kept: `finally` calls `usage.end_call`; if removed: delete `tracked_call.py` + references | **Open** | Medium | `_shared/tracked_call.py` | Grep shows zero dead imports; gate green |
+| Q-L.2 | **Public API surface** — re-export `LLMAdapter`, `LLMProvider`, `LLMAdapterRegistry`, `LLMProfile` from `llm_adapters/__init__.py` | **Open** | Low | `llm_adapters/__init__.py` | Documented import path in `LLM_ADAPTERS.md` |
+| Q-L.3 | **Provider catalog table in docs** — 19 rows: slug, adapter class, env vars, tools/stream/structured, native vs compat | **Open** | High | `docs/LLM_ADAPTERS.md` | Table matches `LLMProvider` enum + conformance list |
+| Q-L.4 | **Fix `LLMProfile` docstring** — `max_retries` only via `options={}`; align examples in guide | **Open** | Low | `registry/profile.py`, tests | Doc test or unit asserts forbid extra fields |
+| Q-L.5 | **Per-provider `supports_streaming()` / `supports_structured_output()`** — override defaults (`False` base default for streaming); table in Q-L.3 | **Open** | Medium | Each `providers/*.py`, ABC defaults | Conformance reads flags; no false positives |
+| Q-L.6 | **`PolicyEngine` + `llm_cost_evaluation`** — rule hook on `TASK_COMPLETED` or policy replay; or remove “next step” from docs until done | **Open** | Medium | `governance/`, `observability_bridge.py`, `policy_engine.py` | Test: over-quota/warn triggers policy decision or structured log contract |
+| Q-L.7 | **Usage tracking doc** — distinguish adapter `LLMAdapterUsageLog` vs runtime `LLMUsageTracker` in `LLM_OBSERVABILITY.md` | **Open** | Low | `docs/LLM_OBSERVABILITY.md` | One diagram, two names |
+| Q-L.8 | **Conformance: structured output** — parametrize providers with `supports_structured_output`; mock SDK | **Open** | Medium | `tests/unit/llm_adapters/` | Added to gate subset in `llm-adapters-guard.yml` |
+| Q-L.9 | **Bedrock `context_window_tokens`** — lookup table or model metadata for common `model_id` | **Open** | Low | `providers/aws_bedrock_adapter.py` | Unit test known model ids |
+| Q-L.10 | **OpenAI-compat adapter init** — replace `__dict__.update` with explicit delegation or composition wrapper | **Open** | Low | `openai_compat_providers.py`, factory | Conformance unchanged |
+| Q-L.11 | **Central env appendix** — single table: `INTERGRAX_LLM_*`, secrets map, per-provider overrides | **Open** | Medium | `LLM_ADAPTERS.md` appendix | Cross-links from each `providers/*/USAGE.md` |
+
+---
+
+#### Phase Q-R — RAG pipeline & Nexus RAG integration
+
+**Components:** `intergrax/rag/`, `runtime/nexus/context/context_builder.py`, `runtime_steps/rag_step.py`, `history_step.py`, `pipelines/no_planner_pipeline.py`, `tools/providers/rag/`, `agents/legal/*` plan flags.
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-R.1 | **Delete dead code in `ContextBuilder`** — `_build_backend_where`, `_map_hits_to_chunks`, unused `VectorStoreHit` import | **Open** | High | `context_builder.py` | Ruff/vulture clean; gate green |
+| Q-R.2 | **Single retrieval per turn (design)** — ADR in plan: either (A) retrieval only in `RagStep`/`rag.retrieve`, or (B) only in `HistoryStep`; remove duplicate vector calls | **Open** | High | `history_step.py`, `rag_step.py`, `context_builder.py` | Integration test: one `RetrievalService.retrieve` per turn (mock counter) |
+| Q-R.3 | **`ContextBuilder` respects plan `use_rag`** — `_should_use_rag` checks plan/engine `use_rag` when present, not only `enable_rag` | **Open** | High | `context_builder.py` | Test: `enable_rag=True`, `use_rag=False` → no retrieve |
+| Q-R.4 | **`NoPlannerPipeline` conditional `RagStep`** — include `RagStep` only when plan/tool_ids require RAG | **Open** | High | `no_planner_pipeline.py`, `pipeline_factory.py` | Pipeline test matrix |
+| Q-R.5 | **Prefetch vs final `top_k`** — `RetrievalRequest.prefetch_k` optional; Nexus passes `max_docs_per_query` as `final_k` only; service uses profile `prefetch_top_k` when unset | **Open** | High | `retrieval_service.py`, contracts, `context_builder.py` | Unit: `top_k=5` still prefetches 20 when profile says 20 |
+| Q-R.6 | **Unify RAG config surface** — map `RuntimeConfig.max_docs_per_query` / threshold → `RagProfile` at factory wire time; deprecate duplicate fields with shim + trace | **Open** | High | `nexus/config.py`, `RetrievalRuntimeConfig`, `rag_profile.py` | One source of truth documented |
+| Q-R.7 | **`RagProfile.extras`** — use for vendor knobs or remove field | **Open** | Low | `rag_profile.py` | No unused field in frozen profile |
+| Q-R.8 | **`INTERGRAX_RAG_METRICS_ENABLED` in `rag_profile_from_env`** or documented exclusion in `RAG_OBSERVABILITY.md` | **Open** | Low | `rag_profile.py`, docs | Consistent env story |
+| Q-R.9 | **`rag/answers/` deprecation path** — mark package deprecated; redirect doc to `RetrievalService`; no new imports from Nexus | **Open** | Medium | `rag/answers/`, `chat_agent` removal (Q-X.1) | Grep: zero imports from `runtime/` and `agents/` except tests |
+| Q-R.10 | **`UserProfileManager` LTM via `RetrievalService`** — same metadata scope / `RagProfile` chunking policy | **Open** | Medium | `memory/user_profile_manager.py` | Unit test with fake `RetrievalService` |
+| Q-R.11 | **Naming guide — three “context builders”** — table in `AGENT_CREATION_GUIDE` or `intergrax/rag/README.md`: Nexus `ContextBuilder`, `ContextManager`, `DefaultContextBuilder` | **Open** | Low | Docs | Linked from architecture §28 pointer |
+| Q-R.12 | **Legacy `use_rag` plan flags** — migrate Legal/Nexus plans to `tool_ids` including `rag.retrieve`; emit deprecation `RuntimeEvent` on boolean | **Open** | Medium | `engine_plan_models.py`, `legal/*`, `tool_runtime.py` | Legal tests use `tool_ids`; booleans shim one release |
+
+---
+
+#### Phase Q-M — Memory
+
+**Components:** `intergrax/memory/`, `runtime/task_memory/`, `runtime/nexus/context/`.
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-M.1 | **Memory architecture one-pager** — four stores: session history, user LTM, task KV (`TaskMemory`), shared graph context; diagram + when to enable SQLite | **Open** | High | `docs/` section in plan §0 or `AGENT_CREATION_GUIDE` Appendix | Linked from §0.3 execution path |
+| Q-M.2 | **Task memory visibility in scaffold** — `wire_task_memory` in lab/product templates; env `INTERGRAX_TASK_MEMORY_DB` in `.env.example`; Step 4E paragraph | **Open** | Medium | `applications/*`, scaffold, guide | Scaffold acceptance asserts task memory path optional |
+| Q-M.3 | **`resolve_task_memory_persistence` defaults** — log warning when None in lab; debug API hint | **Open** | Low | `task_memory/store.py`, `lab_application` factory | Doc + single integration test |
+
+---
+
+#### Phase Q-O — Observability & metrics
+
+**Components:** `runtime/events/`, `runtime/nexus/tracing/`, `runtime/metrics/`, `debug/`, `llm_adapters/tracking/`, `rag/tracking/`, `applications/_shared/platform_wiring.py`.
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-O.1 | **Register RAG observability plugin in default bootstrap** — `register_rag_observability_plugin(plugins)` alongside LLM in `platform_wiring.py` | **Open** | **Critical** | `platform_wiring.py` | Integration: `TASK_COMPLETED` exports RAG metrics when env on |
+| Q-O.2 | **RAG observability bridge tests** — mirror `test_observability_bridge.py` (LLM) | **Open** | High | `tests/unit/rag/tracking/` | In gate or harness-smoke |
+| Q-O.3 | **Parser trace export strategy** — route `parser_trace_flush` through `ObservabilityBackend` **or** document intentional bypass + single env table | **Open** | Medium | `parser_trace_flush.py`, `parser_trace_exporter.py`, integrations | ADR paragraph in `RAG_OBSERVABILITY.md` or refactor |
+| Q-O.4 | **`metrics/export.py` typed trace summary** — use `DiagnosticPayload` / `trace_models` schema ids instead of substring heuristics | **Open** | Medium | `runtime/metrics/export.py` | Unit test with synthetic trace events |
+| Q-O.5 | **Lint `metrics/export.py`** — remove duplicate `ExecutionMetrics` import | **Open** | Low | `metrics/export.py` | Ruff clean |
+| Q-O.6 | **`export_run_metrics` behavioral field** — populate from governance/replay or remove from DTO | **Open** | Low | `metrics/export.py` | API contract test |
+| Q-O.7 | **Mount LLM metrics routes on lab** — `register_llm_metrics_routes(app)` when `INTERGRAX_LLM_METRICS_ENABLED` | **Open** | Medium | `lab_application/host/factory.py` | HTTP test `GET /metrics/llm` 200 when enabled |
+| Q-O.8 | **Observability env profile doc** — one table: trace DB, runtime events DB, LLM/RAG metrics, parser trace, integration observability slug | **Open** | High | New subsection §0 or `infra/README` cross-link | All Tier-3 `.env.example` reference same names |
+| Q-O.9 | **RAG metrics parity decision** — implement log-only parity **or** `register_rag_metrics_routes` + optional Pushgateway; update `RAG_OBSERVABILITY.md` | **Open** | Medium | `rag/tracking/` | Matches documented behavior |
+| Q-O.10 | **Unify phase mapping** — `trace_bridge` delegates phase to `phase_coverage.py`; single source | **Open** | Medium | `events/trace_bridge.py`, `phase_coverage.py` | Unit test: same `ExecutionPhase` for sample events |
+| Q-O.11 | **Debug router type imports** — explicit imports for `DebugHitlResumeService`, `AgentRegistry` in annotations | **Open** | Low | `debug/router.py`, `debug/app.py` | Mypy/ruff on debug package |
+| Q-O.12 | **`trace_bridge` unit tests** | **Open** | Medium | `tests/unit/runtime/events/test_trace_bridge.py` | Gate marker |
+| Q-O.13 | **Clarify dual Prometheus** — in `LLM_OBSERVABILITY.md`: in-process scrape vs `integrations` PromQL backend | **Open** | Low | Docs | Prevents operator confusion |
+| Q-O.14 | **Event/trace store adoption ADR** — document SQLite-first default; criteria to wire `cassandra` / `elasticsearch` for runtime events at scale | **Open** | Low | Plan + `integrations/providers/cassandra/USAGE.md` cross-link | ADR in Phase Q or canon pointer; no mandatory Cassandra migration in Q |
+
+---
+
+#### Phase Q-X — Legacy removal & code hygiene
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-X.1 | **`ChatAgent` removal** — migrate remaining tests to `RuntimeEngine`/`NexusLoop`; delete `intergrax/chat_agent.py`; keep import guard script as negative test | **Open** | High | `chat_agent.py`, `tests/unit/chat_agent/` | Grep zero production imports; gate green |
+| Q-X.2 | **`task_metadata_bridge` shrink** — migrate callers to typed `Task` metadata; deprecate flat bridge with warning event | **Open** | Medium | `task_metadata_bridge.py`, factories | Fewer bridge calls each PR until removed |
+| Q-X.3 | **Copyright / naming consistency** — `Intergrax` header; fix `Integrax` typo in `chat_agent` (or file deleted in Q-X.1) | **Open** | Low | Affected files from audit | Spot-check script or ruff rule |
+| Q-X.4 | **`tools_base` deprecation timeline** — document removal after Q-R.12; no new imports | **Open** | Low | `tools/tools_base.py`, governance script | CI grep gate extended |
+| Q-X.5 | **Sync M.6 “Future” slugs table** — weaviate, milvus, snowflake, vault → **Done (beta)** with paths | **Open** | Low | This plan M.6 P3 section | Table matches repo `integrations/providers/` |
+
+---
+
+#### Phase Q-T — Test harness gaps
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-T.1 | NexusLoop unit suite | **Open** | High | See Q-N.14 | — |
+| Q-T.2 | `test_rag_profile_from_env` | **Open** | Medium | `tests/unit/rag/profiles/` | Gate |
+| Q-T.3 | `test_context_builder_retrieval` | **Open** | High | `tests/unit/runtime/nexus/context/` | Mocks `RetrievalService`; covers Q-R.3 |
+| Q-T.4 | `test_user_profile_manager` | **Open** | Medium | `tests/unit/memory/` | Index + search |
+| Q-T.5 | **Catalog vs legacy RAG path** — integration test one pipeline run, retrieval call count ≤1 | **Open** | High | `tests/integration/runtime/` | Implements Q-R.2 acceptance |
+| Q-T.6 | **Observability wiring E2E** — lab factory bootstraps LLM+RAG plugins | **Open** | High | `tests/integration/runtime/test_platform_wiring_observability.py` | Q-O.1 |
+
+---
+
+#### Phase Q-D — Documentation & plan sync
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| Q-D.1 | Update `docs/README.md` current focus → Phase Q | **Open** | High | `docs/README.md` | — |
+| Q-D.2 | Canon §52 Phase L status → **Done** (pointer to Phase Q) | **Open** | Low | `intergrax_runtime_architecture.md` §52 | — |
+| Q-D.3 | §2 architecture map — §42 row points to Phase Q-N.5–Q-N.6 | **Open** | Low | This file §2 | — |
+| Q-D.4 | `AGENT_CREATION_GUIDE` — Q-M.1 memory diagram + Q-R.11 naming | **Open** | Medium | Guide appendices | — |
+| Q-D.5 | **§5.2 reuse enforcement** — document existing gates (`check_agents_vendor_imports`, `check_integration_vendor_imports`, `check_production_chat_agent_imports`) in AGENT_CREATION_GUIDE anti-patterns | **Open** | Low | Guide + `scripts/` | New agent authors see one list |
+
+---
+
+#### Phase Q — Definition of done (global)
+
+1. Deliverable row **Done** with PR link/date in Appendix C paydown log.
+2. **Gate:** `uv run pytest -m gate -q` green.
+3. **No new** duplicate Tier-0 mechanism (§5.2).
+4. **Tests** for behavior change (unit or integration); not docs-only for code fixes.
+5. Update **Appendix C** status column for audit ID.
+
+---
+
+#### Phase Q — Recommended execution order
+
+Execute in order unless a row is marked parallel. Critical path for harness stability:
+
+```text
+Wave 1 (bugs + critical):  Q-O.1 → Q-N.2 → Q-R.5 → Q-R.1
+Wave 2 (RAG semantics):    Q-R.3 → Q-R.4 → Q-R.2 → Q-T.5 → Q-R.6
+Wave 3 (observability):    Q-O.2 → Q-O.4 → Q-O.7 → Q-O.10 → Q-O.12 → Q-O.8
+Wave 4 (Nexus structure):  Q-N.14 → Q-N.1 → Q-N.3 → Q-N.8
+Wave 5 (LLM docs/debt):    Q-L.3 → Q-L.1 → Q-L.5 → Q-L.8 → Q-L.11
+Wave 6 (memory + legacy):  Q-M.1 → Q-M.2 → Q-R.10 → Q-X.1 → Q-R.9
+Wave 7 (hooks + policy):   Q-N.5 → Q-N.6 → Q-L.6 → Q-N.4
+Wave 8 (cleanup):          Q-N.7 → Q-X.2 → Q-X.3 → Q-X.5 → Q-D.*
+Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-O.13, Q-N.10–Q-N.13, Q-N.15
+```
+
+**Do not start Phase K.1/K.2** until Wave 1–3 are **Done** unless product explicitly overrides (record in Appendix C).
+
+---
+
 ## 4. Priority Order
 
 
 
 ```text
 
-NOW:     Product decision — Phase K.1/K.2 (Problem Radar / Vendor Discovery) **when approved**
+NOW:     Phase Q — Harness Quality & Consolidation (audit 2026-06-01) — Waves 1–8 in Phase Q execution order
 
-DONE:    Phase K hardening — K.3–K.5 (policy facade, AgentDecision cleanup, ChatAgent production guard)
+DONE:    Phase L, M, M-LLM, M-RAG, N, O — harness GA (functional)
 
-DONE:    Phase O, N, L, M core, M-LLM — platform + catalog + scaffold
+DONE:    Phase K hardening K.3–K.5; Appendix B paydown (except B.15)
 
-DONE:    Platform stabilization + Appendix B technical paydown (except B.15 E2E)
+PARALLEL: M.6 additional provider slugs (on demand) — only when a Q wave needs a slug
 
-PARALLEL: M.6 additional provider slugs (on demand, one slug per iteration)
+AFTER Q: Product decision — Phase K.1/K.2 (Problem Radar / Vendor Discovery)
 
-BLOCKED: K.1/K.2 business agents until product priority; K.6 / B.15 Legal live LLM E2E
+DEFERRED: K.6 / B.15 Legal live LLM E2E (product/CI; not Phase Q)
 
-BLOCKED: No new Nexus features unless Tier-1 extension rule (§0.6) applies
+RULE:    Tier-1 changes only via §0.6; Phase Q-N.1/N.5/N.8 are approved harness consolidation
 
 ```
 
-**Rationale:** Integration catalog (M) answers *which backend*. Tool Library (O) answers *what agents call* — closing the gap between LLM planners and integrations. Unified tool model (O.5) removes deprecated `use_rag` / `use_websearch` dual-path before business agents (K) depend on inconsistent semantics.
+**Rationale:** Phase Q removes audit findings (RAG double-fetch, RAG metrics bootstrap gap, Nexus monolith, config drift, dead code, doc drift) so Phase K agents inherit a **single semantic path** for RAG, retry, observability, and memory — not a second platform build.
 
 
 
@@ -1261,18 +1465,22 @@ BLOCKED: No new Nexus features unless Tier-1 extension rule (§0.6) applies
 
 ## 6. Recommended Next Step
 
-### 6.1 Implementation cadence (Phase N and onward)
+### 6.1 Implementation cadence (Phase Q — current)
 
-Each iteration follows **one deliverable at a time**:
+Each iteration follows **one deliverable at a time** (same as Phase N):
 
 ```text
-1. Implement   — single step from Phase N table (e.g. N.1 only)
+1. Implement   — single Q.* ID (e.g. Q-O.1 only)
 2. Summarize   — what changed, tests run, acceptance criteria met
-3. Document    — update this plan (status column) + canon if contracts changed
-4. Next step   — name the next ID (e.g. N.2) and prerequisites
+3. Document    — update Phase Q status + Appendix C row + paydown log (B.0)
+4. Next step   — next ID from Phase Q execution order (Wave 1 first)
 ```
 
-Do not batch N.1–N.5 in one PR unless explicitly agreed.
+Do not batch Wave 1 items in one PR unless explicitly agreed. **Start with Q-O.1** (RAG metrics plugin registration).
+
+### 6.1b Phase N (complete)
+
+Phase N cadence remains the reference for Tier-3 scaffold work; new applications use `new-stack` without waiting for Phase Q completion, but **lab defaults** should pick up Q-M.2/Q-O.7 when those land.
 
 ### 6.2 Tier-3 application layer — **ready for new applications**
 
@@ -1805,12 +2013,138 @@ Decision:       L1 certified — GO Phase K when product priority set
 8. ~~B.07, B.11, B.13, B.18, B.24~~ — §42 baseline, metrics export, delivery hardening, HTTP trace acceptance, vendor import guard (Done 2026-05-27)
 9. ~~Platform stabilization~~ — all Tier-3 factories aligned (Done 2026-05-27)
 10. B.15 — Legal E2E real LLM (**Deferred** — product/CI decision)
-11. Phase K — Problem Radar / Vendor Discovery (**product-blocked**)
+11. **Phase Q** — Harness audit remediation (Waves 1–8) — **NOW**
+12. Phase K — Problem Radar / Vendor Discovery (**after Q Waves 1–3**)
 ```
 
-**Note:** Phase K business agents (Problem Radar, Vendor Discovery) remain **product-blocked** until explicit go — technical debt above does not auto-unblock K.1/K.2.
+**Note:** Phase K business agents remain **product-gated** — Phase Q is the recommended technical prerequisite (Waves 1–3).
 
 ---
 
-*Plan synced after §42 hook parity + product interaction intake (2026-05-27). Gate: **397 passed**. Business agents (K.1/K.2) and Legal live LLM E2E (K.6/B.15) remain product-blocked.*
+## Appendix C — Harness audit traceability (Phase Q)
+
+**Purpose:** Every finding from the harness implementation audit (2026-06-01) maps to exactly one Phase Q deliverable. Update **Status** when the deliverable is **Done** / **Won't fix** (with reason).
+
+**Status values:** `Open` | `Done` | `Won't fix` | `Deferred`
+
+### C.1 Nexus, loops, orchestration, errors
+
+| Audit ID | Finding | Q ID | Status |
+|----------|---------|------|--------|
+| N-01 | `NexusLoop` monolith ~1200 lines | Q-N.1 | Open |
+| N-02 | Duplicate `_normalize_human_response` | Q-N.2 | Open |
+| N-03 | Dual retry (`RetryEngine` vs `max_run_retries`) | Q-N.3 | Open |
+| N-04 | `PolicyEngine` \| `RuntimePolicyEngine` union | Q-N.4 | Open |
+| N-05 | Hooks NOT_WIRED: decision, interrupt, retry | Q-N.5 | Open |
+| N-06 | Hooks PARTIAL: trace persist | Q-N.6 | Open |
+| N-07 | `runtime_steps/tools.py` misleading name | Q-N.7 | Open |
+| N-08 | `RuntimeConfig` monolith | Q-N.8 | Open |
+| N-09 | `integration_profile: object` | Q-N.9 | Open |
+| N-10 | `production_mode` default in lab | Q-N.10 | Open |
+| N-11 | Graph callbacks typed `object` | Q-N.11 | Open |
+| N-12 | Duplicate import `InterruptType` | Q-N.12 | Open |
+| N-13 | `AgentEngine` static UAEP / event_bus | Q-N.13 | Open |
+| N-14 | No unit tests `nexus_loop.py` | Q-N.14 | Open |
+| N-15 | Thin `GraphExecutor` unit coverage | Q-N.15 | Open |
+
+### C.2 LLM adapters
+
+| Audit ID | Finding | Q ID | Status |
+|----------|---------|------|--------|
+| L-01 | Dead `tracked_llm_call` | Q-L.1 | Open |
+| L-02 | Empty `llm_adapters/__init__.py` | Q-L.2 | Open |
+| L-03 | `LLM_ADAPTERS.md` missing provider table | Q-L.3 | Open |
+| L-04 | `LLMProfile` docstring `max_retries` wrong | Q-L.4 | Open |
+| L-05 | `supports_streaming()` default True | Q-L.5 | Open |
+| L-06 | PolicyEngine ignores `llm_cost_evaluation` | Q-L.6 | Open |
+| L-07 | Dual usage tracking naming | Q-L.7 | Open |
+| L-08 | No structured-output conformance | Q-L.8 | Open |
+| L-09 | Bedrock context_window TODO | Q-L.9 | Open |
+| L-10 | OpenAI-compat `__dict__.update` fragility | Q-L.10 | Open |
+| L-11 | Env vars scattered | Q-L.11 | Open |
+
+### C.3 RAG
+
+| Audit ID | Finding | Q ID | Status |
+|----------|---------|------|--------|
+| R-01 | Dead `_build_backend_where` / `_map_hits_to_chunks` | Q-R.1 | Open |
+| R-02 | Four parallel retrieval paths | Q-R.2 | Open |
+| R-03 | `enable_rag` vs `use_rag` in ContextBuilder | Q-R.3 | Open |
+| R-04 | `NoPlannerPipeline` always `RagStep` | Q-R.4 | Open |
+| R-05 | `top_k` collapses prefetch | Q-R.5 | Open |
+| R-06 | `RuntimeConfig` vs `RagProfile` dual config | Q-R.6 | Open |
+| R-07 | Unused `RagProfile.extras` | Q-R.7 | Open |
+| R-08 | RAG metrics env not in profile | Q-R.8 | Open |
+| R-09 | `rag/answers/` parallel stack | Q-R.9 | Open |
+| R-10 | `UserProfileManager` bypasses `RetrievalService` | Q-R.10 | Open |
+| R-11 | Three “context builder” names | Q-R.11 | Open |
+| R-12 | Legacy `use_rag` plan booleans | Q-R.12 | Open |
+
+### C.4 Memory
+
+| Audit ID | Finding | Q ID | Status |
+|----------|---------|------|--------|
+| M-01 | No single memory architecture doc | Q-M.1 | Open |
+| M-02 | Task memory not visible in scaffold | Q-M.2 | Open |
+| M-03 | Silent default when task memory None | Q-M.3 | Open |
+
+### C.5 Observability & metrics
+
+| Audit ID | Finding | Q ID | Status |
+|----------|---------|------|--------|
+| O-01 | RAG plugin not in `platform_wiring` | Q-O.1 | Open |
+| O-02 | No RAG bridge tests | Q-O.2 | Open |
+| O-03 | Parser trace bypasses `ObservabilityBackend` | Q-O.3 | Open |
+| O-04 | `metrics/export` substring heuristics | Q-O.4 | Open |
+| O-05 | Duplicate import in `metrics/export.py` | Q-O.5 | Open |
+| O-06 | `behavioral` never set in export | Q-O.6 | Open |
+| O-07 | `/metrics/llm` not on lab host | Q-O.7 | Open |
+| O-08 | Observability env scattered | Q-O.8 | Open |
+| O-09 | RAG metrics asymmetry vs LLM | Q-O.9 | Open |
+| O-10 | `trace_bridge` vs `phase_coverage` drift | Q-O.10 | Open |
+| O-11 | Debug router missing type imports | Q-O.11 | Open |
+| O-12 | No `trace_bridge` unit tests | Q-O.12 | Open |
+| O-13 | Two Prometheus concepts unclear | Q-O.13 | Open |
+| O-14 | Runtime events SQLite-first; Cassandra adoption undefined | Q-O.14 | Open |
+
+### C.6 Legacy, style, docs
+
+| Audit ID | Finding | Q ID | Status |
+|----------|---------|------|--------|
+| X-01 | Deprecated `ChatAgent` | Q-X.1 | Open |
+| X-02 | `task_metadata_bridge` legacy | Q-X.2 | Open |
+| X-03 | Copyright / Integrax typo | Q-X.3 | Open |
+| X-04 | `tools_base` deprecation | Q-X.4 | Open |
+| X-05 | M.6 Future slugs table stale | Q-X.5 | Open |
+| D-01 | `docs/README` focus outdated | Q-D.1 | Open |
+| D-02 | Canon §52 still “Active” | Q-D.2 | Open |
+| D-03 | §0.1 “blocked until L” stale | Q-D.1 (§0.1 fix) | Done |
+| D-04 | Guide missing memory/RAG naming | Q-D.4 | Open |
+| D-05 | §5.2 process gates not listed for agent authors | Q-D.5 | Open |
+
+### C.7 Tests (cross-cutting)
+
+| Audit ID | Finding | Q ID | Status |
+|----------|---------|------|--------|
+| T-01 | NexusLoop unit suite | Q-T.1 / Q-N.14 | Open |
+| T-02 | `rag_profile_from_env` tests | Q-T.2 | Open |
+| T-03 | `ContextBuilder` tests | Q-T.3 | Open |
+| T-04 | `UserProfileManager` tests | Q-T.4 | Open |
+| T-05 | Single retrieval per turn test | Q-T.5 | Open |
+| T-06 | Platform wiring observability E2E | Q-T.6 | Open |
+
+### C.8 Phase Q paydown log
+
+| Date | Q ID | Summary |
+|------|------|---------|
+| 2026-06-01 | Q-D.3 | §0.1 strategic objective — Harness GA vs Phase K vs Phase Q |
+| — | — | *(append row per merged PR)* |
+
+**Coverage:** 58 audit rows → 49 unique Q deliverables (some Q IDs satisfy multiple rows). **Target:** 100% **Done** or **Won't fix** before declaring Phase Q complete.
+
+**Appendix B relationship:** Open items B.06 (hook remainder), B.07 (baseline beyond), and observability beta notes are **closed by Phase Q** when corresponding Q-N / Q-O rows are **Done**. B.15 and K.* remain outside Phase Q.
+
+---
+
+*Plan synced after harness audit (2026-06-01). **Phase Q** open — see Appendix C. Gate: **397 passed** (must stay green). Phase K.1/K.2 after Q Waves 1–3 unless product override. Legal live LLM E2E (K.6/B.15) deferred.*
 

@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-05-27
+**Last updated:** 2026-06-01
 
 The `docs/` folder holds the canonical platform documentation.
 
@@ -52,18 +52,18 @@ LLM observability          →  LLM_OBSERVABILITY.md
 
 ---
 
-## Current focus (2026-05-30)
+## Current focus (2026-06-01)
 
 | Phase | Status |
 |-------|--------|
+| **Phase Q — Harness quality & consolidation** | **Open** — audit remediation (Nexus, LLM, RAG, memory, observability, legacy); [Appendix C](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-c--harness-audit-traceability-phase-q) |
 | Phase L — Agent OS certification | **Done** |
-| Phase M — Integration Library (Tier-0 catalog) | **Done** (beta) — **99** providers with English `USAGE.md`; see [INTEGRATIONS.md](INTEGRATIONS.md) |
-| Phase O — Tool Library & unified tool model | **Done** — 11 catalog tools; see [TOOLS.md](TOOLS.md) |
-| Phase M-LLM — LLM adapter layer | **Done** (beta) — 19 providers, resilience, tenant metrics, PR guard; see [LLM_ADAPTERS.md](LLM_ADAPTERS.md) |
-| Phase N — Application environment scaffold | **Done** (N.0–N.10) — see implementation plan Phase N |
-| Phase K — Problem Radar / Vendor Discovery | **Ready to open** (product decision) |
+| Phase M / M-LLM / M-RAG / N / O | **Done** (beta where noted) |
+| Phase K — Problem Radar / Vendor Discovery | **After Q Waves 1–3** (product decision; may override) |
 
-Gate: `uv run pytest -m gate -q` — **397 passed** (full gate; CI paths match — see `.github/workflows/unit-tests.yml`)
+**Start Phase Q with:** `Q-O.1` (RAG observability plugin in `platform_wiring.py`).
+
+Gate: `uv run pytest -m gate -q` — **397 passed** (must stay green after each Q PR)
 
 ---
 
