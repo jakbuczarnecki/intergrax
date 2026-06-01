@@ -33,6 +33,7 @@ from typing import Callable, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from intergrax.debug.formatters import build_trace_payload
+from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.progress_service import TaskProgressService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
 from intergrax.runtime.interactions.router import create_interaction_intake_router
@@ -78,6 +79,7 @@ from intergrax.runtime.events.persistence_contract import RuntimeEventPersistenc
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointReader
 from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
+from intergrax.runtime.registry.agent_registry import AgentRegistry
 
 
 def _trace_reader_factory(

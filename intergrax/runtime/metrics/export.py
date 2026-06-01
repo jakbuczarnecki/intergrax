@@ -37,6 +37,19 @@ def export_run_metrics(persisted: PersistedRun, *, agent_id: Optional[str] = Non
     meta = persisted.metadata
     llm_usage = dict(meta.stats.llm_usage or {})
     trace_summary = _summarize_trace_events(persisted.events)
+    behavioral: ExecutionMetrics | None = None
+    if persisted.events:
+        step_count = max(trace_summary.get("step_events", 0), 1)
+        behavioral = ExecutionMetrics(
+            step_count=step_count,
+            total_llm_calls=trace_summary.get("llm_events", 0),
+            total_tool_calls=trace_summary.get("tool_events", 0),
+            total_artifacts=0,
+            total_tokens=_coerce_int(llm_usage.get("total_tokens")) or 0,
+            duration=meta.stats.duration_ms / 1000.0 if meta.stats.duration_ms else None,
+            tool_steps_ratio=min(1.0, trace_summary.get("tool_events", 0) / step_count),
+            llm_steps_ratio=min(1.0, trace_summary.get("llm_events", 0) / step_count),
+        )
 
     return RunMetricsExport(
         run_id=meta.run_id,
@@ -48,6 +61,7 @@ def export_run_metrics(persisted: PersistedRun, *, agent_id: Optional[str] = Non
         total_tokens=_coerce_int(llm_usage.get("total_tokens")),
         llm_usage=llm_usage,
         trace_summary=trace_summary,
+        behavioral=behavioral,
     )
 
 

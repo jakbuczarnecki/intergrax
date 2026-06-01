@@ -808,8 +808,27 @@ class BedrockChatAdapter(LLMAdapter):
             )
         return codec
 
+    _CONTEXT_WINDOWS: dict[str, int] = {
+        "anthropic.claude-3-5-sonnet-20241022-v2:0": 200_000,
+        "anthropic.claude-3-5-haiku-20241022-v1:0": 200_000,
+        "anthropic.claude-3-opus-20240229-v1:0": 200_000,
+        "meta.llama3-1-70b-instruct-v1:0": 128_000,
+        "meta.llama3-1-8b-instruct-v1:0": 128_000,
+        "mistral.mistral-large-2402-v1:0": 128_000,
+        "amazon.titan-text-express-v1": 8_000,
+    }
+
     def _estimate_context_window(self, model_id: str) -> int:
-        # TODO: Optional: refine using a lookup table per model_id.
+        if model_id in self._CONTEXT_WINDOWS:
+            return self._CONTEXT_WINDOWS[model_id]
+        for prefix, tokens in (
+            ("anthropic.claude-3-5", 200_000),
+            ("anthropic.claude-3", 200_000),
+            ("meta.llama3", 128_000),
+            ("mistral.", 128_000),
+        ):
+            if model_id.startswith(prefix):
+                return tokens
         return 32_000
 
     def _infer_family_from_model_id(self, model_id: str) -> BedrockModelFamily:

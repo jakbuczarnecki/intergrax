@@ -412,6 +412,8 @@ Variables use the application prefix (`MY_LAB_`, `MY_PRODUCT_`, …). Do not put
 
 Product profile: optional dev API key via `*_BACKEND_BOOTSTRAP_API_KEY` (+ tenant/user); production requires keys or explicit `*_BACKEND_ALLOW_UNAUTHENTICATED=true` (see generated `host/settings.py`).
 
+**Lab / scaffold harness defaults (Phase Q-N.10):** Tier-3 lab hosts should wire `production_mode=False` via `intergrax.applications._shared.runtime_defaults.harness_production_mode()` so governance and shadow policies stay relaxed during local iteration. Product profiles set `production_mode=True` explicitly in `host/factory.py`.
+
 #### E.5 — Three-command quickstart
 
 From **repository root**:

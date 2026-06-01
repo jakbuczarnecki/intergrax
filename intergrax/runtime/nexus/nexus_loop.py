@@ -46,6 +46,7 @@ from intergrax.runtime.nexus.orchestration.long_running_bridge import (
     maybe_checkpoint_long_running,
     maybe_restore_long_running,
 )
+from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.task_finisher import build_nexus_task_result
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionNode
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -185,6 +186,17 @@ class NexusLoop:
         self._trace_emitter = trace_emitter
         self._trace_store = trace_store
         self._current_task: Optional[Task] = None
+        self._hitl = NexusHitlRunner(
+            publish=self._publish_runtime_event,
+            human_hooks=self._human_hooks,
+            lifecycle_hooks=self._lifecycle_hooks,
+            escalation_router=self._escalation_router,
+            notification_adapter=self._notification_adapter,
+            finish_task=self._finish_task,
+            finalize_trace=self._finalize_persisting_trace,
+            maybe_checkpoint=self._maybe_checkpoint_long_running,
+            persist_human_decision=self._persist_human_decision,
+        )
 
     @property
     def registry(self) -> AgentRegistry:
@@ -253,9 +265,9 @@ class NexusLoop:
             task.state = TaskState.CREATED
         verdict = HumanPauseCoordinator.verdict_from_task(task)
         if verdict == HumanResponseVerdict.REJECT:
-            return await self._handle_human_rejection(task, trace_emitter, lifecycle)
+            return await self._hitl.handle_human_rejection(task, trace_emitter, lifecycle)
         if verdict == HumanResponseVerdict.ESCALATE:
-            return await self._handle_human_escalation(task, trace_emitter, lifecycle)
+            return await self._hitl.handle_human_escalation(task, trace_emitter, lifecycle)
 
         if HumanPauseCoordinator.is_resumed(task):
             await self._publish_runtime_event(
@@ -279,7 +291,7 @@ class NexusLoop:
             )
             HumanPauseCoordinator.clear_pause(task)
 
-        hook_failure = await self._run_lifecycle_hook(
+        hook_failure = await self._hitl.run_lifecycle_hook(
             before=True,
             point=HookPoint.BEFORE_TASK_INTAKE,
             task=task,
@@ -303,7 +315,7 @@ class NexusLoop:
             )
         )
 
-        hook_failure = await self._run_lifecycle_hook(
+        hook_failure = await self._hitl.run_lifecycle_hook(
             before=False,
             point=HookPoint.AFTER_TASK_INTAKE,
             task=task,
@@ -314,7 +326,7 @@ class NexusLoop:
         if hook_failure is not None:
             return hook_failure
 
-        hook_failure = await self._run_lifecycle_hook(
+        hook_failure = await self._hitl.run_lifecycle_hook(
             before=True,
             point=HookPoint.BEFORE_CLASSIFICATION,
             task=task,
@@ -329,7 +341,7 @@ class NexusLoop:
         classification = task.classification or ""
         lifecycle.transition(task, TaskState.CLASSIFIED)
 
-        hook_failure = await self._run_lifecycle_hook(
+        hook_failure = await self._hitl.run_lifecycle_hook(
             before=False,
             point=HookPoint.AFTER_CLASSIFICATION,
             task=task,
@@ -359,7 +371,7 @@ class NexusLoop:
                 graph_id="",
             )
 
-        hook_failure = await self._run_lifecycle_hook(
+        hook_failure = await self._hitl.run_lifecycle_hook(
             before=True,
             point=HookPoint.BEFORE_PLANNING,
             task=task,
@@ -389,7 +401,7 @@ class NexusLoop:
             )
         )
 
-        hook_failure = await self._run_lifecycle_hook(
+        hook_failure = await self._hitl.run_lifecycle_hook(
             before=False,
             point=HookPoint.AFTER_PLANNING,
             task=task,
@@ -403,7 +415,7 @@ class NexusLoop:
 
         if classification == TaskClassification.HUMAN_APPROVAL_REQUIRED.value:
             if not HumanPauseCoordinator.is_resumed(task):
-                hook_failure = await self._run_before_human_pause(task, trace_emitter, lifecycle)
+                hook_failure = await self._hitl.run_before_human_pause(task, trace_emitter, lifecycle)
                 if hook_failure is not None:
                     return hook_failure
                 lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
@@ -442,7 +454,7 @@ class NexusLoop:
                 ),
             )
 
-        def _on_node_start(node: object) -> None:
+        def _on_node_start(node: ExecutionNode) -> None:
             trace_emitter.emit(task, message=f"graph node start: {getattr(node, 'node_id', node)}")
 
         def _on_node_complete(node: ExecutionNode) -> None:
@@ -522,7 +534,7 @@ class NexusLoop:
                     }
                 )
             )
-            hook_failure = await self._run_before_human_pause(
+            hook_failure = await self._hitl.run_before_human_pause(
                 task,
                 trace_emitter,
                 lifecycle,
@@ -815,204 +827,4 @@ class NexusLoop:
             verdict,
             human_store=self._human_store,
             response_text=response_text,
-        )
-
-    async def _run_before_human_pause(
-        self,
-        task: Task,
-        trace_emitter: TaskTraceEmitter,
-        lifecycle: TaskLifecycle,
-        *,
-        agent_id: Optional[str] = None,
-        execution: Optional[AgentExecutionResult] = None,
-    ) -> Optional[TaskResult]:
-        try:
-            await self._human_hooks.before_pause(
-                task,
-                agent_id=agent_id,
-                execution=execution,
-            )
-        except HumanApprovalHookError as exc:
-            lifecycle.transition(task, TaskState.FAILED)
-            if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                await self._finalize_persisting_trace(
-                    trace_emitter, [], task_id=task.task_id
-                )
-            return await self._finish_task(
-                task,
-                trace_emitter,
-                answer="",
-                executions=[],
-                validation=ValidationResult(valid=False, errors=[str(exc)]),
-                plan=None,
-                retry_records=[],
-                graph_id="",
-            )
-        return None
-
-    async def _run_lifecycle_hook(
-        self,
-        *,
-        before: bool,
-        point: HookPoint,
-        task: Task,
-        phase: ExecutionPhase,
-        trace_emitter: TaskTraceEmitter,
-        lifecycle: TaskLifecycle,
-        extra: Optional[dict] = None,
-    ) -> Optional[TaskResult]:
-        try:
-            if before:
-                await self._lifecycle_hooks.before(point, task, phase=phase, extra=extra)
-            else:
-                await self._lifecycle_hooks.after(point, task, phase=phase, extra=extra)
-        except NexusLifecycleHookError as exc:
-            lifecycle.transition(task, TaskState.FAILED)
-            if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                await self._finalize_persisting_trace(
-                    trace_emitter, [], task_id=task.task_id
-                )
-            return await self._finish_task(
-                task,
-                trace_emitter,
-                answer="",
-                executions=[],
-                validation=ValidationResult(valid=False, errors=[str(exc)]),
-                plan=None,
-                retry_records=[],
-                graph_id="",
-            )
-        return None
-
-    async def _handle_human_rejection(
-        self,
-        task: Task,
-        trace_emitter: TaskTraceEmitter,
-        lifecycle: TaskLifecycle,
-    ) -> TaskResult:
-        await self._publish_runtime_event(
-            runtime_event_from_task_state(
-                task,
-                run_id=task.task_id,
-                message="human rejection received",
-            ).model_copy(
-                update={
-                    "event_type": RuntimeEventType.HUMAN_APPROVAL_RECEIVED,
-                    "phase": ExecutionPhase.HUMAN_APPROVAL,
-                    "payload": {
-                        "decision": HumanResponseVerdict.REJECT.value,
-                        "response": task.options.human.response_text,
-                    },
-                }
-            )
-        )
-        await self._human_hooks.after_response(
-            task,
-            verdict=HumanResponseVerdict.REJECT.value,
-        )
-        self._persist_human_decision(task, HumanResponseVerdict.REJECT)
-        lifecycle.transition(task, TaskState.FAILED)
-        if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-            await self._finalize_persisting_trace(trace_emitter, [], task_id=task.task_id)
-        return await self._finish_task(
-            task,
-            trace_emitter,
-            answer="",
-            executions=[],
-            validation=ValidationResult(valid=False, errors=["human rejected"]),
-            plan=None,
-            retry_records=[],
-            graph_id="",
-        )
-
-    async def _handle_human_escalation(
-        self,
-        task: Task,
-        trace_emitter: TaskTraceEmitter,
-        lifecycle: TaskLifecycle,
-    ) -> TaskResult:
-        outcome = self._escalation_router.route(task)
-        self._escalation_router.apply_to_task(task, outcome)
-        self._persist_human_decision(task, HumanResponseVerdict.ESCALATE)
-
-        await self._publish_runtime_event(
-            runtime_event_from_task_state(
-                task,
-                run_id=task.task_id,
-                message="human escalation requested",
-            ).model_copy(
-                update={
-                    "event_type": RuntimeEventType.INTERRUPT_ESCALATED,
-                    "phase": ExecutionPhase.HUMAN_APPROVAL,
-                    "payload": {
-                        "level": outcome.level,
-                        "target": outcome.target.value,
-                        "message": outcome.message,
-                    },
-                }
-            )
-        )
-        await self._human_hooks.after_response(
-            task,
-            verdict=HumanResponseVerdict.ESCALATE.value,
-        )
-
-        progress_message = "awaiting escalated human review"
-        await LongRunningCoordinator.notify_escalation(
-            task,
-            outcome=outcome,
-            progress_message=progress_message,
-            adapter=self._notification_adapter,
-        )
-
-        task.options.human.response_text = None
-        task.options.human.verdict = None
-        task.sync_metadata()
-
-        if outcome.fail_task:
-            lifecycle.transition(task, TaskState.FAILED)
-            if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                await self._finalize_persisting_trace(
-                    trace_emitter, [], task_id=task.task_id
-                )
-            return await self._finish_task(
-                task,
-                trace_emitter,
-                answer="",
-                executions=[],
-                validation=ValidationResult(
-                    valid=False,
-                    errors=[outcome.message or "escalation limit reached"],
-                ),
-                plan=None,
-                retry_records=[],
-                graph_id="",
-            )
-
-        if task.state == TaskState.CREATED:
-            lifecycle.transition(task, TaskState.CLASSIFIED)
-            lifecycle.transition(task, TaskState.PLANNED)
-        hook_failure = await self._run_before_human_pause(task, trace_emitter, lifecycle)
-        if hook_failure is not None:
-            if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-                await self._finalize_persisting_trace(
-                    trace_emitter, [], task_id=task.task_id
-                )
-            return hook_failure
-        lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
-        await self._maybe_checkpoint_long_running(
-            task,
-            progress_message=progress_message,
-        )
-        if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-            await self._finalize_persisting_trace(trace_emitter, [], task_id=task.task_id)
-        return await self._finish_task(
-            task,
-            trace_emitter,
-            answer="",
-            executions=[],
-            validation=ValidationResult(valid=False, errors=["awaiting escalated human review"]),
-            plan=None,
-            retry_records=[],
-            graph_id="",
         )

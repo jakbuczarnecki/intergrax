@@ -643,9 +643,19 @@ Modular layers — all strategy IDs and integration slugs are **configurable** v
 | Agentic deep tier | `rag/retrieval/agentic_loop.py`, `query_refiner.py` | Budgeted loop; `agentic_query_mode=deterministic\|llm`; trace exports `agentic_total_latency_ms` |
 | Qdrant sparse | `integrations/.../qdrant/rag_store.py` | Optional native sparse + RRF (`INTERGRAX_RAG_QDRANT_SPARSE`); pluggable sparse encoder |
 | Weaviate hybrid | `integrations/.../weaviate/rag_store.py`, `schema.py` | Native `query.hybrid`; schema migration; native multi-tenancy; metadata filter translation |
-| Observability | `rag/tracking/metrics.py`, `observability_bridge.py` | `INTERGRAX_RAG_METRICS_ENABLED` — recall@k avg, hybrid/agentic latencies on `TASK_COMPLETED` |
+| Observability | `rag/tracking/metrics.py`, `observability_bridge.py` | See **RAG observability** below |
 | Graph indexer | `rag/graph/indexer/` | `heuristic`, `llm`, or `heuristic_then_llm` via `INTERGRAX_RAG_GRAPH_INDEXER_MODE` |
 | Bootstrap | `rag/bootstrap/rag_stack_bootstrap.py` | `create_default_rag_stack()` for Tier-3 `ToolWiringContext` |
+
+**RAG observability:** Enable with `INTERGRAX_RAG_METRICS_ENABLED=true`. `bootstrap_nexus_platform()` in `applications/_shared/platform_wiring.py` registers LLM + RAG metrics plugins (lab default). Manual: `register_rag_observability_plugin(plugins)` from `rag/tracking/observability_bridge.py`.
+
+Per `(tenant_id, retriever_id, route_tier)`: `calls`, `retrieval_latency_ms`, `rerank_latency_ms`, `hybrid_calls`, `agentic_iterations`, `recall_at_k_avg` (golden harness). `RetrievalResult.trace` exports `hybrid_used`, `agentic_total_latency_ms`, `recall_at_k`, route tier, stop reason. Exported on `TASK_COMPLETED` via structured log field `rag_metrics` (same bus hook as LLM).
+
+**Metrics HTTP:** Same log + optional Pushgateway pattern as LLM — no default `GET /metrics/rag` unless Tier-3 adds `register_rag_metrics_routes`.
+
+**Parser trace:** `parser_trace_flush` / `parser_trace_exporter` may write directly to Phoenix/Langfuse without `ObservabilityBackend` (document-ingest latency). Env: `INTERGRAX_PARSER_TRACE_*` — [../infra/README.md](../infra/README.md). Nexus run traces stay on SQLite / configured trace store (§33.1).
+
+**Golden regression:** `tests/fixtures/rag_golden/retrieval_cases.json` — scenarios `retrieval`, `graph_rag`, `multi_hop`, `agentic`; workflow `.github/workflows/rag-guard.yml`.
 
 **Wiring rule:** `ToolWiringContext` and `RuntimeConfig` expose `retrieval_service`, `rag_profile`, `retriever_manager`, `reranker_manager`. Document parsers resolve via `IntegrationProfile` + `INTERGRAX_RAG_DOCUMENT_PARSER_SLUG` (optional); default loader uses handler registry (smart parsers + catalog fallback).
 
@@ -2279,6 +2289,17 @@ Do not retry endlessly.
 
 Retries should be visible in traces.
 
+### 31.1 Two retry layers (do not double-retry)
+
+Intergrax has **two independent retry layers**. Configure each explicitly; avoid aggressive values on both for the same step without trace events.
+
+| Layer | Location | Scope | Policy |
+|-------|----------|-------|--------|
+| **Graph / validation** | `RetryEngine` (`runtime/nexus/retry/retry_engine.py`) | Nexus execution graph after agent step validation fails | `RetryPolicy` (`max_retries`, `retry_alternate_agent`); may switch agent via `AgentRegistry`; `RetryRecord` on task result; hooks `BEFORE_RETRY` / `AFTER_RETRY` when middleware wired |
+| **Run-level** | `RuntimeEngine` / `runtime_steps` | Transient LLM or tool failures inside one agent run (`RuntimeErrorCode.LLM_ERROR`, `TOOL_ERROR`, …) | `RuntimeConfig.max_run_retries`, `retry_run_on`; re-executes pipeline step; does not change Nexus agent selection |
+
+A future `RetryCoordinator` may delegate to both with explicit `RETRY_SCHEDULED` / `RETRY_STARTED` events (§42.34). Until then, agents emit **intent** (`AgentDecision.RETRY`); runtime executes policy — no agent-internal `for attempt in range(n)` against adapters.
+
 ---
 
 # 32. Human In The Loop
@@ -2335,6 +2356,32 @@ Observability exists for:
 - cost control
 - safety
 - future improvement
+
+### 33.1 Trace and runtime event storage (default)
+
+**Default (lab / single-tenant):** SQLite files on the application host — zero-ops with `IntegrationProfile.lab()`:
+
+| Env | Store |
+|-----|--------|
+| `INTERGRAX_TRACE_DB` | Nexus run traces (`RunTraceWriter`) |
+| `INTERGRAX_RUNTIME_EVENTS_DB` | Canonical runtime events |
+| `INTERGRAX_CHECKPOINTS_DB` | Task checkpoints |
+| `INTERGRAX_TASK_MEMORY_DB` | Task memory KV |
+
+**Scale-out (when all apply):** >1M runtime events/day per tenant → `cassandra` runtime event store (`integrations/providers/cassandra/USAGE.md`); full-text search on payloads → `elasticsearch`; centralized trace UI on Phoenix/Langfuse → keep parser export paths, optional dual-write.
+
+**Non-goals:** mandatory Cassandra for lab; replacing `TaskTraceEmitter` with external APM on every agent run. Extend `RunTraceWriter` / existing pipeline — do not fork a parallel trace store (§8.8).
+
+### 33.2 Harness observability env (Tier-3)
+
+| Variable | Purpose |
+|----------|---------|
+| `INTERGRAX_LLM_METRICS_ENABLED` | LLM metrics plugin + `GET /metrics/llm` — see [LLM_ADAPTERS.md](LLM_ADAPTERS.md) |
+| `INTERGRAX_RAG_METRICS_ENABLED` | RAG metrics plugin (`rag_profile.extras`) — see §7.1.2 RAG observability |
+| `INTERGRAX_PARSER_TRACE_ENABLED` | Document parser span export (may bypass `ObservabilityBackend` for ingest latency) |
+| Integration `observability_backend` slug | PromQL / Sentry / etc. |
+
+Local backends: [../infra/README.md](../infra/README.md) profile `observability` (Prometheus 9090, Phoenix 6006, Langfuse 3000).
 
 ---
 

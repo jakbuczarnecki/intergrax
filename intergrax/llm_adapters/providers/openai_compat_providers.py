@@ -29,7 +29,7 @@ class _CompatAdapterBase(OpenAIChatCompletionsAdapter):
         api_key: Optional[str] = None,
         **defaults,
     ) -> None:
-        built = create_openai_compat_adapter(
+        self._delegate = create_openai_compat_adapter(
             self._CONFIG,
             client=client,
             model=model,
@@ -37,7 +37,13 @@ class _CompatAdapterBase(OpenAIChatCompletionsAdapter):
             api_key=api_key,
             **defaults,
         )
-        self.__dict__.update(built.__dict__)
+        self.provider = self._delegate.provider
+        self.model = self._delegate.model
+        self.call_config = self._delegate.call_config
+        self.usage = self._delegate.usage
+
+    def __getattr__(self, name: str):
+        return getattr(self._delegate, name)
 
 
 class GroqChatAdapter(_CompatAdapterBase):
