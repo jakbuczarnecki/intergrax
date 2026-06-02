@@ -2006,9 +2006,9 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
 | V-CG.1 | Capability graph schema (nodes + edges for Integration/Tool/Skill/Policy/Agent/Application/Product) | **Done** | **Critical** | Typed schema + docs in canon |
-| V-CG.2 | Graph lineage builder from registries | Planned | High | Build process covers changed artifacts |
-| V-CG.3 | Impact analysis report (blast radius) for changed capabilities | Planned | High | CLI/API report in CI artifact |
-| V-CG.4 | Compatibility validation on dependency graph edges | Planned | **Critical** | CI fails on incompatible graph changes |
+| V-CG.2 | Graph lineage builder from registries | **Done** | High | Build process covers changed artifacts |
+| V-CG.3 | Impact analysis report (blast radius) for changed capabilities | **Done** | High | CLI/API report in CI artifact |
+| V-CG.4 | Compatibility validation on dependency graph edges | **Done** (report + enforce mode) | **Critical** | CI fails on incompatible graph changes |
 
 #### V-ALG — Agent Lifecycle Governance
 
@@ -2186,6 +2186,7 @@ L4 readiness requires:
 | Date | V ID | Summary |
 |------|------|---------|
 | 2026-06-02 | V-CG.1, V-AM.1, V-ALG.1 | Typed baseline contracts added (`intergrax/runtime/architecture/`) + report-only artifacts script (`scripts/phase_v_foundations_report.py`) + unit tests |
+| 2026-06-02 | V-CG.2, V-CG.3, V-CG.4 | Lineage/impact/compatibility modules + capability graph guard script (`scripts/phase_v_capability_graph_guard.py`) + enforce switch + unit tests |
 | — | — | *(append row per merged PR)* |
 
 ---

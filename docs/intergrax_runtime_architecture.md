@@ -4904,6 +4904,7 @@ Implementation baseline (Phase V V1):
 
 - typed contracts in `intergrax/runtime/architecture/` (`capability_graph.py`, `architecture_metrics.py`, `agent_certification.py`)
 - report-only artifact generator: `scripts/phase_v_foundations_report.py`
+- V-CG guard baseline: `capability_graph_lineage.py`, `capability_graph_compatibility.py`, `scripts/phase_v_capability_graph_guard.py`
 
 ## 53.1 Strategic objective lock (harness-first)
 

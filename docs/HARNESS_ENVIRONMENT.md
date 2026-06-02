@@ -141,9 +141,13 @@ Primary Phase V tracks impacting the harness environment:
 Current baseline delivered (Phase V V1):
 
 - `V-CG.1` typed capability graph schema
+- `V-CG.2` graph lineage report
+- `V-CG.3` blast-radius impact report
+- `V-CG.4` compatibility guard (report + `--enforce`)
 - `V-AM.1` architecture metrics baseline contract
 - `V-ALG.1` agent certification gate contract
 - report artifacts script: `scripts/phase_v_foundations_report.py`
+- graph guard script: `scripts/phase_v_capability_graph_guard.py`
 
 Execution references in the implementation plan:
 
@@ -170,6 +174,7 @@ uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -q
 uv run pytest tests/unit/skills/test_harness_skill_bundle.py -q
 uv run pytest tests/acceptance/agent_os/test_lab_application.py -m gate -q
 uv run python scripts/phase_v_foundations_report.py
+uv run python scripts/phase_v_capability_graph_guard.py
 ```
 
 Optional strict profile (CI `harness-strict` job):

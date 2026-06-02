@@ -25,6 +25,20 @@ from intergrax.runtime.architecture.capability_graph import (
     CapabilityNodeType,
     build_catalog_capability_graph,
 )
+from intergrax.runtime.architecture.capability_graph_compatibility import (
+    CapabilityCompatibilityReport,
+    CompatibilityIssue,
+    CompatibilitySeverity,
+    evaluate_capability_graph_compatibility,
+)
+from intergrax.runtime.architecture.capability_graph_lineage import (
+    CapabilityImpactRecord,
+    CapabilityImpactReport,
+    CapabilityLineageRecord,
+    CapabilityLineageReport,
+    build_capability_impact_report,
+    build_capability_lineage_report,
+)
 
 __all__ = [
     "AgentCertificationEvidence",
@@ -38,10 +52,20 @@ __all__ = [
     "CapabilityEdgeType",
     "CapabilityGraph",
     "CapabilityGraphVersion",
+    "CapabilityCompatibilityReport",
+    "CapabilityImpactRecord",
+    "CapabilityImpactReport",
+    "CapabilityLineageRecord",
+    "CapabilityLineageReport",
     "CapabilityNode",
     "CapabilityNodeType",
+    "CompatibilityIssue",
+    "CompatibilitySeverity",
     "GateCheckStatus",
     "evaluate_agent_certification",
     "build_catalog_capability_graph",
+    "build_capability_impact_report",
+    "build_capability_lineage_report",
     "compute_architecture_metrics",
+    "evaluate_capability_graph_compatibility",
 ]
