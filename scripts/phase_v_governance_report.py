@@ -72,6 +72,16 @@ from intergrax.runtime.architecture import (
     build_cost_optimization_report,
     evaluate_budget_envelopes,
     evaluate_quota_enforcement,
+    ContextChunkSignal,
+    ContextQualityThresholds,
+    PromptCompositionSpec,
+    PromptLayer,
+    PromptLayerFragment,
+    PromptRegistryEntry,
+    PromptRiskTier,
+    compose_prompt,
+    evaluate_context_engineering,
+    evaluate_prompt_registry,
 )
 
 
@@ -408,6 +418,88 @@ def _build_cost_optimization_report() -> BaseModel:
     )
 
 
+def _build_context_engineering_report() -> BaseModel:
+    return evaluate_context_engineering(
+        chunks=[
+            ContextChunkSignal(
+                chunk_id="chunk-1",
+                content_hash="hash-a",
+                relevance_score=0.92,
+                freshness_score=0.88,
+                confidence_score=0.90,
+            ),
+            ContextChunkSignal(
+                chunk_id="chunk-2",
+                content_hash="hash-a",
+                relevance_score=0.80,
+                freshness_score=0.70,
+                confidence_score=0.75,
+            ),
+            ContextChunkSignal(
+                chunk_id="chunk-3",
+                content_hash="hash-b",
+                relevance_score=0.55,
+                freshness_score=0.60,
+                confidence_score=0.50,
+            ),
+        ],
+        thresholds=ContextQualityThresholds(),
+    )
+
+
+def _build_prompt_registry_report() -> BaseModel:
+    return evaluate_prompt_registry(
+        [
+            PromptRegistryEntry(
+                prompt_id="prompt.research.system",
+                version="1.2.0",
+                owner_team="harness-platform",
+                owner_contact="prompt-owner@intergrax",
+                risk_tier=PromptRiskTier.MEDIUM,
+            ),
+            PromptRegistryEntry(
+                prompt_id="prompt.legal.signoff",
+                version="2.0.0",
+                owner_team="legal-platform",
+                owner_contact="legal-owner@intergrax",
+                risk_tier=PromptRiskTier.HIGH,
+                change_ticket_ref="CHG-2026-0602-PE",
+            ),
+        ]
+    )
+
+
+def _build_prompt_composition_report() -> BaseModel:
+    return compose_prompt(
+        PromptCompositionSpec(
+            prompt_id="prompt.research.system",
+            version="1.2.0",
+            fragments=[
+                PromptLayerFragment(
+                    layer=PromptLayer.SYSTEM,
+                    content="You are a research assistant.",
+                    source_ref="prompts/research/system.md",
+                ),
+                PromptLayerFragment(
+                    layer=PromptLayer.POLICY,
+                    content="Follow tool policy and safety constraints.",
+                    source_ref="policy/runtime_policy_bundle",
+                ),
+                PromptLayerFragment(
+                    layer=PromptLayer.TASK,
+                    content="Summarize the provided evidence.",
+                    source_ref="prompts/research/task.md",
+                ),
+                PromptLayerFragment(
+                    layer=PromptLayer.CONTEXT,
+                    content="Retrieved documents are provided below.",
+                    source_ref="context/retrieval",
+                ),
+            ],
+        )
+    )
+
+
 def main() -> int:
     output_dir = REPO_ROOT / "build" / "architecture_hardening"
     writer: ReportWriter = JsonReportWriter()
@@ -460,6 +552,9 @@ def main() -> int:
     quota_governance_report = _build_quota_governance_report()
     cost_forecast_report = _build_cost_forecast_report()
     cost_optimization_report = _build_cost_optimization_report()
+    context_engineering_report = _build_context_engineering_report()
+    prompt_registry_report = _build_prompt_registry_report()
+    prompt_composition_report = _build_prompt_composition_report()
 
     writer.write(
         output_path=output_dir / "architecture_metrics_pipeline_report.json",
@@ -532,6 +627,18 @@ def main() -> int:
     writer.write(
         output_path=output_dir / "cost_optimization_report.json",
         payload=cost_optimization_report,
+    )
+    writer.write(
+        output_path=output_dir / "context_engineering_report.json",
+        payload=context_engineering_report,
+    )
+    writer.write(
+        output_path=output_dir / "prompt_registry_governance_report.json",
+        payload=prompt_registry_report,
+    )
+    writer.write(
+        output_path=output_dir / "prompt_composition_report.json",
+        payload=prompt_composition_report,
     )
 
     print("phase-v governance report: OK")

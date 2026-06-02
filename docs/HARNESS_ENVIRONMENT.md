@@ -164,6 +164,10 @@ Current baseline delivered (Phase V V1):
 - `V-COST.2` quota enforcement with deterministic `allow/degrade/deny` behavior
 - `V-COST.3` spend/token forecast and anomaly detection reports
 - `V-COST.4` optimization recommendations with policy guardrails
+- `V-CE.1` context relevance/freshness/confidence scoring contracts
+- `V-CE.2` duplicate suppression and context quality threshold governance
+- `V-PE.1` prompt registry governance (owner/version/risk metadata)
+- `V-PE.2` layered prompt composition model (`system`, `policy`, `task`, `context`)
 - report artifacts script: `scripts/phase_v_foundations_report.py`
 - graph guard script: `scripts/phase_v_capability_graph_guard.py`
 - governance artifacts script: `scripts/phase_v_governance_report.py`

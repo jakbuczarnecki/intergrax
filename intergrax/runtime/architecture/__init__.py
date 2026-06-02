@@ -161,6 +161,29 @@ from intergrax.runtime.architecture.cost_optimization import (
     OptimizationRecommendationType,
     build_cost_optimization_report,
 )
+from intergrax.runtime.architecture.context_engineering import (
+    ContextChunkQualityRecord,
+    ContextChunkSignal,
+    ContextEngineeringReport,
+    ContextQualityThresholds,
+    deduplicate_context_chunks,
+    evaluate_context_engineering,
+)
+from intergrax.runtime.architecture.prompt_registry_governance import (
+    PromptRegistryEntry,
+    PromptRegistryGovernanceReport,
+    PromptRegistryValidationResult,
+    PromptRiskTier,
+    evaluate_prompt_registry,
+    validate_prompt_registry_entry,
+)
+from intergrax.runtime.architecture.prompt_composition import (
+    ComposedPrompt,
+    PromptCompositionSpec,
+    PromptLayer,
+    PromptLayerFragment,
+    compose_prompt,
+)
 
 __all__ = [
     "AgentCertificationEvidence",
@@ -252,6 +275,18 @@ __all__ = [
     "OptimizationGuardrail",
     "OptimizationRecommendation",
     "OptimizationRecommendationType",
+    "ContextChunkQualityRecord",
+    "ContextChunkSignal",
+    "ContextEngineeringReport",
+    "ContextQualityThresholds",
+    "PromptRegistryEntry",
+    "PromptRegistryGovernanceReport",
+    "PromptRegistryValidationResult",
+    "PromptRiskTier",
+    "ComposedPrompt",
+    "PromptCompositionSpec",
+    "PromptLayer",
+    "PromptLayerFragment",
     "UnifiedEvaluationReport",
     "evaluate_agent_certification",
     "evaluate_agent_lifecycle_transition",
@@ -265,6 +300,11 @@ __all__ = [
     "evaluate_quota_enforcement",
     "build_cost_forecast_report",
     "build_cost_optimization_report",
+    "deduplicate_context_chunks",
+    "evaluate_context_engineering",
+    "evaluate_prompt_registry",
+    "validate_prompt_registry_entry",
+    "compose_prompt",
     "build_catalog_capability_graph",
     "build_capability_impact_report",
     "build_capability_lineage_report",
