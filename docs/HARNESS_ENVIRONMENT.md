@@ -129,7 +129,7 @@ Lab reference agents implement `HarnessReferenceAgent` + `UAEPAgent`; manifest b
 ## Post-U continuation (Phase V)
 
 Phase S/T/U established a production-configurable harness baseline.
-Phase V architecture hardening contracts are **complete** in harness-only scope; default continuation is **L3/L4 gate evidence** and optional **Phase W-ML** (modality plane).
+Phase V architecture hardening contracts are **complete** in harness-only scope, including **V-V6** closeout (adaptive governance + L3/L4 evidence + CI gate). Default continuation is **operational L3/L4 stability window** and optional **Phase W-ML** (modality plane).
 
 Primary Phase V tracks impacting the harness environment:
 
@@ -181,6 +181,9 @@ Current baseline delivered (Phase V V1):
 - report artifacts script: `scripts/phase_v_foundations_report.py`
 - graph guard script: `scripts/phase_v_capability_graph_guard.py`
 - governance artifacts script: `scripts/phase_v_governance_report.py`
+- `V-V6.1` bounded adaptive loop governance (`adaptive_governance.py`)
+- `V-V6.2` L3/L4 maturity gate evidence (`maturity_gate_evidence.py`)
+- `V-V6.3` CI closeout gate: `scripts/phase_v_closeout_gate.py` (`--enforce`, `--enforce-l4`)
 
 Execution references in the implementation plan:
 
@@ -209,6 +212,7 @@ uv run pytest tests/acceptance/agent_os/test_lab_application.py -m gate -q
 uv run python scripts/phase_v_foundations_report.py
 uv run python scripts/phase_v_capability_graph_guard.py
 uv run python scripts/phase_v_governance_report.py
+uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
 ```
 
 Optional strict profile (CI `harness-strict` job):

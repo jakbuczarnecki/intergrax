@@ -110,6 +110,10 @@ from intergrax.runtime.architecture import (
     HybridRetrievalRequest,
     execute_hybrid_retrieval,
     build_graph_provenance_trace,
+    build_default_adaptive_proposals,
+    evaluate_adaptive_governance,
+    collect_harness_governance_signals,
+    evaluate_maturity_gate_evidence,
 )
 
 
@@ -803,6 +807,8 @@ def main() -> int:
     graph_rag_contract_report = _build_graph_rag_contract_report()
     hybrid_retrieval_report = _build_hybrid_retrieval_report()
     graph_provenance_report = _build_graph_provenance_report()
+    adaptive_governance_report = evaluate_adaptive_governance(build_default_adaptive_proposals())
+    maturity_gate_report = evaluate_maturity_gate_evidence(collect_harness_governance_signals())
 
     writer.write(
         output_path=output_dir / "architecture_metrics_pipeline_report.json",
@@ -927,6 +933,14 @@ def main() -> int:
     writer.write(
         output_path=output_dir / "graph_provenance_trace_report.json",
         payload=graph_provenance_report,
+    )
+    writer.write(
+        output_path=output_dir / "adaptive_governance_report.json",
+        payload=adaptive_governance_report,
+    )
+    writer.write(
+        output_path=output_dir / "maturity_gate_evidence_report.json",
+        payload=maturity_gate_report,
     )
 
     print("phase-v governance report: OK")
