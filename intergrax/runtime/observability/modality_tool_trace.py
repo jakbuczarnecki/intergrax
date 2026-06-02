@@ -4,31 +4,54 @@
 
 from __future__ import annotations
 
-from typing import Mapping
-
+from intergrax.runtime.observability.modality_counters import (
+    MODALITY_INVOCATION_COUNTERS_KEY,
+    ModalityInvocationCounters,
+    read_modality_counters,
+)
 from intergrax.runtime.observability.modality_metrics import ModalityMetricsPayload
 from intergrax.tools.core.handler import WiringContextToolHandler
 from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.registry.wiring import ToolWiringContext
 
-MODALITY_INVOCATION_COUNTERS_KEY = "modality_invocation_counters"
 
-
-def modality_metrics_from_extras(extras: Mapping[str, object]) -> ModalityMetricsPayload | None:
-    raw = extras.get(MODALITY_INVOCATION_COUNTERS_KEY)
-    if not isinstance(raw, dict):
-        return None
+def modality_metrics_from_counters(counters: ModalityInvocationCounters) -> ModalityMetricsPayload:
     return ModalityMetricsPayload(
-        inference_ms=int(raw.get("inference_ms", 0) or 0),
-        media_bytes=int(raw.get("media_bytes", 0) or 0),
-        tts_characters=int(raw.get("tts_characters", 0) or 0),
-        vision_detections=int(raw.get("vision_detections", 0) or 0),
-        ml_predictions=int(raw.get("ml_predictions", 0) or 0),
+        inference_ms=counters.inference_ms,
+        media_bytes=counters.media_bytes,
+        tts_characters=counters.tts_characters,
+        vision_detections=counters.vision_detections,
+        ml_predictions=counters.ml_predictions,
     )
+
+
+def modality_metrics_from_extras(ctx: ToolWiringContext) -> ModalityMetricsPayload | None:
+    raw = ctx.extras.get(MODALITY_INVOCATION_COUNTERS_KEY)
+    if raw is None:
+        return None
+    if isinstance(raw, ModalityInvocationCounters):
+        counters = raw
+    elif isinstance(raw, dict):
+        counters = ModalityInvocationCounters.model_validate(raw)
+    else:
+        return None
+    metrics = modality_metrics_from_counters(counters)
+    if not any(
+        (
+            metrics.inference_ms,
+            metrics.media_bytes,
+            metrics.tts_characters,
+            metrics.vision_detections,
+            metrics.ml_predictions,
+        )
+    ):
+        return None
+    return metrics
 
 
 def modality_metrics_from_handler(handler: object) -> ModalityMetricsPayload | None:
     if isinstance(handler, WiringContextToolHandler):
-        return modality_metrics_from_extras(handler._ctx.extras)
+        return modality_metrics_from_extras(handler._ctx)
     return None
 
 
@@ -43,15 +66,5 @@ def consume_modality_metrics_for_tool(registry: ToolRegistry, tool_id: str) -> M
 
 def modality_metrics_dict(metrics: ModalityMetricsPayload | None) -> dict[str, int] | None:
     if metrics is None:
-        return None
-    if not any(
-        (
-            metrics.inference_ms,
-            metrics.media_bytes,
-            metrics.tts_characters,
-            metrics.vision_detections,
-            metrics.ml_predictions,
-        )
-    ):
         return None
     return metrics.model_dump()

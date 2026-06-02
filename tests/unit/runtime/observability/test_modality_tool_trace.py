@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from intergrax.runtime.metrics.export import _extract_modality_metrics_from_trace
 from intergrax.runtime.nexus.tracing.persistence_models import SerializedTraceEvent
-from intergrax.runtime.observability.modality_tool_trace import (
+from intergrax.runtime.observability.modality_counters import (
     MODALITY_INVOCATION_COUNTERS_KEY,
+    ModalityInvocationCounters,
+)
+from intergrax.runtime.observability.modality_tool_trace import (
     consume_modality_metrics_for_tool,
     modality_metrics_from_extras,
 )
 from intergrax.tools.core.contracts import ToolContract
+from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.tools.core.handler import ServiceToolHandler
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -31,7 +35,14 @@ class _EchoHandler(ServiceToolHandler[_In, _Out]):
 
 
 def test_consume_modality_metrics_clears_counters() -> None:
-    ctx = ToolWiringContext(extras={MODALITY_INVOCATION_COUNTERS_KEY: {"inference_ms": 50, "vision_detections": 2}})
+    ctx = ToolWiringContext(
+        extras={
+            MODALITY_INVOCATION_COUNTERS_KEY: ModalityInvocationCounters(
+                inference_ms=50,
+                vision_detections=2,
+            )
+        }
+    )
     registry = ToolRegistry()
     contract = ToolContract(
         tool_id="vision.detect",
@@ -89,4 +100,4 @@ def test_export_aggregates_tool_invocation_end_metrics() -> None:
 
 
 def test_modality_metrics_from_extras_empty_returns_none() -> None:
-    assert modality_metrics_from_extras({}) is None
+    assert modality_metrics_from_extras(ToolWiringContext()) is None

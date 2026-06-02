@@ -50,13 +50,20 @@ def assert_artifact_allowed(profile: ModalityProfile | None, artifact_id: str) -
         raise ValueError(f"artifact_id {artifact_id!r} not allowed by ModalityProfile {profile.profile_id!r}")
 
 
+def measure_media_bytes(media_uri: str) -> int:
+    """Return on-disk byte size for a local media URI, or ``0`` when unknown."""
+    path = _resolve_media_path(media_uri)
+    if not path.is_file():
+        return 0
+    return path.stat().st_size
+
+
 def assert_media_within_limit(profile: ModalityProfile | None, media_uri: str) -> None:
     if profile is None or profile.max_media_bytes is None:
         return
-    path = _resolve_media_path(media_uri)
-    if not path.is_file():
+    size = measure_media_bytes(media_uri)
+    if size <= 0:
         return
-    size = path.stat().st_size
     if size > profile.max_media_bytes:
         raise ValueError(
             f"media size {size} bytes exceeds ModalityProfile max_media_bytes={profile.max_media_bytes}"

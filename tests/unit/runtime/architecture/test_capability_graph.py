@@ -56,6 +56,13 @@ def test_capability_graph_rejects_invalid_relation() -> None:
         )
 
 
+def test_build_catalog_capability_graph_includes_modality_compatibility_edges() -> None:
+    graph = build_catalog_capability_graph()
+    edge_keys = {(edge.source_node_id, edge.target_node_id) for edge in graph.edges}
+    assert ("tool:vision.detect", "tool:rag.retrieve") in edge_keys
+    assert ("tool:rag.retrieve", "tool:vision.detect") in edge_keys
+
+
 def test_build_catalog_capability_graph_returns_typed_graph() -> None:
     graph = build_catalog_capability_graph()
     assert graph.nodes

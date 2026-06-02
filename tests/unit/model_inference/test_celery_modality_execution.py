@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -52,13 +53,14 @@ def test_run_modality_detect_job_uses_harness_registry() -> None:
     artifact_id = profile.resolved_artifact_id
     adapter_slug = profile.adapter_slug
     registry.get_artifact(artifact_id)
+    golden = Path(__file__).resolve().parents[2] / "fixtures" / "vision_golden" / "sample_target.png"
     job = ModalityDetectJob(
         adapter_slug=adapter_slug,
         artifact_id=artifact_id,
         request=VisionInferenceRequest(
             request_id="req-1",
             artifact_id=artifact_id,
-            media_uri="file:///tmp/sample.png",
+            media_uri=golden.resolve().as_uri(),
         ),
     )
     raw = run_modality_job(job.model_dump_json())

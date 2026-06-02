@@ -108,7 +108,7 @@ VisionModelProfile  →  VisionInferenceRegistry  →  VisionInferenceAdapter
 
 - **In-process** — only for lightweight ONNX / small models with explicit memory/GPU quotas.
 - **Worker pool** — `ModalityExecutionProfile` + `ThreadPoolModalityInferenceExecutor` offloads heavy slugs (`yolo_ultralytics`, `vision_serving`, `huggingface_inference`).
-- **Celery** — `ModalityExecutionMode.CELERY` + `CeleryModalityInferenceExecutor` dispatch serialized jobs (`intergrax.modality.run_job`) when `INTERGRAX_MODALITY_CELERY_BROKER_URL` (or `CELERY_BROKER_URL`) is set; falls back to thread pool when the broker is missing or dispatch fails. Tier-3 hosts may also wire the shared `message_bus` Celery bundle.
+- **Celery** — `ModalityExecutionMode.CELERY` + `CeleryModalityInferenceExecutor` dispatch serialized jobs (`intergrax.modality.run_job`) when `INTERGRAX_MODALITY_CELERY_BROKER_URL` (or `CELERY_BROKER_URL`) is set; falls back to thread pool when the broker is missing or dispatch fails. `wire_modality_extras()` registers the task on the shared `message_bus` Celery bundle when a broker is configured (`modality_celery_wiring.py`).
 - **Remote endpoint** — preferred at high scale; integration slug under `ml_inference_host` or `vision_serving`.
 
 ### C.2 Classical ML (non-CV)
@@ -192,7 +192,8 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 |--------|-----------|
 | LLM multimodal tokens | Existing `llm_metrics` |
 | RAG ingest | `rag_metrics`, parser trace |
-| CV / ML inference | Per-tool `modality_metrics` on `tool_invocation_end` (from wiring counters); `export_run_metrics` aggregates across the run |
+| CV / ML inference | Per-tool `modality_metrics` on `tool_invocation_end` from typed `ModalityInvocationCounters` (`inference_ms`, `media_bytes`, `vision_detections`, `ml_predictions`); `export_run_metrics` aggregates across the run |
+| Speech | `tts_characters` and output `audio_uri` byte size recorded on `speech.synthesize` / `speech.transcribe` |
 | Budgets | V-COST fields: `inference_ms`, `media_bytes`, `tts_characters`, `vision_detections`, `ml_predictions` |
 
 ---

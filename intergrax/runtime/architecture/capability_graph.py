@@ -280,6 +280,33 @@ def _system_nodes() -> list[CapabilityNode]:
     ]
 
 
+def _modality_compatibility_edges() -> list[CapabilityEdge]:
+    """Cross-plane modality tool pairs declared compatible for harness skills."""
+    pairs = (
+        ("tool:vision.detect", "tool:rag.retrieve"),
+        ("tool:vision.detect", "tool:ml.predict"),
+        ("tool:ml.predict", "tool:ml.batch_predict"),
+        ("tool:speech.synthesize", "tool:speech.transcribe"),
+    )
+    edges: list[CapabilityEdge] = []
+    for left, right in pairs:
+        edges.append(
+            CapabilityEdge(
+                source_node_id=left,
+                target_node_id=right,
+                edge_type=CapabilityEdgeType.COMPATIBLE_WITH,
+            )
+        )
+        edges.append(
+            CapabilityEdge(
+                source_node_id=right,
+                target_node_id=left,
+                edge_type=CapabilityEdgeType.COMPATIBLE_WITH,
+            )
+        )
+    return edges
+
+
 def _system_edges(agent_nodes: Sequence[CapabilityNode]) -> list[CapabilityEdge]:
     edges: list[CapabilityEdge] = [
         CapabilityEdge(
@@ -361,6 +388,7 @@ def build_catalog_capability_graph() -> CapabilityGraph:
     edges = [
         *skill_edges,
         *agent_edges,
+        *_modality_compatibility_edges(),
         *_system_edges(agent_nodes),
     ]
     return CapabilityGraph(nodes=nodes, edges=edges)

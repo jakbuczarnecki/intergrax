@@ -4,6 +4,10 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.modality_celery_wiring import (
+    MODALITY_CELERY_BUNDLE_EXTRA_KEY,
+    resolve_modality_celery_bundle,
+)
 from intergrax.model_inference.execution import (
     MODALITY_EXECUTION_PROFILE_EXTRA_KEY,
     MODALITY_EXECUTOR_EXTRA_KEY,
@@ -35,6 +39,9 @@ def wire_modality_extras(
         ctx.extras[MODALITY_PROFILE_EXTRA_KEY] = modality_profile
     ctx.extras[VISION_PROFILE_EXTRA_KEY] = resolved_vision
     ctx.extras[SPEECH_PROFILE_EXTRA_KEY] = resolved_speech
+    celery_bundle = resolve_modality_celery_bundle(resolved_execution)
+    if celery_bundle is not None:
+        ctx.extras[MODALITY_CELERY_BUNDLE_EXTRA_KEY] = celery_bundle
     ctx.extras[MODALITY_EXECUTION_PROFILE_EXTRA_KEY] = resolved_execution
     ctx.extras[MODALITY_EXECUTOR_EXTRA_KEY] = build_modality_inference_executor(resolved_execution)
     ctx.extras[SPEECH_BACKEND_EXTRA_KEY] = resolved_speech.create_adapter()

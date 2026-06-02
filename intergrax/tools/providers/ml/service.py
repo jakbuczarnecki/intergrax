@@ -1,8 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 
+import time
 import uuid
 
 from intergrax.model_inference.contracts import InferenceRequest
+from intergrax.runtime.observability.modality_counters import record_inference_ms, record_ml_predictions
 from intergrax.model_inference.execution import build_modality_inference_executor
 from intergrax.model_inference.execution.executor import ModalityInferenceExecutor
 from intergrax.model_inference.execution.factory import MODALITY_EXECUTOR_EXTRA_KEY
@@ -44,6 +46,7 @@ def ml_predict(ctx: ToolWiringContext, payload: MlPredictInput) -> MlPredictOutp
     artifact = registry.get_artifact(payload.artifact_id)
     adapter = registry.get_ml_adapter(payload.adapter_slug)
     request_id = uuid.uuid4().hex
+    started = time.perf_counter()
     result = executor.run_predict(
         registry=registry,
         adapter=adapter,
@@ -54,6 +57,8 @@ def ml_predict(ctx: ToolWiringContext, payload: MlPredictInput) -> MlPredictOutp
             features=dict(payload.features),
         ),
     )
+    record_inference_ms(ctx, int((time.perf_counter() - started) * 1000))
+    record_ml_predictions(ctx, len(result.predictions))
     return MlPredictOutput(request_id=result.request_id, predictions=result.predictions)
 
 
@@ -84,6 +89,7 @@ def ml_batch_predict(ctx: ToolWiringContext, payload: MlBatchPredictInput) -> Ml
     adapter = registry.get_ml_adapter(payload.adapter_slug)
     request_ids: list[str] = []
     predictions: list[dict[str, float]] = []
+    started = time.perf_counter()
     for row in payload.feature_rows:
         request_id = uuid.uuid4().hex
         result = executor.run_predict(
@@ -98,4 +104,6 @@ def ml_batch_predict(ctx: ToolWiringContext, payload: MlBatchPredictInput) -> Ml
         )
         request_ids.append(result.request_id)
         predictions.append(dict(result.predictions))
+    record_inference_ms(ctx, int((time.perf_counter() - started) * 1000))
+    record_ml_predictions(ctx, len(predictions))
     return MlBatchPredictOutput(request_ids=request_ids, predictions=predictions)
