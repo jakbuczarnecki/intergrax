@@ -2044,7 +2044,7 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 | V-EVAL.1 | Unified evaluation modes: offline/online/shadow/human | **Done** | **Critical** | Mode contracts documented + wired |
 | V-EVAL.2 | Golden datasets + scenario libraries + regression suites | **Done** (typed asset bundle contracts) | High | Versioned benchmark assets |
 | V-EVAL.3 | Automated evaluators (rule-based + LLM judge) | **Done** | High | Evaluator outputs persisted |
-| V-EVAL.4 | Evaluation registry trend/comparison reports | Planned | High | Report artifact required for major releases |
+| V-EVAL.4 | Evaluation registry trend/comparison reports | **Done** | High | Report artifact required for major releases |
 
 #### V-AM — Architecture Metrics & Debt Governance
 
@@ -2053,7 +2053,7 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 | V-AM.1 | Architecture health metric spec (modularity/dependency/coverage/debt) | **Done** | **Critical** | Canon metrics section + thresholds |
 | V-AM.2 | Metrics emission pipeline and dashboards | **Done** (pipeline + trend/gate contracts) | High | Dashboard + alert definitions |
 | V-AM.3 | Governance coverage and observability coverage measurement | **Done** | High | Coverage reports generated in CI |
-| V-AM.4 | Architecture debt index + periodic review process | Planned | High | Debt report cadence defined and used |
+| V-AM.4 | Architecture debt index + periodic review process | **Done** | High | Debt report cadence defined and used |
 
 #### V-SEC — Security & Data Governance Hardening
 
@@ -2190,6 +2190,7 @@ L4 readiness requires:
 | 2026-06-02 | V-AM.2, V-ALG.2, V-EVAL.1 | Metrics pipeline contracts + promotion flow evaluator + unified evaluation mode contracts + governance artifacts script (`scripts/phase_v_governance_report.py`) + unit tests |
 | 2026-06-02 | V-ALG.3, V-ALG.4, V-EVAL.2 | Lifecycle/deprecation governance contracts + production ownership guard + evaluation asset bundle contracts + governance report extensions + unit tests |
 | 2026-06-02 | V-EVAL.3, V-AM.3 | Automated evaluators (`evaluation_automation.py`) + architecture coverage report (`architecture_coverage.py`) + governance report persistence + unit tests |
+| 2026-06-02 | V-AM.4, V-EVAL.4 | Debt governance cadence/policy report (`debt_governance.py`) + release trend/comparison report (`evaluation_registry_trends.py`) + governance script artifacts + unit tests |
 | — | — | *(append row per merged PR)* |
 
 ---

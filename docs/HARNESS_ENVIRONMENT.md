@@ -153,7 +153,9 @@ Current baseline delivered (Phase V V1):
 - `V-EVAL.1` unified evaluation mode contracts (`offline`, `online`, `shadow`, `human`)
 - `V-EVAL.2` golden dataset + scenario library + versioned evaluation asset bundle contracts
 - `V-EVAL.3` automated evaluators (rule-based + LLM-judge) and persisted evaluator outputs
+- `V-EVAL.4` evaluation registry trend/comparison report contracts
 - `V-AM.3` governance and observability coverage report contracts
+- `V-AM.4` architecture debt governance policy and periodic review cadence contracts
 - report artifacts script: `scripts/phase_v_foundations_report.py`
 - graph guard script: `scripts/phase_v_capability_graph_guard.py`
 - governance artifacts script: `scripts/phase_v_governance_report.py`

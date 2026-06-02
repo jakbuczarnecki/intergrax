@@ -42,6 +42,13 @@ from intergrax.runtime.architecture.architecture_coverage import (
     ArchitectureCoverageSummary,
     compute_architecture_coverage,
 )
+from intergrax.runtime.architecture.debt_governance import (
+    ArchitectureDebtGovernanceReport,
+    ArchitectureDebtReviewPolicy,
+    ArchitectureDebtReviewResult,
+    DebtReviewCadence,
+    evaluate_architecture_debt_governance,
+)
 from intergrax.runtime.architecture.capability_graph import (
     CapabilityEdge,
     CapabilityEdgeType,
@@ -85,6 +92,12 @@ from intergrax.runtime.architecture.evaluation_assets import (
     ScenarioCase,
     ScenarioLibraryAsset,
 )
+from intergrax.runtime.architecture.evaluation_registry_trends import (
+    EvaluationComparisonSummary,
+    EvaluationRegistryTrendReport,
+    EvaluationReleaseSnapshot,
+    build_evaluation_registry_trend_report,
+)
 from intergrax.runtime.architecture.production_ownership import (
     ProductionOwnerMetadata,
     ProductionOwnershipDecision,
@@ -112,6 +125,9 @@ __all__ = [
     "ArchitectureMetricsTrend",
     "ArchitectureCoverageReport",
     "ArchitectureCoverageSummary",
+    "ArchitectureDebtGovernanceReport",
+    "ArchitectureDebtReviewPolicy",
+    "ArchitectureDebtReviewResult",
     "CapabilityEdge",
     "CapabilityEdgeType",
     "CapabilityGraph",
@@ -135,7 +151,11 @@ __all__ = [
     "AutomatedEvaluatorResult",
     "EvaluationSignal",
     "EvaluatorType",
+    "DebtReviewCadence",
     "EvaluationAssetBundle",
+    "EvaluationComparisonSummary",
+    "EvaluationRegistryTrendReport",
+    "EvaluationReleaseSnapshot",
     "GoldenDatasetAsset",
     "ScenarioCase",
     "ScenarioLibraryAsset",
@@ -153,7 +173,9 @@ __all__ = [
     "compute_architecture_metrics",
     "build_metrics_pipeline_report",
     "compute_architecture_coverage",
+    "evaluate_architecture_debt_governance",
     "compute_deprecation_deadline",
     "evaluate_capability_graph_compatibility",
     "evaluate_automated_results",
+    "build_evaluation_registry_trend_report",
 ]

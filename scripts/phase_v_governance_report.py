@@ -20,6 +20,9 @@ for path in (REPO_ROOT, REPO_ROOT / "agents", REPO_ROOT / "applications"):
 from intergrax.runtime.architecture import (
     AutomatedEvaluationReport,
     EvaluationSignal,
+    ArchitectureDebtReviewPolicy,
+    DebtReviewCadence,
+    EvaluationReleaseSnapshot,
     AgentLifecycleState,
     AgentLifecycleTransitionRequest,
     AgentCertificationEvaluation,
@@ -38,9 +41,11 @@ from intergrax.runtime.architecture import (
     ArchitectureMetricsSnapshot,
     build_catalog_capability_graph,
     compute_architecture_coverage,
+    build_evaluation_registry_trend_report,
     build_metrics_pipeline_report,
     compute_architecture_metrics,
     evaluate_automated_results,
+    evaluate_architecture_debt_governance,
     evaluate_agent_lifecycle_transition,
     evaluate_agent_promotion,
     evaluate_production_ownership,
@@ -224,11 +229,32 @@ def main() -> int:
         snapshots=[previous_snapshot, current_snapshot]
     )
     coverage_report = compute_architecture_coverage(graph)
+    debt_governance_report = evaluate_architecture_debt_governance(
+        metrics_report=current_snapshot.report,
+        policy=ArchitectureDebtReviewPolicy(
+            cadence=DebtReviewCadence.BIWEEKLY,
+            max_debt_index=0.50,
+            owner_team="harness-architecture",
+            runbook_ref="runbook/architecture/debt_review.md",
+        ),
+    )
     promotion_decision = evaluate_agent_promotion(_build_promotion_bundle())
     lifecycle_decision = evaluate_agent_lifecycle_transition(_build_lifecycle_transition_request())
     ownership_decision = evaluate_production_ownership(_build_production_ownership_evidence())
     evaluation_report = _build_eval_mode_report()
     automated_evaluation_report = _build_automated_evaluation_report(evaluation_report)
+    evaluation_trend_report = build_evaluation_registry_trend_report(
+        snapshots=[
+            EvaluationReleaseSnapshot(
+                release_id="2026.05",
+                automated_report=automated_evaluation_report.model_copy(deep=True),
+            ),
+            EvaluationReleaseSnapshot(
+                release_id="2026.06",
+                automated_report=automated_evaluation_report,
+            ),
+        ]
+    )
     evaluation_assets = _build_evaluation_assets()
 
     writer.write(
@@ -238,6 +264,10 @@ def main() -> int:
     writer.write(
         output_path=output_dir / "architecture_coverage_report.json",
         payload=coverage_report,
+    )
+    writer.write(
+        output_path=output_dir / "architecture_debt_governance_report.json",
+        payload=debt_governance_report,
     )
     writer.write(
         output_path=output_dir / "agent_promotion_decision_report.json",
@@ -258,6 +288,10 @@ def main() -> int:
     writer.write(
         output_path=output_dir / "automated_evaluation_report.json",
         payload=automated_evaluation_report,
+    )
+    writer.write(
+        output_path=output_dir / "evaluation_registry_trend_report.json",
+        payload=evaluation_trend_report,
     )
     writer.write(
         output_path=output_dir / "evaluation_assets_report.json",
