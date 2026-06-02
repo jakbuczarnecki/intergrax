@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from intergrax.skills.providers.harness.manifests import (
     HARNESS_CONTEXT_DEMO,
+    HARNESS_SKILL_REGISTRY,
     HARNESS_TOOL_SMOKE,
     HARNESS_TRACE_READ,
 )
@@ -15,6 +16,7 @@ def _register_harness_skills(registry: SkillRegistry) -> None:
     registry.register(HARNESS_TOOL_SMOKE)
     registry.register(HARNESS_CONTEXT_DEMO)
     registry.register(HARNESS_TRACE_READ)
+    registry.register(HARNESS_SKILL_REGISTRY)
 
 
 def register_harness_skill_bundle(*, override: bool = False) -> None:
@@ -25,6 +27,7 @@ def register_harness_skill_bundle(*, override: bool = False) -> None:
                 HARNESS_TOOL_SMOKE.skill_id,
                 HARNESS_CONTEXT_DEMO.skill_id,
                 HARNESS_TRACE_READ.skill_id,
+                HARNESS_SKILL_REGISTRY.skill_id,
             ),
             register=_register_harness_skills,
             status=SkillBundleStatus.STABLE,

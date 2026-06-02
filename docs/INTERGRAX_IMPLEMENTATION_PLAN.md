@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Phase Q+ / R / S / T / U Done**; **Harness backlog NOW**; product agents & apps **Deferred**; gate **480 passed**  
+Status: Working draft (2026-06-02) — **Phase Q+ / R / S / T / U Done**; **Harness completion backlog Done**; product agents & apps **Deferred**; gate **481 passed**  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -182,7 +182,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Harness environment GA (Phase S) | **Done** (2026-06-01) | S-H.* + S-Ops + S-Doc |
 | Harness cleanliness (Phase T) | **Done** (2026-06-01) | T-Ops + T-H |
 | Harness production hardening (Phase U) | **Done** | Appendix G audit → U.* (U-Leg residual) |
-| **Harness completion backlog** | **NOW** | U-Leg.*, harness typing/CI, skill catalog expansion — see §4.1 |
+| **Harness completion backlog** | **Done** (2026-06-02) | §4.1 — U-Leg, typing/CI, platform skills, research UAEP parity |
 | Product agents (Phase K) | **Deferred** | K.1/K.2 — end of priority list |
 | Tier-3 product applications | **Deferred** | New apps / product routes — after harness backlog |
 
@@ -1909,7 +1909,7 @@ Parallel:            S-Ops.4, domain skill growth (legal/research) — not requi
 | U-Typ.1 | **Fix `ToolsAgentConfig`** — remove erroneous tuple defaults (`temperature = None,`); use `@dataclass` or explicit `__init__` | **Done** | **Critical** | `intergrax/tools/tools_agent.py` | Extends `ToolPlanningConfig` |
 | U-Typ.2 | **`ToolPlanningConfig` in Tier-1** — planner prompts/config in `runtime/nexus/tools/`; `ToolPlanningService` does not import `tools.tools_agent` | **Done** | High | `runtime/nexus/tools/` | `test_catalog_tool_planner.py` |
 | U-Typ.3 | **`ToolPlannerTrackable` protocol** — replace `isinstance(tool_planner, CatalogToolPlanner)` in `runtime_state` | **Done** | Medium | `tool_planner_trackable.py`, `runtime_state.py` | Protocol-based LLM tracker |
-| U-Typ.4 | **Extend getattr audit** — `intergrax/tools/` (planner path), `integrations/registry/profile.py` (use typed field access), `sandbox/service.py` | **Won't fix** | Medium | — | Harness paths clean; profile/sandbox deferred |
+| U-Typ.4 | **Extend getattr audit** — `integrations/registry/profile.py`, `sandbox/service.py` | **Done** | Medium | Typed profile + `SandboxSession` | Harness nexus/agents paths clean |
 | U-Typ.5 | **Remove `hasattr` on harness paths** — `shared_task_context`, `engine_plan_models`, `platform_wiring` trace_store resolution | **Done** | Medium | `platform_wiring.py`, `nexus_loop.trace_store` | Typed trace resolution |
 
 #### U-Arch — Integration & composition consistency
@@ -1917,16 +1917,16 @@ Parallel:            S-Ops.4, domain skill growth (legal/research) — not requi
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
 | U-Arch.1 | **Single lab integration preset** — `create_lab_interaction_adapter()` uses `lab_harness_preset()` (not `IntegrationProfile.lab()`) | **Done** | High | `integration_wiring.py` | `test_lab_harness_environment_wiring.py` |
-| U-Arch.2 | **Typed lab wiring returns** — remove `# type: ignore` on trace/checkpoint/notification adapters; explicit bundle types | **Won't fix** | Medium | — | Residual ignores on sqlite bundle casts; non-blocking |
+| U-Arch.2 | **Typed lab wiring returns** — remove `# type: ignore` on trace/checkpoint/notification adapters; explicit bundle types | **Done** | Medium | `SQLiteIntegrationBundle`, `integration_wiring.py` | Typed sqlite facades |
 | U-Arch.3 | **Rename runtime `tools_agent_*` fields** — `tools_agent_answer` → `tool_planner_answer` (or `catalog_tool_answer`); update trace diag types | **Done** | Low | `runtime_state.py`, tracing adapters | Gate green |
 
 #### U-Leg — Legacy stack removal
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| U-Leg.1 | **`ToolsAgent.run` deprecation freeze** — document; block new imports; optional redirect to `ToolRuntime` only path | **Open** | Medium | `tools_agent.py`, `check_tools_agent_imports.py` | No new `ToolsAgent.run` callers outside tests |
-| U-Leg.2 | **`rag.answers` removal or archive** — migrate remaining `legacy_rag_answers` tests to `RetrievalService`; delete or move module under `intergrax/legacy/` | **Open** | Medium | `intergrax/rag/answers/`, tests | No `intergrax.rag.answers` import in gate collection |
-| U-Leg.3 | **Legacy tool plan booleans** — document sunset for `from_legacy` / `uses_legacy_booleans_only`; gate new usage | **Open** | Low | `tool_runtime.py`, `engine_plan_models.py` | Deprecation comment + audit script optional |
+| U-Leg.1 | **`ToolsAgent.run` deprecation freeze** — document; block new imports; optional redirect to `ToolRuntime` only path | **Done** | Medium | `tools_agent.py`, `check_tools_agent_run.py` | CI audit |
+| U-Leg.2 | **`rag.answers` removal or archive** — migrate remaining `legacy_rag_answers` tests to `RetrievalService`; delete or move module under `intergrax/legacy/` | **Done** | Medium | `intergrax/legacy/rag_answers/` | `test_rag_answers_removed.py` |
+| U-Leg.3 | **Legacy tool plan booleans** — document sunset for `from_legacy` / `uses_legacy_booleans_only`; gate new usage | **Done** | Low | `tool_runtime.py`, `check_legacy_tool_plan_booleans.py` | Deprecation warnings |
 
 #### U-Doc — Operator & architecture alignment
 
@@ -1942,7 +1942,7 @@ Parallel:            S-Ops.4, domain skill growth (legal/research) — not requi
 |---|-------------|--------|----------|----------|------------|
 | U-CI.1 | **harness-smoke includes Phase U tests** — auth, strict harness, lab settings | **Done** | High | `.github/workflows/unit-tests.yml` | harness-smoke extended |
 | U-CI.2 | **Acceptance: production harness path** — one gate test: strict lab + sqlite trace + policy bundle + skill-resolved tools | **Done** | **Critical** | `tests/acceptance/agent_os/`, unit strict harness | `pytest -m gate` **479 passed** |
-| U-CI.3 | **Optional: strict harness job** — separate CI job with `LAB_STRICT_HARNESS=true` + API key | **Won't fix** | Medium | — | Optional; unit coverage sufficient for now |
+| U-CI.3 | **Optional: strict harness job** — separate CI job with `LAB_STRICT_HARNESS=true` + API key | **Done** | Medium | `.github/workflows/unit-tests.yml` | `harness-strict` job |
 
 #### Phase U — Definition of done
 
@@ -1974,11 +1974,10 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 
 ## 4. Priority Order
 
-**Policy (2026-06-02):** Finish **harness platform** work first. **Do not** start or extend business agents (K.1/K.2) or new Tier-3 product applications until the harness completion backlog in §4.1 is **Done** or explicitly reprioritized.
+**Policy (2026-06-02):** Harness platform work in §4.1 is **Done**. **Do not** start or extend business agents (K.1/K.2) or new Tier-3 product applications without explicit product prioritization.
 
 ```text
-NOW:     Harness completion backlog (§4.1) — U-Leg, harness CI/typing, platform skills
-
+DONE:    Harness completion backlog (§4.1) — 2026-06-02
 DONE:    Phase U — Harness production hardening (2026-06-01)
 DONE:    Phase T — Harness cleanliness (2026-06-01)
 DONE:    Phase S — Harness environment GA (2026-06-01)
@@ -2007,14 +2006,14 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 | Order | ID | Deliverable | Priority | Notes |
 |-------|-----|-------------|----------|-------|
-| 1 | U-Leg.2 | Remove or archive `intergrax/rag/answers/`; migrate tests to `RetrievalService` | High | Eliminates parallel RAG stack |
-| 2 | U-Leg.1 | Freeze `ToolsAgent.run` — docs + `check_tools_agent_imports.py` enforcement | High | Planner path is `ToolRuntime` + `CatalogToolPlanner` |
-| 3 | U-Leg.3 | Sunset legacy plan booleans (`from_legacy`, `uses_legacy_booleans_only`) | Medium | Deprecation + optional audit script |
-| 4 | U-Typ.4 | Extend `check_harness_no_getattr.py` or refactor `profile.py` / sandbox paths | Medium | Was Won't fix in U close — reopen if touching harness |
-| 5 | U-Arch.2 | Typed `LabIntegrationWiring` — reduce `# type: ignore` on sqlite bundle | Medium | Tier-3 composition clarity |
-| 6 | U-CI.3 | Optional CI job: `LAB_STRICT_HARNESS=true` + `INTERGRAX_HARNESS_API_KEY` | Low | Document in `HARNESS_ENVIRONMENT.md` |
-| 7 | R-Skill.* | Platform skill catalog growth (`harness.*`, shared packs) — not product agents | Low | Extend registry; no new Tier-2 business agents |
-| 8 | U-Con.* | Reference agent UAEP parity — `ResearchAgent` / `SummaryAgent` → `HarnessReferenceAgent` | Low | Lab harness consistency only |
+| 1 | U-Leg.2 | Remove or archive `intergrax/rag/answers/`; migrate tests to `RetrievalService` | **Done** | `intergrax/legacy/rag_answers/`; import guard |
+| 2 | U-Leg.1 | Freeze `ToolsAgent.run` — docs + `check_tools_agent_run.py` | **Done** | Deprecation + CI audit |
+| 3 | U-Leg.3 | Sunset legacy plan booleans (`from_legacy`, `uses_legacy_booleans_only`) | **Done** | Warnings + `check_legacy_tool_plan_booleans.py` |
+| 4 | U-Typ.4 | `profile.slug_for_category` + sandbox `session_id` typing | **Done** | No getattr on integration profile |
+| 5 | U-Arch.2 | Typed `LabIntegrationWiring` — sqlite bundle types | **Done** | Removed `# type: ignore` on lab wiring |
+| 6 | U-CI.3 | CI job: `LAB_STRICT_HARNESS` + API key | **Done** | `harness-strict` workflow job |
+| 7 | R-Skill.* | `harness.skill_registry` platform skill | **Done** | Harness bundle + gate test |
+| 8 | U-Con.* | `ResearchAgent` / `SummaryAgent` → `HarnessReferenceAgent` | **Done** | Lab `requires_uaep` when research enabled |
 
 **Explicitly out of NOW:** K.1, K.2, Legal product E2E, new `applications/<product>/`, Problem Radar wave 2+.
 
@@ -2048,19 +2047,19 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ## 6. Recommended Next Step
 
-### 6.1 Implementation cadence (Harness completion — active)
+### 6.1 Implementation cadence (Harness completion — Done 2026-06-02)
 
-Phases Q, Q+, R, S, T, **U** are **complete**. **Do not** implement K.1/K.2 or new product applications until §4.1 backlog is closed.
+§4.1 backlog is **closed**. **Do not** start K.1/K.2 without explicit product decision.
 
 ```text
-1. Pick next row from §4.1 (start U-Leg.2)
-2. Tier-0 / Tier-1 / Tier-3 harness only — no business agent domain logic
-3. One deliverable per PR → update Appendix G paydown log if U.*
-4. Verify: uv run pytest -m gate -q; check_harness_no_getattr.py; check_tools_agent_imports.py
-5. Sync §0.5 gate count in this file
+Verify: uv run pytest -m gate -q
+        python scripts/check_harness_no_getattr.py
+        python scripts/check_tools_agent_imports.py
+        python scripts/check_tools_agent_run.py
+        python scripts/check_legacy_tool_plan_booleans.py
 ```
 
-**After §4.1 Done:** Revisit product prioritization (K.1 vs K.2) with Appendix A checklist — separate decision, not automatic.
+**Next (product, deferred):** K.1 or K.2 per Appendix A when prioritized.
 
 **Parallel (harness-only):** M.6 on-demand integration slugs; R-Skill platform catalog expansion.
 
@@ -2591,7 +2590,7 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 13. ~~Phase S — Harness environment GA~~ — **Done**
 14. ~~Phase T — Harness cleanliness~~ — **Done**
 15. Phase U — Harness production hardening — **Done**
-16. Harness completion backlog (§4.1) — **NOW**
+16. Harness completion backlog (§4.1) — **Done** (2026-06-02)
 17. Phase K — K.1/K.2 business agents — **Deferred**
 18. Tier-3 product apps / Legal E2E — **Deferred**
 ```
@@ -2904,8 +2903,8 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 |----------|---------|------|--------|
 | TYP-01 | `ToolsAgentConfig` tuple bug (`temperature = None,`) | U-Typ.1 | Done |
 | TYP-02 | `RuntimePolicyBundle.budget` / `plan_loop` typed as `Any` | U-Pol.3 | Done |
-| TYP-03 | `# type: ignore` on lab integration wiring adapters | U-Arch.2 | Deferred (§4.1 #5) |
-| TYP-04 | `getattr` outside harness audit (tools_agent prune, profile, sandbox) | U-Typ.4 | Deferred (§4.1 #4) |
+| TYP-03 | `# type: ignore` on lab integration wiring adapters | U-Arch.2 | Done |
+| TYP-04 | `getattr` outside harness audit (tools_agent prune, profile, sandbox) | U-Typ.4 | Done |
 | TYP-05 | `hasattr` on harness paths (shared_task_context, engine_plan, platform_wiring) | U-Typ.5 | Done |
 | TYP-06 | `ToolPlanDecision` vs `AgentDecision` naming collision risk | U-Leg.3 | Open |
 
@@ -2914,9 +2913,9 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Audit ID | Finding | U ID | Status |
 |----------|---------|------|--------|
 | LEG-01 | `tools_agent_answer` and ToolsAgent naming in Tier-1 runtime | U-Arch.3 | Done |
-| LEG-02 | `ToolsAgent.run` still full orchestrator — deprecation incomplete | U-Leg.1 | Open |
-| LEG-03 | `rag.answers` module remains; tests filtered not removed | U-Leg.2 | Open |
-| LEG-04 | Legacy tool plan booleans (`from_legacy`, `uses_legacy_rag_flag_only`) | U-Leg.3 | Open |
+| LEG-02 | `ToolsAgent.run` still full orchestrator — deprecation incomplete | U-Leg.1 | Done |
+| LEG-03 | `rag.answers` module remains; tests filtered not removed | U-Leg.2 | Done |
+| LEG-04 | Legacy tool plan booleans (`from_legacy`, `uses_legacy_rag_flag_only`) | U-Leg.3 | Done |
 
 ### G.5 Documentation & CI (P4)
 
@@ -2926,18 +2925,19 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | DOC-02 | Phase K footer still "after Phase S" in harness docs | U-Doc.3 | Done |
 | CI-01 | harness-smoke omits Phase T unit tests | U-CI.1 | Done |
 | CI-02 | No acceptance test for strict production harness path | U-CI.2 | Done |
-| CI-03 | harness-smoke vs gate run on different OS images | U-CI.3 | Deferred (§4.1 #6) |
+| CI-03 | harness-smoke vs gate run on different OS images | U-CI.3 | Done |
 
 ### G.6 Phase U paydown log
 
 | Date | U ID | Summary |
 |------|------|---------|
 | 2026-06-01 | U.0.* | Appendix G + Phase U section added to implementation plan (audit → backlog) |
+| 2026-06-02 | §4.1 | Harness completion: U-Leg.1–3, U-Arch.2, U-Typ.4, U-CI.3, harness.skill_registry, research UAEP parity; gate **481** |
 | — | — | *(append row per merged PR)* |
 
-**Coverage target:** Phase U core **Done** (2026-06-01). **Open:** U-Leg.*, U-Arch.2, U-Typ.4, U-CI.3 — tracked in §4.1. **K.1/K.2 deferred** until harness backlog closed.
+**Coverage target:** Phase U + §4.1 harness completion backlog **Done** (2026-06-02). **K.1/K.2 deferred** until product prioritization.
 
 ---
 
-*Plan synced (2026-06-02). **Phase Q / Q+ / R / S / T / U Done**. Gate: **480 passed**. **NOW:** §4.1 harness completion backlog. **Deferred:** K.1/K.2, product apps, Legal E2E.*
+*Plan synced (2026-06-02). **Harness platform complete** (Q–U + §4.1). Gate: **481 passed**. **Deferred:** K.1/K.2, product apps, Legal E2E.*
 

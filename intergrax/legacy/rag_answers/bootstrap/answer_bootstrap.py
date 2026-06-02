@@ -5,15 +5,15 @@
 from __future__ import annotations
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.rag.answers.answer_manager import AnswerManager
-from intergrax.rag.answers.contracts.answer_engine import AnswerEngine
-from intergrax.rag.answers.contracts.base_answer_manager import BaseAnswerManager
-from intergrax.rag.answers.contracts.base_context_builder import BaseContextBuilder
-from intergrax.rag.answers.contracts.base_prompt_builder import BasePromptBuilder
-from intergrax.rag.answers.engine.answer_engine import DefaultAnswerEngine
-from intergrax.rag.answers.builders.context_builder import DefaultContextBuilder
-from intergrax.rag.answers.builders.prompt_builder import DefaultPromptBuilder
-from intergrax.rag.answers.pipeline.answer_pipeline import AnswerPipeline
+from intergrax.legacy.rag_answers.answer_manager import AnswerManager
+from intergrax.legacy.rag_answers.contracts.answer_engine import AnswerEngine
+from intergrax.legacy.rag_answers.contracts.base_answer_manager import BaseAnswerManager
+from intergrax.legacy.rag_answers.contracts.base_context_builder import BaseContextBuilder
+from intergrax.legacy.rag_answers.contracts.base_prompt_builder import BasePromptBuilder
+from intergrax.legacy.rag_answers.engine.answer_engine import DefaultAnswerEngine
+from intergrax.legacy.rag_answers.builders.context_builder import DefaultContextBuilder
+from intergrax.legacy.rag_answers.builders.prompt_builder import DefaultPromptBuilder
+from intergrax.legacy.rag_answers.pipeline.answer_pipeline import AnswerPipeline
 from intergrax.rag.retrievers.retriever_manager import RetrieverManager
 
 from typing import Optional

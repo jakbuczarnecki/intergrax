@@ -298,12 +298,19 @@ class ToolsAgent:
         llm_usage_tracker: Optional[LLMUsageTracker] = None,
     ) -> ToolsAgentRunResult:
         """
-        High-level tools orchestration entrypoint.
+        Deprecated high-level orchestration entrypoint (Phase U-Leg.1).
 
-        Notes:
-        - Tool execution requires run_id (ToolExecutionRequest requires it).
-        - ToolsAgent is allowed to execute tools standalone (no runtime enforcement).
+        Use ``CatalogToolPlanner`` / ``ToolPlanningService`` inside Nexus, or
+        ``ToolRuntime.invoke`` for capability steps. New production code must not
+        call ``ToolsAgent.run`` (enforced by ``scripts/check_tools_agent_run.py``).
         """
+        import warnings
+
+        warnings.warn(
+            "ToolsAgent.run is deprecated; use ToolRuntime + CatalogToolPlanner in Nexus",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
         # --- Branch 1: caller provides full messages context (ChatGPT-like mode) ---
         if isinstance(input_data, list):

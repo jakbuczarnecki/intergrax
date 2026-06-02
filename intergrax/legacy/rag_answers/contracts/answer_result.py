@@ -9,7 +9,7 @@ from typing import List, Optional
 
 from langchain_core.documents import Document
 
-from intergrax.rag.answers.pipeline.pipeline_trace import PipelineTrace
+from intergrax.legacy.rag_answers.pipeline.pipeline_trace import PipelineTrace
 
 
 @dataclass(slots=True)

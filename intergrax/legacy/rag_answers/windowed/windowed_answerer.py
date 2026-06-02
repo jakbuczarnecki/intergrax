@@ -8,8 +8,8 @@ from typing import List
 
 from langchain_core.documents import Document
 
-from intergrax.rag.answers.answer_manager import AnswerManager
-from intergrax.rag.answers.contracts.answer_request import AnswerRequest
+from intergrax.legacy.rag_answers.answer_manager import AnswerManager
+from intergrax.legacy.rag_answers.contracts.answer_request import AnswerRequest
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 
 

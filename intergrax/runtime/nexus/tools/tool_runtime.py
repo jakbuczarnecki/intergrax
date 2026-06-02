@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional, Protocol, Sequence, runtime_checkable
 
@@ -62,6 +63,13 @@ class ToolInvocationPlan:
         use_tools: bool = False,
         tool_ids: Sequence[str] = (),
     ) -> ToolInvocationPlan:
+        if (use_rag or use_websearch) and not tool_ids:
+            warnings.warn(
+                "ToolInvocationPlan.from_legacy(use_rag/use_websearch) is deprecated; "
+                "pass explicit tool_ids (e.g. rag.retrieve, websearch.query)",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         return cls(
             use_rag=use_rag,
             use_websearch=use_websearch,

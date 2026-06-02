@@ -17,6 +17,7 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.interactions.factory import (
     InteractionSurface,
@@ -24,6 +25,7 @@ from intergrax.runtime.interactions.factory import (
     resolve_interaction_settings,
 )
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.applications._shared.notification_wiring import (
     create_harness_notification_adapter,
     create_resilient_notification_adapter,
@@ -33,6 +35,7 @@ from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
 from lab_application.host.settings import LabApplicationSettings
 
 
@@ -149,10 +152,10 @@ def wire_lab_integrations(
         trace_store: RunTraceWriter = InMemoryRunTraceStore()
         trace_db_path = None
     else:
-        trace_store = sqlite_bundle.trace_store  # type: ignore[assignment]
+        trace_store = sqlite_bundle.trace_store
         trace_db_path = db_path
 
-    runtime_event_store = (
+    runtime_event_store: RuntimeEventPersistence | None = (
         sqlite_bundle.runtime_event_store
         if runtime_events_db_path is not None
         else None
@@ -183,9 +186,9 @@ def wire_lab_integrations(
         profile=profile,
         sqlite_bundle=sqlite_bundle,
         trace_store=trace_store,
-        runtime_event_store=runtime_event_store,  # type: ignore[arg-type]
-        checkpoint_store=sqlite_bundle.task_checkpoint_store,  # type: ignore[arg-type]
-        notification_adapter=notification_adapter,  # type: ignore[arg-type]
+        runtime_event_store=runtime_event_store,
+        checkpoint_store=sqlite_bundle.task_checkpoint_store,
+        notification_adapter=notification_adapter,
         interaction_adapter=interaction_adapter,
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,

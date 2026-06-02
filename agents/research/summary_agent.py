@@ -1,81 +1,30 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
-
-from intergrax.applications._shared.runtime_defaults import harness_production_mode
-from intergrax.agents.agent_contract import Agent
-from intergrax.agents.uaep_pipeline import (
-    pipeline_agent_steps,
-    pipeline_step_complete,
-    run_pipeline_step,
-)
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
+from intergrax.agents.uaep_pipeline import pipeline_agent_steps, pipeline_step_complete
+from intergrax.applications._shared.lab_harness_context import LabHarnessContext
+from intergrax.applications._shared.lab_runtime_config import build_lab_agent_runtime_context
+from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.memory.conversational_memory import ChatMessage
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
-from intergrax.runtime.nexus.runtime_steps.contract import RuntimeStepRunner
-from intergrax.runtime.nexus.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
-from intergrax.runtime.nexus.runtime_steps.setup_steps_tool import SETUP_STEPS
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import TaskContext
+from research.summary_steps.pipeline import build_summary_pipeline, run_summary_domain_step
 
 
-class _SummaryLLMStub(LLMAdapter):
-    provider = "research-summary"
-    model = "summary-stub"
-
-    @property
-    def context_window_tokens(self) -> int:
-        return 128_000
-
-    def generate_messages(
-        self,
-        messages: Sequence[ChatMessage],
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
-    ) -> str:
-        for msg in reversed(messages):
-            content = msg.content or ""
-            if content:
-                return f"summary-draft: {content[:300]}"
-        return "summary-draft: (empty)"
-
-
-class SummaryPipeline(RuntimePipeline):
-    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
-        await RuntimeStepRunner.execute_pipeline(
-            [*SETUP_STEPS, PersistAndBuildAnswerStep()],
-            state,
-        )
-        raw = (state.request.message or "").strip()
-        if "--- prior agent outputs ---" in raw:
-            _, _, prior = raw.partition("--- prior agent outputs ---")
-            summary = f"summary: {prior.strip()[:800]}"
-        else:
-            summary = f"summary: {raw[:800]}"
-        if state.runtime_answer is not None:
-            state.runtime_answer.answer = summary
-        if state.runtime_answer is None:
-            raise RuntimeError("SummaryPipeline did not produce runtime_answer.")
-        return state.runtime_answer
-
-
-class SummaryAgent(Agent):
+class SummaryAgent(HarnessReferenceAgent):
     """Summarizes prior agent outputs in a multi-agent research flow."""
+
+    def __init__(self, harness: LabHarnessContext | None = None) -> None:
+        self._harness = harness or LabHarnessContext(
+            policy_bundle=build_runtime_policy_bundle(),
+        )
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -103,15 +52,13 @@ class SummaryAgent(Agent):
         return CapabilityMatchResult(matched=False, rationale="not summary capability")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        config = RuntimeConfig(
-            llm_adapter=_SummaryLLMStub(),
-            enable_rag=False,
-            production_mode=harness_production_mode(),
-            tenant_id=request.tenant_id,
+        built = build_summary_pipeline()
+        return build_lab_agent_runtime_context(
+            request=request,
+            llm_adapter=built.llm_adapter,
+            harness=self._harness,
+            pipeline=built.pipeline,
         )
-        config.pipeline = SummaryPipeline()
-        session_manager = SessionManager(storage=InMemorySessionStorage())
-        return RuntimeContext.build(config=config, session_manager=session_manager)
 
     def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
         _ = context
@@ -124,7 +71,7 @@ class SummaryAgent(Agent):
         )
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-        return await run_pipeline_step(step, ctx)
+        return await run_summary_domain_step(step, ctx)
 
     def decide_after_step(
         self,

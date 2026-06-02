@@ -29,17 +29,18 @@ def _harness_agent_factory(agent_cls: type[Agent]) -> AgentFactory:
 
 
 def _build_research_agent(ctx, _binding) -> Agent:
+    harness = lab_harness_context_from_build_context(ctx)
     return ResearchAgent(
+        harness,
         tool_profile=ctx.tool_profile,
         tool_wiring_context=ctx.tool_wiring_context,
+        enable_websearch=True,
     )
 
 
 def _build_summary_agent(ctx, _binding) -> Agent:
-    return SummaryAgent(
-        tool_profile=ctx.tool_profile,
-        tool_wiring_context=ctx.tool_wiring_context,
-    )
+    harness = lab_harness_context_from_build_context(ctx)
+    return SummaryAgent(harness)
 
 
 LAB_AGENT_BUILDERS: dict[type[Agent], AgentFactory] = {

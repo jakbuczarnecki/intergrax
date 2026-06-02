@@ -126,14 +126,29 @@ Lab reference agents implement `HarnessReferenceAgent` + `UAEPAgent`; manifest b
 
 ---
 
+## Legacy RAG stack (U-Leg.2)
+
+`intergrax.rag.answers` was **removed**. Use `intergrax.rag.retrieval.RetrievalService`. Archived code: `intergrax/legacy/rag_answers/` (notebooks only).
+
 ## Verification commands
 
 ```bash
 uv run pytest -m gate -q
 python scripts/check_harness_no_getattr.py
+python scripts/check_tools_agent_imports.py
+python scripts/check_tools_agent_run.py
+python scripts/check_legacy_tool_plan_booleans.py
 uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -q
 uv run pytest tests/unit/skills/test_harness_skill_bundle.py -q
 uv run pytest tests/acceptance/agent_os/test_lab_application.py -m gate -q
+```
+
+Optional strict profile (CI `harness-strict` job):
+
+```bash
+set LAB_STRICT_HARNESS=true
+set INTERGRAX_HARNESS_API_KEY=your-key
+uv run pytest tests/unit/applications/test_lab_strict_harness.py -m gate -q
 ```
 
 ---

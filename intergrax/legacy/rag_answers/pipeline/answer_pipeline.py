@@ -10,13 +10,13 @@ from langchain_core.documents import Document
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.rag.answers.contracts.answer_request import AnswerRequest
-from intergrax.rag.answers.contracts.answer_result import AnswerResult
+from intergrax.legacy.rag_answers.contracts.answer_request import AnswerRequest
+from intergrax.legacy.rag_answers.contracts.answer_result import AnswerResult
 
 
-from intergrax.rag.answers.contracts.base_context_builder import BaseContextBuilder
-from intergrax.rag.answers.contracts.base_prompt_builder import BasePromptBuilder
-from intergrax.rag.answers.pipeline.pipeline_trace import PipelineTrace, StepTimer
+from intergrax.legacy.rag_answers.contracts.base_context_builder import BaseContextBuilder
+from intergrax.legacy.rag_answers.contracts.base_prompt_builder import BasePromptBuilder
+from intergrax.legacy.rag_answers.pipeline.pipeline_trace import PipelineTrace, StepTimer
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.rerankers.contracts.reranker_types import RerankerCandidate
 from intergrax.rag.rerankers.re_ranker_manager import ReRankerManager

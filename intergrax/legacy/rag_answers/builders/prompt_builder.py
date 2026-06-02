@@ -5,8 +5,8 @@
 from __future__ import annotations
 from typing import Optional
 
-from intergrax.rag.answers.builders.default_prompts import default_rag_system_instruction
-from intergrax.rag.answers.contracts.base_prompt_builder import BasePromptBuilder
+from intergrax.legacy.rag_answers.builders.default_prompts import default_rag_system_instruction
+from intergrax.legacy.rag_answers.contracts.base_prompt_builder import BasePromptBuilder
 
 
 class DefaultPromptBuilder(BasePromptBuilder):

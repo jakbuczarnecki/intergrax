@@ -103,6 +103,7 @@ Register the bundle in `intergrax/skills/registry/bootstrap.py`.
 | `harness.tool_smoke` | `harness` | **Done** (Phase S) |
 | `harness.context_demo` | `harness` | **Done** (Phase S) |
 | `harness.trace_read` | `harness` | **Done** (Phase S) |
+| `harness.skill_registry` | `harness` | **Done** (harness completion 2026-06-02) |
 | `legal.contract_review` | `legal` | **Done** |
 | `research.literature_scan` | `research` | **Done** |
 

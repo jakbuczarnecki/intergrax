@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from intergrax.rag.answers.contracts.answer_request import AnswerRequest
-from intergrax.rag.answers.contracts.answer_result import AnswerResult
+from intergrax.legacy.rag_answers.contracts.answer_request import AnswerRequest
+from intergrax.legacy.rag_answers.contracts.answer_result import AnswerResult
 
 
 class BaseAnswerManager(ABC):

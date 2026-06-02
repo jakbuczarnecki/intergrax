@@ -67,6 +67,8 @@ jobs:
           && uv run python scripts/check_integration_vendor_imports.py
           && uv run python scripts/check_harness_no_getattr.py
           && uv run python scripts/check_tools_agent_imports.py
+          && uv run python scripts/check_tools_agent_run.py
+          && uv run python scripts/check_legacy_tool_plan_booleans.py
 
   harness-smoke:
     runs-on: ubuntu-latest
@@ -102,5 +104,32 @@ jobs:
           tests/unit/applications/test_lab_harness_environment_wiring.py
           tests/unit/applications/test_harness_auth.py
           tests/unit/applications/test_lab_application_settings_phase_u.py
+          tests/unit/applications/test_lab_strict_harness.py
+          -q --tb=line
+
+  harness-strict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies (CI minimal)
+        run: uv sync --extra dev-ci --frozen
+
+      - name: Strict harness profile tests
+        env:
+          LAB_STRICT_HARNESS: "true"
+          INTERGRAX_HARNESS_API_KEY: "ci-strict-harness-key"
+        run: >-
+          uv run pytest
+          tests/unit/applications/test_harness_auth.py
           tests/unit/applications/test_lab_strict_harness.py
           -q --tb=line

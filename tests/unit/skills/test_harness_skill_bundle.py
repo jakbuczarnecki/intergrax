@@ -6,6 +6,7 @@ import pytest
 
 from intergrax.skills.providers.harness.manifests import (
     HARNESS_CONTEXT_DEMO,
+    HARNESS_SKILL_REGISTRY,
     HARNESS_TOOL_SMOKE,
     HARNESS_TRACE_READ,
 )
@@ -25,9 +26,14 @@ def _reset_skills() -> None:
     reset_default_skills_for_tests()
 
 
-def test_harness_bundle_registers_three_platform_skills() -> None:
+def test_harness_bundle_registers_platform_skills() -> None:
     registry = build_registry_from_profile(SkillProfile(enabled_bundles=["harness"]))
-    for manifest in (HARNESS_TOOL_SMOKE, HARNESS_CONTEXT_DEMO, HARNESS_TRACE_READ):
+    for manifest in (
+        HARNESS_TOOL_SMOKE,
+        HARNESS_CONTEXT_DEMO,
+        HARNESS_TRACE_READ,
+        HARNESS_SKILL_REGISTRY,
+    ):
         assert registry.has(manifest.skill_id)
 
 

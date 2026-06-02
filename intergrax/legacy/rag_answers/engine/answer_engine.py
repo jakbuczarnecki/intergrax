@@ -4,13 +4,13 @@
 
 from __future__ import annotations
 
-from intergrax.rag.answers.contracts.answer_engine import AnswerEngine
-from intergrax.rag.answers.contracts.answer_request import AnswerRequest
-from intergrax.rag.answers.contracts.answer_result import AnswerResult
+from intergrax.legacy.rag_answers.contracts.answer_engine import AnswerEngine
+from intergrax.legacy.rag_answers.contracts.answer_request import AnswerRequest
+from intergrax.legacy.rag_answers.contracts.answer_result import AnswerResult
 
-from intergrax.rag.answers.contracts.base_context_builder import BaseContextBuilder
-from intergrax.rag.answers.contracts.base_prompt_builder import BasePromptBuilder
-from intergrax.rag.answers.pipeline.answer_pipeline import AnswerPipeline
+from intergrax.legacy.rag_answers.contracts.base_context_builder import BaseContextBuilder
+from intergrax.legacy.rag_answers.contracts.base_prompt_builder import BasePromptBuilder
+from intergrax.legacy.rag_answers.pipeline.answer_pipeline import AnswerPipeline
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 

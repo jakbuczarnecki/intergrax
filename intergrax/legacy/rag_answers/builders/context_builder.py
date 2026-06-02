@@ -7,7 +7,7 @@ from typing import List, Optional
 
 from langchain_core.documents import Document
 
-from intergrax.rag.answers.contracts.base_context_builder import BaseContextBuilder
+from intergrax.legacy.rag_answers.contracts.base_context_builder import BaseContextBuilder
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 from intergrax.tokenizers.contracts.base_tokenizer_manager import BaseTokenizerManager
 

@@ -89,12 +89,13 @@ class IntegrationProfile(BaseModel):
             category_key = category.strip().lower()
 
         field_name = PROFILE_FIELD_BY_CATEGORY.get(category_key)
-        if field_name is None:
+        if field_name is None or field_name not in self._SLUG_FIELDS:
             return None
 
-        explicit = getattr(self, field_name, None)
+        explicit = self.model_dump().get(field_name)
         if explicit is not None:
-            return explicit.value
+            slug = explicit if isinstance(explicit, IntegrationSlug) else IntegrationSlug(explicit)
+            return slug.value
 
         if self.cloud_platform is None:
             return None

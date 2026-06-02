@@ -48,8 +48,8 @@ def build_lab_manifest(settings: LabApplicationSettings) -> ApplicationManifest:
     if settings.include_research:
         agents.extend(
             [
-                AgentBinding.mount(ResearchAgent),
-                AgentBinding.mount(SummaryAgent),
+                AgentBinding.mount(ResearchAgent, requires_uaep=True),
+                AgentBinding.mount(SummaryAgent, requires_uaep=True),
             ]
         )
 

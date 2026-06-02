@@ -36,3 +36,14 @@ HARNESS_TRACE_READ = SkillManifest(
     risk_tier=SkillRiskTier.LOW,
     tags=("harness", "observability", "trace"),
 )
+
+HARNESS_SKILL_REGISTRY = SkillManifest(
+    skill_id="harness.skill_registry",
+    version="1.0.0",
+    description="Skill resolver smoke: single-tool pack for registry merge tests.",
+    tool_ids=("rag.retrieve",),
+    prompt_instruction_ids=("harness.skill_registry.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("harness", "registry", "skills"),
+)

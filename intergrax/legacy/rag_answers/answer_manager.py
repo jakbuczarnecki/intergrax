@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-from intergrax.rag.answers.contracts.base_answer_manager import BaseAnswerManager
-from intergrax.rag.answers.engine.answer_engine import AnswerEngine
-from intergrax.rag.answers.contracts.answer_request import AnswerRequest
-from intergrax.rag.answers.contracts.answer_result import AnswerResult
+from intergrax.legacy.rag_answers.contracts.base_answer_manager import BaseAnswerManager
+from intergrax.legacy.rag_answers.engine.answer_engine import AnswerEngine
+from intergrax.legacy.rag_answers.contracts.answer_request import AnswerRequest
+from intergrax.legacy.rag_answers.contracts.answer_result import AnswerResult
 
 
 class AnswerManager(BaseAnswerManager):
