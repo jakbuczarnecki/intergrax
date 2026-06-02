@@ -53,6 +53,7 @@ def build_lab_agent_runtime_context(
     harness: LabHarnessContext,
     pipeline: RuntimePipeline | None = None,
     enable_rag: bool = False,
+    enable_websearch: bool = False,
 ) -> RuntimeContext:
     """Build ``RuntimeContext`` for lab reference agents with policy + strict governance."""
     config = build_lab_agent_runtime_config(
@@ -61,6 +62,7 @@ def build_lab_agent_runtime_context(
         harness=harness,
         pipeline=pipeline,
         enable_rag=enable_rag,
+        enable_websearch=enable_websearch,
     )
     governance: GovernanceService | None = None
     if harness.strict_harness:

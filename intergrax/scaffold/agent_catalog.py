@@ -30,6 +30,14 @@ BUILTIN_AGENTS: dict[str, tuple[ScaffoldAgentSpec, ...]] = {
         ScaffoldAgentSpec("research", "research.research_agent", "ResearchAgent", ()),
         ScaffoldAgentSpec("summary", "research.summary_agent", "SummaryAgent", ()),
     ),
+    "problem_radar": (
+        ScaffoldAgentSpec(
+            "problem_radar",
+            "problem_radar.problem_radar_agent",
+            "ProblemRadarAgent",
+            ("problem_radar.scan",),
+        ),
+    ),
 }
 
 

@@ -16,6 +16,7 @@ from lab.mock_agents import (
 )
 from research.research_agent import ResearchAgent
 from research.summary_agent import SummaryAgent
+from problem_radar.problem_radar_agent import ProblemRadarAgent
 from signoff_probe.signoff_probe_agent import SignoffProbeAgent
 
 
@@ -48,6 +49,7 @@ LAB_AGENT_BUILDERS: dict[type[Agent], AgentFactory] = {
     ValidatorMockAgent: _harness_agent_factory(ValidatorMockAgent),
     ComposerMockAgent: _harness_agent_factory(ComposerMockAgent),
     SignoffProbeAgent: _harness_agent_factory(SignoffProbeAgent),
+    ProblemRadarAgent: _harness_agent_factory(ProblemRadarAgent),
     ResearchAgent: _build_research_agent,
     SummaryAgent: _build_summary_agent,
 }

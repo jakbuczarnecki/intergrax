@@ -19,6 +19,7 @@ class LabApplicationSettings:
     include_echo: bool = True
     include_signoff_probe: bool = True
     include_research: bool = False
+    include_problem_radar: bool = False
     include_interaction_routes: bool = True
     interaction_route_prefix: str = "/v1/interactions"
     include_scheduler: bool = True
@@ -52,6 +53,13 @@ class LabApplicationSettings:
             "no",
         }
         include_research = (os.getenv("LAB_INCLUDE_RESEARCH") or "false").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        include_problem_radar = (
+            os.getenv("LAB_INCLUDE_PROBLEM_RADAR") or "false"
+        ).strip().lower() in {
             "1",
             "true",
             "yes",
@@ -105,6 +113,7 @@ class LabApplicationSettings:
             include_echo=include_echo,
             include_signoff_probe=include_signoff_probe,
             include_research=include_research,
+            include_problem_radar=include_problem_radar,
             include_interaction_routes=include_interactions,
             interaction_route_prefix=interaction_prefix,
             include_scheduler=include_scheduler,

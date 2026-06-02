@@ -12,6 +12,7 @@ from lab.mock_agents import (
     ResearchMockAgent,
     ValidatorMockAgent,
 )
+from problem_radar.problem_radar_agent import ProblemRadarAgent
 from research.research_agent import ResearchAgent
 from research.summary_agent import SummaryAgent
 from signoff_probe.signoff_probe_agent import SignoffProbeAgent
@@ -50,6 +51,15 @@ def build_lab_manifest(settings: LabApplicationSettings) -> ApplicationManifest:
                 AgentBinding.mount(ResearchAgent),
                 AgentBinding.mount(SummaryAgent),
             ]
+        )
+
+    if settings.include_problem_radar:
+        agents.append(
+            AgentBinding.mount(
+                ProblemRadarAgent,
+                capabilities=["problem_radar.scan"],
+                requires_uaep=True,
+            )
         )
 
     return ApplicationManifest.lab(

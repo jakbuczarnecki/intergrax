@@ -523,7 +523,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
-| K.1 | Problem Radar prototype | **Deferred** | §36 | After Phase S; product decision |
+| K.1 | Problem Radar prototype | **In progress** (wave 1 Done) | §36 | `agents/problem_radar/` — stub output + Nexus gate; live ingestion next |
 | K.2 | Vendor Discovery prototype | **Deferred** | §37 | After Phase S; product decision |
 | K.3 | Policy engine facade | **Done** | §42.11 | `PolicyEngine` + `coerce_replay_policy_engine`; `ExecutionGuard` uses `evaluate_replay` (2026-05-27) |
 | K.4 | Dual `AgentDecision` cleanup | **Done** | §42.7 | `ToolPlanDecision`; deprecated `tools_agent.AgentDecision` alias (2026-05-27) |
