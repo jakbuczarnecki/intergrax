@@ -4,8 +4,8 @@ Tier-2 business agent prototype — discovers and clusters user pain signals (ca
 
 ## Status
 
-- **K.1 wave 1:** typed `ProblemRadarOutput`, stub domain logic, UAEP + `HarnessReferenceAgent`, Nexus gate test.
-- **Next:** live `websearch` ingestion, multi-step UAEP pipeline, lab opt-in (`LAB_INCLUDE_PROBLEM_RADAR`).
+- **Deferred (2026-06-02):** Harness-first policy — no further K.1 work until plan §4.1 backlog is Done.
+- **Frozen wave 1:** typed `ProblemRadarOutput`, stub domain logic, UAEP + `HarnessReferenceAgent`, Nexus gate test.
 
 ## Run (pytest)
 

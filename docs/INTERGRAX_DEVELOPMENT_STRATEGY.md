@@ -107,6 +107,9 @@ After each merged harness PR: `uv run pytest -m gate -q` green; `python scripts/
 | Harness quality + hardening (Q, Q+) | **Done** — gate **450**; zero grandfathered getattr in harness paths |
 | Harness AI alignment MVP (Phase R) | **Done** — Skill Library, context, delegation, policy |
 | **Harness environment GA (Phase S)** | **Done** (2026-06-01) — see [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) |
-| Product agents K.1 / K.2 | **Next** — Phase K when product prioritizes |
+| **Harness production hardening (Phase U)** | **Done** (2026-06-01) |
+| **Harness completion backlog** | **NOW** — U-Leg, typing/CI, platform skills ([plan §4.1](INTERGRAX_IMPLEMENTATION_PLAN.md#41-harness-completion-backlog-execution-order)) |
+| Product agents K.1 / K.2 | **Deferred** — after harness backlog; not concurrent with harness work |
+| New Tier-3 product applications | **Deferred** — lab + reference hosts sufficient for harness |
 
-See [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4, Phase S, and (when added) `HARNESS_ENVIRONMENT.md`.
+See [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4 and §6.1.
