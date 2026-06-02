@@ -145,9 +145,13 @@ Current baseline delivered (Phase V V1):
 - `V-CG.3` blast-radius impact report
 - `V-CG.4` compatibility guard (report + `--enforce`)
 - `V-AM.1` architecture metrics baseline contract
+- `V-AM.2` metrics pipeline snapshots, trend, and gate result contracts
 - `V-ALG.1` agent certification gate contract
+- `V-ALG.2` promotion flow contract (`dev -> staging -> production`) with evidence checks
+- `V-EVAL.1` unified evaluation mode contracts (`offline`, `online`, `shadow`, `human`)
 - report artifacts script: `scripts/phase_v_foundations_report.py`
 - graph guard script: `scripts/phase_v_capability_graph_guard.py`
+- governance artifacts script: `scripts/phase_v_governance_report.py`
 
 Execution references in the implementation plan:
 
@@ -175,6 +179,7 @@ uv run pytest tests/unit/skills/test_harness_skill_bundle.py -q
 uv run pytest tests/acceptance/agent_os/test_lab_application.py -m gate -q
 uv run python scripts/phase_v_foundations_report.py
 uv run python scripts/phase_v_capability_graph_guard.py
+uv run python scripts/phase_v_governance_report.py
 ```
 
 Optional strict profile (CI `harness-strict` job):

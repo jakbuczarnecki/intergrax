@@ -2015,7 +2015,7 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
 | V-ALG.1 | Agent certification gate contract (quality/policy/security) | **Done** | **Critical** | Certification criteria codified + tested |
-| V-ALG.2 | Promotion flow (dev -> staging -> production) with evidence | Planned | High | Promotion requires evidence bundle |
+| V-ALG.2 | Promotion flow (dev -> staging -> production) with evidence | **Done** | High | Promotion requires evidence bundle |
 | V-ALG.3 | Deprecation + retirement workflow and migration window policy | Planned | High | Registry lifecycle states enforced |
 | V-ALG.4 | Owner/on-call metadata required for production-eligible agents | Planned | High | Registration validation blocks missing ownership |
 
@@ -2041,7 +2041,7 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
-| V-EVAL.1 | Unified evaluation modes: offline/online/shadow/human | Planned | **Critical** | Mode contracts documented + wired |
+| V-EVAL.1 | Unified evaluation modes: offline/online/shadow/human | **Done** | **Critical** | Mode contracts documented + wired |
 | V-EVAL.2 | Golden datasets + scenario libraries + regression suites | Planned | High | Versioned benchmark assets |
 | V-EVAL.3 | Automated evaluators (rule-based + LLM judge) | Planned | High | Evaluator outputs persisted |
 | V-EVAL.4 | Evaluation registry trend/comparison reports | Planned | High | Report artifact required for major releases |
@@ -2051,7 +2051,7 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
 | V-AM.1 | Architecture health metric spec (modularity/dependency/coverage/debt) | **Done** | **Critical** | Canon metrics section + thresholds |
-| V-AM.2 | Metrics emission pipeline and dashboards | Planned | High | Dashboard + alert definitions |
+| V-AM.2 | Metrics emission pipeline and dashboards | **Done** (pipeline + trend/gate contracts) | High | Dashboard + alert definitions |
 | V-AM.3 | Governance coverage and observability coverage measurement | Planned | High | Coverage reports generated in CI |
 | V-AM.4 | Architecture debt index + periodic review process | Planned | High | Debt report cadence defined and used |
 
@@ -2187,6 +2187,7 @@ L4 readiness requires:
 |------|------|---------|
 | 2026-06-02 | V-CG.1, V-AM.1, V-ALG.1 | Typed baseline contracts added (`intergrax/runtime/architecture/`) + report-only artifacts script (`scripts/phase_v_foundations_report.py`) + unit tests |
 | 2026-06-02 | V-CG.2, V-CG.3, V-CG.4 | Lineage/impact/compatibility modules + capability graph guard script (`scripts/phase_v_capability_graph_guard.py`) + enforce switch + unit tests |
+| 2026-06-02 | V-AM.2, V-ALG.2, V-EVAL.1 | Metrics pipeline contracts + promotion flow evaluator + unified evaluation mode contracts + governance artifacts script (`scripts/phase_v_governance_report.py`) + unit tests |
 | — | — | *(append row per merged PR)* |
 
 ---
