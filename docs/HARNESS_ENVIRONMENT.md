@@ -148,7 +148,10 @@ Current baseline delivered (Phase V V1):
 - `V-AM.2` metrics pipeline snapshots, trend, and gate result contracts
 - `V-ALG.1` agent certification gate contract
 - `V-ALG.2` promotion flow contract (`dev -> staging -> production`) with evidence checks
+- `V-ALG.3` lifecycle transition governance (`production -> deprecated -> retired`) with migration windows
+- `V-ALG.4` production ownership guard contract (owner/on-call/escalation + runbook)
 - `V-EVAL.1` unified evaluation mode contracts (`offline`, `online`, `shadow`, `human`)
+- `V-EVAL.2` golden dataset + scenario library + versioned evaluation asset bundle contracts
 - report artifacts script: `scripts/phase_v_foundations_report.py`
 - graph guard script: `scripts/phase_v_capability_graph_guard.py`
 - governance artifacts script: `scripts/phase_v_governance_report.py`

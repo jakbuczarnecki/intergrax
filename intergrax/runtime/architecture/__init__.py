@@ -16,6 +16,13 @@ from intergrax.runtime.architecture.agent_promotion import (
     PromotionStage,
     evaluate_agent_promotion,
 )
+from intergrax.runtime.architecture.agent_lifecycle_governance import (
+    AgentLifecycleDecision,
+    AgentLifecycleState,
+    AgentLifecycleTransitionRequest,
+    compute_deprecation_deadline,
+    evaluate_agent_lifecycle_transition,
+)
 from intergrax.runtime.architecture.architecture_metrics import (
     ArchitectureMetricThresholds,
     ArchitectureMetricsReport,
@@ -59,12 +66,27 @@ from intergrax.runtime.architecture.evaluation_modes import (
     EvaluationModeResult,
     UnifiedEvaluationReport,
 )
+from intergrax.runtime.architecture.evaluation_assets import (
+    EvaluationAssetBundle,
+    GoldenDatasetAsset,
+    ScenarioCase,
+    ScenarioLibraryAsset,
+)
+from intergrax.runtime.architecture.production_ownership import (
+    ProductionOwnerMetadata,
+    ProductionOwnershipDecision,
+    ProductionOwnershipEvidence,
+    evaluate_production_ownership,
+)
 
 __all__ = [
     "AgentCertificationEvidence",
     "AgentCertificationEvaluation",
     "AgentCertificationGate",
     "AgentCertificationOwner",
+    "AgentLifecycleDecision",
+    "AgentLifecycleState",
+    "AgentLifecycleTransitionRequest",
     "PromotionDecision",
     "PromotionEvidenceBundle",
     "PromotionStage",
@@ -93,13 +115,23 @@ __all__ = [
     "EvaluationMode",
     "EvaluationModeRequest",
     "EvaluationModeResult",
+    "EvaluationAssetBundle",
+    "GoldenDatasetAsset",
+    "ScenarioCase",
+    "ScenarioLibraryAsset",
+    "ProductionOwnerMetadata",
+    "ProductionOwnershipDecision",
+    "ProductionOwnershipEvidence",
     "UnifiedEvaluationReport",
     "evaluate_agent_certification",
+    "evaluate_agent_lifecycle_transition",
     "evaluate_agent_promotion",
+    "evaluate_production_ownership",
     "build_catalog_capability_graph",
     "build_capability_impact_report",
     "build_capability_lineage_report",
     "compute_architecture_metrics",
     "build_metrics_pipeline_report",
+    "compute_deprecation_deadline",
     "evaluate_capability_graph_compatibility",
 ]
