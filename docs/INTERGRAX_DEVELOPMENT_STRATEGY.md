@@ -109,7 +109,9 @@ After each merged harness PR: `uv run pytest -m gate -q` green; `python scripts/
 | **Harness environment GA (Phase S)** | **Done** (2026-06-01) — see [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) |
 | **Harness production hardening (Phase U)** | **Done** (2026-06-01) |
 | **Harness completion backlog** | **Done** (2026-06-02) — U-Leg, typing/CI, platform skills ([plan §4.1](INTERGRAX_IMPLEMENTATION_PLAN.md#41-harness-completion-backlog-execution-order)) |
-| Product agents K.1 / K.2 | **Deferred** — after harness backlog; not concurrent with harness work |
-| New Tier-3 product applications | **Deferred** — lab + reference hosts sufficient for harness |
+| Product agents K.1 / K.2 | **End of plan** — [§6.3](INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only) only after explicit product decision |
+| New Tier-3 product applications | **End of plan** — same §6.3; lab + reference hosts sufficient for all harness work |
 
-See [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4 and §6.1.
+**Default implementation queue:** [plan §6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) (harness maintenance). **Not** business agents or new product apps.
+
+See [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4.0 (priority ladder) and §6.

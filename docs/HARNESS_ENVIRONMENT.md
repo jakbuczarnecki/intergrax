@@ -153,6 +153,6 @@ uv run pytest tests/unit/applications/test_lab_strict_harness.py -m gate -q
 
 ---
 
-## Phase K (deferred)
+## Product agents and applications (end of plan — not default next)
 
-Problem Radar and Vendor Discovery agents start only after **Phase U** and harness gates are met. See implementation plan Phase K.
+Business agents (K.1 Problem Radar, K.2 Vendor Discovery) and new Tier-3 **product** applications are **last** in the [implementation plan](INTERGRAX_IMPLEMENTATION_PLAN.md) (§4.0 Band 3, **§6.3**). Harness work uses §6.1 only. Product work starts only after an explicit prioritization decision — not because Phase U or §4.1 is Done.

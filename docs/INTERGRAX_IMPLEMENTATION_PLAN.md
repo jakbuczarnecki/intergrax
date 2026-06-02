@@ -20,7 +20,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 |-------|--------|
 | Strategic goal, decision hierarchy, work cycle | [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | Full architecture specification | `intergrax_runtime_architecture.md` |
-| Phase status, gaps, priority | **This file** |
+| Phase status, gaps, priority | **This file** — **§4** ladder; **§6.3** = end-of-plan product work only |
 | Tier-0 integration catalog (what / where) | Architecture canon §7.1.1–§7.1.5 |
 | Tier-0 integration implementation (how) | **This file** Phase M |
 | Tier-0 tool catalog (what / where) | Architecture canon §7.1.6–§7.1.7, §22 |
@@ -36,8 +36,8 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Post-audit hardening (typing, legacy, monoliths) | **This file** Phase Q+ + **Appendix D** |
 | Harness GA / consolidation (no new OS features) | **This file** Phase Q / Q+ |
 | Harness AI alignment audit (2026-06-01) → Phase R | **This file** Phase R + **Appendix E** + canon [§5.3](intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model) |
-| Harness environment GA (2026-06-01) → Phase S | **This file** Phase S + **Appendix F** (K.1/K.2 **deferred**) |
-| Harness production hardening (2026-06-01 audit) → Phase U | **This file** Phase U + **Appendix G** (**Done**; K.1/K.2 unblocked) |
+| Harness environment GA (2026-06-01) → Phase S | **This file** Phase S + **Appendix F** (K.1/K.2 → §6.3 end-of-plan) |
+| Harness production hardening (2026-06-01 audit) → Phase U | **This file** Phase U + **Appendix G** (**Done**; does **not** schedule K.1/K.2 — see §6.3) |
 | Skill / Tool / Integration layering (canon) | Architecture §5.3, §7.1.6–§7.1.8 |
 | Skill catalog | `SKILLS.md` |
 
@@ -64,7 +64,7 @@ Current optimization targets:
 
 **Harness production hardening (Phase U):** **Done** (2026-06-01) — auth surfaces, strict harness profile, `HarnessReferenceAgent`, typed policy bundle, planner decoupling, sandbox opt-in. **U-Leg** legacy removal remains tracked in Appendix G. See Phase U + **Appendix G**.
 
-**Product agents (Phase K):** Problem Radar (K.1), Vendor Discovery (K.2), Legal expansion — **Deferred** (harness-first policy; after harness backlog). K.3–K.5 platform items **Done**.
+**Product agents (Phase K):** Problem Radar (K.1), Vendor Discovery (K.2) — **end of plan** (§4.0 Band 3, §6.3); not default next. K.3–K.5 platform hardening **Done**.
 
 **Platform quality (Phase Q):** Done (2026-06-01) — first harness audit remediation; gate was **417 passed** at close (see Appendix C).
 
@@ -139,7 +139,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Agent OS certification (Phase L) | **Done** | No | Appendix A |
 | **Harness environment GA (Phase S)** | **Done** (2026-06-01) | No (blocks K.1/K.2 only) | S-Ops + S-H + S-Doc; gate green |
 | **Harness cleanliness (Phase T)** | **Done** (2026-06-01) | No | T-Ops + T-H; gate green |
-| **Harness production hardening (Phase U)** | **Done** | — (unblocked K.1/K.2) | U-Sec + U-Pol + U-Con + U-Typ + U-Arch + U-CI; U-Leg optional; Appendix G |
+| **Harness production hardening (Phase U)** | **Done** | No | U-Sec + U-Pol + U-Con + U-Typ + U-Arch + U-CI; Appendix G |
 | Regression gate | **480 passed** | No | Must stay green after each harness PR |
 
 ---
@@ -521,7 +521,9 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ### Phase K — Hardening & Reference Agents
 
-**Gate:** Start K.1/K.2 only after **Phase U (Harness production hardening)** is **Done** (see §4). Prerequisites: L, Q+, R, S, T **Done**.
+**Harness prerequisites:** L, Q+, R, S, T, U, and §4.1 **Done** — platform is ready **when** product chooses to start Band 3 (§6.3).
+
+**Scheduling rule (2026-06-02):** K.1/K.2 are **end-of-plan** (§4.0 Band 3, §6.3). Completing harness phases does **not** auto-schedule business agents as the next implementation task.
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
@@ -536,7 +538,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ### Phase L — Agent OS Certification
 
-**Directive:** L1 certification recorded in Appendix A. K.1/K.2 are **Phase K product work** — after harness environment GA (Phase S).  
+**Directive:** L1 certification recorded in Appendix A. K.1/K.2 are **Phase K product work** — **last** in the plan (§6.3), not concurrent with harness bands 1–2.  
 **Agent workflow:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)
 
 | # | Deliverable | Status | Req | Notes |
@@ -1826,7 +1828,7 @@ Wave S4 (cleanup):   S-H.4
 Parallel:            S-Ops.4, domain skill growth (legal/research) — not required for S Done
 ```
 
-**After Phase S Done:** Phase **K** (K.1 or K.2) may start as first business agent on a complete harness.
+**After Phase S Done (historical):** Harness environment was ready for product agents. **Scheduling (2026-06-02):** K.1/K.2 remain **§6.3 end-of-plan** until explicit product prioritization.
 
 ---
 
@@ -1853,7 +1855,7 @@ Parallel:            S-Ops.4, domain skill growth (legal/research) — not requi
 5. `CatalogToolPlanner` does not import `ToolsAgent`.
 6. `postgresql` stable in catalog and harness stack list.
 
-**After Phase T Done:** Phase **K** (K.1/K.2) remains the next **product** milestone on a clean harness.
+**After Phase T Done (historical):** Harness cleanliness complete. **Scheduling (2026-06-02):** product milestone K.1/K.2 is **deferred** (§6.3), not the default next step.
 
 ---
 
@@ -1968,15 +1970,31 @@ Wave U6 (legacy):   U-Leg.2 → U-Leg.1 → U-Leg.3 → U-Arch.3
 Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 ```
 
-**After Phase U Done:** Phase **K** (K.1 or K.2) may start as first **business** agent on a **production-grade** harness baseline.
+**After Phase U Done (historical):** Production-grade harness baseline achieved. **Scheduling (2026-06-02):** start K.1/K.2 only via **§6.3** after explicit product decision — not by default.
 
 ---
 
 ## 4. Priority Order
 
-**Policy (2026-06-02):** Harness platform work in §4.1 is **Done**. **Do not** start or extend business agents (K.1/K.2) or new Tier-3 product applications without explicit product prioritization.
+### 4.0 Implementation priority ladder (canonical)
+
+**Read this before §6.** The plan has three bands. Implement **top to bottom**. **Never** pull items from band 3 into “next step” summaries while band 1–2 are the active policy.
+
+| Band | What | Status (2026-06-02) | Examples |
+|------|------|---------------------|----------|
+| **1 — Harness platform** | Tier-0/1/3 lab wiring, security, policy, typing, legacy removal, gate audits | **Maintenance** (§4.1 **Done**; keep green) | `pytest -m gate`, `check_harness_*`, `check_tools_agent_*`, regression fixes |
+| **2 — Harness platform (optional)** | On-demand integrations, **platform** skill packs only — **no** business domain | **Parallel, optional** | M.6 provider slugs; `harness.*` skills in [SKILLS.md](SKILLS.md) |
+| **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
+
+**Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
+
+**Policy (2026-06-02):** Harness platform work in §4.1 is **Done**. Band 1 = keep gate green. Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
+BAND 1:  Harness maintenance — gate + audit scripts (§6.1)
+BAND 2:  Harness optional — M.6 slugs, platform R-Skill only (§6.2)
+BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
+
 DONE:    Harness completion backlog (§4.1) — 2026-06-02
 DONE:    Phase U — Harness production hardening (2026-06-01)
 DONE:    Phase T — Harness cleanliness (2026-06-01)
@@ -1989,16 +2007,17 @@ DONE:    Phase K hardening K.3–K.5; Appendix B paydown (except B.15)
 
 PARALLEL (harness-only): M.6 provider slugs on demand; R-Skill catalog expansion (platform packs)
 
-DEFERRED (end of list — do not schedule ahead of §4.1):
+BAND 3 — END OF PLAN (see §6.3; not default “next”):
   • K.1 Problem Radar / K.2 Vendor Discovery (business agents)
   • K.6 / B.15 / S-Ops.4 — Legal live LLM E2E (product/CI)
-  • New Tier-3 product applications (beyond lab / existing reference hosts)
-  • Domain skill packs tied to product agents (until K.*)
+  • New Tier-3 **product** applications (beyond lab + existing reference hosts)
+  • Domain skill packs for product agents (until K.* started)
+  • Problem Radar wave 2+ (`agents/problem_radar/` frozen)
 
 RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Integration → Tool → Skill → Agent
 ```
 
-**Rationale:** Phases S/T/U delivered an operable, production-configurable harness. Remaining gaps are **legacy removal**, **audit hygiene**, and **platform skill/CI depth** — not new business capabilities. Product agents consume the harness; they must not drive Tier-1 evolution (canon §52, strategy work cycle).
+**Rationale:** Phases S/T/U + §4.1 delivered a production-configurable **harness**. Band 1–2 preserve and extend that platform. **Band 3 (product) is intentionally last** so business agents and new applications do not drive Tier-1 evolution (canon §52, [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md)).
 
 ### 4.1 Harness completion backlog (execution order)
 
@@ -2045,23 +2064,58 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 
 
-## 6. Recommended Next Step
+## 6. What to implement next
 
-### 6.1 Implementation cadence (Harness completion — Done 2026-06-02)
+**Default answer:** §6.1 (harness maintenance) only. **Not** K.1, K.2, or new product applications — those are **[§6.3 End of plan](#63-end-of-plan--deferred-product-work-only)**.
 
-§4.1 backlog is **closed**. **Do not** start K.1/K.2 without explicit product decision.
+### 6.1 Harness platform maintenance (default — Band 1)
+
+§4.1 backlog is **closed**. Ongoing work = keep the harness green; fix regressions under band 1 only.
 
 ```text
-Verify: uv run pytest -m gate -q
-        python scripts/check_harness_no_getattr.py
-        python scripts/check_tools_agent_imports.py
-        python scripts/check_tools_agent_run.py
-        python scripts/check_legacy_tool_plan_booleans.py
+Verify (every harness PR):
+  uv run pytest -m gate -q
+  python scripts/check_harness_no_getattr.py
+  python scripts/check_tools_agent_imports.py
+  python scripts/check_tools_agent_run.py
+  python scripts/check_legacy_tool_plan_booleans.py
 ```
 
-**Next (product, deferred):** K.1 or K.2 per Appendix A when prioritized.
+**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
 
-**Parallel (harness-only):** M.6 on-demand integration slugs; R-Skill platform catalog expansion.
+### 6.2 Optional harness platform expansion (Band 2 — parallel only)
+
+May run in parallel with §6.1 when there is harness value and **no** business-agent scope:
+
+| Item | Scope | Notes |
+|------|--------|-------|
+| M.6 | Additional integration provider slugs | On demand; Tier-0 catalog |
+| R-Skill | **`harness.*` platform packs only** | See [SKILLS.md](SKILLS.md); not domain/product skills |
+
+**Forbidden in Band 2:** K.1, K.2, product-specific skills, new product application hosts.
+
+### 6.3 End of plan — deferred product work only (Band 3)
+
+**This section is the last band in the implementation plan.** Nothing here is the default “next step” after harness work.
+
+| ID | Deliverable | Status | Gate to start |
+|----|-------------|--------|----------------|
+| K.1 | Problem Radar prototype | **Deferred** | Explicit product decision + [Appendix A](#appendix-a--agent-operating-system-certification-checklist) |
+| K.2 | Vendor Discovery prototype | **Deferred** | Same as K.1 |
+| K.6 / B.15 / S-Ops.4 | Legal live LLM E2E | **Deferred** | Product/CI budget decision |
+| Tier-3 product apps | New `applications/<product>/` beyond lab + reference hosts | **Deferred** | Product decision; scaffold exists (Phase N **Done**) |
+| Domain skills | Product agent skill packs (non-`harness.*`) | **Deferred** | With K.1 or K.2 |
+| `agents/problem_radar/` | Wave 1 scaffold frozen | **Deferred** | Do not extend until K.1 reprioritized |
+
+**When Band 3 may start:** Record the decision in this plan (date + chosen K.1 vs K.2), then follow [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md). Tier-3 scaffold reference (Phase N) applies **only after** that decision — not as ongoing harness work.
+
+**Tier-3 scaffold (for when Band 3 is approved):**
+
+```bash
+python -m intergrax.scaffold new-stack <slug> --profile lab --capability <slug>.basic
+```
+
+See [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md). Existing hosts (`lab_application`, `legal_application`, `research_application`, `poc_template_application`) are sufficient for **all harness** work.
 
 ### 6.1u Archived — Phase U cadence (complete 2026-06-01)
 
@@ -2079,33 +2133,11 @@ Phase Q used **one Q.* deliverable per PR** → update Appendix C + paydown log.
 
 Tier-3 scaffold cadence remains the reference for new applications (`new-stack`); lab defaults include RAG/websearch tools and legal + research skill bundles.
 
-### 6.2 Tier-3 application layer — **ready for new applications**
+### 6.4 Historical gate milestones (archived)
 
-Phase N deliverables **N.0–N.10** are complete. Use [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md) before scaffolding.
+Phases F–L, J, Q, Q+, R, S, T, U, and §4.1 are **Done**. Gate milestones: **417** (Phase Q), **481** (harness completion, 2026-06-02). Phase tables: §2–§3; paydown: Appendices C–G.
 
-**Generate:**
-
-```bash
-python -m intergrax.scaffold new-stack <slug> --profile lab --capability <slug>.basic
-```
-
-**Verify:**
-
-```bash
-uv run pytest tests/unit/applications/ -q
-uv run pytest tests/unit/applications/test_scaffold_acceptance.py -q
-uv run pytest -m gate -q
-```
-
-**Phase L — still required for any new agent work:**
-
-```bash
-uv run pytest tests/acceptance/agent_os -m agent_os -q
-```
-
-**Start:** Phase S — S-Ops.1 (stable stack) or S-H.1 (`harness.*` skills). **Do not** start K.1/K.2 until Phase S definition of done is met.
-
-**Historical completions:** Phases F–L, J, Q, Q+, and R (MVP) are **Done** — see phase tables (§2–§3), Appendices C–E paydown logs. Gate milestones: **417** (Phase Q close), **450** (Q+ / R MVP, 2026-06-01).
+> **Note:** Older phase closers said “next: Phase K (K.1/K.2).” That meant harness prerequisites were met, **not** that product work becomes the default implementation queue. **Current rule:** §4.0 Band 3 / §6.3 only after explicit product prioritization.
 
 ### D.2 Debug API (Done)
 
@@ -2939,5 +2971,5 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 
 ---
 
-*Plan synced (2026-06-02). **Harness platform complete** (Q–U + §4.1). Gate: **481 passed**. **Deferred:** K.1/K.2, product apps, Legal E2E.*
+*Plan synced (2026-06-02). **Harness platform complete** (Q–U + §4.1). Gate: **481 passed**. **Default next:** §6.1 only. **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
 
