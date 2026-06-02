@@ -1269,7 +1269,7 @@ Resolution merges with `RuntimePolicyBundle` and `ToolAccessPolicy` (intersectio
 |-------|----------------|
 | A | `llm_metrics` (existing) |
 | B | `rag_metrics`, parser trace (existing) |
-| C | `modality_metrics` (planned) on `TASK_COMPLETED`: inference latency, model slug, device |
+| C | `modality_metrics` on `tool_invocation_end` (per tool) + aggregated in `export_run_metrics` (`inference_ms`, `vision_detections`, `ml_predictions`, …) |
 
 Extend V-COST envelopes: `inference_ms`, `media_bytes`, `tts_characters`.
 
@@ -5105,7 +5105,7 @@ Implementation baseline (Phase V V1):
 - context/prompt maturity baseline: `context_regression_benchmark.py`, `retrieval_effectiveness.py`, `prompt_policy_overlay.py`, `prompt_regression_suite.py`
 - multi-agent and graph-rag baseline: `multi_agent_coordination.py`, `multi_agent_acceptance.py`, `graph_rag.py`, `hybrid_retrieval.py`, `graph_provenance.py`
 - L4 adaptive and maturity closeout baseline: `adaptive_governance.py`, `maturity_gate_evidence.py`, `scripts/phase_v_closeout_gate.py`
-- modality plane baseline (W-ML): `intergrax/model_inference/` (OpenCV/Ultralytics/stub vision, harness bootstrap), `applications/lab_application/host/tool_wiring.py` (harness modality tools), `runtime/modality/modality_profile.py`, `runtime/observability/modality_metrics.py`, tools `speech.*`, `vision.*`, `ml.predict`, `runtime/architecture/runtime_governance_bridge.py`
+- modality plane baseline (W-ML): `intergrax/model_inference/` (OpenCV/Ultralytics/stub vision, Celery/thread-pool execution, harness bootstrap), `applications/lab_application/host/tool_wiring.py` (harness modality tools), `runtime/modality/modality_profile.py`, `runtime/observability/modality_metrics.py` + `modality_tool_trace.py`, tools `speech.*`, `vision.*`, `ml.*`, `runtime/architecture/runtime_governance_bridge.py`
 
 ## 53.1 Strategic objective lock (harness-first)
 

@@ -107,7 +107,8 @@ VisionModelProfile  →  VisionInferenceRegistry  →  VisionInferenceAdapter
 **Execution placement:**
 
 - **In-process** — only for lightweight ONNX / small models with explicit memory/GPU quotas.
-- **Worker pool** — `ModalityExecutionProfile` + `ThreadPoolModalityInferenceExecutor` offloads heavy slugs (`yolo_ultralytics`, `vision_serving`, `huggingface_inference`); Celery via `message_bus` for Tier-3 hosts.
+- **Worker pool** — `ModalityExecutionProfile` + `ThreadPoolModalityInferenceExecutor` offloads heavy slugs (`yolo_ultralytics`, `vision_serving`, `huggingface_inference`).
+- **Celery** — `ModalityExecutionMode.CELERY` + `CeleryModalityInferenceExecutor` dispatch serialized jobs (`intergrax.modality.run_job`) when `INTERGRAX_MODALITY_CELERY_BROKER_URL` (or `CELERY_BROKER_URL`) is set; falls back to thread pool when the broker is missing or dispatch fails. Tier-3 hosts may also wire the shared `message_bus` Celery bundle.
 - **Remote endpoint** — preferred at high scale; integration slug under `ml_inference_host` or `vision_serving`.
 
 ### C.2 Classical ML (non-CV)
@@ -191,8 +192,8 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 |--------|-----------|
 | LLM multimodal tokens | Existing `llm_metrics` |
 | RAG ingest | `rag_metrics`, parser trace |
-| CV / ML inference (planned) | `modality_metrics` on `TASK_COMPLETED`: `inference_latency_ms`, `model_slug`, `device`, `batch_size` |
-| Budgets | Extend V-COST: `inference_ms`, `media_bytes`, `tts_characters` |
+| CV / ML inference | Per-tool `modality_metrics` on `tool_invocation_end` (from wiring counters); `export_run_metrics` aggregates across the run |
+| Budgets | V-COST fields: `inference_ms`, `media_bytes`, `tts_characters`, `vision_detections`, `ml_predictions` |
 
 ---
 
@@ -212,7 +213,16 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 |---------|--------|---------|
 | **Vision** | `intergrax.model_inference.registry.VisionProfile` | `create_adapter()` → `VisionInferenceAdapter`; `build_registry()` → `ModelInferenceRegistry` |
 | **Speech** | `intergrax.speech_adapters.SpeechProfile` | `create_adapter()` → `SpeechAdapter` |
-| **Execution** | `intergrax.model_inference.execution.ModalityExecutionProfile` | `build_modality_inference_executor()` → `ModalityInferenceExecutor` |
+| **Execution** | `intergrax.model_inference.execution.ModalityExecutionProfile` | `build_modality_inference_executor()` → `ModalityInferenceExecutor` (`in_process`, `thread_pool`, `celery`) |
+
+**Execution env (harness):**
+
+| Variable | Purpose |
+|----------|---------|
+| `INTERGRAX_MODALITY_EXECUTION` | `in_process` \| `thread_pool` \| `celery` |
+| `INTERGRAX_MODALITY_EXECUTION_WORKERS` | Thread pool size (default `4`) |
+| `INTERGRAX_MODALITY_CELERY_BROKER_URL` | Celery broker for distributed modality jobs |
+| `INTERGRAX_MODALITY_CELERY_EAGER` | `true` runs Celery tasks in-process (tests) |
 
 Example (application host)::
 

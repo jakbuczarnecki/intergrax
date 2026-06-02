@@ -17,6 +17,10 @@ if TYPE_CHECKING:
 
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.tools.tool_invocation import ToolInvocationEndDiagV1, ToolInvocationErrorDiagV1, ToolInvocationStartDiagV1
+from intergrax.runtime.observability.modality_tool_trace import (
+    consume_modality_metrics_for_tool,
+    modality_metrics_dict,
+)
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.contracts import ToolContract
@@ -197,6 +201,9 @@ class RuntimeToolInvoker:
                 out = self._validate_output(contract.output_schema, raw_out)
                 duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
 
+                modality_metrics = modality_metrics_dict(
+                    consume_modality_metrics_for_tool(self._registry, contract.tool_id)
+                )
                 state.trace_event(
                     component=TraceComponent.TOOLS,
                     step="tool_invocation_end",
@@ -208,6 +215,7 @@ class RuntimeToolInvoker:
                         success=True,
                         output_preview=self._preview_output(out),
                         duration_ms=duration_ms,
+                        modality_metrics=modality_metrics,
                     ),
                 )
                 return ToolExecutionResult.ok(out)
