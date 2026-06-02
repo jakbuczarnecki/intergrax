@@ -117,6 +117,19 @@ from intergrax.runtime.architecture.tool_security import (
     ToolInvocationRequest,
     evaluate_tool_invocation_security,
 )
+from intergrax.runtime.architecture.retrieval_security import (
+    RetrievalDocumentSignal,
+    RetrievalPoisoningDecision,
+    RetrievalPoisoningReport,
+    RetrievalTrustLevel,
+    evaluate_retrieval_poisoning,
+)
+from intergrax.runtime.architecture.tenant_security import (
+    SecurityAuditEvent,
+    TenantIsolationCheck,
+    TenantSecurityVerificationReport,
+    verify_tenant_security,
+)
 
 __all__ = [
     "AgentCertificationEvidence",
@@ -182,6 +195,13 @@ __all__ = [
     "ToolInvocationDecision",
     "ToolInvocationPolicy",
     "ToolInvocationRequest",
+    "RetrievalDocumentSignal",
+    "RetrievalPoisoningDecision",
+    "RetrievalPoisoningReport",
+    "RetrievalTrustLevel",
+    "SecurityAuditEvent",
+    "TenantIsolationCheck",
+    "TenantSecurityVerificationReport",
     "UnifiedEvaluationReport",
     "evaluate_agent_certification",
     "evaluate_agent_lifecycle_transition",
@@ -189,6 +209,8 @@ __all__ = [
     "evaluate_production_ownership",
     "inspect_prompt_for_injection",
     "evaluate_tool_invocation_security",
+    "evaluate_retrieval_poisoning",
+    "verify_tenant_security",
     "build_catalog_capability_graph",
     "build_capability_impact_report",
     "build_capability_lineage_report",

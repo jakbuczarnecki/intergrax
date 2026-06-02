@@ -2061,8 +2061,8 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 |---|-------------|--------|----------|------------|
 | V-SEC.1 | Prompt injection defense profile + tests | **Done** | **Critical** | Adversarial tests in gate subset |
 | V-SEC.2 | Tool injection defense (schema/argument/capability controls) | **Done** | High | Deny-path tests for dangerous payloads |
-| V-SEC.3 | Retrieval poisoning defense (trust score/quarantine flow) | Planned | High | Poisoning simulation tests |
-| V-SEC.4 | Tenant isolation verification + security audit trail checks | Planned | High | Isolation checks pass in acceptance suite |
+| V-SEC.3 | Retrieval poisoning defense (trust score/quarantine flow) | **Done** | High | Poisoning simulation tests |
+| V-SEC.4 | Tenant isolation verification + security audit trail checks | **Done** | High | Isolation checks pass in acceptance suite |
 
 #### V-COST — Cost & Resource Governance
 
@@ -2192,6 +2192,7 @@ L4 readiness requires:
 | 2026-06-02 | V-EVAL.3, V-AM.3 | Automated evaluators (`evaluation_automation.py`) + architecture coverage report (`architecture_coverage.py`) + governance report persistence + unit tests |
 | 2026-06-02 | V-AM.4, V-EVAL.4 | Debt governance cadence/policy report (`debt_governance.py`) + release trend/comparison report (`evaluation_registry_trends.py`) + governance script artifacts + unit tests |
 | 2026-06-02 | V-SEC.1, V-SEC.2 | Prompt injection defense profile (`prompt_security.py`) + tool injection defense controls (`tool_security.py`) + governance artifacts + adversarial unit tests |
+| 2026-06-02 | V-SEC.3, V-SEC.4 | Retrieval poisoning defense (`retrieval_security.py`) + tenant isolation/audit verification (`tenant_security.py`) + governance artifacts + unit tests |
 | — | — | *(append row per merged PR)* |
 
 ---

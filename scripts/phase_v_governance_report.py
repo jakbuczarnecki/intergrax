@@ -56,6 +56,11 @@ from intergrax.runtime.architecture import (
     ToolInvocationRequest,
     evaluate_tool_invocation_security,
     inspect_prompt_for_injection,
+    RetrievalDocumentSignal,
+    SecurityAuditEvent,
+    TenantIsolationCheck,
+    evaluate_retrieval_poisoning,
+    verify_tenant_security,
 )
 
 
@@ -258,6 +263,59 @@ def _build_tool_security_result() -> BaseModel:
     return evaluate_tool_invocation_security(request=request, policy=policy)
 
 
+def _build_retrieval_security_report() -> BaseModel:
+    return evaluate_retrieval_poisoning(
+        signals=[
+            RetrievalDocumentSignal(
+                document_id="doc.trusted.001",
+                trust_score=0.92,
+                source_ref="kb/internal/policies",
+            ),
+            RetrievalDocumentSignal(
+                document_id="doc.review.002",
+                trust_score=0.55,
+                source_ref="kb/external/forum",
+            ),
+            RetrievalDocumentSignal(
+                document_id="doc.quarantine.003",
+                trust_score=0.20,
+                source_ref="kb/unverified/upload",
+            ),
+        ]
+    )
+
+
+def _build_tenant_security_report() -> BaseModel:
+    checks = [
+        TenantIsolationCheck(
+            request_tenant_id="tenant-a",
+            resource_tenant_id="tenant-a",
+            passed=True,
+        ),
+        TenantIsolationCheck(
+            request_tenant_id="tenant-a",
+            resource_tenant_id="tenant-b",
+            passed=False,
+            reason="Cross-tenant access denied",
+        ),
+    ]
+    audit_events = [
+        SecurityAuditEvent(
+            event_id="audit-001",
+            tenant_id="tenant-a",
+            actor_id="svc-runtime",
+            action="tool.invoke",
+        ),
+        SecurityAuditEvent(
+            event_id="audit-002",
+            tenant_id="tenant-a",
+            actor_id="svc-runtime",
+            action="policy.deny",
+        ),
+    ]
+    return verify_tenant_security(checks=checks, audit_events=audit_events)
+
+
 def main() -> int:
     output_dir = REPO_ROOT / "build" / "architecture_hardening"
     writer: ReportWriter = JsonReportWriter()
@@ -304,6 +362,8 @@ def main() -> int:
     evaluation_assets = _build_evaluation_assets()
     prompt_security_report = _build_prompt_security_result()
     tool_security_report = _build_tool_security_result()
+    retrieval_security_report = _build_retrieval_security_report()
+    tenant_security_report = _build_tenant_security_report()
 
     writer.write(
         output_path=output_dir / "architecture_metrics_pipeline_report.json",
@@ -352,6 +412,14 @@ def main() -> int:
     writer.write(
         output_path=output_dir / "tool_injection_defense_report.json",
         payload=tool_security_report,
+    )
+    writer.write(
+        output_path=output_dir / "retrieval_poisoning_defense_report.json",
+        payload=retrieval_security_report,
+    )
+    writer.write(
+        output_path=output_dir / "tenant_security_verification_report.json",
+        payload=tenant_security_report,
     )
 
     print("phase-v governance report: OK")

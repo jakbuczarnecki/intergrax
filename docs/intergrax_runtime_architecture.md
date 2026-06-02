@@ -4910,6 +4910,7 @@ Implementation baseline (Phase V V1):
 - eval automation and coverage baseline: `evaluation_automation.py`, `architecture_coverage.py`
 - ops maturity baseline: `debt_governance.py`, `evaluation_registry_trends.py`
 - security hardening baseline: `prompt_security.py`, `tool_security.py`
+- security isolation baseline: `retrieval_security.py`, `tenant_security.py`
 
 ## 53.1 Strategic objective lock (harness-first)
 
