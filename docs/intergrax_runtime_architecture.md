@@ -1171,7 +1171,8 @@ Designed for **market-standard production CV** and portable classical ML — sam
 | `model_inference/contracts/` | `VisionInferenceAdapter`, `ModelInferenceAdapter`, DTOs (`DetectionResult`, …) |
 | `model_inference/registry/` | `VisionInferenceRegistry`, `ModelInferenceRegistry`, profiles |
 | `model_inference/providers/<slug>/` | Backend-specific bridges (thin; no business logic) |
-| `model_inference/workers/` | Optional GPU worker entrypoints (Celery/Kafka-aligned) |
+| `model_inference/execution/` | `ModalityInferenceExecutor`, thread-pool offload for heavy vision slugs |
+| `model_inference/workers/` | Optional distributed workers via Tier-3 `message_bus` (Celery/Kafka) |
 
 **Vision backend families (non-exhaustive, pluggable by slug):**
 

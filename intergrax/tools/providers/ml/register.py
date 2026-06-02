@@ -8,7 +8,7 @@ def register_ml_tool_bundle(*, override: bool = False) -> None:
     register_tool_bundle(
         ToolBundleEntry(
             bundle_id=ML_BUNDLE_ID,
-            tool_ids=("ml.predict", "ml.explain"),
+            tool_ids=("ml.predict", "ml.explain", "ml.batch_predict"),
             register=register_ml_tools,
             status=ToolBundleStatus.STABLE,
             description="Classical ML prediction tools.",

@@ -48,6 +48,7 @@ def test_wire_lab_tools_harness_enables_modality_tools_and_profile() -> None:
         "vision.ocr_regions",
         "ml.predict",
         "ml.explain",
+        "ml.batch_predict",
     ):
         assert tool_id in wiring.profile.enabled
     extras = wiring.wiring_context.extras

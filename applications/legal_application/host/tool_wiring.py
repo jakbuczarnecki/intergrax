@@ -20,6 +20,7 @@ _LEGAL_MODALITY_TOOL_IDS = (
     "speech.transcribe",
     "ml.predict",
     "ml.explain",
+    "ml.batch_predict",
 )
 
 

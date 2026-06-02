@@ -107,7 +107,7 @@ VisionModelProfile  →  VisionInferenceRegistry  →  VisionInferenceAdapter
 **Execution placement:**
 
 - **In-process** — only for lightweight ONNX / small models with explicit memory/GPU quotas.
-- **Worker pool** — default for GPU-heavy YOLO; queue via existing `message_bus` (Celery/Kafka) when Tier-3 enables it.
+- **Worker pool** — `ModalityExecutionProfile` + `ThreadPoolModalityInferenceExecutor` offloads heavy slugs (`yolo_ultralytics`, `vision_serving`, `huggingface_inference`); Celery via `message_bus` for Tier-3 hosts.
 - **Remote endpoint** — preferred at high scale; integration slug under `ml_inference_host` or `vision_serving`.
 
 ### C.2 Classical ML (non-CV)
@@ -161,6 +161,7 @@ Atomic tools (LLM-selectable, MCP-exportable):
 | `speech.transcribe` | B or speech_provider | **Done** (stub / provider) |
 | `ml.predict` | C | **Done** |
 | `ml.explain` | C | **Done** (feature importance stub) |
+| `ml.batch_predict` | C | **Done** |
 
 Skills MAY bundle these `tool_ids` (e.g. `harness.vision_qa`) — skills are not new inference engines.
 
@@ -211,6 +212,7 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 |---------|--------|---------|
 | **Vision** | `intergrax.model_inference.registry.VisionProfile` | `create_adapter()` → `VisionInferenceAdapter`; `build_registry()` → `ModelInferenceRegistry` |
 | **Speech** | `intergrax.speech_adapters.SpeechProfile` | `create_adapter()` → `SpeechAdapter` |
+| **Execution** | `intergrax.model_inference.execution.ModalityExecutionProfile` | `build_modality_inference_executor()` → `ModalityInferenceExecutor` |
 
 Example (application host)::
 
@@ -241,6 +243,8 @@ Registries: `VisionAdapterRegistry`, `SpeechAdapterRegistry` (same pattern as `L
 | `HUGGINGFACE_API_KEY` | HF Inference API for `VisionProvider.HUGGINGFACE_INFERENCE` |
 | `INTERGRAX_HF_VISION_MODEL` | HF model id (default `facebook/detr-resnet-50`) |
 | `LEGAL_ENABLE_MODALITY_TOOLS` | Enable Plane C tools on legal host with profile extras |
+| `INTERGRAX_MODALITY_EXECUTION` | `in_process` (default) or `thread_pool` for heavy vision adapters |
+| `INTERGRAX_MODALITY_EXECUTION_WORKERS` | Thread pool size (default `4`) |
 
 ## Implementation status (summary)
 

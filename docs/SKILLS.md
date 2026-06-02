@@ -102,6 +102,7 @@ Register the bundle in `intergrax/skills/registry/bootstrap.py`.
 |----------|--------|--------|
 | `harness.tool_smoke` | `harness` | **Done** (Phase S) |
 | `harness.vision_qa` | `harness` | **Done** (W-ML) — `vision.detect` + `rag.retrieve` |
+| `harness.modality_smoke` | `harness` | **Done** (W-ML) — `vision.detect`, `ml.predict`, `ml.batch_predict` |
 | `harness.context_demo` | `harness` | **Done** (Phase S) |
 | `harness.trace_read` | `harness` | **Done** (Phase S) |
 | `harness.skill_registry` | `harness` | **Done** (harness completion 2026-06-02) |

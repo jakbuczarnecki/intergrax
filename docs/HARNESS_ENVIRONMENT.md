@@ -129,7 +129,7 @@ Lab reference agents implement `HarnessReferenceAgent` + `UAEPAgent`; manifest b
 ## Post-U continuation (Phase V)
 
 Phase S/T/U established a production-configurable harness baseline.
-Phase V architecture hardening and **Phase W-ML** harness contracts are **complete** in harness-only scope: modality tools (`vision.detect/segment/ocr_regions`, `speech.*`, `ml.predict/explain`), `VisionProfile`/`SpeechProfile`, lab + optional legal modality wiring, Triton/HF remote vision adapters, skill `harness.vision_qa`. Default continuation is **operational L3/L4 stability window** and optional **GPU worker pool** for heavy CV.
+Phase V architecture hardening and **Phase W-ML** harness contracts are **complete** in harness-only scope: modality tools (including `ml.batch_predict`), `VisionProfile`/`SpeechProfile`, `ModalityExecutionProfile` thread-pool offload (`INTERGRAX_MODALITY_EXECUTION=thread_pool`), lab + optional legal modality wiring, Triton/HF adapters, skills `harness.vision_qa` and `harness.modality_smoke`. Default continuation is **operational L3/L4 stability window**; optional Celery `message_bus` for distributed workers.
 
 Primary Phase V tracks impacting the harness environment:
 
