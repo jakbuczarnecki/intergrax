@@ -100,4 +100,7 @@ jobs:
           tests/unit/integrations/test_harness_lab_stable_stack.py
           tests/unit/skills/test_harness_skill_bundle.py
           tests/unit/applications/test_lab_harness_environment_wiring.py
+          tests/unit/applications/test_harness_auth.py
+          tests/unit/applications/test_lab_application_settings_phase_u.py
+          tests/unit/applications/test_lab_strict_harness.py
           -q --tb=line

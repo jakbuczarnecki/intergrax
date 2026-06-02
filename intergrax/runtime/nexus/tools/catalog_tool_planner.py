@@ -10,6 +10,7 @@ from typing import Any, Optional
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
+from intergrax.runtime.nexus.tools.tool_planner_trackable import ToolPlannerTrackable
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
 from intergrax.tools.registry import ToolRegistry, ToolWiringContext, build_registry_from_profile
 from intergrax.tools.registry.profile import ToolProfile
@@ -17,7 +18,7 @@ from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 
 
 @dataclass
-class CatalogToolPlanner:
+class CatalogToolPlanner(ToolPlannerTrackable):
     """
     Tier-1 catalog planner implementing :class:`ToolPlannerProtocol`.
 

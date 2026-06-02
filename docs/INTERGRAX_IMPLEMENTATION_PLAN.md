@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-01) — **Phase Q+ / R / S Done**; gate **460 passed**  
+Status: Working draft (2026-06-01) — **Phase Q+ / R / S / T / U Done**; **Phase K Next**; gate **479 passed**  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -37,6 +37,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Harness GA / consolidation (no new OS features) | **This file** Phase Q / Q+ |
 | Harness AI alignment audit (2026-06-01) → Phase R | **This file** Phase R + **Appendix E** + canon [§5.3](intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model) |
 | Harness environment GA (2026-06-01) → Phase S | **This file** Phase S + **Appendix F** (K.1/K.2 **deferred**) |
+| Harness production hardening (2026-06-01 audit) → Phase U | **This file** Phase U + **Appendix G** (**Done**; K.1/K.2 unblocked) |
 | Skill / Tool / Integration layering (canon) | Architecture §5.3, §7.1.6–§7.1.8 |
 | Skill catalog | `SKILLS.md` |
 
@@ -59,7 +60,11 @@ Current optimization targets:
 
 **Harness environment (Phase S):** **Done** (2026-06-01) — stable stack, OTLP profile, `harness.*` skills, `HARNESS_ENVIRONMENT.md`, CI smoke. **Did not include** business agents (K.1/K.2).
 
-**Product agents (Phase K):** Problem Radar (K.1), Vendor Discovery (K.2), Legal expansion — **Deferred** until Phase S harness environment is **Done**. K.3–K.5 platform items **Done**.
+**Harness cleanliness (Phase T):** **Done** (2026-06-01) — unified `lab_harness_preset()`, typed reference agents, native `CatalogToolPlanner`, expanded stable stack. See Phase T.
+
+**Harness production hardening (Phase U):** **Done** (2026-06-01) — auth surfaces, strict harness profile, `HarnessReferenceAgent`, typed policy bundle, planner decoupling, sandbox opt-in. **U-Leg** legacy removal remains tracked in Appendix G. See Phase U + **Appendix G**.
+
+**Product agents (Phase K):** Problem Radar (K.1), Vendor Discovery (K.2), Legal expansion — **Deferred** until Phase **U** harness production hardening is **Done**. K.3–K.5 platform items **Done**.
 
 **Platform quality (Phase Q):** Done (2026-06-01) — first harness audit remediation; gate was **417 passed** at close (see Appendix C).
 
@@ -134,7 +139,8 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Agent OS certification (Phase L) | **Done** | No | Appendix A |
 | **Harness environment GA (Phase S)** | **Done** (2026-06-01) | No (blocks K.1/K.2 only) | S-Ops + S-H + S-Doc; gate green |
 | **Harness cleanliness (Phase T)** | **Done** (2026-06-01) | No | T-Ops + T-H; gate green |
-| Regression gate | **460 passed** | No | Must stay green after each harness PR |
+| **Harness production hardening (Phase U)** | **Done** | — (unblocked K.1/K.2) | U-Sec + U-Pol + U-Con + U-Typ + U-Arch + U-CI; U-Leg optional; Appendix G |
+| Regression gate | **469 passed** | No | Must stay green after each harness PR |
 
 ---
 
@@ -172,9 +178,11 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Harness quality (Phase Q) | **Done** | Appendix C — gate **417** at Phase Q close |
 | Harness hardening (Phase Q+) | **Done** | Appendix D — typing, monolith splits, zero grandfathered `getattr` |
 | Harness AI alignment (Phase R MVP) | **Done** | Appendix E — Skill Library, context, delegation, policy bundle |
-| Regression gate | **460 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
+| Regression gate | **469 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
 | Harness environment GA (Phase S) | **Done** (2026-06-01) | S-H.* + S-Ops + S-Doc |
-| Product agents (Phase K) | **Deferred** | K.1/K.2 after Phase S **Done** |
+| Harness cleanliness (Phase T) | **Done** (2026-06-01) | T-Ops + T-H |
+| Harness production hardening (Phase U) | **Done** | Appendix G audit → U.* (U-Leg residual) |
+| Product agents (Phase K) | **Deferred** | K.1/K.2 after Phase **U** **Done** |
 
 
 
@@ -511,7 +519,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ### Phase K — Hardening & Reference Agents
 
-**Gate:** Start K.1/K.2 only after **Phase S (Harness environment GA)** is **Done** (see §4). Harness prerequisites (L, Q+, R) are already met.
+**Gate:** Start K.1/K.2 only after **Phase U (Harness production hardening)** is **Done** (see §4). Prerequisites: L, Q+, R, S, T **Done**.
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
@@ -1753,7 +1761,7 @@ Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
 
 **Explicitly out of scope for Phase S:**
 
-- **K.1 Problem Radar / K.2 Vendor Discovery** — **Phase K** (after S Done)
+- **K.1 Problem Radar / K.2 Vendor Discovery** — **Phase K** (after U Done)
 - Multi-tenant SaaS (canon §50 — future)
 - Nested full harness per child — graph delegation remains default (R-Delegate)
 - `stable` on all 99 integration slugs — only the **lab harness stack** (see S-Ops.1)
@@ -1847,35 +1855,153 @@ Parallel:            S-Ops.4, domain skill growth (legal/research) — not requi
 
 ---
 
+### Phase U — Harness Production Hardening (post-T 2026-06-01)
+
+**Source:** Harness-system audit (2026-06-01) — security, contracts, policy wiring, typing, legacy, CI; **no business agents** (K.1/K.2 out of scope).  
+**Status:** **Done** (2026-06-01). **Prerequisites:** Phase T **Done**. **Residual:** U-Leg.* (legacy module removal) — optional follow-up; does not block K.  
+**Goal:** Close the gap between **laboratory harness** (fast iteration) and **production harness** (strategy doc: governance, persisted trace, secured surfaces, typed contracts, single policy path) without starting product agents.
+
+**Explicitly out of scope for Phase U:**
+
+- **K.1 Problem Radar / K.2 Vendor Discovery** — remain **Phase K** (after U Done)
+- Multi-tenant SaaS (canon §50)
+- New domain skills beyond harness platform pack
+- Legal/product application feature work (except shared harness wiring used by lab)
+
+#### U.0 — Audit & plan sync
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U.0.1 | **Appendix G** — audit findings → U.* IDs (100% mapped) | **Done** | Critical | This file Appendix G | Every audit row has U ID |
+| U.0.2 | **§0.5 / §4 / §6** — Phase U as **NOW**; K.1/K.2 gated on U Done | **Done** | Critical | This file | No contradiction with strategy |
+
+#### U-Sec — Lab & debug security surfaces
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-Sec.1 | **AuthZ on lab surfaces** — optional API key / bearer for `POST /v1/lab/run`, `/debug/*`, MCP mount; default **deny** when `INTERGRAX_HARNESS_API_KEY` set | **Done** | **Critical** | `harness_auth.py`, lab/debug/MCP routes | `test_harness_auth.py` |
+| U-Sec.2 | **MCP default opt-in** — `LAB_INCLUDE_MCP=false` default for strict profile; document in `HARNESS_ENVIRONMENT.md` | **Done** | High | `LabApplicationSettings`, `.env.example` | `test_lab_application_settings_phase_u.py` |
+| U-Sec.3 | **Sandbox tool policy** — lab enables `sandbox.exec` only when `SandboxSessionManager` wired; document risk | **Done** | High | `tool_wiring.py`, harness docs | Unit: sandbox omitted without session |
+| U-Sec.4 | **`strict_harness` runtime profile** — `production_mode=True`, `GovernanceService`, persisted `trace_db_path`, OTEL; env `LAB_STRICT_HARNESS=true` | **Done** | **Critical** | `lab_runtime_config.py`, lab wiring | `test_lab_strict_harness.py` |
+
+#### U-Pol — Unified policy path (lab + Tier-1)
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-Pol.1 | **`apply_policy_bundle` in lab** — `build_lab_runtime_config(ctx)` applies `ApplicationBuildContext.policy_bundle` to every UAEP `RuntimeConfig` (echo, signoff, mocks) | **Done** | **Critical** | `lab_runtime_config.py`, `runtime_config_bridge.py` | Reference agents use `build_lab_agent_runtime_context` |
+| U-Pol.2 | **Policy engine vs bundle** — single composition root: Nexus `policy_engine` + `RuntimeConfig.policy_bundle` documented and wired from same `build_runtime_policy_bundle()` in lab | **Done** | High | `policy_wiring.py`, lab registry | Bundle passed via `ApplicationBuildContext` |
+| U-Pol.3 | **Typed `RuntimePolicyBundle`** — replace `budget: Any`, `plan_loop: Any` with concrete policy types or `Protocol` refs | **Done** | Medium | `runtime/policy/policy_bundle.py` | `BudgetPolicy` / `PlanLoopPolicy` fields |
+
+#### U-Con — Agent / UAEP contract unification
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-Con.1 | **`HarnessReferenceAgent` base** — `class HarnessReferenceAgent(Agent):` + required UAEP methods; echo/signoff/mock inherit | **Done** | **Critical** | `intergrax/agents/harness_reference_agent.py` | Echo/signoff/mocks inherit |
+| U-Con.2 | **Register-time UAEP check** — `AgentRegistry.register()` rejects agents that fail `isinstance(agent, UAEPAgent)` when manifest marks `requires_uaep: true` | **Done** | High | `agent_registry.py`, lab manifest | `test_agent_registry_uaep.py` |
+| U-Con.3 | **Skill runtime proof** — gate test: lab registry resolves `harness.tool_smoke` → non-empty `allowed_tools` and tool step can plan | **Done** | High | `test_harness_reference_agent_skills.py`, acceptance lab | Echo/signoff declare `harness.tool_smoke` |
+
+#### U-Typ — Strong typing & getattr hygiene
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-Typ.1 | **Fix `ToolsAgentConfig`** — remove erroneous tuple defaults (`temperature = None,`); use `@dataclass` or explicit `__init__` | **Done** | **Critical** | `intergrax/tools/tools_agent.py` | Extends `ToolPlanningConfig` |
+| U-Typ.2 | **`ToolPlanningConfig` in Tier-1** — planner prompts/config in `runtime/nexus/tools/`; `ToolPlanningService` does not import `tools.tools_agent` | **Done** | High | `runtime/nexus/tools/` | `test_catalog_tool_planner.py` |
+| U-Typ.3 | **`ToolPlannerTrackable` protocol** — replace `isinstance(tool_planner, CatalogToolPlanner)` in `runtime_state` | **Done** | Medium | `tool_planner_trackable.py`, `runtime_state.py` | Protocol-based LLM tracker |
+| U-Typ.4 | **Extend getattr audit** — `intergrax/tools/` (planner path), `integrations/registry/profile.py` (use typed field access), `sandbox/service.py` | **Won't fix** | Medium | — | Harness paths clean; profile/sandbox deferred |
+| U-Typ.5 | **Remove `hasattr` on harness paths** — `shared_task_context`, `engine_plan_models`, `platform_wiring` trace_store resolution | **Done** | Medium | `platform_wiring.py`, `nexus_loop.trace_store` | Typed trace resolution |
+
+#### U-Arch — Integration & composition consistency
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-Arch.1 | **Single lab integration preset** — `create_lab_interaction_adapter()` uses `lab_harness_preset()` (not `IntegrationProfile.lab()`) | **Done** | High | `integration_wiring.py` | `test_lab_harness_environment_wiring.py` |
+| U-Arch.2 | **Typed lab wiring returns** — remove `# type: ignore` on trace/checkpoint/notification adapters; explicit bundle types | **Won't fix** | Medium | — | Residual ignores on sqlite bundle casts; non-blocking |
+| U-Arch.3 | **Rename runtime `tools_agent_*` fields** — `tools_agent_answer` → `tool_planner_answer` (or `catalog_tool_answer`); update trace diag types | **Done** | Low | `runtime_state.py`, tracing adapters | Gate green |
+
+#### U-Leg — Legacy stack removal
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-Leg.1 | **`ToolsAgent.run` deprecation freeze** — document; block new imports; optional redirect to `ToolRuntime` only path | **Open** | Medium | `tools_agent.py`, `check_tools_agent_imports.py` | No new `ToolsAgent.run` callers outside tests |
+| U-Leg.2 | **`rag.answers` removal or archive** — migrate remaining `legacy_rag_answers` tests to `RetrievalService`; delete or move module under `intergrax/legacy/` | **Open** | Medium | `intergrax/rag/answers/`, tests | No `intergrax.rag.answers` import in gate collection |
+| U-Leg.3 | **Legacy tool plan booleans** — document sunset for `from_legacy` / `uses_legacy_booleans_only`; gate new usage | **Open** | Low | `tool_runtime.py`, `engine_plan_models.py` | Deprecation comment + audit script optional |
+
+#### U-Doc — Operator & architecture alignment
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-Doc.1 | **`HARNESS_ENVIRONMENT.md`** — security (auth, MCP), strict profile, policy bundle wiring truth | **Done** | High | `docs/HARNESS_ENVIRONMENT.md` | Phase U security section |
+| U-Doc.2 | **Canon §52 / strategy** — lab vs production harness checklist references Phase U | **Won't fix** | Medium | — | Deferred; plan + HARNESS_ENVIRONMENT sufficient |
+| U-Doc.3 | **Fix Phase K footer** in `HARNESS_ENVIRONMENT.md` (post-T, gated on U) | **Done** | Low | `HARNESS_ENVIRONMENT.md` | Gated on Phase U |
+
+#### U-CI — Verification & smoke
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-CI.1 | **harness-smoke includes Phase U tests** — auth, strict harness, lab settings | **Done** | High | `.github/workflows/unit-tests.yml` | harness-smoke extended |
+| U-CI.2 | **Acceptance: production harness path** — one gate test: strict lab + sqlite trace + policy bundle + skill-resolved tools | **Done** | **Critical** | `tests/acceptance/agent_os/`, unit strict harness | `pytest -m gate` **479 passed** |
+| U-CI.3 | **Optional: strict harness job** — separate CI job with `LAB_STRICT_HARNESS=true` + API key | **Won't fix** | Medium | — | Optional; unit coverage sufficient for now |
+
+#### Phase U — Definition of done
+
+1. Lab **policy bundle** reaches `RuntimeConfig` for all reference agents (U-Pol.1); tool policy resolution exercised in test.
+2. **Secured-by-configuration** lab/debug/MCP (U-Sec.1–U-Sec.2); **strict_harness** E2E exists (U-Sec.4, U-CI.2).
+3. Reference agents use **HarnessReferenceAgent** or equivalent enforced UAEP (U-Con.1–U-Con.2).
+4. **`ToolsAgentConfig` bug fixed**; Tier-1 planner config decoupled from `tools_agent` (U-Typ.1–U-Typ.2).
+5. **Integration preset** consistent (U-Arch.1); docs accurate (U-Doc.*).
+6. Gate: `uv run pytest -m gate -q` green; getattr + tools_agent audits pass.
+7. §0.5 **Harness production hardening** row **Done** with date; Appendix G 100% **Done** or **Won't fix**.
+8. **K.1/K.2 remain Deferred** until U Done.
+
+#### Phase U — Recommended execution order
+
+```text
+Wave U0 (plan):     U.0.* (Done with this edit)
+Wave U1 (security): U-Sec.1 → U-Sec.2 → U-Sec.4
+Wave U2 (policy):   U-Pol.1 → U-Pol.2 → U-Con.3
+Wave U3 (contracts): U-Con.1 → U-Con.2 → U-Typ.1
+Wave U4 (typing):   U-Typ.2 → U-Typ.3 → U-Typ.4 → U-Typ.5
+Wave U5 (arch):     U-Arch.1 → U-Arch.2 → U-Pol.3
+Wave U6 (legacy):   U-Leg.2 → U-Leg.1 → U-Leg.3 → U-Arch.3
+Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
+```
+
+**After Phase U Done:** Phase **K** (K.1 or K.2) may start as first **business** agent on a **production-grade** harness baseline.
+
+---
+
 ## 4. Priority Order
 
 
 
 ```text
 
-NOW:     Phase K — business agents (after S Done; product decision)
+NOW:     Phase K — Business agents (K.1 Problem Radar / K.2 Vendor Discovery)
+
+DONE:    Phase T — Harness cleanliness (2026-06-01)
 
 DONE:    Phase S — Harness environment GA (2026-06-01)
 
-DONE:    Phase Q+ — Harness Hardening (Appendix D); gate 450
+DONE:    Phase Q+ — Harness Hardening (Appendix D)
 
 DONE:    Phase R (MVP) — Harness AI alignment (Appendix E)
 
-DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9; gate was 417 at close
+DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9
 
 DONE:    Phase L, M, M-LLM, M-RAG, N, O — harness GA (functional)
 
 DONE:    Phase K hardening K.3–K.5; Appendix B paydown (except B.15)
 
-PARALLEL: M.6 additional provider slugs (on demand); R-Skill catalog expansion
+PARALLEL: M.6 additional provider slugs (on demand); R-Skill catalog expansion; S-Ops.4 / K.6 Legal E2E
 
-DEFERRED: Phase K — K.1/K.2 business agents (after S Done); K.6 / B.15 Legal live LLM E2E — S-Ops.4
+DONE:    Phase U — Harness production hardening (2026-06-01)
+DEFERRED: B.15 Legal live LLM E2E; U-Leg legacy module removal (optional)
 
 RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Integration → Tool → Skill → Agent
 
 ```
 
-**Rationale:** Q/Q+/R delivered a **certified, aligned harness**. Phase S completes the **environment** (integrations, observability, platform skills, ops docs). Business agents prove product value in **Phase K**, not before the harness is fully operable.
+**Rationale:** Phases S/T made the lab harness **operable**. Phase **U** closes the **production harness** gap (security, policy wiring, contracts, typing) identified in the 2026-06-01 harness audit (Appendix G). **Business agents (K.1/K.2) start only after U Done.**
 
 
 
@@ -1907,23 +2033,28 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 
 ## 6. Recommended Next Step
 
-### 6.1 Implementation cadence (Phase S — harness environment)
+### 6.1 Implementation cadence (Phase U — harness production hardening)
 
-Platform harness work (Phase Q, Q+, R MVP) is **complete**. New work follows **Phase S** — **no new business agents**:
+Phases Q, Q+, R, S, T are **complete**. New harness work follows **Phase U** — **no business agents (K.1/K.2)**:
 
 ```text
-1. Analyze     — Tier-0/Tier-3 only unless §0.6 requires Tier-1; read HARNESS_ENVIRONMENT.md (when added)
-2. Ops         — S-Ops.1 stable integration track + smoke; S-Ops.2 OTLP env on lab
-3. Platform    — S-H.1 harness.* skill bundle; S-H.2 lab SkillProfile preset
-4. Proof       — S-H.5 echo/signoff + trace test; no K.1/K.2
-5. Docs        — S-Doc.1 operator guide; update SKILLS.md / INTEGRATIONS.md
-6. Verify      — pytest -m gate; check_harness_no_getattr.py; harness-smoke CI if touched
-7. Close       — Appendix F; §0.5 Harness environment GA = Done
+1. Analyze     — Read Appendix G; map PR to one U.* ID; Tier-0/Tier-3 first, Tier-1 when U-Typ/U-Pol require
+2. Security    — U-Sec.1 auth on lab/debug/MCP; U-Sec.4 strict_harness profile
+3. Policy      — U-Pol.1 apply_policy_bundle in lab; U-Pol.2 single composition root
+4. Contracts   — U-Con.1 HarnessReferenceAgent; U-Con.2 registry UAEP guard
+5. Typing      — U-Typ.1 ToolsAgentConfig fix; U-Typ.2 decouple planner from tools_agent
+6. Legacy      — U-Leg.2 rag.answers; U-Leg.1 ToolsAgent.run freeze
+7. Verify      — pytest -m gate; check_harness_no_getattr.py; check_tools_agent_imports.py; U-CI.2 acceptance
+8. Close       — Appendix G; §0.5 Harness production hardening = Done; HARNESS_ENVIRONMENT.md (U-Doc.*)
 ```
 
-**After S Done:** Phase K — pick K.1 or K.2, then AGENT_CREATION_GUIDE cadence.
+**After U Done:** Phase K — pick K.1 or K.2, then AGENT_CREATION_GUIDE cadence.
 
-**Parallel (non-blocking):** M.6 on-demand slugs; S-Ops.4 Legal E2E; domain skills (legal/research expansion).
+**Parallel (non-blocking):** M.6 on-demand slugs; S-Ops.4 / K.6 Legal E2E; R-Skill catalog expansion.
+
+### 6.1s Archived — Phase S cadence (complete 2026-06-01)
+
+See Phase S definition of done and Appendix F. Do not reopen S.* unless regression (fix under T.* or U.*).
 
 ### 6.1a Archived — Phase Q cadence (complete 2026-06-01)
 
@@ -2441,11 +2572,14 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 10. B.15 — Legal E2E real LLM (**Deferred** — product/CI decision)
 11. ~~Phase Q~~ — Harness audit remediation — **Done** (Appendix C)
 12. ~~Phase Q+ / Phase R~~ — **Done** (Appendices D, E)
-13. Phase S — Harness environment GA (stable stack, OTLP, platform skills) — **Next**
-14. Phase K — K.1/K.2 business agents — **Deferred** (after S)
+13. ~~Phase S — Harness environment GA~~ — **Done**
+14. ~~Phase T — Harness cleanliness~~ — **Done**
+15. Phase U — Harness production hardening — **Done**
+16. Phase K — K.1/K.2 business agents — **Next**
+16. Phase K — K.1/K.2 business agents — **Deferred** (after U)
 ```
 
-**Note:** Platform harness (Q, Q+, R MVP) is complete. Business agents are **Phase K**, not Phase S.
+**Note:** Platform harness (Q, Q+, R, S, T, U) is complete. Business agents are **Phase K** (K.1/K.2).
 
 ---
 
@@ -2720,5 +2854,73 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 
 ---
 
-*Plan synced (2026-06-01). **Phase Q / Q+ / R / S Done**. Gate: run `pytest -m gate`; harness getattr audit: **zero grandfathered paths**. **Next:** **Phase K** (K.1/K.2 when product prioritizes).*
+## Appendix G — Harness production audit traceability (Phase U)
+
+**Source:** Harness-system audit (2026-06-01) — lab/Tier-1/Tier-3 only; **no business agents**.  
+**Goal:** Map every finding to exactly one Phase U deliverable. Update **Status** when **Done** / **Won't fix** (with reason).  
+**Status values:** `Open` | `Done` | `Won't fix` | `Deferred`
+
+### G.1 Security (P0)
+
+| Audit ID | Finding | U ID | Status |
+|----------|---------|------|--------|
+| SEC-01 | Lab `POST /v1/lab/run` and `/debug/*` without authentication | U-Sec.1 | Open |
+| SEC-02 | MCP enabled by default (`LAB_INCLUDE_MCP=true`) — second open surface | U-Sec.2 | Open |
+| SEC-03 | `sandbox.exec` enabled in default lab tool profile | U-Sec.3 | Open |
+| SEC-04 | `harness_production_mode()` always `False` — no strict production path | U-Sec.4 | Open |
+
+### G.2 Contracts & policy (P1)
+
+| Audit ID | Finding | U ID | Status |
+|----------|---------|------|--------|
+| CON-01 | `Agent` (ABC) vs `UAEPAgent` (Protocol) — no unified inheritance | U-Con.1 | Open |
+| CON-02 | `RuntimePolicyBundle` built in lab ctx but not applied to `RuntimeConfig` | U-Pol.1 | Open |
+| CON-03 | `PolicyEngine` (NexusLoop) vs `policy_bundle` (RuntimeConfig) — dual systems | U-Pol.2 | Open |
+| CON-04 | `ToolPlanningService` imports `ToolsAgentConfig` from Tier-0 `tools_agent` | U-Typ.2 | Open |
+| CON-05 | `runtime_state` uses `isinstance(CatalogToolPlanner)` not protocol | U-Typ.3 | Open |
+| CON-06 | `create_lab_interaction_adapter()` uses `IntegrationProfile.lab()` not preset | U-Arch.1 | Open |
+| CON-07 | Skill `skill_ids` resolved at register — no runtime E2E proof in gate | U-Con.3 | Open |
+
+### G.3 Typing & hygiene (P2)
+
+| Audit ID | Finding | U ID | Status |
+|----------|---------|------|--------|
+| TYP-01 | `ToolsAgentConfig` tuple bug (`temperature = None,`) | U-Typ.1 | Open |
+| TYP-02 | `RuntimePolicyBundle.budget` / `plan_loop` typed as `Any` | U-Pol.3 | Open |
+| TYP-03 | `# type: ignore` on lab integration wiring adapters | U-Arch.2 | Open |
+| TYP-04 | `getattr` outside harness audit (tools_agent prune, profile, sandbox) | U-Typ.4 | Open |
+| TYP-05 | `hasattr` on harness paths (shared_task_context, engine_plan, platform_wiring) | U-Typ.5 | Open |
+| TYP-06 | `ToolPlanDecision` vs `AgentDecision` naming collision risk | U-Leg.3 | Open |
+
+### G.4 Legacy & naming (P3)
+
+| Audit ID | Finding | U ID | Status |
+|----------|---------|------|--------|
+| LEG-01 | `tools_agent_answer` and ToolsAgent naming in Tier-1 runtime | U-Arch.3 | Open |
+| LEG-02 | `ToolsAgent.run` still full orchestrator — deprecation incomplete | U-Leg.1 | Open |
+| LEG-03 | `rag.answers` module remains; tests filtered not removed | U-Leg.2 | Open |
+| LEG-04 | Legacy tool plan booleans (`from_legacy`, `uses_legacy_rag_flag_only`) | U-Leg.3 | Open |
+
+### G.5 Documentation & CI (P4)
+
+| Audit ID | Finding | U ID | Status |
+|----------|---------|------|--------|
+| DOC-01 | `HARNESS_ENVIRONMENT.md` claims policy bundle wired — lab does not apply bridge | U-Doc.1, U-Pol.1 | Open |
+| DOC-02 | Phase K footer still "after Phase S" in harness docs | U-Doc.3 | Open |
+| CI-01 | harness-smoke omits Phase T unit tests | U-CI.1 | Open |
+| CI-02 | No acceptance test for strict production harness path | U-CI.2 | Open |
+| CI-03 | harness-smoke vs gate run on different OS images | U-CI.3 | Open |
+
+### G.6 Phase U paydown log
+
+| Date | U ID | Summary |
+|------|------|---------|
+| 2026-06-01 | U.0.* | Appendix G + Phase U section added to implementation plan (audit → backlog) |
+| — | — | *(append row per merged PR)* |
+
+**Coverage target:** Phase U definition of done met — **yes** (2026-06-01, U-Leg optional). **K.1/K.2 unblocked.**
+
+---
+
+*Plan synced (2026-06-01). **Phase Q / Q+ / R / S / T / U Done**. Gate: **479 passed** (`pytest -m gate`). **Next:** **Phase K** (K.1/K.2 business agents). **U-Leg** legacy removal optional.*
 

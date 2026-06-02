@@ -14,13 +14,8 @@ from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.tools.exporters.openai import to_openai_tools
 from intergrax.tools.exporters.schema import pydantic_parameters_schema
 from intergrax.tools.registry import ToolRegistry
+from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
 from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
-from intergrax.tools.tools_agent import (
-    PLANNER_PROMPT,
-    SYSTEM_CONTEXT_TEMPLATE,
-    SYSTEM_PROMPT,
-    ToolsAgentConfig,
-)
 
 
 def _build_openai_tools_schema(tools: ToolRegistry) -> List[Dict[str, Any]]:
@@ -59,11 +54,11 @@ class ToolPlanningService:
         llm: LLMAdapter,
         tools: ToolRegistry,
         *,
-        config: Optional[ToolsAgentConfig] = None,
+        config: Optional[ToolPlanningConfig] = None,
     ) -> None:
         self.llm = llm
         self.tools = tools
-        self.cfg = config or ToolsAgentConfig()
+        self.cfg = config or ToolPlanningConfig.default()
         self._native_tools = False
         try:
             self._native_tools = bool(self.llm.supports_tools())
@@ -212,12 +207,3 @@ class ToolPlanningService:
             tool_plan=ToolCallPlan(calls=calls),
             messages=[],
         )
-
-
-def default_tools_agent_config() -> ToolsAgentConfig:
-    """Shared defaults for planner prompts (also used by legacy ToolsAgent)."""
-    return ToolsAgentConfig(
-        system_instructions=SYSTEM_PROMPT(),
-        system_context_template=SYSTEM_CONTEXT_TEMPLATE(),
-        planner_instructions=PLANNER_PROMPT(),
-    )

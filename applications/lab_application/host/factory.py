@@ -7,7 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
 from intergrax.debug.app import create_debug_app
 from intergrax.llm_adapters.tracking.exposition import register_llm_metrics_routes
@@ -32,6 +32,10 @@ from intergrax.applications._shared.task_defaults import make_lab_harness_task_e
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.task_memory_wiring import wire_task_memory
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
+from intergrax.applications._shared.harness_auth import (
+    apply_harness_auth_middleware,
+    require_harness_api_key,
+)
 from lab_application.serving.fastapi_router import mount_lab_routes
 
 
@@ -71,6 +75,7 @@ def create_lab_application(
     resolved_registry = registry or build_lab_registry(
         settings=settings,
         integration_profile=integrations.profile,
+        trace_db_path=integrations.trace_db_path,
     )
     task_memory = wire_task_memory(warn_if_disabled=settings.harness)
     nexus_loop = NexusLoop(
@@ -141,6 +146,7 @@ def create_lab_application(
                 execute_default=True,
             ),
             prefix=settings.interaction_route_prefix,
+            dependencies=[Depends(require_harness_api_key)],
         )
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
@@ -171,4 +177,5 @@ def create_lab_application(
             await scheduler.stop()
     attach_plugin_shutdown(app, plugin_bootstrap.shutdown_callbacks)
     register_llm_metrics_routes(app)
+    apply_harness_auth_middleware(app)
     return app

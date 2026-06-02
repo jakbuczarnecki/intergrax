@@ -93,7 +93,7 @@ class RuntimeState(RuntimeStateContract):
     used_user_longterm_memory: bool = False
 
     # Tools
-    tools_agent_answer: Optional[str] = None
+    tool_planner_answer: Optional[str] = None
 
     # Typed tool call traces (production runtime artifact).
     tool_traces: List[ToolCallTrace] = field(default_factory=list)
@@ -199,10 +199,10 @@ class RuntimeState(RuntimeStateContract):
            
         self.llm_usage_tracker.register_adapter(self.context.config.llm_adapter, label="core_adapter")
 
-        from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
+        from intergrax.runtime.nexus.tools.tool_planner_trackable import ToolPlannerTrackable
 
         tool_planner = self.context.config.tool_planner
-        if isinstance(tool_planner, CatalogToolPlanner):
+        if isinstance(tool_planner, ToolPlannerTrackable):
             self.llm_usage_tracker.register_adapter(
                 tool_planner.llm,
                 label="tool_planner",

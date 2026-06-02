@@ -13,14 +13,19 @@ def wire_lab_tools(
     *,
     integration_profile: IntegrationProfile | None = None,
     harness: bool = False,
+    sandbox_session: object | None = None,
 ) -> ApplicationToolWiring:
     """
     Laboratory tool wiring — context retrieval tools enabled by default.
 
+    ``sandbox.exec`` is enabled only when a sandbox session is wired (U-Sec.3).
+
     Pass ``integration_profile`` from ``wire_lab_integrations()`` when issue/wiki
     tools should resolve integration contracts automatically.
     """
-    enabled = ["rag.retrieve", "websearch.query", "sandbox.exec"]
+    enabled = ["rag.retrieve", "websearch.query"]
+    if sandbox_session is not None:
+        enabled.append("sandbox.exec")
     if harness:
         enabled.extend(
             [
@@ -35,4 +40,5 @@ def wire_lab_tools(
     return build_application_tool_wiring(
         profile,
         integration_profile=integration_profile,
+        sandbox_session=sandbox_session,
     )

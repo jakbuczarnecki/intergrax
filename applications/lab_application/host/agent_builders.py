@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.applications._shared.lab_harness_context import lab_harness_context_from_build_context
 from intergrax.applications.contracts.factory import AgentFactory
 from echo.echo_agent import EchoAgent
 from lab.mock_agents import (
@@ -18,21 +19,35 @@ from research.summary_agent import SummaryAgent
 from signoff_probe.signoff_probe_agent import SignoffProbeAgent
 
 
-def _zero_arg_factory(agent_cls: type[Agent]) -> AgentFactory:
-    def _build(_ctx, _binding) -> Agent:
-        return agent_cls()
+def _harness_agent_factory(agent_cls: type[Agent]) -> AgentFactory:
+    def _build(ctx, _binding) -> Agent:
+        harness = lab_harness_context_from_build_context(ctx)
+        return agent_cls(harness)
 
     return _build
 
 
-# Prefer type-keyed builders — no string builder_key required on AgentBinding.mount().
+def _build_research_agent(ctx, _binding) -> Agent:
+    return ResearchAgent(
+        tool_profile=ctx.tool_profile,
+        tool_wiring_context=ctx.tool_wiring_context,
+    )
+
+
+def _build_summary_agent(ctx, _binding) -> Agent:
+    return SummaryAgent(
+        tool_profile=ctx.tool_profile,
+        tool_wiring_context=ctx.tool_wiring_context,
+    )
+
+
 LAB_AGENT_BUILDERS: dict[type[Agent], AgentFactory] = {
-    EchoAgent: _zero_arg_factory(EchoAgent),
-    ResearchMockAgent: _zero_arg_factory(ResearchMockAgent),
-    DocumentMockAgent: _zero_arg_factory(DocumentMockAgent),
-    ValidatorMockAgent: _zero_arg_factory(ValidatorMockAgent),
-    ComposerMockAgent: _zero_arg_factory(ComposerMockAgent),
-    SignoffProbeAgent: _zero_arg_factory(SignoffProbeAgent),
-    ResearchAgent: _zero_arg_factory(ResearchAgent),
-    SummaryAgent: _zero_arg_factory(SummaryAgent),
+    EchoAgent: _harness_agent_factory(EchoAgent),
+    ResearchMockAgent: _harness_agent_factory(ResearchMockAgent),
+    DocumentMockAgent: _harness_agent_factory(DocumentMockAgent),
+    ValidatorMockAgent: _harness_agent_factory(ValidatorMockAgent),
+    ComposerMockAgent: _harness_agent_factory(ComposerMockAgent),
+    SignoffProbeAgent: _harness_agent_factory(SignoffProbeAgent),
+    ResearchAgent: _build_research_agent,
+    SummaryAgent: _build_summary_agent,
 }

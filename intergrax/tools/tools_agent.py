@@ -15,6 +15,8 @@ from intergrax.logging import IntergraxLogging
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.llm.messages import ChatMessage
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
+from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
+from intergrax.runtime.nexus.tools import tool_planning_prompts as _tool_planning_prompts
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 from intergrax.tools.execution_models import ToolExecutionRequest
@@ -34,23 +36,15 @@ logger = IntergraxLogging.get_logger(__name__, component="tools")
 # =====================================================================
 
 def PLANNER_PROMPT() -> str:
-    registry = YamlPromptRegistry.create_default(load=True)
-    return registry.resolve_localized("tools_agent_planner").system
+    return _tool_planning_prompts.planner_prompt()
 
 
 def SYSTEM_PROMPT() -> str:
-    registry = YamlPromptRegistry.create_default(load=True)
-    return registry.resolve_localized("tools_agent_system").system
+    return _tool_planning_prompts.system_prompt()
 
 
 def SYSTEM_CONTEXT_TEMPLATE() -> str:
-    """
-    Returns legacy-compatible template containing `{context}` placeholder.
-    Formatting is done later via `.format(context=...)`.
-    """
-    registry = YamlPromptRegistry.create_default(load=True)
-    localized = registry.resolve_localized("tools_agent_context")
-    return localized.user_template or ""
+    return _tool_planning_prompts.system_context_template()
 
 
 # =====================================================================
@@ -79,13 +73,22 @@ class ToolsAgentRunResult:
 # CONFIG
 # =====================================================================
 
-class ToolsAgentConfig:
-    temperature: Optional[float] = None,
-    max_answer_tokens: Optional[int] = None
-    max_tool_iters: int = 6    
-    system_instructions: str = SYSTEM_PROMPT()
-    system_context_template: str = SYSTEM_CONTEXT_TEMPLATE()
-    planner_instructions: str = PLANNER_PROMPT()
+@dataclass
+class ToolsAgentConfig(ToolPlanningConfig):
+    """Legacy tools-agent configuration; extends Tier-1 :class:`ToolPlanningConfig`."""
+
+    max_tool_iters: int = 6
+
+    @classmethod
+    def default(cls) -> ToolsAgentConfig:
+        base = ToolPlanningConfig.default()
+        return cls(
+            temperature=base.temperature,
+            max_answer_tokens=base.max_answer_tokens,
+            system_instructions=base.system_instructions,
+            system_context_template=base.system_context_template,
+            planner_instructions=base.planner_instructions,
+        )
 
 
 # =====================================================================
@@ -172,7 +175,7 @@ class ToolsAgent:
         self.llm = llm
         self.tools = tools
         self.memory = memory
-        self.cfg = config or ToolsAgentConfig()
+        self.cfg = config or ToolsAgentConfig.default()
 
         # Does the LLM support native tools (OpenAI) or a JSON planner (Ollama)?
         self._native_tools = False
@@ -195,7 +198,7 @@ class ToolsAgent:
         last_tc_idx: Optional[int] = None
         for i in range(len(messages) - 1, -1, -1):
             m = messages[i]
-            if m.role == "assistant" and getattr(m, "tool_calls", None):
+            if m.role == "assistant" and m.tool_calls:
                 last_tc_idx = i
                 break
 

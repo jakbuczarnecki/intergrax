@@ -44,7 +44,7 @@ Intergrax deliberately supports **two modes** on one codebase:
 
 **Laboratory is the adoption phase; production harness is the strategic destination.**
 
-The architecture canon (§2, §50–§51) describes both. Phase **L** certified the OS; phases **Q / Q+ / R** hardened harness semantics; phase **S** (see implementation plan) closes the gap to **production proof**.
+The architecture canon (§2, §50–§51) describes both. Phase **L** certified the OS; phases **Q / Q+ / R** hardened harness semantics; phases **S / T** delivered harness environment and cleanliness; phase **U** (see implementation plan) closes the gap to **production harness** (security, policy wiring, contracts). **Business agents (Phase K)** follow **U Done**.
 
 Intergrax is **not** a finished multi-tenant SaaS today (§4 canon). That remains a **future** evolution (canon §50). Production harness **does** require: certified runtime, product reference agents, skill catalog depth, and selected integration **stable** tiers — not 99× beta breadth alone.
 

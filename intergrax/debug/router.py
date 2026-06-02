@@ -32,6 +32,8 @@ from typing import Callable, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
+from intergrax.applications._shared.harness_auth import require_harness_api_key
+
 from intergrax.debug.formatters import build_trace_payload
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.progress_service import TaskProgressService
@@ -170,7 +172,11 @@ def create_debug_router(
     interaction_service: DebugInteractionIntakeService | None = None,
     delivery_ledger: DeliveryLedger | None = None,
 ) -> APIRouter:
-    router = APIRouter(prefix="/debug", tags=["debug"])
+    router = APIRouter(
+        prefix="/debug",
+        tags=["debug"],
+        dependencies=[Depends(require_harness_api_key)],
+    )
     get_reader = _trace_reader_factory(db_path, trace_store)
     get_experiments = _experiment_store_factory(experiments_db_path)
     get_runtime_events = _runtime_event_store_factory(runtime_events_db_path, runtime_event_store)

@@ -19,6 +19,7 @@ def build_lab_registry(
     settings: LabApplicationSettings | None = None,
     integration_profile=None,
     runtime_event_bus: RuntimeEventBus | None = None,
+    trace_db_path=None,
 ) -> AgentRegistry:
     """
     Compose the lab agent registry from manifest + builders (Tier-3 unified wiring).
@@ -45,5 +46,7 @@ def build_lab_registry(
         tool_registry=tool_registry,
         policy_bundle=build_runtime_policy_bundle(),
         runtime_event_bus=runtime_event_bus or RuntimeEventBus(),
+        strict_harness=settings.strict_harness,
+        trace_db_path=trace_db_path,
     )
     return build_application_registry(manifest, ctx, builders=LAB_AGENT_BUILDERS)

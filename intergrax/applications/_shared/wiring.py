@@ -211,6 +211,7 @@ def build_application_registry(
             skill_registry=skill_registry,
             tool_registry=ctx.tool_registry,
             event_bus=ctx.runtime_event_bus,
+            requires_uaep=binding.requires_uaep,
         )
 
     return registry

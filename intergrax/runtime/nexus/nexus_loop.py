@@ -216,6 +216,10 @@ class NexusLoop:
         return self._trace_emitter
 
     @property
+    def trace_store(self) -> Optional[RunTraceWriter]:
+        return self._trace_store
+
+    @property
     def event_bus(self) -> RuntimeEventBus:
         return self._event_bus
 

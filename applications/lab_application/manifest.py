@@ -27,21 +27,22 @@ def build_lab_manifest(settings: LabApplicationSettings) -> ApplicationManifest:
             AgentBinding.mount(
                 EchoAgent,
                 capabilities=["echo.basic"],
+                requires_uaep=True,
             )
         )
 
     if settings.include_mock_agents:
         agents.extend(
             [
-                AgentBinding.mount(ResearchMockAgent),
-                AgentBinding.mount(DocumentMockAgent),
-                AgentBinding.mount(ValidatorMockAgent),
-                AgentBinding.mount(ComposerMockAgent),
+                AgentBinding.mount(ResearchMockAgent, requires_uaep=True),
+                AgentBinding.mount(DocumentMockAgent, requires_uaep=True),
+                AgentBinding.mount(ValidatorMockAgent, requires_uaep=True),
+                AgentBinding.mount(ComposerMockAgent, requires_uaep=True),
             ]
         )
 
     if settings.include_signoff_probe:
-        agents.append(AgentBinding.mount(SignoffProbeAgent))
+        agents.append(AgentBinding.mount(SignoffProbeAgent, requires_uaep=True))
 
     if settings.include_research:
         agents.extend(

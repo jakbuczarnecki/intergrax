@@ -1,6 +1,6 @@
 # Intergrax Harness Environment
 
-**Last updated:** 2026-06-01 · Phase T (Harness cleanliness)
+**Last updated:** 2026-06-01 · Phase U (Harness production hardening)
 
 Operator and author guide for the **lab harness stack** — Tier-0 integrations, Tier-1 Nexus, Tier-3 `lab_application` wiring, platform skills, and observability. Business agents (Problem Radar, Vendor Discovery) are **Phase K** and out of scope here.
 
@@ -100,15 +100,29 @@ Reference harness agents **must** set `AgentContract.skill_ids` — echo and sig
 
 ## Tool preset (lab)
 
-Default enabled tools: `rag.retrieve`, `websearch.query`, `sandbox.exec`.
+Default enabled tools: `rag.retrieve`, `websearch.query`.
+
+`sandbox.exec` is enabled **only** when a sandbox session is passed into `wire_lab_tools(sandbox_session=...)` (Phase U-Sec.3). Skills may still declare `sandbox.exec` for harness exercises — wire a session before expecting successful invocations.
 
 With `LAB_HARNESS=true`, also: `errors.capture`, `observability.query_traces`, `pagerduty.trigger_incident`, etc.
 
 ---
 
+## Security surfaces (Phase U)
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `INTERGRAX_HARNESS_API_KEY` | unset | When set, `POST /v1/lab/run`, `/debug/*`, `/v1/interactions/*`, and MCP (wrapper) require `X-Api-Key` or `Authorization: Bearer <key>` |
+| `LAB_INCLUDE_MCP` | `false` | MCP mount is opt-in |
+| `LAB_STRICT_HARNESS` | `false` | Reference agents use `production_mode=True`, governance service, and `trace_db_path` on `RuntimeConfig` |
+
+Lab reference agents implement `HarnessReferenceAgent` + `UAEPAgent`; manifest bindings set `requires_uaep=True` (research agents excluded until UAEP migration).
+
+---
+
 ## Policy bundle
 
-`build_runtime_policy_bundle()` on lab registry build — tool scope, memory, budget, HITL fragments. Read order: architecture §42.11.5.
+`build_runtime_policy_bundle()` on lab registry build — typed `BudgetPolicy` / `PlanLoopPolicy` slots on `RuntimePolicyBundle`. Applied via `build_lab_agent_runtime_context()` (Phase U-Pol.1). Read order: architecture §42.11.5.
 
 ---
 
@@ -126,4 +140,4 @@ uv run pytest tests/acceptance/agent_os/test_lab_application.py -m gate -q
 
 ## Phase K (deferred)
 
-Problem Radar and Vendor Discovery agents start only after Phase S definition of done is met. See implementation plan Phase K.
+Problem Radar and Vendor Discovery agents start only after **Phase U** and harness gates are met. See implementation plan Phase K.

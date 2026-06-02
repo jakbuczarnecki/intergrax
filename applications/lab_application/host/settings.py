@@ -24,10 +24,11 @@ class LabApplicationSettings:
     include_scheduler: bool = True
     scheduler_poll_seconds: float | None = None
     interaction_surface: str = "auto"
-    include_mcp: bool = True
+    include_mcp: bool = False
     mcp_mount_path: str = "/mcp"
     harness: bool = False
     otel_enabled: bool = True
+    strict_harness: bool = False
 
     @classmethod
     def from_env(cls) -> LabApplicationSettings:
@@ -76,10 +77,15 @@ class LabApplicationSettings:
         interaction_surface = (
             os.getenv("LAB_INTERACTION_SURFACE") or "auto"
         ).strip().lower() or "auto"
-        include_mcp = (os.getenv("LAB_INCLUDE_MCP") or "true").strip().lower() not in {
-            "0",
-            "false",
-            "no",
+        include_mcp = (os.getenv("LAB_INCLUDE_MCP") or "false").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        strict_harness = (os.getenv("LAB_STRICT_HARNESS") or "false").strip().lower() in {
+            "1",
+            "true",
+            "yes",
         }
         mcp_mount = (os.getenv("LAB_MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
         harness = (os.getenv("LAB_HARNESS") or "false").strip().lower() in {
@@ -108,4 +114,5 @@ class LabApplicationSettings:
             mcp_mount_path=mcp_mount,
             harness=harness,
             otel_enabled=otel_enabled,
+            strict_harness=strict_harness,
         )

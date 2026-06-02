@@ -36,8 +36,8 @@ class PersistAndBuildAnswerStep(RuntimeStep):
         # Fallback if answer is empty for any reason
         if not isinstance(answer_text, str) or not answer_text.strip():
             answer_text = (
-                str(state.tools_agent_answer)
-                if state.tools_agent_answer
+                str(state.tool_planner_answer)
+                if state.tool_planner_answer
                 else "[ERROR] Empty answer from runtime."
             )
 

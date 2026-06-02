@@ -5,8 +5,10 @@ from __future__ import annotations
 
 from typing import Optional, Sequence
 
-from intergrax.applications._shared.runtime_defaults import harness_production_mode
-from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
+from intergrax.applications._shared.lab_harness_context import LabHarnessContext
+from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
+from intergrax.applications._shared.lab_runtime_config import build_lab_agent_runtime_context
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
@@ -15,7 +17,6 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.task.task import TaskContext
-from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -71,8 +72,13 @@ class EchoPipeline(RuntimePipeline):
         return state.runtime_answer
 
 
-class EchoAgent(Agent):
+class EchoAgent(HarnessReferenceAgent):
     """Minimal agent: echoes user input through Nexus pipeline."""
+
+    def __init__(self, harness: LabHarnessContext | None = None) -> None:
+        self._harness = harness or LabHarnessContext(
+            policy_bundle=build_runtime_policy_bundle(),
+        )
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -100,18 +106,13 @@ class EchoAgent(Agent):
         return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        config = RuntimeConfig(
+        context = build_lab_agent_runtime_context(
+            request=request,
             llm_adapter=_EchoLLMAdapter(),
-            enable_rag=False,
-            production_mode=harness_production_mode(),
-            tenant_id=request.tenant_id,
+            harness=self._harness,
+            pipeline=EchoPipeline(),
         )
-        config.pipeline = EchoPipeline()
-        session_manager = SessionManager(storage=InMemorySessionStorage())
-        return RuntimeContext.build(
-            config=config,
-            session_manager=session_manager,
-        )
+        return context
 
     def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
         """UAEP reference: single pipeline step (§42.32)."""

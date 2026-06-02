@@ -57,13 +57,13 @@ async def test_persist_step_uses_raw_answer():
 
 
 @pytest.mark.asyncio
-async def test_persist_step_fallback_to_tools_agent_answer():
+async def test_persist_step_fallback_to_tool_planner_answer():
     state = build_runtime_state_for_tests(run_id="run-1")
     state.session = type("S", (), {"id": "s1", "tenant_id": "t1"})()
     state.context.session_manager = _FakeSessionManager()
 
     state.raw_answer = ""
-    state.tools_agent_answer = "tools result"
+    state.tool_planner_answer = "tools result"
 
     await PersistAndBuildAnswerStep().run(state)
 

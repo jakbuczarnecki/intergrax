@@ -6,6 +6,8 @@ from __future__ import annotations
 from typing import Dict, Iterable, List, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import assert_uaep_reference_agent
+from intergrax.agents.uaep_protocol import UAEPAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.events.context_skill_recording import record_skill_resolved
@@ -44,7 +46,10 @@ class AgentRegistry:
         skill_registry: Optional[SkillRegistry] = None,
         tool_registry: Optional[ToolRegistry] = None,
         event_bus: Optional[RuntimeEventBus] = None,
+        requires_uaep: bool = False,
     ) -> None:
+        if requires_uaep:
+            assert_uaep_reference_agent(agent)
         meta = contract or agent.get_contract()
         if meta.skill_ids:
             if skill_registry is None:

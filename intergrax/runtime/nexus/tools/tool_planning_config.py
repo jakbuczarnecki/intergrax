@@ -1,0 +1,33 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""Typed configuration for catalog tool planning (Phase U-Typ.2)."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Optional
+
+from intergrax.runtime.nexus.tools.tool_planning_prompts import (
+    planner_prompt,
+    system_context_template,
+    system_prompt,
+)
+
+
+@dataclass(slots=True)
+class ToolPlanningConfig:
+    """Planner-only LLM settings and prompt text for :class:`ToolPlanningService`."""
+
+    temperature: Optional[float] = None
+    max_answer_tokens: Optional[int] = None
+    system_instructions: str = ""
+    system_context_template: str = ""
+    planner_instructions: str = ""
+
+    @classmethod
+    def default(cls) -> ToolPlanningConfig:
+        return cls(
+            system_instructions=system_prompt(),
+            system_context_template=system_context_template(),
+            planner_instructions=planner_prompt(),
+        )

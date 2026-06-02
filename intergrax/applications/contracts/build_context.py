@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from intergrax.applications.contracts.manifest import ApplicationManifest
@@ -39,6 +40,8 @@ class ApplicationBuildContext:
     tool_registry: ToolRegistry | None = None
     policy_bundle: RuntimePolicyBundle | None = None
     runtime_event_bus: RuntimeEventBus | None = None
+    strict_harness: bool = False
+    trace_db_path: Path | None = None
 
     @classmethod
     def for_manifest(
@@ -54,6 +57,8 @@ class ApplicationBuildContext:
         tool_registry: ToolRegistry | None = None,
         policy_bundle: RuntimePolicyBundle | None = None,
         runtime_event_bus: RuntimeEventBus | None = None,
+        strict_harness: bool = False,
+        trace_db_path: Path | None = None,
     ) -> ApplicationBuildContext:
         resolved_profile = integration_profile
         if resolved_profile is None and isinstance(manifest, ApplicationManifest):
@@ -69,4 +74,6 @@ class ApplicationBuildContext:
             tool_registry=tool_registry,
             policy_bundle=policy_bundle,
             runtime_event_bus=runtime_event_bus,
+            strict_harness=strict_harness,
+            trace_db_path=trace_db_path,
         )
