@@ -1,10 +1,10 @@
 # Intergrax Harness Environment
 
-**Last updated:** 2026-06-01 · Phase U (Harness production hardening)
+**Last updated:** 2026-06-02 · Phase V (Harness architecture hardening follow-on)
 
 Operator and author guide for the **lab harness stack** — Tier-0 integrations, Tier-1 Nexus, Tier-3 `lab_application` wiring, platform skills, and observability. Business agents (Problem Radar, Vendor Discovery) are **Phase K** and out of scope here.
 
-**Related:** [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase S · [SKILLS.md](SKILLS.md) · [INTEGRATIONS.md](INTEGRATIONS.md) · Architecture [§5.3](intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model)
+**Related:** [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase S/U/V · [SKILLS.md](SKILLS.md) · [INTEGRATIONS.md](INTEGRATIONS.md) · Architecture [§5.3](intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model) and [§53](intergrax_runtime_architecture.md#53-harness-architecture-hardening-addendum-post-u)
 
 ---
 
@@ -126,6 +126,27 @@ Lab reference agents implement `HarnessReferenceAgent` + `UAEPAgent`; manifest b
 
 ---
 
+## Post-U continuation (Phase V)
+
+Phase S/T/U established a production-configurable harness baseline.
+Current default platform continuation is **Phase V** (architecture hardening), still in harness-only scope.
+
+Primary Phase V tracks impacting the harness environment:
+
+- capability graph + compatibility gates (`V-CG.*`)
+- context/prompt/evaluation regression discipline (`V-CE.*`, `V-PE.*`, `V-EVAL.*`)
+- security/data and cost/resource governance hardening (`V-SEC.*`, `V-COST.*`)
+- architecture metrics and debt governance (`V-AM.*`)
+
+Execution references in the implementation plan:
+
+- **Phase V stream map:** `Phase V — Harness Architecture Hardening (post-U)`
+- **Execution order:** `Phase V — Execution matrix (dependencies and order)`
+- **Acceptance thresholds:** `Phase V — KPI thresholds and acceptance metrics`
+- **Maturity gates:** `Phase V — L3/L4 gate evidence (architecture maturity)`
+
+---
+
 ## Legacy RAG stack (U-Leg.2)
 
 `intergrax.rag.answers` was **removed**. Use `intergrax.rag.retrieval.RetrievalService`. Archived code: `intergrax/legacy/rag_answers/` (notebooks only).
@@ -155,4 +176,4 @@ uv run pytest tests/unit/applications/test_lab_strict_harness.py -m gate -q
 
 ## Product agents and applications (end of plan — not default next)
 
-Business agents (K.1 Problem Radar, K.2 Vendor Discovery) and new Tier-3 **product** applications are **last** in the [implementation plan](INTERGRAX_IMPLEMENTATION_PLAN.md) (§4.0 Band 3, **§6.3**). Harness work uses §6.1 only. Product work starts only after an explicit prioritization decision — not because Phase U or §4.1 is Done.
+Business agents (K.1 Problem Radar, K.2 Vendor Discovery) and new Tier-3 **product** applications are **last** in the [implementation plan](INTERGRAX_IMPLEMENTATION_PLAN.md) (§4.0 Band 3, **§6.3**). Harness work uses **§6.1 + §6.2 (Phase V)**. Product work starts only after an explicit prioritization decision — not because Phase U, §4.1, or initial Phase V waves are active.

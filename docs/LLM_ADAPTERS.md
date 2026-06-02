@@ -1,10 +1,10 @@
 # Intergrax LLM Adapters
 
-**Last updated:** 2026-06-01
+**Last updated:** 2026-06-02
 
 Tier-0 LLM layer — `LLMAdapter`, registry, `LLMProfile`. Outside Integration Library (§5.2.2).
 
-**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §33 · [applications/USAGE.md](../applications/USAGE.md) · Phase **M-LLM**
+**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §33 · [applications/USAGE.md](../applications/USAGE.md) · Phase **M-LLM** · Phase **V-COST / V-EVAL / V-SEC**
 
 ---
 
@@ -170,5 +170,8 @@ Workflows: `unit-tests.yml`, `llm-adapters-guard.yml`, optional `llm-network-smo
 | PolicyEngine rules consuming `llm_cost_evaluation` logs | §governance replay |
 | Central LLM gateway service (single egress) | §5.2.4 — needs architecture approval |
 | Model routing / fallback chains in `LLMProfile` | Agent harness flexibility |
+| Cost envelopes and quota policy integration | Phase V `V-COST.*` |
+| Evaluation score baselines for model/profile changes | Phase V `V-EVAL.*` |
+| Adversarial prompt/tool defense validation on model paths | Phase V `V-SEC.*` |
 
 **Out of scope:** product E2E gates, per-business-agent adapter code in `llm_adapters/`.

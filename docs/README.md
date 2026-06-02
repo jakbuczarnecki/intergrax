@@ -47,6 +47,9 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | Understand the platform | Strategy doc, then implementation plan §0, then architecture canon §1–§5 |
 | See what to implement next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **§6.1 + §6.2** (harness only, including Phase V) — **not** §6.3 unless product reprioritizes |
+| Understand Phase V sequence/dependencies | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V — Execution matrix** |
+| See Phase V KPI thresholds | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V — KPI thresholds and acceptance metrics** |
+| See L3/L4 architecture maturity gates | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V — L3/L4 gate evidence** |
 | Business agents / new product apps (end of plan) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **§6.3** — deferred; Appendix A when starting K.* |
 | Harness AI terminology | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §5.3 |
 | Post-audit hardening tracker | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Appendix D** (Q+ **Done**) |
@@ -84,6 +87,7 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | **Phase S — Harness environment GA** | **Done** (2026-06-01) — [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) · [Appendix F](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-f--harness-environment-traceability-phase-s) |
 | **Phase T / U — Harness cleanliness + production hardening** | **Done** (2026-06-01) — [Appendix G](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-g--harness-production-audit-traceability-phase-u) |
 | **Phase V — Harness architecture hardening** | **Planned / Active** — Phase V in [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · canon §53 |
+| **Phase V execution controls** | **Defined** — execution matrix, KPI thresholds, cadence, ownership, L3/L4 gates in Phase V section |
 | **Harness completion (§4.1)** | **Done** (2026-06-02) |
 | **Phase K — Business agents** | **End of plan** — §6.3; **not** default next |
 

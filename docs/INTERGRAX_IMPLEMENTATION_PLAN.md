@@ -2089,6 +2089,88 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 | V-KG.2 | Hybrid retrieval reference path (vector + keyword + graph) | Planned | Medium | Reference implementation notes |
 | V-KG.3 | Graph-backed explainability trace fields | Planned | Medium | Trace schema supports graph provenance |
 
+#### Phase V — Execution matrix (dependencies and order)
+
+Phase V should be executed in dependency-aware waves:
+
+```text
+Wave V0 (planning):      V-CG.1 + V-AM.1 + ownership/cadence baseline
+Wave V1 (foundations):   V-CG.2 -> V-CG.4 + V-ALG.1 + V-PE.1 + V-EVAL.1
+Wave V2 (quality):       V-CE.1 -> V-CE.3 + V-PE.2 -> V-PE.4 + V-EVAL.2 -> V-EVAL.3
+Wave V3 (governance):    V-ALG.2 -> V-ALG.4 + V-SEC.1 -> V-SEC.4 + V-COST.1 -> V-COST.2
+Wave V4 (ops maturity):  V-AM.2 -> V-AM.4 + V-EVAL.4 + V-COST.3 -> V-COST.4
+Wave V5 (advanced):      V-MA.1 -> V-MA.3 + V-KG.1 -> V-KG.3
+Wave V6 (closeout):      L3/L4 gate evidence + docs sync + priority reset
+```
+
+Critical dependency rules:
+
+- `V-CG.1` must precede `V-CG.2/V-CG.4` and dependency-health metrics in `V-AM`.
+- `V-PE.1` and `V-EVAL.1` must precede prompt/eval regression gates.
+- `V-ALG.1` must precede production promotion flow (`V-ALG.2`).
+- `V-SEC.*` and `V-COST.*` deny/degrade behavior must be validated before L3 gate.
+
+#### Phase V — KPI thresholds and acceptance metrics
+
+Minimum quantitative targets for Phase V completion:
+
+| Area | Metric | Target |
+|------|--------|--------|
+| Capability graph | Changed harness PRs with graph impact artifact | **>= 95%** |
+| Compatibility | Graph-edge compatibility gate pass on default branch | **100% required** |
+| Lifecycle governance | Production-eligible agents with owner + certification metadata | **100% required** |
+| Context quality | Context regression suite pass rate | **>= 95%** |
+| Prompt quality | Prompt regression/adversarial suite pass rate | **>= 95%** |
+| Evaluation ops | Critical capabilities with baseline + post-change scores | **100% required** |
+| Security hardening | Adversarial defense suite pass rate (prompt/tool/retrieval) | **100% required** |
+| Cost governance | Budget/quota policy test pass rate | **100% required** |
+| Architecture metrics | Modularity/dependency/governance/observability coverage reported | **100% runs** |
+| Architecture debt | Critical debt items trending (rolling 30d) | **non-increasing** |
+
+#### Phase V — Operating cadence and governance ceremonies
+
+- **Weekly:** Architecture hardening triage (V-* progress, blockers, scope control).
+- **Weekly:** Security/cost review for new deny/degrade paths and policy regressions.
+- **Bi-weekly:** Architecture review board for high-impact V-* design changes.
+- **Monthly:** Architecture debt review (index trend + mitigation decisions).
+- **Per release candidate:** L3/L4 evidence review (gates below) before release approval.
+
+#### Phase V — Stream ownership model
+
+| Stream | Primary owner | Supporting owners |
+|--------|----------------|-------------------|
+| V-CG | Platform architecture | Runtime + DevEx |
+| V-ALG | Runtime governance | Platform + QA |
+| V-CE / V-PE | Runtime + Prompt systems | QA/Eval |
+| V-EVAL | Evaluation engineering | Runtime + Product quality |
+| V-AM | Platform observability | Runtime + DevEx |
+| V-SEC | Security engineering | Runtime + Platform |
+| V-COST | Runtime economics | Platform + FinOps |
+| V-MA | Orchestration/runtime | QA |
+| V-KG | Knowledge systems | Runtime + Eval |
+
+Owner rules:
+
+- Every V-* PR must include a single accountable owner.
+- Cross-stream dependencies must list an explicit approver before merge.
+- Ownership metadata for production-impacting components must be reflected in registries where applicable.
+
+#### Phase V — L3/L4 gate evidence (architecture maturity)
+
+L3 readiness requires:
+
+1. `V-CG.*`, `V-ALG.*`, `V-EVAL.1-4`, `V-SEC.1-4`, `V-COST.1-2`, `V-AM.1-3` complete.
+2. KPI thresholds marked **100% required** above are satisfied.
+3. Security and compatibility gates are green for two consecutive release cycles.
+4. Architecture governance artifacts updated (canon + plan + traceability appendices).
+
+L4 readiness requires:
+
+1. L3 criteria met and stable.
+2. `V-COST.3-4`, `V-MA.*`, `V-KG.*`, and adaptive loops with bounded governance controls.
+3. Closed-loop evaluation feedback demonstrates measurable quality/cost improvement over baseline.
+4. Policy-learning/adaptive behavior remains human-governed and auditable.
+
 #### Phase V — Definition of done
 
 1. Capability graph compatibility validation is active in CI for harness-critical changes.
@@ -2097,6 +2179,7 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 4. Architecture health metrics are measurable and reviewed on a recurring cadence.
 5. Security/data/cost hardening controls are testable, observable, and documented.
 6. All changes remain harness-only (no implicit K.1/K.2 scope creep).
+7. Coverage matrix (Appendix H) has **no `Uncovered` rows** for harness-scope architecture domains.
 
 ---
 
@@ -3107,5 +3190,62 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 
 ---
 
-*Plan synced (2026-06-02). **Harness platform complete** (Q–U + §4.1). Gate: **481 passed**. **Default next:** §6.1 only. **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
+## Appendix H — Architecture coverage matrix (Intergrax canon + ideal harness)
+
+**Purpose:** ensure the implementation plan explicitly covers all harness-scope requirements from:
+
+- `intergrax_runtime_architecture.md` (canonical Intergrax runtime architecture)
+- `IDEAL_HARNESS_AI_ARCHITECTURE.md` (target/benchmark architecture)
+
+**Rule:** For harness work, this matrix must have **zero `Uncovered` rows**.
+
+### H.1 Coverage status legend
+
+- **Done** — capability implemented and verified by existing phases/tests.
+- **Planned (Phase V)** — explicitly scheduled in Phase V (`V-*` IDs).
+- **Deferred (product scope)** — intentionally outside harness-only scope (Band 3 / §6.3).
+- **Uncovered** — gap; MUST be added to plan before related implementation proceeds.
+
+### H.2 Harness architecture domains — required coverage
+
+| Domain (harness scope) | Intergrax canon anchor | Ideal harness anchor | Plan coverage | Status |
+|------------------------|------------------------|----------------------|---------------|--------|
+| Strategic objective + harness-first hierarchy | canon §2, §5.1, §51, §53.1 | ideal §0, §1, §26 | §0, §4.0, Phase V governance | **Done** |
+| Tier model and runtime boundaries | canon §5.1, §7.0–§7.4, §42 | ideal §3, §26 | §0.2, §2 map, Phases L/Q+/U | **Done** |
+| Unified execution runtime (UAEP, lifecycle, interrupts, policy) | canon §42.* | ideal §3.3, §3.4, §5, §8 | §2 map, Phase U, gate suites | **Done** |
+| Context engineering core | canon §28.1, §42.35 | ideal §16 | Phase R (Done) + V-CE.* | **Planned (Phase V)** |
+| Capability graph dependencies + impact analysis | canon §53.2 | ideal §19 + capability graph expectations | V-CG.* | **Planned (Phase V)** |
+| Agent lifecycle governance (cert/promo/deprec/retire/owner) | canon §15, §53.3 | ideal §17 | V-ALG.* | **Planned (Phase V)** |
+| Prompt engineering architecture | canon §53.5 | ideal §20 | V-PE.* | **Planned (Phase V)** |
+| Evaluation and benchmarking operations | canon §53.6 | ideal §18 | V-EVAL.* | **Planned (Phase V)** |
+| Architecture metrics and debt governance | canon §53.7 | ideal §21 + architecture metrics expectations | V-AM.* | **Planned (Phase V)** |
+| Security/data governance (agent-native threats) | canon §42.37, §53.8 | ideal §23 | Phase U (baseline) + V-SEC.* | **Planned (Phase V)** |
+| Cost/resource governance | canon §53.9 | ideal §24 | V-COST.* | **Planned (Phase V)** |
+| Multi-agent coordination pattern catalog | canon §42.43, §53.10 | ideal §6 + §25 | V-MA.* | **Planned (Phase V)** |
+| Knowledge graph evolution path (Graph-RAG) | canon §53.11 | ideal §3.7.1 + §25 | V-KG.* | **Planned (Phase V)** |
+| Observability and runtime traceability | canon §33, §42.24 | ideal §11 | Phases Q/Q+/S/U + §6.1 maintenance | **Done** |
+| Registry-driven extensibility (agent/tool/skill/policy/prompt/eval) | canon §7.1.6–§7.1.8, §15, §53.2 | ideal §19 | Phase R/U + V-CG/V-PE/V-EVAL | **Planned (Phase V)** |
+| Product agents and new product apps | canon §7.4, §52 | ideal §26 | §6.3 only | **Deferred (product scope)** |
+
+### H.3 Completion policy for “architecture-complete harness”
+
+Harness architecture can be considered complete against both architecture documents only when:
+
+1. All harness-scope rows in H.2 are `Done` (no `Planned`, no `Uncovered`).
+2. `Deferred (product scope)` rows remain intentionally isolated to Band 3 (§6.3).
+3. Phase V KPI thresholds and L3/L4 evidence gates are satisfied.
+4. Canon + plan + docs index are synchronized in the same change window.
+
+### H.4 Change control rule
+
+Any future addition to either architecture document that introduces a new harness-scope
+domain MUST be reflected in:
+
+- this matrix (Appendix H),
+- a concrete Phase V (or successor phase) deliverable ID,
+- priority ladder (§4) and “what next” (§6) if it changes execution order.
+
+---
+
+*Plan synced (2026-06-02). **Harness baseline complete** (Q–U + §4.1). Gate: **481 passed**. **Default next:** §6.1 + §6.2 (Phase V hardening). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
 

@@ -1,6 +1,6 @@
 # Intergrax Tool Library
 
-**Last updated:** 2026-05-30
+**Last updated:** 2026-06-02
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -13,6 +13,7 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 | [intergrax/tools/USAGE.md](../intergrax/tools/USAGE.md) | **Operational guide** — wire tools in Tier-3 apps and invoke from agents |
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.6–§7.1.7, §22 | Architecture canon — Tool Library, unified tool model |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O | Phase status, backlog, delivery workflow |
+| [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase V | Architecture hardening: security/cost governance and evaluation discipline (`V-SEC.*`, `V-COST.*`, `V-EVAL.*`) |
 | [INTEGRATIONS.md](INTEGRATIONS.md) | **99** backend adapters tools compose (not called directly by agents) |
 | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) Appendix E | How agents declare `allowed_tools` vs applications wire backends |
 
@@ -287,3 +288,6 @@ Catalog conformance (Phase O.4+):
 ```bash
 uv run pytest tests/unit/tools/providers/ -q
 ```
+
+For harness hardening streams, additionally run adversarial and governance-focused checks
+when available in Phase V (`V-SEC.*`, `V-COST.*`, `V-EVAL.*`) before release cut.

@@ -9,6 +9,19 @@ Tier-2 agent logic lives in `agents/` — not here.
 
 ---
 
+## Phase V compliance hooks (harness hardening)
+
+When adding or changing Tier-3 application hosts, include harness hardening hooks where relevant:
+
+- capability graph impact visibility for changed app/agent/tool wiring (`V-CG.*`),
+- lifecycle governance metadata path for production-eligible agents (`V-ALG.*`),
+- context/prompt/eval regression compatibility in host pipelines (`V-CE.*`, `V-PE.*`, `V-EVAL.*`),
+- security and cost policy enforcement in runtime wiring (`V-SEC.*`, `V-COST.*`).
+
+Primary tracker: `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` Phase V.
+
+---
+
 ## Layout of one application
 
 ```text

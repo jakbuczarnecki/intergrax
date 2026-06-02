@@ -1,6 +1,6 @@
 # Intergrax — Development Strategy
 
-**Status:** Canonical (2026-06-01)  
+**Status:** Canonical (2026-06-02)  
 **Audience:** Maintainers, architects, implementation agents, Cursor AI  
 **Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · [docs/README.md](README.md)
 
@@ -44,7 +44,7 @@ Intergrax deliberately supports **two modes** on one codebase:
 
 **Laboratory is the adoption phase; production harness is the strategic destination.**
 
-The architecture canon (§2, §50–§51) describes both. Phase **L** certified the OS; phases **Q / Q+ / R** hardened harness semantics; phases **S / T** delivered harness environment and cleanliness; phase **U** (see implementation plan) closes the gap to **production harness** (security, policy wiring, contracts). **Business agents (Phase K)** follow **U Done**.
+The architecture canon (§2, §50–§51) describes both. Phase **L** certified the OS; phases **Q / Q+ / R** hardened harness semantics; phases **S / T** delivered harness environment and cleanliness; phase **U** closed the gap to **production harness** baseline (security, policy wiring, contracts). **Phase V** is the default post-U architecture hardening track (capability graph, lifecycle governance, context/prompt/evaluation hardening, metrics, security/cost governance). **Business agents (Phase K)** remain end-of-plan and require explicit reprioritization.
 
 Intergrax is **not** a finished multi-tenant SaaS today (§4 canon). That remains a **future** evolution (canon §50). Production harness **does** require: certified runtime, product reference agents, skill catalog depth, and selected integration **stable** tiers — not 99× beta breadth alone.
 
@@ -99,7 +99,7 @@ After each merged harness PR: `uv run pytest -m gate -q` green; `python scripts/
 
 ---
 
-## Current strategic focus (2026-06-01)
+## Current strategic focus (2026-06-02)
 
 | Milestone | Status |
 |-----------|--------|
@@ -108,10 +108,11 @@ After each merged harness PR: `uv run pytest -m gate -q` green; `python scripts/
 | Harness AI alignment MVP (Phase R) | **Done** — Skill Library, context, delegation, policy |
 | **Harness environment GA (Phase S)** | **Done** (2026-06-01) — see [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) |
 | **Harness production hardening (Phase U)** | **Done** (2026-06-01) |
+| **Harness architecture hardening (Phase V)** | **Planned / Active** — execution matrix, KPI thresholds, ownership cadence, L3/L4 evidence gates in implementation plan |
 | **Harness completion backlog** | **Done** (2026-06-02) — U-Leg, typing/CI, platform skills ([plan §4.1](INTERGRAX_IMPLEMENTATION_PLAN.md#41-harness-completion-backlog-execution-order)) |
 | Product agents K.1 / K.2 | **End of plan** — [§6.3](INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only) only after explicit product decision |
 | New Tier-3 product applications | **End of plan** — same §6.3; lab + reference hosts sufficient for all harness work |
 
-**Default implementation queue:** [plan §6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) (harness maintenance). **Not** business agents or new product apps.
+**Default implementation queue:** [plan §6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) + [§6.2](INTERGRAX_IMPLEMENTATION_PLAN.md#62-harness-architecture-hardening-band-2--phase-v) (harness maintenance + architecture hardening). **Not** business agents or new product apps.
 
 See [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4.0 (priority ladder) and §6.
