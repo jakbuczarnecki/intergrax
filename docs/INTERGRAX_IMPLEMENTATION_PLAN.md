@@ -2068,10 +2068,10 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
-| V-COST.1 | Budget envelopes (tenant/app/agent/model/tool) | Planned | High | Budget policy enforcement tests |
-| V-COST.2 | Token/tool/resource quotas with deny/degrade behavior | Planned | High | Quota exceedance behavior deterministic |
-| V-COST.3 | Forecast + anomaly detection for spend and token drift | Planned | Medium | Forecast/anomaly report available |
-| V-COST.4 | Optimization recommendations with policy guardrails | Planned | Medium | Recommendations recorded in ops reports |
+| V-COST.1 | Budget envelopes (tenant/app/agent/model/tool) | **Done** | High | Budget policy enforcement tests |
+| V-COST.2 | Token/tool/resource quotas with deny/degrade behavior | **Done** | High | Quota exceedance behavior deterministic |
+| V-COST.3 | Forecast + anomaly detection for spend and token drift | **Done** | Medium | Forecast/anomaly report available |
+| V-COST.4 | Optimization recommendations with policy guardrails | **Done** | Medium | Recommendations recorded in ops reports |
 
 #### V-MA — Multi-Agent Coordination Model Catalog
 
@@ -2193,6 +2193,7 @@ L4 readiness requires:
 | 2026-06-02 | V-AM.4, V-EVAL.4 | Debt governance cadence/policy report (`debt_governance.py`) + release trend/comparison report (`evaluation_registry_trends.py`) + governance script artifacts + unit tests |
 | 2026-06-02 | V-SEC.1, V-SEC.2 | Prompt injection defense profile (`prompt_security.py`) + tool injection defense controls (`tool_security.py`) + governance artifacts + adversarial unit tests |
 | 2026-06-02 | V-SEC.3, V-SEC.4 | Retrieval poisoning defense (`retrieval_security.py`) + tenant isolation/audit verification (`tenant_security.py`) + governance artifacts + unit tests |
+| 2026-06-02 | V-COST.1, V-COST.2, V-COST.3, V-COST.4 | Budget envelopes + quota deny/degrade + cost forecast/anomaly + optimization guardrails (`cost_*.py`) + governance artifacts + unit tests |
 | — | — | *(append row per merged PR)* |
 
 ---

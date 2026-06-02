@@ -4911,6 +4911,7 @@ Implementation baseline (Phase V V1):
 - ops maturity baseline: `debt_governance.py`, `evaluation_registry_trends.py`
 - security hardening baseline: `prompt_security.py`, `tool_security.py`
 - security isolation baseline: `retrieval_security.py`, `tenant_security.py`
+- cost governance baseline: `cost_budget.py`, `cost_quota.py`, `cost_forecast.py`, `cost_optimization.py`
 
 ## 53.1 Strategic objective lock (harness-first)
 

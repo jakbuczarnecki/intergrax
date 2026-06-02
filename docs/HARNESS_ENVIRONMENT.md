@@ -160,6 +160,10 @@ Current baseline delivered (Phase V V1):
 - `V-SEC.2` tool injection defense policy (allowed tool IDs, blocked argument tokens, capability match controls)
 - `V-SEC.3` retrieval poisoning defense with trust-score quarantine flow
 - `V-SEC.4` tenant isolation verification and security audit trail checks
+- `V-COST.1` multi-scope budget envelope governance (`tenant`, `application`, `agent`, `model`, `tool`)
+- `V-COST.2` quota enforcement with deterministic `allow/degrade/deny` behavior
+- `V-COST.3` spend/token forecast and anomaly detection reports
+- `V-COST.4` optimization recommendations with policy guardrails
 - report artifacts script: `scripts/phase_v_foundations_report.py`
 - graph guard script: `scripts/phase_v_capability_graph_guard.py`
 - governance artifacts script: `scripts/phase_v_governance_report.py`

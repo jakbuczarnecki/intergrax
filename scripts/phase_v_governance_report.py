@@ -61,6 +61,17 @@ from intergrax.runtime.architecture import (
     TenantIsolationCheck,
     evaluate_retrieval_poisoning,
     verify_tenant_security,
+    BudgetEnvelope,
+    BudgetScope,
+    CostUsageSnapshot,
+    OptimizationGuardrail,
+    QuotaResourceType,
+    QuotaUsageRequest,
+    ResourceQuota,
+    build_cost_forecast_report,
+    build_cost_optimization_report,
+    evaluate_budget_envelopes,
+    evaluate_quota_enforcement,
 )
 
 
@@ -316,6 +327,87 @@ def _build_tenant_security_report() -> BaseModel:
     return verify_tenant_security(checks=checks, audit_events=audit_events)
 
 
+def _build_budget_governance_report() -> BaseModel:
+    envelopes = [
+        BudgetEnvelope(
+            scope=BudgetScope.TENANT,
+            scope_id="tenant-a",
+            limit_amount=1000.0,
+            spent_amount=820.0,
+        ),
+        BudgetEnvelope(
+            scope=BudgetScope.AGENT,
+            scope_id="agent:research",
+            limit_amount=250.0,
+            spent_amount=260.0,
+        ),
+        BudgetEnvelope(
+            scope=BudgetScope.TOOL,
+            scope_id="tool:rag.retrieve",
+            limit_amount=120.0,
+            spent_amount=45.0,
+        ),
+    ]
+    return evaluate_budget_envelopes(envelopes)
+
+
+def _build_quota_governance_report() -> BaseModel:
+    quotas = [
+        ResourceQuota(
+            resource_type=QuotaResourceType.TOKENS,
+            scope_id="agent:research",
+            limit=100_000,
+            used=92_000,
+        ),
+        ResourceQuota(
+            resource_type=QuotaResourceType.TOOL_CALLS,
+            scope_id="agent:research",
+            limit=500,
+            used=480,
+        ),
+    ]
+    requests = [
+        QuotaUsageRequest(
+            resource_type=QuotaResourceType.TOKENS,
+            scope_id="agent:research",
+            requested_units=5_000,
+        ),
+        QuotaUsageRequest(
+            resource_type=QuotaResourceType.TOOL_CALLS,
+            scope_id="agent:research",
+            requested_units=30,
+        ),
+    ]
+    return evaluate_quota_enforcement(quotas=quotas, requests=requests)
+
+
+def _build_cost_forecast_report() -> BaseModel:
+    return build_cost_forecast_report(
+        baseline=[
+            CostUsageSnapshot(scope_id="tenant-a", spend_amount=700.0, token_count=80_000),
+            CostUsageSnapshot(scope_id="agent:research", spend_amount=180.0, token_count=35_000),
+        ],
+        current=[
+            CostUsageSnapshot(scope_id="tenant-a", spend_amount=920.0, token_count=110_000),
+            CostUsageSnapshot(scope_id="agent:research", spend_amount=250.0, token_count=48_000),
+        ],
+    )
+
+
+def _build_cost_optimization_report() -> BaseModel:
+    forecast_report = _build_cost_forecast_report()
+    return build_cost_optimization_report(
+        anomalies=forecast_report.anomalies,
+        guardrails=[
+            OptimizationGuardrail(
+                guardrail_id="savings-cap",
+                description="Do not recommend savings above policy threshold",
+                max_recommended_savings_ratio=0.30,
+            )
+        ],
+    )
+
+
 def main() -> int:
     output_dir = REPO_ROOT / "build" / "architecture_hardening"
     writer: ReportWriter = JsonReportWriter()
@@ -364,6 +456,10 @@ def main() -> int:
     tool_security_report = _build_tool_security_result()
     retrieval_security_report = _build_retrieval_security_report()
     tenant_security_report = _build_tenant_security_report()
+    budget_governance_report = _build_budget_governance_report()
+    quota_governance_report = _build_quota_governance_report()
+    cost_forecast_report = _build_cost_forecast_report()
+    cost_optimization_report = _build_cost_optimization_report()
 
     writer.write(
         output_path=output_dir / "architecture_metrics_pipeline_report.json",
@@ -420,6 +516,22 @@ def main() -> int:
     writer.write(
         output_path=output_dir / "tenant_security_verification_report.json",
         payload=tenant_security_report,
+    )
+    writer.write(
+        output_path=output_dir / "budget_governance_report.json",
+        payload=budget_governance_report,
+    )
+    writer.write(
+        output_path=output_dir / "quota_governance_report.json",
+        payload=quota_governance_report,
+    )
+    writer.write(
+        output_path=output_dir / "cost_forecast_report.json",
+        payload=cost_forecast_report,
+    )
+    writer.write(
+        output_path=output_dir / "cost_optimization_report.json",
+        payload=cost_optimization_report,
     )
 
     print("phase-v governance report: OK")
