@@ -184,6 +184,33 @@ from intergrax.runtime.architecture.prompt_composition import (
     PromptLayerFragment,
     compose_prompt,
 )
+from intergrax.runtime.architecture.context_regression_benchmark import (
+    ContextRegressionBenchmarkReport,
+    ContextRegressionCase,
+    ContextRegressionComparison,
+    build_context_regression_benchmark_report,
+    evaluate_context_regression_cases,
+)
+from intergrax.runtime.architecture.retrieval_effectiveness import (
+    RetrievalEffectivenessMetrics,
+    RetrievalEffectivenessReport,
+    RetrievalJudgment,
+    evaluate_retrieval_effectiveness,
+)
+from intergrax.runtime.architecture.prompt_policy_overlay import (
+    PolicyOverlayCompositionReport,
+    PolicyOverlayFragment,
+    PolicyOverlayTraceRecord,
+    apply_policy_overlays,
+)
+from intergrax.runtime.architecture.prompt_regression_suite import (
+    PromptRegressionCase,
+    PromptRegressionCaseResult,
+    PromptRegressionCaseType,
+    PromptRegressionSuiteReport,
+    build_default_adversarial_profile,
+    run_prompt_regression_suite,
+)
 
 __all__ = [
     "AgentCertificationEvidence",
@@ -287,6 +314,19 @@ __all__ = [
     "PromptCompositionSpec",
     "PromptLayer",
     "PromptLayerFragment",
+    "ContextRegressionBenchmarkReport",
+    "ContextRegressionCase",
+    "ContextRegressionComparison",
+    "RetrievalEffectivenessMetrics",
+    "RetrievalEffectivenessReport",
+    "RetrievalJudgment",
+    "PolicyOverlayCompositionReport",
+    "PolicyOverlayFragment",
+    "PolicyOverlayTraceRecord",
+    "PromptRegressionCase",
+    "PromptRegressionCaseResult",
+    "PromptRegressionCaseType",
+    "PromptRegressionSuiteReport",
     "UnifiedEvaluationReport",
     "evaluate_agent_certification",
     "evaluate_agent_lifecycle_transition",
@@ -305,6 +345,12 @@ __all__ = [
     "evaluate_prompt_registry",
     "validate_prompt_registry_entry",
     "compose_prompt",
+    "build_context_regression_benchmark_report",
+    "evaluate_context_regression_cases",
+    "evaluate_retrieval_effectiveness",
+    "apply_policy_overlays",
+    "build_default_adversarial_profile",
+    "run_prompt_regression_suite",
     "build_catalog_capability_graph",
     "build_capability_impact_report",
     "build_capability_lineage_report",

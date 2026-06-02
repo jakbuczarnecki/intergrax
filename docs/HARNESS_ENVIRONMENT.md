@@ -168,6 +168,10 @@ Current baseline delivered (Phase V V1):
 - `V-CE.2` duplicate suppression and context quality threshold governance
 - `V-PE.1` prompt registry governance (owner/version/risk metadata)
 - `V-PE.2` layered prompt composition model (`system`, `policy`, `task`, `context`)
+- `V-CE.3` context regression benchmark baseline vs current comparison
+- `V-CE.4` retrieval effectiveness metrics (`precision@k`, `recall@k`)
+- `V-PE.3` deterministic policy injection overlays with trace records
+- `V-PE.4` prompt regression and adversarial test suite contracts
 - report artifacts script: `scripts/phase_v_foundations_report.py`
 - graph guard script: `scripts/phase_v_capability_graph_guard.py`
 - governance artifacts script: `scripts/phase_v_governance_report.py`

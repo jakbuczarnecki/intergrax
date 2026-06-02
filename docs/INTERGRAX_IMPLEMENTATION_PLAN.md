@@ -2025,8 +2025,8 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 |---|-------------|--------|----------|------------|
 | V-CE.1 | Relevance/freshness/confidence scoring in context assembly | **Done** | High | Scores emitted in trace/runtime events |
 | V-CE.2 | Duplicate suppression + context quality thresholds | **Done** | Medium | Threshold policy test coverage |
-| V-CE.3 | Context regression benchmark suite | Planned | High | CI regression baseline stored and compared |
-| V-CE.4 | Retrieval effectiveness evaluation (precision/recall@k style) | Planned | Medium | Bench report in evaluation registry |
+| V-CE.3 | Context regression benchmark suite | **Done** | High | CI regression baseline stored and compared |
+| V-CE.4 | Retrieval effectiveness evaluation (precision/recall@k style) | **Done** | Medium | Bench report in evaluation registry |
 
 #### V-PE — Prompt Engineering Architecture
 
@@ -2034,8 +2034,8 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 |---|-------------|--------|----------|------------|
 | V-PE.1 | Prompt registry governance contract (owner/version/risk metadata) | **Done** | High | Registry validations active |
 | V-PE.2 | Prompt composition model (system/task/policy/context layers) | **Done** | High | Canon + reference implementation path |
-| V-PE.3 | Deterministic policy injection overlays | Planned | High | Prompt build trace shows overlays |
-| V-PE.4 | Prompt regression/adversarial test suite | Planned | Medium | Gate includes prompt regression subset |
+| V-PE.3 | Deterministic policy injection overlays | **Done** | High | Prompt build trace shows overlays |
+| V-PE.4 | Prompt regression/adversarial test suite | **Done** | Medium | Gate includes prompt regression subset |
 
 #### V-EVAL — Evaluation and Benchmarking Operations
 
@@ -2195,6 +2195,7 @@ L4 readiness requires:
 | 2026-06-02 | V-SEC.3, V-SEC.4 | Retrieval poisoning defense (`retrieval_security.py`) + tenant isolation/audit verification (`tenant_security.py`) + governance artifacts + unit tests |
 | 2026-06-02 | V-COST.1, V-COST.2, V-COST.3, V-COST.4 | Budget envelopes + quota deny/degrade + cost forecast/anomaly + optimization guardrails (`cost_*.py`) + governance artifacts + unit tests |
 | 2026-06-02 | V-CE.1, V-CE.2, V-PE.1, V-PE.2 | Context quality scoring/dedup (`context_engineering.py`) + prompt registry/composition (`prompt_registry_governance.py`, `prompt_composition.py`) + governance artifacts + unit tests |
+| 2026-06-02 | V-CE.3, V-CE.4, V-PE.3, V-PE.4 | Context regression benchmark + retrieval effectiveness + policy overlays + prompt regression suite + governance artifacts + unit tests |
 | — | — | *(append row per merged PR)* |
 
 ---

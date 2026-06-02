@@ -4913,6 +4913,7 @@ Implementation baseline (Phase V V1):
 - security isolation baseline: `retrieval_security.py`, `tenant_security.py`
 - cost governance baseline: `cost_budget.py`, `cost_quota.py`, `cost_forecast.py`, `cost_optimization.py`
 - context/prompt quality baseline: `context_engineering.py`, `prompt_registry_governance.py`, `prompt_composition.py`
+- context/prompt maturity baseline: `context_regression_benchmark.py`, `retrieval_effectiveness.py`, `prompt_policy_overlay.py`, `prompt_regression_suite.py`
 
 ## 53.1 Strategic objective lock (harness-first)
 
