@@ -87,6 +87,10 @@ class PersistingTaskTraceEmitter(TaskTraceEmitter):
         self._session_id = session_id
         self._started_at_utc: Optional[str] = None
 
+    @property
+    def trace_store(self) -> RunTraceWriter:
+        return self._trace_store
+
     def emit(self, task: Task, *, message: str) -> TraceEvent:
         evt = super().emit(task, message=message)
         self._trace_store.append_event(evt)

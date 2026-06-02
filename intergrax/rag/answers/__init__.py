@@ -1,19 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
 
 """
-Deprecated: use ``intergrax.rag.retrieval.RetrievalService`` instead.
+Removed: use ``intergrax.rag.retrieval.RetrievalService``.
 
-This package remains for backward-compatible tests only; do not import from
-``runtime/`` or ``agents/`` production code (Phase Q-R.9).
+The former ``intergrax.rag.answers`` stack lives under ``intergrax.legacy.rag_answers``
+for notebook compatibility only. Do not import from runtime, agents, or applications.
 """
 
 from __future__ import annotations
 
-import warnings
-
-warnings.warn(
-    "intergrax.rag.answers is deprecated; use intergrax.rag.retrieval.RetrievalService",
-    DeprecationWarning,
-    stacklevel=2,
+raise ImportError(
+    "intergrax.rag.answers was removed (Phase U-Leg.2). "
+    "Use intergrax.rag.retrieval.RetrievalService instead. "
+    "Notebooks may import intergrax.legacy.rag_answers explicitly."
 )

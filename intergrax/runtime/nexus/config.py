@@ -39,6 +39,7 @@ from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
 from intergrax.runtime.nexus.policies.runtime_policies import RuntimePolicies
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.runtime.modality.modality_profile import ModalityProfile
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.provider import ToolProvider
 from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
@@ -180,6 +181,8 @@ class RuntimeConfig:
     tool_profile: Optional[ToolProfile] = None
 
     tool_wiring_context: Optional[ToolWiringContext] = None
+
+    modality_profile: Optional[ModalityProfile] = None
 
      # Optional capability-level tool authorization policy.
     # If None → all tools are allowed (backward compatible behavior).
@@ -323,6 +326,7 @@ class RuntimeConfig:
             tool_profile=self.tool_profile,
             tool_wiring_context=self.tool_wiring_context,
             tool_scope_policy=self.tool_scope_policy,
+            modality_profile=self.modality_profile,
         )
 
     @property

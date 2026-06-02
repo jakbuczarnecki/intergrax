@@ -1,6 +1,6 @@
 # Intergrax Integration Library
 
-**Last updated:** 2026-06-01 (Phase S harness stable stack)
+**Last updated:** 2026-06-01 (Phase T harness stable stack)
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 
@@ -19,13 +19,14 @@ The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular
 
 ---
 
-## Harness lab stable stack (Phase S)
+## Harness lab stable stack (Phase S / T)
 
 The **lab harness environment** treats these catalog slugs as **`stable`** (production-ready for the reference lab stack). Source of truth: `intergrax/integrations/registry/harness_lab_stack.py`.
 
 | Slug | Category |
 |------|----------|
 | `sqlite` | relational_store |
+| `postgresql` | relational_store (Tier-2 product apps) |
 | `redis` | key_value_cache |
 | `qdrant` | vector_store |
 | `slack` | notification_channel + interaction_surface |

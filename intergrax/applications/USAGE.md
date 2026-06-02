@@ -9,6 +9,19 @@
 
 ---
 
+## Phase V compliance hooks (harness hardening)
+
+For composition-engine or host-wiring changes, align with implementation plan Phase V:
+
+- dependency and impact visibility on composed capabilities (`V-CG.*`),
+- production lifecycle governance metadata propagation (`V-ALG.*`),
+- context/prompt/evaluation regression compatibility (`V-CE.*`, `V-PE.*`, `V-EVAL.*`),
+- security/cost policy hooks in runtime path (`V-SEC.*`, `V-COST.*`).
+
+This keeps Tier-3 composition aligned with harness-only architecture hardening.
+
+---
+
 ## What this engine does
 
 | Piece | Module | Role |

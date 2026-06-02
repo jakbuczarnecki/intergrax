@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, Protocol, runtime_checkable
 
-from intergrax.tools.tools_agent import ToolPlanDecision
+from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 
 
 @runtime_checkable

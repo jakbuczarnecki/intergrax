@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+
+from intergrax.applications._shared.harness_auth import require_harness_api_key
 from pydantic import BaseModel, Field
 
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -93,7 +95,11 @@ def mount_lab_routes(
     task_enricher: Callable[[Task], Task] | None = None,
 ) -> LabRunService:
     service = LabRunService.from_nexus_loop(nexus_loop, task_enricher=task_enricher)
-    router = APIRouter(prefix=prefix, tags=["lab"])
+    router = APIRouter(
+        prefix=prefix,
+        tags=["lab"],
+        dependencies=[Depends(require_harness_api_key)],
+    )
 
     @router.post("/run", response_model=LabRunResponseV1)
     async def lab_run(body: LabRunRequestV1) -> LabRunResponseV1:

@@ -17,6 +17,7 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.interactions.factory import (
     InteractionSurface,
@@ -24,6 +25,7 @@ from intergrax.runtime.interactions.factory import (
     resolve_interaction_settings,
 )
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.applications._shared.notification_wiring import (
     create_harness_notification_adapter,
     create_resilient_notification_adapter,
@@ -33,6 +35,7 @@ from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
 from lab_application.host.settings import LabApplicationSettings
 
 
@@ -78,14 +81,18 @@ def build_lab_integration_profile(
     *,
     sqlite_overrides: dict[str, Path] | None = None,
     harness: bool = False,
-    otel_enabled: bool = False,
+    otel_enabled: bool = True,
+    enable_redis: bool = False,
+    enable_qdrant: bool = False,
 ) -> IntegrationProfile:
     if harness:
         profile = IntegrationProfile.harness_lab()
-    elif otel_enabled:
-        profile = IntegrationProfile.harness_environment()
     else:
-        profile = IntegrationProfile.lab()
+        profile = IntegrationProfile.lab_harness_preset(
+            enable_otel=otel_enabled,
+            enable_redis=enable_redis,
+            enable_qdrant=enable_qdrant,
+        )
     if not sqlite_overrides:
         return profile
     return profile.model_copy(
@@ -101,7 +108,7 @@ def build_lab_integration_profile(
 def create_lab_interaction_adapter(settings: LabApplicationSettings) -> InteractionAdapter:
     surface = settings.interaction_surface.strip().lower()
     if surface in {InteractionSurface.LAB.value, InteractionSurface.LAB_JSON.value}:
-        profile = IntegrationProfile.lab()
+        profile = IntegrationProfile.lab_harness_preset()
         return profile.resolve(IntegrationCategory.INTERACTION_SURFACE)
     return create_interaction_adapter(
         resolve_interaction_settings(surface=surface or InteractionSurface.AUTO.value)
@@ -116,14 +123,14 @@ def wire_lab_integrations(
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
     harness: bool = False,
-    otel_enabled: bool = False,
+    otel_enabled: bool | None = None,
 ) -> LabIntegrationWiring:
     """
     Single composition root for lab persistence, notifications, and interaction surface.
 
-    Uses ``IntegrationProfile.lab()`` (sqlite + log + lab_json) with optional SQLite path overrides.
-    Set ``harness=True`` for LangSmith/Sentry/PagerDuty harness stack (Phase M.9).
-    Set ``otel_enabled=True`` (or ``LAB_OTEL_ENABLED``) for OTEL observability facade (Phase S-Ops.2).
+    Uses ``IntegrationProfile.lab_harness_preset()`` (sqlite + log + lab_json + OTEL by default).
+    Set ``harness=True`` for LangSmith/Sentry/PagerDuty vendor harness stack (Phase M.9).
+    Set ``otel_enabled=False`` to disable OTEL on the unified lab preset (Phase T-Ops.1).
     """
     register_default_integrations()
 
@@ -133,10 +140,11 @@ def wire_lab_integrations(
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
     )
+    resolved_otel = settings.otel_enabled if otel_enabled is None else otel_enabled
     profile = build_lab_integration_profile(
         sqlite_overrides=sqlite_overrides or None,
         harness=harness,
-        otel_enabled=otel_enabled,
+        otel_enabled=resolved_otel,
     )
     sqlite_bundle = create_sqlite_integration(**sqlite_overrides)
 
@@ -144,10 +152,10 @@ def wire_lab_integrations(
         trace_store: RunTraceWriter = InMemoryRunTraceStore()
         trace_db_path = None
     else:
-        trace_store = sqlite_bundle.trace_store  # type: ignore[assignment]
+        trace_store = sqlite_bundle.trace_store
         trace_db_path = db_path
 
-    runtime_event_store = (
+    runtime_event_store: RuntimeEventPersistence | None = (
         sqlite_bundle.runtime_event_store
         if runtime_events_db_path is not None
         else None
@@ -178,9 +186,9 @@ def wire_lab_integrations(
         profile=profile,
         sqlite_bundle=sqlite_bundle,
         trace_store=trace_store,
-        runtime_event_store=runtime_event_store,  # type: ignore[arg-type]
-        checkpoint_store=sqlite_bundle.task_checkpoint_store,  # type: ignore[arg-type]
-        notification_adapter=notification_adapter,  # type: ignore[arg-type]
+        runtime_event_store=runtime_event_store,
+        checkpoint_store=sqlite_bundle.task_checkpoint_store,
+        notification_adapter=notification_adapter,
         interaction_adapter=interaction_adapter,
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,

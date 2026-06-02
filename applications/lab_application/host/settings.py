@@ -19,15 +19,17 @@ class LabApplicationSettings:
     include_echo: bool = True
     include_signoff_probe: bool = True
     include_research: bool = False
+    include_problem_radar: bool = False
     include_interaction_routes: bool = True
     interaction_route_prefix: str = "/v1/interactions"
     include_scheduler: bool = True
     scheduler_poll_seconds: float | None = None
     interaction_surface: str = "auto"
-    include_mcp: bool = True
+    include_mcp: bool = False
     mcp_mount_path: str = "/mcp"
     harness: bool = False
-    otel_enabled: bool = False
+    otel_enabled: bool = True
+    strict_harness: bool = False
 
     @classmethod
     def from_env(cls) -> LabApplicationSettings:
@@ -55,6 +57,13 @@ class LabApplicationSettings:
             "true",
             "yes",
         }
+        include_problem_radar = (
+            os.getenv("LAB_INCLUDE_PROBLEM_RADAR") or "false"
+        ).strip().lower() in {
+            "1",
+            "true",
+            "yes",
+        }
         include_interactions = (
             os.getenv("LAB_INCLUDE_INTERACTIONS") or "true"
         ).strip().lower() not in {
@@ -76,10 +85,15 @@ class LabApplicationSettings:
         interaction_surface = (
             os.getenv("LAB_INTERACTION_SURFACE") or "auto"
         ).strip().lower() or "auto"
-        include_mcp = (os.getenv("LAB_INCLUDE_MCP") or "true").strip().lower() not in {
-            "0",
-            "false",
-            "no",
+        include_mcp = (os.getenv("LAB_INCLUDE_MCP") or "false").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        strict_harness = (os.getenv("LAB_STRICT_HARNESS") or "false").strip().lower() in {
+            "1",
+            "true",
+            "yes",
         }
         mcp_mount = (os.getenv("LAB_MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
         harness = (os.getenv("LAB_HARNESS") or "false").strip().lower() in {
@@ -87,7 +101,7 @@ class LabApplicationSettings:
             "true",
             "yes",
         }
-        otel_enabled = (os.getenv("LAB_OTEL_ENABLED") or "false").strip().lower() in {
+        otel_enabled = (os.getenv("LAB_OTEL_ENABLED") or "true").strip().lower() in {
             "1",
             "true",
             "yes",
@@ -99,6 +113,7 @@ class LabApplicationSettings:
             include_echo=include_echo,
             include_signoff_probe=include_signoff_probe,
             include_research=include_research,
+            include_problem_radar=include_problem_radar,
             include_interaction_routes=include_interactions,
             interaction_route_prefix=interaction_prefix,
             include_scheduler=include_scheduler,
@@ -108,4 +123,5 @@ class LabApplicationSettings:
             mcp_mount_path=mcp_mount,
             harness=harness,
             otel_enabled=otel_enabled,
+            strict_harness=strict_harness,
         )

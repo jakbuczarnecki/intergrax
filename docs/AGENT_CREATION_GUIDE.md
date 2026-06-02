@@ -203,6 +203,18 @@ registry.register(DocumentAutomationAgent(), contract=contract)
 | **D — Product application** | Existing product host (Legal, Research, …) | `applications/<product>/manifest.py` + `host/wiring.py` |
 | **E — Dedicated application (scaffold)** | New deployable host (env, Docker, HTTP API) | `python -m intergrax.scaffold new-application` → § [Step 4E](#e--dedicated-application-scaffold) |
 
+### Production lifecycle governance note (Phase V)
+
+When an agent is intended for production eligibility, registration and runtime success are not sufficient.
+The agent must satisfy lifecycle governance gates tracked in implementation plan **Phase V (V-ALG.\*)**:
+
+- certification evidence (quality/policy/security),
+- promotion path evidence (dev -> staging -> production),
+- explicit owner/on-call metadata,
+- deprecation/retirement policy metadata.
+
+Use this guide for creation workflow, and use Phase V governance streams for production lifecycle readiness.
+
 There is **no auto-discovery**. Every context requires an explicit roster entry (`AgentBinding.mount` or `registry.register()`).
 
 ### A — Smoke test (recommended first run)

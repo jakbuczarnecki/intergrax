@@ -13,11 +13,16 @@ from lab_application.host.integration_wiring import build_lab_integration_profil
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
-def test_lab_integration_profile_otel_when_enabled() -> None:
-    profile = build_lab_integration_profile(otel_enabled=True)
+def test_lab_integration_profile_otel_by_default() -> None:
+    profile = build_lab_integration_profile()
     assert profile.relational_store == IntegrationSlug.SQLITE
     assert profile.observability_backend == IntegrationSlug.OTEL
     assert IntegrationSlug.OTEL in profile.options
+
+
+def test_lab_integration_profile_otel_when_explicitly_enabled() -> None:
+    profile = build_lab_integration_profile(otel_enabled=True)
+    assert profile.observability_backend == IntegrationSlug.OTEL
 
 
 def test_lab_skill_profile_includes_harness_bundle() -> None:

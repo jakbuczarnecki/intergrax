@@ -6,23 +6,27 @@ from __future__ import annotations
 from signoff_probe.capabilities import CAPABILITIES
 from signoff_probe.contract import build_agent_contract
 from signoff_probe.steps.pipeline import build_pipeline, run_domain_step
-from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
+from intergrax.applications._shared.lab_harness_context import LabHarnessContext
+from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
+from intergrax.applications._shared.lab_runtime_config import build_lab_agent_runtime_context
 from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.applications._shared.runtime_defaults import harness_production_mode
 from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.agents.uaep_pipeline import pipeline_agent_steps, pipeline_step_complete
 
 
-class SignoffProbeAgent(Agent):
+class SignoffProbeAgent(HarnessReferenceAgent):
     """UAEP-first scaffolded agent — replace domain logic in ``steps/`` and ``prompts/``."""
+
+    def __init__(self, harness: LabHarnessContext | None = None) -> None:
+        self._harness = harness or LabHarnessContext(
+            policy_bundle=build_runtime_policy_bundle(),
+        )
 
     def get_contract(self):
         return build_agent_contract()
@@ -41,15 +45,13 @@ class SignoffProbeAgent(Agent):
         return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        config = RuntimeConfig(
-            llm_adapter=build_pipeline().llm_adapter,
-            enable_rag=False,
-            production_mode=harness_production_mode(),
-            tenant_id=request.tenant_id,
+        built = build_pipeline()
+        return build_lab_agent_runtime_context(
+            request=request,
+            llm_adapter=built.llm_adapter,
+            harness=self._harness,
+            pipeline=built.pipeline,
         )
-        config.pipeline = build_pipeline().pipeline
-        session_manager = SessionManager(storage=InMemorySessionStorage())
-        return RuntimeContext.build(config=config, session_manager=session_manager)
 
     def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
         _ = context

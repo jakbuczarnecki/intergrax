@@ -15,6 +15,7 @@ from intergrax.applications._shared.plugin_bootstrap import (
 from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
+from intergrax.runtime.task.task_trace import PersistingTaskTraceEmitter
 from intergrax.llm_adapters.tracking.observability_bridge import register_llm_observability_plugin
 from intergrax.rag.tracking.observability_bridge import register_rag_observability_plugin
 from intergrax.runtime.plugins.default_plugins import default_lab_plugins
@@ -27,11 +28,11 @@ def bootstrap_nexus_platform(
     metrics_store: Optional[ExecutionMetricsStore] = None,
 ) -> PluginBootstrapResult:
     """Register default runtime plugins on a composed NexusLoop."""
-    reader = trace_store
-    if reader is None and hasattr(nexus_loop, "trace_emitter"):
+    reader = trace_store or nexus_loop.trace_store
+    if reader is None:
         emitter = nexus_loop.trace_emitter
-        if emitter is not None and hasattr(emitter, "trace_store"):
-            reader = emitter.trace_store  # type: ignore[attr-defined]
+        if isinstance(emitter, PersistingTaskTraceEmitter):
+            reader = emitter.trace_store
     plugins = default_lab_plugins(trace_store=reader, metrics_store=metrics_store)
     register_llm_observability_plugin(plugins)
     register_rag_observability_plugin(plugins)

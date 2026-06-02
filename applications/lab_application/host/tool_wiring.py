@@ -4,23 +4,46 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.modality_wiring import wire_modality_extras
 from intergrax.applications._shared.tool_wiring import ApplicationToolWiring, build_application_tool_wiring
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.model_inference.registry import VisionProfile
+from intergrax.runtime.modality.modality_profile import ModalityProfile, lab_default_modality_profile
+from intergrax.speech_adapters.registry.profile import SpeechProfile
 from intergrax.tools.registry.profile import ToolProfile
+
+_HARNESS_MODALITY_TOOLS = (
+    "speech.synthesize",
+    "speech.transcribe",
+    "vision.detect",
+    "vision.segment",
+    "vision.ocr_regions",
+    "ml.predict",
+    "ml.explain",
+    "ml.batch_predict",
+)
 
 
 def wire_lab_tools(
     *,
     integration_profile: IntegrationProfile | None = None,
     harness: bool = False,
+    sandbox_session: object | None = None,
+    modality_profile: ModalityProfile | None = None,
+    vision_profile: VisionProfile | None = None,
+    speech_profile: SpeechProfile | None = None,
 ) -> ApplicationToolWiring:
     """
     Laboratory tool wiring — context retrieval tools enabled by default.
 
+    ``sandbox.exec`` is enabled only when a sandbox session is wired (U-Sec.3).
+
     Pass ``integration_profile`` from ``wire_lab_integrations()`` when issue/wiki
     tools should resolve integration contracts automatically.
     """
-    enabled = ["rag.retrieve", "websearch.query", "sandbox.exec"]
+    enabled = ["rag.retrieve", "websearch.query"]
+    if sandbox_session is not None:
+        enabled.append("sandbox.exec")
     if harness:
         enabled.extend(
             [
@@ -29,10 +52,24 @@ def wire_lab_tools(
                 "pagerduty.trigger_incident",
                 "gitlab.create_issue",
                 "braintrust.log_eval",
+                *_HARNESS_MODALITY_TOOLS,
             ]
         )
+    resolved_modality = modality_profile
+    if harness and resolved_modality is None:
+        resolved_modality = lab_default_modality_profile()
     profile = ToolProfile(enabled=enabled)
-    return build_application_tool_wiring(
+    wiring = build_application_tool_wiring(
         profile,
         integration_profile=integration_profile,
+        sandbox_session=sandbox_session,
     )
+    if harness:
+        wire_modality_extras(
+            wiring.wiring_context,
+            modality_profile=resolved_modality,
+            vision_profile=vision_profile,
+            speech_profile=speech_profile,
+        )
+    return wiring
+

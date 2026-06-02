@@ -33,7 +33,7 @@ class _FailingAdapter:
 async def test_core_llm_step_uses_tools_answer_when_present():
     state = build_runtime_state_for_tests(run_id="run-1")
     state.used_tools = True
-    state.tools_agent_answer = "TOOLS"
+    state.tool_planner_answer = "TOOLS"
 
     await CoreLLMStep().run(state)
 
@@ -45,7 +45,7 @@ async def test_core_llm_step_invalid_last_message_produces_error_answer():
     state = build_runtime_state_for_tests(run_id="run-1")
 
     state.used_tools = False
-    state.tools_agent_answer = None
+    state.tool_planner_answer = None
 
     state.messages_for_llm = [ChatMessage(role="assistant", content="a1")]
     state.context.config.llm_adapter = _FakeAdapter()
@@ -92,7 +92,7 @@ async def test_core_llm_step_fallback_on_error_with_tools_answer():
     state.messages_for_llm = [ChatMessage(role="user", content="u1")]
     state.context.config.llm_adapter = _FailingAdapter()
 
-    state.tools_agent_answer = "TOOLS"
+    state.tool_planner_answer = "TOOLS"
 
     await CoreLLMStep().run(state)
 

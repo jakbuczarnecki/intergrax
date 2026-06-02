@@ -261,6 +261,9 @@ class GeminiChatAdapter(LLMAdapter):
     def supports_tools(self) -> bool:
         return True
 
+    def supports_vision(self) -> bool:
+        return True
+
     def supports_structured_output(self) -> bool:
         return True
 

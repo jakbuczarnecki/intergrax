@@ -33,6 +33,9 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
     ensure_parent_dirs,
     resolve_sqlite_store_paths,
 )
+from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
+from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
 
 
 @dataclass(frozen=True)
@@ -42,9 +45,9 @@ class SQLiteIntegrationBundle:
     config: SQLiteIntegrationConfig
     paths: SqliteStorePaths
     relational_store: SQLiteRelationalStore
-    trace_store: object
-    runtime_event_store: object
-    task_checkpoint_store: object
+    trace_store: SQLiteRunTraceStore
+    runtime_event_store: SQLiteRuntimeEventStore
+    task_checkpoint_store: SQLiteTaskCheckpointStore
     human_decision_store: object
     task_memory_store: object
     experiment_store: object

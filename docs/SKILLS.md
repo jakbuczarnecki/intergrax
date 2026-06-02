@@ -1,8 +1,8 @@
 # Intergrax Skill Library
 
-**Last updated:** 2026-06-01 · Phase R MVP **Done** · Phase S platform `harness.*` bundle **Done**
+**Last updated:** 2026-06-02 · Phase R MVP **Done** · Phase S platform `harness.*` bundle **Done** · Phase V hardening alignment
 
-Composable **capability packs** between the [Tool Library](TOOLS.md) and Tier-2 agents. Canon: [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.8 · Harness terms: §5.3 · Tracker: [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Appendix E.
+Composable **capability packs** between the [Tool Library](TOOLS.md) and Tier-2 agents. Canon: [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.8 · Harness terms: §5.3 · Modality tools (`vision.*`, `speech.*`, `ml.*`): [MODALITY.md](MODALITY.md) §7.1.9 · Tracker: [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Appendix E + Phase V (`V-PE.*`, `V-EVAL.*`) + Phase W-ML.
 
 ---
 
@@ -101,8 +101,11 @@ Register the bundle in `intergrax/skills/registry/bootstrap.py`.
 | skill_id | Bundle | Status |
 |----------|--------|--------|
 | `harness.tool_smoke` | `harness` | **Done** (Phase S) |
+| `harness.vision_qa` | `harness` | **Done** (W-ML) — `vision.detect` + `rag.retrieve` |
+| `harness.modality_smoke` | `harness` | **Done** (W-ML) — `vision.detect`, `ml.predict`, `ml.batch_predict` |
 | `harness.context_demo` | `harness` | **Done** (Phase S) |
 | `harness.trace_read` | `harness` | **Done** (Phase S) |
+| `harness.skill_registry` | `harness` | **Done** (harness completion 2026-06-02) |
 | `legal.contract_review` | `legal` | **Done** |
 | `research.literature_scan` | `research` | **Done** |
 
@@ -113,3 +116,6 @@ Register the bundle in `intergrax/skills/registry/bootstrap.py`.
 - Do **not** model skills as `ToolContract`.
 - Do **not** import integrations from skill code — reference `tool_id`s only.
 - LLM tool-calling surface remains **tools** only.
+- Prompt and evaluation governance for skill packs should follow Phase V streams:
+  - prompt architecture/regression: `V-PE.*`
+  - evaluation baselines/trends: `V-EVAL.*`

@@ -12,6 +12,7 @@ from lab.mock_agents import (
     ResearchMockAgent,
     ValidatorMockAgent,
 )
+from problem_radar.problem_radar_agent import ProblemRadarAgent
 from research.research_agent import ResearchAgent
 from research.summary_agent import SummaryAgent
 from signoff_probe.signoff_probe_agent import SignoffProbeAgent
@@ -27,28 +28,38 @@ def build_lab_manifest(settings: LabApplicationSettings) -> ApplicationManifest:
             AgentBinding.mount(
                 EchoAgent,
                 capabilities=["echo.basic"],
+                requires_uaep=True,
             )
         )
 
     if settings.include_mock_agents:
         agents.extend(
             [
-                AgentBinding.mount(ResearchMockAgent),
-                AgentBinding.mount(DocumentMockAgent),
-                AgentBinding.mount(ValidatorMockAgent),
-                AgentBinding.mount(ComposerMockAgent),
+                AgentBinding.mount(ResearchMockAgent, requires_uaep=True),
+                AgentBinding.mount(DocumentMockAgent, requires_uaep=True),
+                AgentBinding.mount(ValidatorMockAgent, requires_uaep=True),
+                AgentBinding.mount(ComposerMockAgent, requires_uaep=True),
             ]
         )
 
     if settings.include_signoff_probe:
-        agents.append(AgentBinding.mount(SignoffProbeAgent))
+        agents.append(AgentBinding.mount(SignoffProbeAgent, requires_uaep=True))
 
     if settings.include_research:
         agents.extend(
             [
-                AgentBinding.mount(ResearchAgent),
-                AgentBinding.mount(SummaryAgent),
+                AgentBinding.mount(ResearchAgent, requires_uaep=True),
+                AgentBinding.mount(SummaryAgent, requires_uaep=True),
             ]
+        )
+
+    if settings.include_problem_radar:
+        agents.append(
+            AgentBinding.mount(
+                ProblemRadarAgent,
+                capabilities=["problem_radar.scan"],
+                requires_uaep=True,
+            )
         )
 
     return ApplicationManifest.lab(

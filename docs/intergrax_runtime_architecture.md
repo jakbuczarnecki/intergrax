@@ -94,6 +94,8 @@ Platform work MUST **extend and wire** existing Tier-0 modules — not introduce
 
 **Capability stack (Tier-0 + Tier-2):** Integration → Tool → **Skill** → Agent (§7.1.6–§7.1.8). Skills are composable packs; tools remain atomic LLM operations.
 
+**Model & modality stack (Tier-0):** three **modality planes** — generative LLM (§5.2.2), media ingest/RAG (§7.1.2), dedicated inference — vision CV, speech, classical ML (§7.1.9). Catalog index: [`MODALITY.md`](MODALITY.md).
+
 ---
 
 # 3. What Intergrax Is
@@ -474,6 +476,7 @@ Intergrax is a **Harness AI environment** (Agent OS). Industry harness literatur
 | **Context engineering** | Tier-1 `ContextManager` + `TaskContextAssemblyOptions` + `MemoryView` + `ContextBudgetPolicy` (§28.1) |
 | **Subagent** | **Graph delegation** — Nexus `ExecutionGraph` child node, not nested OS (§42.14.3) |
 | **Policy** | `PolicyEngine`, `ToolAccessPolicy`, budgets, HITL, org profiles — composed as `RuntimePolicyBundle` (§42.11.4) |
+| **Modality / ML** | Planes B+C via **tools** + optional **`ModalityProfile`** (§7.1.9); generative vision/audio via **`LLMProfile`** (Plane A); never vendor SDKs in agents |
 
 ### 5.3.2 Agent composition (not harness + LLM only)
 
@@ -484,9 +487,10 @@ Harness (Nexus + app wiring)
         → AgentEngine / UAEP steps
         → ToolRuntime.invoke(tool_id)  →  Integration adapters
         → LLM adapters (per step / planner)
+        → Modality tools (vision.detect, speech.*, ml.predict)  →  Plane C registry / speech_provider
 ```
 
-Agents MUST NOT call integrations directly. Skills MUST NOT replace `ToolRuntime` or appear as fake `ToolContract` entries.
+Agents MUST NOT call integrations directly. Agents MUST NOT import CV/ML SDKs (`ultralytics`, `torch`, `onnxruntime`, …) when a catalog tool or adapter exists (§7.1.9). Skills MUST NOT replace `ToolRuntime` or appear as fake `ToolContract` entries.
 
 ### 5.3.3 Architectural decision: Skill layer (ADR)
 
@@ -678,6 +682,7 @@ Category contracts MUST be **backend-agnostic**: same method names and DTOs whet
 | **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`, metrics) | 19 slugs — [LLM_ADAPTERS.md](LLM_ADAPTERS.md) §5.2.2 |
 | **Tokenization** | `intergrax/tokenizers/` | Not an external integration slug |
 | **RAG pipeline** | `intergrax/rag/` | Vector stores + document parsers use **catalog bridges**; orchestration stays in `rag/` |
+| **Model & modality inference** | `intergrax/model_inference/` (planned), tools, optional integration hosts | Vision CV (YOLO, ONNX, …), classical ML, speech APIs — §7.1.9; **not** LLM slugs in Integration Library |
 
 #### RAG stack (Tier-0, Phase M-RAG)
 
@@ -1094,6 +1099,190 @@ Resolution order (canonical):
 #### Relationship to Tier-2 pipelines
 
 UAEP `get_steps` / domain pipelines remain **agent-local orchestration**. A skill MAY include an optional **`step_template_id`** (future) for shared step sequences — it does NOT execute steps itself; `AgentEngine` does.
+
+### 7.1.9 Model & Modality Plane (Vision, Audio, Classical ML)
+
+**Status:** Architecture **defined** (2026-06-02); harness registry + modality tools + lab `ModalityProfile` wiring **Done** (Phase W-ML); remote Triton/HF live serving **incremental**.  
+**Catalog index:** [`MODALITY.md`](MODALITY.md) · **Harness alignment:** §5.3 · **ADR:** extends §44.10 (LLM stays out of Integration Library).
+
+#### Strategic intent
+
+A scalable Harness AI MUST support **multimodal cognition** and **deterministic model inference** without becoming a monolithic MLOps platform. Intergrax extends the existing four-layer stack (Integration → Tool → Skill → Agent) with **three modality planes**, each with its own Tier-0 registry and the same governance hooks (policy, trace, budgets) as LLM and RAG.
+
+#### ADR summary (modality plane)
+
+| Decision | Verdict |
+|----------|---------|
+| LLM providers (incl. native multimodal APIs) in Integration Catalog | **Rejected** — §7.1.2, §44.10 |
+| Skills wrapping entire CV/TTS pipelines as one fake tool | **Rejected** — §7.1.8 anti-patterns |
+| Dedicated **Plane C** registry for YOLO/ONNX/sklearn + atomic tools | **Adopted** |
+| Media ingest (Whisper, OCR, parsers) as **Plane B** via existing RAG/document_parser | **Adopted** (partially implemented) |
+| `speech_provider` integration category for SaaS TTS/STT (ElevenLabs, …) | **Adopted** (planned) |
+| Tier-2 agents importing `torch` / `ultralytics` directly | **Rejected** |
+
+#### Three modality planes
+
+```text
+Plane A — Generative cognition     intergrax/llm_adapters/     (dialog, native vision/audio LLM APIs)
+Plane B — Media → text (ingest)    document_parser + rag/      (indexing, transcripts, OCR text)
+Plane C — Dedicated inference      model_inference/ (planned)  (YOLO, ONNX, sklearn, remote serving)
+```
+
+| Plane | Use when | Examples |
+|-------|----------|----------|
+| **A** | Reasoning, planning, conversational multimodal | Gemini vision, GPT-4o, Claude image input |
+| **B** | Files/URLs → searchable text or embeddings | `whisper`, `docling`, `ImageSmartLoader`, `HFEmbeddingProvider` |
+| **C** | Deterministic CV/ML, regulated boxes, low-latency detection | YOLO, ONNX Runtime, OpenVINO, Triton, `ml.predict` |
+
+**Routing rule:** If the task requires **reproducible geometry** (bounding boxes, masks, calibrated scores) or **fixed latency SLA**, prefer **Plane C**. If the task requires **semantic description in dialog**, prefer **Plane A**. If the task is **knowledge indexing**, use **Plane B** only.
+
+#### Plane A — Generative multimodal (LLM adapters)
+
+- **Canonical module:** `intergrax/llm_adapters/` — unchanged separation from integrations.
+- **Message model:** `intergrax/llm/messages.py` — `AttachmentRef` types (`image`, `audio`, `video`, …).
+- **Target adapter contract extensions:**
+  - `supports_vision()`, `supports_audio_input()`, `supports_audio_output()` (capability flags),
+  - mapping `AttachmentRef` → vendor content parts in `generate_messages` / streaming paths.
+- **Policy:** multimodal attachments subject to `ContextBudgetPolicy`, MIME allowlists, and tenant media quotas (extends V-COST).
+
+See [LLM_ADAPTERS.md](LLM_ADAPTERS.md) — **Multimodal capabilities** section.
+
+#### Plane B — Media ingest (existing RAG stack)
+
+Plane B is **not** a separate top-level package; it composes:
+
+| Component | Location | Notes |
+|-----------|----------|-------|
+| Document parsers | `integrations/providers/document_parser/<slug>/` | `whisper`, `yt_dlp`, `docling`, … |
+| Smart loaders | `intergrax/multimedia/`, `rag/document_loaders/` | Image OCR/caption, audio pipelines |
+| Embeddings | `intergrax/rag/embedding/` | `hf`, `openai`, `ollama` providers |
+| Sparse encoders | `rag/vectorstore/sparse/` | `bm25_hash`, optional `splade` |
+
+Ingest MUST remain invocable through **tools** (`rag.ingest_document`, retrieval stack) — not ad-hoc agent SDK calls.
+
+#### Plane C — Vision inference engine (extensible)
+
+**Target module:** `intergrax/model_inference/` (Tier-0, Phase W-ML).
+
+Designed for **market-standard production CV** and portable classical ML — same extensibility pattern as `llm_adapters/` and `integrations/`:
+
+| Subsystem | Role |
+|-----------|------|
+| `model_inference/contracts/` | `VisionInferenceAdapter`, `ModelInferenceAdapter`, DTOs (`DetectionResult`, …) |
+| `model_inference/registry/` | `VisionInferenceRegistry`, `ModelInferenceRegistry`, profiles |
+| `model_inference/providers/<slug>/` | Backend-specific bridges (thin; no business logic) |
+| `model_inference/execution/` | `ModalityInferenceExecutor`, thread-pool offload for heavy vision slugs |
+| `model_inference/workers/` | Optional distributed workers via Tier-3 `message_bus` (Celery/Kafka) |
+
+**Vision backend families (non-exhaustive, pluggable by slug):**
+
+| Slug family (planned) | Technology | Typical deployment |
+|-----------------------|------------|--------------------|
+| `yolo_ultralytics` | Ultralytics YOLO (v8+) | Local GPU worker or sidecar |
+| `onnxruntime` | ONNX Runtime | Edge CPU/GPU, cross-platform |
+| `openvino` | Intel OpenVINO | On-prem Intel |
+| `tensorrt` | NVIDIA TensorRT | Low-latency GPU |
+| `torchscript` | TorchScript `.pt` | Lab / air-gapped |
+| `triton_grpc` / `torchserve` | Remote model server | K8s model mesh |
+| `huggingface_inference` | HF Inference Endpoints | Managed API |
+| `roboflow` / `sagemaker` / `vertex_prediction` | Cloud CV/ML hosts | Enterprise VPC |
+
+**Contract requirements (all Plane C adapters):**
+
+- Typed **input schema** (URI, bytes ref, MIME, optional ROI) and **output schema** (detections, masks, class scores).
+- **`model_id` + `version`** on every invocation; trace exports slug, latency, device, batch size — not raw media by default.
+- **Idempotency** where inference is side-effect free; **risk_tier** for tools exposing CV output to downstream LLM steps.
+- **Resource policy:** max batch, max resolution, GPU memory class — enforced before invoke (PolicyEngine + `ModalityProfile`).
+
+**YOLO / object-detection example flow:**
+
+```text
+Agent step  →  ToolRuntime.invoke("vision.detect")
+           →  VisionInferenceRegistry.resolve(profile)
+           →  yolo_ultralytics adapter  →  DetectionResult JSON
+           →  trace + modality_metrics  →  optional LLM step (Plane A) for narrative only
+```
+
+#### Plane C — Classical ML (non-vision)
+
+- **`ModelArtifact`** metadata: id, semver, input/output JSON schema, owner, license, risk_tier.
+- **Tools:** `ml.predict`, `ml.batch_predict` (planned); optional `ml.explain` (high risk).
+- **Artifacts** stored in `object_storage`; loading in worker or remote host — not in Nexus request thread for heavy models.
+
+#### Speech and audio output (SaaS)
+
+- **Category (planned):** `speech_provider` in Integration Library.
+- **Examples:** `elevenlabs`, `azure_speech`, `deepgram`, `openai_tts` (slug placeholders until W-ML.2).
+- **Tools:** `speech.synthesize`, `speech.transcribe` — output URIs via `object_storage` contract.
+- **Ingest STT** may continue via `document_parser/whisper` (Plane B); SaaS STT is optional Plane C via integration.
+
+#### Hugging Face — platform roles
+
+| Role | Module | Rule |
+|------|--------|------|
+| Embeddings | `rag/embedding/providers/hf_embedding_provider.py` | RAG only |
+| Hub artifacts | Governance (pin revision, license) | V-SEC / artifact policy |
+| Hosted inference | `ml_inference_host` integration | Remote Plane C |
+| Local transformers | Worker pool only | Never Nexus hot path |
+
+Env: `INTERGRAX_DEFAULT_HF_EMBED_MODEL` (existing). Do not conflate Hub download with runtime agent imports.
+
+#### Integration categories (planned — require §5.2.4 approval)
+
+| Category | Contract (planned) | Distinct from |
+|----------|-------------------|---------------|
+| `speech_provider` | TTS/STT SaaS | `document_parser` (file ingest) |
+| `vision_serving` | Remote CV gRPC/REST (Triton, TorchServe) | Plane A LLM vision |
+| `ml_inference_host` | Managed endpoints (HF, SageMaker, Azure ML, Vertex) | `cloud_platform` facade |
+
+Add rows to §7.1.2 table when each category is approved — do not overload `observability_backend` or `document_parser`.
+
+#### Tool surface (planned)
+
+| tool_id | Plane | Atomic operation |
+|---------|-------|------------------|
+| `vision.detect` | C | Object detection / boxes |
+| `vision.segment` | C | Instance/semantic masks |
+| `vision.ocr_regions` | C | Layout OCR blocks |
+| `speech.synthesize` | C | TTS → storage URI |
+| `speech.transcribe` | B/C | Audio → text |
+| `ml.predict` | C | Structured inference |
+
+Each tool is one LLM-callable function with MCP export, risk class, and retry policy — same as §7.1.6.
+
+#### ModalityProfile (Tier-3 / agent assembly)
+
+Optional profile composes with `LLMProfile` (ideal §17, implementation plan Phase W-ML):
+
+| Field | Purpose |
+|-------|---------|
+| `allowed_planes` | Subset of `generative`, `ingest`, `vision_inference`, `classical_ml`, `speech` |
+| `vision_model_ids` | Allowlist of registered CV models |
+| `max_media_bytes` | Attachment and ingest size cap |
+| `require_deterministic_cv` | Force Plane C for detection tasks in regulated domains |
+
+Resolution merges with `RuntimePolicyBundle` and `ToolAccessPolicy` (intersection, not bypass).
+
+#### Observability
+
+| Plane | Metrics hook |
+|-------|----------------|
+| A | `llm_metrics` (existing) |
+| B | `rag_metrics`, parser trace (existing) |
+| C | `modality_metrics` on `tool_invocation_end` (per tool) + aggregated in `export_run_metrics` (`inference_ms`, `vision_detections`, `ml_predictions`, …) |
+
+Extend V-COST envelopes: `inference_ms`, `media_bytes`, `tts_characters`.
+
+#### Explicit non-goals (harness boundary)
+
+- Online training, hyperparameter search, feature stores as platform products.
+- Registering LLM slugs as integrations.
+- CV pipelines as monolithic skills without atomic tools.
+- Duplicating `llm_adapters` for each ONNX file — use Plane C registry instead.
+
+#### Implementation tracker
+
+Phase **W-ML** in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md). Existing Plane B assets: M.6 (`whisper`, `yt_dlp`), image/audio smart loaders, HF embeddings.
 
 ---
 
@@ -4872,7 +5061,7 @@ This is the core architectural direction of Intergrax.
 
 # 52. Phase L — Agent OS Readiness (Implementation Directive)
 
-**Status:** **Done** (2026-05-27). Follow-on harness work: **Phase Q / Q+ / R (MVP) Done**; **Phase S** (harness environment GA) is **next** — see [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+**Status:** **Done** (2026-05-27). Follow-on harness work: **Phase Q / Q+ / R / S / T / U Done**. Current harness evolution is tracked in **Phase V — Architecture Hardening** in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
 
 Before implementing business agents (Problem Radar, Vendor Discovery, Legal expansion), Intergrax formalized Agent Operating System behavior:
 
@@ -4887,9 +5076,177 @@ Before implementing business agents (Problem Radar, Vendor Discovery, Legal expa
 
 **Acceptance question (L — met):** Can a developer create a new agent in < 1 hour, register it, execute through Nexus, inspect traces, and iterate **without modifying runtime infrastructure**?
 
-**Harness environment question (S — open):** Is the **lab harness stack** (integrations, OTLP, platform skills, operator docs) complete so any Tier-2 agent — including future K.1/K.2 — runs on a production-ready environment without further Tier-0/Tier-3 gaps?
+**Harness environment question (S — closed):** Is the **lab harness stack** (integrations, OTLP, platform skills, operator docs) complete so any Tier-2 agent — including future K.1/K.2 — runs on a production-ready environment without further Tier-0/Tier-3 gaps? **Yes (Phase S Done, 2026-06-01).**
 
 Business agents are **consumers** of the runtime. They must not drive **one-off** runtime evolution (§0.6 in the implementation plan). Platform gaps found while building K.1/K.2 that affect **many future agents** still require Tier-1/Tier-0 changes with canon updates first.
 
-See implementation plan Phase L (§3), **Phase S**, and **Appendix A** in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+See implementation plan Phase L (§3), **Phase S**, **Phase V**, and **Appendix A** in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+
+---
+
+# 53. Harness Architecture Hardening Addendum (Post-U)
+
+This section formalizes post-U hardening required to align Intergrax with the
+ideal Harness AI architecture while staying in harness-only scope (no business-agent expansion).
+
+Implementation baseline (Phase V V1):
+
+- typed contracts in `intergrax/runtime/architecture/` (`capability_graph.py`, `architecture_metrics.py`, `agent_certification.py`)
+- report-only artifact generator: `scripts/phase_v_foundations_report.py`
+- V-CG guard baseline: `capability_graph_lineage.py`, `capability_graph_compatibility.py`, `scripts/phase_v_capability_graph_guard.py`
+- governance baseline: `architecture_metrics_pipeline.py`, `agent_promotion.py`, `evaluation_modes.py`, `scripts/phase_v_governance_report.py`
+- lifecycle/eval assets baseline: `agent_lifecycle_governance.py`, `production_ownership.py`, `evaluation_assets.py`
+- eval automation and coverage baseline: `evaluation_automation.py`, `architecture_coverage.py`
+- ops maturity baseline: `debt_governance.py`, `evaluation_registry_trends.py`
+- security hardening baseline: `prompt_security.py`, `tool_security.py`
+- security isolation baseline: `retrieval_security.py`, `tenant_security.py`
+- cost governance baseline: `cost_budget.py`, `cost_quota.py`, `cost_forecast.py`, `cost_optimization.py`
+- context/prompt quality baseline: `context_engineering.py`, `prompt_registry_governance.py`, `prompt_composition.py`
+- context/prompt maturity baseline: `context_regression_benchmark.py`, `retrieval_effectiveness.py`, `prompt_policy_overlay.py`, `prompt_regression_suite.py`
+- multi-agent and graph-rag baseline: `multi_agent_coordination.py`, `multi_agent_acceptance.py`, `graph_rag.py`, `hybrid_retrieval.py`, `graph_provenance.py`
+- L4 adaptive and maturity closeout baseline: `adaptive_governance.py`, `maturity_gate_evidence.py`, `scripts/phase_v_closeout_gate.py`
+- modality plane baseline (W-ML): `intergrax/model_inference/` (OpenCV/Ultralytics/stub vision, Celery/thread-pool execution, harness bootstrap), `applications/lab_application/host/tool_wiring.py` (harness modality tools), `runtime/modality/modality_profile.py`, `runtime/observability/modality_metrics.py` + `modality_tool_trace.py`, tools `speech.*`, `vision.*`, `ml.*`, `runtime/architecture/runtime_governance_bridge.py`
+
+## 53.1 Strategic objective lock (harness-first)
+
+Intergrax MUST continue to treat the harness runtime as the durable product.
+Tier-2 business agents remain replaceable consumers of the runtime.
+
+Canonical relationship:
+
+```text
+Harness -> Runtime -> Agents -> Applications -> Products
+```
+
+This model is normative for architecture decisions and implementation planning.
+
+## 53.2 Capability graph architecture
+
+Registries and capability layers MUST be represented as a dependency graph:
+
+```text
+Integration -> Tool -> Skill -> Policy -> Agent -> Application -> Product
+```
+
+Minimum requirements:
+
+- typed node and edge taxonomy,
+- dependency lineage and provenance,
+- blast-radius impact analysis for version/policy/runtime changes,
+- compatibility validation executed on graph edges before release.
+
+## 53.3 Agent lifecycle governance
+
+Beyond contract shape (§12) and registry metadata (§15), every agent lifecycle MUST include:
+
+- certification gates (quality + policy + security),
+- promotion flow (dev -> staging -> production),
+- deprecation policy with migration windows,
+- retirement contract with rollback/archive semantics,
+- explicit owner and operational escalation path.
+
+## 53.4 Context quality hardening
+
+Context engineering (§28.1) MUST include explicit quality controls:
+
+- relevance/freshness/confidence scoring,
+- duplicate suppression and context-noise controls,
+- regression benchmarking for retrieval/context assembly,
+- traceable context-lineage chain from output evidence to source.
+
+## 53.5 Prompt engineering architecture
+
+Prompt artifacts MUST be treated as governed platform assets:
+
+- prompt registry ownership and versioning,
+- composable prompt layers (system/task/policy/context),
+- deterministic policy injection overlays,
+- prompt regression tests and change governance.
+
+## 53.6 Evaluation and benchmarking operations
+
+Evaluation MUST operate as a first-class runtime subsystem:
+
+- offline + online + shadow + human evaluation modes,
+- golden datasets and scenario regression suites,
+- rule-based and LLM-judge evaluators,
+- evaluation registry with score history, trend analysis, and release comparisons.
+
+## 53.7 Architecture metrics and debt governance
+
+Architecture health MUST be measured, not inferred.
+
+Minimum metric families:
+
+- modularity and coupling indicators,
+- dependency graph health and incompatibility rate,
+- observability and governance coverage,
+- policy/context/prompt/test critical-path coverage,
+- architecture debt index with trend tracking.
+
+## 53.8 Security and data-governance hardening
+
+Security controls MUST include explicit defenses for agent-native threats:
+
+- prompt injection defense,
+- tool injection defense,
+- retrieval poisoning defense,
+- tenant isolation verification,
+- immutable auditability for governance-critical actions.
+
+## 53.9 Cost and resource governance
+
+Cost control MUST be enforceable at runtime and observable at operations level:
+
+- budget envelopes by tenant/application/agent/model/tool,
+- token and tool quotas,
+- forecast and anomaly detection,
+- optimization loops with policy constraints.
+
+## 53.10 Multi-agent coordination model catalog
+
+Intergrax MUST support explicit coordination patterns with selection criteria:
+
+- hierarchical,
+- orchestrator-worker,
+- supervisor-worker,
+- peer-to-peer,
+- evaluator-loop / critique-revise.
+
+Pattern choice MUST be policy-aware and justified by task complexity, risk, latency, and cost.
+
+## 53.11 Knowledge graph evolution path
+
+Graph-native knowledge should evolve from optional retrieval enhancement to
+first-class capability:
+
+- graph RAG support,
+- entity-relation semantic modeling,
+- hybrid retrieval (vector + keyword + graph),
+- graph-backed explainability in reasoning traces.
+
+## 53.12 Architecture hardening policy
+
+Changes introduced by this section are harness-platform scope only and MUST be
+implemented through Tier-0/Tier-1/Tier-3 reusable mechanisms.
+
+Business-agent work (K.1/K.2, product apps, domain skills) remains deferred
+until explicit product reprioritization in the implementation plan.
+
+## 53.13 Model & modality plane (vision, audio, classical ML)
+
+Harness evolution after Phase U includes a **documented and extensible modality
+architecture** (canon §7.1.9, [`MODALITY.md`](MODALITY.md)):
+
+- **Plane A** — generative multimodal LLM via `llm_adapters/` only.
+- **Plane B** — media ingest and embeddings via RAG + `document_parser` (partially shipped).
+- **Plane C** — dedicated vision inference (YOLO, ONNX, OpenVINO, TensorRT, remote
+  serving) and classical ML via `model_inference/` registry + atomic tools.
+
+Implementation is tracked in **Phase W-ML** (documentation first, then registry and
+tools). New integration categories (`speech_provider`, `vision_serving`,
+`ml_inference_host`) require §5.2.4 approval before catalog registration.
+
+Agents and product teams MUST use **ToolRuntime** for all Plane B/C effects; Tier-2
+code MUST NOT import CV/ML vendor SDKs when a catalog path exists.
 

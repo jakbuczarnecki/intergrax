@@ -21,11 +21,10 @@ FORBIDDEN = (
     "import intergrax.tools.tools_agent",
 )
 
-# Tier-1 may wrap ToolsAgent inside catalog_tool_planner only.
 GRANDFATHER_PREFIXES = (
     "intergrax/tools/tools_agent.py",
-    "intergrax/runtime/nexus/tools/catalog_tool_planner.py",
     "intergrax/runtime/nexus/tools/tool_planner_protocol.py",
+    "intergrax/runtime/nexus/tools/tool_planning_service.py",
     "tests/",
 )
 

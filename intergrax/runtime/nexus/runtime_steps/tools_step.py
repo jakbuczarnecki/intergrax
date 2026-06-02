@@ -42,7 +42,7 @@ class ToolsStep(RuntimeStep):
 
         state.used_tools = False
         state.tool_traces = []
-        state.tools_agent_answer = None
+        state.tool_planner_answer = None
 
         invoker = state.context.config.tool_invoker
         tool_planner = state.context.config.tool_planner

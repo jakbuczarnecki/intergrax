@@ -11,8 +11,10 @@ from __future__ import annotations
 
 from typing import Optional, Sequence
 
-from intergrax.applications._shared.runtime_defaults import harness_production_mode
-from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
+from intergrax.applications._shared.lab_harness_context import LabHarnessContext
+from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
+from intergrax.applications._shared.lab_runtime_config import build_lab_agent_runtime_context
 from intergrax.agents.uaep_pipeline import (
     pipeline_agent_steps,
     pipeline_step_complete,
@@ -25,7 +27,6 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.memory.conversational_memory import ChatMessage
-from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
@@ -33,8 +34,7 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, Run
 from intergrax.runtime.nexus.runtime_steps.contract import RuntimeStepRunner
 from intergrax.runtime.nexus.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
 from intergrax.runtime.nexus.runtime_steps.setup_steps_tool import SETUP_STEPS
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.task.task import TaskContext
 
 
 class _StubLLM(LLMAdapter):
@@ -58,7 +58,7 @@ class _StubLLM(LLMAdapter):
         call = self.usage.begin_call(run_id=run_id)
         try:
             for msg in reversed(messages):
-                content = getattr(msg, "content", None) or ""
+                content = msg.content or ""
                 if content:
                     return f"{self.provider}: {content[:120]}"
             return f"{self.provider}: (empty)"
@@ -84,11 +84,12 @@ class _MockPipeline(RuntimePipeline):
         return state.runtime_answer
 
 
-class _MockAgentBase(Agent):
+class _MockAgentBase(HarnessReferenceAgent):
     """UAEP pipeline-backed mock agent."""
 
     def __init__(
         self,
+        harness: LabHarnessContext | None = None,
         *,
         agent_id: str,
         name: str,
@@ -96,6 +97,9 @@ class _MockAgentBase(Agent):
         prefix: str,
         provider: str,
     ) -> None:
+        self._harness = harness or LabHarnessContext(
+            policy_bundle=build_runtime_policy_bundle(),
+        )
         self._agent_id = agent_id
         self._name = name
         self._capability = capability
@@ -114,8 +118,8 @@ class _MockAgentBase(Agent):
             max_steps=5,
         )
 
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
+        capability = task_context.capability
         if capability in (None, self._capability):
             return CapabilityMatchResult(
                 matched=True,
@@ -127,15 +131,12 @@ class _MockAgentBase(Agent):
         return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        config = RuntimeConfig(
+        return build_lab_agent_runtime_context(
+            request=request,
             llm_adapter=_StubLLM(provider=self._provider, prefix=self._prefix),
-            enable_rag=False,
-            production_mode=harness_production_mode(),
-            tenant_id=request.tenant_id,
+            harness=self._harness,
+            pipeline=_MockPipeline(prefix=self._prefix),
         )
-        config.pipeline = _MockPipeline(prefix=self._prefix)
-        session_manager = SessionManager(storage=InMemorySessionStorage())
-        return RuntimeContext.build(config=config, session_manager=session_manager)
 
     def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
         _ = context
@@ -161,8 +162,9 @@ class _MockAgentBase(Agent):
 
 
 class ResearchMockAgent(_MockAgentBase):
-    def __init__(self) -> None:
+    def __init__(self, harness: LabHarnessContext | None = None) -> None:
         super().__init__(
+            harness,
             agent_id="research_mock",
             name="Research Mock Agent",
             capability="lab.research_mock",
@@ -172,8 +174,9 @@ class ResearchMockAgent(_MockAgentBase):
 
 
 class DocumentMockAgent(_MockAgentBase):
-    def __init__(self) -> None:
+    def __init__(self, harness: LabHarnessContext | None = None) -> None:
         super().__init__(
+            harness,
             agent_id="document_mock",
             name="Document Mock Agent",
             capability="lab.document_mock",
@@ -183,8 +186,9 @@ class DocumentMockAgent(_MockAgentBase):
 
 
 class ValidatorMockAgent(_MockAgentBase):
-    def __init__(self) -> None:
+    def __init__(self, harness: LabHarnessContext | None = None) -> None:
         super().__init__(
+            harness,
             agent_id="validator_mock",
             name="Validator Mock Agent",
             capability="lab.validator_mock",
@@ -194,8 +198,9 @@ class ValidatorMockAgent(_MockAgentBase):
 
 
 class ComposerMockAgent(_MockAgentBase):
-    def __init__(self) -> None:
+    def __init__(self, harness: LabHarnessContext | None = None) -> None:
         super().__init__(
+            harness,
             agent_id="composer_mock",
             name="Composer Mock Agent",
             capability="lab.composer_mock",

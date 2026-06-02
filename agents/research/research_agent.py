@@ -1,91 +1,39 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
-
-from intergrax.agents.agent_contract import Agent
-from intergrax.agents.uaep_pipeline import (
-    pipeline_agent_steps,
-    pipeline_step_complete,
-    run_pipeline_step,
-)
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
+from intergrax.agents.uaep_pipeline import pipeline_agent_steps, pipeline_step_complete
+from intergrax.applications._shared.lab_harness_context import LabHarnessContext
+from intergrax.applications._shared.lab_runtime_config import build_lab_agent_runtime_context
+from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.applications._shared.runtime_defaults import harness_production_mode
-from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.task.task import TaskContext
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.wiring import ToolWiringContext
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.memory.conversational_memory import ChatMessage
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
-from intergrax.runtime.nexus.runtime_steps.contract import RuntimeStepRunner
-from intergrax.runtime.nexus.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
-from intergrax.runtime.nexus.runtime_steps.setup_steps_tool import SETUP_STEPS
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
+from research.steps.pipeline import build_pipeline, run_domain_step
 
 
-class _ResearchLLMStub(LLMAdapter):
-    provider = "research"
-    model = "research-stub"
-
-    @property
-    def context_window_tokens(self) -> int:
-        return 128_000
-
-    def generate_messages(
-        self,
-        messages: Sequence[ChatMessage],
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
-    ) -> str:
-        for msg in reversed(messages):
-            content = getattr(msg, "content", None) or ""
-            if content:
-                return f"research-note: {content[:200]}"
-        return "research-note: (empty)"
-
-
-class ResearchPipeline(RuntimePipeline):
-    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
-        await RuntimeStepRunner.execute_pipeline(
-            [*SETUP_STEPS, PersistAndBuildAnswerStep()],
-            state,
-        )
-        query = (state.request.message or "").strip()
-        findings = (
-            f"research findings for '{query[:120]}': "
-            "[stub: source A — relevant snippet], "
-            "[stub: source B — supporting detail]"
-        )
-        if state.runtime_answer is not None:
-            state.runtime_answer.answer = findings
-        if state.runtime_answer is None:
-            raise RuntimeError("ResearchPipeline did not produce runtime_answer.")
-        return state.runtime_answer
-
-
-class ResearchAgent(Agent):
+class ResearchAgent(HarnessReferenceAgent):
     """Prototype research agent — stub pipeline with optional catalog websearch."""
 
     def __init__(
         self,
+        harness: LabHarnessContext | None = None,
         *,
         tool_profile: ToolProfile | None = None,
         tool_wiring_context: ToolWiringContext | None = None,
         enable_websearch: bool = False,
     ) -> None:
+        self._harness = harness or LabHarnessContext(
+            policy_bundle=build_runtime_policy_bundle(),
+        )
         self._tool_profile = tool_profile
         self._tool_wiring_context = tool_wiring_context
         self._enable_websearch = enable_websearch
@@ -118,23 +66,22 @@ class ResearchAgent(Agent):
         return CapabilityMatchResult(matched=False, rationale="not a research capability")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
+        built = build_pipeline()
         has_web = bool(
             self._enable_websearch
             and self._tool_profile
             and self._tool_profile.is_tool_enabled("websearch.query")
         )
-        config = RuntimeConfig(
-            llm_adapter=_ResearchLLMStub(),
-            enable_rag=False,
+        runtime_context = build_lab_agent_runtime_context(
+            request=request,
+            llm_adapter=built.llm_adapter,
+            harness=self._harness,
+            pipeline=built.pipeline,
             enable_websearch=has_web,
-            production_mode=harness_production_mode(),
-            tenant_id=request.tenant_id,
-            tool_profile=self._tool_profile,
-            tool_wiring_context=self._tool_wiring_context,
         )
-        config.pipeline = ResearchPipeline()
-        session_manager = SessionManager(storage=InMemorySessionStorage())
-        return RuntimeContext.build(config=config, session_manager=session_manager)
+        runtime_context.config.tool_profile = self._tool_profile
+        runtime_context.config.tool_wiring_context = self._tool_wiring_context
+        return runtime_context
 
     def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
         _ = context
@@ -147,7 +94,7 @@ class ResearchAgent(Agent):
         )
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-        return await run_pipeline_step(step, ctx)
+        return await run_domain_step(step, ctx)
 
     def decide_after_step(
         self,

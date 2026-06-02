@@ -18,7 +18,7 @@ from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLe
 class CoreLLMStep(RuntimeStep):
     """
     Call the core LLM adapter and decide on the final answer text,
-    possibly falling back to tools_agent_answer when needed.
+    possibly falling back to tool_planner_answer when needed.
     """
 
     def execution_kind(self) -> ExecutionKind | None:
@@ -26,18 +26,18 @@ class CoreLLMStep(RuntimeStep):
 
     async def run(self, state: RuntimeState) -> None:
         # If tools were used and we have an explicit agent answer, prefer it.
-        if state.used_tools and state.tools_agent_answer:
+        if state.used_tools and state.tool_planner_answer:
             state.trace_event(
                 component=TraceComponent.ENGINE,
                 step="core_llm",
-                message="Using tools_agent_answer as the final answer.",
+                message="Using tool_planner_answer as the final answer.",
                 level=TraceLevel.INFO,
                 payload=CoreLLMUsedToolsAgentAnswerDiagV1(
                     used_tools_answer=True,
-                    has_tools_agent_answer=True,
+                    has_tool_planner_answer=True,
                 ),
             )
-            state.raw_answer = str(state.tools_agent_answer)
+            state.raw_answer = str(state.tool_planner_answer)
             return
 
         try:
@@ -93,7 +93,7 @@ class CoreLLMStep(RuntimeStep):
             state.raw_answer = raw_answer
 
         except Exception as e:
-            # Trace the error and whether a tools_agent_answer fallback is available.
+            # Trace the error and whether a tool_planner_answer fallback is available.
             state.trace_event(
                 component=TraceComponent.ENGINE,
                 step="core_llm_error",
@@ -102,15 +102,15 @@ class CoreLLMStep(RuntimeStep):
                 payload=CoreLLMAdapterFailedDiagV1(
                     error_type=type(e).__name__,
                     error_message=str(e),
-                    has_tools_agent_answer=bool(state.tools_agent_answer),
+                    has_tool_planner_answer=bool(state.tool_planner_answer),
                 ),
             )
 
-            if state.tools_agent_answer:
+            if state.tool_planner_answer:
                 state.raw_answer = (
-                    "[ERROR] LLM adapter failed, falling back to tools agent answer.\n"
+                    "[ERROR] LLM adapter failed, falling back to tool planner answer.\n"
                     f"Details: {e}\n\n"
-                    f"{state.tools_agent_answer}"
+                    f"{state.tool_planner_answer}"
                 )
                 return
 

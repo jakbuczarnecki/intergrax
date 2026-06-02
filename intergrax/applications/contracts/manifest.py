@@ -93,6 +93,10 @@ class AgentBinding(BaseModel):
         description="Documented capability ids (routing hints; not enforced here)",
     )
     enabled: bool = True
+    requires_uaep: bool = Field(
+        default=False,
+        description="When true, registration fails unless the agent implements UAEPAgent",
+    )
     default: bool = Field(
         default=False,
         description="When true, used as default agent for product-style routes",
@@ -110,6 +114,7 @@ class AgentBinding(BaseModel):
         capabilities: list[str] | None = None,
         enabled: bool = True,
         default: bool = False,
+        requires_uaep: bool = False,
     ) -> AgentBinding:
         """
         Strongly-typed roster entry — pass the agent **class** and optional **factory**.
@@ -133,6 +138,7 @@ class AgentBinding(BaseModel):
             capabilities=capabilities or [],
             enabled=enabled,
             default=default,
+            requires_uaep=requires_uaep,
         )
 
     @classmethod

@@ -65,6 +65,7 @@ class ToolInvocationEndDiagV1(DiagnosticPayload):
     success: bool
     output_preview: Optional[str]
     duration_ms: Optional[int]
+    modality_metrics: Optional[Dict[str, Any]] = None
 
     def redact(self) -> ToolInvocationEndDiagV1:
         """
@@ -78,6 +79,7 @@ class ToolInvocationEndDiagV1(DiagnosticPayload):
             success=self.success,
             output_preview=DEFAULT_REDACTED_TEXT if self.output_preview is not None else None,
             duration_ms=self.duration_ms,
+            modality_metrics=self.modality_metrics,
         )
 
     @classmethod
@@ -85,13 +87,16 @@ class ToolInvocationEndDiagV1(DiagnosticPayload):
         return "intergrax.diag.tools.invocation.end"
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        payload: Dict[str, Any] = {
             "tool_id": self.tool_id,
             "step_id": self.step_id,
             "success": self.success,
             "output_preview": self.output_preview,
             "duration_ms": self.duration_ms,
         }
+        if self.modality_metrics is not None:
+            payload["modality_metrics"] = dict(self.modality_metrics)
+        return payload
 
 
 @dataclass(frozen=True)

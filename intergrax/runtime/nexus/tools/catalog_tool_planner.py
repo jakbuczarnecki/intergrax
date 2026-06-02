@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework — proprietary and confidential.
 
-"""Catalog-backed tool planner (Phase Q+-L.2) — Tier-1 replacement for Tier-0 ToolsAgent in agents."""
+"""Catalog-backed tool planner (Phase Q+-L.2, T-Ops.5) — no ``ToolsAgent`` wrapper."""
 
 from __future__ import annotations
 
@@ -10,25 +10,27 @@ from typing import Any, Optional
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
+from intergrax.runtime.nexus.tools.tool_planner_trackable import ToolPlannerTrackable
+from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
 from intergrax.tools.registry import ToolRegistry, ToolWiringContext, build_registry_from_profile
 from intergrax.tools.registry.profile import ToolProfile
-from intergrax.tools.tools_agent import ToolPlanDecision, ToolsAgent
+from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 
 
 @dataclass
-class CatalogToolPlanner:
+class CatalogToolPlanner(ToolPlannerTrackable):
     """
-    Wraps legacy :class:`~intergrax.tools.tools_agent.ToolsAgent` for planning only.
+    Tier-1 catalog planner implementing :class:`ToolPlannerProtocol`.
 
-    Tier-2 agents must depend on this type (or another ``ToolPlannerProtocol``), not
-    import ``ToolsAgent`` directly.
+    Uses :class:`~intergrax.runtime.nexus.tools.tool_planning_service.ToolPlanningService`
+    instead of legacy :class:`~intergrax.tools.tools_agent.ToolsAgent`.
     """
 
-    _planner: ToolsAgent
+    _service: ToolPlanningService
 
     @property
     def llm(self) -> LLMAdapter:
-        return self._planner.llm
+        return self._service.llm
 
     @classmethod
     def from_registry(
@@ -37,7 +39,7 @@ class CatalogToolPlanner:
         llm: LLMAdapter,
         registry: ToolRegistry,
     ) -> CatalogToolPlanner:
-        return cls(_planner=ToolsAgent(llm=llm, tools=registry))
+        return cls(_service=ToolPlanningService(llm=llm, tools=registry))
 
     @classmethod
     def from_profile(
@@ -57,7 +59,7 @@ class CatalogToolPlanner:
         *,
         run_id: str,
     ) -> ToolPlanDecision:
-        return self._planner.plan_tools(
+        return self._service.plan_tools(
             input_data=input_data,
             context=context,
             run_id=run_id,

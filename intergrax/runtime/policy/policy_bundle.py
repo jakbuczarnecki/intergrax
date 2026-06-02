@@ -7,6 +7,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
+from intergrax.runtime.nexus.budget.budget_models import BudgetPolicy
+from intergrax.runtime.nexus.planning.plan_loop_models import PlanLoopPolicy
 from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 
@@ -21,8 +23,8 @@ class RuntimePolicyBundle:
     """
 
     tool_access: ToolAccessPolicy | ToolScopePolicy | None = None
-    budget: Any | None = None
-    plan_loop: Any | None = None
+    budget: BudgetPolicy | None = None
+    plan_loop: PlanLoopPolicy | None = None
     require_human_on_critical: bool = True
     domain_fragments: Dict[str, Any] = field(default_factory=dict)
 

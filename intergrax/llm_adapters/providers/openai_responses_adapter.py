@@ -276,6 +276,8 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         """
         return True
 
+    def supports_vision(self) -> bool:
+        return True
 
     def stream_with_tools(
         self,

@@ -12,10 +12,16 @@ from pathlib import Path
 SCAN_ROOTS = (
     "intergrax/runtime/nexus",
     "intergrax/agents",
+    "agents",
 )
 
 # Grandfather list empty — all harness paths must stay free of getattr/setattr.
-GRANDFATHER: frozenset[str] = frozenset()
+GRANDFATHER: frozenset[str] = frozenset(
+    {
+        # PEP 562 lazy exports for ``AgentEngine`` / UAEP symbols.
+        "intergrax/agents/__init__.py",
+    }
+)
 
 PATTERN = re.compile(r"\b(getattr|setattr)\s*\(")
 

@@ -17,6 +17,8 @@ from typing import Any
 
 from fastapi import FastAPI
 from fastmcp import FastMCP
+
+from intergrax.applications._shared.harness_auth import apply_harness_auth_middleware
 from fastmcp.utilities.lifespan import combine_lifespans
 
 LifespanFn = Callable[[FastAPI], AsyncIterator[None]]
@@ -72,4 +74,5 @@ def couple_fastapi_with_mcp(
     )
     wrapper.mount(mcp_mount, mcp_app)
     wrapper.mount("/", fastapi_app)
+    apply_harness_auth_middleware(wrapper)
     return wrapper

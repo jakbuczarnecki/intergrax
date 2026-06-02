@@ -17,7 +17,7 @@ def register_postgresql_integration(*, override: bool = False) -> None:
             slug=IntegrationSlug.POSTGRESQL.value,
             categories=(IntegrationCategory.RELATIONAL_STORE,),
             factory=create_postgresql_relational_store,
-            status=IntegrationStatus.BETA,
+            status=IntegrationStatus.STABLE,
             env_prefix="INTERGRAX_POSTGRESQL",
             description=(
                 "PostgreSQL relational store (via create_postgresql_integration); "

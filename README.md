@@ -28,7 +28,7 @@ All platform documentation lives in [`docs/`](docs/). Canonical docs — one sou
 | [docs/README.md](docs/README.md) | Navigate docs, see current phase focus, update rules |
 | [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Strategic goal, decision hierarchy, standard work cycle |
 | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Full architecture canon (tiers, Nexus, UAEP §42) |
-| [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, gaps, priority, business-agent checklist (Appendix A) |
+| [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, hardening streams, priority, execution matrix/KPIs (Phase V), business-agent checklist (Appendix A) |
 | [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) | Create an agent: scaffold → register → run → inspect |
 | [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **Integration Library** — catalog of all **99** wired providers; each at `providers/<category>/<slug>/USAGE.md` |
 | [TOOLS.md](docs/TOOLS.md) | **Tool Library** — atomic LLM/MCP operations (RAG, web search, Jira, sandbox, …) |
@@ -38,7 +38,7 @@ All platform documentation lives in [`docs/`](docs/). Canonical docs — one sou
 | [intergrax/applications/USAGE.md](intergrax/applications/USAGE.md) | Tier-3 composition engine: manifest, typed bindings, registry |
 | [applications/USAGE.md](applications/USAGE.md) | Application layout: env, Docker, host, run |
 
-**Quick paths:** strategy → [DEVELOPMENT_STRATEGY](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) · new agent → [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md) · **integrations** → [INTEGRATIONS](docs/INTEGRATIONS.md) · **tools** → [TOOLS](docs/TOOLS.md) · **skills** → [SKILLS](docs/SKILLS.md) · **LLM** → [LLM_ADAPTERS](docs/LLM_ADAPTERS.md) · **new application** → [applications/USAGE](applications/USAGE.md) · **current phase** → [IMPLEMENTATION_PLAN](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) §4 (**Phase S** next; Q+ and R Done) · **Harness terms** → [architecture §5.3](docs/intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model)
+**Quick paths:** strategy → [DEVELOPMENT_STRATEGY](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) · new agent → [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md) · **integrations** → [INTEGRATIONS](docs/INTEGRATIONS.md) · **tools** → [TOOLS](docs/TOOLS.md) · **skills** → [SKILLS](docs/SKILLS.md) · **LLM** → [LLM_ADAPTERS](docs/LLM_ADAPTERS.md) · **ideal harness target** → [IDEAL_HARNESS_AI_ARCHITECTURE](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) · **Phase V stream list** → [IMPLEMENTATION_PLAN §Phase V](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-v--harness-architecture-hardening-post-u) · **Phase V execution matrix/KPIs** → [IMPLEMENTATION_PLAN §Phase V execution matrix](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-v--execution-matrix-dependencies-and-order) · **L3/L4 gates** → [IMPLEMENTATION_PLAN §Phase V L3/L4 gate evidence](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-v--l3l4-gate-evidence-architecture-maturity) · **new application** → [applications/USAGE](applications/USAGE.md) · **Harness terms** → [architecture §5.3](docs/intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model)
 
 ---
 
@@ -395,9 +395,11 @@ Intergrax is under **active development** (private R&D). Phase status, prioritie
 | **Q+** | Harness hardening — **Done** (Appendix D) |
 | **R** | Harness AI alignment (Skill Library, context, delegation, policy) — **Done (MVP)** (Appendix E) |
 | **S** | Harness environment GA — **Done** (2026-06-01) — [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) |
-| **K** | Business agents — **next** when product prioritizes (K.1/K.2) |
+| **T / U** | Harness cleanliness + production hardening — **Done** (Appendix G) |
+| **V** | Harness architecture hardening (capability graph, lifecycle governance, metrics, prompt/eval/context/security/cost) — **Active** (`V-CG.1`, `V-AM.1`, `V-ALG.1` done) |
+| **K** | Business agents — **end of plan**, deferred until explicit product prioritization (§6.3) |
 
-Regression gate: `uv run pytest -m gate -q` — **460 passed** (2026-06-01). Also: `python scripts/check_harness_no_getattr.py`
+Regression gate: `uv run pytest -m gate -q` — **481 passed** (2026-06-02). Also: `python scripts/check_harness_no_getattr.py`
 
 ---
 

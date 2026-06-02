@@ -24,6 +24,7 @@ def test_build_lab_integration_profile_defaults() -> None:
     assert profile.relational_store == IntegrationSlug.SQLITE
     assert profile.notification_channel == IntegrationSlug.LOG
     assert profile.interaction_surface == IntegrationSlug.LAB_JSON
+    assert profile.observability_backend == IntegrationSlug.OTEL
 
 
 def test_wire_lab_integrations_uses_profile_and_sqlite(tmp_path) -> None:

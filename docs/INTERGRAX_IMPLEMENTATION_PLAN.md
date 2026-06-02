@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-01) — **Phase Q+ / R / S Done**; gate **460 passed**  
+Status: Working draft (2026-06-02) — **Phase Q+ / R / S / T / U / V Done** (V-V6 closeout + CI); **Harness completion backlog Done**; product agents & apps **Deferred**; gate **484 passed**; operational L3/L4 stability window **pending** (2 release cycles)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -20,7 +20,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 |-------|--------|
 | Strategic goal, decision hierarchy, work cycle | [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | Full architecture specification | `intergrax_runtime_architecture.md` |
-| Phase status, gaps, priority | **This file** |
+| Phase status, gaps, priority | **This file** — **§4** ladder; **§6.3** = end-of-plan product work only |
 | Tier-0 integration catalog (what / where) | Architecture canon §7.1.1–§7.1.5 |
 | Tier-0 integration implementation (how) | **This file** Phase M |
 | Tier-0 tool catalog (what / where) | Architecture canon §7.1.6–§7.1.7, §22 |
@@ -36,9 +36,11 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Post-audit hardening (typing, legacy, monoliths) | **This file** Phase Q+ + **Appendix D** |
 | Harness GA / consolidation (no new OS features) | **This file** Phase Q / Q+ |
 | Harness AI alignment audit (2026-06-01) → Phase R | **This file** Phase R + **Appendix E** + canon [§5.3](intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model) |
-| Harness environment GA (2026-06-01) → Phase S | **This file** Phase S + **Appendix F** (K.1/K.2 **deferred**) |
+| Harness environment GA (2026-06-01) → Phase S | **This file** Phase S + **Appendix F** (K.1/K.2 → §6.3 end-of-plan) |
+| Harness production hardening (2026-06-01 audit) → Phase U | **This file** Phase U + **Appendix G** (**Done**; does **not** schedule K.1/K.2 — see §6.3) |
 | Skill / Tool / Integration layering (canon) | Architecture §5.3, §7.1.6–§7.1.8 |
 | Skill catalog | `SKILLS.md` |
+| Model & modality plane (vision, audio, ML) | Architecture canon §7.1.9 · [`MODALITY.md`](MODALITY.md) · **Phase W-ML** (below) |
 
 ---
 
@@ -59,7 +61,11 @@ Current optimization targets:
 
 **Harness environment (Phase S):** **Done** (2026-06-01) — stable stack, OTLP profile, `harness.*` skills, `HARNESS_ENVIRONMENT.md`, CI smoke. **Did not include** business agents (K.1/K.2).
 
-**Product agents (Phase K):** Problem Radar (K.1), Vendor Discovery (K.2), Legal expansion — **Deferred** until Phase S harness environment is **Done**. K.3–K.5 platform items **Done**.
+**Harness cleanliness (Phase T):** **Done** (2026-06-01) — unified `lab_harness_preset()`, typed reference agents, native `CatalogToolPlanner`, expanded stable stack. See Phase T.
+
+**Harness production hardening (Phase U):** **Done** (2026-06-01) — auth surfaces, strict harness profile, `HarnessReferenceAgent`, typed policy bundle, planner decoupling, sandbox opt-in. **U-Leg** legacy removal remains tracked in Appendix G. See Phase U + **Appendix G**.
+
+**Product agents (Phase K):** Problem Radar (K.1), Vendor Discovery (K.2) — **end of plan** (§4.0 Band 3, §6.3); not default next. K.3–K.5 platform hardening **Done**.
 
 **Platform quality (Phase Q):** Done (2026-06-01) — first harness audit remediation; gate was **417 passed** at close (see Appendix C).
 
@@ -133,7 +139,10 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Laboratory workflow | **~99%** (post-Q+-O) | No | Metrics parity, planner observability |
 | Agent OS certification (Phase L) | **Done** | No | Appendix A |
 | **Harness environment GA (Phase S)** | **Done** (2026-06-01) | No (blocks K.1/K.2 only) | S-Ops + S-H + S-Doc; gate green |
-| Regression gate | **460 passed** | No | Must stay green after each harness PR |
+| **Harness cleanliness (Phase T)** | **Done** (2026-06-01) | No | T-Ops + T-H; gate green |
+| **Harness production hardening (Phase U)** | **Done** | No | U-Sec + U-Pol + U-Con + U-Typ + U-Arch + U-CI; Appendix G |
+| **Harness architecture hardening (Phase V)** | **Done** | No (harness-only) | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics/MA/KG hardening |
+| Regression gate | **480 passed** | No | Must stay green after each harness PR |
 
 ---
 
@@ -161,7 +170,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 
 
-**Current alignment** (synced with §0.5, 2026-06-01):
+**Current alignment** (synced with §0.5, 2026-06-02):
 
 | Scope | Score | Notes |
 |-------|-------|-------|
@@ -171,9 +180,15 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Harness quality (Phase Q) | **Done** | Appendix C — gate **417** at Phase Q close |
 | Harness hardening (Phase Q+) | **Done** | Appendix D — typing, monolith splits, zero grandfathered `getattr` |
 | Harness AI alignment (Phase R MVP) | **Done** | Appendix E — Skill Library, context, delegation, policy bundle |
-| Regression gate | **460 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
+| Regression gate | **480 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
 | Harness environment GA (Phase S) | **Done** (2026-06-01) | S-H.* + S-Ops + S-Doc |
-| Product agents (Phase K) | **Deferred** | K.1/K.2 after Phase S **Done** |
+| Harness cleanliness (Phase T) | **Done** (2026-06-01) | T-Ops + T-H |
+| Harness production hardening (Phase U) | **Done** | Appendix G audit → U.* (U-Leg residual) |
+| Harness architecture hardening (Phase V) | **Done** | Capability graph, lifecycle governance, architecture metrics, prompt/eval/context/security/cost/MA/KG hardening |
+| Model & modality plane (Phase W-ML) | **Done** (2026-06-02) | Vision/speech profiles, tools, remote adapters, `harness.vision_qa` — canon §7.1.9 |
+| **Harness completion backlog** | **Done** (2026-06-02) | §4.1 — U-Leg, typing/CI, platform skills, research UAEP parity |
+| Product agents (Phase K) | **Deferred** | K.1/K.2 — end of priority list |
+| Tier-3 product applications | **Deferred** | New apps / product routes — after harness backlog |
 
 
 
@@ -202,6 +217,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | §22 ToolRuntime | Policy gateway | **Done** | `tool_runtime.py`, `ToolAccessPolicy` |
 
 | §7.1.8 Skill Library | Composable capability packs, importers | **MVP Done** | `intergrax/skills/` · `docs/SKILLS.md` |
+| §7.1.9 Model & Modality Plane | Vision (YOLO/ONNX/…), speech, classical ML, HF roles | **Done** | `docs/MODALITY.md` · Phase W-ML |
 
 | §5.3 Harness AI alignment | Scaffold, skill/tool split, context, delegation | **Done** | `scaffold/new_skill.py`, `intergrax/skills/`, Appendix E |
 
@@ -510,11 +526,13 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ### Phase K — Hardening & Reference Agents
 
-**Gate:** Start K.1/K.2 only after **Phase S (Harness environment GA)** is **Done** (see §4). Harness prerequisites (L, Q+, R) are already met.
+**Harness prerequisites:** L, Q+, R, S, T, U, and §4.1 **Done** — platform is ready **when** product chooses to start Band 3 (§6.3).
+
+**Scheduling rule (2026-06-02):** K.1/K.2 are **end-of-plan** (§4.0 Band 3, §6.3). Completing harness phases does **not** auto-schedule business agents as the next implementation task.
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
-| K.1 | Problem Radar prototype | **Deferred** | §36 | After Phase S; product decision |
+| K.1 | Problem Radar prototype | **Deferred** | §36 | Wave-1 scaffold frozen (`agents/problem_radar/`); resume after harness backlog |
 | K.2 | Vendor Discovery prototype | **Deferred** | §37 | After Phase S; product decision |
 | K.3 | Policy engine facade | **Done** | §42.11 | `PolicyEngine` + `coerce_replay_policy_engine`; `ExecutionGuard` uses `evaluate_replay` (2026-05-27) |
 | K.4 | Dual `AgentDecision` cleanup | **Done** | §42.7 | `ToolPlanDecision`; deprecated `tools_agent.AgentDecision` alias (2026-05-27) |
@@ -525,7 +543,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ### Phase L — Agent OS Certification
 
-**Directive:** L1 certification recorded in Appendix A. K.1/K.2 are **Phase K product work** — after harness environment GA (Phase S).  
+**Directive:** L1 certification recorded in Appendix A. K.1/K.2 are **Phase K product work** — **last** in the plan (§6.3), not concurrent with harness bands 1–2.  
 **Agent workflow:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)
 
 | # | Deliverable | Status | Req | Notes |
@@ -1752,7 +1770,7 @@ Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
 
 **Explicitly out of scope for Phase S:**
 
-- **K.1 Problem Radar / K.2 Vendor Discovery** — **Phase K** (after S Done)
+- **K.1 Problem Radar / K.2 Vendor Discovery** — **Phase K** (after U Done)
 - Multi-tenant SaaS (canon §50 — future)
 - Nested full harness per child — graph delegation remains default (R-Delegate)
 - `stable` on all 99 integration slugs — only the **lab harness stack** (see S-Ops.1)
@@ -1815,39 +1833,526 @@ Wave S4 (cleanup):   S-H.4
 Parallel:            S-Ops.4, domain skill growth (legal/research) — not required for S Done
 ```
 
-**After Phase S Done:** Phase **K** (K.1 or K.2) may start as first business agent on a complete harness.
+**After Phase S Done (historical):** Harness environment was ready for product agents. **Scheduling (2026-06-02):** K.1/K.2 remain **§6.3 end-of-plan** until explicit product prioritization.
+
+---
+
+### Phase T — Harness Cleanliness (post-S 2026-06-01)
+
+**Status:** **Done** (2026-06-01). **Prerequisites:** Phase S **Done**.  
+**Goal:** Close harness technical debt — unified lab preset, typed Tier-2 agents, native catalog planner, expanded stable stack, gate hygiene — without new business agents.
+
+| # | Deliverable | Status | Location | Acceptance |
+|---|-------------|--------|----------|------------|
+| T-Ops.1 | **`lab_harness_preset()`** — default lab profile (sqlite + log + lab_json + OTEL; optional redis/qdrant) | **Done** | `IntegrationProfile`, `integration_wiring.py`, `settings.py` | `test_lab_harness_preset.py` |
+| T-H.1 | **Echo/signoff `skill_ids`** — `harness.tool_smoke` on `AgentContract` | **Done** | `agents/echo`, `agents/signoff_probe` | `test_harness_reference_agent_skills.py` |
+| T-H.2 | **`rag.answers` gate hygiene** — gate uses `RetrievalService` only; legacy tests marked `legacy_rag_answers` | **Done** | `tests/integration/rag/answers/` | No `rag.answers` in `-m gate` |
+| T-H.3 | **Typed `TaskContext` in Tier-2 agents** — no `getattr` on capability/message content in `agents/` | **Done** | echo, research, signoff, org worker, lab mocks | `check_harness_no_getattr.py` scans `agents/` |
+| T-Ops.5 | **`CatalogToolPlanner`** without `ToolsAgent` wrapper | **Done** | `tool_planning_service.py`, `catalog_tool_planner.py` | `test_catalog_tool_planner.py` |
+| T-Ops.6 | **Tier-2 stable stack** — `postgresql` + `sentry` in `HARNESS_LAB_STABLE_SLUGS` | **Done** | `harness_lab_stack.py`, postgresql `register.py` | `test_harness_lab_stable_stack.py` |
+
+#### Phase T — Definition of done
+
+1. Lab default wiring uses `lab_harness_preset()` (OTEL on unless env disables).
+2. Echo and signoff_probe declare `harness.tool_smoke` via `skill_ids`.
+3. Gate RAG path is `RetrievalService`-only; legacy `rag.answers` tests excluded from gate.
+4. `python scripts/check_harness_no_getattr.py` passes with `agents/` in scan roots.
+5. `CatalogToolPlanner` does not import `ToolsAgent`.
+6. `postgresql` stable in catalog and harness stack list.
+
+**After Phase T Done (historical):** Harness cleanliness complete. **Scheduling (2026-06-02):** product milestone K.1/K.2 is **deferred** (§6.3), not the default next step.
+
+---
+
+### Phase U — Harness Production Hardening (post-T 2026-06-01)
+
+**Source:** Harness-system audit (2026-06-01) — security, contracts, policy wiring, typing, legacy, CI; **no business agents** (K.1/K.2 out of scope).  
+**Status:** **Done** (2026-06-01). **Prerequisites:** Phase T **Done**. **Residual:** U-Leg.* (legacy module removal) — optional follow-up; does not block K.  
+**Goal:** Close the gap between **laboratory harness** (fast iteration) and **production harness** (strategy doc: governance, persisted trace, secured surfaces, typed contracts, single policy path) without starting product agents.
+
+**Explicitly out of scope for Phase U:**
+
+- **K.1 Problem Radar / K.2 Vendor Discovery** — remain **Phase K** (after U Done)
+- Multi-tenant SaaS (canon §50)
+- New domain skills beyond harness platform pack
+- Legal/product application feature work (except shared harness wiring used by lab)
+
+#### U.0 — Audit & plan sync
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U.0.1 | **Appendix G** — audit findings → U.* IDs (100% mapped) | **Done** | Critical | This file Appendix G | Every audit row has U ID |
+| U.0.2 | **§0.5 / §4 / §6** — Phase U as **NOW**; K.1/K.2 gated on U Done | **Done** | Critical | This file | No contradiction with strategy |
+
+#### U-Sec — Lab & debug security surfaces
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-Sec.1 | **AuthZ on lab surfaces** — optional API key / bearer for `POST /v1/lab/run`, `/debug/*`, MCP mount; default **deny** when `INTERGRAX_HARNESS_API_KEY` set | **Done** | **Critical** | `harness_auth.py`, lab/debug/MCP routes | `test_harness_auth.py` |
+| U-Sec.2 | **MCP default opt-in** — `LAB_INCLUDE_MCP=false` default for strict profile; document in `HARNESS_ENVIRONMENT.md` | **Done** | High | `LabApplicationSettings`, `.env.example` | `test_lab_application_settings_phase_u.py` |
+| U-Sec.3 | **Sandbox tool policy** — lab enables `sandbox.exec` only when `SandboxSessionManager` wired; document risk | **Done** | High | `tool_wiring.py`, harness docs | Unit: sandbox omitted without session |
+| U-Sec.4 | **`strict_harness` runtime profile** — `production_mode=True`, `GovernanceService`, persisted `trace_db_path`, OTEL; env `LAB_STRICT_HARNESS=true` | **Done** | **Critical** | `lab_runtime_config.py`, lab wiring | `test_lab_strict_harness.py` |
+
+#### U-Pol — Unified policy path (lab + Tier-1)
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-Pol.1 | **`apply_policy_bundle` in lab** — `build_lab_runtime_config(ctx)` applies `ApplicationBuildContext.policy_bundle` to every UAEP `RuntimeConfig` (echo, signoff, mocks) | **Done** | **Critical** | `lab_runtime_config.py`, `runtime_config_bridge.py` | Reference agents use `build_lab_agent_runtime_context` |
+| U-Pol.2 | **Policy engine vs bundle** — single composition root: Nexus `policy_engine` + `RuntimeConfig.policy_bundle` documented and wired from same `build_runtime_policy_bundle()` in lab | **Done** | High | `policy_wiring.py`, lab registry | Bundle passed via `ApplicationBuildContext` |
+| U-Pol.3 | **Typed `RuntimePolicyBundle`** — replace `budget: Any`, `plan_loop: Any` with concrete policy types or `Protocol` refs | **Done** | Medium | `runtime/policy/policy_bundle.py` | `BudgetPolicy` / `PlanLoopPolicy` fields |
+
+#### U-Con — Agent / UAEP contract unification
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-Con.1 | **`HarnessReferenceAgent` base** — `class HarnessReferenceAgent(Agent):` + required UAEP methods; echo/signoff/mock inherit | **Done** | **Critical** | `intergrax/agents/harness_reference_agent.py` | Echo/signoff/mocks inherit |
+| U-Con.2 | **Register-time UAEP check** — `AgentRegistry.register()` rejects agents that fail `isinstance(agent, UAEPAgent)` when manifest marks `requires_uaep: true` | **Done** | High | `agent_registry.py`, lab manifest | `test_agent_registry_uaep.py` |
+| U-Con.3 | **Skill runtime proof** — gate test: lab registry resolves `harness.tool_smoke` → non-empty `allowed_tools` and tool step can plan | **Done** | High | `test_harness_reference_agent_skills.py`, acceptance lab | Echo/signoff declare `harness.tool_smoke` |
+
+#### U-Typ — Strong typing & getattr hygiene
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-Typ.1 | **Fix `ToolsAgentConfig`** — remove erroneous tuple defaults (`temperature = None,`); use `@dataclass` or explicit `__init__` | **Done** | **Critical** | `intergrax/tools/tools_agent.py` | Extends `ToolPlanningConfig` |
+| U-Typ.2 | **`ToolPlanningConfig` in Tier-1** — planner prompts/config in `runtime/nexus/tools/`; `ToolPlanningService` does not import `tools.tools_agent` | **Done** | High | `runtime/nexus/tools/` | `test_catalog_tool_planner.py` |
+| U-Typ.3 | **`ToolPlannerTrackable` protocol** — replace `isinstance(tool_planner, CatalogToolPlanner)` in `runtime_state` | **Done** | Medium | `tool_planner_trackable.py`, `runtime_state.py` | Protocol-based LLM tracker |
+| U-Typ.4 | **Extend getattr audit** — `integrations/registry/profile.py`, `sandbox/service.py` | **Done** | Medium | Typed profile + `SandboxSession` | Harness nexus/agents paths clean |
+| U-Typ.5 | **Remove `hasattr` on harness paths** — `shared_task_context`, `engine_plan_models`, `platform_wiring` trace_store resolution | **Done** | Medium | `platform_wiring.py`, `nexus_loop.trace_store` | Typed trace resolution |
+
+#### U-Arch — Integration & composition consistency
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-Arch.1 | **Single lab integration preset** — `create_lab_interaction_adapter()` uses `lab_harness_preset()` (not `IntegrationProfile.lab()`) | **Done** | High | `integration_wiring.py` | `test_lab_harness_environment_wiring.py` |
+| U-Arch.2 | **Typed lab wiring returns** — remove `# type: ignore` on trace/checkpoint/notification adapters; explicit bundle types | **Done** | Medium | `SQLiteIntegrationBundle`, `integration_wiring.py` | Typed sqlite facades |
+| U-Arch.3 | **Rename runtime `tools_agent_*` fields** — `tools_agent_answer` → `tool_planner_answer` (or `catalog_tool_answer`); update trace diag types | **Done** | Low | `runtime_state.py`, tracing adapters | Gate green |
+
+#### U-Leg — Legacy stack removal
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-Leg.1 | **`ToolsAgent.run` deprecation freeze** — document; block new imports; optional redirect to `ToolRuntime` only path | **Done** | Medium | `tools_agent.py`, `check_tools_agent_run.py` | CI audit |
+| U-Leg.2 | **`rag.answers` removal or archive** — migrate remaining `legacy_rag_answers` tests to `RetrievalService`; delete or move module under `intergrax/legacy/` | **Done** | Medium | `intergrax/legacy/rag_answers/` | `test_rag_answers_removed.py` |
+| U-Leg.3 | **Legacy tool plan booleans** — document sunset for `from_legacy` / `uses_legacy_booleans_only`; gate new usage | **Done** | Low | `tool_runtime.py`, `check_legacy_tool_plan_booleans.py` | Deprecation warnings |
+
+#### U-Doc — Operator & architecture alignment
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-Doc.1 | **`HARNESS_ENVIRONMENT.md`** — security (auth, MCP), strict profile, policy bundle wiring truth | **Done** | High | `docs/HARNESS_ENVIRONMENT.md` | Phase U security section |
+| U-Doc.2 | **Canon §52 / strategy** — lab vs production harness checklist references Phase U | **Won't fix** | Medium | — | Deferred; plan + HARNESS_ENVIRONMENT sufficient |
+| U-Doc.3 | **Fix Phase K footer** in `HARNESS_ENVIRONMENT.md` (post-T, gated on U) | **Done** | Low | `HARNESS_ENVIRONMENT.md` | Gated on Phase U |
+
+#### U-CI — Verification & smoke
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| U-CI.1 | **harness-smoke includes Phase U tests** — auth, strict harness, lab settings | **Done** | High | `.github/workflows/unit-tests.yml` | harness-smoke extended |
+| U-CI.2 | **Acceptance: production harness path** — one gate test: strict lab + sqlite trace + policy bundle + skill-resolved tools | **Done** | **Critical** | `tests/acceptance/agent_os/`, unit strict harness | `pytest -m gate` **479 passed** |
+| U-CI.3 | **Optional: strict harness job** — separate CI job with `LAB_STRICT_HARNESS=true` + API key | **Done** | Medium | `.github/workflows/unit-tests.yml` | `harness-strict` job |
+
+#### Phase U — Definition of done
+
+1. Lab **policy bundle** reaches `RuntimeConfig` for all reference agents (U-Pol.1); tool policy resolution exercised in test.
+2. **Secured-by-configuration** lab/debug/MCP (U-Sec.1–U-Sec.2); **strict_harness** E2E exists (U-Sec.4, U-CI.2).
+3. Reference agents use **HarnessReferenceAgent** or equivalent enforced UAEP (U-Con.1–U-Con.2).
+4. **`ToolsAgentConfig` bug fixed**; Tier-1 planner config decoupled from `tools_agent` (U-Typ.1–U-Typ.2).
+5. **Integration preset** consistent (U-Arch.1); docs accurate (U-Doc.*).
+6. Gate: `uv run pytest -m gate -q` green; getattr + tools_agent audits pass.
+7. §0.5 **Harness production hardening** row **Done** with date; Appendix G 100% **Done** or **Won't fix**.
+8. **K.1/K.2 remain Deferred** until U Done.
+
+#### Phase U — Recommended execution order
+
+```text
+Wave U0 (plan):     U.0.* (Done with this edit)
+Wave U1 (security): U-Sec.1 → U-Sec.2 → U-Sec.4
+Wave U2 (policy):   U-Pol.1 → U-Pol.2 → U-Con.3
+Wave U3 (contracts): U-Con.1 → U-Con.2 → U-Typ.1
+Wave U4 (typing):   U-Typ.2 → U-Typ.3 → U-Typ.4 → U-Typ.5
+Wave U5 (arch):     U-Arch.1 → U-Arch.2 → U-Pol.3
+Wave U6 (legacy):   U-Leg.2 → U-Leg.1 → U-Leg.3 → U-Arch.3
+Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
+```
+
+**After Phase U Done (historical):** Production-grade harness baseline achieved. **Scheduling (2026-06-02):** start K.1/K.2 only via **§6.3** after explicit product decision — not by default.
+
+---
+
+### Phase V — Harness Architecture Hardening (post-U)
+
+**Source:** Architecture hardening audit against `IDEAL_HARNESS_AI_ARCHITECTURE.md` (2026-06-02).  
+**Status:** **Done** (2026-06-02) — all `V-*` and `V-V6.*` contracts, unit tests, governance artifacts, and CI closeout gate; **operational** L3/L4 evidence (two stable release cycles) remains for release board sign-off. **Prerequisites:** Phase U **Done**.  
+**Goal:** Close architecture-level gaps that increase long-term technical debt, reduce extensibility, or weaken governance in harness-only scope.
+
+**Explicitly in scope for Phase V:**
+
+- Capability dependency graph + compatibility gates
+- Agent lifecycle governance (certification/promotion/deprecation/retirement/ownership)
+- Context quality scoring + context regression discipline
+- Prompt engineering architecture and governance
+- Evaluation registry operations (offline/online/shadow/human)
+- Architecture metrics and architecture debt governance
+- Advanced security/data governance defenses (prompt/tool/retrieval attacks)
+- Cost/resource governance (budgets, quotas, forecasting, optimization)
+- Multi-agent coordination model catalog and selection matrix
+- Knowledge-graph/Graph-RAG evolution path (harness capability, no product-domain rollout)
+
+**Explicitly out of scope for Phase V:**
+
+- K.1/K.2 business agent delivery
+- New product-specific Tier-3 applications
+- Domain skill packs not under `harness.*`
+
+#### V-CG — Capability Graph Architecture
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-CG.1 | Capability graph schema (nodes + edges for Integration/Tool/Skill/Policy/Agent/Application/Product) | **Done** | **Critical** | Typed schema + docs in canon |
+| V-CG.2 | Graph lineage builder from registries | **Done** | High | Build process covers changed artifacts |
+| V-CG.3 | Impact analysis report (blast radius) for changed capabilities | **Done** | High | CLI/API report in CI artifact |
+| V-CG.4 | Compatibility validation on dependency graph edges | **Done** (report + enforce mode) | **Critical** | CI fails on incompatible graph changes |
+
+#### V-ALG — Agent Lifecycle Governance
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-ALG.1 | Agent certification gate contract (quality/policy/security) | **Done** | **Critical** | Certification criteria codified + tested |
+| V-ALG.2 | Promotion flow (dev -> staging -> production) with evidence | **Done** | High | Promotion requires evidence bundle |
+| V-ALG.3 | Deprecation + retirement workflow and migration window policy | **Done** (typed governance contracts) | High | Registry lifecycle states enforced |
+| V-ALG.4 | Owner/on-call metadata required for production-eligible agents | **Done** (ownership guard contracts) | High | Registration validation blocks missing ownership |
+
+#### V-CE — Context Quality and Regression Hardening
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-CE.1 | Relevance/freshness/confidence scoring in context assembly | **Done** | High | Scores emitted in trace/runtime events |
+| V-CE.2 | Duplicate suppression + context quality thresholds | **Done** | Medium | Threshold policy test coverage |
+| V-CE.3 | Context regression benchmark suite | **Done** | High | CI regression baseline stored and compared |
+| V-CE.4 | Retrieval effectiveness evaluation (precision/recall@k style) | **Done** | Medium | Bench report in evaluation registry |
+
+#### V-PE — Prompt Engineering Architecture
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-PE.1 | Prompt registry governance contract (owner/version/risk metadata) | **Done** | High | Registry validations active |
+| V-PE.2 | Prompt composition model (system/task/policy/context layers) | **Done** | High | Canon + reference implementation path |
+| V-PE.3 | Deterministic policy injection overlays | **Done** | High | Prompt build trace shows overlays |
+| V-PE.4 | Prompt regression/adversarial test suite | **Done** | Medium | Gate includes prompt regression subset |
+
+#### V-EVAL — Evaluation and Benchmarking Operations
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-EVAL.1 | Unified evaluation modes: offline/online/shadow/human | **Done** | **Critical** | Mode contracts documented + wired |
+| V-EVAL.2 | Golden datasets + scenario libraries + regression suites | **Done** (typed asset bundle contracts) | High | Versioned benchmark assets |
+| V-EVAL.3 | Automated evaluators (rule-based + LLM judge) | **Done** | High | Evaluator outputs persisted |
+| V-EVAL.4 | Evaluation registry trend/comparison reports | **Done** | High | Report artifact required for major releases |
+
+#### V-AM — Architecture Metrics & Debt Governance
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-AM.1 | Architecture health metric spec (modularity/dependency/coverage/debt) | **Done** | **Critical** | Canon metrics section + thresholds |
+| V-AM.2 | Metrics emission pipeline and dashboards | **Done** (pipeline + trend/gate contracts) | High | Dashboard + alert definitions |
+| V-AM.3 | Governance coverage and observability coverage measurement | **Done** | High | Coverage reports generated in CI |
+| V-AM.4 | Architecture debt index + periodic review process | **Done** | High | Debt report cadence defined and used |
+
+#### V-SEC — Security & Data Governance Hardening
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-SEC.1 | Prompt injection defense profile + tests | **Done** | **Critical** | Adversarial tests in gate subset |
+| V-SEC.2 | Tool injection defense (schema/argument/capability controls) | **Done** | High | Deny-path tests for dangerous payloads |
+| V-SEC.3 | Retrieval poisoning defense (trust score/quarantine flow) | **Done** | High | Poisoning simulation tests |
+| V-SEC.4 | Tenant isolation verification + security audit trail checks | **Done** | High | Isolation checks pass in acceptance suite |
+
+#### V-COST — Cost & Resource Governance
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-COST.1 | Budget envelopes (tenant/app/agent/model/tool) | **Done** | High | Budget policy enforcement tests |
+| V-COST.2 | Token/tool/resource quotas with deny/degrade behavior | **Done** | High | Quota exceedance behavior deterministic |
+| V-COST.3 | Forecast + anomaly detection for spend and token drift | **Done** | Medium | Forecast/anomaly report available |
+| V-COST.4 | Optimization recommendations with policy guardrails | **Done** | Medium | Recommendations recorded in ops reports |
+
+#### V-MA — Multi-Agent Coordination Model Catalog
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-MA.1 | Coordination patterns catalog (hierarchical/orchestrator-worker/supervisor-worker/peer/swarm/evaluator-loop) | **Done** | High | Canon section + selection table |
+| V-MA.2 | Pattern selection matrix (risk/latency/cost/complexity) | **Done** | High | Matrix used in planning docs |
+| V-MA.3 | Pattern-specific acceptance tests | **Done** | Medium | Test suite covers selected patterns |
+
+#### V-KG — Knowledge Graph Evolution Path (Harness)
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-KG.1 | Graph-RAG architecture contract | **Done** | Medium | Canon section + terminology alignment |
+| V-KG.2 | Hybrid retrieval reference path (vector + keyword + graph) | **Done** | Medium | Reference implementation notes |
+| V-KG.3 | Graph-backed explainability trace fields | **Done** | Medium | Trace schema supports graph provenance |
+
+#### V-V6 — Phase V Closeout (L3/L4 Evidence & CI)
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-V6.1 | Bounded adaptive governance contracts (policy-learning envelopes, human gates) | **Done** | High | `adaptive_governance.py` + unit tests |
+| V-V6.2 | L3/L4 maturity gate evidence aggregator | **Done** | **Critical** | `maturity_gate_evidence.py` + `maturity_gate_evidence_report.json` |
+| V-V6.3 | CI closeout gate (`phase_v_closeout_gate.py --enforce`) | **Done** | **Critical** | Regression workflow runs closeout after gate tests |
+
+#### Phase V — Execution matrix (dependencies and order)
+
+Phase V should be executed in dependency-aware waves:
+
+```text
+Wave V0 (planning):      V-CG.1 + V-AM.1 + ownership/cadence baseline
+Wave V1 (foundations):   V-CG.2 -> V-CG.4 + V-ALG.1 + V-PE.1 + V-EVAL.1
+Wave V2 (quality):       V-CE.1 -> V-CE.3 + V-PE.2 -> V-PE.4 + V-EVAL.2 -> V-EVAL.3
+Wave V3 (governance):    V-ALG.2 -> V-ALG.4 + V-SEC.1 -> V-SEC.4 + V-COST.1 -> V-COST.2
+Wave V4 (ops maturity):  V-AM.2 -> V-AM.4 + V-EVAL.4 + V-COST.3 -> V-COST.4
+Wave V5 (advanced):      V-MA.1 -> V-MA.3 + V-KG.1 -> V-KG.3
+Wave V6 (closeout):      L3/L4 gate evidence + docs sync + priority reset
+```
+
+Critical dependency rules:
+
+- `V-CG.1` must precede `V-CG.2/V-CG.4` and dependency-health metrics in `V-AM`.
+- `V-PE.1` and `V-EVAL.1` must precede prompt/eval regression gates.
+- `V-ALG.1` must precede production promotion flow (`V-ALG.2`).
+- `V-SEC.*` and `V-COST.*` deny/degrade behavior must be validated before L3 gate.
+
+#### Phase V — KPI thresholds and acceptance metrics
+
+Minimum quantitative targets for Phase V completion:
+
+| Area | Metric | Target |
+|------|--------|--------|
+| Capability graph | Changed harness PRs with graph impact artifact | **>= 95%** |
+| Compatibility | Graph-edge compatibility gate pass on default branch | **100% required** |
+| Lifecycle governance | Production-eligible agents with owner + certification metadata | **100% required** |
+| Context quality | Context regression suite pass rate | **>= 95%** |
+| Prompt quality | Prompt regression/adversarial suite pass rate | **>= 95%** |
+| Evaluation ops | Critical capabilities with baseline + post-change scores | **100% required** |
+| Security hardening | Adversarial defense suite pass rate (prompt/tool/retrieval) | **100% required** |
+| Cost governance | Budget/quota policy test pass rate | **100% required** |
+| Architecture metrics | Modularity/dependency/governance/observability coverage reported | **100% runs** |
+| Architecture debt | Critical debt items trending (rolling 30d) | **non-increasing** |
+
+#### Phase V — Operating cadence and governance ceremonies
+
+- **Weekly:** Architecture hardening triage (V-* progress, blockers, scope control).
+- **Weekly:** Security/cost review for new deny/degrade paths and policy regressions.
+- **Bi-weekly:** Architecture review board for high-impact V-* design changes.
+- **Monthly:** Architecture debt review (index trend + mitigation decisions).
+- **Per release candidate:** L3/L4 evidence review (gates below) before release approval.
+
+#### Phase V — Stream ownership model
+
+| Stream | Primary owner | Supporting owners |
+|--------|----------------|-------------------|
+| V-CG | Platform architecture | Runtime + DevEx |
+| V-ALG | Runtime governance | Platform + QA |
+| V-CE / V-PE | Runtime + Prompt systems | QA/Eval |
+| V-EVAL | Evaluation engineering | Runtime + Product quality |
+| V-AM | Platform observability | Runtime + DevEx |
+| V-SEC | Security engineering | Runtime + Platform |
+| V-COST | Runtime economics | Platform + FinOps |
+| V-MA | Orchestration/runtime | QA |
+| V-KG | Knowledge systems | Runtime + Eval |
+
+Owner rules:
+
+- Every V-* PR must include a single accountable owner.
+- Cross-stream dependencies must list an explicit approver before merge.
+- Ownership metadata for production-impacting components must be reflected in registries where applicable.
+
+#### Phase V — L3/L4 gate evidence (architecture maturity)
+
+L3 readiness requires:
+
+1. `V-CG.*`, `V-ALG.*`, `V-EVAL.1-4`, `V-SEC.1-4`, `V-COST.1-2`, `V-AM.1-3` complete.
+2. KPI thresholds marked **100% required** above are satisfied.
+3. Security and compatibility gates are green for two consecutive release cycles.
+4. Architecture governance artifacts updated (canon + plan + traceability appendices).
+
+L4 readiness requires:
+
+1. L3 criteria met and stable.
+2. `V-COST.3-4`, `V-MA.*`, `V-KG.*`, and adaptive loops with bounded governance controls.
+3. Closed-loop evaluation feedback demonstrates measurable quality/cost improvement over baseline.
+4. Policy-learning/adaptive behavior remains human-governed and auditable.
+
+#### Phase V — Definition of done
+
+1. Capability graph compatibility validation is active in CI for harness-critical changes.
+2. Agent lifecycle governance gates exist and are enforced for production-eligible agents.
+3. Context/prompt/evaluation governance artifacts are versioned and regression-tested.
+4. Architecture health metrics are measurable and reviewed on a recurring cadence.
+5. Security/data/cost hardening controls are testable, observable, and documented.
+6. All changes remain harness-only (no implicit K.1/K.2 scope creep).
+7. Coverage matrix (Appendix H) has **no `Uncovered` rows** for harness-scope architecture domains.
+
+#### Phase V — Paydown log
+
+| Date | V ID | Summary |
+|------|------|---------|
+| 2026-06-02 | V-CG.1, V-AM.1, V-ALG.1 | Typed baseline contracts added (`intergrax/runtime/architecture/`) + report-only artifacts script (`scripts/phase_v_foundations_report.py`) + unit tests |
+| 2026-06-02 | V-CG.2, V-CG.3, V-CG.4 | Lineage/impact/compatibility modules + capability graph guard script (`scripts/phase_v_capability_graph_guard.py`) + enforce switch + unit tests |
+| 2026-06-02 | V-AM.2, V-ALG.2, V-EVAL.1 | Metrics pipeline contracts + promotion flow evaluator + unified evaluation mode contracts + governance artifacts script (`scripts/phase_v_governance_report.py`) + unit tests |
+| 2026-06-02 | V-ALG.3, V-ALG.4, V-EVAL.2 | Lifecycle/deprecation governance contracts + production ownership guard + evaluation asset bundle contracts + governance report extensions + unit tests |
+| 2026-06-02 | V-EVAL.3, V-AM.3 | Automated evaluators (`evaluation_automation.py`) + architecture coverage report (`architecture_coverage.py`) + governance report persistence + unit tests |
+| 2026-06-02 | V-AM.4, V-EVAL.4 | Debt governance cadence/policy report (`debt_governance.py`) + release trend/comparison report (`evaluation_registry_trends.py`) + governance script artifacts + unit tests |
+| 2026-06-02 | V-SEC.1, V-SEC.2 | Prompt injection defense profile (`prompt_security.py`) + tool injection defense controls (`tool_security.py`) + governance artifacts + adversarial unit tests |
+| 2026-06-02 | V-SEC.3, V-SEC.4 | Retrieval poisoning defense (`retrieval_security.py`) + tenant isolation/audit verification (`tenant_security.py`) + governance artifacts + unit tests |
+| 2026-06-02 | V-COST.1, V-COST.2, V-COST.3, V-COST.4 | Budget envelopes + quota deny/degrade + cost forecast/anomaly + optimization guardrails (`cost_*.py`) + governance artifacts + unit tests |
+| 2026-06-02 | V-CE.1, V-CE.2, V-PE.1, V-PE.2 | Context quality scoring/dedup (`context_engineering.py`) + prompt registry/composition (`prompt_registry_governance.py`, `prompt_composition.py`) + governance artifacts + unit tests |
+| 2026-06-02 | V-CE.3, V-CE.4, V-PE.3, V-PE.4 | Context regression benchmark + retrieval effectiveness + policy overlays + prompt regression suite + governance artifacts + unit tests |
+| 2026-06-02 | V-MA.1, V-MA.2, V-MA.3, V-KG.1, V-KG.2, V-KG.3 | Multi-agent coordination catalog/selection/acceptance + Graph-RAG/hybrid retrieval/provenance contracts + governance artifacts + unit tests |
+| 2026-06-02 | V-V6.1, V-V6.2, V-V6.3 | Bounded adaptive governance + L3/L4 maturity evidence + `phase_v_closeout_gate.py` CI enforcement |
+| — | — | *(append row per merged PR)* |
+
+---
+
+## Phase W-ML — Model & Modality Plane (Vision, Audio, Classical ML)
+
+**Status:** Architecture + catalog documentation **Done** (2026-06-02); implementation **Planned**.  
+**Canon:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.9, §53.13 · **Catalog:** [`MODALITY.md`](MODALITY.md) · **Ideal:** [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5.1, §7.1, §17.
+
+**Strategic fit:** Extends Harness AI at scale without MLOps scope creep. Same patterns as LLM adapters and Integration Library — registries, contracts, atomic tools, policy, trace, V-COST budgets.
+
+**Explicitly in scope:**
+
+- Three-plane modality model (generative LLM / ingest / dedicated inference).
+- Extensible **vision inference engine** (YOLO/Ultralytics, ONNX Runtime, OpenVINO, TensorRT, remote Triton/TorchServe, cloud endpoints).
+- `speech_provider` integrations (e.g. ElevenLabs) + TTS/STT tools.
+- Classical ML registry (`ModelArtifact`, `ml.predict` tools).
+- Hugging Face role separation (embeddings vs hosted inference vs hub governance).
+- `ModalityProfile` for Tier-3/agent assembly.
+- `modality_metrics` + cost envelope extensions.
+
+**Explicitly out of scope:**
+
+- Online training / AutoML / feature stores as platform products.
+- LLM slugs in Integration Catalog (§44.10).
+- CV or ML SDK imports in Tier-2 `agents/`.
+- Monolithic “vision skills” without atomic tools.
+
+**Dependency:** Documentation may land during Phase V; code waves SHOULD not block V closeout but SHOULD follow V-COST/V-SEC patterns.
+
+#### W-ML — Deliverables
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| W-ML.0 | Canon §7.1.9 + §53.13 + `MODALITY.md` + IDEAL/LLM_ADAPTERS sync | **Done** | **Critical** | Docs merged; three planes documented |
+| W-ML.1 | Multimodal LLM contract — `supports_vision` / audio flags; `AttachmentRef` → vendor parts | **Done** | High | Conformance tests in `tests/unit/llm_adapters/`; OpenAI + Gemini vision flags |
+| W-ML.2 | `speech_provider` category + `elevenlabs` (or stub) + tools `speech.synthesize` / `speech.transcribe` | **Done** | Medium | `ElevenLabsSpeechBackend` when `ELEVENLABS_API_KEY` set; stub otherwise |
+| W-ML.3 | `intergrax/model_inference/` scaffold — `VisionInferenceAdapter`, registry, `yolo_ultralytics` + `onnxruntime` slugs | **Done** | High | OpenCV contour adapter (default); optional Ultralytics; golden PNG fixture |
+| W-ML.4 | Remote serving integrations — `vision_serving` / `huggingface_inference` (Triton HTTP + HF Inference API) | **Done** | Medium | `triton_vision.py`, `huggingface_inference_vision.py`; env `INTERGRAX_TRITON_URL`, `HUGGINGFACE_API_KEY` |
+| W-ML.5 | `ModelInferenceAdapter` + `ml.predict` + `ModelArtifact` metadata contract | **Done** | Medium | `ml.predict` tool + stub sklearn classifier artifact |
+| W-ML.6 | `ModalityProfile` + Tier-3 wiring + policy intersection with `ToolAccessPolicy` | **Done** | High | `runtime/modality/modality_profile.py` + `ToolAccessPolicy.apply_modality_profile` |
+| W-ML.7 | `modality_metrics` export on `TASK_COMPLETED` + V-COST fields (`inference_ms`, `media_bytes`, `tts_characters`) | **Done** | Medium | `runtime/observability/modality_metrics.py` + metrics export |
+| W-ML.8 | Capability graph nodes for modality tools + compatibility guard entries | **Done** | Low | Modality tools registered in default catalog (`register_default_tools`) |
+
+#### W-ML — Execution waves
+
+```text
+Wave W0 (docs):       W-ML.0  — Done 2026-06-02
+Wave W1 (LLM):        W-ML.1  — multimodal attachments (Plane A)
+Wave W2 (speech):     W-ML.2  — speech_provider + tools
+Wave W3 (vision CV):  W-ML.3  — YOLO + ONNX local inference + vision.* tools
+Wave W4 (scale-out):  W-ML.4  — remote serving integrations
+Wave W5 (classical):  W-ML.5  — ml.predict + ModelArtifact
+Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability graph
+```
+
+**Priority ladder placement:** Band 2 extension — run **after** critical Phase V streams (V-CG, V-SEC, V-COST) or **in parallel** with V-MA/V-KG when owners are separate. **Not** Band 3 product work.
+
+#### W-ML — Existing assets (no rework required)
+
+| Asset | Plane | Location |
+|-------|-------|----------|
+| Whisper / yt_dlp ingest | B | `integrations/providers/document_parser/` |
+| Image/audio smart loaders | B | `intergrax/multimedia/`, `rag/document_loaders/` |
+| HF embeddings | B | `rag/embedding/providers/hf_embedding_provider.py` |
+| SPLADE sparse (optional) | B | `rag/vectorstore/sparse/splade_sparse_encoder.py` |
+| LLM adapters (19 slugs) | A | `intergrax/llm_adapters/` |
+
+#### W-ML — Paydown log
+
+| Date | W-ML ID | Summary |
+|------|---------|---------|
+| 2026-06-02 | W-ML.0 | Canon §7.1.9, §53.13, `MODALITY.md`, IDEAL §3.5.1/§7.1/§17, `LLM_ADAPTERS.md` multimodal section, docs README |
+| 2026-06-02 | W-ML.1–W-ML.8 | Multimodal LLM flags + attachment mapping, speech/vision/ml tools, model_inference scaffold, ModalityProfile, modality metrics, runtime governance bridge |
+| 2026-06-02 | W-ML.2–W-ML.3, W-ML.6 | Lab harness modality tool wiring, OpenCV/ElevenLabs backends, golden vision fixture, `RuntimeConfig.modality_profile` |
+| 2026-06-02 | W-ML.4+ | Triton/HF vision adapters, `vision.segment`/`vision.ocr_regions`/`ml.explain`, `harness.vision_qa`, extended `ModalityProfile`, legal `LEGAL_ENABLE_MODALITY_TOOLS` |
+| 2026-06-02 | W-ML.workers | `ModalityExecutionProfile`, thread-pool executor, `ml.batch_predict`, `harness.modality_smoke`, `max_media_bytes` enforcement |
+| 2026-06-02 | W-ML.celery | `CeleryModalityInferenceExecutor`, serialized modality jobs, trace `modality_metrics` on `tool_invocation_end`, aggregated export |
+| 2026-06-02 | W-ML.metrics+ | Typed `ModalityInvocationCounters`, `media_bytes`/`tts_characters`/`ml_predictions` recording, message_bus Celery registration, capability graph modality `COMPATIBLE_WITH` edges |
 
 ---
 
 ## 4. Priority Order
 
+### 4.0 Implementation priority ladder (canonical)
 
+**Read this before §6.** The plan has three bands. Implement **top to bottom**. **Never** pull items from band 3 into “next step” summaries while band 1–2 are the active policy.
+
+| Band | What | Status (2026-06-02) | Examples |
+|------|------|---------------------|----------|
+| **1 — Harness platform** | Tier-0/1/3 lab wiring, security, policy, typing, legacy removal, gate audits | **Maintenance** (§4.1 **Done**; keep green) | `pytest -m gate`, `check_harness_*`, `check_tools_agent_*`, regression fixes |
+| **2 — Harness architecture hardening** | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics hardening — **no** business domain | **Done (Phase V + V-V6)** | V-CG … V-KG, V-V6 closeout |
+| **2b — Modality plane (optional parallel)** | Vision CV, speech, classical ML — harness Tier-0 only | **Done** | W-ML complete; optional Celery bus wiring for Tier-3 scale-out |
+| **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
+
+**Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
+
+**Policy (2026-06-02):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green (includes Phase V closeout CI). Band 2 = **Done** (Phase V + V-V6); optional **W-ML** in Band 2b. Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
+BAND 1:  Harness maintenance — gate + audit scripts (§6.1)
+BAND 2:  Harness architecture hardening — Phase V streams (§6.2)
+BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
-NOW:     Phase K — business agents (after S Done; product decision)
-
+DONE:    Harness completion backlog (§4.1) — 2026-06-02
+DONE:    Phase U — Harness production hardening (2026-06-01)
+DONE:    Phase T — Harness cleanliness (2026-06-01)
 DONE:    Phase S — Harness environment GA (2026-06-01)
-
-DONE:    Phase Q+ — Harness Hardening (Appendix D); gate 450
-
+DONE:    Phase Q+ — Harness Hardening (Appendix D)
 DONE:    Phase R (MVP) — Harness AI alignment (Appendix E)
-
-DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9; gate was 417 at close
-
+DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9
 DONE:    Phase L, M, M-LLM, M-RAG, N, O — harness GA (functional)
-
 DONE:    Phase K hardening K.3–K.5; Appendix B paydown (except B.15)
 
-PARALLEL: M.6 additional provider slugs (on demand); R-Skill catalog expansion
+PARALLEL (harness-only): M.6 provider slugs on demand; R-Skill catalog expansion (platform packs); Phase V hardening streams
 
-DEFERRED: Phase K — K.1/K.2 business agents (after S Done); K.6 / B.15 Legal live LLM E2E — S-Ops.4
+BAND 3 — END OF PLAN (see §6.3; not default “next”):
+  • K.1 Problem Radar / K.2 Vendor Discovery (business agents)
+  • K.6 / B.15 / S-Ops.4 — Legal live LLM E2E (product/CI)
+  • New Tier-3 **product** applications (beyond lab + existing reference hosts)
+  • Domain skill packs for product agents (until K.* started)
+  • Problem Radar wave 2+ (`agents/problem_radar/` frozen)
 
 RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Integration → Tool → Skill → Agent
-
 ```
 
-**Rationale:** Q/Q+/R delivered a **certified, aligned harness**. Phase S completes the **environment** (integrations, observability, platform skills, ops docs). Business agents prove product value in **Phase K**, not before the harness is fully operable.
+**Rationale:** Phases S/T/U + §4.1 delivered a production-configurable **harness**. Band 1–2 preserve and extend that platform. **Band 3 (product) is intentionally last** so business agents and new applications do not drive Tier-1 evolution (canon §52, [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md)).
+
+### 4.1 Harness completion backlog (execution order)
+
+Work **one ID per PR**; gate green after each step. Map fixes to Appendix G where applicable.
+
+| Order | ID | Deliverable | Priority | Notes |
+|-------|-----|-------------|----------|-------|
+| 1 | U-Leg.2 | Remove or archive `intergrax/rag/answers/`; migrate tests to `RetrievalService` | **Done** | `intergrax/legacy/rag_answers/`; import guard |
+| 2 | U-Leg.1 | Freeze `ToolsAgent.run` — docs + `check_tools_agent_run.py` | **Done** | Deprecation + CI audit |
+| 3 | U-Leg.3 | Sunset legacy plan booleans (`from_legacy`, `uses_legacy_booleans_only`) | **Done** | Warnings + `check_legacy_tool_plan_booleans.py` |
+| 4 | U-Typ.4 | `profile.slug_for_category` + sandbox `session_id` typing | **Done** | No getattr on integration profile |
+| 5 | U-Arch.2 | Typed `LabIntegrationWiring` — sqlite bundle types | **Done** | Removed `# type: ignore` on lab wiring |
+| 6 | U-CI.3 | CI job: `LAB_STRICT_HARNESS` + API key | **Done** | `harness-strict` workflow job |
+| 7 | R-Skill.* | `harness.skill_registry` platform skill | **Done** | Harness bundle + gate test |
+| 8 | U-Con.* | `ResearchAgent` / `SummaryAgent` → `HarnessReferenceAgent` | **Done** | Lab `requires_uaep` when research enabled |
+
+**Explicitly out of NOW:** K.1, K.2, Legal product E2E, new `applications/<product>/`, Problem Radar wave 2+.
 
 
 
@@ -1870,6 +2375,9 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 5. **No regression** — `pytest tests/ -m gate` green; Echo through NexusLoop
 
 6. **Reuse Tier-0** — extend existing modules; no parallel LLM/log/trace stacks (§5.2)
+7. **Architecture governance** — for Phase V streams, update compatibility/evaluation evidence (graph impact + score deltas)
+8. **Security/cost controls** — hardening changes include policy-enforced tests for deny/degrade paths
+9. **No product scope creep** — harness phases MUST NOT implicitly include K.1/K.2 or new product hosts
 
 
 
@@ -1877,25 +2385,74 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 
 
 
-## 6. Recommended Next Step
+## 6. What to implement next
 
-### 6.1 Implementation cadence (Phase S — harness environment)
+**Default answer:** §6.1 (harness maintenance) only. **Not** K.1, K.2, or new product applications — those are **[§6.3 End of plan](#63-end-of-plan--deferred-product-work-only)**.
 
-Platform harness work (Phase Q, Q+, R MVP) is **complete**. New work follows **Phase S** — **no new business agents**:
+### 6.1 Harness platform maintenance (default — Band 1)
+
+§4.1 backlog is **closed**. Ongoing work = keep the harness green; fix regressions under band 1 only.
 
 ```text
-1. Analyze     — Tier-0/Tier-3 only unless §0.6 requires Tier-1; read HARNESS_ENVIRONMENT.md (when added)
-2. Ops         — S-Ops.1 stable integration track + smoke; S-Ops.2 OTLP env on lab
-3. Platform    — S-H.1 harness.* skill bundle; S-H.2 lab SkillProfile preset
-4. Proof       — S-H.5 echo/signoff + trace test; no K.1/K.2
-5. Docs        — S-Doc.1 operator guide; update SKILLS.md / INTEGRATIONS.md
-6. Verify      — pytest -m gate; check_harness_no_getattr.py; harness-smoke CI if touched
-7. Close       — Appendix F; §0.5 Harness environment GA = Done
+Verify (every harness PR):
+  uv run pytest -m gate -q
+  python scripts/check_harness_no_getattr.py
+  python scripts/check_tools_agent_imports.py
+  python scripts/check_tools_agent_run.py
+  python scripts/check_legacy_tool_plan_booleans.py
 ```
 
-**After S Done:** Phase K — pick K.1 or K.2, then AGENT_CREATION_GUIDE cadence.
+**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
 
-**Parallel (non-blocking):** M.6 on-demand slugs; S-Ops.4 Legal E2E; domain skills (legal/research expansion).
+### 6.2 Harness architecture hardening (Band 2 — Phase V)
+
+Run in parallel with §6.1 when work stays in harness scope and **no** business-agent scope:
+
+| Item | Scope | Notes |
+|------|--------|-------|
+| M.6 | Additional integration provider slugs | On demand; Tier-0 catalog |
+| R-Skill | **`harness.*` platform packs only** | See [SKILLS.md](SKILLS.md); not domain/product skills |
+| V-CG | Capability graph + compatibility gates | Phase V critical stream |
+| V-ALG | Agent lifecycle governance | Certification/promotion/deprecation/ownership |
+| V-CE / V-PE | Context quality + prompt governance | Regression discipline + policy overlays |
+| V-EVAL | Evaluation registry operations | Offline/online/shadow/human + trend reports |
+| V-AM | Architecture metrics + debt index | Architecture health as measurable signal |
+| V-SEC / V-COST | Security/data governance + budget governance | Prompt/tool/retrieval defenses + quotas |
+| V-MA / V-KG | Multi-agent coordination catalog + Graph-RAG readiness | Harness capability hardening only |
+| W-ML | Model & modality plane — multimodal LLM, YOLO/ONNX vision, speech, classical ML | [MODALITY.md](MODALITY.md); docs **Done**; code per Phase W-ML waves |
+
+**Forbidden in Band 2:** K.1, K.2, product-specific skills, new product application hosts.
+
+### 6.3 End of plan — deferred product work only (Band 3)
+
+**This section is the last band in the implementation plan.** Nothing here is the default “next step” after harness work.
+
+| ID | Deliverable | Status | Gate to start |
+|----|-------------|--------|----------------|
+| K.1 | Problem Radar prototype | **Deferred** | Explicit product decision + [Appendix A](#appendix-a--agent-operating-system-certification-checklist) |
+| K.2 | Vendor Discovery prototype | **Deferred** | Same as K.1 |
+| K.6 / B.15 / S-Ops.4 | Legal live LLM E2E | **Deferred** | Product/CI budget decision |
+| Tier-3 product apps | New `applications/<product>/` beyond lab + reference hosts | **Deferred** | Product decision; scaffold exists (Phase N **Done**) |
+| Domain skills | Product agent skill packs (non-`harness.*`) | **Deferred** | With K.1 or K.2 |
+| `agents/problem_radar/` | Wave 1 scaffold frozen | **Deferred** | Do not extend until K.1 reprioritized |
+
+**When Band 3 may start:** Record the decision in this plan (date + chosen K.1 vs K.2), then follow [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md). Tier-3 scaffold reference (Phase N) applies **only after** that decision — not as ongoing harness work.
+
+**Tier-3 scaffold (for when Band 3 is approved):**
+
+```bash
+python -m intergrax.scaffold new-stack <slug> --profile lab --capability <slug>.basic
+```
+
+See [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md). Existing hosts (`lab_application`, `legal_application`, `research_application`, `poc_template_application`) are sufficient for **all harness** work.
+
+### 6.1u Archived — Phase U cadence (complete 2026-06-01)
+
+Security, policy, contracts, typing (U-Sec through U-CI). See Phase U definition of done. Residual U-Leg.* moved to §4.1 — not reopened as a new phase.
+
+### 6.1s Archived — Phase S cadence (complete 2026-06-01)
+
+See Phase S definition of done and Appendix F. Do not reopen S.* unless regression (fix under T.* or U.*).
 
 ### 6.1a Archived — Phase Q cadence (complete 2026-06-01)
 
@@ -1905,33 +2462,11 @@ Phase Q used **one Q.* deliverable per PR** → update Appendix C + paydown log.
 
 Tier-3 scaffold cadence remains the reference for new applications (`new-stack`); lab defaults include RAG/websearch tools and legal + research skill bundles.
 
-### 6.2 Tier-3 application layer — **ready for new applications**
+### 6.4 Historical gate milestones (archived)
 
-Phase N deliverables **N.0–N.10** are complete. Use [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md) before scaffolding.
+Phases F–L, J, Q, Q+, R, S, T, U, and §4.1 are **Done**. Gate milestones: **417** (Phase Q), **481** (harness completion, 2026-06-02). Phase tables: §2–§3; paydown: Appendices C–G.
 
-**Generate:**
-
-```bash
-python -m intergrax.scaffold new-stack <slug> --profile lab --capability <slug>.basic
-```
-
-**Verify:**
-
-```bash
-uv run pytest tests/unit/applications/ -q
-uv run pytest tests/unit/applications/test_scaffold_acceptance.py -q
-uv run pytest -m gate -q
-```
-
-**Phase L — still required for any new agent work:**
-
-```bash
-uv run pytest tests/acceptance/agent_os -m agent_os -q
-```
-
-**Start:** Phase S — S-Ops.1 (stable stack) or S-H.1 (`harness.*` skills). **Do not** start K.1/K.2 until Phase S definition of done is met.
-
-**Historical completions:** Phases F–L, J, Q, Q+, and R (MVP) are **Done** — see phase tables (§2–§3), Appendices C–E paydown logs. Gate milestones: **417** (Phase Q close), **450** (Q+ / R MVP, 2026-06-01).
+> **Note:** Older phase closers said “next: Phase K (K.1/K.2).” That meant harness prerequisites were met, **not** that product work becomes the default implementation queue. **Current rule:** §4.0 Band 3 / §6.3 only after explicit product prioritization.
 
 ### D.2 Debug API (Done)
 
@@ -2413,11 +2948,15 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 10. B.15 — Legal E2E real LLM (**Deferred** — product/CI decision)
 11. ~~Phase Q~~ — Harness audit remediation — **Done** (Appendix C)
 12. ~~Phase Q+ / Phase R~~ — **Done** (Appendices D, E)
-13. Phase S — Harness environment GA (stable stack, OTLP, platform skills) — **Next**
-14. Phase K — K.1/K.2 business agents — **Deferred** (after S)
+13. ~~Phase S — Harness environment GA~~ — **Done**
+14. ~~Phase T — Harness cleanliness~~ — **Done**
+15. Phase U — Harness production hardening — **Done**
+16. Harness completion backlog (§4.1) — **Done** (2026-06-02)
+17. Phase K — K.1/K.2 business agents — **Deferred**
+18. Tier-3 product apps / Legal E2E — **Deferred**
 ```
 
-**Note:** Platform harness (Q, Q+, R MVP) is complete. Business agents are **Phase K**, not Phase S.
+**Note:** Platform harness (Q–U) is complete. **Harness completion** (legacy + CI) is active. Business agents and product applications are **end of list**.
 
 ---
 
@@ -2692,5 +3231,131 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 
 ---
 
-*Plan synced (2026-06-01). **Phase Q / Q+ / R / S Done**. Gate: run `pytest -m gate`; harness getattr audit: **zero grandfathered paths**. **Next:** **Phase K** (K.1/K.2 when product prioritizes).*
+## Appendix G — Harness production audit traceability (Phase U)
+
+**Source:** Harness-system audit (2026-06-01) — lab/Tier-1/Tier-3 only; **no business agents**.  
+**Goal:** Map every finding to exactly one Phase U deliverable. Update **Status** when **Done** / **Won't fix** (with reason).  
+**Status values:** `Open` | `Done` | `Won't fix` | `Deferred`
+
+### G.1 Security (P0)
+
+| Audit ID | Finding | U ID | Status |
+|----------|---------|------|--------|
+| SEC-01 | Lab `POST /v1/lab/run` and `/debug/*` without authentication | U-Sec.1 | Done |
+| SEC-02 | MCP enabled by default (`LAB_INCLUDE_MCP=true`) — second open surface | U-Sec.2 | Done |
+| SEC-03 | `sandbox.exec` enabled in default lab tool profile | U-Sec.3 | Done |
+| SEC-04 | `harness_production_mode()` always `False` — no strict production path | U-Sec.4 | Done |
+
+### G.2 Contracts & policy (P1)
+
+| Audit ID | Finding | U ID | Status |
+|----------|---------|------|--------|
+| CON-01 | `Agent` (ABC) vs `UAEPAgent` (Protocol) — no unified inheritance | U-Con.1 | Done |
+| CON-02 | `RuntimePolicyBundle` built in lab ctx but not applied to `RuntimeConfig` | U-Pol.1 | Done |
+| CON-03 | `PolicyEngine` (NexusLoop) vs `policy_bundle` (RuntimeConfig) — dual systems | U-Pol.2 | Done |
+| CON-04 | `ToolPlanningService` imports `ToolsAgentConfig` from Tier-0 `tools_agent` | U-Typ.2 | Done |
+| CON-05 | `runtime_state` uses `isinstance(CatalogToolPlanner)` not protocol | U-Typ.3 | Done |
+| CON-06 | `create_lab_interaction_adapter()` uses `IntegrationProfile.lab()` not preset | U-Arch.1 | Done |
+| CON-07 | Skill `skill_ids` resolved at register — no runtime E2E proof in gate | U-Con.3 | Done |
+
+### G.3 Typing & hygiene (P2)
+
+| Audit ID | Finding | U ID | Status |
+|----------|---------|------|--------|
+| TYP-01 | `ToolsAgentConfig` tuple bug (`temperature = None,`) | U-Typ.1 | Done |
+| TYP-02 | `RuntimePolicyBundle.budget` / `plan_loop` typed as `Any` | U-Pol.3 | Done |
+| TYP-03 | `# type: ignore` on lab integration wiring adapters | U-Arch.2 | Done |
+| TYP-04 | `getattr` outside harness audit (tools_agent prune, profile, sandbox) | U-Typ.4 | Done |
+| TYP-05 | `hasattr` on harness paths (shared_task_context, engine_plan, platform_wiring) | U-Typ.5 | Done |
+| TYP-06 | `ToolPlanDecision` vs `AgentDecision` naming collision risk | U-Leg.3 | Open |
+
+### G.4 Legacy & naming (P3)
+
+| Audit ID | Finding | U ID | Status |
+|----------|---------|------|--------|
+| LEG-01 | `tools_agent_answer` and ToolsAgent naming in Tier-1 runtime | U-Arch.3 | Done |
+| LEG-02 | `ToolsAgent.run` still full orchestrator — deprecation incomplete | U-Leg.1 | Done |
+| LEG-03 | `rag.answers` module remains; tests filtered not removed | U-Leg.2 | Done |
+| LEG-04 | Legacy tool plan booleans (`from_legacy`, `uses_legacy_rag_flag_only`) | U-Leg.3 | Done |
+
+### G.5 Documentation & CI (P4)
+
+| Audit ID | Finding | U ID | Status |
+|----------|---------|------|--------|
+| DOC-01 | `HARNESS_ENVIRONMENT.md` claims policy bundle wired — lab does not apply bridge | U-Doc.1, U-Pol.1 | Done |
+| DOC-02 | Phase K footer still "after Phase S" in harness docs | U-Doc.3 | Done |
+| CI-01 | harness-smoke omits Phase T unit tests | U-CI.1 | Done |
+| CI-02 | No acceptance test for strict production harness path | U-CI.2 | Done |
+| CI-03 | harness-smoke vs gate run on different OS images | U-CI.3 | Done |
+
+### G.6 Phase U paydown log
+
+| Date | U ID | Summary |
+|------|------|---------|
+| 2026-06-01 | U.0.* | Appendix G + Phase U section added to implementation plan (audit → backlog) |
+| 2026-06-02 | §4.1 | Harness completion: U-Leg.1–3, U-Arch.2, U-Typ.4, U-CI.3, harness.skill_registry, research UAEP parity; gate **481** |
+| — | — | *(append row per merged PR)* |
+
+**Coverage target:** Phase U + §4.1 harness completion backlog **Done** (2026-06-02). **K.1/K.2 deferred** until product prioritization.
+
+---
+
+## Appendix H — Architecture coverage matrix (Intergrax canon + ideal harness)
+
+**Purpose:** ensure the implementation plan explicitly covers all harness-scope requirements from:
+
+- `intergrax_runtime_architecture.md` (canonical Intergrax runtime architecture)
+- `IDEAL_HARNESS_AI_ARCHITECTURE.md` (target/benchmark architecture)
+
+**Rule:** For harness work, this matrix must have **zero `Uncovered` rows**.
+
+### H.1 Coverage status legend
+
+- **Done** — capability implemented and verified by existing phases/tests.
+- **Planned (Phase V)** — explicitly scheduled in Phase V (`V-*` IDs).
+- **Deferred (product scope)** — intentionally outside harness-only scope (Band 3 / §6.3).
+- **Uncovered** — gap; MUST be added to plan before related implementation proceeds.
+
+### H.2 Harness architecture domains — required coverage
+
+| Domain (harness scope) | Intergrax canon anchor | Ideal harness anchor | Plan coverage | Status |
+|------------------------|------------------------|----------------------|---------------|--------|
+| Strategic objective + harness-first hierarchy | canon §2, §5.1, §51, §53.1 | ideal §0, §1, §26 | §0, §4.0, Phase V governance | **Done** |
+| Tier model and runtime boundaries | canon §5.1, §7.0–§7.4, §42 | ideal §3, §26 | §0.2, §2 map, Phases L/Q+/U | **Done** |
+| Unified execution runtime (UAEP, lifecycle, interrupts, policy) | canon §42.* | ideal §3.3, §3.4, §5, §8 | §2 map, Phase U, gate suites | **Done** |
+| Context engineering core | canon §28.1, §42.35 | ideal §16 | Phase R (Done) + V-CE.* | **Done** |
+| Capability graph dependencies + impact analysis | canon §53.2 | ideal §19 + capability graph expectations | V-CG.* | **Done** |
+| Agent lifecycle governance (cert/promo/deprec/retire/owner) | canon §15, §53.3 | ideal §17 | V-ALG.* | **Done** |
+| Prompt engineering architecture | canon §53.5 | ideal §20 | V-PE.* | **Done** |
+| Evaluation and benchmarking operations | canon §53.6 | ideal §18 | V-EVAL.* | **Done** |
+| Architecture metrics and debt governance | canon §53.7 | ideal §21 + architecture metrics expectations | V-AM.* | **Done** |
+| Security/data governance (agent-native threats) | canon §42.37, §53.8 | ideal §23 | Phase U (baseline) + V-SEC.* | **Done** |
+| Cost/resource governance | canon §53.9 | ideal §24 | V-COST.* | **Done** |
+| Multi-agent coordination pattern catalog | canon §42.43, §53.10 | ideal §6 + §25 | V-MA.* | **Done** |
+| Knowledge graph evolution path (Graph-RAG) | canon §53.11 | ideal §3.7.1 + §25 | V-KG.* | **Done** |
+| Observability and runtime traceability | canon §33, §42.24 | ideal §11 | Phases Q/Q+/S/U + §6.1 maintenance | **Done** |
+| Registry-driven extensibility (agent/tool/skill/policy/prompt/eval) | canon §7.1.6–§7.1.8, §15, §53.2 | ideal §19 | Phase R/U + V-CG/V-PE/V-EVAL | **Done** |
+| Product agents and new product apps | canon §7.4, §52 | ideal §26 | §6.3 only | **Deferred (product scope)** |
+
+### H.3 Completion policy for “architecture-complete harness”
+
+Harness architecture can be considered complete against both architecture documents only when:
+
+1. All harness-scope rows in H.2 are `Done` (no `Planned`, no `Uncovered`).
+2. `Deferred (product scope)` rows remain intentionally isolated to Band 3 (§6.3).
+3. Phase V KPI thresholds and L3/L4 evidence gates are satisfied.
+4. Canon + plan + docs index are synchronized in the same change window.
+
+### H.4 Change control rule
+
+Any future addition to either architecture document that introduces a new harness-scope
+domain MUST be reflected in:
+
+- this matrix (Appendix H),
+- a concrete Phase V (or successor phase) deliverable ID,
+- priority ladder (§4) and “what next” (§6) if it changes execution order.
+
+---
+
+*Plan synced (2026-06-02). **Harness baseline complete** (Q–U + §4.1). Gate: **481 passed**. **Default next:** §6.1 + §6.2 (Phase V hardening). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
 

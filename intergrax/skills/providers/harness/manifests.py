@@ -36,3 +36,36 @@ HARNESS_TRACE_READ = SkillManifest(
     risk_tier=SkillRiskTier.LOW,
     tags=("harness", "observability", "trace"),
 )
+
+HARNESS_MODALITY_SMOKE = SkillManifest(
+    skill_id="harness.modality_smoke",
+    version="1.0.0",
+    description="Modality plane smoke: vision detect, ML predict, and batch predict.",
+    tool_ids=("vision.detect", "ml.predict", "ml.batch_predict"),
+    prompt_instruction_ids=("harness.modality_smoke.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("harness", "modality", "smoke"),
+)
+
+HARNESS_VISION_QA = SkillManifest(
+    skill_id="harness.vision_qa",
+    version="1.0.0",
+    description="Vision QA smoke: dedicated CV detect plus RAG context retrieval.",
+    tool_ids=("vision.detect", "rag.retrieve"),
+    prompt_instruction_ids=("harness.vision_qa.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("harness", "vision", "rag"),
+)
+
+HARNESS_SKILL_REGISTRY = SkillManifest(
+    skill_id="harness.skill_registry",
+    version="1.0.0",
+    description="Skill resolver smoke: single-tool pack for registry merge tests.",
+    tool_ids=("rag.retrieve",),
+    prompt_instruction_ids=("harness.skill_registry.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("harness", "registry", "skills"),
+)
