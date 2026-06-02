@@ -27,6 +27,10 @@ class ModalityProfile(BaseModel):
     profile_id: str
     allowed_planes: set[ModalityPlane] = Field(default_factory=set)
     allowed_tool_ids: tuple[str, ...] = Field(default_factory=tuple)
+    vision_model_ids: tuple[str, ...] = Field(default_factory=tuple)
+    max_media_bytes: int | None = Field(default=None, ge=0)
+    tts_voice_id: str | None = None
+    require_deterministic_cv: bool = False
 
 
 def filter_tool_ids_by_modality_profile(
@@ -46,6 +50,9 @@ def filter_tool_ids_by_modality_profile(
         if allowed_prefixes and not any(tool_id.startswith(prefix) for prefix in allowed_prefixes):
             if tool_id not in allowed_explicit:
                 continue
+        if profile.require_deterministic_cv and tool_id.startswith("vision.") and tool_id != "vision.detect":
+            if tool_id not in allowed_explicit:
+                continue
         filtered.append(tool_id)
     return tuple(filtered)
 
@@ -63,4 +70,5 @@ def lab_default_modality_profile() -> ModalityProfile:
             ModalityPlane.GENERATIVE_LLM,
         },
         allowed_tool_ids=(),
+        vision_model_ids=(),
     )

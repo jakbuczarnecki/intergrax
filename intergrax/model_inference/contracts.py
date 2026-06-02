@@ -53,6 +53,30 @@ class VisionInferenceResult(BaseModel):
     detections: list[VisionDetection] = Field(default_factory=list)
 
 
+class VisionSegment(BaseModel):
+    label: str
+    confidence: float
+    bbox: VisionBoundingBox
+
+
+class VisionSegmentationResult(BaseModel):
+    request_id: str
+    artifact_id: str
+    segments: list[VisionSegment] = Field(default_factory=list)
+
+
+class VisionOcrRegion(BaseModel):
+    text: str
+    confidence: float
+    bbox: VisionBoundingBox
+
+
+class VisionOcrResult(BaseModel):
+    request_id: str
+    artifact_id: str
+    regions: list[VisionOcrRegion] = Field(default_factory=list)
+
+
 class InferenceRequest(BaseModel):
     request_id: str
     artifact_id: str
@@ -65,6 +89,13 @@ class InferenceResult(BaseModel):
     predictions: dict[str, float] = Field(default_factory=dict)
 
 
+class InferenceExplanationResult(BaseModel):
+    request_id: str
+    artifact_id: str
+    predictions: dict[str, float] = Field(default_factory=dict)
+    feature_importance: dict[str, float] = Field(default_factory=dict)
+
+
 class VisionInferenceAdapter(ABC):
     """Plane C vision inference adapter contract."""
 
@@ -72,6 +103,18 @@ class VisionInferenceAdapter(ABC):
 
     @abstractmethod
     def detect(self, request: VisionInferenceRequest, *, artifact: ModelArtifact) -> VisionInferenceResult:
+        raise NotImplementedError
+
+
+class ExtendedVisionInferenceAdapter(VisionInferenceAdapter):
+    """Vision adapters that also expose segmentation and OCR region APIs."""
+
+    @abstractmethod
+    def segment(self, request: VisionInferenceRequest, *, artifact: ModelArtifact) -> VisionSegmentationResult:
+        raise NotImplementedError
+
+    @abstractmethod
+    def ocr_regions(self, request: VisionInferenceRequest, *, artifact: ModelArtifact) -> VisionOcrResult:
         raise NotImplementedError
 
 
@@ -83,3 +126,15 @@ class ModelInferenceAdapter(ABC):
     @abstractmethod
     def predict(self, request: InferenceRequest, *, artifact: ModelArtifact) -> InferenceResult:
         raise NotImplementedError
+
+    def explain(self, request: InferenceRequest, *, artifact: ModelArtifact) -> InferenceExplanationResult:
+        """Default explain path derives importance from normalized feature magnitudes."""
+        prediction = self.predict(request, artifact=artifact)
+        total = sum(abs(v) for v in request.features.values()) or 1.0
+        importance = {key: abs(value) / total for key, value in request.features.items()}
+        return InferenceExplanationResult(
+            request_id=prediction.request_id,
+            artifact_id=prediction.artifact_id,
+            predictions=dict(prediction.predictions),
+            feature_importance=importance,
+        )

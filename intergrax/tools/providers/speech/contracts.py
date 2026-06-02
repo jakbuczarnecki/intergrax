@@ -1,26 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
 
-from __future__ import annotations
+"""Re-export speech I/O contracts from Tier-0 ``speech_adapters``."""
 
-from pydantic import BaseModel, Field
+from intergrax.speech_adapters.contracts.io import (
+    SpeechSynthesizeInput,
+    SpeechSynthesizeOutput,
+    SpeechTranscribeInput,
+    SpeechTranscribeOutput,
+)
 
-
-class SpeechSynthesizeInput(BaseModel):
-    text: str
-    voice_id: str = "default"
-    language: str = "en"
-
-
-class SpeechSynthesizeOutput(BaseModel):
-    audio_uri: str
-    character_count: int
-
-
-class SpeechTranscribeInput(BaseModel):
-    audio_uri: str
-    language: str = "en"
-
-
-class SpeechTranscribeOutput(BaseModel):
-    transcript: str
-    duration_ms: int = Field(ge=0)
+__all__ = [
+    "SpeechSynthesizeInput",
+    "SpeechSynthesizeOutput",
+    "SpeechTranscribeInput",
+    "SpeechTranscribeOutput",
+]

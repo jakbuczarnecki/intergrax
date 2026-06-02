@@ -1,19 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Remote serving placeholder adapters (Phase W-ML.4)."""
+"""Remote serving adapters — re-exports for backward compatibility."""
 
-from __future__ import annotations
+from intergrax.model_inference.adapters.huggingface_inference_vision import HuggingFaceInferenceVisionAdapter
+from intergrax.model_inference.adapters.stub_ml import StubModelInferenceAdapter
+from intergrax.model_inference.adapters.triton_vision import TritonVisionServingAdapter
 
-from intergrax.model_inference.adapters.stub_vision import StubVisionInferenceAdapter
-
-
-class TritonVisionServingAdapter(StubVisionInferenceAdapter):
-    """Placeholder for Triton / remote vision serving integration."""
-
-    slug = "vision_serving"
-
-
-class MlInferenceHostAdapter(StubVisionInferenceAdapter):
-    """Placeholder for generic ML inference host remote path."""
+# Legacy slug used in early harness registry wiring.
+class MlInferenceHostAdapter(StubModelInferenceAdapter):
+    """Placeholder slug for remote classical ML hosts (delegates to stub classifier)."""
 
     slug = "ml_inference_host"

@@ -9,6 +9,9 @@ from intergrax.tools.providers.speech.contracts import (
     SpeechTranscribeInput,
     SpeechTranscribeOutput,
 )
+from intergrax.model_inference.registry import vision_profile_from_env
+from intergrax.model_inference.registry.vision_profile import VISION_PROFILE_EXTRA_KEY
+from intergrax.speech_adapters.registry.profile import SPEECH_PROFILE_EXTRA_KEY, speech_profile_from_env
 from intergrax.tools.providers.speech.backends import (
     MODEL_INFERENCE_REGISTRY_EXTRA_KEY,
     SPEECH_BACKEND_EXTRA_KEY,
@@ -16,7 +19,6 @@ from intergrax.tools.providers.speech.backends import (
 )
 from intergrax.tools.providers.speech.handlers import SpeechSynthesizeHandler, SpeechTranscribeHandler
 from intergrax.tools.providers.speech.service import SPEECH_SYNTHESIZE_TOOL_ID, SPEECH_TRANSCRIBE_TOOL_ID
-from intergrax.model_inference.bootstrap import build_harness_model_inference_registry
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -24,10 +26,19 @@ SPEECH_BUNDLE_ID = "speech"
 
 
 def register_speech_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
+    from intergrax.model_inference.registry import VisionProfile
+    from intergrax.speech_adapters.registry.profile import SpeechProfile
+
     if SPEECH_BACKEND_EXTRA_KEY not in ctx.extras:
-        ctx.extras[SPEECH_BACKEND_EXTRA_KEY] = build_speech_backend()
+        raw_speech = ctx.extras.get(SPEECH_PROFILE_EXTRA_KEY)
+        profile = raw_speech if isinstance(raw_speech, SpeechProfile) else speech_profile_from_env()
+        ctx.extras[SPEECH_PROFILE_EXTRA_KEY] = profile
+        ctx.extras[SPEECH_BACKEND_EXTRA_KEY] = profile.create_adapter()
     if MODEL_INFERENCE_REGISTRY_EXTRA_KEY not in ctx.extras:
-        ctx.extras[MODEL_INFERENCE_REGISTRY_EXTRA_KEY] = build_harness_model_inference_registry()
+        raw_vision = ctx.extras.get(VISION_PROFILE_EXTRA_KEY)
+        vision = raw_vision if isinstance(raw_vision, VisionProfile) else vision_profile_from_env()
+        ctx.extras[VISION_PROFILE_EXTRA_KEY] = vision
+        ctx.extras[MODEL_INFERENCE_REGISTRY_EXTRA_KEY] = vision.build_registry()
     registry.register(
         ToolContract(
             tool_id=SPEECH_SYNTHESIZE_TOOL_ID,

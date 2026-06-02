@@ -93,6 +93,7 @@ class LegalBackendSettings:
     use_legal_tool_decision: bool = False
     tools_mode: str = "off"
     extra_enabled_tool_ids: tuple[str, ...] = ()
+    enable_modality_tools: bool = False
     legal_llm_model: Optional[str] = None
 
     @property
@@ -189,6 +190,7 @@ class LegalBackendSettings:
         tools_mode = os.environ.get("LEGAL_TOOLS_MODE", "off").strip().lower() or "off"
         extra_tools_raw = os.environ.get("LEGAL_ENABLED_TOOLS", "").strip()
         extra_tools = tuple(x.strip() for x in extra_tools_raw.split(",") if x.strip())
+        enable_modality = _env_bool("LEGAL_ENABLE_MODALITY_TOOLS", default=False)
 
         # Research SKU defaults — tools opt-in via env unless explicitly enabled
         if profile == "research" and not _env_bool("LEGAL_ENABLE_RAG", default=False) and os.environ.get("LEGAL_ENABLE_RAG") is None:
@@ -223,4 +225,5 @@ class LegalBackendSettings:
             use_legal_tool_decision=use_legal_tool_decision,
             tools_mode=tools_mode,
             extra_enabled_tool_ids=extra_tools,
+            enable_modality_tools=enable_modality,
         )

@@ -1,14 +1,18 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Registry for vision and classical ML inference adapters (Phase W-ML.3–W-ML.5)."""
+"""Typed registry for Plane C vision and classical ML inference adapters."""
 
 from __future__ import annotations
 
-from intergrax.model_inference.contracts import ModelInferenceAdapter, VisionInferenceAdapter
+from intergrax.model_inference.contracts import (
+    ModelArtifact,
+    ModelInferenceAdapter,
+    VisionInferenceAdapter,
+)
 
 
 class ModelInferenceRegistry:
-    """Typed registry for Plane C inference adapters."""
+    """Runtime registry of vision/ML adapters and registered artifacts."""
 
     def __init__(self) -> None:
         self._vision_adapters: dict[str, VisionInferenceAdapter] = {}
@@ -42,8 +46,8 @@ class ModelInferenceRegistry:
             raise KeyError(f"Model artifact not registered: {artifact_id}")
         return artifact
 
+    def registered_vision_slugs(self) -> tuple[str, ...]:
+        return tuple(sorted(self._vision_adapters.keys()))
 
-def build_default_model_inference_registry() -> ModelInferenceRegistry:
-    from intergrax.model_inference.bootstrap import build_harness_model_inference_registry
-
-    return build_harness_model_inference_registry()
+    def registered_ml_slugs(self) -> tuple[str, ...]:
+        return tuple(sorted(self._ml_adapters.keys()))

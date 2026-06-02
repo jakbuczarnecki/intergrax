@@ -12,3 +12,15 @@ class MlPredictInput(BaseModel):
 class MlPredictOutput(BaseModel):
     request_id: str
     predictions: dict[str, float] = Field(default_factory=dict)
+
+
+class MlExplainInput(BaseModel):
+    artifact_id: str = "ml.stub.classifier"
+    adapter_slug: str = "sklearn_classifier"
+    features: dict[str, float] = Field(default_factory=dict)
+
+
+class MlExplainOutput(BaseModel):
+    request_id: str
+    predictions: dict[str, float] = Field(default_factory=dict)
+    feature_importance: dict[str, float] = Field(default_factory=dict)

@@ -16,6 +16,7 @@ LLM adapters own **Plane A** of the Model & Modality architecture (canon §7.1.9
 |---------|-------|-------|
 | Chat reasoning over text | `llm_adapters/` | Existing |
 | Native vendor vision/audio in dialog | `llm_adapters/` | Capability flags + content parts (W-ML.1) |
+| Dedicated vision CV / TTS-STT tools | `model_inference/` + `speech_adapters/` | `VisionProfile` / `SpeechProfile` (same pattern as `LLMProfile`) — see [MODALITY.md](MODALITY.md) |
 | Audio/file → text for RAG | `document_parser` + `rag/` | Plane B — [MODALITY.md](MODALITY.md) |
 | Object detection / segmentation | `model_inference/` (planned) | Plane C — tools `vision.*` |
 

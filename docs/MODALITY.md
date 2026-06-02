@@ -148,19 +148,19 @@ New categories require §5.2.4 approval. Planned slugs are **documentation place
 
 ---
 
-## Tool surface (planned)
+## Tool surface
 
 Atomic tools (LLM-selectable, MCP-exportable):
 
-| tool_id (planned) | Plane | Notes |
-|-------------------|-------|-------|
-| `vision.detect` | C | Bounding boxes / classes; policy on confidence threshold |
-| `vision.segment` | C | Masks / polygons |
-| `vision.ocr_regions` | C | Layout OCR when LLM vision insufficient |
-| `speech.synthesize` | C + speech_provider | TTS output → `object_storage` URI |
-| `speech.transcribe` | B or speech_provider | Prefer `whisper` parser for ingest |
-| `ml.predict` | C | Tabular / vector in → structured out |
-| `ml.explain` | C | Optional SHAP-like; high risk tier |
+| tool_id | Plane | Status |
+|---------|-------|--------|
+| `vision.detect` | C | **Done** |
+| `vision.segment` | C | **Done** |
+| `vision.ocr_regions` | C | **Done** |
+| `speech.synthesize` | C + speech_provider | **Done** |
+| `speech.transcribe` | B or speech_provider | **Done** (stub / provider) |
+| `ml.predict` | C | **Done** |
+| `ml.explain` | C | **Done** (feature importance stub) |
 
 Skills MAY bundle these `tool_ids` (e.g. `harness.vision_qa`) — skills are not new inference engines.
 
@@ -205,12 +205,42 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 
 ---
 
+## Declarative profiles (mirrors `LLMProfile`)
+
+| Profile | Module | Factory |
+|---------|--------|---------|
+| **Vision** | `intergrax.model_inference.registry.VisionProfile` | `create_adapter()` → `VisionInferenceAdapter`; `build_registry()` → `ModelInferenceRegistry` |
+| **Speech** | `intergrax.speech_adapters.SpeechProfile` | `create_adapter()` → `SpeechAdapter` |
+
+Example (application host)::
+
+```python
+from intergrax.model_inference.registry import VisionProfile, VisionProvider, vision_profile_from_env
+from intergrax.speech_adapters import SpeechProfile, SpeechProvider, speech_profile_from_env
+
+vision = VisionProfile(provider=VisionProvider.OPENCV)
+registry = vision.build_registry()
+
+speech = speech_profile_from_env()
+adapter = speech.create_adapter()
+```
+
+Registries: `VisionAdapterRegistry`, `SpeechAdapterRegistry` (same pattern as `LLMAdapterRegistry`).
+
 ## Harness environment variables
 
 | Variable | Purpose |
 |----------|---------|
-| `INTERGRAX_VISION_ADAPTER` | `stub` \| `onnxruntime` (OpenCV contour adapter, default) \| `yolo_ultralytics` |
-| `ELEVENLABS_API_KEY` | When set, `speech.synthesize` uses ElevenLabs REST; otherwise stub URI |
+| `INTERGRAX_VISION_PROVIDER` or legacy `INTERGRAX_VISION_ADAPTER` | `stub` \| `onnxruntime` (OpenCV, default) \| `yolo_ultralytics` |
+| `INTERGRAX_VISION_ARTIFACT_ID` | Optional artifact override for `vision.detect` default |
+| `INTERGRAX_SPEECH_PROVIDER` | `stub` \| `elevenlabs` (default `stub`, or `elevenlabs` when `ELEVENLABS_API_KEY` set) |
+| `INTERGRAX_SPEECH_VOICE_ID` | Optional default TTS voice |
+| `ELEVENLABS_API_KEY` | API key for `SpeechProfile(provider=elevenlabs)` |
+| `INTERGRAX_TRITON_URL` | Triton/KServe base URL for `VisionProvider.TRITON` |
+| `INTERGRAX_TRITON_MODEL` | Triton model name (default `yolo`) |
+| `HUGGINGFACE_API_KEY` | HF Inference API for `VisionProvider.HUGGINGFACE_INFERENCE` |
+| `INTERGRAX_HF_VISION_MODEL` | HF model id (default `facebook/detr-resnet-50`) |
+| `LEGAL_ENABLE_MODALITY_TOOLS` | Enable Plane C tools on legal host with profile extras |
 
 ## Implementation status (summary)
 

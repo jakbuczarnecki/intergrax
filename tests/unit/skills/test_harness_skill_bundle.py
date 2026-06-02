@@ -9,6 +9,7 @@ from intergrax.skills.providers.harness.manifests import (
     HARNESS_SKILL_REGISTRY,
     HARNESS_TOOL_SMOKE,
     HARNESS_TRACE_READ,
+    HARNESS_VISION_QA,
 )
 from intergrax.skills.registry import SkillProfile, build_registry_from_profile
 from intergrax.skills.registry.bootstrap import register_default_skills, reset_default_skills_for_tests
@@ -33,6 +34,7 @@ def test_harness_bundle_registers_platform_skills() -> None:
         HARNESS_CONTEXT_DEMO,
         HARNESS_TRACE_READ,
         HARNESS_SKILL_REGISTRY,
+        HARNESS_VISION_QA,
     ):
         assert registry.has(manifest.skill_id)
 

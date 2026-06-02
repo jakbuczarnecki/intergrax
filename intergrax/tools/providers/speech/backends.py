@@ -1,77 +1,23 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Speech synthesis/transcription backends (Phase W-ML.2)."""
+"""Backward-compatible speech backend shims — prefer ``intergrax.speech_adapters``."""
 
 from __future__ import annotations
 
-import os
-from typing import Protocol
+from intergrax.speech_adapters import SpeechAdapter, SpeechProfile, speech_profile_from_env
+from intergrax.speech_adapters.providers.elevenlabs_speech import ElevenLabsSpeechAdapter
+from intergrax.speech_adapters.providers.stub_speech import StubSpeechAdapter
+from intergrax.speech_adapters.registry.profile import SPEECH_PROFILE_EXTRA_KEY
 
-import httpx
-
-from intergrax.tools.providers.speech.contracts import (
-    SpeechSynthesizeInput,
-    SpeechSynthesizeOutput,
-    SpeechTranscribeInput,
-    SpeechTranscribeOutput,
-)
+# Legacy type aliases
+SpeechBackend = SpeechAdapter
+StubSpeechBackend = StubSpeechAdapter
+ElevenLabsSpeechBackend = ElevenLabsSpeechAdapter
 
 
-class SpeechBackend(Protocol):
-    """Typed speech provider surface for tool handlers."""
-
-    def synthesize(self, payload: SpeechSynthesizeInput) -> SpeechSynthesizeOutput:
-        ...
-
-    def transcribe(self, payload: SpeechTranscribeInput) -> SpeechTranscribeOutput:
-        ...
-
-
-class StubSpeechBackend:
-    """Harness stub backend used when no vendor API key is configured."""
-
-    def synthesize(self, payload: SpeechSynthesizeInput) -> SpeechSynthesizeOutput:
-        return SpeechSynthesizeOutput(
-            audio_uri=f"stub://speech/{payload.voice_id}.wav",
-            character_count=len(payload.text),
-        )
-
-    def transcribe(self, payload: SpeechTranscribeInput) -> SpeechTranscribeOutput:
-        return SpeechTranscribeOutput(
-            transcript=f"[stub transcript for {payload.audio_uri}]",
-            duration_ms=1000,
-        )
-
-
-class ElevenLabsSpeechBackend:
-    """ElevenLabs REST integration (requires ``ELEVENLABS_API_KEY``)."""
-
-    def __init__(self, *, api_key: str, base_url: str = "https://api.elevenlabs.io/v1") -> None:
-        self._api_key = api_key
-        self._base_url = base_url.rstrip("/")
-
-    def synthesize(self, payload: SpeechSynthesizeInput) -> SpeechSynthesizeOutput:
-        voice_id = payload.voice_id if payload.voice_id != "default" else "21m00Tcm4TlvDq8ikWAM"
-        url = f"{self._base_url}/text-to-speech/{voice_id}"
-        headers = {"xi-api-key": self._api_key, "accept": "audio/mpeg"}
-        body = {"text": payload.text, "model_id": "eleven_multilingual_v2"}
-        with httpx.Client(timeout=30.0) as client:
-            response = client.post(url, headers=headers, json=body)
-            response.raise_for_status()
-        return SpeechSynthesizeOutput(
-            audio_uri=f"elevenlabs://audio/{voice_id}",
-            character_count=len(payload.text),
-        )
-
-    def transcribe(self, payload: SpeechTranscribeInput) -> SpeechTranscribeOutput:
-        raise NotImplementedError("ElevenLabs transcription is not configured in harness stub path")
-
-
-def build_speech_backend() -> SpeechBackend:
-    api_key = (os.getenv("ELEVENLABS_API_KEY") or "").strip()
-    if api_key:
-        return ElevenLabsSpeechBackend(api_key=api_key)
-    return StubSpeechBackend()
+def build_speech_backend(*, profile: SpeechProfile | None = None) -> SpeechAdapter:
+    resolved = profile or speech_profile_from_env()
+    return resolved.create_adapter()
 
 
 SPEECH_BACKEND_EXTRA_KEY = "speech_backend"

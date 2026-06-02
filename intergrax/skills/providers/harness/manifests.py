@@ -37,6 +37,17 @@ HARNESS_TRACE_READ = SkillManifest(
     tags=("harness", "observability", "trace"),
 )
 
+HARNESS_VISION_QA = SkillManifest(
+    skill_id="harness.vision_qa",
+    version="1.0.0",
+    description="Vision QA smoke: dedicated CV detect plus RAG context retrieval.",
+    tool_ids=("vision.detect", "rag.retrieve"),
+    prompt_instruction_ids=("harness.vision_qa.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("harness", "vision", "rag"),
+)
+
 HARNESS_SKILL_REGISTRY = SkillManifest(
     skill_id="harness.skill_registry",
     version="1.0.0",

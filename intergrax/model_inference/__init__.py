@@ -13,7 +13,13 @@ from intergrax.model_inference.contracts import (
     VisionInferenceRequest,
     VisionInferenceResult,
 )
-from intergrax.model_inference.registry import ModelInferenceRegistry, build_default_model_inference_registry
+from intergrax.model_inference.registry import (
+    ModelInferenceRegistry,
+    VisionProfile,
+    VisionProvider,
+    build_default_model_inference_registry,
+    vision_profile_from_env,
+)
 
 __all__ = [
     "InferenceRequest",
@@ -21,7 +27,10 @@ __all__ = [
     "ModelArtifact",
     "ModelInferenceAdapter",
     "ModelInferenceRegistry",
+    "VisionProfile",
+    "VisionProvider",
     "build_default_model_inference_registry",
+    "vision_profile_from_env",
     "VisionBoundingBox",
     "VisionDetection",
     "VisionInferenceAdapter",
