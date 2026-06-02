@@ -27,6 +27,9 @@ def register_default_tools(*, override: bool = False) -> None:
     from intergrax.tools.providers.observability.register import register_observability_tool_bundle
     from intergrax.tools.providers.rag.register import register_rag_tool_bundle
     from intergrax.tools.providers.sandbox.register import register_sandbox_tool_bundle
+    from intergrax.tools.providers.speech.register import register_speech_tool_bundle
+    from intergrax.tools.providers.vision.register import register_vision_tool_bundle
+    from intergrax.tools.providers.ml.register import register_ml_tool_bundle
     from intergrax.tools.providers.websearch.register import register_websearch_tool_bundle
 
     for register_fn in (
@@ -40,6 +43,9 @@ def register_default_tools(*, override: bool = False) -> None:
         register_observability_tool_bundle,
         register_braintrust_tool_bundle,
         register_sandbox_tool_bundle,
+        register_speech_tool_bundle,
+        register_vision_tool_bundle,
+        register_ml_tool_bundle,
     ):
         register_fn(override=override)
 

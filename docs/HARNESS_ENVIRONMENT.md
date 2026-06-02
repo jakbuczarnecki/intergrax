@@ -129,7 +129,7 @@ Lab reference agents implement `HarnessReferenceAgent` + `UAEPAgent`; manifest b
 ## Post-U continuation (Phase V)
 
 Phase S/T/U established a production-configurable harness baseline.
-Phase V architecture hardening contracts are **complete** in harness-only scope, including **V-V6** closeout (adaptive governance + L3/L4 evidence + CI gate). Default continuation is **operational L3/L4 stability window** and optional **Phase W-ML** (modality plane).
+Phase V architecture hardening and **Phase W-ML** harness contracts are **complete** in harness-only scope (stub modality tools + typed planes). Default continuation is **operational L3/L4 stability window** and **incremental live provider backends** (YOLO/ONNX/ElevenLabs).
 
 Primary Phase V tracks impacting the harness environment:
 

@@ -1,6 +1,6 @@
 # Intergrax — Model & Modality Plane
 
-**Last updated:** 2026-06-02 · **Phase W-ML** (documentation **Done**; implementation **Planned**)
+**Last updated:** 2026-06-02 · **Phase W-ML** (W-ML.0 docs **Done**; W-ML.1–W-ML.8 harness contracts **Done**; production provider backends **incremental**)
 
 Catalog and harness rules for **vision**, **audio/speech**, **classical ML**, and **Hugging Face** usage — aligned with Integration → Tool → Skill → Agent (§5.3, §7.1.9).
 

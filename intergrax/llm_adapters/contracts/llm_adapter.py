@@ -96,6 +96,18 @@ class LLMAdapter(ABC):
         """Whether generate_structured is natively supported (not prompt-only)."""
         return False
 
+    def supports_vision(self) -> bool:
+        """Whether the adapter can consume image attachments in user messages."""
+        return False
+
+    def supports_audio_input(self) -> bool:
+        """Whether the adapter can consume audio attachments in user messages."""
+        return False
+
+    def supports_audio_output(self) -> bool:
+        """Whether the adapter can emit audio responses."""
+        return False
+
     @abstractmethod
     def generate_messages(
         self,

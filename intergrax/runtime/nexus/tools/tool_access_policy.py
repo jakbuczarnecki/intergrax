@@ -7,6 +7,7 @@ from typing import Optional, Protocol, Sequence
 
 from intergrax.runtime.nexus.tools.tool_runtime import ToolInvocationPlan
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+from intergrax.runtime.modality.modality_profile import ModalityProfile, filter_tool_ids_by_modality_profile
 from intergrax.tools.unified.constants import (
     RAG_RETRIEVE_TOOL_ID,
     RAG_TOOL_ALIASES,
@@ -74,6 +75,22 @@ class ToolAccessPolicy:
             use_rag=use_rag,
             use_websearch=use_websearch,
             use_tools=use_tools,
+        )
+
+    @staticmethod
+    def apply_modality_profile(
+        plan: ToolInvocationPlan,
+        *,
+        profile: ModalityProfile,
+    ) -> ToolInvocationPlan:
+        """Intersect tool plan with modality plane policy (Phase W-ML.6)."""
+        normalized = plan.normalized()
+        filtered = filter_tool_ids_by_modality_profile(normalized.tool_ids, profile)
+        return ToolInvocationPlan(
+            tool_ids=filtered,
+            use_rag=normalized.use_rag and any(tool_id.startswith("rag.") for tool_id in filtered),
+            use_websearch=normalized.use_websearch,
+            use_tools=bool(filtered),
         )
 
     @staticmethod

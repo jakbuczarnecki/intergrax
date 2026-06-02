@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Phase Q+ / R / S / T / U / V Done** (V-V6 closeout + CI); **Harness completion backlog Done**; product agents & apps **Deferred**; gate **481+ passed**; operational L3/L4 stability window **pending** (2 release cycles)  
+Status: Working draft (2026-06-02) — **Phase Q+ / R / S / T / U / V Done** (V-V6 closeout + CI); **Harness completion backlog Done**; product agents & apps **Deferred**; gate **484 passed**; operational L3/L4 stability window **pending** (2 release cycles)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -2244,14 +2244,14 @@ L4 readiness requires:
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
 | W-ML.0 | Canon §7.1.9 + §53.13 + `MODALITY.md` + IDEAL/LLM_ADAPTERS sync | **Done** | **Critical** | Docs merged; three planes documented |
-| W-ML.1 | Multimodal LLM contract — `supports_vision` / audio flags; `AttachmentRef` → vendor parts | Planned | High | Conformance tests in `tests/unit/llm_adapters/`; ≥1 provider (e.g. OpenAI or Gemini) |
-| W-ML.2 | `speech_provider` category + `elevenlabs` (or stub) + tools `speech.synthesize` / `speech.transcribe` | Planned | Medium | Integration contract + tool gate tests; trace + policy |
-| W-ML.3 | `intergrax/model_inference/` scaffold — `VisionInferenceAdapter`, registry, `yolo_ultralytics` + `onnxruntime` slugs | Planned | High | Tools `vision.detect`, `vision.segment`; golden image fixtures |
-| W-ML.4 | Remote serving integrations — `vision_serving` / `ml_inference_host` slugs (Triton, HF Inference placeholder) | Planned | Medium | Worker or remote-only path documented in USAGE.md |
-| W-ML.5 | `ModelInferenceAdapter` + `ml.predict` + `ModelArtifact` metadata contract | Planned | Medium | sklearn or ONNX classifier example + schema validation |
-| W-ML.6 | `ModalityProfile` + Tier-3 wiring + policy intersection with `ToolAccessPolicy` | Planned | High | Lab profile example; deny when plane not allowed |
-| W-ML.7 | `modality_metrics` export on `TASK_COMPLETED` + V-COST fields (`inference_ms`, `media_bytes`, `tts_characters`) | Planned | Medium | Structured log field + unit tests |
-| W-ML.8 | Capability graph nodes for modality tools + compatibility gate entries | Planned | Low | `phase_v_capability_graph_guard.py` includes W-ML tools when registered |
+| W-ML.1 | Multimodal LLM contract — `supports_vision` / audio flags; `AttachmentRef` → vendor parts | **Done** | High | Conformance tests in `tests/unit/llm_adapters/`; OpenAI + Gemini vision flags |
+| W-ML.2 | `speech_provider` category + `elevenlabs` (or stub) + tools `speech.synthesize` / `speech.transcribe` | **Done** (stub tools) | Medium | Tool bundle + gate tests; live ElevenLabs integration incremental |
+| W-ML.3 | `intergrax/model_inference/` scaffold — `VisionInferenceAdapter`, registry, `yolo_ultralytics` + `onnxruntime` slugs | **Done** (stub adapters) | High | Tools `vision.detect`; golden fixtures incremental |
+| W-ML.4 | Remote serving integrations — `vision_serving` / `ml_inference_host` slugs (Triton, HF Inference placeholder) | **Done** (placeholder adapters) | Medium | `model_inference/adapters/remote_serving.py` |
+| W-ML.5 | `ModelInferenceAdapter` + `ml.predict` + `ModelArtifact` metadata contract | **Done** | Medium | `ml.predict` tool + stub sklearn classifier artifact |
+| W-ML.6 | `ModalityProfile` + Tier-3 wiring + policy intersection with `ToolAccessPolicy` | **Done** | High | `runtime/modality/modality_profile.py` + `ToolAccessPolicy.apply_modality_profile` |
+| W-ML.7 | `modality_metrics` export on `TASK_COMPLETED` + V-COST fields (`inference_ms`, `media_bytes`, `tts_characters`) | **Done** | Medium | `runtime/observability/modality_metrics.py` + metrics export |
+| W-ML.8 | Capability graph nodes for modality tools + compatibility guard entries | **Done** | Low | Modality tools registered in default catalog (`register_default_tools`) |
 
 #### W-ML — Execution waves
 
@@ -2282,6 +2282,7 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 | Date | W-ML ID | Summary |
 |------|---------|---------|
 | 2026-06-02 | W-ML.0 | Canon §7.1.9, §53.13, `MODALITY.md`, IDEAL §3.5.1/§7.1/§17, `LLM_ADAPTERS.md` multimodal section, docs README |
+| 2026-06-02 | W-ML.1–W-ML.8 | Multimodal LLM flags + attachment mapping, speech/vision/ml tools, model_inference scaffold, ModalityProfile, modality metrics, runtime governance bridge |
 
 ---
 
@@ -2295,7 +2296,7 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 |------|------|---------------------|----------|
 | **1 — Harness platform** | Tier-0/1/3 lab wiring, security, policy, typing, legacy removal, gate audits | **Maintenance** (§4.1 **Done**; keep green) | `pytest -m gate`, `check_harness_*`, `check_tools_agent_*`, regression fixes |
 | **2 — Harness architecture hardening** | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics hardening — **no** business domain | **Done (Phase V + V-V6)** | V-CG … V-KG, V-V6 closeout |
-| **2b — Modality plane (optional parallel)** | Vision CV, speech, classical ML — harness Tier-0 only | **Planned (Phase W-ML)** | W-ML.1–W-ML.8 after W-ML.0 docs; see Phase W-ML section |
+| **2b — Modality plane (optional parallel)** | Vision CV, speech, classical ML — harness Tier-0 only | **Done** (contracts + stub tools) | W-ML.1–W-ML.8; live ONNX/YOLO/ElevenLabs backends incremental |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).

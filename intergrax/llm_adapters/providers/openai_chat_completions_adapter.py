@@ -137,6 +137,9 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
     def supports_structured_output(self) -> bool:
         return True
 
+    def supports_vision(self) -> bool:
+        return True
+
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
@@ -294,7 +297,12 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
     ) -> dict:
         temp = temperature if temperature is not None else self.defaults.get("temperature")
         out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens")
-        mapped = map_chat_completion_messages(system_text=system_text, convo=convo)
+        include_multimodal = self.supports_vision() and _conversation_has_attachments(convo)
+        mapped = map_chat_completion_messages(
+            system_text=system_text,
+            convo=convo,
+            include_multimodal=include_multimodal,
+        )
         payload: dict = {"model": self.model, "messages": mapped, "stream": stream}
         if temp is not None:
             payload["temperature"] = float(temp)
@@ -307,3 +315,7 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
         if response_format is not None:
             payload["response_format"] = response_format
         return payload
+
+
+def _conversation_has_attachments(convo: Sequence[ChatMessage]) -> bool:
+    return any(message.attachments for message in convo)

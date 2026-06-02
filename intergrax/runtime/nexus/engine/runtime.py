@@ -51,6 +51,8 @@ from intergrax.runtime.nexus.tracing.runtime.runtime_run_end import RuntimeRunEn
 from intergrax.runtime.nexus.retry.coordinator import RetryCoordinator
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_retry import RuntimeRunRetryDiagV1
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_start import RuntimeRunStartDiagV1
+from intergrax.runtime.architecture.multi_agent_coordination import PlanningConstraints
+from intergrax.runtime.architecture.runtime_governance_bridge import RuntimeArchitectureGovernanceBridge
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
 
@@ -171,6 +173,20 @@ class RuntimeEngine:
                 pipeline_name=pipeline.__class__.__name__ if pipeline is not None else "None",
             ),
         )
+        planning_constraints_raw = request.metadata.get("planning_constraints")
+        if isinstance(planning_constraints_raw, dict):
+            governance_bridge = RuntimeArchitectureGovernanceBridge()
+            planning_constraints = PlanningConstraints.model_validate(planning_constraints_raw)
+            governance_metadata = governance_bridge.build_trace_metadata(
+                constraints=planning_constraints
+            )
+            state.trace_event(
+                component=TraceComponent.ENGINE,
+                step="architecture_governance",
+                level=TraceLevel.INFO,
+                message="Architecture governance metadata recorded.",
+                payload=governance_metadata,
+            )
 
         runtime_answer: RuntimeAnswer | None = None
         run_error: RunError | None = None

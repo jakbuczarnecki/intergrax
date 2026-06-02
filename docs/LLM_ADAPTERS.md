@@ -27,7 +27,7 @@ LLM adapters own **Plane A** of the Model & Modality architecture (canon §7.1.9
 - `ContextBudgetPolicy` and `ModalityProfile.max_media_bytes` cap attachment volume (Phase W-ML).
 - Traces record attachment types and sizes — not necessarily raw bytes.
 
-### Target capability flags (planned — W-ML.1)
+### Capability flags (W-ML.1)
 
 | Method | Meaning |
 |--------|---------|
