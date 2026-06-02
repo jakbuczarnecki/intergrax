@@ -93,6 +93,23 @@ from intergrax.runtime.architecture import (
     apply_policy_overlays,
     build_default_adversarial_profile,
     run_prompt_regression_suite,
+    PlanningConstraints,
+    PlanningDimensionLevel,
+    build_default_coordination_catalog,
+    select_coordination_pattern,
+    CoordinationPattern,
+    MultiAgentAcceptanceCase,
+    evaluate_multi_agent_acceptance,
+    GraphRagArchitectureContract,
+    GraphRagEdge,
+    GraphRagEdgeType,
+    GraphRagNode,
+    GraphRagNodeType,
+    ChannelRetrievalHit,
+    RetrievalChannel,
+    HybridRetrievalRequest,
+    execute_hybrid_retrieval,
+    build_graph_provenance_trace,
 )
 
 
@@ -604,6 +621,123 @@ def _build_prompt_regression_suite_report() -> BaseModel:
     )
 
 
+def _build_multi_agent_catalog_report() -> BaseModel:
+    return build_default_coordination_catalog()
+
+
+def _build_multi_agent_selection_report() -> BaseModel:
+    return select_coordination_pattern(
+        constraints=PlanningConstraints(
+            risk_level=PlanningDimensionLevel.HIGH,
+            latency_level=PlanningDimensionLevel.MEDIUM,
+            cost_level=PlanningDimensionLevel.MEDIUM,
+            complexity_level=PlanningDimensionLevel.HIGH,
+        )
+    )
+
+
+def _build_multi_agent_acceptance_report() -> BaseModel:
+    return evaluate_multi_agent_acceptance(
+        [
+            MultiAgentAcceptanceCase(
+                case_id="ma.supervisor",
+                pattern=CoordinationPattern.SUPERVISOR_WORKER,
+                agent_count=3,
+                completed_steps=5,
+                expected_steps=5,
+                human_gate_satisfied=True,
+            ),
+            MultiAgentAcceptanceCase(
+                case_id="ma.swarm",
+                pattern=CoordinationPattern.SWARM,
+                agent_count=4,
+                completed_steps=4,
+                expected_steps=4,
+            ),
+        ]
+    )
+
+
+def _build_graph_rag_contract_report() -> BaseModel:
+    return GraphRagArchitectureContract(
+        graph_id="graph.research.knowledge",
+        nodes=[
+            GraphRagNode(node_id="doc-1", node_type=GraphRagNodeType.DOCUMENT, label="Policy PDF"),
+            GraphRagNode(node_id="entity-1", node_type=GraphRagNodeType.ENTITY, label="Compliance"),
+            GraphRagNode(node_id="tool-1", node_type=GraphRagNodeType.TOOL, label="rag.retrieve"),
+        ],
+        edges=[
+            GraphRagEdge(
+                source_node_id="doc-1",
+                target_node_id="entity-1",
+                edge_type=GraphRagEdgeType.DERIVED_FROM,
+            ),
+            GraphRagEdge(
+                source_node_id="entity-1",
+                target_node_id="tool-1",
+                edge_type=GraphRagEdgeType.EXECUTED_BY,
+            ),
+        ],
+    )
+
+
+def _build_hybrid_retrieval_report() -> BaseModel:
+    return execute_hybrid_retrieval(
+        HybridRetrievalRequest(
+            query_id="q-research",
+            vector_hits=[
+                ChannelRetrievalHit(
+                    channel=RetrievalChannel.VECTOR,
+                    document_id="doc-1",
+                    score=0.9,
+                )
+            ],
+            keyword_hits=[
+                ChannelRetrievalHit(
+                    channel=RetrievalChannel.KEYWORD,
+                    document_id="doc-2",
+                    score=0.7,
+                )
+            ],
+            graph_hits=[
+                ChannelRetrievalHit(
+                    channel=RetrievalChannel.GRAPH,
+                    document_id="doc-1",
+                    score=0.8,
+                )
+            ],
+            top_k=3,
+        )
+    )
+
+
+def _build_graph_provenance_report() -> BaseModel:
+    nodes = [
+        GraphRagNode(node_id="doc-1", node_type=GraphRagNodeType.DOCUMENT, label="Policy PDF"),
+        GraphRagNode(node_id="entity-1", node_type=GraphRagNodeType.ENTITY, label="Compliance"),
+        GraphRagNode(node_id="tool-1", node_type=GraphRagNodeType.TOOL, label="rag.retrieve"),
+    ]
+    edges = [
+        GraphRagEdge(
+            source_node_id="doc-1",
+            target_node_id="entity-1",
+            edge_type=GraphRagEdgeType.DERIVED_FROM,
+        ),
+        GraphRagEdge(
+            source_node_id="entity-1",
+            target_node_id="tool-1",
+            edge_type=GraphRagEdgeType.EXECUTED_BY,
+        ),
+    ]
+    return build_graph_provenance_trace(
+        trace_id="trace-research-001",
+        graph_id="graph.research.knowledge",
+        nodes=nodes,
+        edges=edges,
+        target_node_id="tool-1",
+    )
+
+
 def main() -> int:
     output_dir = REPO_ROOT / "build" / "architecture_hardening"
     writer: ReportWriter = JsonReportWriter()
@@ -663,6 +797,12 @@ def main() -> int:
     retrieval_effectiveness_report = _build_retrieval_effectiveness_report()
     policy_overlay_report = _build_policy_overlay_report()
     prompt_regression_suite_report = _build_prompt_regression_suite_report()
+    multi_agent_catalog_report = _build_multi_agent_catalog_report()
+    multi_agent_selection_report = _build_multi_agent_selection_report()
+    multi_agent_acceptance_report = _build_multi_agent_acceptance_report()
+    graph_rag_contract_report = _build_graph_rag_contract_report()
+    hybrid_retrieval_report = _build_hybrid_retrieval_report()
+    graph_provenance_report = _build_graph_provenance_report()
 
     writer.write(
         output_path=output_dir / "architecture_metrics_pipeline_report.json",
@@ -763,6 +903,30 @@ def main() -> int:
     writer.write(
         output_path=output_dir / "prompt_regression_suite_report.json",
         payload=prompt_regression_suite_report,
+    )
+    writer.write(
+        output_path=output_dir / "multi_agent_coordination_catalog_report.json",
+        payload=multi_agent_catalog_report,
+    )
+    writer.write(
+        output_path=output_dir / "multi_agent_pattern_selection_report.json",
+        payload=multi_agent_selection_report,
+    )
+    writer.write(
+        output_path=output_dir / "multi_agent_acceptance_report.json",
+        payload=multi_agent_acceptance_report,
+    )
+    writer.write(
+        output_path=output_dir / "graph_rag_architecture_report.json",
+        payload=graph_rag_contract_report,
+    )
+    writer.write(
+        output_path=output_dir / "hybrid_retrieval_report.json",
+        payload=hybrid_retrieval_report,
+    )
+    writer.write(
+        output_path=output_dir / "graph_provenance_trace_report.json",
+        payload=graph_provenance_report,
     )
 
     print("phase-v governance report: OK")

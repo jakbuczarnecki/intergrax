@@ -1,6 +1,6 @@
 # Intergrax Harness Environment
 
-**Last updated:** 2026-06-02 · Phase V (Harness architecture hardening follow-on)
+**Last updated:** 2026-06-02 · Phase V **Done** (typed contracts + governance artifacts; L3/L4 CI closeout pending)
 
 Operator and author guide for the **lab harness stack** — Tier-0 integrations, Tier-1 Nexus, Tier-3 `lab_application` wiring, platform skills, and observability. Business agents (Problem Radar, Vendor Discovery) are **Phase K** and out of scope here.
 
@@ -129,7 +129,7 @@ Lab reference agents implement `HarnessReferenceAgent` + `UAEPAgent`; manifest b
 ## Post-U continuation (Phase V)
 
 Phase S/T/U established a production-configurable harness baseline.
-Current default platform continuation is **Phase V** (architecture hardening), still in harness-only scope.
+Phase V architecture hardening contracts are **complete** in harness-only scope; default continuation is **L3/L4 gate evidence** and optional **Phase W-ML** (modality plane).
 
 Primary Phase V tracks impacting the harness environment:
 
@@ -172,6 +172,12 @@ Current baseline delivered (Phase V V1):
 - `V-CE.4` retrieval effectiveness metrics (`precision@k`, `recall@k`)
 - `V-PE.3` deterministic policy injection overlays with trace records
 - `V-PE.4` prompt regression and adversarial test suite contracts
+- `V-MA.1` multi-agent coordination pattern catalog
+- `V-MA.2` coordination pattern selection matrix (risk/latency/cost/complexity)
+- `V-MA.3` pattern-specific multi-agent acceptance contracts
+- `V-KG.1` Graph-RAG architecture contract (nodes/edges/types)
+- `V-KG.2` hybrid retrieval path (vector + keyword + graph fusion)
+- `V-KG.3` graph-backed explainability trace provenance fields
 - report artifacts script: `scripts/phase_v_foundations_report.py`
 - graph guard script: `scripts/phase_v_capability_graph_guard.py`
 - governance artifacts script: `scripts/phase_v_governance_report.py`

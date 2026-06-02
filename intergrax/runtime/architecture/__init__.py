@@ -211,6 +211,42 @@ from intergrax.runtime.architecture.prompt_regression_suite import (
     build_default_adversarial_profile,
     run_prompt_regression_suite,
 )
+from intergrax.runtime.architecture.multi_agent_coordination import (
+    CoordinationPattern,
+    CoordinationPatternCatalog,
+    CoordinationPatternDefinition,
+    PatternSelectionMatrixReport,
+    PlanningConstraints,
+    PlanningDimensionLevel,
+    build_default_coordination_catalog,
+    select_coordination_pattern,
+)
+from intergrax.runtime.architecture.multi_agent_acceptance import (
+    MultiAgentAcceptanceCase,
+    MultiAgentAcceptanceReport,
+    MultiAgentAcceptanceResult,
+    evaluate_multi_agent_acceptance,
+)
+from intergrax.runtime.architecture.graph_rag import (
+    GraphRagArchitectureContract,
+    GraphRagEdge,
+    GraphRagEdgeType,
+    GraphRagNode,
+    GraphRagNodeType,
+)
+from intergrax.runtime.architecture.hybrid_retrieval import (
+    ChannelRetrievalHit,
+    HybridRetrievalReport,
+    HybridRetrievalRequest,
+    HybridRetrievalResult,
+    RetrievalChannel,
+    execute_hybrid_retrieval,
+)
+from intergrax.runtime.architecture.graph_provenance import (
+    GraphProvenanceRecord,
+    GraphTraceFieldBundle,
+    build_graph_provenance_trace,
+)
 
 __all__ = [
     "AgentCertificationEvidence",
@@ -327,6 +363,27 @@ __all__ = [
     "PromptRegressionCaseResult",
     "PromptRegressionCaseType",
     "PromptRegressionSuiteReport",
+    "CoordinationPattern",
+    "CoordinationPatternCatalog",
+    "CoordinationPatternDefinition",
+    "PatternSelectionMatrixReport",
+    "PlanningConstraints",
+    "PlanningDimensionLevel",
+    "MultiAgentAcceptanceCase",
+    "MultiAgentAcceptanceReport",
+    "MultiAgentAcceptanceResult",
+    "GraphRagArchitectureContract",
+    "GraphRagEdge",
+    "GraphRagEdgeType",
+    "GraphRagNode",
+    "GraphRagNodeType",
+    "ChannelRetrievalHit",
+    "HybridRetrievalReport",
+    "HybridRetrievalRequest",
+    "HybridRetrievalResult",
+    "RetrievalChannel",
+    "GraphProvenanceRecord",
+    "GraphTraceFieldBundle",
     "UnifiedEvaluationReport",
     "evaluate_agent_certification",
     "evaluate_agent_lifecycle_transition",
@@ -351,6 +408,11 @@ __all__ = [
     "apply_policy_overlays",
     "build_default_adversarial_profile",
     "run_prompt_regression_suite",
+    "build_default_coordination_catalog",
+    "select_coordination_pattern",
+    "evaluate_multi_agent_acceptance",
+    "execute_hybrid_retrieval",
+    "build_graph_provenance_trace",
     "build_catalog_capability_graph",
     "build_capability_impact_report",
     "build_capability_lineage_report",

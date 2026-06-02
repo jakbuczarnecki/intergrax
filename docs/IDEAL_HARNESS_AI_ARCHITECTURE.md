@@ -108,6 +108,30 @@ An ideal Harness AI system is built from 9 logical layers.
 - Model selection (routing by cost, latency, risk, and quality).
 - Structured output contracts (JSON schema / typed contracts).
 
+### 3.5.1 Modality planes (vision, audio, classical ML)
+
+Ideal Harness AI treats **modality** as first-class, not an afterthought to text LLMs.
+Three planes keep concerns separable and extensible (Integrax canon §7.1.9):
+
+| Plane | Purpose | Ideal components |
+|-------|---------|------------------|
+| **A — Generative** | Dialog, reasoning, native multimodal LLM APIs | `LLMAdapter` + attachment/content-part mapping |
+| **B — Ingest** | Files/streams → text or embeddings for knowledge | RAG ingest, document parsers, transcription |
+| **C — Dedicated inference** | Deterministic CV/ML, TTS hosts, served models | `VisionInferenceAdapter`, `ModelInferenceAdapter`, `SpeechAdapter` |
+
+**Vision inference engine (Plane C)** MUST support production market standards through
+pluggable backends — e.g. YOLO/Ultralytics, ONNX Runtime, OpenVINO, TensorRT,
+TorchServe/Triton, and cloud endpoints — without coupling agents to vendor SDKs.
+
+**Routing discipline:**
+
+- Regulated or metric-bound detection (boxes, masks, scores) → Plane C tools.
+- Semantic Q&A over an image in conversation → Plane A when policy allows.
+- Archive indexing → Plane B only.
+
+**Harness rules:** agents invoke modalities through **tools** and profiles; heavy models
+run in worker pools or remote hosts; training pipelines stay outside the execution OS.
+
 ### 3.6 Capability Layer (Tools + Skills + Integrations)
 
 - Tool registry (versioned, policy-tagged, observable).
@@ -219,9 +243,11 @@ latency constraints, and cost envelope.
 ### 7.1 Extension point mechanisms
 
 - Provider adapters (`LLMAdapter`, `EmbeddingAdapter`, `RerankerAdapter`).
-- Tool adapters (`ToolSpec`, `ToolRuntime`, `ToolPolicyProfile`).
-- Skill packs (`SkillManifest`, `SkillDependencies`, `SkillTests`).
+- **Modality adapters (Plane C):** `VisionInferenceAdapter` (YOLO, ONNX, OpenVINO, TensorRT, remote serving), `ModelInferenceAdapter` (sklearn, ONNX classifiers), `SpeechAdapter` (TTS/STT SaaS via integration hosts).
+- Tool adapters (`ToolSpec`, `ToolRuntime`, `ToolPolicyProfile`) — including `vision.*`, `speech.*`, `ml.*` atomic operations.
+- Skill packs (`SkillManifest`, `SkillDependencies`, `SkillTests`) — bundle tool_ids only; skills are not inference engines.
 - Policy packs (`PolicyBundle`, `PolicyVersion`, `ComplianceProfile`).
+- **ModalityProfile** — allowed planes, vision model allowlist, media byte caps, deterministic-CV policy flag.
 
 ### 7.2 Compatibility contracts
 
@@ -521,11 +547,12 @@ The architecture explicitly enforces composition over monolithic implementations
 
 Formal composition model:
 
-`Agent = LLM Profile + Skill Set + Policy Bundle + Context Profile + Memory Profile + Tool Permissions`
+`Agent = LLM Profile + Modality Profile + Skill Set + Policy Bundle + Context Profile + Memory Profile + Tool Permissions`
 
 ### 17.1 Agent definition
 
-- **LLM Profile:** allowed models, routing policies, latency/cost envelopes.
+- **LLM Profile:** allowed models, routing policies, latency/cost envelopes; multimodal capability flags (vision/audio in/out).
+- **Modality Profile:** allowed modality planes, CV model allowlist, media quotas, speech defaults, deterministic-CV requirements for regulated domains.
 - **Skill Set:** capabilities exposed through curated skill packs.
 - **Policy Bundle:** safety, compliance, and execution constraints.
 - **Context Profile:** context assembly/budget/lineage strategy.

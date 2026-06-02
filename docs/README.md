@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-02 (Phase V architecture hardening added; K.1/K.2 deferred)
+**Last updated:** 2026-06-02 (Phase V hardening; Phase W-ML modality docs; K.1/K.2 deferred)
 
 The `docs/` folder holds the canonical platform documentation.
 
@@ -17,6 +17,7 @@ The `docs/` folder holds the canonical platform documentation.
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — all implemented providers, contracts, wiring, usage links |
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — atomic LLM/MCP tools, engine status, four-layer stack |
 | [**SKILLS.md**](SKILLS.md) | **Skill Library** — composable capability packs, registry, importers |
+| [**MODALITY.md**](MODALITY.md) | **Model & modality plane** — vision (YOLO/ONNX/…), audio/speech, classical ML, Hugging Face roles |
 | [**HARNESS_ENVIRONMENT.md**](HARNESS_ENVIRONMENT.md) | **Harness environment** — lab stack, OTLP, skills preset, verification |
 | [**../README.md**](../README.md) | **GitHub landing** — tiers, Integration/Tool/Skill/Agent stack, links to canon and plan |
 | [**LLM_ADAPTERS.md**](LLM_ADAPTERS.md) | **LLM adapter catalog** — providers, streaming, tools, env vars, Prometheus/governance |
@@ -33,6 +34,7 @@ Agent workflow (how)      →  AGENT_CREATION_GUIDE.md
 Integrations (catalog)    →  INTEGRATIONS.md
 Tools (catalog)           →  TOOLS.md
 Skills (catalog)          →  SKILLS.md
+Modality / ML / vision    →  MODALITY.md
 Harness environment       →  HARNESS_ENVIRONMENT.md
 LLM adapters + metrics    →  LLM_ADAPTERS.md
 Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
@@ -57,6 +59,8 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | Harness environment (lab stack, OTLP, ops) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase S/T** + **Appendix F** · `HARNESS_ENVIRONMENT.md` |
 | Harness production hardening (security, policy, contracts) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase U** + **Appendix G** |
 | Harness architecture hardening (capability graph, lifecycle, metrics, prompt/eval/context/security/cost) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V** · [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §53 |
+| Vision / audio / ML modality architecture (YOLO, ElevenLabs, HF, ONNX) | [MODALITY.md](MODALITY.md) · canon §7.1.9 · plan **Phase W-ML** |
+| Configure multimodal LLM vs dedicated CV | [LLM_ADAPTERS.md](LLM_ADAPTERS.md) (Plane A) · [MODALITY.md](MODALITY.md) (Planes B/C) |
 | Check readiness for business agents | Implementation plan **Appendix A** |
 | Review technical debt before Tier-1 work | Implementation plan **Appendix B** |
 | Wire external systems (DB, Slack, Jira, …) | [INTEGRATIONS.md](INTEGRATIONS.md), then architecture canon §7.1 |
@@ -87,6 +91,7 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | **Phase S — Harness environment GA** | **Done** (2026-06-01) — [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) · [Appendix F](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-f--harness-environment-traceability-phase-s) |
 | **Phase T / U — Harness cleanliness + production hardening** | **Done** (2026-06-01) — [Appendix G](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-g--harness-production-audit-traceability-phase-u) |
 | **Phase V — Harness architecture hardening** | **Active** — Phase V in [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · canon §53 (`V-CG.1`, `V-AM.1`, `V-ALG.1` done) |
+| **Phase W-ML — Model & modality plane** | **Docs Done** · implementation Planned — [MODALITY.md](MODALITY.md) · canon §7.1.9 |
 | **Phase V execution controls** | **Defined** — execution matrix, KPI thresholds, cadence, ownership, L3/L4 gates in Phase V section |
 | **Harness completion (§4.1)** | **Done** (2026-06-02) |
 | **Phase K — Business agents** | **End of plan** — §6.3; **not** default next |
@@ -105,5 +110,6 @@ Harness CI also runs: `python scripts/check_harness_no_getattr.py` (zero grandfa
 4. **Agent author workflow** → `AGENT_CREATION_GUIDE.md`.
 5. **Integration or tool catalog changes** → `INTEGRATIONS.md` or `TOOLS.md` respectively.
 6. **Skill packs / importers** → `SKILLS.md` + plan Appendix E (and Phase S when prod proof).
-7. **Harness AI terms** → `intergrax_runtime_architecture.md` §5.3 only (single source of truth).
-8. After each merged harness PR: run gate + getattr audit; update §0 gate count in the plan footer.
+7. **Modality / vision / speech / ML** → `MODALITY.md` + canon §7.1.9 + plan Phase W-ML.
+8. **Harness AI terms** → `intergrax_runtime_architecture.md` §5.3 only (single source of truth).
+9. After each merged harness PR: run gate + getattr audit; update §0 gate count in the plan footer.

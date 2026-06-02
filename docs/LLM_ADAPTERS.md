@@ -4,7 +4,42 @@
 
 Tier-0 LLM layer — `LLMAdapter`, registry, `LLMProfile`. Outside Integration Library (§5.2.2).
 
-**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §33 · [applications/USAGE.md](../applications/USAGE.md) · Phase **M-LLM** · Phase **V-COST / V-EVAL / V-SEC**
+**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §33 · [MODALITY.md](MODALITY.md) (Planes A/B/C) · [applications/USAGE.md](../applications/USAGE.md) · Phase **M-LLM** · Phase **W-ML** · Phase **V-COST / V-EVAL / V-SEC**
+
+---
+
+## Modality plane A — generative multimodal (LLM)
+
+LLM adapters own **Plane A** of the Model & Modality architecture (canon §7.1.9). Dedicated CV (YOLO, ONNX, …), classical ML, and SaaS TTS (ElevenLabs, …) belong to **Plane C** / integrations — not this module.
+
+| Concern | Owner | Notes |
+|---------|-------|-------|
+| Chat reasoning over text | `llm_adapters/` | Existing |
+| Native vendor vision/audio in dialog | `llm_adapters/` | Capability flags + content parts (W-ML.1) |
+| Audio/file → text for RAG | `document_parser` + `rag/` | Plane B — [MODALITY.md](MODALITY.md) |
+| Object detection / segmentation | `model_inference/` (planned) | Plane C — tools `vision.*` |
+
+### Message attachments
+
+`intergrax/llm/messages.py` defines `AttachmentRef` (`type`: `image`, `audio`, `video`, `pdf`, …; `uri`; metadata). Target behavior:
+
+- Adapters with `supports_vision()` / `supports_audio_input()` map attachments to vendor message parts.
+- `ContextBudgetPolicy` and `ModalityProfile.max_media_bytes` cap attachment volume (Phase W-ML).
+- Traces record attachment types and sizes — not necessarily raw bytes.
+
+### Target capability flags (planned — W-ML.1)
+
+| Method | Meaning |
+|--------|---------|
+| `supports_vision()` | Image (and optionally video frame) input |
+| `supports_audio_input()` | Audio input in chat |
+| `supports_audio_output()` | Spoken response generation via vendor API |
+
+Defaults remain **false** until an adapter implements mapping and conformance tests pass.
+
+### When not to use LLM for vision
+
+Use Plane C tools (`vision.detect`, …) when outputs must be **deterministic**, **geometric**, or **auditably reproducible** (safety, manufacturing, compliance). Use Plane A when the product needs **semantic interpretation** in natural language.
 
 ---
 
@@ -170,8 +205,9 @@ Workflows: `unit-tests.yml`, `llm-adapters-guard.yml`, optional `llm-network-smo
 | PolicyEngine rules consuming `llm_cost_evaluation` logs | §governance replay |
 | Central LLM gateway service (single egress) | §5.2.4 — needs architecture approval |
 | Model routing / fallback chains in `LLMProfile` | Agent harness flexibility |
+| Multimodal attachment mapping + capability flags | Phase W-ML.1 · §7.1.9 |
 | Cost envelopes and quota policy integration | Phase V `V-COST.*` |
 | Evaluation score baselines for model/profile changes | Phase V `V-EVAL.*` |
 | Adversarial prompt/tool defense validation on model paths | Phase V `V-SEC.*` |
 
-**Out of scope:** product E2E gates, per-business-agent adapter code in `llm_adapters/`.
+**Out of scope:** product E2E gates, per-business-agent adapter code in `llm_adapters/`, YOLO/ONNX/CV engines (see [MODALITY.md](MODALITY.md) Plane C).
