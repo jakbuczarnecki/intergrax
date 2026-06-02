@@ -4872,7 +4872,7 @@ This is the core architectural direction of Intergrax.
 
 # 52. Phase L — Agent OS Readiness (Implementation Directive)
 
-**Status:** **Done** (2026-05-27). Follow-on harness work: **Phase Q / Q+ / R (MVP) Done**; **Phase S** (harness environment GA) is **next** — see [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+**Status:** **Done** (2026-05-27). Follow-on harness work: **Phase Q / Q+ / R / S / T / U Done**. Current harness evolution is tracked in **Phase V — Architecture Hardening** in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
 
 Before implementing business agents (Problem Radar, Vendor Discovery, Legal expansion), Intergrax formalized Agent Operating System behavior:
 
@@ -4887,9 +4887,142 @@ Before implementing business agents (Problem Radar, Vendor Discovery, Legal expa
 
 **Acceptance question (L — met):** Can a developer create a new agent in < 1 hour, register it, execute through Nexus, inspect traces, and iterate **without modifying runtime infrastructure**?
 
-**Harness environment question (S — open):** Is the **lab harness stack** (integrations, OTLP, platform skills, operator docs) complete so any Tier-2 agent — including future K.1/K.2 — runs on a production-ready environment without further Tier-0/Tier-3 gaps?
+**Harness environment question (S — closed):** Is the **lab harness stack** (integrations, OTLP, platform skills, operator docs) complete so any Tier-2 agent — including future K.1/K.2 — runs on a production-ready environment without further Tier-0/Tier-3 gaps? **Yes (Phase S Done, 2026-06-01).**
 
 Business agents are **consumers** of the runtime. They must not drive **one-off** runtime evolution (§0.6 in the implementation plan). Platform gaps found while building K.1/K.2 that affect **many future agents** still require Tier-1/Tier-0 changes with canon updates first.
 
-See implementation plan Phase L (§3), **Phase S**, and **Appendix A** in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+See implementation plan Phase L (§3), **Phase S**, **Phase V**, and **Appendix A** in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+
+---
+
+# 53. Harness Architecture Hardening Addendum (Post-U)
+
+This section formalizes post-U hardening required to align Intergrax with the
+ideal Harness AI architecture while staying in harness-only scope (no business-agent expansion).
+
+## 53.1 Strategic objective lock (harness-first)
+
+Intergrax MUST continue to treat the harness runtime as the durable product.
+Tier-2 business agents remain replaceable consumers of the runtime.
+
+Canonical relationship:
+
+```text
+Harness -> Runtime -> Agents -> Applications -> Products
+```
+
+This model is normative for architecture decisions and implementation planning.
+
+## 53.2 Capability graph architecture
+
+Registries and capability layers MUST be represented as a dependency graph:
+
+```text
+Integration -> Tool -> Skill -> Policy -> Agent -> Application -> Product
+```
+
+Minimum requirements:
+
+- typed node and edge taxonomy,
+- dependency lineage and provenance,
+- blast-radius impact analysis for version/policy/runtime changes,
+- compatibility validation executed on graph edges before release.
+
+## 53.3 Agent lifecycle governance
+
+Beyond contract shape (§12) and registry metadata (§15), every agent lifecycle MUST include:
+
+- certification gates (quality + policy + security),
+- promotion flow (dev -> staging -> production),
+- deprecation policy with migration windows,
+- retirement contract with rollback/archive semantics,
+- explicit owner and operational escalation path.
+
+## 53.4 Context quality hardening
+
+Context engineering (§28.1) MUST include explicit quality controls:
+
+- relevance/freshness/confidence scoring,
+- duplicate suppression and context-noise controls,
+- regression benchmarking for retrieval/context assembly,
+- traceable context-lineage chain from output evidence to source.
+
+## 53.5 Prompt engineering architecture
+
+Prompt artifacts MUST be treated as governed platform assets:
+
+- prompt registry ownership and versioning,
+- composable prompt layers (system/task/policy/context),
+- deterministic policy injection overlays,
+- prompt regression tests and change governance.
+
+## 53.6 Evaluation and benchmarking operations
+
+Evaluation MUST operate as a first-class runtime subsystem:
+
+- offline + online + shadow + human evaluation modes,
+- golden datasets and scenario regression suites,
+- rule-based and LLM-judge evaluators,
+- evaluation registry with score history, trend analysis, and release comparisons.
+
+## 53.7 Architecture metrics and debt governance
+
+Architecture health MUST be measured, not inferred.
+
+Minimum metric families:
+
+- modularity and coupling indicators,
+- dependency graph health and incompatibility rate,
+- observability and governance coverage,
+- policy/context/prompt/test critical-path coverage,
+- architecture debt index with trend tracking.
+
+## 53.8 Security and data-governance hardening
+
+Security controls MUST include explicit defenses for agent-native threats:
+
+- prompt injection defense,
+- tool injection defense,
+- retrieval poisoning defense,
+- tenant isolation verification,
+- immutable auditability for governance-critical actions.
+
+## 53.9 Cost and resource governance
+
+Cost control MUST be enforceable at runtime and observable at operations level:
+
+- budget envelopes by tenant/application/agent/model/tool,
+- token and tool quotas,
+- forecast and anomaly detection,
+- optimization loops with policy constraints.
+
+## 53.10 Multi-agent coordination model catalog
+
+Intergrax MUST support explicit coordination patterns with selection criteria:
+
+- hierarchical,
+- orchestrator-worker,
+- supervisor-worker,
+- peer-to-peer,
+- evaluator-loop / critique-revise.
+
+Pattern choice MUST be policy-aware and justified by task complexity, risk, latency, and cost.
+
+## 53.11 Knowledge graph evolution path
+
+Graph-native knowledge should evolve from optional retrieval enhancement to
+first-class capability:
+
+- graph RAG support,
+- entity-relation semantic modeling,
+- hybrid retrieval (vector + keyword + graph),
+- graph-backed explainability in reasoning traces.
+
+## 53.12 Architecture hardening policy
+
+Changes introduced by this section are harness-platform scope only and MUST be
+implemented through Tier-0/Tier-1/Tier-3 reusable mechanisms.
+
+Business-agent work (K.1/K.2, product apps, domain skills) remains deferred
+until explicit product reprioritization in the implementation plan.
 

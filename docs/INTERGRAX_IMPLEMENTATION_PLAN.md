@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Phase Q+ / R / S / T / U Done**; **Harness completion backlog Done**; product agents & apps **Deferred**; gate **481 passed**  
+Status: Working draft (2026-06-02) — **Phase Q+ / R / S / T / U Done**; **Phase V (Architecture Hardening) Planned**; **Harness completion backlog Done**; product agents & apps **Deferred**; gate **481 passed**  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -140,6 +140,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Harness environment GA (Phase S)** | **Done** (2026-06-01) | No (blocks K.1/K.2 only) | S-Ops + S-H + S-Doc; gate green |
 | **Harness cleanliness (Phase T)** | **Done** (2026-06-01) | No | T-Ops + T-H; gate green |
 | **Harness production hardening (Phase U)** | **Done** | No | U-Sec + U-Pol + U-Con + U-Typ + U-Arch + U-CI; Appendix G |
+| **Harness architecture hardening (Phase V)** | **Planned** | No (harness-only) | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics hardening |
 | Regression gate | **480 passed** | No | Must stay green after each harness PR |
 
 ---
@@ -168,7 +169,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 
 
-**Current alignment** (synced with §0.5, 2026-06-01):
+**Current alignment** (synced with §0.5, 2026-06-02):
 
 | Scope | Score | Notes |
 |-------|-------|-------|
@@ -182,6 +183,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Harness environment GA (Phase S) | **Done** (2026-06-01) | S-H.* + S-Ops + S-Doc |
 | Harness cleanliness (Phase T) | **Done** (2026-06-01) | T-Ops + T-H |
 | Harness production hardening (Phase U) | **Done** | Appendix G audit → U.* (U-Leg residual) |
+| Harness architecture hardening (Phase V) | **Planned** | Capability graph, lifecycle governance, architecture metrics, prompt/eval/context/security/cost hardening |
 | **Harness completion backlog** | **Done** (2026-06-02) | §4.1 — U-Leg, typing/CI, platform skills, research UAEP parity |
 | Product agents (Phase K) | **Deferred** | K.1/K.2 — end of priority list |
 | Tier-3 product applications | **Deferred** | New apps / product routes — after harness backlog |
@@ -1974,6 +1976,130 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 
 ---
 
+### Phase V — Harness Architecture Hardening (post-U)
+
+**Source:** Architecture hardening audit against `IDEAL_HARNESS_AI_ARCHITECTURE.md` (2026-06-02).  
+**Status:** **Planned**. **Prerequisites:** Phase U **Done**.  
+**Goal:** Close architecture-level gaps that increase long-term technical debt, reduce extensibility, or weaken governance in harness-only scope.
+
+**Explicitly in scope for Phase V:**
+
+- Capability dependency graph + compatibility gates
+- Agent lifecycle governance (certification/promotion/deprecation/retirement/ownership)
+- Context quality scoring + context regression discipline
+- Prompt engineering architecture and governance
+- Evaluation registry operations (offline/online/shadow/human)
+- Architecture metrics and architecture debt governance
+- Advanced security/data governance defenses (prompt/tool/retrieval attacks)
+- Cost/resource governance (budgets, quotas, forecasting, optimization)
+- Multi-agent coordination model catalog and selection matrix
+- Knowledge-graph/Graph-RAG evolution path (harness capability, no product-domain rollout)
+
+**Explicitly out of scope for Phase V:**
+
+- K.1/K.2 business agent delivery
+- New product-specific Tier-3 applications
+- Domain skill packs not under `harness.*`
+
+#### V-CG — Capability Graph Architecture
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-CG.1 | Capability graph schema (nodes + edges for Integration/Tool/Skill/Policy/Agent/Application/Product) | Planned | **Critical** | Typed schema + docs in canon |
+| V-CG.2 | Graph lineage builder from registries | Planned | High | Build process covers changed artifacts |
+| V-CG.3 | Impact analysis report (blast radius) for changed capabilities | Planned | High | CLI/API report in CI artifact |
+| V-CG.4 | Compatibility validation on dependency graph edges | Planned | **Critical** | CI fails on incompatible graph changes |
+
+#### V-ALG — Agent Lifecycle Governance
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-ALG.1 | Agent certification gate contract (quality/policy/security) | Planned | **Critical** | Certification criteria codified + tested |
+| V-ALG.2 | Promotion flow (dev -> staging -> production) with evidence | Planned | High | Promotion requires evidence bundle |
+| V-ALG.3 | Deprecation + retirement workflow and migration window policy | Planned | High | Registry lifecycle states enforced |
+| V-ALG.4 | Owner/on-call metadata required for production-eligible agents | Planned | High | Registration validation blocks missing ownership |
+
+#### V-CE — Context Quality and Regression Hardening
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-CE.1 | Relevance/freshness/confidence scoring in context assembly | Planned | High | Scores emitted in trace/runtime events |
+| V-CE.2 | Duplicate suppression + context quality thresholds | Planned | Medium | Threshold policy test coverage |
+| V-CE.3 | Context regression benchmark suite | Planned | High | CI regression baseline stored and compared |
+| V-CE.4 | Retrieval effectiveness evaluation (precision/recall@k style) | Planned | Medium | Bench report in evaluation registry |
+
+#### V-PE — Prompt Engineering Architecture
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-PE.1 | Prompt registry governance contract (owner/version/risk metadata) | Planned | High | Registry validations active |
+| V-PE.2 | Prompt composition model (system/task/policy/context layers) | Planned | High | Canon + reference implementation path |
+| V-PE.3 | Deterministic policy injection overlays | Planned | High | Prompt build trace shows overlays |
+| V-PE.4 | Prompt regression/adversarial test suite | Planned | Medium | Gate includes prompt regression subset |
+
+#### V-EVAL — Evaluation and Benchmarking Operations
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-EVAL.1 | Unified evaluation modes: offline/online/shadow/human | Planned | **Critical** | Mode contracts documented + wired |
+| V-EVAL.2 | Golden datasets + scenario libraries + regression suites | Planned | High | Versioned benchmark assets |
+| V-EVAL.3 | Automated evaluators (rule-based + LLM judge) | Planned | High | Evaluator outputs persisted |
+| V-EVAL.4 | Evaluation registry trend/comparison reports | Planned | High | Report artifact required for major releases |
+
+#### V-AM — Architecture Metrics & Debt Governance
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-AM.1 | Architecture health metric spec (modularity/dependency/coverage/debt) | Planned | **Critical** | Canon metrics section + thresholds |
+| V-AM.2 | Metrics emission pipeline and dashboards | Planned | High | Dashboard + alert definitions |
+| V-AM.3 | Governance coverage and observability coverage measurement | Planned | High | Coverage reports generated in CI |
+| V-AM.4 | Architecture debt index + periodic review process | Planned | High | Debt report cadence defined and used |
+
+#### V-SEC — Security & Data Governance Hardening
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-SEC.1 | Prompt injection defense profile + tests | Planned | **Critical** | Adversarial tests in gate subset |
+| V-SEC.2 | Tool injection defense (schema/argument/capability controls) | Planned | High | Deny-path tests for dangerous payloads |
+| V-SEC.3 | Retrieval poisoning defense (trust score/quarantine flow) | Planned | High | Poisoning simulation tests |
+| V-SEC.4 | Tenant isolation verification + security audit trail checks | Planned | High | Isolation checks pass in acceptance suite |
+
+#### V-COST — Cost & Resource Governance
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-COST.1 | Budget envelopes (tenant/app/agent/model/tool) | Planned | High | Budget policy enforcement tests |
+| V-COST.2 | Token/tool/resource quotas with deny/degrade behavior | Planned | High | Quota exceedance behavior deterministic |
+| V-COST.3 | Forecast + anomaly detection for spend and token drift | Planned | Medium | Forecast/anomaly report available |
+| V-COST.4 | Optimization recommendations with policy guardrails | Planned | Medium | Recommendations recorded in ops reports |
+
+#### V-MA — Multi-Agent Coordination Model Catalog
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-MA.1 | Coordination patterns catalog (hierarchical/orchestrator-worker/supervisor-worker/peer/swarm/evaluator-loop) | Planned | High | Canon section + selection table |
+| V-MA.2 | Pattern selection matrix (risk/latency/cost/complexity) | Planned | High | Matrix used in planning docs |
+| V-MA.3 | Pattern-specific acceptance tests | Planned | Medium | Test suite covers selected patterns |
+
+#### V-KG — Knowledge Graph Evolution Path (Harness)
+
+| # | Deliverable | Status | Priority | Acceptance |
+|---|-------------|--------|----------|------------|
+| V-KG.1 | Graph-RAG architecture contract | Planned | Medium | Canon section + terminology alignment |
+| V-KG.2 | Hybrid retrieval reference path (vector + keyword + graph) | Planned | Medium | Reference implementation notes |
+| V-KG.3 | Graph-backed explainability trace fields | Planned | Medium | Trace schema supports graph provenance |
+
+#### Phase V — Definition of done
+
+1. Capability graph compatibility validation is active in CI for harness-critical changes.
+2. Agent lifecycle governance gates exist and are enforced for production-eligible agents.
+3. Context/prompt/evaluation governance artifacts are versioned and regression-tested.
+4. Architecture health metrics are measurable and reviewed on a recurring cadence.
+5. Security/data/cost hardening controls are testable, observable, and documented.
+6. All changes remain harness-only (no implicit K.1/K.2 scope creep).
+
+---
+
 ## 4. Priority Order
 
 ### 4.0 Implementation priority ladder (canonical)
@@ -1983,16 +2109,16 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 | Band | What | Status (2026-06-02) | Examples |
 |------|------|---------------------|----------|
 | **1 — Harness platform** | Tier-0/1/3 lab wiring, security, policy, typing, legacy removal, gate audits | **Maintenance** (§4.1 **Done**; keep green) | `pytest -m gate`, `check_harness_*`, `check_tools_agent_*`, regression fixes |
-| **2 — Harness platform (optional)** | On-demand integrations, **platform** skill packs only — **no** business domain | **Parallel, optional** | M.6 provider slugs; `harness.*` skills in [SKILLS.md](SKILLS.md) |
+| **2 — Harness architecture hardening** | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics hardening — **no** business domain | **Active (Phase V)** | V-CG, V-ALG, V-CE, V-PE, V-EVAL, V-AM, V-SEC, V-COST, V-MA, V-KG |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-02):** Harness platform work in §4.1 is **Done**. Band 1 = keep gate green. Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-02):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green. Band 2 = execute Phase V hardening. Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1)
-BAND 2:  Harness optional — M.6 slugs, platform R-Skill only (§6.2)
+BAND 2:  Harness architecture hardening — Phase V streams (§6.2)
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
 DONE:    Harness completion backlog (§4.1) — 2026-06-02
@@ -2005,7 +2131,7 @@ DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9
 DONE:    Phase L, M, M-LLM, M-RAG, N, O — harness GA (functional)
 DONE:    Phase K hardening K.3–K.5; Appendix B paydown (except B.15)
 
-PARALLEL (harness-only): M.6 provider slugs on demand; R-Skill catalog expansion (platform packs)
+PARALLEL (harness-only): M.6 provider slugs on demand; R-Skill catalog expansion (platform packs); Phase V hardening streams
 
 BAND 3 — END OF PLAN (see §6.3; not default “next”):
   • K.1 Problem Radar / K.2 Vendor Discovery (business agents)
@@ -2057,6 +2183,9 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 5. **No regression** — `pytest tests/ -m gate` green; Echo through NexusLoop
 
 6. **Reuse Tier-0** — extend existing modules; no parallel LLM/log/trace stacks (§5.2)
+7. **Architecture governance** — for Phase V streams, update compatibility/evaluation evidence (graph impact + score deltas)
+8. **Security/cost controls** — hardening changes include policy-enforced tests for deny/degrade paths
+9. **No product scope creep** — harness phases MUST NOT implicitly include K.1/K.2 or new product hosts
 
 
 
@@ -2083,14 +2212,21 @@ Verify (every harness PR):
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
 
-### 6.2 Optional harness platform expansion (Band 2 — parallel only)
+### 6.2 Harness architecture hardening (Band 2 — Phase V)
 
-May run in parallel with §6.1 when there is harness value and **no** business-agent scope:
+Run in parallel with §6.1 when work stays in harness scope and **no** business-agent scope:
 
 | Item | Scope | Notes |
 |------|--------|-------|
 | M.6 | Additional integration provider slugs | On demand; Tier-0 catalog |
 | R-Skill | **`harness.*` platform packs only** | See [SKILLS.md](SKILLS.md); not domain/product skills |
+| V-CG | Capability graph + compatibility gates | Phase V critical stream |
+| V-ALG | Agent lifecycle governance | Certification/promotion/deprecation/ownership |
+| V-CE / V-PE | Context quality + prompt governance | Regression discipline + policy overlays |
+| V-EVAL | Evaluation registry operations | Offline/online/shadow/human + trend reports |
+| V-AM | Architecture metrics + debt index | Architecture health as measurable signal |
+| V-SEC / V-COST | Security/data governance + budget governance | Prompt/tool/retrieval defenses + quotas |
+| V-MA / V-KG | Multi-agent coordination catalog + Graph-RAG readiness | Harness capability hardening only |
 
 **Forbidden in Band 2:** K.1, K.2, product-specific skills, new product application hosts.
 

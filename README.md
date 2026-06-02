@@ -38,7 +38,7 @@ All platform documentation lives in [`docs/`](docs/). Canonical docs — one sou
 | [intergrax/applications/USAGE.md](intergrax/applications/USAGE.md) | Tier-3 composition engine: manifest, typed bindings, registry |
 | [applications/USAGE.md](applications/USAGE.md) | Application layout: env, Docker, host, run |
 
-**Quick paths:** strategy → [DEVELOPMENT_STRATEGY](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) · new agent → [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md) · **integrations** → [INTEGRATIONS](docs/INTEGRATIONS.md) · **tools** → [TOOLS](docs/TOOLS.md) · **skills** → [SKILLS](docs/SKILLS.md) · **LLM** → [LLM_ADAPTERS](docs/LLM_ADAPTERS.md) · **new application** → [applications/USAGE](applications/USAGE.md) · **current phase** → [IMPLEMENTATION_PLAN](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) §4 (**Phase S** next; Q+ and R Done) · **Harness terms** → [architecture §5.3](docs/intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model)
+**Quick paths:** strategy → [DEVELOPMENT_STRATEGY](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) · new agent → [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md) · **integrations** → [INTEGRATIONS](docs/INTEGRATIONS.md) · **tools** → [TOOLS](docs/TOOLS.md) · **skills** → [SKILLS](docs/SKILLS.md) · **LLM** → [LLM_ADAPTERS](docs/LLM_ADAPTERS.md) · **ideal harness target** → [IDEAL_HARNESS_AI_ARCHITECTURE](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) · **new application** → [applications/USAGE](applications/USAGE.md) · **current phase** → [IMPLEMENTATION_PLAN](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) §4 (**Phase V** active hardening; Q+/R/S/T/U Done) · **Harness terms** → [architecture §5.3](docs/intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model)
 
 ---
 
@@ -395,9 +395,11 @@ Intergrax is under **active development** (private R&D). Phase status, prioritie
 | **Q+** | Harness hardening — **Done** (Appendix D) |
 | **R** | Harness AI alignment (Skill Library, context, delegation, policy) — **Done (MVP)** (Appendix E) |
 | **S** | Harness environment GA — **Done** (2026-06-01) — [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) |
-| **K** | Business agents — **next** when product prioritizes (K.1/K.2) |
+| **T / U** | Harness cleanliness + production hardening — **Done** (Appendix G) |
+| **V** | Harness architecture hardening (capability graph, lifecycle governance, metrics, prompt/eval/context/security/cost) — **Planned/Active** |
+| **K** | Business agents — **end of plan**, deferred until explicit product prioritization (§6.3) |
 
-Regression gate: `uv run pytest -m gate -q` — **460 passed** (2026-06-01). Also: `python scripts/check_harness_no_getattr.py`
+Regression gate: `uv run pytest -m gate -q` — **481 passed** (2026-06-02). Also: `python scripts/check_harness_no_getattr.py`
 
 ---
 
