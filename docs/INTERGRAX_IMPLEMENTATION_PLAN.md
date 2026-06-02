@@ -2005,7 +2005,7 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
-| V-CG.1 | Capability graph schema (nodes + edges for Integration/Tool/Skill/Policy/Agent/Application/Product) | Planned | **Critical** | Typed schema + docs in canon |
+| V-CG.1 | Capability graph schema (nodes + edges for Integration/Tool/Skill/Policy/Agent/Application/Product) | **Done** | **Critical** | Typed schema + docs in canon |
 | V-CG.2 | Graph lineage builder from registries | Planned | High | Build process covers changed artifacts |
 | V-CG.3 | Impact analysis report (blast radius) for changed capabilities | Planned | High | CLI/API report in CI artifact |
 | V-CG.4 | Compatibility validation on dependency graph edges | Planned | **Critical** | CI fails on incompatible graph changes |
@@ -2014,7 +2014,7 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
-| V-ALG.1 | Agent certification gate contract (quality/policy/security) | Planned | **Critical** | Certification criteria codified + tested |
+| V-ALG.1 | Agent certification gate contract (quality/policy/security) | **Done** | **Critical** | Certification criteria codified + tested |
 | V-ALG.2 | Promotion flow (dev -> staging -> production) with evidence | Planned | High | Promotion requires evidence bundle |
 | V-ALG.3 | Deprecation + retirement workflow and migration window policy | Planned | High | Registry lifecycle states enforced |
 | V-ALG.4 | Owner/on-call metadata required for production-eligible agents | Planned | High | Registration validation blocks missing ownership |
@@ -2050,7 +2050,7 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
-| V-AM.1 | Architecture health metric spec (modularity/dependency/coverage/debt) | Planned | **Critical** | Canon metrics section + thresholds |
+| V-AM.1 | Architecture health metric spec (modularity/dependency/coverage/debt) | **Done** | **Critical** | Canon metrics section + thresholds |
 | V-AM.2 | Metrics emission pipeline and dashboards | Planned | High | Dashboard + alert definitions |
 | V-AM.3 | Governance coverage and observability coverage measurement | Planned | High | Coverage reports generated in CI |
 | V-AM.4 | Architecture debt index + periodic review process | Planned | High | Debt report cadence defined and used |
@@ -2180,6 +2180,13 @@ L4 readiness requires:
 5. Security/data/cost hardening controls are testable, observable, and documented.
 6. All changes remain harness-only (no implicit K.1/K.2 scope creep).
 7. Coverage matrix (Appendix H) has **no `Uncovered` rows** for harness-scope architecture domains.
+
+#### Phase V — Paydown log
+
+| Date | V ID | Summary |
+|------|------|---------|
+| 2026-06-02 | V-CG.1, V-AM.1, V-ALG.1 | Typed baseline contracts added (`intergrax/runtime/architecture/`) + report-only artifacts script (`scripts/phase_v_foundations_report.py`) + unit tests |
+| — | — | *(append row per merged PR)* |
 
 ---
 

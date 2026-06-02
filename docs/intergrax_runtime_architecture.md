@@ -4900,6 +4900,11 @@ See implementation plan Phase L (§3), **Phase S**, **Phase V**, and **Appendix 
 This section formalizes post-U hardening required to align Intergrax with the
 ideal Harness AI architecture while staying in harness-only scope (no business-agent expansion).
 
+Implementation baseline (Phase V V1):
+
+- typed contracts in `intergrax/runtime/architecture/` (`capability_graph.py`, `architecture_metrics.py`, `agent_certification.py`)
+- report-only artifact generator: `scripts/phase_v_foundations_report.py`
+
 ## 53.1 Strategic objective lock (harness-first)
 
 Intergrax MUST continue to treat the harness runtime as the durable product.
