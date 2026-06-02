@@ -26,6 +26,7 @@ from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
 from intergrax.runtime.nexus.policies.runtime_policies import RuntimePolicies
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.runtime.modality.modality_profile import ModalityProfile
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.provider import ToolProvider
 from intergrax.tools.registry import ToolProfile, ToolWiringContext
@@ -76,6 +77,7 @@ class ToolsRuntimeConfig:
     tool_profile: Optional[ToolProfile] = None
     tool_wiring_context: Optional[ToolWiringContext] = None
     tool_scope_policy: Optional[ToolScopePolicy] = None
+    modality_profile: ModalityProfile | None = None
 
 
 @dataclass

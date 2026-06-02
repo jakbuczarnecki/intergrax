@@ -4,14 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.model_inference.adapters.stub_ml import StubModelInferenceAdapter
-from intergrax.model_inference.adapters.stub_vision import StubVisionInferenceAdapter
-from intergrax.model_inference.contracts import (
-    ModelArtifact,
-    ModelArtifactFormat,
-    ModelInferenceAdapter,
-    VisionInferenceAdapter,
-)
+from intergrax.model_inference.contracts import ModelInferenceAdapter, VisionInferenceAdapter
 
 
 class ModelInferenceRegistry:
@@ -51,23 +44,6 @@ class ModelInferenceRegistry:
 
 
 def build_default_model_inference_registry() -> ModelInferenceRegistry:
-    registry = ModelInferenceRegistry()
-    registry.register_vision_adapter(StubVisionInferenceAdapter())
-    registry.register_ml_adapter(StubModelInferenceAdapter())
-    registry.register_artifact(
-        ModelArtifact(
-            artifact_id="vision.stub.yolo",
-            slug="yolo_ultralytics",
-            format=ModelArtifactFormat.ULTRALYTICS,
-            metadata={"engine": "stub"},
-        )
-    )
-    registry.register_artifact(
-        ModelArtifact(
-            artifact_id="ml.stub.classifier",
-            slug="sklearn_classifier",
-            format=ModelArtifactFormat.SKLEARN,
-            metadata={"engine": "stub"},
-        )
-    )
-    return registry
+    from intergrax.model_inference.bootstrap import build_harness_model_inference_registry
+
+    return build_harness_model_inference_registry()

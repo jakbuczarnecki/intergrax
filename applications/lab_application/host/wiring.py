@@ -30,7 +30,10 @@ def build_lab_registry(
     settings = settings or LabApplicationSettings.from_env()
     manifest = build_lab_manifest(settings)
     profile = integration_profile or manifest.integration_profile
-    tool_wiring = wire_lab_tools(integration_profile=profile)
+    tool_wiring = wire_lab_tools(
+        integration_profile=profile,
+        harness=settings.harness,
+    )
     skill_wiring = build_application_skill_wiring(lab_skill_profile())
     tool_registry = tool_wiring.registry
     if not tool_wiring.profile.enabled and not tool_wiring.profile.enabled_bundles:

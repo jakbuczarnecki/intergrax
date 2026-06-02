@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import pytest
+
 from intergrax.model_inference import build_default_model_inference_registry
 from intergrax.model_inference.contracts import InferenceRequest, VisionInferenceRequest
 
 
-def test_default_registry_runs_stub_vision_and_ml() -> None:
+def test_default_registry_runs_stub_vision_and_ml(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("INTERGRAX_VISION_ADAPTER", "stub")
     registry = build_default_model_inference_registry()
     artifact = registry.get_artifact("vision.stub.yolo")
     vision = registry.get_vision_adapter("yolo_ultralytics")

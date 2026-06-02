@@ -1,6 +1,6 @@
 # Intergrax — Model & Modality Plane
 
-**Last updated:** 2026-06-02 · **Phase W-ML** (W-ML.0 docs **Done**; W-ML.1–W-ML.8 harness contracts **Done**; production provider backends **incremental**)
+**Last updated:** 2026-06-02 · **Phase W-ML** (W-ML.0–W-ML.8 **Done**; harness backends: OpenCV contours, optional Ultralytics, ElevenLabs TTS when keyed; lab `ModalityProfile` wiring **Done**)
 
 Catalog and harness rules for **vision**, **audio/speech**, **classical ML**, and **Hugging Face** usage — aligned with Integration → Tool → Skill → Agent (§5.3, §7.1.9).
 
@@ -166,7 +166,7 @@ Skills MAY bundle these `tool_ids` (e.g. `harness.vision_qa`) — skills are not
 
 ---
 
-## Agent assembly — ModalityProfile (planned)
+## Agent assembly — ModalityProfile
 
 Extend harness composition (canon §7.1.9, ideal §17):
 
@@ -205,6 +205,13 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 
 ---
 
+## Harness environment variables
+
+| Variable | Purpose |
+|----------|---------|
+| `INTERGRAX_VISION_ADAPTER` | `stub` \| `onnxruntime` (OpenCV contour adapter, default) \| `yolo_ultralytics` |
+| `ELEVENLABS_API_KEY` | When set, `speech.synthesize` uses ElevenLabs REST; otherwise stub URI |
+
 ## Implementation status (summary)
 
 | Item | Status |
@@ -212,10 +219,12 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 | Architecture & catalog (this doc + canon §7.1.9) | **Done** (2026-06-02) |
 | Whisper / yt_dlp / image ingest | **Done** (beta) |
 | HF embeddings / optional SPLADE | **Done** |
-| Multimodal LLM contract + attachment wire-up | **Planned** (W-ML.1) |
-| `speech_provider` + tools | **Planned** (W-ML.2) |
-| `model_inference` + YOLO/ONNX registry | **Planned** (W-ML.3) |
-| HF Inference / Triton integration slugs | **Planned** (W-ML.4) |
+| Multimodal LLM contract + attachment wire-up | **Done** (W-ML.1) |
+| `speech.synthesize` / `speech.transcribe` tools + ElevenLabs/stub backend | **Done** (W-ML.2) |
+| `model_inference` registry + OpenCV / stub / optional Ultralytics | **Done** (W-ML.3) |
+| Lab `ModalityProfile` + `ToolAccessPolicy.apply_modality_profile` | **Done** (W-ML.6) |
+| Golden fixture `tests/fixtures/vision_golden/sample_target.png` | **Done** |
+| HF Inference / Triton live endpoints | **Placeholder** (W-ML.4) |
 
 ---
 

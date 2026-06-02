@@ -129,7 +129,7 @@ Lab reference agents implement `HarnessReferenceAgent` + `UAEPAgent`; manifest b
 ## Post-U continuation (Phase V)
 
 Phase S/T/U established a production-configurable harness baseline.
-Phase V architecture hardening and **Phase W-ML** harness contracts are **complete** in harness-only scope (stub modality tools + typed planes). Default continuation is **operational L3/L4 stability window** and **incremental live provider backends** (YOLO/ONNX/ElevenLabs).
+Phase V architecture hardening and **Phase W-ML** harness contracts are **complete** in harness-only scope (modality tools, `ModalityProfile` lab wiring, OpenCV vision default, ElevenLabs TTS when `ELEVENLABS_API_KEY` is set). Set `INTERGRAX_VISION_ADAPTER=stub|onnxruntime|yolo_ultralytics` for vision backend selection. Default continuation is **operational L3/L4 stability window** and **remote serving integrations** (Triton/HF live endpoints).
 
 Primary Phase V tracks impacting the harness environment:
 

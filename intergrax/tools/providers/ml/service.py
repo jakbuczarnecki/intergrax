@@ -2,15 +2,20 @@
 
 import uuid
 
-from intergrax.model_inference import build_default_model_inference_registry
 from intergrax.model_inference.contracts import InferenceRequest
+from intergrax.tools.providers.speech.backends import MODEL_INFERENCE_REGISTRY_EXTRA_KEY
 from intergrax.tools.providers.ml.contracts import MlPredictInput, MlPredictOutput
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 ML_PREDICT_TOOL_ID = "ml.predict"
 
 
-def ml_predict(payload: MlPredictInput) -> MlPredictOutput:
-    registry = build_default_model_inference_registry()
+def ml_predict(ctx: ToolWiringContext, payload: MlPredictInput) -> MlPredictOutput:
+    registry = ctx.extras.get(MODEL_INFERENCE_REGISTRY_EXTRA_KEY)
+    if registry is None:
+        from intergrax.model_inference.bootstrap import build_harness_model_inference_registry
+
+        registry = build_harness_model_inference_registry()
     artifact = registry.get_artifact(payload.artifact_id)
     adapter = registry.get_ml_adapter(payload.adapter_slug)
     request_id = uuid.uuid4().hex

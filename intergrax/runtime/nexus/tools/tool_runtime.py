@@ -150,6 +150,9 @@ class ToolRuntime:
             allowed_tools=effective_allowed,
             state=state,
         )
+        modality_profile = cfg.modality_profile
+        if modality_profile is not None:
+            plan = ToolAccessPolicy.apply_modality_profile(plan, profile=modality_profile)
 
         if raw_plan.uses_legacy_booleans_only():
             state.trace_event(

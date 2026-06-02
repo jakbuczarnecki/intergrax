@@ -50,6 +50,9 @@ def filter_tool_ids_by_modality_profile(
     return tuple(filtered)
 
 
+MODALITY_PROFILE_EXTRA_KEY = "modality_profile"
+
+
 def lab_default_modality_profile() -> ModalityProfile:
     """Harness lab profile enabling ingest + dedicated inference tools."""
     return ModalityProfile(

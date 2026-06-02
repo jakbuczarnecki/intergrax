@@ -40,6 +40,8 @@ def build_lab_agent_runtime_config(
         production_mode=harness.strict_harness,
         tenant_id=request.tenant_id,
         trace_db_path=trace_path,
+        modality_profile=harness.modality_profile,
+        tool_wiring_context=harness.tool_wiring_context,
     )
     if pipeline is not None:
         config.pipeline = pipeline

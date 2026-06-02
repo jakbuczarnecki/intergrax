@@ -1102,7 +1102,7 @@ UAEP `get_steps` / domain pipelines remain **agent-local orchestration**. A skil
 
 ### 7.1.9 Model & Modality Plane (Vision, Audio, Classical ML)
 
-**Status:** Architecture **defined** (2026-06-02); core registry code **Planned** (Phase W-ML).  
+**Status:** Architecture **defined** (2026-06-02); harness registry + modality tools + lab `ModalityProfile` wiring **Done** (Phase W-ML); remote Triton/HF live serving **incremental**.  
 **Catalog index:** [`MODALITY.md`](MODALITY.md) · **Harness alignment:** §5.3 · **ADR:** extends §44.10 (LLM stays out of Integration Library).
 
 #### Strategic intent
@@ -5104,7 +5104,7 @@ Implementation baseline (Phase V V1):
 - context/prompt maturity baseline: `context_regression_benchmark.py`, `retrieval_effectiveness.py`, `prompt_policy_overlay.py`, `prompt_regression_suite.py`
 - multi-agent and graph-rag baseline: `multi_agent_coordination.py`, `multi_agent_acceptance.py`, `graph_rag.py`, `hybrid_retrieval.py`, `graph_provenance.py`
 - L4 adaptive and maturity closeout baseline: `adaptive_governance.py`, `maturity_gate_evidence.py`, `scripts/phase_v_closeout_gate.py`
-- modality plane baseline (W-ML): `intergrax/model_inference/`, `runtime/modality/modality_profile.py`, `runtime/observability/modality_metrics.py`, tools `speech.*`, `vision.*`, `ml.predict`, `runtime/architecture/runtime_governance_bridge.py`
+- modality plane baseline (W-ML): `intergrax/model_inference/` (OpenCV/Ultralytics/stub vision, harness bootstrap), `applications/lab_application/host/tool_wiring.py` (harness modality tools), `runtime/modality/modality_profile.py`, `runtime/observability/modality_metrics.py`, tools `speech.*`, `vision.*`, `ml.predict`, `runtime/architecture/runtime_governance_bridge.py`
 
 ## 53.1 Strategic objective lock (harness-first)
 

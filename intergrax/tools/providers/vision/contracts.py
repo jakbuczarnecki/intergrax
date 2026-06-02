@@ -9,8 +9,8 @@ from intergrax.model_inference.contracts import VisionDetection
 
 class VisionDetectInput(BaseModel):
     media_uri: str
-    artifact_id: str = "vision.stub.yolo"
-    adapter_slug: str = "yolo_ultralytics"
+    artifact_id: str = "vision.opencv.onnx"
+    adapter_slug: str = "onnxruntime"
     top_k: int = Field(default=5, ge=1, le=100)
 
 
