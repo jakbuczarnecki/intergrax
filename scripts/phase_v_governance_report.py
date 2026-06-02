@@ -18,6 +18,8 @@ for path in (REPO_ROOT, REPO_ROOT / "agents", REPO_ROOT / "applications"):
         sys.path.insert(0, path_value)
 
 from intergrax.runtime.architecture import (
+    AutomatedEvaluationReport,
+    EvaluationSignal,
     AgentLifecycleState,
     AgentLifecycleTransitionRequest,
     AgentCertificationEvaluation,
@@ -35,8 +37,10 @@ from intergrax.runtime.architecture import (
     UnifiedEvaluationReport,
     ArchitectureMetricsSnapshot,
     build_catalog_capability_graph,
+    compute_architecture_coverage,
     build_metrics_pipeline_report,
     compute_architecture_metrics,
+    evaluate_automated_results,
     evaluate_agent_lifecycle_transition,
     evaluate_agent_promotion,
     evaluate_production_ownership,
@@ -93,6 +97,40 @@ def _build_eval_mode_report() -> UnifiedEvaluationReport:
         for request in requests
     ]
     return UnifiedEvaluationReport(requests=requests, results=results)
+
+
+def _build_automated_evaluation_report(
+    evaluation_report: UnifiedEvaluationReport,
+) -> AutomatedEvaluationReport:
+    rule_signals_by_run_id: dict[str, list[EvaluationSignal]] = {
+        "eval-offline-baseline": [
+            EvaluationSignal(signal_id="format.valid_json", value=1.0, threshold=1.0),
+            EvaluationSignal(signal_id="policy.no_forbidden_tool", value=1.0, threshold=1.0),
+        ],
+        "eval-online-canary": [
+            EvaluationSignal(signal_id="latency.p95", value=0.84, threshold=0.80),
+            EvaluationSignal(signal_id="safety.block_rate", value=0.90, threshold=0.80),
+        ],
+        "eval-shadow-research": [
+            EvaluationSignal(signal_id="consistency.answer_shape", value=0.88, threshold=0.80),
+            EvaluationSignal(signal_id="trace.completeness", value=0.95, threshold=0.90),
+        ],
+        "eval-human-signoff": [
+            EvaluationSignal(signal_id="review.pass_ratio", value=0.92, threshold=0.85),
+            EvaluationSignal(signal_id="escalation.correctness", value=0.90, threshold=0.85),
+        ],
+    }
+    llm_judge_scores_by_run_id: dict[str, float] = {
+        "eval-offline-baseline": 0.90,
+        "eval-online-canary": 0.84,
+        "eval-shadow-research": 0.88,
+        "eval-human-signoff": 0.91,
+    }
+    return evaluate_automated_results(
+        mode_results=evaluation_report.results,
+        rule_signals_by_run_id=rule_signals_by_run_id,
+        llm_judge_scores_by_run_id=llm_judge_scores_by_run_id,
+    )
 
 
 def _build_promotion_bundle() -> PromotionEvidenceBundle:
@@ -185,15 +223,21 @@ def main() -> int:
     metrics_pipeline_report = build_metrics_pipeline_report(
         snapshots=[previous_snapshot, current_snapshot]
     )
+    coverage_report = compute_architecture_coverage(graph)
     promotion_decision = evaluate_agent_promotion(_build_promotion_bundle())
     lifecycle_decision = evaluate_agent_lifecycle_transition(_build_lifecycle_transition_request())
     ownership_decision = evaluate_production_ownership(_build_production_ownership_evidence())
     evaluation_report = _build_eval_mode_report()
+    automated_evaluation_report = _build_automated_evaluation_report(evaluation_report)
     evaluation_assets = _build_evaluation_assets()
 
     writer.write(
         output_path=output_dir / "architecture_metrics_pipeline_report.json",
         payload=metrics_pipeline_report,
+    )
+    writer.write(
+        output_path=output_dir / "architecture_coverage_report.json",
+        payload=coverage_report,
     )
     writer.write(
         output_path=output_dir / "agent_promotion_decision_report.json",
@@ -210,6 +254,10 @@ def main() -> int:
     writer.write(
         output_path=output_dir / "unified_evaluation_report.json",
         payload=evaluation_report,
+    )
+    writer.write(
+        output_path=output_dir / "automated_evaluation_report.json",
+        payload=automated_evaluation_report,
     )
     writer.write(
         output_path=output_dir / "evaluation_assets_report.json",

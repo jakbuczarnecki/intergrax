@@ -37,6 +37,11 @@ from intergrax.runtime.architecture.architecture_metrics_pipeline import (
     MetricsTrendDirection,
     build_metrics_pipeline_report,
 )
+from intergrax.runtime.architecture.architecture_coverage import (
+    ArchitectureCoverageReport,
+    ArchitectureCoverageSummary,
+    compute_architecture_coverage,
+)
 from intergrax.runtime.architecture.capability_graph import (
     CapabilityEdge,
     CapabilityEdgeType,
@@ -65,6 +70,14 @@ from intergrax.runtime.architecture.evaluation_modes import (
     EvaluationModeRequest,
     EvaluationModeResult,
     UnifiedEvaluationReport,
+)
+from intergrax.runtime.architecture.evaluation_automation import (
+    AutomatedEvaluationRecord,
+    AutomatedEvaluationReport,
+    AutomatedEvaluatorResult,
+    EvaluationSignal,
+    EvaluatorType,
+    evaluate_automated_results,
 )
 from intergrax.runtime.architecture.evaluation_assets import (
     EvaluationAssetBundle,
@@ -97,6 +110,8 @@ __all__ = [
     "ArchitectureMetricsReport",
     "ArchitectureMetricsSummary",
     "ArchitectureMetricsTrend",
+    "ArchitectureCoverageReport",
+    "ArchitectureCoverageSummary",
     "CapabilityEdge",
     "CapabilityEdgeType",
     "CapabilityGraph",
@@ -115,6 +130,11 @@ __all__ = [
     "EvaluationMode",
     "EvaluationModeRequest",
     "EvaluationModeResult",
+    "AutomatedEvaluationRecord",
+    "AutomatedEvaluationReport",
+    "AutomatedEvaluatorResult",
+    "EvaluationSignal",
+    "EvaluatorType",
     "EvaluationAssetBundle",
     "GoldenDatasetAsset",
     "ScenarioCase",
@@ -132,6 +152,8 @@ __all__ = [
     "build_capability_lineage_report",
     "compute_architecture_metrics",
     "build_metrics_pipeline_report",
+    "compute_architecture_coverage",
     "compute_deprecation_deadline",
     "evaluate_capability_graph_compatibility",
+    "evaluate_automated_results",
 ]

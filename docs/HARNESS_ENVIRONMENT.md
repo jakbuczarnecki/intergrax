@@ -152,6 +152,8 @@ Current baseline delivered (Phase V V1):
 - `V-ALG.4` production ownership guard contract (owner/on-call/escalation + runbook)
 - `V-EVAL.1` unified evaluation mode contracts (`offline`, `online`, `shadow`, `human`)
 - `V-EVAL.2` golden dataset + scenario library + versioned evaluation asset bundle contracts
+- `V-EVAL.3` automated evaluators (rule-based + LLM-judge) and persisted evaluator outputs
+- `V-AM.3` governance and observability coverage report contracts
 - report artifacts script: `scripts/phase_v_foundations_report.py`
 - graph guard script: `scripts/phase_v_capability_graph_guard.py`
 - governance artifacts script: `scripts/phase_v_governance_report.py`

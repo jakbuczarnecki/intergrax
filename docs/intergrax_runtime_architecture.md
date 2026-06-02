@@ -4907,6 +4907,7 @@ Implementation baseline (Phase V V1):
 - V-CG guard baseline: `capability_graph_lineage.py`, `capability_graph_compatibility.py`, `scripts/phase_v_capability_graph_guard.py`
 - governance baseline: `architecture_metrics_pipeline.py`, `agent_promotion.py`, `evaluation_modes.py`, `scripts/phase_v_governance_report.py`
 - lifecycle/eval assets baseline: `agent_lifecycle_governance.py`, `production_ownership.py`, `evaluation_assets.py`
+- eval automation and coverage baseline: `evaluation_automation.py`, `architecture_coverage.py`
 
 ## 53.1 Strategic objective lock (harness-first)
 
