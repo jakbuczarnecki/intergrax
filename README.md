@@ -396,7 +396,7 @@ Intergrax is under **active development** (private R&D). Phase status, prioritie
 | **R** | Harness AI alignment (Skill Library, context, delegation, policy) — **Done (MVP)** (Appendix E) |
 | **S** | Harness environment GA — **Done** (2026-06-01) — [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) |
 | **T / U** | Harness cleanliness + production hardening — **Done** (Appendix G) |
-| **V** | Harness architecture hardening (capability graph, lifecycle governance, metrics, prompt/eval/context/security/cost) — **Planned/Active** |
+| **V** | Harness architecture hardening (capability graph, lifecycle governance, metrics, prompt/eval/context/security/cost) — **Active** (`V-CG.1`, `V-AM.1`, `V-ALG.1` done) |
 | **K** | Business agents — **end of plan**, deferred until explicit product prioritization (§6.3) |
 
 Regression gate: `uv run pytest -m gate -q` — **481 passed** (2026-06-02). Also: `python scripts/check_harness_no_getattr.py`

@@ -138,6 +138,13 @@ Primary Phase V tracks impacting the harness environment:
 - security/data and cost/resource governance hardening (`V-SEC.*`, `V-COST.*`)
 - architecture metrics and debt governance (`V-AM.*`)
 
+Current baseline delivered (Phase V V1):
+
+- `V-CG.1` typed capability graph schema
+- `V-AM.1` architecture metrics baseline contract
+- `V-ALG.1` agent certification gate contract
+- report artifacts script: `scripts/phase_v_foundations_report.py`
+
 Execution references in the implementation plan:
 
 - **Phase V stream map:** `Phase V — Harness Architecture Hardening (post-U)`
@@ -162,6 +169,7 @@ python scripts/check_legacy_tool_plan_booleans.py
 uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -q
 uv run pytest tests/unit/skills/test_harness_skill_bundle.py -q
 uv run pytest tests/acceptance/agent_os/test_lab_application.py -m gate -q
+uv run python scripts/phase_v_foundations_report.py
 ```
 
 Optional strict profile (CI `harness-strict` job):

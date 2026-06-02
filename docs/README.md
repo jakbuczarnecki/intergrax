@@ -86,7 +86,7 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | Phase M / M-LLM / M-RAG / N / O | **Done** (beta where noted) |
 | **Phase S — Harness environment GA** | **Done** (2026-06-01) — [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) · [Appendix F](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-f--harness-environment-traceability-phase-s) |
 | **Phase T / U — Harness cleanliness + production hardening** | **Done** (2026-06-01) — [Appendix G](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-g--harness-production-audit-traceability-phase-u) |
-| **Phase V — Harness architecture hardening** | **Planned / Active** — Phase V in [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · canon §53 |
+| **Phase V — Harness architecture hardening** | **Active** — Phase V in [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · canon §53 (`V-CG.1`, `V-AM.1`, `V-ALG.1` done) |
 | **Phase V execution controls** | **Defined** — execution matrix, KPI thresholds, cadence, ownership, L3/L4 gates in Phase V section |
 | **Harness completion (§4.1)** | **Done** (2026-06-02) |
 | **Phase K — Business agents** | **End of plan** — §6.3; **not** default next |
