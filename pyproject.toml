@@ -145,6 +145,7 @@ dev = [
 dev-ci = [
   "pytest>=8.4,<9",
   "pytest-asyncio>=0.23,<0.24",
+  "pytest-xdist>=3.6,<4",
   "redis>=5.0",
   "celery>=5.3",
 ]
