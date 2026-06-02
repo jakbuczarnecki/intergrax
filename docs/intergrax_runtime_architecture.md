@@ -4909,6 +4909,7 @@ Implementation baseline (Phase V V1):
 - lifecycle/eval assets baseline: `agent_lifecycle_governance.py`, `production_ownership.py`, `evaluation_assets.py`
 - eval automation and coverage baseline: `evaluation_automation.py`, `architecture_coverage.py`
 - ops maturity baseline: `debt_governance.py`, `evaluation_registry_trends.py`
+- security hardening baseline: `prompt_security.py`, `tool_security.py`
 
 ## 53.1 Strategic objective lock (harness-first)
 

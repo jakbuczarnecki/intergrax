@@ -104,6 +104,19 @@ from intergrax.runtime.architecture.production_ownership import (
     ProductionOwnershipEvidence,
     evaluate_production_ownership,
 )
+from intergrax.runtime.architecture.prompt_security import (
+    PromptDefenseProfile,
+    PromptInjectionRule,
+    PromptInspectionResult,
+    PromptRiskLevel,
+    inspect_prompt_for_injection,
+)
+from intergrax.runtime.architecture.tool_security import (
+    ToolInvocationDecision,
+    ToolInvocationPolicy,
+    ToolInvocationRequest,
+    evaluate_tool_invocation_security,
+)
 
 __all__ = [
     "AgentCertificationEvidence",
@@ -162,11 +175,20 @@ __all__ = [
     "ProductionOwnerMetadata",
     "ProductionOwnershipDecision",
     "ProductionOwnershipEvidence",
+    "PromptDefenseProfile",
+    "PromptInjectionRule",
+    "PromptInspectionResult",
+    "PromptRiskLevel",
+    "ToolInvocationDecision",
+    "ToolInvocationPolicy",
+    "ToolInvocationRequest",
     "UnifiedEvaluationReport",
     "evaluate_agent_certification",
     "evaluate_agent_lifecycle_transition",
     "evaluate_agent_promotion",
     "evaluate_production_ownership",
+    "inspect_prompt_for_injection",
+    "evaluate_tool_invocation_security",
     "build_catalog_capability_graph",
     "build_capability_impact_report",
     "build_capability_lineage_report",

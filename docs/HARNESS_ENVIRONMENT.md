@@ -156,6 +156,8 @@ Current baseline delivered (Phase V V1):
 - `V-EVAL.4` evaluation registry trend/comparison report contracts
 - `V-AM.3` governance and observability coverage report contracts
 - `V-AM.4` architecture debt governance policy and periodic review cadence contracts
+- `V-SEC.1` prompt injection defense profile and adversarial deny-path tests
+- `V-SEC.2` tool injection defense policy (allowed tool IDs, blocked argument tokens, capability match controls)
 - report artifacts script: `scripts/phase_v_foundations_report.py`
 - graph guard script: `scripts/phase_v_capability_graph_guard.py`
 - governance artifacts script: `scripts/phase_v_governance_report.py`
