@@ -60,7 +60,7 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | Harness environment (lab stack, OTLP, ops) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase S/T** + **Appendix F** · `HARNESS_ENVIRONMENT.md` |
 | Harness production hardening (security, policy, contracts) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase U** + **Appendix G** |
 | Harness architecture hardening (capability graph, lifecycle, metrics, prompt/eval/context/security/cost) | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V** · [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §53 |
-| Plugin catalogs (integrations, tools, skills) | [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase P-Ext** · **Appendix I** |
+| Plugin catalogs (integrations, tools, skills) — **Done** | [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase P-Ext** · **Appendix I** |
 | Vision / audio / ML modality architecture (YOLO, ElevenLabs, HF, ONNX) | [MODALITY.md](MODALITY.md) · canon §7.1.9 · plan **Phase W-ML** |
 | Configure multimodal LLM vs dedicated CV | [LLM_ADAPTERS.md](LLM_ADAPTERS.md) (Plane A) · [MODALITY.md](MODALITY.md) (Planes B/C) |
 | Check readiness for business agents | Implementation plan **Appendix A** |
