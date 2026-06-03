@@ -4,11 +4,6 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from enum import Enum
-
-from pydantic import BaseModel, Field
-
 from intergrax.runtime.architecture.evaluation_automation import (
     AutomatedEvaluationReport,
     EvaluationSignal,
@@ -19,27 +14,24 @@ from intergrax.runtime.architecture.evaluation_registry_trends import (
     EvaluationReleaseSnapshot,
     build_evaluation_registry_trend_report,
 )
+from intergrax.runtime.architecture.online_evaluation_models import (
+    OnlineEvaluationBatch,
+    OnlineEvaluationMode,
+    OnlineEvaluationObservation,
+)
+from intergrax.runtime.architecture.online_evaluation_registry import (
+    OnlineEvaluationRegistry,
+    default_online_evaluation_registry,
+)
 
-
-class OnlineEvaluationMode(str, Enum):
-    ONLINE = "online"
-    SHADOW = "shadow"
-
-
-class OnlineEvaluationObservation(BaseModel):
-    observation_id: str
-    run_id: str
-    agent_id: str
-    mode: OnlineEvaluationMode
-    scenario_id: str
-    passed: bool
-    score: float = Field(ge=0.0, le=1.0)
-    recorded_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-
-
-class OnlineEvaluationBatch(BaseModel):
-    release_id: str
-    observations: list[OnlineEvaluationObservation] = Field(default_factory=list)
+__all__ = [
+    "OnlineEvaluationBatch",
+    "OnlineEvaluationMode",
+    "OnlineEvaluationObservation",
+    "append_online_evaluation_to_trend",
+    "observations_to_automated_report",
+    "record_shadow_observation",
+]
 
 
 def observations_to_automated_report(batch: OnlineEvaluationBatch) -> AutomatedEvaluationReport:
@@ -101,9 +93,10 @@ def record_shadow_observation(
     scenario_id: str,
     passed: bool,
     score: float,
+    registry: OnlineEvaluationRegistry | None = None,
 ) -> OnlineEvaluationObservation:
-    """Record a single shadow-mode harness observation (no user-visible impact)."""
-    return OnlineEvaluationObservation(
+    """Record a single shadow-mode harness observation and append to the registry."""
+    observation = OnlineEvaluationObservation(
         observation_id=f"shadow:{run_id}:{scenario_id}",
         run_id=run_id,
         agent_id=agent_id,
@@ -112,3 +105,6 @@ def record_shadow_observation(
         passed=passed,
         score=score,
     )
+    target_registry = registry or default_online_evaluation_registry()
+    target_registry.append(observation)
+    return observation

@@ -19,10 +19,8 @@ from intergrax.runtime.architecture.multi_agent_coordination import (
     PlanningConstraints,
     select_coordination_pattern,
 )
-from intergrax.runtime.architecture.online_evaluation import (
-    OnlineEvaluationObservation,
-    record_shadow_observation,
-)
+from intergrax.runtime.architecture.online_evaluation import OnlineEvaluationObservation, record_shadow_observation
+from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
 
 
 class RuntimeGovernanceTraceMetadata(BaseModel):
@@ -34,6 +32,9 @@ class RuntimeGovernanceTraceMetadata(BaseModel):
 
 class RuntimeArchitectureGovernanceBridge:
     """Typed bridge used by Nexus runtime to emit architecture governance metadata."""
+
+    def __init__(self, *, evaluation_registry: OnlineEvaluationRegistry | None = None) -> None:
+        self._evaluation_registry = evaluation_registry
 
     def select_coordination_pattern(
         self,
@@ -100,4 +101,5 @@ class RuntimeArchitectureGovernanceBridge:
             scenario_id=scenario_id,
             passed=passed,
             score=score,
+            registry=self._evaluation_registry,
         )

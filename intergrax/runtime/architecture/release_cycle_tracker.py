@@ -43,3 +43,19 @@ def save_release_cycle_tracker(tracker: ReleaseCycleTracker, path: Path | None =
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(tracker.model_dump_json(indent=2), encoding="utf-8")
     return target
+
+
+def append_release_cycle(
+    *,
+    cycle_id: str,
+    gate_green: bool = True,
+    notes: str = "",
+    path: Path | None = None,
+) -> ReleaseCycleTracker:
+    """Append one signed-off harness release cycle (W-OPS.5)."""
+    tracker = load_release_cycle_tracker(path)
+    tracker.cycles.append(
+        ReleaseCycleRecord(cycle_id=cycle_id, gate_green=gate_green, notes=notes),
+    )
+    save_release_cycle_tracker(tracker, path)
+    return tracker

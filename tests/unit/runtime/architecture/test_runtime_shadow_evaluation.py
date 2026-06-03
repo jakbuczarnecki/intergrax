@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from intergrax.runtime.architecture.online_evaluation_registry import InMemoryOnlineEvaluationRegistry
 from intergrax.runtime.architecture.runtime_governance_bridge import RuntimeArchitectureGovernanceBridge
 from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.responses.response_schema import RouteInfo, RuntimeAnswer, RuntimeRequest
@@ -48,7 +49,8 @@ def test_maybe_record_harness_shadow_evaluation_emits_trace() -> None:
 
 
 def test_governance_bridge_records_shadow_observation() -> None:
-    bridge = RuntimeArchitectureGovernanceBridge()
+    registry = InMemoryOnlineEvaluationRegistry()
+    bridge = RuntimeArchitectureGovernanceBridge(evaluation_registry=registry)
     obs = bridge.record_shadow_run_evaluation(
         run_id="run-2",
         agent_id="echo",
@@ -58,3 +60,4 @@ def test_governance_bridge_records_shadow_observation() -> None:
     )
     assert obs.run_id == "run-2"
     assert obs.passed is True
+    assert len(registry.list_observations()) == 1

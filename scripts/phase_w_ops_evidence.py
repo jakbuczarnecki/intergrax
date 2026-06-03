@@ -88,6 +88,20 @@ def collect_operational_checks() -> OperationalMaturityEvidence:
             detail="Harness requires_skills demo (W-OPS.9)",
         ),
         OperationalHarnessCheck(
+            check_id="harness_lab_health_gate",
+            passed=_run_pytest("tests/unit/integrations/test_harness_lab_health.py"),
+            detail="Lab stable stack health probes (W-OPS.10)",
+        ),
+        OperationalHarnessCheck(
+            check_id="shadow_eval_gate",
+            passed=_run_pytest(
+                "tests/unit/runtime/architecture/test_online_evaluation.py "
+                "tests/unit/runtime/architecture/test_online_evaluation_registry.py "
+                "tests/unit/runtime/architecture/test_runtime_shadow_evaluation.py"
+            ),
+            detail="Shadow evaluation registry + RuntimeEngine hook (W-OPS.11)",
+        ),
+        OperationalHarnessCheck(
             check_id="slo_documentation",
             passed=slo_doc.is_file() and "Harness SLO catalog" in slo_doc.read_text(encoding="utf-8"),
             detail="SLO catalog in HARNESS_ENVIRONMENT.md (W-OPS.4)",

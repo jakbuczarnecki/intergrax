@@ -117,7 +117,9 @@ Operational L3 evidence is separate from `phase_v_closeout_gate` (contract CI). 
 
 **Lab stack health (W-OPS.10):** `health_check_harness_lab_stack()` probes every `HARNESS_LAB_STABLE_SLUGS` catalog entry via `health_check_catalog_slugs` with circuit breaker protection.
 
-**Shadow evaluation (W-OPS.11):** set `RuntimeRequest.metadata["harness_shadow_eval"]` to `{"scenario_id": "...", "passed": true, "score": 1.0}`; `RuntimeEngine` records `HarnessShadowEvalRecordedDiagV1` trace step.
+**Shadow evaluation (W-OPS.11):** set `RuntimeRequest.metadata["harness_shadow_eval"]` to `{"scenario_id": "...", "passed": true, "score": 1.0}`; `RuntimeEngine` records `HarnessShadowEvalRecordedDiagV1` trace step and appends to `build/architecture_hardening/online_evaluation_observations.json`.
+
+**Release cycles (W-OPS.5):** after a gate-green harness release, run `uv run python scripts/record_harness_release_cycle.py --cycle-id <id>`. Evidence script reads `build/architecture_hardening/release_cycles.json` (or `W_OPS_RELEASE_CYCLES`).
 
 | SLI | Target (harness lab) | Measurement |
 |-----|----------------------|-------------|

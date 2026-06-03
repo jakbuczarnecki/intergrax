@@ -213,7 +213,7 @@ P1 — Band 2 (on demand, zgodnie z planem)
 R-Skill — rozszerzenie harness.* i adopcja requires_skills.
 M.6 — nowe slugi integracji z pełnym health + testami kontraktowymi.
 W-ML ops — opcjonalne skalowanie workerów Celery (Band 2b).
-Online evaluation — shadow/A-B i rejestr wyników poza artefaktami V-EVAL.
+Online evaluation — shadow registry (`online_evaluation_observations.json`) **Done**; A/B produkcyjne — on demand.
 P2 — higiena
 ToolsAgent — ścieżka legacy zamrożona; długoterminowo usunięcie po migracji ostatnich konsumentów.
 load_callable w applications/_shared/wiring.py — dynamiczny import poza audytem getattr (niski risk, ale luźniejsze niż reszta harnessu).
@@ -238,11 +238,10 @@ Silna — P-Ext, EP, extension guide
 
 **Źródło prawdy implementacji:** [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) — **Phase W-OPS** + **§6.2w** (kolejność PR).
 
-§6.1 maintenance — utrzymać gate 486 + audyty CI po każdym PR harness.
-**W-OPS P0** — idempotency (W-OPS.1), circuit breaker (W-OPS.2), reliability gate tests (W-OPS.3), tenant_id (W-OPS.6), mandatory API key profile (W-OPS.7), SLO + runbooks (W-OPS.4), L3-ops evidence vs V-V6 CI (W-OPS.5).
-**W-OPS P1** — harness.* skills (W-OPS.8), requires_skills demo (W-OPS.9), M.6 integracje (W-OPS.10), online eval (W-OPS.11), Celery scale-out opcjonalnie (W-OPS.12).
-**W-OPS P2** — ToolsAgent removal (W-OPS.13), typed wiring (W-OPS.14), metrics enforcement (W-OPS.15).
-Nie mieszać z Band 3 — Problem Radar / Vendor Discovery / nowe aplikacje produktowe do czasu decyzji §6.3.
+§6.1 maintenance — utrzymać gate **467** (full regression) + audyty CI po każdym PR harness.
+**W-OPS (kod)** — **Done** (W-OPS.1–15): idempotency, circuit breaker, SLO, shadow eval + file registry, lab stack health, harness skills.
+**Operacyjne L3** — `record_harness_release_cycle.py` × 2 cykle → `phase_w_ops_evidence.py --enforce`.
+**On demand** — nowe slugi M.6, Celery scale-out (W-OPS.12), Band 3 (K.1/K.2) po decyzji §6.3.
 11. Podsumowanie dla stakeholderów
 Intergrax spełnia definicję Harness AI z canonu i IDEAL jako Agent OS do szybkiego tworzenia i testowania agentów (Appendix A, lab, katalogi, Nexus §42). To jest najlepiej dowiedziona warstwa platformy w historii planu (Q→V + P-Ext).
 

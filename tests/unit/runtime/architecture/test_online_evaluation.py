@@ -10,17 +10,20 @@ from intergrax.runtime.architecture.online_evaluation import (
     append_online_evaluation_to_trend,
     record_shadow_observation,
 )
+from intergrax.runtime.architecture.online_evaluation_registry import InMemoryOnlineEvaluationRegistry
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def test_shadow_observation_appends_to_trend() -> None:
+    registry = InMemoryOnlineEvaluationRegistry()
     obs = record_shadow_observation(
         run_id="run-1",
         agent_id="echo",
         scenario_id="harness.smoke",
         passed=True,
         score=0.9,
+        registry=registry,
     )
     batch = OnlineEvaluationBatch(release_id="2026.06.02-rc1", observations=[obs])
     snapshot, comparisons = append_online_evaluation_to_trend(
