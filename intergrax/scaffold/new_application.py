@@ -284,9 +284,9 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             SQLiteIntegrationBundle,
             create_sqlite_integration,
         )
-        from intergrax.integrations.registry.bootstrap import register_default_integrations
+        from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
         from intergrax.integrations.registry.profile import IntegrationProfile
-                from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+        from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
         from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
         from intergrax.runtime.interactions.factory import (
             InteractionSurface,
@@ -360,7 +360,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             runtime_events_db_path: Path | None = None,
             checkpoints_db_path: Path | None = None,
         ) -> {pascal}IntegrationWiring:
-            register_default_integrations()
+            bootstrap_application_integration_catalog(integration_preset="full")
             sqlite_overrides = _sqlite_config_overrides(
                 db_path=db_path,
                 experiments_db_path=experiments_db_path,

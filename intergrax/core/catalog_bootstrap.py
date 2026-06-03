@@ -76,14 +76,26 @@ def bootstrap_catalogs(
     or ``tool_bundle_ids`` / ``skill_bundle_ids``, for lazy catalog registration.
     """
     global _tier0_shipped_done
-    if register_shipped and not _tier0_shipped_done:
+    if register_shipped:
         from intergrax.integrations.registry.bootstrap import register_default_integrations
         from intergrax.skills.registry.bootstrap import register_default_skills
         from intergrax.tools.registry.bootstrap import register_default_tools
 
-        register_default_integrations(preset=integration_preset)  # type: ignore[arg-type]
-        register_default_tools(bundle_ids=tool_bundle_ids)
-        register_default_skills(bundle_ids=skill_bundle_ids)
+        if not _tier0_shipped_done or not integration_catalog_snapshot():
+            register_default_integrations(
+                preset=integration_preset,  # type: ignore[arg-type]
+                override=not integration_catalog_snapshot(),
+            )
+        if not _tier0_shipped_done or not tool_catalog_snapshot():
+            register_default_tools(
+                bundle_ids=tool_bundle_ids,
+                override=not tool_catalog_snapshot(),
+            )
+        if not _tier0_shipped_done or not skill_catalog_snapshot():
+            register_default_skills(
+                bundle_ids=skill_bundle_ids,
+                override=not skill_catalog_snapshot(),
+            )
         _tier0_shipped_done = True
 
     ep_policy = entry_point_conflict_policy(on_conflict)

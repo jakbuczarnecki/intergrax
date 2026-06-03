@@ -175,11 +175,8 @@ def wire_lab_integrations(
     )
     interaction_adapter = create_lab_interaction_adapter(settings)
 
-    default_notify = (
-        profile.notification_channel.value
-        if harness and profile.notification_channel is not None
-        else "log"
-    )
+    harness_notify_slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
+    default_notify = harness_notify_slug if harness and harness_notify_slug is not None else "log"
 
     return LabIntegrationWiring(
         profile=profile,

@@ -44,7 +44,7 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
 
         from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
         from intergrax.integrations.registry.profile import IntegrationProfile
-                {imports}
+        {imports}
         {factory_imports}
 
 

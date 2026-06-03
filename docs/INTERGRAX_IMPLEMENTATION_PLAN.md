@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Phase Q+ / R / S / T / U / V Done** (V-V6 closeout + CI); **Harness completion backlog Done**; product agents & apps **Deferred**; gate **484 passed**; operational L3/L4 stability window **pending** (2 release cycles)  
+Status: Working draft (2026-06-02) — **Phase Q+ / R / S / T / U / V Done** (V-V6 closeout + CI); **Harness completion backlog Done**; product agents & apps **Deferred**; gate **486 passed**; operational L3/L4 stability window **pending** (2 release cycles)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -3761,6 +3761,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | 2026-06-02 | P-Ext paydown | Fixture EP package, external examples/tests, Tier-3 wiring, docs, CI smoke (residual: 1.5, 4.3, 5.1, 5.6) |
 | 2026-06-02 | P-Ext closure | IntegrationSlug docs cleanup, `warn_override` conflict policy, scaffold CLI, lab wiring recipe |
 | 2026-06-02 | P-Ext complete | Phase narrative + §6.1p synced; expanded `check_plugin_catalog.py` smoke suite |
+| 2026-06-02 | §6.1 | Gate green **486**: IntegrationBinding test fixes, circular import, catalog re-bootstrap after test clears, scaffold templates |
 | — | — | *(append row per merged PR)* |
 
 ---

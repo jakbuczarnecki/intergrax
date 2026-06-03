@@ -55,6 +55,22 @@ def test_bootstrap_catalogs_idempotent_shipped() -> None:
     assert first == second
 
 
+def test_bootstrap_re_registers_shipped_after_catalog_cleared() -> None:
+    bootstrap_catalogs(register_shipped=True)
+    clear_catalog()
+    bootstrap_catalogs(register_shipped=True)
+    snap = snapshot_catalogs()
+    assert snap.integration_slugs
+
+
+def test_bootstrap_re_registers_skills_after_skill_catalog_cleared() -> None:
+    bootstrap_catalogs(register_shipped=True)
+    clear_skill_catalog()
+    bootstrap_catalogs(register_shipped=True)
+    snap = snapshot_catalogs()
+    assert "harness" in snap.skill_bundle_ids
+
+
 def test_bootstrap_registers_explicit_integration_plugin() -> None:
     result = bootstrap_catalogs(
         register_shipped=False,

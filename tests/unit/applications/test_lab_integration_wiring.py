@@ -14,16 +14,17 @@ from lab_application.host.integration_wiring import (
     wire_lab_integrations,
 )
 from lab_application.host.settings import LabApplicationSettings
+from tests.unit.applications._profile_assertions import assert_profile_slug
 
 pytestmark = pytest.mark.unit
 
 
 def test_build_lab_integration_profile_defaults() -> None:
     profile = build_lab_integration_profile()
-    assert profile.relational_store == "sqlite"
-    assert profile.notification_channel == "log"
-    assert profile.interaction_surface == "lab_json"
-    assert profile.observability_backend == "otel"
+    assert_profile_slug(profile, "relational_store", "sqlite")
+    assert_profile_slug(profile, "notification_channel", "log")
+    assert_profile_slug(profile, "interaction_surface", "lab_json")
+    assert_profile_slug(profile, "observability_backend", "otel")
 
 
 def test_wire_lab_integrations_uses_profile_and_sqlite(tmp_path) -> None:
@@ -36,7 +37,7 @@ def test_wire_lab_integrations_uses_profile_and_sqlite(tmp_path) -> None:
         checkpoints_db_path=tmp_path / "checkpoints.db",
     )
 
-    assert wiring.profile.relational_store == "sqlite"
+    assert_profile_slug(wiring.profile, "relational_store", "sqlite")
     assert isinstance(wiring.notification_adapter, LogNotificationAdapter)
     assert wiring.checkpoint_store is wiring.sqlite_bundle.task_checkpoint_store
     assert wiring.runtime_event_store is wiring.sqlite_bundle.runtime_event_store
@@ -54,8 +55,8 @@ def test_wire_lab_integrations_harness_profile_and_pagerduty(monkeypatch: pytest
     monkeypatch.setenv("INTERGRAX_PAGERDUTY_ROUTING_KEY", "test-routing-key")
     wiring = wire_lab_integrations(settings=LabApplicationSettings(), harness=True)
 
-    assert wiring.profile.notification_channel == "pagerduty"
-    assert wiring.profile.observability_backend == "sentry"
+    assert_profile_slug(wiring.profile, "notification_channel", "pagerduty")
+    assert_profile_slug(wiring.profile, "observability_backend", "sentry")
     assert "langsmith" in wiring.profile.options
     assert isinstance(wiring.notification_adapter, PagerDutyNotificationChannel)
     assert wiring.default_long_running_notify_channel == "pagerduty"

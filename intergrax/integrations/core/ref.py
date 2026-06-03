@@ -15,7 +15,6 @@ from intergrax.integrations.contracts.base import (
 from intergrax.integrations.core.binding import IntegrationBinding
 from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.core.plugin import IntegrationPlugin, integration_manifest_for_plugin
-from intergrax.integrations.registry.catalog import get_entry
 
 # Authoring input for IntegrationProfile fields (before normalization to IntegrationBinding).
 IntegrationRef = Union[
@@ -93,6 +92,8 @@ def resolve_ref_to_slug(
                     f"Integration {normalized!r} is not valid for profile field {field_name!r} "
                     f"(category {category.value}); manifest declares: {allowed}"
                 )
+
+    from intergrax.integrations.registry.catalog import get_entry
 
     try:
         entry = get_entry(normalized)

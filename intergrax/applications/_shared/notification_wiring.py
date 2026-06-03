@@ -64,7 +64,7 @@ def create_notification_adapter_from_profile(
     delivery_ledger: DeliveryLedger | None = None,
 ) -> NotificationAdapter:
     """Resolve notification adapter via Integration Library catalog (Phase M.9)."""
-    slug = profile.notification_channel
+    slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
     if slug is None:
         return create_resilient_notification_adapter(profile, delivery_ledger=delivery_ledger)
     settings = resolve_notification_settings()
@@ -90,7 +90,7 @@ def create_resilient_notification_adapter(
     backend = settings.backend.value
     if backend in _CATALOG_NOTIFICATION_SLUGS:
         slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
-        if slug == _CATALOG_NOTIFICATION_SLUGS[backend].value:
+        if slug == _CATALOG_NOTIFICATION_SLUGS[backend]:
             return profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)  # type: ignore[return-value]
     if settings.backend == NotificationBackend.LOG:
         return profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)  # type: ignore[return-value]
