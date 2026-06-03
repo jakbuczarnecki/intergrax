@@ -36,6 +36,7 @@ from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdo
 from intergrax.applications._shared.harness_auth import (
     apply_harness_auth_middleware,
     require_harness_api_key,
+    resolve_harness_api_key,
 )
 from lab_application.serving.fastapi_router import mount_lab_routes
 
@@ -64,6 +65,11 @@ def create_lab_application(
     - ``/debug/*`` — trace, events, checkpoints, progress, experiments, HITL intake
     """
     settings = settings or LabApplicationSettings.from_env()
+    if settings.requires_harness_api_key and resolve_harness_api_key() is None:
+        raise ValueError(
+            "INTERGRAX_HARNESS_API_KEY is required when INTERGRAX_ENV is stage/prod "
+            "or LAB_STRICT_HARNESS=true (Phase W-OPS.7)."
+        )
     integrations = wire_lab_integrations(
         settings=settings,
         db_path=db_path,

@@ -13,7 +13,7 @@ from intergrax.runtime.tools.idempotent_invoker import (
 )
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 class DummyInput(BaseModel):
@@ -33,15 +33,13 @@ class CountingExecutor:
         return DummyOutput(result=request.input.value * 2)
 
 
-class DummyRequest:
-    def __init__(self) -> None:
-        self.tenant_id = "tenant_test"
-        self.agent_id = "agent_test"
-
-
 class DummyState:
     def __init__(self) -> None:
-        self.request = DummyRequest()
+        self._tenant_id = "tenant_test"
+
+    @property
+    def tenant_id(self) -> str:
+        return self._tenant_id
 
     def trace_event(self, *args, **kwargs):
         pass

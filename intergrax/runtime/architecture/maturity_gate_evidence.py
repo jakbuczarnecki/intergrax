@@ -219,11 +219,11 @@ def collect_harness_governance_signals() -> MaturityGateInputs:
 
     metrics_report = compute_architecture_metrics(graph)
     metrics_report.thresholds = ArchitectureMetricThresholds(
-        modularity_score_min=0.20,
-        dependency_health_score_min=0.20,
-        observability_coverage_min=0.01,
-        governance_coverage_min=0.01,
-        architecture_debt_index_max=1.0,
+        modularity_score_min=0.25,
+        dependency_health_score_min=0.25,
+        observability_coverage_min=0.02,
+        governance_coverage_min=0.02,
+        architecture_debt_index_max=0.95,
     )
     metrics_pipeline = build_metrics_pipeline_report(
         snapshots=[ArchitectureMetricsSnapshot(snapshot_id="catalog", report=metrics_report)]

@@ -58,7 +58,7 @@ class IdempotentToolInvoker:
                 request=request,
             )
 
-        tenant_id = state.request.tenant_id
+        tenant_id = state.tenant_id
         key = request.idempotency_key
 
         status = self._store.get_status(tenant_id, key)

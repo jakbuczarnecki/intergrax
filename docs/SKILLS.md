@@ -110,6 +110,9 @@ Register with `register_skill_plugin(...)` or add the class to `shipped_plugins.
 | `harness.context_demo` | `harness` | **Done** (Phase S) |
 | `harness.trace_read` | `harness` | **Done** (Phase S) |
 | `harness.skill_registry` | `harness` | **Done** (harness completion 2026-06-02) |
+| `harness.reliability_smoke` | `harness` | **Done** (W-OPS.8) |
+| `harness.policy_smoke` | `harness` | **Done** (W-OPS.8) |
+| `harness.stack_demo` | `harness` | **Done** (W-OPS.9) — `requires_skills` demo |
 | `legal.contract_review` | `legal` | **Done** |
 | `research.literature_scan` | `research` | **Done** |
 

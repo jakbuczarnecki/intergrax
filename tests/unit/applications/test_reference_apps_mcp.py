@@ -12,7 +12,13 @@ def test_lab_application_exposes_mcp_mount() -> None:
     from lab_application.host.factory import create_lab_application
     from lab_application.host.settings import LabApplicationSettings
 
-    settings = LabApplicationSettings(include_mcp=True, include_scheduler=False)
+    from intergrax.fastapi_core.config import ApiEnvironment
+
+    settings = LabApplicationSettings(
+        environment=ApiEnvironment.DEV,
+        include_mcp=True,
+        include_scheduler=False,
+    )
     app = create_lab_application(settings=settings)
     client = TestClient(app)
     assert client.get("/v1/lab/agents").status_code == 200
