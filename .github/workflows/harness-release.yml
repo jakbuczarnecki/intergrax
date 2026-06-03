@@ -1,0 +1,19 @@
+# Operational L3 evidence on release tags (Phase H-APP.6.2)
+name: Harness release evidence
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  ops-evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --extra dev-ci --frozen
+      - name: Enforce W-OPS / H-APP operational evidence
+        run: uv run python scripts/phase_w_ops_evidence.py --enforce

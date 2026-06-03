@@ -24,12 +24,17 @@ pytestmark = [pytest.mark.unit, pytest.mark.agent_os, pytest.mark.gate]
 def _assert_tool_wiring_in_host(target, pkg: str, short: str) -> None:
     wiring = (target / "host" / "wiring.py").read_text(encoding="utf-8")
     tool_wiring = (target / "host" / "tool_wiring.py").read_text(encoding="utf-8")
-    assert f"wire_{short}_tools" in wiring
-    assert "tool_profile=tool_wiring.profile" in wiring
-    assert "tool_wiring_context=tool_wiring.wiring_context" in wiring
-    assert "ApplicationBuildContext.for_manifest" in wiring
+    env_profile_path = target / "host" / "environment_profile.py"
+    if env_profile_path.is_file():
+        env_profile = env_profile_path.read_text(encoding="utf-8")
+        assert "ApplicationEnvironmentProfile" in env_profile
+    assert "wire_application_environment" in wiring
+    assert f"build_{short}_environment_profile" in wiring
+    assert "env_wiring.build_context" in wiring
+    assert f"wire_{short}_tools" in tool_wiring
     assert "build_application_tool_wiring" in tool_wiring
     assert "ToolProfile" in tool_wiring
+    assert "ApplicationEnvironmentProfile" in env_profile
 
 
 def test_scaffold_profiles_exposed_on_cli() -> None:

@@ -16,7 +16,6 @@ from intergrax.debug.interaction_service import DebugInteractionIntakeService
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.applications._shared.fastapi_mcp import (
@@ -31,7 +30,9 @@ from lab_application.host.wiring import build_lab_registry
 from lab_application.mcp.server import build_lab_mcp_server
 from intergrax.applications._shared.task_defaults import make_lab_harness_task_enricher
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
-from intergrax.applications._shared.task_memory_wiring import wire_task_memory
+from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
+from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
+from intergrax.applications._shared.task_memory_wiring import wire_task_memory_from_profile
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.harness_auth import (
     apply_harness_auth_middleware,
@@ -79,18 +80,20 @@ def create_lab_application(
         harness=settings.harness,
         otel_enabled=settings.otel_enabled,
     )
+    lab_env = build_lab_environment_profile(settings)
     resolved_registry = registry or build_lab_registry(
         settings=settings,
         integration_profile=integrations.profile,
         trace_db_path=integrations.trace_db_path,
     )
-    task_memory = wire_task_memory(warn_if_disabled=settings.harness)
-    nexus_loop = NexusLoop(
+    task_memory = wire_task_memory_from_profile(lab_env, warn_if_disabled=settings.harness)
+    nexus_loop = build_nexus_loop_from_environment(
         resolved_registry,
-        checkpoint_store=integrations.checkpoint_store,
+        env=lab_env,
         trace_store=integrations.trace_store,
-        runtime_event_store=integrations.runtime_event_store,
+        checkpoint_store=integrations.checkpoint_store,
         notification_adapter=integrations.notification_adapter,
+        runtime_events_db_path=integrations.runtime_events_db_path,
         task_memory_store=task_memory.store,
         task_memory_db_path=task_memory.db_path,
     )

@@ -11,13 +11,16 @@ String ``import_path`` / ``factory_path`` remain for scaffold-generated manifest
 from __future__ import annotations
 
 import re
-from enum import Enum
 from typing import Any, Callable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.applications.contracts.agent_ref import qualname_for_agent, qualname_for_callable
+from intergrax.applications.contracts.application_host import (
+    ApplicationFeatures,
+    ApplicationProfile,
+)
 from intergrax.integrations.registry.profile import IntegrationProfile
 
 _APP_ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
@@ -28,13 +31,6 @@ _IMPORT_PATH_RE = re.compile(
 _FACTORY_PATH_RE = re.compile(
     r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]+)+\.[a-z][a-z0-9_]*$"
 )
-
-
-class ApplicationProfile(str, Enum):
-    """Scaffold / factory profile for Tier-3 hosts."""
-
-    LAB = "lab"
-    PRODUCT = "product"
 
 
 class AgentBinding(BaseModel):
@@ -241,53 +237,6 @@ class AgentBinding(BaseModel):
         return self
 
 
-class ApplicationFeatures(BaseModel):
-    """Product/lab behaviors toggled by the Tier-3 host factory."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    debug_surface: bool = Field(
-        default=True,
-        description="Expose /debug/* inspection routes (lab profile default)",
-    )
-    interaction_routes: bool = Field(
-        default=True,
-        description="Mount inbound interaction intake router",
-    )
-    long_running_scheduler: bool = Field(
-        default=True,
-        description="Start long-running scheduler on app startup",
-    )
-    openapi: bool | None = Field(
-        default=None,
-        description="Override OpenAPI exposure; None = profile default",
-    )
-    task_sandbox_default: bool = Field(
-        default=False,
-        description="Default Task metadata sandbox flag (Tier-1 isolation, not this host)",
-    )
-
-    @classmethod
-    def lab_defaults(cls) -> ApplicationFeatures:
-        return cls(
-            debug_surface=True,
-            interaction_routes=True,
-            long_running_scheduler=True,
-            openapi=None,
-            task_sandbox_default=False,
-        )
-
-    @classmethod
-    def product_defaults(cls) -> ApplicationFeatures:
-        return cls(
-            debug_surface=False,
-            interaction_routes=False,
-            long_running_scheduler=False,
-            openapi=False,
-            task_sandbox_default=False,
-        )
-
-
 class ApplicationManifest(BaseModel):
     """
     Tier-3 composition contract for a deployable application environment.
@@ -318,6 +267,10 @@ class ApplicationManifest(BaseModel):
         default_factory=IntegrationProfile.lab,
     )
     features: ApplicationFeatures = Field(default_factory=ApplicationFeatures.lab_defaults)
+    environment: "ApplicationEnvironmentProfile | None" = Field(
+        default=None,
+        description="Optional IDEAL §17 environment umbrella (Phase H-APP.1.2)",
+    )
 
     @field_validator("app_id")
     @classmethod
@@ -376,6 +329,29 @@ class ApplicationManifest(BaseModel):
         if not self.enabled_agents():
             raise ValueError(f"ApplicationManifest {self.app_id!r} has no enabled agents")
 
+    def resolved_environment(self) -> "ApplicationEnvironmentProfile":
+        """Return manifest environment or profile-appropriate defaults."""
+        from intergrax.applications.contracts.environment_profile import (
+            ApplicationEnvironmentProfile,
+        )
+
+        if self.environment is not None:
+            return self.environment
+        if self.profile is ApplicationProfile.PRODUCT:
+            return ApplicationEnvironmentProfile.product_defaults()
+        return ApplicationEnvironmentProfile.lab_defaults()
+
+    @classmethod
+    def environment_defaults(cls, profile: ApplicationProfile) -> "ApplicationEnvironmentProfile":
+        """Factory for ``lab`` / ``product`` environment presets (H-APP.1.2)."""
+        from intergrax.applications.contracts.environment_profile import (
+            ApplicationEnvironmentProfile,
+        )
+
+        if profile is ApplicationProfile.PRODUCT:
+            return ApplicationEnvironmentProfile.product_defaults()
+        return ApplicationEnvironmentProfile.lab_defaults()
+
     @classmethod
     def lab(
         cls,
@@ -433,3 +409,14 @@ class ApplicationManifest(BaseModel):
             features=ApplicationFeatures.product_defaults(),
             **kwargs,
         )
+
+
+def _rebuild_application_manifest_model() -> None:
+    from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+
+    ApplicationManifest.model_rebuild(
+        _types_namespace={"ApplicationEnvironmentProfile": ApplicationEnvironmentProfile},
+    )
+
+
+_rebuild_application_manifest_model()

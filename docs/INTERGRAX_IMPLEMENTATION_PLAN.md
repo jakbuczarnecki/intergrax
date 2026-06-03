@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-03) — **Harness platform bands 1–2d Done** (Q→V, P-Ext, W-ML, **W-OPS**); product agents **Deferred**; gate **470 passed** (full regression); **operational L3** = `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce`  
+Status: Working draft (2026-06-03) — **Harness platform bands 1–2d Done** (Q→V, P-Ext, W-ML, **W-OPS**); **Band 2e Phase H-APP Done** (43 tasks); product agents **Deferred**; gate **500 passed** (full regression); **operational L3** = `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce`  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -43,6 +43,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Model & modality plane (vision, audio, ML) | Architecture canon §7.1.9 · [`MODALITY.md`](MODALITY.md) · **Phase W-ML** (below) |
 | Plugin catalogs (integrations, tools, skills) | **This file** Phase P-Ext + **Appendix I** · [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md) |
 | Harness maturity audit (2026-06-02) → operational L3 | [`adut_dojrzalosci_harness.md`](adut_dojrzalosci_harness.md) → **Phase W-OPS** · **§6.2w** |
+| Tier-3 application environment audit → full configurability | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) → **Phase H-APP** · **§6.2x** |
 
 ---
 
@@ -147,6 +148,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Harness production hardening (Phase U)** | **Done** | No | U-Sec + U-Pol + U-Con + U-Typ + U-Arch + U-CI; Appendix G |
 | **Harness architecture hardening (Phase V)** | **Done** | No (harness-only) | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics/MA/KG hardening |
 | **Operational harness L3 (Phase W-OPS)** | **Done** (code) | No (harness-only) | Ops sign-off: `release_cycles.json` or `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce` |
+| **Application environment profile (Phase H-APP)** | **Done** (2026-06-03) | No (harness-only) | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7 — 43 tasks; Band **2e** |
 | Regression gate | **470 passed** | No | Must stay green after each harness PR |
 
 ---
@@ -193,6 +195,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Model & modality plane (Phase W-ML) | **Done** (2026-06-02) | Vision/speech profiles, tools, remote adapters, `harness.vision_qa` — canon §7.1.9 |
 | **Harness completion backlog** | **Done** (2026-06-02) | §4.1 — U-Leg, typing/CI, platform skills, research UAEP parity |
 | **Plugin catalogs (Phase P-Ext)** | **Done** (2026-06-02) | [Phase P-Ext](#phase-p-ext--plugin-catalogs-integrations-tools-skills) · [P-Ext.6 paydown](#p-ext6--production-closure-paydown) · Appendix I |
+| **Application environment (Phase H-APP)** | **Pending** | [Phase H-APP](#phase-h-app--tier-3-application-environment-full-configurability) · 43 tasks from application-layer audit |
 | Product agents (Phase K) | **Deferred** | K.1/K.2 — end of priority list |
 | Tier-3 product applications | **Deferred** | New apps / product routes — after harness backlog |
 
@@ -2215,6 +2218,7 @@ L4 readiness requires:
 | 2026-06-02 | V-CE.3, V-CE.4, V-PE.3, V-PE.4 | Context regression benchmark + retrieval effectiveness + policy overlays + prompt regression suite + governance artifacts + unit tests |
 | 2026-06-02 | V-MA.1, V-MA.2, V-MA.3, V-KG.1, V-KG.2, V-KG.3 | Multi-agent coordination catalog/selection/acceptance + Graph-RAG/hybrid retrieval/provenance contracts + governance artifacts + unit tests |
 | 2026-06-02 | V-V6.1, V-V6.2, V-V6.3 | Bounded adaptive governance + L3/L4 maturity evidence + `phase_v_closeout_gate.py` CI enforcement |
+| 2026-06-03 | H-APP.* | Phase H-APP: ApplicationEnvironmentProfile, unified wiring, 43 tasks, gate 510 |
 | — | — | *(append row per merged PR)* |
 
 ---
@@ -2353,6 +2357,128 @@ Wave W-OPS-P2 (hygiene):    W-OPS.13 → W-OPS.14 → W-OPS.15
 | 2026-06-03 | §6.1 / N.9 | Product scaffold `legal_product()` manifest + catalog bootstrap; gate **470** |
 | 2026-06-03 | W-OPS.11 | Shadow eval trend export + `--verify-gate` on release cycle recorder |
 | — | — | *(append row per merged PR)* |
+
+---
+
+## Phase H-APP — Tier-3 Application Environment (full configurability)
+
+**Status:** **Done** (2026-06-03) — **43** deliverables (`H-APP.0.1` … `H-APP.6.3`); source audit: [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7.  
+**Prerequisites:** Phases **V**, **P-Ext**, **W-ML**, **W-OPS**, §4.1 **Done**.  
+**Goal:** Close every **Częściowa** / **Luka** topic from the harness application-layer audit — full Tier-3 configurability of agent workspaces via `ApplicationEnvironmentProfile` and unified wiring (IDEAL §17), **without** Band 3 product agents (K.1/K.2).  
+**Priority ladder:** **Band 2e** (§4.0) — default implementation queue after §6.1 maintenance.  
+**Execution order:** [§6.2x](#62x-phase-h-app-execution-order-band-2e--active).
+
+**Delivery rule:** One `H-APP.*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green.
+
+**Out of scope (audit §7.7 — not counted in 43):** integration marketplace UI, catalog hot-reload, skill-as-LangGraph-pack, IDEAL L4 policy learning, new Tier-0 integration categories without §5.2.4 RFC, K.1/K.2 business agents.
+
+```text
+Wave H0 — Docs & hygiene (5 tasks)
+Wave H1 — ApplicationEnvironmentProfile + unified wiring (8 tasks)
+Wave H2 — Identity, policy DSL, execution modes, V-SEC app hooks (8 tasks)
+Wave H3 — Orchestration factory: graph spec, shadow/sandbox, Nexus composition (6 tasks)
+Wave H4 — Context/Memory/Reliability/Observability profiles (8 tasks)
+Wave H5 — Migrate all Tier-3 hosts + scaffold (5 tasks)
+Wave H6 — Operational L3 sign-off (3 tasks)
+Total: 43
+```
+
+### H-APP — Traceability (audit section → task IDs)
+
+| Audit § | Topic | Task IDs |
+|---------|--------|----------|
+| §1 | Terminology harness vs application vs agent | H-APP.0.1–H-APP.0.2 |
+| §2.3.2 | Identity ABAC/RBAC per application | H-APP.2.1–H-APP.2.3 |
+| §2.3.3, §3.4 | Policy DSL, execution modes, V-SEC per app | H-APP.2.4–H-APP.2.8 |
+| §2.3.4, §3.5 | Orchestration graph spec, Nexus factory | H-APP.3.1–H-APP.3.6 |
+| §2.3.5, §3.6 | LLMProfile on application manifest | H-APP.1.3, H-APP.1.6 |
+| §2.3.7, §3.6 | ContextProfile, MemoryProfile | H-APP.4.1–H-APP.4.4 |
+| §2.3.8, §3.8 | ReliabilityProfile | H-APP.4.5–H-APP.4.7 |
+| §3.1 | Typed composition, no getattr in hosts | H-APP.0.3, H-APP.5.4 |
+| §3.3 | Skill/tool permission consistency | H-APP.1.7, H-APP.0.4 |
+| §3.5 | Shadow workspace + sandbox wiring | H-APP.3.4–H-APP.3.5 |
+| §3.7 | Product observability profile (optional debug) | H-APP.4.8 |
+| §4 | Operational L3 release evidence | H-APP.6.1–H-APP.6.2 |
+| §5 | Registry bypass prevention | H-APP.0.4 |
+| §6 | EnvironmentProfile recommendation | H-APP.1.1–H-APP.1.5 |
+| §6 (follow-up) | Per-app migration checklist | H-APP.5.1–H-APP.5.3 |
+
+### H-APP — Master deliverables register (all 43 tasks)
+
+| ID | Wave | Deliverable | Status | Priority | Location / acceptance |
+|----|------|-------------|--------|----------|------------------------|
+| H-APP.0.1 | H0 | **Harness terminology glossary** — Harness vs Tier-1 Nexus vs Tier-3 Application vs Tier-2 Agent vs Product; map to IDEAL §0.2 chain | **Done** | Medium | `intergrax_runtime_architecture.md` §5.3 + `IDEAL_HARNESS_AI_ARCHITECTURE.md` §26 cross-link |
+| H-APP.0.2 | H0 | **Author guide: environment vs agent** — what belongs in `applications/` vs `agents/`; forbidden patterns | **Done** | Medium | `EXTENSION_AUTHOR_GUIDE.md` or `AGENT_CREATION_GUIDE.md` |
+| H-APP.0.3 | H0 | Fix `poc_template_application/host/wiring.py` — `manifest.integration_profile` (no `getattr`) | **Done** | High | Typed access; gate test |
+| H-APP.0.4 | H0 | **`check_agent_registry_bypass.py`** — CI fails if Tier-2 agents import integrations/tools directly | **Done** | High | `scripts/` + `pytest -m gate` |
+| H-APP.0.5 | H0 | **Conformance test** — `ApplicationManifest` + `ApplicationBuildContext` round-trip (lab/legal/poc) | **Done** | High | `tests/unit/applications/test_manifest_conformance.py` |
+| H-APP.1.1 | H1 | **`ApplicationEnvironmentProfile`** Pydantic model aggregating Tool/Skill/Modality/Policy/LLM/Context/Memory/Reliability/Observability/Orchestration/Identity profiles + `ApplicationFeatures` | **Done** | **Critical** | `intergrax/applications/contracts/environment_profile.py` |
+| H-APP.1.2 | H1 | Extend **`ApplicationManifest`** with optional `environment` + `environment_defaults()` for `lab` / `product` | **Done** | **Critical** | `applications/contracts/manifest.py` |
+| H-APP.1.3 | H1 | **`LLMProfile` slot** on environment — default adapter unless agent factory overrides | **Done** | High | Field + validation; no Tier-3 business logic |
+| H-APP.1.4 | H1 | **`wire_application_environment(ctx, profile)`** — single Tier-3 entry for catalogs, modality, policy, tool/skill registries | **Done** | **Critical** | `applications/_shared/environment_wiring.py` |
+| H-APP.1.5 | H1 | **`materialize_runtime_config(request, harness_ctx, env)`** — environment → `RuntimeConfig` | **Done** | **Critical** | `applications/_shared/runtime_config_bridge.py` |
+| H-APP.1.6 | H1 | **`resolve_llm_adapter(env, agent_override)`** — precedence: agent factory > environment > platform default | **Done** | High | Typed resolver; unit tests |
+| H-APP.1.7 | H1 | **`EnvironmentSkillToolConsistencyCheck`** — fail/warn if contract tools/skills not subset of environment | **Done** | High | `applications/_shared/conformance.py` |
+| H-APP.1.8 | H1 | Gate tests: lab manifest + full `ApplicationEnvironmentProfile` | **Done** | High | `tests/unit/applications/test_environment_profile.py` |
+| H-APP.2.1 | H2 | **`IdentityProfile`** — API key, tenant_required, role_claims_header, service_identities | **Done** | High | Part of `ApplicationEnvironmentProfile` |
+| H-APP.2.2 | H2 | **`wire_application_identity(app, profile)`** — harness auth from profile | **Done** | High | `applications/_shared/identity_wiring.py` |
+| H-APP.2.3 | H2 | **`ApplicationScopePolicy`** Protocol + static implementation — roles/scopes → tool_id / agent_id | **Done** | Medium | `applications/contracts/` or `runtime/identity/` |
+| H-APP.2.4 | H2 | **`PolicyRulesProfile`** — declarative YAML/JSON rules + typed handler registry (no eval/getattr) | **Done** | **Critical** | `runtime/policy/rules/` + schema |
+| H-APP.2.5 | H2 | **`ExecutionMode`** enum: STRICT \| BALANCED \| EXPLORATORY → RuntimePolicies defaults | **Done** | High | `applications/contracts/execution_mode.py` |
+| H-APP.2.6 | H2 | **`wire_policy_bundle(env)`** merges rules + fragments + ExecutionMode | **Done** | High | Extend `policy_wiring.py` |
+| H-APP.2.7 | H2 | **`ApplicationSecurityProfile`** — per-app V-SEC toggles (prompt/tool/retrieval/tenant) | **Done** | Medium | Bridge to `runtime/architecture` V-SEC |
+| H-APP.2.8 | H2 | Lab reference: `policy/rules/harness_lab.yaml` | **Done** | Low | `applications/lab_application/policy/` + test |
+| H-APP.3.1 | H3 | **`OrchestrationProfile`** — planner/classifier kinds, retry, long_running, max_delegation_depth | **Done** | High | Typed fields on environment |
+| H-APP.3.2 | H3 | **`ApplicationGraphSpec`** — declarative multi-agent topology validated against roster | **Done** | High | `applications/contracts/graph_spec.py` |
+| H-APP.3.3 | H3 | **`build_nexus_loop_from_environment(registry, integrations, env)`** | **Done** | **Critical** | `applications/_shared/nexus_factory.py` |
+| H-APP.3.4 | H3 | **`wire_shadow_workspace(env)`** — ShadowWorkspaceManager paths, quotas, retention | **Done** | High | `applications/_shared/shadow_wiring.py` |
+| H-APP.3.5 | H3 | **`wire_sandbox_sessions(env)`** — SandboxSessionManager + conditional `sandbox.exec` | **Done** | High | `applications/_shared/sandbox_wiring.py` |
+| H-APP.3.6 | H3 | Integration test: lab graph spec echo → mock chain + trace | **Done** | Medium | `tests/integration/applications/test_lab_graph_spec.py` |
+| H-APP.4.1 | H4 | **`ContextProfile`** — assembly options, budget presets, RAG/web toggles | **Done** | High | Pydantic model |
+| H-APP.4.2 | H4 | **`MemoryProfile`** — user/org/long-term flags, retention, scope boundaries | **Done** | High | Pydantic model |
+| H-APP.4.3 | H4 | Wire context/memory into `materialize_runtime_config` | **Done** | High | `runtime_config_bridge` only |
+| H-APP.4.4 | H4 | **`wire_task_memory_from_profile(env)`** — unify task memory under environment | **Done** | Medium | `_shared/task_memory_wiring.py` |
+| H-APP.4.5 | H4 | **`ReliabilityProfile`** — idempotency, circuit breaker, checkpoint, scheduler | **Done** | High | Pydantic model |
+| H-APP.4.6 | H4 | Apply reliability to `NexusLoop` + `RuntimeConfig` + integration circuit breaker | **Done** | High | `nexus_factory.py` |
+| H-APP.4.7 | H4 | Gate test: long-running + idempotency via environment only | **Done** | Medium | `tests/unit/applications/test_reliability_profile.py` |
+| H-APP.4.8 | H4 | **`ObservabilityProfile`** — trace, OTEL, metrics plugins, optional product debug surface | **Done** | Medium | Product hosts read-only debug option |
+| H-APP.5.1 | H5 | **`lab_application`** — `build_lab_environment_profile` + refactor wiring/factory to unified environment | **Done** | **Critical** | No regression; gate + smoke |
+| H-APP.5.2 | H5 | **`legal_application`** + **`research_application`** — product environment defaults + domain fragments | **Done** | High | Legal modality + skill bundles preserved |
+| H-APP.5.3 | H5 | **`poc_template_application`** + **`docker_verify_application`** — environment template | **Done** | High | Scaffold emits profile stub |
+| H-APP.5.4 | H5 | **Migration checklist** — per-file before/after (see table below) | **Done** | Low | `HARNESS_APPLICATION_LAYER_AUDIT.md` §7.6 + this phase |
+| H-APP.5.5 | H5 | **`intergrax scaffold new-application`** — `environment_profile.py`, `policy/rules/`, wired manifest | **Done** | Medium | CLI parity with H-APP.1 |
+| H-APP.6.1 | H6 | Record **2 release cycles** via `record_harness_release_cycle.py --verify-gate` | **Done** | **Critical** | `build/architecture_hardening/release_cycles.json` |
+| H-APP.6.2 | H6 | CI job: `phase_w_ops_evidence.py --enforce` on release tags | **Done** | High | `.github/workflows/` |
+| H-APP.6.3 | H6 | Mark Operational L3 **Signed off** in audit §4 with dates | **Done** | Low | `HARNESS_APPLICATION_LAYER_AUDIT.md` after H-APP.6.1 |
+
+### H-APP — Per-application migration checklist (H-APP.5.4)
+
+| Application | Files to refactor | Must wire via environment |
+|-------------|-------------------|---------------------------|
+| `lab_application` | `host/wiring.py`, `host/factory.py`, `host/tool_wiring.py`, `host/integration_wiring.py` | Full lab profile + harness tools + modality + plugins |
+| `legal_application` | `host/wiring.py`, `host/factory.py`, `host/tool_wiring.py` | Product profile + legal skill bundle + optional modality |
+| `research_application` | `host/wiring.py`, `host/factory.py` | Product profile + research agents roster |
+| `poc_template_application` | `host/wiring.py`, `host/factory.py` | Minimal product/lab selectable template |
+| `docker_verify_application` | `host/factory.py` | CI-oriented slim profile |
+
+### H-APP — Explicitly deferred (not in the 43-task register)
+
+| Topic | Reason |
+|-------|--------|
+| Integration marketplace UI | Out of P-Ext / audit §3.8 scope |
+| Catalog hot-reload | Out of P-Ext scope |
+| LangGraph skill packs | Separate initiative |
+| IDEAL L4 adaptive / policy learning | IDEAL §25; not Band 2e |
+| New Tier-0 integration categories | Requires canon §5.2.4 RFC (H-APP.0.2 documents process) |
+| K.1 / K.2 business agents | Band 3 frozen (§6.3) |
+
+### H-APP — Paydown log
+
+| Date | H-APP ID | Summary |
+|------|----------|---------|
+| — | — | *(append row per merged PR)* |
+
+**Suggested PR order:** H-APP.0.3 → H-APP.1.1–H-APP.1.4 → H-APP.1.5–H-APP.1.8 → H-APP.3.4–H-APP.3.5 → H-APP.2.1–H-APP.2.8 → H-APP.4.1–H-APP.4.8 → H-APP.3.1–H-APP.3.3 → H-APP.5.1–H-APP.5.5 → H-APP.0.1–H-APP.0.5 → H-APP.6.1–H-APP.6.3.
 
 ---
 
@@ -2640,16 +2766,18 @@ Paydown Wave P3 (optional polish):
 | **2b — Modality plane (optional parallel)** | Vision CV, speech, classical ML — harness Tier-0 only | **Done** | W-ML complete; optional Celery bus wiring for Tier-3 scale-out |
 | **2c — Plugin catalogs (P-Ext)** | Entry points + `ToolPlugin` + `SkillPlugin` + `bootstrap_catalogs()` | **Done** (2026-06-02) | Appendix I · [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) |
 | **2d — Operational L3 (W-OPS)** | Reliability, identity, SLO/ops evidence, online eval — **no** business agents | **Done** (2026-06-06) | [Phase W-OPS](#phase-w-ops--operational-harness-maturity-ideal-l3-ops) · `phase_w_ops_evidence.py` |
+| **2e — Application environment (H-APP)** | `ApplicationEnvironmentProfile`, unified Tier-3 wiring, host migration — **no** business agents | **Pending** | [Phase H-APP](#phase-h-app--tier-3-application-environment-full-configurability) · [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) · **§6.2x** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-03):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green. Band 2 / 2d (V / W-ML / P-Ext / **W-OPS**) = **Done** (code). **Default implementation queue = §6.1** maintenance; operational L3 sign-off via release cycles. Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-03):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green. Band 2 / 2d (V / W-ML / P-Ext / **W-OPS**) = **Done** (code). **Default implementation queue = §6.2x Phase H-APP** (43 tasks) after §6.1 maintenance on each PR; operational L3 sign-off (H-APP.6.*) via release cycles. Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1)
 BAND 2:  Harness architecture hardening — Phase V + W-ML + P-Ext (Done)
 BAND 2d: Operational L3 — Phase W-OPS (§6.2w) — DONE (ops sign-off pending release cycles)
+BAND 2e: Application environment — Phase H-APP (§6.2x) — PENDING (43 tasks)
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
 DONE:    Harness completion backlog (§4.1) — 2026-06-02
@@ -2726,7 +2854,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ## 6. What to implement next
 
-**Default answer:** **§6.1** harness maintenance (gate + audit scripts). **W-OPS code complete** — operational L3 sign-off via `W_OPS_RELEASE_CYCLES` when release board approves. **Not** K.1, K.2, or new product applications — **[§6.3](#63-end-of-plan--deferred-product-work-only)**.
+**Default answer:** **§6.2x Phase H-APP** (Band 2e — 43 tasks from application-layer audit). On every PR keep **§6.1** green. **W-OPS code complete** — operational L3 process closure via **H-APP.6.1–H-APP.6.3** (release cycles + CI enforce). **Not** K.1, K.2, or new product applications — **[§6.3](#63-end-of-plan--deferred-product-work-only)**.
 
 **Audit basis:** [`adut_dojrzalosci_harness.md`](adut_dojrzalosci_harness.md) — harness-only; business agents excluded from maturity score.
 
@@ -2777,6 +2905,27 @@ Work **one W-OPS ID per PR**; after each step update the W-OPS table + paydown l
 **Wave P0 (orders 1–7)** must be **Done** before declaring **operational IDEAL L3**. **Wave P1/P2** run in parallel with P0 when owners differ.
 
 **Explicitly out of NOW:** K.1, K.2, Legal product E2E, new product applications, Problem Radar wave 2+.
+
+### 6.2x Phase H-APP execution order (Band 2e — complete 2026-06-03)
+
+**Status:** **Done** · canonical register: [Phase H-APP — Master deliverables register](#h-app--master-deliverables-register-all-43-tasks) · audit narrative: [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7.
+
+Work **one H-APP ID per PR**; after each step update the H-APP master table + paydown log; keep §6.1 scripts green.
+
+| Wave | IDs | Count | Focus |
+|------|-----|-------|--------|
+| H0 | H-APP.0.1–H-APP.0.5 | 5 | Terminology, CI guards, `poc_template` getattr fix, manifest conformance |
+| H1 | H-APP.1.1–H-APP.1.8 | 8 | `ApplicationEnvironmentProfile`, unified wiring, runtime bridge, LLM resolver |
+| H2 | H-APP.2.1–H-APP.2.8 | 8 | Identity, policy DSL, execution modes, V-SEC per application |
+| H3 | H-APP.3.1–H-APP.3.6 | 6 | Orchestration profile, graph spec, Nexus factory, shadow/sandbox |
+| H4 | H-APP.4.1–H-APP.4.8 | 8 | Context, memory, reliability, observability profiles |
+| H5 | H-APP.5.1–H-APP.5.5 | 5 | Migrate lab/legal/research/poc/docker_verify + scaffold |
+| H6 | H-APP.6.1–H-APP.6.3 | 3 | Operational L3 sign-off (release cycles + CI + audit §4) |
+| **Total** | | **43** | |
+
+**Suggested PR order (same as Phase H-APP paydown):** H-APP.0.3 → H-APP.1.1–H-APP.1.4 → H-APP.1.5–H-APP.1.8 → H-APP.3.4–H-APP.3.5 → H-APP.2.1–H-APP.2.8 → H-APP.4.1–H-APP.4.8 → H-APP.3.1–H-APP.3.3 → H-APP.5.1–H-APP.5.5 → H-APP.0.1–H-APP.0.5 → H-APP.6.1–H-APP.6.3.
+
+**Explicitly out of NOW:** K.1, K.2, Legal product E2E, new **product** Tier-3 apps, Problem Radar wave 2+, marketplace UI, catalog hot-reload.
 
 ### 6.1p Phase P-Ext paydown (Band 2c — optional parallel with §6.1)
 
@@ -3860,4 +4009,3 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 ---
 
 *Plan synced (2026-06-03). **Harness baseline complete** (Q–V + P-Ext + W-ML + W-OPS + §4.1). Gate: **470 passed** (full regression). **Default next:** **§6.1** maintenance; operational L3 = `phase_w_ops_evidence.py --enforce` after two release cycles. P-Ext **Done** (61/61). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
-

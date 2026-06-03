@@ -1,6 +1,6 @@
 # Extension Author Guide (Tier-0 Plugin Catalogs)
 
-**Last updated:** 2026-06-02 · Phase P-Ext
+**Last updated:** 2026-06-03 · Phase P-Ext · **H-APP** environment profile
 
 Intergrax exposes three **Tier-0 plugin catalogs**. Shipped providers and third-party pip packages register through the same protocols.
 
@@ -11,6 +11,21 @@ Intergrax exposes three **Tier-0 plugin catalogs**. Shipped providers and third-
 | Skill | `intergrax.skills` | `SkillPlugin` | `register_skill_plugin()` |
 
 **Architecture:** Integration → Tool → Skill → Agent. See [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.5.1, §7.1.6–§7.1.8.
+
+---
+
+## 0. Tier-3 environment vs Tier-2 agent (H-APP)
+
+| Belongs in `applications/<app>/` | Belongs in `agents/<name>/` |
+|----------------------------------|-----------------------------|
+| `ApplicationManifest`, `ApplicationEnvironmentProfile` | `Agent`, UAEP steps, domain prompts |
+| `wire_application_environment()`, host `factory.py` | `AgentContract`, skill manifests on contract |
+| Tool/skill **profiles** (which catalog ids are enabled) | Business logic and step graphs |
+| Policy bundle, identity, observability profiles | No direct `intergrax.integrations` / `intergrax.tools` imports |
+
+**Forbidden:** `getattr`/`setattr` on manifests in host wiring; Tier-2 agents importing integration or tool modules (use `scripts/check_agent_registry_bypass.py`).
+
+Scaffold: `python -m intergrax.scaffold new-application <name>` emits `host/environment_profile.py` and unified wiring.
 
 ---
 

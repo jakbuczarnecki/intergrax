@@ -462,6 +462,19 @@ The package `intergrax.agent_kit.tiers` exposes `DeploymentTier` enum labels ali
 
 Intergrax is a **Harness AI environment** (Agent OS). Industry harness literature uses vocabulary that maps to Intergrax as follows.
 
+### 5.3.0 Terminology (Harness vs Application vs Agent)
+
+| Term | Tier | Role |
+|------|------|------|
+| **Platform / Tier-0** | 0 | Catalogs: integrations, tools, skills, LLM adapters, modality inference |
+| **Nexus / Runtime** | 1 | Orchestration loop, policy engine, trace, context, graph execution |
+| **Agent** | 2 | Autonomous business logic: UAEP steps, `AgentContract`, prompts (`agents/`) |
+| **Application** | 3 | Deployable **environment**: manifest, `ApplicationEnvironmentProfile`, host wiring (`applications/`) |
+| **Harness (practical)** | 1+3+0 | Nexus + application wiring + platform catalogs — not a single Python package |
+| **Product** | — | Business offering composed of Tier-3 app + selected Tier-2 agents |
+
+IDEAL chain: `Harness → Runtime → Agents → Applications → Products`. Intergrax **Application** = Tier-3 host (IDEAL “environment”), not the Tier-2 agent module.
+
 ### 5.3.1 Core mapping
 
 | Harness AI term | Intergrax implementation |
