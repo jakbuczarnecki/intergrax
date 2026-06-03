@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from intergrax.runtime.metrics.export import _extract_modality_metrics_from_trace
+from intergrax.runtime.observability.modality_metrics import aggregate_modality_metrics_from_trace_events
 from intergrax.runtime.nexus.tracing.persistence_models import SerializedTraceEvent
 from intergrax.runtime.observability.modality_counters import (
     MODALITY_INVOCATION_COUNTERS_KEY,
@@ -94,7 +94,7 @@ def test_export_aggregates_tool_invocation_end_metrics() -> None:
             artifact_refs=[],
         ),
     ]
-    aggregated = _extract_modality_metrics_from_trace(events)
+    aggregated = aggregate_modality_metrics_from_trace_events(events)
     assert aggregated.inference_ms == 30
     assert aggregated.vision_detections == 3
 

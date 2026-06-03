@@ -12,7 +12,10 @@ from intergrax.runtime.governance.contracts.metrics_record_dto import RunMetrics
 from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
 from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, SerializedTraceEvent
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent
-from intergrax.runtime.observability.modality_metrics import ModalityMetricsPayload
+from intergrax.runtime.observability.modality_metrics import (
+    ModalityMetricsPayload,
+    aggregate_modality_metrics_from_trace_events,
+)
 from intergrax.runtime.replay.metrics import ExecutionMetrics
 
 _LLM_SCHEMA_MARKERS = frozenset({"llm", "llm_usage", "llm_call"})
@@ -70,31 +73,7 @@ def export_run_metrics(persisted: PersistedRun, *, agent_id: Optional[str] = Non
 
 
 def _extract_modality_metrics_from_trace(events: List[SerializedTraceEvent]) -> ModalityMetricsPayload:
-    aggregated = ModalityMetricsPayload()
-    found = False
-    for event in events:
-        payload = _trace_event_payload(event)
-        step = event.step if isinstance(event, SerializedTraceEvent) else str(event.get("step", ""))
-        if step != "tool_invocation_end":
-            continue
-        modality_raw = payload.get("modality_metrics")
-        if isinstance(modality_raw, dict):
-            partial = ModalityMetricsPayload.model_validate(modality_raw)
-            aggregated = ModalityMetricsPayload(
-                inference_ms=aggregated.inference_ms + partial.inference_ms,
-                media_bytes=aggregated.media_bytes + partial.media_bytes,
-                tts_characters=aggregated.tts_characters + partial.tts_characters,
-                vision_detections=aggregated.vision_detections + partial.vision_detections,
-                ml_predictions=aggregated.ml_predictions + partial.ml_predictions,
-            )
-            found = True
-    if found:
-        return aggregated
-    for event in reversed(events):
-        payload = _trace_event_payload(event)
-        if "modality_metrics" in payload:
-            return ModalityMetricsPayload.model_validate(payload["modality_metrics"])
-    return ModalityMetricsPayload()
+    return aggregate_modality_metrics_from_trace_events(events)
 
 
 def _trace_event_payload(event: SerializedTraceEvent | Dict[str, Any]) -> Dict[str, Any]:

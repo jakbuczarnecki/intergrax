@@ -17,7 +17,7 @@ from intergrax.runtime.nexus.planning.task_planner import NexusPlan, TaskPlanner
 from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy, RetryRecord
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader, RunTraceWriter
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator, HumanApprovalHookError
 from intergrax.runtime.hooks.hook_point import HookPoint
@@ -165,9 +165,11 @@ class NexusLoop:
         self._trace_emitter = trace_emitter
         self._trace_store = trace_store
         self._current_task: Optional[Task] = None
+        trace_reader = trace_store if isinstance(trace_store, RunTraceReader) else None
         self._events = NexusRuntimeEventPublisher(
             self._event_bus,
             current_task=lambda: self._current_task,
+            trace_reader=trace_reader,
         )
         self._hitl = NexusHitlRunner(
             publish=self._publish_runtime_event,

@@ -1304,7 +1304,7 @@ Resolution merges with `RuntimePolicyBundle` and `ToolAccessPolicy` (intersectio
 |-------|----------------|
 | A | `llm_metrics` (existing) |
 | B | `rag_metrics`, parser trace (existing) |
-| C | `modality_metrics` on `tool_invocation_end` (per tool) + aggregated in `export_run_metrics` (`inference_ms`, `vision_detections`, `ml_predictions`, …) |
+| C | `modality_metrics` on `tool_invocation_end` (per tool), aggregated on `TASK_COMPLETED` runtime event + `export_run_metrics` (`inference_ms`, `media_bytes`, `tts_characters`, …) |
 
 Extend V-COST envelopes: `inference_ms`, `media_bytes`, `tts_characters`.
 
