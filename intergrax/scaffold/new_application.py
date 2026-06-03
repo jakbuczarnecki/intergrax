@@ -439,6 +439,7 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
         from {pkg}.host.integration_wiring import wire_{short}_integrations
         from {pkg}.host.settings import {pascal}ApplicationSettings
         from intergrax.applications._shared.fastapi_mcp import (
+            apply_lifespans,
             couple_fastapi_with_mcp,
             make_scheduler_lifespan,
         )
@@ -532,14 +533,7 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                     extra_lifespans=extra_lifespans,
                 )
             elif scheduler is not None:
-
-                @app.on_event("startup")
-                async def _start_scheduler() -> None:
-                    await scheduler.start()
-
-                @app.on_event("shutdown")
-                async def _stop_scheduler() -> None:
-                    await scheduler.stop()
+                apply_lifespans(app, make_scheduler_lifespan(scheduler))
             attach_plugin_shutdown(app, platform.shutdown_callbacks)
             return app
         '''

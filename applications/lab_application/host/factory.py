@@ -20,6 +20,7 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.applications._shared.fastapi_mcp import (
+    apply_lifespans,
     couple_fastapi_with_mcp,
     make_scheduler_lifespan,
 )
@@ -167,14 +168,7 @@ def create_lab_application(
             extra_lifespans=extra_lifespans,
         )
     elif scheduler is not None:
-
-        @app.on_event("startup")
-        async def _start_long_running_scheduler() -> None:
-            await scheduler.start()
-
-        @app.on_event("shutdown")
-        async def _stop_long_running_scheduler() -> None:
-            await scheduler.stop()
+        apply_lifespans(app, make_scheduler_lifespan(scheduler))
     attach_plugin_shutdown(app, plugin_bootstrap.shutdown_callbacks)
     register_llm_metrics_routes(app)
     apply_harness_auth_middleware(app)

@@ -45,6 +45,15 @@ def make_scheduler_lifespan(scheduler: Any) -> LifespanFn:
     return _lifespan
 
 
+def apply_lifespans(app: FastAPI, *lifespans: LifespanFn) -> FastAPI:
+    """Merge lifespan handlers onto an existing FastAPI app (replaces ``on_event``)."""
+    if not lifespans:
+        return app
+    existing = app.router.lifespan_context
+    app.router.lifespan_context = combine_lifespans(*lifespans, existing)
+    return app
+
+
 def couple_fastapi_with_mcp(
     fastapi_app: FastAPI,
     mcp: FastMCP,
