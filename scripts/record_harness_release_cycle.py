@@ -25,7 +25,31 @@ def main() -> int:
         action="store_true",
         help="Mark cycle as not gate-green (default: gate_green=True)",
     )
+    parser.add_argument(
+        "--verify-gate",
+        action="store_true",
+        help="Require W-OPS code checks green before recording (runs phase_w_ops evidence checks)",
+    )
     args = parser.parse_args()
+
+    if args.verify_gate and not args.gate_red:
+        import importlib.util
+
+        evidence_path = REPO_ROOT / "scripts" / "phase_w_ops_evidence.py"
+        spec = importlib.util.spec_from_file_location("phase_w_ops_evidence", evidence_path)
+        if spec is None or spec.loader is None:
+            print(f"Cannot load evidence module: {evidence_path}")
+            return 1
+        evidence_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(evidence_mod)
+        evidence = evidence_mod.collect_operational_checks()
+        code_ok = all(
+            item.passed for item in evidence.checks if item.check_id != "release_cycles"
+        )
+        if not code_ok:
+            failed = [item.check_id for item in evidence.checks if not item.passed]
+            print(f"W-OPS code checks failed: {', '.join(failed)}")
+            return 1
 
     from intergrax.runtime.architecture.release_cycle_tracker import (
         append_release_cycle,

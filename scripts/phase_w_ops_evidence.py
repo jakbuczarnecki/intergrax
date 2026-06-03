@@ -60,6 +60,35 @@ def _resolve_release_cycles() -> int:
     return load_release_cycle_tracker(RELEASE_CYCLES_PATH).completed_count
 
 
+def _shadow_trend_export_ok() -> bool:
+    try:
+        from intergrax.runtime.architecture.online_evaluation_registry import (
+            InMemoryOnlineEvaluationRegistry,
+        )
+        from intergrax.runtime.architecture.online_evaluation_trend import (
+            export_shadow_evaluation_trend,
+        )
+        from intergrax.runtime.architecture.online_evaluation import record_shadow_observation
+
+        registry = InMemoryOnlineEvaluationRegistry()
+        record_shadow_observation(
+            run_id="w-ops-evidence",
+            agent_id="echo",
+            scenario_id="harness.ops",
+            passed=True,
+            score=1.0,
+            registry=registry,
+        )
+        report = export_shadow_evaluation_trend(
+            "w-ops-evidence-probe",
+            registry=registry,
+            clear_registry_after_export=True,
+        )
+        return len(report.snapshots) == 1
+    except Exception:
+        return False
+
+
 def collect_operational_checks() -> OperationalMaturityEvidence:
     release_cycles = _resolve_release_cycles()
 
@@ -97,9 +126,15 @@ def collect_operational_checks() -> OperationalMaturityEvidence:
             passed=_run_pytest(
                 "tests/unit/runtime/architecture/test_online_evaluation.py "
                 "tests/unit/runtime/architecture/test_online_evaluation_registry.py "
+                "tests/unit/runtime/architecture/test_online_evaluation_trend.py "
                 "tests/unit/runtime/architecture/test_runtime_shadow_evaluation.py"
             ),
             detail="Shadow evaluation registry + RuntimeEngine hook (W-OPS.11)",
+        ),
+        OperationalHarnessCheck(
+            check_id="shadow_trend_export",
+            passed=_shadow_trend_export_ok(),
+            detail="Shadow evaluation trend export API (W-OPS.11)",
         ),
         OperationalHarnessCheck(
             check_id="slo_documentation",

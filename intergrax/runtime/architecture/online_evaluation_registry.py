@@ -21,6 +21,8 @@ class OnlineEvaluationRegistry(Protocol):
 
     def list_observations(self) -> list[OnlineEvaluationObservation]: ...
 
+    def clear(self) -> None: ...
+
 
 class InMemoryOnlineEvaluationRegistry:
     """In-process registry for unit tests."""
@@ -33,6 +35,9 @@ class InMemoryOnlineEvaluationRegistry:
 
     def list_observations(self) -> list[OnlineEvaluationObservation]:
         return list(self._observations)
+
+    def clear(self) -> None:
+        self._observations.clear()
 
 
 class FileOnlineEvaluationRegistry:
@@ -48,6 +53,9 @@ class FileOnlineEvaluationRegistry:
 
     def list_observations(self) -> list[OnlineEvaluationObservation]:
         return self._load().observations
+
+    def clear(self) -> None:
+        self._save(OnlineEvaluationRegistryStore())
 
     def _load(self) -> OnlineEvaluationRegistryStore:
         if not self._path.is_file():
