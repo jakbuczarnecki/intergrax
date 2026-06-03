@@ -48,11 +48,10 @@ for slug, cat_enum, enum, factory, env in SPECS:
         + "from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationEntry, IntegrationStatus\n"
         + f"from {import_base}.bundle import {factory}\n"
         + "from intergrax.integrations.registry.catalog import register_integration\n"
-        + "from intergrax.integrations.registry.slugs import IntegrationSlug\n\n"
         + f"def register_{slug}_integration(*, override: bool = False) -> None:\n"
         + "    register_integration(\n"
         + "        IntegrationEntry(\n"
-        + f"            slug=IntegrationSlug.{enum}.value,\n"
+        + f'            slug="{slug}",\n'
         + f"            categories=(IntegrationCategory.{cat_enum},),\n"
         + f"            factory={factory},\n"
         + "            status=IntegrationStatus.BETA,\n"

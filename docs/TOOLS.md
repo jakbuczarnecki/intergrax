@@ -27,7 +27,7 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 | **LLM-first contracts** | Every tool has `tool_id`, `description`, Pydantic `input_schema` / `output_schema` — optimized for model tool selection and MCP export. |
 | **Compose integrations** | Handlers call `IssueTracker`, `SearchProvider`, RAG managers, etc. — never vendor SDKs. |
 | **Single execution path** | All invocations route through `ToolRuntime` → `RuntimeToolInvoker` (trace, policy, idempotency). |
-| **Plugin-native catalog** | Shipped and external bundles implement `ToolPlugin`; register via `register_tool_plugin()` or entry point `intergrax.tools`. |
+| **Plugin-native catalog** | Shipped and external bundles implement `ToolPlugin`; register via `register_tool_plugin()` or entry point `intergrax.tools`. Scaffold: `python -m intergrax.scaffold new-tool-bundle <bundle_id>`. |
 | **Explicit registration** | Tier-3 calls `bootstrap_catalogs()` then `ToolProfile` + `ToolWiringContext`; agents never self-register tools. |
 | **Unified model** | Platform capabilities (RAG, web search, Jira, sandbox) are **tools** — not parallel boolean flags (§7.1.7). |
 | **Dual export** | Same `ToolContract` → OpenAI function schema, MCP tool, and `ToolRequest.tool_name`. |
@@ -86,7 +86,7 @@ from intergrax.integrations import IntegrationProfile, register_default_integrat
 register_default_integrations()
 register_default_tools()
 
-profile = IntegrationProfile(issue_tracker=IntegrationSlug.JIRA)
+profile = IntegrationProfile(issue_tracker="jira")
 ctx = ToolWiringContext.from_integration_profile(profile)
 
 registry = build_registry_from_profile(

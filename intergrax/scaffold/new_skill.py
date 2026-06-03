@@ -8,11 +8,15 @@ from pathlib import Path
 
 
 def register_parser(sub: argparse._SubParsersAction) -> None:
-    parser = sub.add_parser("new-skill", help="Create intergrax/skills/providers/<domain>/ SkillPlugin scaffold")
-    parser.add_argument("skill_id", help="Skill id (e.g. legal.contract_review)")
-    parser.add_argument("--domain", help="Provider folder (default: first segment of skill_id)")
-    parser.add_argument("--root", type=Path, default=Path.cwd())
-    parser.add_argument("--force", action="store_true")
+    for command in ("new-skill", "new-skill-bundle"):
+        parser = sub.add_parser(
+            command,
+            help="Create intergrax/skills/providers/<domain>/ SkillPlugin scaffold",
+        )
+        parser.add_argument("skill_id", help="Skill id (e.g. legal.contract_review)")
+        parser.add_argument("--domain", help="Provider folder (default: first segment of skill_id)")
+        parser.add_argument("--root", type=Path, default=Path.cwd())
+        parser.add_argument("--force", action="store_true")
 
 
 def run_new_skill(args: argparse.Namespace) -> int:

@@ -12,10 +12,9 @@
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 register_default_integrations()
-profile = IntegrationProfile(interaction_surface=IntegrationSlug.LAB_JSON)
+profile = IntegrationProfile(interaction_surface="lab_json")
 backend = profile.resolve(IntegrationCategory.INTERACTION_SURFACE)
 ```
 

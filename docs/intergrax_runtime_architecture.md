@@ -824,21 +824,20 @@ applications/legal_application/settings.py
     → create_interaction_adapter("teams")
 ```
 
-`IntegrationProfile` uses typed slugs (`IntegrationSlug`) and typed categories (`IntegrationCategory`) in application code. YAML/env may use strings; Tier-3 Python code must not.
+`IntegrationProfile` uses catalog manifests, plugin classes, or validated slug strings plus typed categories (`IntegrationCategory`) in application code. YAML/env may use strings; Tier-2 agents must not import provider packages.
 
 ```python
 from intergrax.integrations import (
     IntegrationCategory,
     IntegrationProfile,
-    IntegrationSlug,
     register_default_integrations,
 )
 
 register_default_integrations()
 profile = IntegrationProfile(
-    key_value_cache=IntegrationSlug.REDIS,
-    relational_store=IntegrationSlug.SQLITE,
-    options={IntegrationSlug.SQLITE: {"data_dir": "build/lab"}},
+    key_value_cache="redis",
+    relational_store="sqlite",
+    options={"sqlite": {"data_dir": "build/lab"}},
 )
 cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
 db = profile.resolve(IntegrationCategory.RELATIONAL_STORE)

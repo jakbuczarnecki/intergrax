@@ -70,3 +70,7 @@ def list_catalog_skill_ids() -> list[str]:
     for entry in _CATALOG.values():
         ids.update(entry.skill_ids)
     return sorted(ids)
+
+
+def catalog_snapshot() -> dict[str, SkillBundleEntry]:
+    return dict(_CATALOG)

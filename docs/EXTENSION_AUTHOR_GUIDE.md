@@ -153,9 +153,27 @@ my_skills = "my_pkg.skill_plugin:MySkillPlugin"
 
 Enable discovery: `bootstrap_catalogs(discover_entry_points=True)`.
 
+Catalog slug conflicts when a plugin replaces a shipped provider:
+
+- `on_conflict="error"` — raise on duplicate catalog slug (default)
+- `on_conflict="warn_override"` — log warning and replace the catalog row
+- `on_conflict="skip"` — skip the plugin when the slug already exists
+
 ---
 
-## 6. Validation
+## 6. Scaffold CLI
+
+```bash
+python -m intergrax.scaffold new-integration <slug> --category <integration_category>
+python -m intergrax.scaffold new-tool-bundle <bundle_id> [--tool-id <bundle_id>.ping]
+python -m intergrax.scaffold new-skill <skill_id> [--domain <folder>]
+```
+
+`new-skill-bundle` is an alias for `new-skill`. Generated trees use `IntegrationPlugin`, `ToolPlugin`, and `SkillPlugin` protocols (manifest + `plugin.py` + `bundle.py` / `register.py`).
+
+---
+
+## 7. Validation
 
 ```bash
 set PYTHONPATH=.
@@ -165,7 +183,7 @@ pytest tests/unit/core/plugins tests/unit/integrations/test_external_plugin.py -
 
 ---
 
-## 7. Do not confuse with Nexus runtime plugins
+## 8. Do not confuse with Nexus runtime plugins
 
 | Mechanism | Purpose |
 |-----------|---------|

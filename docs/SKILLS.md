@@ -91,6 +91,7 @@ Invalid files raise `CursorSkillImportError` — no partial attach. Use `import_
 
 ```bash
 python -m intergrax.scaffold new-skill legal.my_skill --domain legal
+# alias: new-skill-bundle
 ```
 
 Register with `register_skill_plugin(...)` or add the class to `shipped_plugins.py` (see `intergrax/scaffold new-skill`).

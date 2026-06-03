@@ -59,9 +59,37 @@ def _fix_import_line(imports: str) -> str:
     return f"from intergrax.integrations.registry.slugs import {', '.join(kept)}\n"
 
 
+def _transform_markdown(text: str) -> tuple[str, bool]:
+    original = text
+    text = re.sub(
+        r"IntegrationSlug\.([A-Z0-9_]+)\.value",
+        lambda m: f'"{_slug_from_member(m.group(1))}"',
+        text,
+    )
+    text = re.sub(
+        r"IntegrationSlug\.([A-Z0-9_]+)",
+        lambda m: f'"{_slug_from_member(m.group(1))}"',
+        text,
+    )
+    text = re.sub(
+        r"from intergrax\.integrations\.registry\.slugs import IntegrationSlug\n",
+        "",
+        text,
+    )
+    text = re.sub(
+        r"from intergrax\.integrations import IntegrationProfile, IntegrationSlug, register_default_integrations\n",
+        "from intergrax.integrations.registry.bootstrap import register_default_integrations\n"
+        "from intergrax.integrations.registry.profile import IntegrationProfile\n",
+        text,
+    )
+    text = re.sub(r",\s*IntegrationSlug", "", text)
+    text = re.sub(r"IntegrationSlug,\s*", "", text)
+    return text, text != original
+
+
 def main() -> int:
     changed = 0
-    for path in ROOT.rglob("*.py"):
+    for path in list(ROOT.rglob("*.py")) + list(ROOT.rglob("*.md")):
         if any(part in SKIP_DIRS for part in path.parts):
             continue
         if "replace_integration_slug_enum" in path.name:
@@ -69,7 +97,10 @@ def main() -> int:
         text = path.read_text(encoding="utf-8")
         if "IntegrationSlug" not in text:
             continue
-        new_text, did = _transform(text)
+        if path.suffix == ".md":
+            new_text, did = _transform_markdown(text)
+        else:
+            new_text, did = _transform(text)
         if did:
             path.write_text(new_text, encoding="utf-8")
             changed += 1

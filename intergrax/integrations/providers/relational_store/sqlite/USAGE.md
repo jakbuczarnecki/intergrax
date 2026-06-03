@@ -12,10 +12,9 @@
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 register_default_integrations()
-profile = IntegrationProfile(relational_store=IntegrationSlug.SQLITE)
+profile = IntegrationProfile(relational_store="sqlite")
 backend = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
 ```
 

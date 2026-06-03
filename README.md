@@ -280,12 +280,11 @@ The **Integration Library** (`intergrax/integrations/`) provides:
 ```python
 # Tier-3 application — declare backends once
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 profile = IntegrationProfile(
-    relational_store=IntegrationSlug.POSTGRESQL,
-    vector_store=IntegrationSlug.QDRANT,
-    notification_channel=IntegrationSlug.SLACK,
+    relational_store="postgresql",
+    vector_store="qdrant",
+    notification_channel="slack",
 )
 # Agents receive resolved contract instances — no boto3, no pymongo in agent code
 ```

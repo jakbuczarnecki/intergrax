@@ -19,10 +19,11 @@ Wraps `SlashCommandInteractionAdapter` from the runtime interactions layer.
 ## Usage
 
 ```python
-from intergrax.integrations import IntegrationProfile, IntegrationSlug, register_default_integrations
+from intergrax.integrations.registry.bootstrap import register_default_integrations
+from intergrax.integrations.registry.profile import IntegrationProfile
 
 register_default_integrations()
-profile = IntegrationProfile(interaction_surface=IntegrationSlug.SLASH_COMMAND)
+profile = IntegrationProfile(interaction_surface="slash_command")
 adapter = profile.resolve("interaction_surface")
 
 payload = {"command": "/research", "text": "summarize quarterly report", "user_id": "U1", "team_id": "T1"}
@@ -32,4 +33,4 @@ inbound = adapter.to_inbound(payload, tenant_id="t1", user_id="U1")
 ## Notes
 
 - Parses `command` / `text` via `parse_slash_command_text()` — capability + message for Nexus routing.
-- For Slack/Teams vendor SDK intake, prefer `IntegrationSlug.SLACK` or `IntegrationSlug.TEAMS` (dual category registration).
+- For Slack/Teams vendor SDK intake, prefer `"slack"` or `"teams"` (dual category registration).

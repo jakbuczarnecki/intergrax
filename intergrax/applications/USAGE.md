@@ -243,13 +243,12 @@ See `applications/legal_application/host/factory.py` and `applications/lab_appli
 
 ```python
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 manifest = ApplicationManifest.lab(
     ...,
     integration_profile=IntegrationProfile(
-        relational_store=IntegrationSlug.SQLITE,
-        notification_channel=IntegrationSlug.LOG,
+        relational_store="sqlite",
+        notification_channel="log",
     ),
 )
 ```

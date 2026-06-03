@@ -12,10 +12,9 @@
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 register_default_integrations()
-profile = IntegrationProfile(key_value_cache=IntegrationSlug.ELASTICACHE)
+profile = IntegrationProfile(key_value_cache="elasticache")
 backend = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
 ```
 
@@ -43,4 +42,4 @@ cache.set("t1", "lock:graph", b"1", ttl_seconds=60)
 
 ## Notes
 
-Uses the memcached-style duck client adapter. For full Redis semantics prefer ``IntegrationSlug.REDIS`` with the cluster URL.
+Uses the memcached-style duck client adapter. For full Redis semantics prefer the ``redis`` slug with the cluster URL.

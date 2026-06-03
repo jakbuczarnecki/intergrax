@@ -14,7 +14,7 @@ from intergrax.core.plugins.errors import PluginConflictError, PluginLoadError
 
 logger = logging.getLogger(__name__)
 
-ConflictPolicy = Literal["error", "skip", "override"]
+ConflictPolicy = Literal["error", "skip", "override", "warn_override"]
 
 EP_INTEGRATIONS = "intergrax.integrations"
 EP_TOOLS = "intergrax.tools"
@@ -83,7 +83,7 @@ def load_entry_point_plugins(
             if on_conflict == "skip":
                 logger.warning("Skipping duplicate entry point %s in group %s", name, group)
                 continue
-            if on_conflict == "override":
+            if on_conflict in ("override", "warn_override"):
                 logger.warning("Overriding duplicate entry point %s in group %s", name, group)
             else:
                 raise PluginConflictError(
@@ -120,13 +120,16 @@ def load_plugin_types(
 
 def register_plugins(
     group: str,
-    register_fn: Callable[[type], None],
+    register_fn: Callable[[type], bool | None],
     *,
     explicit: Sequence[type] = (),
     discover_entry_points: bool = False,
     on_conflict: ConflictPolicy = "error",
 ) -> int:
-    """Load plugins and invoke ``register_fn(plugin_type)`` for each."""
+    """Load plugins and invoke ``register_fn(plugin_type)`` for each.
+
+    When ``register_fn`` returns ``False``, the plugin is not counted (e.g. catalog skip).
+    """
     count = 0
     for plugin_type in load_plugin_types(
         group,
@@ -134,6 +137,7 @@ def register_plugins(
         discover_entry_points=discover_entry_points,
         on_conflict=on_conflict,
     ):
-        register_fn(plugin_type)
-        count += 1
+        registered = register_fn(plugin_type)
+        if registered is not False:
+            count += 1
     return count

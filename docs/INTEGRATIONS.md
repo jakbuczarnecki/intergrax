@@ -113,6 +113,8 @@ Tier-3 hosts should call `bootstrap_application_integration_catalog()` (not bare
 
 See [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md), `intergrax/integrations/examples/custom_memory_kv/`, and `tests/unit/integrations/test_external_plugin.py`.
 
+Scaffold a new provider tree: `python -m intergrax.scaffold new-integration <slug> --category <category>`.
+
 ---
 
 ## Design principles
@@ -195,8 +197,8 @@ Explicit SQLite bundle (lab / tests):
 from intergrax.runtime.persistence.integration_profile_wiring import open_trace_store_from_profile
 
 profile = IntegrationProfile(
-    relational_store=IntegrationSlug.SQLITE,
-    options={IntegrationSlug.SQLITE: {"data_dir": "build/lab"}},
+    relational_store="sqlite",
+    options={"sqlite": {"data_dir": "build/lab"}},
 )
 trace_store = open_trace_store_from_profile(profile)
 ```
@@ -296,7 +298,7 @@ All providers below are registered in `register_default_integrations()`.
 
 Unit tests: `tests/unit/integrations/` — **335+** cases including `test_p2_providers.py` and `test_p3_providers.py`.
 
-### Reserved in `IntegrationSlug` but not registered
+### Reserved slugs (manifest constants) but not registered in catalog
 
 None — all enum slugs in `FIELD_SLUGS` are registered except cloud-platform-only defaults resolved via `IntegrationProfile.with_cloud_platform()`.
 

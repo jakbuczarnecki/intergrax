@@ -12,10 +12,9 @@
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 register_default_integrations()
-profile = IntegrationProfile(object_storage=IntegrationSlug.S3)
+profile = IntegrationProfile(object_storage="s3")
 backend = profile.resolve(IntegrationCategory.OBJECT_STORAGE)
 ```
 
@@ -46,4 +45,4 @@ store.delete("exports/run-1.zip")
 
 ## Notes
 
-boto3 S3 client only in ``opens.py``. With ``IntegrationProfile(cloud_platform=IntegrationSlug.AWS)``, ``object_storage`` resolves to ``s3`` by default.
+boto3 S3 client only in ``opens.py``. With ``IntegrationProfile(cloud_platform='aws')``, ``object_storage`` resolves to ``s3`` by default.

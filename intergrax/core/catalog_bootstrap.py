@@ -8,6 +8,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Sequence
 
+from intergrax.core.catalog_conflict import (
+    catalog_registration_override,
+    entry_point_conflict_policy,
+    should_skip_catalog_registration,
+)
 from intergrax.core.plugins.discovery import (
     EP_INTEGRATIONS,
     EP_SKILLS,
@@ -15,8 +20,17 @@ from intergrax.core.plugins.discovery import (
     ConflictPolicy,
     register_plugins,
 )
+from intergrax.integrations.core.plugin import (
+    IntegrationPlugin,
+    integration_manifest_for_plugin,
+)
+from intergrax.integrations.registry.catalog import catalog_snapshot as integration_catalog_snapshot
 from intergrax.integrations.registry.plugin_register import register_integration_plugin
+from intergrax.skills.core.plugin import SkillPlugin, skill_bundle_manifest_for_plugin
+from intergrax.skills.registry.catalog import catalog_snapshot as skill_catalog_snapshot
 from intergrax.skills.registry.plugin_register import register_skill_plugin
+from intergrax.tools.core.plugin import ToolPlugin, tool_bundle_manifest_for_plugin
+from intergrax.tools.registry.catalog import catalog_snapshot as tool_catalog_snapshot
 from intergrax.tools.registry.plugin_register import register_tool_plugin
 
 if TYPE_CHECKING:
@@ -72,35 +86,76 @@ def bootstrap_catalogs(
         register_default_skills(bundle_ids=skill_bundle_ids)
         _tier0_shipped_done = True
 
-    def _register_integration(plugin_type: type) -> None:
-        register_integration_plugin(plugin_type, override=(on_conflict == "override"))
+    ep_policy = entry_point_conflict_policy(on_conflict)
 
-    def _register_tool(plugin_type: type) -> None:
-        register_tool_plugin(plugin_type, override=(on_conflict == "override"))
+    def _register_integration(plugin_type: type[IntegrationPlugin]) -> bool:
+        manifest = integration_manifest_for_plugin(plugin_type)
+        slug = manifest.slug.strip().lower()
+        slug_registered = slug in integration_catalog_snapshot()
+        if should_skip_catalog_registration(slug_registered=slug_registered, on_conflict=on_conflict):
+            return False
+        override = catalog_registration_override(
+            slug=slug,
+            slug_registered=slug_registered,
+            on_conflict=on_conflict,
+            catalog_kind="integration",
+            plugin_type=plugin_type,
+        )
+        register_integration_plugin(plugin_type, override=override)
+        return True
 
-    def _register_skill(plugin_type: type) -> None:
-        register_skill_plugin(plugin_type, override=(on_conflict == "override"))
+    def _register_tool(plugin_type: type[ToolPlugin]) -> bool:
+        manifest = tool_bundle_manifest_for_plugin(plugin_type)
+        bundle_id = manifest.bundle_id.strip().lower()
+        bundle_registered = bundle_id in tool_catalog_snapshot()
+        if should_skip_catalog_registration(slug_registered=bundle_registered, on_conflict=on_conflict):
+            return False
+        override = catalog_registration_override(
+            slug=bundle_id,
+            slug_registered=bundle_registered,
+            on_conflict=on_conflict,
+            catalog_kind="tool",
+            plugin_type=plugin_type,
+        )
+        register_tool_plugin(plugin_type, override=override)
+        return True
+
+    def _register_skill(plugin_type: type[SkillPlugin]) -> bool:
+        manifest = skill_bundle_manifest_for_plugin(plugin_type)
+        bundle_id = manifest.bundle_id.strip().lower()
+        bundle_registered = bundle_id in skill_catalog_snapshot()
+        if should_skip_catalog_registration(slug_registered=bundle_registered, on_conflict=on_conflict):
+            return False
+        override = catalog_registration_override(
+            slug=bundle_id,
+            slug_registered=bundle_registered,
+            on_conflict=on_conflict,
+            catalog_kind="skill",
+            plugin_type=plugin_type,
+        )
+        register_skill_plugin(plugin_type, override=override)
+        return True
 
     integration_count = register_plugins(
         EP_INTEGRATIONS,
         _register_integration,
         explicit=integration_plugins,
         discover_entry_points=discover_entry_points,
-        on_conflict=on_conflict,
+        on_conflict=ep_policy,
     )
     tool_count = register_plugins(
         EP_TOOLS,
         _register_tool,
         explicit=tool_plugins,
         discover_entry_points=discover_entry_points,
-        on_conflict=on_conflict,
+        on_conflict=ep_policy,
     )
     skill_count = register_plugins(
         EP_SKILLS,
         _register_skill,
         explicit=skill_plugins,
         discover_entry_points=discover_entry_points,
-        on_conflict=on_conflict,
+        on_conflict=ep_policy,
     )
     return CatalogBootstrapResult(
         integration_plugins=integration_count,

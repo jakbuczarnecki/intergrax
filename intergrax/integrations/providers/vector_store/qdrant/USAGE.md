@@ -12,10 +12,9 @@
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 register_default_integrations()
-profile = IntegrationProfile(vector_store=IntegrationSlug.QDRANT)
+profile = IntegrationProfile(vector_store="qdrant")
 backend = profile.resolve(IntegrationCategory.VECTOR_STORE)
 ```
 
