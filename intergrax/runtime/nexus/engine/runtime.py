@@ -50,6 +50,9 @@ from intergrax.runtime.nexus.tracing.runtime.runtime_run_abort import RuntimeRun
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_end import RuntimeRunEndDiagV1
 from intergrax.runtime.nexus.retry.coordinator import RetryCoordinator
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_retry import RuntimeRunRetryDiagV1
+from intergrax.runtime.nexus.tracing.runtime.harness_shadow_eval_recorded import (
+    HarnessShadowEvalRecordedDiagV1,
+)
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_start import RuntimeRunStartDiagV1
 from intergrax.runtime.architecture.multi_agent_coordination import PlanningConstraints
 from intergrax.runtime.architecture.runtime_governance_bridge import RuntimeArchitectureGovernanceBridge
@@ -245,6 +248,12 @@ class RuntimeEngine:
 
                     # --- Hard Output Gate (contract enforcement) ---
                     self._validate_runtime_answer_contract(
+                        state=state,
+                        runtime_answer=runtime_answer,
+                    )
+
+                    self._maybe_record_harness_shadow_evaluation(
+                        request=request,
                         state=state,
                         runtime_answer=runtime_answer,
                     )
@@ -459,6 +468,47 @@ class RuntimeEngine:
                             duration_ms=duration_ms,
                         ),
                     )
+
+    def _maybe_record_harness_shadow_evaluation(
+        self,
+        *,
+        request: RuntimeRequest,
+        state: RuntimeState,
+        runtime_answer: RuntimeAnswer,
+    ) -> None:
+        """Optional shadow evaluation when ``request.metadata`` requests it (W-OPS.11)."""
+        raw = request.metadata.get("harness_shadow_eval")
+        if not isinstance(raw, dict):
+            return
+        scenario_id = str(raw.get("scenario_id") or "harness.default")
+        passed = bool(raw.get("passed", runtime_answer.answer.strip() != ""))
+        score_raw = raw.get("score", 1.0 if passed else 0.0)
+        try:
+            score = float(score_raw)
+        except (TypeError, ValueError):
+            score = 1.0 if passed else 0.0
+        bridge = RuntimeArchitectureGovernanceBridge()
+        observation = bridge.record_shadow_run_evaluation(
+            run_id=state.run_id,
+            agent_id=request.agent_id,
+            scenario_id=scenario_id,
+            passed=passed,
+            score=score,
+        )
+        state.trace_event(
+            component=TraceComponent.ENGINE,
+            step="harness_shadow_eval_recorded",
+            level=TraceLevel.INFO,
+            message="Harness shadow evaluation observation recorded.",
+            payload=HarnessShadowEvalRecordedDiagV1(
+                run_id=observation.run_id,
+                agent_id=observation.agent_id,
+                scenario_id=observation.scenario_id,
+                passed=observation.passed,
+                score=observation.score,
+                observation_id=observation.observation_id,
+            ),
+        )
 
     async def _run_with_timeout(
             self,

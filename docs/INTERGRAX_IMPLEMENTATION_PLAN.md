@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-06) — **Harness platform bands 1–2d Done** (Q→V, P-Ext, W-ML, **W-OPS**); product agents **Deferred**; gate **494 passed**; **operational L3** = `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce`  
+Status: Working draft (2026-06-03) — **Harness platform bands 1–2d Done** (Q→V, P-Ext, W-ML, **W-OPS**); product agents **Deferred**; gate **467 passed** (full regression); **operational L3** = `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce`  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -146,8 +146,8 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Harness cleanliness (Phase T)** | **Done** (2026-06-01) | No | T-Ops + T-H; gate green |
 | **Harness production hardening (Phase U)** | **Done** | No | U-Sec + U-Pol + U-Con + U-Typ + U-Arch + U-CI; Appendix G |
 | **Harness architecture hardening (Phase V)** | **Done** | No (harness-only) | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics/MA/KG hardening |
-| **Operational harness L3 (Phase W-OPS)** | **Active** | No (harness-only) | [adut_dojrzalosci_harness.md](adut_dojrzalosci_harness.md) → §6.2w; Reliability/Identity/SLO ops |
-| Regression gate | **480 passed** | No | Must stay green after each harness PR |
+| **Operational harness L3 (Phase W-OPS)** | **Done** (code) | No (harness-only) | Ops sign-off: `release_cycles.json` or `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce` |
+| Regression gate | **467 passed** | No | Must stay green after each harness PR |
 
 ---
 
@@ -185,7 +185,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Harness quality (Phase Q) | **Done** | Appendix C — gate **417** at Phase Q close |
 | Harness hardening (Phase Q+) | **Done** | Appendix D — typing, monolith splits, zero grandfathered `getattr` |
 | Harness AI alignment (Phase R MVP) | **Done** | Appendix E — Skill Library, context, delegation, policy bundle |
-| Regression gate | **480 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
+| Regression gate | **467 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
 | Harness environment GA (Phase S) | **Done** (2026-06-01) | S-H.* + S-Ops + S-Doc |
 | Harness cleanliness (Phase T) | **Done** (2026-06-01) | T-Ops + T-H |
 | Harness production hardening (Phase U) | **Done** | Appendix G audit → U.* (U-Leg residual) |
@@ -2299,7 +2299,7 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 
 ## Phase W-OPS — Operational Harness Maturity (IDEAL L3 ops)
 
-**Status:** **Done** (2026-06-06) — W-OPS.1–W-OPS.15 delivered (W-OPS.10 on demand **Deferred**); **operational L3** sign-off still requires `W_OPS_RELEASE_CYCLES>=2` via `phase_w_ops_evidence.py --enforce`.  
+**Status:** **Done** (2026-06-06) — W-OPS.1–W-OPS.15 delivered including W-OPS.10 lab stack health probes; **operational L3** sign-off still requires `W_OPS_RELEASE_CYCLES>=2` (or `build/architecture_hardening/release_cycles.json`) via `phase_w_ops_evidence.py --enforce`.  
 **Source:** [`adut_dojrzalosci_harness.md`](adut_dojrzalosci_harness.md) · [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) §12.3–§12.4 · [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md)  
 **Prerequisites:** Phases **V**, **P-Ext**, **W-ML**, §4.1 **Done**.  
 **Goal:** Close the gap between **L3 CI evidence** (`maturity_gate_evidence`, relaxed thresholds) and **L3 operational** (IDEAL critical areas Policy/Reliability/Observability ≥ 3 with release evidence).  
@@ -2321,8 +2321,8 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 | W-OPS.7 | **Mandatory harness auth** — stage/prod/strict require `INTERGRAX_HARNESS_API_KEY` | **Done** | High | `LabApplicationSettings.requires_harness_api_key`; `test_lab_harness_api_key_required.py` |
 | W-OPS.8 | **`harness.*` skill expansion** — `harness.reliability_smoke`, `harness.policy_smoke` | **Done** | Medium | `skills/providers/harness/manifests.py` |
 | W-OPS.9 | **`requires_skills` adoption** — `harness.stack_demo` | **Done** | Medium | `test_harness_requires_skills_demo.py` |
-| W-OPS.10 | **M.6 on demand** — new integration slug + health per provider | **Deferred** | Medium | Band 2 on demand; not blocking W-OPS P0 |
-| W-OPS.11 | **Online evaluation path** — shadow observations → evaluation trends | **Done** | Medium | `runtime/architecture/online_evaluation.py`; gate test |
+| W-OPS.10 | **Harness lab stack health** — per-slug probes + circuit breaker | **Done** | Medium | `health_check_catalog_slugs`, `harness_lab_health.py`; `test_harness_lab_health.py` |
+| W-OPS.11 | **Online evaluation path** — shadow observations → evaluation trends | **Done** | Medium | `online_evaluation.py`; `RuntimeEngine` + `metadata.harness_shadow_eval`; gate tests |
 | W-OPS.12 | **W-ML Celery scale-out (optional)** — env-driven via `wire_modality_extras` | **Done** | Low | `INTERGRAX_MODALITY_EXECUTION=celery`; documented in HARNESS_ENVIRONMENT |
 | W-OPS.13 | **ToolsAgent removal roadmap** — CI blocks new imports; module frozen | **Done** | Low | `check_tools_agent_imports.py`, `check_tools_agent_run.py` |
 | W-OPS.14 | **Typed Tier-3 wiring** — `load_callable` uses module namespace (no `getattr`) | **Done** | Low | `applications/_shared/wiring.py` |
@@ -2347,6 +2347,7 @@ Wave W-OPS-P2 (hygiene):    W-OPS.13 → W-OPS.14 → W-OPS.15
 |------|----------|---------|
 | 2026-06-02 | W-OPS.0 | Maturity audit → Phase W-OPS + §6.2w execution order in implementation plan |
 | 2026-06-06 | W-OPS.1–W-OPS.15 | Circuit breaker, idempotency gate, SLO docs, ops evidence script, staging API key, harness skills, online eval, wiring/metrics |
+| 2026-06-03 | W-OPS.10–W-OPS.11 | Lab stack health by catalog slug; shadow eval wired in `RuntimeEngine`; CI `phase_w_ops_evidence.py`; gate **467** |
 | — | — | *(append row per merged PR)* |
 
 ---
@@ -2639,12 +2640,12 @@ Paydown Wave P3 (optional polish):
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-02):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green. Band 2 (V / W-ML / P-Ext) = **Done**. **Default implementation queue = Band 2d (W-OPS)** per [maturity audit](adut_dojrzalosci_harness.md). Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-03):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green. Band 2 / 2d (V / W-ML / P-Ext / **W-OPS**) = **Done** (code). **Default implementation queue = §6.1** maintenance; operational L3 sign-off via release cycles. Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1)
 BAND 2:  Harness architecture hardening — Phase V + W-ML + P-Ext (Done)
-BAND 2d: Operational L3 — Phase W-OPS (§6.2w) — ACTIVE DEFAULT NEXT
+BAND 2d: Operational L3 — Phase W-OPS (§6.2w) — DONE (ops sign-off pending release cycles)
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
 DONE:    Harness completion backlog (§4.1) — 2026-06-02
@@ -3851,5 +3852,5 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-02). **Harness baseline complete** (Q–V + P-Ext + W-ML + §4.1). Gate: **486 passed**. **Default next:** **§6.2w Phase W-OPS** per [adut_dojrzalosci_harness.md](adut_dojrzalosci_harness.md); §6.1 on every PR. P-Ext **Done** (61/61). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
+*Plan synced (2026-06-03). **Harness baseline complete** (Q–V + P-Ext + W-ML + W-OPS + §4.1). Gate: **467 passed** (full regression). **Default next:** **§6.1** maintenance; operational L3 = `phase_w_ops_evidence.py --enforce` after two release cycles. P-Ext **Done** (61/61). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
 

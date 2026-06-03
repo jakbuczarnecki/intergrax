@@ -130,6 +130,9 @@ jobs:
       - name: Phase V architecture closeout gate
         run: uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
 
+      - name: Phase W-OPS operational evidence (non-enforcing)
+        run: uv run python scripts/phase_w_ops_evidence.py
+
   harness:
     if: >-
       github.event_name == 'pull_request' ||
@@ -167,6 +170,8 @@ jobs:
           tests/unit/applications/test_task_defaults.py
           tests/unit/applications/test_harness_default_notify.py
           tests/unit/integrations/test_harness_lab_stable_stack.py
+          tests/unit/integrations/test_harness_lab_health.py
+          tests/unit/runtime/architecture/test_runtime_shadow_evaluation.py
           tests/unit/skills/test_harness_skill_bundle.py
           tests/unit/applications/test_lab_harness_environment_wiring.py
           tests/unit/applications/test_lab_application_settings_phase_u.py

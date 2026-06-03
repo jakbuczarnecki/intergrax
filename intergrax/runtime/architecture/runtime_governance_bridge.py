@@ -19,6 +19,10 @@ from intergrax.runtime.architecture.multi_agent_coordination import (
     PlanningConstraints,
     select_coordination_pattern,
 )
+from intergrax.runtime.architecture.online_evaluation import (
+    OnlineEvaluationObservation,
+    record_shadow_observation,
+)
 
 
 class RuntimeGovernanceTraceMetadata(BaseModel):
@@ -78,4 +82,22 @@ class RuntimeArchitectureGovernanceBridge:
             coordination_pattern=pattern_name,
             adaptive_governance_passed=adaptive_passed,
             reasons=reasons,
+        )
+
+    def record_shadow_run_evaluation(
+        self,
+        *,
+        run_id: str,
+        agent_id: str,
+        scenario_id: str,
+        passed: bool,
+        score: float,
+    ) -> OnlineEvaluationObservation:
+        """Append a shadow-mode harness evaluation observation (W-OPS.11)."""
+        return record_shadow_observation(
+            run_id=run_id,
+            agent_id=agent_id,
+            scenario_id=scenario_id,
+            passed=passed,
+            score=score,
         )

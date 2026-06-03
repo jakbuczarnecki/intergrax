@@ -15,6 +15,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+RELEASE_CYCLES_PATH = REPO_ROOT / "build" / "architecture_hardening" / "release_cycles.json"
 for path in (REPO_ROOT, REPO_ROOT / "agents", REPO_ROOT / "applications"):
     value = str(path)
     if value not in sys.path:
@@ -45,12 +46,22 @@ def _run_pytest(target: str) -> bool:
     return completed.returncode == 0
 
 
+def _resolve_release_cycles() -> int:
+    env_raw = (os.getenv("W_OPS_RELEASE_CYCLES") or "").strip()
+    if env_raw:
+        try:
+            return max(0, int(env_raw))
+        except ValueError:
+            return 0
+    if not RELEASE_CYCLES_PATH.is_file():
+        return 0
+    from intergrax.runtime.architecture.release_cycle_tracker import load_release_cycle_tracker
+
+    return load_release_cycle_tracker(RELEASE_CYCLES_PATH).completed_count
+
+
 def collect_operational_checks() -> OperationalMaturityEvidence:
-    cycles_raw = (os.getenv("W_OPS_RELEASE_CYCLES") or "0").strip()
-    try:
-        release_cycles = max(0, int(cycles_raw))
-    except ValueError:
-        release_cycles = 0
+    release_cycles = _resolve_release_cycles()
 
     slo_doc = REPO_ROOT / "docs" / "HARNESS_ENVIRONMENT.md"
     checks = [
