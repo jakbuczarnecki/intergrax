@@ -7,7 +7,7 @@ Zakres: Tier-0 platforma, Tier-1 Nexus, Tier-3 lab_application / scaffold, katal
 Wymiar	Ocena	Komentarz
 Deklaracja planu
 Harness completion Done
-Q→V + P-Ext + W-OPS zamknięte (kod); gate 467 (full regression)
+Q→V + P-Ext + W-OPS zamknięte (kod); gate 469 (full regression)
 IDEAL L0–L4 (§12)
 L2+ → L3 (kod/kontrakty)
 Pełne L3 operacyjne i L4 adaptacyjne — nie (2 cykle release + SLO/incydenty)
@@ -238,7 +238,7 @@ Silna — P-Ext, EP, extension guide
 
 **Źródło prawdy implementacji:** [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) — **Phase W-OPS** + **§6.2w** (kolejność PR).
 
-§6.1 maintenance — utrzymać gate **467** (full regression) + audyty CI po każdym PR harness.
+§6.1 maintenance — utrzymać gate **469** (full regression) + audyty CI po każdym PR harness.
 **W-OPS (kod)** — **Done** (W-OPS.1–15): idempotency, circuit breaker, SLO, shadow eval + file registry, lab stack health, harness skills.
 **Operacyjne L3** — `record_harness_release_cycle.py` × 2 cykle → `phase_w_ops_evidence.py --enforce`.
 **On demand** — nowe slugi M.6, Celery scale-out (W-OPS.12), Band 3 (K.1/K.2) po decyzji §6.3.

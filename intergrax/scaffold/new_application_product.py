@@ -55,11 +55,7 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
             raw = os.environ.get("INTERGRAX_INTEGRATION_PROFILE_JSON", "").strip()
             if raw:
                 return IntegrationProfile.model_validate_json(raw)
-            return IntegrationProfile(
-                relational_store="sqlite",
-                vector_store="inmemory",
-                document_parser="docling",
-            )
+            return IntegrationProfile.legal_product()
 
 
         def build_{short}_manifest() -> ApplicationManifest:
@@ -410,6 +406,7 @@ def integration_wiring_py(names: ScaffoldApplicationNames) -> str:
 
         from pathlib import Path
 
+        from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
         from intergrax.integrations.registry.profile import IntegrationProfile
         from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores, wire_nexus_observability
 
@@ -420,6 +417,7 @@ def integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             runtime_events_db_path: Path | None = None,
             integration_profile: IntegrationProfile | None = None,
         ) -> NexusObservabilityStores:
+            bootstrap_application_integration_catalog(integration_preset="full")
             return wire_nexus_observability(
                 trace_db_path=trace_db_path,
                 runtime_events_db_path=runtime_events_db_path,

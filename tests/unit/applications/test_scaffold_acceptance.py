@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 
 from intergrax.scaffold.new_application import _PROFILES, create_application, register_parser
 from tests.unit.applications.scaffold_runtime_helper import (
+    factory_callable,
     import_scaffold_modules,
     lab_settings_class,
     prepare_scaffold_package,
@@ -98,7 +99,7 @@ def test_scaffold_product_profile_runtime_e2e(tmp_path) -> None:
         route_prefix="/v1/gate_n9_product",
         include_mcp=False,
     )
-    create_app = getattr(factory_mod, f"create_{short}_backend_app")
+    create_app = factory_callable(factory_mod, short, product=True)
     client = TestClient(create_app(settings=settings))
 
     assert client.get("/health").status_code == 200
