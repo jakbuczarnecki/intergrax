@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.environment_wiring import wire_application_environment
 from intergrax.applications._shared.wiring import build_application_registry
-from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from poc_template_application.host.agent_builders import POC_TEMPLATE_AGENT_BUILDERS
 from poc_template_application.host.settings import PocTemplateApplicationSettings
-from poc_template_application.host.tool_wiring import wire_poc_template_tools
 from poc_template_application.manifest import build_poc_template_manifest
 
 
@@ -17,11 +17,15 @@ def build_poc_template_registry(
 ) -> AgentRegistry:
     settings = settings or PocTemplateApplicationSettings.from_env()
     manifest = build_poc_template_manifest()
-    tool_wiring = wire_poc_template_tools(integration_profile=getattr(manifest, "integration_profile", None))
-    ctx = ApplicationBuildContext.for_manifest(
-        manifest,
-        settings=settings,
-        tool_profile=tool_wiring.profile,
-        tool_wiring_context=tool_wiring.wiring_context,
+    env = manifest.environment or ApplicationEnvironmentProfile.lab_defaults(
+        profile_id="poc_template",
+        harness_tools=False,
     )
-    return build_application_registry(manifest, ctx, builders=POC_TEMPLATE_AGENT_BUILDERS)
+    if manifest.environment is None:
+        manifest = manifest.model_copy(update={"environment": env})
+    env_wiring = wire_application_environment(manifest, env, settings=settings)
+    return build_application_registry(
+        manifest,
+        env_wiring.build_context,
+        builders=POC_TEMPLATE_AGENT_BUILDERS,
+    )

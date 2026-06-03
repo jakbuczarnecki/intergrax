@@ -8,7 +8,7 @@ from intergrax.tools.tool_executor import ToolHandler
 
 from pydantic import BaseModel
 
-from intergrax.tools.tools_agent import ToolPlanDecision
+from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 from testing_support.builder import FakeLLMAdapter, build_runtime_state_for_tests, tools_agent_make_contract
 
 pytestmark = pytest.mark.unit

@@ -35,6 +35,10 @@ class SkillManifest(BaseModel):
     policy_fragment_id: str | None = None
     risk_tier: SkillRiskTier = SkillRiskTier.LOW
     tags: tuple[str, ...] = ()
+    requires_skills: tuple[str, ...] = Field(
+        default_factory=tuple,
+        description="Other skill_ids merged before this skill (transitive).",
+    )
 
     @field_validator("skill_id")
     @classmethod

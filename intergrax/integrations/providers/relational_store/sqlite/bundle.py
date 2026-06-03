@@ -107,7 +107,7 @@ def create_sqlite_relational_store(
     db_path: Path | str | None = None,
     **config_overrides: object,
 ) -> SQLiteRelationalStore:
-    """Catalog factory for ``IntegrationSlug.SQLITE`` / ``RELATIONAL_STORE``."""
+    """Catalog factory for ``"sqlite"`` / ``RELATIONAL_STORE``."""
     overrides: dict[str, object] = dict(config_overrides)
     if db_path is not None:
         overrides["relational_db"] = Path(db_path)

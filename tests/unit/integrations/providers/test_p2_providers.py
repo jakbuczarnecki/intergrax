@@ -51,7 +51,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import catalog_snapshot, clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.queueing.contracts.task_queue import TaskRequest
 from intergrax.runtime.notifications.models import NotificationMessage
 
@@ -413,18 +412,18 @@ def test_register_default_integrations_includes_p2_slugs() -> None:
     register_default_integrations()
     slugs = set(catalog_snapshot().keys())
     for slug in (
-        IntegrationSlug.GCS,
-        IntegrationSlug.DYNAMODB,
-        IntegrationSlug.BRAVE,
-        IntegrationSlug.PLAYWRIGHT,
-        IntegrationSlug.AZURE_BLOB,
+        "gcs",
+        "dynamodb",
+        "brave",
+        "playwright",
+        "azure_blob",
     ):
-        assert slug.value in slugs
+        assert slug in slugs
 
 
 def test_resolve_gcs_via_profile() -> None:
     register_default_integrations()
-    profile = IntegrationProfile(object_storage=IntegrationSlug.GCS)
+    profile = IntegrationProfile(object_storage="gcs")
     store = resolve(
         IntegrationCategory.OBJECT_STORAGE,
         profile=profile,

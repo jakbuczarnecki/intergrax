@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
 from problem_radar.capabilities import CAPABILITIES
 
 
@@ -14,8 +15,8 @@ def build_agent_contract() -> AgentContract:
         ),
         version="0.1.0",
         capabilities=CAPABILITIES,
-        allowed_tools=["websearch.query", "rag.retrieve"],
-        skill_ids=["research.literature_scan"],
+        skills=[RESEARCH_LITERATURE_SCAN],
+        extra_tools=[],
         risk_level=AgentRiskLevel.MEDIUM,
         max_steps=12,
         validation_rules=["structured_output"],

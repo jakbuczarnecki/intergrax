@@ -1,3 +1,4 @@
-from intergrax.tools.providers.jira.register import register_jira_tool_bundle
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
 
-__all__ = ["register_jira_tool_bundle"]
+"""Jira tool bundle — register via ``intergrax.tools.registry.shipped_plugins``."""

@@ -40,7 +40,6 @@ from intergrax.integrations.providers.secrets_store.vault.bundle import create_v
 from intergrax.integrations.providers.vector_store.inmemory.bundle import create_inmemory_vector_store
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import catalog_snapshot, clear_catalog
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.queueing.contracts.task_queue import TaskRequest
 from intergrax.runtime.notifications.models import NotificationMessage
 
@@ -250,11 +249,11 @@ def test_register_default_integrations_includes_p3_slugs() -> None:
     register_default_integrations()
     slugs = set(catalog_snapshot().keys())
     for slug in (
-        IntegrationSlug.TAVILY,
-        IntegrationSlug.VAULT,
-        IntegrationSlug.NEO4J,
-        IntegrationSlug.INMEMORY,
-        IntegrationSlug.FIRECRAWL,
-        IntegrationSlug.SENTRY,
+        "tavily",
+        "vault",
+        "neo4j",
+        "inmemory",
+        "firecrawl",
+        "sentry",
     ):
-        assert slug.value in slugs
+        assert slug in slugs

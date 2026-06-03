@@ -101,7 +101,7 @@ def create_redis_key_value_cache(
     client: Optional["redis.Redis"] = None,
     **config_overrides: object,
 ) -> KeyValueCache:
-    """Catalog factory for ``IntegrationSlug.REDIS`` / ``KEY_VALUE_CACHE``."""
+    """Catalog factory for ``"redis"`` / ``KEY_VALUE_CACHE``."""
     return create_redis_integration(
         url=url,
         db=db,

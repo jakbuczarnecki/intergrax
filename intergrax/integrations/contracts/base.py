@@ -81,6 +81,14 @@ class IntegrationError(Exception):
     """Base error for integration catalog resolution and wiring."""
 
 
+class IntegrationDependencyError(IntegrationError):
+    """Backend unavailable, circuit open, or dependency timeout."""
+
+    def __init__(self, message: str, *, integration_name: str = "") -> None:
+        super().__init__(message)
+        self.integration_name = integration_name
+
+
 class IntegrationConfigurationError(IntegrationError):
     """Profile/env does not specify a slug for a requested category."""
 

@@ -41,3 +41,6 @@ def to_mcp_tools(
         else:
             contracts = [item.contract for item in items]  # type: ignore[union-attr]
     return [contract_to_mcp_tool(c, compact_description=compact_description) for c in contracts]
+
+
+export_mcp_tools = to_mcp_tools

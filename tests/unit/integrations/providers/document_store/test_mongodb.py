@@ -31,7 +31,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 
@@ -310,7 +309,7 @@ def test_create_mongodb_integration_bundle() -> None:
 
 def test_register_and_resolve_via_profile() -> None:
     register_mongodb_integration()
-    profile = IntegrationProfile(document_store=IntegrationSlug.MONGODB)
+    profile = IntegrationProfile(document_store="mongodb")
     factory, _ = _collection_factory()
 
     store = resolve(
@@ -325,7 +324,7 @@ def test_register_and_resolve_via_profile() -> None:
 
 def test_register_default_integrations_includes_mongodb() -> None:
     register_default_integrations()
-    profile = IntegrationProfile(document_store=IntegrationSlug.MONGODB)
+    profile = IntegrationProfile(document_store="mongodb")
     factory, _ = _collection_factory()
 
     store = resolve(

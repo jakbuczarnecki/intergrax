@@ -1,3 +1,4 @@
-from intergrax.tools.providers.notify.register import register_notify_tool_bundle
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
 
-__all__ = ["register_notify_tool_bundle"]
+"""Notify tool bundle."""

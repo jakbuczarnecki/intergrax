@@ -3,7 +3,9 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from intergrax.fastapi_core.config import ApiEnvironment
 from lab_application.host.factory import create_lab_application
+from lab_application.host.settings import LabApplicationSettings
 
 pytestmark = [pytest.mark.integration, pytest.mark.agent_os, pytest.mark.gate]
 
@@ -11,6 +13,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.agent_os, pytest.mark.gate]
 @pytest.fixture
 def lab_client(tmp_path):
     app = create_lab_application(
+        settings=LabApplicationSettings(environment=ApiEnvironment.DEV),
         db_path=tmp_path / "trace.db",
         checkpoints_db_path=tmp_path / "lab.db",
         runtime_events_db_path=tmp_path / "events.db",

@@ -5,7 +5,7 @@
 Complete Google CSE integration bundle — the single composition root for Google search.
 
 All runtime wiring MUST use this module or
-``profile.resolve(IntegrationCategory.SEARCH_PROVIDER)`` with ``IntegrationSlug.GOOGLE_CSE``.
+``profile.resolve(IntegrationCategory.SEARCH_PROVIDER)`` with ``"google_cse"``.
 """
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ def create_google_cse_search_provider(
     session: Optional[object] = None,
     **config_overrides: object,
 ) -> SearchProvider:
-    """Catalog factory for ``IntegrationSlug.GOOGLE_CSE`` / ``SEARCH_PROVIDER``."""
+    """Catalog factory for ``"google_cse"`` / ``SEARCH_PROVIDER``."""
     return create_google_cse_integration(
         api_key=api_key,
         cx=cx,

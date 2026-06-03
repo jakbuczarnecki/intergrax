@@ -48,7 +48,6 @@ from intergrax.integrations.registry.factory import resolve
 
 from intergrax.integrations.registry.profile import IntegrationProfile
 
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 from intergrax.distributed.providers.redis_idempotency_store import RedisIdempotencyStore
 
@@ -184,7 +183,7 @@ def test_register_and_resolve_via_profile() -> None:
 
 
 
-    profile = IntegrationProfile(key_value_cache=IntegrationSlug.REDIS)
+    profile = IntegrationProfile(key_value_cache="redis")
 
     cache = resolve(
 
@@ -210,7 +209,7 @@ def test_register_default_integrations_includes_redis() -> None:
 
     register_default_integrations()
 
-    profile = IntegrationProfile(key_value_cache=IntegrationSlug.REDIS)
+    profile = IntegrationProfile(key_value_cache="redis")
 
 
 

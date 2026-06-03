@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
-from intergrax.applications._shared.skill_wiring import (
-    build_application_skill_wiring,
-    research_skill_profile,
-)
+from intergrax.applications._shared.environment_wiring import wire_application_environment
 from intergrax.applications._shared.wiring import build_application_registry
-from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from research_application.host.agent_builders import RESEARCH_AGENT_BUILDERS
+from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
 from research_application.host.settings import ResearchBackendSettings
-from research_application.host.tool_wiring import wire_research_tools
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
 
@@ -22,24 +18,27 @@ def build_research_registry(
 ) -> AgentRegistry:
     """Compose research + summary agents via unified Tier-3 wiring."""
     settings = settings or ResearchBackendSettings.from_env()
-    tool_wiring = wire_research_tools(settings=settings)
-    skill_wiring = build_application_skill_wiring(research_skill_profile())
-    tool_registry = tool_wiring.registry
-    if not tool_wiring.profile.enabled and not tool_wiring.profile.enabled_bundles:
-        tool_registry = None
-    ctx = ApplicationBuildContext.for_manifest(
-        RESEARCH_APPLICATION_MANIFEST,
+    manifest = RESEARCH_APPLICATION_MANIFEST
+    enabled_tools = list(settings.enabled_tool_ids)
+    for tool_id in RESEARCH_LITERATURE_SCAN.tool_ids:
+        if tool_id not in enabled_tools:
+            enabled_tools.append(tool_id)
+    env = manifest.environment or ApplicationEnvironmentProfile.product_defaults(
+        profile_id="research.product",
+        skill_bundles=["research"],
+        tool_ids=enabled_tools,
+    ).model_copy(update={"integration_profile": manifest.integration_profile})
+    if manifest.environment is None:
+        manifest = manifest.model_copy(update={"environment": env})
+    env_wiring = wire_application_environment(
+        manifest,
+        env,
         settings=settings,
-        tool_profile=tool_wiring.profile,
-        tool_wiring_context=tool_wiring.wiring_context,
-        skill_profile=skill_wiring.profile,
-        skill_registry=skill_wiring.registry,
-        tool_registry=tool_registry,
-        policy_bundle=build_runtime_policy_bundle(),
+        websearch_executor=settings.websearch_executor,
     )
     return build_application_registry(
-        RESEARCH_APPLICATION_MANIFEST,
-        ctx,
+        manifest,
+        env_wiring.build_context,
         builders=RESEARCH_AGENT_BUILDERS,
     )
 

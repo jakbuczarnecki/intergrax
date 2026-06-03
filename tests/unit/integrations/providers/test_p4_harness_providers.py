@@ -24,7 +24,6 @@ from intergrax.integrations.providers.observability_backend.opensearch.bundle im
 from intergrax.integrations.providers.vector_store.vespa.bundle import create_vespa_vector_store
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import catalog_snapshot, clear_catalog
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.runtime.notifications.models import NotificationMessage
 
 pytestmark = pytest.mark.unit
@@ -141,11 +140,11 @@ def test_register_default_integrations_includes_p4_slugs() -> None:
     register_default_integrations()
     slugs = set(catalog_snapshot().keys())
     for slug in (
-        IntegrationSlug.LANGSMITH,
-        IntegrationSlug.PAGERDUTY,
-        IntegrationSlug.GITLAB,
-        IntegrationSlug.VESPA,
-        IntegrationSlug.OPENSEARCH,
-        IntegrationSlug.SLASH_COMMAND,
+        "langsmith",
+        "pagerduty",
+        "gitlab",
+        "vespa",
+        "opensearch",
+        "slash_command",
     ):
-        assert slug.value in slugs
+        assert slug in slugs

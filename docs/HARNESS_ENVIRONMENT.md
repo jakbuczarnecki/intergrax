@@ -93,6 +93,9 @@ Runtime events: `GET /debug/tasks/{id}/events` when SQLite runtime events DB is 
 | `harness.tool_smoke` | `rag.retrieve`, `websearch.query` | Tool catalog smoke |
 | `harness.context_demo` | `rag.retrieve` | Context budget exercises |
 | `harness.trace_read` | `sandbox.exec` | Isolated diagnostics |
+| `harness.reliability_smoke` | `observability.query_traces`, `rag.retrieve` | Reliability / ops smoke (W-OPS.8) |
+| `harness.policy_smoke` | `rag.retrieve`, `websearch.query` | Policy bundle smoke (W-OPS.8) |
+| `harness.stack_demo` | requires `harness.tool_smoke` | `requires_skills` chain demo (W-OPS.9) |
 
 Reference harness agents **must** set `AgentContract.skill_ids` — echo and signoff_probe use `harness.tool_smoke`; do not duplicate tool lists in agent code.
 
@@ -108,13 +111,46 @@ With `LAB_HARNESS=true`, also: `errors.capture`, `observability.query_traces`, `
 
 ---
 
+## Harness SLO catalog (Phase W-OPS.4)
+
+Operational L3 evidence is separate from `phase_v_closeout_gate` (contract CI). Use `scripts/phase_w_ops_evidence.py` (CI: non-enforcing) and set `W_OPS_RELEASE_CYCLES` or append cycles to `build/architecture_hardening/release_cycles.json` after release board sign-off.
+
+**Lab stack health (W-OPS.10):** `health_check_harness_lab_stack()` probes every `HARNESS_LAB_STABLE_SLUGS` catalog entry via `health_check_catalog_slugs` with circuit breaker protection.
+
+**Shadow evaluation (W-OPS.11):** set `RuntimeRequest.metadata["harness_shadow_eval"]` to `{"scenario_id": "...", "passed": true, "score": 1.0}`; `RuntimeEngine` records `HarnessShadowEvalRecordedDiagV1` trace step and appends to `build/architecture_hardening/online_evaluation_observations.json`. After a release, export trends: `uv run python scripts/export_harness_shadow_eval_trend.py --release-id <id>` → `shadow_evaluation_trend_report.json` (snapshots in `evaluation_release_snapshots.json`).
+
+**Release cycles (W-OPS.5):** after a gate-green harness release, run `uv run python scripts/record_harness_release_cycle.py --cycle-id <id> [--verify-gate]`. Evidence script reads `build/architecture_hardening/release_cycles.json` (or `W_OPS_RELEASE_CYCLES`).
+
+| SLI | Target (harness lab) | Measurement |
+|-----|----------------------|-------------|
+| Trace completeness | ≥ 99% runs have `GET /debug/tasks/{id}/trace` payload | SQLite trace store + acceptance tests |
+| Lab run success rate | ≥ 99% gate `agent_os` acceptance | `pytest tests/acceptance/agent_os -m gate` |
+| Tool idempotency | Duplicate side-effect invoke returns cached result | `tests/unit/runtime/tools/test_idempotent_invoker.py` |
+| Integration resilience | Circuit opens after repeated backend failures | `tests/unit/integrations/test_integration_circuit_breaker.py` |
+| Cost per run (lab) | No unbounded token growth week-over-week | `GET /debug/tasks/{id}/metrics` + V-COST envelopes |
+
+**Incident budget (rolling 30d):** ≤ 2 Sev-2 harness regressions; ≤ 1 unresolved gate red > 24h.
+
+**Runbook stubs (owner: harness-platform):**
+
+| Scenario | Action |
+|----------|--------|
+| Gate red after harness PR | Re-run `pytest -m gate`; check `check_plugin_catalog.py` and `phase_v_closeout_gate.py` |
+| Provider outage | Open integration circuit; degrade tool to read-only paths; notify on-call |
+| Policy false positive | Use HITL override path; file policy fragment fix in `RuntimePolicyBundle` |
+| Stuck long-running task | Inspect checkpoint store; resume via scheduler or abort via debug API |
+
+---
+
 ## Security surfaces (Phase U)
 
 | Variable | Default | Effect |
 |----------|---------|--------|
-| `INTERGRAX_HARNESS_API_KEY` | unset | When set, `POST /v1/lab/run`, `/debug/*`, `/v1/interactions/*`, and MCP (wrapper) require `X-Api-Key` or `Authorization: Bearer <key>` |
+| `INTERGRAX_HARNESS_API_KEY` | unset (dev) | **Required** when `INTERGRAX_ENV=stage` or `prod`, or `LAB_STRICT_HARNESS=true` (W-OPS.7). When set, lab/debug/interaction/MCP routes require `X-Api-Key` or `Authorization: Bearer <key>` |
+| `INTERGRAX_ENV` | `dev` | `stage` / `staging` / `prod` select API environment; non-dev requires harness API key |
 | `LAB_INCLUDE_MCP` | `false` | MCP mount is opt-in |
 | `LAB_STRICT_HARNESS` | `false` | Reference agents use `production_mode=True`, governance service, and `trace_db_path` on `RuntimeConfig` |
+| `INTERGRAX_MODALITY_EXECUTION` | `in_process` | Set `celery` + `INTERGRAX_MODALITY_CELERY_BROKER_URL` for Tier-3 modality scale-out (W-OPS.12) |
 
 Lab reference agents implement `HarnessReferenceAgent` + `UAEPAgent`; manifest bindings set `requires_uaep=True` (research agents excluded until UAEP migration).
 
@@ -213,6 +249,14 @@ uv run python scripts/phase_v_foundations_report.py
 uv run python scripts/phase_v_capability_graph_guard.py
 uv run python scripts/phase_v_governance_report.py
 uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
+uv run python scripts/phase_w_ops_evidence.py
+```
+
+Operational L3 (after two stable release cycles):
+
+```bash
+set W_OPS_RELEASE_CYCLES=2
+uv run python scripts/phase_w_ops_evidence.py --enforce
 ```
 
 Optional strict profile (CI `harness-strict` job):

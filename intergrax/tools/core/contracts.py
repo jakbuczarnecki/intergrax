@@ -61,6 +61,7 @@ class ToolContract:
 
     side_effects: bool
 
+    version: str = "1.0.0"
     description_short: Optional[str] = None
     risk_level: ToolRiskLevel = ToolRiskLevel.LOW
     timeout_ms: int = 30_000

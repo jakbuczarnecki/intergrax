@@ -70,7 +70,7 @@ def create_elasticsearch_observability_backend(
     http_client_factory: Optional[Callable[[ElasticsearchIntegrationConfig], Any]] = None,
     **config_overrides: object,
 ) -> ElasticsearchObservabilityBackend:
-    """Catalog factory for ``IntegrationSlug.ELASTICSEARCH`` / ``OBSERVABILITY_BACKEND``."""
+    """Catalog factory for ``"elasticsearch"`` / ``OBSERVABILITY_BACKEND``."""
     return create_elasticsearch_integration(
         observability_backend=observability_backend,
         client=client,

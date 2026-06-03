@@ -5,7 +5,7 @@
 Complete lab JSON integration bundle — composition root for laboratory interaction intake.
 
 All runtime wiring MUST use this module or
-``profile.resolve(IntegrationCategory.INTERACTION_SURFACE)`` with ``IntegrationSlug.LAB_JSON``.
+``profile.resolve(IntegrationCategory.INTERACTION_SURFACE)`` with ``"lab_json"``.
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ def create_lab_json_interaction_surface(
     interaction_adapter: Optional[InteractionAdapter] = None,
     **config_overrides: object,
 ) -> InteractionAdapter:
-    """Catalog factory for ``IntegrationSlug.LAB_JSON`` / ``INTERACTION_SURFACE``."""
+    """Catalog factory for ``"lab_json"`` / ``INTERACTION_SURFACE``."""
     return create_lab_json_integration(
         interaction_adapter=interaction_adapter,
         **config_overrides,

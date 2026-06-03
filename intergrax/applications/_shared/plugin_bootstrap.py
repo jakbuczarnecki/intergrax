@@ -5,8 +5,13 @@
 
 from __future__ import annotations
 
-from typing import Callable, List
+from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
+from typing import List
 
+from fastapi import FastAPI
+
+from intergrax.applications._shared.fastapi_mcp import LifespanFn, apply_lifespans
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.plugins.bootstrap import PluginBootstrapResult, bootstrap_runtime_plugins
 from intergrax.runtime.plugins.contract import RuntimePlugin
@@ -32,12 +37,22 @@ def bootstrap_application_plugins(
     )
 
 
-def attach_plugin_shutdown(app, callbacks: List[Callable[[], None]]) -> None:
+def make_plugin_shutdown_lifespan(callbacks: List[Callable[[], None]]) -> LifespanFn:
+    """Lifespan that runs plugin shutdown callbacks on application teardown."""
+
+    @asynccontextmanager
+    async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        try:
+            yield
+        finally:
+            for callback in callbacks:
+                callback()
+
+    return _lifespan
+
+
+def attach_plugin_shutdown(app: FastAPI, callbacks: List[Callable[[], None]]) -> None:
     """Register plugin shutdown hooks on a FastAPI app."""
     if not callbacks:
         return
-
-    @app.on_event("shutdown")
-    async def _shutdown_plugins() -> None:
-        for callback in callbacks:
-            callback()
+    apply_lifespans(app, make_plugin_shutdown_lifespan(callbacks))

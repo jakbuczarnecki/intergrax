@@ -1,0 +1,195 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""First-party :class:`ToolPlugin` classes for all shipped tool bundles (lazy-loaded)."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from intergrax.tools.registry.plugin_factory import define_tool_plugin
+
+if TYPE_CHECKING:
+    from intergrax.tools.registry.catalog import ToolBundleStatus
+
+_SHIPPED_TOOL_PLUGINS: tuple[type, ...] | None = None
+_SHIPPED_TOOL_BUNDLE_IDS: frozenset[str] | None = None
+
+
+def _load_shipped_tool_plugins() -> tuple[type, ...]:
+    global _SHIPPED_TOOL_PLUGINS, _SHIPPED_TOOL_BUNDLE_IDS
+    if _SHIPPED_TOOL_PLUGINS is not None:
+        return _SHIPPED_TOOL_PLUGINS
+
+    from intergrax.tools.providers.braintrust.bundle import (
+        BRAINTRUST_BUNDLE_ID,
+        BRAINTRUST_TOOL_IDS,
+        register_braintrust_tools,
+    )
+    from intergrax.tools.providers.confluence.bundle import (
+        CONFLUENCE_BUNDLE_ID,
+        CONFLUENCE_TOOL_IDS,
+        register_confluence_tools,
+    )
+    from intergrax.tools.providers.gitlab.bundle import (
+        GITLAB_BUNDLE_ID,
+        GITLAB_TOOL_IDS,
+        register_gitlab_tools,
+    )
+    from intergrax.tools.providers.jira.bundle import JIRA_BUNDLE_ID, JIRA_TOOL_IDS, register_jira_tools
+    from intergrax.tools.providers.ml.bundle import ML_BUNDLE_ID, register_ml_tools
+    from intergrax.tools.providers.ml.service import (
+        ML_BATCH_PREDICT_TOOL_ID,
+        ML_EXPLAIN_TOOL_ID,
+        ML_PREDICT_TOOL_ID,
+    )
+    from intergrax.tools.providers.notify.bundle import NOTIFY_BUNDLE_ID, NOTIFY_TOOL_IDS, register_notify_tools
+    from intergrax.tools.providers.observability.bundle import (
+        OBSERVABILITY_BUNDLE_ID,
+        OBSERVABILITY_TOOL_IDS,
+        register_observability_tools,
+    )
+    from intergrax.tools.providers.pagerduty.bundle import (
+        PAGERDUTY_BUNDLE_ID,
+        PAGERDUTY_TOOL_IDS,
+        register_pagerduty_tools,
+    )
+    from intergrax.tools.providers.rag.bundle import RAG_BUNDLE_ID, RAG_TOOL_IDS, register_rag_tools
+    from intergrax.tools.providers.sandbox.bundle import SANDBOX_BUNDLE_ID, SANDBOX_TOOL_IDS, register_sandbox_tools
+    from intergrax.tools.providers.speech.bundle import SPEECH_BUNDLE_ID, register_speech_tools
+    from intergrax.tools.providers.speech.service import SPEECH_SYNTHESIZE_TOOL_ID, SPEECH_TRANSCRIBE_TOOL_ID
+    from intergrax.tools.providers.vision.bundle import VISION_BUNDLE_ID, register_vision_tools
+    from intergrax.tools.providers.vision.service import (
+        VISION_DETECT_TOOL_ID,
+        VISION_OCR_REGIONS_TOOL_ID,
+        VISION_SEGMENT_TOOL_ID,
+    )
+    from intergrax.tools.providers.websearch.bundle import (
+        WEBSEARCH_BUNDLE_ID,
+        WEBSEARCH_TOOL_IDS,
+        register_websearch_tools,
+    )
+    from intergrax.tools.registry.catalog import ToolBundleStatus
+
+    plugins: tuple[type, ...] = (
+        define_tool_plugin(
+            bundle_id=RAG_BUNDLE_ID,
+            tool_ids=RAG_TOOL_IDS,
+            register_fn=register_rag_tools,
+            description="Vector retrieval tools for indexed documents (RAG).",
+            class_name="RagToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=WEBSEARCH_BUNDLE_ID,
+            tool_ids=WEBSEARCH_TOOL_IDS,
+            register_fn=register_websearch_tools,
+            description="Web research tools (live search APIs).",
+            class_name="WebsearchToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=JIRA_BUNDLE_ID,
+            tool_ids=JIRA_TOOL_IDS,
+            register_fn=register_jira_tools,
+            description="Jira issue tracker tools.",
+            class_name="JiraToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=GITLAB_BUNDLE_ID,
+            tool_ids=GITLAB_TOOL_IDS,
+            register_fn=register_gitlab_tools,
+            description="GitLab issue tracker tools.",
+            class_name="GitlabToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=CONFLUENCE_BUNDLE_ID,
+            tool_ids=CONFLUENCE_TOOL_IDS,
+            register_fn=register_confluence_tools,
+            description="Confluence wiki tools.",
+            class_name="ConfluenceToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=NOTIFY_BUNDLE_ID,
+            tool_ids=NOTIFY_TOOL_IDS,
+            register_fn=register_notify_tools,
+            description="Outbound notification tools.",
+            class_name="NotifyToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=PAGERDUTY_BUNDLE_ID,
+            tool_ids=PAGERDUTY_TOOL_IDS,
+            register_fn=register_pagerduty_tools,
+            description="PagerDuty incident tools.",
+            class_name="PagerdutyToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=OBSERVABILITY_BUNDLE_ID,
+            tool_ids=OBSERVABILITY_TOOL_IDS,
+            register_fn=register_observability_tools,
+            status=ToolBundleStatus.BETA,
+            description="Metrics, logs, traces, and error capture tools.",
+            class_name="ObservabilityToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=BRAINTRUST_BUNDLE_ID,
+            tool_ids=BRAINTRUST_TOOL_IDS,
+            register_fn=register_braintrust_tools,
+            description="Braintrust eval logging tools.",
+            class_name="BraintrustToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=SANDBOX_BUNDLE_ID,
+            tool_ids=SANDBOX_TOOL_IDS,
+            register_fn=register_sandbox_tools,
+            description="Sandboxed code execution tools.",
+            class_name="SandboxToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=SPEECH_BUNDLE_ID,
+            tool_ids=(SPEECH_SYNTHESIZE_TOOL_ID, SPEECH_TRANSCRIBE_TOOL_ID),
+            register_fn=register_speech_tools,
+            description="Speech synthesis and transcription tools.",
+            class_name="SpeechToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=VISION_BUNDLE_ID,
+            tool_ids=(VISION_DETECT_TOOL_ID, VISION_SEGMENT_TOOL_ID, VISION_OCR_REGIONS_TOOL_ID),
+            register_fn=register_vision_tools,
+            description="Vision detection, segmentation, and OCR tools.",
+            class_name="VisionToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=ML_BUNDLE_ID,
+            tool_ids=(ML_PREDICT_TOOL_ID, ML_EXPLAIN_TOOL_ID, ML_BATCH_PREDICT_TOOL_ID),
+            register_fn=register_ml_tools,
+            description="Classical ML predict/explain tools.",
+            class_name="MlToolPlugin",
+        ),
+    )
+    _SHIPPED_TOOL_PLUGINS = plugins
+    _SHIPPED_TOOL_BUNDLE_IDS = frozenset(p.tool_bundle_manifest().bundle_id for p in plugins)
+    return plugins
+
+
+def shipped_tool_plugins() -> tuple[type, ...]:
+    return _load_shipped_tool_plugins()
+
+
+def shipped_tool_bundle_ids() -> frozenset[str]:
+    _load_shipped_tool_plugins()
+    assert _SHIPPED_TOOL_BUNDLE_IDS is not None
+    return _SHIPPED_TOOL_BUNDLE_IDS
+
+
+# Backward-compatible aliases for register modules
+def __getattr__(name: str):
+    _load_shipped_tool_plugins()
+    if name == "SHIPPED_TOOL_PLUGINS":
+        return _SHIPPED_TOOL_PLUGINS
+    if name == "SHIPPED_TOOL_BUNDLE_IDS":
+        return _SHIPPED_TOOL_BUNDLE_IDS
+    if name.endswith("ToolPlugin"):
+        for plugin in _SHIPPED_TOOL_PLUGINS or ():
+            if plugin.__name__ == name:
+                return plugin
+        raise AttributeError(name)
+    raise AttributeError(name)

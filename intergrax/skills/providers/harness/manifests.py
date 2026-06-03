@@ -69,3 +69,37 @@ HARNESS_SKILL_REGISTRY = SkillManifest(
     risk_tier=SkillRiskTier.LOW,
     tags=("harness", "registry", "skills"),
 )
+
+HARNESS_RELIABILITY_SMOKE = SkillManifest(
+    skill_id="harness.reliability_smoke",
+    version="1.0.0",
+    description="Reliability exercises: idempotent-friendly read paths and observability query.",
+    tool_ids=("observability.query_traces", "rag.retrieve"),
+    prompt_instruction_ids=("harness.reliability_smoke.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("harness", "reliability", "ops"),
+)
+
+HARNESS_POLICY_SMOKE = SkillManifest(
+    skill_id="harness.policy_smoke",
+    version="1.0.0",
+    description="Policy and governance smoke: low-risk tools under harness policy bundle.",
+    tool_ids=("rag.retrieve", "websearch.query"),
+    prompt_instruction_ids=("harness.policy_smoke.system",),
+    policy_fragment_id="harness.policy_smoke",
+    risk_tier=SkillRiskTier.LOW,
+    tags=("harness", "policy", "governance"),
+)
+
+HARNESS_STACK_DEMO = SkillManifest(
+    skill_id="harness.stack_demo",
+    version="1.0.0",
+    description="Demonstrates requires_skills: merges tools from harness.tool_smoke before this pack.",
+    tool_ids=("websearch.read_url",),
+    requires_skills=("harness.tool_smoke",),
+    prompt_instruction_ids=("harness.stack_demo.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("harness", "requires_skills", "demo"),
+)

@@ -45,12 +45,12 @@ def load_callable(import_path: str) -> Callable[..., Any]:
             f"Cannot import module {module_path!r} for {import_path!r}"
         ) from exc
 
-    try:
-        target = getattr(module, attr_name)
-    except AttributeError as exc:
+    namespace = vars(module)
+    if attr_name not in namespace:
         raise AgentImportError(
             f"Module {module_path!r} has no attribute {attr_name!r}"
-        ) from exc
+        )
+    target = namespace[attr_name]
 
     if not callable(target):
         raise AgentImportError(f"{import_path!r} is not callable")

@@ -70,7 +70,7 @@ def create_prometheus_observability_backend(
     http_client_factory: Optional[Callable[[PrometheusIntegrationConfig], Any]] = None,
     **config_overrides: object,
 ) -> PrometheusObservabilityBackend:
-    """Catalog factory for ``IntegrationSlug.PROMETHEUS`` / ``OBSERVABILITY_BACKEND``."""
+    """Catalog factory for ``"prometheus"`` / ``OBSERVABILITY_BACKEND``."""
     return create_prometheus_integration(
         observability_backend=observability_backend,
         client=client,

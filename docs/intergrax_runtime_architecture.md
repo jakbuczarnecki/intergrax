@@ -462,6 +462,19 @@ The package `intergrax.agent_kit.tiers` exposes `DeploymentTier` enum labels ali
 
 Intergrax is a **Harness AI environment** (Agent OS). Industry harness literature uses vocabulary that maps to Intergrax as follows.
 
+### 5.3.0 Terminology (Harness vs Application vs Agent)
+
+| Term | Tier | Role |
+|------|------|------|
+| **Platform / Tier-0** | 0 | Catalogs: integrations, tools, skills, LLM adapters, modality inference |
+| **Nexus / Runtime** | 1 | Orchestration loop, policy engine, trace, context, graph execution |
+| **Agent** | 2 | Autonomous business logic: UAEP steps, `AgentContract`, prompts (`agents/`) |
+| **Application** | 3 | Deployable **environment**: manifest, `ApplicationEnvironmentProfile`, host wiring (`applications/`) |
+| **Harness (practical)** | 1+3+0 | Nexus + application wiring + platform catalogs — not a single Python package |
+| **Product** | — | Business offering composed of Tier-3 app + selected Tier-2 agents |
+
+IDEAL chain: `Harness → Runtime → Agents → Applications → Products`. Intergrax **Application** = Tier-3 host (IDEAL “environment”), not the Tier-2 agent module.
+
 ### 5.3.1 Core mapping
 
 | Harness AI term | Intergrax implementation |
@@ -824,21 +837,20 @@ applications/legal_application/settings.py
     → create_interaction_adapter("teams")
 ```
 
-`IntegrationProfile` uses typed slugs (`IntegrationSlug`) and typed categories (`IntegrationCategory`) in application code. YAML/env may use strings; Tier-3 Python code must not.
+`IntegrationProfile` uses catalog manifests, plugin classes, or validated slug strings plus typed categories (`IntegrationCategory`) in application code. YAML/env may use strings; Tier-2 agents must not import provider packages.
 
 ```python
 from intergrax.integrations import (
     IntegrationCategory,
     IntegrationProfile,
-    IntegrationSlug,
     register_default_integrations,
 )
 
 register_default_integrations()
 profile = IntegrationProfile(
-    key_value_cache=IntegrationSlug.REDIS,
-    relational_store=IntegrationSlug.SQLITE,
-    options={IntegrationSlug.SQLITE: {"data_dir": "build/lab"}},
+    key_value_cache="redis",
+    relational_store="sqlite",
+    options={"sqlite": {"data_dir": "build/lab"}},
 )
 cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
 db = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
@@ -869,6 +881,42 @@ integrations:
 | Live vendor tests | CI optional job | `pytest -m integration_live` — secrets in CI only |
 
 Each provider README MUST document: auth model, required env vars, rate limits, idempotency behavior, and a **smoke command** runnable from lab.
+
+### 7.1.5.1 Tier-0 Plugin Catalogs (Phase P-Ext)
+
+All three Tier-0 catalogs (integrations, tools, skills) share one **plugin-native** registration model. Shipped first-party providers and third-party pip packages use the same APIs.
+
+| Layer | Protocol | Register API | Entry point group |
+|-------|----------|--------------|-------------------|
+| Integration | `IntegrationPlugin` | `register_integration_plugin()` | `intergrax.integrations` |
+| Tool | `ToolPlugin` | `register_tool_plugin()` | `intergrax.tools` |
+| Skill | `SkillPlugin` | `register_skill_plugin()` | `intergrax.skills` |
+
+**Tier-3 bootstrap (single call):**
+
+```python
+from intergrax.core.catalog_bootstrap import bootstrap_catalogs
+
+bootstrap_catalogs(
+    register_shipped=True,
+    integration_preset="full",  # or "core" for lab cold-start (~12 integration slugs)
+    tool_bundle_ids=None,     # or ("rag", "websearch") for lazy tool catalog
+    skill_bundle_ids=None,    # or ("harness",) for lazy skill catalog
+    discover_entry_points=True,
+    integration_plugins=(MyIntegrationPlugin,),
+)
+```
+
+`build_application_tool_wiring` / `build_application_skill_wiring` call `bootstrap_catalogs(register_shipped=True)` idempotently.
+
+**Rules:**
+
+- No central enum of all integration slugs — identity is `IntegrationManifest.slug` per provider.
+- External packages MUST NOT edit Intergrax core; register via entry points or explicit plugin classes at startup.
+- **Runtime Nexus plugins** (`RuntimePlugin`, `plugin_bootstrap.py`) are a **separate** extensibility plane from Tier-0 catalog plugins.
+- Tool execution observability (trace, scope policy, error mapping) lives in `RuntimeToolInvoker` — not in plugin registration.
+
+Author guide: [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md). Implementation tracker: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase P-Ext + Appendix I.
 
 ### 7.1.6 Tool Library — Canonical Catalog
 
@@ -1269,7 +1317,7 @@ Resolution merges with `RuntimePolicyBundle` and `ToolAccessPolicy` (intersectio
 |-------|----------------|
 | A | `llm_metrics` (existing) |
 | B | `rag_metrics`, parser trace (existing) |
-| C | `modality_metrics` on `tool_invocation_end` (per tool) + aggregated in `export_run_metrics` (`inference_ms`, `vision_detections`, `ml_predictions`, …) |
+| C | `modality_metrics` on `tool_invocation_end` (per tool), aggregated on `TASK_COMPLETED` runtime event + `export_run_metrics` (`inference_ms`, `media_bytes`, `tts_characters`, …) |
 
 Extend V-COST envelopes: `inference_ms`, `media_bytes`, `tts_characters`.
 

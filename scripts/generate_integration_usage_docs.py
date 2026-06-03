@@ -18,10 +18,9 @@ COMMON_HEADER = """\
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 register_default_integrations()
-profile = IntegrationProfile({profile_field}=IntegrationSlug.{slug_enum})
+profile = IntegrationProfile({profile_field}="{slug}")
 backend = profile.resolve(IntegrationCategory.{category_enum})
 ```
 
@@ -495,7 +494,7 @@ obj = store.get("exports/run-1.zip")
 url = store.presigned_url("exports/run-1.zip", expires_in_seconds=900)
 store.delete("exports/run-1.zip")
 """,
-        "notes": "boto3 S3 client only in ``opens.py``. With ``IntegrationProfile(cloud_platform=IntegrationSlug.AWS)``, ``object_storage`` resolves to ``s3`` by default.",
+        "notes": "boto3 S3 client only in ``opens.py``. With ``IntegrationProfile(cloud_platform='aws')``, ``object_storage`` resolves to ``s3`` by default.",
     },
     # --- Phase M.6 P2/P3 (2026-05-30) ---
     {
@@ -623,7 +622,7 @@ cache.close()
 cache = create_elasticache_key_value_cache(host="my-cluster.xxxxx.cache.amazonaws.com", port=6379)
 cache.set("t1", "lock:graph", b"1", ttl_seconds=60)
 """,
-        "notes": "Uses the memcached-style duck client adapter. For full Redis semantics prefer ``IntegrationSlug.REDIS`` with the cluster URL.",
+        "notes": "Uses the memcached-style duck client adapter. For full Redis semantics prefer the ``redis`` slug with the cluster URL.",
     },
     {
         "slug": "oracle",

@@ -10,7 +10,6 @@ from echo.echo_agent import EchoAgent
 from intergrax.applications.contracts.agent_ref import qualname_for_agent
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 

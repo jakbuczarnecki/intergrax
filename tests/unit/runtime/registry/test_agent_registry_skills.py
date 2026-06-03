@@ -12,7 +12,34 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.task.task import TaskContext
+from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
+from pydantic import BaseModel
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+
+
+class _In(BaseModel):
+    pass
+
+
+class _Out(BaseModel):
+    pass
+
+
+_EXTRA_TOOL = ToolContract(
+    tool_id="extra.tool",
+    name="extra.tool",
+    description="extra",
+    input_schema=_In,
+    output_schema=_Out,
+    error_mapping={},
+    side_effects=False,
+)
+
+_DEMO_SKILL = SkillManifest(
+    skill_id="demo.pack",
+    description="demo",
+    tool_ids=("rag.retrieve",),
+)
 
 
 class _SkillAgent(Agent):
@@ -22,8 +49,8 @@ class _SkillAgent(Agent):
             name="Skill Stub",
             description="stub",
             capabilities=["stub.cap"],
-            skill_ids=["demo.pack"],
-            allowed_tools=["extra.tool"],
+            skills=[_DEMO_SKILL],
+            extra_tools=[_EXTRA_TOOL],
         )
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
@@ -38,15 +65,9 @@ class _SkillAgent(Agent):
 
 
 @pytest.mark.unit
-def test_agent_registry_resolves_skill_ids_into_allowed_tools() -> None:
+def test_agent_registry_resolves_skills_into_allowed_tools() -> None:
     skills = SkillRegistry()
-    skills.register(
-        SkillManifest(
-            skill_id="demo.pack",
-            description="demo",
-            tool_ids=("rag.retrieve",),
-        )
-    )
+    skills.register(_DEMO_SKILL)
     registry = AgentRegistry()
     registry.register(_SkillAgent(), skill_registry=skills)
     contract = registry.get_contract("skill_stub")
@@ -55,7 +76,9 @@ def test_agent_registry_resolves_skill_ids_into_allowed_tools() -> None:
 
 
 @pytest.mark.unit
-def test_agent_registry_requires_skill_registry_when_skill_ids_set() -> None:
+def test_agent_registry_unknown_skill_raises() -> None:
+    from intergrax.skills.resolver import SkillResolutionError
+
     registry = AgentRegistry()
-    with pytest.raises(ValueError, match="SkillRegistry"):
+    with pytest.raises(SkillResolutionError, match="Unknown skill_id"):
         registry.register(_SkillAgent())

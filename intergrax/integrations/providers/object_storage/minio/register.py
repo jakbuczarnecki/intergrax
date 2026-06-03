@@ -1,24 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Register minio."""
+"""Register minio in the integration catalog."""
 
 from __future__ import annotations
 
-from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationEntry, IntegrationStatus
 from intergrax.integrations.providers.object_storage.minio.bundle import create_minio_object_storage
-from intergrax.integrations.registry.catalog import register_integration
-from intergrax.integrations.registry.slugs import IntegrationSlug
+from intergrax.integrations.providers.object_storage.minio.manifest import MANIFEST
+from intergrax.integrations.registry.plugin_register import register_from_manifest
+
 
 def register_minio_integration(*, override: bool = False) -> None:
-    register_integration(
-        IntegrationEntry(
-            slug=IntegrationSlug.MINIO.value,
-            categories=(IntegrationCategory.OBJECT_STORAGE,),
-            factory=create_minio_object_storage,
-            status=IntegrationStatus.BETA,
-            env_prefix="INTERGRAX_MINIO",
-            description="minio integration (Phase M.7)",
-        ),
-        override=override,
-    )
+    register_from_manifest(MANIFEST, create_minio_object_storage, override=override)

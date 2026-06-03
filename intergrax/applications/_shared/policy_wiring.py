@@ -1,21 +1,60 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Tier-3 runtime policy bundle composition (Phase R-Policy.2)."""
+"""Tier-3 runtime policy bundle composition (Phase R-Policy.2, H-APP.2.6)."""
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    PolicyRulesProfile,
+)
+from intergrax.applications.contracts.execution_mode import (
+    ExecutionMode,
+    runtime_policies_for_execution_mode,
+)
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+from intergrax.runtime.policy.rules.loader import load_policy_rules_from_path
+from intergrax.runtime.policy.rules.registry import PolicyRuleRegistry
+from intergrax.runtime.policy.rules.schema import DeclarativePolicyRule
 
 
 def build_runtime_policy_bundle(
     *,
     require_human_on_critical: bool = True,
     domain_fragments: dict[str, Any] | None = None,
+    execution_mode: ExecutionMode | None = None,
+    policy_rules: PolicyRulesProfile | None = None,
 ) -> RuntimePolicyBundle:
     """Default harness policy bundle for lab and product hosts."""
+    fragments = dict(domain_fragments or {})
+    if execution_mode is not None:
+        fragments["execution_mode"] = execution_mode.value
+        fragments["runtime_policies"] = runtime_policies_for_execution_mode(execution_mode)
+    if policy_rules is not None:
+        fragments["policy_rules"] = _resolve_policy_rules(policy_rules)
+        fragments["policy_rule_registry"] = PolicyRuleRegistry()
     return RuntimePolicyBundle(
         require_human_on_critical=require_human_on_critical,
-        domain_fragments=dict(domain_fragments or {}),
+        domain_fragments=fragments,
     )
+
+
+def wire_policy_bundle(env: ApplicationEnvironmentProfile) -> RuntimePolicyBundle:
+    """Merge policy rules, domain fragments, and execution mode (H-APP.2.6)."""
+    return build_runtime_policy_bundle(
+        domain_fragments=env.domain_policy_fragments,
+        execution_mode=env.execution_mode,
+        policy_rules=env.policy_rules,
+    )
+
+
+def _resolve_policy_rules(profile: PolicyRulesProfile) -> list[DeclarativePolicyRule]:
+    rules: list[DeclarativePolicyRule] = []
+    if profile.rules_path is not None:
+        rules.extend(load_policy_rules_from_path(Path(profile.rules_path)))
+    for item in profile.inline_rules:
+        rules.append(DeclarativePolicyRule.model_validate(item))
+    return rules

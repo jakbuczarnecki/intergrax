@@ -29,7 +29,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
 from intergrax.runtime.human.store import SQLiteHumanDecisionStore
 from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
@@ -97,7 +96,7 @@ def test_create_sqlite_trace_store_factory(tmp_path: Path) -> None:
 
 def test_register_and_resolve_via_lab_profile(tmp_path: Path) -> None:
     register_sqlite_integration()
-    profile = IntegrationProfile(relational_store=IntegrationSlug.SQLITE)
+    profile = IntegrationProfile(relational_store="sqlite")
 
     store = resolve(
         IntegrationCategory.RELATIONAL_STORE,

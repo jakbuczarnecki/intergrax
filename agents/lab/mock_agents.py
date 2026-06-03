@@ -113,7 +113,8 @@ class _MockAgentBase(HarnessReferenceAgent):
             description=f"Runtime validation mock ({self._agent_id}).",
             version="0.1.0",
             capabilities=[self._capability],
-            allowed_tools=[],
+            skills=[],
+            extra_tools=[],
             risk_level=AgentRiskLevel.LOW,
             max_steps=5,
         )

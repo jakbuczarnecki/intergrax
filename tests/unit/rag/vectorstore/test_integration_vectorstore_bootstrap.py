@@ -10,7 +10,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.rag.vectorstore.bootstrap.integration_vectorstore import (
     create_default_vectorstore_manager,
     create_vectorstore_from_integration,
@@ -31,7 +30,7 @@ def test_create_vectorstore_from_integration_falls_back_to_inmemory() -> None:
 
 def test_create_vectorstore_manager_wraps_resolved_store() -> None:
     mock_store = MagicMock()
-    profile = IntegrationProfile(vector_store=IntegrationSlug.QDRANT)
+    profile = IntegrationProfile(vector_store="qdrant")
 
     with patch(
         "intergrax.rag.vectorstore.bootstrap.integration_vectorstore.create_vectorstore_from_integration",

@@ -8,7 +8,10 @@ from typing import cast
 
 from intergrax.applications._shared.harness_governance import create_lab_allow_governance_service
 from intergrax.applications._shared.lab_harness_context import LabHarnessContext
-from intergrax.applications._shared.runtime_config_bridge import apply_policy_bundle_to_runtime_config
+from intergrax.applications._shared.runtime_config_bridge import (
+    apply_policy_bundle_to_runtime_config,
+    materialize_runtime_config,
+)
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.governance.service import GovernanceService
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -32,6 +35,20 @@ def build_lab_agent_runtime_config(
     trace_path: str | None = None
     if harness.strict_harness and harness.trace_db_path is not None:
         trace_path = str(harness.trace_db_path)
+
+    if harness.strict_harness:
+        from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+
+        env = ApplicationEnvironmentProfile.lab_defaults(profile_id="lab.agent")
+        env.context_profile.enable_rag = enable_rag
+        env.context_profile.enable_websearch = enable_websearch
+        return materialize_runtime_config(
+            request,
+            harness,
+            env,
+            llm_adapter=llm_adapter,
+            pipeline=pipeline,
+        )
 
     config = RuntimeConfig(
         llm_adapter=llm_adapter,

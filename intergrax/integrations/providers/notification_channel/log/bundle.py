@@ -38,7 +38,7 @@ def create_log_notification_channel(
     notification_adapter: Optional[NotificationAdapter] = None,
     **config_overrides: object,
 ) -> NotificationAdapter:
-    """Catalog factory for ``IntegrationSlug.LOG`` / ``NOTIFICATION_CHANNEL``."""
+    """Catalog factory for ``"log"`` / ``NOTIFICATION_CHANNEL``."""
     return create_log_integration(
         notification_adapter=notification_adapter,
         **config_overrides,

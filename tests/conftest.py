@@ -12,9 +12,38 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
+import subprocess
+import sys
+from pathlib import Path
+
 import pytest
 
 from intergrax.runtime.nexus.planning.engine_plan_models import EngineNextStep, PlanIntent
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_FIXTURE_PKG = _REPO_ROOT / "tests" / "fixtures" / "plugin_packages" / "intergrax_catalog_fixture"
+
+
+def _install_catalog_fixture_package() -> None:
+    import shutil
+
+    uv = shutil.which("uv")
+    if uv is not None:
+        subprocess.check_call(
+            [uv, "pip", "install", "-e", str(_FIXTURE_PKG)],
+            cwd=str(_REPO_ROOT),
+        )
+        return
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "-e", str(_FIXTURE_PKG), "-q"],
+        cwd=str(_REPO_ROOT),
+    )
+
+
+@pytest.fixture(scope="session")
+def catalog_fixture_installed() -> None:
+    """Editable-install catalog entry-point fixture package (Phase P-Ext.0.5)."""
+    _install_catalog_fixture_package()
 from intergrax.runtime.nexus.planning.plan_sources import PlanSpec
 
 @pytest.fixture

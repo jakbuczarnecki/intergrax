@@ -29,7 +29,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 
@@ -126,9 +125,9 @@ def test_resolve_returns_gcp_native_slugs() -> None:
     factory, _ = _credential_factory()
     platform = create_gcp_cloud_platform(**_gcp_config().model_dump(), credential_factory=factory)
 
-    assert platform.resolve("object_storage") == IntegrationSlug.GCS.value
-    assert platform.resolve("message_bus") == IntegrationSlug.PUBSUB.value
-    assert platform.resolve("relational_store") == IntegrationSlug.CLOUD_SQL.value
+    assert platform.resolve("object_storage") == "gcs"
+    assert platform.resolve("message_bus") == "pubsub"
+    assert platform.resolve("relational_store") == "cloud_sql"
     assert platform.resolve("document_store") is None
     assert_cloud_platform(platform)
 
@@ -165,7 +164,7 @@ def test_create_gcp_integration_bundle() -> None:
 
 def test_register_and_resolve_via_profile() -> None:
     register_gcp_integration()
-    profile = IntegrationProfile(cloud_platform=IntegrationSlug.GCP)
+    profile = IntegrationProfile(cloud_platform="gcp")
     factory, _ = _credential_factory()
 
     platform = resolve(
@@ -180,7 +179,7 @@ def test_register_and_resolve_via_profile() -> None:
 
 def test_register_default_integrations_includes_gcp() -> None:
     register_default_integrations()
-    profile = IntegrationProfile(cloud_platform=IntegrationSlug.GCP)
+    profile = IntegrationProfile(cloud_platform="gcp")
     factory, _ = _credential_factory()
 
     platform = resolve(

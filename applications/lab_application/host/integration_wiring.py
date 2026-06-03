@@ -13,9 +13,8 @@ from intergrax.integrations.providers.relational_store.sqlite.bundle import (
     SQLiteIntegrationBundle,
     create_sqlite_integration,
 )
-from intergrax.integrations.registry.bootstrap import register_default_integrations
+from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
@@ -99,7 +98,7 @@ def build_lab_integration_profile(
         update={
             "options": {
                 **profile.options,
-                IntegrationSlug.SQLITE: dict(sqlite_overrides),
+                "sqlite": dict(sqlite_overrides),
             }
         }
     )
@@ -132,7 +131,7 @@ def wire_lab_integrations(
     Set ``harness=True`` for LangSmith/Sentry/PagerDuty vendor harness stack (Phase M.9).
     Set ``otel_enabled=False`` to disable OTEL on the unified lab preset (Phase T-Ops.1).
     """
-    register_default_integrations()
+    bootstrap_application_integration_catalog(integration_preset="full")
 
     sqlite_overrides = _sqlite_config_overrides(
         db_path=db_path,
@@ -176,11 +175,8 @@ def wire_lab_integrations(
     )
     interaction_adapter = create_lab_interaction_adapter(settings)
 
-    default_notify = (
-        profile.notification_channel.value
-        if harness and profile.notification_channel is not None
-        else "log"
-    )
+    harness_notify_slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
+    default_notify = harness_notify_slug if harness and harness_notify_slug is not None else "log"
 
     return LabIntegrationWiring(
         profile=profile,

@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.scaffold.application_names import pascal_case
 from intergrax.scaffold.new_application import create_application
 
@@ -45,6 +46,7 @@ def prepare_scaffold_package(
     apps_dir = str(target.parent)
     if apps_dir not in sys.path:
         sys.path.insert(0, apps_dir)
+    register_default_integrations(override=True)
     purge_scaffold_package(pkg)
     return target, pkg, short
 
@@ -56,9 +58,24 @@ def import_scaffold_modules(pkg: str) -> tuple[ModuleType, ModuleType]:
     return factory_mod, settings_mod
 
 
+def _settings_class(settings_mod: ModuleType, class_name: str) -> type:
+    candidate = settings_mod.__dict__.get(class_name)
+    if not isinstance(candidate, type):
+        raise TypeError(f"Expected settings class {class_name!r} on {settings_mod.__name__}")
+    return candidate
+
+
 def lab_settings_class(settings_mod: ModuleType, short: str) -> type:
-    return getattr(settings_mod, f"{pascal_case(short)}ApplicationSettings")
+    return _settings_class(settings_mod, f"{pascal_case(short)}ApplicationSettings")
 
 
 def product_settings_class(settings_mod: ModuleType, short: str) -> type:
-    return getattr(settings_mod, f"{pascal_case(short)}BackendSettings")
+    return _settings_class(settings_mod, f"{pascal_case(short)}BackendSettings")
+
+
+def factory_callable(factory_mod: ModuleType, short: str, *, product: bool) -> object:
+    name = f"create_{short}_backend_app" if product else f"create_{short}_application"
+    candidate = factory_mod.__dict__.get(name)
+    if candidate is None:
+        raise AttributeError(f"{factory_mod.__name__} has no factory {name!r}")
+    return candidate

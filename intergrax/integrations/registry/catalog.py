@@ -20,9 +20,17 @@ _CATALOG: dict[str, IntegrationEntry] = {}
 
 def register_integration(entry: IntegrationEntry, *, override: bool = False) -> None:
     """Register or replace a provider factory (used by providers and tests)."""
-    if entry.slug in _CATALOG and not override:
-        raise ValueError(f"Integration slug '{entry.slug}' is already registered.")
-    _CATALOG[entry.slug] = entry
+    normalized_slug = entry.slug.strip().lower()
+    if normalized_slug in _CATALOG and not override:
+        raise ValueError(f"Integration slug '{normalized_slug}' is already registered.")
+    _CATALOG[normalized_slug] = IntegrationEntry(
+        slug=normalized_slug,
+        categories=entry.categories,
+        factory=entry.factory,
+        status=entry.status,
+        env_prefix=entry.env_prefix,
+        description=entry.description,
+    )
 
 
 def unregister_integration(slug: str) -> None:

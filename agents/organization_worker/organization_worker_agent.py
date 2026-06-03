@@ -42,7 +42,8 @@ class OrganizationWorkerAgent(Agent):
             ),
             version="1.0.0",
             capabilities=[ORG_VENDOR_REPORT_CAPABILITY],
-            allowed_tools=[],
+            skills=[],
+            extra_tools=[],
             risk_level=AgentRiskLevel.MEDIUM,
             max_steps=3,
         )

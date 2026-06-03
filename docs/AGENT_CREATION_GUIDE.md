@@ -852,19 +852,18 @@ nexus_loop = NexusLoop(
 from intergrax.integrations import (
     IntegrationCategory,
     IntegrationProfile,
-    IntegrationSlug,
     register_default_integrations,
 )
 
 register_default_integrations()
 profile = IntegrationProfile(
-    relational_store=IntegrationSlug.POSTGRESQL,
-    key_value_cache=IntegrationSlug.REDIS,
-    notification_channel=IntegrationSlug.SLACK,
-    interaction_surface=IntegrationSlug.SLACK,
+    relational_store="postgresql",
+    key_value_cache="redis",
+    notification_channel="slack",
+    interaction_surface="slack",
     options={
-        IntegrationSlug.SQLITE: {"data_dir": "build/my_app"},
-        IntegrationSlug.REDIS: {"url": "redis://localhost:6379/0"},
+        "sqlite": {"data_dir": "build/my_app"},
+        "redis": {"url": "redis://localhost:6379/0"},
     },
 )
 
@@ -875,7 +874,7 @@ db_bundle = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
 **Cloud-hosted profile** — platform defaults for object storage, message bus, etc.:
 
 ```python
-profile = IntegrationProfile.with_cloud_platform(IntegrationSlug.AWS)
+profile = IntegrationProfile.with_cloud_platform("aws")
 cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)  # inherits cloud default slug
 ```
 

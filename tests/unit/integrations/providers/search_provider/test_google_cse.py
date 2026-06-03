@@ -23,7 +23,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.websearch.providers.google_cse_provider import GoogleCSEProvider
 from intergrax.websearch.schemas.query_spec import QuerySpec
 from intergrax.websearch.schemas.search_hit import SearchHit
@@ -87,7 +86,7 @@ def test_create_google_cse_search_provider_delegates_to_web_provider(
 
 def test_register_and_resolve_via_profile(mock_web_provider: MagicMock) -> None:
     register_google_cse_integration()
-    profile = IntegrationProfile(search_provider=IntegrationSlug.GOOGLE_CSE)
+    profile = IntegrationProfile(search_provider="google_cse")
 
     provider = resolve(
         IntegrationCategory.SEARCH_PROVIDER,
@@ -104,7 +103,7 @@ def test_register_default_integrations_includes_google_cse(
     mock_web_provider: MagicMock,
 ) -> None:
     register_default_integrations()
-    profile = IntegrationProfile(search_provider=IntegrationSlug.GOOGLE_CSE)
+    profile = IntegrationProfile(search_provider="google_cse")
 
     provider = resolve(
         IntegrationCategory.SEARCH_PROVIDER,

@@ -91,3 +91,6 @@ def register_websearch_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> 
     registry.register(websearch_query_contract(), WebsearchQueryHandler(ctx))
     registry.register(websearch_read_url_contract(), WebsearchReadUrlHandler(ctx))
     registry.register(websearch_fetch_batch_contract(), WebsearchFetchBatchHandler(ctx))
+
+
+WEBSEARCH_QUERY_TOOL_CONTRACT = websearch_query_contract()

@@ -29,7 +29,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 
@@ -185,7 +184,7 @@ def test_create_confluence_integration_bundle() -> None:
 
 def test_register_and_resolve_via_profile() -> None:
     register_confluence_integration()
-    profile = IntegrationProfile(wiki_knowledge=IntegrationSlug.CONFLUENCE)
+    profile = IntegrationProfile(wiki_knowledge="confluence")
     http = _mock_http_client()
 
     wiki = resolve(
@@ -200,7 +199,7 @@ def test_register_and_resolve_via_profile() -> None:
 
 def test_register_default_integrations_includes_confluence() -> None:
     register_default_integrations()
-    profile = IntegrationProfile(wiki_knowledge=IntegrationSlug.CONFLUENCE)
+    profile = IntegrationProfile(wiki_knowledge="confluence")
     http = _mock_http_client()
 
     wiki = resolve(

@@ -22,7 +22,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.runtime.interactions.factory import create_interaction_adapter, resolve_interaction_settings
 from intergrax.runtime.interactions.metadata_keys import INTERACTION_CHANNEL_KEY
 
@@ -62,7 +61,7 @@ def test_create_lab_json_interaction_surface_default() -> None:
 
 def test_register_and_resolve_via_profile(mock_interaction: MagicMock) -> None:
     register_lab_json_integration()
-    profile = IntegrationProfile(interaction_surface=IntegrationSlug.LAB_JSON)
+    profile = IntegrationProfile(interaction_surface="lab_json")
 
     surface = resolve(
         IntegrationCategory.INTERACTION_SURFACE,
@@ -75,7 +74,7 @@ def test_register_and_resolve_via_profile(mock_interaction: MagicMock) -> None:
 
 def test_register_and_resolve_conformance() -> None:
     register_lab_json_integration()
-    profile = IntegrationProfile(interaction_surface=IntegrationSlug.LAB_JSON)
+    profile = IntegrationProfile(interaction_surface="lab_json")
 
     surface = resolve(IntegrationCategory.INTERACTION_SURFACE, profile=profile)
 
@@ -85,7 +84,7 @@ def test_register_and_resolve_conformance() -> None:
 
 def test_register_default_integrations_includes_lab_json() -> None:
     register_default_integrations()
-    profile = IntegrationProfile(interaction_surface=IntegrationSlug.LAB_JSON)
+    profile = IntegrationProfile(interaction_surface="lab_json")
 
     surface = resolve(IntegrationCategory.INTERACTION_SURFACE, profile=profile)
 

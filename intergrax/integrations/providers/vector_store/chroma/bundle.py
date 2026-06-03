@@ -49,7 +49,7 @@ def create_chroma_vector_store(
     store_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
 ) -> ChromaVectorStoreIntegration:
-    """Catalog factory for ``IntegrationSlug.CHROMA`` / ``VECTOR_STORE``."""
+    """Catalog factory for ``"chroma"`` / ``VECTOR_STORE``."""
     return create_chroma_integration(
         vector_store=vector_store,
         store=store,

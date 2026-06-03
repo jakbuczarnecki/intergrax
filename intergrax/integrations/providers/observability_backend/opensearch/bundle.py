@@ -60,7 +60,7 @@ def create_opensearch_observability_backend(
     http_client_factory: Optional[Callable[[OpenSearchIntegrationConfig], Any]] = None,
     **config_overrides: object,
 ) -> OpenSearchObservabilityBackend:
-    """Catalog factory for ``IntegrationSlug.OPENSEARCH``."""
+    """Catalog factory for ``"opensearch"``."""
     return create_opensearch_integration(
         observability_backend=observability_backend,
         client=client,

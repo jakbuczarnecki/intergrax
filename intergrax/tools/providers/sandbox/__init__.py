@@ -1,3 +1,4 @@
-from intergrax.tools.providers.sandbox.register import register_sandbox_tool_bundle
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
 
-__all__ = ["register_sandbox_tool_bundle"]
+"""Sandbox tool bundle."""

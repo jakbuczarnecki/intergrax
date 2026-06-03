@@ -31,10 +31,20 @@ class LabApplicationSettings:
     otel_enabled: bool = True
     strict_harness: bool = False
 
+    @property
+    def requires_harness_api_key(self) -> bool:
+        """Staging/production and strict harness profiles must configure API key (W-OPS.7)."""
+        return self.strict_harness or self.environment != ApiEnvironment.DEV
+
     @classmethod
     def from_env(cls) -> LabApplicationSettings:
         env_raw = (os.getenv("INTERGRAX_ENV") or "dev").strip().lower()
-        environment = ApiEnvironment.PROD if env_raw == "prod" else ApiEnvironment.DEV
+        if env_raw == "prod":
+            environment = ApiEnvironment.PROD
+        elif env_raw in {"stage", "staging"}:
+            environment = ApiEnvironment.STAGE
+        else:
+            environment = ApiEnvironment.DEV
         include_mocks = (os.getenv("LAB_INCLUDE_MOCK_AGENTS") or "true").strip().lower() not in {
             "0",
             "false",

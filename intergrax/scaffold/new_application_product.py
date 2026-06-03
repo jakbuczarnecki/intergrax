@@ -44,7 +44,6 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
 
         from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
         from intergrax.integrations.registry.profile import IntegrationProfile
-        from intergrax.integrations.registry.slugs import IntegrationSlug
         {imports}
         {factory_imports}
 
@@ -56,11 +55,7 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
             raw = os.environ.get("INTERGRAX_INTEGRATION_PROFILE_JSON", "").strip()
             if raw:
                 return IntegrationProfile.model_validate_json(raw)
-            return IntegrationProfile(
-                relational_store=IntegrationSlug.SQLITE,
-                vector_store=IntegrationSlug.INMEMORY,
-                document_parser=IntegrationSlug.DOCLING,
-            )
+            return IntegrationProfile.legal_product()
 
 
         def build_{short}_manifest() -> ApplicationManifest:
@@ -322,13 +317,14 @@ def wiring_py(names: ScaffoldApplicationNames) -> str:
 
         from __future__ import annotations
 
+        from intergrax.applications._shared.environment_wiring import wire_application_environment
         from intergrax.applications._shared.wiring import build_application_registry
-        from intergrax.applications.contracts.build_context import ApplicationBuildContext
+        from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
         from intergrax.applications.contracts.manifest import ApplicationManifest
         from intergrax.runtime.registry.agent_registry import AgentRegistry
         from {pkg}.host.agent_builders import {names.builders_const}
+        from {pkg}.host.environment_profile import build_{short}_environment_profile
         from {pkg}.host.settings import {pascal}BackendSettings
-        from {pkg}.host.tool_wiring import wire_{short}_tools
         from {pkg}.manifest import APPLICATION_MANIFEST
 
 
@@ -345,17 +341,31 @@ def wiring_py(names: ScaffoldApplicationNames) -> str:
         ) -> AgentRegistry:
             settings = settings or {pascal}BackendSettings.from_env()
             manifest = build_{short}_manifest(settings)
-            tool_wiring = wire_{short}_tools(
-                integration_profile=getattr(manifest, "integration_profile", None),
-            )
-            ctx = ApplicationBuildContext.for_manifest(
+            env = manifest.environment or build_{short}_environment_profile(settings)
+            if manifest.environment is None:
+                manifest = manifest.model_copy(update={{"environment": env}})
+            env_wiring = wire_application_environment(manifest, env, settings=settings)
+            return build_application_registry(
                 manifest,
-                settings=settings,
-                tool_profile=tool_wiring.profile,
-                tool_wiring_context=tool_wiring.wiring_context,
+                env_wiring.build_context,
+                builders={names.builders_const},
             )
-            return build_application_registry(manifest, ctx, builders={names.builders_const})
         '''
+    )
+
+
+def environment_profile_py(names: ScaffoldApplicationNames) -> str:
+    from intergrax.scaffold.new_application import _environment_profile_py
+
+    body = _environment_profile_py(names)
+    return (
+        body.replace(f"{names.pascal}ApplicationSettings", f"{names.pascal}BackendSettings")
+        .replace("lab_defaults", "product_defaults")
+        .replace(f'profile_id="{names.short}.scaffold"', f'profile_id="{names.short}.product"')
+        .replace(
+            'ApplicationEnvironmentProfile.product_defaults(profile_id=',
+            'ApplicationEnvironmentProfile.product_defaults(skill_bundles=["harness"], profile_id=',
+        )
     )
 
 
@@ -411,6 +421,7 @@ def integration_wiring_py(names: ScaffoldApplicationNames) -> str:
 
         from pathlib import Path
 
+        from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
         from intergrax.integrations.registry.profile import IntegrationProfile
         from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores, wire_nexus_observability
 
@@ -421,6 +432,7 @@ def integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             runtime_events_db_path: Path | None = None,
             integration_profile: IntegrationProfile | None = None,
         ) -> NexusObservabilityStores:
+            bootstrap_application_integration_catalog(integration_preset="full")
             return wire_nexus_observability(
                 trace_db_path=trace_db_path,
                 runtime_events_db_path=runtime_events_db_path,

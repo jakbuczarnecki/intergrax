@@ -60,7 +60,7 @@ def create_pagerduty_notification_channel(
     http_client_factory: Optional[Callable[[PagerDutyIntegrationConfig], Any]] = None,
     **config_overrides: object,
 ) -> PagerDutyNotificationChannel:
-    """Catalog factory for ``IntegrationSlug.PAGERDUTY``."""
+    """Catalog factory for ``"pagerduty"``."""
     return create_pagerduty_integration(
         notification_channel=notification_channel,
         client=client,

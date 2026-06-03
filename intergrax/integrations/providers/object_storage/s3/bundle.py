@@ -67,7 +67,7 @@ def create_s3_object_storage(
     s3_client_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
 ) -> S3ObjectStorage:
-    """Catalog factory for ``IntegrationSlug.S3`` / ``OBJECT_STORAGE``."""
+    """Catalog factory for ``"s3"`` / ``OBJECT_STORAGE``."""
     return create_s3_integration(
         object_storage=object_storage,
         s3_client=s3_client,

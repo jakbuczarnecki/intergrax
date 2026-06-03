@@ -24,6 +24,7 @@ from poc_template_application.host.integration_wiring import wire_poc_template_i
 from poc_template_application.host.settings import PocTemplateApplicationSettings
 from poc_template_application.host.tool_wiring import wire_poc_template_tools
 from intergrax.applications._shared.fastapi_mcp import (
+    apply_lifespans,
     couple_fastapi_with_mcp,
     make_scheduler_lifespan,
 )
@@ -120,13 +121,6 @@ def create_poc_template_application(
             extra_lifespans=extra_lifespans,
         )
     elif scheduler is not None:
-
-        @app.on_event("startup")
-        async def _start_scheduler() -> None:
-            await scheduler.start()
-
-        @app.on_event("shutdown")
-        async def _stop_scheduler() -> None:
-            await scheduler.stop()
+        apply_lifespans(app, make_scheduler_lifespan(scheduler))
     attach_plugin_shutdown(app, platform.shutdown_callbacks)
     return app

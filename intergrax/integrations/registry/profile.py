@@ -1,86 +1,130 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Declarative Tier-3 integration selection (Phase M.3)."""
+"""Declarative Tier-3 integration selection (Phase M.3) — open catalog manifests."""
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Mapping, Optional
+from typing import Any, Callable, ClassVar, Mapping, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.integrations.contracts.base import (
     PROFILE_FIELD_BY_CATEGORY,
     IntegrationCategory,
 )
-from intergrax.integrations.registry.slugs import (
-    CLOUD_PLATFORM_DEFAULTS,
-    FIELD_SLUGS,
-    IntegrationSlug,
-    SlugInput,
-    validate_field_slug,
+from intergrax.integrations.core.binding import IntegrationBinding
+from intergrax.integrations.core.manifest import IntegrationManifest
+from intergrax.integrations.core.ref import IntegrationRef, validate_integration_ref
+from intergrax.integrations.registry.catalog_manifests import (
+    AWS,
+    AZURE,
+    COHERE_RERANK,
+    DOCLING,
+    GCP,
+    GOOGLE_CSE,
+    INMEMORY,
+    JINA_RERANK,
+    LAB_JSON,
+    LANGSMITH,
+    LOG,
+    OTEL,
+    PAGERDUTY,
+    QDRANT,
+    REDIS,
+    SENTRY,
+    SQLITE,
 )
+from intergrax.integrations.core.defaults import CLOUD_PLATFORM_DEFAULTS
 
 
 class IntegrationProfile(BaseModel):
     """
     Typed provider selection per category for a Tier-3 application.
 
-    Use ``IntegrationSlug`` and ``IntegrationCategory`` — not raw strings — in application code::
+    Each slot accepts:
+
+    - :class:`~intergrax.integrations.core.manifest.IntegrationManifest` (catalog manifest)
+    - :class:`~intergrax.integrations.core.plugin.IntegrationPlugin` subclass (factory via type)
+    - pre-built integration **instance** (no catalog factory)
+  - slug ``str`` / env (validated against registered catalog)
+
+    Example::
 
         profile = IntegrationProfile(
-            relational_store=IntegrationSlug.SQLITE,
-            key_value_cache=IntegrationSlug.REDIS,
-            options={IntegrationSlug.SQLITE: {"data_dir": "build/lab"}},
+            relational_store=SQLITE,
+            key_value_cache=REDIS,
+            options={SQLITE: {"data_dir": "build/lab"}},
         )
         store = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
-
-    Env/YAML may still supply strings; they are coerced to ``IntegrationSlug``.
     """
 
-    model_config = ConfigDict(extra="forbid", use_enum_values=False)
+    model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
-    _SLUG_FIELDS: ClassVar[tuple[str, ...]] = tuple(FIELD_SLUGS.keys())
+    _SLUG_FIELDS: ClassVar[tuple[str, ...]] = tuple(PROFILE_FIELD_BY_CATEGORY.values())
 
-    cloud_platform: IntegrationSlug | None = None
-    relational_store: IntegrationSlug | None = None
-    document_store: IntegrationSlug | None = None
-    key_value_cache: IntegrationSlug | None = None
-    message_bus: IntegrationSlug | None = None
-    object_storage: IntegrationSlug | None = None
-    vector_store: IntegrationSlug | None = None
-    search_provider: IntegrationSlug | None = None
-    notification_channel: IntegrationSlug | None = None
-    interaction_surface: IntegrationSlug | None = None
-    collaboration_suite: IntegrationSlug | None = None
-    issue_tracker: IntegrationSlug | None = None
-    wiki_knowledge: IntegrationSlug | None = None
-    observability_backend: IntegrationSlug | None = None
-    browser_automation: IntegrationSlug | None = None
-    secrets_store: IntegrationSlug | None = None
-    graph_store: IntegrationSlug | None = None
-    document_parser: IntegrationSlug | None = None
-    rerank_provider: IntegrationSlug | None = None
+    _BINDING_ACCESSORS: ClassVar[
+        dict[str, Callable[["IntegrationProfile"], IntegrationBinding | None]]
+    ] = {}
 
-    options: dict[IntegrationSlug, dict[str, Any]] = Field(default_factory=dict)
+    cloud_platform: IntegrationBinding | None = None
+    relational_store: IntegrationBinding | None = None
+    document_store: IntegrationBinding | None = None
+    key_value_cache: IntegrationBinding | None = None
+    message_bus: IntegrationBinding | None = None
+    object_storage: IntegrationBinding | None = None
+    vector_store: IntegrationBinding | None = None
+    search_provider: IntegrationBinding | None = None
+    notification_channel: IntegrationBinding | None = None
+    interaction_surface: IntegrationBinding | None = None
+    collaboration_suite: IntegrationBinding | None = None
+    issue_tracker: IntegrationBinding | None = None
+    wiki_knowledge: IntegrationBinding | None = None
+    observability_backend: IntegrationBinding | None = None
+    browser_automation: IntegrationBinding | None = None
+    secrets_store: IntegrationBinding | None = None
+    graph_store: IntegrationBinding | None = None
+    document_parser: IntegrationBinding | None = None
+    rerank_provider: IntegrationBinding | None = None
 
-    @field_validator(*_SLUG_FIELDS, mode="before")
+    options: dict[str, dict[str, Any]] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
     @classmethod
-    def _coerce_and_validate_slug(cls, value: SlugInput | None, info) -> IntegrationSlug | None:
-        if value is None or value == "":
-            return None
-        field_name = info.field_name
-        assert field_name is not None
-        return validate_field_slug(field_name, value)
+    def _coerce_integration_bindings(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        normalized = dict(data)
+        for field_name in cls._SLUG_FIELDS:
+            if field_name in normalized:
+                normalized[field_name] = validate_integration_ref(
+                    field_name,
+                    normalized[field_name],
+                )
+        return normalized
 
     @field_validator("options", mode="before")
     @classmethod
-    def _coerce_option_keys(cls, value: dict[Any, Any] | None) -> dict[IntegrationSlug, dict[str, Any]]:
+    def _coerce_option_keys(cls, value: dict[Any, Any] | None) -> dict[str, dict[str, Any]]:
         if not value:
             return {}
-        from intergrax.integrations.registry.slugs import coerce_slug
+        from intergrax.integrations.core.ref import normalize_integration_binding
 
-        return {coerce_slug(key): dict(opts) for key, opts in value.items()}
+        normalized: dict[str, dict[str, Any]] = {}
+        for key, opts in value.items():
+            binding = normalize_integration_binding(key)
+            slug = binding.resolved_slug() if binding is not None else str(key).strip().lower()
+            if slug:
+                normalized[slug] = dict(opts)
+        return normalized
+
+    def binding_for_field(self, field_name: str) -> IntegrationBinding | None:
+        if field_name not in self._SLUG_FIELDS:
+            raise ValueError(f"Unknown integration profile field: {field_name!r}")
+        accessor = self._BINDING_ACCESSORS.get(field_name)
+        if accessor is None:
+            raise ValueError(f"No binding accessor registered for field: {field_name!r}")
+        return accessor(self)
 
     def slug_for_category(self, category: str | IntegrationCategory) -> str | None:
         if isinstance(category, IntegrationCategory):
@@ -92,26 +136,47 @@ class IntegrationProfile(BaseModel):
         if field_name is None or field_name not in self._SLUG_FIELDS:
             return None
 
-        explicit = self.model_dump().get(field_name)
-        if explicit is not None:
-            slug = explicit if isinstance(explicit, IntegrationSlug) else IntegrationSlug(explicit)
-            return slug.value
+        binding = self.binding_for_field(field_name)
+        if binding is not None:
+            if binding.instance is not None:
+                return None
+            slug = binding.resolved_slug()
+            if slug:
+                return slug
 
         if self.cloud_platform is None:
             return None
 
-        defaults = CLOUD_PLATFORM_DEFAULTS.get(self.cloud_platform, {})
+        platform_slug = self.cloud_platform.resolved_slug()
+        if not platform_slug:
+            return None
+
+        defaults = CLOUD_PLATFORM_DEFAULTS.get(platform_slug, {})
         try:
             cat_enum = IntegrationCategory(category_key)
         except ValueError:
             return None
-        default_slug = defaults.get(cat_enum)
-        return default_slug.value if default_slug is not None else None
+        return defaults.get(cat_enum)
 
-    def options_for_slug(self, slug: SlugInput) -> dict[str, Any]:
-        from intergrax.integrations.registry.slugs import coerce_slug
+    def options_for_slug(self, slug: IntegrationRef) -> dict[str, Any]:
+        from intergrax.integrations.core.ref import normalize_integration_binding
 
-        return dict(self.options.get(coerce_slug(slug), {}))
+        binding = normalize_integration_binding(slug)
+        if binding is None:
+            return {}
+        key = binding.resolved_slug()
+        if not key:
+            return {}
+        return dict(self.options.get(key, {}))
+
+    def instance_for_category(self, category: IntegrationCategory) -> Any | None:
+        field_name = PROFILE_FIELD_BY_CATEGORY.get(category.value)
+        if field_name is None:
+            return None
+        binding = self.binding_for_field(field_name)
+        if binding is None:
+            return None
+        return binding.instance
 
     def resolve(
         self,
@@ -119,45 +184,35 @@ class IntegrationProfile(BaseModel):
         *,
         config: Optional[Mapping[str, Any]] = None,
     ) -> Any:
-        """
-        Instantiate the provider for ``category`` using this profile.
-
-        Application code MUST pass ``IntegrationCategory`` — not category name strings.
-        """
+        """Instantiate the provider for ``category`` using this profile."""
         from intergrax.integrations.registry.factory import resolve_from_profile
 
         return resolve_from_profile(self, category, config=config)
 
     @classmethod
     def harness_lab(cls) -> IntegrationProfile:
-        """Lab harness stack — LangSmith traces, Sentry errors, PagerDuty escalation."""
         return cls(
-            relational_store=IntegrationSlug.SQLITE,
-            notification_channel=IntegrationSlug.PAGERDUTY,
-            observability_backend=IntegrationSlug.SENTRY,
-            interaction_surface=IntegrationSlug.LAB_JSON,
+            relational_store=SQLITE,
+            notification_channel=PAGERDUTY,
+            observability_backend=SENTRY,
+            interaction_surface=LAB_JSON,
             options={
-                IntegrationSlug.LANGSMITH: {},
-                IntegrationSlug.SENTRY: {},
+                LANGSMITH.slug: {},
+                SENTRY.slug: {},
             },
         )
 
     @classmethod
     def lab(cls) -> IntegrationProfile:
-        """Laboratory defaults — no external vendors required."""
         return cls(
-            relational_store=IntegrationSlug.SQLITE,
-            notification_channel=IntegrationSlug.LOG,
-            interaction_surface=IntegrationSlug.LAB_JSON,
-            document_parser=IntegrationSlug.DOCLING,
+            relational_store=SQLITE,
+            notification_channel=LOG,
+            interaction_surface=LAB_JSON,
+            document_parser=DOCLING,
         )
 
     @classmethod
     def harness_environment(cls) -> IntegrationProfile:
-        """
-        Phase S lab harness stack — sqlite persistence, log notifications, lab JSON intake,
-        OTEL observability facade (noop exporter unless ``INTERGRAX_OTEL_ENDPOINT`` targets a collector).
-        """
         return cls.lab_harness_preset(enable_otel=True)
 
     @classmethod
@@ -168,55 +223,68 @@ class IntegrationProfile(BaseModel):
         enable_redis: bool = False,
         enable_qdrant: bool = False,
     ) -> IntegrationProfile:
-        """
-        Unified lab harness preset (Phase T-Ops.1).
-
-        Defaults: sqlite + log + lab_json + docling; OTEL on unless ``enable_otel=False``.
-        Optional redis/qdrant for distributed cache and production RAG vector backend.
-        """
-        options: dict[IntegrationSlug, dict[str, Any]] = {}
+        options: dict[str, dict[str, Any]] = {}
         if enable_otel:
-            options[IntegrationSlug.OTEL] = {}
+            options[OTEL.slug] = {}
 
         return cls(
-            relational_store=IntegrationSlug.SQLITE,
-            notification_channel=IntegrationSlug.LOG,
-            interaction_surface=IntegrationSlug.LAB_JSON,
-            document_parser=IntegrationSlug.DOCLING,
-            observability_backend=IntegrationSlug.OTEL if enable_otel else None,
-            key_value_cache=IntegrationSlug.REDIS if enable_redis else None,
-            vector_store=IntegrationSlug.QDRANT if enable_qdrant else None,
+            relational_store=SQLITE,
+            notification_channel=LOG,
+            interaction_surface=LAB_JSON,
+            document_parser=DOCLING,
+            observability_backend=OTEL if enable_otel else None,
+            key_value_cache=REDIS if enable_redis else None,
+            vector_store=QDRANT if enable_qdrant else None,
             options=options,
         )
 
     @classmethod
     def legal_product(cls) -> IntegrationProfile:
-        """Legal Tier-3 defaults — SQLite observability, in-memory vectors, Docling + Cohere rerank."""
         return cls(
-            relational_store=IntegrationSlug.SQLITE,
-            vector_store=IntegrationSlug.INMEMORY,
-            document_parser=IntegrationSlug.DOCLING,
-            rerank_provider=IntegrationSlug.COHERE_RERANK,
+            relational_store=SQLITE,
+            vector_store=INMEMORY,
+            document_parser=DOCLING,
+            rerank_provider=COHERE_RERANK,
         )
 
     @classmethod
     def research_product(cls) -> IntegrationProfile:
-        """Research Tier-3 defaults — SQLite, in-memory vectors, Docling + web search rerank stack."""
         return cls(
-            relational_store=IntegrationSlug.SQLITE,
-            vector_store=IntegrationSlug.INMEMORY,
-            document_parser=IntegrationSlug.DOCLING,
-            search_provider=IntegrationSlug.GOOGLE_CSE,
-            rerank_provider=IntegrationSlug.JINA_RERANK,
+            relational_store=SQLITE,
+            vector_store=INMEMORY,
+            document_parser=DOCLING,
+            search_provider=GOOGLE_CSE,
+            rerank_provider=JINA_RERANK,
         )
 
     @classmethod
-    def with_cloud_platform(cls, platform: IntegrationSlug) -> IntegrationProfile:
-        """Select a cloud facade; unset infra categories inherit platform defaults on resolve."""
-        validate_field_slug("cloud_platform", platform)
-        return cls(cloud_platform=platform)
+    def with_cloud_platform(cls, platform: IntegrationRef) -> IntegrationProfile:
+        binding = validate_integration_ref("cloud_platform", platform)
+        return cls(cloud_platform=binding)
 
 
 def default_lab_profile() -> IntegrationProfile:
-    """Alias for ``IntegrationProfile.lab()``."""
     return IntegrationProfile.lab()
+
+
+IntegrationProfile._BINDING_ACCESSORS = {
+    "cloud_platform": lambda profile: profile.cloud_platform,
+    "relational_store": lambda profile: profile.relational_store,
+    "document_store": lambda profile: profile.document_store,
+    "key_value_cache": lambda profile: profile.key_value_cache,
+    "message_bus": lambda profile: profile.message_bus,
+    "object_storage": lambda profile: profile.object_storage,
+    "vector_store": lambda profile: profile.vector_store,
+    "search_provider": lambda profile: profile.search_provider,
+    "notification_channel": lambda profile: profile.notification_channel,
+    "interaction_surface": lambda profile: profile.interaction_surface,
+    "collaboration_suite": lambda profile: profile.collaboration_suite,
+    "issue_tracker": lambda profile: profile.issue_tracker,
+    "wiki_knowledge": lambda profile: profile.wiki_knowledge,
+    "observability_backend": lambda profile: profile.observability_backend,
+    "browser_automation": lambda profile: profile.browser_automation,
+    "secrets_store": lambda profile: profile.secrets_store,
+    "graph_store": lambda profile: profile.graph_store,
+    "document_parser": lambda profile: profile.document_parser,
+    "rerank_provider": lambda profile: profile.rerank_provider,
+}

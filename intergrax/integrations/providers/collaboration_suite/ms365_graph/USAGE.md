@@ -12,10 +12,9 @@
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 register_default_integrations()
-profile = IntegrationProfile(collaboration_suite=IntegrationSlug.MS365_GRAPH)
+profile = IntegrationProfile(collaboration_suite="ms365_graph")
 backend = profile.resolve(IntegrationCategory.COLLABORATION_SUITE)
 ```
 

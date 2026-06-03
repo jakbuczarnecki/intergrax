@@ -1,18 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.tools.providers.observability.bundle import OBSERVABILITY_BUNDLE_ID, register_observability_tools
-from intergrax.tools.registry.catalog import ToolBundleEntry, ToolBundleStatus, register_tool_bundle
+from __future__ import annotations
+
+from intergrax.tools.registry.plugin_register import register_tool_plugin
+from intergrax.tools.registry.shipped_plugins import ObservabilityToolPlugin
 
 
 def register_observability_tool_bundle(*, override: bool = False) -> None:
-    register_tool_bundle(
-        ToolBundleEntry(
-            bundle_id=OBSERVABILITY_BUNDLE_ID,
-            tool_ids=("metrics.query_instant", "logs.search", "observability.query_traces", "errors.capture"),
-            register=register_observability_tools,
-            status=ToolBundleStatus.BETA,
-            description="Metrics and log search tools.",
-        ),
-        override=override,
-    )
+    register_tool_plugin(ObservabilityToolPlugin, override=override)

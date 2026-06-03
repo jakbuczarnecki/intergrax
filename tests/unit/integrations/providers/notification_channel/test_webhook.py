@@ -21,7 +21,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 
@@ -61,7 +60,7 @@ def test_create_webhook_notification_channel_injects_adapter(mock_notification: 
 
 def test_register_and_resolve_via_profile(mock_notification: MagicMock) -> None:
     register_webhook_integration()
-    profile = IntegrationProfile(notification_channel=IntegrationSlug.WEBHOOK)
+    profile = IntegrationProfile(notification_channel="webhook")
 
     channel = resolve(
         IntegrationCategory.NOTIFICATION_CHANNEL,
@@ -75,7 +74,7 @@ def test_register_and_resolve_via_profile(mock_notification: MagicMock) -> None:
 
 def test_register_default_integrations_includes_webhook(mock_notification: MagicMock) -> None:
     register_default_integrations()
-    profile = IntegrationProfile(notification_channel=IntegrationSlug.WEBHOOK)
+    profile = IntegrationProfile(notification_channel="webhook")
 
     channel = resolve(
         IntegrationCategory.NOTIFICATION_CHANNEL,

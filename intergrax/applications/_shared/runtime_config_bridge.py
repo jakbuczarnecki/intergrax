@@ -1,10 +1,21 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Bridge Tier-3 :class:`RuntimePolicyBundle` into Nexus :class:`RuntimeConfig` (Phase R-Policy)."""
+"""Bridge Tier-3 environment into Nexus RuntimeConfig (Phase H-APP.1.5)."""
 
 from __future__ import annotations
 
+from intergrax.applications._shared.lab_harness_context import LabHarnessContext
+from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.execution_mode import runtime_policies_for_execution_mode
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
+from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 
@@ -25,3 +36,78 @@ def apply_policy_bundle_to_runtime_config(
         if isinstance(bundle.tool_access, ToolScopePolicy):
             config.tool_scope_policy = bundle.tool_access
     return config
+
+
+def materialize_runtime_config(
+    request: RuntimeRequest,
+    harness_ctx: LabHarnessContext | ApplicationBuildContext,
+    env: ApplicationEnvironmentProfile,
+    *,
+    llm_adapter: LLMAdapter | None = None,
+    pipeline: RuntimePipeline | None = None,
+) -> RuntimeConfig:
+    """
+    Map ``ApplicationEnvironmentProfile`` → ``RuntimeConfig`` (H-APP.1.5).
+
+    Replaces scattered ``build_lab_agent_runtime_config`` call sites over time.
+    """
+    ctx_profile = env.context_profile
+    trace_path: str | None = None
+    strict = False
+    policy_bundle: RuntimePolicyBundle | None = None
+    modality_profile = env.modality_profile
+    tool_wiring_context = None
+
+    if isinstance(harness_ctx, LabHarnessContext):
+        strict = harness_ctx.strict_harness
+        if harness_ctx.trace_db_path is not None:
+            trace_path = str(harness_ctx.trace_db_path)
+        policy_bundle = harness_ctx.policy_bundle
+        if harness_ctx.modality_profile is not None:
+            modality_profile = harness_ctx.modality_profile
+        tool_wiring_context = harness_ctx.tool_wiring_context
+    elif isinstance(harness_ctx, ApplicationBuildContext):
+        strict = harness_ctx.strict_harness
+        if harness_ctx.trace_db_path is not None:
+            trace_path = str(harness_ctx.trace_db_path)
+        policy_bundle = harness_ctx.policy_bundle
+        tool_wiring_context = harness_ctx.tool_wiring_context
+
+    resolved_llm = resolve_llm_adapter(env, agent_override=llm_adapter)
+
+    config = RuntimeConfig(
+        llm_adapter=resolved_llm,
+        enable_rag=ctx_profile.enable_rag,
+        enable_websearch=ctx_profile.enable_websearch,
+        production_mode=strict or env.execution_mode.value == "strict",
+        tenant_id=request.tenant_id,
+        trace_db_path=trace_path,
+        modality_profile=modality_profile,
+        tool_wiring_context=tool_wiring_context,
+        runtime_policies=runtime_policies_for_execution_mode(env.execution_mode),
+    )
+    if pipeline is not None:
+        config.pipeline = pipeline
+    return apply_policy_bundle_to_runtime_config(config, policy_bundle)
+
+
+def build_runtime_context_from_environment(
+    request: RuntimeRequest,
+    harness_ctx: LabHarnessContext | ApplicationBuildContext,
+    env: ApplicationEnvironmentProfile,
+    *,
+    llm_adapter: LLMAdapter | None = None,
+    pipeline: RuntimePipeline | None = None,
+) -> RuntimeContext:
+    """Build ``RuntimeContext`` from environment profile."""
+    config = materialize_runtime_config(
+        request,
+        harness_ctx,
+        env,
+        llm_adapter=llm_adapter,
+        pipeline=pipeline,
+    )
+    return RuntimeContext.build(
+        config=config,
+        session_manager=SessionManager(storage=InMemorySessionStorage()),
+    )

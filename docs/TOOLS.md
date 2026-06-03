@@ -10,6 +10,7 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 |----------|---------|
 | Phase **M-RAG** | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) — RAG engine phases M-RAG.1–M-RAG.17 |
 | RAG stack canon | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) — Tier-0 retrieval architecture |
+| [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) | **External tool plugins** — `ToolPlugin`, entry points, MCP export |
 | [intergrax/tools/USAGE.md](../intergrax/tools/USAGE.md) | **Operational guide** — wire tools in Tier-3 apps and invoke from agents |
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.6–§7.1.7, §22 | Architecture canon — Tool Library, unified tool model |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O | Phase status, backlog, delivery workflow |
@@ -26,7 +27,8 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 | **LLM-first contracts** | Every tool has `tool_id`, `description`, Pydantic `input_schema` / `output_schema` — optimized for model tool selection and MCP export. |
 | **Compose integrations** | Handlers call `IssueTracker`, `SearchProvider`, RAG managers, etc. — never vendor SDKs. |
 | **Single execution path** | All invocations route through `ToolRuntime` → `RuntimeToolInvoker` (trace, policy, idempotency). |
-| **Explicit registration** | Tier-3 passes `ToolProvider` modules + `ToolWiringContext`; no runtime discovery from agent code. |
+| **Plugin-native catalog** | Shipped and external bundles implement `ToolPlugin`; register via `register_tool_plugin()` or entry point `intergrax.tools`. Scaffold: `python -m intergrax.scaffold new-tool-bundle <bundle_id>`. |
+| **Explicit registration** | Tier-3 calls `bootstrap_catalogs()` then `ToolProfile` + `ToolWiringContext`; agents never self-register tools. |
 | **Unified model** | Platform capabilities (RAG, web search, Jira, sandbox) are **tools** — not parallel boolean flags (§7.1.7). |
 | **Dual export** | Same `ToolContract` → OpenAI function schema, MCP tool, and `ToolRequest.tool_name`. |
 
@@ -64,7 +66,7 @@ Tier-3 application (tool_wiring.py)
 ToolProfile(enabled=[...], enabled_bundles=[...])
         │
         ▼
-register_default_tools()  ──►  build_registry_from_profile(profile, ctx)
+bootstrap_catalogs()  ──►  register_default_tools()  ──►  build_registry_from_profile(profile, ctx)
         │
         ▼
 ToolRegistry  ──►  RuntimeToolInvoker  ──►  Agent / ToolsAgent / MCP
@@ -84,7 +86,7 @@ from intergrax.integrations import IntegrationProfile, register_default_integrat
 register_default_integrations()
 register_default_tools()
 
-profile = IntegrationProfile(issue_tracker=IntegrationSlug.JIRA)
+profile = IntegrationProfile(issue_tracker="jira")
 ctx = ToolWiringContext.from_integration_profile(profile)
 
 registry = build_registry_from_profile(

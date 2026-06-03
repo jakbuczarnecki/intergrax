@@ -56,9 +56,12 @@ class ToolWiringContext:
 
         Categories without a configured slug are skipped (``None``).
         """
-        from intergrax.integrations.contracts.base import IntegrationCategory
+        from intergrax.integrations.contracts.base import (
+            IntegrationCategory,
+            UnknownIntegrationError,
+        )
+        from intergrax.integrations.registry.catalog import get_entry
         from intergrax.integrations.registry.factory import resolve
-        from intergrax.integrations.registry.slugs import FIELD_SLUGS
 
         def _optional(category: IntegrationCategory) -> Any | None:
             slug = profile.slug_for_category(category)
@@ -71,15 +74,22 @@ class ToolWiringContext:
 
         primary_obs = _optional(IntegrationCategory.OBSERVABILITY_BACKEND)
         obs_backends: dict[str, Any] = {}
-        if profile.observability_backend is not None and primary_obs is not None:
-            obs_backends[profile.observability_backend.value] = primary_obs
+        primary_binding = profile.binding_for_field("observability_backend")
+        if primary_binding is not None and primary_obs is not None:
+            primary_slug = primary_binding.resolved_slug()
+            if primary_slug:
+                obs_backends[primary_slug] = primary_obs
         for slug in profile.options:
-            if slug not in FIELD_SLUGS["observability_backend"]:
+            try:
+                entry = get_entry(slug)
+            except UnknownIntegrationError:
                 continue
-            if slug.value in obs_backends:
+            if IntegrationCategory.OBSERVABILITY_BACKEND not in entry.categories:
+                continue
+            if slug in obs_backends:
                 continue
             try:
-                obs_backends[slug.value] = resolve(
+                obs_backends[slug] = resolve(
                     IntegrationCategory.OBSERVABILITY_BACKEND,
                     slug=slug,
                     profile=profile,

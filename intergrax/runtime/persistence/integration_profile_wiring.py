@@ -19,7 +19,6 @@ from intergrax.integrations.providers.relational_store.sqlite.bundle import (
     create_sqlite_integration,
 )
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 
 def sqlite_bundle_for_profile(
@@ -29,9 +28,9 @@ def sqlite_bundle_for_profile(
     **config_overrides: object,
 ) -> Optional[SQLiteIntegrationBundle]:
     slug = profile.slug_for_category(IntegrationCategory.RELATIONAL_STORE)
-    if slug != IntegrationSlug.SQLITE.value:
+    if slug != "sqlite":
         return None
-    opts = dict(profile.options_for_slug(IntegrationSlug.SQLITE))
+    opts = dict(profile.options_for_slug("sqlite"))
     opts.update(config_overrides)
     return create_sqlite_integration(data_dir=data_dir, **opts)
 

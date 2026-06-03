@@ -14,9 +14,9 @@ from intergrax.integrations.contracts.base import (
     normalize_category,
 )
 from intergrax.integrations.providers.cloud_platform.azure.config import AZURE_MANAGEMENT_SCOPE, AzureIntegrationConfig
-from intergrax.integrations.registry.slugs import CLOUD_PLATFORM_DEFAULTS, IntegrationSlug
+from intergrax.integrations.registry.slugs import CLOUD_PLATFORM_DEFAULTS
 
-_AZURE_DEFAULTS = CLOUD_PLATFORM_DEFAULTS[IntegrationSlug.AZURE]
+_AZURE_DEFAULTS = CLOUD_PLATFORM_DEFAULTS["azure"]
 
 
 class AzureCloudPlatform:
@@ -26,7 +26,7 @@ class AzureCloudPlatform:
     Instantiate via ``create_azure_cloud_platform()`` — not from agent code.
     """
 
-    slug = IntegrationSlug.AZURE.value
+    slug = "azure"
 
     def __init__(self, config: AzureIntegrationConfig, credential: Any) -> None:
         self._config = config
@@ -52,7 +52,7 @@ class AzureCloudPlatform:
         except UnknownIntegrationCategoryError:
             return None
         slug = _AZURE_DEFAULTS.get(normalized)
-        return slug.value if slug is not None else None
+        return slug if slug is not None else None
 
     def health(self) -> HealthStatus:
         try:
@@ -67,4 +67,4 @@ class AzureCloudPlatform:
 
     def default_slug_for(self, category: IntegrationCategory) -> Optional[str]:
         slug = _AZURE_DEFAULTS.get(category)
-        return slug.value if slug is not None else None
+        return slug if slug is not None else None

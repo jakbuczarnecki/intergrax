@@ -51,7 +51,7 @@ class AgentRegistry:
         if requires_uaep:
             assert_uaep_reference_agent(agent)
         meta = contract or agent.get_contract()
-        if meta.skill_ids:
+        if meta.skills or meta.extra_tools:
             if skill_registry is None:
                 skill_registry = _bootstrap_default_skill_registry()
             resolver = SkillResolver(skill_registry, tool_registry)

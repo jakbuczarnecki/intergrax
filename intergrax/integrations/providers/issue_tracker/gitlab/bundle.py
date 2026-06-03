@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""GitLab integration bundle — composition root for ``IntegrationSlug.GITLAB``."""
+"""GitLab integration bundle — composition root for ``"gitlab"``."""
 
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ def create_gitlab_issue_tracker(
     http_client_factory: Optional[Callable[[GitLabIntegrationConfig], Any]] = None,
     **config_overrides: object,
 ) -> GitLabIssueTracker:
-    """Catalog factory for ``IntegrationSlug.GITLAB`` / ``ISSUE_TRACKER``."""
+    """Catalog factory for ``"gitlab"`` / ``ISSUE_TRACKER``."""
     return create_gitlab_integration(
         issue_tracker=issue_tracker,
         client=client,

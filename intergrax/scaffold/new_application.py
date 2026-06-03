@@ -203,12 +203,13 @@ def _wiring_py(names: ScaffoldApplicationNames) -> str:
 
         from __future__ import annotations
 
+        from intergrax.applications._shared.environment_wiring import wire_application_environment
         from intergrax.applications._shared.wiring import build_application_registry
-        from intergrax.applications.contracts.build_context import ApplicationBuildContext
+        from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
         from intergrax.runtime.registry.agent_registry import AgentRegistry
         from {pkg}.host.agent_builders import {builders_const}
+        from {pkg}.host.environment_profile import build_{short}_environment_profile
         from {pkg}.host.settings import {pascal}ApplicationSettings
-        from {pkg}.host.tool_wiring import wire_{short}_tools
         from {pkg}.manifest import build_{short}_manifest
 
 
@@ -218,16 +219,38 @@ def _wiring_py(names: ScaffoldApplicationNames) -> str:
         ) -> AgentRegistry:
             settings = settings or {pascal}ApplicationSettings.from_env()
             manifest = build_{short}_manifest()
-            tool_wiring = wire_{short}_tools(
-                integration_profile=getattr(manifest, "integration_profile", None),
-            )
-            ctx = ApplicationBuildContext.for_manifest(
+            env = manifest.environment or build_{short}_environment_profile(settings)
+            if manifest.environment is None:
+                manifest = manifest.model_copy(update={{"environment": env}})
+            env_wiring = wire_application_environment(manifest, env, settings=settings)
+            return build_application_registry(
                 manifest,
-                settings=settings,
-                tool_profile=tool_wiring.profile,
-                tool_wiring_context=tool_wiring.wiring_context,
+                env_wiring.build_context,
+                builders={builders_const},
             )
-            return build_application_registry(manifest, ctx, builders={builders_const})
+        '''
+    )
+
+
+def _environment_profile_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    short = names.short
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        """Tier-3 environment profile for {pkg} (Phase H-APP.5.5)."""
+
+        from __future__ import annotations
+
+        from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+        from {pkg}.host.settings import {names.pascal}ApplicationSettings
+
+
+        def build_{short}_environment_profile(
+            settings: {names.pascal}ApplicationSettings,
+        ) -> ApplicationEnvironmentProfile:
+            return ApplicationEnvironmentProfile.lab_defaults(profile_id="{short}.scaffold")
         '''
     )
 
@@ -284,9 +307,8 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             SQLiteIntegrationBundle,
             create_sqlite_integration,
         )
-        from intergrax.integrations.registry.bootstrap import register_default_integrations
+        from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
         from intergrax.integrations.registry.profile import IntegrationProfile
-        from intergrax.integrations.registry.slugs import IntegrationSlug
         from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
         from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
         from intergrax.runtime.interactions.factory import (
@@ -361,7 +383,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             runtime_events_db_path: Path | None = None,
             checkpoints_db_path: Path | None = None,
         ) -> {pascal}IntegrationWiring:
-            register_default_integrations()
+            bootstrap_application_integration_catalog(integration_preset="full")
             sqlite_overrides = _sqlite_config_overrides(
                 db_path=db_path,
                 experiments_db_path=experiments_db_path,
@@ -371,7 +393,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             profile = IntegrationProfile.lab()
             if sqlite_overrides:
                 profile = profile.model_copy(
-                    update={{"options": {{IntegrationSlug.SQLITE: dict(sqlite_overrides)}}}}
+                    update={{"options": {{"sqlite": dict(sqlite_overrides)}}}}
                 )
             sqlite_bundle = create_sqlite_integration(**sqlite_overrides)
             if db_path is None:
@@ -440,6 +462,7 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
         from {pkg}.host.integration_wiring import wire_{short}_integrations
         from {pkg}.host.settings import {pascal}ApplicationSettings
         from intergrax.applications._shared.fastapi_mcp import (
+            apply_lifespans,
             couple_fastapi_with_mcp,
             make_scheduler_lifespan,
         )
@@ -533,14 +556,7 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                     extra_lifespans=extra_lifespans,
                 )
             elif scheduler is not None:
-
-                @app.on_event("startup")
-                async def _start_scheduler() -> None:
-                    await scheduler.start()
-
-                @app.on_event("shutdown")
-                async def _stop_scheduler() -> None:
-                    await scheduler.stop()
+                apply_lifespans(app, make_scheduler_lifespan(scheduler))
             attach_plugin_shutdown(app, platform.shutdown_callbacks)
             return app
         '''
@@ -888,6 +904,8 @@ def _create_lab_application(
     _write(target / "host" / "settings.py", _settings_py(names), force=force)
     _write(target / "host" / "agent_builders.py", _agent_builders_py(names, specs), force=force)
     _write(target / "host" / "wiring.py", _wiring_py(names), force=force)
+    _write(target / "host" / "environment_profile.py", _environment_profile_py(names), force=force)
+    _write(target / "host" / "policy" / "rules" / ".gitkeep", "", force=force)
     _write(target / "host" / "integration_wiring.py", _integration_wiring_py(names), force=force)
     _write(target / "host" / "tool_wiring.py", _tool_wiring_py(names), force=force)
     _write(target / "host" / "factory.py", _factory_py(names), force=force)
@@ -965,6 +983,8 @@ def _create_product_application(
     _write(target / "host" / "agent_builders.py", product_tpl.agent_builders_py(names, specs), force=force)
     _write(target / "host" / "agent_factories.py", product_tpl.agent_factories_py(names, specs), force=force)
     _write(target / "host" / "wiring.py", product_tpl.wiring_py(names), force=force)
+    _write(target / "host" / "environment_profile.py", product_tpl.environment_profile_py(names), force=force)
+    _write(target / "host" / "policy" / "rules" / ".gitkeep", "", force=force)
     _write(target / "host" / "integration_wiring.py", product_tpl.integration_wiring_py(names), force=force)
     _write(target / "host" / "tool_wiring.py", product_tpl.tool_wiring_py(names), force=force)
     _write(target / "host" / "factory.py", product_tpl.factory_py(names), force=force)

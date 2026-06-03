@@ -32,7 +32,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 
@@ -237,7 +236,7 @@ def test_create_pinecone_integration_bundle() -> None:
 
 def test_register_and_resolve_via_profile() -> None:
     register_pinecone_integration()
-    profile = IntegrationProfile(vector_store=IntegrationSlug.PINECONE)
+    profile = IntegrationProfile(vector_store="pinecone")
     factory, _ = _store_factory()
 
     store = resolve(
@@ -252,7 +251,7 @@ def test_register_and_resolve_via_profile() -> None:
 
 def test_register_default_integrations_includes_pinecone() -> None:
     register_default_integrations()
-    profile = IntegrationProfile(vector_store=IntegrationSlug.PINECONE)
+    profile = IntegrationProfile(vector_store="pinecone")
     factory, _ = _store_factory()
 
     store = resolve(

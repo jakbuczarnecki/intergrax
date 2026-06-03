@@ -7,7 +7,6 @@ from typing import Literal, Sequence
 
 from langchain_core.documents import Document
 
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
 from intergrax.rag.document_loaders.integration.catalog_parser import CatalogDocumentParser
@@ -44,10 +43,10 @@ class ExcelSmartParser(BaseDocumentParser):
         return "openpyxl"
 
     def is_available(self) -> bool:
-        return resolve_document_parser(IntegrationSlug.OPENPYXL, **self._options).is_available()
+        return resolve_document_parser("openpyxl", **self._options).is_available()
 
     def load(self, source: str) -> Sequence[Document]:
-        backend = resolve_document_parser(IntegrationSlug.OPENPYXL, **self._options)
+        backend = resolve_document_parser("openpyxl", **self._options)
         docs = CatalogDocumentParser(backend).load(source)
         result: list[Document] = []
         for i, doc in enumerate(docs):

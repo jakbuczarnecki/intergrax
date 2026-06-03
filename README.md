@@ -34,6 +34,7 @@ All platform documentation lives in [`docs/`](docs/). Canonical docs — one sou
 | [TOOLS.md](docs/TOOLS.md) | **Tool Library** — atomic LLM/MCP operations (RAG, web search, Jira, sandbox, …) |
 | [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) | **LLM adapters** — OpenAI, Claude, Gemini, Ollama, Azure, Mistral, Bedrock |
 | [SKILLS.md](docs/SKILLS.md) | **Skill Library** — composable packs: tools + prompts + policy; external importers |
+| [EXTENSION_AUTHOR_GUIDE.md](docs/EXTENSION_AUTHOR_GUIDE.md) | **Tier-0 plugin catalogs** — integrations, tools, skills; entry points & bootstrap |
 | [intergrax/tools/USAGE.md](intergrax/tools/USAGE.md) | Wire catalog tools in applications and agents (quick start) |
 | [intergrax/applications/USAGE.md](intergrax/applications/USAGE.md) | Tier-3 composition engine: manifest, typed bindings, registry |
 | [applications/USAGE.md](applications/USAGE.md) | Application layout: env, Docker, host, run |
@@ -77,6 +78,24 @@ Within Tier-0 and Tier-2, Intergrax uses a **four-layer capability model** (Harn
 ```text
 Integration  →  Tool  →  Skill  →  Agent  →  Nexus (Harness)  →  Application wiring
 ```
+
+### Tier-0 plugin catalogs (Phase P-Ext)
+
+Shipped providers and **pip-installable extensions** register through the same plugin protocols:
+
+| Layer | Protocol | Bootstrap |
+|-------|----------|-----------|
+| Integration | `IntegrationPlugin` | `register_integration_plugin()` · EP `intergrax.integrations` |
+| Tool | `ToolPlugin` | `register_tool_plugin()` · EP `intergrax.tools` |
+| Skill | `SkillPlugin` | `register_skill_plugin()` · EP `intergrax.skills` |
+
+```python
+from intergrax.core.catalog_bootstrap import bootstrap_catalogs
+
+bootstrap_catalogs(register_shipped=True, discover_entry_points=True)
+```
+
+Tools work **standalone** for LLM/MCP (`ToolContract` + handler + `to_mcp_tools`). Skills only compose allow-lists — they are not invokable tools. Details: [EXTENSION_AUTHOR_GUIDE.md](docs/EXTENSION_AUTHOR_GUIDE.md) · canon §7.1.5.1.
 
 ---
 
@@ -261,12 +280,11 @@ The **Integration Library** (`intergrax/integrations/`) provides:
 ```python
 # Tier-3 application — declare backends once
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 profile = IntegrationProfile(
-    relational_store=IntegrationSlug.POSTGRESQL,
-    vector_store=IntegrationSlug.QDRANT,
-    notification_channel=IntegrationSlug.SLACK,
+    relational_store="postgresql",
+    vector_store="qdrant",
+    notification_channel="slack",
 )
 # Agents receive resolved contract instances — no boto3, no pymongo in agent code
 ```
@@ -296,10 +314,18 @@ The **Tool Library** (`intergrax/tools/`) provides:
 **Catalog providers (Phase O Done):** full first-party catalog wired end-to-end in reference applications (`tool_wiring.py` → `ApplicationBuildContext` → agent `RuntimeConfig`). Legacy `use_rag` / `use_websearch` remain as compatibility shims.
 
 ```python
-# Tier-2 agent — declare tool policy, not vendors
+# Tier-2 agent — declare tool policy via catalog constants (not raw vendor APIs)
+from intergrax.tools.providers.jira.service import JIRA_SEARCH_TASKS_TOOL_ID, JIRA_GET_ISSUE_TOOL_ID
+from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
+
 AgentContract(
     id="pm",
-    allowed_tools=["jira.search_tasks", "jira.get_issue", "rag.retrieve", "confluence.search_pages"],
+    allowed_tools=[
+        JIRA_SEARCH_TASKS_TOOL_ID,
+        JIRA_GET_ISSUE_TOOL_ID,
+        RAG_RETRIEVE_TOOL_ID,
+        "confluence.search_pages",  # catalog constant when bundle exports it
+    ],
 )
 
 # Tier-3 application — wire integrations into tool handlers
@@ -336,20 +362,26 @@ The **Skill Library** (`intergrax/skills/`) provides:
 | **No tool confusion** | Skills never register as `ToolContract`; LLM tool-calling surface stays atomic |
 
 ```python
-# Agent composes skills + optional extra tools
+# Skills: catalog manifests (registered via skill bundles). Tools: ToolContract references.
+from intergrax.skills.providers.legal.manifests import LEGAL_CONTRACT_REVIEW
+from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
+from intergrax.tools.providers.rag.bundle import RAG_RETRIEVE_TOOL_CONTRACT
+from intergrax.tools.providers.websearch.bundle import WEBSEARCH_QUERY_TOOL_CONTRACT
+
 AgentContract(
     id="legal",
-    skill_ids=["legal.contract_review"],
-    allowed_tools=[],  # extras only; skill union applied by SkillResolver
+    skills=[LEGAL_CONTRACT_REVIEW],
+    extra_tools=[],
 )
 
-# Research pipeline — literature scan pack (tools + prompts)
 AgentContract(
     id="research",
-    skill_ids=["research.literature_scan"],
-    allowed_tools=["websearch.query", "rag.retrieve"],  # merged with skill tool_ids at register
+    skills=[RESEARCH_LITERATURE_SCAN],
+    extra_tools=[RAG_RETRIEVE_TOOL_CONTRACT, WEBSEARCH_QUERY_TOOL_CONTRACT],
 )
 ```
+
+`AgentRegistry.register` merges `skills` + `extra_tools` into resolved `allowed_tools` (string allow-list for runtime). Do not pass ad-hoc tool/skill id strings in Tier-2 agent code.
 
 **Catalog:** [SKILLS.md](docs/SKILLS.md) · **architecture:** [§7.1.8](docs/intergrax_runtime_architecture.md) · **Harness mapping:** [§5.3](docs/intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model)
 

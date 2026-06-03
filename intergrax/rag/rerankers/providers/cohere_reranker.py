@@ -6,7 +6,6 @@ from __future__ import annotations
 import os
 from typing import List, Optional
 
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.rag.rerankers.integration.resolver import rerank_scores
 from intergrax.rag.rerankers.providers._api_reranker_base import _APIRerankerBase
 
@@ -36,7 +35,7 @@ class CohereReranker(_APIRerankerBase):
         texts: List[str],
     ) -> List[float]:
         return rerank_scores(
-            IntegrationSlug.COHERE_RERANK,
+            "cohere_rerank",
             query,
             texts,
             top_n=self._top_n,

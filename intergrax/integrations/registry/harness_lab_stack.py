@@ -8,19 +8,17 @@ from collections.abc import Mapping, Sequence
 
 from intergrax.integrations.contracts.base import IntegrationMetadata, IntegrationStatus
 from intergrax.integrations.registry.catalog import metadata_for_slug
-from intergrax.integrations.registry.slugs import IntegrationSlug
-
 HARNESS_LAB_STABLE_SLUGS: frozenset[str] = frozenset(
     {
-        IntegrationSlug.SQLITE.value,
-        IntegrationSlug.POSTGRESQL.value,
-        IntegrationSlug.REDIS.value,
-        IntegrationSlug.QDRANT.value,
-        IntegrationSlug.SLACK.value,
-        IntegrationSlug.SENTRY.value,
-        IntegrationSlug.OTEL.value,
-        IntegrationSlug.LAB_JSON.value,
-        IntegrationSlug.LOG.value,
+        "sqlite",
+        "postgresql",
+        "redis",
+        "qdrant",
+        "slack",
+        "sentry",
+        "otel",
+        "lab_json",
+        "log",
     }
 )
 

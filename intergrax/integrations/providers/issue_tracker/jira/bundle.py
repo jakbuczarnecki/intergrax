@@ -59,7 +59,7 @@ def create_jira_issue_tracker(
     http_client_factory: Optional[Callable[[JiraIntegrationConfig], Any]] = None,
     **config_overrides: object,
 ) -> JiraIssueTracker:
-    """Catalog factory for ``IntegrationSlug.JIRA`` / ``ISSUE_TRACKER``."""
+    """Catalog factory for ``"jira"`` / ``ISSUE_TRACKER``."""
     return create_jira_integration(
         issue_tracker=issue_tracker,
         client=client,

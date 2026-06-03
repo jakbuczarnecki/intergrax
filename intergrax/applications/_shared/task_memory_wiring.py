@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""TaskMemory persistence wiring for Tier-3 applications (Phase Q-M.2)."""
+"""TaskMemory persistence wiring for Tier-3 applications (Phase Q-M.2, H-APP.4.4)."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
     ENV_TASK_MEMORY_DB,
     resolve_task_memory_db_path,
@@ -50,3 +51,23 @@ def wire_task_memory(
         warn_if_disabled=warn_if_disabled,
     )
     return TaskMemoryWiring(store=store, db_path=resolved_path)
+
+
+def wire_task_memory_from_profile(
+    env: ApplicationEnvironmentProfile,
+    *,
+    db_path: Path | None = None,
+    warn_if_disabled: bool = False,
+) -> TaskMemoryWiring:
+    """Unify task memory wiring under environment memory profile (H-APP.4.4)."""
+    memory = env.memory_profile
+    enabled = (
+        memory.enable_user_memory
+        or memory.enable_org_memory
+        or memory.enable_long_term_memory
+    )
+    return wire_task_memory(
+        db_path=db_path,
+        enabled=enabled if enabled else None,
+        warn_if_disabled=warn_if_disabled,
+    )

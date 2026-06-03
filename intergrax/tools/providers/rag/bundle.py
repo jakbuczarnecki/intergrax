@@ -86,3 +86,6 @@ def register_rag_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
     registry.register(rag_retrieve_contract(), RagRetrieveHandler(ctx))
     registry.register(rag_ingest_contract(), RagIngestHandler(ctx))
     registry.register(rag_list_collections_contract(), RagListCollectionsHandler(ctx))
+
+
+RAG_RETRIEVE_TOOL_CONTRACT = rag_retrieve_contract()

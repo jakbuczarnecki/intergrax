@@ -5,7 +5,7 @@
 Complete Teams integration bundle — the single composition root for Microsoft Teams.
 
 Outbound (HITL / escalation) and inbound (Bot Framework activities) wiring MUST use
-this module or ``profile.resolve()`` with ``IntegrationSlug.TEAMS``.
+this module or ``profile.resolve()`` with ``"teams"``.
 """
 
 from __future__ import annotations

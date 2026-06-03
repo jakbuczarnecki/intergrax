@@ -13,6 +13,8 @@ from intergrax.integrations.contracts.base import (
     UnknownIntegrationError,
     UnknownIntegrationCategoryError,
 )
+from intergrax.integrations.core.manifest import IntegrationManifest
+from intergrax.integrations.core.slug import SlugInput, coerce_slug
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.factory import (
     build_profile_from_env,
@@ -21,16 +23,15 @@ from intergrax.integrations.registry.factory import (
     resolve_from_profile,
 )
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug, SlugInput, coerce_slug
 
 __all__ = [
     "HealthStatus",
     "IntegrationCategory",
     "IntegrationEntry",
     "IntegrationError",
+    "IntegrationManifest",
     "IntegrationMetadata",
     "IntegrationProfile",
-    "IntegrationSlug",
     "IntegrationStatus",
     "SlugInput",
     "UnknownIntegrationCategoryError",

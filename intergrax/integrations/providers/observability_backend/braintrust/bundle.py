@@ -60,7 +60,7 @@ def create_braintrust_observability_backend(
     http_client_factory: Optional[Callable[[BraintrustIntegrationConfig], Any]] = None,
     **config_overrides: object,
 ) -> BraintrustObservabilityBackend:
-    """Catalog factory for ``IntegrationSlug.BRAINTRUST``."""
+    """Catalog factory for ``"braintrust"``."""
     return create_braintrust_integration(
         observability_backend=observability_backend,
         client=client,

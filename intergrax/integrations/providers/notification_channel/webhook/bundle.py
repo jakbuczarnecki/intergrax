@@ -5,7 +5,7 @@
 Complete generic webhook integration bundle — composition root for HTTP outbound notifications.
 
 All runtime wiring MUST use this module or
-``profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)`` with ``IntegrationSlug.WEBHOOK``.
+``profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)`` with ``"webhook"``.
 """
 
 from __future__ import annotations
@@ -67,7 +67,7 @@ def create_webhook_notification_channel(
     formatter: Optional[NotificationPayloadFormatter] = None,
     **config_overrides: object,
 ) -> NotificationAdapter:
-    """Catalog factory for ``IntegrationSlug.WEBHOOK`` / ``NOTIFICATION_CHANNEL``."""
+    """Catalog factory for ``"webhook"`` / ``NOTIFICATION_CHANNEL``."""
     return create_webhook_integration(
         webhook_url=webhook_url,
         notification_adapter=notification_adapter,

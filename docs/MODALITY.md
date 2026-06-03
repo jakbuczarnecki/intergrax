@@ -192,7 +192,7 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 |--------|-----------|
 | LLM multimodal tokens | Existing `llm_metrics` |
 | RAG ingest | `rag_metrics`, parser trace |
-| CV / ML inference | Per-tool `modality_metrics` on `tool_invocation_end` from typed `ModalityInvocationCounters` (`inference_ms`, `media_bytes`, `vision_detections`, `ml_predictions`); `export_run_metrics` aggregates across the run |
+| CV / ML inference | Per-tool `modality_metrics` on `tool_invocation_end` from typed `ModalityInvocationCounters`; aggregated on `TASK_COMPLETED` when a `RunTraceReader` is wired; `export_run_metrics` uses the same aggregation |
 | Speech | `tts_characters` and output `audio_uri` byte size recorded on `speech.synthesize` / `speech.transcribe` |
 | Budgets | V-COST fields: `inference_ms`, `media_bytes`, `tts_characters`, `vision_detections`, `ml_predictions` |
 

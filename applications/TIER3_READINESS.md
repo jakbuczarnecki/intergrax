@@ -47,12 +47,50 @@ uv run pytest tests/integration/applications/test_poc_template_docker_build.py -
 
 Requires Docker CLI. See [`USAGE.md`](USAGE.md#docker-and-ci).
 
+## External plugins (lab recipe)
+
+Enable setuptools entry-point discovery for third-party integration/tool/skill packages:
+
+```bash
+# .env or shell
+INTERGRAX_DISCOVER_PLUGINS=true
+```
+
+Lab host (`applications/lab_application/host/integration_wiring.py`) calls
+`bootstrap_application_integration_catalog()` which registers the shipped catalog and,
+when the flag is set, loads `intergrax.integrations` / `intergrax.tools` / `intergrax.skills`
+entry points. Use `bootstrap_catalogs(on_conflict="warn_override")` in custom hosts when
+a plugin must replace a shipped slug (logs a warning).
+
+```python
+from intergrax.core.catalog_bootstrap import bootstrap_catalogs
+from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.catalog_manifests import SQLITE, LOG
+
+bootstrap_catalogs(
+    register_shipped=True,
+    discover_entry_points=True,
+    integration_preset="full",
+)
+profile = IntegrationProfile(relational_store=SQLITE, notification_channel=LOG)
+```
+
+Scaffold new providers:
+
+```bash
+python -m intergrax.scaffold new-integration acme_kv --category key_value_cache
+python -m intergrax.scaffold new-tool-bundle acme_ops --tool-id acme_ops.ping
+python -m intergrax.scaffold new-skill legal.contract_review
+```
+
+See [EXTENSION_AUTHOR_GUIDE.md](../docs/EXTENSION_AUTHOR_GUIDE.md).
+
 ## Reference hosts
 
 | Application | Profile | Notes |
 |-------------|---------|--------|
 | `poc_template_application` | lab | Committed scaffold reference |
-| `lab_application` | lab | Debug API + integrations lab profile |
+| `lab_application` | lab | Debug API + integrations lab profile + `INTERGRAX_DISCOVER_PLUGINS` |
 | `legal_application` | product | Mature chat/legal serving (extend scaffold product) |
 | `research_application` | product | Multi-agent pipeline |
 

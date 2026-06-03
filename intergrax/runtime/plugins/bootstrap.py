@@ -31,7 +31,7 @@ def bootstrap_runtime_plugins(
     """
     Register Tier-3 plugins at application startup.
 
-    Returns shutdown callbacks for FastAPI lifespan / on_event handlers.
+    Returns shutdown callbacks for FastAPI lifespan handlers.
     """
     policy = policy_engine or _NullPolicyEngine()
     shutdowns: List[Callable[[], None]] = []
