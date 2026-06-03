@@ -1,7 +1,5 @@
 # © Artur Czarnecki. All rights reserved.
 
-import warnings
-
 import pytest
 
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
@@ -72,11 +70,11 @@ def test_policy_engine_evaluate_replay_without_config_allows():
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_tools_agent_agent_decision_alias_emits_deprecation():
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        from intergrax.tools import tools_agent
+def test_tools_agent_has_no_agent_decision_alias():
+    """§42.7 ``AgentDecision`` must not be re-exported from ``tools_agent`` (TYP-06)."""
+    import intergrax.tools.tools_agent as tools_agent
 
-        alias = tools_agent.AgentDecision
-    assert alias.__name__ == "ToolPlanDecision"
-    assert any(issubclass(item.category, DeprecationWarning) for item in caught)
+    assert not hasattr(tools_agent, "AgentDecision")
+    from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
+
+    assert ToolPlanDecision.__module__ == "intergrax.tools.core.tool_plan_decision"

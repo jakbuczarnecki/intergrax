@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Mapping, Optional
+from typing import Any, Callable, ClassVar, Mapping, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -63,6 +63,10 @@ class IntegrationProfile(BaseModel):
 
     _SLUG_FIELDS: ClassVar[tuple[str, ...]] = tuple(PROFILE_FIELD_BY_CATEGORY.values())
 
+    _BINDING_ACCESSORS: ClassVar[
+        dict[str, Callable[["IntegrationProfile"], IntegrationBinding | None]]
+    ] = {}
+
     cloud_platform: IntegrationBinding | None = None
     relational_store: IntegrationBinding | None = None
     document_store: IntegrationBinding | None = None
@@ -115,7 +119,12 @@ class IntegrationProfile(BaseModel):
         return normalized
 
     def binding_for_field(self, field_name: str) -> IntegrationBinding | None:
-        return getattr(self, field_name)
+        if field_name not in self._SLUG_FIELDS:
+            raise ValueError(f"Unknown integration profile field: {field_name!r}")
+        accessor = self._BINDING_ACCESSORS.get(field_name)
+        if accessor is None:
+            raise ValueError(f"No binding accessor registered for field: {field_name!r}")
+        return accessor(self)
 
     def slug_for_category(self, category: str | IntegrationCategory) -> str | None:
         if isinstance(category, IntegrationCategory):
@@ -127,7 +136,7 @@ class IntegrationProfile(BaseModel):
         if field_name is None or field_name not in self._SLUG_FIELDS:
             return None
 
-        binding: IntegrationBinding | None = getattr(self, field_name)
+        binding = self.binding_for_field(field_name)
         if binding is not None:
             if binding.instance is not None:
                 return None
@@ -164,7 +173,7 @@ class IntegrationProfile(BaseModel):
         field_name = PROFILE_FIELD_BY_CATEGORY.get(category.value)
         if field_name is None:
             return None
-        binding: IntegrationBinding | None = getattr(self, field_name)
+        binding = self.binding_for_field(field_name)
         if binding is None:
             return None
         return binding.instance
@@ -256,3 +265,26 @@ class IntegrationProfile(BaseModel):
 
 def default_lab_profile() -> IntegrationProfile:
     return IntegrationProfile.lab()
+
+
+IntegrationProfile._BINDING_ACCESSORS = {
+    "cloud_platform": lambda profile: profile.cloud_platform,
+    "relational_store": lambda profile: profile.relational_store,
+    "document_store": lambda profile: profile.document_store,
+    "key_value_cache": lambda profile: profile.key_value_cache,
+    "message_bus": lambda profile: profile.message_bus,
+    "object_storage": lambda profile: profile.object_storage,
+    "vector_store": lambda profile: profile.vector_store,
+    "search_provider": lambda profile: profile.search_provider,
+    "notification_channel": lambda profile: profile.notification_channel,
+    "interaction_surface": lambda profile: profile.interaction_surface,
+    "collaboration_suite": lambda profile: profile.collaboration_suite,
+    "issue_tracker": lambda profile: profile.issue_tracker,
+    "wiki_knowledge": lambda profile: profile.wiki_knowledge,
+    "observability_backend": lambda profile: profile.observability_backend,
+    "browser_automation": lambda profile: profile.browser_automation,
+    "secrets_store": lambda profile: profile.secrets_store,
+    "graph_store": lambda profile: profile.graph_store,
+    "document_parser": lambda profile: profile.document_parser,
+    "rerank_provider": lambda profile: profile.rerank_provider,
+}

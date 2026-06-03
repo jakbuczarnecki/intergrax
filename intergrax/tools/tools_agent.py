@@ -674,21 +674,4 @@ class ToolsAgent:
         )
 
 
-_DEPRECATED_TOOL_AGENT_ALIASES = {
-    "AgentDecision": ToolPlanDecision,
-    "AgentExecutionResult": ToolsAgentRunResult,
-}
-
-
-def __getattr__(name: str):
-    import warnings
-
-    if name in _DEPRECATED_TOOL_AGENT_ALIASES:
-        warnings.warn(
-            f"intergrax.tools.tools_agent.{name} is deprecated; "
-            f"use { _DEPRECATED_TOOL_AGENT_ALIASES[name].__name__} instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return _DEPRECATED_TOOL_AGENT_ALIASES[name]
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+# Planner output: ``intergrax.tools.core.tool_plan_decision.ToolPlanDecision`` (not §42.7 AgentDecision).
