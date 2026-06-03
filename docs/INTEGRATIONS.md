@@ -89,7 +89,29 @@ intergrax/integrations/providers/
 
 **Import path:** `from intergrax.integrations.providers.object_storage.s3.bundle import create_s3_object_storage`
 
-Catalog slugs (`IntegrationSlug.S3`) are unchanged — only the Python package path includes the category folder.
+Catalog identity is the string **slug** (`"s3"`, `"postgresql"`) registered at runtime — not a central enum.
+
+---
+
+## Open catalog (no slug enum)
+
+| Mechanism | Role |
+|-----------|------|
+| `providers/<category>/<slug>/manifest.py` | `MANIFEST = IntegrationManifest(slug=…)` — canonical metadata per provider |
+| `register_from_manifest(MANIFEST, factory)` | Registers in runtime catalog (`registry/catalog.py`) |
+| `IntegrationProfile` | Declares slot: manifest, plugin class, slug `str`, or pre-built instance |
+| `profile.resolve(IntegrationCategory.…)` | Instantiates via registered factory |
+| `catalog_manifests.py` | Lightweight **preset** copies for lab/product profiles only (not exhaustive) |
+| `IntegrationPlugin` | External packages: `integration_manifest()` + `create_integration()` |
+| `bootstrap_catalogs()` | Unified Tier-3 bootstrap; `integration_preset="core"` or `"full"` |
+
+Third-party integrations **must not** extend a core enum. Register a plugin or call `register_from_manifest` from application startup.
+
+**Shipped vs plugin class:** ~99 providers register via `register_from_manifest(MANIFEST, create_*)`. External pip packages should implement `IntegrationPlugin` (`integration_manifest()` + `create_integration()`). `SqliteIntegrationPlugin` in `providers/relational_store/sqlite/plugin.py` documents the class-based pattern; shipped `register.py` keeps the manifest path for bootstrap performance.
+
+Tier-3 hosts should call `bootstrap_application_integration_catalog()` (not bare `register_default_integrations()`).
+
+See [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md), `intergrax/integrations/examples/custom_memory_kv/`, and `tests/unit/integrations/test_external_plugin.py`.
 
 ---
 
@@ -101,7 +123,7 @@ Catalog slugs (`IntegrationSlug.S3`) are unchanged — only the Python package p
 | **Modular providers** | One slug = one package under `providers/<category>/<slug>/` (category = contract name). Swap Redis for ElastiCache, SQLite for PostgreSQL, or Chroma for Pinecone by changing `IntegrationProfile` — no agent refactor. |
 | **Environment portability** | Tier-3 applications compose integrations at startup (`IntegrationProfile`, env vars). The same Tier-2 agent runs against lab defaults (`sqlite`, `log`, `lab_json`) or production stacks (`postgresql`, `slack`, `s3`, `qdrant`). |
 | **Single entry for SDKs** | Vendor SDKs (boto3, PyMongo, chromadb, redis, …) are imported only in boundary modules: `opens.py`, `rag_store.py`, `web_client.py`, `client.py`, and `_shared/p2|p3|p4/factories.py`. CI enforces this via `scripts/check_integration_vendor_imports.py`. Tier-2 agents must **not** import provider slugs or vendor libraries. |
-| **Catalog registration** | `register_default_integrations()` registers all shipped providers. Resolution: explicit slug → profile field → env (`INTERGRAX_INTEGRATION_<CATEGORY>`) → cloud-platform defaults. |
+| **Catalog registration** | `register_default_integrations(preset="full")` or `preset="core"` (lab). Resolution: explicit slug → profile field → env → cloud defaults. |
 
 ---
 
@@ -128,17 +150,19 @@ Agents consume integrations **through catalog tools** ([TOOLS.md](TOOLS.md)), no
 **Example — declarative profile:**
 
 ```python
-from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.registry.bootstrap import register_default_integrations
+from intergrax.integrations.registry.catalog_manifests import POSTGRESQL, QDRANT
+from intergrax.integrations.registry.profile import IntegrationProfile
 
+register_default_integrations()
 profile = IntegrationProfile(
-    relational_store=IntegrationSlug.POSTGRESQL,
-    vector_store=IntegrationSlug.QDRANT,
-    object_storage=IntegrationSlug.S3,
-    notification_channel=IntegrationSlug.SLACK,
+    relational_store=POSTGRESQL,
+    vector_store=QDRANT,
+    object_storage="s3",
+    notification_channel="slack",
     options={
-        IntegrationSlug.S3: {"bucket": "intergrax-artifacts", "prefix": "tenant-a"},
+        "s3": {"bucket": "intergrax-artifacts", "prefix": "tenant-a"},
     },
 )
 

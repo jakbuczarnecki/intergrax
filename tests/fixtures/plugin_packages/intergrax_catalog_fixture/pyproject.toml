@@ -1,0 +1,22 @@
+[project]
+name = "intergrax-catalog-fixture"
+version = "0.0.1"
+description = "Test-only entry-point plugins for Intergrax catalog bootstrap (Phase P-Ext.0.5)."
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.entry-points."intergrax.integrations"]
+fixture_kv = "intergrax_catalog_fixture.integration:FixtureKvIntegrationPlugin"
+
+[project.entry-points."intergrax.tools"]
+fixture_echo = "intergrax_catalog_fixture.tool:FixtureEchoToolPlugin"
+
+[project.entry-points."intergrax.skills"]
+fixture_pack = "intergrax_catalog_fixture.skill:FixturePackSkillPlugin"

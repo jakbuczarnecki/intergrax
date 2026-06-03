@@ -52,7 +52,7 @@ def create_postgresql_relational_store(
     connection_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
 ) -> PostgreSQLRelationalStore:
-    """Catalog factory for ``IntegrationSlug.POSTGRESQL`` / ``RELATIONAL_STORE``."""
+    """Catalog factory for ``"postgresql"`` / ``RELATIONAL_STORE``."""
     bundle = create_postgresql_integration(
         relational_store=relational_store,
         connection_factory=connection_factory,

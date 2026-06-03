@@ -48,7 +48,7 @@ def create_vespa_vector_store(
     http_client_factory: Optional[Callable[[VespaIntegrationConfig], Any]] = None,
     **config_overrides: object,
 ) -> VectorStore:
-    """Catalog factory for ``IntegrationSlug.VESPA``."""
+    """Catalog factory for ``"vespa"``."""
     return create_vespa_integration(
         vector_store=vector_store,
         client=client,

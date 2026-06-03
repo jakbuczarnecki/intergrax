@@ -249,7 +249,7 @@ def _agent_nodes_and_edges() -> tuple[list[CapabilityNode], list[CapabilityEdge]
                 version=contract.version,
             )
         )
-        for skill_id in contract.skill_ids:
+        for skill_id in (manifest.skill_id for manifest in contract.skills):
             edges.append(
                 CapabilityEdge(
                     source_node_id=agent_node_id,

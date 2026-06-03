@@ -1,18 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.tools.providers.pagerduty.bundle import PAGERDUTY_BUNDLE_ID, register_pagerduty_tools
-from intergrax.tools.registry.catalog import ToolBundleEntry, ToolBundleStatus, register_tool_bundle
+from __future__ import annotations
+
+from intergrax.tools.registry.plugin_register import register_tool_plugin
+from intergrax.tools.registry.shipped_plugins import PagerdutyToolPlugin
 
 
 def register_pagerduty_tool_bundle(*, override: bool = False) -> None:
-    register_tool_bundle(
-        ToolBundleEntry(
-            bundle_id=PAGERDUTY_BUNDLE_ID,
-            tool_ids=("pagerduty.trigger_incident",),
-            register=register_pagerduty_tools,
-            status=ToolBundleStatus.BETA,
-            description="PagerDuty escalation tools.",
-        ),
-        override=override,
-    )
+    register_tool_plugin(PagerdutyToolPlugin, override=override)

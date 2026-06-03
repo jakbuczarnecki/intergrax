@@ -69,3 +69,15 @@ HARNESS_SKILL_REGISTRY = SkillManifest(
     risk_tier=SkillRiskTier.LOW,
     tags=("harness", "registry", "skills"),
 )
+
+HARNESS_STACK_DEMO = SkillManifest(
+    skill_id="harness.stack_demo",
+    version="1.0.0",
+    description="Demonstrates requires_skills: merges tools from harness.tool_smoke before this pack.",
+    tool_ids=("websearch.read_url",),
+    requires_skills=("harness.tool_smoke",),
+    prompt_instruction_ids=("harness.stack_demo.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("harness", "requires_skills", "demo"),
+)

@@ -8,7 +8,6 @@ from typing import List
 
 from langchain_core.documents import Document
 
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.rag.document_loaders.integration.catalog_parser import CatalogDocumentParser
 from intergrax.rag.document_loaders.integration.resolver import resolve_document_parser
 
@@ -36,5 +35,5 @@ class AudioSmartLoader:
         }
 
     def load(self) -> List[Document]:
-        backend = resolve_document_parser(IntegrationSlug.WHISPER, **self._options)
+        backend = resolve_document_parser("whisper", **self._options)
         return list(CatalogDocumentParser(backend).load(self.path))

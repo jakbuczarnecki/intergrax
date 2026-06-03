@@ -52,7 +52,7 @@ def create_mysql_relational_store(
     connection_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
 ) -> MySQLRelationalStore:
-    """Catalog factory for ``IntegrationSlug.MYSQL`` / ``RELATIONAL_STORE``."""
+    """Catalog factory for ``"mysql"`` / ``RELATIONAL_STORE``."""
     bundle = create_mysql_integration(
         relational_store=relational_store,
         connection_factory=connection_factory,

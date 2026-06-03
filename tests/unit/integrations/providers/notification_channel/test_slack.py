@@ -26,7 +26,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 
@@ -87,8 +86,8 @@ def test_create_slack_interaction_surface_uses_slack_channel() -> None:
 def test_register_and_resolve_notification_channel(mock_notification: MagicMock) -> None:
     register_slack_integration()
     profile = IntegrationProfile(
-        notification_channel=IntegrationSlug.SLACK,
-        interaction_surface=IntegrationSlug.SLACK,
+        notification_channel="slack",
+        interaction_surface="slack",
     )
 
     channel = resolve(
@@ -104,8 +103,8 @@ def test_register_and_resolve_notification_channel(mock_notification: MagicMock)
 def test_register_and_resolve_interaction_surface(mock_interaction: SlackInteractionAdapter) -> None:
     register_slack_integration()
     profile = IntegrationProfile(
-        notification_channel=IntegrationSlug.SLACK,
-        interaction_surface=IntegrationSlug.SLACK,
+        notification_channel="slack",
+        interaction_surface="slack",
     )
 
     surface = resolve(
@@ -120,7 +119,7 @@ def test_register_and_resolve_interaction_surface(mock_interaction: SlackInterac
 
 def test_register_default_integrations_includes_slack(mock_notification: MagicMock) -> None:
     register_default_integrations()
-    profile = IntegrationProfile(notification_channel=IntegrationSlug.SLACK)
+    profile = IntegrationProfile(notification_channel="slack")
 
     channel = resolve(
         IntegrationCategory.NOTIFICATION_CHANNEL,

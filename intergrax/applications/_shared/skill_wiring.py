@@ -6,8 +6,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.core.catalog_bootstrap import bootstrap_catalogs
+from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.skills.registry import SkillProfile, SkillRegistry, build_registry_from_profile
-from intergrax.skills.registry.bootstrap import register_default_skills
 
 
 @dataclass(frozen=True)
@@ -17,7 +18,12 @@ class ApplicationSkillWiring:
 
 
 def build_application_skill_wiring(profile: SkillProfile) -> ApplicationSkillWiring:
-    register_default_skills()
+    skill_bundle_ids = tuple(profile.enabled_bundles) if profile.enabled_bundles else None
+    bootstrap_catalogs(
+        register_shipped=True,
+        skill_bundle_ids=skill_bundle_ids,
+        discover_entry_points=discover_plugins_enabled(),
+    )
     registry = build_registry_from_profile(profile)
     return ApplicationSkillWiring(profile=profile, registry=registry)
 

@@ -26,7 +26,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 
@@ -94,8 +93,8 @@ def test_create_teams_interaction_surface_uses_teams_channel() -> None:
 def test_register_and_resolve_notification_channel(mock_notification: MagicMock) -> None:
     register_teams_integration()
     profile = IntegrationProfile(
-        notification_channel=IntegrationSlug.TEAMS,
-        interaction_surface=IntegrationSlug.TEAMS,
+        notification_channel="teams",
+        interaction_surface="teams",
     )
 
     channel = resolve(
@@ -111,8 +110,8 @@ def test_register_and_resolve_notification_channel(mock_notification: MagicMock)
 def test_register_and_resolve_interaction_surface(mock_interaction: TeamsInteractionAdapter) -> None:
     register_teams_integration()
     profile = IntegrationProfile(
-        notification_channel=IntegrationSlug.TEAMS,
-        interaction_surface=IntegrationSlug.TEAMS,
+        notification_channel="teams",
+        interaction_surface="teams",
     )
 
     surface = resolve(
@@ -127,7 +126,7 @@ def test_register_and_resolve_interaction_surface(mock_interaction: TeamsInterac
 
 def test_register_default_integrations_includes_teams(mock_notification: MagicMock) -> None:
     register_default_integrations()
-    profile = IntegrationProfile(notification_channel=IntegrationSlug.TEAMS)
+    profile = IntegrationProfile(notification_channel="teams")
 
     channel = resolve(
         IntegrationCategory.NOTIFICATION_CHANNEL,

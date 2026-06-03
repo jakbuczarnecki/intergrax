@@ -10,6 +10,7 @@ from intergrax.applications._shared.lab_harness_context import LabHarnessContext
 from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
 from intergrax.applications._shared.lab_runtime_config import build_lab_agent_runtime_context
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.skills.providers.harness.manifests import HARNESS_TOOL_SMOKE
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -87,8 +88,8 @@ class EchoAgent(HarnessReferenceAgent):
             description="Echoes user input for runtime harness validation.",
             version="1.0.0",
             capabilities=["echo.basic"],
-            allowed_tools=[],
-            skill_ids=["harness.tool_smoke"],
+            skills=[HARNESS_TOOL_SMOKE],
+            extra_tools=[],
             risk_level=AgentRiskLevel.LOW,
             max_steps=5,
         )

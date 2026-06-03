@@ -41,6 +41,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Skill / Tool / Integration layering (canon) | Architecture §5.3, §7.1.6–§7.1.8 |
 | Skill catalog | `SKILLS.md` |
 | Model & modality plane (vision, audio, ML) | Architecture canon §7.1.9 · [`MODALITY.md`](MODALITY.md) · **Phase W-ML** (below) |
+| Plugin catalogs (integrations, tools, skills) | **This file** Phase P-Ext + **Appendix I** · [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md) |
 
 ---
 
@@ -74,6 +75,8 @@ Current optimization targets:
 **Harness AI alignment (Phase R):** **Done (MVP)** (2026-06-01) — **Skill Library**, context-engineering API, graph-native delegation, unified policy bundle. See Appendix E. **Phase S** hardens the **environment** agents run in; product agents follow in **Phase K**.
 
 **Skill layer decision (ADR R.0.1):** **Do not** collapse skills into tools. Tools remain **atomic LLM-invokable operations**; skills are **composable capability packs** (tools + prompts + policy + metadata) with **import adapters** for external skill formats (e.g. Cursor `SKILL.md`). See architecture §7.1.8.
+
+**Plugin catalogs (Phase P-Ext):** **MVP Done** (2026-06-02) — protocols, `bootstrap_catalogs()`, lazy presets, 13/13 tool bundles on `ToolPlugin`, 3/3 skill bundles on `SkillPlugin`. **Paydown open:** [P-Ext.6](#p-ext6--production-closure-paydown) + Appendix I. Author guide: [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md).
 
 ### 0.6 When Tier-1 (Nexus) changes are required
 
@@ -187,6 +190,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Harness architecture hardening (Phase V) | **Done** | Capability graph, lifecycle governance, architecture metrics, prompt/eval/context/security/cost/MA/KG hardening |
 | Model & modality plane (Phase W-ML) | **Done** (2026-06-02) | Vision/speech profiles, tools, remote adapters, `harness.vision_qa` — canon §7.1.9 |
 | **Harness completion backlog** | **Done** (2026-06-02) | §4.1 — U-Leg, typing/CI, platform skills, research UAEP parity |
+| **Plugin catalogs (Phase P-Ext)** | **MVP Done** (paydown open) | [Phase P-Ext](#phase-p-ext--plugin-catalogs-integrations-tools-skills) · [P-Ext.6 paydown](#p-ext6--production-closure-paydown) · Appendix I |
 | Product agents (Phase K) | **Deferred** | K.1/K.2 — end of priority list |
 | Tier-3 product applications | **Deferred** | New apps / product routes — after harness backlog |
 
@@ -2291,6 +2295,277 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 
 ---
 
+### Phase P-Ext — Plugin Catalogs (Integrations, Tools, Skills)
+
+**Status:** **MVP Done** (2026-06-02) · **production closure:** [P-Ext.6](#p-ext6--production-closure-paydown) (**Planned**).  
+**Prerequisites:** Phases **M** (Integration Library), **O** (Tool Library), **R** (Skill Library MVP) **Done**; open integration slug model (no closed `IntegrationSlug` enum in registry) **Done**.  
+**Goal:** Make all three Tier-0 catalogs **plugin-native** and aligned with market patterns (hexagonal adapters, MCP-style tools, capability packs) — including **pip-installable** extensions without editing Intergrax core.  
+**Tracker:** **Appendix I** (task-level status). **Author guide:** [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md).
+
+**MVP delivered (2026-06-02):** `load_plugins` + `bootstrap_catalogs()` · three plugin protocols · lazy presets/bundle ids · integrations **manifest+factory** (~99 full) · tools **13/13** `ToolPlugin` · skills **3/3** `SkillPlugin` (**8** `skill_id`) · `skill_wiring` uses `bootstrap_catalogs` · `requires_skills` resolver · `custom_memory_kv` + `test_external_plugin.py` · partial `resolve_typed.py` · `CatalogSnapshot` · `check_plugin_catalog.py` · canon §7.1.5.1 + EN author guide.
+
+**Principle:** Integration → Tool → Skill → Agent (unchanged) · explicit first-party bootstrap + optional entry points · one P-Ext.* ID per PR · gate green.
+
+**Production-path reality (do not confuse with MVP):**
+
+| Layer | Shipped catalog | External extension | Runtime materialization |
+|-------|-----------------|--------------------|-------------------------|
+| **Integrations** | **~99** slugs (`preset="full"`) / **12** core (`preset="core"`) via `register_from_manifest` + `create_*` — **0** shipped `register.py` use `register_integration_plugin` | `IntegrationPlugin` + EP `intergrax.integrations` | `IntegrationProfile.resolve(category, config=…)` → backend instance |
+| **Tools** | **13** bundles / **~29** `tool_id` — **13/13** via `ToolPlugin` (`shipped_plugins.py`) | `ToolPlugin` + EP `intergrax.tools` | `bootstrap_catalogs` → `build_registry_from_profile(ToolProfile, ctx)` → `ToolRegistry` → `RuntimeToolInvoker` / MCP |
+| **Skills** | **3** bundles / **8** `skill_id` — **3/3** via `SkillPlugin` (`harness`×6, `legal`×1, `research`×1) | `SkillPlugin` + EP `intergrax.skills` | `build_registry_from_profile(SkillProfile)` → `SkillRegistry` → `SkillResolver` → `allowed_tools` |
+
+**Out of scope for Phase P-Ext:**
+
+- Online plugin marketplace UI / central registry service
+- Runtime hot-reload of catalogs without process restart
+- Skill as executable workflow graph (LangGraph pack) — separate initiative
+- Replacing `ToolWiringContext` with a generic DI framework
+- Migrating all ~99 shipped integrations to `IntegrationPlugin` classes (optional long-term; manifest path remains supported)
+
+#### P-Ext.0 — Shared plugin foundation
+
+**Goal:** One plugin loader and one Tier-3 bootstrap entry point.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| P-Ext.0.1 | **`load_plugins(group, …)`** — entry point discovery | **Done** | **Critical** | `intergrax/core/plugins/discovery.py` | Idempotent; `on_conflict=error\|skip` |
+| P-Ext.0.2 | **Plugin errors** — `PluginConflictError`, `PluginLoadError` | **Done** | High | `intergrax/core/plugins/errors.py` | Unit tests |
+| P-Ext.0.3 | **`bootstrap_catalogs()`** — unified Tier-3 composition | **Done** | **Critical** | `intergrax/core/catalog_bootstrap.py` | tool/skill wiring + idempotent shipped |
+| P-Ext.0.4 | **`docs/EXTENSION_AUTHOR_GUIDE.md`** | **Done** | High | `docs/` | pip package walkthrough |
+| P-Ext.0.5 | **Fixture pip package** in tests | **Planned** | High | `tests/fixtures/plugin_packages/` | editable install; registers integration + tool + skill |
+| P-Ext.0.6 | **EP discovery tests** via fixture (all three groups) | **Planned** | High | `tests/unit/core/plugins/` | `bootstrap_catalogs(discover_entry_points=True)` loads fixture |
+| P-Ext.0.7 | **`INTERGRAX_DISCOVER_PLUGINS`** env + Tier-3 wiring | **Planned** | Medium | `catalog_bootstrap.py`, `applications/_shared/platform_wiring.py` | lab opt-in; default `false` in prod hosts |
+
+**DoD:** Fixture package registers via entry point; discovery unit tests green.
+
+**Entry point groups (canonical names):**
+
+```toml
+[project.entry-points."intergrax.integrations"]
+[project.entry-points."intergrax.tools"]
+[project.entry-points."intergrax.skills"]
+```
+
+---
+
+#### P-Ext.1 — Integrations: plugin closure
+
+**Baseline:** `IntegrationManifest`, `IntegrationPlugin`, `register_from_manifest`, per-provider `manifest.py` (open slug catalog).
+
+**Audit snapshot (2026-06-02 — integrations only):**
+
+| Area | Finding | Prod? |
+|------|---------|-------|
+| **Shipped catalog** | `bootstrap_core` **12** slugs + `bootstrap_extended` **~87** → **~99** full; all `register.py` call `register_from_manifest(MANIFEST, create_*)` | **Yes** — primary harness path |
+| **`IntegrationPlugin` shipped** | **0/99** providers register via `register_integration_plugin` in shipped code | N/A — external / explicit only |
+| **Reference plugin class** | `SqliteIntegrationPlugin` in `sqlite/plugin.py`; `register.py` still uses manifest path | Doc pattern only (P-Ext.1.12) |
+| **External example** | `integrations/examples/custom_memory_kv/` + `test_external_plugin.py` (explicit register) | **Yes** API; EP not tested |
+| **`IntegrationProfile.resolve`** | Manifest, plugin class, slug `str`, or pre-built instance via `IntegrationBinding` | **Yes** — Tier-3 prod |
+| **`resolve_typed.py`** | Exists: `resolve_relational_store`, `resolve_key_value_cache`, `resolve_document_parser` only | **Partial** — not used in lab wiring yet |
+| **`IntegrationSlug` enum** | **0** references in `intergrax/**/*.py`; remains in **~90** `USAGE.md`, root `README.md`, legacy `scripts/` | Code **Done**; docs **open** (P-Ext.1.5) |
+| **Tier-3 bootstrap** | `tool_wiring` / `skill_wiring` → `bootstrap_catalogs()`; **lab/poc** `integration_wiring.py` still calls `register_default_integrations()` directly | **Gap** (P-Ext.1.10) |
+| **Entry points** | Wired in `catalog_bootstrap`; `discover_entry_points=False` default; no fixture pip test | Paydown P-Ext.0.5 / 1.6 |
+| **`on_conflict`** | `bootstrap_catalogs(on_conflict=…)` forwards to `register_plugins` | **Done** at API; catalog slug override policy still loose (P-Ext.4.3) |
+| **Health API** | `integrations/registry/health.py` — **missing** | Optional (P-Ext.1.4) |
+| **Unit tests** | Per-provider tests + `test_profile` + `test_external_plugin` + lazy `preset="core"` in `test_lazy_catalog_bootstrap` | **Strong**; no full-count assertion in CI |
+
+**Verdict:** Shipped integrations are **production-ready** on the **manifest + factory** path. `IntegrationPlugin` is **production-ready for third-party** extensions; parity with tools (all shipped as plugin classes) is **explicitly out of scope**.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| P-Ext.1.1 | Wire **`intergrax.integrations`** entry points in `bootstrap_catalogs()` | **Done** | **Critical** | `catalog_bootstrap.py` | `discover_entry_points=True` |
+| P-Ext.1.2 | Split **`register_default_integrations()`** → core + optional | **Done** | High | `integrations/registry/bootstrap_core.py` | `preset="core"` (12) \| `"full"` (~99) |
+| P-Ext.1.3 | **Typed resolve** helpers (top categories) | **Partial** | Medium | `integrations/registry/resolve_typed.py` | 3 categories today |
+| P-Ext.1.3a | Expand **`resolve_typed`** + unit tests | **Planned** | Medium | `resolve_typed.py`, `tests/unit/integrations/test_resolve_typed.py` | +`vector_store`, `notification_channel`, `object_storage`; used in lab docs |
+| P-Ext.1.4 | **Health check** API per slug (optional) | **Planned** | Low | `integrations/registry/health.py` | `ping(slug) -> bool` smoke helper |
+| P-Ext.1.5 | Remove **`IntegrationSlug`** from docs/scripts | **Planned** | Medium | `**/USAGE.md`, `README.md`, `scripts/`, `docs/AGENT_CREATION_GUIDE.md` | `intergrax/**/*.py` already clean |
+| P-Ext.1.6 | **EP integration test** via fixture | **Planned** | High | `tests/unit/integrations/` | `discover_entry_points=True` loads fixture slug |
+| P-Ext.1.7 | **Dual-model docs** — manifest+factory vs `IntegrationPlugin` | **Planned** | Medium | `INTEGRATIONS.md`, `EXTENSION_AUTHOR_GUIDE.md` | decision table + when to migrate |
+| P-Ext.1.8 | **CI smoke** — integration slug counts | **Planned** | Medium | `scripts/check_plugin_catalog.py` | `core` ≥12, `full` ≥95 (or exact snapshot) |
+| P-Ext.1.9 | **`test_resolve_typed.py`** | **Planned** | Low | `tests/unit/integrations/` | type errors on wrong contract |
+| P-Ext.1.10 | **Tier-3** lab/poc use `bootstrap_catalogs(integration_preset=…)` | **Planned** | High | `applications/*/host/integration_wiring.py` | replace bare `register_default_integrations()` |
+| P-Ext.1.11 | **`applications/_shared/integration_wiring.py`** helper | **Planned** | Medium | `applications/_shared/` | mirror `tool_wiring` — bootstrap + profile factory |
+| P-Ext.1.12 | **`SqliteIntegrationPlugin`** — document or wire one shipped slug | **Planned** | Low | `sqlite/register.py` or `INTEGRATIONS.md` | either `register_integration_plugin` in sqlite **or** “reference only” in docs |
+
+**DoD:** 364+ integration unit tests green; external integration via entry point **and** via pip entry point (fixture); Tier-3 hosts use unified `bootstrap_catalogs()` for integrations.
+
+---
+
+#### P-Ext.2 — Tools: ToolPlugin + MCP export
+
+**Baseline:** `ToolContract`, `ToolBundleEntry`, `ToolProfile`, `ToolWiringContext`, `RuntimeToolInvoker`.
+
+**Audit snapshot (2026-06-02 — tools only):**
+
+| Area | Finding | Prod? |
+|------|---------|-------|
+| **Shipped catalog** | **13/13** bundles on `ToolPlugin` via `shipped_plugins.py` + `define_tool_plugin` | **Yes** — full plugin parity |
+| **Tool count** | **~29** `tool_id` across bundles (RAG, websearch, jira, sandbox, vision, speech, …) | **Yes** |
+| **Legacy register path** | No shipped bundle bypasses `register_tool_plugin`; `register_from_tool_manifest` is internal only | **Yes** |
+| **External example** | **None** (`tools/examples/` missing) | API via guide only |
+| **EP `intergrax.tools`** | Wired in `catalog_bootstrap`; no fixture test | Paydown P-Ext.0.5 / 2.11 |
+| **Tier-3 wiring** | `tool_wiring.build_application_tool_wiring` → `bootstrap_catalogs(register_shipped=True)` | **Yes** |
+| **Lazy catalog** | `bootstrap_catalogs(tool_bundle_ids=…)` supported; **`tool_wiring` does not pass profile bundles** (registers all 13, filters at `build_registry_from_profile`) | **Partial** (P-Ext.2.12) |
+| **Runtime materialization** | Two-phase: catalog → `ToolWiringContext` + integrations → `ToolRegistry` handlers | **Yes** |
+| **MCP / standalone LLM** | `export_mcp_tools`, `ToolsAgent`, `RuntimeToolInvoker` trace | **Yes** — strongest market path |
+| **Unit tests** | Per-bundle tests + catalog bootstrap; **no** `test_external_tool_plugin` | **Good**; EP gap |
+
+**Verdict:** Shipped tools are **production-ready** on **`ToolPlugin`**. Gaps: **external example + EP test + lazy bootstrap in `tool_wiring`** (symmetric with P-Ext.3.9).
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| P-Ext.2.1 | **`ToolPlugin` Protocol** | **Done** | **Critical** | `intergrax/tools/core/plugin.py` | `tool_bundle_manifest()`, `register_tools(registry, ctx)` |
+| P-Ext.2.2 | **`ToolManifest`** (bundle metadata) | **Done** | **Critical** | `intergrax/tools/core/manifest.py` | bundle_id, tool_ids, status |
+| P-Ext.2.3 | **`register_tool_plugin()`** | **Done** | **Critical** | `intergrax/tools/registry/plugin_register.py` | Mirror integrations |
+| P-Ext.2.4 | **Pilot migration** — RAG bundle → `ToolPlugin` | **Done** | High | `tools/providers/rag/` | Pattern for other bundles |
+| P-Ext.2.5 | Entry point group **`intergrax.tools`** | **Done** | High | `catalog_bootstrap.py` | opt-in `discover_entry_points` |
+| P-Ext.2.6 | **`export_mcp_tools(registry)`** | **Done** | High | `intergrax/tools/exporters/mcp.py` | alias of `to_mcp_tools` |
+| P-Ext.2.7 | **`ToolContract.version`** field (semver) | **Done** | Medium | `tools/core/contracts.py` | Default `1.0.0` |
+| P-Ext.2.8 | **Migrate all shipped tool bundles** → `ToolPlugin` | **Done** | High | `tools/registry/shipped_plugins.py`, `providers/*/register.py` | 13/13 bundles |
+| P-Ext.2.9 | **Reference external tool** — `tools/examples/` | **Planned** | High | `intergrax/tools/examples/` | mirror `integrations/examples/custom_memory_kv` |
+| P-Ext.2.10 | **`test_external_tool_plugin.py`** | **Planned** | High | `tests/unit/tools/` | catalog → `build_registry_from_profile` → `RuntimeToolInvoker.invoke` |
+| P-Ext.2.11 | **EP tool test** via fixture | **Planned** | High | `tests/unit/tools/` | depends on P-Ext.0.5 |
+| P-Ext.2.12 | **`tool_wiring` lazy bootstrap** — pass `tool_bundle_ids` from profile | **Planned** | Medium | `applications/_shared/tool_wiring.py` | `bootstrap_catalogs(..., tool_bundle_ids=profile.enabled_bundles)` |
+
+**DoD:** External tool executes via `RuntimeToolInvoker` after entry-point registration (test proves it); Tier-3 `tool_wiring` supports lazy bundle bootstrap.
+
+---
+
+#### P-Ext.3 — Skills: SkillPlugin
+
+**Baseline:** `SkillManifest`, `SkillBundleEntry`, `SkillResolver`, `AgentRegistry` merge to `allowed_tools`.
+
+**Audit snapshot (2026-06-02 — skills only):**
+
+| Area | Finding | Prod? |
+|------|---------|-------|
+| **Shipped catalog** | **3/3** bundles on `SkillPlugin` via `shipped_plugins.py` + `register_default_skills()` | **Yes** — best plugin parity of Tier-0 |
+| **Skill count** | **8** `skill_id`: `harness` (6), `legal` (1), `research` (1) | **Yes** |
+| **Legacy `register_skill_bundle`** | Only in `plugin_register.py` + **outdated** `scaffold new-skill` output | Scaffold **not** prod (P-Ext.3.10) |
+| **`register_from_skill_manifest`** | Internal helper; all shipped paths use `register_skill_plugin` | **Yes** |
+| **External example** | **None** (`skills/examples/` missing) | API only via guide snippet |
+| **EP `intergrax.skills`** | Wired in `catalog_bootstrap`; no fixture test | Paydown P-Ext.0.5 / 3.8 |
+| **Tier-3 wiring** | `skill_wiring.build_application_skill_wiring` → `bootstrap_catalogs(register_shipped=True)` — **better than integrations** | **Yes** |
+| **Lazy catalog** | `bootstrap_catalogs(skill_bundle_ids=…)` supported; **`skill_wiring` does not pass profile bundles** (registers all 3, filters at `build_registry_from_profile`) | **Partial** (P-Ext.3.9) |
+| **Runtime materialization** | Two-phase like tools: catalog bundle rows → `build_registry_from_profile` → `SkillRegistry` | **Yes** |
+| **`requires_skills`** | Resolver + `test_requires_skills.py`; **0** shipped manifests use it | Feature **Done**; adoption open (P-Ext.3.12) |
+| **Cursor `SKILL.md` importer** | `CursorSkillImporter` — parallel path, not `SkillPlugin` | **Yes** for import; document vs plugin (P-Ext.3.11) |
+| **Agent merge** | `AgentRegistry.register(..., skill_registry=, tool_registry=)` + `test_agent_registry_skills.py` | **Yes** |
+| **Unit tests** | `test_harness_skill_bundle`, `test_skill_resolver`, resolver/registry factory; **no** external-plugin test | **Good**; EP gap |
+
+**Verdict:** Shipped skills are **production-ready** on **`SkillPlugin`** (strongest Tier-0 catalog). Gaps match tools: **external example + EP test + lazy bootstrap in Tier-3 helper + scaffold alignment**.
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| P-Ext.3.1 | **`SkillPlugin` Protocol** | **Done** | **Critical** | `intergrax/skills/core/plugin.py` | `skill_bundle_manifest()`, `skill_manifests()`, `register_skills(registry)` |
+| P-Ext.3.2 | **`register_skill_plugin()`** | **Done** | **Critical** | `intergrax/skills/registry/plugin_register.py` | Wraps `register_from_skill_manifest` |
+| P-Ext.3.3 | Entry point group **`intergrax.skills`** | **Done** | High | `catalog_bootstrap.py` | opt-in `discover_entry_points` |
+| P-Ext.3.4 | Migrate **`harness`** + **`research`** + **`legal`** → `SkillPlugin` | **Done** | High | `skills/providers/*/plugin.py`, `shipped_plugins.py` | **3/3** bundles |
+| P-Ext.3.5 | **`requires_skills`** on `SkillManifest` + resolver DFS | **Done** | Low | `skills/resolver.py`, `test_requires_skills.py` | Cycle + unknown dep errors |
+| P-Ext.3.6 | **Reference external skill** — `skills/examples/` | **Planned** | High | `intergrax/skills/examples/` | mirror `integrations/examples/custom_memory_kv` |
+| P-Ext.3.7 | **`test_external_skill_plugin.py`** | **Planned** | High | `tests/unit/skills/` | explicit `register_skill_plugin` → `SkillResolver` → tool merge |
+| P-Ext.3.8 | **EP skill test** via fixture | **Planned** | High | `tests/unit/skills/` | depends on P-Ext.0.5 |
+| P-Ext.3.9 | **`skill_wiring` lazy bootstrap** — pass `skill_bundle_ids` from profile | **Planned** | Medium | `applications/_shared/skill_wiring.py` | `bootstrap_catalogs(..., skill_bundle_ids=profile.enabled_bundles)` |
+| P-Ext.3.10 | **Scaffold `new-skill`** emits `SkillPlugin` + `plugin.py` | **Planned** | Medium | `intergrax/scaffold/new_skill.py` | remove legacy `register_skill_bundle` template |
+| P-Ext.3.11 | **Docs: SkillPlugin vs Cursor importer** | **Planned** | Medium | `SKILLS.md`, `EXTENSION_AUTHOR_GUIDE.md` | when to use pip plugin vs `SKILL.md` import |
+| P-Ext.3.12 | **`requires_skills` in shipped harness** (optional demo) | **Planned** | Low | `skills/providers/harness/manifests.py` | one derived skill depending on `harness.tool_smoke` |
+
+**DoD:** External skill merges `allowed_tools` on `AgentRegistry.register` (test proves it); Tier-3 `skill_wiring` supports lazy bundle bootstrap.
+
+---
+
+#### P-Ext.4 — Operational scale
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| P-Ext.4.1 | **Lazy bootstrap** — register only bundles in active `*Profile` | **Done** | High | `catalog_bootstrap.py`, bootstrap modules | `tool_bundle_ids`, `skill_bundle_ids`, `integration_preset` |
+| P-Ext.4.2 | **`CatalogSnapshot` API** (read-only) | **Done** | Medium | `intergrax/core/catalog_snapshot.py` | list slugs for docs/UI |
+| P-Ext.4.3 | Slug conflict policy in bootstrap | **Planned** | Medium | `catalog_bootstrap.py` | `error` / `warn_override` |
+| P-Ext.4.4 | CI **`check_plugin_catalog.py`** | **Done** | High | `scripts/` | smoke: shipped bundles present |
+| P-Ext.4.5 | **Expand CI smoke** — all three catalog counts | **Planned** | Medium | `scripts/check_plugin_catalog.py` | tools **13** bundles / ~**29** tool_id; skills **3** bundles / **8** skill_id; integrations **core≥12**, **full≥95** (see also P-Ext.1.8) |
+
+---
+
+#### P-Ext.5 — Docs, scaffold, canon
+
+| # | Deliverable | Status | Priority | Location | Acceptance |
+|---|-------------|--------|----------|----------|------------|
+| P-Ext.5.1 | Scaffold **`new_integration` / `new_tool_bundle` / `new_skill_bundle`** | **Planned** | Medium | `intergrax/scaffold/` | manifest + plugin + register |
+| P-Ext.5.2 | **External plugins** sections in INTEGRATIONS/TOOLS/SKILLS | **Done** | Medium | `docs/` | Cross-link Appendix I |
+| P-Ext.5.3 | **Canon §7.1.5.1** — entry points + plugin protocols | **Done** | High | `intergrax_runtime_architecture.md` | §7.1.5.1 Tier-0 Plugin Catalogs |
+| P-Ext.5.4 | Remove duplicate `PLUGIN_CATALOG_PLAN.md` | **Done** | Low | — | tracking only in this plan + Appendix I |
+| P-Ext.5.5 | **Prod path matrix** in author guide (integration vs tool vs skill) | **Planned** | Medium | `EXTENSION_AUTHOR_GUIDE.md` | two-phase tool bootstrap documented |
+| P-Ext.5.6 | **Lab wiring recipe** for external plugins | **Planned** | Medium | `applications/lab_application/`, `TIER3_READINESS.md` | `discover_entry_points` + profile example |
+
+---
+
+#### P-Ext.6 — Production closure (paydown)
+
+**Goal:** Close gaps between **MVP** (API + shipped catalogs) and **production-ready extensibility** (tested pip install, parity across three layers, ops hooks).
+
+| # | Deliverable | Status | Priority | Depends on | Acceptance |
+|---|-------------|--------|----------|------------|------------|
+| P-Ext.6.1 | **Fixture pip package** (unblocks EP tests) | **Planned** | **Critical** | — | same as P-Ext.0.5 |
+| P-Ext.6.2 | **External tool + skill examples + tests** | **Planned** | **Critical** | 6.1 | P-Ext.2.9–2.11, P-Ext.3.6–3.8, 3.7 green |
+| P-Ext.6.8 | **Skill Tier-3 + scaffold** (rollup) | **Planned** | Medium | — | P-Ext.3.9–3.12, scaffold overlap P-Ext.5.1 |
+| P-Ext.6.9 | **Tool Tier-3 lazy wiring** (rollup) | **Planned** | Medium | — | P-Ext.2.12 (symmetric with P-Ext.3.9) |
+| P-Ext.6.10 | **Tier-3 lazy wiring** (all catalogs rollup) | **Planned** | Medium | — | P-Ext.2.12 + P-Ext.3.9 + optional `integration_preset` in shared helpers |
+| P-Ext.6.3 | **EP discovery** in tests + lab env flag | **Planned** | High | 6.1 | P-Ext.0.6–0.7, P-Ext.1.6 |
+| P-Ext.6.4 | **IntegrationSlug cleanup** in docs/scripts | **Planned** | Medium | — | P-Ext.1.5 |
+| P-Ext.6.5 | **Scaffold** `new_tool_bundle` / `new_skill_bundle` / `new_integration` | **Planned** | Medium | — | P-Ext.5.1 |
+| P-Ext.6.6 | **Integration Tier-3** + typed resolve + health (rollup) | **Planned** | Medium | — | P-Ext.1.3a, 1.4, 1.8–1.11 |
+| P-Ext.6.7 | **Conflict policy** + expanded CI smoke | **Planned** | Medium | — | P-Ext.4.3, P-Ext.4.5, P-Ext.1.8 |
+
+**DoD (phase closure):** Appendix I has no **Planned** P0/P1 rows; external integration, tool, and skill each proven via **entry point** (fixture package), not only explicit in-process registration.
+
+---
+
+#### Phase P-Ext — Definition of done
+
+**MVP (met 2026-06-02):**
+
+1. `bootstrap_catalogs()` + three plugin protocols + lazy presets.
+2. All shipped tool/skill bundles on `ToolPlugin` / `SkillPlugin`.
+3. Integration example `custom_memory_kv` + `test_external_plugin.py`.
+4. Canon §7.1.5.1 + `EXTENSION_AUTHOR_GUIDE.md` (EN).
+5. Gate: `tests/unit/core/plugins`, integrations/tools/skills plugin tests green.
+
+**Production closure (P-Ext.6 — open):**
+
+1. **Fixture pip package** registers integration + tool + skill without Intergrax core edits.
+2. **EP discovery tests** for all three groups (`discover_entry_points=True`).
+3. **External tool test** — `RuntimeToolInvoker` after EP registration.
+4. **External skill test** — `allowed_tools` merge after EP registration.
+5. **Tier-3** documents/env for optional discovery; default remains explicit bootstrap.
+6. **Tier-3 lazy wiring** — `tool_wiring` and `skill_wiring` pass profile bundle ids to `bootstrap_catalogs()` (P-Ext.2.12, P-Ext.3.9).
+7. **No central slug enum** in new code/docs (string slugs); `IntegrationSlug` removed from author-facing examples.
+8. **MCP export** from active `ToolRegistry` (already met).
+9. Appendix I: all P-Ext.* rows **Done** or **Won't fix** with reason.
+
+#### Phase P-Ext — Recommended execution order
+
+```text
+MVP (Done):               P-Ext.0.1–0.4 | P-Ext.1.1–1.2 | P-Ext.2.1–2.8 | P-Ext.3.* | P-Ext.4.1–4.2,4.4 | P-Ext.5.2–5.4
+
+Paydown Wave P1 (critical):
+  P-Ext.0.5 → P-Ext.0.6 → P-Ext.1.6 → P-Ext.1.10
+           → P-Ext.2.9 → P-Ext.2.10 → P-Ext.2.11
+           → P-Ext.3.6 → P-Ext.3.7 → P-Ext.3.8
+
+Paydown Wave P2 (ops + docs):
+  P-Ext.0.7 → P-Ext.4.3 → P-Ext.4.5 → P-Ext.1.8 → P-Ext.1.5 → P-Ext.1.7 → P-Ext.5.5 → P-Ext.5.6
+           → P-Ext.2.12 → P-Ext.3.9 → P-Ext.3.10 → P-Ext.3.11
+
+Paydown Wave P3 (optional polish):
+  P-Ext.1.3a → P-Ext.1.4 → P-Ext.5.1 → P-Ext.3.12
+```
+
+**Effort estimate:** MVP ~21–32 person-days (**spent**); paydown **~12–18** person-days incl. integration + tool + skill closure (Appendix I).
+
+**Priority ladder:** **Band 2c** (§4.0) — harness Tier-0 extensibility; **not** Band 3 product work.
+
+---
+
 ## 4. Priority Order
 
 ### 4.0 Implementation priority ladder (canonical)
@@ -2302,6 +2577,7 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 | **1 — Harness platform** | Tier-0/1/3 lab wiring, security, policy, typing, legacy removal, gate audits | **Maintenance** (§4.1 **Done**; keep green) | `pytest -m gate`, `check_harness_*`, `check_tools_agent_*`, regression fixes |
 | **2 — Harness architecture hardening** | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics hardening — **no** business domain | **Done (Phase V + V-V6)** | V-CG … V-KG, V-V6 closeout |
 | **2b — Modality plane (optional parallel)** | Vision CV, speech, classical ML — harness Tier-0 only | **Done** | W-ML complete; optional Celery bus wiring for Tier-3 scale-out |
+| **2c — Plugin catalogs (P-Ext)** | Entry points + `ToolPlugin` + `SkillPlugin` + `bootstrap_catalogs()` | **MVP Done** (paydown [P-Ext.6](#p-ext6--production-closure-paydown)) | Appendix I · [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -2323,7 +2599,7 @@ DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9
 DONE:    Phase L, M, M-LLM, M-RAG, N, O — harness GA (functional)
 DONE:    Phase K hardening K.3–K.5; Appendix B paydown (except B.15)
 
-PARALLEL (harness-only): M.6 provider slugs on demand; R-Skill catalog expansion (platform packs); Phase V hardening streams
+PARALLEL (harness-only): M.6 provider slugs on demand; R-Skill catalog expansion (platform packs); **Phase P-Ext.6 paydown** (plugin production closure)
 
 BAND 3 — END OF PLAN (see §6.3; not default “next”):
   • K.1 Problem Radar / K.2 Vendor Discovery (business agents)
@@ -2400,9 +2676,31 @@ Verify (every harness PR):
   python scripts/check_tools_agent_imports.py
   python scripts/check_tools_agent_run.py
   python scripts/check_legacy_tool_plan_booleans.py
+  python scripts/check_plugin_catalog.py
 ```
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
+
+### 6.1p Phase P-Ext paydown (Band 2c — optional parallel with §6.1)
+
+**Status:** **Planned** · **not** default before gate green. Execute **one P-Ext.\*** ID per PR when extending plugin catalogs.
+
+| Order | ID | Deliverable | Priority |
+|-------|-----|-------------|----------|
+| 1 | P-Ext.0.5 | Fixture pip package (`tests/fixtures/plugin_packages/`) | P0 |
+| 2 | P-Ext.0.6 | EP discovery tests (all three groups) | P0 |
+| 3 | P-Ext.1.6 | Integration EP test via fixture | P0 |
+| 4 | P-Ext.1.10 | Tier-3 `integration_wiring` → `bootstrap_catalogs()` | P0 |
+| 5 | P-Ext.2.9–2.11 | External tool example + unit + EP tests | P0 |
+| 6 | P-Ext.3.6–3.8 | External skill example + unit + EP tests | P0 |
+| 7 | P-Ext.0.7 | `INTERGRAX_DISCOVER_PLUGINS` + lab wiring | P1 |
+| 8 | P-Ext.4.3, 4.5, 1.8 | Conflict policy + CI smoke (incl. integration counts) | P1 |
+| 9 | P-Ext.1.5, 1.7, 5.5–5.6 | Slug/docs cleanup + author guide matrix | P2 |
+| 10 | P-Ext.2.12, 3.9–3.11 | Tool/skill lazy bootstrap, scaffold plugin template, importer docs | P2 |
+| 11 | P-Ext.1.3a, 1.4, 1.9, 1.11–1.12 | Typed resolve expansion, health API, integration wiring helper | P3 |
+| 12 | P-Ext.5.1, 3.10, 3.12 | Scaffold CLI (all three catalogs) + harness `requires_skills` demo | P3 |
+
+Full task register: [Appendix I](#appendix-i--plugin-catalog-traceability-phase-p-ext).
 
 ### 6.2 Harness architecture hardening (Band 2 — Phase V)
 
@@ -3334,7 +3632,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Multi-agent coordination pattern catalog | canon §42.43, §53.10 | ideal §6 + §25 | V-MA.* | **Done** |
 | Knowledge graph evolution path (Graph-RAG) | canon §53.11 | ideal §3.7.1 + §25 | V-KG.* | **Done** |
 | Observability and runtime traceability | canon §33, §42.24 | ideal §11 | Phases Q/Q+/S/U + §6.1 maintenance | **Done** |
-| Registry-driven extensibility (agent/tool/skill/policy/prompt/eval) | canon §7.1.6–§7.1.8, §15, §53.2 | ideal §19 | Phase R/U + V-CG/V-PE/V-EVAL | **Done** |
+| Registry-driven extensibility (agent/tool/skill/policy/prompt/eval) | canon §7.1.5.1–§7.1.8, §15, §53.2 | ideal §19 | Phase R/U + V-CG/V-PE/V-EVAL + **P-Ext** | **MVP Done** — [P-Ext.6 paydown](#p-ext6--production-closure-paydown) for EP fixture + external tool/skill tests; marketplace UI out of scope |
 | Product agents and new product apps | canon §7.4, §52 | ideal §26 | §6.3 only | **Deferred (product scope)** |
 
 ### H.3 Completion policy for “architecture-complete harness”
@@ -3357,5 +3655,113 @@ domain MUST be reflected in:
 
 ---
 
-*Plan synced (2026-06-02). **Harness baseline complete** (Q–U + §4.1). Gate: **481 passed**. **Default next:** §6.1 + §6.2 (Phase V hardening). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
+## Appendix I — Plugin catalog traceability (Phase P-Ext)
+
+**Purpose:** Task-level tracker for plugin-native Integration, Tool, and Skill catalogs. **Canonical phase narrative:** [Phase P-Ext](#phase-p-ext--plugin-catalogs-integrations-tools-skills) · paydown: [P-Ext.6](#p-ext6--production-closure-paydown).
+
+**Status:** **MVP Done** (2026-06-02) · **paydown open** · **MVP effort:** ~21–32 person-days · **paydown estimate:** ~8–14 person-days.
+
+### I.1 Delivery rule
+
+Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix → `pytest -m gate` green. Paydown cadence: [§6.1p](#61p-phase-p-ext-paydown-band-2c--optional-parallel-with-61).
+
+### I.2 Task register
+
+| ID | Layer | Summary | Status | Priority |
+|----|-------|---------|--------|----------|
+| P-Ext.0.1 | All | `load_plugins()` / entry point discovery | **Done** | P0 |
+| P-Ext.0.2 | All | `PluginConflictError`, `PluginLoadError` | **Done** | P0 |
+| P-Ext.0.3 | All | `bootstrap_catalogs()` Tier-3 API | **Done** | P0 |
+| P-Ext.0.4 | All | `EXTENSION_AUTHOR_GUIDE.md` (EN) | **Done** | P0 |
+| P-Ext.0.5 | All | Test fixture pip package | **Done** | P0 |
+| P-Ext.0.6 | All | EP discovery tests (3 groups) | **Done** | P0 |
+| P-Ext.0.7 | All | `INTERGRAX_DISCOVER_PLUGINS` + lab wiring | **Done** | P1 |
+| P-Ext.1.1 | Integrations | Entry points `intergrax.integrations` | **Done** | P0 |
+| P-Ext.1.2 | Integrations | `bootstrap_core` / optional split | **Done** | P1 |
+| P-Ext.1.3 | Integrations | Typed `resolve_*` helpers (top categories) | **Done** | P2 |
+| P-Ext.1.3a | Integrations | Expand `resolve_typed` + tests | **Done** | P2 |
+| P-Ext.1.4 | Integrations | Health check API (optional) | **Done** | P3 |
+| P-Ext.1.5 | Integrations | `IntegrationSlug` cleanup (docs/scripts) | **Planned** | P2 |
+| P-Ext.1.6 | Integrations | EP test via fixture | **Done** | P0 |
+| P-Ext.1.7 | Integrations | Dual-model docs (manifest vs plugin) | **Done** | P2 |
+| P-Ext.1.8 | Integrations | CI integration slug count smoke | **Done** | P1 |
+| P-Ext.1.9 | Integrations | `test_resolve_typed.py` | **Done** | P3 |
+| P-Ext.1.10 | Integrations | Tier-3 `bootstrap_catalogs` in integration_wiring | **Done** | P0 |
+| P-Ext.1.11 | Integrations | `_shared/integration_wiring.py` helper | **Done** | P2 |
+| P-Ext.1.12 | Integrations | `SqliteIntegrationPlugin` wire or document | **Done** | P3 |
+| P-Ext.2.1 | Tools | `ToolPlugin` Protocol | **Done** | P0 |
+| P-Ext.2.2 | Tools | `ToolBundleManifest` / bundle metadata | **Done** | P0 |
+| P-Ext.2.3 | Tools | `register_tool_plugin()` | **Done** | P0 |
+| P-Ext.2.4 | Tools | RAG bundle plugin migration (pilot) | **Done** | P1 |
+| P-Ext.2.5 | Tools | Entry points `intergrax.tools` | **Done** | P1 |
+| P-Ext.2.6 | Tools | MCP tool export | **Done** | P1 |
+| P-Ext.2.7 | Tools | `ToolContract.version` | **Done** | P2 |
+| P-Ext.2.8 | Tools | All 13 shipped bundles → `ToolPlugin` | **Done** | P1 |
+| P-Ext.2.9 | Tools | `tools/examples/` reference package | **Done** | P0 |
+| P-Ext.2.10 | Tools | `test_external_tool_plugin.py` | **Done** | P0 |
+| P-Ext.2.11 | Tools | EP tool test via fixture | **Done** | P0 |
+| P-Ext.2.12 | Tools | `tool_wiring` lazy `tool_bundle_ids` | **Done** | P2 |
+| P-Ext.3.1 | Skills | `SkillPlugin` Protocol | **Done** | P1 |
+| P-Ext.3.2 | Skills | `register_skill_plugin()` | **Done** | P1 |
+| P-Ext.3.3 | Skills | Entry points `intergrax.skills` | **Done** | P1 |
+| P-Ext.3.4 | Skills | harness + research + legal plugin migration | **Done** | P1 |
+| P-Ext.3.5 | Skills | `requires_skills` (optional) | **Done** | P3 |
+| P-Ext.3.6 | Skills | `skills/examples/` reference package | **Done** | P0 |
+| P-Ext.3.7 | Skills | `test_external_skill_plugin.py` | **Done** | P0 |
+| P-Ext.3.8 | Skills | EP skill test via fixture | **Done** | P0 |
+| P-Ext.3.9 | Skills | `skill_wiring` lazy `skill_bundle_ids` | **Done** | P2 |
+| P-Ext.3.10 | Skills | Scaffold `new-skill` → `SkillPlugin` | **Done** | P2 |
+| P-Ext.3.11 | Skills | Docs: SkillPlugin vs Cursor importer | **Done** | P2 |
+| P-Ext.3.12 | Skills | Shipped `requires_skills` demo (optional) | **Done** | P3 |
+| P-Ext.4.1 | Ops | Lazy profile bootstrap | **Done** | P2 |
+| P-Ext.4.2 | Ops | `CatalogSnapshot` API | **Done** | P2 |
+| P-Ext.4.3 | Ops | Slug conflict policy (bootstrap) | **Planned** | P2 |
+| P-Ext.4.4 | Ops | `check_plugin_catalog.py` CI | **Done** | P1 |
+| P-Ext.4.5 | Ops | CI smoke: tool/skill bundle counts | **Done** | P1 |
+| P-Ext.5.1 | Docs | Scaffold `new_*` commands | **Planned** | P2 |
+| P-Ext.5.2 | Docs | INTEGRATIONS/TOOLS/SKILLS external sections | **Done** | P2 |
+| P-Ext.5.3 | Docs | Canon §7.1.5.1 plugin narrative | **Done** | P1 |
+| P-Ext.5.4 | Docs | remove `PLUGIN_CATALOG_PLAN.md` | **Done** | P3 |
+| P-Ext.5.5 | Docs | Prod path matrix in author guide | **Done** | P2 |
+| P-Ext.5.6 | Docs | Lab wiring recipe for external plugins | **Planned** | P2 |
+| P-Ext.6.1 | Paydown | Fixture pip package (rollup) | **Done** | P0 |
+| P-Ext.6.2 | Paydown | External tool + skill examples + tests | **Done** | P0 |
+| P-Ext.6.3 | Paydown | EP discovery + lab env | **Done** | P1 |
+| P-Ext.6.4 | Paydown | IntegrationSlug cleanup | **Planned** | P2 |
+| P-Ext.6.5 | Paydown | Scaffold CLI | **Planned** | P2 |
+| P-Ext.6.6 | Paydown | Integration Tier-3 + typed resolve + health | **Done** | P2 |
+| P-Ext.6.7 | Paydown | Conflict policy + CI smoke | **Planned** | P1 |
+| P-Ext.6.8 | Paydown | Skill Tier-3 + scaffold rollup | **Done** | P2 |
+| P-Ext.6.9 | Paydown | Tool Tier-3 lazy wiring rollup | **Done** | P2 |
+| P-Ext.6.10 | Paydown | Tier-3 lazy wiring (all catalogs) rollup | **Done** | P2 |
+
+**Paydown summary (open):** 4 **Planned** · 56 **Done** · 1 **Partial** (P-Ext.1.3 base helpers; rollup rows duplicate leaf IDs).
+
+### I.3 Market alignment checklist
+
+| Pattern | Target |
+|---------|--------|
+| Hexagonal adapters | `IntegrationCategory` + contracts + `IntegrationPlugin` |
+| MCP tools | `ToolContract` + `export_mcp_tools` |
+| Capability packs | `SkillManifest` + resolver (not LLM-invokable) |
+| 12-factor config | env_prefix + `IntegrationProfile.options` |
+| Plugin discovery | entry points (hybrid with explicit bootstrap) |
+| Tier-3 composition root | `bootstrap_catalogs()` |
+
+### I.4 Paydown log
+
+| Date | P-Ext ID | Summary |
+|------|----------|---------|
+| 2026-06-02 | — | Phase P-Ext + Appendix I added (migrated from `PLUGIN_CATALOG_PLAN.md`) |
+| 2026-06-02 | 0.1–0.4, 1.1–1.2, 2.1–2.8, 3.1–3.5, 4.1–4.2, 4.4, 5.2–5.4 | MVP: protocols, bootstrap, 13 tool + 3 skill plugins, lazy catalog, `custom_memory_kv` test |
+| 2026-06-02 | — | Plan updated: **MVP Done** + **P-Ext.6 paydown** backlog (EP fixture, external tool/skill tests, ops/docs) |
+| 2026-06-02 | 1.* audit | Integrations audit: 12 core / ~99 full manifest path; `resolve_typed` partial; Tier-3 integration_wiring gap; +P-Ext.1.3a, 1.8–1.12 |
+| 2026-06-02 | 3.* audit | Skills audit: 3/3 `SkillPlugin`, 8 skill_id; Tier-3 `skill_wiring` OK; scaffold legacy; +P-Ext.3.9–3.12, 6.8 |
+| 2026-06-02 | 2.* audit | Tools audit section + `tool_wiring` lazy (P-Ext.2.12); P-Ext.4.5 unified counts; +P-Ext.6.9–6.10 |
+| 2026-06-02 | P-Ext paydown | Fixture EP package, external examples/tests, Tier-3 wiring, docs, CI smoke (residual: 1.5, 4.3, 5.1, 5.6) |
+| — | — | *(append row per merged PR)* |
+
+---
+
+*Plan synced (2026-06-02). **Harness baseline complete** (Q–U + §4.1). Gate: **481 passed**. **Default next:** §6.1 maintenance. **Optional parallel:** [§6.1p P-Ext paydown](#61p-phase-p-ext-paydown-band-2c--optional-parallel-with-61) (start P-Ext.0.5). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
 

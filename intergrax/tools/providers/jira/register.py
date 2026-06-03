@@ -1,18 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.tools.providers.jira.bundle import JIRA_BUNDLE_ID, JIRA_TOOL_IDS, register_jira_tools
-from intergrax.tools.registry.catalog import ToolBundleEntry, ToolBundleStatus, register_tool_bundle
+from __future__ import annotations
+
+from intergrax.tools.registry.plugin_register import register_tool_plugin
+from intergrax.tools.registry.shipped_plugins import JiraToolPlugin
 
 
 def register_jira_tool_bundle(*, override: bool = False) -> None:
-    register_tool_bundle(
-        ToolBundleEntry(
-            bundle_id=JIRA_BUNDLE_ID,
-            tool_ids=JIRA_TOOL_IDS,
-            register=register_jira_tools,
-            status=ToolBundleStatus.STABLE,
-            description="Jira issue tracker tools.",
-        ),
-        override=override,
-    )
+    register_tool_plugin(JiraToolPlugin, override=override)

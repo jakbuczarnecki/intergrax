@@ -27,7 +27,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 
@@ -133,7 +132,7 @@ def test_qdrant_register_and_resolve() -> None:
     factory, _ = _store_factory()
     store = resolve(
         IntegrationCategory.VECTOR_STORE,
-        profile=IntegrationProfile(vector_store=IntegrationSlug.QDRANT),
+        profile=IntegrationProfile(vector_store="qdrant"),
         config={"collection_name": "c1", "tenant_id": "t1", "store_factory": factory},
     )
     assert_vector_store(store)
@@ -145,7 +144,7 @@ def test_chroma_register_and_resolve() -> None:
     factory, _ = _store_factory()
     store = resolve(
         IntegrationCategory.VECTOR_STORE,
-        profile=IntegrationProfile(vector_store=IntegrationSlug.CHROMA),
+        profile=IntegrationProfile(vector_store="chroma"),
         config={"collection_name": "c1", "tenant_id": "t1", "store_factory": factory},
     )
     assert_vector_store(store)
@@ -155,7 +154,7 @@ def test_chroma_register_and_resolve() -> None:
 def test_register_default_integrations_includes_qdrant_and_chroma() -> None:
     register_default_integrations()
     factory, _ = _store_factory()
-    for slug in (IntegrationSlug.QDRANT, IntegrationSlug.CHROMA):
+    for slug in ("qdrant", "chroma"):
         store = resolve(
             IntegrationCategory.VECTOR_STORE,
             profile=IntegrationProfile(vector_store=slug),

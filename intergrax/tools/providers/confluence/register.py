@@ -1,22 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.tools.providers.confluence.bundle import CONFLUENCE_BUNDLE_ID, register_confluence_tools
-from intergrax.tools.registry.catalog import ToolBundleEntry, ToolBundleStatus, register_tool_bundle
+from __future__ import annotations
+
+from intergrax.tools.registry.plugin_register import register_tool_plugin
+from intergrax.tools.registry.shipped_plugins import ConfluenceToolPlugin
 
 
 def register_confluence_tool_bundle(*, override: bool = False) -> None:
-    register_tool_bundle(
-        ToolBundleEntry(
-            bundle_id=CONFLUENCE_BUNDLE_ID,
-            tool_ids=(
-                "confluence.get_page",
-                "confluence.search_pages",
-                "confluence.search",
-            ),
-            register=register_confluence_tools,
-            status=ToolBundleStatus.STABLE,
-            description="Confluence wiki / knowledge tools.",
-        ),
-        override=override,
-    )
+    register_tool_plugin(ConfluenceToolPlugin, override=override)

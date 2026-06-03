@@ -8,9 +8,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from intergrax.core.catalog_bootstrap import bootstrap_catalogs
+from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
-from intergrax.tools.registry.bootstrap import register_default_tools
 
 
 @dataclass(frozen=True)
@@ -41,10 +42,16 @@ def build_application_tool_wiring(
     """
     Build a catalog registry for Tier-3 hosts (lab, product, MCP export).
 
-    Call ``register_default_tools()`` once, compose ``ToolWiringContext`` from
-    integrations + runtime managers, then enable tools via ``ToolProfile``.
+    Call ``bootstrap_catalogs()`` once (Tier-0 integrations, tools, skills), compose
+    ``ToolWiringContext`` from integrations + runtime managers, then enable tools via
+    ``ToolProfile``.
     """
-    register_default_tools()
+    tool_bundle_ids = tuple(profile.enabled_bundles) if profile.enabled_bundles else None
+    bootstrap_catalogs(
+        register_shipped=True,
+        tool_bundle_ids=tool_bundle_ids,
+        discover_entry_points=discover_plugins_enabled(),
+    )
     ctx = wiring_context
     if ctx is None and integration_profile is not None:
         ctx = ToolWiringContext.from_integration_profile(

@@ -1,3 +1,4 @@
-from intergrax.tools.providers.confluence.register import register_confluence_tool_bundle
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
 
-__all__ = ["register_confluence_tool_bundle"]
+"""Confluence tool bundle — register via ``intergrax.tools.registry.shipped_plugins``."""

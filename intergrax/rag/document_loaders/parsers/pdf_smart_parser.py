@@ -7,7 +7,6 @@ from typing import Sequence
 
 from langchain_core.documents import Document
 
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.integration.catalog_parser import CatalogDocumentParser
 from intergrax.rag.document_loaders.integration.resolver import resolve_document_parser
@@ -37,8 +36,8 @@ class PdfSmartParser(BaseDocumentParser):
         return "pymupdf"
 
     def is_available(self) -> bool:
-        return resolve_document_parser(IntegrationSlug.PYMUPDF, **self._options).is_available()
+        return resolve_document_parser("pymupdf", **self._options).is_available()
 
     def load(self, source: str) -> Sequence[Document]:
-        backend = resolve_document_parser(IntegrationSlug.PYMUPDF, **self._options)
+        backend = resolve_document_parser("pymupdf", **self._options)
         return CatalogDocumentParser(backend).load(source)

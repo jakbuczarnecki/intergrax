@@ -34,7 +34,7 @@ def create_slash_command_interaction_surface(
     interaction_adapter: Optional[InteractionAdapter] = None,
     **config_overrides: object,
 ) -> InteractionAdapter:
-    """Catalog factory for ``IntegrationSlug.SLASH_COMMAND``."""
+    """Catalog factory for ``"slash_command"``."""
     return create_slash_command_integration(
         interaction_adapter=interaction_adapter,
         **config_overrides,

@@ -11,7 +11,6 @@ import pytest
 
 from intergrax.integrations.contracts.observability_backend import TraceQueryResult, TraceRecord
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.tools.providers.observability.contracts import ErrorsCaptureInput, TracesQueryInput
 from intergrax.tools.providers.observability.resolve import resolve_observability_backend
 from intergrax.tools.providers.observability.service import errors_capture, traces_query
@@ -80,7 +79,7 @@ def test_harness_profile_options_resolve_observability_backends(monkeypatch: pyt
     langsmith = _LangSmithBackend()
 
     def _fake_resolve(category: Any, *, slug: Any = None, profile: Any = None, config: Any = None) -> Any:
-        if slug == IntegrationSlug.LANGSMITH:
+        if slug == "langsmith":
             return langsmith
         return sentry
 

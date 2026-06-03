@@ -9,7 +9,6 @@ from pathlib import Path
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
 from intergrax.runtime.notifications.deliveries.http_webhook_delivery import HttpWebhookDelivery
@@ -46,16 +45,16 @@ def open_host_delivery_ledger(
     return open_delivery_ledger(db_path=ledger_db)
 
 
-_CATALOG_NOTIFICATION_SLUGS: dict[str, IntegrationSlug] = {
-    "log": IntegrationSlug.LOG,
-    "slack": IntegrationSlug.SLACK,
-    "teams": IntegrationSlug.TEAMS,
-    "webhook": IntegrationSlug.WEBHOOK,
-    "pagerduty": IntegrationSlug.PAGERDUTY,
-    "opsgenie": IntegrationSlug.OPSGENIE,
-    "discord": IntegrationSlug.DISCORD,
-    "twilio": IntegrationSlug.TWILIO,
-    "email_smtp": IntegrationSlug.EMAIL_SMTP,
+_CATALOG_NOTIFICATION_SLUGS: dict[str] = {
+    "log": "log",
+    "slack": "slack",
+    "teams": "teams",
+    "webhook": "webhook",
+    "pagerduty": "pagerduty",
+    "opsgenie": "opsgenie",
+    "discord": "discord",
+    "twilio": "twilio",
+    "email_smtp": "email_smtp",
 }
 
 

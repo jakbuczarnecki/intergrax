@@ -64,7 +64,7 @@ def create_mongodb_document_store(
     collection_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
 ) -> MongoDBDocumentStore:
-    """Catalog factory for ``IntegrationSlug.MONGODB`` / ``DOCUMENT_STORE``."""
+    """Catalog factory for ``"mongodb"`` / ``DOCUMENT_STORE``."""
     return create_mongodb_integration(
         document_store=document_store,
         collection=collection,

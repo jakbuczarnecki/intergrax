@@ -5,7 +5,7 @@
 Complete Bing integration bundle — the single composition root for Bing Web Search.
 
 All runtime wiring MUST use this module or
-``profile.resolve(IntegrationCategory.SEARCH_PROVIDER)`` with ``IntegrationSlug.BING``.
+``profile.resolve(IntegrationCategory.SEARCH_PROVIDER)`` with ``"bing"``.
 """
 
 from __future__ import annotations
@@ -65,7 +65,7 @@ def create_bing_search_provider(
     session: Optional[object] = None,
     **config_overrides: object,
 ) -> SearchProvider:
-    """Catalog factory for ``IntegrationSlug.BING`` / ``SEARCH_PROVIDER``."""
+    """Catalog factory for ``"bing"`` / ``SEARCH_PROVIDER``."""
     return create_bing_integration(
         api_key=api_key,
         provider=provider,

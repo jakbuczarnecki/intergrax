@@ -17,7 +17,6 @@ from intergrax.distributed.registry import DistributedProviderRegistry
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.key_value_cache.redis import RedisKVStore, register_redis_integration
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 
 def resolve_redis_kv_store(
@@ -26,12 +25,12 @@ def resolve_redis_kv_store(
 ) -> Any:
     """Catalog-first Redis KV resolution (Phase M.9)."""
     register_redis_integration(override=True)
-    active = profile or IntegrationProfile(key_value_cache=IntegrationSlug.REDIS)
+    active = profile or IntegrationProfile(key_value_cache="redis")
     if active.key_value_cache is None:
-        active = active.model_copy(update={"key_value_cache": IntegrationSlug.REDIS})
+        active = active.model_copy(update={"key_value_cache": "redis"})
     return active.resolve(
         IntegrationCategory.KEY_VALUE_CACHE,
-        config=active.options_for_slug(IntegrationSlug.REDIS) | dict(config_overrides),
+        config=active.options_for_slug("redis") | dict(config_overrides),
     )
 
 

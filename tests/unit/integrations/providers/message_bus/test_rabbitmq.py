@@ -23,7 +23,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.queueing.contracts.task_queue import TaskRequest
 
 pytestmark = pytest.mark.unit
@@ -127,7 +126,7 @@ def test_register_and_resolve_via_profile(
     mock_producer: MagicMock,
 ) -> None:
     register_rabbitmq_integration()
-    profile = IntegrationProfile(message_bus=IntegrationSlug.RABBITMQ)
+    profile = IntegrationProfile(message_bus="rabbitmq")
 
     bus = resolve(
         IntegrationCategory.MESSAGE_BUS,
@@ -143,7 +142,7 @@ def test_register_default_integrations_includes_rabbitmq(
     mock_producer: MagicMock,
 ) -> None:
     register_default_integrations()
-    profile = IntegrationProfile(message_bus=IntegrationSlug.RABBITMQ)
+    profile = IntegrationProfile(message_bus="rabbitmq")
 
     bus = resolve(
         IntegrationCategory.MESSAGE_BUS,

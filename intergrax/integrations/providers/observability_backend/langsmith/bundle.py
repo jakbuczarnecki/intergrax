@@ -60,7 +60,7 @@ def create_langsmith_observability_backend(
     http_client_factory: Optional[Callable[[LangSmithIntegrationConfig], Any]] = None,
     **config_overrides: object,
 ) -> LangSmithObservabilityBackend:
-    """Catalog factory for ``IntegrationSlug.LANGSMITH``."""
+    """Catalog factory for ``"langsmith"``."""
     return create_langsmith_integration(
         observability_backend=observability_backend,
         client=client,

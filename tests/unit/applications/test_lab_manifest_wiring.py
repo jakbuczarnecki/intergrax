@@ -51,6 +51,6 @@ def test_build_lab_registry_with_research_resolves_skill_ids() -> None:
     registry = build_lab_registry(settings=settings)
     assert registry.has("research")
     contract = registry.get_contract("research")
-    assert "research.literature_scan" in contract.skill_ids
+    assert any(s.skill_id == "research.literature_scan" for s in contract.skills)
     assert "rag.retrieve" in contract.allowed_tools
     assert "websearch.query" in contract.allowed_tools

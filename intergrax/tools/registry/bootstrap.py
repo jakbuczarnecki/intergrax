@@ -1,55 +1,48 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Register default tool catalog bundles (Phase O.2+)."""
+"""Register default tool catalog bundles via :class:`ToolPlugin` (Phase P-Ext)."""
 
 from __future__ import annotations
+
+from typing import AbstractSet, Sequence
+
+from intergrax.tools.registry.plugin_register import register_tool_plugin
 
 _BOOTSTRAPPED = False
 
 
-def register_default_tools(*, override: bool = False) -> None:
+def register_default_tools(
+    *,
+    bundle_ids: Sequence[str] | None = None,
+    override: bool = False,
+) -> None:
     """
     Idempotent registration of shipped tool catalog bundles.
 
-    Call from Tier-3 application factories before ``build_registry_from_profile()``.
+    When ``bundle_ids`` is set, only those bundles are registered (lazy catalog).
     """
     global _BOOTSTRAPPED
-    if _BOOTSTRAPPED and not override:
+    if _BOOTSTRAPPED and not override and bundle_ids is None:
         return
 
-    from intergrax.tools.providers.braintrust.register import register_braintrust_tool_bundle
-    from intergrax.tools.providers.gitlab.register import register_gitlab_tool_bundle
-    from intergrax.tools.providers.pagerduty.register import register_pagerduty_tool_bundle
-    from intergrax.tools.providers.confluence.register import register_confluence_tool_bundle
-    from intergrax.tools.providers.jira.register import register_jira_tool_bundle
-    from intergrax.tools.providers.notify.register import register_notify_tool_bundle
-    from intergrax.tools.providers.observability.register import register_observability_tool_bundle
-    from intergrax.tools.providers.rag.register import register_rag_tool_bundle
-    from intergrax.tools.providers.sandbox.register import register_sandbox_tool_bundle
-    from intergrax.tools.providers.speech.register import register_speech_tool_bundle
-    from intergrax.tools.providers.vision.register import register_vision_tool_bundle
-    from intergrax.tools.providers.ml.register import register_ml_tool_bundle
-    from intergrax.tools.providers.websearch.register import register_websearch_tool_bundle
+    from intergrax.tools.registry.shipped_plugins import shipped_tool_bundle_ids, shipped_tool_plugins
 
-    for register_fn in (
-        register_rag_tool_bundle,
-        register_websearch_tool_bundle,
-        register_jira_tool_bundle,
-        register_gitlab_tool_bundle,
-        register_confluence_tool_bundle,
-        register_notify_tool_bundle,
-        register_pagerduty_tool_bundle,
-        register_observability_tool_bundle,
-        register_braintrust_tool_bundle,
-        register_sandbox_tool_bundle,
-        register_speech_tool_bundle,
-        register_vision_tool_bundle,
-        register_ml_tool_bundle,
-    ):
-        register_fn(override=override)
+    allowed: AbstractSet[str] | None = None
+    if bundle_ids is not None:
+        allowed = {bid.strip().lower() for bid in bundle_ids if bid.strip()}
+        unknown = allowed - shipped_tool_bundle_ids()
+        if unknown:
+            raise ValueError(f"Unknown tool bundle_id(s): {', '.join(sorted(unknown))}")
 
-    _BOOTSTRAPPED = True
+    for plugin_type in shipped_tool_plugins():
+        manifest = plugin_type.tool_bundle_manifest()
+        if allowed is not None and manifest.bundle_id not in allowed:
+            continue
+        register_tool_plugin(plugin_type, override=override)
+
+    if bundle_ids is None:
+        _BOOTSTRAPPED = True
 
 
 def reset_default_tools_bootstrap() -> None:

@@ -28,7 +28,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 
@@ -174,7 +173,7 @@ def test_create_elasticsearch_integration_bundle() -> None:
 
 def test_register_and_resolve_via_profile() -> None:
     register_elasticsearch_integration()
-    profile = IntegrationProfile(observability_backend=IntegrationSlug.ELASTICSEARCH)
+    profile = IntegrationProfile(observability_backend="elasticsearch")
     http = _mock_http_client(post_payload={"aggregations": {"count": {"value": 1}}})
 
     backend = resolve(
@@ -189,7 +188,7 @@ def test_register_and_resolve_via_profile() -> None:
 
 def test_register_default_integrations_includes_elasticsearch() -> None:
     register_default_integrations()
-    profile = IntegrationProfile(observability_backend=IntegrationSlug.ELASTICSEARCH)
+    profile = IntegrationProfile(observability_backend="elasticsearch")
     http = _mock_http_client(post_payload={"aggregations": {"count": {"value": 1}}})
 
     backend = resolve(

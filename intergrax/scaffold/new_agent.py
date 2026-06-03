@@ -135,7 +135,8 @@ def _contract_py(slug: str, class_name: str, primary_capability: str) -> str:
                 description="Scaffolded UAEP agent for Intergrax experiments.",
                 version="0.1.0",
                 capabilities=CAPABILITIES,
-                allowed_tools=[],
+                skills=[],
+                extra_tools=[],
                 risk_level=AgentRiskLevel.LOW,
                 max_steps=10,
             )

@@ -58,7 +58,7 @@ def create_gcp_cloud_platform(
     credential_factory: Optional[Callable[[], tuple[object, str]]] = None,
     **config_overrides: object,
 ) -> GcpCloudPlatform:
-    """Catalog factory for ``IntegrationSlug.GCP`` / ``CLOUD_PLATFORM``."""
+    """Catalog factory for ``"gcp"`` / ``CLOUD_PLATFORM``."""
     return create_gcp_integration(
         cloud_platform=cloud_platform,
         credentials=credentials,

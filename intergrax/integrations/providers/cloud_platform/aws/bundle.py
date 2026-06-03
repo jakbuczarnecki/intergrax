@@ -55,7 +55,7 @@ def create_aws_cloud_platform(
     session_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
 ) -> AwsCloudPlatform:
-    """Catalog factory for ``IntegrationSlug.AWS`` / ``CLOUD_PLATFORM``."""
+    """Catalog factory for ``"aws"`` / ``CLOUD_PLATFORM``."""
     return create_aws_integration(
         cloud_platform=cloud_platform,
         session=session,

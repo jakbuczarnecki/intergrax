@@ -870,6 +870,42 @@ integrations:
 
 Each provider README MUST document: auth model, required env vars, rate limits, idempotency behavior, and a **smoke command** runnable from lab.
 
+### 7.1.5.1 Tier-0 Plugin Catalogs (Phase P-Ext)
+
+All three Tier-0 catalogs (integrations, tools, skills) share one **plugin-native** registration model. Shipped first-party providers and third-party pip packages use the same APIs.
+
+| Layer | Protocol | Register API | Entry point group |
+|-------|----------|--------------|-------------------|
+| Integration | `IntegrationPlugin` | `register_integration_plugin()` | `intergrax.integrations` |
+| Tool | `ToolPlugin` | `register_tool_plugin()` | `intergrax.tools` |
+| Skill | `SkillPlugin` | `register_skill_plugin()` | `intergrax.skills` |
+
+**Tier-3 bootstrap (single call):**
+
+```python
+from intergrax.core.catalog_bootstrap import bootstrap_catalogs
+
+bootstrap_catalogs(
+    register_shipped=True,
+    integration_preset="full",  # or "core" for lab cold-start (~12 integration slugs)
+    tool_bundle_ids=None,     # or ("rag", "websearch") for lazy tool catalog
+    skill_bundle_ids=None,    # or ("harness",) for lazy skill catalog
+    discover_entry_points=True,
+    integration_plugins=(MyIntegrationPlugin,),
+)
+```
+
+`build_application_tool_wiring` / `build_application_skill_wiring` call `bootstrap_catalogs(register_shipped=True)` idempotently.
+
+**Rules:**
+
+- No central enum of all integration slugs — identity is `IntegrationManifest.slug` per provider.
+- External packages MUST NOT edit Intergrax core; register via entry points or explicit plugin classes at startup.
+- **Runtime Nexus plugins** (`RuntimePlugin`, `plugin_bootstrap.py`) are a **separate** extensibility plane from Tier-0 catalog plugins.
+- Tool execution observability (trace, scope policy, error mapping) lives in `RuntimeToolInvoker` — not in plugin registration.
+
+Author guide: [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md). Implementation tracker: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase P-Ext + Appendix I.
+
 ### 7.1.6 Tool Library — Canonical Catalog
 
 Tier-0 agent-facing capabilities MUST live in a **single, discoverable Tool Library** under `intergrax/tools/`, mirroring the Integration Library pattern (§7.1.1).

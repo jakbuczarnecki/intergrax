@@ -2,6 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.skills.providers.harness.manifests import HARNESS_TOOL_SMOKE
 from signoff_probe.capabilities import CAPABILITIES
 
 
@@ -12,8 +13,8 @@ def build_agent_contract() -> AgentContract:
         description="Scaffolded UAEP agent for Intergrax experiments.",
         version="0.1.0",
         capabilities=CAPABILITIES,
-        allowed_tools=[],
-        skill_ids=["harness.tool_smoke"],
+        skills=[HARNESS_TOOL_SMOKE],
+        extra_tools=[],
         risk_level=AgentRiskLevel.LOW,
         max_steps=10,
     )

@@ -24,7 +24,7 @@ def test_build_research_registry_registers_pipeline_agents() -> None:
     assert "research" in ids
     assert "research-summary" in ids
     research_contract = registry.get_contract("research")
-    assert "research.literature_scan" in research_contract.skill_ids
+    assert any(s.skill_id == "research.literature_scan" for s in research_contract.skills)
     assert "rag.retrieve" in research_contract.allowed_tools
     assert "websearch.query" in research_contract.allowed_tools
 

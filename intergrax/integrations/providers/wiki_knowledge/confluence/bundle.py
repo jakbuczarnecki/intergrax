@@ -66,7 +66,7 @@ def create_confluence_wiki_knowledge(
     http_client_factory: Optional[Callable[[ConfluenceIntegrationConfig], Any]] = None,
     **config_overrides: object,
 ) -> ConfluenceWikiKnowledge:
-    """Catalog factory for ``IntegrationSlug.CONFLUENCE`` / ``WIKI_KNOWLEDGE``."""
+    """Catalog factory for ``"confluence"`` / ``WIKI_KNOWLEDGE``."""
     return create_confluence_integration(
         wiki_knowledge=wiki_knowledge,
         client=client,

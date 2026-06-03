@@ -29,7 +29,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 
@@ -142,9 +141,9 @@ def test_resolve_returns_azure_native_slugs() -> None:
     factory, _ = _credential_factory()
     platform = create_azure_cloud_platform(**_azure_config().model_dump(), credential_factory=factory)
 
-    assert platform.resolve("object_storage") == IntegrationSlug.AZURE_BLOB.value
-    assert platform.resolve("message_bus") == IntegrationSlug.SERVICE_BUS.value
-    assert platform.resolve("relational_store") == IntegrationSlug.AZURE_SQL.value
+    assert platform.resolve("object_storage") == "azure_blob"
+    assert platform.resolve("message_bus") == "service_bus"
+    assert platform.resolve("relational_store") == "azure_sql"
     assert platform.resolve("document_store") is None
     assert_cloud_platform(platform)
 
@@ -181,7 +180,7 @@ def test_create_azure_integration_bundle() -> None:
 
 def test_register_and_resolve_via_profile() -> None:
     register_azure_integration()
-    profile = IntegrationProfile(cloud_platform=IntegrationSlug.AZURE)
+    profile = IntegrationProfile(cloud_platform="azure")
     factory, _ = _credential_factory()
 
     platform = resolve(
@@ -196,7 +195,7 @@ def test_register_and_resolve_via_profile() -> None:
 
 def test_register_default_integrations_includes_azure() -> None:
     register_default_integrations()
-    profile = IntegrationProfile(cloud_platform=IntegrationSlug.AZURE)
+    profile = IntegrationProfile(cloud_platform="azure")
     factory, _ = _credential_factory()
 
     platform = resolve(

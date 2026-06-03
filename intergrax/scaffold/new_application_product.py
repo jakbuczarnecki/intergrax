@@ -44,8 +44,7 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
 
         from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
         from intergrax.integrations.registry.profile import IntegrationProfile
-        from intergrax.integrations.registry.slugs import IntegrationSlug
-        {imports}
+                {imports}
         {factory_imports}
 
 
@@ -57,9 +56,9 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
             if raw:
                 return IntegrationProfile.model_validate_json(raw)
             return IntegrationProfile(
-                relational_store=IntegrationSlug.SQLITE,
-                vector_store=IntegrationSlug.INMEMORY,
-                document_parser=IntegrationSlug.DOCLING,
+                relational_store="sqlite",
+                vector_store="inmemory",
+                document_parser="docling",
             )
 
 

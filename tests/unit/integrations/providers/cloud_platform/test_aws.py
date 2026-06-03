@@ -29,7 +29,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 
@@ -146,10 +145,10 @@ def test_resolve_returns_aws_native_slugs() -> None:
     factory, _ = _session_factory()
     platform = create_aws_cloud_platform(**_aws_config().model_dump(), session_factory=factory)
 
-    assert platform.resolve("object_storage") == IntegrationSlug.S3.value
-    assert platform.resolve("message_bus") == IntegrationSlug.SQS.value
-    assert platform.resolve("document_store") == IntegrationSlug.DYNAMODB.value
-    assert platform.resolve("key_value_cache") == IntegrationSlug.ELASTICACHE.value
+    assert platform.resolve("object_storage") == "s3"
+    assert platform.resolve("message_bus") == "sqs"
+    assert platform.resolve("document_store") == "dynamodb"
+    assert platform.resolve("key_value_cache") == "elasticache"
     assert platform.resolve("relational_store") is None
     assert_cloud_platform(platform)
 
@@ -187,7 +186,7 @@ def test_create_aws_integration_bundle() -> None:
 
 def test_register_and_resolve_via_profile() -> None:
     register_aws_integration()
-    profile = IntegrationProfile(cloud_platform=IntegrationSlug.AWS)
+    profile = IntegrationProfile(cloud_platform="aws")
     factory, _ = _session_factory()
 
     platform = resolve(
@@ -202,7 +201,7 @@ def test_register_and_resolve_via_profile() -> None:
 
 def test_register_default_integrations_includes_aws() -> None:
     register_default_integrations()
-    profile = IntegrationProfile(cloud_platform=IntegrationSlug.AWS)
+    profile = IntegrationProfile(cloud_platform="aws")
     factory, _ = _session_factory()
 
     platform = resolve(

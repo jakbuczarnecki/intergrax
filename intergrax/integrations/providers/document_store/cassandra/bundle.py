@@ -61,7 +61,7 @@ def create_cassandra_document_store(
     session_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
 ) -> CassandraDocumentStore:
-    """Catalog factory for ``IntegrationSlug.CASSANDRA`` / ``DOCUMENT_STORE``."""
+    """Catalog factory for ``"cassandra"`` / ``DOCUMENT_STORE``."""
     return create_cassandra_integration(
         document_store=document_store,
         session=session,

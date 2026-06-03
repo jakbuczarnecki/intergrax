@@ -7,6 +7,7 @@ from typing import AbstractSet, Sequence
 
 from intergrax.skills.core.contracts import SkillManifest, SkillRiskTier
 from intergrax.skills.registry.runtime import SkillRegistry
+from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.registry.runtime import ToolRegistry
 
 
@@ -49,8 +50,37 @@ class SkillResolver:
     def skill_registry(self) -> SkillRegistry:
         return self._skill_registry
 
+    def _expand_skill_dependencies(self, skill_ids: Sequence[str]) -> tuple[str, ...]:
+        order: list[str] = []
+        seen: set[str] = set()
+        visiting: set[str] = set()
+
+        def visit(skill_id: str) -> None:
+            if skill_id in seen:
+                return
+            if skill_id in visiting:
+                raise SkillResolutionError(f"Cyclic requires_skills involving: {skill_id}")
+            if not self._skill_registry.has(skill_id):
+                raise SkillResolutionError(f"Unknown skill_id: {skill_id}")
+            visiting.add(skill_id)
+            manifest = self._skill_registry.get(skill_id).manifest
+            for dep in manifest.requires_skills:
+                dep_id = dep.strip()
+                if dep_id:
+                    visit(dep_id)
+            visiting.remove(skill_id)
+            seen.add(skill_id)
+            order.append(skill_id)
+
+        for skill_id in skill_ids:
+            sid = skill_id.strip()
+            if sid:
+                visit(sid)
+        return tuple(order)
+
     def resolve(self, skill_ids: Sequence[str]) -> ResolvedSkillPack:
-        normalized = tuple(dict.fromkeys(sid.strip() for sid in skill_ids if sid.strip()))
+        roots = tuple(dict.fromkeys(sid.strip() for sid in skill_ids if sid.strip()))
+        normalized = self._expand_skill_dependencies(roots) if roots else ()
         if not normalized:
             return ResolvedSkillPack(
                 skill_ids=(),
@@ -92,6 +122,31 @@ class SkillResolver:
             sid = skill_id.strip()
             if sid and not self._skill_registry.has(sid):
                 raise SkillResolutionError(f"Unknown skill_id: {sid}")
+
+    def validate_skills(self, skills: Sequence[SkillManifest]) -> None:
+        for manifest in skills:
+            skill_id = manifest.skill_id.strip()
+            if not skill_id:
+                raise SkillResolutionError("SkillManifest.skill_id must be non-empty")
+            if not self._skill_registry.has(skill_id):
+                raise SkillResolutionError(f"Unknown skill_id: {skill_id}")
+
+    def resolve_skills(self, skills: Sequence[SkillManifest]) -> ResolvedSkillPack:
+        skill_ids = [manifest.skill_id for manifest in skills]
+        return self.resolve(skill_ids)
+
+    def validate_tool_contracts(self, tools: Sequence[ToolContract]) -> None:
+        if self._tool_registry is None:
+            return
+        missing = [
+            tool.tool_id
+            for tool in tools
+            if tool.tool_id.strip() and not self._tool_registry.has(tool.tool_id)
+        ]
+        if missing:
+            raise SkillResolutionError(
+                f"extra_tools reference tool_id(s) not in ToolRegistry: {', '.join(sorted(missing))}"
+            )
 
     def _validate_tools_exist(self, tool_ids: set[str]) -> None:
         assert self._tool_registry is not None

@@ -49,7 +49,7 @@ def create_qdrant_vector_store(
     store_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
 ) -> QdrantVectorStoreIntegration:
-    """Catalog factory for ``IntegrationSlug.QDRANT`` / ``VECTOR_STORE``."""
+    """Catalog factory for ``"qdrant"`` / ``VECTOR_STORE``."""
     return create_qdrant_integration(
         vector_store=vector_store,
         store=store,

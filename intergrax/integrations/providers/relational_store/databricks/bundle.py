@@ -52,7 +52,7 @@ def create_databricks_relational_store(
     connection_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
 ) -> DatabricksRelationalStore:
-    """Catalog factory for ``IntegrationSlug.DATABRICKS`` / ``RELATIONAL_STORE``."""
+    """Catalog factory for ``"databricks"`` / ``RELATIONAL_STORE``."""
     bundle = create_databricks_integration(
         relational_store=relational_store,
         connection_factory=connection_factory,

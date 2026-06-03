@@ -5,7 +5,7 @@
 Complete Celery integration bundle — the single composition root for Celery in Intergrax.
 
 All runtime wiring (message bus, worker app, Nexus Celery stack) MUST use this module
-or ``profile.resolve(IntegrationCategory.MESSAGE_BUS)`` with ``IntegrationSlug.CELERY``.
+or ``profile.resolve(IntegrationCategory.MESSAGE_BUS)`` with ``"celery"``.
 """
 
 from __future__ import annotations
@@ -75,7 +75,7 @@ def create_celery_message_bus(
     task_always_eager: bool = False,
     **config_overrides: object,
 ) -> MessageBus:
-    """Catalog factory for ``IntegrationSlug.CELERY`` / ``MESSAGE_BUS``."""
+    """Catalog factory for ``"celery"`` / ``MESSAGE_BUS``."""
     return create_celery_integration(
         app=app,
         broker_url=broker_url,

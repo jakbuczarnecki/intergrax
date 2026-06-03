@@ -55,7 +55,7 @@ def create_pinecone_vector_store(
     store_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
 ) -> PineconeVectorStoreIntegration:
-    """Catalog factory for ``IntegrationSlug.PINECONE`` / ``VECTOR_STORE``."""
+    """Catalog factory for ``"pinecone"`` / ``VECTOR_STORE``."""
     return create_pinecone_integration(
         vector_store=vector_store,
         store=store,

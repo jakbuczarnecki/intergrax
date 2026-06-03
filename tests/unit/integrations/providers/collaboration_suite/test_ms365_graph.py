@@ -30,7 +30,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 
@@ -282,7 +281,7 @@ def test_create_ms365_graph_integration_bundle() -> None:
 
 def test_register_and_resolve_via_profile() -> None:
     register_ms365_graph_integration()
-    profile = IntegrationProfile(collaboration_suite=IntegrationSlug.MS365_GRAPH)
+    profile = IntegrationProfile(collaboration_suite="ms365_graph")
     http = _mock_http_client()
 
     suite = resolve(
@@ -297,7 +296,7 @@ def test_register_and_resolve_via_profile() -> None:
 
 def test_register_default_integrations_includes_ms365_graph() -> None:
     register_default_integrations()
-    profile = IntegrationProfile(collaboration_suite=IntegrationSlug.MS365_GRAPH)
+    profile = IntegrationProfile(collaboration_suite="ms365_graph")
     http = _mock_http_client()
 
     suite = resolve(

@@ -73,7 +73,7 @@ def create_ms365_graph_collaboration_suite(
     access_token: Optional[str] = None,
     **config_overrides: object,
 ) -> Ms365GraphCollaborationSuite:
-    """Catalog factory for ``IntegrationSlug.MS365_GRAPH`` / ``COLLABORATION_SUITE``."""
+    """Catalog factory for ``"ms365_graph"`` / ``COLLABORATION_SUITE``."""
     return create_ms365_graph_integration(
         collaboration_suite=collaboration_suite,
         client=client,

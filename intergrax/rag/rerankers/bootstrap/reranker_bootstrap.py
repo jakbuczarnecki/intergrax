@@ -25,7 +25,6 @@ from intergrax.rag.rerankers.providers.embedding_cosine_reranker import (
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 
 def create_default_reranker_registry(
@@ -65,9 +64,9 @@ def create_default_reranker_registry(
         if integration_profile is not None:
             preferred = integration_profile.slug_for_category(IntegrationCategory.RERANK_PROVIDER)
 
-        if preferred in (None, IntegrationSlug.COHERE_RERANK.value):
+        if preferred in (None, "cohere_rerank"):
             registry.register(CohereReranker())
-        if preferred in (None, IntegrationSlug.JINA_RERANK.value):
+        if preferred in (None, "jina_rerank"):
             registry.register(JinaReranker())
 
     return registry

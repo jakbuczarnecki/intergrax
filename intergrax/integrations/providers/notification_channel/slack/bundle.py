@@ -5,7 +5,7 @@
 Complete Slack integration bundle — the single composition root for Slack in Intergrax.
 
 Outbound (HITL / escalation) and inbound (slash commands) wiring MUST use this module
-or ``profile.resolve()`` with ``IntegrationSlug.SLACK``.
+or ``profile.resolve()`` with ``"slack"``.
 """
 
 from __future__ import annotations

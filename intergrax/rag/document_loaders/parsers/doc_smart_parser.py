@@ -7,7 +7,6 @@ from typing import Literal, Sequence
 
 from langchain_core.documents import Document
 
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.integration.catalog_parser import CatalogDocumentParser
 from intergrax.rag.document_loaders.integration.resolver import resolve_document_parser
@@ -25,13 +24,13 @@ class DocSmartParser(BaseDocumentParser):
 
     def is_available(self) -> bool:
         return resolve_document_parser(
-            IntegrationSlug.PYTHON_DOCX,
+            "python_docx",
             strategy=self._strategy,
         ).is_available()
 
     def load(self, source: str) -> Sequence[Document]:
         backend = resolve_document_parser(
-            IntegrationSlug.PYTHON_DOCX,
+            "python_docx",
             strategy=self._strategy,
         )
         return CatalogDocumentParser(backend).load(source)

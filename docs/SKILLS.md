@@ -32,6 +32,7 @@ Skills are **not** invoked by the LLM. The runtime **resolves** them into `allow
 | `prompt_instruction_ids` | Prompt Registry refs |
 | `policy_fragment_id` | Optional governance fragment |
 | `risk_tier` | `low` … `critical` |
+| `requires_skills` | Other `skill_id`s merged before this skill (transitive) |
 
 Package: `intergrax/skills/core/contracts.py`
 
@@ -42,12 +43,14 @@ Package: `intergrax/skills/core/contracts.py`
 Mirror of the tool catalog pattern:
 
 ```python
+from intergrax.core.catalog_bootstrap import bootstrap_catalogs
 from intergrax.skills.registry import SkillProfile, build_registry_from_profile
-from intergrax.skills.registry.bootstrap import register_default_skills
 
-register_default_skills()
+bootstrap_catalogs(register_shipped=True, skill_bundle_ids=("legal",))
 registry = build_registry_from_profile(SkillProfile(enabled_bundles=["legal"]))
 ```
+
+External bundles: `SkillPlugin` + `register_skill_plugin()` or entry point `intergrax.skills`. See [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md).
 
 Tier-3 helper: `intergrax.applications._shared.skill_wiring.build_application_skill_wiring`.
 
@@ -90,7 +93,7 @@ Invalid files raise `CursorSkillImportError` — no partial attach. Use `import_
 python -m intergrax.scaffold new-skill legal.my_skill --domain legal
 ```
 
-Register the bundle in `intergrax/skills/registry/bootstrap.py`.
+Register with `register_skill_plugin(...)` or add the class to `shipped_plugins.py` (see `intergrax/scaffold new-skill`).
 
 **Application profiles:** `lab_application` enables `harness` + `legal` + `research`; `legal_application` → `legal`; `research_application` → `research` (see `skill_wiring.py`, [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md)).
 

@@ -1,18 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.tools.providers.braintrust.bundle import BRAINTRUST_BUNDLE_ID, register_braintrust_tools
-from intergrax.tools.registry.catalog import ToolBundleEntry, ToolBundleStatus, register_tool_bundle
+from __future__ import annotations
+
+from intergrax.tools.registry.plugin_register import register_tool_plugin
+from intergrax.tools.registry.shipped_plugins import BraintrustToolPlugin
 
 
 def register_braintrust_tool_bundle(*, override: bool = False) -> None:
-    register_tool_bundle(
-        ToolBundleEntry(
-            bundle_id=BRAINTRUST_BUNDLE_ID,
-            tool_ids=("braintrust.log_eval",),
-            register=register_braintrust_tools,
-            status=ToolBundleStatus.BETA,
-            description="Braintrust eval logging tools.",
-        ),
-        override=override,
-    )
+    register_tool_plugin(BraintrustToolPlugin, override=override)

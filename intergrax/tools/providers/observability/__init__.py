@@ -1,3 +1,4 @@
-from intergrax.tools.providers.observability.register import register_observability_tool_bundle
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
 
-__all__ = ["register_observability_tool_bundle"]
+"""Observability tool bundle."""

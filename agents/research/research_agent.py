@@ -8,6 +8,7 @@ from intergrax.applications._shared.lab_harness_context import LabHarnessContext
 from intergrax.applications._shared.lab_runtime_config import build_lab_agent_runtime_context
 from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
 from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -40,13 +41,13 @@ class ResearchAgent(HarnessReferenceAgent):
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
-            skill_ids=["research.literature_scan"],
             id="research",
             name="Research Agent",
             description="Prototype agent producing stub research findings.",
             version="0.1.0",
             capabilities=["research.web_search", "research.pipeline"],
-            allowed_tools=["websearch.query", "rag.retrieve"],
+            skills=[RESEARCH_LITERATURE_SCAN],
+            extra_tools=[],
             risk_level=AgentRiskLevel.LOW,
             max_steps=10,
             validation_rules=["non_empty_summary"],

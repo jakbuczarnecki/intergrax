@@ -14,9 +14,9 @@ from intergrax.integrations.contracts.base import (
     normalize_category,
 )
 from intergrax.integrations.providers.cloud_platform.aws.config import AwsIntegrationConfig
-from intergrax.integrations.registry.slugs import CLOUD_PLATFORM_DEFAULTS, IntegrationSlug
+from intergrax.integrations.registry.slugs import CLOUD_PLATFORM_DEFAULTS
 
-_AWS_DEFAULTS = CLOUD_PLATFORM_DEFAULTS[IntegrationSlug.AWS]
+_AWS_DEFAULTS = CLOUD_PLATFORM_DEFAULTS["aws"]
 
 
 class AwsCloudPlatform:
@@ -26,7 +26,7 @@ class AwsCloudPlatform:
     Instantiate via ``create_aws_cloud_platform()`` — not from agent code.
     """
 
-    slug = IntegrationSlug.AWS.value
+    slug = "aws"
 
     def __init__(self, config: AwsIntegrationConfig, session: Any) -> None:
         self._config = config
@@ -52,7 +52,7 @@ class AwsCloudPlatform:
         except UnknownIntegrationCategoryError:
             return None
         slug = _AWS_DEFAULTS.get(normalized)
-        return slug.value if slug is not None else None
+        return slug if slug is not None else None
 
     def health(self) -> HealthStatus:
         try:
@@ -65,5 +65,4 @@ class AwsCloudPlatform:
             return HealthStatus(slug=self.slug, healthy=False, detail=str(exc))
 
     def default_slug_for(self, category: IntegrationCategory) -> Optional[str]:
-        slug = _AWS_DEFAULTS.get(category)
-        return slug.value if slug is not None else None
+        return _AWS_DEFAULTS.get(category)

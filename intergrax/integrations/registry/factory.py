@@ -17,7 +17,8 @@ from intergrax.integrations.contracts.base import (
 )
 from intergrax.integrations.registry.catalog import get_entry
 from intergrax.integrations.registry.profile import IntegrationProfile, default_lab_profile
-from intergrax.integrations.registry.slugs import IntegrationSlug, SlugInput, coerce_slug
+from intergrax.integrations.core.ref import IntegrationRef
+from intergrax.integrations.core.slug import SlugInput, coerce_slug
 
 
 def build_profile_from_mapping(data: Mapping[str, Any]) -> IntegrationProfile:
@@ -36,17 +37,20 @@ def build_profile_from_env(
 
     Unset categories inherit from ``defaults`` when provided.
     """
-    base = defaults or IntegrationProfile()
-    payload: dict[str, Any] = base.model_dump()
+    profile = (defaults or IntegrationProfile()).model_copy(deep=True)
 
     for category in IntegrationCategory:
         env_slug = read_integration_slug_from_env(category.value)
         if env_slug:
             field = category.value
             if field in IntegrationProfile.model_fields:
-                payload[field] = env_slug
+                from intergrax.integrations.core.binding import IntegrationBinding
 
-    return IntegrationProfile.model_validate(payload)
+                profile = profile.model_copy(
+                    update={field: IntegrationBinding.from_slug(env_slug)},
+                )
+
+    return profile
 
 
 def resolve_slug(
@@ -57,16 +61,22 @@ def resolve_slug(
 ) -> str:
     normalized = normalize_category(category)
     if slug is not None:
-        return coerce_slug(slug).value
+        return coerce_slug(slug)
 
     if profile is not None:
+        instance = profile.instance_for_category(normalized)
+        if instance is not None:
+            raise IntegrationConfigurationError(
+                f"Category '{normalized.value}' uses a pre-built integration instance; "
+                "call profile.instance_for_category() instead of resolve_slug()."
+            )
         from_profile = profile.slug_for_category(normalized)
         if from_profile:
             return from_profile.strip().lower()
 
     from_env = read_integration_slug_from_env(normalized.value)
     if from_env:
-        return from_env.strip().lower()
+        return coerce_slug(from_env)
 
     raise IntegrationConfigurationError(
         f"No integration slug configured for category '{normalized.value}'."
@@ -113,4 +123,8 @@ def resolve_from_profile(
     *,
     config: Optional[Mapping[str, Any]] = None,
 ) -> Any:
+    normalized = normalize_category(category)
+    instance = profile.instance_for_category(normalized)
+    if instance is not None:
+        return instance
     return resolve(category, profile=profile, config=config)

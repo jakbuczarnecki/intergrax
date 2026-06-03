@@ -286,8 +286,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
         )
         from intergrax.integrations.registry.bootstrap import register_default_integrations
         from intergrax.integrations.registry.profile import IntegrationProfile
-        from intergrax.integrations.registry.slugs import IntegrationSlug
-        from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+                from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
         from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
         from intergrax.runtime.interactions.factory import (
             InteractionSurface,
@@ -371,7 +370,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             profile = IntegrationProfile.lab()
             if sqlite_overrides:
                 profile = profile.model_copy(
-                    update={{"options": {{IntegrationSlug.SQLITE: dict(sqlite_overrides)}}}}
+                    update={{"options": {{"sqlite": dict(sqlite_overrides)}}}}
                 )
             sqlite_bundle = create_sqlite_integration(**sqlite_overrides)
             if db_path is None:

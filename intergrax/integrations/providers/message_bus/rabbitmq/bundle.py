@@ -115,7 +115,7 @@ def create_rabbitmq_message_bus(
     producer: Optional[MessageProducer] = None,
     **config_overrides: object,
 ) -> MessageBus:
-    """Catalog factory for ``IntegrationSlug.RABBITMQ`` / ``MESSAGE_BUS``."""
+    """Catalog factory for ``"rabbitmq"`` / ``MESSAGE_BUS``."""
     overrides: dict[str, object] = dict(config_overrides)
     if host is not None:
         overrides["host"] = host

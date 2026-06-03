@@ -25,7 +25,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 
@@ -220,7 +219,7 @@ def test_create_s3_integration_bundle() -> None:
 
 def test_register_and_resolve_via_profile() -> None:
     register_s3_integration()
-    profile = IntegrationProfile(object_storage=IntegrationSlug.S3)
+    profile = IntegrationProfile(object_storage="s3")
     factory, _ = _client_factory()
 
     store = resolve(
@@ -235,7 +234,7 @@ def test_register_and_resolve_via_profile() -> None:
 
 def test_register_default_integrations_includes_s3() -> None:
     register_default_integrations()
-    profile = IntegrationProfile(object_storage=IntegrationSlug.S3)
+    profile = IntegrationProfile(object_storage="s3")
     factory, _ = _client_factory()
 
     store = resolve(
@@ -249,7 +248,7 @@ def test_register_default_integrations_includes_s3() -> None:
 
 def test_cloud_platform_profile_resolves_s3_by_default() -> None:
     register_default_integrations()
-    profile = IntegrationProfile.with_cloud_platform(IntegrationSlug.AWS)
+    profile = IntegrationProfile.with_cloud_platform("aws")
     factory, _ = _client_factory()
 
     store = resolve(

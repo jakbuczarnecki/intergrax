@@ -21,7 +21,6 @@ from intergrax.integrations.providers.vector_store.vespa.config import VespaInte
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog, list_slugs
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.providers.braintrust.service import braintrust_log_eval
 from intergrax.tools.providers.braintrust.contracts import BraintrustLogEvalInput
@@ -155,7 +154,7 @@ def test_braintrust_log_eval_tool() -> None:
 
 def test_slash_command_registered() -> None:
     register_default_integrations()
-    assert IntegrationSlug.SLASH_COMMAND.value in list_slugs()
+    assert "slash_command" in list_slugs()
 
 
 def test_slash_command_adapter_handles_payload() -> None:
@@ -167,8 +166,10 @@ def test_slash_command_adapter_handles_payload() -> None:
 
 def test_harness_lab_profile() -> None:
     profile = IntegrationProfile.harness_lab()
-    assert profile.observability_backend == IntegrationSlug.SENTRY
-    assert profile.notification_channel == IntegrationSlug.PAGERDUTY
+    assert profile.observability_backend is not None
+    assert profile.observability_backend.resolved_slug() == "sentry"
+    assert profile.notification_channel is not None
+    assert profile.notification_channel.resolved_slug() == "pagerduty"
 
 
 def test_opensearch_index_document() -> None:

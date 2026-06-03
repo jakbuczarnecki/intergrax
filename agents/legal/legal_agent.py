@@ -7,6 +7,7 @@ from typing import Optional
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.skills.providers.legal.manifests import LEGAL_CONTRACT_REVIEW
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -60,8 +61,8 @@ class LegalAgent(Agent):
             description="Contract analysis and legal document review.",
             version="1.0.0",
             capabilities=["legal.contract_review"],
-            skill_ids=["legal.contract_review"],
-            allowed_tools=["rag", "websearch", "tools"],
+            skills=[LEGAL_CONTRACT_REVIEW],
+            extra_tools=[],
             required_adapters=["llm"],
             risk_level=AgentRiskLevel.HIGH,
             max_steps=20,

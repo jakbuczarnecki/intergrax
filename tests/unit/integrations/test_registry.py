@@ -28,8 +28,8 @@ from intergrax.integrations.registry.factory import (
     resolve,
     resolve_slug,
 )
+from intergrax.integrations.registry.catalog_manifests import LAB_JSON, SQLITE
 from intergrax.integrations.registry.profile import IntegrationProfile, default_lab_profile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 
 pytestmark = pytest.mark.unit
 
@@ -75,7 +75,7 @@ def test_resolve_with_explicit_slug() -> None:
 
 def test_resolve_from_profile() -> None:
     _register_fake("sqlite", categories=(IntegrationCategory.RELATIONAL_STORE,), payload="sql")
-    profile = IntegrationProfile(relational_store=IntegrationSlug.SQLITE)
+    profile = IntegrationProfile(relational_store=SQLITE)
 
     instance = resolve(IntegrationCategory.RELATIONAL_STORE, profile=profile)
 
@@ -84,7 +84,7 @@ def test_resolve_from_profile() -> None:
 
 def test_resolve_with_typed_slug() -> None:
     _register_fake("redis", categories=(IntegrationCategory.KEY_VALUE_CACHE,), payload="kv")
-    instance = resolve(IntegrationCategory.KEY_VALUE_CACHE, slug=IntegrationSlug.REDIS)
+    instance = resolve(IntegrationCategory.KEY_VALUE_CACHE, slug="redis")
     assert instance["slug"] == "redis"
 
 
@@ -97,6 +97,8 @@ def test_resolve_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_build_profile_from_mapping() -> None:
+    _register_fake("sqlite", categories=(IntegrationCategory.RELATIONAL_STORE,), payload="sql")
+    _register_fake("redis", categories=(IntegrationCategory.KEY_VALUE_CACHE,), payload="kv")
     profile = build_profile_from_mapping(
         {
             "integrations": {
@@ -105,29 +107,36 @@ def test_build_profile_from_mapping() -> None:
             }
         }
     )
-    assert profile.relational_store == IntegrationSlug.SQLITE
-    assert profile.key_value_cache == IntegrationSlug.REDIS
+    assert profile.relational_store is not None
+    assert profile.relational_store.resolved_slug() == "sqlite"
+    assert profile.key_value_cache is not None
+    assert profile.key_value_cache.resolved_slug() == "redis"
 
 
 def test_build_profile_from_env_overrides_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    _register_fake("postgresql", categories=(IntegrationCategory.RELATIONAL_STORE,), payload="pg")
     monkeypatch.setenv("INTERGRAX_INTEGRATION_RELATIONAL_STORE", "postgresql")
     profile = build_profile_from_env(defaults=default_lab_profile())
 
-    assert profile.relational_store == IntegrationSlug.POSTGRESQL
-    assert profile.interaction_surface == IntegrationSlug.LAB_JSON
+    assert profile.relational_store is not None
+    assert profile.relational_store.resolved_slug() == "postgresql"
+    assert profile.interaction_surface is not None
+    assert profile.interaction_surface.resolved_slug() == LAB_JSON.slug
 
 
 def test_cloud_platform_defaults_when_category_unset() -> None:
-    profile = IntegrationProfile.with_cloud_platform(IntegrationSlug.AWS)
+    from intergrax.integrations.registry.catalog_manifests import AWS
 
-    assert profile.slug_for_category(IntegrationCategory.OBJECT_STORAGE) == IntegrationSlug.S3.value
-    assert profile.slug_for_category(IntegrationCategory.MESSAGE_BUS) == IntegrationSlug.SQS.value
+    profile = IntegrationProfile.with_cloud_platform(AWS)
+
+    assert profile.slug_for_category(IntegrationCategory.OBJECT_STORAGE) == "s3"
+    assert profile.slug_for_category(IntegrationCategory.MESSAGE_BUS) == "sqs"
     assert profile.slug_for_category(IntegrationCategory.RELATIONAL_STORE) is None
 
 
 def test_resolve_rejects_unregistered_slug() -> None:
-    with pytest.raises(UnknownIntegrationError):
-        resolve(IntegrationCategory.KEY_VALUE_CACHE, slug=IntegrationSlug.REDIS)
+    with pytest.raises((UnknownIntegrationError, ValueError), match="redis"):
+        resolve(IntegrationCategory.KEY_VALUE_CACHE, slug="redis")
 
 
 def test_resolve_rejects_unknown_slug() -> None:
@@ -139,7 +148,7 @@ def test_resolve_rejects_category_mismatch() -> None:
     _register_fake("redis", categories=(IntegrationCategory.KEY_VALUE_CACHE,), payload="kv")
 
     with pytest.raises(IntegrationCategoryMismatchError):
-        resolve(IntegrationCategory.MESSAGE_BUS, slug=IntegrationSlug.REDIS)
+        resolve(IntegrationCategory.MESSAGE_BUS, slug="redis")
 
 
 def test_resolve_requires_configuration() -> None:
@@ -162,8 +171,8 @@ def test_factory_receives_profile_options() -> None:
         )
     )
     profile = IntegrationProfile(
-        key_value_cache=IntegrationSlug.REDIS,
-        options={IntegrationSlug.REDIS: {"url": "redis://localhost/0"}},
+        key_value_cache="redis",
+        options={"redis": {"url": "redis://localhost/0"}},
     )
 
     resolve(IntegrationCategory.KEY_VALUE_CACHE, profile=profile)

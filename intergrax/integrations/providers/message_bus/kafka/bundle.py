@@ -103,7 +103,7 @@ def create_kafka_message_bus(
     producer: Optional[MessageProducer] = None,
     **config_overrides: object,
 ) -> MessageBus:
-    """Catalog factory for ``IntegrationSlug.KAFKA`` / ``MESSAGE_BUS``."""
+    """Catalog factory for ``"kafka"`` / ``MESSAGE_BUS``."""
     return create_kafka_integration(
         kv_store=kv_store,
         bootstrap_servers=bootstrap_servers,

@@ -1,28 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Register lab JSON in the integration catalog (Phase M.4)."""
+"""Register lab_json in the integration catalog."""
 
 from __future__ import annotations
 
-from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationEntry, IntegrationStatus
 from intergrax.integrations.providers.interaction_surface.lab_json.bundle import create_lab_json_interaction_surface
-from intergrax.integrations.registry.catalog import register_integration
-from intergrax.integrations.registry.slugs import IntegrationSlug
+from intergrax.integrations.providers.interaction_surface.lab_json.manifest import MANIFEST
+from intergrax.integrations.registry.plugin_register import register_from_manifest
 
 
 def register_lab_json_integration(*, override: bool = False) -> None:
-    register_integration(
-        IntegrationEntry(
-            slug=IntegrationSlug.LAB_JSON.value,
-            categories=(IntegrationCategory.INTERACTION_SURFACE,),
-            factory=create_lab_json_interaction_surface,
-            status=IntegrationStatus.STABLE,
-            env_prefix="INTERGRAX_LAB_JSON",
-            description=(
-                "Laboratory JSON interaction surface — vendor-neutral dict → Task "
-                "(via create_lab_json_integration)"
-            ),
-        ),
-        override=override,
-    )
+    register_from_manifest(MANIFEST, create_lab_json_interaction_surface, override=override)

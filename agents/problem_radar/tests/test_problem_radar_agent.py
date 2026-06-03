@@ -26,8 +26,7 @@ def test_stub_output_is_valid_problem_radar_schema() -> None:
 def test_contract_declares_canon_capabilities() -> None:
     contract = ProblemRadarAgent().get_contract()
     assert "problem_radar.clustering" in contract.capabilities
-    assert "websearch.query" in contract.allowed_tools
-    assert contract.skill_ids == ["research.literature_scan"]
+    assert any(s.skill_id == "research.literature_scan" for s in contract.skills)
 
 
 @pytest.mark.asyncio

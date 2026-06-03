@@ -55,7 +55,7 @@ def create_azure_cloud_platform(
     credential_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
 ) -> AzureCloudPlatform:
-    """Catalog factory for ``IntegrationSlug.AZURE`` / ``CLOUD_PLATFORM``."""
+    """Catalog factory for ``"azure"`` / ``CLOUD_PLATFORM``."""
     return create_azure_integration(
         cloud_platform=cloud_platform,
         credential=credential,

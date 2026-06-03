@@ -13,9 +13,8 @@ from intergrax.integrations.providers.relational_store.sqlite.bundle import (
     SQLiteIntegrationBundle,
     create_sqlite_integration,
 )
-from intergrax.integrations.registry.bootstrap import register_default_integrations
+from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.slugs import IntegrationSlug
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.interactions.factory import (
@@ -90,7 +89,7 @@ def wire_poc_template_integrations(
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
 ) -> PocTemplateIntegrationWiring:
-    register_default_integrations()
+    bootstrap_application_integration_catalog(integration_preset="full")
     sqlite_overrides = _sqlite_config_overrides(
         db_path=db_path,
         experiments_db_path=experiments_db_path,
@@ -100,7 +99,7 @@ def wire_poc_template_integrations(
     profile = IntegrationProfile.lab()
     if sqlite_overrides:
         profile = profile.model_copy(
-            update={"options": {IntegrationSlug.SQLITE: dict(sqlite_overrides)}}
+            update={"options": {"sqlite": dict(sqlite_overrides)}}
         )
     sqlite_bundle = create_sqlite_integration(**sqlite_overrides)
     if db_path is None:

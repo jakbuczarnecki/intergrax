@@ -14,9 +14,9 @@ from intergrax.integrations.contracts.base import (
     normalize_category,
 )
 from intergrax.integrations.providers.cloud_platform.gcp.config import GcpIntegrationConfig
-from intergrax.integrations.registry.slugs import CLOUD_PLATFORM_DEFAULTS, IntegrationSlug
+from intergrax.integrations.registry.slugs import CLOUD_PLATFORM_DEFAULTS
 
-_GCP_DEFAULTS = CLOUD_PLATFORM_DEFAULTS[IntegrationSlug.GCP]
+_GCP_DEFAULTS = CLOUD_PLATFORM_DEFAULTS["gcp"]
 
 
 class GcpCloudPlatform:
@@ -26,7 +26,7 @@ class GcpCloudPlatform:
     Instantiate via ``create_gcp_cloud_platform()`` — not from agent code.
     """
 
-    slug = IntegrationSlug.GCP.value
+    slug = "gcp"
 
     def __init__(
         self,
@@ -64,7 +64,7 @@ class GcpCloudPlatform:
         except UnknownIntegrationCategoryError:
             return None
         slug = _GCP_DEFAULTS.get(normalized)
-        return slug.value if slug is not None else None
+        return slug if slug is not None else None
 
     def health(self) -> HealthStatus:
         try:
@@ -84,4 +84,4 @@ class GcpCloudPlatform:
 
     def default_slug_for(self, category: IntegrationCategory) -> Optional[str]:
         slug = _GCP_DEFAULTS.get(category)
-        return slug.value if slug is not None else None
+        return slug if slug is not None else None
