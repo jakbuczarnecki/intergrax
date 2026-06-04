@@ -12,9 +12,11 @@ from __future__ import annotations
 from typing import Optional, Sequence
 
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
-from intergrax.applications._shared.lab_harness_context import LabHarnessContext
-from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
-from intergrax.applications._shared.lab_runtime_config import build_lab_agent_runtime_context
+from intergrax.agents.reference_harness import (
+    LabHarnessContext,
+    build_lab_agent_runtime_context,
+    default_reference_harness,
+)
 from intergrax.agents.uaep_pipeline import (
     pipeline_agent_steps,
     pipeline_step_complete,
@@ -97,9 +99,7 @@ class _MockAgentBase(HarnessReferenceAgent):
         prefix: str,
         provider: str,
     ) -> None:
-        self._harness = harness or LabHarnessContext(
-            policy_bundle=build_runtime_policy_bundle(),
-        )
+        self._harness = harness or default_reference_harness()
         self._agent_id = agent_id
         self._name = name
         self._capability = capability

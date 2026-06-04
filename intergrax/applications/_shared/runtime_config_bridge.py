@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.applications._shared.lab_harness_context import LabHarnessContext
+from intergrax.agents.reference_harness import LabHarnessContext
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile

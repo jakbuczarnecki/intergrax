@@ -17,8 +17,10 @@ from intergrax.applications._shared.task_memory_wiring import wire_task_memory_f
 from intergrax.applications._shared.wiring import build_application_registry
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores, wire_nexus_observability
+from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 
 
@@ -44,6 +46,9 @@ def build_harness_host_runtime(
     checkpoints_db_path: Path | None = None,
     use_in_memory_trace: bool = False,
     builders: dict[type, Any] | None = None,
+    registry: AgentRegistry | None = None,
+    checkpoint_store: TaskCheckpointPersistence | None = None,
+    notification_adapter: NotificationAdapter | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment wiring → registry → observability → NexusLoop.
@@ -59,7 +64,7 @@ def build_harness_host_runtime(
         environment,
         settings=settings,
     )
-    registry = build_application_registry(
+    resolved_registry = registry or build_application_registry(
         resolved_manifest,
         env_wiring.build_context,
         builders=builders,
@@ -72,11 +77,11 @@ def build_harness_host_runtime(
     )
     task_memory = wire_task_memory_from_profile(environment)
     nexus_loop = build_nexus_loop_from_environment(
-        registry,
+        resolved_registry,
         env=environment,
         trace_store=observability.trace_store,
-        checkpoint_store=None,
-        notification_adapter=None,
+        checkpoint_store=checkpoint_store,
+        notification_adapter=notification_adapter,
         runtime_events_db_path=observability.runtime_events_db_path,
         task_memory_store=task_memory.store,
         task_memory_db_path=task_memory.db_path,
@@ -88,7 +93,7 @@ def build_harness_host_runtime(
         manifest=resolved_manifest,
         environment=environment,
         env_wiring=env_wiring,
-        registry=registry,
+        registry=resolved_registry,
         observability=observability,
         nexus_loop=nexus_loop,
     )

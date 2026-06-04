@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.uaep_pipeline import pipeline_agent_steps, pipeline_step_complete
-from intergrax.applications._shared.lab_harness_context import LabHarnessContext
-from intergrax.applications._shared.lab_runtime_config import build_lab_agent_runtime_context
-from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
+from intergrax.agents.reference_harness import (
+    LabHarnessContext,
+    build_lab_agent_runtime_context,
+    default_reference_harness,
+)
 from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -23,9 +25,7 @@ class ProblemRadarAgent(HarnessReferenceAgent):
     """Phase K.1 prototype — stub clustering with typed ``ProblemRadarOutput``."""
 
     def __init__(self, harness: LabHarnessContext | None = None) -> None:
-        self._harness = harness or LabHarnessContext(
-            policy_bundle=build_runtime_policy_bundle(),
-        )
+        self._harness = harness or default_reference_harness()
 
     def get_contract(self):
         return build_agent_contract()

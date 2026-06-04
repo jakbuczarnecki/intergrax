@@ -164,9 +164,12 @@ Both scaffolds follow the same idea: **opinionated folder layout + defaults** so
 
 | Application | What it demonstrates |
 |-------------|-------------------|
-| [`lab_application/`](applications/lab_application/) | Universal lab — multiple agents, debug API, `IntegrationProfile.lab()` |
-| [`legal_application/`](applications/legal_application/) | Product host — configured `LegalAgent`, auth, FastAPI core, typed factory |
-| [`research_application/`](applications/research_application/) | Multi-agent HTTP host — research pipeline wiring |
+| [`poc_template_application/`](applications/poc_template_application/) | **Canonical Tier-3 shell** — H-APP + `build_harness_host_runtime` (start here for new apps) |
+| [`lab_application/`](applications/lab_application/) | Universal lab — multiple agents, debug API, `IntegrationProfile.lab_stack()` |
+| [`legal_application/`](applications/legal_application/) | Product host — scaffold `LegalAgent`, auth, FastAPI core |
+| [`research_application/`](applications/research_application/) | Multi-agent HTTP host — research + summary agents |
+
+**CLI (Phase DX / AA):** `uv run intergrax run <module>:app`, `uv run intergrax doctor`, `uv run python -m intergrax.scaffold new-stack …` — see [Phase AA](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-aa--agents--applications-conformance-scaffold-docs-deploy).
 
 **Usage guides (define, invoke, deploy):**
 
@@ -213,7 +216,7 @@ uv run pytest -m gate -q
 | Echo | Minimal UAEP reference | `agents/echo/` |
 | Research | Web research pipeline | `agents/research/` |
 | Research Summary | Summarization stage in multi-agent flow | `agents/research/` |
-| Legal | Contract analysis and legal review | `agents/legal/` |
+| Legal | Contract review (UAEP scaffold baseline) | `agents/legal/` · `ARCHITECTURE.md` |
 
 Agents execute through **UAEP** (Unified Agent Execution Protocol): `get_steps` → `run_step` → `decide_after_step`, orchestrated by `AgentEngine` inside `NexusLoop`.
 

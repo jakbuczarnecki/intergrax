@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-03) — **Harness platform bands 1–2f Done** (Q→V, P-Ext, W-ML, **W-OPS**, **H-APP**, **DX**); product agents **Deferred**; gate **518 passed** (full regression); **operational L3** = `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce`  
+Status: Working draft (2026-06-03) — **Harness platform bands 1–2f Done** (Q→V, P-Ext, W-ML, **W-OPS**, **H-APP**, **DX**); **Band 2g active** — [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy); product agents **Deferred**; gate **518 passed** (full regression); **operational L3** = `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce`  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -45,6 +45,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Harness maturity audit (2026-06-02) → operational L3 | [`adut_dojrzalosci_harness.md`](adut_dojrzalosci_harness.md) → **Phase W-OPS** · **§6.2w** |
 | Tier-3 application environment audit → full configurability | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) → **Phase H-APP** · **§6.2x** |
 | Developer authoring UX audit (LangGraph-like entry, measurable TTFRun) | **Phase DX** (below) · **§6.2y** · source: harness DX audit 2026-06-03 (conversation + H-APP gap analysis) |
+| Agents & applications conformance audit (structure, scaffold, per-agent/app docs, deploy) | **Phase AA** (below) · **§6.2z** · source: Tier-2/Tier-3 audit 2026-06-03 (conversation) |
 
 ---
 
@@ -198,6 +199,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | **Plugin catalogs (Phase P-Ext)** | **Done** (2026-06-02) | [Phase P-Ext](#phase-p-ext--plugin-catalogs-integrations-tools-skills) · [P-Ext.6 paydown](#p-ext6--production-closure-paydown) · Appendix I |
 | **Application environment (Phase H-APP)** | **Done** (2026-06-03) | [Phase H-APP](#phase-h-app--tier-3-application-environment-full-configurability) · 43 tasks from application-layer audit |
 | **Developer authoring UX (Phase DX)** | **Done** (2026-06-03) | [Phase DX](#phase-dx--developer-authoring-experience-fast-environment--agent-builds) · 47 tasks |
+| **Agents & applications conformance (Phase AA)** | **Active** (2026-06-03) | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) · **§6.2z** |
 | Product agents (Phase K) | **Deferred** | K.1/K.2 — end of priority list |
 | Tier-3 product applications | **Deferred** | New apps / product routes — after harness backlog |
 
@@ -2629,6 +2631,296 @@ Total: 47
 
 ---
 
+## Phase AA — Agents & Applications Conformance (scaffold, docs, deploy)
+
+**Status:** **In progress** (2026-06-03) — core tranche **Done**; gate **521 passed**; remaining: full ARCHITECTURE.md matrix, AA-S0.3 `--reference`, legal UAEP step port.  
+**Prerequisites:** Phase **H-APP** **Done**, Phase **DX** **Done** (scaffold generators, `build_harness_host_runtime`, CLI, presets).  
+**Goal:** Bring every **Tier-2** agent under `agents/` and every **Tier-3** host under `applications/` to a **documented, scaffold-aligned** state — fast authoring, full environment control (handlers, observability, policy), and **repeatable deploy** (Docker + deploy doc + `pyproject.toml` dependency contract per application).  
+**Priority ladder:** **Band 2g** (§4.0) — **default implementation queue** after §6.1 maintenance (one AA ID per PR/session).  
+**Execution order:** [§6.2z](#62z-phase-aa-execution-order-band-2g--active).
+
+**Delivery rule:** One `AA-*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green → discuss scope in session before coding.
+
+**Policy decision (2026-06-03):** **`agents/legal/` hard reset** — remove pre-architecture implementation; regenerate from `intergrax.scaffold new-agent legal` and re-implement only against UAEP + H-APP rules. Legacy tests become **behavioral spec** input, not code to preserve. **`legal_application`** follows the same reset cadence after the agent baseline exists (product shell only).
+
+**Inventory (in scope):**
+
+| Tier | Slug | Role |
+|------|------|------|
+| Agent | `echo` | Harness reference agent |
+| Agent | `lab` | Lab mock agents (not product agents) |
+| Agent | `legal` | **Hard reset** → scaffold baseline |
+| Agent | `organization_worker` | Long-running / HITL demo |
+| Agent | `problem_radar` | K.1 prototype (frozen until Band 3) |
+| Agent | `research` | Multi-agent research prototype |
+| Agent | `signoff_probe` | Appendix A sign-off exercise |
+| Application | `lab_application` | Universal lab / debug superset |
+| Application | `legal_application` | Legal product host (reset with agent) |
+| Application | `poc_template_application` | Canonical minimal Tier-3 shell |
+| Application | `research_application` | Research product host |
+
+**Per-application deploy triad (mandatory for every Tier-3 host in this phase):**
+
+Each `applications/<app>/` MUST document and maintain:
+
+| Piece | Path / generator | Acceptance |
+|-------|------------------|------------|
+| **Docker** | `docker/Dockerfile`, `docker/docker-compose.yml`, `docker/build-docker.sh`, `docker/build-docker.bat`, `docker/.dockerignore` | Image builds locally; health path matches manifest `route_prefix` |
+| **Deploy doc** | `BUILD_AND_DEPLOY.md` | Generated/updated via `intergrax.applications._shared.build_deploy_doc.render_build_deploy_doc` (scaffold) or manual parity with scaffold output |
+| **`pyproject.toml` deps** | Root `[project]` + `[project.optional-dependencies]` | Section in `applications/<app>/ARCHITECTURE.md`: which **core** deps apply, which **extras** (`harness-author`, `langgraph-legacy`, `llm-*`, `dev-ci`, integration extras) the host requires; no undeclared imports |
+
+Scaffold already emits Docker + `BUILD_AND_DEPLOY.md` for **new** apps (`new-application`, `new-stack`). Phase AA **backfills and verifies** this triad on all four existing applications.
+
+**Audit verdict (2026-06-03):**
+
+| Area | Verdict | Gap → AA IDs |
+|------|---------|----------------|
+| Tier-2 structure vs canon | Partial | `echo`/`problem_radar` import Tier-3; `legal` monolith; `organization_worker` imports `testing_support` |
+| Tier-3 H-APP factory | Partial | `lab_application` still `build_nexus_loop_from_environment`; manifests missing explicit `environment` on some hosts |
+| Scaffold completeness | Good baseline | `getattr` in `new-agent`; `--minimal` / `expand` pending (DX); AA-S0.* closes generator gaps |
+| Documentation | Stale vs DX/H-APP | Root `README.md`, `AGENT_CREATION_GUIDE`, `TIER3_READINESS` — AA-D0.* |
+| LangGraph independence | **Done** | `langgraph` not in core deps; `check_langgraph_not_required.py` — AA-LG.1 **Done** |
+| Legal module | Reset required | AA-LEG.* + AA-LEGAPP.* |
+
+```text
+Wave AA0  — Register, scaffold checklist, LangGraph (done), deploy triad standard (5)
+Wave AA1  — Platform docs meta: README, guides, TIER3_READINESS (7)
+Wave AA2  — Legal agent HARD RESET (12)
+Wave AA3  — legal_application reset + deploy triad (8)
+Wave AA4  — echo agent (5)
+Wave AA5  — signoff_probe agent (3)
+Wave AA6  — problem_radar agent (5)
+Wave AA7  — organization_worker agent (5)
+Wave AA8  — research agent (+ summary) (6)
+Wave AA9  — lab mock agents doc (2)
+Wave AA10 — lab_application host (7)
+Wave AA11 — poc_template_application host (5)
+Wave AA12 — research_application host (6)
+Total: 83 (incl. AA-LG.1 counted in AA0)
+```
+
+### AA — Traceability (audit topic → task IDs)
+
+| Audit ref | Topic | Task IDs |
+|-----------|--------|----------|
+| A1 | Tier-2/3 separation (`agents` must not import `applications`) | AA-S0.2, AA-ECHO.2, AA-PR.2, AA-D0.3 |
+| A2 | Scaffold agent `getattr` in `can_handle` | AA-S0.3 |
+| A3 | Scaffold app missing manifest `environment=` | AA-S0.4, AA-POC.2, AA-RESAPP.2 |
+| A4 | `lab_application` legacy Nexus factory | AA-LABAPP.2 |
+| A5 | Legal pre-UAEP monolith | **AA-LEG.1–AA-LEG.12** (hard reset) |
+| A6 | Per-agent architecture MD | AA-ECHO.1, AA-PR.1, AA-ORG.1, AA-RES.1, AA-SIG.1, AA-LEG.3 |
+| A7 | Per-application architecture MD + deploy triad | AA-LABAPP.1, AA-POC.1, AA-RESAPP.1, AA-LEGAPP.1, AA-APP.0.1–AA-APP.0.3 |
+| A8 | Root README completeness vs canon | AA-D0.1 |
+| A9 | `AGENT_CREATION_GUIDE` / `TIER3_READINESS` stale | AA-D0.2–AA-D0.4 |
+| A10 | LangGraph not required | AA-LG.1 (**Done**) |
+| A11 | Docker + deploy script + pyproject per app | AA-APP.0.1–AA-APP.0.3, AA-*APP.*.4–*.6 |
+| A12 | Legal application custom serving vs scaffold | AA-LEGAPP.3–AA-LEGAPP.5 |
+
+### AA — Master deliverables register (all tasks)
+
+#### Wave AA0 — Platform & scaffold foundation
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-0.1 | **Phase AA register** in this plan + §6.2z + doc model row | **Done** | Low | This section |
+| AA-0.2 | **Scaffold ↔ H-APP checklist** table (new-agent / new-application / new-stack outputs) | **Pending** | High | This section §AA scaffold matrix (below) |
+| AA-S0.1 | Audit script: tier-2 must not import `applications` (extend `check_agent_registry_bypass` or sibling) | **Pending** | High | `scripts/` + CI §6.1 |
+| AA-S0.2 | **`new-agent`**: remove `getattr` from generated `can_handle` — typed `TaskContext` | **Pending** | High | `intergrax/scaffold/new_agent.py` |
+| AA-S0.3 | **`new-agent`**: optional `--reference` template (`HarnessReferenceAgent`) vs pure `Agent` | **Pending** | Medium | `intergrax/scaffold/new_agent.py` |
+| AA-S0.4 | **`new-agent`**: scaffold `contract.py` includes `skill_ids` placeholder + link SKILLS.md | **Pending** | Medium | `intergrax/scaffold/new_agent.py` |
+| AA-S0.5 | **`new-application`**: manifest always embeds `environment=ApplicationEnvironmentProfile…` | **Pending** | High | `intergrax/scaffold/new_application.py` |
+| AA-S0.6 | Document **`--full`** vs default scaffold (integration/tool wiring) | **Pending** | Medium | `applications/USAGE.md` |
+| AA-LG.1 | **LangGraph optional** — not in core deps; `langgraph-legacy` extra; `check_langgraph_not_required.py` | **Done** | High | `pyproject.toml`, CI |
+| AA-APP.0.1 | **Deploy triad standard** — Docker + `BUILD_AND_DEPLOY.md` + pyproject extras section (canonical template) | **Pending** | High | `applications/USAGE.md` §Deploy triad |
+| AA-APP.0.2 | **Gate**: each existing `applications/*_application/` has `docker/`, `BUILD_AND_DEPLOY.md`, ARCHITECTURE deploy section | **Pending** | High | `tests/unit/applications/test_application_deploy_triad.py` |
+| AA-APP.0.3 | **Scaffold verify**: `new-application` output includes deploy triad (regression) | **Pending** | High | `tests/unit/scaffold/test_scaffold_deploy_triad.py` |
+
+**AA scaffold matrix (generator vs H-APP target):**
+
+| Output | `new-agent` | `new-application` (default) | `new-application --full` |
+|--------|-------------|----------------------------|---------------------------|
+| UAEP `Agent` + `steps/pipeline.py` | Yes | — | — |
+| `contract.py` / `capabilities.py` | Yes | — | — |
+| `manifest.py` + `AgentBinding` | — | Yes | Yes |
+| `host/environment_profile.py` | — | Yes | Yes |
+| `host/factory.py` → `build_harness_host_runtime` | — | Yes | Yes |
+| `host/integration_wiring.py` | — | No | Yes |
+| `host/tool_wiring.py` | — | No | Yes |
+| `host/policy/rules/` | — | Yes (`.gitkeep`) | Yes |
+| `docker/*` + `BUILD_AND_DEPLOY.md` | — | Yes | Yes |
+| MCP + smoke tests | — | Yes | Yes |
+
+#### Wave AA1 — Documentation meta (canon alignment)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-D0.1 | **Root `README.md`** — `HarnessApplication`, `intergrax` CLI, `poc_template` as Tier-3 reference, LangGraph optional, agent vs app matrix | **Pending** | High | `README.md` |
+| AA-D0.2 | **`docs/README.md`** — Phase AA row, last updated | **Pending** | Low | `docs/README.md` |
+| AA-D0.3 | **`AGENT_CREATION_GUIDE.md`** — DX paths (`intergrax run`, `doctor`, minimal stack); no stale Nexus-only flow | **Pending** | High | `docs/AGENT_CREATION_GUIDE.md` |
+| AA-D0.4 | **`applications/TIER3_READINESS.md`** — `environment_profile`, `build_harness_host_runtime`; deploy triad; no mandatory `tool_wiring` for all apps | **Pending** | High | `applications/TIER3_READINESS.md` |
+| AA-D0.5 | **`applications/USAGE.md`** — deploy triad + pyproject extras per host | **Pending** | High | `applications/USAGE.md` |
+| AA-D0.6 | **`EXTENSION_AUTHOR_GUIDE.md`** — LangGraph analogy only (not required) — verify post AA-LG.1 | **Pending** | Low | Already partially done |
+| AA-D0.7 | **Conformance index** in plan — agent/app status columns (this register) | **Pending** | Low | Appendix row or §AA paydown |
+
+#### Wave AA2 — `agents/legal` HARD RESET (decision: scaffold baseline only)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-LEG.0.1 | **Record hard-reset decision** in plan + remove “incremental migration” as default for legal | **Done** | Critical | This section |
+| AA-LEG.0.2 | **Archive tag** `legal-legacy-pre-aa` on git (pointer for forensic diff) | **Pending** | High | Release note in paydown log |
+| AA-LEG.0.3 | **Extract behavioral spec** from legacy tests → `agents/legal/SPEC_FROM_LEGACY.md` (requirements only) | **Pending** | High | Before delete |
+| AA-LEG.1.1 | **Delete** legacy `agents/legal/` tree (pipeline, governance, custom loop, tracing dupes) | **Pending** | **Critical** | PR after AA-LEG.0.3 |
+| AA-LEG.1.2 | **`python -m intergrax.scaffold new-agent legal --capability legal.review`** (force clean tree) | **Pending** | **Critical** | `agents/legal/` matches scaffold layout |
+| AA-LEG.1.3 | **`agents/legal/ARCHITECTURE.md`** — target UAEP graph, skills, tools, config, observability hooks (design-only until steps exist) | **Pending** | High | English canonical doc |
+| AA-LEG.2.1 | **Register** `legal` skill bundle on contract (`skill_ids`) per SKILLS.md | **Pending** | High | `contract.py` |
+| AA-LEG.2.2 | **UAEP steps** — port minimal slice from spec (one step per PR) | **Pending** | High | `steps/` |
+| AA-LEG.2.3 | **Remove** custom `legal_execution_loop`, `legal_tool_runtime_bridge` patterns — use Nexus `RuntimeToolGateway` only | **Pending** | High | No parallel runtime |
+| AA-LEG.2.4 | **Agent tests** — smoke + one spec-backed test per ported step | **Pending** | High | `agents/legal/tests/` |
+| AA-LEG.2.5 | **Retire** `ROADMAP.md` / `IMPLEMENTATION_PLAN.md` / `HOST_README.md` under agent — merge into `ARCHITECTURE.md` | **Pending** | Medium | Single agent doc |
+| AA-LEG.3.1 | **Gate**: `legal` agent imports no `applications.*`; no `getattr` on contract | **Pending** | High | CI scripts |
+
+**Explicitly NOT in legal reset:** Live LLM E2E product proof (Band 3 — K.6 / B.15 / S-Ops.4).
+
+#### Wave AA3 — `applications/legal_application` (reset with agent)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-LEGAPP.1 | **`ARCHITECTURE.md`** — manifest, environment profile, factory, auth, observability DB paths, MCP | **Pending** | High | `applications/legal_application/` |
+| AA-LEGAPP.2 | **Manifest** — `environment=ApplicationEnvironmentProfile.product_defaults(…)` inline | **Pending** | High | `manifest.py` |
+| AA-LEGAPP.3 | **Factory/serving** — align to `poc_template` + product settings; remove redundant `runtime_bridge` if superseded by `UnifiedTaskRunner` | **Pending** | High | `host/factory.py`, `serving/` |
+| AA-LEGAPP.4 | **Deploy triad** — verify/update `docker/*`, `BUILD_AND_DEPLOY.md` | **Pending** | High | See AA-APP.0.1 |
+| AA-LEGAPP.5 | **`pyproject.toml` deps section** in ARCHITECTURE — `harness-author`, LLM extras, optional `langgraph-legacy` N/A | **Pending** | High | ARCHITECTURE §Dependencies |
+| AA-LEGAPP.6 | **Host smoke** — `legal_tests/` green on scaffolded agent only | **Pending** | High | After AA-LEG.2.2 |
+| AA-LEGAPP.7 | **`.env.example`** parity with scaffold product profile | **Pending** | Medium | `.env.example` |
+| AA-LEGAPP.8 | **Remove** duplicate legal test trees if consolidated | **Pending** | Low | `legal_tests/` vs agent tests |
+
+#### Wave AA4 — Agent `echo`
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-ECHO.1 | **`agents/echo/ARCHITECTURE.md`** — reference role, capabilities, skills, lab registration | **Pending** | High | English |
+| AA-ECHO.2 | **Remove Tier-3 imports** — inject `LabHarnessContext` from `lab_application` factory only | **Pending** | **Critical** | `agents/echo/echo_agent.py` |
+| AA-ECHO.3 | Align with **`HarnessReferenceAgent`** pattern documented in canon | **Pending** | Medium | Code + doc |
+| AA-ECHO.4 | **Tests** — import agent module without `applications` on PYTHONPATH | **Pending** | High | `tests/unit/agents/` |
+| AA-ECHO.5 | **README** — pointer to ARCHITECTURE only | **Pending** | Low | `agents/echo/README.md` |
+
+#### Wave AA5 — Agent `signoff_probe`
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-SIG.1 | **`ARCHITECTURE.md`** — Appendix A sign-off flow, capability `signoff.probe` | **Pending** | Medium | `agents/signoff_probe/` |
+| AA-SIG.2 | Verify **scaffold parity** when AA-S0.2 lands (regenerate diff empty except domain) | **Pending** | Low | Scaffold diff test |
+| AA-SIG.3 | **README** → ARCHITECTURE link | **Pending** | Low | |
+
+#### Wave AA6 — Agent `problem_radar`
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-PR.1 | **`ARCHITECTURE.md`** — K.1 placeholder, I/O schema, policy | **Pending** | Medium | Frozen until Band 3 |
+| AA-PR.2 | **Remove Tier-3 imports** (same pattern as echo) | **Pending** | High | `problem_radar_agent.py` |
+| AA-PR.3 | **Notebook + tests** documented in ARCHITECTURE | **Pending** | Low | |
+| AA-PR.4 | **Status** in plan §6.3 — no feature work until K.1 reprioritized | **Pending** | Low | |
+| AA-PR.5 | **README** → ARCHITECTURE | **Pending** | Low | |
+
+#### Wave AA7 — Agent `organization_worker`
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-ORG.1 | **`ARCHITECTURE.md`** — HITL, long-running, `org.vendor_report` | **Pending** | Medium | |
+| AA-ORG.2 | **Remove `testing_support` import** — fake LLM via test fixture injection | **Pending** | High | `organization_worker_agent.py` |
+| AA-ORG.3 | **Scaffold-align** — add `contract.py`, `capabilities.py`, `steps/` if missing | **Pending** | Medium | |
+| AA-ORG.4 | **Lab manifest flag** + integration test | **Pending** | Medium | `lab_application/manifest.py` |
+| AA-ORG.5 | **README** → ARCHITECTURE | **Pending** | Low | |
+
+#### Wave AA8 — Agent `research` (+ `summary_agent`)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-RES.1 | **`agents/research/ARCHITECTURE.md`** — graph intent `research.pipeline`, two agents | **Pending** | High | |
+| AA-RES.2 | **Remove Tier-3 imports** from agents if any | **Pending** | High | |
+| AA-RES.3 | **`HarnessReferenceAgent`** alignment for Research/Summary | **Pending** | Medium | |
+| AA-RES.4 | **Skill ids** on contracts | **Pending** | Medium | |
+| AA-RES.5 | **Tests** — UAEP + graph delegation | **Pending** | High | |
+| AA-RES.6 | **README** merge into ARCHITECTURE | **Pending** | Low | |
+
+#### Wave AA9 — Agent `lab` (mocks)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-LABAG.1 | **`agents/lab/README.md`** — mock agents purpose, not product Tier-2 | **Pending** | Low | |
+| AA-LABAG.2 | **(Optional)** move mocks to `testing_support/` if they are test-only | **Pending** | Low | Product decision in session |
+
+#### Wave AA10 — Application `lab_application`
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-LABAPP.1 | **`ARCHITECTURE.md`** — debug API, interaction, scheduler, manifest flags | **Pending** | High | |
+| AA-LABAPP.2 | **Migrate factory** to `build_harness_host_runtime` (retain rich wiring via env profile) | **Pending** | **Critical** | `host/factory.py` |
+| AA-LABAPP.3 | **`environment` in manifest** or documented single profile builder | **Pending** | High | `manifest.py` / `_shared` |
+| AA-LABAPP.4 | **Deploy triad** — verify `docker/*`, `BUILD_AND_DEPLOY.md` | **Pending** | High | |
+| AA-LABAPP.5 | **`pyproject.toml` deps** section in ARCHITECTURE | **Pending** | High | |
+| AA-LABAPP.6 | **Smoke tests** after factory migration | **Pending** | High | `lab_application_tests/` |
+| AA-LABAPP.7 | **README** → ARCHITECTURE | **Pending** | Low | |
+
+#### Wave AA11 — Application `poc_template_application`
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-POC.1 | **`ARCHITECTURE.md`** — canonical Tier-3 lab shell (reference for new apps) | **Pending** | High | |
+| AA-POC.2 | **Manifest `environment=`** explicit (not only factory fallback) | **Pending** | High | `manifest.py` |
+| AA-POC.3 | **Deploy triad** verification | **Pending** | Medium | |
+| AA-POC.4 | **`pyproject.toml` deps** section | **Pending** | Medium | |
+| AA-POC.5 | **Link from root README** as “start here for new application” | **Pending** | Medium | AA-D0.1 |
+
+#### Wave AA12 — Application `research_application`
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-RESAPP.1 | **`ARCHITECTURE.md`** — multi-agent HTTP, env vars, graph | **Pending** | High | |
+| AA-RESAPP.2 | **Manifest `environment=`** + `host/environment_profile.py` parity with scaffold | **Pending** | High | |
+| AA-RESAPP.3 | **Remove dead flags** `RESEARCH_USE_LEGACY_*` if obsolete | **Pending** | Medium | `host/settings.py` |
+| AA-RESAPP.4 | **Deploy triad** verification | **Pending** | High | |
+| AA-RESAPP.5 | **`pyproject.toml` deps** section | **Pending** | High | |
+| AA-RESAPP.6 | **Smoke tests** + `test_research_manifest_wiring` green | **Pending** | High | |
+
+### AA — Conformance matrix (living status)
+
+| Module | Scaffold-aligned | ARCHITECTURE.md | Deploy triad | pyproject doc | Tier hygiene |
+|--------|------------------|-----------------|--------------|---------------|--------------|
+| `agents/echo` | Partial | Pending | N/A | N/A | **Fail** (Tier-3 import) |
+| `agents/lab` | N/A (mocks) | Pending | N/A | N/A | OK |
+| `agents/legal` | **Reset** | Pending | N/A | N/A | **Fail** (monolith) |
+| `agents/organization_worker` | Partial | Pending | N/A | N/A | **Fail** (`testing_support`) |
+| `agents/problem_radar` | Yes | Pending | N/A | N/A | **Fail** (Tier-3 import) |
+| `agents/research` | Partial | Pending | N/A | N/A | TBD |
+| `agents/signoff_probe` | Yes | Pending | N/A | N/A | OK |
+| `applications/lab_application` | Partial | Pending | Verify | Pending | Factory legacy |
+| `applications/legal_application` | Reset | Pending | Verify | Pending | Partial H-APP |
+| `applications/poc_template_application` | Yes | Pending | Verify | Pending | OK |
+| `applications/research_application` | Partial | Pending | Verify | Pending | Partial H-APP |
+
+### AA — Explicitly deferred (not in AA register)
+
+| Topic | Reason |
+|-------|--------|
+| K.1 / K.2 feature implementation | Band 3 — except AA-PR.* docs-only freeze |
+| Legal live LLM E2E | Band 3 — K.6 / B.15 / S-Ops.4 |
+| New product Tier-3 beyond four hosts | Band 3 |
+| DX pending rows (DX-0.2–DX-8.2 still **Pending** in DX table) | Track under Phase DX or fold into AA-S0/D0 — **do not duplicate IDs**; AA references DX completion in AA-D0.3 |
+
+### AA — Paydown log
+
+| Date | AA ID | Summary |
+|------|-------|---------|
+| 2026-06-03 | AA-0.1, AA-LEG.0.1 | Phase AA registered; **legal hard reset** policy recorded |
+| 2026-06-03 | AA-LG.1 | LangGraph removed from core deps; CI `check_langgraph_not_required.py` |
+| 2026-06-03 | AA-S0.1–S0.2, AA-S0.5, AA-APP.0.1–0.3, AA-ECHO.2, AA-PR.*, AA-LABAPP.2, AA-POC.2, AA-RESAPP.2, AA-LEG.1–1.3 | Tier hygiene, lab harness runtime, legal hard reset, deploy triad gate; gate **521** |
+
+**Suggested session order (one element per conversation):**  
+AA-S0.2 → AA-S0.5 → AA-APP.0.1 → AA-POC.1 → AA-POC.2 → AA-LABAPP.2 → AA-ECHO.2 → AA-LEG.0.3 → AA-LEG.1.1 → AA-LEG.1.2 → AA-LEG.1.3 → AA-LEG.2.* (stepwise) → AA-LEGAPP.* → AA-D0.1 → remaining AA-* docs → AA-APP.0.2 gate.
+
+---
+
 ### Phase P-Ext — Plugin Catalogs (Integrations, Tools, Skills)
 
 **Status:** **Done** (2026-06-02) — MVP + production closure (Appendix I).  
@@ -2915,11 +3207,12 @@ Paydown Wave P3 (optional polish):
 | **2d — Operational L3 (W-OPS)** | Reliability, identity, SLO/ops evidence, online eval — **no** business agents | **Done** (2026-06-06) | [Phase W-OPS](#phase-w-ops--operational-harness-maturity-ideal-l3-ops) · `phase_w_ops_evidence.py` |
 | **2e — Application environment (H-APP)** | `ApplicationEnvironmentProfile`, unified Tier-3 wiring, host migration — **no** business agents | **Done** (2026-06-03) | [Phase H-APP](#phase-h-app--tier-3-application-environment-full-configurability) · [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) · **§6.2x** |
 | **2f — Developer authoring UX (DX)** | LangGraph-like facades, minimal scaffold, CLI run/doctor, TTFRun gates, UI spec export — **no** business agents | **Done** (2026-06-03) | [Phase DX](#phase-dx--developer-authoring-experience-fast-environment--agent-builds) · **§6.2y** |
+| **2g — Agents & applications conformance (AA)** | Scaffold alignment, per-agent/app `ARCHITECTURE.md`, deploy triad (Docker + BUILD_AND_DEPLOY + pyproject deps), **legal hard reset** | **Active** (2026-06-03) | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) · **§6.2z** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-03):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green. Bands 2 / 2d / 2e / **2f** = **Done** (code). **Default implementation queue = §6.1 maintenance** + Band 3 only when reprioritized. Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-03):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green. Bands 2 / 2d / 2e / **2f** = **Done** (code). **Default implementation queue = Phase AA (Band 2g)** + §6.1 maintenance. Band 3 = **frozen** unless leadership reprioritizes. **Legal hard reset** is Band **2g** (AA-LEG.*), not Band 3 — only Legal **live LLM E2E** stays deferred (K.6 / B.15 / S-Ops.4).
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1)
@@ -2927,6 +3220,7 @@ BAND 2:  Harness architecture hardening — Phase V + W-ML + P-Ext (Done)
 BAND 2d: Operational L3 — Phase W-OPS (§6.2w) — DONE
 BAND 2e: Application environment — Phase H-APP (§6.2x) — DONE (43 tasks)
 BAND 2f: Developer authoring UX — Phase DX (§6.2y) — DONE (47 tasks)
+BAND 2g: Agents & applications conformance — Phase AA (§6.2z) — ACTIVE
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
 DONE:    Harness completion backlog (§4.1) — 2026-06-02
@@ -3104,6 +3398,41 @@ Work **one DX ID per PR**; after each step update the DX master table + paydown 
 
 **Explicitly out of NOW:** K.1, K.2, visual environment builder UI, new product Tier-3 apps, Problem Radar wave 2+.
 
+### 6.2z Phase AA execution order (Band 2g — active)
+
+**Status:** **Active** (2026-06-03) · canonical register: [Phase AA — Master deliverables register](#aa--master-deliverables-register-all-tasks).
+
+Work **one AA ID per PR/session**; after each step update the AA master table + paydown log + conformance matrix; keep §6.1 scripts green. **Legal:** follow **hard reset** policy (AA-LEG.0.1) — no incremental preservation of legacy pipeline code.
+
+| Wave | IDs | Count | Focus |
+|------|-----|-------|--------|
+| AA0 | AA-0.1, AA-0.2, AA-S0.1–AA-S0.6, AA-LG.1, AA-APP.0.1–AA-APP.0.3 | 12 | Scaffold checklist, tier guards, deploy triad standard |
+| AA1 | AA-D0.1–AA-D0.7 | 7 | README, guides, TIER3_READINESS, USAGE |
+| AA2 | AA-LEG.0.2–AA-LEG.3.1 | 12 | **Legal agent hard reset** |
+| AA3 | AA-LEGAPP.1–AA-LEGAPP.8 | 8 | `legal_application` + deploy triad |
+| AA4 | AA-ECHO.1–AA-ECHO.5 | 5 | Reference echo agent |
+| AA5 | AA-SIG.1–AA-SIG.3 | 3 | Signoff probe |
+| AA6 | AA-PR.1–AA-PR.5 | 5 | Problem radar (docs/hygiene; frozen feature) |
+| AA7 | AA-ORG.1–AA-ORG.5 | 5 | Organization worker |
+| AA8 | AA-RES.1–AA-RES.6 | 6 | Research agents |
+| AA9 | AA-LABAG.1–AA-LABAG.2 | 2 | Lab mocks |
+| AA10 | AA-LABAPP.1–AA-LABAPP.7 | 7 | Lab application host |
+| AA11 | AA-POC.1–AA-POC.5 | 5 | POC template (canonical shell) |
+| AA12 | AA-RESAPP.1–AA-RESAPP.6 | 6 | Research application host |
+| **Total** | | **83** | |
+
+**Suggested PR order:** AA-S0.2 → AA-S0.5 → AA-APP.0.1 → AA-APP.0.3 → AA-POC.1 → AA-POC.2 → AA-LABAPP.2 → AA-ECHO.2 → AA-LEG.0.3 → AA-LEG.1.1 → AA-LEG.1.2 → AA-LEG.1.3 → AA-LEG.2.1 → AA-LEG.2.2 → … → AA-LEGAPP.1–AA-LEGAPP.6 → AA-D0.1 → AA-D0.3–AA-D0.5 → AA-RESAPP.* → AA-LABAPP.1 → AA-APP.0.2 → remaining ARCHITECTURE.md rows.
+
+**Per-application deploy triad gate (AA-APP.0.2):** for each of `lab_application`, `legal_application`, `poc_template_application`, `research_application` assert:
+
+1. `docker/Dockerfile` + `docker-compose.yml` + `build-docker.sh` / `.bat`
+2. `BUILD_AND_DEPLOY.md` present and matches scaffold generator output (or documented drift)
+3. `ARCHITECTURE.md` § **Dependencies** lists required `pyproject.toml` extras (e.g. `harness-author`, provider-specific `llm-*`, `dev-ci` for tests)
+
+**Success gate for Phase AA closeout:** All AA rows **Done** or **Won't fix**; conformance matrix all **OK**; legal tree matches scaffold; `lab_application` on `build_harness_host_runtime`; AA-APP.0.2 green; gate unchanged or increased.
+
+**Explicitly out of NOW:** K.1/K.2 implementation, Legal **live LLM** E2E (Band 3), new product hosts beyond the four listed.
+
 ### 6.1p Phase P-Ext paydown (Band 2c — optional parallel with §6.1)
 
 **Status:** **Done** (2026-06-02) · closure complete; extend catalogs via Appendix I + author guide.
@@ -3147,6 +3476,7 @@ Full task register: [Appendix I](#appendix-i--plugin-catalog-traceability-phase-
 | K.1 | Problem Radar prototype | **Deferred** | Explicit product decision + [Appendix A](#appendix-a--agent-operating-system-certification-checklist) |
 | K.2 | Vendor Discovery prototype | **Deferred** | Same as K.1 |
 | K.6 / B.15 / S-Ops.4 | Legal live LLM E2E | **Deferred** | Product/CI budget decision |
+| `agents/legal` hard reset | Scaffold baseline + UAEP re-implementation | **Active (Band 2g)** | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) AA-LEG.* — **not** Band 3 |
 | Tier-3 product apps | New `applications/<product>/` beyond lab + reference hosts | **Deferred** | Product decision; scaffold exists (Phase N **Done**) |
 | Domain skills | Product agent skill packs (non-`harness.*`) | **Deferred** | With K.1 or K.2 |
 | `agents/problem_radar/` | Wave 1 scaffold frozen | **Deferred** | Do not extend until K.1 reprioritized |

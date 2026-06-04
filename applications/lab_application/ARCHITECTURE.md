@@ -1,0 +1,24 @@
+# lab_application — architecture
+
+## Purpose
+
+Universal **Harness lab** — multi-agent roster, debug API, interactions, scheduler, strict harness profile.
+
+## Factory
+
+- `wire_lab_integrations` for SQLite trace/events/checkpoints
+- `build_harness_host_runtime` (Phase AA-LABAPP.2) for Nexus assembly
+- Retains `integration_wiring.py` / `tool_wiring.py` (lab superset)
+
+## Manifest
+
+- Dynamic roster from `LabApplicationSettings` flags
+
+## Deploy triad
+
+- `docker/`, `BUILD_AND_DEPLOY.md` — see gate `test_application_deploy_triad`
+
+## Dependencies
+
+- Full monorepo `uv sync` (torch, integrations catalog)
+- `INTERGRAX_HARNESS_API_KEY` when strict/stage/prod

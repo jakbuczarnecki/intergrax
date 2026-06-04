@@ -7,9 +7,11 @@ from signoff_probe.capabilities import CAPABILITIES
 from signoff_probe.contract import build_agent_contract
 from signoff_probe.steps.pipeline import build_pipeline, run_domain_step
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
-from intergrax.applications._shared.lab_harness_context import LabHarnessContext
-from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
-from intergrax.applications._shared.lab_runtime_config import build_lab_agent_runtime_context
+from intergrax.agents.reference_harness import (
+    LabHarnessContext,
+    build_lab_agent_runtime_context,
+    default_reference_harness,
+)
 from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -24,9 +26,7 @@ class SignoffProbeAgent(HarnessReferenceAgent):
     """UAEP-first scaffolded agent — replace domain logic in ``steps/`` and ``prompts/``."""
 
     def __init__(self, harness: LabHarnessContext | None = None) -> None:
-        self._harness = harness or LabHarnessContext(
-            policy_bundle=build_runtime_policy_bundle(),
-        )
+        self._harness = harness or default_reference_harness()
 
     def get_contract(self):
         return build_agent_contract()

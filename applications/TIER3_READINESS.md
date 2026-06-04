@@ -23,7 +23,10 @@ See [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md) Step **4E*
 |-------|----------|
 | Composition contract | `manifest.py`, `AgentBinding.mount` |
 | Registry wiring | `host/wiring.py` → `build_application_registry` |
-| Tool catalog | `host/tool_wiring.py` → `ToolProfile` |
+| Environment profile | `host/environment_profile.py` + `manifest.environment` |
+| Host runtime | `host/factory.py` → `build_harness_host_runtime` |
+| Tool catalog (optional) | `host/tool_wiring.py` only with scaffold `--full` |
+| Deploy triad | `docker/`, `BUILD_AND_DEPLOY.md`, `ARCHITECTURE.md` § Dependencies |
 | HTTP + MCP | `host/factory.py`, `mcp/server.py` |
 | Env + deploy | `.env.example`, `BUILD_AND_DEPLOY.md`, `docker/build-docker.*` |
 | Smoke tests | `<pkg>_tests/host/` |
