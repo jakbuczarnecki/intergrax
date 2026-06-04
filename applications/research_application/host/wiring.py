@@ -12,6 +12,23 @@ from research_application.host.settings import ResearchBackendSettings
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
 
+def build_research_environment_profile(
+    settings: ResearchBackendSettings | None = None,
+) -> ApplicationEnvironmentProfile:
+    """Product environment for research host (DX-1.4)."""
+    settings = settings or ResearchBackendSettings.from_env()
+    manifest = RESEARCH_APPLICATION_MANIFEST
+    enabled_tools = list(settings.enabled_tool_ids)
+    for tool_id in RESEARCH_LITERATURE_SCAN.tool_ids:
+        if tool_id not in enabled_tools:
+            enabled_tools.append(tool_id)
+    return ApplicationEnvironmentProfile.product_defaults(
+        profile_id="research.product",
+        skill_bundles=["research"],
+        tool_ids=enabled_tools,
+    ).model_copy(update={"integration_profile": manifest.integration_profile})
+
+
 def build_research_registry(
     *,
     settings: ResearchBackendSettings | None = None,
@@ -19,15 +36,7 @@ def build_research_registry(
     """Compose research + summary agents via unified Tier-3 wiring."""
     settings = settings or ResearchBackendSettings.from_env()
     manifest = RESEARCH_APPLICATION_MANIFEST
-    enabled_tools = list(settings.enabled_tool_ids)
-    for tool_id in RESEARCH_LITERATURE_SCAN.tool_ids:
-        if tool_id not in enabled_tools:
-            enabled_tools.append(tool_id)
-    env = manifest.environment or ApplicationEnvironmentProfile.product_defaults(
-        profile_id="research.product",
-        skill_bundles=["research"],
-        tool_ids=enabled_tools,
-    ).model_copy(update={"integration_profile": manifest.integration_profile})
+    env = manifest.environment or build_research_environment_profile(settings)
     if manifest.environment is None:
         manifest = manifest.model_copy(update={"environment": env})
     env_wiring = wire_application_environment(

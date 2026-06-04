@@ -14,7 +14,25 @@ Intergrax exposes three **Tier-0 plugin catalogs**. Shipped providers and third-
 
 ---
 
-## 0. Tier-3 environment vs Tier-2 agent (H-APP)
+## 0. Tier-3 environment vs Tier-2 agent (H-APP, DX)
+
+| LangGraph | Intergrax |
+|-----------|-----------|
+| `State` fields | `AgentContract` + step metadata |
+| Node function | `IntergraxAgent` `@step` / `run_step` |
+| Conditional edge | `decide_after_step` → `AgentDecision` |
+| `StateGraph.compile()` | `AgentGraph.build()` → `ApplicationGraphSpec` |
+| `app.invoke()` | `HarnessApplication.build_fastapi()` + `POST …/run` |
+
+**Responsibility matrix**
+
+| Concern | Agent (`agents/`) | Environment (`applications/` or `HarnessApplication`) |
+|---------|-------------------|--------------------------------------------------------|
+| Business logic, UAEP steps | Yes | No |
+| Tool/skill allow-list on contract | Yes | Enables catalogs via profiles |
+| Integration backends (Postgres, S3, …) | No | `IntegrationProfile` / presets |
+| Nexus loop, retry, graph routing | No | `ApplicationEnvironmentProfile` |
+| HTTP/MCP host, auth, tenant | No | Host factory / `HarnessApplication` |
 
 | Belongs in `applications/<app>/` | Belongs in `agents/<name>/` |
 |----------------------------------|-----------------------------|

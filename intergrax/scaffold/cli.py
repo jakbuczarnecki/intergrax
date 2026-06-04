@@ -22,12 +22,8 @@ from intergrax.scaffold.new_stack import register_parser as register_new_stack_p
 from intergrax.scaffold.new_stack import run_new_stack
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="intergrax.scaffold",
-        description="Scaffold Intergrax agents (Tier-2) and applications (Tier-3).",
-    )
-    sub = parser.add_subparsers(dest="command", required=True)
+def register_scaffold_commands(sub: argparse._SubParsersAction) -> None:
+    """Register scaffold subcommands on a parent parser."""
 
     new_agent = sub.add_parser("new-agent", help="Create agents/<name>/ from UAEP template")
     new_agent.add_argument("name", help="Agent slug (e.g. document_automation)")
@@ -51,6 +47,15 @@ def build_parser() -> argparse.ArgumentParser:
     register_new_skill_parser(sub)
     register_new_integration_parser(sub)
     register_new_tool_bundle_parser(sub)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="intergrax.scaffold",
+        description="Scaffold Intergrax agents (Tier-2) and applications (Tier-3).",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+    register_scaffold_commands(sub)
     return parser
 
 

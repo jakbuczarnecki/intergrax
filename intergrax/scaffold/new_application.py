@@ -57,22 +57,25 @@ def _manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
 
         from __future__ import annotations
 
+        from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
         from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
         from intergrax.integrations.registry.profile import IntegrationProfile
         {imports}
 
 
         def build_{short}_manifest() -> ApplicationManifest:
+            environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="{short}.scaffold")
             return ApplicationManifest.lab(
                 app_id="{short}",
                 name="{names.display} Lab Application",
                 route_prefix="{route_prefix}",
                 env_prefix="{env_prefix_value}",
-                integration_profile=IntegrationProfile.lab(),
+                integration_profile=IntegrationProfile.lab_stack(),
+                environment=environment,
                 agents=[
         {mounts_block}
                 ],
-                description="Scaffolded Tier-3 lab environment (Phase N.3)",
+                description="Scaffolded Tier-3 lab environment (Phase DX-1.5)",
             )
 
 
@@ -452,15 +455,17 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
 
         from intergrax.debug.app import create_debug_app
         from intergrax.debug.hitl_service import DebugHitlResumeService
+        from intergrax.debug.store import open_default_task_checkpoint_persistence
         from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
         from intergrax.runtime.interactions.router import create_interaction_intake_router
         from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
+        from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
         from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
-        from intergrax.runtime.nexus.nexus_loop import NexusLoop
         from intergrax.runtime.registry.agent_registry import AgentRegistry
         from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
-        from {pkg}.host.integration_wiring import wire_{short}_integrations
         from {pkg}.host.settings import {pascal}ApplicationSettings
+        from {pkg}.host.environment_profile import build_{short}_environment_profile
+        from {pkg}.manifest import build_{short}_manifest
         from intergrax.applications._shared.fastapi_mcp import (
             apply_lifespans,
             couple_fastapi_with_mcp,
@@ -468,7 +473,6 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
         )
         from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
         from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
-        from {pkg}.host.wiring import build_{short}_registry
         from {pkg}.mcp.server import build_{short}_mcp_server
         from {pkg}.serving.fastapi_router import mount_{short}_routes
 
@@ -483,30 +487,27 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
             registry: Optional[AgentRegistry] = None,
         ) -> FastAPI:
             settings = settings or {pascal}ApplicationSettings.from_env()
-            resolved_registry = registry or build_{short}_registry(settings=settings)
-            integrations = wire_{short}_integrations(
+            manifest = build_{short}_manifest()
+            env = manifest.environment or build_{short}_environment_profile(settings)
+            runtime = build_harness_host_runtime(
+                manifest,
+                env,
                 settings=settings,
-                db_path=db_path,
-                experiments_db_path=experiments_db_path,
+                trace_db_path=db_path,
                 runtime_events_db_path=runtime_events_db_path,
-                checkpoints_db_path=checkpoints_db_path,
+                use_in_memory_trace=db_path is None,
             )
-            nexus_loop = NexusLoop(
-                resolved_registry,
-                checkpoint_store=integrations.checkpoint_store,
-                trace_store=integrations.trace_store,
-                runtime_event_store=integrations.runtime_event_store,
-                notification_adapter=integrations.notification_adapter,
-            )
+            nexus_loop = runtime.nexus_loop
+            resolved_registry = registry or runtime.registry
             platform = bootstrap_nexus_platform(
                 nexus_loop,
-                trace_store=integrations.trace_store,  # type: ignore[arg-type]
+                trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
             )
             task_runner = UnifiedTaskRunner(nexus_loop)
             scheduler_wiring = wire_long_running_scheduler(
-                checkpoint_store=integrations.checkpoint_store,
+                checkpoint_store=None,
                 task_runner=task_runner,
-                notification_adapter=integrations.notification_adapter,
+                notification_adapter=None,
                 poll_interval_seconds=settings.scheduler_poll_seconds,
                 enabled=settings.include_scheduler,
             )
@@ -514,23 +515,23 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                 nexus_loop,
                 interaction_surface=settings.interaction_surface,
             )
+            checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)
             hitl_service = DebugHitlResumeService(
                 resolved_registry,
-                checkpoint_store=integrations.checkpoint_store,
+                checkpoint_store=checkpoint_store,
             )
             app = create_debug_app(
-                db_path=integrations.trace_db_path,
-                experiments_db_path=integrations.experiments_db_path,
-                runtime_events_db_path=integrations.runtime_events_db_path,
-                checkpoints_db_path=integrations.checkpoints_db_path,
+                db_path=runtime.observability.trace_db_path,
+                experiments_db_path=experiments_db_path,
+                runtime_events_db_path=runtime.observability.runtime_events_db_path,
+                checkpoints_db_path=checkpoints_db_path,
                 registry=resolved_registry,
                 nexus_loop=nexus_loop,
                 interaction_service=interaction_service,
                 hitl_service=hitl_service,
-                checkpoint_store=integrations.checkpoint_store,
-                trace_store=integrations.trace_store,
-                runtime_event_store=integrations.runtime_event_store,
-                delivery_ledger=integrations.delivery_ledger,
+                checkpoint_store=checkpoint_store,
+                trace_store=runtime.observability.trace_store,
+                runtime_event_store=runtime.observability.runtime_event_store,
             )
             app.title = "{title}"
             mount_{short}_routes(app, nexus_loop=nexus_loop, prefix=settings.route_prefix)
@@ -544,9 +545,11 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                 )
             scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
             if settings.include_mcp:
+                tool_registry = runtime.env_wiring.tool_wiring.registry
                 mcp = build_{short}_mcp_server(
                     nexus_loop=nexus_loop,
                     route_prefix=settings.route_prefix,
+                    tool_registry=tool_registry,
                 )
                 extra_lifespans = [make_scheduler_lifespan(scheduler)] if scheduler else []
                 app = couple_fastapi_with_mcp(
@@ -735,14 +738,20 @@ def _mcp_server_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpe
             *,
             nexus_loop: NexusLoop,
             route_prefix: str,
+            tool_registry: object | None = None,
         ) -> FastMCP:
             """MCP tools mirror the lab HTTP API (same NexusLoop / UnifiedTaskRunner)."""
             _ = route_prefix
-            return build_nexus_mcp_server(
-                name="{display} MCP",
-                nexus_loop=nexus_loop,
-                default_capability="{cap}",
-            )
+            from intergrax.tools.registry.runtime import ToolRegistry
+
+            kwargs: dict[str, object] = {{
+                "name": "{display} MCP",
+                "nexus_loop": nexus_loop,
+                "default_capability": "{cap}",
+            }}
+            if isinstance(tool_registry, ToolRegistry):
+                kwargs["tool_registry"] = tool_registry
+            return build_nexus_mcp_server(**kwargs)
         '''
     )
 
@@ -886,6 +895,7 @@ def _create_lab_application(
     target: Path,
     profile: str,
     force: bool,
+    full_scaffold: bool = False,
 ) -> None:
     agent_dirs = _agent_dirs(specs)
     cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
@@ -906,8 +916,9 @@ def _create_lab_application(
     _write(target / "host" / "wiring.py", _wiring_py(names), force=force)
     _write(target / "host" / "environment_profile.py", _environment_profile_py(names), force=force)
     _write(target / "host" / "policy" / "rules" / ".gitkeep", "", force=force)
-    _write(target / "host" / "integration_wiring.py", _integration_wiring_py(names), force=force)
-    _write(target / "host" / "tool_wiring.py", _tool_wiring_py(names), force=force)
+    if full_scaffold:
+        _write(target / "host" / "integration_wiring.py", _integration_wiring_py(names), force=force)
+        _write(target / "host" / "tool_wiring.py", _tool_wiring_py(names), force=force)
     _write(target / "host" / "factory.py", _factory_py(names), force=force)
     _write(target / "host" / "main.py", _main_py(names), force=force)
 
@@ -1044,6 +1055,7 @@ def create_application(
     route_prefix: str | None = None,
     port: int = 8091,
     force: bool = False,
+    full_scaffold: bool = False,
 ) -> Path:
     if profile not in _PROFILES:
         raise ValueError(f"Unsupported profile {profile!r}; choose: {', '.join(_PROFILES)}")
@@ -1066,6 +1078,7 @@ def create_application(
             target=target,
             profile=profile,
             force=force,
+            full_scaffold=full_scaffold,
         )
     else:
         _create_product_application(
@@ -1115,6 +1128,11 @@ def register_parser(sub: argparse._SubParsersAction) -> None:
         help="Repository root (default: cwd)",
     )
     parser.add_argument("--force", action="store_true", help="Overwrite if exists")
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Emit legacy integration_wiring.py and tool_wiring.py (advanced hosts only)",
+    )
 
 
 def _default_port(profile: str, port: int | None) -> int:
@@ -1135,6 +1153,7 @@ def run_new_application(args: argparse.Namespace) -> int:
             route_prefix=args.route_prefix,
             port=port,
             force=args.force,
+            full_scaffold=bool(args.full),
         )
     except (ValueError, FileExistsError) as exc:
         print(f"error: {exc}", file=sys.stderr)

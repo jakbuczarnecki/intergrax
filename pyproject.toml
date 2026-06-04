@@ -96,7 +96,16 @@ url = "https://download.pytorch.org/whl/cpu"
 torch = { index = "pytorch-cpu" }
 
 
+[project.scripts]
+intergrax = "intergrax.cli.main:main"
+
 [project.optional-dependencies]
+harness-author = [
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
+  "python-dotenv>=1.0",
+  "PyYAML>=6.0",
+]
 # Minimal LLM provider subsets (core package still installs all providers by default).
 llm-openai = ["openai>=1.0", "tiktoken>=0.7"]
 llm-anthropic = ["anthropic>=0.25", "tiktoken>=0.7"]

@@ -140,6 +140,10 @@ class ApplicationEnvironmentProfile(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     profile_id: str = "default"
+    spec_version: str = Field(
+        default="1.0.0",
+        description="Serialized environment spec version for UI round-trip (Phase DX-7.2)",
+    )
     application_profile: ApplicationProfile = ApplicationProfile.LAB
     integration_profile: IntegrationProfile = Field(default_factory=IntegrationProfile.lab)
     tool_profile: ToolProfile = Field(default_factory=ToolProfile)

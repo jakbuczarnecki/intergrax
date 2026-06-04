@@ -79,9 +79,7 @@ def _agent_py(slug: str, class_name: str, primary_capability: str) -> str:
                 return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
             def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-                from intergrax.applications._shared.runtime_defaults import (
-                    harness_production_mode,
-                )
+                from intergrax.agents.defaults import harness_production_mode
 
                 config = RuntimeConfig(
                     llm_adapter=build_pipeline().llm_adapter,

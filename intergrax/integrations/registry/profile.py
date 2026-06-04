@@ -262,6 +262,36 @@ class IntegrationProfile(BaseModel):
         binding = validate_integration_ref("cloud_platform", platform)
         return cls(cloud_platform=binding)
 
+    @classmethod
+    def lab_stack(cls, *, enable_otel: bool = True) -> IntegrationProfile:
+        from intergrax.integrations.registry.presets import lab_stack as _lab_stack
+
+        return _lab_stack(enable_otel=enable_otel)
+
+    @classmethod
+    def legal_stack(cls) -> IntegrationProfile:
+        from intergrax.integrations.registry.presets import legal_stack as _legal_stack
+
+        return _legal_stack()
+
+    @classmethod
+    def research_stack(cls) -> IntegrationProfile:
+        from intergrax.integrations.registry.presets import research_stack as _research_stack
+
+        return _research_stack()
+
+    @classmethod
+    def data_stack(cls, *, enable_redis: bool = True, enable_qdrant: bool = False) -> IntegrationProfile:
+        from intergrax.integrations.registry.presets import data_stack as _data_stack
+
+        return _data_stack(enable_redis=enable_redis, enable_qdrant=enable_qdrant)
+
+    @classmethod
+    def observability_stack(cls, *, enable_otel: bool = True) -> IntegrationProfile:
+        from intergrax.integrations.registry.presets import observability_stack as _obs_stack
+
+        return _obs_stack(enable_otel=enable_otel)
+
 
 def default_lab_profile() -> IntegrationProfile:
     return IntegrationProfile.lab()
