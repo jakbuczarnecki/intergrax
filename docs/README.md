@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-02 (Phase V hardening; Phase W-ML modality docs; K.1/K.2 deferred)
+**Last updated:** 2026-06-02 (Phase AA Band 2g — agents/applications conformance; Phase V/W-ML; K.1/K.2 deferred)
 
 The `docs/` folder holds the canonical platform documentation.
 
@@ -12,7 +12,7 @@ The `docs/` folder holds the canonical platform documentation.
 |----------|---------|
 | [**INTERGRAX_DEVELOPMENT_STRATEGY.md**](INTERGRAX_DEVELOPMENT_STRATEGY.md) | **Strategic goal** — decision hierarchy, lab vs production harness, work cycle |
 | [**intergrax_runtime_architecture.md**](intergrax_runtime_architecture.md) | **Architecture canon** — tiers, Nexus, UAEP §42, retry (§31), observability & trace storage (§33), RAG stack (§7.1.2) |
-| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; Appendix A–I + Phase V + **Phase P-Ext** (plugin catalogs) |
+| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **Phase AA** (Band 2g); Appendix A–I + Phase V + **Phase P-Ext** |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — all implemented providers, contracts, wiring, usage links |
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — atomic LLM/MCP tools, engine status, four-layer stack |

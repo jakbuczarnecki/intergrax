@@ -18,7 +18,12 @@ Universal **Harness lab** — multi-agent roster, debug API, interactions, sched
 
 - `docker/`, `BUILD_AND_DEPLOY.md` — see gate `test_application_deploy_triad`
 
+## Manifest environment
+
+- `build_lab_environment_profile(settings)` embedded in `manifest.environment`
+
 ## Dependencies
 
 - Full monorepo `uv sync` (torch, integrations catalog)
 - `INTERGRAX_HARNESS_API_KEY` when strict/stage/prod
+- Optional `[dev-ci]` for gate tests under `lab_application_tests/`

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from echo.echo_agent import EchoAgent
 from lab.mock_agents import (
@@ -62,12 +63,14 @@ def build_lab_manifest(settings: LabApplicationSettings) -> ApplicationManifest:
             )
         )
 
+    environment = build_lab_environment_profile(settings)
     return ApplicationManifest.lab(
         app_id="lab",
         name="Intergrax Lab Application",
         route_prefix=settings.route_prefix,
         env_prefix="LAB_",
         default_port=8090,
+        environment=environment,
         agents=agents,
         description="Universal Agent OS experimentation environment",
     )

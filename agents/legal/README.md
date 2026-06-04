@@ -1,6 +1,6 @@
 # legal agent
 
-UAEP-first scaffold. Full process: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) (single canonical guide).
+Architecture: [ARCHITECTURE.md](ARCHITECTURE.md). Full process: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md).
 
 ## Quick start
 

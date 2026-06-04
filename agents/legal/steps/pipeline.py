@@ -36,7 +36,7 @@ class _LegalLLMStub(LLMAdapter):
         run_id: Optional[str] = None,
     ) -> str:
         for msg in reversed(messages):
-            content = getattr(msg, "content", None) or ""
+            content = msg.content or ""
             if content:
                 return f"legal: {content[:200]}"
         return "legal: (empty)"

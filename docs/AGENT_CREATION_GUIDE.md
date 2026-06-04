@@ -120,7 +120,25 @@ python -m intergrax.scaffold new-agent document_automation \
     --capability documents.automation
 ```
 
+For agents that run inside **lab** or **product** hosts with injected integrations (echo, legal, research pattern):
+
+```bash
+python -m intergrax.scaffold new-agent my_probe \
+    --capability my_probe.basic \
+    --reference
+```
+
+`--reference` emits `HarnessReferenceAgent` + `LabHarnessContext` wiring — Tier-3 `host/agent_builders.py` injects the harness; the agent package must **not** import `applications.*`.
+
 Repeat `--capability` for multiple capabilities. Default if omitted: `<slug>.basic`.
+
+**DX shortcuts (no Nexus edits):**
+
+```bash
+uv run intergrax doctor
+uv run intergrax run applications.poc_template_application.host.main:app --reload
+uv run python -m intergrax.scaffold new-stack my_lab --profile lab --capability my_lab.basic
+```
 
 **Generated layout:**
 

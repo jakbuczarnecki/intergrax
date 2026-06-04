@@ -41,6 +41,11 @@ def register_scaffold_commands(sub: argparse._SubParsersAction) -> None:
         help="Repository root (default: cwd)",
     )
     new_agent.add_argument("--force", action="store_true", help="Overwrite if exists")
+    new_agent.add_argument(
+        "--reference",
+        action="store_true",
+        help="Use HarnessReferenceAgent template (lab/product hosts inject LabHarnessContext)",
+    )
 
     register_application_parser(sub)
     register_new_stack_parser(sub)
@@ -70,6 +75,7 @@ def main(argv: list[str] | None = None) -> int:
                 capabilities=args.capabilities,
                 root=args.root.resolve(),
                 force=args.force,
+                reference=args.reference,
             )
         except (ValueError, FileExistsError) as exc:
             print(f"error: {exc}", file=sys.stderr)
