@@ -23,10 +23,9 @@ from intergrax.applications._shared.fastapi_mcp import (
     couple_fastapi_with_mcp,
     make_scheduler_lifespan,
 )
-from lab_application.host.integration_wiring import wire_lab_integrations
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.tool_wiring import wire_lab_tools
-from lab_application.host.wiring import build_lab_registry
+from lab_application.host.wiring import bootstrap_lab_integration_wiring, build_lab_registry
 from lab_application.mcp.server import build_lab_mcp_server
 from intergrax.applications._shared.task_defaults import make_lab_harness_task_enricher
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
@@ -71,7 +70,7 @@ def create_lab_application(
             "INTERGRAX_HARNESS_API_KEY is required when INTERGRAX_ENV is stage/prod "
             "or LAB_STRICT_HARNESS=true (Phase W-OPS.7)."
         )
-    integrations = wire_lab_integrations(
+    integrations = bootstrap_lab_integration_wiring(
         settings=settings,
         db_path=db_path,
         experiments_db_path=experiments_db_path,

@@ -2358,6 +2358,7 @@ Wave W-OPS-P2 (hygiene):    W-OPS.13 → W-OPS.14 → W-OPS.15
 | 2026-06-02 | W-OPS.0 | Maturity audit → Phase W-OPS + §6.2w execution order in implementation plan |
 | 2026-06-06 | W-OPS.1–W-OPS.15 | Circuit breaker, idempotency gate, SLO docs, ops evidence script, staging API key, harness skills, online eval, wiring/metrics |
 | 2026-06-02 | OPS-L3.1 | `phase_w_ops_evidence.py` Windows pytest argv + shadow trend probe; `--enforce` green |
+| 2026-06-02 | REG / §6.1 | `doctor --ci` green: research `ToolEnablementProfile` protocol; lab factory via `bootstrap_lab_integration_wiring` |
 | 2026-06-03 | W-OPS.10–W-OPS.11 | Lab stack health by catalog slug; shadow eval wired in `RuntimeEngine`; CI `phase_w_ops_evidence.py`; gate **470** |
 | 2026-06-03 | W-OPS.5/11 | File-backed shadow eval registry; `record_harness_release_cycle.py`; extended ops evidence checks |
 | 2026-06-03 | §6.1 / N.9 | Product scaffold `legal_product()` manifest + catalog bootstrap; gate **470** |
@@ -2914,7 +2915,7 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 
 ### AA — Residual backlog (infrastructure)
 
-**Platform AA rows closed (2026-06-02).** Open infrastructure items: [§6.1z](#61z-harness-implementation-queue-consolidated) only.
+**Platform AA rows closed (2026-06-02).** No open infrastructure IDs — [§6.1z](#61z-harness-implementation-queue-consolidated) queue closed; ongoing **§6.1** only.
 
 | ID | Deliverable | Priority | Notes |
 |----|-------------|----------|-------|
@@ -3362,7 +3363,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ## 6. What to implement next
 
-**Default answer (infrastructure only):** follow the ordered register in **[§6.1z](#61z-harness-implementation-queue-consolidated)** (Band 1 maintenance + open harness IDs). Use `HarnessApplication`, `intergrax run`, `new-stack` / `new-application` for new environments.
+**Default answer (infrastructure only):** **[§6.1](#61harness-platform-maintenance-default--band-1)** maintenance (gate + audit scripts). Harness feature queue **[§6.1z](#61z-harness-implementation-queue-consolidated) is closed** (2026-06-02). Use `HarnessApplication`, `intergrax run`, `new-stack` / `new-application` for new environments.
 
 **Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](#63a-business-backlog-register-consolidated)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
 
@@ -3610,7 +3611,7 @@ See [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md). Exi
 | **A.5** | Full Legal regression (all steps, live model) | Phase A row | Low | K.6 / B.15 |
 | **Phase E** | Legal agent refactoring (parallel track) | `agents/legal/` | On demand | Product architecture |
 
-**Not business (infrastructure — use [§6.1z](#61z-harness-implementation-queue-consolidated), not this table):** DX-5.7, AA-LEG.0.2 (tag), §6.1 maintenance, OPS-L3.1 verification.
+**Not business (infrastructure — closed; see [§6.1z](#61z-harness-implementation-queue-consolidated)):** DX-5.7, AA-LEG.0.2, OPS-L3.1 **Done**; ongoing **§6.1** maintenance only.
 
 ### 6.1u Archived — Phase U cadence (complete 2026-06-01)
 

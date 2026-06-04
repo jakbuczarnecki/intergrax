@@ -18,8 +18,7 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import TaskContext
-from intergrax.tools.registry.profile import ToolProfile
-from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.agents.tool_enablement import ToolEnablementProfile, ToolWiringContextLike
 from research.steps.pipeline import build_pipeline, run_domain_step
 
 
@@ -30,8 +29,8 @@ class ResearchAgent(HarnessReferenceAgent):
         self,
         harness: LabHarnessContext | None = None,
         *,
-        tool_profile: ToolProfile | None = None,
-        tool_wiring_context: ToolWiringContext | None = None,
+        tool_profile: ToolEnablementProfile | None = None,
+        tool_wiring_context: ToolWiringContextLike | None = None,
         enable_websearch: bool = False,
     ) -> None:
         self._harness = harness or default_reference_harness()
