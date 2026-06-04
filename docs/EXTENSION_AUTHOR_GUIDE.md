@@ -16,8 +16,10 @@ Intergrax exposes three **Tier-0 plugin catalogs**. Shipped providers and third-
 
 ## 0. Tier-3 environment vs Tier-2 agent (H-APP, DX)
 
-| LangGraph | Intergrax |
-|-----------|-----------|
+**LangGraph is not required.** Intergrax ships its own Nexus loop, `HarnessApplication`, and `AgentGraph`. The table below is a **conceptual mapping** for authors coming from LangGraph — not a runtime dependency. Optional legacy notebooks and `intergrax.supervisor.build_langgraph_from_plan` need the extra `pip install 'Intergrax-ai[langgraph-legacy]'`.
+
+| LangGraph (analogy) | Intergrax |
+|---------------------|-----------|
 | `State` fields | `AgentContract` + step metadata |
 | Node function | `IntergraxAgent` `@step` / `run_step` |
 | Conditional edge | `decide_after_step` → `AgentDecision` |

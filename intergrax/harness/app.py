@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""HarnessApplication facade — LangGraph-style authoring entry (Phase DX-2.1)."""
+"""HarnessApplication facade — graph-style authoring entry (Phase DX-2.1, no LangGraph)."""
 
 from __future__ import annotations
 

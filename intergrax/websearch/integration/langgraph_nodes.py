@@ -2,6 +2,8 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+"""Optional LangGraph adapter for web search nodes (requires [langgraph-legacy])."""
+
 from __future__ import annotations
 from typing import TypedDict, Optional, List, Dict, Any, Annotated
 

@@ -40,7 +40,6 @@ dependencies = [
   "langchain-openai>=0.3",
   "langchain-ollama>=0.2",
   "langchain-text-splitters>=0.3",
-  "langgraph>=0.0.40",
   # -----------------
   # RAG / Vector DBs
   # -----------------
@@ -106,6 +105,8 @@ harness-author = [
   "python-dotenv>=1.0",
   "PyYAML>=6.0",
 ]
+# Optional legacy adapters and notebooks only — not required for Nexus / Harness runtime.
+langgraph-legacy = ["langgraph>=0.0.40"]
 # Minimal LLM provider subsets (core package still installs all providers by default).
 llm-openai = ["openai>=1.0", "tiktoken>=0.7"]
 llm-anthropic = ["anthropic>=0.25", "tiktoken>=0.7"]

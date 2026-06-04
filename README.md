@@ -231,7 +231,7 @@ Tier-3 **applications** that compose these agents are listed in [Applications �
 - **Observability** — persisted run traces (SQLite), debug CLI (`python -m intergrax.debug`), debug HTTP API (`intergrax.debug.app`).
 - **Tier-0 reuse** — one canonical path for integrations, tools, skills, LLM, RAG, and tracing; agents compose rather than reimplement.
 
-Legacy Supervisor / LangGraph orchestration is **deprecated** in favour of the Nexus runtime model.
+Legacy Supervisor / LangGraph orchestration is **deprecated** and **optional** (`[langgraph-legacy]` extra only). Production paths use the Nexus runtime model; LangGraph is not a core dependency.
 
 ---
 
