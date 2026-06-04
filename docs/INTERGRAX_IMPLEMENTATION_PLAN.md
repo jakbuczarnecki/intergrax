@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Harness platform bands 1–2f mostly Done** (Q→V, P-Ext, W-ML, **W-OPS**, **H-APP**, **DX** 46/47); **Band 2g platform Done** — [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy); **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **533 passed**; **operational L3** = `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce`  
+Status: Working draft (2026-06-02) — **Harness platform bands 1–2f Done** (Q→V, P-Ext, W-ML, **W-OPS**, **H-APP**, **DX** 47/47); **Band 2g platform Done** — [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy); **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **534 passed**; **operational L3** = `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce`  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -46,7 +46,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Tier-3 application environment audit → full configurability | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) → **Phase H-APP** · **§6.2x** |
 | Developer authoring UX audit (LangGraph-like entry, measurable TTFRun) | **Phase DX** (below) · **§6.2y** · source: harness DX audit 2026-06-03 (conversation + H-APP gap analysis) |
 | Agents & applications conformance audit (structure, scaffold, per-agent/app docs, deploy) | **Phase AA** (below) · **§6.2z** · source: Tier-2/Tier-3 audit 2026-06-03 (conversation) |
-| Infrastructure vs business scope split | **§4.0a** · [§6.3a](#63a-business-backlog-register-consolidated) · DX/AA residual backlogs |
+| Infrastructure vs business scope split | **§4.0a** · [§6.1z](#61z-harness-implementation-queue-consolidated) · [§6.3a](#63a-business-backlog-register-consolidated) |
 
 ---
 
@@ -199,8 +199,8 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | **Harness completion backlog** | **Done** (2026-06-02) | §4.1 — U-Leg, typing/CI, platform skills, research UAEP parity |
 | **Plugin catalogs (Phase P-Ext)** | **Done** (2026-06-02) | [Phase P-Ext](#phase-p-ext--plugin-catalogs-integrations-tools-skills) · [P-Ext.6 paydown](#p-ext6--production-closure-paydown) · Appendix I |
 | **Application environment (Phase H-APP)** | **Done** (2026-06-03) | [Phase H-APP](#phase-h-app--tier-3-application-environment-full-configurability) · 43 tasks from application-layer audit |
-| **Developer authoring UX (Phase DX)** | **Done** (2026-06-02) | [Phase DX](#phase-dx--developer-authoring-experience-fast-environment--agent-builds) · 46/47 **Done**, optional DX-5.7 — [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
-| **Agents & applications conformance (Phase AA)** | **Mostly Done** (2026-06-02) | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) · platform **Done**, domain **Deferred** — [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
+| **Developer authoring UX (Phase DX)** | **Done** (2026-06-02) | [Phase DX](#phase-dx--developer-authoring-experience-fast-environment--agent-builds) · **47/47 Done** — [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
+| **Agents & applications conformance (Phase AA)** | **Platform Done** (2026-06-02) | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) · platform **Done** ([§6.1z](#61z-harness-implementation-queue-consolidated)); domain **Deferred** — [§6.3a](#63a-business-backlog-register-consolidated) |
 | Product agents (Phase K) | **Deferred** | K.1/K.2 — end of priority list |
 | Tier-3 product applications | **Deferred** | New apps / product routes — after harness backlog |
 
@@ -2357,6 +2357,7 @@ Wave W-OPS-P2 (hygiene):    W-OPS.13 → W-OPS.14 → W-OPS.15
 |------|----------|---------|
 | 2026-06-02 | W-OPS.0 | Maturity audit → Phase W-OPS + §6.2w execution order in implementation plan |
 | 2026-06-06 | W-OPS.1–W-OPS.15 | Circuit breaker, idempotency gate, SLO docs, ops evidence script, staging API key, harness skills, online eval, wiring/metrics |
+| 2026-06-02 | OPS-L3.1 | `phase_w_ops_evidence.py` Windows pytest argv + shadow trend probe; `--enforce` green |
 | 2026-06-03 | W-OPS.10–W-OPS.11 | Lab stack health by catalog slug; shadow eval wired in `RuntimeEngine`; CI `phase_w_ops_evidence.py`; gate **470** |
 | 2026-06-03 | W-OPS.5/11 | File-backed shadow eval registry; `record_harness_release_cycle.py`; extended ops evidence checks |
 | 2026-06-03 | §6.1 / N.9 | Product scaffold `legal_product()` manifest + catalog bootstrap; gate **470** |
@@ -2489,7 +2490,7 @@ Total: 43
 
 ## Phase DX — Developer Authoring Experience (fast environment + agent builds)
 
-**Status:** **Done** (2026-06-02) — **46/47** deliverables **Done** in master table; optional **DX-5.7** (canon appendix) — [DX — Residual backlog](#dx--residual-backlog-infrastructure); gate TBD this session.  
+**Status:** **Done** (2026-06-02) — **47/47** deliverables **Done** in master table; gate **533+ passed**.  
 **Prerequisites:** Phase **H-APP** **Done** (typed `ApplicationEnvironmentProfile`, `wire_application_environment`, `build_harness_host_runtime`). Phases **N**, **P-Ext**, **S** scaffold baseline **Done**.  
 **Goal:** Make building **Tier-3 application environments** and **Tier-2 agents** trivial for Python developers — LangGraph-like mental model (state/steps → graph → run), **measurable** time-to-first-run (TTFRun), progressive disclosure (minimal → standard → production), and **UI-ready** serialized specs for Phase 2 (non-developer environment builder).  
 **Priority ladder:** **Band 2f** (§4.0) — **closed for core path**; residual IDs are **infrastructure** follow-ups, not Band 3.  
@@ -2597,7 +2598,7 @@ Total: 47
 | DX-5.4 | DX5 | **Optional `agents.yaml`** — declarative `AgentBinding` list validated against importable classes | **Done** | Low | Same loader; schema test |
 | DX-5.5 | DX5 | **Product scaffold observability preset** — `ObservabilityProfile` template (trace + optional read-only debug) | **Done** | Medium | `new_application_product.py` `environment_profile.py` (`otel_enabled`, debug override) |
 | DX-5.6 | DX5 | **Structured log correlation** — inject `trace_id` / `run_id` in FastAPI middleware (lab + product factories) | **Done** | Medium | `intergrax/applications/_shared/logging_middleware.py` |
-| DX-5.7 | DX5 | **Runtime event catalog table** — `RuntimeEventType` → emit phase → ops filter hints in canon §42 | **Pending** | Low | `intergrax_runtime_architecture.md` §42 appendix |
+| DX-5.7 | DX5 | **Runtime event catalog table** — `RuntimeEventType` → emit phase → ops filter hints in canon §42 | **Done** | Low | `intergrax_runtime_architecture.md` §42.1.5; `phase_coverage.EVENT_OPS_FILTER_HINTS` |
 | DX-5.8 | DX5 | **Policy rule handler plugins** — entry point group `intergrax.policy_rules` (mirror P-Ext pattern) | **Done** | Medium | `runtime/policy/rules/` + author guide § |
 | DX-6.1 | DX6 | **`intergrax.agents.defaults`** — `harness_production_mode`, lab runtime config helpers (no Tier-3 import from agents) | **Done** | High | `intergrax/agents/defaults.py`; Tier-3 re-export in `runtime_defaults.py` |
 | DX-6.2 | DX6 | **Fix reference agents** — `echo`, `research` (and scaffold template) must not import `applications/_shared` | **Done** | High | `agents/echo/`, `agents/research/` + `check_agent_registry_bypass` |
@@ -2630,24 +2631,21 @@ Total: 47
 | 2026-06-03 | DX-1.1–DX-8.3 (core) | HarnessApplication, scaffold H-APP alignment, CLI run/doctor, presets, `check_scaffold_harness_alignment`; gate **518** |
 | 2026-06-02 | Plan sync | Master table synced to codebase; **17** IDs remain **Pending** — [residual backlog](#dx--residual-backlog-infrastructure) |
 | 2026-06-02 | DX residual closeout | `--minimal` stack, `expand`, doctor CI, spec export + round-trip, TTFRun acceptance, `agents.defaults.harness_production_mode`, docs quickstart; gate **533** |
+| 2026-06-02 | DX-5.7 | §42.1.5 event catalog + `EVENT_OPS_FILTER_HINTS`; Phase DX **47/47 Done** |
 
-**Suggested PR order (residual):** DX-5.7 only (canon event appendix) — otherwise Phase DX infrastructure **Done**.
+**Suggested PR order (residual):** None — Phase DX infrastructure **Done**.
 
 **Phase 2 UI boundary (DX-7.5):** A future visual builder must consume only versioned artifacts from `build/harness_specs/*.json` and `build/capability_catalog_feed.json` — not parallel Pydantic copies. Host behavior stays `HarnessApplication` / Tier-3 factories; UI edits serialize to the same `ApplicationEnvironmentProfile` + `ApplicationManifest` + `ApplicationGraphSpec` models validated by DX-7.1/DX-7.3.
 
 ### DX — Residual backlog (infrastructure)
 
-**Not Band 3.** Platform DX rows **Done** (2026-06-02) except optional canon appendix.
-
-| ID | Deliverable | Priority | Notes |
-|----|-------------|----------|-------|
-| DX-5.7 | Runtime event catalog appendix (canon §42) | Low | Ops filter hints — optional; defer to W-OPS / canon maintenance |
+**Not Band 3.** Platform DX rows **Done** (2026-06-02), including DX-5.7 (§42.1.5). No open DX IDs — see [§6.1z](#61z-harness-implementation-queue-consolidated).
 
 ---
 
 ## Phase AA — Agents & Applications Conformance (scaffold, docs, deploy)
 
-**Status:** **Mostly Done** (2026-06-02) — **platform/conformance Done** (tier hygiene, ARCHITECTURE matrix, deploy triad, legal **scaffold** reset); **domain steps Deferred** (AA-LEG.2.2+); gate **533 passed**.  
+**Status:** **Mostly Done** (2026-06-02) — **platform/conformance Done** (tier hygiene, ARCHITECTURE matrix, deploy triad, legal **scaffold** reset); **domain steps Deferred** (AA-LEG.2.2+); gate **534 passed**.  
 **Prerequisites:** Phase **H-APP** **Done**, Phase **DX** **Mostly Done** (scaffold generators, `build_harness_host_runtime`, CLI, presets).  
 **Goal:** Bring every **Tier-2** agent under `agents/` and every **Tier-3** host under `applications/` to a **documented, scaffold-aligned** state — fast authoring, full environment control (handlers, observability, policy), and **repeatable deploy** (Docker + deploy doc + `pyproject.toml` dependency contract per application). **Domain UAEP implementation is Band 3** — see [§6.3](#63-end-of-plan--deferred-product-work-only).  
 **Priority ladder:** **Band 2g** (§4.0) — **platform rows closed**; only [AA residual](#aa--residual-backlog-infrastructure) + §6.1 maintenance.  
@@ -2782,7 +2780,7 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 | ID | Deliverable | Status | Priority | Location / acceptance |
 |----|-------------|--------|----------|------------------------|
 | AA-LEG.0.1 | **Record hard-reset decision** in plan + remove “incremental migration” as default for legal | **Done** | Critical | This section |
-| AA-LEG.0.2 | **Archive tag** `legal-legacy-pre-aa` on git (pointer for forensic diff) | **Deferred** | High | Release note in paydown log |
+| AA-LEG.0.2 | **Archive tag** `legal-legacy-pre-aa` on git (pointer for forensic diff) | **Done** | High | Tag on parent of `bbce1bd` (pre hard-reset) |
 | AA-LEG.0.3 | **Extract behavioral spec** from legacy tests → `agents/legal/SPEC_FROM_LEGACY.md` (requirements only) | **Done** | High | Before delete |
 | AA-LEG.1.1 | **Delete** legacy `agents/legal/` tree (pipeline, governance, custom loop, tracing dupes) | **Done** | **Critical** | PR after AA-LEG.0.3 |
 | AA-LEG.1.2 | **`python -m intergrax.scaffold new-agent legal --capability legal.review`** (force clean tree) | **Done** | **Critical** | `agents/legal/` matches scaffold layout |
@@ -2863,7 +2861,7 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 | ID | Deliverable | Status | Priority | Location / acceptance |
 |----|-------------|--------|----------|------------------------|
 | AA-LABAG.1 | **`agents/lab/README.md`** — mock agents purpose, not product Tier-2 | **Done** | Low | `agents/lab/README.md` |
-| AA-LABAG.2 | **(Optional)** move mocks to `testing_support/` if they are test-only | **Pending** | Low | Product decision in session |
+| AA-LABAG.2 | **(Optional)** move mocks to `testing_support/` if they are test-only | **Won't fix** | Low | Until leadership requests — mocks stay under `agents/lab/` |
 
 #### Wave AA10 — Application `lab_application`
 
@@ -2874,7 +2872,7 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 | AA-LABAPP.3 | **`environment` in manifest** or documented single profile builder | **Done** | High | `manifest.py` / `_shared` |
 | AA-LABAPP.4 | **Deploy triad** — verify `docker/*`, `BUILD_AND_DEPLOY.md` | **Done** | High | |
 | AA-LABAPP.5 | **`pyproject.toml` deps** section in ARCHITECTURE | **Done** | High | |
-| AA-LABAPP.6 | **Smoke tests** after factory migration | **Deferred** | High | `lab_application_tests/` |
+| AA-LABAPP.6 | **Smoke tests** after factory migration | **Done** | High | `lab_application_tests/host/test_lab_host_smoke.py` + `tests/acceptance/agent_os/test_lab_application.py` |
 | AA-LABAPP.7 | **README** → ARCHITECTURE | **Done** | Low | |
 
 #### Wave AA11 — Application `poc_template_application`
@@ -2916,12 +2914,15 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 
 ### AA — Residual backlog (infrastructure)
 
+**Platform AA rows closed (2026-06-02).** Open infrastructure items: [§6.1z](#61z-harness-implementation-queue-consolidated) only.
+
 | ID | Deliverable | Priority | Notes |
 |----|-------------|----------|-------|
 | AA-LABAG.1 | `agents/lab/README.md` — mock agents, not product Tier-2 | Low | **Done** — `agents/lab/README.md` |
-| AA-LABAG.2 | (Optional) move lab mocks to `testing_support/` | Low | Product decision — **Won't fix** until leadership requests |
+| AA-LABAG.2 | (Optional) move lab mocks to `testing_support/` | Low | **Won't fix** until leadership requests |
 | AA-SIG.2 | Scaffold parity diff test for `signoff_probe` | Low | **Done** — `tests/unit/scaffold/test_signoff_scaffold_parity.py` |
-| AA-LEG.0.2 | Git tag `legal-legacy-pre-aa` | High | Forensics; requires explicit `git tag` in release session |
+| AA-LABAPP.6 | Lab host smoke after H-APP factory | High | **Done** — unit + acceptance coverage |
+| AA-LEG.0.2 | Git tag `legal-legacy-pre-aa` | High | **Done** — annotated tag on pre-reset commit |
 
 ### AA — Explicitly deferred (business / domain — Band 3)
 
@@ -2930,7 +2931,7 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 | Legal UAEP domain steps | AA-LEG.2.2–2.4, AA-LEGAPP.6, AA-LEGAPP.8 | Business logic on scaffold — [§6.3a](#63a-business-backlog-register-consolidated) |
 | Research domain | AA-RES.4, AA-RES.5, AA-RESAPP.6 | Skills + graph tests — product prototype |
 | Organization worker full scaffold | AA-ORG.3, AA-ORG.4 | Demo agent + lab roster |
-| Lab/research host extra smoke | AA-LABAPP.6 | After domain work optional |
+| Lab host extra smoke | AA-LABAPP.6 | **Done** (2026-06-02 sync) — not blocking |
 | K.1 / K.2 | Phase K | Band 3 — problem_radar / vendor discovery |
 | Legal live LLM E2E | K.6 / B.15 / S-Ops.4 | Band 3 — CI budget |
 | New product Tier-3 beyond four hosts | §6.3 | Product decision |
@@ -2944,9 +2945,11 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 | 2026-06-03 | AA-S0.1–S0.2, AA-S0.5, AA-APP.0.1–0.3, AA-ECHO.2, AA-PR.*, AA-LABAPP.2, AA-POC.2, AA-RESAPP.2, AA-LEG.1–1.3 | Tier hygiene, lab harness runtime, legal hard reset, deploy triad gate; gate **521** |
 | 2026-06-02 | AA-S0.3, AA-D0.*, AA-* ARCHITECTURE, AA-LABAPP.3, AA-RESAPP.3 | `--reference` scaffold, docs matrix, lab manifest environment, tier import tests; gate **526** |
 | 2026-06-02 | Plan sync | §4.0a scope split, DX/AA residual backlogs, §6.3a business register, master tables synced |
+| 2026-06-02 | AA sync | AA-LABAPP.6 **Done**; AA-LABAG.2 **Won't fix**; §6.1z implementation queue |
+| 2026-06-02 | AA-LEG.0.2, OPS-L3.1 | Tag `legal-legacy-pre-aa`; operational L3 evidence verified |
 
-**Suggested session order (platform — mostly complete):**  
-AA-LABAG.1 → AA-LEG.0.2 (tag) → AA-SIG.2. **Do not schedule** AA-LEG.2.* / AA-RES.5 / AA-ORG.3–4 in harness cadence — use [§6.3a](#63a-business-backlog-register-consolidated) after product decision.
+**Suggested session order (platform — complete):**  
+See [§6.1z](#61z-harness-implementation-queue-consolidated). **Do not schedule** AA-LEG.2.* / AA-RES.5 / AA-ORG.3–4 in harness cadence — use [§6.3a](#63a-business-backlog-register-consolidated) after product decision.
 
 ---
 
@@ -3303,9 +3306,10 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 
 | Topic | Section |
 |-------|---------|
+| **Canonical implementation queue (infrastructure)** | [§6.1z](#61z-harness-implementation-queue-consolidated) |
 | Ongoing gate + audit scripts | [§6.1](#61-harness-platform-maintenance-default--band-1) |
-| DX leftovers (`--minimal`, `doctor --ci`, schemas, TTFRun) | [DX — Residual backlog](#dx--residual-backlog-infrastructure) |
-| AA platform leftovers (lab mock README) | [AA — Residual backlog](#aa--residual-backlog-infrastructure) |
+| DX optional appendix | [DX — Residual backlog](#dx--residual-backlog-infrastructure) (DX-5.7 only) |
+| AA platform closure | [AA — Residual backlog](#aa--residual-backlog-infrastructure) (AA-LEG.0.2 tag only) |
 | All business / domain work | [§6.3](#63-end-of-plan--deferred-product-work-only) · [Business backlog register](#63a-business-backlog-register-consolidated) |
 
 ### 4.1 Harness completion backlog (execution order)
@@ -3358,11 +3362,37 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ## 6. What to implement next
 
-**Default answer (infrastructure only):** [§6.1](#61-harness-platform-maintenance-default--band-1) harness maintenance (gate green, audit scripts) → optional [DX residual](#dx--residual-backlog-infrastructure) (P0: **DX-8.1**, **DX-3.1**, **DX-7.1**) → optional [AA residual](#aa--residual-backlog-infrastructure) (low). Use `HarnessApplication`, `intergrax run`, `new-stack` / `new-application` for new environments.
+**Default answer (infrastructure only):** follow the ordered register in **[§6.1z](#61z-harness-implementation-queue-consolidated)** (Band 1 maintenance + open harness IDs). Use `HarnessApplication`, `intergrax run`, `new-stack` / `new-application` for new environments.
 
-**Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
+**Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](#63a-business-backlog-register-consolidated)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
 
-**Audit basis:** Tier-2/Tier-3 conformance audit (2026-06-03) + DX audit; business agents excluded from default queue.
+**Audit basis:** Tier-2/Tier-3 conformance audit (2026-06-03) + DX closeout (2026-06-02); business agents excluded from §6.1z.
+
+### 6.1z Harness implementation queue (consolidated)
+
+**Purpose:** Single ordered list of **infrastructure** work. Excludes Band 3 / [§6.3a](#63a-business-backlog-register-consolidated). **Queue closed 2026-06-02** (DX-5.7, AA-LEG.0.2, OPS-L3.1). Ongoing: **§6.1** maintenance only.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green; scripts in [§6.1](#61-harness-platform-maintenance-default--band-1) |
+| 1 | **DX-5.7** | Docs | **Done** | `RuntimeEventType` catalog appendix in `intergrax_runtime_architecture.md` §42.1.5 + `EVENT_OPS_FILTER_HINTS` | Gate `test_all_runtime_event_types_have_ops_filter_hint` |
+| 2 | **AA-LEG.0.2** | Release / git | **Done** | Annotated tag `legal-legacy-pre-aa` on pre-reset commit | `git tag -l legal-legacy-pre-aa` |
+| 3 | **OPS-L3.1** | Process | **Done** | Operational L3 sign-off in production cadence | `release_cycles.json` ≥2; `harness-release.yml` + `phase_w_ops_evidence.py --enforce` |
+| — | **REG-*** | Regression | As needed | Fix gate/CI failures only | No feature scope |
+| — | **M.6 / R-Skill** | On demand | Optional | New integration slug or skill bundle when a host blocks | Per product/host need; not harness gate |
+
+**Closed (no implementation — do not reopen without regression):**
+
+| ID | Resolution |
+|----|------------|
+| DX-0.3–DX-8.2 (except DX-5.7) | **Done** — 2026-06-02 DX residual closeout |
+| AA-LABAG.1, AA-SIG.2, AA-LABAPP.6 | **Done** |
+| AA-LABAG.2 | **Won't fix** — mocks remain in `agents/lab/` until leadership requests move |
+| W-OPS.1–15, H-APP.0–6.3, P-Ext, Q–V | **Done** |
+
+**Explicitly excluded from this queue (business — implement only after §6.3 decision):** K.1, K.2, K.6, B.15, S-Ops.4, A.5, AA-LEG.2.2+, AA-LEGAPP.6–8, AA-RES.4–5, AA-RESAPP.6, AA-ORG.3–4, new Tier-3 product apps, domain skills — full list: [§6.3a](#63a-business-backlog-register-consolidated).
+
+**Suggested PR order:** None (harness platform queue closed). Regressions → **REG-*** under §6.1.
 
 ### 6.1 Harness platform maintenance (default — Band 1)
 
@@ -3439,7 +3469,7 @@ Work **one H-APP ID per PR**; after each step update the H-APP master table + pa
 
 ### 6.2y Phase DX execution order (Band 2f — mostly done)
 
-**Status:** **Done** (2026-06-02) · **46/47 Done** · optional DX-5.7 · canonical register: [Phase DX — Master deliverables register](#dx--master-deliverables-register-all-47-tasks).
+**Status:** **Done** (2026-06-02) · **47/47 Done** · canonical register: [Phase DX — Master deliverables register](#dx--master-deliverables-register-all-47-tasks).
 
 Work **one DX ID per PR**; after each step update the DX master table + paydown log; keep §6.1 scripts green. **Start with DX1 (scaffold/H-APP alignment)** before DX2 facades — otherwise new authors copy broken `factory.py` patterns.
 
@@ -3573,14 +3603,14 @@ See [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md). Exi
 | **AA-RESAPP.6** | Research application smoke + manifest wiring | `research_application_tests/` | High | AA-RES.5 |
 | **AA-ORG.3** | Organization worker scaffold-align (`contract`, `steps/`) | `agents/organization_worker/` | Medium | Harness demo |
 | **AA-ORG.4** | Lab manifest flag + integration test | `lab_application/manifest.py` | Medium | AA-ORG.3 |
-| **AA-LABAPP.6** | Extra lab host smoke (optional) | `lab_application_tests/` | Low | Optional |
+| ~~AA-LABAPP.6~~ | ~~Extra lab host smoke~~ | — | — | **Done** (2026-06-02) — not in business queue |
 | **K.6 / B.15 / S-Ops.4** | Legal full E2E with live LLM | CI / acceptance | Low | CI budget approval |
 | **Tier-3 product** | New `applications/<product>/` beyond four reference hosts | `applications/` | Product | Phase N scaffold + §6.3 decision |
 | **Domain skills** | Non-`harness.*` skill packs for product agents | `intergrax/skills/providers/` | Product | With K.1 or K.2 |
 | **A.5** | Full Legal regression (all steps, live model) | Phase A row | Low | K.6 / B.15 |
 | **Phase E** | Legal agent refactoring (parallel track) | `agents/legal/` | On demand | Product architecture |
 
-**Not business (infrastructure — do not list here):** DX residual ([§DX residual](#dx--residual-backlog-infrastructure)), AA-LABAG.*, AA-LEG.0.2, AA-SIG.2, §6.1 maintenance.
+**Not business (infrastructure — use [§6.1z](#61z-harness-implementation-queue-consolidated), not this table):** DX-5.7, AA-LEG.0.2 (tag), §6.1 maintenance, OPS-L3.1 verification.
 
 ### 6.1u Archived — Phase U cadence (complete 2026-06-01)
 

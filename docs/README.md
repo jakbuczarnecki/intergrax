@@ -50,7 +50,7 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | Understand the platform | Strategy doc, then implementation plan §0, then architecture canon §1–§5 |
 | Infrastructure vs business scope | [INTERGRAX_IMPLEMENTATION_PLAN.md §4.0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business) |
-| See what to implement next (harness) | **§6.1** + [DX residual](INTERGRAX_IMPLEMENTATION_PLAN.md#dx--residual-backlog-infrastructure) + [AA residual](INTERGRAX_IMPLEMENTATION_PLAN.md#aa--residual-backlog-infrastructure) |
+| See what to implement next (harness) | [§6.1z implementation queue](INTERGRAX_IMPLEMENTATION_PLAN.md#61z-harness-implementation-queue-consolidated) + [§6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) maintenance |
 | Business / product backlog only | [§6.3a](INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated) — after explicit product decision |
 | Understand Phase V sequence/dependencies | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V — Execution matrix** |
 | See Phase V KPI thresholds | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V — KPI thresholds and acceptance metrics** |

@@ -131,6 +131,8 @@ Operational L3 evidence is separate from `phase_v_closeout_gate` (contract CI). 
 
 **Incident budget (rolling 30d):** ≤ 2 Sev-2 harness regressions; ≤ 1 unresolved gate red > 24h.
 
+**Runtime event ops filters (Phase DX-5.7):** Every `RuntimeEventType` maps to an `ExecutionPhase` and a stable ops filter token (`ops:alert`, `ops:hitl`, `trace:step`, …). Source of truth: `intergrax.runtime.events.phase_coverage` (`EVENT_PHASE_COVERAGE`, `EVENT_OPS_FILTER_HINTS`). Canon table: [architecture §42.1.5](intergrax_runtime_architecture.md#4215-runtime-event-catalog-ops-filters). Gate: `test_all_runtime_event_types_have_ops_filter_hint`.
+
 **Runbook stubs (owner: harness-platform):**
 
 | Scenario | Action |

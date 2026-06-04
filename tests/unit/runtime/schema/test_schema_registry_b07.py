@@ -2,7 +2,10 @@
 
 import pytest
 
-from intergrax.runtime.events.phase_coverage import list_unmapped_event_types
+from intergrax.runtime.events.phase_coverage import (
+    list_unmapped_event_types,
+    list_unmapped_ops_filter_hints,
+)
 from intergrax.runtime.plugins.contract import RuntimePlugin
 from intergrax.runtime.schema.registry import (
     RUNTIME_SCHEMA_REGISTRY,
@@ -37,3 +40,7 @@ def test_runtime_plugin_contract_is_dataclass():
 
 def test_all_runtime_event_types_have_execution_phase():
     assert list_unmapped_event_types() == []
+
+
+def test_all_runtime_event_types_have_ops_filter_hint() -> None:
+    assert list_unmapped_ops_filter_hints() == []

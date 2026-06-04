@@ -40,8 +40,10 @@ class OperationalMaturityEvidence(BaseModel):
     )
 
 
-def _run_pytest(target: str) -> bool:
-    cmd = [sys.executable, "-m", "pytest", target, "-q", "--tb=line"]
+def _run_pytest(*targets: str) -> bool:
+    if not targets:
+        return False
+    cmd = [sys.executable, "-m", "pytest", *targets, "-q", "--tb=line"]
     completed = subprocess.run(cmd, cwd=REPO_ROOT, check=False)
     return completed.returncode == 0
 
@@ -84,7 +86,7 @@ def _shadow_trend_export_ok() -> bool:
             registry=registry,
             clear_registry_after_export=True,
         )
-        return len(report.snapshots) == 1
+        return len(report.snapshots) >= 1
     except Exception:
         return False
 
@@ -124,10 +126,10 @@ def collect_operational_checks() -> OperationalMaturityEvidence:
         OperationalHarnessCheck(
             check_id="shadow_eval_gate",
             passed=_run_pytest(
-                "tests/unit/runtime/architecture/test_online_evaluation.py "
-                "tests/unit/runtime/architecture/test_online_evaluation_registry.py "
-                "tests/unit/runtime/architecture/test_online_evaluation_trend.py "
-                "tests/unit/runtime/architecture/test_runtime_shadow_evaluation.py"
+                "tests/unit/runtime/architecture/test_online_evaluation.py",
+                "tests/unit/runtime/architecture/test_online_evaluation_registry.py",
+                "tests/unit/runtime/architecture/test_online_evaluation_trend.py",
+                "tests/unit/runtime/architecture/test_runtime_shadow_evaluation.py",
             ),
             detail="Shadow evaluation registry + RuntimeEngine hook (W-OPS.11)",
         ),

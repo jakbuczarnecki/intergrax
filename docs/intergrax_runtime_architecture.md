@@ -3305,6 +3305,60 @@ TASK_COMPLETED | TASK_FAILED
 - Events MUST be persisted to trace storage (§42.24).
 - Events MUST NOT contain secrets; redact at emission time.
 
+### 42.1.5 Runtime event catalog (ops filters)
+
+**Phase DX-5.7.** Canonical mapping lives in code: `intergrax.runtime.events.phase_coverage` (`EVENT_PHASE_COVERAGE`, `EVENT_OPS_FILTER_HINTS`). Gate: `test_all_runtime_event_types_have_execution_phase` and `test_all_runtime_event_types_have_ops_filter_hint`.
+
+| `RuntimeEventType` | `ExecutionPhase` | Ops filter hint | Typical subscriber |
+|--------------------|------------------|-----------------|-------------------|
+| `TASK_CREATED` | `INTAKE` | `trace:intake` | TraceStore, metrics |
+| `TASK_CLASSIFIED` | `CLASSIFICATION` | `trace:classification` | TraceStore |
+| `PLAN_CREATED` | `PLANNING` | `ops:planning` | TraceStore, planner metrics |
+| `PLAN_UPDATED` | `PLANNING` | `ops:planning` | TraceStore |
+| `PLAN_FAILED` | `PLANNING` | `ops:alert` | Alerting, TraceStore |
+| `AGENT_SELECTED` | `AGENT_SELECTION` | `trace:selection` | TraceStore |
+| `SKILL_RESOLVED` | `AGENT_SELECTION` | `trace:skills` | TraceStore |
+| `SKILL_IMPORT_FAILED` | `AGENT_SELECTION` | `ops:alert` | Alerting |
+| `CONTEXT_BUILT` | `CONTEXT_BUILDING` | `trace:context` | TraceStore |
+| `CONTEXT_ASSEMBLED` | `CONTEXT_BUILDING` | `trace:context` | TraceStore |
+| `CONTEXT_TRIMMED` | `CONTEXT_BUILDING` | `trace:context` | TraceStore |
+| `INGESTION_FAILED` | `CONTEXT_BUILDING` | `ops:alert` | Alerting |
+| `MEMORY_READ` | `CONTEXT_BUILDING` | `ops:memory` | TraceStore |
+| `MEMORY_WRITE` | `CONTEXT_BUILDING` | `ops:memory` | TraceStore |
+| `STEP_STARTED` | `STEP_EXECUTION` | `trace:step` | TraceStore, UAEP |
+| `STEP_COMPLETED` | `STEP_EXECUTION` | `trace:step` | TraceStore |
+| `STEP_FAILED` | `STEP_EXECUTION` | `ops:alert` | Alerting, recovery |
+| `TOOL_REQUESTED` | `STEP_EXECUTION` | `ops:tool_audit` | ToolRuntime audit |
+| `TOOL_COMPLETED` | `STEP_EXECUTION` | `ops:tool_audit` | ToolRuntime audit |
+| `TOOL_DENIED` | `STEP_EXECUTION` | `ops:alert` | PolicyEngine, alerting |
+| `TOOL_FAILED` | `STEP_EXECUTION` | `ops:alert` | Alerting, recovery |
+| `TASK_PROGRESS` | `STEP_EXECUTION` | `ops:progress` | Long-running UI, scheduler |
+| `HANDOFF_INITIATED` | `STEP_EXECUTION` | `ops:handoff` | Graph executor |
+| `HANDOFF_COMPLETED` | `STEP_EXECUTION` | `ops:handoff` | Graph executor |
+| `VALIDATION_STARTED` | `VALIDATION` | `trace:validation` | TraceStore |
+| `VALIDATION_PASSED` | `VALIDATION` | `trace:validation` | TraceStore |
+| `VALIDATION_FAILED` | `VALIDATION` | `ops:alert` | Alerting |
+| `DECISION_EMITTED` | `FINALIZATION` | `trace:decision` | TraceStore, hooks |
+| `INTERRUPT_REQUESTED` | `INTERRUPT_HANDLING` | `ops:hitl` | HITL queue |
+| `INTERRUPT_HANDLED` | `INTERRUPT_HANDLING` | `ops:hitl` | HITL queue |
+| `INTERRUPT_ESCALATED` | `INTERRUPT_HANDLING` | `ops:alert` | Alerting |
+| `RUNTIME_HANDLER_FAILED` | `INTERRUPT_HANDLING` | `ops:alert` | Alerting |
+| `HUMAN_APPROVAL_REQUESTED` | `HUMAN_APPROVAL` | `ops:hitl` | HITL / PagerDuty |
+| `HUMAN_APPROVAL_RECEIVED` | `HUMAN_APPROVAL` | `ops:hitl` | HITL |
+| `HUMAN_APPROVAL_TIMEOUT` | `HUMAN_APPROVAL` | `ops:alert` | Alerting |
+| `PAUSE_REQUESTED` | `HUMAN_APPROVAL` | `ops:hitl` | Scheduler |
+| `PAUSED` | `HUMAN_APPROVAL` | `ops:hitl` | Scheduler |
+| `RESUMED` | `HUMAN_APPROVAL` | `ops:hitl` | Scheduler |
+| `RETRY_SCHEDULED` | `RETRY_HANDLING` | `ops:retry` | RetryEngine metrics |
+| `RETRY_STARTED` | `RETRY_HANDLING` | `ops:retry` | RetryEngine metrics |
+| `CANCELLATION_REQUESTED` | `COMPLETION` | `ops:completion` | TraceStore |
+| `CANCELLED` | `COMPLETION` | `ops:completion` | TraceStore |
+| `TASK_COMPLETED` | `COMPLETION` | `ops:completion` | SLO dashboards |
+| `TASK_FAILED` | `COMPLETION` | `ops:alert` | Alerting, SLO burn |
+| `TRACE_PERSISTED` | `TRACE_PERSISTENCE` | `trace:persistence` | TraceStore |
+
+**Filter token legend:** `trace:*` — default observability scrape; `ops:alert` — page-worthy failures; `ops:hitl` — human-in-the-loop queues; `ops:tool_audit` — tool policy audits; `ops:completion` — terminal task outcomes; `ops:retry` — retry scheduler; `ops:planning` — planner failures/updates; `ops:handoff` — graph delegation; `ops:memory` — memory store access; `ops:progress` — checkpointed long runs.
+
 ---
 
 ## 42.2 Event Bus Architecture
