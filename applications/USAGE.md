@@ -60,6 +60,16 @@ Gate: `tests/unit/applications/test_application_deploy_triad.py`.
 
 **Scaffold default vs `--full`:** `python -m intergrax.scaffold new-application …` emits H-APP `factory.py` + `environment_profile.py` without `integration_wiring.py` / `tool_wiring.py`. Use `--full` only when custom catalog wiring is required.
 
+### Progressive disclosure (Phase DX-0.4)
+
+| Stage | How | Notes |
+|-------|-----|-------|
+| **Minimal** | `python -m intergrax.scaffold new-stack <name> --profile lab --minimal` | Harness-only factory; skip Docker/MCP until promoted |
+| **Standard** | `new-stack` or `new-application` without `--minimal` | Full lab/product scaffold (Docker, MCP, deploy doc) |
+| **Promote** | `python -m intergrax.scaffold expand <app_slug>` | Upgrade minimal lab tree to standard layout |
+
+Author path: [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md) Step 4E § E.0.
+
 ---
 
 ## How to define an application

@@ -43,6 +43,7 @@ def main(argv: list[str] | None = None) -> int:
         "new-skill-bundle",
         "new-integration",
         "new-tool-bundle",
+        "expand",
     }:
         return scaffold_main(argv)
     parser = build_parser()

@@ -355,17 +355,33 @@ def wiring_py(names: ScaffoldApplicationNames) -> str:
 
 
 def environment_profile_py(names: ScaffoldApplicationNames) -> str:
-    from intergrax.scaffold.new_application import _environment_profile_py
+    pkg = names.pkg
+    short = names.short
+    pascal = names.pascal
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
 
-    body = _environment_profile_py(names)
-    return (
-        body.replace(f"{names.pascal}ApplicationSettings", f"{names.pascal}BackendSettings")
-        .replace("lab_defaults", "product_defaults")
-        .replace(f'profile_id="{names.short}.scaffold"', f'profile_id="{names.short}.product"')
-        .replace(
-            'ApplicationEnvironmentProfile.product_defaults(profile_id=',
-            'ApplicationEnvironmentProfile.product_defaults(skill_bundles=["harness"], profile_id=',
-        )
+        """Tier-3 environment profile for {pkg} (Phase H-APP.5.5, DX-5.5)."""
+
+        from __future__ import annotations
+
+        from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+        from {pkg}.host.settings import {pascal}BackendSettings
+
+
+        def build_{short}_environment_profile(
+            settings: {pascal}BackendSettings,
+        ) -> ApplicationEnvironmentProfile:
+            _ = settings
+            profile = ApplicationEnvironmentProfile.product_defaults(
+                skill_bundles=["harness"],
+                profile_id="{short}.product",
+            )
+            profile.observability_profile.otel_enabled = True
+            profile.observability_profile.debug_surface_override = True
+            return profile
+        '''
     )
 
 

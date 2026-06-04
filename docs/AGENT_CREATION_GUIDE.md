@@ -353,6 +353,37 @@ Applications contain **wiring only** — never agent business logic.
 **Phase N status:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) (Phase N table)  
 **Reference tree:** `applications/poc_template_application/` (committed scaffold example)
 
+#### E.0 — 15-minute minimal path (Phase DX-3.6)
+
+From repository root — fastest harness loop (no Docker/MCP until you promote):
+
+```bash
+# 1. Agent + lab host (minimal factory)
+python -m intergrax.scaffold new-stack my_feature --profile lab --minimal \
+  --capability my_feature.basic
+
+# 2. Agent smoke test
+uv run pytest agents/my_feature/tests -q
+
+# 3. Run HTTP host (prints route + sample curl)
+uv run intergrax run my_feature_application.host.main:app
+
+# 4. Invoke (replace port/prefix from CLI output)
+curl -s -X POST http://127.0.0.1:8091/v1/my_feature/run \
+  -H "Content-Type: application/json" \
+  -d '{"message":"hello","capability":"my_feature.basic"}'
+```
+
+**Progressive disclosure (Phase DX-0.4):**
+
+| Stage | Command / artifact | What you get |
+|-------|-------------------|--------------|
+| **Minimal** | `new-stack --minimal` | Lab host via `build_harness_host_runtime` + `create_lab_fastapi_from_runtime`; agent under `agents/<slug>/` |
+| **Standard** | `new-stack` (no `--minimal`) | Docker, MCP, `BUILD_AND_DEPLOY.md`, full factory + debug scheduler |
+| **Promote** | `python -m intergrax.scaffold expand <app_slug>` | Adds standard files to an existing minimal lab application |
+
+See also [`applications/USAGE.md`](../applications/USAGE.md) § Progressive disclosure.
+
 #### E.1 — Choose scaffold profile
 
 | Profile | CLI | Host style | Default port |
@@ -442,7 +473,7 @@ Variables use the application prefix (`MY_LAB_`, `MY_PRODUCT_`, …). Do not put
 
 Product profile: optional dev API key via `*_BACKEND_BOOTSTRAP_API_KEY` (+ tenant/user); production requires keys or explicit `*_BACKEND_ALLOW_UNAUTHENTICATED=true` (see generated `host/settings.py`).
 
-**Lab / scaffold harness defaults (Phase Q-N.10):** Tier-3 lab hosts should wire `production_mode=False` via `intergrax.applications._shared.runtime_defaults.harness_production_mode()` so governance and shadow policies stay relaxed during local iteration. Product profiles set `production_mode=True` explicitly in `host/factory.py`.
+**Lab / scaffold harness defaults (Phase Q-N.10, DX-6.1):** Tier-2 agents and lab hosts use `intergrax.agents.defaults.harness_production_mode()` (returns `False`) on `RuntimeConfig` so governance and shadow policies stay relaxed during local iteration. Product profiles set `production_mode=True` explicitly in `host/factory.py`. Tier-3 may re-export via `intergrax.applications._shared.runtime_defaults`.
 
 #### E.5 — Three-command quickstart
 

@@ -34,13 +34,15 @@ def run_doctor(args: argparse.Namespace) -> int:
     root = args.root.resolve()
     checks: list[tuple[str, bool, str]] = []
 
-    bypass = root / "scripts" / "check_agent_registry_bypass.py"
-    ok, msg = _run_script(bypass, root)
-    checks.append(("agent_registry_bypass", ok, msg))
-
-    align = root / "scripts" / "check_scaffold_harness_alignment.py"
-    ok, msg = _run_script(align, root)
-    checks.append(("scaffold_harness_alignment", ok, msg))
+    scripts = [
+        ("agent_registry_bypass", "check_agent_registry_bypass.py"),
+        ("agents_no_tier3_imports", "check_agents_no_tier3_imports.py"),
+        ("scaffold_harness_alignment", "check_scaffold_harness_alignment.py"),
+        ("harness_no_getattr", "check_harness_no_getattr.py"),
+    ]
+    for name, script_name in scripts:
+        ok, msg = _run_script(root / "scripts" / script_name, root)
+        checks.append((name, ok, msg))
 
     for name, passed, detail in checks:
         status = "PASS" if passed else "FAIL"

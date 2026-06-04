@@ -474,13 +474,20 @@ def create_agent(
     root: Path,
     force: bool = False,
     reference: bool = False,
+    minimal: bool = False,
 ) -> Path:
     slug = _slug(name)
     class_name = _class_name(slug)
     if not capabilities:
         capabilities = [f"{slug}.basic"]
 
-    target = root / "agents" / slug
+    agents_root = root / "agents"
+    agents_root.mkdir(parents=True, exist_ok=True)
+    agents_init = agents_root / "__init__.py"
+    if not agents_init.exists():
+        agents_init.write_text("", encoding="utf-8")
+
+    target = agents_root / slug
     if target.exists() and not force:
         raise FileExistsError(f"Agent directory already exists: {target}")
 
@@ -498,7 +505,8 @@ def create_agent(
     _write(target / "prompts" / "system.md", _prompts_system_md(slug), force=force)
     _write(target / "tests" / "__init__.py", "", force=force)
     _write(target / "tests" / f"test_{slug}_agent.py", _test_agent_py(slug, class_name, primary_capability), force=force)
-    _write(target / "notebooks" / f"01_{slug}_experiment.ipynb", _notebook_stub(slug, primary_capability), force=force)
+    if not minimal:
+        _write(target / "notebooks" / f"01_{slug}_experiment.ipynb", _notebook_stub(slug, primary_capability), force=force)
     _write(
         target / "__init__.py",
         dedent(
@@ -510,7 +518,8 @@ def create_agent(
         ),
         force=force,
     )
-    _write(target / "README.md", _readme(slug, class_name, capabilities), force=force)
+    if not minimal:
+        _write(target / "README.md", _readme(slug, class_name, capabilities), force=force)
 
     return target
 

@@ -566,6 +566,58 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
     )
 
 
+def _factory_minimal_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    short = names.short
+    pascal = names.pascal
+    title = f"Intergrax {names.display} (minimal)"
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        """Minimal harness host for {pkg} (Phase DX-3.1 — no MCP/debug scheduler)."""
+
+        from __future__ import annotations
+
+        from typing import Optional
+
+        from fastapi import FastAPI
+
+        from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+        from intergrax.harness.lab_fastapi import create_lab_fastapi_from_runtime
+        from intergrax.runtime.registry.agent_registry import AgentRegistry
+        from {pkg}.host.agent_builders import {names.builders_const}
+        from {pkg}.host.settings import {pascal}ApplicationSettings
+        from {pkg}.host.environment_profile import build_{short}_environment_profile
+        from {pkg}.manifest import build_{short}_manifest
+
+
+        def create_{short}_application(
+            *,
+            settings: Optional[{pascal}ApplicationSettings] = None,
+            registry: Optional[AgentRegistry] = None,
+        ) -> FastAPI:
+            settings = settings or {pascal}ApplicationSettings.from_env()
+            manifest = build_{short}_manifest()
+            env = manifest.environment or build_{short}_environment_profile(settings)
+            runtime = build_harness_host_runtime(
+                manifest,
+                env,
+                settings=settings,
+                registry=registry,
+                builders={names.builders_const},
+                use_in_memory_trace=True,
+            )
+            app = create_lab_fastapi_from_runtime(
+                runtime,
+                route_prefix=settings.route_prefix,
+            )
+            app.title = "{title}"
+            return app
+        '''
+    )
+
+
 def _main_py(names: ScaffoldApplicationNames) -> str:
     pkg = names.pkg
     short = names.short
@@ -896,6 +948,7 @@ def _create_lab_application(
     profile: str,
     force: bool,
     full_scaffold: bool = False,
+    minimal: bool = False,
 ) -> None:
     agent_dirs = _agent_dirs(specs)
     cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
@@ -919,14 +972,15 @@ def _create_lab_application(
     if full_scaffold:
         _write(target / "host" / "integration_wiring.py", _integration_wiring_py(names), force=force)
         _write(target / "host" / "tool_wiring.py", _tool_wiring_py(names), force=force)
-    _write(target / "host" / "factory.py", _factory_py(names), force=force)
+    factory_src = _factory_minimal_py if minimal else _factory_py
+    _write(target / "host" / "factory.py", factory_src(names), force=force)
     _write(target / "host" / "main.py", _main_py(names), force=force)
 
-    _write(target / "serving" / "__init__.py", "", force=force)
-    _write(target / "serving" / "fastapi_router.py", _serving_router_py(names), force=force)
-
-    _write(target / "mcp" / "__init__.py", "", force=force)
-    _write(target / "mcp" / "server.py", _mcp_server_py(names, specs), force=force)
+    if not minimal:
+        _write(target / "serving" / "__init__.py", "", force=force)
+        _write(target / "serving" / "fastapi_router.py", _serving_router_py(names), force=force)
+        _write(target / "mcp" / "__init__.py", "", force=force)
+        _write(target / "mcp" / "server.py", _mcp_server_py(names, specs), force=force)
 
     _write(target / names.tests_pkg / "__init__.py", "", force=force)
     _write(
@@ -936,34 +990,35 @@ def _create_lab_application(
     )
     _write(target / names.tests_pkg / "host" / "__init__.py", "", force=force)
 
-    write_application_docker(
-        target,
-        pkg=names.pkg,
-        short=names.short,
-        port=names.port,
-        env_prefix=names.env_prefix,
-        agent_dirs=agent_dirs,
-        health_path=health_path,
-        force=force,
-    )
-
-    _write(
-        target / "BUILD_AND_DEPLOY.md",
-        render_build_deploy_doc(
+    if not minimal:
+        write_application_docker(
+            target,
             pkg=names.pkg,
             short=names.short,
             port=names.port,
             env_prefix=names.env_prefix,
-            route_prefix=names.route_prefix,
-            profile=profile,
             agent_dirs=agent_dirs,
-            example_capability=cap,
             health_path=health_path,
-            tests_pkg=names.tests_pkg,
-            display=names.display,
-        ),
-        force=force,
-    )
+            force=force,
+        )
+
+        _write(
+            target / "BUILD_AND_DEPLOY.md",
+            render_build_deploy_doc(
+                pkg=names.pkg,
+                short=names.short,
+                port=names.port,
+                env_prefix=names.env_prefix,
+                route_prefix=names.route_prefix,
+                profile=profile,
+                agent_dirs=agent_dirs,
+                example_capability=cap,
+                health_path=health_path,
+                tests_pkg=names.tests_pkg,
+                display=names.display,
+            ),
+            force=force,
+        )
 
 
 def _create_product_application(
@@ -1056,6 +1111,7 @@ def create_application(
     port: int = 8091,
     force: bool = False,
     full_scaffold: bool = False,
+    minimal: bool = False,
 ) -> Path:
     if profile not in _PROFILES:
         raise ValueError(f"Unsupported profile {profile!r}; choose: {', '.join(_PROFILES)}")
@@ -1079,6 +1135,7 @@ def create_application(
             profile=profile,
             force=force,
             full_scaffold=full_scaffold,
+            minimal=minimal,
         )
     else:
         _create_product_application(
@@ -1133,6 +1190,11 @@ def register_parser(sub: argparse._SubParsersAction) -> None:
         action="store_true",
         help="Emit legacy integration_wiring.py and tool_wiring.py (advanced hosts only)",
     )
+    parser.add_argument(
+        "--minimal",
+        action="store_true",
+        help="Lab profile only: skip Docker/MCP/deploy doc; use minimal harness factory",
+    )
 
 
 def _default_port(profile: str, port: int | None) -> int:
@@ -1154,6 +1216,7 @@ def run_new_application(args: argparse.Namespace) -> int:
             port=port,
             force=args.force,
             full_scaffold=bool(args.full),
+            minimal=bool(args.minimal),
         )
     except (ValueError, FileExistsError) as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -1164,7 +1227,8 @@ def run_new_application(args: argparse.Namespace) -> int:
         route_prefix=args.route_prefix,
         port=port,
     )
-    print(f"Created Tier-3 application at {path}  (profile={args.profile})")
+    mode = "minimal" if args.minimal else args.profile
+    print(f"Created Tier-3 application at {path}  (profile={mode})")
     print(f"  Package: {names.pkg}  (app_id={names.short!r}, env={names.env_prefix})")
     print(f"  Start:  uv run uvicorn {names.pkg}.host.main:app --host 127.0.0.1 --port {names.port}")
     print(f"  Test:   uv run pytest {path / names.tests_pkg} -q")

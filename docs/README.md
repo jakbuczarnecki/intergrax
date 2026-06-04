@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-02 (Phase AA Band 2g — agents/applications conformance; Phase V/W-ML; K.1/K.2 deferred)
+**Last updated:** 2026-06-02 (plan §4.0a infrastructure vs business split; Phase AA/DX mostly Done; K.1/K.2 deferred)
 
 The `docs/` folder holds the canonical platform documentation.
 
@@ -12,7 +12,7 @@ The `docs/` folder holds the canonical platform documentation.
 |----------|---------|
 | [**INTERGRAX_DEVELOPMENT_STRATEGY.md**](INTERGRAX_DEVELOPMENT_STRATEGY.md) | **Strategic goal** — decision hierarchy, lab vs production harness, work cycle |
 | [**intergrax_runtime_architecture.md**](intergrax_runtime_architecture.md) | **Architecture canon** — tiers, Nexus, UAEP §42, retry (§31), observability & trace storage (§33), RAG stack (§7.1.2) |
-| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **Phase AA** (Band 2g); Appendix A–I + Phase V + **Phase P-Ext** |
+| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **§4.0a** scope split; **Phase AA** (Band 2g); **§6.3a** business backlog; Appendix A–I + Phase V + **Phase P-Ext** |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — all implemented providers, contracts, wiring, usage links |
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — atomic LLM/MCP tools, engine status, four-layer stack |
@@ -49,7 +49,9 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 |------------|------|
 | Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | Understand the platform | Strategy doc, then implementation plan §0, then architecture canon §1–§5 |
-| See what to implement next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **§6.1 + §6.2** (harness only, including Phase V) — **not** §6.3 unless product reprioritizes |
+| Infrastructure vs business scope | [INTERGRAX_IMPLEMENTATION_PLAN.md §4.0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business) |
+| See what to implement next (harness) | **§6.1** + [DX residual](INTERGRAX_IMPLEMENTATION_PLAN.md#dx--residual-backlog-infrastructure) + [AA residual](INTERGRAX_IMPLEMENTATION_PLAN.md#aa--residual-backlog-infrastructure) |
+| Business / product backlog only | [§6.3a](INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated) — after explicit product decision |
 | Understand Phase V sequence/dependencies | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V — Execution matrix** |
 | See Phase V KPI thresholds | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V — KPI thresholds and acceptance metrics** |
 | See L3/L4 architecture maturity gates | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V — L3/L4 gate evidence** |

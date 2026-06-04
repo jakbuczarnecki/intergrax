@@ -111,6 +111,20 @@ Third-party integrations **must not** extend a core enum. Register a plugin or c
 
 Tier-3 hosts should call `bootstrap_application_integration_catalog()` (not bare `register_default_integrations()`).
 
+### Named integration presets (Phase DX-4.3)
+
+Typed factories in `intergrax.integrations.registry.presets` — use in `ApplicationManifest` / `host/environment_profile.py`:
+
+| Preset function | Returns | Typical use |
+|-----------------|---------|-------------|
+| `lab_stack(enable_otel=True)` | `IntegrationProfile.lab_harness_preset` | Default lab / scaffold hosts |
+| `legal_stack()` | `IntegrationProfile.legal_product()` | Legal product relational + vector |
+| `research_stack()` | `IntegrationProfile.research_product()` | Research product search + vector |
+| `data_stack(enable_redis=True, enable_qdrant=False)` | Lab harness + optional redis/qdrant | Data-heavy experiments |
+| `observability_stack(enable_otel=True)` | Lab harness OTEL-first | Trace/metrics focus |
+
+CLI fragment helper: `uv run intergrax integrations pick postgres` (see `intergrax/cli/integrations_pick.py`).
+
 See [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md), `intergrax/integrations/examples/custom_memory_kv/`, and `tests/unit/integrations/test_external_plugin.py`.
 
 Scaffold a new provider tree: `python -m intergrax.scaffold new-integration <slug> --category <category>`.

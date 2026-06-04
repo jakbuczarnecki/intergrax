@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Harness platform bands 1–2f Done** (Q→V, P-Ext, W-ML, **W-OPS**, **H-APP**, **DX**); **Band 2g mostly Done** — [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy); product agents **Deferred**; gate **526 passed** (full regression); **operational L3** = `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce`  
+Status: Working draft (2026-06-02) — **Harness platform bands 1–2f mostly Done** (Q→V, P-Ext, W-ML, **W-OPS**, **H-APP**, **DX** 46/47); **Band 2g platform Done** — [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy); **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **533 passed**; **operational L3** = `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce`  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -20,7 +20,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 |-------|--------|
 | Strategic goal, decision hierarchy, work cycle | [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | Full architecture specification | `intergrax_runtime_architecture.md` |
-| Phase status, gaps, priority | **This file** — **§4** ladder; **§6.3** = end-of-plan product work only |
+| Phase status, gaps, priority | **This file** — **§4** ladder; **§4.0a** infrastructure vs business; **§6.3** / **§6.3a** = product work only |
 | Tier-0 integration catalog (what / where) | Architecture canon §7.1.1–§7.1.5 |
 | Tier-0 integration implementation (how) | **This file** Phase M |
 | Tier-0 tool catalog (what / where) | Architecture canon §7.1.6–§7.1.7, §22 |
@@ -46,6 +46,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Tier-3 application environment audit → full configurability | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) → **Phase H-APP** · **§6.2x** |
 | Developer authoring UX audit (LangGraph-like entry, measurable TTFRun) | **Phase DX** (below) · **§6.2y** · source: harness DX audit 2026-06-03 (conversation + H-APP gap analysis) |
 | Agents & applications conformance audit (structure, scaffold, per-agent/app docs, deploy) | **Phase AA** (below) · **§6.2z** · source: Tier-2/Tier-3 audit 2026-06-03 (conversation) |
+| Infrastructure vs business scope split | **§4.0a** · [§6.3a](#63a-business-backlog-register-consolidated) · DX/AA residual backlogs |
 
 ---
 
@@ -189,7 +190,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Harness quality (Phase Q) | **Done** | Appendix C — gate **417** at Phase Q close |
 | Harness hardening (Phase Q+) | **Done** | Appendix D — typing, monolith splits, zero grandfathered `getattr` |
 | Harness AI alignment (Phase R MVP) | **Done** | Appendix E — Skill Library, context, delegation, policy bundle |
-| Regression gate | **470 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
+| Regression gate | **533 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
 | Harness environment GA (Phase S) | **Done** (2026-06-01) | S-H.* + S-Ops + S-Doc |
 | Harness cleanliness (Phase T) | **Done** (2026-06-01) | T-Ops + T-H |
 | Harness production hardening (Phase U) | **Done** | Appendix G audit → U.* (U-Leg residual) |
@@ -198,8 +199,8 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | **Harness completion backlog** | **Done** (2026-06-02) | §4.1 — U-Leg, typing/CI, platform skills, research UAEP parity |
 | **Plugin catalogs (Phase P-Ext)** | **Done** (2026-06-02) | [Phase P-Ext](#phase-p-ext--plugin-catalogs-integrations-tools-skills) · [P-Ext.6 paydown](#p-ext6--production-closure-paydown) · Appendix I |
 | **Application environment (Phase H-APP)** | **Done** (2026-06-03) | [Phase H-APP](#phase-h-app--tier-3-application-environment-full-configurability) · 43 tasks from application-layer audit |
-| **Developer authoring UX (Phase DX)** | **Done** (2026-06-03) | [Phase DX](#phase-dx--developer-authoring-experience-fast-environment--agent-builds) · 47 tasks |
-| **Agents & applications conformance (Phase AA)** | **Mostly Done** (2026-06-02) | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) · **§6.2z** |
+| **Developer authoring UX (Phase DX)** | **Done** (2026-06-02) | [Phase DX](#phase-dx--developer-authoring-experience-fast-environment--agent-builds) · 46/47 **Done**, optional DX-5.7 — [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
+| **Agents & applications conformance (Phase AA)** | **Mostly Done** (2026-06-02) | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) · platform **Done**, domain **Deferred** — [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
 | Product agents (Phase K) | **Deferred** | K.1/K.2 — end of priority list |
 | Tier-3 product applications | **Deferred** | New apps / product routes — after harness backlog |
 
@@ -2488,11 +2489,12 @@ Total: 43
 
 ## Phase DX — Developer Authoring Experience (fast environment + agent builds)
 
-**Status:** **Done** (2026-06-03) — **47** deliverables (`DX-0.1` … `DX-8.3`); gate **518 passed**.  
-**Prerequisites:** Phase **H-APP** **Done** (typed `ApplicationEnvironmentProfile`, `wire_application_environment`, `build_nexus_loop_from_environment`). Phases **N**, **P-Ext**, **S** scaffold baseline **Done**.  
+**Status:** **Done** (2026-06-02) — **46/47** deliverables **Done** in master table; optional **DX-5.7** (canon appendix) — [DX — Residual backlog](#dx--residual-backlog-infrastructure); gate TBD this session.  
+**Prerequisites:** Phase **H-APP** **Done** (typed `ApplicationEnvironmentProfile`, `wire_application_environment`, `build_harness_host_runtime`). Phases **N**, **P-Ext**, **S** scaffold baseline **Done**.  
 **Goal:** Make building **Tier-3 application environments** and **Tier-2 agents** trivial for Python developers — LangGraph-like mental model (state/steps → graph → run), **measurable** time-to-first-run (TTFRun), progressive disclosure (minimal → standard → production), and **UI-ready** serialized specs for Phase 2 (non-developer environment builder).  
-**Priority ladder:** **Band 2f** (§4.0) — **default implementation queue** after §6.1 maintenance.  
-**Execution order:** [§6.2y](#62y-phase-dx-execution-order-band-2f--active).
+**Priority ladder:** **Band 2f** (§4.0) — **closed for core path**; residual IDs are **infrastructure** follow-ups, not Band 3.  
+**Scope split:** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business).  
+**Execution order:** [§6.2y](#62y-phase-dx-execution-order-band-2f--mostly-done).
 
 **Delivery rule:** One `DX-*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green.
 
@@ -2564,52 +2566,52 @@ Total: 47
 | ID | Wave | Deliverable | Status | Priority | Location / acceptance |
 |----|------|-------------|--------|----------|------------------------|
 | DX-0.1 | DX0 | **Phase DX register** in this plan + doc model row (§Documentation model) | **Done** | Low | This section + §6.2y |
-| DX-0.2 | DX0 | **LangGraph ↔ Intergrax mapping** table (state, nodes, edges, compile, invoke) | **Pending** | High | `EXTENSION_AUTHOR_GUIDE.md` §0 or `AGENT_CREATION_GUIDE.md` §1 |
-| DX-0.3 | DX0 | **Responsibility matrix** — what belongs in agent vs environment (single canonical table) | **Pending** | High | `EXTENSION_AUTHOR_GUIDE.md` + cross-link canon §5.3.0 |
-| DX-0.4 | DX0 | **Progressive disclosure** doc — minimal (`--minimal`) → standard scaffold → production (`expand`, Docker, MCP) | **Pending** | Medium | `AGENT_CREATION_GUIDE.md` Step 4E + `applications/USAGE.md` |
-| DX-1.1 | DX1 | **Scaffold `factory.py`** — build `NexusLoop` only via `build_nexus_loop_from_environment(registry, env, …)` + integration bundle from `wire_application_environment` | **Pending** | **Critical** | `intergrax/scaffold/new_application.py`, `new_application_product.py` |
-| DX-1.2 | DX1 | **Scaffold default output** — remove generated `integration_wiring.py` + `tool_wiring.py`; retain via `--full` flag only | **Pending** | **Critical** | Scaffold CLI + README in generated app |
-| DX-1.3 | DX1 | **Migrate `poc_template_application/host/factory.py`** to H-APP factory pattern (no parallel legacy wiring) | **Pending** | High | Parity with `lab_application`; gate smoke |
-| DX-1.4 | DX1 | **Audit + fix** `legal_application` / `research_application` factories — single env path, no duplicate tool/integration wiring | **Pending** | High | Host smoke tests green |
-| DX-1.5 | DX1 | **Scaffold manifest** — embed `environment: ApplicationEnvironmentProfile…` at generation (not only lazy `environment_profile.py` fallback) | **Pending** | High | Generated `manifest.py` |
-| DX-1.6 | DX1 | **Gate test** — scaffold output: `factory.py` must not import `host.tool_wiring` / `host.integration_wiring` unless `--full` | **Pending** | High | `tests/unit/scaffold/test_scaffold_harness_alignment.py` |
-| DX-2.1 | DX2 | **`HarnessApplication` facade** — `.agents()`, `.integrations()`, `.graph()`, `.mode()`, `.llm()`, `.hooks()`, `.build()`, `.serve()` | **Pending** | **Critical** | `intergrax/harness/app.py` |
-| DX-2.2 | DX2 | **`AgentGraph` fluent builder** — nodes, edges, default agent, `on_error(retry=…)` → `ApplicationGraphSpec` | **Pending** | **Critical** | `intergrax/applications/contracts/graph_builder.py` |
-| DX-2.3 | DX2 | **`IntergraxAgent` base** + **`@step` decorator** — generates UAEP `get_steps` / `run_step` wiring | **Pending** | **Critical** | `intergrax/agents/authoring/` |
-| DX-2.4 | DX2 | **Decision helpers** — `continue_to()`, `complete()`, `delegate_to()` wrapping `AgentDecision` | **Pending** | Medium | `intergrax/agents/authoring/decisions.py` |
-| DX-2.5 | DX2 | **Unit test** — minimal `HarnessApplication` + `EchoAgent`/`IntergraxAgent` runs offline (no network) | **Pending** | High | `tests/unit/harness/test_harness_application_minimal.py` |
-| DX-2.6 | DX2 | **Public package** `intergrax.harness` — stable imports documented in author guide | **Pending** | High | `intergrax/harness/__init__.py` |
-| DX-3.1 | DX3 | **`new-stack --minimal`** — ≤4 author-facing files + smoke test (no Docker/MCP by default) | **Pending** | **Critical** | `intergrax/scaffold/new_stack.py` |
-| DX-3.2 | DX3 | **`intergrax run <module>:app`** — load `.env`, uvicorn, print route + sample curl | **Pending** | High | `intergrax/cli/run.py` + `scaffold/cli.py` |
-| DX-3.3 | DX3 | **`intergrax doctor`** — tier import violations, manifest/env conformance, scaffold freshness hint, TTFRun estimate | **Pending** | High | `intergrax/cli/doctor.py` |
-| DX-3.4 | DX3 | **`intergrax scaffold expand`** — promote minimal app → standard (Docker, MCP, debug, BUILD_AND_DEPLOY) | **Pending** | Medium | `intergrax/scaffold/expand_application.py` |
-| DX-3.5 | DX3 | **Acceptance test** `test_minimal_stack_ttf_run` — scaffold minimal → pytest → HTTP run **≤60s** in CI | **Pending** | High | `tests/acceptance/dx/` |
-| DX-3.6 | DX3 | **15-minute quickstart** — single numbered path: `new-stack --minimal` → edit agent → `intergrax run` → curl | **Pending** | High | `AGENT_CREATION_GUIDE.md` (replace scattered entry points) |
-| DX-4.1 | DX4 | **`IntegrationProfile` presets** — `.lab_stack()`, `.legal_stack()`, `.data_stack()`, `.observability_stack()` (typed, documented slugs) | **Pending** | High | `intergrax/integrations/registry/presets.py` |
-| DX-4.2 | DX4 | **`intergrax integrations pick`** CLI — emit profile fragment (postgres, redis, s3, prometheus, …) for `environment_profile.py` | **Pending** | Medium | `intergrax/cli/integrations_pick.py` |
-| DX-4.3 | DX4 | **Preset catalog table** in `INTEGRATIONS.md` + `EXTENSION_AUTHOR_GUIDE.md` | **Pending** | Medium | Docs only |
-| DX-4.4 | DX4 | **Gate tests** — each preset resolves with in-memory/sqlite stubs (no network) | **Pending** | High | `tests/unit/integrations/test_integration_presets.py` |
-| DX-5.1 | DX5 | **`ApplicationHost` Protocol/base** — override methods for environment control (intake, agent selection, finalize, error) | **Pending** | High | `intergrax/harness/application_host.py` |
-| DX-5.2 | DX5 | **Map host overrides → `HookPoint`** + optional `RuntimeEventBus` subscribe API on `HarnessApplication` | **Pending** | High | Bridge in `intergrax/harness/hooks.py` |
-| DX-5.3 | DX5 | **`HarnessApplication.from_yaml(path)`** — load `ApplicationEnvironmentProfile` + roster from `env.yaml` | **Pending** | Medium | `intergrax/harness/yaml_loader.py` |
-| DX-5.4 | DX5 | **Optional `agents.yaml`** — declarative `AgentBinding` list validated against importable classes | **Pending** | Low | Same loader; schema test |
-| DX-5.5 | DX5 | **Product scaffold observability preset** — `ObservabilityProfile` template (trace + optional read-only debug) | **Pending** | Medium | `new_application_product.py` |
-| DX-5.6 | DX5 | **Structured log correlation** — inject `trace_id` / `run_id` in FastAPI middleware (lab + product factories) | **Pending** | Medium | `intergrax/applications/_shared/logging_middleware.py` |
+| DX-0.2 | DX0 | **LangGraph ↔ Intergrax mapping** table (state, nodes, edges, compile, invoke) | **Done** | High | `EXTENSION_AUTHOR_GUIDE.md` §0 or `AGENT_CREATION_GUIDE.md` §1 |
+| DX-0.3 | DX0 | **Responsibility matrix** — what belongs in agent vs environment (single canonical table) | **Done** | High | `EXTENSION_AUTHOR_GUIDE.md` §0 + cross-link canon §5.3.0 |
+| DX-0.4 | DX0 | **Progressive disclosure** doc — minimal (`--minimal`) → standard scaffold → production (`expand`, Docker, MCP) | **Done** | Medium | `AGENT_CREATION_GUIDE.md` Step 4E § E.0 + `applications/USAGE.md` |
+| DX-1.1 | DX1 | **Scaffold `factory.py`** — build `NexusLoop` only via `build_nexus_loop_from_environment(registry, env, …)` + integration bundle from `wire_application_environment` | **Done** | **Critical** | `intergrax/scaffold/new_application.py`, `new_application_product.py` |
+| DX-1.2 | DX1 | **Scaffold default output** — remove generated `integration_wiring.py` + `tool_wiring.py`; retain via `--full` flag only | **Done** | **Critical** | Scaffold CLI + README in generated app |
+| DX-1.3 | DX1 | **Migrate `poc_template_application/host/factory.py`** to H-APP factory pattern (no parallel legacy wiring) | **Done** | High | Parity with `lab_application`; gate smoke |
+| DX-1.4 | DX1 | **Audit + fix** `legal_application` / `research_application` factories — single env path, no duplicate tool/integration wiring | **Done** | High | Host smoke tests green |
+| DX-1.5 | DX1 | **Scaffold manifest** — embed `environment: ApplicationEnvironmentProfile…` at generation (not only lazy `environment_profile.py` fallback) | **Done** | High | Generated `manifest.py` |
+| DX-1.6 | DX1 | **Gate test** — scaffold output: `factory.py` must not import `host.tool_wiring` / `host.integration_wiring` unless `--full` | **Done** | High | `tests/unit/scaffold/test_scaffold_harness_alignment.py` |
+| DX-2.1 | DX2 | **`HarnessApplication` facade** — `.agents()`, `.integrations()`, `.graph()`, `.mode()`, `.llm()`, `.hooks()`, `.build()`, `.serve()` | **Done** | **Critical** | `intergrax/harness/app.py` |
+| DX-2.2 | DX2 | **`AgentGraph` fluent builder** — nodes, edges, default agent, `on_error(retry=…)` → `ApplicationGraphSpec` | **Done** | **Critical** | `intergrax/applications/contracts/graph_builder.py` |
+| DX-2.3 | DX2 | **`IntergraxAgent` base** + **`@step` decorator** — generates UAEP `get_steps` / `run_step` wiring | **Done** | **Critical** | `intergrax/agents/authoring/` |
+| DX-2.4 | DX2 | **Decision helpers** — `continue_to()`, `complete()`, `delegate_to()` wrapping `AgentDecision` | **Done** | Medium | `intergrax/agents/authoring/decisions.py` |
+| DX-2.5 | DX2 | **Unit test** — minimal `HarnessApplication` + `EchoAgent`/`IntergraxAgent` runs offline (no network) | **Done** | High | `tests/unit/harness/test_harness_application_minimal.py` |
+| DX-2.6 | DX2 | **Public package** `intergrax.harness` — stable imports documented in author guide | **Done** | High | `intergrax/harness/__init__.py` |
+| DX-3.1 | DX3 | **`new-stack --minimal`** — ≤4 author-facing files + smoke test (no Docker/MCP by default) | **Done** | **Critical** | `intergrax/scaffold/new_stack.py`, `new_application.py` `--minimal` |
+| DX-3.2 | DX3 | **`intergrax run <module>:app`** — load `.env`, uvicorn, print route + sample curl | **Done** | High | `intergrax/cli/run.py` + `scaffold/cli.py` |
+| DX-3.3 | DX3 | **`intergrax doctor`** — tier import violations, manifest/env conformance, scaffold freshness hint, TTFRun estimate | **Done** | High | `intergrax/cli/doctor.py` |
+| DX-3.4 | DX3 | **`intergrax scaffold expand`** — promote minimal app → standard (Docker, MCP, debug, BUILD_AND_DEPLOY) | **Done** | Medium | `intergrax/scaffold/expand_application.py` |
+| DX-3.5 | DX3 | **Acceptance test** `test_minimal_stack_ttf_run` — scaffold minimal → pytest → HTTP run **≤60s** in CI | **Done** | High | `tests/acceptance/dx/test_minimal_stack_ttf_run.py` |
+| DX-3.6 | DX3 | **15-minute quickstart** — single numbered path: `new-stack --minimal` → edit agent → `intergrax run` → curl | **Done** | High | `AGENT_CREATION_GUIDE.md` Step 4E § E.0 |
+| DX-4.1 | DX4 | **`IntegrationProfile` presets** — `.lab_stack()`, `.legal_stack()`, `.data_stack()`, `.observability_stack()` (typed, documented slugs) | **Done** | High | `intergrax/integrations/registry/presets.py` |
+| DX-4.2 | DX4 | **`intergrax integrations pick`** CLI — emit profile fragment (postgres, redis, s3, prometheus, …) for `environment_profile.py` | **Done** | Medium | `intergrax/cli/integrations_pick.py` |
+| DX-4.3 | DX4 | **Preset catalog table** in `INTEGRATIONS.md` + `EXTENSION_AUTHOR_GUIDE.md` | **Done** | Medium | `INTEGRATIONS.md` § Named integration presets |
+| DX-4.4 | DX4 | **Gate tests** — each preset resolves with in-memory/sqlite stubs (no network) | **Done** | High | `tests/unit/integrations/test_integration_presets.py` |
+| DX-5.1 | DX5 | **`ApplicationHost` Protocol/base** — override methods for environment control (intake, agent selection, finalize, error) | **Done** | High | `intergrax/harness/application_host.py` |
+| DX-5.2 | DX5 | **Map host overrides → `HookPoint`** + optional `RuntimeEventBus` subscribe API on `HarnessApplication` | **Done** | High | Bridge in `intergrax/harness/hooks.py` |
+| DX-5.3 | DX5 | **`HarnessApplication.from_yaml(path)`** — load `ApplicationEnvironmentProfile` + roster from `env.yaml` | **Done** | Medium | `intergrax/harness/yaml_loader.py` |
+| DX-5.4 | DX5 | **Optional `agents.yaml`** — declarative `AgentBinding` list validated against importable classes | **Done** | Low | Same loader; schema test |
+| DX-5.5 | DX5 | **Product scaffold observability preset** — `ObservabilityProfile` template (trace + optional read-only debug) | **Done** | Medium | `new_application_product.py` `environment_profile.py` (`otel_enabled`, debug override) |
+| DX-5.6 | DX5 | **Structured log correlation** — inject `trace_id` / `run_id` in FastAPI middleware (lab + product factories) | **Done** | Medium | `intergrax/applications/_shared/logging_middleware.py` |
 | DX-5.7 | DX5 | **Runtime event catalog table** — `RuntimeEventType` → emit phase → ops filter hints in canon §42 | **Pending** | Low | `intergrax_runtime_architecture.md` §42 appendix |
-| DX-5.8 | DX5 | **Policy rule handler plugins** — entry point group `intergrax.policy_rules` (mirror P-Ext pattern) | **Pending** | Medium | `runtime/policy/rules/` + author guide § |
-| DX-6.1 | DX6 | **`intergrax.agents.defaults`** — `harness_production_mode`, lab runtime config helpers (no Tier-3 import from agents) | **Pending** | High | Move from `applications/_shared/runtime_defaults.py` |
-| DX-6.2 | DX6 | **Fix reference agents** — `echo`, `research` (and scaffold template) must not import `applications/_shared` | **Pending** | High | `agents/echo/`, `agents/research/` + `check_agent_registry_bypass` |
-| DX-6.3 | DX6 | **`intergrax init <project>`** — cookiecutter: external repo, `pip install intergrax`, minimal harness layout | **Pending** | High | `intergrax/scaffold/external_project/` template |
-| DX-6.4 | DX6 | **CI smoke** — generated external template project pytest (fixture repo) | **Pending** | Medium | `tests/integration/dx/test_external_project_template.py` |
-| DX-6.5 | DX6 | **`pyproject` optional extra `[harness-author]`** — documented minimal dependency set for external apps | **Pending** | Low | `pyproject.toml` + README |
-| DX-7.1 | DX7 | **JSON Schema export** for `ApplicationEnvironmentProfile`, `ApplicationManifest`, `ApplicationGraphSpec` | **Pending** | High | `scripts/export_harness_spec_schemas.py` → `build/harness_specs/` |
-| DX-7.2 | DX7 | **`spec_version` on environment profile** + migration note in plan | **Pending** | Medium | `environment_profile.py` |
-| DX-7.3 | DX7 | **YAML round-trip tests** — graph + environment serialize/deserialize without loss | **Pending** | High | `tests/unit/harness/test_spec_roundtrip.py` |
-| DX-7.4 | DX7 | **Capability catalog JSON feed** — integrations/tools/skills slugs + labels for future UI builder | **Pending** | Medium | `scripts/export_capability_catalog_feed.py` |
-| DX-7.5 | DX7 | **Phase 2 UI boundary doc** — UI engine consumes DX-7 artifacts only; no parallel spec | **Pending** | Low | `INTERGRAX_DEVELOPMENT_STRATEGY.md` or plan §Phase DX |
-| DX-8.1 | DX8 | **`intergrax doctor --ci`** — fail on tier violations, scaffold misalignment, TTFRun regression | **Pending** | High | CI step in `.github/workflows/unit-tests.yml` |
-| DX-8.2 | DX8 | **DX metrics in paydown** — record TTFRun seconds, author file count per release cycle | **Pending** | Low | `build/architecture_hardening/dx_metrics.json` |
-| DX-8.3 | DX8 | **`check_scaffold_harness_alignment.py`** — CI script (complements DX-1.6 gate) | **Pending** | High | `scripts/` + §6.1 maintenance list |
+| DX-5.8 | DX5 | **Policy rule handler plugins** — entry point group `intergrax.policy_rules` (mirror P-Ext pattern) | **Done** | Medium | `runtime/policy/rules/` + author guide § |
+| DX-6.1 | DX6 | **`intergrax.agents.defaults`** — `harness_production_mode`, lab runtime config helpers (no Tier-3 import from agents) | **Done** | High | `intergrax/agents/defaults.py`; Tier-3 re-export in `runtime_defaults.py` |
+| DX-6.2 | DX6 | **Fix reference agents** — `echo`, `research` (and scaffold template) must not import `applications/_shared` | **Done** | High | `agents/echo/`, `agents/research/` + `check_agent_registry_bypass` |
+| DX-6.3 | DX6 | **`intergrax init <project>`** — cookiecutter: external repo, `pip install intergrax`, minimal harness layout | **Done** | High | `intergrax/scaffold/external_project/` template |
+| DX-6.4 | DX6 | **CI smoke** — generated external template project pytest (fixture repo) | **Done** | Medium | `tests/integration/dx/test_external_project_template.py` |
+| DX-6.5 | DX6 | **`pyproject` optional extra `[harness-author]`** — documented minimal dependency set for external apps | **Done** | Low | `pyproject.toml` + README |
+| DX-7.1 | DX7 | **JSON Schema export** for `ApplicationEnvironmentProfile`, `ApplicationManifest`, `ApplicationGraphSpec` | **Done** | High | `scripts/export_harness_spec_schemas.py` → `build/harness_specs/` (CI) |
+| DX-7.2 | DX7 | **`spec_version` on environment profile** + migration note in plan | **Done** | Medium | `environment_profile.py` |
+| DX-7.3 | DX7 | **YAML round-trip tests** — graph + environment serialize/deserialize without loss | **Done** | High | `tests/unit/harness/test_spec_roundtrip.py` |
+| DX-7.4 | DX7 | **Capability catalog JSON feed** — integrations/tools/skills slugs + labels for future UI builder | **Done** | Medium | `scripts/export_capability_catalog_feed.py` (CI) |
+| DX-7.5 | DX7 | **Phase 2 UI boundary doc** — UI engine consumes DX-7 artifacts only; no parallel spec | **Done** | Low | Plan §Phase DX — UI boundary (below) |
+| DX-8.1 | DX8 | **`intergrax doctor --ci`** — fail on tier violations, scaffold misalignment, TTFRun regression | **Done** | High | `.github/workflows/unit-tests.yml` |
+| DX-8.2 | DX8 | **DX metrics in paydown** — record TTFRun seconds, author file count per release cycle | **Done** | Low | `scripts/record_dx_metrics.py` → `build/architecture_hardening/dx_metrics.json` |
+| DX-8.3 | DX8 | **`check_scaffold_harness_alignment.py`** — CI script (complements DX-1.6 gate) | **Done** | High | `scripts/` + §6.1 maintenance list |
 
 ### DX — Explicitly deferred (not in the 47-task register)
 
@@ -2625,19 +2627,32 @@ Total: 47
 
 | Date | DX ID | Summary |
 |------|-------|---------|
-| 2026-06-03 | DX-1.1–DX-8.3 | Phase DX — HarnessApplication, scaffold H-APP alignment, CLI, presets; gate **518** |
+| 2026-06-03 | DX-1.1–DX-8.3 (core) | HarnessApplication, scaffold H-APP alignment, CLI run/doctor, presets, `check_scaffold_harness_alignment`; gate **518** |
+| 2026-06-02 | Plan sync | Master table synced to codebase; **17** IDs remain **Pending** — [residual backlog](#dx--residual-backlog-infrastructure) |
+| 2026-06-02 | DX residual closeout | `--minimal` stack, `expand`, doctor CI, spec export + round-trip, TTFRun acceptance, `agents.defaults.harness_production_mode`, docs quickstart; gate **533** |
 
-**Suggested PR order:** DX-1.1 → DX-1.2 → DX-1.3 → DX-1.6 → DX-8.3 → DX-2.1 → DX-2.2 → DX-2.3 → DX-2.5 → DX-3.1 → DX-3.2 → DX-3.5 → DX-3.6 → DX-4.1 → DX-4.4 → DX-1.4–DX-1.5 → DX-2.4 → DX-2.6 → DX-3.3–DX-3.4 → DX-5.1–DX-5.2 → DX-6.1–DX-6.2 → DX-4.2–DX-4.3 → DX-5.3–DX-5.8 → DX-6.3–DX-6.5 → DX-7.1–DX-7.5 → DX-8.1–DX-8.2 → DX-0.1–DX-0.4.
+**Suggested PR order (residual):** DX-5.7 only (canon event appendix) — otherwise Phase DX infrastructure **Done**.
+
+**Phase 2 UI boundary (DX-7.5):** A future visual builder must consume only versioned artifacts from `build/harness_specs/*.json` and `build/capability_catalog_feed.json` — not parallel Pydantic copies. Host behavior stays `HarnessApplication` / Tier-3 factories; UI edits serialize to the same `ApplicationEnvironmentProfile` + `ApplicationManifest` + `ApplicationGraphSpec` models validated by DX-7.1/DX-7.3.
+
+### DX — Residual backlog (infrastructure)
+
+**Not Band 3.** Platform DX rows **Done** (2026-06-02) except optional canon appendix.
+
+| ID | Deliverable | Priority | Notes |
+|----|-------------|----------|-------|
+| DX-5.7 | Runtime event catalog appendix (canon §42) | Low | Ops filter hints — optional; defer to W-OPS / canon maintenance |
 
 ---
 
 ## Phase AA — Agents & Applications Conformance (scaffold, docs, deploy)
 
-**Status:** **In progress** (2026-06-03) — core tranche **Done**; gate **521 passed**; remaining: full ARCHITECTURE.md matrix, AA-S0.3 `--reference`, legal UAEP step port.  
-**Prerequisites:** Phase **H-APP** **Done**, Phase **DX** **Done** (scaffold generators, `build_harness_host_runtime`, CLI, presets).  
-**Goal:** Bring every **Tier-2** agent under `agents/` and every **Tier-3** host under `applications/` to a **documented, scaffold-aligned** state — fast authoring, full environment control (handlers, observability, policy), and **repeatable deploy** (Docker + deploy doc + `pyproject.toml` dependency contract per application).  
-**Priority ladder:** **Band 2g** (§4.0) — **default implementation queue** after §6.1 maintenance (one AA ID per PR/session).  
-**Execution order:** [§6.2z](#62z-phase-aa-execution-order-band-2g--active).
+**Status:** **Mostly Done** (2026-06-02) — **platform/conformance Done** (tier hygiene, ARCHITECTURE matrix, deploy triad, legal **scaffold** reset); **domain steps Deferred** (AA-LEG.2.2+); gate **533 passed**.  
+**Prerequisites:** Phase **H-APP** **Done**, Phase **DX** **Mostly Done** (scaffold generators, `build_harness_host_runtime`, CLI, presets).  
+**Goal:** Bring every **Tier-2** agent under `agents/` and every **Tier-3** host under `applications/` to a **documented, scaffold-aligned** state — fast authoring, full environment control (handlers, observability, policy), and **repeatable deploy** (Docker + deploy doc + `pyproject.toml` dependency contract per application). **Domain UAEP implementation is Band 3** — see [§6.3](#63-end-of-plan--deferred-product-work-only).  
+**Priority ladder:** **Band 2g** (§4.0) — **platform rows closed**; only [AA residual](#aa--residual-backlog-infrastructure) + §6.1 maintenance.  
+**Scope split:** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business).  
+**Execution order:** [§6.2z](#62z-phase-aa-execution-order-band-2g--mostly-done).
 
 **Delivery rule:** One `AA-*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green → discuss scope in session before coding.
 
@@ -2809,7 +2824,7 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 | ID | Deliverable | Status | Priority | Location / acceptance |
 |----|-------------|--------|----------|------------------------|
 | AA-SIG.1 | **`ARCHITECTURE.md`** — Appendix A sign-off flow, capability `signoff.probe` | **Done** | Medium | `agents/signoff_probe/` |
-| AA-SIG.2 | Verify **scaffold parity** when AA-S0.2 lands (regenerate diff empty except domain) | **Deferred** | Low | Scaffold diff test |
+| AA-SIG.2 | Verify **scaffold parity** when AA-S0.2 lands (regenerate diff empty except domain) | **Done** | Low | `tests/unit/scaffold/test_signoff_scaffold_parity.py` |
 | AA-SIG.3 | **README** → ARCHITECTURE link | **Done** | Low | |
 
 #### Wave AA6 — Agent `problem_radar`
@@ -2847,7 +2862,7 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 
 | ID | Deliverable | Status | Priority | Location / acceptance |
 |----|-------------|--------|----------|------------------------|
-| AA-LABAG.1 | **`agents/lab/README.md`** — mock agents purpose, not product Tier-2 | **Pending** | Low | |
+| AA-LABAG.1 | **`agents/lab/README.md`** — mock agents purpose, not product Tier-2 | **Done** | Low | `agents/lab/README.md` |
 | AA-LABAG.2 | **(Optional)** move mocks to `testing_support/` if they are test-only | **Pending** | Low | Product decision in session |
 
 #### Wave AA10 — Application `lab_application`
@@ -2899,14 +2914,26 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 | `applications/poc_template_application` | Yes | **Done** | **OK** | **Done** | OK |
 | `applications/research_application` | Yes | **Done** | **OK** | **Done** | H-APP |
 
-### AA — Explicitly deferred (not in AA register)
+### AA — Residual backlog (infrastructure)
 
-| Topic | Reason |
-|-------|--------|
-| K.1 / K.2 feature implementation | Band 3 — except AA-PR.* docs-only freeze |
-| Legal live LLM E2E | Band 3 — K.6 / B.15 / S-Ops.4 |
-| New product Tier-3 beyond four hosts | Band 3 |
-| DX pending rows (DX-0.2–DX-8.2 still **Pending** in DX table) | Track under Phase DX or fold into AA-S0/D0 — **do not duplicate IDs**; AA references DX completion in AA-D0.3 |
+| ID | Deliverable | Priority | Notes |
+|----|-------------|----------|-------|
+| AA-LABAG.1 | `agents/lab/README.md` — mock agents, not product Tier-2 | Low | **Done** — `agents/lab/README.md` |
+| AA-LABAG.2 | (Optional) move lab mocks to `testing_support/` | Low | Product decision — **Won't fix** until leadership requests |
+| AA-SIG.2 | Scaffold parity diff test for `signoff_probe` | Low | **Done** — `tests/unit/scaffold/test_signoff_scaffold_parity.py` |
+| AA-LEG.0.2 | Git tag `legal-legacy-pre-aa` | High | Forensics; requires explicit `git tag` in release session |
+
+### AA — Explicitly deferred (business / domain — Band 3)
+
+| Topic | Task IDs | Reason |
+|-------|----------|--------|
+| Legal UAEP domain steps | AA-LEG.2.2–2.4, AA-LEGAPP.6, AA-LEGAPP.8 | Business logic on scaffold — [§6.3a](#63a-business-backlog-register-consolidated) |
+| Research domain | AA-RES.4, AA-RES.5, AA-RESAPP.6 | Skills + graph tests — product prototype |
+| Organization worker full scaffold | AA-ORG.3, AA-ORG.4 | Demo agent + lab roster |
+| Lab/research host extra smoke | AA-LABAPP.6 | After domain work optional |
+| K.1 / K.2 | Phase K | Band 3 — problem_radar / vendor discovery |
+| Legal live LLM E2E | K.6 / B.15 / S-Ops.4 | Band 3 — CI budget |
+| New product Tier-3 beyond four hosts | §6.3 | Product decision |
 
 ### AA — Paydown log
 
@@ -2916,9 +2943,10 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 | 2026-06-03 | AA-LG.1 | LangGraph removed from core deps; CI `check_langgraph_not_required.py` |
 | 2026-06-03 | AA-S0.1–S0.2, AA-S0.5, AA-APP.0.1–0.3, AA-ECHO.2, AA-PR.*, AA-LABAPP.2, AA-POC.2, AA-RESAPP.2, AA-LEG.1–1.3 | Tier hygiene, lab harness runtime, legal hard reset, deploy triad gate; gate **521** |
 | 2026-06-02 | AA-S0.3, AA-D0.*, AA-* ARCHITECTURE, AA-LABAPP.3, AA-RESAPP.3 | `--reference` scaffold, docs matrix, lab manifest environment, tier import tests; gate **526** |
+| 2026-06-02 | Plan sync | §4.0a scope split, DX/AA residual backlogs, §6.3a business register, master tables synced |
 
-**Suggested session order (one element per conversation):**  
-AA-S0.2 → AA-S0.5 → AA-APP.0.1 → AA-POC.1 → AA-POC.2 → AA-LABAPP.2 → AA-ECHO.2 → AA-LEG.0.3 → AA-LEG.1.1 → AA-LEG.1.2 → AA-LEG.1.3 → AA-LEG.2.* (stepwise) → AA-LEGAPP.* → AA-D0.1 → remaining AA-* docs → AA-APP.0.2 gate.
+**Suggested session order (platform — mostly complete):**  
+AA-LABAG.1 → AA-LEG.0.2 (tag) → AA-SIG.2. **Do not schedule** AA-LEG.2.* / AA-RES.5 / AA-ORG.3–4 in harness cadence — use [§6.3a](#63a-business-backlog-register-consolidated) after product decision.
 
 ---
 
@@ -3208,12 +3236,12 @@ Paydown Wave P3 (optional polish):
 | **2d — Operational L3 (W-OPS)** | Reliability, identity, SLO/ops evidence, online eval — **no** business agents | **Done** (2026-06-06) | [Phase W-OPS](#phase-w-ops--operational-harness-maturity-ideal-l3-ops) · `phase_w_ops_evidence.py` |
 | **2e — Application environment (H-APP)** | `ApplicationEnvironmentProfile`, unified Tier-3 wiring, host migration — **no** business agents | **Done** (2026-06-03) | [Phase H-APP](#phase-h-app--tier-3-application-environment-full-configurability) · [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) · **§6.2x** |
 | **2f — Developer authoring UX (DX)** | LangGraph-like facades, minimal scaffold, CLI run/doctor, TTFRun gates, UI spec export — **no** business agents | **Done** (2026-06-03) | [Phase DX](#phase-dx--developer-authoring-experience-fast-environment--agent-builds) · **§6.2y** |
-| **2g — Agents & applications conformance (AA)** | Scaffold alignment, per-agent/app `ARCHITECTURE.md`, deploy triad (Docker + BUILD_AND_DEPLOY + pyproject deps), **legal hard reset** | **Active** (2026-06-03) | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) · **§6.2z** |
+| **2g — Agents & applications conformance (AA)** | Scaffold alignment, per-agent/app `ARCHITECTURE.md`, deploy triad, legal **scaffold** reset (domain steps → Band 3) | **Mostly Done** (2026-06-02) | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) · **§6.2z** · [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-03):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green. Bands 2 / 2d / 2e / **2f** = **Done** (code). **Default implementation queue = Phase AA (Band 2g)** + §6.1 maintenance. Band 3 = **frozen** unless leadership reprioritizes. **Legal hard reset** is Band **2g** (AA-LEG.*), not Band 3 — only Legal **live LLM E2E** stays deferred (K.6 / B.15 / S-Ops.4).
+**Policy (2026-06-02):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green. Bands 2 / 2d / 2e / **2f** / **2g (platform)** = **Done** or **mostly Done**. **Default implementation queue = §6.1** + [DX residual](#dx--residual-backlog-infrastructure) + [AA residual](#aa--residual-backlog-infrastructure). Band 3 = **frozen** unless leadership reprioritizes. **Legal scaffold reset** is Band **2g Done**; **Legal UAEP steps** (AA-LEG.2.2+) are **Band 3 / business**; **Legal live LLM E2E** stays deferred (K.6 / B.15 / S-Ops.4).
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1)
@@ -3221,7 +3249,7 @@ BAND 2:  Harness architecture hardening — Phase V + W-ML + P-Ext (Done)
 BAND 2d: Operational L3 — Phase W-OPS (§6.2w) — DONE
 BAND 2e: Application environment — Phase H-APP (§6.2x) — DONE (43 tasks)
 BAND 2f: Developer authoring UX — Phase DX (§6.2y) — DONE (47 tasks)
-BAND 2g: Agents & applications conformance — Phase AA (§6.2z) — ACTIVE
+BAND 2g: Agents & applications conformance — Phase AA (§6.2z) — MOSTLY DONE (platform); domain → Band 3
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
 DONE:    Harness completion backlog (§4.1) — 2026-06-02
@@ -3247,6 +3275,38 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 ```
 
 **Rationale:** Phases S/T/U + §4.1 delivered a production-configurable **harness**. Band 1–2 preserve and extend that platform. **Band 3 (product) is intentionally last** so business agents and new applications do not drive Tier-1 evolution (canon §52, [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md)).
+
+### 4.0a Implementation scope split (infrastructure vs business)
+
+**Canonical rule:** Default implementation queue = **infrastructure only** (Bands 1–2g + §6.1). **Business** work runs only after explicit product prioritization — **[§6.3](#63-end-of-plan--deferred-product-work-only)**.
+
+| Layer | Bands / phases | What it includes | Default queue |
+|-------|----------------|------------------|---------------|
+| **Infrastructure (Intergrax Harness)** | 1, 2, 2b–2f, 2g (platform rows) | `intergrax/runtime/`, Tier-0 catalogs, H-APP, DX facades, scaffold, CI audits, reference hosts (`poc_template`, `lab_application`), harness agents (`echo`, `signoff_probe`), W-OPS evidence | **Active** — §6.1 + [DX residual](#dx--residual-backlog-infrastructure) + [AA platform](#aa--residual-backlog-infrastructure) |
+| **Conformance shells (platform)** | 2g AA | `legal` / `legal_application` **scaffold** + deploy triad + tier hygiene (no domain UAEP steps) | **Done** (shell) |
+| **Business agents & product apps** | 3, §6.3, AA-LEG.2.*, K.* | K.1/K.2, Legal UAEP steps, research/org domain tests, new `applications/<product>/`, live LLM E2E | **Deferred** — not default next |
+
+**Module classification (repo inventory):**
+
+| Module | Role | Queue |
+|--------|------|-------|
+| `agents/echo`, `agents/signoff_probe` | Harness reference Tier-2 | Infrastructure — **Done** |
+| `agents/lab` | Lab mocks (not product agents) | Infrastructure — AA-LABAG.* optional |
+| `applications/poc_template_application`, `applications/lab_application` | Reference Tier-3 hosts | Infrastructure — **Done** |
+| `agents/legal`, `applications/legal_application` | Product shell on scaffold | Platform **Done**; domain logic **Deferred** (AA-LEG.2.2+) |
+| `agents/research`, `applications/research_application` | Research prototype host | Platform **Done**; domain tests **Deferred** (AA-RES.4–5, AA-RESAPP.6) |
+| `agents/organization_worker` | HITL / long-running demo | Docs **Done**; full scaffold + lab flag **Deferred** (AA-ORG.3–4) |
+| `agents/problem_radar` | K.1 placeholder | **Frozen** — Band 3 (K.1) |
+| New `applications/<product>/` beyond four hosts | Customer/product deploy | **Deferred** — §6.3 |
+
+**Where to look for open work:**
+
+| Topic | Section |
+|-------|---------|
+| Ongoing gate + audit scripts | [§6.1](#61-harness-platform-maintenance-default--band-1) |
+| DX leftovers (`--minimal`, `doctor --ci`, schemas, TTFRun) | [DX — Residual backlog](#dx--residual-backlog-infrastructure) |
+| AA platform leftovers (lab mock README) | [AA — Residual backlog](#aa--residual-backlog-infrastructure) |
+| All business / domain work | [§6.3](#63-end-of-plan--deferred-product-work-only) · [Business backlog register](#63a-business-backlog-register-consolidated) |
 
 ### 4.1 Harness completion backlog (execution order)
 
@@ -3298,9 +3358,11 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ## 6. What to implement next
 
-**Default answer:** **§6.1 harness maintenance** (gate green, `intergrax doctor --ci`, scaffold alignment script). Phases **H-APP** and **DX** are **Done** — use `HarnessApplication`, `intergrax run`, and `new-stack` / `new-application` for new environments. **Not** K.1, K.2, or new product applications — **[§6.3](#63-end-of-plan--deferred-product-work-only)**.
+**Default answer (infrastructure only):** [§6.1](#61-harness-platform-maintenance-default--band-1) harness maintenance (gate green, audit scripts) → optional [DX residual](#dx--residual-backlog-infrastructure) (P0: **DX-8.1**, **DX-3.1**, **DX-7.1**) → optional [AA residual](#aa--residual-backlog-infrastructure) (low). Use `HarnessApplication`, `intergrax run`, `new-stack` / `new-application` for new environments.
 
-**Audit basis:** Developer authoring UX audit (2026-06-03) — fast Tier-2/Tier-3 builds, measurable TTFRun, UI spec prep (Phase 2); harness-only; business agents excluded.
+**Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
+
+**Audit basis:** Tier-2/Tier-3 conformance audit (2026-06-03) + DX audit; business agents excluded from default queue.
 
 ### 6.1 Harness platform maintenance (default — Band 1)
 
@@ -3318,8 +3380,9 @@ Verify (every harness PR):
   # Per release (ops):
   uv run python scripts/export_harness_shadow_eval_trend.py --release-id <release-id>
   uv run python scripts/record_harness_release_cycle.py --cycle-id <release-id> --verify-gate
-  # After DX-8.3 lands:
-  # python scripts/check_scaffold_harness_alignment.py
+  python scripts/check_scaffold_harness_alignment.py
+  python scripts/check_agents_no_tier3_imports.py
+  # Residual (DX-8.1):
   # uv run intergrax doctor --ci
 ```
 
@@ -3374,9 +3437,9 @@ Work **one H-APP ID per PR**; after each step update the H-APP master table + pa
 
 **Explicitly out of NOW:** K.1, K.2, Legal product E2E, new **product** Tier-3 apps, Problem Radar wave 2+, marketplace UI, catalog hot-reload.
 
-### 6.2y Phase DX execution order (Band 2f — active)
+### 6.2y Phase DX execution order (Band 2f — mostly done)
 
-**Status:** **Done** (2026-06-03) · canonical register: [Phase DX — Master deliverables register](#dx--master-deliverables-register-all-47-tasks).
+**Status:** **Done** (2026-06-02) · **46/47 Done** · optional DX-5.7 · canonical register: [Phase DX — Master deliverables register](#dx--master-deliverables-register-all-47-tasks).
 
 Work **one DX ID per PR**; after each step update the DX master table + paydown log; keep §6.1 scripts green. **Start with DX1 (scaffold/H-APP alignment)** before DX2 facades — otherwise new authors copy broken `factory.py` patterns.
 
@@ -3395,13 +3458,13 @@ Work **one DX ID per PR**; after each step update the DX master table + paydown 
 
 **Suggested PR order:** DX-1.1 → DX-1.2 → DX-1.3 → DX-1.6 → DX-8.3 → DX-2.1 → DX-2.2 → DX-2.3 → DX-2.5 → DX-3.1 → DX-3.2 → DX-3.5 → DX-3.6 → DX-4.1 → DX-4.4 → DX-1.4–DX-1.5 → DX-2.4 → DX-2.6 → DX-3.3–DX-3.4 → DX-5.1–DX-5.2 → DX-6.1–DX-6.2 → DX-4.2–DX-4.3 → DX-5.3–DX-5.8 → DX-6.3–DX-6.5 → DX-7.1–DX-7.5 → DX-8.1–DX-8.2 → DX-0.1–DX-0.4.
 
-**Success gate for Phase DX closeout:** DX-3.5 + DX-8.1 green in CI; DX-3.6 quickstart validated by dry-run; DX-7.1 schemas published under `build/harness_specs/`; all DX1 scaffold/host migrations **Done**.
+**Success gate for Phase DX full closeout:** All rows **Done** or **Won't fix**; DX-3.5 + DX-8.1 green in CI; DX-3.6 quickstart validated; DX-7.1 schemas under `build/harness_specs/`. **Core path (DX1–DX2, DX3.2–3.3, DX8.3) already meets harness authoring needs.**
 
 **Explicitly out of NOW:** K.1, K.2, visual environment builder UI, new product Tier-3 apps, Problem Radar wave 2+.
 
-### 6.2z Phase AA execution order (Band 2g — active)
+### 6.2z Phase AA execution order (Band 2g — mostly done)
 
-**Status:** **Active** (2026-06-03) · canonical register: [Phase AA — Master deliverables register](#aa--master-deliverables-register-all-tasks).
+**Status:** **Mostly Done** (2026-06-02) · platform **Done** · domain **Deferred** · canonical register: [Phase AA — Master deliverables register](#aa--master-deliverables-register-all-tasks).
 
 Work **one AA ID per PR/session**; after each step update the AA master table + paydown log + conformance matrix; keep §6.1 scripts green. **Legal:** follow **hard reset** policy (AA-LEG.0.1) — no incremental preservation of legacy pipeline code.
 
@@ -3430,9 +3493,9 @@ Work **one AA ID per PR/session**; after each step update the AA master table + 
 2. `BUILD_AND_DEPLOY.md` present and matches scaffold generator output (or documented drift)
 3. `ARCHITECTURE.md` § **Dependencies** lists required `pyproject.toml` extras (e.g. `harness-author`, provider-specific `llm-*`, `dev-ci` for tests)
 
-**Success gate for Phase AA closeout:** All AA rows **Done** or **Won't fix**; conformance matrix all **OK**; legal tree matches scaffold; `lab_application` on `build_harness_host_runtime`; AA-APP.0.2 green; gate unchanged or increased.
+**Success gate for Phase AA platform closeout:** **Met** (2026-06-02) — conformance matrix **OK**; legal tree = scaffold; `lab_application` on `build_harness_host_runtime`; AA-APP.0.2 green; gate **533**. **Full AA register closeout** additionally requires Band 3 domain rows **Done** or explicitly **Deferred** (current policy: **Deferred**).
 
-**Explicitly out of NOW:** K.1/K.2 implementation, Legal **live LLM** E2E (Band 3), new product hosts beyond the four listed.
+**Explicitly out of NOW:** K.1/K.2 implementation, Legal **live LLM** E2E (Band 3), new product hosts beyond the four listed, Legal UAEP step port (AA-LEG.2.2+) unless product reprioritizes §6.3.
 
 ### 6.1p Phase P-Ext paydown (Band 2c — optional parallel with §6.1)
 
@@ -3477,7 +3540,7 @@ Full task register: [Appendix I](#appendix-i--plugin-catalog-traceability-phase-
 | K.1 | Problem Radar prototype | **Deferred** | Explicit product decision + [Appendix A](#appendix-a--agent-operating-system-certification-checklist) |
 | K.2 | Vendor Discovery prototype | **Deferred** | Same as K.1 |
 | K.6 / B.15 / S-Ops.4 | Legal live LLM E2E | **Deferred** | Product/CI budget decision |
-| `agents/legal` hard reset | Scaffold baseline done; UAEP steps **Deferred** | **Band 2g platform Done** | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) AA-LEG.2.2+ — **not** Band 3 |
+| `agents/legal` UAEP domain steps | Scaffold shell **Done** (Band 2g); step port **Deferred** | **Business** | [§6.3a](#63a-business-backlog-register-consolidated) AA-LEG.2.2+ |
 | Tier-3 product apps | New `applications/<product>/` beyond lab + reference hosts | **Deferred** | Product decision; scaffold exists (Phase N **Done**) |
 | Domain skills | Product agent skill packs (non-`harness.*`) | **Deferred** | With K.1 or K.2 |
 | `agents/problem_radar/` | Wave 1 scaffold frozen | **Deferred** | Do not extend until K.1 reprioritized |
@@ -3491,6 +3554,33 @@ python -m intergrax.scaffold new-stack <slug> --profile lab --capability <slug>.
 ```
 
 See [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md). Existing hosts (`lab_application`, `legal_application`, `research_application`, `poc_template_application`) are sufficient for **all harness** work.
+
+### 6.3a Business backlog register (consolidated)
+
+**Single register for Band 3 and AA domain-deferred rows.** Do not duplicate in harness session summaries.
+
+| ID | Deliverable | Module | Priority | Depends on |
+|----|-------------|--------|----------|------------|
+| **K.1** | Problem Radar prototype (wave 2+) | `agents/problem_radar/` | Product | Explicit reprioritization |
+| **K.2** | Vendor Discovery prototype | (greenfield) | Product | K.1 decision or parallel product call |
+| **AA-LEG.2.2** | Legal UAEP steps (one step per PR from `SPEC_FROM_LEGACY.md`) | `agents/legal/steps/` | High | Product/legal owner |
+| **AA-LEG.2.3** | Remove any parallel legal runtime (Nexus gateway only) | `agents/legal/` | High | AA-LEG.2.2 |
+| **AA-LEG.2.4** | Legal agent tests per ported step | `agents/legal/tests/` | High | AA-LEG.2.2 |
+| **AA-LEGAPP.6** | `legal_application` host smoke on real steps | `legal_tests/` | High | AA-LEG.2.2 |
+| **AA-LEGAPP.8** | Consolidate duplicate legal test trees | `legal_tests/` vs agent tests | Low | AA-LEG.2.4 |
+| **AA-RES.4** | Research skill ids on contracts | `agents/research/` | Medium | Product |
+| **AA-RES.5** | Research UAEP + graph delegation tests | `agents/research/tests/` | High | Product |
+| **AA-RESAPP.6** | Research application smoke + manifest wiring | `research_application_tests/` | High | AA-RES.5 |
+| **AA-ORG.3** | Organization worker scaffold-align (`contract`, `steps/`) | `agents/organization_worker/` | Medium | Harness demo |
+| **AA-ORG.4** | Lab manifest flag + integration test | `lab_application/manifest.py` | Medium | AA-ORG.3 |
+| **AA-LABAPP.6** | Extra lab host smoke (optional) | `lab_application_tests/` | Low | Optional |
+| **K.6 / B.15 / S-Ops.4** | Legal full E2E with live LLM | CI / acceptance | Low | CI budget approval |
+| **Tier-3 product** | New `applications/<product>/` beyond four reference hosts | `applications/` | Product | Phase N scaffold + §6.3 decision |
+| **Domain skills** | Non-`harness.*` skill packs for product agents | `intergrax/skills/providers/` | Product | With K.1 or K.2 |
+| **A.5** | Full Legal regression (all steps, live model) | Phase A row | Low | K.6 / B.15 |
+| **Phase E** | Legal agent refactoring (parallel track) | `agents/legal/` | On demand | Product architecture |
+
+**Not business (infrastructure — do not list here):** DX residual ([§DX residual](#dx--residual-backlog-infrastructure)), AA-LABAG.*, AA-LEG.0.2, AA-SIG.2, §6.1 maintenance.
 
 ### 6.1u Archived — Phase U cadence (complete 2026-06-01)
 

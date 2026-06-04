@@ -190,6 +190,7 @@ def test_new_stack_cli_creates_agent_and_application(tmp_path) -> None:
             app_only=False,
             root=root,
             force=False,
+            minimal=False,
         )
     )
     assert code == 0
