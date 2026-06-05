@@ -96,12 +96,16 @@ Harness → Runtime → Agents → Applications → Products
 | 2 | `docs/intergrax_runtime_architecture.md` | **Current canonical architecture** | Four-tier model (Tier-0→3), §42 Unified Execution Runtime, forbidden patterns, implementation rules |
 | 3 | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` | **Implementation roadmap & status** | Phase trackers (Q, Q+, R, S, U, V, W-OPS, H-APP, MEM, DX, AA…), gate counts, Done/In-progress rows |
 | 4 | `docs/INTEGRAX_HARNESS_AUDIT_MAP.md` | **Audit procedure** | Layer-specific audit questions, typical gaps, scoring model, output format, global rules |
+| 5 | `docs/AGENT_CREATION_GUIDE.md` **Appendix H** | **Governance control plane (authoring)** | `ApplicationEnvironmentProfile` map, `RuntimePolicyBundle`, security profile, observability mandatory vs optional, verification commands — use when auditing §5 Policy and §21 Observability |
+| 6 | `docs/AGENT_CREATION_GUIDE.md` **Appendix I** | **Orchestration control plane (authoring)** | Nexus runners, `ExecutionGraph`, `DelegationSpec`, hooks, planning strategies, customization surfaces — use when auditing §7–§10 (planning, Agent OS, graph, subagents) |
 
-**Always distinguish these five views — never conflate them:**
+**Always distinguish these seven views — never conflate them:**
 
 - **Target** → `IDEAL_HARNESS_AI_ARCHITECTURE.md`
 - **Current architecture** → `intergrax_runtime_architecture.md`
 - **Plan** → `INTERGRAX_IMPLEMENTATION_PLAN.md`
+- **Governance authoring** → `AGENT_CREATION_GUIDE.md` Appendix H
+- **Orchestration authoring** → `AGENT_CREATION_GUIDE.md` Appendix I
 - **Implementation** → source code under `intergrax/`, `agents/`, `applications/`
 - **Verification** → tests, CI gates, scripts
 
@@ -221,7 +225,7 @@ Execute these steps **in order** for each layer in scope. Do not skip steps.
 
 ### Step 1 — Read references
 
-1. Read the relevant sections of all 4 canonical documents for this layer.
+1. Read the relevant sections of the canonical documents for this layer (IDEAL, architecture canon, implementation plan, audit map; for **§5 Policy** and **§21 Observability** read Appendix H; for **§7–§10** planning/graph/subagents read Appendix I).
 2. Note which `INTERGRAX_IMPLEMENTATION_PLAN.md` phases/appendices claim Done vs In-progress for this area.
 
 ### Step 2 — Map to codebase

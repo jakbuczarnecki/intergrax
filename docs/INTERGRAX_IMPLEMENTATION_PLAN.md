@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-05) — **Harness platform bands 1–2i Done**; **Band 2i closed:** [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout) (**Done** — 2026-06-05); **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **569 passed**; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
+Status: Working draft (2026-06-05) — **Harness platform bands 1–2i Done**; Phase V + V-REM **closed**; **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **571 passed**; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -26,6 +26,8 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Tier-0 tool catalog (what / where) | Architecture canon §7.1.6–§7.1.7, §22 |
 | Tier-0 tool implementation (how) | **This file** Phase O |
 | Agent creation workflow | `AGENT_CREATION_GUIDE.md` |
+| Governance / policy / observability control plane (authoring) | `AGENT_CREATION_GUIDE.md` **Appendix H** · canon §42.11 · `EXTENSION_AUTHOR_GUIDE.md` §10 (`intergrax.policy_rules`) |
+| Orchestration / graph / delegation control plane (authoring) | `AGENT_CREATION_GUIDE.md` **Appendix I** · canon §42.3–§42.15, §42.43 · R-Delegate **Done** |
 | Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
 | Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
 | Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
@@ -159,8 +161,8 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Phase V runtime remediation (V-REM)** | **Done** | No (harness-only) | All V-REM rows closed; §6.1z queue closed |
 | **Operational harness L3 (Phase W-OPS)** | **Done** (code) | No (harness-only) | Ops sign-off: `release_cycles.json` or `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce` |
 | **Application environment profile (Phase H-APP)** | **Done** (2026-06-03) | No (harness-only) | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7 — 43 tasks; memory bridge gap → [Phase MEM](#phase-mem--memory-platform-completion) |
-| **Memory platform (Phase MEM)** | **Done** (~3,5/5 post-closeout) | No (harness-only) | Memory platform **48/48** — gate **567** |
-| Regression gate | **567 passed** | No | Must stay green after each harness PR |
+| **Memory platform (Phase MEM)** | **Done** (~3,5/5 post-closeout) | No (harness-only) | Memory platform **48/48** — gate **571** |
+| Regression gate | **571 passed** | No | Must stay green after each harness PR |
 
 ---
 
@@ -198,7 +200,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Harness quality (Phase Q) | **Done** | Appendix C — gate **417** at Phase Q close |
 | Harness hardening (Phase Q+) | **Done** | Appendix D — typing, monolith splits, zero grandfathered `getattr` |
 | Harness AI alignment (Phase R MVP) | **Done** | Appendix E — Skill Library, context, delegation, policy bundle |
-| Regression gate | **567 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
+| Regression gate | **571 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
 | Harness environment GA (Phase S) | **Done** (2026-06-01) | S-H.* + S-Ops + S-Doc |
 | Harness cleanliness (Phase T) | **Done** (2026-06-01) | T-Ops + T-H |
 | Harness production hardening (Phase U) | **Done** | Appendix G audit → U.* (U-Leg residual) |
@@ -3033,7 +3035,7 @@ See [§6.1z](#61z-harness-implementation-queue-consolidated). **Do not schedule*
 
 ## Phase MEM — Memory Platform Completion
 
-**Status:** **Done** (2026-06-02) — **48/48** deliverables; gate **567 passed**.  
+**Status:** **Done** (2026-06-02) — **48/48** deliverables; gate **571 passed**.  
 **Prerequisites:** Phases **I** (TaskMemory), **R-Context**, **H-APP** (profile models), **DX-5.7** (ops:memory hints) **Done**; **H-APP.4.3** closed via **MEM-1.***.  
 **Goal:** Close every gap from the **memory platform audit** — short-term session, user/org LTM, task KV, context compression, H-APP→runtime wiring, persistence, recovery, observability, developer hooks, and market-parity documentation — **without** Band 3 product agents (K.1/K.2) or Mem0-like SaaS product layer (MEM-8 deferred P3).  
 **Priority ladder:** **Band 2h** (§4.0) — **default implementation queue** after §6.1 maintenance.  
@@ -3261,7 +3263,7 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 
 | Date | ID | Notes |
 |------|-----|-------|
-| 2026-06-02 | MEM-1.*–MEM-9.* | Phase MEM **48/48 Done**; H-APP.4.3 **Done**; gate **567** |
+| 2026-06-02 | MEM-1.*–MEM-9.* | Phase MEM **48/48 Done**; H-APP.4.3 **Done**; gate **571** |
 | 2026-06-02 | §6.1 reference hosts | `with_harness_memory()` on legal/research; gate `test_reference_hosts_memory_bridge`; W-OPS memory_platform_gate |
 | 2026-06-02 | MEM-0.1–MEM-0.2, MEM-PAR.1, MEM-CHk.1, MEM-PERS.1 | Memory audit → Phase MEM register in plan |
 | 2026-06-02 | MEM-OBS.2 | Baseline already **Done** (DX-5.7) |
@@ -3554,7 +3556,7 @@ Paydown Wave P3 (optional polish):
 | Band | What | Status (2026-06-05) | Examples |
 |------|------|---------------------|----------|
 | **1 — Harness platform** | Tier-0/1/3 lab wiring, security, policy, typing, legacy removal, gate audits | **Maintenance** (§4.1 **Done**; keep green) | `pytest -m gate`, `check_harness_*`, `check_tools_agent_*`, regression fixes |
-| **2 — Harness architecture hardening** | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics hardening — **no** business domain | **Partial closeout** (Phase V contracts Done; runtime gaps → V-REM) | V-CG … V-KG, V-V6 closeout |
+| **2 — Harness architecture hardening** | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics hardening — **no** business domain | **Done** (2026-06-05) | V-CG … V-KG, V-V6 closeout · V-REM |
 | **2i — Phase V runtime remediation (V-REM)** | Close 9 Partial Phase V + EvalRunner gate gaps — runtime enforcement, not new OS features | **Done** (2026-06-05) | [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout) · Appendix J |
 | **2b — Modality plane (optional parallel)** | Vision CV, speech, classical ML — harness Tier-0 only | **Done** | W-ML complete; optional Celery bus wiring for Tier-3 scale-out |
 | **2c — Plugin catalogs (P-Ext)** | Entry points + `ToolPlugin` + `SkillPlugin` + `bootstrap_catalogs()` | **Done** (2026-06-02) | Appendix I · [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) |
@@ -3571,7 +3573,7 @@ Paydown Wave P3 (optional polish):
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1)
-BAND 2:  Harness architecture hardening — Phase V contracts Done; runtime gaps → V-REM
+BAND 2:  Harness architecture hardening — Phase V + V-REM — DONE (2026-06-05)
 BAND 2i: Phase V runtime remediation — V-REM — DONE (2026-06-05)
 BAND 2d: Operational L3 — Phase W-OPS (§6.2w) — DONE
 BAND 2e: Application environment — Phase H-APP (§6.2x) — DONE (43 tasks)
@@ -3610,7 +3612,7 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 
 | Layer | Bands / phases | What it includes | Default queue |
 |-------|----------------|------------------|---------------|
-| **Infrastructure (Intergrax Harness)** | 1, 2, 2b–2h (platform rows), **2i V-REM** | `intergrax/runtime/`, Tier-0 catalogs, H-APP, DX, MEM, scaffold, CI audits, reference hosts | **Active** — §6.1 maintenance + **§6.1z V-REM queue** |
+| **Infrastructure (Intergrax Harness)** | 1, 2, 2b–2i (platform rows) | `intergrax/runtime/`, Tier-0 catalogs, H-APP, DX, MEM, scaffold, CI audits, reference hosts | **Active** — §6.1 maintenance only |
 | **Conformance shells (platform)** | 2g AA | `legal` / `legal_application` **scaffold** + deploy triad + tier hygiene (no domain UAEP steps) | **Done** (shell) |
 | **Business agents & product apps** | 3, §6.3, AA-LEG.2.*, K.* | K.1/K.2, Legal UAEP steps, research/org domain tests, new `applications/<product>/`, live LLM E2E | **Deferred** — not default next |
 
@@ -3766,9 +3768,13 @@ Verify (every harness PR):
   python scripts/check_scaffold_harness_alignment.py
   python scripts/check_agents_no_tier3_imports.py
   uv run intergrax doctor --ci
+  uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
+  uv run python scripts/phase_v_capability_graph_guard.py --enforce
 ```
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
+
+**Orchestration audit residuals (optional — pull when needed):** wire `OrchestrationProfile.planner_kind` / `classifier_kind` in `build_nexus_loop_from_environment`; runtime bridge `ApplicationGraphSpec` → initial `NexusPlan`; `max_parallel_nodes` on graph batches. Author map: [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) §I.4–§I.5.
 
 ### 6.2v Phase V-REM execution order (Band 2i — closed 2026-06-05)
 
@@ -3789,7 +3795,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 | 9 | V-REM-PE.2 | YAML prompt assets catalog seed | Medium | V-PE.1 |
 | 10 | V-REM-A.1 | NexusEvalRunner integration tests + gate | Medium | A.4, A.4.1 |
 
-**Phase V-REM closeout:** Mark parent Partial rows **Done**; update Appendix H; close §6.1z queue; re-run `phase_v_closeout_gate.py --enforce`.
+**Phase V-REM closeout:** **Done** (2026-06-05). Verified via `phase_v_closeout_gate.py --enforce --enforce-l4`.
 
 ### 6.2w Phase W-OPS execution order (Band 2d — complete 2026-06-06)
 
@@ -3940,13 +3946,13 @@ Work **one MEM ID per PR**; after each step update the MEM master table + paydow
 
 Full task register: [Appendix I](#appendix-i--plugin-catalog-traceability-phase-p-ext).
 
-### 6.2 Harness architecture hardening (Band 2 — Phase V) — partial closeout
+### 6.2 Harness architecture hardening (Band 2 — Phase V) — Done
 
-**Status:** **Partial closeout** (2026-06-02 contracts Done; 2026-06-05 audit → **9 Partial** + EvalRunner gap). Runtime remediation: [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout) · [§6.2v](#62v-phase-v-rem-execution-order-band-2i--active).
+**Status:** **Done** (2026-06-05) — Phase V contracts + V-REM runtime enforcement complete. Closeout: `phase_v_closeout_gate.py --enforce --enforce-l4`.
 
 | Item | Status | Notes |
 |------|--------|-------|
-| V-CG … V-V6 (contracts) | **Partial closeout** | Governance + CI Done; V-CG.2–4, V-ALG.3–4, V-PE.1, V-SEC.2–4 → V-REM |
+| V-CG … V-V6 | **Done** | Governance + CI + runtime enforcement |
 | V-REM | **Done** | 10/10 closed — §6.1z queue closed |
 | W-ML | **Done** | [MODALITY.md](MODALITY.md) |
 | P-Ext | **Done** | Appendix I |
@@ -5036,20 +5042,20 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 **Purpose:** 100% mapping from **Partial** audit findings (2026-06-05) to concrete remediation IDs. **Canonical phase narrative:** [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout).
 
-**Status:** **12 tasks** · **2 Done** (V-REM.0.1, V-REM.0.2) · **10 Planned**.
+**Status:** **12 tasks** · **12 Done** (2026-06-05).
 
 ### J.1 Audit gap → remediation matrix
 
 | Audit source | Layer / area | Gap | Severity | Parent plan ID | V-REM ID | Status |
 |--------------|--------------|-----|----------|----------------|----------|--------|
-| Plan/code audit 2026-06-05 | Capability graph (AUDIT_MAP §19) | System edges agents→application incorrect per host | **Critical** | V-CG.2, V-CG.3, V-CG.4 | V-REM-CG.1, V-REM-CG.2 | Planned |
-| Plan/code audit 2026-06-05 | Agent lifecycle (AUDIT_MAP §31) | Governance contracts exist; no runtime routing cutoff for retired/deprecated | High | V-ALG.3 | V-REM-ALG.1 | Planned |
-| Plan/code audit 2026-06-05 | Agent lifecycle (AUDIT_MAP §31) | Ownership contracts exist; no production-eligible filter at selection | High | V-ALG.4 | V-REM-ALG.2 | Planned |
-| Plan/code audit 2026-06-05 | Prompt registry (AUDIT_MAP §17) | PromptMeta missing owner/risk; no YAML assets for E2E validation | High | V-PE.1 | V-REM-PE.1, V-REM-PE.2 | Planned |
-| Plan/code audit 2026-06-05 | Security (AUDIT_MAP §23) | Tool injection defense not wired on execution path | High | V-SEC.2 | V-REM-SEC.1 | Planned |
-| Plan/code audit 2026-06-05 | Security (AUDIT_MAP §23) | Retrieval poisoning defense not enforced per tenant/app | High | V-SEC.3 | V-REM-SEC.2 | Planned |
-| Plan/code audit 2026-06-05 | Security (AUDIT_MAP §23) | Tenant isolation + audit trail hooks missing in main path | High | V-SEC.4 | V-REM-SEC.3 | Planned |
-| Plan/code audit 2026-06-05 | Evaluation (AUDIT_MAP §25) | NexusEvalRunner exists; missing integration tests + gate | Medium | A.4, A.4.1 | V-REM-A.1 | Planned |
+| Plan/code audit 2026-06-05 | Capability graph (AUDIT_MAP §19) | System edges agents→application incorrect per host | **Critical** | V-CG.2, V-CG.3, V-CG.4 | V-REM-CG.1, V-REM-CG.2 | **Done** |
+| Plan/code audit 2026-06-05 | Agent lifecycle (AUDIT_MAP §31) | Governance contracts exist; no runtime routing cutoff for retired/deprecated | High | V-ALG.3 | V-REM-ALG.1 | **Done** |
+| Plan/code audit 2026-06-05 | Agent lifecycle (AUDIT_MAP §31) | Ownership contracts exist; no production-eligible filter at selection | High | V-ALG.4 | V-REM-ALG.2 | **Done** |
+| Plan/code audit 2026-06-05 | Prompt registry (AUDIT_MAP §17) | PromptMeta missing owner/risk; no YAML assets for E2E validation | High | V-PE.1 | V-REM-PE.1, V-REM-PE.2 | **Done** |
+| Plan/code audit 2026-06-05 | Security (AUDIT_MAP §23) | Tool injection defense not wired on execution path | High | V-SEC.2 | V-REM-SEC.1 | **Done** |
+| Plan/code audit 2026-06-05 | Security (AUDIT_MAP §23) | Retrieval poisoning defense not enforced per tenant/app | High | V-SEC.3 | V-REM-SEC.2 | **Done** |
+| Plan/code audit 2026-06-05 | Security (AUDIT_MAP §23) | Tenant isolation + audit trail hooks missing in main path | High | V-SEC.4 | V-REM-SEC.3 | **Done** |
+| Plan/code audit 2026-06-05 | Evaluation (AUDIT_MAP §25) | NexusEvalRunner exists; missing integration tests + gate | Medium | A.4, A.4.1 | V-REM-A.1 | **Done** |
 | Plan sync 2026-06-05 | Plan governance | Appendix J + §6.1z queue + status sync | — | — | V-REM.0.1, V-REM.0.2 | **Done** |
 
 **Coverage target:** 100% **Done** when every **Planned** row is **Done** and parent Partial IDs (V-CG.2–4, V-ALG.3–4, V-PE.1, V-SEC.2–4, A.4) are **Done**.
@@ -5059,8 +5065,9 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | Date | V-REM ID | Summary |
 |------|----------|---------|
 | 2026-06-05 | V-REM.0.1, V-REM.0.2 | Appendix J + Phase V-REM section + §6.1z/§6.2v + Appendix H sync |
-| — | — | *(append row per merged PR)* |
+| 2026-06-05 | V-REM-CG.1–A.1 | Runtime remediation: capability graph, lifecycle routing, V-SEC wiring, prompt governance, EvalRunner gate |
+| 2026-06-05 | V-POST.1, V-POST.2 | Phase V closeout gate green; AgentEngine routability guard; NexusLoop tenant-security integration tests |
 
 ---
 
-*Plan synced (2026-06-05). **Harness platform** bands 1–2i **Done**; Phase V-REM **closed**. Gate: **569 passed**. **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance + [§6.3](#63-product--business-scope-gate) product gate when leadership reprioritizes. Operational L3 **signed off**. P-Ext **Done** (61/61). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
+*Plan synced (2026-06-05). **Harness platform** bands 1–2i **Done**; Phase V + V-REM **closed**. Gate: **571 passed**. **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance. Product work gated by [§6.3](#63-end-of-plan--deferred-product-work-only). Operational L3 **signed off**. P-Ext **Done** (61/61).*

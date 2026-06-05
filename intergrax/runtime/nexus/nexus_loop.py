@@ -130,6 +130,7 @@ class NexusLoop:
         self._notification_adapter = notification_adapter
         self._engine = AgentEngine(
             registry,
+            production_mode=production_mode,
             event_bus=self._event_bus,
             policy_engine=self._policy_engine,
             uaep_executor=UAEPExecutor(

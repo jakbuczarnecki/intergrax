@@ -3453,6 +3453,8 @@ def enforce_cost_ceiling(ctx: HookContext) -> HookResult:
 - Hooks MUST NOT call adapters directly; they influence policy and decisions only.
 - Hooks MUST be registered in `HookRegistry` at application startup (Tier-3) or Nexus bootstrap.
 
+**Authoring reference:** full `HookPoint` list and orchestration hook placement — [`AGENT_CREATION_GUIDE.md` Appendix I §I.2](AGENT_CREATION_GUIDE.md#i2-orchestration-control-plane-map) · governance hooks Appendix H.
+
 ---
 
 ## 42.4 Standard Agent Lifecycle
@@ -3837,6 +3839,8 @@ For a single task/run, policy is **composed once** at Tier-3 startup and read do
 | 5 | Human gates | `PolicyDecision.action == REQUIRE_HUMAN` → HITL pause; resume via checkpoint / approval metadata |
 
 **Trace checklist:** `RuntimeEvent` stream (`PLAN_CREATED`, `SKILL_RESOLVED`, `CONTEXT_ASSEMBLED`, tool events) + Nexus trace DB for planner/tool steps. Planner hard failures emit `PLAN_FAILED` (parse / PlanSource).
+
+**Authoring reference:** Tier-3 control-plane map (profiles, bundles, observability mandatory vs optional, verification commands) — [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane). Harness operator context: [`HARNESS_ENVIRONMENT.md`](HARNESS_ENVIRONMENT.md#harness-control-plane-authoring).
 
 ---
 
@@ -4736,6 +4740,8 @@ Task: "Design and validate new checkout flow for SaaS product"
 ```
 
 All cross-agent data via `SharedTaskContext` / artifacts — never direct calls.
+
+**Authoring reference:** orchestration control plane (Nexus runners, `ExecutionGraph`, `DelegationSpec`, hooks, customization surfaces) — [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane).
 
 ---
 

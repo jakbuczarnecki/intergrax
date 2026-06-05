@@ -1,6 +1,6 @@
 # Extension Author Guide (Tier-0 Plugin Catalogs)
 
-**Last updated:** 2026-06-03 · Phase P-Ext · **H-APP** environment profile
+**Last updated:** 2026-06-05 · Phase P-Ext · **H-APP** · §10 policy rules (`intergrax.policy_rules`)
 
 Intergrax exposes three **Tier-0 plugin catalogs**. Shipped providers and third-party pip packages register through the same protocols.
 
@@ -243,3 +243,23 @@ Bootstrap: `intergrax.core.memory_bootstrap.bootstrap_memory_stores(discover_ent
 Reference fixture: `tests/fixtures/plugin_packages/memory_store_plugin/`.
 
 Swap backends in Tier-3 by registering an EP plugin — agents still use `UserProfileManager` / `SessionManager`; never import store implementations from Tier-2.
+
+---
+
+## 10. Policy rule handler plugins (Phase DX-5.8)
+
+Entry point group: `intergrax.policy_rules`
+
+| Mechanism | Purpose |
+|-----------|---------|
+| `PolicyRuleHandlerPlugin` | Register custom handlers evaluated by `PolicyEngine` |
+| `PolicyRulesProfile.rules_path` | Declarative YAML rules loaded via `load_policy_rules_from_path` |
+| `PolicyRulesProfile.inline_rules` | Inline rule dicts on `ApplicationEnvironmentProfile` |
+
+Bootstrap: `intergrax.runtime.policy.rules.plugin_loader.register_policy_rule_plugins(discover_entry_points=True)` (called from policy wiring when enabled).
+
+**Composition:** YAML + EP handlers merge into `RuntimePolicyBundle.domain_fragments["policy_rules"]` via `intergrax/applications/_shared/policy_wiring.py`. They **never** bypass `ToolRuntime` or `ApplicationSecurityProfile` middleware.
+
+**Author map:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) [Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · canon [§42.11](intergrax_runtime_architecture.md#4211-policy-engine).
+
+Lab reference: `applications/lab_application/policy/rules/harness_lab.yaml`.

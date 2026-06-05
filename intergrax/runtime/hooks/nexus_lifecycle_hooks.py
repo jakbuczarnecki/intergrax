@@ -11,6 +11,7 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
+from intergrax.runtime.security.task_security_context import resource_tenant_id_for_task
 from intergrax.runtime.task.task import Task
 
 
@@ -35,7 +36,7 @@ def nexus_lifecycle_hook_context(
             "capability": task.context.capability,
             "tenant_id": task.tenant_id,
             "user_id": task.user_id,
-            "resource_tenant_id": task.tenant_id,
+            "resource_tenant_id": resource_tenant_id_for_task(task),
             "prompt": task.message,
             **(extra or {}),
         },

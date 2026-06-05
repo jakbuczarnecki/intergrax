@@ -1,6 +1,6 @@
 # Intergrax Harness Environment
 
-**Last updated:** 2026-06-02 · Phase V **Done** (typed contracts + governance artifacts; L3/L4 CI closeout pending)
+**Last updated:** 2026-06-05 · Phase V **Done** (L3/L4 CI closeout + operational L3 signed off); gate **571**
 
 Operator and author guide for the **lab harness stack** — Tier-0 integrations, Tier-1 Nexus, Tier-3 `lab_application` wiring, platform skills, and observability. Business agents (Problem Radar, Vendor Discovery) are **Phase K** and out of scope here.
 
@@ -164,6 +164,23 @@ Lab reference agents implement `HarnessReferenceAgent` + `UAEPAgent`; manifest b
 
 ---
 
+## Harness control plane (authoring)
+
+Governance, policy, and observability are **composable control-plane layers** — configured via `ApplicationEnvironmentProfile`, `RuntimePolicyBundle`, hooks, and plugin entry points; enforced by Nexus on every run.
+
+| Need | Where |
+|------|--------|
+| Full control-plane map (profiles, bundles, hooks, EP groups) | [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
+| Operator policy read order | Architecture [§42.11.5](intergrax_runtime_architecture.md#42115-how-to-read-policy-for-a-run-operator) |
+| Policy rule handler plugins (`intergrax.policy_rules`) | [`EXTENSION_AUTHOR_GUIDE.md` §10](EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) |
+| Audit layers (policy §5, observability §21) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) |
+
+**Modularity:** swap observability backend via `IntegrationProfile.observability_backend`; add policy via YAML + EP handlers; enable V-SEC defenses via `ApplicationSecurityProfile` — without changing Tier-2 agent code.
+
+**Orchestration:** graph execution, delegation, handoff, hooks — [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane). Multi-agent quick start: [Appendix C](AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs).
+
+---
+
 ## Post-U continuation (Phase V)
 
 Phase S/T/U established a production-configurable harness baseline.
@@ -197,7 +214,7 @@ Current baseline delivered (Phase V V1):
 - `V-SEC.1` prompt injection defense profile and adversarial deny-path tests
 - `V-SEC.2` tool injection defense policy (allowed tool IDs, blocked argument tokens, capability match controls)
 - `V-SEC.3` retrieval poisoning defense with trust-score quarantine flow
-- `V-SEC.4` tenant isolation verification and security audit trail checks
+- `V-SEC.4` tenant isolation verification and security audit trail checks (runtime: `TenantSecurityMiddleware` on `BEFORE_TASK_INTAKE`; optional `TaskContext.metadata["resource_tenant_id"]` for resource-bound checks via `task_security_context.py`)
 - `V-COST.1` multi-scope budget envelope governance (`tenant`, `application`, `agent`, `model`, `tool`)
 - `V-COST.2` quota enforcement with deterministic `allow/degrade/deny` behavior
 - `V-COST.3` spend/token forecast and anomaly detection reports

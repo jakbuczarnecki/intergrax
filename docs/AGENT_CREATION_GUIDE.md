@@ -32,8 +32,11 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 16. [Appendix D — Advanced execution paths](#appendix-d--advanced-execution-paths)
 17. [Appendix E — Integrations and Tier-0 wiring](#appendix-e--integrations-and-tier-0-wiring)
 18. [Appendix F — Tier-3 application environment](#appendix-f--tier-3-application-environment)
-19. [Anti-patterns](#anti-patterns)
-20. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+19. [Appendix G — Memory & RAG naming](#appendix-g--memory--rag-naming-phase-q)
+20. [Appendix H — Governance, policy & observability](#appendix-h--governance-policy--observability-control-plane)
+21. [Appendix I — Orchestration control plane](#appendix-i--orchestration-control-plane)
+22. [Anti-patterns](#anti-patterns)
+23. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -728,6 +731,8 @@ Result metadata includes `shadow_workspace_id` or `sandbox_session_id`.
 
 ## Appendix C — Multi-agent graphs
 
+**Full orchestration map:** [Appendix I](#appendix-i--orchestration-control-plane) (control plane, contracts, hooks, customization).
+
 Register multiple agents, then run through graph orchestration (Nexus planner or explicit graph):
 
 ```python
@@ -746,6 +751,8 @@ result = await loop.handle_task(
 ```
 
 Agents share context via `SharedTaskContext` and `MemoryView` — owned by Nexus, not agent code.
+
+**Declarative topology (Tier-3):** `AgentGraph` fluent builder → `ApplicationGraphSpec` on `ApplicationEnvironmentProfile.graph_spec` (roster validation, DX round-trip). Runtime `ExecutionGraph` is built from `NexusPlan` at task time — see Appendix I §I.4.
 
 ---
 
@@ -1146,6 +1153,295 @@ Do **not** register markdown instruction packs as `ToolContract`. Import externa
 
 ---
 
+## Appendix H — Governance, policy & observability (control plane)
+
+**Audience:** Tier-3 application authors, platform engineers, operators.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §5 (Policy), §21 (Observability); [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.3, §3.9.
+
+Intergrax is **policy-first** and **event-first**. Governance and observability are **modular, composable layers** — not a single monolithic dashboard. Authors configure them through typed profiles, bundles, hooks, and integration slugs; Nexus enforces them on every run.
+
+### H.1 Design principles (Harness audit)
+
+| Principle | Meaning in Intergrax |
+|-----------|----------------------|
+| Policy-first | No tool/LLM path without `ToolRuntime`, `PolicyEngine`, or `ApplicationSecurityProfile` middleware |
+| Trace-everything | `RuntimeEvent` + Nexus trace DB; canon §42.1, §42.1.5 |
+| Composable-by-default | `RuntimePolicyBundle`, `SkillResolver`, `HookRegistry`, plugin entry points |
+| Tier separation | Agents declare capabilities; **Tier-3** composes policy and observability |
+
+### H.2 Control plane map (where to customize)
+
+```text
+ApplicationEnvironmentProfile (Tier-3 umbrella)
+  ├── security_profile          → V-SEC toggles (prompt/tool/retrieval/tenant) → application_security_wiring.py
+  ├── policy_rules              → YAML declarative rules (lab: harness_lab.yaml) → policy_wiring.py
+  ├── identity_profile          → API key, tenant_required, service identities
+  ├── context_profile           → budget, RAG/web flags → RuntimeConfig + CONTEXT_* events
+  ├── memory_profile            → STM/LTM/task flags → memory_wiring.py (Appendix G)
+  ├── observability_profile     → trace SQLite, OTEL, metrics plugins
+  ├── reliability_profile       → idempotency, circuit breaker, checkpoints, scheduler
+  ├── execution_mode            → strict | balanced | exploratory → runtime_policies
+  └── integration_profile       → observability_backend slug (prometheus, otel, elasticsearch, …)
+
+RuntimePolicyBundle (composed once per host)
+  ├── tool_access / tool_scope  → allowed_tools intersection with AgentContract
+  ├── budget / plan_loop        → token/cost ceilings, plan iteration limits
+  ├── hitl                        → human approval requirements
+  └── domain_fragments          → skill policy_fragment_id + app-specific keys
+
+Skill layer
+  └── SkillManifest.policy_fragment_id → merges into domain_fragments (never bypasses ToolRuntime)
+
+Hook layer (Tier-1)
+  └── HookPoint (BEFORE_TOOL_CALL, BEFORE_MEMORY_WRITE, …) → middleware + trace
+
+Plugin extension (Tier-0)
+  ├── intergrax.policy_rules     → custom PolicyEngine rule handlers (DX-5.8)
+  ├── intergrax.integrations/tools/skills/memory_stores → catalog plugins (P-Ext, MEM)
+  └── RuntimePlugin              → Nexus metrics/persistence middleware (not catalog EP)
+```
+
+**Rule:** compose policy **once** at Tier-3 startup (`build_runtime_policy_bundle`, `wire_application_environment`). Agents MUST NOT construct parallel policy objects.
+
+### H.3 Security profile (per application)
+
+`ApplicationEnvironmentProfile.security_profile` (`ApplicationSecurityProfile`) maps to Phase V-SEC / V-REM wiring:
+
+| Field | Effect when enabled |
+|-------|---------------------|
+| `prompt_defense_enabled` | Prompt injection defense on LLM path |
+| `tool_injection_defense_enabled` | `ToolInjectionDefenseMiddleware` on `BEFORE_TOOL_CALL` |
+| `retrieval_poisoning_defense_enabled` | Trust-score / quarantine on RAG retrieval |
+| `tenant_security_verify_enabled` | Tenant boundary checks at task intake |
+
+Wiring: `intergrax/applications/_shared/application_security_wiring.py`. Gate tests under `tests/unit/runtime/architecture/` and integration paths.
+
+### H.4 Policy bundle — operator read order
+
+Canonical operator checklist: architecture [§42.11.5](intergrax_runtime_architecture.md#42115-how-to-read-policy-for-a-run-operator).
+
+| Step | Inspect | Location |
+|------|---------|----------|
+| 1 | Composed bundle | `ApplicationBuildContext.policy_bundle` |
+| 2 | Agent + skills | `AgentContract.skill_ids` → `SKILL_RESOLVED` event |
+| 3 | Tool enforcement | `ToolRuntime` + `resolve_allowed_tools_from_config` |
+| 4 | Domain overlays | `domain_fragments` / `policy_rules` YAML |
+| 5 | Human gates | `PolicyDecision.REQUIRE_HUMAN` → HITL queue |
+
+Lab example: `applications/lab_application/policy/rules/harness_lab.yaml` referenced from `build_lab_environment_profile()`.
+
+### H.5 Observability — what is mandatory vs optional
+
+| Signal | Mechanism | Mandatory in harness? |
+|--------|-----------|------------------------|
+| Lifecycle events | `RuntimeEventBus` → SQLite / trace store | **Yes** — gate + §42.1 rules |
+| Event catalog + ops filters | `EVENT_OPS_FILTER_HINTS` (§42.1.5) | **Yes** — `test_all_runtime_event_types_have_ops_filter_hint` |
+| LLM/RAG metrics | `TASK_COMPLETED` payload + plugins | **Yes** when env flags set |
+| External observability backend | `IntegrationProfile.observability_backend` | **Optional** — prometheus, otel, elasticsearch |
+| Lab debug APIs | `GET /debug/tasks/{id}/trace`, `/events`, `/metrics` | **Lab default** |
+| Unified product dashboard | — | **Not shipped** — integrate via observability_backend or scrape debug APIs |
+
+**Inspect a run (lab):**
+
+```bash
+uv run uvicorn lab_application.host.main:app --host 127.0.0.1 --port 8090
+# POST /v1/lab/run  →  GET /debug/tasks/{id}/trace?include_runtime=true
+# GET /debug/tasks/{id}/events  →  GET /debug/tasks/{id}/metrics
+```
+
+Operator SLO catalog, runbooks, release cycles: [`HARNESS_ENVIRONMENT.md`](HARNESS_ENVIRONMENT.md).
+
+### H.6 Policy rule plugins
+
+Entry point group: `intergrax.policy_rules` (mirror P-Ext pattern).
+
+- Loader: `intergrax/runtime/policy/rules/plugin_loader.py`
+- Declarative YAML: `load_policy_rules_from_path` + `PolicyRulesProfile.rules_path`
+- Author guide: [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md) §10
+
+### H.7 What agents (Tier-2) must not do
+
+| Do not | Do instead |
+|--------|------------|
+| Import vendor SDKs or integration slugs | Declare `allowed_tools`; wire `IntegrationProfile` in Tier-3 |
+| Build custom `PolicyEngine` per agent | Use `RuntimePolicyBundle` + `skill_ids` |
+| Bypass `ToolRuntime` | All tool calls through gateway |
+| Assume observability is automatic in tests | Assert `RuntimeEvent` types in integration tests |
+
+### H.8 Verification (audit evidence)
+
+| Concern | Command / artifact |
+|---------|-------------------|
+| Policy + memory bridge | `pytest tests/unit/applications/test_reference_hosts_memory_bridge.py -m gate` |
+| W-OPS memory platform | `python scripts/phase_w_ops_evidence.py` |
+| Event catalog completeness | `pytest tests/unit/runtime/events/ -m gate -k ops_filter` |
+| Harness getattr hygiene | `python scripts/check_harness_no_getattr.py` |
+| Operational L3 | `release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce` |
+
+Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer checklists: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
+## Appendix I — Orchestration control plane
+
+**Audience:** Tier-3 application authors, platform engineers, operators.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §7 (Reasoning/planning), §8 (Agent OS), §9 (Orchestration/graph), §10 (Subagents); canon [§42.3](intergrax_runtime_architecture.md#423-hook-system)–[§42.15](intergrax_runtime_architecture.md#4215-agent-handoff-contracts), [§42.43](intergrax_runtime_architecture.md#4243-multi-agent-collaboration-flow-reference).
+
+Intergrax orchestration is **centralized in Tier-1 (Nexus)** — agents own **local** UAEP steps only. Planning, scheduling, graph execution, handoff, retry, HITL, and trace are **composable runtime responsibilities** with typed contracts and hook extension points.
+
+### I.1 Design principles (Harness audit)
+
+| Principle | Meaning in Intergrax |
+|-----------|----------------------|
+| Single execution stack | `NexusLoop` → `GraphExecutor` → `AgentEngine` → UAEP — no parallel OS per agent |
+| Policy-first orchestration | Graph steps still pass `ToolRuntime`, `PolicyEngine`, security middleware |
+| Composable-by-default | Inject planners, classifiers, retry policy, middleware via Nexus/bootstrap — not agent code |
+| Graph-native delegation | Subagents = `ExecutionGraph` nodes + `DelegationSpec` — not nested harness instances |
+| Trace-everything | `RuntimeEvent` per phase; graph callbacks; `ops:handoff` / `ops:planning` filter hints |
+
+### I.2 Orchestration control plane map
+
+```text
+Task intake
+  └── NexusIntakeRunner          resume · long-running restore · early HITL
+        └── NexusPlanningRunner  classify → plan → pre-graph HITL
+              └── plan_to_execution_graph(NexusPlan) → ExecutionGraph
+                    └── NexusGraphRunner
+                          └── GraphExecutor (batches · parallel within batch)
+                                ├── AgentRouter (capability / contract routing)
+                                ├── ContextManager (SharedTaskContext · assembly options)
+                                ├── HandoffCoordinator (§42.15 — graph mutation)
+                                ├── RetryEngine + RetryCoordinator
+                                └── AgentEngine → UAEPExecutor | RuntimeEngine pipeline
+
+ApplicationEnvironmentProfile (Tier-3)
+  ├── orchestration_profile     planner_kind · classifier_kind · retry_policy_name · max_delegation_depth
+  ├── graph_spec                ApplicationGraphSpec (declarative roster topology — DX/validation)
+  ├── execution_mode            strict | balanced | exploratory → Nexus production_mode + policies
+  ├── reliability_profile       checkpoint store · scheduler · idempotency
+  └── context_profile           assembly budget · RAG flags → per-node AgentContextBundle
+
+Hook layer (Tier-1) — full lifecycle
+  └── HookPoint BEFORE/AFTER: intake · classification · planning · agent_selection ·
+      context_build · step · tool · validation · decision · interrupt · human · retry ·
+      handoff · finalization · trace_persist · memory_write
+      → MiddlewarePipeline (priority-ordered handlers; ALLOW | BLOCK | MODIFY | ESCALATE)
+
+Coordination patterns (Phase V-MA)
+  └── multi_agent_coordination.py — catalog + select_coordination_pattern(constraints)
+      → RuntimeArchitectureGovernanceBridge metadata on runs
+```
+
+**Rule:** register agents via `AgentRegistry` — **never** edit `NexusLoop` / `GraphExecutor` for one agent. Extend via hooks, injected collaborators, or Tier-3 profile wiring.
+
+### I.3 Core contracts (typed, inspectable)
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `NexusPlan` / `PlanStep` | `planning/task_planner.py` | Structured plan before execution |
+| `ExecutionGraph` / `ExecutionNode` | `execution/execution_graph.py` | Typed nodes, `depends_on`, `DelegationSpec` |
+| `DelegationSpec` | `contracts/delegation.py` | Child agent, isolated memory namespace, context assembly |
+| `AgentHandoff` | `contracts/agent_handoff.py` | Nexus-mediated transfer (never direct agent calls) |
+| `TaskContextAssemblyOptions` | `contracts/context_assembly.py` | Bounded child context (FULL / SUMMARY_ONLY / …) |
+| `AgentExecutionResult` | `contracts/agent_execution_result.py` | Status, decision, artifacts for merge |
+| `AgentDecision` | `contracts/agent_decision.py` | COMPLETE · RETRY · INTERRUPT · MODIFY_PLAN · HANDOFF |
+| `ValidationResult` | `contracts/validation.py` | Step/node/task validation gates |
+| `ApplicationGraphSpec` | `applications/contracts/graph_spec.py` | Declarative multi-agent topology on manifest roster |
+
+Canon reference flow (PM → UX → Legal → Validator → Human): [§42.43](intergrax_runtime_architecture.md#4243-multi-agent-collaboration-flow-reference).
+
+### I.4 Planning strategies (explicit, customizable)
+
+| Strategy | Entry | When used |
+|----------|-------|-----------|
+| No planner (single agent) | `TaskClassification.SINGLE_AGENT_DEFAULT` | Default lab path |
+| Deterministic multi-step | `TaskPlanner._multi_agent_plan`, `_research_pipeline_plan` | Known capability pipelines |
+| LLM step planner | `step_planner/` + `RuntimeConfig.step_planner_cfg` | Agent-local tool loops |
+| LLM engine planner | `engine_planner_orchestrator.py` | Nexus-level plan from LLM |
+| Graph from plan | `plan_to_execution_graph()` | Every Nexus run after planning |
+
+`OrchestrationProfile.planner_kind` / `classifier_kind` are **declared** on `ApplicationEnvironmentProfile` (H-APP.3.1) for UI/spec round-trip. **Wired today:** `retry_policy_name` (`strict` → fewer retries), `long_running_enabled` → checkpoint store on `NexusLoop`. **Planned wiring:** inject custom `TaskPlanner` / `ClassifyingTaskClassifier` from `planner_kind` / `classifier_kind` in `build_nexus_loop_from_environment` (§6.1 maintenance — do not fork Nexus for one app).
+
+### I.5 Graph execution and merge
+
+| Mechanism | Behavior |
+|-----------|----------|
+| Topological batches | `ExecutionGraph.batches()` — parallel `asyncio.gather` within batch |
+| Sequential failure | First failed node stops graph (unless retry recovers) |
+| Retry | `RetryEngine` at node level; `RetryCoordinator` at run level; hooks `BEFORE_RETRY` / `AFTER_RETRY` |
+| Handoff | `AgentDecision` / `resolve_handoff_from_execution` → `HandoffCoordinator` inserts node |
+| Delegation | `ExecutionNode.delegation: DelegationSpec` → isolated `MemoryView` namespace |
+| Merge | `FinalResponseComposer.compose_summary(executions)` — deterministic summary merge |
+| Checkpoint skip | `apply_runtime_checkpoint_to_graph` — resume long runs |
+| Cancel | `CancellationCoordinator` — marks pending nodes cancelled |
+
+**Audit note (honest gaps):** graph-level backpressure and per-batch concurrency caps are **partial** — tenant semaphore exists on `RuntimeEngine` (`max_parallel_per_tenant`); batch fan-out does not yet expose a dedicated `max_parallel_nodes` on `OrchestrationProfile`. Track under §6.1 maintenance if product needs it.
+
+### I.6 Subagent / delegation semantics (R-Delegate — Done)
+
+| Harness subagent | Intergrax |
+|------------------|-----------|
+| Spawn child with own context | `ExecutionGraph` node + `DelegationSpec` |
+| Isolated memory | `task_id/delegation/{node_id}/` via `delegation_memory.py` |
+| Parent tool policy | `inherit_tool_policy=True` → intersect with child `AgentContract.allowed_tools` |
+| Trace | `parent_run_id`, `parent_node_id` on delegation metadata; `ops:handoff` events |
+
+**Forbidden:** Tier-2 agent importing and calling another agent. **Required:** Nexus schedules child after plan edge or handoff.
+
+### I.7 Customization surfaces (full control without forking Nexus)
+
+| Surface | How to customize |
+|---------|------------------|
+| **Hooks** | Register `MiddlewarePipeline` handlers on any `HookPoint` at Tier-3 bootstrap |
+| **Runtime plugins** | `RuntimePlugin.register(bus, hooks, policy)` — metrics/persistence middleware (not catalog EP) |
+| **Planner** | Pass custom `TaskPlanner` / `ClassifyingTaskClassifier` to `NexusLoop(...)` constructor |
+| **Graph executor** | Inject `GraphExecutor` with custom `AgentEngine`, `HandoffCoordinator`, `ContextManager` |
+| **Coordination pattern** | `select_coordination_pattern(PlanningConstraints)` — metadata + planning guidance (V-MA) |
+| **Application graph** | `AgentGraph().add(...).edge(...).delegates_to(...).build()` → `graph_spec` on env profile |
+| **Execution mode** | `ExecutionMode.STRICT` → `production_mode=True` on Nexus + stricter agent routability |
+| **Agent contract** | `capabilities`, `max_steps`, `allowed_tools` — routing and tool scope per agent |
+
+Agent-local tool orchestration: `RuntimeConfig.tool_planner` (`ToolPlannerProtocol`) + `CatalogToolPlanner` — separate from Nexus graph, still through `ToolRuntime`.
+
+### I.8 Observability for orchestration runs
+
+| Signal | Event / trace |
+|--------|----------------|
+| Plan created | `PLAN_CREATED` · `ops:planning` |
+| Plan failed | `PLAN_FAILED` (engine planner parse/LLM) |
+| Node start/complete | Graph trace callbacks → Nexus trace DB |
+| Handoff | `HANDOFF_INITIATED` / `HANDOFF_COMPLETED` · `ops:handoff` |
+| Retry | `RETRY_SCHEDULED` · `ops:retry` |
+| HITL pause | `HUMAN_APPROVAL_REQUESTED` · `ops:hitl` |
+
+**Inspect (lab):** `GET /debug/tasks/{id}/trace?include_runtime=true` · event stream §42.1.5 filter hints.
+
+### I.9 What agents (Tier-2) must not do
+
+| Do not | Do instead |
+|--------|------------|
+| Call another agent directly | Emit `AgentDecision` / handoff; let Nexus route |
+| Build private execution graphs | Declare `capabilities`; let `TaskPlanner` + registry route |
+| Implement retry loops over adapters | Return `AgentDecision.RETRY`; runtime `RetryEngine` executes |
+| Own global task lifecycle | UAEP steps only; Nexus owns `TaskLifecycle` |
+| Spawn nested Nexus / harness | Use `DelegationSpec` on graph node |
+
+### I.10 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Graph executor (handoff, retry) | `pytest tests/integration/runtime/test_graph_executor_handoff_retry.py -m gate` |
+| Graph coverage | `pytest tests/unit/runtime/execution/ -m gate` |
+| Delegation memory | `pytest tests/unit/runtime/task_memory/ -m gate -k delegation` |
+| Multi-agent patterns (V-MA) | `pytest tests/unit/runtime/architecture/test_multi_agent_coordination.py -m gate` |
+| Nexus decomposition | `pytest tests/unit/runtime/nexus/ -m gate` |
+| No agent branches in NexusLoop | `python scripts/check_harness_no_getattr.py` + code review |
+| Full gate | `uv run pytest -m gate -q` |
+
+Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layers §7–§10: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -1193,4 +1489,6 @@ When asked to create a new Intergrax agent:
 5. Verify: `uv run pytest agents/<slug>/tests -q` then `uv run pytest -m gate -q`; optionally `python scripts/check_agents_vendor_imports.py`, `python scripts/check_integration_vendor_imports.py`, and `python scripts/check_production_chat_agent_imports.py` (no `ChatAgent` in production paths).
 6. Do **not** modify `intergrax/runtime/` unless a reusable Tier-0 gap is proven and approved.
 7. Do **not** import `intergrax.integrations.providers.*` from agent code — wire integrations in Tier-3 only (Appendix E).
-8. Do **not** create duplicate workflow documentation — update this file if the process changes.
+8. For Tier-3 hosts, configure governance via `ApplicationEnvironmentProfile` + `RuntimePolicyBundle` — see [Appendix H](#appendix-h--governance-policy--observability-control-plane).
+9. For multi-agent / graph / delegation behavior, read [Appendix I](#appendix-i--orchestration-control-plane) — never wire cross-agent calls inside `agents/`.
+10. Do **not** create duplicate workflow documentation — update this file if the process changes.

@@ -47,6 +47,7 @@ class AgentEngine:
         shadow_manager: Optional[ShadowWorkspaceManager] = None,
         sandbox_manager: Optional[SandboxSessionManager] = None,
         task_memory_store: Optional[TaskMemoryPersistence] = None,
+        production_mode: bool = False,
     ) -> None:
         if isinstance(agents, AgentRegistry):
             self._registry = agents
@@ -54,6 +55,7 @@ class AgentEngine:
         else:
             self._registry = None
             self._agents = agents
+        self._production_mode = production_mode
         self._uaep = uaep_executor or UAEPExecutor(
             middleware=middleware,
             event_bus=event_bus,
@@ -84,6 +86,11 @@ class AgentEngine:
         if not agent_id:
             raise ValueError("request.agent_id must be provided.")
         if self._registry is not None:
+            if not self._registry.is_routable(
+                agent_id,
+                production_mode=self._production_mode,
+            ):
+                raise ValueError(f"Agent '{agent_id}' is not routable in current mode.")
             return self._registry.get(agent_id)
         agent = self._agents.get(agent_id)
         if agent is None:
