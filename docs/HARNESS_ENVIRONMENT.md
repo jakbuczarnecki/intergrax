@@ -260,6 +260,7 @@ uv run pytest -m gate -q
 python scripts/check_harness_no_getattr.py
 python scripts/check_legacy_modules_removed.py
 python scripts/check_agent_skill_resolution.py
+python scripts/check_harness_registry_resolution.py
 python scripts/check_legacy_tool_plan_booleans.py
 uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -q
 uv run pytest tests/unit/skills/test_harness_skill_bundle.py -q

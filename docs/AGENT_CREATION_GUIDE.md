@@ -40,8 +40,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 24. [Appendix L — Context engineering control plane](#appendix-l--context-engineering-control-plane)
 25. [Appendix M — Prompt registry control plane](#appendix-m--prompt-registry-control-plane)
 26. [Appendix N — Agent assembly control plane](#appendix-n--agent-assembly-control-plane)
-27. [Anti-patterns](#anti-patterns)
-28. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+27. [Appendix O — Registry architecture control plane](#appendix-o--registry-architecture-control-plane)
+28. [Anti-patterns](#anti-patterns)
+29. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -1910,6 +1911,85 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 
 ---
 
+## Appendix O — Registry architecture control plane
+
+**Audience:** Tier-3 application authors, platform engineers.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §19; capability graph: canon §53.2 · Phase V-CG **Done**.
+
+Registries are **runtime primitives** — not optional documentation. Tier-3 hosts materialize catalog registries through `wire_application_environment`; Nexus and `AgentRegistry` resolve artifacts from typed snapshots.
+
+### O.1 Design principles (Harness audit)
+
+| Principle | Meaning in Intergrax |
+|-----------|----------------------|
+| Registry-first | Tools, skills, prompts, policies resolve through registries — not ad-hoc imports |
+| Environment-driven | `ToolProfile` / `SkillProfile` / `PromptProfile` on `ApplicationEnvironmentProfile` |
+| Typed snapshot | `HarnessRegistrySnapshot` captures wired handles for conformance audits |
+| Register-time validation | `registry_assembly_resolver` fails fast when profiles require missing registries |
+| Capability graph | `CapabilityGraph` links integration → tool → skill → agent → application (V-CG) |
+| Plugin catalogs | `bootstrap_catalogs()` + entry points (Phase P-Ext **Done**) |
+
+### O.2 Registry control plane map
+
+```text
+ApplicationEnvironmentProfile (Tier-3)
+  ├── integration_profile         Integration catalog selection
+  ├── tool_profile                ToolRegistry materialization
+  ├── skill_profile               SkillRegistry materialization
+  ├── prompt_profile              YamlPromptRegistry materialization
+  └── policy_rules_profile        RuntimePolicyBundle composition
+
+wire_application_environment()
+  ├── tool_wiring.py              build_application_tool_wiring → ToolRegistry
+  ├── skill_wiring.py             build_application_skill_wiring → SkillRegistry
+  ├── prompt_wiring.py            resolve_prompt_registry → YamlPromptRegistry
+  ├── policy_wiring.py            wire_policy_bundle → RuntimePolicyBundle
+  └── registry_wiring.py          resolve_registry_snapshot → HarnessRegistrySnapshot
+        └── registry_assembly_resolver.py   profile ↔ registry conformance
+
+AgentRegistry.register (Tier-1)
+  └── SkillResolver + resolve_contract_tools → allowed_tools
+```
+
+### O.3 Core contracts
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `ToolRegistry` | `tools/registry/runtime.py` | Runtime tool catalog |
+| `SkillRegistry` | `skills/registry/runtime.py` | Runtime skill catalog |
+| `PromptRegistryProtocol` | `prompts/registry/prompt_registry_protocol.py` | Typed prompt resolve |
+| `AgentRegistry` | `runtime/registry/agent_registry.py` | Agent discovery + contracts |
+| `RuntimePolicyBundle` | `runtime/policy/policy_bundle.py` | Policy composition |
+| `HarnessRegistrySnapshot` | `applications/_shared/registry_snapshot.py` | Wired registry handles |
+| `RegistrySnapshotProtocol` | `applications/_shared/registry_snapshot_protocol.py` | Snapshot audit surface |
+| `CapabilityGraph` | `runtime/architecture/capability_graph.py` | Dependency / impact graph |
+
+### O.4 Artifact coverage (audit §19)
+
+| Artifact | Registry / profile | Resolution path |
+|----------|-------------------|-----------------|
+| Agent | `AgentRegistry` | `build_application_registry` |
+| Tool | `ToolRegistry` | `build_application_tool_wiring` |
+| Skill | `SkillRegistry` | `build_application_skill_wiring` |
+| Policy | `RuntimePolicyBundle` | `wire_policy_bundle` |
+| Prompt | `YamlPromptRegistry` | `resolve_prompt_registry` |
+| Integration | `IntegrationProfile` | `bootstrap_application_integration_catalog` |
+| Evaluation | `OnlineEvaluationRegistry` | Phase W-OPS / V-EVAL |
+
+### O.5 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Registry snapshot wiring | `pytest tests/unit/applications/test_registry_wiring.py -m gate` |
+| Agent skill resolution | `python scripts/check_agent_skill_resolution.py` |
+| Host registry resolution | `python scripts/check_harness_registry_resolution.py` |
+| Capability graph guard | `uv run python scripts/phase_v_capability_graph_guard.py --enforce` |
+| Full gate | `uv run pytest -m gate -q` |
+
+Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §19: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -1940,6 +2020,7 @@ Run before opening a harness PR (see `scripts/`):
 | `check_harness_no_getattr.py` | No new `getattr`/`setattr` under `runtime/nexus/` and `agents/` |
 | `check_legacy_modules_removed.py` | Removed modules (`tools_agent`, `chat_router`, `chains`) stay absent; no production imports |
 | `check_agent_skill_resolution.py` | Tier-2 agents do not pre-populate `allowed_tools`; skills resolve at register |
+| `check_harness_registry_resolution.py` | Tier-3 hosts wire catalogs via `wire_application_environment` / `build_harness_host_runtime` |
 | `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |
 | `check_integration_vendor_imports.py` | Tier-0 does not import application/agent trees incorrectly |
 | `check_production_chat_agent_imports.py` | No `ChatAgent` on production paths |
@@ -1965,4 +2046,5 @@ When asked to create a new Intergrax agent:
 12. For context budget and assembly, read [Appendix L](#appendix-l--context-engineering-control-plane) — configure `ContextProfile`, not ad-hoc prompt stitching.
 13. For YAML prompt catalogs and registry wiring, read [Appendix M](#appendix-m--prompt-registry-control-plane) — configure `PromptProfile`, not inline prompt strings.
 14. For agent contract assembly, skills, and lifecycle, read [Appendix N](#appendix-n--agent-assembly-control-plane) — declare `skills` on `AgentContract`, not raw `allowed_tools`.
-15. Do **not** create duplicate workflow documentation — update this file if the process changes.
+15. For registry wiring and catalog resolution, read [Appendix O](#appendix-o--registry-architecture-control-plane) — enable profiles on environment, not direct `ToolRegistry()` in hosts.
+16. Do **not** create duplicate workflow documentation — update this file if the process changes.
