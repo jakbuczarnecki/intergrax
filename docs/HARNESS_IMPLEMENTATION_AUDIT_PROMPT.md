@@ -99,8 +99,9 @@ Harness → Runtime → Agents → Applications → Products
 | 5 | `docs/AGENT_CREATION_GUIDE.md` **Appendix H** | **Governance control plane (authoring)** | `ApplicationEnvironmentProfile` map, `RuntimePolicyBundle`, security profile, observability mandatory vs optional, verification commands — use when auditing §5 Policy and §21 Observability |
 | 6 | `docs/AGENT_CREATION_GUIDE.md` **Appendix I** | **Orchestration control plane (authoring)** | Nexus runners, `ExecutionGraph`, `DelegationSpec`, hooks, planning strategies, customization surfaces — use when auditing §7–§10; implementation closeout: plan **Phase ORCH** (**Done**) |
 | 7 | `docs/AGENT_CREATION_GUIDE.md` **Appendix J** | **Tools & skills control plane (authoring)** | `ToolProfile`, `SkillProfile`, `catalog_runtime_bridge`, `SkillResolverProtocol`, `ToolRuntime`, conformance checks — use when auditing §11–§12; implementation closeout: plan **Phase TS** (**Done**) |
+| 8 | `docs/AGENT_CREATION_GUIDE.md` **Appendix K** | **Integration & RAG control plane (authoring)** | `IntegrationProfile`, `integration_runtime_bridge`, `rag_runtime_bridge`, health probes, `RetrievalService` — use when auditing §13–§14; closeout: **Phase INT** + **Phase RAG** (**Done**) |
 
-**Always distinguish these eight views — never conflate them:**
+**Always distinguish these nine views — never conflate them:**
 
 - **Target** → `IDEAL_HARNESS_AI_ARCHITECTURE.md`
 - **Current architecture** → `intergrax_runtime_architecture.md`
@@ -108,6 +109,7 @@ Harness → Runtime → Agents → Applications → Products
 - **Governance authoring** → `AGENT_CREATION_GUIDE.md` Appendix H
 - **Orchestration authoring** → `AGENT_CREATION_GUIDE.md` Appendix I
 - **Tools/skills authoring** → `AGENT_CREATION_GUIDE.md` Appendix J
+- **Integration/RAG authoring** → `AGENT_CREATION_GUIDE.md` Appendix K
 - **Implementation** → source code under `intergrax/`, `agents/`, `applications/`
 - **Verification** → tests, CI gates, scripts
 

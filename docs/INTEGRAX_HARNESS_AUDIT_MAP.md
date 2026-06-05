@@ -774,6 +774,8 @@ Skill Layer Score: L0-L4
 
 ## 13. Integration Layer
 
+**Authoring map (control plane):** `AGENT_CREATION_GUIDE.md` **Appendix K** · implementation closeout: plan **Phase INT** (**Done**).
+
 ### Purpose
 
 Verify that integrations are backend/provider adapters, not agent tools or business logic.
@@ -808,6 +810,8 @@ Integration Layer Score: L0-L4
 ---
 
 ## 14. RAG and Retrieval Layer
+
+**Authoring map (control plane):** `AGENT_CREATION_GUIDE.md` **Appendix K** §K.5 · implementation closeout: plan **Phase RAG** (**Done**).
 
 ### Purpose
 

@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Harness platform bands 1–2k Done**; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; **Orchestration closeout (Phase ORCH) Done**; **Tools/skills closeout (Phase TS) Done**; **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **589 passed**; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
+Status: Working draft (2026-06-02) — **Harness platform bands 1–2m Done**; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; **Orchestration (ORCH)**, **Tools/skills (TS)**, **Integration (INT)**, **RAG closeout (RAG) Done**; **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **600 passed**; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -31,6 +31,8 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Governance audit closeout (docs + residuals register) | [Phase GOV-AUDIT](#phase-gov-audit--governance-control-plane-audit-closeout) · **GOV-DOC.\*** **Done** |
 | Orchestration audit closeout (runtime wiring) | [Phase ORCH](#phase-orch--orchestration-control-plane-closeout) · **§6.1b** · Band **2j** |
 | Tools / skills audit closeout (runtime bridge) | [Phase TS](#phase-ts--tools--skills-control-plane-closeout) · **§6.1c** · Band **2k** · `AGENT_CREATION_GUIDE.md` **Appendix J** |
+| Integration audit closeout (runtime bridge + health) | [Phase INT](#phase-int--integration-control-plane-closeout) · **§6.1d** · Band **2l** · **Appendix K** |
+| RAG audit closeout (runtime bridge) | [Phase RAG](#phase-rag--rag-retrieval-control-plane-closeout) · **§6.1e** · Band **2m** · **Appendix K** §K.5 |
 | Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
 | Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
 | Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
@@ -55,7 +57,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Phase V runtime remediation (2026-06-05 audit) → close Partial gaps | **Phase V-REM** (below) · **Appendix J** · **§6.1z** · **§6.2v** · source: plan/code audit vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` |
 | Phase V remediation traceability (audit gap → V-REM ID) | **Appendix J** (below) |
 | Full architecture audit procedure (32 layers) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) · prompt: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) |
-| Infrastructure vs business scope split | **§4.0a** · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) (closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) (closed) · [§6.1g](#61g-harness-implementation-queue--governance-audit-closed) (closed) · [§6.3a](#63a-business-backlog-register-consolidated) |
+| Infrastructure vs business scope split | **§4.0a** · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) (closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) (closed) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) (closed) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) (closed) · [§6.1g](#61g-harness-implementation-queue--governance-audit-closed) (closed) · [§6.3a](#63a-business-backlog-register-consolidated) |
 
 **Note on audit source documents:** Some historical audit narratives (e.g. `HARNESS_APPLICATION_LAYER_AUDIT.md`) may live outside the repo. **Task traceability in this plan is canonical** — H-APP (43 tasks), W-OPS, MEM, DX, AA registers below; do not re-derive scope from missing files.
 
@@ -168,7 +170,9 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Governance audit closeout (GOV-AUDIT)** | **Done** (docs) | No | GOV-DOC.1–2; code via V-REM/H-APP/DX-5.8 |
 | **Orchestration closeout (Phase ORCH)** | **Done** (Band 2j) | No (harness-only) | ORCH-1–4 — [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) |
 | **Tools/skills closeout (Phase TS)** | **Done** (Band 2k) | No (harness-only) | TS-1–3 — [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) |
-| Regression gate | **589 passed** | No | Must stay green after each harness PR |
+| **Integration closeout (Phase INT)** | **Done** (Band 2l) | No (harness-only) | INT-1–2 — [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) |
+| **RAG closeout (Phase RAG)** | **Done** (Band 2m) | No (harness-only) | RAG-1 — [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) |
+| Regression gate | **600 passed** | No | Must stay green after each harness PR |
 
 ---
 
@@ -206,7 +210,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Harness quality (Phase Q) | **Done** | Appendix C — gate **417** at Phase Q close |
 | Harness hardening (Phase Q+) | **Done** | Appendix D — typing, monolith splits, zero grandfathered `getattr` |
 | Harness AI alignment (Phase R MVP) | **Done** | Appendix E — Skill Library, context, delegation, policy bundle |
-| Regression gate | **589 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
+| Regression gate | **600 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
 | Harness environment GA (Phase S) | **Done** (2026-06-01) | S-H.* + S-Ops + S-Doc |
 | Harness cleanliness (Phase T) | **Done** (2026-06-01) | T-Ops + T-H |
 | Harness production hardening (Phase U) | **Done** | Appendix G audit → U.* (U-Leg residual) |
@@ -222,6 +226,8 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | **Governance audit (GOV-AUDIT)** | **Done** (docs) | [Phase GOV-AUDIT](#phase-gov-audit--governance-control-plane-audit-closeout) |
 | **Orchestration closeout (Phase ORCH)** | **Done** (2026-06-05) | [Phase ORCH](#phase-orch--orchestration-control-plane-closeout) · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) |
 | **Tools/skills closeout (Phase TS)** | **Done** (2026-06-02) | [Phase TS](#phase-ts--tools--skills-control-plane-closeout) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) |
+| **Integration closeout (Phase INT)** | **Done** (2026-06-02) | [Phase INT](#phase-int--integration-control-plane-closeout) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) |
+| **RAG closeout (Phase RAG)** | **Done** (2026-06-02) | [Phase RAG](#phase-rag--rag-retrieval-control-plane-closeout) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) |
 | Product agents (Phase K) | **Deferred** | K.1/K.2 — end of priority list |
 | Tier-3 product applications | **Deferred** | New apps / product routes — after harness backlog |
 
@@ -3576,11 +3582,13 @@ Paydown Wave P3 (optional polish):
 | **2h — Memory platform (MEM)** | H-APP→runtime bridge, durable user LTM, session SQLite, gates, hooks, memory docs — **no** business agents | **Done** (2026-06-02) | [Phase MEM](#phase-mem--memory-platform-completion) · **§6.2aa** |
 | **2j — Orchestration closeout (ORCH)** | Wire `planner_kind`/`classifier_kind`, `ApplicationGraphSpec`→plan, graph concurrency cap — **no** business agents | **Done** (2026-06-05) | [Phase ORCH](#phase-orch--orchestration-control-plane-closeout) · **§6.1b** · **§6.2bb** |
 | **2k — Tools/skills closeout (TS)** | Catalog→`RuntimeConfig` bridge, harness LLM wiring, `SkillResolverProtocol`, Appendix J — **no** business agents | **Done** (2026-06-02) | [Phase TS](#phase-ts--tools--skills-control-plane-closeout) · **§6.1c** · **§6.2bc** |
+| **2l — Integration closeout (INT)** | `integration_runtime_bridge`, bootstrap health probes, Appendix K — **no** business agents | **Done** (2026-06-02) | [Phase INT](#phase-int--integration-control-plane-closeout) · **§6.1d** · **§6.2bd** |
+| **2m — RAG closeout (RAG)** | `rag_runtime_bridge`, RAG stack on environment wire — **no** business agents | **Done** (2026-06-02) | [Phase RAG](#phase-rag--rag-retrieval-control-plane-closeout) · **§6.1e** · **§6.2be** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-02):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j** (ORCH) and **2k** (TS) = **Done**. Bands 2 / 2b–**2k** platform rows = **Done**. Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-02):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2m** (ORCH, TS, INT, RAG) = **Done**. Bands 2 / 2b–**2m** platform rows = **Done**. Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1) — every PR (default next)
@@ -3593,7 +3601,9 @@ BAND 2f: Developer authoring UX — Phase DX (§6.2y) — DONE (47 tasks)
 BAND 2g: Agents & applications conformance — Phase AA (§6.2z) — MOSTLY DONE (platform); domain → Band 3
 BAND 2h: Memory platform — Phase MEM (§6.2aa) — DONE (48/48)
 BAND 2j: Orchestration closeout — Phase ORCH (§6.1b) — DONE (ORCH-1 → ORCH-4)
-BAND 2k: Tools/skills closeout — Phase TS (§6.1c) — DONE (TS-1 → TS-4)
+BAND 2k: Tools/skills closeout — Phase TS (§6.1c) — DONE (TS-1 → TS-3)
+BAND 2l: Integration closeout — Phase INT (§6.1d) — DONE (INT-1 → INT-2)
+BAND 2m: RAG closeout — Phase RAG (§6.1e) — DONE (RAG-1)
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
 DONE:    Harness completion backlog (§4.1) — 2026-06-02
@@ -3647,7 +3657,7 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 
 | Topic | Section |
 |-------|---------|
-| **Canonical implementation queue (infrastructure)** | [§6.1](#61-harness-platform-maintenance-default--band-1) (**active** — maintenance) · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) (closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) (closed) · [§6.1z](#61z-harness-implementation-queue-consolidated) (closed) |
+| **Canonical implementation queue (infrastructure)** | [§6.1](#61-harness-platform-maintenance-default--band-1) (**active** — maintenance) · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) (all closed) · [§6.1z](#61z-harness-implementation-queue-consolidated) (closed) |
 | Ongoing gate + audit scripts | [§6.1](#61-harness-platform-maintenance-default--band-1) |
 | Memory platform (Done — §6.1 maintenance) | [Phase MEM](#phase-mem--memory-platform-completion) · [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active) |
 | All business / domain work | [§6.3](#63-end-of-plan--deferred-product-work-only) · [Business backlog register](#63a-business-backlog-register-consolidated) |
@@ -3813,13 +3823,92 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ---
 
+## Phase INT — Integration control plane closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (INT-DOC.* + INT-1–2); gate **600 passed**
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §13; author map: `AGENT_CREATION_GUIDE.md` **Appendix K**.
+
+**Priority ladder:** **Band 2l** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+**Execution order:** [§6.2bd](#62bd-phase-int-execution-order-band-2l--closed) · queue: [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed)
+
+### INT — Master register
+
+| ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
+|----|------|-------------|--------|----------|---------|------------|
+| INT-DOC.1 | INT0 | **Appendix K** — integration control plane (§K.1–K.7) | **Done** | High | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| INT-DOC.2 | INT0 | **Cross-ref sync** — plan, README, AUDIT_MAP §13, audit prompt ref #8 | **Done** | Medium | `docs/*` | Links resolve |
+| INT-1 | INT1 | **`integration_runtime_bridge.py`** — explicit `integration_profile` on `RuntimeConfig` | **Done** | **Critical** | `integration_runtime_bridge.py`, `runtime_config_bridge.py` | `test_integration_runtime_bridge.py` |
+| INT-2 | INT2 | **`integration_health_wiring.py`** — bootstrap health probes on `wire_application_environment` | **Done** | High | `integration_health_wiring.py`, `environment_wiring.py` | `test_integration_health_wiring.py` |
+
+### INT — Paydown log
+
+| Date | INT ID | Summary |
+|------|--------|---------|
+| 2026-06-02 | INT-DOC.1, INT-DOC.2 | Appendix K + cross-refs; AUDIT_MAP §13 |
+| 2026-06-02 | INT-1, INT-2 | Integration runtime bridge + health wiring |
+
+**Phase INT complete when:** INT-1–2 + INT-DOC.* **Done**; §6.1d queue closed. **Status: complete (2026-06-02).**
+
+---
+
+## Phase RAG — RAG retrieval control plane closeout
+
+**Status:** **Done** (2026-06-02) — **3/3** deliverables Done (RAG-DOC.* + RAG-1); gate **600 passed**
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §14; author map: **Appendix K** §K.5.
+
+**Priority ladder:** **Band 2m** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+**Execution order:** [§6.2be](#62be-phase-rag-execution-order-band-2m--closed) · queue: [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed)
+
+### RAG — Master register
+
+| ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
+|----|------|-------------|--------|----------|---------|------------|
+| RAG-DOC.1 | RAG0 | **Appendix K** §K.5 + AUDIT_MAP §14 cross-ref | **Done** | High | `docs/*` | RAG bridge documented |
+| RAG-1 | RAG1 | **`rag_runtime_bridge.py`** + RAG stack on `wire_application_environment` | **Done** | **Critical** | `rag_runtime_bridge.py`, `environment_wiring.py`, `runtime_config_bridge.py` | `test_rag_runtime_bridge.py` |
+
+### RAG — Paydown log
+
+| Date | RAG ID | Summary |
+|------|--------|---------|
+| 2026-06-02 | RAG-DOC.1 | Appendix K §K.5 + plan sync |
+| 2026-06-02 | RAG-1 | RAG runtime bridge + environment wire; gate **600** |
+
+**Phase RAG complete when:** RAG-1 + RAG-DOC.* **Done**; §6.1e queue closed. **Status: complete (2026-06-02).**
+
+---
+
 ## 6. What to implement next
 
-**Default answer (infrastructure only):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** — keep gate green. Phase TS **Done**. Phase ORCH **Done**. GOV-AUDIT **Done**. Phase V-REM **Done**. Phase MEM **Done** (48/48). Product work gated by [§6.3](#63-product--business-scope-gate).
+**Default answer (infrastructure only):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** — keep gate green. Phase INT + RAG **Done**. Phase TS **Done**. Phase ORCH **Done**. GOV-AUDIT **Done**. Phase V-REM **Done**. Phase MEM **Done** (48/48). Product work gated by [§6.3](#63-product--business-scope-gate).
 
 **Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](#63a-business-backlog-register-consolidated)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
 
-**Audit basis:** Governance audit (2026-06-05) → GOV-AUDIT **Done**; orchestration audit (2026-06-05) → Phase ORCH + §6.1b; tools/skills audit (2026-06-02) → Phase TS + §6.1c; prior V-REM/MEM/DX/AA closeouts in [§6.1z](#61z-harness-implementation-queue-consolidated) / [§6.1aa](#61aa-harness-implementation-queue-memory-platform).
+**Audit basis:** Governance audit (2026-06-05) → GOV-AUDIT **Done**; orchestration audit (2026-06-05) → Phase ORCH + §6.1b; tools/skills audit (2026-06-02) → Phase TS + §6.1c; integration/RAG audit (2026-06-02) → Phase INT + RAG + §6.1d/§6.1e; prior V-REM/MEM/DX/AA closeouts in [§6.1z](#61z-harness-implementation-queue-consolidated) / [§6.1aa](#61aa-harness-implementation-queue-memory-platform).
+
+### 6.1e Harness implementation queue — RAG closeout (closed)
+
+**Purpose:** Single ordered list for **Phase RAG** (Band 2m). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **RAG-DOC.1** | Docs | **Done** | Appendix K §K.5 + AUDIT_MAP §14 | Author map complete |
+| 2 | **RAG-1** | Code | **Done** | `rag_runtime_bridge` + environment wire | `test_rag_runtime_bridge.py` |
+
+### 6.1d Harness implementation queue — integration closeout (closed)
+
+**Purpose:** Single ordered list for **Phase INT** (Band 2l). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **INT-DOC.1–2** | Docs | **Done** | Appendix K + cross-refs | Author map complete |
+| 2 | **INT-1** | Code | **Done** | `integration_runtime_bridge` | `test_integration_runtime_bridge.py` |
+| 3 | **INT-2** | Code | **Done** | `integration_health_wiring` | `test_integration_health_wiring.py` |
 
 ### 6.1c Harness implementation queue — tools/skills closeout (closed)
 
@@ -3944,6 +4033,25 @@ Verify (every harness PR):
 ```
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
+
+### 6.2be Phase RAG execution order (Band 2m — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase RAG](#phase-rag--rag-retrieval-control-plane-closeout) · queue: [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | RAG-1 | `rag_runtime_bridge` + environment wire | Critical |
+| 2 | RAG-DOC.1 | Appendix K §K.5 + plan sync | Low |
+
+### 6.2bd Phase INT execution order (Band 2l — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase INT](#phase-int--integration-control-plane-closeout) · queue: [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | INT-1 | `integration_runtime_bridge` | Critical |
+| 2 | INT-2 | `integration_health_wiring` | High |
+| 3 | INT-DOC.1–2 | Appendix K + plan sync | Low |
 
 ### 6.2bc Phase TS execution order (Band 2k — closed 2026-06-02)
 
@@ -5265,4 +5373,4 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-02). **Harness platform** bands 1–2k **Done**; GOV-AUDIT + Phase ORCH + Phase TS **closed**. Gate: **589 passed**. **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance. Product work gated by [§6.3](#63-end-of-plan--deferred-product-work-only). Operational L3 **signed off**. P-Ext **Done** (61/61).*
+*Plan synced (2026-06-02). **Harness platform** bands 1–2m **Done**; GOV-AUDIT + Phase ORCH + TS + INT + RAG **closed**. Gate: **600 passed**. **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance. Product work gated by [§6.3](#63-end-of-plan--deferred-product-work-only). Operational L3 **signed off**. P-Ext **Done** (61/61).*

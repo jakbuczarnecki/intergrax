@@ -9,7 +9,12 @@ from intergrax.applications._shared.catalog_runtime_bridge import (
     apply_catalog_profiles_from_build_context,
     apply_catalog_profiles_from_environment,
 )
+from intergrax.applications._shared.integration_runtime_bridge import (
+    apply_integration_profiles_from_build_context,
+    apply_integration_profiles_from_environment,
+)
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.applications._shared.rag_runtime_bridge import apply_rag_for_environment
 from intergrax.applications._shared.memory_runtime_bridge import apply_environment_profiles_to_runtime_config
 from intergrax.applications._shared.memory_wiring import (
     build_session_manager_from_environment,
@@ -99,9 +104,15 @@ def materialize_runtime_config(
     if pipeline is not None:
         config.pipeline = pipeline
     apply_environment_profiles_to_runtime_config(config, env)
+    apply_integration_profiles_from_environment(config, env)
     apply_catalog_profiles_from_environment(config, env)
     if isinstance(harness_ctx, ApplicationBuildContext):
+        apply_integration_profiles_from_build_context(config, harness_ctx)
         apply_catalog_profiles_from_build_context(config, harness_ctx)
+    rag_wiring_context = tool_wiring_context
+    if isinstance(harness_ctx, ApplicationBuildContext) and harness_ctx.tool_wiring_context is not None:
+        rag_wiring_context = harness_ctx.tool_wiring_context
+    apply_rag_for_environment(config, env, tool_wiring_context=rag_wiring_context)
     return apply_policy_bundle_to_runtime_config(config, policy_bundle)
 
 

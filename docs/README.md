@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-02 (GOV-AUDIT + Phase ORCH + Phase TS Done; gate **589**)
+**Last updated:** 2026-06-02 (GOV-AUDIT + ORCH + TS + INT + RAG Done; gate **600**)
 
 The `docs/` folder holds the canonical platform documentation.
 
@@ -54,6 +54,7 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | **Policy, governance & observability (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · canon [§42.11](intergrax_runtime_architecture.md#4211-policy-engine) · [`HARNESS_ENVIRONMENT.md`](HARNESS_ENVIRONMENT.md) |
 | **Orchestration, graphs & delegation (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) · canon [§42.43](intergrax_runtime_architecture.md#4243-multi-agent-collaboration-flow-reference) · [Appendix C](AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs) |
 | **Tools & skills (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix J](AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) · [Phase TS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-ts--tools--skills-control-plane-closeout) |
+| **Integration & RAG (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix K](AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) · [Phase INT](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-int--integration-control-plane-closeout) · [Phase RAG](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-rag--rag-retrieval-control-plane-closeout) |
 | Audit policy / observability layers | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §5, §21 · [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) |
 | Audit orchestration / graph / subagent layers | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §7–§10 · [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) |
 | Memory platform (STM/LTM/context/hooks) | [Phase MEM](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem--memory-platform-completion) · **Done** 48/48 |
@@ -109,9 +110,11 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | **GOV-AUDIT — Governance control plane** | **Done** (docs) — Appendix H |
 | **Phase ORCH — Orchestration closeout** | **Done** (2026-06-05) — ORCH-1→4 |
 | **Phase TS — Tools/skills closeout** | **Done** (2026-06-02) — TS-1→3 |
+| **Phase INT — Integration closeout** | **Done** (2026-06-02) — INT-1→2 |
+| **Phase RAG — RAG retrieval closeout** | **Done** (2026-06-02) — RAG-1 |
 | **Phase K — Business agents** | **End of plan** — §6.3; **not** default next |
 
-Gate: `uv run pytest -m gate -q` — **589 passed** (2026-06-02)
+Gate: `uv run pytest -m gate -q` — **600 passed** (2026-06-02)
 
 Harness CI also runs: `python scripts/check_harness_no_getattr.py` (zero grandfathered paths)
 
@@ -122,7 +125,7 @@ Harness CI also runs: `python scripts/check_harness_no_getattr.py` (zero grandfa
 1. **Strategy** (goal, hierarchy, work cycle) → `INTERGRAX_DEVELOPMENT_STRATEGY.md`.
 2. **Architecture** (including observability, retry semantics, trace storage, RAG metrics) → `intergrax_runtime_architecture.md`, then sync §0 in the plan.
 3. **Status / phases / gaps** → `INTERGRAX_IMPLEMENTATION_PLAN.md` (§0, phase sections, appendices).
-4. **Agent author workflow** → `AGENT_CREATION_GUIDE.md` ([Appendix H — governance](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · [Appendix I — orchestration](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) · [Appendix J — tools/skills](AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane)).
+4. **Agent author workflow** → `AGENT_CREATION_GUIDE.md` ([Appendix H — governance](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · [Appendix I — orchestration](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) · [Appendix J — tools/skills](AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) · [Appendix K — integration/RAG](AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane)).
 5. **Integration or tool catalog changes** → `INTEGRATIONS.md` or `TOOLS.md` respectively.
 6. **Skill packs / importers** → `SKILLS.md` + plan Appendix E (and Phase S when prod proof).
 7. **Modality / vision / speech / ML** → `MODALITY.md` + canon §7.1.9 + plan Phase W-ML.

@@ -36,8 +36,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 20. [Appendix H — Governance, policy & observability](#appendix-h--governance-policy--observability-control-plane)
 21. [Appendix I — Orchestration control plane](#appendix-i--orchestration-control-plane)
 22. [Appendix J — Tools & skills control plane](#appendix-j--tools--skills-control-plane)
-23. [Anti-patterns](#anti-patterns)
-24. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+23. [Appendix K — Integration & RAG control plane](#appendix-k--integration--rag-control-plane)
+24. [Anti-patterns](#anti-patterns)
+25. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -1556,6 +1557,114 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 
 ---
 
+## Appendix K — Integration & RAG control plane
+
+**Audience:** Tier-3 application authors, extension authors, platform engineers.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §13 (Integration), §14 (RAG); canon [§7.1](intergrax_runtime_architecture.md#71-integration-library)–[§7.1.5](intergrax_runtime_architecture.md#715-integration-profile); memory/RAG naming: [Appendix G](#appendix-g--memory--rag-naming-phase-q).
+
+Integrations are **backend/provider adapters** (Tier-0). RAG is a **full retrieval layer** composed from integration vector stores + embedding/rerank managers — not agent-local vector queries. Agents stay vendor-agnostic; Tier-3 selects providers via `IntegrationProfile`.
+
+### K.1 Design principles (Harness audit)
+
+| Principle | Meaning in Intergrax |
+|-----------|----------------------|
+| Category contracts | Every integration slot maps to `IntegrationCategory` + stable contract |
+| Vendor isolation | SDK imports only in `integrations/providers/` boundary modules |
+| Profile-first wiring | Tier-3 resolves providers via `IntegrationProfile.resolve(category)` |
+| Single retrieval path | `RetrievalService` + `rag.retrieve` tool — no agent `vectorstore.query` |
+| Health at bootstrap | `probe_integration_profile_health` on environment wire |
+| Typed bridges | `integration_runtime_bridge`, `rag_runtime_bridge` — no dynamic attribute access |
+
+### K.2 Integration & RAG control plane map
+
+```text
+ApplicationEnvironmentProfile (Tier-3)
+  └── integration_profile          category slots (relational_store, vector_store, …)
+
+wire_application_environment()
+  ├── bootstrap_application_integration_catalog()
+  ├── probe_integration_profile_health()     → ApplicationEnvironmentWiring.integration_health
+  ├── resolve_rag_stack_for_environment()    when context_profile.enable_rag
+  ├── ToolWiringContext.from_integration_profile()
+  └── build_application_tool_wiring()          RAG managers injected into tool context
+
+materialize_runtime_config() / build_runtime_context_from_environment()
+  ├── integration_runtime_bridge.py          integration_profile on RuntimeConfig
+  ├── rag_runtime_bridge.py                  vectorstore / retrieval_service / RagProfile
+  ├── memory_runtime_bridge.py               context toggles (MEM)
+  └── catalog_runtime_bridge.py              tool/skill profiles (TS)
+
+Agent execution (Tier-1)
+  ├── RuntimeConfig.integration_profile      memory backends, notifications, vector store
+  ├── Nexus ContextBuilder + RetrievalService canonical RAG path
+  └── Catalog tool rag.retrieve              policy-checked retrieval
+```
+
+**Rule:** declare integrations on `IntegrationProfile` in Tier-3 — **never** import `integrations/providers/` from `agents/`.
+
+### K.3 Core contracts (typed, inspectable)
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `IntegrationProfile` | `integrations/registry/profile.py` | Typed provider selection per category |
+| `IntegrationCategory` | `integrations/contracts/base.py` | Category enum + profile field map |
+| `IntegrationHealthProbe` | `integrations/contracts/health_probe.py` | Optional provider health() |
+| `HealthStatus` | `integrations/contracts/base.py` | Bootstrap probe result |
+| `RagStack` | `rag/bootstrap/rag_stack_bootstrap.py` | Composed RAG managers + `RetrievalService` |
+| `RagProfile` | `rag/profiles/rag_profile.py` | Retrieval modes, top-k, rerank toggles |
+| `RetrievalService` | `rag/retrieval/retrieval_service.py` | Canonical retrieval orchestration |
+| `RuntimeConfig.integration_profile` | `runtime/nexus/config.py` | Runtime integration snapshot (INT-1) |
+
+### K.4 Customization surfaces
+
+| Surface | How to customize |
+|---------|------------------|
+| **Integration profile** | `ApplicationEnvironmentProfile.integration_profile` or manifest default |
+| **Presets** | `IntegrationProfile.lab_harness_preset()`, `legal_stack()`, `research_stack()` |
+| **Per-slug options** | `IntegrationProfile.options` dict (e.g. sqlite `data_dir`) |
+| **RAG enable** | `ContextProfile.enable_rag` on environment → stack bootstrap |
+| **RAG tuning** | `RagProfile` env vars or explicit profile passed to `create_default_rag_stack` |
+| **Vector store** | `vector_store` slot on profile (falls back to in-memory when unset) |
+| **Plugin catalogs** | Integration entry points (Phase P-Ext **Done**) |
+| **Health probes** | Implement `IntegrationHealthProbe` on provider; run via `probe_integration_profile_health` |
+
+### K.5 Runtime bridges (INT + RAG — Done)
+
+| Bridge | Module | Maps |
+|--------|--------|------|
+| Integration → RuntimeConfig | `integration_runtime_bridge.py` | `integration_profile` |
+| Integration health | `integration_health_wiring.py` | bootstrap `HealthStatus` tuple |
+| RAG → RuntimeConfig | `rag_runtime_bridge.py` | managers + `RetrievalService` + `RagProfile` |
+| Memory backends | `memory_wiring.py` | sqlite/mongo session + LTM from `integration_profile` |
+
+Wired `ApplicationBuildContext.integration_profile` **overrides** raw environment defaults.
+
+### K.6 What agents (Tier-2) must not do
+
+| Do not | Do instead |
+|--------|------------|
+| Import `redis`, `boto3`, `psycopg` in agents | Declare tools; wire integration in Tier-3 profile |
+| Call `vectorstore.query` directly | Use `rag.retrieve` tool or Nexus `ContextBuilder` |
+| Store integration config in agent dir | `IntegrationProfile` on environment/manifest |
+| Treat LLM provider as Integration slug | Use `LLMProfile` / `resolve_llm_adapter` (LLM Adapter layer) |
+| Use legacy `use_rag` plan booleans | Explicit `tool_ids` (`rag.retrieve`) |
+
+### K.7 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Integration runtime bridge | `pytest tests/unit/applications/test_integration_runtime_bridge.py -m gate` |
+| Integration health wiring | `pytest tests/unit/applications/test_integration_health_wiring.py -m gate` |
+| RAG runtime bridge | `pytest tests/unit/applications/test_rag_runtime_bridge.py -m gate` |
+| Harness lab health | `pytest tests/unit/integrations/test_harness_lab_health.py -m gate` |
+| RAG tool catalog | `pytest tests/unit/tools/providers/rag/ -m gate` |
+| Vendor import gates | `python scripts/check_agents_vendor_imports.py` |
+| Full gate | `uv run pytest -m gate -q` |
+
+Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layers §13–§14: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -1606,4 +1715,5 @@ When asked to create a new Intergrax agent:
 8. For Tier-3 hosts, configure governance via `ApplicationEnvironmentProfile` + `RuntimePolicyBundle` — see [Appendix H](#appendix-h--governance-policy--observability-control-plane).
 9. For multi-agent / graph / delegation behavior, read [Appendix I](#appendix-i--orchestration-control-plane) — never wire cross-agent calls inside `agents/`.
 10. For tool/skill catalogs and runtime bridge, read [Appendix J](#appendix-j--tools--skills-control-plane) — enable profiles on environment, not in agent code.
-11. Do **not** create duplicate workflow documentation — update this file if the process changes.
+11. For integration backends and RAG retrieval, read [Appendix K](#appendix-k--integration--rag-control-plane) — wire `IntegrationProfile` in Tier-3 only.
+12. Do **not** create duplicate workflow documentation — update this file if the process changes.

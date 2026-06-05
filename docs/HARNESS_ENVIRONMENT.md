@@ -1,6 +1,6 @@
 # Intergrax Harness Environment
 
-**Last updated:** 2026-06-02 · Phase V + ORCH + TS **Done**; gate **589**
+**Last updated:** 2026-06-02 · Phase V + ORCH + TS + INT + RAG **Done**; gate **600**
 
 Operator and author guide for the **lab harness stack** — Tier-0 integrations, Tier-1 Nexus, Tier-3 `lab_application` wiring, platform skills, and observability. Business agents (Problem Radar, Vendor Discovery) are **Phase K** and out of scope here.
 

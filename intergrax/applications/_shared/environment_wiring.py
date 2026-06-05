@@ -11,7 +11,10 @@ from typing import Any
 from intergrax.applications._shared.environment_conformance import (
     EnvironmentSkillToolConsistencyCheck,
 )
+from intergrax.applications._shared.integration_health_wiring import probe_integration_profile_health
 from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
+from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_stack_for_environment
 from intergrax.applications._shared.modality_wiring import wire_modality_extras
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
 from intergrax.applications._shared.sandbox_wiring import tool_profile_with_sandbox, wire_sandbox_sessions
@@ -21,6 +24,7 @@ from intergrax.applications._shared.tool_wiring import ApplicationToolWiring, bu
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.integrations.contracts.base import HealthStatus
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
@@ -38,6 +42,7 @@ class ApplicationEnvironmentWiring:
     build_context: ApplicationBuildContext
     shadow_manager: ShadowWorkspaceManager | None
     sandbox_manager: SandboxSessionManager | None
+    integration_health: tuple[HealthStatus, ...] = ()
 
 
 def wire_application_environment(
@@ -60,6 +65,13 @@ def wire_application_environment(
     """
     bootstrap_application_integration_catalog()
     resolved_integration = integration_profile or env.integration_profile or manifest.integration_profile
+    integration_health = probe_integration_profile_health(resolved_integration)
+
+    rag_stack = resolve_rag_stack_for_environment(
+        env,
+        integration_profile=resolved_integration,
+        llm_adapter=resolve_llm_adapter(env),
+    )
 
     tool_profile = tool_profile_with_sandbox(env)
     wiring_context = ToolWiringContext.from_integration_profile(resolved_integration)
@@ -70,6 +82,12 @@ def wire_application_environment(
         tool_profile,
         integration_profile=resolved_integration,
         wiring_context=wiring_context,
+        vectorstore_manager=rag_stack.vectorstore_manager if rag_stack is not None else None,
+        embedding_manager=rag_stack.embedding_manager if rag_stack is not None else None,
+        retriever_manager=rag_stack.retriever_manager if rag_stack is not None else None,
+        reranker_manager=rag_stack.reranker_manager if rag_stack is not None else None,
+        rag_profile=rag_stack.profile if rag_stack is not None else None,
+        retrieval_service=rag_stack.retrieval_service if rag_stack is not None else None,
         sandbox_session=sandbox_session,
         websearch_executor=websearch_executor,
     )
@@ -110,4 +128,5 @@ def wire_application_environment(
         build_context=build_context,
         shadow_manager=wire_shadow_workspace(env),
         sandbox_manager=wire_sandbox_sessions(env),
+        integration_health=integration_health,
     )
