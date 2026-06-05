@@ -36,8 +36,6 @@ This document was generated automatically by the Intergrax Project Structure Doc
 - `bundle_intergrax_engine.py`
 - `generate_project_overview.py`
 - `intergrax\__init__.py`
-- `intergrax\chains\__init__.py`
-- `intergrax\chains\langchain_qa_chain.py`
 - `intergrax\chat_agent.py`
 - `intergrax\globals\__init__.py`
 - `intergrax\globals\settings.py`
@@ -568,34 +566,6 @@ Key Responsibilities:
 - Sets up the package structure
 - Registers core components
 - Defines the framework's entry points
-
-### `intergrax\chains\__init__.py`
-
-DESCRIPTION: This module serves as the entry point for Intergrax chain modules, providing a standardized interface and facilitating the loading of specific chain classes.
-
-DOMAIN: Chain Management
-
-KEY RESPONSIBILITIES:
-• Defines the base class for chain modules.
-• Loads available chain classes from submodules.
-• Provides an entry point for registering new chain classes.
-
-### `intergrax\chains\langchain_qa_chain.py`
-
-**Description:** This module provides a flexible QA chain implementation using the LangChain framework, enabling users to build custom chains with hooks for modifying data at various stages.
-
-**Domain:** LLM adapters / RAG logic
-
-**Key Responsibilities:**
-
-* Builds a QA chain with hooks for modifying data at stages:
-	+ `on_before_build_prompt`: Modifies payload before building prompt
-	+ `on_after_build_prompt`: Modifies prompt text after building
-	+ `on_after_llm`: Post-processing of LLM answer text
-* Creates a LangChain Runnable pipeline from the QA chain configuration
-* Provides public API for invoking the chain and retrieving results
-
-**Notes:** The module appears to be well-maintained, with clear documentation and structured code. However, some parts may require further investigation or clarification (e.g., specific implementation details in `_build_context` method).
 
 ### `intergrax\chat_agent.py`
 

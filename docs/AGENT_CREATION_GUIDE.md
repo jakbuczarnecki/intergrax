@@ -1860,7 +1860,7 @@ Run before opening a harness PR (see `scripts/`):
 | `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |
 | `check_integration_vendor_imports.py` | Tier-0 does not import application/agent trees incorrectly |
 | `check_production_chat_agent_imports.py` | No `ChatAgent` on production paths |
-| `check_legacy_package_boundaries.py` | Supervisor/chains not pulled into runtime/applications |
+| `check_legacy_package_boundaries.py` | Supervisor not pulled into runtime/applications |
 
 ---
 
