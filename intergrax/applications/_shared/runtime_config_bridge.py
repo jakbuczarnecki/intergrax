@@ -86,6 +86,7 @@ def materialize_runtime_config(
         production_mode=strict or env.execution_mode.value == "strict",
         tenant_id=request.tenant_id,
         trace_db_path=trace_path,
+        security_profile=env.security_profile,
         modality_profile=modality_profile,
         tool_wiring_context=tool_wiring_context,
         runtime_policies=runtime_policies_for_execution_mode(env.execution_mode),

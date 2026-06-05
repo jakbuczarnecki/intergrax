@@ -50,6 +50,7 @@ def build_nexus_loop_from_environment(
         runtime_events_db_path=runtime_events_db_path,
         task_memory_store=task_memory_store,
         task_memory_db_path=task_memory_db_path,
+        production_mode=env.execution_mode.value == "strict",
     )
     register_application_security_hooks(loop, env.security_profile)
     return loop

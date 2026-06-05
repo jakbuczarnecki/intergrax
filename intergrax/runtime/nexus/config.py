@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from intergrax.integrations.registry.profile import IntegrationProfile
     from intergrax.runtime.events.event_bus import RuntimeEventBus
     from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+    from intergrax.applications.contracts.environment_profile import ApplicationSecurityProfile
 
 from intergrax.rag.profiles.runtime_rag_sync import sync_rag_profile_from_runtime_config
 from intergrax.runtime.nexus.config_sections import (
@@ -287,6 +288,7 @@ class RuntimeConfig:
     # ENVIRONMENT
     # ------------------------------------------------------------------
     production_mode: bool = True
+    security_profile: Optional["ApplicationSecurityProfile"] = None
 
 
     # ------------------------------------------------------------------

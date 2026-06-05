@@ -9,6 +9,7 @@ from intergrax.agents.agent_contract import Agent
 from intergrax.agents.harness_reference_agent import assert_uaep_reference_agent
 from intergrax.agents.uaep_protocol import UAEPAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.runtime.registry.agent_routing_policy import evaluate_agent_routing
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.events.context_skill_recording import record_skill_resolved
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -88,16 +89,42 @@ class AgentRegistry:
     def list_contracts(self) -> List[AgentContract]:
         return [self._contracts[aid] for aid in self.list_agent_ids()]
 
-    def find_by_capability(self, capability: str) -> List[Agent]:
+    def is_routable(self, agent_id: str, *, production_mode: bool = False) -> bool:
+        contract = self.get_contract(agent_id)
+        return evaluate_agent_routing(contract, production_mode=production_mode).routable
+
+    def list_routable_agent_ids(self, *, production_mode: bool = False) -> List[str]:
+        return [
+            agent_id
+            for agent_id in self.list_agent_ids()
+            if self.is_routable(agent_id, production_mode=production_mode)
+        ]
+
+    def find_by_capability(
+        self,
+        capability: str,
+        *,
+        production_mode: bool = False,
+    ) -> List[Agent]:
         matched: List[Agent] = []
         for agent_id, contract in self._contracts.items():
-            if capability in contract.capabilities:
-                matched.append(self._agents[agent_id])
+            if capability not in contract.capabilities:
+                continue
+            if not self.is_routable(agent_id, production_mode=production_mode):
+                continue
+            matched.append(self._agents[agent_id])
         return matched
 
-    def find_best_match(self, task_context: object) -> Optional[Agent]:
+    def find_best_match(
+        self,
+        task_context: object,
+        *,
+        production_mode: bool = False,
+    ) -> Optional[Agent]:
         best: Optional[tuple[float, Agent]] = None
-        for agent in self._agents.values():
+        for agent_id, agent in self._agents.items():
+            if not self.is_routable(agent_id, production_mode=production_mode):
+                continue
             result = agent.can_handle(task_context)
             if not result.matched:
                 continue

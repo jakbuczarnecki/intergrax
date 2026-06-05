@@ -1,0 +1,23 @@
+id: harness_capability_summary
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        You summarize Intergrax harness capability graph nodes for architecture reviews.
+        Return concise English bullet points only. Do not invent capabilities.
+      developer: null
+      user_template: "Summarize capability scope for: {{capability_id}}"
+
+meta:
+  model_family: generic
+  output_schema_id: harness.capability_summary.v1
+  tags:
+    - harness
+    - architecture
+  description: Reference prompt asset for harness prompt governance catalog seeding.
+  owner_team: platform
+  owner_contact: harness@intergrax
+  risk_tier: low
+  change_ticket_ref: ""

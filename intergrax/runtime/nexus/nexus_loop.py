@@ -95,6 +95,7 @@ class NexusLoop:
         checkpoint_store: Optional[SQLiteTaskCheckpointStore] = None,
         notification_adapter: Optional[NotificationAdapter] = None,
         middleware: Optional[MiddlewarePipeline] = None,
+        production_mode: bool = False,
         runtime_event_store: Optional[RuntimeEventPersistence] = None,
         runtime_events_db_path: Optional[Path] = None,
         task_memory_store: Optional[TaskMemoryPersistence] = None,
@@ -148,7 +149,7 @@ class NexusLoop:
             policy=retry_policy or RetryPolicy(),
             middleware=self._middleware,
         )
-        self._router = AgentRouter(registry)
+        self._router = AgentRouter(registry, production_mode=production_mode)
         self._context_manager = context_manager or ContextManager()
         self._graph_executor = graph_executor or GraphExecutor(
             registry,

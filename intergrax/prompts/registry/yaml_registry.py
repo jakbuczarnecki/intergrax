@@ -12,9 +12,10 @@ from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.prompts.schema.prompt_schema import (
     LocalizedContent,
 )
-from intergrax.prompts.storage.yaml_loader import YamlPromptLoader
-from intergrax.prompts.storage.models import LoadedPrompt, PromptNotFound
+from intergrax.prompts.registry.governance_validation import validate_prompt_document_governance
 from intergrax.prompts.registry.pin_config import PromptPinConfig
+from intergrax.prompts.storage.yaml_loader import YamlPromptLoader
+from intergrax.prompts.storage.models import LoadedPrompt, PromptNotFound, PromptValidationError
 
 
 class YamlPromptRegistry:
@@ -64,6 +65,13 @@ class YamlPromptRegistry:
                     continue
 
                 loaded = self._loader.load(f)
+                if loaded.document.meta.owner_team:
+                    validation = validate_prompt_document_governance(loaded.document)
+                    if not validation.valid:
+                        raise PromptValidationError(
+                            f"Governance validation failed for {prompt_id}: "
+                            + "; ".join(validation.reasons)
+                        )
                 self._cache[prompt_id][loaded.document.version] = loaded
 
     # ---------------------------------------------------------------------

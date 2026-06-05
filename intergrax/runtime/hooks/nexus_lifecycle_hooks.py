@@ -33,6 +33,10 @@ def nexus_lifecycle_hook_context(
             "task_state": task.state.value,
             "classification": task.classification,
             "capability": task.context.capability,
+            "tenant_id": task.tenant_id,
+            "user_id": task.user_id,
+            "resource_tenant_id": task.tenant_id,
+            "prompt": task.message,
             **(extra or {}),
         },
     )

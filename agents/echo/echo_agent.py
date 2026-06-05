@@ -12,6 +12,7 @@ from intergrax.agents.reference_harness import (
     default_reference_harness,
 )
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.skills.providers.harness.manifests import HARNESS_TOOL_SMOKE
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
@@ -91,6 +92,11 @@ class EchoAgent(HarnessReferenceAgent):
             skills=[HARNESS_TOOL_SMOKE],
             extra_tools=[],
             risk_level=AgentRiskLevel.LOW,
+            lifecycle_state=AgentLifecycleState.PRODUCTION,
+            production_eligible=True,
+            owner_team="platform",
+            owner_contact="harness@intergrax",
+            runbook_ref="docs/INTERGRAX_IMPLEMENTATION_PLAN.md",
             max_steps=5,
         )
 

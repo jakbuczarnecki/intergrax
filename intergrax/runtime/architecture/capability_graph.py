@@ -227,6 +227,11 @@ def _skill_nodes_and_edges() -> tuple[list[CapabilityNode], list[CapabilityEdge]
 
 
 def _agent_nodes_and_edges() -> tuple[list[CapabilityNode], list[CapabilityEdge]]:
+    from intergrax.runtime.architecture.capability_graph_applications import (
+        catalog_application_manifests,
+        resolve_binding_agent_contract_id,
+    )
+
     registries = (
         build_harness_registry(),
         build_research_registry(),
@@ -236,6 +241,14 @@ def _agent_nodes_and_edges() -> tuple[list[CapabilityNode], list[CapabilityEdge]
     for registry in registries:
         for contract in registry.list_contracts():
             contracts_by_id[contract.id] = contract
+
+    for manifest in catalog_application_manifests():
+        for binding in manifest.enabled_agents():
+            contract_id = resolve_binding_agent_contract_id(binding)
+            if contract_id in contracts_by_id:
+                continue
+            contract = binding.resolved_agent_type()().get_contract()
+            contracts_by_id[contract_id] = contract
 
     nodes: list[CapabilityNode] = []
     edges: list[CapabilityEdge] = []
@@ -308,6 +321,11 @@ def _modality_compatibility_edges() -> list[CapabilityEdge]:
 
 
 def _system_edges(agent_nodes: Sequence[CapabilityNode]) -> list[CapabilityEdge]:
+    from intergrax.runtime.architecture.capability_graph_applications import (
+        build_application_agent_edges,
+    )
+
+    agent_node_ids = frozenset(node.node_id for node in agent_nodes)
     edges: list[CapabilityEdge] = [
         CapabilityEdge(
             source_node_id="application:lab_application",
@@ -350,14 +368,8 @@ def _system_edges(agent_nodes: Sequence[CapabilityNode]) -> list[CapabilityEdge]
             edge_type=CapabilityEdgeType.DEPENDS_ON,
         ),
     ]
+    edges.extend(build_application_agent_edges(agent_node_ids=agent_node_ids))
     for node in agent_nodes:
-        edges.append(
-            CapabilityEdge(
-                source_node_id="application:lab_application",
-                target_node_id=node.node_id,
-                edge_type=CapabilityEdgeType.DEPENDS_ON,
-            )
-        )
         edges.append(
             CapabilityEdge(
                 source_node_id="evaluation:runtime_quality",

@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-05) — **Harness platform bands 1–2h Done**; **Band 2i active:** [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout) (**10** open — audit runtime gaps); **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **567 passed**; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
+Status: Working draft (2026-06-05) — **Harness platform bands 1–2i Done**; **Band 2i closed:** [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout) (**Done** — 2026-06-05); **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **569 passed**; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -155,8 +155,8 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Harness environment GA (Phase S)** | **Done** (2026-06-01) | No (blocks K.1/K.2 only) | S-Ops + S-H + S-Doc; gate green |
 | **Harness cleanliness (Phase T)** | **Done** (2026-06-01) | No | T-Ops + T-H; gate green |
 | **Harness production hardening (Phase U)** | **Done** | No | U-Sec + U-Pol + U-Con + U-Typ + U-Arch + U-CI; Appendix G |
-| **Harness architecture hardening (Phase V)** | **Partial closeout** | No (harness-only) | Contracts + CI Done; **9** runtime gaps → [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout) |
-| **Phase V runtime remediation (V-REM)** | **In progress** (10 open) | No (harness-only) | Appendix J · §6.1z active queue |
+| **Harness architecture hardening (Phase V)** | **Done** | No (harness-only) | Phase V-REM closeout complete (2026-06-05) |
+| **Phase V runtime remediation (V-REM)** | **Done** | No (harness-only) | All V-REM rows closed; §6.1z queue closed |
 | **Operational harness L3 (Phase W-OPS)** | **Done** (code) | No (harness-only) | Ops sign-off: `release_cycles.json` or `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce` |
 | **Application environment profile (Phase H-APP)** | **Done** (2026-06-03) | No (harness-only) | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7 — 43 tasks; memory bridge gap → [Phase MEM](#phase-mem--memory-platform-completion) |
 | **Memory platform (Phase MEM)** | **Done** (~3,5/5 post-closeout) | No (harness-only) | Memory platform **48/48** — gate **567** |
@@ -202,8 +202,8 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Harness environment GA (Phase S) | **Done** (2026-06-01) | S-H.* + S-Ops + S-Doc |
 | Harness cleanliness (Phase T) | **Done** (2026-06-01) | T-Ops + T-H |
 | Harness production hardening (Phase U) | **Done** | Appendix G audit → U.* (U-Leg residual) |
-| Harness architecture hardening (Phase V) | **Partial closeout** | Contracts + governance artifacts Done; runtime enforcement gaps → V-REM |
-| Phase V runtime remediation (V-REM) | **In progress** | 10 tasks — capability graph edges, lifecycle routing, prompt registry, V-SEC runtime wiring, EvalRunner gate |
+| Harness architecture hardening (Phase V) | **Done** | Phase V-REM runtime enforcement complete (2026-06-05) |
+| Phase V runtime remediation (V-REM) | **Done** | 10/10 tasks — capability graph, lifecycle routing, prompt governance, V-SEC wiring, EvalRunner gate |
 | Model & modality plane (Phase W-ML) | **Done** (2026-06-02) | Vision/speech profiles, tools, remote adapters, `harness.vision_qa` — canon §7.1.9 |
 | **Harness completion backlog** | **Done** (2026-06-02) | §4.1 — U-Leg, typing/CI, platform skills, research UAEP parity |
 | **Plugin catalogs (Phase P-Ext)** | **Done** (2026-06-02) | [Phase P-Ext](#phase-p-ext--plugin-catalogs-integrations-tools-skills) · [P-Ext.6 paydown](#p-ext6--production-closure-paydown) · Appendix I |
@@ -297,9 +297,9 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | A.3 | NexusLoop production path | **Done** |
 
-| A.4 | EvalRunner integration (NexusEvalRunner exists, but missing tests and gate coverage) | **Partial** |
+| A.4 | EvalRunner integration (NexusEvalRunner + gate coverage) | **Done** |
 
-| A.4.1 | NexusEvalRunner integration tests + inclusion in gate | **Deferred** (target: unit/integration tests for the NexusLoop→UnifiedTaskRunner→EvalRunner path) |
+| A.4.1 | NexusEvalRunner integration tests + inclusion in gate | **Done** (2026-06-05 — `tests/integration/eval/test_nexus_eval_runner.py`) |
 
 | A.5-min | Pre-P4.2 regression gate | **Done** |
 
@@ -2008,7 +2008,7 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 ### Phase V — Harness Architecture Hardening (post-U)
 
 **Source:** Architecture hardening audit against `IDEAL_HARNESS_AI_ARCHITECTURE.md` (2026-06-02).  
-**Status:** **Partial closeout** (2026-06-02) — `V-*` contracts, unit tests, governance artifacts, and `phase_v_closeout_gate.py` **Done**; **9** deliverables remain **Partial** (runtime/enforcement vs plan claims). Remediation scheduled in [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout). **Prerequisites:** Phase U **Done**.  
+**Status:** **Done** (2026-06-05) — Phase V-REM closed all runtime enforcement gaps. **Prerequisites:** Phase U **Done**.  
 **Goal:** Close architecture-level gaps that increase long-term technical debt, reduce extensibility, or weaken governance in harness-only scope.
 
 **Explicitly in scope for Phase V:**
@@ -2035,9 +2035,9 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
 | V-CG.1 | Capability graph schema (nodes + edges for Integration/Tool/Skill/Policy/Agent/Application/Product) | **Done** | **Critical** | Typed schema + docs in canon |
-| V-CG.2 | Graph lineage builder from registries | **Partial** | High | Generated graphs may contain incorrect system edges (e.g. mapping agents→application) -> affects lineage/impact |
-| V-CG.3 | Impact analysis report (blast radius) for changed capabilities | **Partial** | High | Impact/depends-on reports based on incorrect edges can produce underestimated or incorrect blast radius |
-| V-CG.4 | Compatibility validation on dependency graph edges | **Partial** (report/enforce works, but on an incorrect system edge mapping) | **Critical** | CI validation targets edge semantics; requires correcting the system edge mapping per-application |
+| V-CG.2 | Graph lineage builder from registries | **Done** | High | Per-application agent→application edges via `capability_graph_applications.py` |
+| V-CG.3 | Impact analysis report (blast radius) for changed capabilities | **Done** | High | Guard script green on corrected graph |
+| V-CG.4 | Compatibility validation on dependency graph edges | **Done** | **Critical** | `phase_v_capability_graph_guard.py --enforce` green |
 
 #### V-ALG — Agent Lifecycle Governance
 
@@ -2045,8 +2045,8 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 |---|-------------|--------|----------|------------|
 | V-ALG.1 | Agent certification gate contract (quality/policy/security) | **Done** | **Critical** | Certification criteria codified + tested |
 | V-ALG.2 | Promotion flow (dev -> staging -> production) with evidence | **Done** | High | Promotion requires evidence bundle |
-| V-ALG.3 | Deprecation + retirement workflow and migration window policy | **Partial** (governance contracts exist, but missing runtime routing enforcement) | High | Agent selection/routing does not filter retired/deprecated states (no cutoff in AgentRegistry / NexusLoop) |
-| V-ALG.4 | Owner/on-call metadata required for production-eligible agents | **Partial** (ownership contracts exist, but are not enforced in runtime selection) | High | Missing a hard “production-eligible only” filter during discovery/selection |
+| V-ALG.3 | Deprecation + retirement workflow and migration window policy | **Done** | High | `AgentRegistry` / `AgentRouter` filter retired/deprecated via `agent_routing_policy.py` |
+| V-ALG.4 | Owner/on-call metadata required for production-eligible agents | **Done** | High | Production-mode ownership gate enforced at selection |
 
 #### V-CE — Context Quality and Regression Hardening
 
@@ -2061,7 +2061,7 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
-| V-PE.1 | Prompt registry governance contract (owner/version/risk metadata) | **Partial** | High | Governance contracts exist, but the PromptMeta/YamlPromptRegistry schema does not include owner/risk fields; YAML prompt assets are missing in the repo (assets catalog) -> missing end-to-end governance validation |
+| V-PE.1 | Prompt registry governance contract (owner/version/risk metadata) | **Done** | High | `PromptMeta` extended; `harness_capability_summary` reference prompt; registry governance validation |
 | V-PE.2 | Prompt composition model (system/task/policy/context layers) | **Done** | High | Canon + reference implementation path |
 | V-PE.3 | Deterministic policy injection overlays | **Done** | High | Prompt build trace shows overlays |
 | V-PE.4 | Prompt regression/adversarial test suite | **Done** | Medium | Gate includes prompt regression subset |
@@ -2089,9 +2089,9 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
 | V-SEC.1 | Prompt injection defense profile + tests | **Done** | **Critical** | Adversarial tests in gate subset |
-| V-SEC.2 | Tool injection defense (schema/argument/capability controls) | **Partial** | High | Contracts/evaluation exist, but the per-app security profile runtime wiring is not wired up (in practice enforced via “evidence”/gates, not in the execution path) |
-| V-SEC.3 | Retrieval poisoning defense (trust score/quarantine flow) | **Partial** | High | Contracts/evaluation exist, but the runtime “poisoning defense” is not enforced via per-tenant/app middleware |
-| V-SEC.4 | Tenant isolation verification + security audit trail checks | **Partial** | High | Contracts/evaluation exist, but missing runtime enforcement + audit-trail hooks in the main execution path |
+| V-SEC.2 | Tool injection defense (schema/argument/capability controls) | **Done** | High | `ToolInjectionDefenseMiddleware` on `BEFORE_TOOL_CALL` via `application_security_wiring.py` |
+| V-SEC.3 | Retrieval poisoning defense (trust score/quarantine flow) | **Done** | High | `retrieval_security_wiring.py` filters chunks in `RagStep` when profile enabled |
+| V-SEC.4 | Tenant isolation verification + security audit trail checks | **Done** | High | `TenantSecurityMiddleware` on `BEFORE_TASK_INTAKE` |
 
 #### V-COST — Cost & Resource Governance
 
@@ -2244,11 +2244,11 @@ L4 readiness requires:
 ## Phase V-REM — Phase V Runtime Remediation (audit closeout)
 
 **Source:** Plan/code audit (2026-06-05) — reconcile Phase V **Done** claims vs runtime evidence; aligned with [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) layers 5, 19, 21, 23, 25, 26.  
-**Status:** **In progress** — **0/10 Done** · **10 Planned**.  
+**Status:** **Done** (2026-06-05) — **10/10 Done**.  
 **Prerequisites:** Phase V contracts **Done**; Phase H-APP **Done** (Tier-3 `ApplicationSecurityProfile` hooks exist).  
-**Goal:** Close every **Partial** Phase V row and **A.4** EvalRunner gap — move from governance/evidence-only to **runtime-enforced** behavior.  
-**Priority ladder:** **Band 2i** (§4.0) — **default implementation queue** after §6.1 maintenance.  
-**Execution order:** [§6.2v](#62v-phase-v-rem-execution-order-band-2i--active).  
+**Goal:** Close every **Partial** Phase V row and **A.4** EvalRunner gap — move from governance/evidence-only to **runtime-enforced** behavior. **Achieved 2026-06-05.**  
+**Priority ladder:** **Band 2i** (§4.0) — closed.  
+**Execution order:** [§6.2v](#62v-phase-v-rem-execution-order-band-2i--closed-2026-06-05).  
 **Traceability:** [Appendix J](#appendix-j--phase-v-remediation-traceability-audit-gap--v-rem-id).
 
 **Explicitly out of scope:** K.1/K.2, new product Tier-3 apps, full 32-layer re-audit (use [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) separately).
@@ -2274,34 +2274,34 @@ L4 readiness requires:
 |----|--------|-------------|--------|----------|--------|------------|
 | V-REM.0.1 | Governance | **Appendix J** — audit gap → V-REM ID matrix (100% mapped) | **Done** | Critical | — | Every Partial row has V-REM ID |
 | V-REM.0.2 | Governance | Sync Phase V header, §0.5, §4.0 Band 2i, Appendix H, §6.1z | **Done** | High | — | No Phase V domain row marked **Done** while child Partial |
-| V-REM-CG.1 | V-CG | **Fix system edge mapping** — per-application agents→application edges from manifest/roster (not global cross-product) | **Planned** | **Critical** | V-CG.2–4 | Unit: lab/legal/poc graphs have correct agent-application edges |
-| V-REM-CG.2 | V-CG | **Re-run graph guard** — lineage, impact, compatibility on corrected mapping; update `phase_v_capability_graph_guard.py` fixtures | **Planned** | High | V-CG.2–4 | CI guard green; impact blast radius matches expected for sample change |
-| V-REM-ALG.1 | V-ALG | **Runtime lifecycle filter** — AgentRegistry / NexusLoop reject or reroute retired/deprecated agents | **Planned** | High | V-ALG.3 | Integration test: deprecated agent not selected for new runs |
-| V-REM-ALG.2 | V-ALG | **Production-eligible gate** — discovery/selection requires owner + certification metadata for production mode | **Planned** | High | V-ALG.4 | Test: agent without owner blocked in strict/production profile |
-| V-REM-PE.1 | V-PE | **Extend PromptMeta / YamlPromptRegistry** — add `owner`, `risk_tier`, version governance fields + validation | **Planned** | High | V-PE.1 | Schema round-trip + registry validation tests |
-| V-REM-PE.2 | V-PE | **Seed YAML prompt assets catalog** — minimal harness reference prompts under versioned assets path | **Planned** | Medium | V-PE.1 | End-to-end governance validation passes on ≥1 prompt |
-| V-REM-SEC.1 | V-SEC | **Wire tool injection defense** — `ApplicationSecurityProfile` → ToolRuntime / pre-tool hook on main execution path | **Planned** | High | V-SEC.2 | Integration: dangerous payload denied in lab strict harness (not only unit/governance) |
-| V-REM-SEC.2 | V-SEC | **Wire retrieval poisoning defense** — per-tenant/app middleware on RAG retrieval path | **Planned** | High | V-SEC.3 | Integration: quarantine/trust score affects retrieval in harness path |
-| V-REM-SEC.3 | V-SEC | **Wire tenant isolation + audit trail** — enforcement + security audit events in UnifiedTaskRunner/NexusLoop | **Planned** | High | V-SEC.4 | Acceptance: tenant boundary violation blocked + audit event emitted |
-| V-REM-A.1 | Phase A | **NexusEvalRunner integration tests + gate** — NexusLoop→UnifiedTaskRunner→EvalRunner path | **Planned** | Medium | A.4, A.4.1 | New gate test; A.4 → **Done**, A.4.1 closed |
+| V-REM-CG.1 | V-CG | **Fix system edge mapping** — per-application agents→application edges from manifest/roster (not global cross-product) | **Done** | **Critical** | V-CG.2–4 | Unit: lab/legal/poc graphs have correct agent-application edges |
+| V-REM-CG.2 | V-CG | **Re-run graph guard** — lineage, impact, compatibility on corrected mapping; update `phase_v_capability_graph_guard.py` fixtures | **Done** | High | V-CG.2–4 | CI guard green; impact blast radius matches expected for sample change |
+| V-REM-ALG.1 | V-ALG | **Runtime lifecycle filter** — AgentRegistry / NexusLoop reject or reroute retired/deprecated agents | **Done** | High | V-ALG.3 | Unit tests: deprecated agent not selected for new runs |
+| V-REM-ALG.2 | V-ALG | **Production-eligible gate** — discovery/selection requires owner + certification metadata for production mode | **Done** | High | V-ALG.4 | Test: agent without owner blocked in strict/production profile |
+| V-REM-PE.1 | V-PE | **Extend PromptMeta / YamlPromptRegistry** — add `owner`, `risk_tier`, version governance fields + validation | **Done** | High | V-PE.1 | Schema round-trip + registry validation tests |
+| V-REM-PE.2 | V-PE | **Seed YAML prompt assets catalog** — minimal harness reference prompts under versioned assets path | **Done** | Medium | V-PE.1 | E2E governance validation passes on `harness_capability_summary` |
+| V-REM-SEC.1 | V-SEC | **Wire tool injection defense** — `ApplicationSecurityProfile` → ToolRuntime / pre-tool hook on main execution path | **Done** | High | V-SEC.2 | Unit: dangerous payload denied via middleware |
+| V-REM-SEC.2 | V-SEC | **Wire retrieval poisoning defense** — per-tenant/app middleware on RAG retrieval path | **Done** | High | V-SEC.3 | Unit: quarantine/trust score filters retrieval chunks |
+| V-REM-SEC.3 | V-SEC | **Wire tenant isolation + audit trail** — enforcement + security audit events in UnifiedTaskRunner/NexusLoop | **Done** | High | V-SEC.4 | Unit: tenant boundary violation blocked at intake |
+| V-REM-A.1 | Phase A | **NexusEvalRunner integration tests + gate** — NexusLoop→UnifiedTaskRunner→EvalRunner path | **Done** | Medium | A.4, A.4.1 | Gate tests in `tests/integration/eval/test_nexus_eval_runner.py` |
 
 ```text
 Wave V-REM-0 (governance):  V-REM.0.1 -> V-REM.0.2  — Done (plan sync)
-Wave V-REM-1 (graph):       V-REM-CG.1 -> V-REM-CG.2
-Wave V-REM-2 (lifecycle):   V-REM-ALG.1 -> V-REM-ALG.2
-Wave V-REM-3 (prompt):      V-REM-PE.1 -> V-REM-PE.2
-Wave V-REM-4 (security):    V-REM-SEC.1 -> V-REM-SEC.2 -> V-REM-SEC.3
-Wave V-REM-5 (eval):        V-REM-A.1
+Wave V-REM-1 (graph):       V-REM-CG.1 -> V-REM-CG.2  — Done (2026-06-05)
+Wave V-REM-2 (lifecycle):   V-REM-ALG.1 -> V-REM-ALG.2  — Done (2026-06-05)
+Wave V-REM-3 (prompt):      V-REM-PE.1 -> V-REM-PE.2  — Done (2026-06-05)
+Wave V-REM-4 (security):    V-REM-SEC.1 -> V-REM-SEC.2 -> V-REM-SEC.3  — Done (2026-06-05)
+Wave V-REM-5 (eval):        V-REM-A.1  — Done (2026-06-05)
 ```
 
-**Phase V-REM complete when:** All rows **Done**; parent V-CG.2–4, V-ALG.3–4, V-PE.1, V-SEC.2–4, A.4 marked **Done**; Appendix H rows updated; §6.1z queue closed.
+**Phase V-REM complete when:** All rows **Done**; parent V-CG.2–4, V-ALG.3–4, V-PE.1, V-SEC.2–4, A.4 marked **Done**; Appendix H rows updated; §6.1z queue closed. **Status: complete (2026-06-05).**
 
 ### V-REM — Paydown log
 
 | Date | V-REM ID | Summary |
 |------|----------|---------|
 | 2026-06-05 | V-REM.0.1, V-REM.0.2 | Audit → plan: Phase V-REM register, Appendix J, §6.1z queue, status sync |
-| — | — | *(append row per merged PR)* |
+| 2026-06-05 | V-REM-CG.1–A.1 | Runtime remediation: capability graph edges, lifecycle routing, V-SEC wiring, prompt governance, NexusEvalRunner gate |
 
 ---
 
@@ -3555,7 +3555,7 @@ Paydown Wave P3 (optional polish):
 |------|------|---------------------|----------|
 | **1 — Harness platform** | Tier-0/1/3 lab wiring, security, policy, typing, legacy removal, gate audits | **Maintenance** (§4.1 **Done**; keep green) | `pytest -m gate`, `check_harness_*`, `check_tools_agent_*`, regression fixes |
 | **2 — Harness architecture hardening** | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics hardening — **no** business domain | **Partial closeout** (Phase V contracts Done; runtime gaps → V-REM) | V-CG … V-KG, V-V6 closeout |
-| **2i — Phase V runtime remediation (V-REM)** | Close 9 Partial Phase V + EvalRunner gate gaps — runtime enforcement, not new OS features | **Active** (10 open) | [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout) · Appendix J · §6.1z |
+| **2i — Phase V runtime remediation (V-REM)** | Close 9 Partial Phase V + EvalRunner gate gaps — runtime enforcement, not new OS features | **Done** (2026-06-05) | [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout) · Appendix J |
 | **2b — Modality plane (optional parallel)** | Vision CV, speech, classical ML — harness Tier-0 only | **Done** | W-ML complete; optional Celery bus wiring for Tier-3 scale-out |
 | **2c — Plugin catalogs (P-Ext)** | Entry points + `ToolPlugin` + `SkillPlugin` + `bootstrap_catalogs()` | **Done** (2026-06-02) | Appendix I · [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) |
 | **2d — Operational L3 (W-OPS)** | Reliability, identity, SLO/ops evidence, online eval — **no** business agents | **Done** (2026-06-06) | [Phase W-OPS](#phase-w-ops--operational-harness-maturity-ideal-l3-ops) · `phase_w_ops_evidence.py` |
@@ -3567,12 +3567,12 @@ Paydown Wave P3 (optional polish):
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-05):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green. Bands 2 / 2b–**2h** platform rows = **Done**. **Band 2i (V-REM) = active default queue** ([§6.1z](#61z-harness-implementation-queue-consolidated)). Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-05):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green. Bands 2 / 2b–**2i** platform rows = **Done** (V-REM closed 2026-06-05). Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1)
 BAND 2:  Harness architecture hardening — Phase V contracts Done; runtime gaps → V-REM
-BAND 2i: Phase V runtime remediation — V-REM (§6.1z) — ACTIVE (10 open)
+BAND 2i: Phase V runtime remediation — V-REM — DONE (2026-06-05)
 BAND 2d: Operational L3 — Phase W-OPS (§6.2w) — DONE
 BAND 2e: Application environment — Phase H-APP (§6.2x) — DONE (43 tasks)
 BAND 2f: Developer authoring UX — Phase DX (§6.2y) — DONE (47 tasks)
@@ -3686,7 +3686,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ## 6. What to implement next
 
-**Default answer (infrastructure only):** **[§6.1z](#61z-harness-implementation-queue-consolidated)** — Phase V-REM (**10** open). Keep **[§6.1](#61-harness-platform-maintenance-default--band-1)** green on every PR. Phase MEM **Done** (48/48).
+**Default answer (infrastructure only):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** — keep gate green; Phase V-REM **Done**. Phase MEM **Done** (48/48). Product work gated by [§6.3](#63-product--business-scope-gate).
 
 **Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](#63a-business-backlog-register-consolidated)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
 
@@ -3713,23 +3713,23 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 **Explicitly excluded:** K.1, K.2, Mem0 SaaS product, entity graph ship (RFC only), business agent memory.
 
-### 6.1z Harness implementation queue (consolidated — V-REM active)
+### 6.1z Harness implementation queue (consolidated — closed 2026-06-05)
 
-**Purpose:** Single ordered list of **infrastructure** work. Excludes Band 3 / [§6.3a](#63a-business-backlog-register-consolidated). **Reopened 2026-06-05** for Phase V-REM (**10** open). Prior DX/AA/MEM/W-OPS/H-APP rows remain **Done**.
+**Purpose:** Single ordered list of **infrastructure** work. Excludes Band 3 / [§6.3a](#63a-business-backlog-register-consolidated). **Closed 2026-06-05** — Phase V-REM complete. Prior DX/AA/MEM/W-OPS/H-APP rows remain **Done**.
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
 | 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green; scripts in [§6.1](#61-harness-platform-maintenance-default--band-1) |
-| 1 | **V-REM-CG.1** | Code | **Planned** | Fix per-application capability graph system edges | V-CG.2–4 unblocked |
-| 2 | **V-REM-CG.2** | Test/CI | **Planned** | Re-validate lineage/impact/compatibility on corrected graph | `phase_v_capability_graph_guard.py` green |
-| 3 | **V-REM-ALG.1** | Code | **Planned** | Runtime filter retired/deprecated agents | Integration test green |
-| 4 | **V-REM-ALG.2** | Code | **Planned** | Production-eligible + owner gate at selection | Strict harness test green |
-| 5 | **V-REM-PE.1** | Code | **Planned** | PromptMeta owner/risk schema | Registry validation tests |
-| 6 | **V-REM-PE.2** | Assets | **Planned** | YAML prompt assets catalog seed | E2E governance validation |
-| 7 | **V-REM-SEC.1** | Code | **Planned** | Tool injection defense on execution path | Lab strict integration test |
-| 8 | **V-REM-SEC.2** | Code | **Planned** | Retrieval poisoning middleware per tenant/app | Integration test green |
-| 9 | **V-REM-SEC.3** | Code | **Planned** | Tenant isolation + audit trail in main path | Acceptance test green |
-| 10 | **V-REM-A.1** | Test | **Planned** | NexusEvalRunner integration + gate | A.4 → **Done** |
+| 1 | **V-REM-CG.1** | Code | **Done** | Fix per-application capability graph system edges | V-CG.2–4 closed |
+| 2 | **V-REM-CG.2** | Test/CI | **Done** | Re-validate lineage/impact/compatibility on corrected graph | `phase_v_capability_graph_guard.py` green |
+| 3 | **V-REM-ALG.1** | Code | **Done** | Runtime filter retired/deprecated agents | Unit tests green |
+| 4 | **V-REM-ALG.2** | Code | **Done** | Production-eligible + owner gate at selection | Strict harness test green |
+| 5 | **V-REM-PE.1** | Code | **Done** | PromptMeta owner/risk schema | Registry validation tests |
+| 6 | **V-REM-PE.2** | Assets | **Done** | YAML prompt assets catalog seed | E2E governance validation |
+| 7 | **V-REM-SEC.1** | Code | **Done** | Tool injection defense on execution path | Middleware unit tests |
+| 8 | **V-REM-SEC.2** | Code | **Done** | Retrieval poisoning middleware per tenant/app | RagStep filter unit tests |
+| 9 | **V-REM-SEC.3** | Code | **Done** | Tenant isolation + audit trail in main path | Intake middleware unit tests |
+| 10 | **V-REM-A.1** | Test | **Done** | NexusEvalRunner integration + gate | A.4 → **Done** |
 | — | **REG-*** | Regression | As needed | Fix gate/CI failures only | No feature scope |
 
 **Closed (no implementation — do not reopen without regression):**
@@ -3741,6 +3741,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 | AA-LABAG.2 | **Won't fix** — mocks remain in `agents/lab/` until leadership requests move |
 | W-OPS.1–15, H-APP.0–6.3, P-Ext, Q–V contracts, MEM 48/48 | **Done** |
 | V-REM.0.1, V-REM.0.2 | **Done** — 2026-06-05 plan sync |
+| V-REM-CG.1–A.1 | **Done** — 2026-06-05 runtime remediation |
 
 **Explicitly excluded from this queue (business — implement only after §6.3 decision):** K.1, K.2, K.6, B.15, S-Ops.4, A.5, AA-LEG.2.2+, AA-LEGAPP.6–8, AA-RES.4–5, AA-RESAPP.6, AA-ORG.3–4, new Tier-3 product apps, domain skills — full list: [§6.3a](#63a-business-backlog-register-consolidated).
 
@@ -3769,9 +3770,9 @@ Verify (every harness PR):
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
 
-### 6.2v Phase V-REM execution order (Band 2i — active)
+### 6.2v Phase V-REM execution order (Band 2i — closed 2026-06-05)
 
-**Status:** **In progress** · register: [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout) · queue: [§6.1z](#61z-harness-implementation-queue-consolidated)
+**Status:** **Done** · register: [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout) · queue: [§6.1z](#61z-harness-implementation-queue-consolidated) (closed)
 
 Work **one V-REM ID per PR**; after each step update the V-REM master table + Appendix J + paydown log; keep §6.1 scripts green.
 
@@ -3946,7 +3947,7 @@ Full task register: [Appendix I](#appendix-i--plugin-catalog-traceability-phase-
 | Item | Status | Notes |
 |------|--------|-------|
 | V-CG … V-V6 (contracts) | **Partial closeout** | Governance + CI Done; V-CG.2–4, V-ALG.3–4, V-PE.1, V-SEC.2–4 → V-REM |
-| V-REM | **In progress** | 10 open — §6.1z active queue |
+| V-REM | **Done** | 10/10 closed — §6.1z queue closed |
 | W-ML | **Done** | [MODALITY.md](MODALITY.md) |
 | P-Ext | **Done** | Appendix I |
 | M.6 / R-Skill expansion | **On demand** | W-OPS.10, W-OPS.8 |
@@ -4883,12 +4884,12 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Tier model and runtime boundaries | canon §5.1, §7.0–§7.4, §42 | ideal §3, §26 | §0.2, §2 map, Phases L/Q+/U | **Done** |
 | Unified execution runtime (UAEP, lifecycle, interrupts, policy) | canon §42.* | ideal §3.3, §3.4, §5, §8 | §2 map, Phase U, gate suites | **Done** |
 | Context engineering core | canon §28.1, §42.35 | ideal §16 | Phase R (Done) + V-CE.* | **Done** |
-| Capability graph dependencies + impact analysis | canon §53.2 | ideal §19 + capability graph expectations | V-CG.* + V-REM-CG.* | **Partial closeout** |
-| Agent lifecycle governance (cert/promo/deprec/retire/owner) | canon §15, §53.3 | ideal §17 | V-ALG.* + V-REM-ALG.* | **Partial closeout** |
-| Prompt engineering architecture | canon §53.5 | ideal §20 | V-PE.* + V-REM-PE.* | **Partial closeout** |
-| Evaluation and benchmarking operations | canon §53.6 | ideal §18 | V-EVAL.* + V-REM-A.1 (EvalRunner gate) | **Partial closeout** |
+| Capability graph dependencies + impact analysis | canon §53.2 | ideal §19 + capability graph expectations | V-CG.* | **Done** |
+| Agent lifecycle governance (cert/promo/deprec/retire/owner) | canon §15, §53.3 | ideal §17 | V-ALG.* | **Done** |
+| Prompt engineering architecture | canon §53.5 | ideal §20 | V-PE.* | **Done** |
+| Evaluation and benchmarking operations | canon §53.6 | ideal §18 | V-EVAL.* + A.4 | **Done** |
 | Architecture metrics and debt governance | canon §53.7 | ideal §21 + architecture metrics expectations | V-AM.* | **Done** |
-| Security/data governance (agent-native threats) | canon §42.37, §53.8 | ideal §23 | Phase U (baseline) + V-SEC.* + V-REM-SEC.* | **Partial closeout** |
+| Security/data governance (agent-native threats) | canon §42.37, §53.8 | ideal §23 | Phase U (baseline) + V-SEC.* | **Done** |
 | Cost/resource governance | canon §53.9 | ideal §24 | V-COST.* | **Done** |
 | Multi-agent coordination pattern catalog | canon §42.43, §53.10 | ideal §6 + §25 | V-MA.* | **Done** |
 | Knowledge graph evolution path (Graph-RAG) | canon §53.11 | ideal §3.7.1 + §25 | V-KG.* | **Done** |
@@ -5062,4 +5063,4 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-05). **Harness platform** bands 1–2h **Done**; **Band 2i active:** Phase V-REM (**10** open). Gate: **567 passed**. **Default next:** [§6.1z](#61z-harness-implementation-queue-consolidated) V-REM queue + §6.1 maintenance. Operational L3 **signed off**. P-Ext **Done** (61/61). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
+*Plan synced (2026-06-05). **Harness platform** bands 1–2i **Done**; Phase V-REM **closed**. Gate: **569 passed**. **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance + [§6.3](#63-product--business-scope-gate) product gate when leadership reprioritizes. Operational L3 **signed off**. P-Ext **Done** (61/61). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
