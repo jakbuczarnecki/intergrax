@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework — proprietary and confidential.
 
-"""Catalog-backed tool planner (Phase Q+-L.2, T-Ops.5) — no ``ToolsAgent`` wrapper."""
+"""Catalog-backed tool planner (Phase Q+-L.2, T-Ops.5)."""
 
 from __future__ import annotations
 
@@ -23,8 +23,7 @@ class CatalogToolPlanner(ToolPlannerTrackable):
     """
     Tier-1 catalog planner implementing :class:`ToolPlannerProtocol`.
 
-    Uses :class:`~intergrax.runtime.nexus.tools.tool_planning_service.ToolPlanningService`
-    instead of legacy :class:`~intergrax.tools.tools_agent.ToolsAgent`.
+    Uses :class:`~intergrax.runtime.nexus.tools.tool_planning_service.ToolPlanningService`.
     """
 
     _service: ToolPlanningService

@@ -313,7 +313,7 @@ The **Tool Library** (`intergrax/tools/`) provides:
 | **Dual export** | Same catalog entry → OpenAI function schema, MCP tool, and UAEP `ToolRequest`. |
 | **Unified model** | RAG and web search are catalog tools (`rag.retrieve`, `websearch.query`) — legacy `use_rag` / `use_websearch` map automatically. |
 
-**Engine today:** `ToolContract`, `ToolRegistry`, `RuntimeToolInvoker`, `ToolsAgent`.  
+**Engine today:** `ToolContract`, `ToolRegistry`, `RuntimeToolInvoker`, `CatalogToolPlanner`.  
 **Catalog providers (Phase O Done):** full first-party catalog wired end-to-end in reference applications (`tool_wiring.py` → `ApplicationBuildContext` → agent `RuntimeConfig`). Legacy `use_rag` / `use_websearch` remain as compatibility shims.
 
 ```python
@@ -398,7 +398,7 @@ Agents call language models through **`LLMAdapter`** — not OpenAI/Anthropic SD
 |----------|---------|
 | **Unified contract** | `generate_messages`, `stream_messages`, optional `generate_with_tools` / `generate_structured`. |
 | **Lazy registry** | `LLMAdapterRegistry.create("openai")` loads only the provider you need. |
-| **Tool-ready** | OpenAI, Claude, Azure, Gemini, Mistral, and Bedrock (Anthropic) support native tool loops for `ToolsAgent`. |
+| **Tool-ready** | OpenAI, Claude, Azure, Gemini, Mistral, and Bedrock (Anthropic) support native tool loops for `CatalogToolPlanner`. |
 | **Usage tracking** | Per-`run_id` token and latency stats for runtime observability. |
 | **Outside integrations** | LLM providers are **not** Integration Library slugs (architecture §5.2.2). |
 

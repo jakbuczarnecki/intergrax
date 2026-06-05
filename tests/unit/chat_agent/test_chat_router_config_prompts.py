@@ -1,36 +1,21 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
+
+"""Chat router YAML prompt assets (no legacy chat_router module)."""
 
 from __future__ import annotations
 
 import pytest
 
-from intergrax.legacy.chat_router import ChatRouterConfig
-
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 
 pytestmark = pytest.mark.unit
 
 
-def test_ensure_prompts_loads_from_yaml() -> None:
-    cfg = ChatRouterConfig(
-        tools_description="",
-        general_description="",
-    )
+def test_chat_router_general_and_tool_prompts_load_from_yaml() -> None:
+    registry = YamlPromptRegistry.create_default(load=True)
 
-    cfg.ensure_prompts()
+    general = (registry.resolve_localized("chat_router_general").system or "").strip()
+    tools = (registry.resolve_localized("chat_router_tool").system or "").strip()
 
-    assert cfg.general_description
-    assert cfg.tools_description
-
-
-def test_ensure_prompts_preserves_existing_values() -> None:
-    cfg = ChatRouterConfig(
-        tools_description="CUSTOM_TOOLS",
-        general_description="CUSTOM_GENERAL",
-    )
-
-    cfg.ensure_prompts()
-
-    assert cfg.tools_description == "CUSTOM_TOOLS"
-    assert cfg.general_description == "CUSTOM_GENERAL"
+    assert general
+    assert tools

@@ -160,18 +160,18 @@ class RuntimeConfig:
     #   - "required": runtime must use at least one tool.
     tools_mode: ToolChoiceMode = "auto"
 
-    # Determines how much contextual information the tools agent receives:
+    # Determines how much contextual information the tool planner receives:
     #
     #   - "current_message_only":
-    #       ToolsAgent sees only the newest user query.
+    #       Planner sees only the newest user query.
     #       Useful for strict function-calling, cost optimization
     #       and predictable single-turn behavior.
     #
     #   - "conversation":
-    #       ToolsAgent sees full conversation history up to this point.
+    #       Planner sees full conversation history up to this point.
     #
     #   - "full":
-    #       ToolsAgent receives the same context as the LLM:
+    #       Planner receives the same context as the LLM:
     #       system → profile → history → RAG → websearch.
     #
     tools_context_scope: ToolsContextScope = ToolsContextScope.CURRENT_MESSAGE_ONLY

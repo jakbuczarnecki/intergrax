@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Harness platform bands 1–2p Done**; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; **Orchestration (ORCH)**, **Tools/skills (TS)**, **Integration (INT)**, **RAG closeout (RAG) Done**; **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **623 passed**; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
+Status: Working draft (2026-06-02) — **Harness platform bands 1–2p Done**; **Phase CLEAN closed**; **Band 2q (Phase AS) = default implementation queue**; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; **Orchestration (ORCH)**, **Tools/skills (TS)**, **Integration (INT)**, **RAG**, **CTX**, **LEG**, **PE**, **CLEAN** closeouts **Done**; **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green after CLEAN; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -35,6 +35,8 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | RAG audit closeout (runtime bridge) | [Phase RAG](#phase-rag--rag-retrieval-control-plane-closeout) · **§6.1e** · Band **2m** · **Appendix K** §K.5 |
 | Context engineering closeout (runtime + Nexus wiring) | [Phase CTX](#phase-ctx--context-engineering-control-plane-closeout) · **§6.1f** · Band **2n** · **Appendix L** |
 | Prompt registry closeout (runtime + environment wiring) | [Phase PE](#phase-pe--prompt-registry-control-plane-closeout) · **§6.1i** · Band **2p** · **Appendix M** |
+| Legacy module closeout (chat_router, tools_agent, chains) | [Phase CLEAN](#phase-clean--legacy-module-closeout) · **§6.1j** |
+| Agent assembly closeout (contracts, capabilities, lifecycle) | [Phase AS](#phase-as--agent-assembly-control-plane-closeout) · **§6.1k** · Band **2q** · AUDIT_MAP §18 |
 | Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
 | Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
 | Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
@@ -176,7 +178,9 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **RAG closeout (Phase RAG)** | **Done** (Band 2m) | No (harness-only) | RAG-1 — [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) |
 | **Context engineering closeout (Phase CTX)** | **Done** (Band 2n) | No (harness-only) | CTX-1–2 — [§6.1f](#61f-harness-implementation-queue--context-engineering-closeout-closed) |
 | **Prompt registry closeout (Phase PE)** | **Done** (Band 2p) | No (harness-only) | PE-1–3 — [§6.1i](#61i-harness-implementation-queue--prompt-registry-closeout-closed) |
-| Regression gate | **623 passed** | No | Must stay green after each harness PR |
+| **Legacy module closeout (Phase CLEAN)** | **Done** | No (harness-only) | CLEAN-1–4 — [§6.1j](#61j-harness-implementation-queue--legacy-module-closeout-closed) |
+| **Agent assembly closeout (Phase AS)** | **Next** (Band 2q) | No (harness-only) | AS-1–3 — [§6.1k](#61k-harness-implementation-queue--agent-assembly-closeout) |
+| Regression gate | **628 passed** | No | Must stay green after each harness PR |
 
 ---
 
@@ -3574,7 +3578,7 @@ Paydown Wave P3 (optional polish):
 
 | Band | What | Status (2026-06-05) | Examples |
 |------|------|---------------------|----------|
-| **1 — Harness platform** | Tier-0/1/3 lab wiring, security, policy, typing, legacy removal, gate audits | **Maintenance** (§4.1 **Done**; keep green) | `pytest -m gate`, `check_harness_*`, `check_tools_agent_*`, regression fixes |
+| **1 — Harness platform** | Tier-0/1/3 lab wiring, security, policy, typing, legacy removal, gate audits | **Maintenance** (§4.1 **Done**; keep green) | `pytest -m gate`, `check_harness_*`, `check_legacy_modules_removed.py`, regression fixes |
 | **2 — Harness architecture hardening** | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics hardening — **no** business domain | **Done** (2026-06-05) | V-CG … V-KG, V-V6 closeout · V-REM |
 | **2i — Phase V runtime remediation (V-REM)** | Close 9 Partial Phase V + EvalRunner gate gaps — runtime enforcement, not new OS features | **Done** (2026-06-05) | [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout) · Appendix J |
 | **2b — Modality plane (optional parallel)** | Vision CV, speech, classical ML — harness Tier-0 only | **Done** | W-ML complete; optional Celery bus wiring for Tier-3 scale-out |
@@ -3591,6 +3595,7 @@ Paydown Wave P3 (optional polish):
 | **2n — Context engineering closeout (CTX)** | `context_runtime_bridge`, `context_wiring`, Nexus `ContextManager` wire — **no** business agents | **Done** (2026-06-02) | [Phase CTX](#phase-ctx--context-engineering-control-plane-closeout) · **§6.1f** · **§6.2bf** |
 | **2o — Legacy tool plan closeout (LEG)** | `tool_ids` canonical path; gateway/engine planner migration — **no** business agents | **Done** (2026-06-02) | [Phase LEG](#phase-leg--legacy-tool-plan-boolean-closeout) · **§6.1h** |
 | **2p — Prompt registry closeout (PE)** | `PromptProfile`, `prompt_runtime_bridge`, `prompt_wiring`, Appendix M — **no** business agents | **Done** (2026-06-02) | [Phase PE](#phase-pe--prompt-registry-control-plane-closeout) · **§6.1i** |
+| **2q — Agent assembly closeout (AS)** | Agent contract conformance, capability/skill resolution, lifecycle state — **no** business agents | **Next** | [Phase AS](#phase-as--agent-assembly-control-plane-closeout) · **§6.1k** · AUDIT_MAP §18 |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -3614,6 +3619,8 @@ BAND 2m: RAG closeout — Phase RAG (§6.1e) — DONE (RAG-1)
 BAND 2n: Context engineering closeout — Phase CTX (§6.1f) — DONE (CTX-1 → CTX-2)
 BAND 2o: Legacy tool plan closeout — Phase LEG (§6.1h) — DONE (LEG-1 → LEG-3)
 BAND 2p: Prompt registry closeout — Phase PE (§6.1i) — DONE (PE-1 → PE-3)
+BAND 2q: Agent assembly closeout — Phase AS (§6.1k) — NEXT (AS-1 → AS-3)
+DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
 DONE:    Harness completion backlog (§4.1) — 2026-06-02
@@ -3959,13 +3966,55 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 | PE-4 | PE4 | **Nexus injection** — `prompt_registry_resolver`; `tools_step`, `tool_planning_prompts`, `engine_plan_models`, `engine_planner_messages` use `RuntimeContext.prompt_registry` | **Done** | `prompt_registry_resolver.py`, Nexus steps/planner | `test_tools_step_prompt_registry.py` |
 | PE-DOC.1 | PE0 | **Appendix M** — prompt registry control plane (§M.1–M.6) | **Done** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
 
-**Residual:** legacy paths only (`legacy/chat_router.py`, `tools_agent.py` deprecation shim) — not on Tier-3 host build path. `intergrax/chains` **removed** (2026-06-02).
+**Residual:** none on Tier-3 host build path. Legacy YAML prompt assets (`chat_router*`, `tools_agent_*`) remain as catalog files only.
+
+---
+
+## Phase CLEAN — Legacy module closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (CLEAN-1–4)
+
+**Audit basis:** Phase U-Leg residual; `scripts/check_legacy_modules_removed.py`; prior `check_tools_agent_*` audits merged.
+
+**Priority ladder:** closeout between Band 2p and 2q; default queue = **Band 2q** [Phase AS](#phase-as--agent-assembly-control-plane-closeout).
+
+### CLEAN — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| CLEAN-1 | CLEAN1 | **Remove `legacy/chat_router.py`** — YAML assets tested without runtime module | **Done** | `tests/unit/chat_agent/` | prompt YAML tests green |
+| CLEAN-2 | CLEAN2 | **Remove `tools/tools_agent.py`** — `CatalogToolPlanner` + `ToolPlanningService` canonical | **Done** | `catalog_tool_planner.py`, `tool_planning_service.py` | `test_catalog_tool_planner.py` |
+| CLEAN-3 | CLEAN3 | **Unified CI audit** — `check_legacy_modules_removed.py` replaces `check_tools_agent_*` | **Done** | `scripts/`, `.github/workflows/unit-tests.yml` | audit script green in CI |
+| CLEAN-4 | CLEAN4 | **Docs sync** — plan, HARNESS_ENVIRONMENT, AGENT_CREATION_GUIDE, README, TOOLS | **Done** | `docs/*` | no stale `ToolsAgent` production paths |
+
+**Retained (not CLEAN scope):** `ToolInvocationPlan.from_legacy()` + deprecation tests; `EnginePlan.use_rag`/`use_websearch` on LLM schema; `intergrax/legacy/rag_answers/` archive with import guard; diagnostic type names (`CoreLLMUsedToolsAgentAnswerDiagV1`).
+
+---
+
+## Phase AS — Agent assembly control plane closeout
+
+**Status:** **Next** (Band 2q) — **0/4** deliverables Done
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §18; ideal model §17 in [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md).
+
+**Priority ladder:** **Band 2q** (§4.0) — **default implementation queue** after Phase CLEAN; then **§6.1** maintenance.
+
+### AS — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| AS-DOC.1 | AS0 | **Appendix N** — agent assembly control plane (contract, capabilities, `skill_ids`, lifecycle) | **Pending** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| AS-1 | AS1 | **`agent_assembly_resolver`** — contract metadata validation at register time | **Pending** | `agents/registry/`, `contracts/` | unit tests + gate |
+| AS-2 | AS2 | **Lifecycle state on `AgentContract`** — draft/experimental/certified/deprecated/retired enforcement | **Pending** | `contracts/`, `AgentRegistry` | registry tests |
+| AS-3 | AS3 | **`skill_ids` → `allowed_tools` resolution audit** — CI script + docs cross-ref | **Pending** | `scripts/`, `AgentRegistry` | audit script in CI |
+
+**Explicitly excluded:** new business agents (K.1/K.2), Legal domain steps, product-only contract variants — [§6.3a](#63a-business-backlog-register-consolidated).
 
 ---
 
 ## 6. What to implement next
 
-**Default answer (infrastructure only):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** — keep gate green. Phase PE **Done**. Phase LEG **Done**. Phase CTX **Done**. Phase INT + RAG **Done**. Phase TS **Done**. Phase ORCH **Done**. GOV-AUDIT **Done**. Phase V-REM **Done**. Phase MEM **Done** (48/48). Product work gated by [§6.3](#63-product--business-scope-gate).
+**Default answer (infrastructure only):** **[Band 2q — Phase AS](#phase-as--agent-assembly-control-plane-closeout)** — [§6.1k](#61k-harness-implementation-queue--agent-assembly-closeout). Between AS PRs: **[§6.1](#61-harness-platform-maintenance-default--band-1)** — keep gate green. Phase CLEAN **Done**. Phase PE **Done**. Phase LEG **Done**. Phase CTX **Done**. Phase INT + RAG **Done**. Phase TS **Done**. Phase ORCH **Done**. GOV-AUDIT **Done**. Phase V-REM **Done**. Phase MEM **Done** (48/48). Product work gated by [§6.3](#63-product--business-scope-gate).
 
 **Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](#63a-business-backlog-register-consolidated)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
 
@@ -3983,6 +4032,36 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 | 3 | **PE-2** | Code | **Done** | `prompt_wiring` + `PromptRegistryProtocol` | `test_prompt_wiring.py` |
 | 4 | **PE-3** | Code | **Done** | environment + runtime context wire | gate green |
 | 5 | **PE-4** | Code | **Done** | Nexus prompt registry injection | `test_tools_step_prompt_registry.py` |
+
+### 6.1j Harness implementation queue — legacy module closeout (closed)
+
+**Purpose:** Single ordered list for **Phase CLEAN** (post-2p closeout). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **CLEAN-1** | Code | **Done** | Remove `chat_router.py`; YAML-only tests | `test_chat_agent_prompts_yaml.py` |
+| 2 | **CLEAN-2** | Code | **Done** | Remove `tools_agent.py`; planner tests | `test_catalog_tool_planner.py` |
+| 3 | **CLEAN-3** | CI | **Done** | `check_legacy_modules_removed.py` in CI | workflow green |
+| 4 | **CLEAN-4** | Docs | **Done** | Plan + harness docs sync | no stale production refs |
+
+**Suggested PR order (complete):** CLEAN-1 → CLEAN-2 → CLEAN-3 → CLEAN-4.
+
+### 6.1k Harness implementation queue — agent assembly closeout
+
+**Purpose:** Single ordered list for **Phase AS** (Band 2q). **Active** — default implementation queue.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **AS-DOC.1** | Docs | **Pending** | Appendix N + cross-refs | Author map complete |
+| 2 | **AS-1** | Code | **Pending** | `agent_assembly_resolver` | register-time validation tests |
+| 3 | **AS-2** | Code | **Pending** | Lifecycle state on `AgentContract` | registry tests |
+| 4 | **AS-3** | CI | **Pending** | `skill_ids` resolution audit script | CI green |
+
+**Suggested PR order:** AS-DOC.1 → AS-1 → AS-2 → AS-3.
+
+**Explicitly excluded:** K.1, K.2, new product agents, domain-only contract packs — [§6.3a](#63a-business-backlog-register-consolidated).
 
 ### 6.1f Harness implementation queue — context engineering closeout (closed)
 
@@ -4123,8 +4202,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 Verify (every harness PR):
   uv run pytest -m gate -q
   python scripts/check_harness_no_getattr.py
-  python scripts/check_tools_agent_imports.py
-  python scripts/check_tools_agent_run.py
+  python scripts/check_legacy_modules_removed.py
   python scripts/check_legacy_tool_plan_booleans.py
   python scripts/check_plugin_catalog.py
   uv run python scripts/phase_w_ops_evidence.py
@@ -4139,6 +4217,28 @@ Verify (every harness PR):
 ```
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
+
+### 6.2bg Phase AS execution order (Band 2q — active)
+
+**Status:** **Next** · register: [Phase AS](#phase-as--agent-assembly-control-plane-closeout) · queue: [§6.1k](#61k-harness-implementation-queue--agent-assembly-closeout)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | AS-DOC.1 | Appendix N + plan sync | High |
+| 2 | AS-1 | `agent_assembly_resolver` | Critical |
+| 3 | AS-2 | Lifecycle state on `AgentContract` | High |
+| 4 | AS-3 | `skill_ids` resolution audit script | Medium |
+
+### 6.2bh Phase CLEAN execution order (closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase CLEAN](#phase-clean--legacy-module-closeout) · queue: [§6.1j](#61j-harness-implementation-queue--legacy-module-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | CLEAN-1 | Remove `chat_router.py` | Critical |
+| 2 | CLEAN-2 | Remove `tools_agent.py` | Critical |
+| 3 | CLEAN-3 | `check_legacy_modules_removed.py` in CI | High |
+| 4 | CLEAN-4 | Docs sync | Low |
 
 ### 6.2bf Phase CTX execution order (Band 2n — closed 2026-06-02)
 

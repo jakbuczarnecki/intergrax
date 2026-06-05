@@ -44,7 +44,7 @@ class ToolsStep(RuntimeStep):
         """
         Run tools planner + runtime tool execution if configured.
 
-        ToolsAgent is used only for planning.
+        Tool planner (``ToolPlannerProtocol``) plans calls only.
         All execution is performed by RuntimeToolInvoker (Layer-2 runtime).
         """
 

@@ -1,12 +1,28 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""Block new production imports of deprecated tools_agent (Phase Q+-L.1)."""
+"""Ensure deprecated harness modules stay removed (Phase CLEAN)."""
 
 from __future__ import annotations
 
 import sys
 from pathlib import Path
+
+REMOVED_MODULES = (
+    "intergrax/tools/tools_agent.py",
+    "intergrax/legacy/chat_router.py",
+    "intergrax/chains/langchain_qa_chain.py",
+    "intergrax/chains/__init__.py",
+)
+
+FORBIDDEN_IMPORTS = (
+    "from intergrax.tools.tools_agent import",
+    "import intergrax.tools.tools_agent",
+    "from intergrax.legacy.chat_router import",
+    "import intergrax.legacy.chat_router",
+    "from intergrax.chains",
+    "import intergrax.chains",
+)
 
 SCAN_ROOTS = (
     "applications",
@@ -14,18 +30,12 @@ SCAN_ROOTS = (
     "intergrax/agents",
     "intergrax/applications",
     "intergrax/scaffold",
-)
-
-FORBIDDEN = (
-    "from intergrax.tools.tools_agent import",
-    "import intergrax.tools.tools_agent",
+    "agents",
 )
 
 GRANDFATHER_PREFIXES = (
-    "intergrax/tools/tools_agent.py",
-    "intergrax/runtime/nexus/tools/tool_planner_protocol.py",
-    "intergrax/runtime/nexus/tools/tool_planning_service.py",
     "tests/",
+    "scripts/check_legacy_modules_removed.py",
 )
 
 
@@ -35,7 +45,12 @@ def _grandfathered(rel: str) -> bool:
 
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[1]
-    violations: list[str] = []
+    errors: list[str] = []
+
+    for rel in REMOVED_MODULES:
+        if (repo_root / rel).exists():
+            errors.append(f"removed module still present: {rel}")
+
     for root_name in SCAN_ROOTS:
         root = repo_root / root_name
         if not root.is_dir():
@@ -51,14 +66,15 @@ def main() -> int:
                 stripped = line.strip()
                 if not stripped or stripped.startswith("#"):
                     continue
-                for forbidden in FORBIDDEN:
+                for forbidden in FORBIDDEN_IMPORTS:
                     if forbidden in stripped:
-                        violations.append(f"{rel}:{line_no}: {stripped}")
-    if violations:
-        print("tools_agent imports outside grandfather list:")
-        print("\n".join(violations))
+                        errors.append(f"{rel}:{line_no}: {stripped}")
+
+    if errors:
+        print("Legacy module removal audit failed:")
+        print("\n".join(errors))
         return 1
-    print("tools_agent import audit: OK")
+    print("legacy module removal audit: OK")
     return 0
 
 
