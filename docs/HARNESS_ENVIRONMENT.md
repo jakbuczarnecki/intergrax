@@ -84,6 +84,8 @@ Runtime events: `GET /debug/tasks/{id}/events` when SQLite runtime events DB is 
 
 **Tier-3 security wiring (Phase SEC):** `wire_application_security()` maps `ApplicationSecurityProfile` to V-SEC middleware; `build_harness_host_runtime()` validates assembly via `security_assembly_resolver`. Author map: [`AGENT_CREATION_GUIDE.md` Appendix S](AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout). CI: `scripts/check_harness_security_wiring.py`.
 
+**Tier-3 cost wiring (Phase COST):** `wire_application_cost()` maps `CostProfile` to `BudgetPolicy` / `RunBudget`; `wire_policy_bundle()` merges cost governance into `RuntimePolicyBundle`. Author map: [`AGENT_CREATION_GUIDE.md` Appendix T](AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout). CI: `scripts/check_harness_cost_wiring.py`.
+
 **Context engineering events** (Tier-1): `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` — see architecture §28.1.
 
 ---
@@ -183,6 +185,7 @@ Governance, policy, and observability are **composable control-plane layers** �
 | Observability wire-time closeout (§21) | [`AGENT_CREATION_GUIDE.md` Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [Phase OBS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs--observability-control-plane-closeout) |
 | Reliability wire-time closeout (§22) | [`AGENT_CREATION_GUIDE.md` Appendix R](AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) · [Phase REL](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-rel--reliability-control-plane-closeout) |
 | Security wire-time closeout (§23) | [`AGENT_CREATION_GUIDE.md` Appendix S](AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [Phase SEC](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-sec--security-control-plane-closeout) |
+| Cost wire-time closeout (§24) | [`AGENT_CREATION_GUIDE.md` Appendix T](AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) · [Phase COST](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-cost--cost-governance-control-plane-closeout) |
 
 **Modularity:** swap observability backend via `IntegrationProfile.observability_backend`; add policy via YAML + EP handlers; enable V-SEC defenses via `ApplicationSecurityProfile` — without changing Tier-2 agent code.
 

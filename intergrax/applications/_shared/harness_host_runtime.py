@@ -34,6 +34,13 @@ from intergrax.applications._shared.reliability_wiring import (
 from intergrax.applications._shared.security_assembly_resolver import (
     assert_security_assembly_valid,
 )
+from intergrax.applications._shared.cost_assembly_resolver import (
+    assert_cost_assembly_valid,
+)
+from intergrax.applications._shared.cost_wiring import (
+    ApplicationCostWiring,
+    wire_application_cost,
+)
 from intergrax.applications._shared.security_wiring import (
     ApplicationSecurityWiring,
     wire_application_security,
@@ -54,6 +61,7 @@ class HarnessHostRuntime:
     observability: NexusObservabilityStores
     reliability: ApplicationReliabilityWiring
     security: ApplicationSecurityWiring
+    cost: ApplicationCostWiring
     nexus_loop: NexusLoop
 
 
@@ -117,6 +125,8 @@ def build_harness_host_runtime(
     assert_reliability_assembly_valid(reliability_wiring, environment)
     security_wiring = wire_application_security(environment)
     assert_security_assembly_valid(security_wiring, environment)
+    cost_wiring = wire_application_cost(environment)
+    assert_cost_assembly_valid(cost_wiring, environment)
     task_memory = wire_task_memory_from_profile(environment)
     nexus_loop = build_nexus_loop_from_environment(
         resolved_registry,
@@ -143,5 +153,6 @@ def build_harness_host_runtime(
         observability=observability,
         reliability=reliability_wiring,
         security=security_wiring,
+        cost=cost_wiring,
         nexus_loop=nexus_loop,
     )

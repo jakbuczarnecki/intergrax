@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -122,6 +122,20 @@ class ObservabilityProfile(BaseModel):
     debug_surface_override: bool | None = None
 
 
+class CostProfile(BaseModel):
+    """Run budget and quota governance for a Tier-3 host (Phase COST-1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    budget_enforcement_enabled: bool = True
+    enforcement_mode: Literal["abort", "hitl"] = "abort"
+    max_total_tokens: int | None = Field(default=None, ge=1)
+    max_llm_calls: int | None = Field(default=None, ge=1)
+    max_tool_calls: int | None = Field(default=None, ge=1)
+    max_planner_iterations: int | None = Field(default=None, ge=1)
+    quota_degrade_threshold_ratio: float = Field(default=0.90, ge=0.0, le=1.0)
+
+
 class OrchestrationProfile(BaseModel):
     """Nexus loop composition overrides (Phase H-APP.3.1)."""
 
@@ -178,6 +192,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     memory_profile: MemoryProfile = Field(default_factory=MemoryProfile)
     reliability_profile: ReliabilityProfile = Field(default_factory=ReliabilityProfile)
     observability_profile: ObservabilityProfile = Field(default_factory=ObservabilityProfile)
+    cost_profile: CostProfile = Field(default_factory=CostProfile)
     orchestration_profile: OrchestrationProfile = Field(default_factory=OrchestrationProfile)
     identity_profile: IdentityProfile = Field(default_factory=IdentityProfile)
     security_profile: ApplicationSecurityProfile = Field(
@@ -257,6 +272,7 @@ class ApplicationEnvironmentProfile(BaseModel):
                 metrics_plugins_enabled=True,
                 debug_surface_override=True,
             ),
+            cost_profile=CostProfile(max_llm_calls=64, max_tool_calls=128),
             orchestration_profile=OrchestrationProfile(long_running_enabled=True),
             identity_profile=IdentityProfile(require_api_key=False),
             shadow_workspace=ShadowWorkspaceProfile(),
@@ -290,6 +306,7 @@ class ApplicationEnvironmentProfile(BaseModel):
                 trace_sqlite_enabled=True,
                 debug_surface_override=False,
             ),
+            cost_profile=CostProfile(max_total_tokens=32_000),
             features=ApplicationFeatures.product_defaults(),
             execution_mode=ExecutionMode.STRICT,
             domain_policy_fragments=dict(domain_fragments or {}),

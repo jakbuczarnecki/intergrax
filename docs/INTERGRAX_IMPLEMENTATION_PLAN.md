@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Harness platform bands 1–2v Done**; **Phase SEC closed**; default queue = **§6.1** maintenance; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; **Orchestration (ORCH)**, **Tools/skills (TS)**, **Integration (INT)**, **RAG**, **CTX**, **LEG**, **PE**, **CLEAN** closeouts **Done**; **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green after CLEAN; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
+Status: Working draft (2026-06-02) — **Harness platform bands 1–2w Done**; **Phase COST closed**; default queue = **§6.1** maintenance; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; **Orchestration (ORCH)**, **Tools/skills (TS)**, **Integration (INT)**, **RAG**, **CTX**, **LEG**, **PE**, **CLEAN** closeouts **Done**; **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green after CLEAN; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -42,6 +42,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Observability closeout (profile bridge, assembly resolver, CI) | [Phase OBS](#phase-obs--observability-control-plane-closeout) · **§6.1n** · Band **2t** · **Appendix Q** |
 | Reliability closeout (idempotency bridge, circuit breaker, CI) | [Phase REL](#phase-rel--reliability-control-plane-closeout) · **§6.1o** · Band **2u** · **Appendix R** |
 | Security closeout (V-SEC bridge, middleware assembly, CI) | [Phase SEC](#phase-sec--security-control-plane-closeout) · **§6.1q** · Band **2v** · **Appendix S** |
+| Cost governance closeout (budget bridge, policy bundle, CI) | [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · **§6.1r** · Band **2w** · **Appendix T** |
 | Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
 | Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
 | Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
@@ -190,7 +191,8 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Observability closeout (Phase OBS)** | **Done** (Band 2t) | No (harness-only) | OBS-1–3 — [§6.1n](#61n-harness-implementation-queue--observability-closeout-closed) |
 | **Reliability closeout (Phase REL)** | **Done** (Band 2u) | No (harness-only) | REL-1–3 — [§6.1o](#61o-harness-implementation-queue--reliability-closeout-closed) |
 | **Security closeout (Phase SEC)** | **Done** (Band 2v) | No (harness-only) | SEC-1–3 — [§6.1q](#61q-harness-implementation-queue--security-closeout-closed) |
-| Regression gate | **671 passed** | No | Must stay green after each harness PR |
+| **Cost governance closeout (Phase COST)** | **Done** (Band 2w) | No (harness-only) | COST-1–3 — [§6.1r](#61r-harness-implementation-queue--cost-governance-closeout-closed) |
+| Regression gate | **679 passed** | No | Must stay green after each harness PR |
 
 ---
 
@@ -3611,6 +3613,7 @@ Paydown Wave P3 (optional polish):
 | **2t — Observability closeout (OBS)** | Profile bridge, assembly resolver, host wiring CI — **no** business agents | **Done** (2026-06-02) | [Phase OBS](#phase-obs--observability-control-plane-closeout) · **§6.1n** · **Appendix Q** |
 | **2u — Reliability closeout (REL)** | Idempotency bridge, circuit breaker wire, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase REL](#phase-rel--reliability-control-plane-closeout) · **§6.1o** · **Appendix R** |
 | **2v — Security closeout (SEC)** | V-SEC bridge, middleware assembly resolver, host CI — **no** business agents | **Done** (2026-06-02) | [Phase SEC](#phase-sec--security-control-plane-closeout) · **§6.1q** · **Appendix S** |
+| **2w — Cost governance closeout (COST)** | Budget bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · **§6.1r** · **Appendix T** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -3640,6 +3643,7 @@ BAND 2s: Capability graph closeout — Phase CG (§6.1m) — DONE (CG-1 → CG-3
 BAND 2t: Observability closeout — Phase OBS (§6.1n) — DONE (OBS-1 → OBS-3)
 BAND 2u: Reliability closeout — Phase REL (§6.1o) — DONE (REL-1 → REL-3)
 BAND 2v: Security closeout — Phase SEC (§6.1q) — DONE (SEC-1 → SEC-3)
+BAND 2w: Cost governance closeout — Phase COST (§6.1r) — DONE (COST-1 → COST-3)
 DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
@@ -4137,9 +4141,30 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ---
 
+## Phase COST — Cost governance control plane closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (COST-DOC.1 + COST-1–3)
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §24; V-COST **Done**; author map: `AGENT_CREATION_GUIDE.md` **Appendix T**.
+
+**Priority ladder:** **Band 2w** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+### COST — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| COST-DOC.1 | COST0 | **Appendix T** — cost governance control plane closeout | **Done** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| COST-1 | COST1 | **`CostProfile`** + **`cost_runtime_bridge`** + **`cost_wiring`** | **Done** | `environment_profile.py`, `cost_runtime_bridge.py`, `cost_wiring.py`, `policy_wiring.py` | `test_harness_cost_wiring.py` |
+| COST-2 | COST2 | **`cost_assembly_resolver`** — profile ↔ budget conformance | **Done** | `cost_assembly_resolver.py`, `harness_host_runtime.py`, `runtime_config_bridge.py` | assembly validation tests |
+| COST-3 | COST3 | **Host cost CI** — `check_harness_cost_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+
+**Explicitly excluded:** new business agents (K.1/K.2), product FinOps dashboards — [§6.3a](#63a-business-backlog-register-consolidated).
+
+---
+
 ## 6. What to implement next
 
-**Default answer (infrastructure only):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** — keep gate green. Phase SEC **Done**. Phase REL **Done**. Phase OBS **Done**. Phase CG **Done**. Phase REG **Done**. Phase AS **Done**. Phase CLEAN **Done**. Phase PE **Done**. Phase LEG **Done**. Phase CTX **Done**. Phase INT + RAG **Done**. Phase TS **Done**. Phase ORCH **Done**. GOV-AUDIT **Done**. Phase V-REM **Done**. Phase MEM **Done** (48/48). Product work gated by [§6.3](#63-product--business-scope-gate).
+**Default answer (infrastructure only):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** — keep gate green. Phase COST **Done**. Phase SEC **Done**. Phase REL **Done**. Phase OBS **Done**. Phase REG **Done**. Phase AS **Done**. Phase CLEAN **Done**. Phase PE **Done**. Phase LEG **Done**. Phase CTX **Done**. Phase INT + RAG **Done**. Phase TS **Done**. Phase ORCH **Done**. GOV-AUDIT **Done**. Phase V-REM **Done**. Phase MEM **Done** (48/48). Product work gated by [§6.3](#63-product--business-scope-gate).
 
 **Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](#63a-business-backlog-register-consolidated)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
 
@@ -4257,6 +4282,20 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 | 4 | **SEC-3** | CI | **Done** | `check_harness_security_wiring.py` | CI green |
 
 **Suggested PR order (complete):** SEC-DOC.1 → SEC-1 → SEC-2 → SEC-3.
+
+### 6.1r Harness implementation queue — cost governance closeout (closed)
+
+**Purpose:** Single ordered list for **Phase COST** (Band 2w). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **COST-DOC.1** | Docs | **Done** | Appendix T + cross-refs | Author map complete |
+| 2 | **COST-1** | Code | **Done** | `CostProfile` + `cost_runtime_bridge` + `cost_wiring` | `test_harness_cost_wiring.py` |
+| 3 | **COST-2** | Code | **Done** | `cost_assembly_resolver` | wire-time validation tests |
+| 4 | **COST-3** | CI | **Done** | `check_harness_cost_wiring.py` | CI green |
+
+**Suggested PR order (complete):** COST-DOC.1 → COST-1 → COST-2 → COST-3.
 
 ### 6.1f Harness implementation queue — context engineering closeout (closed)
 
@@ -4415,6 +4454,17 @@ Verify (every harness PR):
 ```
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
+
+### 6.2bn Phase COST execution order (Band 2w — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · queue: [§6.1r](#61r-harness-implementation-queue--cost-governance-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | COST-DOC.1 | Appendix T + plan sync | High |
+| 2 | COST-1 | `CostProfile` + `cost_runtime_bridge` + `cost_wiring` | Critical |
+| 3 | COST-2 | `cost_assembly_resolver` | High |
+| 4 | COST-3 | `check_harness_cost_wiring.py` | Medium |
 
 ### 6.2bm Phase SEC execution order (Band 2v — closed 2026-06-02)
 

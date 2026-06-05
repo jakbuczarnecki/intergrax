@@ -1307,6 +1307,8 @@ Verify that cost and resource consumption are explicit, enforceable and optimiza
 Cost Governance Score: L0-L4
 ```
 
+**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix T](AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) (wire-time budget bridge + policy bundle merge); V-COST contracts in `runtime/architecture/cost_*.py`. **Closeout:** [Phase COST](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-cost--cost-governance-control-plane-closeout) **Done** (COST-DOC.*).
+
 ---
 
 ## 25. Evaluation and Benchmarking

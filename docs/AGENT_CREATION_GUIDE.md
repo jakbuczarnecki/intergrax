@@ -45,8 +45,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 29. [Appendix Q — Observability control plane closeout](#appendix-q--observability-control-plane-closeout)
 30. [Appendix R — Reliability control plane closeout](#appendix-r--reliability-control-plane-closeout)
 31. [Appendix S — Security control plane closeout](#appendix-s--security-control-plane-closeout)
-32. [Anti-patterns](#anti-patterns)
-33. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+32. [Appendix T — Cost governance control plane closeout](#appendix-t--cost-governance-control-plane-closeout)
+33. [Anti-patterns](#anti-patterns)
+34. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -2254,6 +2255,72 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 
 ---
 
+## Appendix T — Cost governance control plane closeout
+
+**Audience:** Tier-3 application authors, platform engineers, FinOps.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §24; V-COST **Done**; complements [Appendix H §H.2](#h2-control-plane-map-where-to-customize) (`RuntimePolicyBundle.budget`).
+
+Tier-3 hosts must materialize `BudgetPolicy`, `RunBudget`, and quota domain fragments from typed `CostProfile` — not ad-hoc budget objects in host factories.
+
+### T.1 Design principles (Harness audit)
+
+| Principle | Meaning in Intergrax |
+|-----------|----------------------|
+| Profile-driven | `CostProfile` on `ApplicationEnvironmentProfile` |
+| Wire-time validation | `cost_assembly_resolver` at `build_harness_host_runtime` |
+| Typed bridge | `CostWiringOptions` maps profile → Nexus budget config |
+| Policy bundle merge | `wire_policy_bundle` attaches `BudgetPolicy` + `cost_governance` fragment |
+| Context fallback | Explicit cost limits or `ContextProfile.budget_policy` when enforcement enabled |
+
+### T.2 Cost wiring map
+
+```text
+ApplicationEnvironmentProfile (Tier-3)
+  └── cost_profile
+        ├── budget_enforcement_enabled  → BudgetPolicy
+        ├── max_* limits                → RunBudget
+        └── quota_degrade_threshold_ratio → domain_fragments.cost_governance
+
+wire_application_cost() (Tier-3)
+  └── cost_runtime_bridge.py
+        ├── resolve_cost_wiring_options()
+        └── apply_cost_profiles_from_environment() → RuntimeConfig
+
+wire_policy_bundle() (Tier-3)
+  └── policy_wiring.py + cost_wiring.py
+
+build_harness_host_runtime() (Tier-3)
+  └── cost_assembly_resolver.py
+
+Release / CI
+  └── check_harness_cost_wiring.py
+  └── test_harness_cost_wiring.py
+```
+
+### T.3 Core contracts
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `CostProfile` | `contracts/environment_profile.py` | Author-facing budget/quota flags |
+| `CostWiringOptions` | `cost_runtime_bridge.py` | Profile → wiring flags |
+| `ApplicationCostWiring` | `cost_wiring.py` | Resolved budget policy + run budget |
+| `CostAssemblyValidationResult` | `cost_assembly_resolver.py` | Wire-time conformance |
+| `BudgetPolicy` / `RunBudget` | `runtime/nexus/budget/budget_models.py` | Nexus enforcement |
+
+### T.4 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Profile → wiring bridge | `pytest tests/unit/applications/test_harness_cost_wiring.py -m gate` |
+| Host cost materialization | `python scripts/check_harness_cost_wiring.py` |
+| V-COST envelope/quota logic | `pytest tests/unit/runtime/architecture/test_cost_budget.py tests/unit/runtime/architecture/test_cost_quota.py -m gate` |
+| Runtime config bridge | `pytest tests/unit/applications/test_runtime_config_bridge.py -m gate` |
+| Full gate | `uv run pytest -m gate -q` |
+
+Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §24: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -2289,6 +2356,7 @@ Run before opening a harness PR (see `scripts/`):
 | `check_harness_observability_wiring.py` | Hosts wire observability stores from `ObservabilityProfile` |
 | `check_harness_reliability_wiring.py` | Hosts wire reliability stores from `ReliabilityProfile` |
 | `check_harness_security_wiring.py` | Hosts wire V-SEC middleware from `ApplicationSecurityProfile` |
+| `check_harness_cost_wiring.py` | Hosts wire budget policy from `CostProfile` |
 | `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |
 | `check_integration_vendor_imports.py` | Tier-0 does not import application/agent trees incorrectly |
 | `check_production_chat_agent_imports.py` | No `ChatAgent` on production paths |
@@ -2319,4 +2387,5 @@ When asked to create a new Intergrax agent:
 17. For observability wiring and assembly validation, read [Appendix Q](#appendix-q--observability-control-plane-closeout) — configure `ObservabilityProfile`, not direct `wire_nexus_observability()` in hosts.
 18. For reliability wiring and idempotency/circuit breaker assembly, read [Appendix R](#appendix-r--reliability-control-plane-closeout) — configure `ReliabilityProfile`, not ad-hoc `IdempotencyStore` in hosts.
 19. For security wiring and V-SEC middleware assembly, read [Appendix S](#appendix-s--security-control-plane-closeout) — configure `ApplicationSecurityProfile`, not direct middleware in host factories.
-20. Do **not** create duplicate workflow documentation — update this file if the process changes.
+20. For cost governance wiring and budget assembly, read [Appendix T](#appendix-t--cost-governance-control-plane-closeout) — configure `CostProfile`, not ad-hoc `BudgetPolicy` in hosts.
+21. Do **not** create duplicate workflow documentation — update this file if the process changes.
