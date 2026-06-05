@@ -86,6 +86,8 @@ Runtime events: `GET /debug/tasks/{id}/events` when SQLite runtime events DB is 
 
 **Tier-3 cost wiring (Phase COST):** `wire_application_cost()` maps `CostProfile` to `BudgetPolicy` / `RunBudget`; `wire_policy_bundle()` merges cost governance into `RuntimePolicyBundle`. Author map: [`AGENT_CREATION_GUIDE.md` Appendix T](AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout). CI: `scripts/check_harness_cost_wiring.py`.
 
+**Tier-3 evaluation wiring (Phase EVAL):** `wire_application_evaluation()` maps `EvaluationProfile` to `OnlineEvaluationRegistry` / governance bridge; `wire_policy_bundle()` merges `evaluation_governance` into `RuntimePolicyBundle`. Author map: [`AGENT_CREATION_GUIDE.md` Appendix U](AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout). CI: `scripts/check_harness_evaluation_wiring.py`.
+
 **Context engineering events** (Tier-1): `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` — see architecture §28.1.
 
 ---

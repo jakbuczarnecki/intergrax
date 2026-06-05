@@ -1350,6 +1350,8 @@ Verify that intelligent behavior is measured, compared and regression-tested.
 Evaluation Score: L0-L4
 ```
 
+**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix U](AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) (wire-time evaluation bridge + policy bundle merge); V-EVAL contracts in `runtime/architecture/online_evaluation*.py`, `eval/nexus_eval_runner.py`. **Closeout:** [Phase EVAL](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-eval--evaluation-control-plane-closeout) **Done** (EVAL-DOC.*).
+
 ---
 
 ## 26. Testing, CI and Architecture Gates

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from intergrax.applications._shared.cost_wiring import wire_application_cost
+from intergrax.applications._shared.evaluation_wiring import wire_application_evaluation
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     PolicyRulesProfile,
@@ -44,12 +45,14 @@ def build_runtime_policy_bundle(
 
 
 def wire_policy_bundle(env: ApplicationEnvironmentProfile) -> RuntimePolicyBundle:
-    """Merge policy rules, domain fragments, execution mode, and cost governance (H-APP.2.6)."""
+    """Merge policy rules, domain fragments, execution mode, cost, and evaluation governance."""
     cost_wiring = wire_application_cost(env)
+    evaluation_wiring = wire_application_evaluation(env)
     base = build_runtime_policy_bundle(
         domain_fragments={
             **env.domain_policy_fragments,
             **cost_wiring.domain_fragments,
+            **evaluation_wiring.domain_fragments,
         },
         execution_mode=env.execution_mode,
         policy_rules=env.policy_rules,

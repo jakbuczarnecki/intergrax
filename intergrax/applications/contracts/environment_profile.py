@@ -136,6 +136,20 @@ class CostProfile(BaseModel):
     quota_degrade_threshold_ratio: float = Field(default=0.90, ge=0.0, le=1.0)
 
 
+class EvaluationProfile(BaseModel):
+    """Evaluation and benchmarking posture for a Tier-3 host (Phase EVAL-1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    shadow_eval_enabled: bool = True
+    online_registry_enabled: bool = True
+    offline_eval_runner_enabled: bool = False
+    trend_comparison_enabled: bool = True
+    require_baseline_for_release: bool = False
+    registry_path: Path | None = None
+    evaluation_assets_ref: str | None = None
+
+
 class OrchestrationProfile(BaseModel):
     """Nexus loop composition overrides (Phase H-APP.3.1)."""
 
@@ -193,6 +207,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     reliability_profile: ReliabilityProfile = Field(default_factory=ReliabilityProfile)
     observability_profile: ObservabilityProfile = Field(default_factory=ObservabilityProfile)
     cost_profile: CostProfile = Field(default_factory=CostProfile)
+    evaluation_profile: EvaluationProfile = Field(default_factory=EvaluationProfile)
     orchestration_profile: OrchestrationProfile = Field(default_factory=OrchestrationProfile)
     identity_profile: IdentityProfile = Field(default_factory=IdentityProfile)
     security_profile: ApplicationSecurityProfile = Field(
@@ -273,6 +288,12 @@ class ApplicationEnvironmentProfile(BaseModel):
                 debug_surface_override=True,
             ),
             cost_profile=CostProfile(max_llm_calls=64, max_tool_calls=128),
+            evaluation_profile=EvaluationProfile(
+                shadow_eval_enabled=True,
+                online_registry_enabled=True,
+                offline_eval_runner_enabled=True,
+                trend_comparison_enabled=True,
+            ),
             orchestration_profile=OrchestrationProfile(long_running_enabled=True),
             identity_profile=IdentityProfile(require_api_key=False),
             shadow_workspace=ShadowWorkspaceProfile(),
@@ -307,6 +328,12 @@ class ApplicationEnvironmentProfile(BaseModel):
                 debug_surface_override=False,
             ),
             cost_profile=CostProfile(max_total_tokens=32_000),
+            evaluation_profile=EvaluationProfile(
+                shadow_eval_enabled=False,
+                online_registry_enabled=True,
+                offline_eval_runner_enabled=False,
+                require_baseline_for_release=True,
+            ),
             features=ApplicationFeatures.product_defaults(),
             execution_mode=ExecutionMode.STRICT,
             domain_policy_fragments=dict(domain_fragments or {}),

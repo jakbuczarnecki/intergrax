@@ -26,6 +26,10 @@ from intergrax.applications._shared.reliability_runtime_bridge import (
 from intergrax.applications._shared.cost_runtime_bridge import (
     apply_cost_profiles_from_environment,
 )
+from intergrax.applications._shared.evaluation_runtime_bridge import (
+    apply_evaluation_profiles_from_environment,
+)
+from intergrax.applications._shared.evaluation_wiring import wire_application_evaluation
 from intergrax.applications._shared.reliability_wiring import wire_application_reliability
 from intergrax.applications._shared.security_runtime_bridge import (
     apply_security_profiles_from_environment,
@@ -131,6 +135,12 @@ def materialize_runtime_config(
     )
     apply_context_profiles_from_environment(config, env)
     apply_cost_profiles_from_environment(config, env)
+    evaluation_wiring = wire_application_evaluation(env)
+    apply_evaluation_profiles_from_environment(
+        config,
+        env,
+        registry=evaluation_wiring.registry,
+    )
     apply_integration_profiles_from_environment(config, env)
     apply_catalog_profiles_from_environment(config, env)
     if isinstance(harness_ctx, ApplicationBuildContext):

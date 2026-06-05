@@ -46,8 +46,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 30. [Appendix R — Reliability control plane closeout](#appendix-r--reliability-control-plane-closeout)
 31. [Appendix S — Security control plane closeout](#appendix-s--security-control-plane-closeout)
 32. [Appendix T — Cost governance control plane closeout](#appendix-t--cost-governance-control-plane-closeout)
-33. [Anti-patterns](#anti-patterns)
-34. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+33. [Appendix U — Evaluation control plane closeout](#appendix-u--evaluation-control-plane-closeout)
+34. [Anti-patterns](#anti-patterns)
+35. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -2321,6 +2322,75 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 
 ---
 
+## Appendix U — Evaluation control plane closeout
+
+**Audience:** Tier-3 application authors, platform engineers, quality engineers.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25; V-EVAL **Done**; complements [Appendix H §H.2](#h2-control-plane-map-where-to-customize) (shadow evaluation metadata on `RuntimeRequest`).
+
+Tier-3 hosts must materialize online evaluation registry, governance bridge, and policy domain fragments from typed `EvaluationProfile` — not ad-hoc registry singletons in host factories.
+
+### U.1 Design principles (Harness audit)
+
+| Principle | Meaning in Intergrax |
+|-----------|----------------------|
+| Profile-driven | `EvaluationProfile` on `ApplicationEnvironmentProfile` |
+| Wire-time validation | `evaluation_assembly_resolver` at `build_harness_host_runtime` |
+| Typed bridge | `EvaluationWiringOptions` maps profile → registry + runtime config |
+| Policy bundle merge | `wire_policy_bundle` attaches `evaluation_governance` fragment |
+| Runtime propagation | `RuntimeConfig.evaluation_registry` feeds shadow eval recording |
+
+### U.2 Evaluation wiring map
+
+```text
+ApplicationEnvironmentProfile (Tier-3)
+  └── evaluation_profile
+        ├── shadow_eval_enabled           → RuntimeEngine shadow metadata path
+        ├── online_registry_enabled       → OnlineEvaluationRegistry
+        ├── offline_eval_runner_enabled   → NexusEvalRunner (host runtime)
+        └── trend_comparison_enabled      → registry trend reports
+
+wire_application_evaluation() (Tier-3)
+  └── evaluation_runtime_bridge.py
+        ├── resolve_evaluation_wiring_options()
+        └── apply_evaluation_profiles_from_environment() → RuntimeConfig
+
+wire_policy_bundle() (Tier-3)
+  └── policy_wiring.py + evaluation_wiring.py
+
+build_harness_host_runtime() (Tier-3)
+  └── evaluation_assembly_resolver.py
+
+Release / CI
+  └── check_harness_evaluation_wiring.py
+  └── test_harness_evaluation_wiring.py
+```
+
+### U.3 Core contracts
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `EvaluationProfile` | `contracts/environment_profile.py` | Author-facing eval/benchmark flags |
+| `EvaluationWiringOptions` | `evaluation_runtime_bridge.py` | Profile → wiring flags |
+| `ApplicationEvaluationWiring` | `evaluation_wiring.py` | Resolved registry + governance bridge |
+| `EvaluationAssemblyValidationResult` | `evaluation_assembly_resolver.py` | Wire-time conformance |
+| `OnlineEvaluationRegistry` | `runtime/architecture/online_evaluation_registry.py` | Shadow/online observation store |
+| `NexusEvalRunner` | `eval/nexus_eval_runner.py` | Offline benchmark runner |
+
+### U.4 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Profile → wiring bridge | `pytest tests/unit/applications/test_harness_evaluation_wiring.py -m gate` |
+| Host evaluation materialization | `python scripts/check_harness_evaluation_wiring.py` |
+| V-EVAL shadow/online contracts | `pytest tests/unit/runtime/architecture/test_online_evaluation.py tests/unit/runtime/architecture/test_online_evaluation_registry.py -m gate` |
+| Offline eval runner | `pytest tests/integration/eval/test_nexus_eval_runner.py -m gate` |
+| Runtime config bridge | `pytest tests/unit/applications/test_runtime_config_bridge.py -m gate` |
+| Full gate | `uv run pytest -m gate -q` |
+
+Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §25: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -2357,6 +2427,7 @@ Run before opening a harness PR (see `scripts/`):
 | `check_harness_reliability_wiring.py` | Hosts wire reliability stores from `ReliabilityProfile` |
 | `check_harness_security_wiring.py` | Hosts wire V-SEC middleware from `ApplicationSecurityProfile` |
 | `check_harness_cost_wiring.py` | Hosts wire budget policy from `CostProfile` |
+| `check_harness_evaluation_wiring.py` | Hosts wire evaluation registry from `EvaluationProfile` |
 | `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |
 | `check_integration_vendor_imports.py` | Tier-0 does not import application/agent trees incorrectly |
 | `check_production_chat_agent_imports.py` | No `ChatAgent` on production paths |
@@ -2388,4 +2459,5 @@ When asked to create a new Intergrax agent:
 18. For reliability wiring and idempotency/circuit breaker assembly, read [Appendix R](#appendix-r--reliability-control-plane-closeout) — configure `ReliabilityProfile`, not ad-hoc `IdempotencyStore` in hosts.
 19. For security wiring and V-SEC middleware assembly, read [Appendix S](#appendix-s--security-control-plane-closeout) — configure `ApplicationSecurityProfile`, not direct middleware in host factories.
 20. For cost governance wiring and budget assembly, read [Appendix T](#appendix-t--cost-governance-control-plane-closeout) — configure `CostProfile`, not ad-hoc `BudgetPolicy` in hosts.
-21. Do **not** create duplicate workflow documentation — update this file if the process changes.
+21. For evaluation wiring and shadow/online registry assembly, read [Appendix U](#appendix-u--evaluation-control-plane-closeout) — configure `EvaluationProfile`, not ad-hoc `OnlineEvaluationRegistry` in hosts.
+22. Do **not** create duplicate workflow documentation — update this file if the process changes.
