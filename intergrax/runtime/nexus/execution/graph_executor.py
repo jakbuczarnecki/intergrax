@@ -77,8 +77,10 @@ class GraphExecutor:
         handoff_coordinator: Optional[HandoffCoordinator] = None,
         event_bus: Optional[RuntimeEventBus] = None,
         middleware: Optional[MiddlewarePipeline] = None,
+        max_parallel_nodes: int | None = None,
     ) -> None:
         self._registry = registry
+        self._max_parallel_nodes = max_parallel_nodes
         self._engine = engine or AgentEngine(registry)
         self._router = router or AgentRouter(registry)
         self._validation_engine = validation_engine or NexusValidationEngine()
@@ -139,21 +141,16 @@ class GraphExecutor:
                     all_executions.append(extra_execution)
                     prior_outputs[node_id] = extra_execution
             else:
-                results = await asyncio.gather(
-                    *[
-                        self._execute_node(
-                            graph,
-                            task,
-                            node,
-                            prior_outputs,
-                            runtime_ckpt=runtime_ckpt,
-                            plan_criteria=plan_criteria,
-                            on_retry=on_retry,
-                            on_node_start=on_node_start,
-                            on_node_complete=on_node_complete,
-                        )
-                        for node in batch
-                    ]
+                results = await self._execute_parallel_batch(
+                    batch,
+                    graph=graph,
+                    task=task,
+                    prior_outputs=prior_outputs,
+                    runtime_ckpt=runtime_ckpt,
+                    plan_criteria=plan_criteria,
+                    on_retry=on_retry,
+                    on_node_start=on_node_start,
+                    on_node_complete=on_node_complete,
                 )
                 for execution, retries, failed, cancelled, handoff_extras in results:
                     all_retries.extend(retries)
@@ -171,6 +168,74 @@ class GraphExecutor:
                         prior_outputs[node.node_id] = node.execution_result
 
         return all_executions, all_retries, graph, False
+
+    async def _execute_parallel_batch(
+        self,
+        batch: list[ExecutionNode],
+        *,
+        graph: ExecutionGraph,
+        task: Task,
+        prior_outputs: Dict[str, AgentExecutionResult],
+        runtime_ckpt: Optional[RuntimeCheckpoint],
+        plan_criteria: Optional[List[str]],
+        on_retry: Optional[RetryCallback],
+        on_node_start: Optional[Callable[[ExecutionNode], None]],
+        on_node_complete: Optional[Callable[[ExecutionNode], None]],
+    ) -> list[
+        tuple[
+            AgentExecutionResult,
+            List[RetryRecord],
+            bool,
+            bool,
+            List[HandoffExtra],
+        ]
+    ]:
+        limit = self._max_parallel_nodes
+        if limit is None or limit >= len(batch):
+            return list(
+                await asyncio.gather(
+                    *[
+                        self._execute_node(
+                            graph,
+                            task,
+                            node,
+                            prior_outputs,
+                            runtime_ckpt=runtime_ckpt,
+                            plan_criteria=plan_criteria,
+                            on_retry=on_retry,
+                            on_node_start=on_node_start,
+                            on_node_complete=on_node_complete,
+                        )
+                        for node in batch
+                    ]
+                )
+            )
+
+        semaphore = asyncio.Semaphore(limit)
+
+        async def _run_node(
+            node: ExecutionNode,
+        ) -> tuple[
+            AgentExecutionResult,
+            List[RetryRecord],
+            bool,
+            bool,
+            List[HandoffExtra],
+        ]:
+            async with semaphore:
+                return await self._execute_node(
+                    graph,
+                    task,
+                    node,
+                    prior_outputs,
+                    runtime_ckpt=runtime_ckpt,
+                    plan_criteria=plan_criteria,
+                    on_retry=on_retry,
+                    on_node_start=on_node_start,
+                    on_node_complete=on_node_complete,
+                )
+
+        return list(await asyncio.gather(*[_run_node(node) for node in batch]))
 
     async def _execute_node(
         self,

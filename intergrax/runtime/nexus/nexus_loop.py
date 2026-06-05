@@ -13,7 +13,9 @@ from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.execution.graph_builder import plan_to_execution_graph
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
+from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPlannerProtocol
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, TaskPlanner
+from intergrax.runtime.nexus.task_classifier_protocol import NexusTaskClassifierProtocol
 from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy, RetryRecord
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier
@@ -75,8 +77,9 @@ class NexusLoop:
         self,
         registry: AgentRegistry,
         *,
-        classifier: Optional[ClassifyingTaskClassifier] = None,
-        planner: Optional[TaskPlanner] = None,
+        classifier: NexusTaskClassifierProtocol | None = None,
+        planner: NexusTaskPlannerProtocol | None = None,
+        max_parallel_nodes: int | None = None,
         validation_engine: Optional[NexusValidationEngine] = None,
         retry_engine: Optional[RetryEngine] = None,
         graph_executor: Optional[GraphExecutor] = None,
@@ -161,6 +164,7 @@ class NexusLoop:
             context_manager=self._context_manager,
             event_bus=self._event_bus,
             middleware=self._middleware,
+            max_parallel_nodes=max_parallel_nodes,
         )
         self._composer = FinalResponseComposer()
         self._lifecycle = lifecycle

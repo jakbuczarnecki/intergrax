@@ -15,8 +15,10 @@ from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
-from intergrax.runtime.nexus.planning.task_planner import NexusPlan, TaskPlanner
-from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier, TaskClassification
+from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPlannerProtocol
+from intergrax.runtime.nexus.planning.task_planner import NexusPlan
+from intergrax.runtime.nexus.task_classifier_protocol import NexusTaskClassifierProtocol
+from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
@@ -36,8 +38,8 @@ class PlanningPhaseOutcome:
 
 @dataclass
 class NexusPlanningRunner:
-    classifier: ClassifyingTaskClassifier
-    planner: TaskPlanner
+    classifier: NexusTaskClassifierProtocol
+    planner: NexusTaskPlannerProtocol
     registry: AgentRegistry
     hitl: NexusHitlRunner
     publish: PublishFn

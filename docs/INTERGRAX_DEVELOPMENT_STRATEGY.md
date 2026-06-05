@@ -1,6 +1,6 @@
 # Intergrax — Development Strategy
 
-**Status:** Canonical (2026-06-05)  
+**Status:** Canonical (2026-06-05) — default queue: §6.1 maintenance  
 **Audience:** Maintainers, architects, implementation agents, Cursor AI  
 **Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · [docs/README.md](README.md)
 
@@ -104,16 +104,17 @@ After each merged harness PR: `uv run pytest -m gate -q` green; `python scripts/
 | Milestone | Status |
 |-----------|--------|
 | Agent OS certification (Phase L) | **Done** — Appendix A 20/20 |
-| Harness quality + hardening (Q, Q+) | **Done** — gate **571** (current); zero grandfathered getattr in harness paths |
+| Harness quality + hardening (Q, Q+) | **Done** — gate **581** (current); zero grandfathered getattr in harness paths |
 | Harness AI alignment MVP (Phase R) | **Done** — Skill Library, context, delegation, policy |
 | **Harness environment GA (Phase S)** | **Done** (2026-06-01) — see [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) |
 | **Harness production hardening (Phase U)** | **Done** (2026-06-01) |
 | **Harness architecture hardening (Phase V)** | **Done** (2026-06-05) | Phase V + V-REM closed; L3/L4 CI closeout + operational L3 signed off |
+| **Orchestration closeout (Phase ORCH)** | **Done** (2026-06-05) | planner/classifier wiring, graph spec plan seed, parallel cap |
 | **Harness completion backlog** | **Done** (2026-06-02) | §4.1 — U-Leg, typing/CI, platform skills ([plan §4.1](INTERGRAX_IMPLEMENTATION_PLAN.md#41-harness-completion-backlog-execution-order)) |
 | Product agents K.1 / K.2 | **End of plan** — [§6.3](INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only) only after explicit product decision |
 | New Tier-3 product applications | **End of plan** — same §6.3; lab + reference hosts sufficient for all harness work |
 
-**Default implementation queue:** [plan §6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) maintenance only. **Not** business agents or new product apps.
+**Default implementation queue:** [plan §6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) maintenance only. Phase ORCH + GOV-AUDIT **Done**. **Not** business agents or new product apps.
 
 **Governance / policy / observability authoring:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) Appendix H; audit §5 + §21 in [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 

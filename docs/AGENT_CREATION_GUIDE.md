@@ -752,7 +752,7 @@ result = await loop.handle_task(
 
 Agents share context via `SharedTaskContext` and `MemoryView` — owned by Nexus, not agent code.
 
-**Declarative topology (Tier-3):** `AgentGraph` fluent builder → `ApplicationGraphSpec` on `ApplicationEnvironmentProfile.graph_spec` (roster validation, DX round-trip). Runtime `ExecutionGraph` is built from `NexusPlan` at task time — see Appendix I §I.4.
+**Declarative topology (Tier-3):** `AgentGraph` fluent builder → `ApplicationGraphSpec` on `ApplicationEnvironmentProfile.graph_spec` (roster validation, DX round-trip). Runtime bridge via `GraphSpecSeedingPlanner` when the task has no pre-built plan id — see Appendix I §I.4.
 
 ---
 
@@ -1315,8 +1315,8 @@ Task intake
                                 └── AgentEngine → UAEPExecutor | RuntimeEngine pipeline
 
 ApplicationEnvironmentProfile (Tier-3)
-  ├── orchestration_profile     planner_kind · classifier_kind · retry_policy_name · max_delegation_depth
-  ├── graph_spec                ApplicationGraphSpec (declarative roster topology — DX/validation)
+  ├── orchestration_profile     planner_kind · classifier_kind · retry_policy_name · max_parallel_nodes · max_delegation_depth
+  ├── graph_spec                ApplicationGraphSpec → GraphSpecSeedingPlanner (`graph_spec_to_plan.py`)
   ├── execution_mode            strict | balanced | exploratory → Nexus production_mode + policies
   ├── reliability_profile       checkpoint store · scheduler · idempotency
   └── context_profile           assembly budget · RAG flags → per-node AgentContextBundle
@@ -1360,7 +1360,7 @@ Canon reference flow (PM → UX → Legal → Validator → Human): [§42.43](in
 | LLM engine planner | `engine_planner_orchestrator.py` | Nexus-level plan from LLM |
 | Graph from plan | `plan_to_execution_graph()` | Every Nexus run after planning |
 
-`OrchestrationProfile.planner_kind` / `classifier_kind` are **declared** on `ApplicationEnvironmentProfile` (H-APP.3.1) for UI/spec round-trip. **Wired today:** `retry_policy_name` (`strict` → fewer retries), `long_running_enabled` → checkpoint store on `NexusLoop`. **Planned wiring:** inject custom `TaskPlanner` / `ClassifyingTaskClassifier` from `planner_kind` / `classifier_kind` in `build_nexus_loop_from_environment` (§6.1 maintenance — do not fork Nexus for one app).
+`OrchestrationProfile.planner_kind` / `classifier_kind` resolve via `orchestration_wiring.py` → `build_nexus_loop_from_environment` (ORCH-1 **Done**). Also wired: `retry_policy_name`, `long_running_enabled`, `max_parallel_nodes` (ORCH-3). Kinds: `default` | `engine` (requires `llm_adapter` at factory). Unknown kinds fail fast at bootstrap.
 
 ### I.5 Graph execution and merge
 
@@ -1375,7 +1375,7 @@ Canon reference flow (PM → UX → Legal → Validator → Human): [§42.43](in
 | Checkpoint skip | `apply_runtime_checkpoint_to_graph` — resume long runs |
 | Cancel | `CancellationCoordinator` — marks pending nodes cancelled |
 
-**Audit note (honest gaps):** graph-level backpressure and per-batch concurrency caps are **partial** — tenant semaphore exists on `RuntimeEngine` (`max_parallel_per_tenant`); batch fan-out does not yet expose a dedicated `max_parallel_nodes` on `OrchestrationProfile`. Track under §6.1 maintenance if product needs it.
+**Concurrency:** `OrchestrationProfile.max_parallel_nodes` caps parallel nodes per graph batch (`GraphExecutor` semaphore). Tenant-level cap remains on `RuntimeEngine` (`max_parallel_per_tenant`).
 
 ### I.6 Subagent / delegation semantics (R-Delegate — Done)
 
@@ -1394,7 +1394,8 @@ Canon reference flow (PM → UX → Legal → Validator → Human): [§42.43](in
 |---------|------------------|
 | **Hooks** | Register `MiddlewarePipeline` handlers on any `HookPoint` at Tier-3 bootstrap |
 | **Runtime plugins** | `RuntimePlugin.register(bus, hooks, policy)` — metrics/persistence middleware (not catalog EP) |
-| **Planner** | Pass custom `TaskPlanner` / `ClassifyingTaskClassifier` to `NexusLoop(...)` constructor |
+| **Planner / classifier kinds** | `OrchestrationProfile.planner_kind` / `classifier_kind` via `orchestration_wiring.py` → `build_nexus_loop_from_environment` |
+| **Planner (direct inject)** | Pass custom planner/classifier implementing `NexusTaskPlannerProtocol` / `NexusTaskClassifierProtocol` to `NexusLoop(...)` |
 | **Graph executor** | Inject `GraphExecutor` with custom `AgentEngine`, `HandoffCoordinator`, `ContextManager` |
 | **Coordination pattern** | `select_coordination_pattern(PlanningConstraints)` — metadata + planning guidance (V-MA) |
 | **Application graph** | `AgentGraph().add(...).edge(...).delegates_to(...).build()` → `graph_spec` on env profile |

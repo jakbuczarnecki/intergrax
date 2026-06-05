@@ -483,7 +483,7 @@ Nothing should execute without appropriate policy checks, permission checks and 
 Policy Enforcement Score: L0-L4
 ```
 
-**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) (control plane map, security profile, policy bundle read order); canon [§42.11](intergrax_runtime_architecture.md#4211-policy-engine); [`EXTENSION_AUTHOR_GUIDE.md` §10](EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) (`intergrax.policy_rules`).
+**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) (control plane map, security profile, policy bundle read order); canon [§42.11](intergrax_runtime_architecture.md#4211-policy-engine); [`EXTENSION_AUTHOR_GUIDE.md` §10](EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) (`intergrax.policy_rules`). **Closeout:** [Phase GOV-AUDIT](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-gov-audit--governance-control-plane-audit-closeout) **Done** (GOV-DOC.*).
 
 ---
 
@@ -563,7 +563,7 @@ Verify that reasoning is explicit, observable and separated from execution.
 Reasoning Architecture Score: L0-L4
 ```
 
-**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix I §I.4](AGENT_CREATION_GUIDE.md#i4-planning-strategies-explicit-customizable) (planning strategies); canon [§42.5](intergrax_runtime_architecture.md#425-unified-agent-execution-protocol) (UAEP separation).
+**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix I §I.4](AGENT_CREATION_GUIDE.md#i4-planning-strategies-explicit-customizable) (planning strategies); canon [§42.5](intergrax_runtime_architecture.md#425-unified-agent-execution-protocol) (UAEP separation). **Closeout:** [Phase ORCH ORCH-1](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-orch--orchestration-control-plane-closeout) — **Done**.
 
 ---
 
@@ -643,7 +643,7 @@ Verify that planning, scheduling, graph execution and routing are formal runtime
 Orchestration Score: L0-L4
 ```
 
-**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix I §I.5](AGENT_CREATION_GUIDE.md#i5-graph-execution-and-merge) (batches, retry, merge); `ExecutionGraph` / `GraphExecutor` in `intergrax/runtime/nexus/execution/`; coordination catalog `multi_agent_coordination.py` (V-MA).
+**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix I §I.5](AGENT_CREATION_GUIDE.md#i5-graph-execution-and-merge) (batches, retry, merge); `ExecutionGraph` / `GraphExecutor` in `intergrax/runtime/nexus/execution/`; coordination catalog `multi_agent_coordination.py` (V-MA). **Closeout:** [Phase ORCH](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-orch--orchestration-control-plane-closeout) ORCH-2, ORCH-3 — **Done**.
 
 ---
 

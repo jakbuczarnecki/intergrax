@@ -97,7 +97,7 @@ Harness → Runtime → Agents → Applications → Products
 | 3 | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` | **Implementation roadmap & status** | Phase trackers (Q, Q+, R, S, U, V, W-OPS, H-APP, MEM, DX, AA…), gate counts, Done/In-progress rows |
 | 4 | `docs/INTEGRAX_HARNESS_AUDIT_MAP.md` | **Audit procedure** | Layer-specific audit questions, typical gaps, scoring model, output format, global rules |
 | 5 | `docs/AGENT_CREATION_GUIDE.md` **Appendix H** | **Governance control plane (authoring)** | `ApplicationEnvironmentProfile` map, `RuntimePolicyBundle`, security profile, observability mandatory vs optional, verification commands — use when auditing §5 Policy and §21 Observability |
-| 6 | `docs/AGENT_CREATION_GUIDE.md` **Appendix I** | **Orchestration control plane (authoring)** | Nexus runners, `ExecutionGraph`, `DelegationSpec`, hooks, planning strategies, customization surfaces — use when auditing §7–§10 (planning, Agent OS, graph, subagents) |
+| 6 | `docs/AGENT_CREATION_GUIDE.md` **Appendix I** | **Orchestration control plane (authoring)** | Nexus runners, `ExecutionGraph`, `DelegationSpec`, hooks, planning strategies, customization surfaces — use when auditing §7–§10; implementation closeout: plan **Phase ORCH** (**Done**) |
 
 **Always distinguish these seven views — never conflate them:**
 

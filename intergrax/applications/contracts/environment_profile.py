@@ -123,6 +123,7 @@ class OrchestrationProfile(BaseModel):
     retry_policy_name: str | None = None
     long_running_enabled: bool = False
     max_delegation_depth: int = Field(default=4, ge=1, le=32)
+    max_parallel_nodes: int | None = Field(default=None, ge=1, le=256)
 
 
 class ShadowWorkspaceProfile(BaseModel):

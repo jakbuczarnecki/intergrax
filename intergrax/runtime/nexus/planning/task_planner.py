@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from intergrax.contracts.delegation import DelegationSpec
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
@@ -21,6 +22,7 @@ class PlanStep(BaseModel):
     capability: Optional[str] = None
     description: str = ""
     depends_on: List[str] = Field(default_factory=list)
+    delegation: DelegationSpec | None = None
 
 
 class NexusPlan(BaseModel):
