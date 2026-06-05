@@ -7,8 +7,12 @@ from __future__ import annotations
 
 RAG_RETRIEVE_TOOL_ID = "rag.retrieve"
 WEBSEARCH_QUERY_TOOL_ID = "websearch.query"
+OPENAI_FILE_SEARCH_QUERY_TOOL_ID = "openai.file_search.query"
 
 RAG_TOOL_ALIASES: frozenset[str] = frozenset({"rag", RAG_RETRIEVE_TOOL_ID, "nexus.rag"})
 WEBSEARCH_TOOL_ALIASES: frozenset[str] = frozenset(
     {"websearch", WEBSEARCH_QUERY_TOOL_ID, "nexus.websearch"},
+)
+OPENAI_FILE_SEARCH_TOOL_ALIASES: frozenset[str] = frozenset(
+    {"openai_file_search", OPENAI_FILE_SEARCH_QUERY_TOOL_ID, "openai.file_search"},
 )

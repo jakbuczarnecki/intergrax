@@ -1,6 +1,6 @@
 # Extension Author Guide (Tier-0 Plugin Catalogs)
 
-**Last updated:** 2026-06-03 · Phase P-Ext · **H-APP** environment profile
+**Last updated:** 2026-06-05 · Phase P-Ext · **H-APP** · §10 policy rules (`intergrax.policy_rules`)
 
 Intergrax exposes three **Tier-0 plugin catalogs**. Shipped providers and third-party pip packages register through the same protocols.
 
@@ -14,7 +14,27 @@ Intergrax exposes three **Tier-0 plugin catalogs**. Shipped providers and third-
 
 ---
 
-## 0. Tier-3 environment vs Tier-2 agent (H-APP)
+## 0. Tier-3 environment vs Tier-2 agent (H-APP, DX)
+
+**LangGraph is not required.** Intergrax ships its own Nexus loop, `HarnessApplication`, and `AgentGraph`. The table below is a **conceptual mapping** for authors coming from LangGraph — not a runtime dependency. Optional legacy notebooks and `intergrax.supervisor.build_langgraph_from_plan` need the extra `pip install 'Intergrax-ai[langgraph-legacy]'`.
+
+| LangGraph (analogy) | Intergrax |
+|---------------------|-----------|
+| `State` fields | `AgentContract` + step metadata |
+| Node function | `IntergraxAgent` `@step` / `run_step` |
+| Conditional edge | `decide_after_step` → `AgentDecision` |
+| `StateGraph.compile()` | `AgentGraph.build()` → `ApplicationGraphSpec` |
+| `app.invoke()` | `HarnessApplication.build_fastapi()` + `POST …/run` |
+
+**Responsibility matrix**
+
+| Concern | Agent (`agents/`) | Environment (`applications/` or `HarnessApplication`) |
+|---------|-------------------|--------------------------------------------------------|
+| Business logic, UAEP steps | Yes | No |
+| Tool/skill allow-list on contract | Yes | Enables catalogs via profiles |
+| Integration backends (Postgres, S3, …) | No | `IntegrationProfile` / presets |
+| Nexus loop, retry, graph routing | No | `ApplicationEnvironmentProfile` |
+| HTTP/MCP host, auth, tenant | No | Host factory / `HarnessApplication` |
 
 | Belongs in `applications/<app>/` | Belongs in `agents/<name>/` |
 |----------------------------------|-----------------------------|
@@ -206,3 +226,40 @@ pytest tests/unit/core/plugins tests/unit/integrations/test_external_plugin.py -
 | `RuntimePlugin` / `plugin_bootstrap.py` | Nexus middleware, metrics, persistence hooks |
 
 Agents consume **tools** via `ToolRegistry` and **skills** via `SkillResolver` → `allowed_tools`. Agents MUST NOT import vendor SDKs or integration slugs directly when a catalog tool exists.
+
+---
+
+## 9. Memory store plugins (Phase MEM)
+
+Entry point group: `intergrax.memory_stores`
+
+| Protocol | Factory method | Replaces |
+|----------|----------------|----------|
+| `UserProfileStorePlugin` | `create_user_profile_store(**kwargs)` | Default `InMemoryUserProfileStore` / sqlite bundle / optional Mongo `document_store` (MEM-PERS.2) |
+| `SessionStoragePlugin` | `create_session_storage(**kwargs)` | Default `InMemorySessionStorage` / sqlite bundle |
+
+Bootstrap: `intergrax.core.memory_bootstrap.bootstrap_memory_stores(discover_entry_points=True)`.
+
+Reference fixture: `tests/fixtures/plugin_packages/memory_store_plugin/`.
+
+Swap backends in Tier-3 by registering an EP plugin — agents still use `UserProfileManager` / `SessionManager`; never import store implementations from Tier-2.
+
+---
+
+## 10. Policy rule handler plugins (Phase DX-5.8)
+
+Entry point group: `intergrax.policy_rules`
+
+| Mechanism | Purpose |
+|-----------|---------|
+| `PolicyRuleHandlerPlugin` | Register custom handlers evaluated by `PolicyEngine` |
+| `PolicyRulesProfile.rules_path` | Declarative YAML rules loaded via `load_policy_rules_from_path` |
+| `PolicyRulesProfile.inline_rules` | Inline rule dicts on `ApplicationEnvironmentProfile` |
+
+Bootstrap: `intergrax.runtime.policy.rules.plugin_loader.register_policy_rule_plugins(discover_entry_points=True)` (called from policy wiring when enabled).
+
+**Composition:** YAML + EP handlers merge into `RuntimePolicyBundle.domain_fragments["policy_rules"]` via `intergrax/applications/_shared/policy_wiring.py`. They **never** bypass `ToolRuntime` or `ApplicationSecurityProfile` middleware.
+
+**Author map:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) [Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · canon [§42.11](intergrax_runtime_architecture.md#4211-policy-engine).
+
+Lab reference: `applications/lab_application/policy/rules/harness_lab.yaml`.

@@ -66,6 +66,11 @@ def register_parser(sub: argparse._SubParsersAction) -> None:
         help="Repository root (default: cwd)",
     )
     parser.add_argument("--force", action="store_true", help="Overwrite if exists")
+    parser.add_argument(
+        "--minimal",
+        action="store_true",
+        help="Minimal stack: no agent notebook/README extras; lab app without Docker/MCP/deploy doc",
+    )
 
 
 def run_new_stack(args: argparse.Namespace) -> int:
@@ -88,6 +93,7 @@ def run_new_stack(args: argparse.Namespace) -> int:
                 capabilities=caps,
                 root=root,
                 force=args.force,
+                minimal=args.minimal,
             )
         if not args.agent_only:
             resolve_agent_specs([slug])
@@ -99,6 +105,7 @@ def run_new_stack(args: argparse.Namespace) -> int:
                 route_prefix=args.route_prefix,
                 port=port,
                 force=args.force,
+                minimal=args.minimal and args.profile == "lab",
             )
     except (ValueError, FileExistsError) as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -107,7 +114,8 @@ def run_new_stack(args: argparse.Namespace) -> int:
     names = ScaffoldApplicationNames.resolve(slug, route_prefix=args.route_prefix, port=port)
     class_name = _class_name(slug)
 
-    print(f"Stack {slug!r} — Tier-2 + Tier-3 scaffold")
+    label = "minimal" if args.minimal else "standard"
+    print(f"Stack {slug!r} — Tier-2 + Tier-3 scaffold ({label})")
     if agent_path is not None:
         print(f"  Agent:  {agent_path}")
         print(f"  Test:   uv run pytest {agent_path / 'tests'} -q")

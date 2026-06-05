@@ -25,6 +25,7 @@ class MemoryAccessPolicy:
     read_only: bool = False
     write_denied_namespaces: Optional[FrozenSet[str]] = None
     list_limit: int = 100
+    scope_boundary: str = "tenant"
 
 
 def memory_access_policy_from_metadata(metadata: Dict[str, Any]) -> MemoryAccessPolicy:
@@ -46,9 +47,11 @@ def memory_access_policy_from_metadata(metadata: Dict[str, Any]) -> MemoryAccess
     if denied_raw:
         write_denied = frozenset(str(item).strip() for item in denied_raw if str(item).strip())
     list_limit = int(raw.get("list_limit", 100))
+    scope_boundary = str(raw.get("scope_boundary", metadata.get("memory_scope_boundary", "tenant")))
     return MemoryAccessPolicy(
         allowed_namespaces=allowed,
         read_only=read_only,
         write_denied_namespaces=write_denied,
         list_limit=max(1, list_limit),
+        scope_boundary=scope_boundary,
     )

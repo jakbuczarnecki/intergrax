@@ -7,6 +7,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, FrozenSet, Optional
 
+from intergrax.prompts.schema.prompt_governance import PromptRiskTier
+
 
 @dataclass(frozen=True)
 class PromptMeta:
@@ -17,6 +19,10 @@ class PromptMeta:
     output_schema_id: str
     tags: FrozenSet[str]
     description: Optional[str]
+    owner_team: str = ""
+    owner_contact: str = ""
+    risk_tier: PromptRiskTier = PromptRiskTier.LOW
+    change_ticket_ref: str = ""
 
 
 

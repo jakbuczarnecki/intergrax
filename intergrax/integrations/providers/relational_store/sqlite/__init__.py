@@ -30,6 +30,7 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
     ENV_TASK_CHECKPOINTS_DB,
     ENV_TASK_MEMORY_DB,
     ENV_TRACE_DB,
+    ENV_USER_PROFILE_DB,
     SqliteStorePaths,
     resolve_experiments_db_path,
     resolve_human_decisions_db_path,
@@ -42,6 +43,7 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
     resolve_task_checkpoints_db_path,
     resolve_task_memory_db_path,
     resolve_trace_db_path,
+    resolve_user_profile_db_path,
 )
 
 __all__ = [
@@ -66,6 +68,7 @@ __all__ = [
     "ENV_TASK_CHECKPOINTS_DB",
     "ENV_TASK_MEMORY_DB",
     "ENV_TRACE_DB",
+    "ENV_USER_PROFILE_DB",
     "create_sqlite_experiment_store",
     "create_sqlite_human_decision_store",
     "create_sqlite_idempotency_store",
@@ -77,6 +80,7 @@ __all__ = [
     "create_sqlite_task_checkpoint_store",
     "create_sqlite_task_memory_store",
     "create_sqlite_trace_store",
+    "create_sqlite_user_profile_store",
     "register_sqlite_integration",
     "resolve_experiments_db_path",
     "resolve_human_decisions_db_path",
@@ -90,6 +94,7 @@ __all__ = [
     "resolve_task_checkpoints_db_path",
     "resolve_task_memory_db_path",
     "resolve_trace_db_path",
+    "resolve_user_profile_db_path",
 ]
 
 _BUNDLE_EXPORTS = frozenset(
@@ -106,6 +111,7 @@ _BUNDLE_EXPORTS = frozenset(
         "create_sqlite_task_checkpoint_store",
         "create_sqlite_task_memory_store",
         "create_sqlite_trace_store",
+        "create_sqlite_user_profile_store",
         "resolve_sqlite_config",
         "register_sqlite_integration",
     }

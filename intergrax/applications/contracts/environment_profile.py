@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -53,6 +53,26 @@ class ApplicationSecurityProfile(BaseModel):
     tenant_security_verify_enabled: bool = True
 
 
+class ContextDecisionProfile(BaseModel):
+    """Unified memory vs context vs RAG assembly policy (Phase MEM-CTX.1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    include_session_history: bool = True
+    prefer_longterm_memory: bool = True
+    prefer_rag_when_enabled: bool = True
+    max_memory_entries_in_context: int = Field(default=8, ge=1, le=64)
+
+
+class PromptProfile(BaseModel):
+    """YAML prompt catalog selection for a Tier-3 host (Phase PE-1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    catalog_path: Path | None = None
+    load_on_startup: bool = True
+
+
 class ContextProfile(BaseModel):
     """Context assembly defaults for Nexus (Phase H-APP.4.1)."""
 
@@ -62,6 +82,7 @@ class ContextProfile(BaseModel):
         default_factory=TaskContextAssemblyOptions
     )
     budget_policy: ContextBudgetPolicy | None = None
+    decision: ContextDecisionProfile = Field(default_factory=ContextDecisionProfile)
     enable_rag: bool = True
     enable_websearch: bool = True
 
@@ -74,6 +95,7 @@ class MemoryProfile(BaseModel):
     enable_user_memory: bool = False
     enable_org_memory: bool = False
     enable_long_term_memory: bool = False
+    enable_task_memory: bool = False
     retention_days: int | None = Field(default=None, ge=1)
     scope_boundary: str = "tenant"
 
@@ -100,6 +122,34 @@ class ObservabilityProfile(BaseModel):
     debug_surface_override: bool | None = None
 
 
+class CostProfile(BaseModel):
+    """Run budget and quota governance for a Tier-3 host (Phase COST-1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    budget_enforcement_enabled: bool = True
+    enforcement_mode: Literal["abort", "hitl"] = "abort"
+    max_total_tokens: int | None = Field(default=None, ge=1)
+    max_llm_calls: int | None = Field(default=None, ge=1)
+    max_tool_calls: int | None = Field(default=None, ge=1)
+    max_planner_iterations: int | None = Field(default=None, ge=1)
+    quota_degrade_threshold_ratio: float = Field(default=0.90, ge=0.0, le=1.0)
+
+
+class EvaluationProfile(BaseModel):
+    """Evaluation and benchmarking posture for a Tier-3 host (Phase EVAL-1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    shadow_eval_enabled: bool = True
+    online_registry_enabled: bool = True
+    offline_eval_runner_enabled: bool = False
+    trend_comparison_enabled: bool = True
+    require_baseline_for_release: bool = False
+    registry_path: Path | None = None
+    evaluation_assets_ref: str | None = None
+
+
 class OrchestrationProfile(BaseModel):
     """Nexus loop composition overrides (Phase H-APP.3.1)."""
 
@@ -110,6 +160,7 @@ class OrchestrationProfile(BaseModel):
     retry_policy_name: str | None = None
     long_running_enabled: bool = False
     max_delegation_depth: int = Field(default=4, ge=1, le=32)
+    max_parallel_nodes: int | None = Field(default=None, ge=1, le=256)
 
 
 class ShadowWorkspaceProfile(BaseModel):
@@ -140,16 +191,23 @@ class ApplicationEnvironmentProfile(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     profile_id: str = "default"
+    spec_version: str = Field(
+        default="1.0.0",
+        description="Serialized environment spec version for UI round-trip (Phase DX-7.2)",
+    )
     application_profile: ApplicationProfile = ApplicationProfile.LAB
     integration_profile: IntegrationProfile = Field(default_factory=IntegrationProfile.lab)
     tool_profile: ToolProfile = Field(default_factory=ToolProfile)
     skill_profile: SkillProfile = Field(default_factory=SkillProfile)
     modality_profile: ModalityProfile | None = None
     llm_profile: LLMProfile | None = None
+    prompt_profile: PromptProfile = Field(default_factory=PromptProfile)
     context_profile: ContextProfile = Field(default_factory=ContextProfile)
     memory_profile: MemoryProfile = Field(default_factory=MemoryProfile)
     reliability_profile: ReliabilityProfile = Field(default_factory=ReliabilityProfile)
     observability_profile: ObservabilityProfile = Field(default_factory=ObservabilityProfile)
+    cost_profile: CostProfile = Field(default_factory=CostProfile)
+    evaluation_profile: EvaluationProfile = Field(default_factory=EvaluationProfile)
     orchestration_profile: OrchestrationProfile = Field(default_factory=OrchestrationProfile)
     identity_profile: IdentityProfile = Field(default_factory=IdentityProfile)
     security_profile: ApplicationSecurityProfile = Field(
@@ -162,6 +220,20 @@ class ApplicationEnvironmentProfile(BaseModel):
     sandbox: SandboxProfile | None = None
     features: ApplicationFeatures = Field(default_factory=ApplicationFeatures.lab_defaults)
     domain_policy_fragments: dict[str, Any] = Field(default_factory=dict)
+
+    @classmethod
+    def harness_memory_profile(cls) -> MemoryProfile:
+        """STM/LTM/task memory flags for harness reference hosts (Phase MEM)."""
+        return MemoryProfile(
+            enable_user_memory=True,
+            enable_org_memory=True,
+            enable_long_term_memory=True,
+            enable_task_memory=True,
+        )
+
+    def with_harness_memory(self) -> ApplicationEnvironmentProfile:
+        """Return a copy with harness memory flags enabled (sqlite-backed hosts)."""
+        return self.model_copy(update={"memory_profile": self.harness_memory_profile()})
 
     @classmethod
     def lab_defaults(
@@ -204,6 +276,7 @@ class ApplicationEnvironmentProfile(BaseModel):
             modality_profile=lab_default_modality_profile(),
             llm_profile=LLMProfile.lab(),
             context_profile=ContextProfile(enable_rag=True, enable_websearch=True),
+            memory_profile=cls.harness_memory_profile(),
             reliability_profile=ReliabilityProfile(
                 long_running_scheduler_enabled=True,
                 idempotency_enabled=True,
@@ -213,6 +286,13 @@ class ApplicationEnvironmentProfile(BaseModel):
                 otel_enabled=False,
                 metrics_plugins_enabled=True,
                 debug_surface_override=True,
+            ),
+            cost_profile=CostProfile(max_llm_calls=64, max_tool_calls=128),
+            evaluation_profile=EvaluationProfile(
+                shadow_eval_enabled=True,
+                online_registry_enabled=True,
+                offline_eval_runner_enabled=True,
+                trend_comparison_enabled=True,
             ),
             orchestration_profile=OrchestrationProfile(long_running_enabled=True),
             identity_profile=IdentityProfile(require_api_key=False),
@@ -246,6 +326,13 @@ class ApplicationEnvironmentProfile(BaseModel):
             observability_profile=ObservabilityProfile(
                 trace_sqlite_enabled=True,
                 debug_surface_override=False,
+            ),
+            cost_profile=CostProfile(max_total_tokens=32_000),
+            evaluation_profile=EvaluationProfile(
+                shadow_eval_enabled=False,
+                online_registry_enabled=True,
+                offline_eval_runner_enabled=False,
+                require_baseline_for_release=True,
             ),
             features=ApplicationFeatures.product_defaults(),
             execution_mode=ExecutionMode.STRICT,

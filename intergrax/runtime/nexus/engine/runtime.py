@@ -477,6 +477,9 @@ class RuntimeEngine:
         runtime_answer: RuntimeAnswer,
     ) -> None:
         """Optional shadow evaluation when ``request.metadata`` requests it (W-OPS.11)."""
+        profile = state.context.config.evaluation_profile
+        if profile is not None and not profile.shadow_eval_enabled:
+            return
         raw = request.metadata.get("harness_shadow_eval")
         if not isinstance(raw, dict):
             return
@@ -487,7 +490,9 @@ class RuntimeEngine:
             score = float(score_raw)
         except (TypeError, ValueError):
             score = 1.0 if passed else 0.0
-        bridge = RuntimeArchitectureGovernanceBridge()
+        bridge = RuntimeArchitectureGovernanceBridge(
+            evaluation_registry=state.context.config.evaluation_registry,
+        )
         observation = bridge.record_shadow_run_evaluation(
             run_id=state.run_id,
             agent_id=request.agent_id,

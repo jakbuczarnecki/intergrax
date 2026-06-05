@@ -2,7 +2,6 @@
 
 from intergrax.runtime.task_memory.coordinator import TaskMemoryCoordinator
 from intergrax.runtime.task_memory.limits import TaskMemoryLimits
-from intergrax.runtime.task_memory.memory_view import PolicyScopedMemoryView
 from intergrax.runtime.task_memory.models import TaskMemoryRecord, TaskMemoryWriteRequest
 from intergrax.runtime.task_memory.persistence_contract import (
     NullTaskMemoryPersistence,
@@ -38,3 +37,15 @@ __all__ = [
     "resolve_task_memory_db_path",
     "resolve_task_memory_persistence",
 ]
+
+
+def __getattr__(name: str):
+    if name == "PolicyScopedMemoryView":
+        from intergrax.runtime.task_memory.memory_view import PolicyScopedMemoryView
+
+        return PolicyScopedMemoryView
+    if name == "memory_access_policy_from_metadata":
+        from intergrax.runtime.task_memory.policy import memory_access_policy_from_metadata
+
+        return memory_access_policy_from_metadata
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -88,16 +88,28 @@ class EnginePlannerMessageBuilder:
                 "use_user_longterm_memory": {"type": "boolean"},
                 "use_rag": {"type": "boolean"},
                 "use_tools": {"type": "boolean"},
+                "tool_ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Canonical catalog tool ids (e.g. rag.retrieve, websearch.query).",
+                },
             },
         }
 
-        system_prompt = DEFAULT_PLANNER_SYSTEM_PROMPT()
+        prompt_registry = state.context.prompt_registry
+        catalog_path = state.context.config.prompt_catalog_path
+        prompt_kwargs = {
+            "registry": prompt_registry,
+            "catalog_path": catalog_path,
+        }
+
+        system_prompt = DEFAULT_PLANNER_SYSTEM_PROMPT(**prompt_kwargs)
         if prompt_config is not None and prompt_config.system_prompt:
             system_prompt = prompt_config.system_prompt.strip()
 
         replan_system_msg: Optional[ChatMessage] = None
         if replan_ctx is not None:
-            replan_template = DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT()
+            replan_template = DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT(**prompt_kwargs)
             if prompt_config is not None and prompt_config.replan_system_prompt:
                 replan_template = prompt_config.replan_system_prompt.strip()
 
@@ -121,7 +133,7 @@ class EnginePlannerMessageBuilder:
             replan_text = replan_template.format(replan_json=replan_json)
             replan_system_msg = ChatMessage(role="system", content=replan_text)
 
-        next_step_rules_prompt = DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT()
+        next_step_rules_prompt = DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT(**prompt_kwargs)
         if prompt_config is not None and prompt_config.next_step_rules_prompt:
             next_step_rules_prompt = prompt_config.next_step_rules_prompt.strip()
 

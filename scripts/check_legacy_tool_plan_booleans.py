@@ -19,7 +19,6 @@ FORBIDDEN = "ToolInvocationPlan.from_legacy("
 
 GRANDFATHER = (
     "intergrax/runtime/nexus/tools/tool_runtime.py",
-    "intergrax/runtime/nexus/tools/tool_gateway.py",
     "tests/",
 )
 

@@ -1,12 +1,15 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""ExecutionPhase coverage audit for RuntimeEventType (§42.31, B.07)."""
+"""ExecutionPhase and ops-filter coverage for RuntimeEventType (§42.31, DX-5.7)."""
 
 from __future__ import annotations
 
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+
+# Ops scrape / alert routing hints (canon §42.1.5). Values are stable filter tokens.
+OpsFilterHint = str
 
 EVENT_PHASE_COVERAGE: dict[RuntimeEventType, ExecutionPhase] = {
     RuntimeEventType.TASK_CREATED: ExecutionPhase.INTAKE,
@@ -56,10 +59,66 @@ EVENT_PHASE_COVERAGE: dict[RuntimeEventType, ExecutionPhase] = {
     RuntimeEventType.RUNTIME_HANDLER_FAILED: ExecutionPhase.INTERRUPT_HANDLING,
 }
 
+EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
+    RuntimeEventType.TASK_CREATED: "trace:intake",
+    RuntimeEventType.TASK_CLASSIFIED: "trace:classification",
+    RuntimeEventType.PLAN_CREATED: "ops:planning",
+    RuntimeEventType.PLAN_UPDATED: "ops:planning",
+    RuntimeEventType.PLAN_FAILED: "ops:alert",
+    RuntimeEventType.AGENT_SELECTED: "trace:selection",
+    RuntimeEventType.CONTEXT_BUILT: "trace:context",
+    RuntimeEventType.CONTEXT_ASSEMBLED: "trace:context",
+    RuntimeEventType.CONTEXT_TRIMMED: "trace:context",
+    RuntimeEventType.INGESTION_FAILED: "ops:alert",
+    RuntimeEventType.SKILL_RESOLVED: "trace:skills",
+    RuntimeEventType.SKILL_IMPORT_FAILED: "ops:alert",
+    RuntimeEventType.STEP_STARTED: "trace:step",
+    RuntimeEventType.STEP_COMPLETED: "trace:step",
+    RuntimeEventType.STEP_FAILED: "ops:alert",
+    RuntimeEventType.TOOL_REQUESTED: "ops:tool_audit",
+    RuntimeEventType.TOOL_COMPLETED: "ops:tool_audit",
+    RuntimeEventType.TOOL_DENIED: "ops:alert",
+    RuntimeEventType.TOOL_FAILED: "ops:alert",
+    RuntimeEventType.VALIDATION_STARTED: "trace:validation",
+    RuntimeEventType.VALIDATION_PASSED: "trace:validation",
+    RuntimeEventType.VALIDATION_FAILED: "ops:alert",
+    RuntimeEventType.DECISION_EMITTED: "trace:decision",
+    RuntimeEventType.INTERRUPT_REQUESTED: "ops:hitl",
+    RuntimeEventType.INTERRUPT_HANDLED: "ops:hitl",
+    RuntimeEventType.INTERRUPT_ESCALATED: "ops:alert",
+    RuntimeEventType.HUMAN_APPROVAL_REQUESTED: "ops:hitl",
+    RuntimeEventType.HUMAN_APPROVAL_RECEIVED: "ops:hitl",
+    RuntimeEventType.HUMAN_APPROVAL_TIMEOUT: "ops:alert",
+    RuntimeEventType.PAUSE_REQUESTED: "ops:hitl",
+    RuntimeEventType.PAUSED: "ops:hitl",
+    RuntimeEventType.RESUMED: "ops:hitl",
+    RuntimeEventType.RETRY_SCHEDULED: "ops:retry",
+    RuntimeEventType.RETRY_STARTED: "ops:retry",
+    RuntimeEventType.CANCELLATION_REQUESTED: "ops:completion",
+    RuntimeEventType.CANCELLED: "ops:completion",
+    RuntimeEventType.MEMORY_READ: "ops:memory",
+    RuntimeEventType.MEMORY_WRITE: "ops:memory",
+    RuntimeEventType.HANDOFF_INITIATED: "ops:handoff",
+    RuntimeEventType.HANDOFF_COMPLETED: "ops:handoff",
+    RuntimeEventType.TRACE_PERSISTED: "trace:persistence",
+    RuntimeEventType.TASK_PROGRESS: "ops:progress",
+    RuntimeEventType.TASK_COMPLETED: "ops:completion",
+    RuntimeEventType.TASK_FAILED: "ops:alert",
+    RuntimeEventType.RUNTIME_HANDLER_FAILED: "ops:alert",
+}
+
 
 def phase_for_event(event_type: RuntimeEventType) -> ExecutionPhase | None:
     return EVENT_PHASE_COVERAGE.get(event_type)
 
 
+def ops_filter_hint_for_event(event_type: RuntimeEventType) -> OpsFilterHint | None:
+    return EVENT_OPS_FILTER_HINTS.get(event_type)
+
+
 def list_unmapped_event_types() -> list[RuntimeEventType]:
     return [item for item in RuntimeEventType if item not in EVENT_PHASE_COVERAGE]
+
+
+def list_unmapped_ops_filter_hints() -> list[RuntimeEventType]:
+    return [item for item in RuntimeEventType if item not in EVENT_OPS_FILTER_HINTS]

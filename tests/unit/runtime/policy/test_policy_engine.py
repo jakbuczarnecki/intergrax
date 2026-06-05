@@ -70,11 +70,11 @@ def test_policy_engine_evaluate_replay_without_config_allows():
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_tools_agent_has_no_agent_decision_alias():
-    """§42.7 ``AgentDecision`` must not be re-exported from ``tools_agent`` (TYP-06)."""
-    import intergrax.tools.tools_agent as tools_agent
+def test_tools_agent_module_removed_and_tool_plan_decision_canonical():
+    """§42.7 legacy ``tools_agent`` removed; ``ToolPlanDecision`` is canonical (TYP-06)."""
+    import importlib.util
 
-    assert not hasattr(tools_agent, "AgentDecision")
     from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 
+    assert importlib.util.find_spec("intergrax.tools.tools_agent") is None
     assert ToolPlanDecision.__module__ == "intergrax.tools.core.tool_plan_decision"

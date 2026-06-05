@@ -10,6 +10,8 @@ without embedding orchestration in communication adapters.
 
 from __future__ import annotations
 
+from typing import Optional, Sequence
+
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_decision import (
@@ -24,8 +26,36 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.task.task import TaskContext
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
+from intergrax.runtime.nexus.session.session_manager import SessionManager
+
+
+class _StubLLMAdapter(LLMAdapter):
+    """In-agent stub for lab runs without external providers."""
+
+    provider = "org_worker"
+    model = "stub"
+
+    def __init__(self, fixed_text: str) -> None:
+        self._text = fixed_text
+
+    @property
+    def context_window_tokens(self) -> int:
+        return 32_000
+
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
+    ) -> str:
+        _ = messages, temperature, max_tokens, run_id
+        return self._text
 
 ORG_VENDOR_REPORT_CAPABILITY = "org.vendor_report"
 
@@ -62,14 +92,14 @@ class OrganizationWorkerAgent(Agent):
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         config = RuntimeConfig(
-            llm_adapter=FakeLLMAdapter(fixed_text="vendor report draft"),
+            llm_adapter=_StubLLMAdapter(fixed_text="vendor report draft"),
             enable_rag=False,
             production_mode=False,
             tenant_id=request.tenant_id,
         )
         return RuntimeContext.build(
             config=config,
-            session_manager=build_in_memory_session_manager(),
+            session_manager=SessionManager(storage=InMemorySessionStorage()),
         )
 
     def get_steps(self, context: RuntimeContext) -> list[AgentStep]:

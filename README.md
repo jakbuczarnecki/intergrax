@@ -1,204 +1,309 @@
 # Intergrax
 
-**Agent OS and Harness AI runtime for building, orchestrating, and validating specialized AI agents.**
+**Agent OS and Harness AI runtime for building, orchestrating, experimenting with, and validating specialized AI agents.**
+
+Intergrax is a **production-grade Harness AI platform** — not a single chatbot or domain agent, but the **runtime environment** that lets teams define agent capabilities as reusable modules, compose multi-agent graphs, enforce policy and observability consistently, and graduate ideas from a fast **laboratory** to a governed **production harness**.
+
+**Strategic goal:** build a modern Agent Operating System aligned with practices used by leading agent platforms (Cursor, Claude Code, Codex-class harnesses, Viktor, Google ADK-style labs, enterprise agent runtimes). See [Development Strategy](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md).
+
+---
+
+## Table of contents
+
+- [What is Intergrax?](#what-is-intergrax)
+- [Harness AI — the core idea](#harness-ai--the-core-idea)
+- [Laboratory vs production harness](#laboratory-vs-production-harness)
+- [Quick start](#quick-start)
+- [Four-tier platform model](#four-tier-platform-model)
+- [Capability stack](#capability-stack-integration--tool--skill--agent)
+- [Nexus runtime and UAEP](#nexus-runtime-and-uaep)
+- [Experimentation workflow](#experimentation-workflow)
+- [Applications — isolated deployable environments](#applications--isolated-deployable-environments)
+- [Platform building blocks (Tier-0)](#platform-building-blocks-tier-0)
+- [Integration Library](#integration-library)
+- [Tool Library](#tool-library)
+- [Skill Library](#skill-library)
+- [LLM adapters](#llm-adapters)
+- [Modality and ML plane](#modality-and-ml-plane)
+- [Memory, RAG, and context engineering](#memory-rag-and-context-engineering)
+- [Governance, policy, and human-in-the-loop](#governance-policy-and-human-in-the-loop)
+- [Orchestration and multi-agent graphs](#orchestration-and-multi-agent-graphs)
+- [Observability and trace](#observability-and-trace)
+- [Extensibility — plugin catalogs](#extensibility--plugin-catalogs)
+- [Developer experience](#developer-experience)
+- [Reference agents and applications](#reference-agents-and-applications)
+- [Repository layout](#repository-layout)
+- [Architecture maturity and audits](#architecture-maturity-and-audits)
+- [Adaptive Harness Intelligence (L4)](#adaptive-harness-intelligence-l4)
+- [Documentation index](#documentation-index)
+- [Status](#status)
+- [Audience](#audience)
+- [Local infrastructure](#local-infrastructure)
+- [License](#license)
 
 ---
 
 ## What is Intergrax?
 
-Intergrax is an **AI Operating System** — a controlled **Harness AI** environment for designing agentic capabilities, running them through a shared runtime, and deciding which ideas to keep, improve, or discard.
+Intergrax answers one question:
 
-The core asset is not a single chatbot or domain agent. It is the **runtime** that lets you:
+> **Can we rapidly create, run, and evaluate new AI agents without rebuilding infrastructure every time?**
 
-- define agent capabilities as reusable modules,
-- register and compose agents in a multi-agent graph,
-- enforce tools, skills (composable capability packs), governance, and observability consistently,
-- run experiments with full traceability (CLI and HTTP debug surfaces).
+It is designed for teams who treat **the Harness as the durable product** and agents as **replaceable execution units** — composable workers assembled from profiles, tools, skills, and policy, not one-off LLM scripts.
 
-Intergrax is a **Harness AI runtime** and **Agent OS**: fast **laboratory** workflows for new ideas, with a defined path to **production harness** proof (reference agents, skills, stable integrations). See [Documentation](#documentation) and [Development strategy](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md).
+### What Intergrax is
 
----
+| Role | Description |
+|------|-------------|
+| **Four-tier AI platform** | Platform → Nexus (Agent OS) → Agents → Applications |
+| **Harness AI environment** | Governed runtime: policy, tools, skills, context, trace, composable agents |
+| **Agent experimentation laboratory** | Fast hypothesis validation — idea to first traced run in **under one hour** |
+| **Agent Operating System** | Nexus orchestrates lifecycle, graphs, HITL, retries, and ToolRuntime |
+| **Capability execution platform** | Integration → Tool → Skill → Agent stack with full extensibility |
+| **Integration bridge** | Connect agentic work to real organizational systems (Jira, Slack, PostgreSQL, …) |
 
-## Documentation
+### What Intergrax is not
 
-All platform documentation lives in [`docs/`](docs/). Canonical docs — one source of truth per topic:
+Intergrax is **not** a chatbot, a prompt collection, a single agent, a workflow builder, a marketplace, or a finished multi-tenant SaaS product today. It **learns from** Cursor, Viktor, NotebookLM, and modern agent runtimes — the **laboratory** optimizes controlled experimentation; the **harness** optimizes governed, repeatable production agent work on the **same codebase**.
 
-| Document | Read when you want to… |
-|----------|------------------------|
-| [docs/README.md](docs/README.md) | Navigate docs, see current phase focus, update rules |
-| [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Strategic goal, decision hierarchy, standard work cycle |
-| [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Full architecture canon (tiers, Nexus, UAEP §42) |
-| [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, hardening streams, priority, execution matrix/KPIs (Phase V), business-agent checklist (Appendix A) |
-| [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) | Create an agent: scaffold → register → run → inspect |
-| [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **Integration Library** — catalog of all **99** wired providers; each at `providers/<category>/<slug>/USAGE.md` |
-| [TOOLS.md](docs/TOOLS.md) | **Tool Library** — atomic LLM/MCP operations (RAG, web search, Jira, sandbox, …) |
-| [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) | **LLM adapters** — OpenAI, Claude, Gemini, Ollama, Azure, Mistral, Bedrock |
-| [SKILLS.md](docs/SKILLS.md) | **Skill Library** — composable packs: tools + prompts + policy; external importers |
-| [EXTENSION_AUTHOR_GUIDE.md](docs/EXTENSION_AUTHOR_GUIDE.md) | **Tier-0 plugin catalogs** — integrations, tools, skills; entry points & bootstrap |
-| [intergrax/tools/USAGE.md](intergrax/tools/USAGE.md) | Wire catalog tools in applications and agents (quick start) |
-| [intergrax/applications/USAGE.md](intergrax/applications/USAGE.md) | Tier-3 composition engine: manifest, typed bindings, registry |
-| [applications/USAGE.md](applications/USAGE.md) | Application layout: env, Docker, host, run |
-
-**Quick paths:** strategy → [DEVELOPMENT_STRATEGY](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) · new agent → [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md) · **integrations** → [INTEGRATIONS](docs/INTEGRATIONS.md) · **tools** → [TOOLS](docs/TOOLS.md) · **skills** → [SKILLS](docs/SKILLS.md) · **LLM** → [LLM_ADAPTERS](docs/LLM_ADAPTERS.md) · **ideal harness target** → [IDEAL_HARNESS_AI_ARCHITECTURE](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) · **Phase V stream list** → [IMPLEMENTATION_PLAN §Phase V](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-v--harness-architecture-hardening-post-u) · **Phase V execution matrix/KPIs** → [IMPLEMENTATION_PLAN §Phase V execution matrix](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-v--execution-matrix-dependencies-and-order) · **L3/L4 gates** → [IMPLEMENTATION_PLAN §Phase V L3/L4 gate evidence](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-v--l3l4-gate-evidence-architecture-maturity) · **new application** → [applications/USAGE](applications/USAGE.md) · **Harness terms** → [architecture §5.3](docs/intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model)
+Canon: [architecture §3–§4](docs/intergrax_runtime_architecture.md) · [ideal Harness AI model](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 
 ---
 
-## Four-tier model
+## Harness AI — the core idea
+
+The main architectural thesis:
+
+> **The future value is not in building one agent. The value is in building the runtime that allows many agents to be built, tested, and orchestrated quickly.**
+
+Intergrax implements the industry Harness AI chain:
+
+```text
+Harness  →  Runtime (Nexus)  →  Agents  →  Applications  →  Products
+```
+
+| Term | Intergrax implementation |
+|------|---------------------------|
+| **Harness** | Tier-1 Nexus + Tier-0 catalogs + Tier-3 application wiring (policy, tools, integrations, trace) |
+| **Scaffold** | `python -m intergrax.scaffold` — `new-agent`, `new-application`, `new-stack`, `new-skill` |
+| **Runnable agent instance** | Harness + agent + `LLMProfile` + resolved `skill_ids` / `allowed_tools` + `RuntimePolicyBundle` |
+| **Tool** | Atomic `ToolContract` — LLM/MCP invocable operation |
+| **Skill** | Composable `SkillManifest` — tools + prompts + policy fragment (not an LLM function) |
+| **Subagent** | Graph delegation via `ExecutionGraph` — not a nested OS |
+| **Policy** | `PolicyEngine`, budgets, HITL, `RuntimePolicyBundle` |
+
+**Agent composition flow:**
+
+```text
+Harness (Nexus + app wiring)
+    → runs Tier-2 Agent
+        → composes SkillManifest(s)  →  resolves tool_ids, prompts, policy
+        → AgentEngine / UAEP steps
+        → ToolRuntime.invoke(tool_id)  →  Integration adapters
+        → LLM adapters (per step / planner)
+        → Modality tools (vision, speech, ML)  →  Plane C registry
+```
+
+**Single vocabulary source for Harness terms:** [architecture §5.3](docs/intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model)
+
+**Target reference model:** [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) — policy-first, composable-by-default, trace-everything, human-governed autonomy, progressive extensibility.
+
+**L4 differentiation (planned):** [Adaptive Harness Intelligence Architecture](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — governed closed-loop harness improvement (observe → propose → gate → apply → verify); canon [§54](docs/intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum).
+
+---
+
+## Laboratory vs production harness
+
+Intergrax deliberately supports **two modes on one codebase**:
+
+| Mode | Purpose | Primary metric |
+|------|---------|----------------|
+| **Laboratory** | Fast hypothesis validation; discard failed ideas quickly | Time from idea → first traced run **< 1 hour** |
+| **Production harness** | Reliable Agent OS for business agents at organizational scale | Reference agents + stable integration paths + ops SLOs |
+
+**Laboratory is the adoption phase; production harness is the strategic destination.**
+
+- New capabilities **start** in the lab workflow (`lab_application`, pytest, debug API).
+- Capabilities that ship to users **graduate** through maturity gates (Phase L → Q/Q+/R → S → U → V).
+- Business agents (Phase K) require **explicit product prioritization** — harness platform work is **Done**; default queue is [maintenance only](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1).
+
+Strategy: [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) · Lab stack: [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md)
+
+---
+
+## Quick start
+
+### Prerequisites
+
+- Python 3.12, [`uv`](https://github.com/astral-sh/uv) package manager
+- Repository clone with `agents/` and `applications/` on `pythonpath` (configured in `pyproject.toml`)
+
+### Verify platform health
+
+```bash
+uv run pytest tests/acceptance/agent_os -m agent_os -q
+uv run pytest -m gate -q
+python scripts/check_harness_no_getattr.py
+```
+
+### Scaffold and run your first agent
+
+```bash
+# 1. Create agent skeleton (Tier-2)
+python -m intergrax.scaffold new-agent my_agent --capability domain.action
+
+# 2. Implement domain logic in agents/my_agent/ (steps, prompts, contract)
+
+# 3. Run tests
+uv run pytest agents/my_agent/tests/ -q
+
+# 4. Run via shared lab (Tier-3)
+uv run uvicorn lab_application.host.main:app --host 127.0.0.1 --port 8090
+# POST /v1/lab/run  →  GET /debug/tasks/{id}/trace
+```
+
+**Full workflow:** [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) — scaffold → register → run → inspect → evaluate → keep · improve · pause · delete.
+
+**CLI shortcuts (Phase DX / AA):**
+
+```bash
+uv run intergrax run <module>:app
+uv run intergrax doctor
+uv run python -m intergrax.scaffold new-stack <name>   # agent + application bundle
+```
+
+---
+
+## Four-tier platform model
 
 Intergrax is organized as a **four-tier stack**. Higher tiers compose lower tiers; they do not reimplement platform infrastructure.
 
+```text
+Tier-3  Applications     →  deployable products (legal API, lab host, research service)
+Tier-2  Agents           →  specialized capability modules (LegalAgent, ResearchAgent)
+Tier-1  Nexus Runtime    →  Agent OS (NexusLoop, AgentEngine, UAEP, governance)
+Tier-0  Platform         →  universal building blocks (integrations, tools, skills, LLM, RAG)
+```
+
 | Tier | Role | Repository path |
 |------|------|-----------------|
-| **Tier-0 — Platform** | Universal building blocks: integrations, **tools**, **skills**, LLM adapters, RAG, memory, logging, trace | `intergrax/` (outside Nexus orchestration) |
-| **Tier-1 — Nexus Runtime** | Agent OS: task lifecycle, `NexusLoop`, `AgentEngine`, UAEP, execution graph, governance, event bus | `intergrax/runtime/` |
-| **Tier-2 — Agents** | Specialized capability modules: contracts, domain logic, pipelines, agent-local governance | `agents/` |
-| **Tier-3 — Applications** | Isolated, deployable environments — compose agents into separate products (see below) | `applications/` |
+| **Tier-0 — Platform** | Integrations, tools, skills, LLM adapters, RAG, memory, logging, trace backends | `intergrax/` (outside Nexus orchestration) |
+| **Tier-1 — Nexus Runtime** | Task lifecycle, `NexusLoop`, `AgentEngine`, UAEP, execution graph, governance, event bus | `intergrax/runtime/` |
+| **Tier-2 — Agents** | Domain logic: contracts, pipelines, prompts, agent-local governance | `agents/` |
+| **Tier-3 — Applications** | Isolated deployable environments — compose agents into products | `applications/` |
 
-**Dependency rules:**
+### Dependency rules (mandatory)
 
-- `intergrax/` must not import from `agents/` or `applications/`.
-- `agents/` must not import from `applications/`.
-- `applications/` may import from `agents/` and `intergrax/`.
+```text
+intergrax/       MUST NOT import from agents/ or applications/
+agents/          MUST NOT import from applications/
+applications/    MAY import from agents/ and intergrax/
+```
 
-This separation keeps the **Harness** (runtime) stable while agents and product surfaces evolve independently.
+Agents **must not** import vendor SDKs or integration slugs directly — they consume Tier-0 through Nexus policy and `ToolRuntime`. This separation keeps the **Harness stable** while agents and product surfaces evolve independently.
 
-### Capability stack (Integration → Tool → Skill → Agent)
+**Reuse rule:** Tier-1/2/3 work is **composition and wiring** of existing Tier-0 modules — not parallel universal mechanisms. See [architecture §5.2](docs/intergrax_runtime_architecture.md#52-platform-reuse-and-no-redundancy-principle).
 
-Within Tier-0 and Tier-2, Intergrax uses a **four-layer capability model** (Harness AI alignment — architecture §5.3, §7.1.6–§7.1.8):
+---
 
-| Layer | What it is | Example |
-|-------|------------|---------|
-| **Integration** | Swappable backend contract (no LLM schema) | PostgreSQL, Bing, Jira REST |
-| **Tool** | Single operation exposed to the LLM / MCP | `rag.retrieve`, `jira.search_tasks` |
-| **Skill** | Reusable pack: `tool_ids` + prompts + policy fragment | `legal.contract_review` |
-| **Agent** | Domain module: UAEP steps, contract, `skill_ids[]` | `LegalAgent` in `agents/legal/` |
+## Capability stack (Integration → Tool → Skill → Agent)
 
-**Skills are not tools** — the model still calls tools; the runtime resolves skills into allow-lists and instructions before the run. External skill formats (e.g. Cursor `SKILL.md`) attach only after validation to `SkillManifest`. See [SKILLS.md](docs/SKILLS.md) and plan Appendix E.
+Within Tier-0 and Tier-2, Intergrax uses a **four-layer capability model** (Harness AI alignment):
+
+| Layer | What it is | Invoked by LLM? | Example |
+|-------|------------|-----------------|---------|
+| **Integration** | Swappable backend contract (no LLM schema) | No | PostgreSQL, Bing, Jira REST |
+| **Tool** | Single atomic operation exposed to LLM / MCP | **Yes** | `rag.retrieve`, `jira.search_tasks` |
+| **Skill** | Reusable pack: `tool_ids` + prompts + policy fragment | **No** | `legal.contract_review`, `harness.tool_smoke` |
+| **Agent** | Domain module: UAEP steps, contract, `skill_ids[]` | — | `LegalAgent` in `agents/legal/` |
+
+**Skills are not tools** — the model still calls tools; the runtime resolves skills into allow-lists and instructions before the run. External skill formats (e.g. Cursor `SKILL.md`) attach only after validation to `SkillManifest`.
 
 ```text
 Integration  →  Tool  →  Skill  →  Agent  →  Nexus (Harness)  →  Application wiring
 ```
 
-### Tier-0 plugin catalogs (Phase P-Ext)
-
-Shipped providers and **pip-installable extensions** register through the same plugin protocols:
-
-| Layer | Protocol | Bootstrap |
-|-------|----------|-----------|
-| Integration | `IntegrationPlugin` | `register_integration_plugin()` · EP `intergrax.integrations` |
-| Tool | `ToolPlugin` | `register_tool_plugin()` · EP `intergrax.tools` |
-| Skill | `SkillPlugin` | `register_skill_plugin()` · EP `intergrax.skills` |
-
-```python
-from intergrax.core.catalog_bootstrap import bootstrap_catalogs
-
-bootstrap_catalogs(register_shipped=True, discover_entry_points=True)
-```
-
-Tools work **standalone** for LLM/MCP (`ToolContract` + handler + `to_mcp_tools`). Skills only compose allow-lists — they are not invokable tools. Details: [EXTENSION_AUTHOR_GUIDE.md](docs/EXTENSION_AUTHOR_GUIDE.md) · canon §7.1.5.1.
+Catalogs: [INTEGRATIONS.md](docs/INTEGRATIONS.md) · [TOOLS.md](docs/TOOLS.md) · [SKILLS.md](docs/SKILLS.md) · Architecture [§7.1.6–§7.1.8](docs/intergrax_runtime_architecture.md)
 
 ---
 
-## Applications — isolated environments you can ship
+## Nexus runtime and UAEP
 
-**Applications** are how Intergrax turns reusable **agent capabilities** into **separate, deployable products**.  
-An agent answers *what the system can do* (legal review, research, echo tests). An application answers *how that capability is hosted, configured, and delivered* — as its own API, with its own env, Docker image, and integration profile.
+**Nexus** (Tier-1) is the Agent Operating System — it orchestrates agents the way an OS orchestrates applications. Agents **run inside** Nexus; they do not replace it.
 
-Think of Tier-2 agents as **specialized modules** and Tier-3 applications as **ready-made shells** — like shipping the same engine in different vehicles: a lab van, a legal product API, or a research service. Each vehicle is an **isolated environment**; they share Nexus and agents, not each other's secrets or deployment config.
+### Core components
 
-### What an application is
+| Component | Role |
+|-----------|------|
+| **NexusLoop** | Task intake, classification, planning, lifecycle (`Task` → `RUNNING` → `COMPLETED` / `WAITING_FOR_HUMAN`) |
+| **AgentRegistry** | Agent registration, capability routing, skill/tool resolution |
+| **AgentEngine** | Bridge Nexus → agent local UAEP loop |
+| **ExecutionGraph** | Multi-agent workflows (e.g. Research → Summary) |
+| **ToolRuntime** | Unified tool gateway — `ToolRequest` / policy / trace / idempotency (§42.12) |
+| **PolicyEngine** | Pre-run, pre-tool, post-tool governance hooks |
+| **ContextManager** | Context assembly, budget trimming, memory views (§28.1) |
 
-| Property | Meaning |
-|----------|---------|
-| **Isolated environment** | Own `.env` / `.env.example`, settings, HTTP routes, optional `docker/` — not mixed with the repo root or other apps |
-| **Composition only** | Wires agents + integrations; **no** domain logic (that stays in `agents/<name>/`) |
-| **Deployable unit** | Built to `uvicorn` locally; `applications/<app>/docker/build-docker.sh` (or `.bat`) for image build / push |
-| **Template-born** | Created from a standard layout (scaffold `new-application` — Phase N); same ergonomics as `new-agent` for agents |
-| **Reusable agents** | The same `LegalAgent` or `EchoAgent` can power **different** applications with different config, roster, and integrations |
+Orchestration modules live under `intergrax/runtime/nexus/orchestration/` (`intake_runner`, `planning_runner`, `graph_runner`, `hitl_runner`, `task_events`, `lifecycle_bridge`, …).
 
-### How it works (concept → runtime)
+### UAEP — Unified Agent Execution Protocol
+
+Every Tier-2 agent executes through **UAEP**:
 
 ```text
-agents/legal/              Tier-2  — LegalAgent, pipeline, prompts (reusable capability)
-agents/research/           Tier-2  — ResearchAgent, SummaryAgent
-        │
-        │  AgentBinding.mount(AgentClass, factory=...)
-        ▼
-applications/legal_application/   Tier-3  — manifest, host, .env, Docker
-applications/my_concept_lab/      Tier-3  — another product using Echo + your new agent
-        │
-        ▼
-NexusLoop + IntegrationProfile + FastAPI  →  HTTP / Docker on production
+get_steps  →  run_step  →  decide_after_step
 ```
 
-1. **Define agents** under `agents/` (capabilities, UAEP steps, `AgentContract`).
-2. **Declare a roster** in `applications/<app>/manifest.py` — which agents are active, with typed `AgentBinding.mount(AgentClass, factory=...)`.
-3. **Build instances** via application factories (`host/agent_factories.py`, `host/agent_builders.py`) and `build_application_registry()`.
-4. **Expose HTTP** in `host/factory.py` + `serving/`; configure Tier-0 backends through `IntegrationProfile` in `integration_wiring.py`.
-5. **Run or ship** with app-local env and Docker — without copying agent code into the application tree.
+Orchestrated by `AgentEngine` inside `NexusLoop`. The **Unified Execution Runtime Specification** (architecture §42) defines canonical contracts for events, hooks, lifecycle, decisions, interrupts, policy, and governance. All agent implementations **must** conform to §42.
 
-The composition engine lives in **`intergrax/applications/`** (manifest contract, wiring API). Concrete hosts live in **`applications/<app_name>/`**.
+**Registration rule:** new agents integrate through `AgentRegistry.register()` — never by editing `NexusLoop` or task lifecycle code.
 
-### Applications vs agents vs shared lab
+Canon: [architecture §42](docs/intergrax_runtime_architecture.md) · Author guide: [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) · Orchestration control plane: [Appendix I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane)
 
-| | **Agent** (`agents/`) | **Shared lab** (`lab_application`) | **Dedicated application** (`applications/<app>/`) |
-|--|------------------------|-------------------------------------|---------------------------------------------------|
-| Purpose | Reusable capability | Experiment many agents in one debug surface | One product / POC with its own deployment |
-| Domain logic | Yes | No | No |
-| Own `.env` / Docker | No | Partial (lab defaults) | Yes — full isolation |
-| Typical use | Build & test capability | Quick HTTP + `/debug/*` | Ship legal API, concept lab, customer-facing host |
-
-You can validate an agent with pytest or the shared lab first, then **promote** it into a dedicated application when you need a stable host or production path.
-
-### Scaffold and templates
-
-| Scaffold | Creates | Command |
-|----------|---------|---------|
-| Agent template | `agents/<name>/` — UAEP, tests, notebook | `python -m intergrax.scaffold new-agent <name> --capability <domain>.<action>` |
-| Application template | `applications/<app>/` — manifest, host, `.env.example`, docker (Phase N) | `AGENT_CREATION_GUIDE.md` Step 4E; `new-application --profile lab\|product` |
-| Skill template | `intergrax/skills/providers/<domain>/` — manifest, prompts | `python -m intergrax.scaffold new-skill <id>` — [SKILLS.md](docs/SKILLS.md) |
-
-Both scaffolds follow the same idea: **opinionated folder layout + defaults** so you start from a working structure, not an empty repo.
-
-### Example applications in this repository
-
-| Application | What it demonstrates |
-|-------------|-------------------|
-| [`lab_application/`](applications/lab_application/) | Universal lab — multiple agents, debug API, `IntegrationProfile.lab()` |
-| [`legal_application/`](applications/legal_application/) | Product host — configured `LegalAgent`, auth, FastAPI core, typed factory |
-| [`research_application/`](applications/research_application/) | Multi-agent HTTP host — research pipeline wiring |
-
-**Usage guides (define, invoke, deploy):**
-
-- Composition engine: [`intergrax/applications/USAGE.md`](intergrax/applications/USAGE.md)
-- Application folder layout: [`applications/USAGE.md`](applications/USAGE.md)
-- Architecture rules: [`docs/intergrax_runtime_architecture.md`](docs/intergrax_runtime_architecture.md) §7.4.8–§7.4.10
+Legacy Supervisor / LangGraph orchestration is **deprecated** and **optional** (`[langgraph-legacy]` extra only). Production paths use the Nexus runtime model.
 
 ---
 
-## Harness AI workflow
+## Experimentation workflow
 
-The intended experimentation loop:
+The intended Harness AI loop:
 
 ```text
 new idea
-  → define agent capability (AgentContract)
-  → implement Tier-2 agent under agents/
+  → define agent capability (AgentContract + capability id)
+  → scaffold agent under agents/          (< 1 hour target)
+  → implement domain logic (steps, prompts)
   → register in AgentRegistry
+  → wire integrations, tools, skills (Tier-3 or lab)
   → run via NexusLoop (Task → AgentEngine → UAEP)
   → inspect traces, cost, quality, failures
+  → record experiment decision
   → keep · improve · pause · delete
 ```
 
-Scaffold a new agent:
+### Scaffold commands
+
+| Scaffold | Creates | Command |
+|----------|---------|---------|
+| Agent | `agents/<name>/` — UAEP, tests, notebook | `python -m intergrax.scaffold new-agent <name> --capability <domain>.<action>` |
+| Application | `applications/<app>/` — manifest, host, `.env.example`, docker | `python -m intergrax.scaffold new-application <name> --profile lab\|product` |
+| Skill | `intergrax/skills/providers/<domain>/` — manifest, prompts | `python -m intergrax.scaffold new-skill <skill_id>` |
+| Full stack | Agent + application bundle | `python -m intergrax.scaffold new-stack <name>` |
+
+### Inspect and evaluate
 
 ```bash
-python -m intergrax.scaffold new-agent <name> --capability <domain>.<action>
+# Debug CLI
+python -m intergrax.debug
+
+# Lab HTTP debug API
+GET /debug/tasks/{id}/trace?include_runtime=true
+GET /debug/tasks/{id}/metrics
+GET /debug/tasks/{id}/events
 ```
 
-When the agent needs its **own deployable host**, add a Tier-3 application (manifest + wiring) — see [Applications — isolated environments](#applications--isolated-environments-you-can-ship) and [`applications/USAGE.md`](applications/USAGE.md).
+Experiments, shadow workspaces, and sandbox isolation: [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) Appendices A–B.
 
-Run the regression gate:
+Regression gate:
 
 ```bash
 uv run pytest -m gate -q
@@ -206,79 +311,98 @@ uv run pytest -m gate -q
 
 ---
 
-## Reference agents
+## Applications — isolated deployable environments
 
-| Agent | Capability | Path |
-|-------|------------|------|
-| Echo | Minimal UAEP reference | `agents/echo/` |
-| Research | Web research pipeline | `agents/research/` |
-| Research Summary | Summarization stage in multi-agent flow | `agents/research/` |
-| Legal | Contract analysis and legal review | `agents/legal/` |
+**Applications** turn reusable **agent capabilities** into **separate, deployable products**. An agent answers *what the system can do*. An application answers *how that capability is hosted, configured, and delivered* — as its own API, with its own env, Docker image, and integration profile.
 
-Agents execute through **UAEP** (Unified Agent Execution Protocol): `get_steps` → `run_step` → `decide_after_step`, orchestrated by `AgentEngine` inside `NexusLoop`.
+Think of Tier-2 agents as **specialized modules** and Tier-3 applications as **ready-made shells** — like shipping the same engine in different vehicles: a lab van, a legal product API, or a research service.
 
-Tier-3 **applications** that compose these agents are listed in [Applications — isolated environments](#applications--isolated-environments-you-can-ship).
+### What an application is
 
----
+| Property | Meaning |
+|----------|---------|
+| **Isolated environment** | Own `.env` / `.env.example`, settings, HTTP routes, optional `docker/` |
+| **Composition only** | Wires agents + integrations; **no** domain logic (stays in `agents/<name>/`) |
+| **Deployable unit** | `uvicorn` locally; `applications/<app>/docker/build-docker.sh` for image build |
+| **Template-born** | Scaffold `new-application` — same ergonomics as `new-agent` |
+| **Reusable agents** | Same `LegalAgent` can power different applications with different config |
 
-## Runtime capabilities
-
-- **NexusLoop** — task intake, agent selection, lifecycle (`Task` → `RUNNING` → `COMPLETED` / `WAITING_FOR_HUMAN`).
-- **ExecutionGraph** — multi-agent workflows (e.g. Research → Summary).
-- **UAEP + governance** — step boundaries, `AgentDecision`, human-in-the-loop pause/resume, policy interrupts.
-- **ToolRuntime gateway** — unified tool access via `ToolRequest` / `RuntimeToolGateway` (§42.12).
-- **Skill Library** — composable capability packs above tools; `SkillResolver` merges `skill_ids` into policy and allow-lists (§7.1.8).
-- **Observability** — persisted run traces (SQLite), debug CLI (`python -m intergrax.debug`), debug HTTP API (`intergrax.debug.app`).
-- **Tier-0 reuse** — one canonical path for integrations, tools, skills, LLM, RAG, and tracing; agents compose rather than reimplement.
-
-Legacy Supervisor / LangGraph orchestration is **deprecated** in favour of the Nexus runtime model.
-
----
-
-## Repository layout
+### Concept → runtime
 
 ```text
-intergrax/              # Tier-0 platform + Tier-1 Nexus (integrations/, tools/, skills/)
-agents/                 # Tier-2 specialized agents (echo, legal, research, …)
-applications/           # Tier-3 isolated deployable environments (see applications/USAGE.md)
-docs/                   # Architecture canon, implementation plan, agent guide (see docs/README.md)
-notebooks/              # Runnable examples and integration demos
-tests/                  # Unit and integration tests (gate: pytest -m gate)
+agents/legal/              Tier-2  — LegalAgent, pipeline, prompts
+agents/research/           Tier-2  — ResearchAgent, SummaryAgent
+        │
+        │  AgentBinding.mount(AgentClass, factory=...)
+        ▼
+applications/legal_application/   Tier-3  — manifest, host, .env, Docker
+applications/lab_application/     Tier-3  — universal lab + debug API
+        │
+        ▼
+NexusLoop + IntegrationProfile + FastAPI  →  HTTP / Docker in production
 ```
+
+### Applications vs agents vs shared lab
+
+| | **Agent** (`agents/`) | **Shared lab** (`lab_application`) | **Dedicated application** (`applications/<app>/`) |
+|--|------------------------|-------------------------------------|---------------------------------------------------|
+| Purpose | Reusable capability | Experiment many agents in one debug surface | One product / POC with own deployment |
+| Domain logic | Yes | No | No |
+| Own `.env` / Docker | No | Partial (lab defaults) | Yes — full isolation |
+| Typical use | Build & test capability | Quick HTTP + `/debug/*` | Ship legal API, concept lab, customer host |
+
+### Example applications in this repository
+
+| Application | What it demonstrates |
+|-------------|-------------------|
+| [`poc_template_application/`](applications/poc_template_application/) | **Canonical Tier-3 shell** — H-APP + `build_harness_host_runtime` |
+| [`lab_application/`](applications/lab_application/) | Universal lab — multiple agents, debug API, `IntegrationProfile.lab_stack()` |
+| [`legal_application/`](applications/legal_application/) | Product host — scaffold `LegalAgent`, auth, FastAPI core |
+| [`research_application/`](applications/research_application/) | Multi-agent HTTP host — research + summary agents |
+
+**Usage guides:**
+
+- Composition engine: [`intergrax/applications/USAGE.md`](intergrax/applications/USAGE.md)
+- Application folder layout: [`applications/USAGE.md`](applications/USAGE.md)
+- Tier-3 environment (Appendix F): [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md#appendix-f--tier-3-application-environment)
+- Architecture rules: [§7.4.8–§7.4.10](docs/intergrax_runtime_architecture.md)
 
 ---
 
 ## Platform building blocks (Tier-0)
 
-Shared infrastructure used by all agents:
+Shared infrastructure used by all agents through **one canonical path** per concern:
 
-- **LLM adapters** — nineteen providers via `LLMAdapterRegistry` (`intergrax/llm_adapters/`) — see [LLM Adapters](#llm-adapters)
-- **RAG** — embeddings, vector stores, document loaders (`intergrax/rag/`)
-- **Tools** — registry, Tool Library catalog, MCP export (`intergrax/tools/`) — see [Tool Library](#tool-library)
-- **Skills** — Skill Library, manifests, importers (`intergrax/skills/`) — see [Skill Library](#skill-library)
-- **Memory** — conversational and session storage (`intergrax/memory/`)
-- **Integration Library** — modular catalog of external backends (DB, queues, search, vectors, cloud) — see [Integration Library](#integration-library)
-- **FastAPI core** — shared API primitives for Tier-3 hosts (`intergrax/fastapi_core/`)
+| Concern | Module | Documentation |
+|---------|--------|---------------|
+| **LLM adapters** | `intergrax/llm_adapters/` — 19 providers | [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) |
+| **Integration Library** | `intergrax/integrations/` — 99 providers | [INTEGRATIONS.md](docs/INTEGRATIONS.md) |
+| **Tool Library** | `intergrax/tools/` — atomic LLM/MCP operations | [TOOLS.md](docs/TOOLS.md) |
+| **Skill Library** | `intergrax/skills/` — composable capability packs | [SKILLS.md](docs/SKILLS.md) |
+| **RAG** | `intergrax/rag/` — embeddings, vector stores, ingest | Architecture [§7.1.2](docs/intergrax_runtime_architecture.md) |
+| **Memory** | `intergrax/memory/` — STM/LTM, session, hooks | Phase MEM **Done** (48/48) |
+| **Modality inference** | vision, speech, classical ML tools | [MODALITY.md](docs/MODALITY.md) |
+| **FastAPI core** | `intergrax/fastapi_core/` — shared API primitives for Tier-3 hosts | Architecture [§7.4](docs/intergrax_runtime_architecture.md) |
+| **MCP export** | Tool catalog → MCP clients | [TOOLS.md](docs/TOOLS.md) · [intergrax/tools/USAGE.md](intergrax/tools/USAGE.md) |
+
+**Forbidden in agents:** direct vendor SDKs, duplicate tool registries, boolean `use_rag` / `use_websearch` flags (deprecated — use catalog `tool_ids`).
 
 ---
 
 ## Integration Library
 
-Intergrax treats external systems as **pluggable, environment-specific infrastructure** — not hard-coded dependencies inside agents.
-
-The **Integration Library** (`intergrax/integrations/`) provides:
+External systems are **pluggable, environment-specific infrastructure** — not hard-coded dependencies inside agents.
 
 | Property | Benefit |
 |----------|---------|
-| **Universal contracts** | Agents depend on small category protocols (`RelationalStore`, `VectorStore`, `MessageBus`, …), not vendor SDKs. |
-| **Modular providers** | Each backend is a self-contained package (`providers/<slug>/`). Swap SQLite for PostgreSQL, Chroma for Qdrant, or log for Slack by changing configuration — not agent code. |
-| **Portable across environments** | The same Tier-2 agent runs in a local lab (`IntegrationProfile.lab()`), a customer VPC, or a multi-cloud stack. Tier-3 applications compose the profile at startup. |
-| **Safe boundaries** | Vendor SDKs live only in each provider’s `opens.py`. Tier-2 agents must not import provider slugs or third-party drivers. |
+| **Universal contracts** | Agents depend on category protocols (`RelationalStore`, `VectorStore`, `MessageBus`, …), not vendor SDKs |
+| **Modular providers** | Each backend is `providers/<category>/<slug>/` — swap SQLite for PostgreSQL by config |
+| **Portable profiles** | Same agent runs in lab (`IntegrationProfile.lab()`), customer VPC, or multi-cloud |
+| **Safe boundaries** | Vendor SDKs live only in provider `opens.py` — never in `agents/` |
 
-**99 providers** are registered today — relational stores (incl. Oracle/MSSQL/Azure SQL/Cloud SQL), document DBs (MongoDB, Cassandra, DynamoDB), Redis/Memcached/ElastiCache, Kafka/Celery/RabbitMQ/SQS/Service Bus/Pub/Sub, S3/Azure Blob/GCS, Pinecone/Qdrant/Chroma, web search (Google CSE, Bing, Brave, SerpAPI), Slack/Teams/SMTP, Jira/GitHub/Linear/Azure DevOps, Confluence/Notion/SharePoint, observability backends, Playwright, and AWS/Azure/GCP facades.
+**99 providers** registered — relational stores, document DBs, Redis/Kafka/RabbitMQ/SQS, S3/Azure/GCS, Pinecone/Qdrant/Chroma, web search, Slack/Teams/SMTP, Jira/GitHub/Linear, Confluence/Notion, observability backends, Playwright, AWS/Azure/GCP facades.
 
 ```python
-# Tier-3 application — declare backends once
 from intergrax.integrations.registry.profile import IntegrationProfile
 
 profile = IntegrationProfile(
@@ -289,149 +413,439 @@ profile = IntegrationProfile(
 # Agents receive resolved contract instances — no boto3, no pymongo in agent code
 ```
 
-**Full catalog (99 providers, env vars, links to per-slug `USAGE.md`):**  
-**[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)**
+**Full catalog:** [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) — per-slug `USAGE.md` at `providers/<category>/<slug>/USAGE.md`
 
-Architecture rules: [runtime architecture §7.1](docs/intergrax_runtime_architecture.md) · implementation status: [Phase M](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
+Control plane: [AGENT_CREATION_GUIDE Appendix K](docs/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) · Audit layer 13: [INTEGRAX_HARNESS_AUDIT_MAP.md §13](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
 
 ---
 
 ## Tool Library
 
-Agents do not call Jira, Bing, or PostgreSQL directly. They invoke **tools** — named, schema-defined operations optimized for LLM planners and MCP clients. Tools compose the [Integration Library](#integration-library) (and RAG modules) underneath.
-
-The **Tool Library** (`intergrax/tools/`) provides:
+Agents invoke **tools** — named, schema-defined operations for LLM planners and MCP clients. Tools compose the Integration Library underneath.
 
 | Property | Benefit |
 |----------|---------|
-| **LLM-first contracts** | Each tool has `tool_id`, description, and JSON Schema parameters — for native tool-calling models and MCP. |
-| **Composable semantics** | e.g. `jira.search_tasks(project, status)` builds JQL internally; agents never see raw integration APIs. |
-| **Unified execution** | All invocations go through `ToolRuntime` — policy, trace, idempotency, and `allowed_tools` enforcement. |
-| **Dual export** | Same catalog entry → OpenAI function schema, MCP tool, and UAEP `ToolRequest`. |
-| **Unified model** | RAG and web search are catalog tools (`rag.retrieve`, `websearch.query`) — legacy `use_rag` / `use_websearch` map automatically. |
-
-**Engine today:** `ToolContract`, `ToolRegistry`, `RuntimeToolInvoker`, `ToolsAgent`.  
-**Catalog providers (Phase O Done):** full first-party catalog wired end-to-end in reference applications (`tool_wiring.py` → `ApplicationBuildContext` → agent `RuntimeConfig`). Legacy `use_rag` / `use_websearch` remain as compatibility shims.
+| **LLM-first contracts** | `tool_id`, description, JSON Schema — native tool-calling + MCP |
+| **Composable semantics** | `jira.search_tasks(project, status)` builds JQL internally |
+| **Unified execution** | All invocations through `ToolRuntime` — policy, trace, idempotency |
+| **Dual export** | Same entry → OpenAI function schema, MCP tool, UAEP `ToolRequest` |
+| **Unified model** | RAG and web search are catalog tools (`rag.retrieve`, `websearch.query`) |
 
 ```python
-# Tier-2 agent — declare tool policy via catalog constants (not raw vendor APIs)
-from intergrax.tools.providers.jira.service import JIRA_SEARCH_TASKS_TOOL_ID, JIRA_GET_ISSUE_TOOL_ID
+from intergrax.tools.providers.jira.service import JIRA_SEARCH_TASKS_TOOL_ID
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
 
 AgentContract(
     id="pm",
-    allowed_tools=[
-        JIRA_SEARCH_TASKS_TOOL_ID,
-        JIRA_GET_ISSUE_TOOL_ID,
-        RAG_RETRIEVE_TOOL_ID,
-        "confluence.search_pages",  # catalog constant when bundle exports it
-    ],
+    allowed_tools=[JIRA_SEARCH_TASKS_TOOL_ID, RAG_RETRIEVE_TOOL_ID],
 )
-
-# Tier-3 application — wire integrations into tool handlers
-from intergrax.tools.registry import ToolProfile, ToolWiringContext, build_registry_from_profile, register_default_tools
-
-register_default_tools()
-ctx = ToolWiringContext.from_integration_profile(integration_profile)
-registry = build_registry_from_profile(ToolProfile(enabled_bundles=["jira", "confluence"]), ctx=ctx)
 ```
 
-**Full catalog (tool_ids, status, migration from legacy flags):**  
-**[docs/TOOLS.md](docs/TOOLS.md)** · **end-to-end wiring:** **[intergrax/tools/USAGE.md](intergrax/tools/USAGE.md)**
+**Full catalog:** [docs/TOOLS.md](docs/TOOLS.md) · **Wiring guide:** [intergrax/tools/USAGE.md](intergrax/tools/USAGE.md)
 
-Architecture: [§7.1.6–§7.1.7](docs/intergrax_runtime_architecture.md) · implementation: [Phase O](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
+Control plane: [Appendix J](docs/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) · Audit layer 11: [AUDIT_MAP §11](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
 
 ---
 
 ## Skill Library
 
-**Skills** sit between tools and agents. A skill groups everything needed for a **business or functional goal** without being a single LLM function call.
-
-| Layer | Invoked by LLM? | Role |
-|-------|-----------------|------|
-| Tool | **Yes** | One schema-defined operation (`websearch.query`) |
-| Skill | **No** | Pack resolved at register/run: which tools, which prompts, which policy fragment |
-
-The **Skill Library** (`intergrax/skills/`) provides:
+**Skills** sit between tools and agents — reusable packs for business or functional goals without being a single LLM function call.
 
 | Property | Benefit |
 |----------|---------|
 | **`SkillManifest`** | Versioned `skill_id`, `tool_ids`, prompt refs, optional policy fragment |
 | **Composition** | Agents declare `skill_ids` on `AgentContract`; runtime merges into `allowed_tools` + context |
-| **External skills** | Importers (e.g. Cursor `SKILL.md`) → validated manifest — no raw markdown in production prompts |
-| **No tool confusion** | Skills never register as `ToolContract`; LLM tool-calling surface stays atomic |
+| **External skills** | Importers (Cursor `SKILL.md`) → validated manifest |
+| **No tool confusion** | Skills never register as `ToolContract` |
 
-```python
-# Skills: catalog manifests (registered via skill bundles). Tools: ToolContract references.
-from intergrax.skills.providers.legal.manifests import LEGAL_CONTRACT_REVIEW
-from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
-from intergrax.tools.providers.rag.bundle import RAG_RETRIEVE_TOOL_CONTRACT
-from intergrax.tools.providers.websearch.bundle import WEBSEARCH_QUERY_TOOL_CONTRACT
+Platform harness skills in lab: `harness.tool_smoke`, `harness.context_demo`, `harness.trace_read`, `harness.policy_smoke`, `harness.stack_demo` — see [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md).
 
-AgentContract(
-    id="legal",
-    skills=[LEGAL_CONTRACT_REVIEW],
-    extra_tools=[],
-)
-
-AgentContract(
-    id="research",
-    skills=[RESEARCH_LITERATURE_SCAN],
-    extra_tools=[RAG_RETRIEVE_TOOL_CONTRACT, WEBSEARCH_QUERY_TOOL_CONTRACT],
-)
-```
-
-`AgentRegistry.register` merges `skills` + `extra_tools` into resolved `allowed_tools` (string allow-list for runtime). Do not pass ad-hoc tool/skill id strings in Tier-2 agent code.
-
-**Catalog:** [SKILLS.md](docs/SKILLS.md) · **architecture:** [§7.1.8](docs/intergrax_runtime_architecture.md) · **Harness mapping:** [§5.3](docs/intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model)
+**Catalog:** [SKILLS.md](docs/SKILLS.md) · Architecture [§7.1.8](docs/intergrax_runtime_architecture.md) · Audit layer 12: [AUDIT_MAP §12](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
 
 ---
 
 ## LLM adapters
 
-Agents call language models through **`LLMAdapter`** — not OpenAI/Anthropic SDKs directly. The adapter layer keeps chat, **streaming**, native **tools**, and **structured JSON** consistent across providers.
+Language models are accessed through **`LLMAdapter`** — not vendor SDKs directly. Nineteen providers: OpenAI, Claude, Gemini, Ollama, Azure, Mistral, Bedrock, Groq, vLLM, Together, Fireworks, OpenRouter, DeepSeek, xAI, llama.cpp, Cohere, and more.
 
 | Property | Benefit |
 |----------|---------|
-| **Unified contract** | `generate_messages`, `stream_messages`, optional `generate_with_tools` / `generate_structured`. |
-| **Lazy registry** | `LLMAdapterRegistry.create("openai")` loads only the provider you need. |
-| **Tool-ready** | OpenAI, Claude, Azure, Gemini, Mistral, and Bedrock (Anthropic) support native tool loops for `ToolsAgent`. |
-| **Usage tracking** | Per-`run_id` token and latency stats for runtime observability. |
-| **Outside integrations** | LLM providers are **not** Integration Library slugs (architecture §5.2.2). |
-
-**Nineteen providers today:** core (`openai`, `claude`, `azure_openai`, `azure_ai_inference`, `gemini`, `vertex_gemini`, `mistral`, `aws_bedrock`, `ollama`) plus OpenAI-compatible hosts (`groq`, `vllm`, `together`, `fireworks`, `openrouter`, `deepseek`, `xai`, `llama_cpp`, `cohere`, `cohere_native`).
+| **Unified contract** | `generate_messages`, `stream_messages`, `generate_with_tools`, `generate_structured` |
+| **Lazy registry** | `LLMAdapterRegistry.create("openai")` loads only needed provider |
+| **Tool-ready** | Native tool loops for `CatalogToolPlanner` |
+| **Usage tracking** | Per-`run_id` token and latency stats |
+| **Outside integrations** | LLM providers are **not** Integration Library slugs |
 
 ```python
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
 llm = LLMAdapterRegistry.create(LLMProvider.OPENAI, model="gpt-4o-mini")
 text = llm.generate_messages([...], run_id=task_id)
 ```
 
-**Full catalog (env vars, streaming/tools matrix, Bedrock Converse, optional `pyproject` extras):**  
-**[docs/LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md)**
+**Full catalog:** [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) · Audit layer 6: [AUDIT_MAP §6](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
 
-Architecture: [§5.2.2](docs/intergrax_runtime_architecture.md)
+---
+
+## Modality and ML plane
+
+Harness AI at scale needs more than text LLMs — images, audio, CV detectors (YOLO, ONNX), embeddings, and batch classifiers. Intergrax organizes modality in **three planes**:
+
+| Plane | Purpose | Module |
+|-------|---------|--------|
+| **A — Generative** | Dialog, reasoning, native multimodal LLM APIs | `intergrax/llm_adapters/` |
+| **B — Ingest** | Files/streams → text or embeddings for knowledge | RAG ingest, document parsers, transcription |
+| **C — Dedicated inference** | Deterministic CV/ML, TTS, served models | `vision.detect`, `ml.predict`, `speech.synthesize` tools |
+
+**Routing discipline:**
+
+- Regulated detection (boxes, masks, scores) → Plane C tools
+- Semantic Q&A over an image in conversation → Plane A when policy allows
+- Archive indexing → Plane B only
+
+Agents invoke modalities through **tools** and profiles only — never vendor SDKs (`ultralytics`, `torch`, …) in `agents/`.
+
+**Full index:** [MODALITY.md](docs/MODALITY.md) · Phase W-ML **Done** · Audit layer 29: [AUDIT_MAP §29](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
+
+---
+
+## Memory, RAG, and context engineering
+
+| Layer | Components | Status |
+|-------|------------|--------|
+| **RAG** | `RetrievalService`, `RagProfile`, `IngestPipeline`, hybrid sparse/dense | Phase M-RAG **Done** |
+| **Memory** | STM/LTM, session storage, hooks, task memory | Phase MEM **Done** (48/48) |
+| **Context engineering** | `ContextManager`, `ContextBudgetPolicy`, `CONTEXT_ASSEMBLED` / `CONTEXT_TRIMMED` events | Phase CTX **Done** |
+| **Prompt registry** | Versioned prompts, assembly, policy overlays | Phase PE **Done** |
+
+Control planes: [Appendix G](docs/AGENT_CREATION_GUIDE.md#appendix-g--memory--rag-naming-phase-q) · [Appendix L](docs/AGENT_CREATION_GUIDE.md#appendix-l--context-engineering-control-plane) · [Appendix M](docs/AGENT_CREATION_GUIDE.md#appendix-m--prompt-registry-control-plane)
+
+Audit layers: [§14 RAG](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) · [§15 Memory](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) · [§16 Context](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) · [§17 Prompt](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
+
+---
+
+## Governance, policy, and human-in-the-loop
+
+Intergrax is **policy-first** — nothing executes without permission, constraint checks, and traceability.
+
+| Capability | Implementation |
+|------------|----------------|
+| **Policy engine** | `PolicyEngine`, `RuntimePolicyBundle`, pre/post tool hooks |
+| **Tool access policy** | `allowed_tools` enforcement via `ToolRuntime` |
+| **Budgets** | Context, cost, execution time limits |
+| **Human-in-the-loop** | `WAITING_FOR_HUMAN`, approval workflows, escalation |
+| **Shadow workspace** | Isolated execution for risky side effects |
+| **Sandbox** | `sandbox.exec` tool with session isolation |
+
+```text
+pre-run  →  pre-tool  →  tool invoke  →  post-tool  →  post-run
+                ↑                              ↑
+           PolicyEngine                   HITL gates
+```
+
+Control plane: [AGENT_CREATION_GUIDE Appendix H](docs/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · [Appendix A HITL](docs/AGENT_CREATION_GUIDE.md#appendix-a--human-in-the-loop) · [Appendix B shadow/sandbox](docs/AGENT_CREATION_GUIDE.md#appendix-b--shadow-workspace-and-sandbox)
+
+Audit layers: [§5 Policy](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) · [§23 Security](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) · [§24 Cost](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
+
+---
+
+## Orchestration and multi-agent graphs
+
+Nexus supports **single-agent** and **multi-agent** execution through `ExecutionGraph`:
+
+```text
+Task intake  →  classifier  →  planner  →  graph_runner
+                                              │
+                    ResearchAgent  ──edge──►  SummaryAgent
+```
+
+| Feature | Description |
+|---------|-------------|
+| **Planner** | Goal decomposition into plans and steps |
+| **Graph spec** | `ApplicationGraphSpec` — nodes, edges, parallel cap |
+| **Delegation** | Child nodes as subagents — not nested OS instances |
+| **HITL runner** | Pause/resume at graph boundaries |
+| **Retry layers** | Architecture §31.1 — classified failure handling |
+
+Phase ORCH **Done** (2026-06-05). Control plane: [Appendix I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) · [Appendix C graphs](docs/AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs)
+
+Audit layers: [§7 Cognition](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) · [§9 Orchestration](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) · [§10 Subagents](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
+
+---
+
+## Observability and trace
+
+Every decision and invocation is **traceable** — core Harness AI principle.
+
+| Surface | Purpose |
+|---------|---------|
+| **Run traces** | SQLite-persisted step timeline per task |
+| **Runtime events** | Structured event bus (`CONTEXT_ASSEMBLED`, tool invocations, policy interrupts) |
+| **Debug CLI** | `python -m intergrax.debug` |
+| **Debug HTTP API** | `intergrax.debug.app` — `/debug/tasks/{id}/trace`, `/metrics`, `/events` |
+| **OTLP** | OpenTelemetry export via `IntegrationProfile.harness_environment()` |
+| **Prometheus** | LLM/RAG metrics — [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) |
+
+Lab wiring: [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) · Control plane: [Appendix Q](docs/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) (observability) · [Appendix R](docs/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) (reliability) · [Appendix S](docs/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) (security) · [Appendix T](docs/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) (cost) · [Appendix U](docs/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) (evaluation)
+
+Audit layer 21: [AUDIT_MAP §21](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
+
+---
+
+## Extensibility — plugin catalogs
+
+Shipped providers and **pip-installable extensions** register through the same plugin protocols (Phase P-Ext **Done**):
+
+| Layer | Protocol | Entry point | Register |
+|-------|----------|-------------|----------|
+| Integration | `IntegrationPlugin` | `intergrax.integrations` | `register_integration_plugin()` |
+| Tool | `ToolPlugin` | `intergrax.tools` | `register_tool_plugin()` |
+| Skill | `SkillPlugin` | `intergrax.skills` | `register_skill_plugin()` |
+
+```python
+from intergrax.core.catalog_bootstrap import bootstrap_catalogs
+
+bootstrap_catalogs(
+    register_shipped=True,
+    discover_entry_points=True,
+    integration_plugins=(MyIntegrationPlugin,),
+    tool_plugins=(MyToolPlugin,),
+    skill_plugins=(MySkillPlugin,),
+)
+```
+
+Tools work **standalone** for LLM/MCP. Skills compose allow-lists — they are not invokable tools.
+
+**Author guide:** [EXTENSION_AUTHOR_GUIDE.md](docs/EXTENSION_AUTHOR_GUIDE.md) · Architecture [§7.1.5.1](docs/intergrax_runtime_architecture.md) · Plan [Phase P-Ext](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
+
+---
+
+## Developer experience
+
+Intergrax optimizes **time-to-first-traced-run** — opinionated scaffolds, typed wiring APIs, and zero `getattr` hacks in harness paths.
+
+| Tool | Purpose |
+|------|---------|
+| `intergrax.scaffold` | `new-agent`, `new-application`, `new-skill`, `new-stack` |
+| `intergrax run` | Launch application ASGI host |
+| `intergrax doctor` | Platform health checks |
+| `pytest -m gate` | Regression gate (656 tests) |
+| `check_harness_no_getattr.py` | Zero grandfathered reflection in harness paths |
+| `check_harness_observability_wiring.py` | Tier-3 observability assembly validation |
+
+**Decision hierarchy** for all work:
+
+```text
+1. Development Strategy (strategic goal)
+2. Architecture canon (living spec)
+3. Implementation plan (status map)
+```
+
+Standard work cycle: ANALIZA → OCENA ARCHITEKTURY → OCENA PLANU → DOKUMENTACJA → IMPLEMENTACJA → WERYFIKACJA (gate) → WNIOSKI
+
+Audit layer 27: [AUDIT_MAP §27 Developer Experience](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
+
+---
+
+## Reference agents and applications
+
+### Tier-2 reference agents
+
+| Agent | Capability | Path |
+|-------|------------|------|
+| Echo | Minimal UAEP reference | `agents/echo/` |
+| Signoff Probe | Harness sign-off / policy probe | `agents/signoff_probe/` |
+| Research | Web research pipeline | `agents/research/` |
+| Research Summary | Summarization in multi-agent flow | `agents/research/` |
+| Legal | Contract review (UAEP scaffold baseline) | `agents/legal/` |
+
+Agents execute through **UAEP**, orchestrated by `AgentEngine` inside `NexusLoop`.
+
+### Control plane closeouts (platform Done)
+
+All harness control planes are **closed** — authoring maps live in AGENT_CREATION_GUIDE appendices:
+
+| Phase | Focus | Appendix |
+|-------|-------|----------|
+| AS | Agent assembly | [N](docs/AGENT_CREATION_GUIDE.md#appendix-n--agent-assembly-control-plane) |
+| REG | Registry architecture | [O](docs/AGENT_CREATION_GUIDE.md#appendix-o--registry-architecture-control-plane) |
+| CG | Capability graph | [P](docs/AGENT_CREATION_GUIDE.md#appendix-p--capability-graph-control-plane) |
+| OBS | Observability wiring | [Q](docs/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) |
+| ORCH | Orchestration | [I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) |
+| TS | Tools & skills | [J](docs/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) |
+| INT | Integrations | [K](docs/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) |
+| RAG | Retrieval | [K](docs/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) |
+| CTX | Context engineering | [L](docs/AGENT_CREATION_GUIDE.md#appendix-l--context-engineering-control-plane) |
+| PE | Prompt registry | [M](docs/AGENT_CREATION_GUIDE.md#appendix-m--prompt-registry-control-plane) |
+| MEM | Memory platform | Plan [Phase MEM](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem--memory-platform-completion) |
+
+---
+
+## Repository layout
+
+```text
+intergrax/              # Tier-0 platform + Tier-1 Nexus
+  integrations/         # Integration Library (99 providers)
+  tools/                # Tool Library + MCP export
+  skills/               # Skill Library + importers
+  llm_adapters/         # 19 LLM providers
+  rag/                  # Retrieval, ingest, embeddings
+  memory/               # Session, STM/LTM
+  runtime/              # NexusLoop, AgentEngine, UAEP, governance
+  applications/         # Tier-3 composition engine (manifest, wiring API)
+  scaffold/             # new-agent, new-application, new-skill, new-stack
+agents/                 # Tier-2 specialized agents
+applications/           # Tier-3 isolated deployable environments
+docs/                   # Architecture canon, plan, guides, audits
+infra/                  # Local Docker compose for integration backends
+notebooks/              # Runnable examples and integration demos
+tests/                  # Unit, integration, acceptance (gate: pytest -m gate)
+scripts/                # Harness CI checks, evidence collectors
+```
+
+---
+
+## Architecture maturity and audits
+
+Intergrax maintains a **layered audit model** — the platform is audited one architectural layer at a time, never declared "complete" after a shallow whole-system review.
+
+| Document | Role |
+|----------|------|
+| [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) | Target Harness AI reference (9 logical layers, L0–L4 maturity) |
+| [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | **L4 Adaptive Harness Intelligence (AHI)** — closed-loop architecture RFC, Phase W-ADAPT roadmap |
+| [INTEGRAX_HARNESS_AUDIT_MAP.md](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) | 32 auditable layers with DoD, evidence, risk scoring |
+| [HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md](docs/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) | Cursor/agent prompt template for focused audits |
+
+**Maturity model (L0–L4):** evolution is evidence-driven, not declaration-driven. Phase V L3/L4 gate evidence: [IMPLEMENTATION_PLAN](docs/INTERGRAX_IMPLEMENTATION_PLAN.md).
+
+**Audit phases:**
+
+1. **Core Harness Integrity** — tiers, UAEP, runtime, registry
+2. **Capability Platform** — tools, skills, integrations, RAG, memory
+3. **Production Readiness** — security, cost, SLOs, operational excellence
+
+---
+
+## Adaptive Harness Intelligence (L4)
+
+Intergrax is designed to evolve beyond static harness configuration toward an **Adaptive Harness Intelligence (AHI)** model — a Tier-1 **Adaptive Control Plane** that improves quality, cost, and operational efficiency over time through **evidence-driven, policy-governed closed loops**.
+
+This is **not classical reinforcement learning** (neural policy training, unconstrained reward maximization). It is **bounded harness adaptation**: contextual bandits, statistical gates, evaluation registry feedback, and human-governed policy learning — aligned with IDEAL §25 and the L4 maturity model.
+
+| Concept | Description |
+|---------|-------------|
+| **What it does** | Observes run outcomes → proposes versioned profile changes → validates through governance → applies via shadow/canary → verifies improvement → rolls back on failure |
+| **What it discovers** | Operational patterns in traces (tool/agent/HITL sequences), routing inefficiencies, cost anomalies, eval regressions |
+| **What stays human-governed** | Policy-learning mutations, promotion to production traffic, skill/workflow creation from mined patterns |
+| **Current status** | Phase V delivered **L4 governance contracts** (`adaptive_governance.py`, maturity gates). **Runtime adaptation** is specified but not yet implemented — tracked as **Phase W-ADAPT**. |
+
+**Primary document:** [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — full business case, component specification, data contracts, flow diagrams, phased roadmap (W-ADAPT-0 through W-ADAPT-7), KPIs, and L4 runtime acceptance gates.
+
+**Canon summary:** [intergrax_runtime_architecture.md §54](docs/intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum)
+
+**Competitive angle:** Most harnesses stop at trace + manual tuning. Intergrax targets **auditable, rollback-ready, capability-graph-aware** continuous improvement of the runtime itself — while agents remain replaceable execution units.
+
+---
+
+## Documentation index
+
+All platform documentation lives in [`docs/`](docs/). **One source of truth per topic.**
+
+### Strategy and architecture
+
+| Document | Read when you want to… |
+|----------|------------------------|
+| [docs/README.md](docs/README.md) | Navigate all docs, see current phase focus, update rules |
+| [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Strategic goal, decision hierarchy, lab vs production, work cycle |
+| [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Full architecture canon — tiers, Nexus, UAEP §42, Harness §5.3 |
+| [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) | Ideal Harness AI target — evaluate implementation alignment |
+| [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | **Adaptive Harness Intelligence (L4)** — business case, ACP architecture, W-ADAPT implementation waves |
+| [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, hardening streams, KPIs, business checklist (Appendix A) |
+### Authoring and workflow
+
+| Document | Read when you want to… |
+|----------|------------------------|
+| [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) | **Canonical agent workflow** — scaffold → register → run → inspect (Appendices A–Q) |
+| [EXTENSION_AUTHOR_GUIDE.md](docs/EXTENSION_AUTHOR_GUIDE.md) | Tier-0 plugin catalogs — integrations, tools, skills; entry points |
+| [applications/USAGE.md](applications/USAGE.md) | Application layout — env, Docker, host, deploy triad |
+| [intergrax/applications/USAGE.md](intergrax/applications/USAGE.md) | Composition engine — manifest, typed bindings, registry |
+| [intergrax/tools/USAGE.md](intergrax/tools/USAGE.md) | Wire catalog tools in applications and agents |
+
+### Capability catalogs
+
+| Document | Read when you want to… |
+|----------|------------------------|
+| [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **99 providers** — contracts, env vars, per-slug USAGE links |
+| [TOOLS.md](docs/TOOLS.md) | Tool Library — atomic LLM/MCP operations, migration from legacy flags |
+| [SKILLS.md](docs/SKILLS.md) | Skill Library — manifests, importers, harness presets |
+| [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) | 19 LLM providers — streaming, tools, env vars, metrics |
+| [MODALITY.md](docs/MODALITY.md) | Vision, audio, ML — three modality planes |
+
+### Operations and environment
+
+| Document | Read when you want to… |
+|----------|------------------------|
+| [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) | Lab harness stack, OTLP, skill/tool presets, SLO catalog |
+| [infra/README.md](infra/README.md) | Local Docker infra — compose profiles, `manage.sh` |
+| [infra/PORTS.md](infra/PORTS.md) | Host port matrix for integration backends |
+
+### Audits and quality
+
+| Document | Read when you want to… |
+|----------|------------------------|
+| [INTEGRAX_HARNESS_AUDIT_MAP.md](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) | Layer-by-layer audit map (32 layers) |
+| [HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md](docs/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) | Focused audit prompt for coding agents |
+
+### Quick navigation paths
+
+```text
+Strategic direction     →  INTERGRAX_DEVELOPMENT_STRATEGY.md
+Platform architecture   →  intergrax_runtime_architecture.md §1–§5
+New agent (< 1 hour)    →  AGENT_CREATION_GUIDE.md
+Integrations (99)       →  INTEGRATIONS.md
+Tools                   →  TOOLS.md + intergrax/tools/USAGE.md
+Skills                  →  SKILLS.md
+LLM providers           →  LLM_ADAPTERS.md
+Modality / CV / ML      →  MODALITY.md
+Lab environment         →  HARNESS_ENVIRONMENT.md
+New application         →  applications/USAGE.md + poc_template_application/
+Plugin extension        →  EXTENSION_AUTHOR_GUIDE.md
+Ideal harness target    →  IDEAL_HARNESS_AI_ARCHITECTURE.md
+L4 adaptive harness     →  ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md · canon §54
+Phase status / gates    →  INTERGRAX_IMPLEMENTATION_PLAN.md
+Harness audit           →  INTEGRAX_HARNESS_AUDIT_MAP.md
+Governance / HITL       →  AGENT_CREATION_GUIDE.md Appendix H
+Orchestration / graphs  →  AGENT_CREATION_GUIDE.md Appendix I
+```
 
 ---
 
 ## Status
 
-Intergrax is under **active development** (private R&D). Phase status, priorities, and the business-agent readiness checklist:
+Intergrax is under **active development** (private R&D). The **harness platform** is **complete** — default queue is maintenance only ([§6.1](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1)). Business agents (Phase K) are **end of plan** until explicit product prioritization ([§6.3](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only)).
 
-**[`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)**
+| Phase | Focus | Status |
+|-------|--------|--------|
+| **L** | Agent OS certification | **Done** — Appendix A 20/20 |
+| **M / M-LLM / M-RAG / N / O** | Integration Library, LLM, RAG, applications, tools | **Done** |
+| **Q / Q+** | Harness quality + post-audit hardening | **Done** — Appendix C, D |
+| **R** | Harness AI alignment — Skill Library, context, delegation, policy | **Done (MVP)** — Appendix E |
+| **S** | Harness environment GA | **Done** — [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) |
+| **T / U** | Harness cleanliness + production hardening | **Done** — Appendix G |
+| **V** | Harness architecture hardening — capability graph, lifecycle, metrics, prompt/eval/context/security/cost | **Done** (2026-06-05) |
+| **W-ML** | Model & modality plane | **Done** — [MODALITY.md](docs/MODALITY.md) |
+| **P-Ext** | Tier-0 plugin catalogs | **Done** (61/61) |
+| **AA** | Agents & applications conformance | **Platform Done** |
+| **MEM** | Memory platform | **Done** (48/48) |
+| **ORCH / TS / INT / RAG / CTX / PE / AS / REG / CG / OBS** | Control plane closeouts | **Done** |
+| **K** | Business agents | **End of plan** — deferred |
 
-| Phase | Focus |
-|-------|--------|
-| **Q+** | Harness hardening — **Done** (Appendix D) |
-| **R** | Harness AI alignment (Skill Library, context, delegation, policy) — **Done (MVP)** (Appendix E) |
-| **S** | Harness environment GA — **Done** (2026-06-01) — [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) |
-| **T / U** | Harness cleanliness + production hardening — **Done** (Appendix G) |
-| **V** | Harness architecture hardening (capability graph, lifecycle governance, metrics, prompt/eval/context/security/cost) — **Active** (`V-CG.1`, `V-AM.1`, `V-ALG.1` done) |
-| **K** | Business agents — **end of plan**, deferred until explicit product prioritization (§6.3) |
+**Regression gate:** `uv run pytest -m gate -q` — **656 passed**
 
-Regression gate: `uv run pytest -m gate -q` — **481 passed** (2026-06-02). Also: `python scripts/check_harness_no_getattr.py`
+**Harness CI:** `python scripts/check_harness_no_getattr.py` (zero grandfathered paths)
+
+Full tracker: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
 
 ---
 
@@ -440,9 +854,26 @@ Regression gate: `uv run pytest -m gate -q` — **481 passed** (2026-06-02). Als
 Intergrax is for teams and developers who want to:
 
 - build **specialized agents** on a shared Harness rather than one-off LLM scripts,
-- orchestrate **multi-agent ecosystems** with traceable execution,
-- validate agent hypotheses in a **controlled laboratory** before productizing,
-- integrate AI capabilities into business systems via **Tier-3 application hosts** — isolated, template-based environments that compose agent specializations into separate deployable products.
+- **experiment rapidly** in a controlled laboratory with full traceability,
+- orchestrate **multi-agent ecosystems** with policy, HITL, and observability,
+- **extend** the platform via pip-installable integration/tool/skill plugins,
+- integrate AI capabilities into business systems via **Tier-3 application hosts** — isolated, template-based environments that compose agent specializations into deployable products,
+- evaluate platform maturity against an **ideal Harness AI reference model** with evidence-driven L0–L4 gates.
+
+---
+
+## Local infrastructure
+
+Optional Docker backends for integration development and lab presets:
+
+```bash
+# See infra/README.md for compose profiles
+cd infra && ./manage.sh up redis qdrant postgresql
+```
+
+Port matrix: [infra/PORTS.md](infra/PORTS.md)
+
+Stable lab stack slugs: `sqlite`, `postgresql`, `redis`, `qdrant`, `slack`, `sentry`, `otel`, `lab_json`, `log` — [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md)
 
 ---
 

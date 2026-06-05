@@ -4,10 +4,18 @@
 
 from __future__ import annotations
 
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
 from research.research_agent import ResearchAgent
 from research.summary_agent import SummaryAgent
+
+
+def _research_environment() -> ApplicationEnvironmentProfile:
+    return ApplicationEnvironmentProfile.product_defaults(
+        profile_id="research.product",
+        skill_bundles=["research"],
+    ).model_copy(update={"integration_profile": IntegrationProfile.research_product()}).with_harness_memory()
 
 
 RESEARCH_APPLICATION_MANIFEST = ApplicationManifest.product(
@@ -17,6 +25,7 @@ RESEARCH_APPLICATION_MANIFEST = ApplicationManifest.product(
     env_prefix="RESEARCH_",
     default_port=8010,
     integration_profile=IntegrationProfile.research_product(),
+    environment=_research_environment(),
     agents=[
         AgentBinding.mount(ResearchAgent),
         AgentBinding.mount(SummaryAgent),

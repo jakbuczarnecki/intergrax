@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-03) — **Harness platform bands 1–2d Done** (Q→V, P-Ext, W-ML, **W-OPS**); **Band 2e Phase H-APP Done** (43 tasks); product agents **Deferred**; gate **500 passed** (full regression); **operational L3** = `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce`  
+Status: Working draft (2026-06-02) — **Harness platform bands 1–2x Done**; **Phase EVAL closed**; default queue = **§6.1** maintenance; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; **Orchestration (ORCH)**, **Tools/skills (TS)**, **Integration (INT)**, **RAG**, **CTX**, **LEG**, **PE**, **CLEAN** closeouts **Done**; **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green after CLEAN; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -20,12 +20,30 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 |-------|--------|
 | Strategic goal, decision hierarchy, work cycle | [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | Full architecture specification | `intergrax_runtime_architecture.md` |
-| Phase status, gaps, priority | **This file** — **§4** ladder; **§6.3** = end-of-plan product work only |
+| Phase status, gaps, priority | **This file** — **§4** ladder; **§4.0a** infrastructure vs business; **§6.3** / **§6.3a** = product work only |
 | Tier-0 integration catalog (what / where) | Architecture canon §7.1.1–§7.1.5 |
 | Tier-0 integration implementation (how) | **This file** Phase M |
 | Tier-0 tool catalog (what / where) | Architecture canon §7.1.6–§7.1.7, §22 |
 | Tier-0 tool implementation (how) | **This file** Phase O |
 | Agent creation workflow | `AGENT_CREATION_GUIDE.md` |
+| Governance / policy / observability control plane (authoring) | `AGENT_CREATION_GUIDE.md` **Appendix H** · canon §42.11 · `EXTENSION_AUTHOR_GUIDE.md` §10 (`intergrax.policy_rules`) |
+| Orchestration / graph / delegation control plane (authoring) | `AGENT_CREATION_GUIDE.md` **Appendix I** · canon §42.3–§42.15, §42.43 · R-Delegate **Done** · closeout [Phase ORCH](#phase-orch--orchestration-control-plane-closeout) |
+| Governance audit closeout (docs + residuals register) | [Phase GOV-AUDIT](#phase-gov-audit--governance-control-plane-audit-closeout) · **GOV-DOC.\*** **Done** |
+| Orchestration audit closeout (runtime wiring) | [Phase ORCH](#phase-orch--orchestration-control-plane-closeout) · **§6.1b** · Band **2j** |
+| Tools / skills audit closeout (runtime bridge) | [Phase TS](#phase-ts--tools--skills-control-plane-closeout) · **§6.1c** · Band **2k** · `AGENT_CREATION_GUIDE.md` **Appendix J** |
+| Integration audit closeout (runtime bridge + health) | [Phase INT](#phase-int--integration-control-plane-closeout) · **§6.1d** · Band **2l** · **Appendix K** |
+| RAG audit closeout (runtime bridge) | [Phase RAG](#phase-rag--rag-retrieval-control-plane-closeout) · **§6.1e** · Band **2m** · **Appendix K** §K.5 |
+| Context engineering closeout (runtime + Nexus wiring) | [Phase CTX](#phase-ctx--context-engineering-control-plane-closeout) · **§6.1f** · Band **2n** · **Appendix L** |
+| Prompt registry closeout (runtime + environment wiring) | [Phase PE](#phase-pe--prompt-registry-control-plane-closeout) · **§6.1i** · Band **2p** · **Appendix M** |
+| Legacy module closeout (chat_router, tools_agent, chains) | [Phase CLEAN](#phase-clean--legacy-module-closeout) · **§6.1j** |
+| Agent assembly closeout (contracts, capabilities, lifecycle) | [Phase AS](#phase-as--agent-assembly-control-plane-closeout) · **§6.1k** · Band **2q** · **Appendix N** |
+| Registry architecture closeout (snapshots, conformance, CI) | [Phase REG](#phase-reg--registry-architecture-control-plane-closeout) · **§6.1l** · Band **2r** · **Appendix O** |
+| Capability graph closeout (environment slice, blast-radius wire) | [Phase CG](#phase-cg--capability-graph-control-plane-closeout) · **§6.1m** · Band **2s** · **Appendix P** |
+| Observability closeout (profile bridge, assembly resolver, CI) | [Phase OBS](#phase-obs--observability-control-plane-closeout) · **§6.1n** · Band **2t** · **Appendix Q** |
+| Reliability closeout (idempotency bridge, circuit breaker, CI) | [Phase REL](#phase-rel--reliability-control-plane-closeout) · **§6.1o** · Band **2u** · **Appendix R** |
+| Security closeout (V-SEC bridge, middleware assembly, CI) | [Phase SEC](#phase-sec--security-control-plane-closeout) · **§6.1q** · Band **2v** · **Appendix S** |
+| Cost governance closeout (budget bridge, policy bundle, CI) | [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · **§6.1r** · Band **2w** · **Appendix T** |
+| Evaluation closeout (registry bridge, policy bundle, CI) | [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · **§6.1s** · Band **2x** · **Appendix U** |
 | Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
 | Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
 | Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
@@ -42,8 +60,17 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Skill catalog | `SKILLS.md` |
 | Model & modality plane (vision, audio, ML) | Architecture canon §7.1.9 · [`MODALITY.md`](MODALITY.md) · **Phase W-ML** (below) |
 | Plugin catalogs (integrations, tools, skills) | **This file** Phase P-Ext + **Appendix I** · [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md) |
-| Harness maturity audit (2026-06-02) → operational L3 | [`adut_dojrzalosci_harness.md`](adut_dojrzalosci_harness.md) → **Phase W-OPS** · **§6.2w** |
+| Harness maturity audit (2026-06-02) → operational L3 | **Phase W-OPS** (below) · **§6.2w** · source: maturity audit 2026-06-02 (conversation) |
 | Tier-3 application environment audit → full configurability | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) → **Phase H-APP** · **§6.2x** |
+| Developer authoring UX audit (LangGraph-like entry, measurable TTFRun) | **Phase DX** (below) · **§6.2y** · source: harness DX audit 2026-06-03 (conversation + H-APP gap analysis) |
+| Agents & applications conformance audit (structure, scaffold, per-agent/app docs, deploy) | **Phase AA** (below) · **§6.2z** · source: Tier-2/Tier-3 audit 2026-06-03 (conversation) |
+| Memory platform audit (STM/LTM/org/task/context/hooks/persistence) | **Phase MEM** (below) · **§6.2aa** · **§6.1aa** · source: memory audit 2026-06-02 (conversation) |
+| Phase V runtime remediation (2026-06-05 audit) → close Partial gaps | **Phase V-REM** (below) · **Appendix J** · **§6.1z** · **§6.2v** · source: plan/code audit vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` |
+| Phase V remediation traceability (audit gap → V-REM ID) | **Appendix J** (below) |
+| Full architecture audit procedure (32 layers) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) · prompt: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) |
+| Infrastructure vs business scope split | **§4.0a** · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) (closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) (closed) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) (closed) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) (closed) · [§6.1g](#61g-harness-implementation-queue--governance-audit-closed) (closed) · [§6.3a](#63a-business-backlog-register-consolidated) |
+
+**Note on audit source documents:** Some historical audit narratives (e.g. `HARNESS_APPLICATION_LAYER_AUDIT.md`) may live outside the repo. **Task traceability in this plan is canonical** — H-APP (43 tasks), W-OPS, MEM, DX, AA registers below; do not re-derive scope from missing files.
 
 ---
 
@@ -57,7 +84,7 @@ Intergrax is an **Agent Operating System / Harness AI runtime** — not a collec
 
 Current optimization targets:
 
-- **harness environment GA** (Phase S) · experimentation speed · agent creation speed · runtime stability
+- **harness environment GA** (Phase S) · **developer authoring UX** (Phase DX) · experimentation speed · agent creation speed · runtime stability
 - orchestration quality · observability · composability · skill/platform packs (Integration → Tool → Skill)
 
 **Harness GA (Phase L):** Agent OS certified — Appendix A **20/20**. New agents ship via scaffold without Nexus edits.
@@ -146,10 +173,28 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Harness environment GA (Phase S)** | **Done** (2026-06-01) | No (blocks K.1/K.2 only) | S-Ops + S-H + S-Doc; gate green |
 | **Harness cleanliness (Phase T)** | **Done** (2026-06-01) | No | T-Ops + T-H; gate green |
 | **Harness production hardening (Phase U)** | **Done** | No | U-Sec + U-Pol + U-Con + U-Typ + U-Arch + U-CI; Appendix G |
-| **Harness architecture hardening (Phase V)** | **Done** | No (harness-only) | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics/MA/KG hardening |
+| **Harness architecture hardening (Phase V)** | **Done** | No (harness-only) | Phase V-REM closeout complete (2026-06-05) |
+| **Phase V runtime remediation (V-REM)** | **Done** | No (harness-only) | All V-REM rows closed; §6.1z queue closed |
 | **Operational harness L3 (Phase W-OPS)** | **Done** (code) | No (harness-only) | Ops sign-off: `release_cycles.json` or `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce` |
-| **Application environment profile (Phase H-APP)** | **Done** (2026-06-03) | No (harness-only) | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7 — 43 tasks; Band **2e** |
-| Regression gate | **470 passed** | No | Must stay green after each harness PR |
+| **Application environment profile (Phase H-APP)** | **Done** (2026-06-03) | No (harness-only) | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7 — 43 tasks; memory bridge gap → [Phase MEM](#phase-mem--memory-platform-completion) |
+| **Memory platform (Phase MEM)** | **Done** (~3,5/5 post-closeout) | No (harness-only) | Memory platform **48/48** — gate **581** |
+| **Governance audit closeout (GOV-AUDIT)** | **Done** (docs) | No | GOV-DOC.1–2; code via V-REM/H-APP/DX-5.8 |
+| **Orchestration closeout (Phase ORCH)** | **Done** (Band 2j) | No (harness-only) | ORCH-1–4 — [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) |
+| **Tools/skills closeout (Phase TS)** | **Done** (Band 2k) | No (harness-only) | TS-1–3 — [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) |
+| **Integration closeout (Phase INT)** | **Done** (Band 2l) | No (harness-only) | INT-1–2 — [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) |
+| **RAG closeout (Phase RAG)** | **Done** (Band 2m) | No (harness-only) | RAG-1 — [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) |
+| **Context engineering closeout (Phase CTX)** | **Done** (Band 2n) | No (harness-only) | CTX-1–2 — [§6.1f](#61f-harness-implementation-queue--context-engineering-closeout-closed) |
+| **Prompt registry closeout (Phase PE)** | **Done** (Band 2p) | No (harness-only) | PE-1–3 — [§6.1i](#61i-harness-implementation-queue--prompt-registry-closeout-closed) |
+| **Legacy module closeout (Phase CLEAN)** | **Done** | No (harness-only) | CLEAN-1–4 — [§6.1j](#61j-harness-implementation-queue--legacy-module-closeout-closed) |
+| **Agent assembly closeout (Phase AS)** | **Done** (Band 2q) | No (harness-only) | AS-1–3 — [§6.1k](#61k-harness-implementation-queue--agent-assembly-closeout-closed) |
+| **Registry architecture closeout (Phase REG)** | **Done** (Band 2r) | No (harness-only) | REG-1–3 — [§6.1l](#61l-harness-implementation-queue--registry-architecture-closeout-closed) |
+| **Capability graph closeout (Phase CG)** | **Done** (Band 2s) | No (harness-only) | CG-1–3 — [§6.1m](#61m-harness-implementation-queue--capability-graph-closeout-closed) |
+| **Observability closeout (Phase OBS)** | **Done** (Band 2t) | No (harness-only) | OBS-1–3 — [§6.1n](#61n-harness-implementation-queue--observability-closeout-closed) |
+| **Reliability closeout (Phase REL)** | **Done** (Band 2u) | No (harness-only) | REL-1–3 — [§6.1o](#61o-harness-implementation-queue--reliability-closeout-closed) |
+| **Security closeout (Phase SEC)** | **Done** (Band 2v) | No (harness-only) | SEC-1–3 — [§6.1q](#61q-harness-implementation-queue--security-closeout-closed) |
+| **Cost governance closeout (Phase COST)** | **Done** (Band 2w) | No (harness-only) | COST-1–3 — [§6.1r](#61r-harness-implementation-queue--cost-governance-closeout-closed) |
+| **Evaluation closeout (Phase EVAL)** | **Done** (Band 2x) | No (harness-only) | EVAL-1–3 — [§6.1s](#61s-harness-implementation-queue--evaluation-closeout-closed) |
+| Regression gate | **687 passed** | No | Must stay green after each harness PR |
 
 ---
 
@@ -177,7 +222,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 
 
-**Current alignment** (synced with §0.5, 2026-06-02):
+**Current alignment** (synced with §0.5, 2026-06-05):
 
 | Scope | Score | Notes |
 |-------|-------|-------|
@@ -187,15 +232,24 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Harness quality (Phase Q) | **Done** | Appendix C — gate **417** at Phase Q close |
 | Harness hardening (Phase Q+) | **Done** | Appendix D — typing, monolith splits, zero grandfathered `getattr` |
 | Harness AI alignment (Phase R MVP) | **Done** | Appendix E — Skill Library, context, delegation, policy bundle |
-| Regression gate | **470 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
+| Regression gate | **608 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
 | Harness environment GA (Phase S) | **Done** (2026-06-01) | S-H.* + S-Ops + S-Doc |
 | Harness cleanliness (Phase T) | **Done** (2026-06-01) | T-Ops + T-H |
 | Harness production hardening (Phase U) | **Done** | Appendix G audit → U.* (U-Leg residual) |
-| Harness architecture hardening (Phase V) | **Done** | Capability graph, lifecycle governance, architecture metrics, prompt/eval/context/security/cost/MA/KG hardening |
+| Harness architecture hardening (Phase V) | **Done** | Phase V-REM runtime enforcement complete (2026-06-05) |
+| Phase V runtime remediation (V-REM) | **Done** | 10/10 tasks — capability graph, lifecycle routing, prompt governance, V-SEC wiring, EvalRunner gate |
 | Model & modality plane (Phase W-ML) | **Done** (2026-06-02) | Vision/speech profiles, tools, remote adapters, `harness.vision_qa` — canon §7.1.9 |
 | **Harness completion backlog** | **Done** (2026-06-02) | §4.1 — U-Leg, typing/CI, platform skills, research UAEP parity |
 | **Plugin catalogs (Phase P-Ext)** | **Done** (2026-06-02) | [Phase P-Ext](#phase-p-ext--plugin-catalogs-integrations-tools-skills) · [P-Ext.6 paydown](#p-ext6--production-closure-paydown) · Appendix I |
-| **Application environment (Phase H-APP)** | **Pending** | [Phase H-APP](#phase-h-app--tier-3-application-environment-full-configurability) · 43 tasks from application-layer audit |
+| **Application environment (Phase H-APP)** | **Done** (2026-06-03) | [Phase H-APP](#phase-h-app--tier-3-application-environment-full-configurability) · 43 tasks from application-layer audit |
+| **Developer authoring UX (Phase DX)** | **Done** (2026-06-02) | [Phase DX](#phase-dx--developer-authoring-experience-fast-environment--agent-builds) · **47/47 Done** — [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
+| **Agents & applications conformance (Phase AA)** | **Platform Done** (2026-06-02) | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) · platform **Done**; domain **Deferred** — [§6.3a](#63a-business-backlog-register-consolidated) |
+| **Memory platform (Phase MEM)** | **Done** (2026-06-02) | [Phase MEM](#phase-mem--memory-platform-completion) · **48/48** |
+| **Governance audit (GOV-AUDIT)** | **Done** (docs) | [Phase GOV-AUDIT](#phase-gov-audit--governance-control-plane-audit-closeout) |
+| **Orchestration closeout (Phase ORCH)** | **Done** (2026-06-05) | [Phase ORCH](#phase-orch--orchestration-control-plane-closeout) · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) |
+| **Tools/skills closeout (Phase TS)** | **Done** (2026-06-02) | [Phase TS](#phase-ts--tools--skills-control-plane-closeout) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) |
+| **Integration closeout (Phase INT)** | **Done** (2026-06-02) | [Phase INT](#phase-int--integration-control-plane-closeout) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) |
+| **RAG closeout (Phase RAG)** | **Done** (2026-06-02) | [Phase RAG](#phase-rag--rag-retrieval-control-plane-closeout) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) |
 | Product agents (Phase K) | **Deferred** | K.1/K.2 — end of priority list |
 | Tier-3 product applications | **Deferred** | New apps / product routes — after harness backlog |
 
@@ -282,7 +336,9 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 | A.3 | NexusLoop production path | **Done** |
 
-| A.4 | EvalRunner integration | **Done** |
+| A.4 | EvalRunner integration (NexusEvalRunner + gate coverage) | **Done** |
+
+| A.4.1 | NexusEvalRunner integration tests + inclusion in gate | **Done** (2026-06-05 — `tests/integration/eval/test_nexus_eval_runner.py`) |
 
 | A.5-min | Pre-P4.2 regression gate | **Done** |
 
@@ -1556,7 +1612,7 @@ Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-
 | Q+-L.2 | **Legal agent → catalog `ToolRuntime`** — remove runtime dependency on `ToolsAgent` / `ToolsStep` planner loop | **Done** | **Critical** | `agents/legal/`, `catalog_tool_planner.py` | Legal uses `CatalogToolPlanner` + `tool_planner` |
 | Q+-L.3 | **`RuntimeConfig` default tools** — no default `ToolsAgent` in `config` / `config_sections` | **Done** | High | `nexus/config.py`, `config_sections.py` | `tool_planner: ToolPlannerProtocol` only |
 | Q+-L.4 | **`supervisor` boundary** — move to `experiments/supervisor` or hard-deprecate with import guard | **Done** | Medium | `intergrax/supervisor/__init__.py`, gate import test | Not imported from runtime/applications |
-| Q+-L.5 | **`chains/langchain_qa_chain`** — experimental only or remove from default paths | **Done** | Medium | `intergrax/chains/__init__.py`, gate import test | Tests-only imports |
+| Q+-L.5 | **`chains/langchain_qa_chain`** — removed from harness (package deleted) | **Done** | Medium | — | No `intergrax.chains` imports |
 | Q+-L.6 | **`rag/answers` e2e** — migrate `tests/e2e/rag` to `RetrievalService`; package import guard | **Done** | Medium | `tests/e2e/rag/test_rag_full_runtime_e2e.py` | No `rag.answers` import |
 | Q+-L.7 | **`openai/rag/rag_openai.py`** — bridge to `RetrievalService` or delete if unused | **Won't fix** | Low | `openai/rag/rag_openai.py` | Zero production imports; legacy sample only |
 
@@ -1991,7 +2047,7 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 ### Phase V — Harness Architecture Hardening (post-U)
 
 **Source:** Architecture hardening audit against `IDEAL_HARNESS_AI_ARCHITECTURE.md` (2026-06-02).  
-**Status:** **Done** (2026-06-02) — all `V-*` and `V-V6.*` contracts, unit tests, governance artifacts, and CI closeout gate; **operational** L3/L4 evidence (two stable release cycles) remains for release board sign-off. **Prerequisites:** Phase U **Done**.  
+**Status:** **Done** (2026-06-05) — Phase V-REM closed all runtime enforcement gaps. **Prerequisites:** Phase U **Done**.  
 **Goal:** Close architecture-level gaps that increase long-term technical debt, reduce extensibility, or weaken governance in harness-only scope.
 
 **Explicitly in scope for Phase V:**
@@ -2018,9 +2074,9 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
 | V-CG.1 | Capability graph schema (nodes + edges for Integration/Tool/Skill/Policy/Agent/Application/Product) | **Done** | **Critical** | Typed schema + docs in canon |
-| V-CG.2 | Graph lineage builder from registries | **Done** | High | Build process covers changed artifacts |
-| V-CG.3 | Impact analysis report (blast radius) for changed capabilities | **Done** | High | CLI/API report in CI artifact |
-| V-CG.4 | Compatibility validation on dependency graph edges | **Done** (report + enforce mode) | **Critical** | CI fails on incompatible graph changes |
+| V-CG.2 | Graph lineage builder from registries | **Done** | High | Per-application agent→application edges via `capability_graph_applications.py` |
+| V-CG.3 | Impact analysis report (blast radius) for changed capabilities | **Done** | High | Guard script green on corrected graph |
+| V-CG.4 | Compatibility validation on dependency graph edges | **Done** | **Critical** | `phase_v_capability_graph_guard.py --enforce` green |
 
 #### V-ALG — Agent Lifecycle Governance
 
@@ -2028,8 +2084,8 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 |---|-------------|--------|----------|------------|
 | V-ALG.1 | Agent certification gate contract (quality/policy/security) | **Done** | **Critical** | Certification criteria codified + tested |
 | V-ALG.2 | Promotion flow (dev -> staging -> production) with evidence | **Done** | High | Promotion requires evidence bundle |
-| V-ALG.3 | Deprecation + retirement workflow and migration window policy | **Done** (typed governance contracts) | High | Registry lifecycle states enforced |
-| V-ALG.4 | Owner/on-call metadata required for production-eligible agents | **Done** (ownership guard contracts) | High | Registration validation blocks missing ownership |
+| V-ALG.3 | Deprecation + retirement workflow and migration window policy | **Done** | High | `AgentRegistry` / `AgentRouter` filter retired/deprecated via `agent_routing_policy.py` |
+| V-ALG.4 | Owner/on-call metadata required for production-eligible agents | **Done** | High | Production-mode ownership gate enforced at selection |
 
 #### V-CE — Context Quality and Regression Hardening
 
@@ -2044,7 +2100,7 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
-| V-PE.1 | Prompt registry governance contract (owner/version/risk metadata) | **Done** | High | Registry validations active |
+| V-PE.1 | Prompt registry governance contract (owner/version/risk metadata) | **Done** | High | `PromptMeta` extended; `harness_capability_summary` reference prompt; registry governance validation |
 | V-PE.2 | Prompt composition model (system/task/policy/context layers) | **Done** | High | Canon + reference implementation path |
 | V-PE.3 | Deterministic policy injection overlays | **Done** | High | Prompt build trace shows overlays |
 | V-PE.4 | Prompt regression/adversarial test suite | **Done** | Medium | Gate includes prompt regression subset |
@@ -2072,9 +2128,9 @@ Wave U7 (close):    U-Doc.* → U-CI.* → Appendix G paydown log
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
 | V-SEC.1 | Prompt injection defense profile + tests | **Done** | **Critical** | Adversarial tests in gate subset |
-| V-SEC.2 | Tool injection defense (schema/argument/capability controls) | **Done** | High | Deny-path tests for dangerous payloads |
-| V-SEC.3 | Retrieval poisoning defense (trust score/quarantine flow) | **Done** | High | Poisoning simulation tests |
-| V-SEC.4 | Tenant isolation verification + security audit trail checks | **Done** | High | Isolation checks pass in acceptance suite |
+| V-SEC.2 | Tool injection defense (schema/argument/capability controls) | **Done** | High | `ToolInjectionDefenseMiddleware` on `BEFORE_TOOL_CALL` via `application_security_wiring.py` |
+| V-SEC.3 | Retrieval poisoning defense (trust score/quarantine flow) | **Done** | High | `retrieval_security_wiring.py` filters chunks in `RagStep` when profile enabled |
+| V-SEC.4 | Tenant isolation verification + security audit trail checks | **Done** | High | `TenantSecurityMiddleware` on `BEFORE_TASK_INTAKE` |
 
 #### V-COST — Cost & Resource Governance
 
@@ -2219,7 +2275,72 @@ L4 readiness requires:
 | 2026-06-02 | V-MA.1, V-MA.2, V-MA.3, V-KG.1, V-KG.2, V-KG.3 | Multi-agent coordination catalog/selection/acceptance + Graph-RAG/hybrid retrieval/provenance contracts + governance artifacts + unit tests |
 | 2026-06-02 | V-V6.1, V-V6.2, V-V6.3 | Bounded adaptive governance + L3/L4 maturity evidence + `phase_v_closeout_gate.py` CI enforcement |
 | 2026-06-03 | H-APP.* | Phase H-APP: ApplicationEnvironmentProfile, unified wiring, 43 tasks, gate 510 |
+| 2026-06-05 | V-REM.0.* | Plan audit: 9 Phase V + 1 Phase A gaps reclassified Partial; Phase V-REM + Appendix J + §6.1z queue opened |
 | — | — | *(append row per merged PR)* |
+
+---
+
+## Phase V-REM — Phase V Runtime Remediation (audit closeout)
+
+**Source:** Plan/code audit (2026-06-05) — reconcile Phase V **Done** claims vs runtime evidence; aligned with [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) layers 5, 19, 21, 23, 25, 26.  
+**Status:** **Done** (2026-06-05) — **10/10 Done**.  
+**Prerequisites:** Phase V contracts **Done**; Phase H-APP **Done** (Tier-3 `ApplicationSecurityProfile` hooks exist).  
+**Goal:** Close every **Partial** Phase V row and **A.4** EvalRunner gap — move from governance/evidence-only to **runtime-enforced** behavior. **Achieved 2026-06-05.**  
+**Priority ladder:** **Band 2i** (§4.0) — closed.  
+**Execution order:** [§6.2v](#62v-phase-v-rem-execution-order-band-2i--closed-2026-06-05).  
+**Traceability:** [Appendix J](#appendix-j--phase-v-remediation-traceability-audit-gap--v-rem-id).
+
+**Explicitly out of scope:** K.1/K.2, new product Tier-3 apps, full 32-layer re-audit (use [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) separately).
+
+**Delivery rule:** One `V-REM.*` ID per PR → update master table + Appendix J + paydown log → `pytest -m gate` + relevant architecture scripts green.
+
+### V-REM — Traceability (audit gap → task ID)
+
+| Parent ID | Gap summary | V-REM ID |
+|-----------|-------------|----------|
+| V-CG.2–V-CG.4 | Incorrect system edge mapping agents→application breaks lineage/impact/CI | V-REM-CG.1, V-REM-CG.2 |
+| V-ALG.3 | No runtime cutoff for retired/deprecated agents | V-REM-ALG.1 |
+| V-ALG.4 | No production-eligible-only filter at selection | V-REM-ALG.2 |
+| V-PE.1 | PromptMeta missing owner/risk; no YAML prompt assets | V-REM-PE.1, V-REM-PE.2 |
+| V-SEC.2 | Tool injection defense not wired in execution path | V-REM-SEC.1 |
+| V-SEC.3 | Retrieval poisoning defense not enforced per tenant/app | V-REM-SEC.2 |
+| V-SEC.4 | Tenant isolation + audit trail hooks missing in main path | V-REM-SEC.3 |
+| A.4 / A.4.1 | NexusEvalRunner missing integration tests + gate | V-REM-A.1 |
+
+### V-REM — Master deliverables register
+
+| ID | Stream | Deliverable | Status | Priority | Closes | Acceptance |
+|----|--------|-------------|--------|----------|--------|------------|
+| V-REM.0.1 | Governance | **Appendix J** — audit gap → V-REM ID matrix (100% mapped) | **Done** | Critical | — | Every Partial row has V-REM ID |
+| V-REM.0.2 | Governance | Sync Phase V header, §0.5, §4.0 Band 2i, Appendix H, §6.1z | **Done** | High | — | No Phase V domain row marked **Done** while child Partial |
+| V-REM-CG.1 | V-CG | **Fix system edge mapping** — per-application agents→application edges from manifest/roster (not global cross-product) | **Done** | **Critical** | V-CG.2–4 | Unit: lab/legal/poc graphs have correct agent-application edges |
+| V-REM-CG.2 | V-CG | **Re-run graph guard** — lineage, impact, compatibility on corrected mapping; update `phase_v_capability_graph_guard.py` fixtures | **Done** | High | V-CG.2–4 | CI guard green; impact blast radius matches expected for sample change |
+| V-REM-ALG.1 | V-ALG | **Runtime lifecycle filter** — AgentRegistry / NexusLoop reject or reroute retired/deprecated agents | **Done** | High | V-ALG.3 | Unit tests: deprecated agent not selected for new runs |
+| V-REM-ALG.2 | V-ALG | **Production-eligible gate** — discovery/selection requires owner + certification metadata for production mode | **Done** | High | V-ALG.4 | Test: agent without owner blocked in strict/production profile |
+| V-REM-PE.1 | V-PE | **Extend PromptMeta / YamlPromptRegistry** — add `owner`, `risk_tier`, version governance fields + validation | **Done** | High | V-PE.1 | Schema round-trip + registry validation tests |
+| V-REM-PE.2 | V-PE | **Seed YAML prompt assets catalog** — minimal harness reference prompts under versioned assets path | **Done** | Medium | V-PE.1 | E2E governance validation passes on `harness_capability_summary` |
+| V-REM-SEC.1 | V-SEC | **Wire tool injection defense** — `ApplicationSecurityProfile` → ToolRuntime / pre-tool hook on main execution path | **Done** | High | V-SEC.2 | Unit: dangerous payload denied via middleware |
+| V-REM-SEC.2 | V-SEC | **Wire retrieval poisoning defense** — per-tenant/app middleware on RAG retrieval path | **Done** | High | V-SEC.3 | Unit: quarantine/trust score filters retrieval chunks |
+| V-REM-SEC.3 | V-SEC | **Wire tenant isolation + audit trail** — enforcement + security audit events in UnifiedTaskRunner/NexusLoop | **Done** | High | V-SEC.4 | Unit: tenant boundary violation blocked at intake |
+| V-REM-A.1 | Phase A | **NexusEvalRunner integration tests + gate** — NexusLoop→UnifiedTaskRunner→EvalRunner path | **Done** | Medium | A.4, A.4.1 | Gate tests in `tests/integration/eval/test_nexus_eval_runner.py` |
+
+```text
+Wave V-REM-0 (governance):  V-REM.0.1 -> V-REM.0.2  — Done (plan sync)
+Wave V-REM-1 (graph):       V-REM-CG.1 -> V-REM-CG.2  — Done (2026-06-05)
+Wave V-REM-2 (lifecycle):   V-REM-ALG.1 -> V-REM-ALG.2  — Done (2026-06-05)
+Wave V-REM-3 (prompt):      V-REM-PE.1 -> V-REM-PE.2  — Done (2026-06-05)
+Wave V-REM-4 (security):    V-REM-SEC.1 -> V-REM-SEC.2 -> V-REM-SEC.3  — Done (2026-06-05)
+Wave V-REM-5 (eval):        V-REM-A.1  — Done (2026-06-05)
+```
+
+**Phase V-REM complete when:** All rows **Done**; parent V-CG.2–4, V-ALG.3–4, V-PE.1, V-SEC.2–4, A.4 marked **Done**; Appendix H rows updated; §6.1z queue closed. **Status: complete (2026-06-05).**
+
+### V-REM — Paydown log
+
+| Date | V-REM ID | Summary |
+|------|----------|---------|
+| 2026-06-05 | V-REM.0.1, V-REM.0.2 | Audit → plan: Phase V-REM register, Appendix J, §6.1z queue, status sync |
+| 2026-06-05 | V-REM-CG.1–A.1 | Runtime remediation: capability graph edges, lifecycle routing, V-SEC wiring, prompt governance, NexusEvalRunner gate |
 
 ---
 
@@ -2305,7 +2426,7 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 ## Phase W-OPS — Operational Harness Maturity (IDEAL L3 ops)
 
 **Status:** **Done** (2026-06-06) — W-OPS.1–W-OPS.15 delivered including W-OPS.10 lab stack health probes; **operational L3** sign-off still requires `W_OPS_RELEASE_CYCLES>=2` (or `build/architecture_hardening/release_cycles.json`) via `phase_w_ops_evidence.py --enforce`.  
-**Source:** [`adut_dojrzalosci_harness.md`](adut_dojrzalosci_harness.md) · [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) §12.3–§12.4 · [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md)  
+**Source:** Harness maturity audit (2026-06-02; conversation) · [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) §12.3–§12.4 · [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md)  
 **Prerequisites:** Phases **V**, **P-Ext**, **W-ML**, §4.1 **Done**.  
 **Goal:** Close the gap between **L3 CI evidence** (`maturity_gate_evidence`, relaxed thresholds) and **L3 operational** (IDEAL critical areas Policy/Reliability/Observability ≥ 3 with release evidence).  
 **Out of scope:** K.1, K.2, new product Tier-3 apps, domain/product skills (Band 3 · §6.3).
@@ -2352,6 +2473,8 @@ Wave W-OPS-P2 (hygiene):    W-OPS.13 → W-OPS.14 → W-OPS.15
 |------|----------|---------|
 | 2026-06-02 | W-OPS.0 | Maturity audit → Phase W-OPS + §6.2w execution order in implementation plan |
 | 2026-06-06 | W-OPS.1–W-OPS.15 | Circuit breaker, idempotency gate, SLO docs, ops evidence script, staging API key, harness skills, online eval, wiring/metrics |
+| 2026-06-02 | OPS-L3.1 | `phase_w_ops_evidence.py` Windows pytest argv + shadow trend probe; `--enforce` green |
+| 2026-06-02 | REG / §6.1 | `doctor --ci` green: research `ToolEnablementProfile` protocol; lab factory via `bootstrap_lab_integration_wiring` |
 | 2026-06-03 | W-OPS.10–W-OPS.11 | Lab stack health by catalog slug; shadow eval wired in `RuntimeEngine`; CI `phase_w_ops_evidence.py`; gate **470** |
 | 2026-06-03 | W-OPS.5/11 | File-backed shadow eval registry; `record_harness_release_cycle.py`; extended ops evidence checks |
 | 2026-06-03 | §6.1 / N.9 | Product scaffold `legal_product()` manifest + catalog bootstrap; gate **470** |
@@ -2362,9 +2485,9 @@ Wave W-OPS-P2 (hygiene):    W-OPS.13 → W-OPS.14 → W-OPS.15
 
 ## Phase H-APP — Tier-3 Application Environment (full configurability)
 
-**Status:** **Done** (2026-06-03) — **43** deliverables (`H-APP.0.1` … `H-APP.6.3`); source audit: [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7.  
+**Status:** **Done** (2026-06-03) — **43** deliverables; memory bridge via Phase MEM **Done**; source audit: [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7.  
 **Prerequisites:** Phases **V**, **P-Ext**, **W-ML**, **W-OPS**, §4.1 **Done**.  
-**Goal:** Close every **Częściowa** / **Luka** topic from the harness application-layer audit — full Tier-3 configurability of agent workspaces via `ApplicationEnvironmentProfile` and unified wiring (IDEAL §17), **without** Band 3 product agents (K.1/K.2).  
+**Goal:** Close every **Partial** / **Gap** topic from the harness application-layer audit — full Tier-3 configurability of agent workspaces via `ApplicationEnvironmentProfile` and unified wiring (IDEAL §17), **without** Band 3 product agents (K.1/K.2).
 **Priority ladder:** **Band 2e** (§4.0) — default implementation queue after §6.1 maintenance.  
 **Execution order:** [§6.2x](#62x-phase-h-app-execution-order-band-2e--active).
 
@@ -2436,7 +2559,7 @@ Total: 43
 | H-APP.3.6 | H3 | Integration test: lab graph spec echo → mock chain + trace | **Done** | Medium | `tests/integration/applications/test_lab_graph_spec.py` |
 | H-APP.4.1 | H4 | **`ContextProfile`** — assembly options, budget presets, RAG/web toggles | **Done** | High | Pydantic model |
 | H-APP.4.2 | H4 | **`MemoryProfile`** — user/org/long-term flags, retention, scope boundaries | **Done** | High | Pydantic model |
-| H-APP.4.3 | H4 | Wire context/memory into `materialize_runtime_config` | **Done** | High | `runtime_config_bridge` only |
+| H-APP.4.3 | H4 | Wire context/memory into `materialize_runtime_config` | **Done** | High | Phase MEM **MEM-1.*** — `memory_runtime_bridge.py`, `memory_wiring.py` |
 | H-APP.4.4 | H4 | **`wire_task_memory_from_profile(env)`** — unify task memory under environment | **Done** | Medium | `_shared/task_memory_wiring.py` |
 | H-APP.4.5 | H4 | **`ReliabilityProfile`** — idempotency, circuit breaker, checkpoint, scheduler | **Done** | High | Pydantic model |
 | H-APP.4.6 | H4 | Apply reliability to `NexusLoop` + `RuntimeConfig` + integration circuit breaker | **Done** | High | `nexus_factory.py` |
@@ -2479,6 +2602,714 @@ Total: 43
 | — | — | *(append row per merged PR)* |
 
 **Suggested PR order:** H-APP.0.3 → H-APP.1.1–H-APP.1.4 → H-APP.1.5–H-APP.1.8 → H-APP.3.4–H-APP.3.5 → H-APP.2.1–H-APP.2.8 → H-APP.4.1–H-APP.4.8 → H-APP.3.1–H-APP.3.3 → H-APP.5.1–H-APP.5.5 → H-APP.0.1–H-APP.0.5 → H-APP.6.1–H-APP.6.3.
+
+---
+
+## Phase DX — Developer Authoring Experience (fast environment + agent builds)
+
+**Status:** **Done** (2026-06-02) — **47/47** deliverables **Done** in master table; gate **533+ passed**.  
+**Prerequisites:** Phase **H-APP** **Done** (typed `ApplicationEnvironmentProfile`, `wire_application_environment`, `build_harness_host_runtime`). Phases **N**, **P-Ext**, **S** scaffold baseline **Done**.  
+**Goal:** Make building **Tier-3 application environments** and **Tier-2 agents** trivial for Python developers — LangGraph-like mental model (state/steps → graph → run), **measurable** time-to-first-run (TTFRun), progressive disclosure (minimal → standard → production), and **UI-ready** serialized specs for Phase 2 (non-developer environment builder).  
+**Priority ladder:** **Band 2f** (§4.0) — **closed for core path**; residual IDs are **infrastructure** follow-ups, not Band 3.  
+**Scope split:** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business).  
+**Execution order:** [§6.2y](#62y-phase-dx-execution-order-band-2f--mostly-done).
+
+**Delivery rule:** One `DX-*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green.
+
+**Strategic split:**
+
+| Phase | Audience | Outcome |
+|-------|----------|---------|
+| **DX (this phase)** | Python developers | Import contracts → define typed agents → configure environment → run HTTP/MCP in minutes |
+| **Phase 2 (future — not DX)** | Business users via UI | Visual builder over same Pydantic/YAML specs (`DX-7.*` prepares artifacts only) |
+
+**Target metrics (enforced by DX-3.5, DX-8.1):**
+
+| Metric | Baseline (2026-06-03) | Target after DX |
+|--------|----------------------|-----------------|
+| **TTFRun** (scaffold → successful `POST …/run`) | ~45–90 min (docs + wiring) | **≤15 min** guided; **≤60 s** CI smoke |
+| Author-edited files (hello world) | ~12–25 | **≤4** (`--minimal`) |
+| Author LOC (excluding generated boilerplate) | ~200–400 | **≤120** |
+| Commands to first run | 3+ | **1** (`intergrax run`) |
+| Scaffold H-APP alignment | Partial (`factory.py` legacy path) | **100%** |
+
+**LangGraph mapping (author mental model — implement in DX-0.2):**
+
+| LangGraph | Intergrax (DX target) |
+|-----------|------------------------|
+| `State` fields | `AgentContract` + `RuntimeExecutionContext.metadata` |
+| Node function | `@step` / `run_step` on `IntergraxAgent` |
+| Conditional edges | `decide_after_step` → `AgentDecision` |
+| `StateGraph.compile()` | `AgentGraph.build()` → `ApplicationGraphSpec` |
+| `app.invoke()` | `HarnessApplication.serve()` / `POST /v1/…/run` |
+
+**Out of scope (not counted in 47):** Band 3 product agents (K.1/K.2); visual graph editor UI; integration marketplace; catalog hot-reload; renaming `applications/` → `harness/` (canon §5.3.0 — **Application** = Tier-3 instance, **Harness** = platform); LangGraph skill pack import.
+
+```text
+Wave DX0 — Docs & traceability (4 tasks)
+Wave DX1 — Scaffold/H-APP alignment fix (6 tasks) — P0 before facades
+Wave DX2 — Authoring facades: HarnessApplication, AgentGraph, IntergraxAgent (6 tasks)
+Wave DX3 — Minimal path + CLI + TTFRun gates (6 tasks)
+Wave DX4 — Integration presets & picker (4 tasks)
+Wave DX5 — Host hooks, YAML, observability/logging DX (8 tasks)
+Wave DX6 — Tier hygiene + external projects (5 tasks)
+Wave DX7 — UI engine prep: JSON Schema, spec versioning, catalog feed (5 tasks)
+Wave DX8 — DX metrics & CI guards (3 tasks)
+Total: 47
+```
+
+### DX — Traceability (audit gap → task IDs)
+
+| Audit ref | Topic | Task IDs |
+|-----------|--------|----------|
+| L1 | Scaffold generates legacy + H-APP wiring in parallel | DX-1.1–DX-1.2, DX-1.6, DX-8.3 |
+| L2 | No minimal hello harness (1–3 files) | DX-3.1, DX-2.1–DX-2.3, DX-3.2 |
+| L3 | No fluent graph API | DX-2.2, DX-7.3 |
+| L4 | No `HarnessApplication` / single entry class | DX-2.1, DX-2.6, DX-5.1–DX-5.2 |
+| L5 | Monorepo-only (`pythonpath`) | DX-6.3–DX-6.5 |
+| L6 | Tier-2 agents import `applications/_shared` | DX-6.1–DX-6.2 |
+| L7 | IntegrationProfile slot knowledge burden | DX-4.1–DX-4.3, DX-4.2 |
+| L8 | No `intergrax run` / `intergrax doctor` / TTFRun metric | DX-3.2–DX-3.3, DX-3.5, DX-8.1–DX-8.2 |
+| L9 | Documentation sprawl, no single 15-min path | DX-0.1–DX-0.4, DX-3.6 |
+| L10 | No JSON Schema / stable spec for UI phase 2 | DX-7.1–DX-7.5 |
+| H-APP.5.3 gap | `poc_template` / scaffold `factory.py` not on `build_nexus_loop_from_environment` | DX-1.1, DX-1.3 |
+| §6 responsibility table | Agent vs environment concerns split | DX-0.3 |
+| Progressive disclosure | minimal → standard → production | DX-0.4, DX-3.4 |
+| Architecture audit rec. | Product observability preset, trace_id in logs, event catalog | DX-5.5–DX-5.7 |
+| Architecture audit rec. | Policy handler plugins (extend without core PR) | DX-5.8 |
+| Do not weaken tiers | Doctor/checks enforce boundaries | DX-0.3, DX-3.3, DX-6.2, DX-8.3 |
+
+### DX — Master deliverables register (all 47 tasks)
+
+| ID | Wave | Deliverable | Status | Priority | Location / acceptance |
+|----|------|-------------|--------|----------|------------------------|
+| DX-0.1 | DX0 | **Phase DX register** in this plan + doc model row (§Documentation model) | **Done** | Low | This section + §6.2y |
+| DX-0.2 | DX0 | **LangGraph ↔ Intergrax mapping** table (state, nodes, edges, compile, invoke) | **Done** | High | `EXTENSION_AUTHOR_GUIDE.md` §0 or `AGENT_CREATION_GUIDE.md` §1 |
+| DX-0.3 | DX0 | **Responsibility matrix** — what belongs in agent vs environment (single canonical table) | **Done** | High | `EXTENSION_AUTHOR_GUIDE.md` §0 + cross-link canon §5.3.0 |
+| DX-0.4 | DX0 | **Progressive disclosure** doc — minimal (`--minimal`) → standard scaffold → production (`expand`, Docker, MCP) | **Done** | Medium | `AGENT_CREATION_GUIDE.md` Step 4E § E.0 + `applications/USAGE.md` |
+| DX-1.1 | DX1 | **Scaffold `factory.py`** — build `NexusLoop` only via `build_nexus_loop_from_environment(registry, env, …)` + integration bundle from `wire_application_environment` | **Done** | **Critical** | `intergrax/scaffold/new_application.py`, `new_application_product.py` |
+| DX-1.2 | DX1 | **Scaffold default output** — remove generated `integration_wiring.py` + `tool_wiring.py`; retain via `--full` flag only | **Done** | **Critical** | Scaffold CLI + README in generated app |
+| DX-1.3 | DX1 | **Migrate `poc_template_application/host/factory.py`** to H-APP factory pattern (no parallel legacy wiring) | **Done** | High | Parity with `lab_application`; gate smoke |
+| DX-1.4 | DX1 | **Audit + fix** `legal_application` / `research_application` factories — single env path, no duplicate tool/integration wiring | **Done** | High | Host smoke tests green |
+| DX-1.5 | DX1 | **Scaffold manifest** — embed `environment: ApplicationEnvironmentProfile…` at generation (not only lazy `environment_profile.py` fallback) | **Done** | High | Generated `manifest.py` |
+| DX-1.6 | DX1 | **Gate test** — scaffold output: `factory.py` must not import `host.tool_wiring` / `host.integration_wiring` unless `--full` | **Done** | High | `tests/unit/scaffold/test_scaffold_harness_alignment.py` |
+| DX-2.1 | DX2 | **`HarnessApplication` facade** — `.agents()`, `.integrations()`, `.graph()`, `.mode()`, `.llm()`, `.hooks()`, `.build()`, `.serve()` | **Done** | **Critical** | `intergrax/harness/app.py` |
+| DX-2.2 | DX2 | **`AgentGraph` fluent builder** — nodes, edges, default agent, `on_error(retry=…)` → `ApplicationGraphSpec` | **Done** | **Critical** | `intergrax/applications/contracts/graph_builder.py` |
+| DX-2.3 | DX2 | **`IntergraxAgent` base** + **`@step` decorator** — generates UAEP `get_steps` / `run_step` wiring | **Done** | **Critical** | `intergrax/agents/authoring/` |
+| DX-2.4 | DX2 | **Decision helpers** — `continue_to()`, `complete()`, `delegate_to()` wrapping `AgentDecision` | **Done** | Medium | `intergrax/agents/authoring/decisions.py` |
+| DX-2.5 | DX2 | **Unit test** — minimal `HarnessApplication` + `EchoAgent`/`IntergraxAgent` runs offline (no network) | **Done** | High | `tests/unit/harness/test_harness_application_minimal.py` |
+| DX-2.6 | DX2 | **Public package** `intergrax.harness` — stable imports documented in author guide | **Done** | High | `intergrax/harness/__init__.py` |
+| DX-3.1 | DX3 | **`new-stack --minimal`** — ≤4 author-facing files + smoke test (no Docker/MCP by default) | **Done** | **Critical** | `intergrax/scaffold/new_stack.py`, `new_application.py` `--minimal` |
+| DX-3.2 | DX3 | **`intergrax run <module>:app`** — load `.env`, uvicorn, print route + sample curl | **Done** | High | `intergrax/cli/run.py` + `scaffold/cli.py` |
+| DX-3.3 | DX3 | **`intergrax doctor`** — tier import violations, manifest/env conformance, scaffold freshness hint, TTFRun estimate | **Done** | High | `intergrax/cli/doctor.py` |
+| DX-3.4 | DX3 | **`intergrax scaffold expand`** — promote minimal app → standard (Docker, MCP, debug, BUILD_AND_DEPLOY) | **Done** | Medium | `intergrax/scaffold/expand_application.py` |
+| DX-3.5 | DX3 | **Acceptance test** `test_minimal_stack_ttf_run` — scaffold minimal → pytest → HTTP run **≤60s** in CI | **Done** | High | `tests/acceptance/dx/test_minimal_stack_ttf_run.py` |
+| DX-3.6 | DX3 | **15-minute quickstart** — single numbered path: `new-stack --minimal` → edit agent → `intergrax run` → curl | **Done** | High | `AGENT_CREATION_GUIDE.md` Step 4E § E.0 |
+| DX-4.1 | DX4 | **`IntegrationProfile` presets** — `.lab_stack()`, `.legal_stack()`, `.data_stack()`, `.observability_stack()` (typed, documented slugs) | **Done** | High | `intergrax/integrations/registry/presets.py` |
+| DX-4.2 | DX4 | **`intergrax integrations pick`** CLI — emit profile fragment (postgres, redis, s3, prometheus, …) for `environment_profile.py` | **Done** | Medium | `intergrax/cli/integrations_pick.py` |
+| DX-4.3 | DX4 | **Preset catalog table** in `INTEGRATIONS.md` + `EXTENSION_AUTHOR_GUIDE.md` | **Done** | Medium | `INTEGRATIONS.md` § Named integration presets |
+| DX-4.4 | DX4 | **Gate tests** — each preset resolves with in-memory/sqlite stubs (no network) | **Done** | High | `tests/unit/integrations/test_integration_presets.py` |
+| DX-5.1 | DX5 | **`ApplicationHost` Protocol/base** — override methods for environment control (intake, agent selection, finalize, error) | **Done** | High | `intergrax/harness/application_host.py` |
+| DX-5.2 | DX5 | **Map host overrides → `HookPoint`** + optional `RuntimeEventBus` subscribe API on `HarnessApplication` | **Done** | High | Bridge in `intergrax/harness/hooks.py` |
+| DX-5.3 | DX5 | **`HarnessApplication.from_yaml(path)`** — load `ApplicationEnvironmentProfile` + roster from `env.yaml` | **Done** | Medium | `intergrax/harness/yaml_loader.py` |
+| DX-5.4 | DX5 | **Optional `agents.yaml`** — declarative `AgentBinding` list validated against importable classes | **Done** | Low | Same loader; schema test |
+| DX-5.5 | DX5 | **Product scaffold observability preset** — `ObservabilityProfile` template (trace + optional read-only debug) | **Done** | Medium | `new_application_product.py` `environment_profile.py` (`otel_enabled`, debug override) |
+| DX-5.6 | DX5 | **Structured log correlation** — inject `trace_id` / `run_id` in FastAPI middleware (lab + product factories) | **Done** | Medium | `intergrax/applications/_shared/logging_middleware.py` |
+| DX-5.7 | DX5 | **Runtime event catalog table** — `RuntimeEventType` → emit phase → ops filter hints in canon §42 | **Done** | Low | `intergrax_runtime_architecture.md` §42.1.5; `phase_coverage.EVENT_OPS_FILTER_HINTS` |
+| DX-5.8 | DX5 | **Policy rule handler plugins** — entry point group `intergrax.policy_rules` (mirror P-Ext pattern) | **Done** | Medium | `runtime/policy/rules/` + author guide § |
+| DX-6.1 | DX6 | **`intergrax.agents.defaults`** — `harness_production_mode`, lab runtime config helpers (no Tier-3 import from agents) | **Done** | High | `intergrax/agents/defaults.py`; Tier-3 re-export in `runtime_defaults.py` |
+| DX-6.2 | DX6 | **Fix reference agents** — `echo`, `research` (and scaffold template) must not import `applications/_shared` | **Done** | High | `agents/echo/`, `agents/research/` + `check_agent_registry_bypass` |
+| DX-6.3 | DX6 | **`intergrax init <project>`** — cookiecutter: external repo, `pip install intergrax`, minimal harness layout | **Done** | High | `intergrax/scaffold/external_project/` template |
+| DX-6.4 | DX6 | **CI smoke** — generated external template project pytest (fixture repo) | **Done** | Medium | `tests/integration/dx/test_external_project_template.py` |
+| DX-6.5 | DX6 | **`pyproject` optional extra `[harness-author]`** — documented minimal dependency set for external apps | **Done** | Low | `pyproject.toml` + README |
+| DX-7.1 | DX7 | **JSON Schema export** for `ApplicationEnvironmentProfile`, `ApplicationManifest`, `ApplicationGraphSpec` | **Done** | High | `scripts/export_harness_spec_schemas.py` → `build/harness_specs/` (CI) |
+| DX-7.2 | DX7 | **`spec_version` on environment profile** + migration note in plan | **Done** | Medium | `environment_profile.py` |
+| DX-7.3 | DX7 | **YAML round-trip tests** — graph + environment serialize/deserialize without loss | **Done** | High | `tests/unit/harness/test_spec_roundtrip.py` |
+| DX-7.4 | DX7 | **Capability catalog JSON feed** — integrations/tools/skills slugs + labels for future UI builder | **Done** | Medium | `scripts/export_capability_catalog_feed.py` (CI) |
+| DX-7.5 | DX7 | **Phase 2 UI boundary doc** — UI engine consumes DX-7 artifacts only; no parallel spec | **Done** | Low | Plan §Phase DX — UI boundary (below) |
+| DX-8.1 | DX8 | **`intergrax doctor --ci`** — fail on tier violations, scaffold misalignment, TTFRun regression | **Done** | High | `.github/workflows/unit-tests.yml` |
+| DX-8.2 | DX8 | **DX metrics in paydown** — record TTFRun seconds, author file count per release cycle | **Done** | Low | `scripts/record_dx_metrics.py` → `build/architecture_hardening/dx_metrics.json` |
+| DX-8.3 | DX8 | **`check_scaffold_harness_alignment.py`** — CI script (complements DX-1.6 gate) | **Done** | High | `scripts/` + §6.1 maintenance list |
+
+### DX — Explicitly deferred (not in the 47-task register)
+
+| Topic | Reason |
+|-------|--------|
+| Visual graph editor / drag-and-drop UI | Phase 2 product; DX-7 only exports schemas |
+| Rename `applications/` directory | Canon decision: Application = Tier-3 deployable instance |
+| K.1 / K.2 business agents | Band 3 frozen (§6.3) |
+| Full LangGraph runtime compatibility | Different execution model; mapping doc only (DX-0.2) |
+| `phase_w_ops_evidence --verify-gate` hardening | W-OPS maintenance, not DX |
+
+### DX — Paydown log
+
+| Date | DX ID | Summary |
+|------|-------|---------|
+| 2026-06-03 | DX-1.1–DX-8.3 (core) | HarnessApplication, scaffold H-APP alignment, CLI run/doctor, presets, `check_scaffold_harness_alignment`; gate **518** |
+| 2026-06-02 | Plan sync | Master table synced to codebase; **17** IDs remain **Pending** — [residual backlog](#dx--residual-backlog-infrastructure) |
+| 2026-06-02 | DX residual closeout | `--minimal` stack, `expand`, doctor CI, spec export + round-trip, TTFRun acceptance, `agents.defaults.harness_production_mode`, docs quickstart; gate **533** |
+| 2026-06-02 | DX-5.7 | §42.1.5 event catalog + `EVENT_OPS_FILTER_HINTS`; Phase DX **47/47 Done** |
+
+**Suggested PR order (residual):** None — Phase DX infrastructure **Done**.
+
+**Phase 2 UI boundary (DX-7.5):** A future visual builder must consume only versioned artifacts from `build/harness_specs/*.json` and `build/capability_catalog_feed.json` — not parallel Pydantic copies. Host behavior stays `HarnessApplication` / Tier-3 factories; UI edits serialize to the same `ApplicationEnvironmentProfile` + `ApplicationManifest` + `ApplicationGraphSpec` models validated by DX-7.1/DX-7.3.
+
+### DX — Residual backlog (infrastructure)
+
+**Not Band 3.** Platform DX rows **Done** (2026-06-02), including DX-5.7 (§42.1.5). No open DX IDs — see [§6.1z](#61z-harness-implementation-queue-consolidated).
+
+---
+
+## Phase AA — Agents & Applications Conformance (scaffold, docs, deploy)
+
+**Status:** **Mostly Done** (2026-06-02) — **platform/conformance Done** (tier hygiene, ARCHITECTURE matrix, deploy triad, legal **scaffold** reset); **domain steps Deferred** (AA-LEG.2.2+); gate **534 passed**.  
+**Prerequisites:** Phase **H-APP** **Done**, Phase **DX** **Mostly Done** (scaffold generators, `build_harness_host_runtime`, CLI, presets).  
+**Goal:** Bring every **Tier-2** agent under `agents/` and every **Tier-3** host under `applications/` to a **documented, scaffold-aligned** state — fast authoring, full environment control (handlers, observability, policy), and **repeatable deploy** (Docker + deploy doc + `pyproject.toml` dependency contract per application). **Domain UAEP implementation is Band 3** — see [§6.3](#63-end-of-plan--deferred-product-work-only).  
+**Priority ladder:** **Band 2g** (§4.0) — **platform rows closed**; only [AA residual](#aa--residual-backlog-infrastructure) + §6.1 maintenance.  
+**Scope split:** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business).  
+**Execution order:** [§6.2z](#62z-phase-aa-execution-order-band-2g--mostly-done).
+
+**Delivery rule:** One `AA-*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green → discuss scope in session before coding.
+
+**Policy decision (2026-06-03):** **`agents/legal/` hard reset** — remove pre-architecture implementation; regenerate from `intergrax.scaffold new-agent legal` and re-implement only against UAEP + H-APP rules. Legacy tests become **behavioral spec** input, not code to preserve. **`legal_application`** follows the same reset cadence after the agent baseline exists (product shell only).
+
+**Inventory (in scope):**
+
+| Tier | Slug | Role |
+|------|------|------|
+| Agent | `echo` | Harness reference agent |
+| Agent | `lab` | Lab mock agents (not product agents) |
+| Agent | `legal` | **Hard reset** → scaffold baseline |
+| Agent | `organization_worker` | Long-running / HITL demo |
+| Agent | `problem_radar` | K.1 prototype (frozen until Band 3) |
+| Agent | `research` | Multi-agent research prototype |
+| Agent | `signoff_probe` | Appendix A sign-off exercise |
+| Application | `lab_application` | Universal lab / debug superset |
+| Application | `legal_application` | Legal product host (reset with agent) |
+| Application | `poc_template_application` | Canonical minimal Tier-3 shell |
+| Application | `research_application` | Research product host |
+
+**Per-application deploy triad (mandatory for every Tier-3 host in this phase):**
+
+Each `applications/<app>/` MUST document and maintain:
+
+| Piece | Path / generator | Acceptance |
+|-------|------------------|------------|
+| **Docker** | `docker/Dockerfile`, `docker/docker-compose.yml`, `docker/build-docker.sh`, `docker/build-docker.bat`, `docker/.dockerignore` | Image builds locally; health path matches manifest `route_prefix` |
+| **Deploy doc** | `BUILD_AND_DEPLOY.md` | Generated/updated via `intergrax.applications._shared.build_deploy_doc.render_build_deploy_doc` (scaffold) or manual parity with scaffold output |
+| **`pyproject.toml` deps** | Root `[project]` + `[project.optional-dependencies]` | Section in `applications/<app>/ARCHITECTURE.md`: which **core** deps apply, which **extras** (`harness-author`, `langgraph-legacy`, `llm-*`, `dev-ci`, integration extras) the host requires; no undeclared imports |
+
+Scaffold already emits Docker + `BUILD_AND_DEPLOY.md` for **new** apps (`new-application`, `new-stack`). Phase AA **backfills and verifies** this triad on all four existing applications.
+
+**Audit verdict (2026-06-03):**
+
+| Area | Verdict | Gap → AA IDs |
+|------|---------|----------------|
+| Tier-2 structure vs canon | **OK** | Tier-3 imports removed; `legal` scaffold baseline; CI `check_agents_no_tier3_imports.py` |
+| Tier-3 H-APP factory | **OK** | `build_harness_host_runtime` on lab/poc/legal/research; manifest `environment=` |
+| Scaffold completeness | **OK** | Typed `can_handle`, `--reference`, deploy triad regression test |
+| Documentation | **OK** | ARCHITECTURE.md matrix, guides, TIER3_READINESS — AA-D0.* **Done** |
+| LangGraph independence | **Done** | `langgraph` not in core deps; `check_langgraph_not_required.py` — AA-LG.1 **Done** |
+| Legal module | Reset required | AA-LEG.* + AA-LEGAPP.* |
+
+```text
+Wave AA0  — Register, scaffold checklist, LangGraph (done), deploy triad standard (5)
+Wave AA1  — Platform docs meta: README, guides, TIER3_READINESS (7)
+Wave AA2  — Legal agent HARD RESET (12)
+Wave AA3  — legal_application reset + deploy triad (8)
+Wave AA4  — echo agent (5)
+Wave AA5  — signoff_probe agent (3)
+Wave AA6  — problem_radar agent (5)
+Wave AA7  — organization_worker agent (5)
+Wave AA8  — research agent (+ summary) (6)
+Wave AA9  — lab mock agents doc (2)
+Wave AA10 — lab_application host (7)
+Wave AA11 — poc_template_application host (5)
+Wave AA12 — research_application host (6)
+Total: 83 (incl. AA-LG.1 counted in AA0)
+```
+
+### AA — Traceability (audit topic → task IDs)
+
+| Audit ref | Topic | Task IDs |
+|-----------|--------|----------|
+| A1 | Tier-2/3 separation (`agents` must not import `applications`) | AA-S0.2, AA-ECHO.2, AA-PR.2, AA-D0.3 |
+| A2 | Scaffold agent `getattr` in `can_handle` | AA-S0.3 |
+| A3 | Scaffold app missing manifest `environment=` | AA-S0.4, AA-POC.2, AA-RESAPP.2 |
+| A4 | `lab_application` legacy Nexus factory | AA-LABAPP.2 |
+| A5 | Legal pre-UAEP monolith | **AA-LEG.1–AA-LEG.12** (hard reset) |
+| A6 | Per-agent architecture MD | AA-ECHO.1, AA-PR.1, AA-ORG.1, AA-RES.1, AA-SIG.1, AA-LEG.3 |
+| A7 | Per-application architecture MD + deploy triad | AA-LABAPP.1, AA-POC.1, AA-RESAPP.1, AA-LEGAPP.1, AA-APP.0.1–AA-APP.0.3 |
+| A8 | Root README completeness vs canon | AA-D0.1 |
+| A9 | `AGENT_CREATION_GUIDE` / `TIER3_READINESS` stale | AA-D0.2–AA-D0.4 |
+| A10 | LangGraph not required | AA-LG.1 (**Done**) |
+| A11 | Docker + deploy script + pyproject per app | AA-APP.0.1–AA-APP.0.3, AA-*APP.*.4–*.6 |
+| A12 | Legal application custom serving vs scaffold | AA-LEGAPP.3–AA-LEGAPP.5 |
+
+### AA — Master deliverables register (all tasks)
+
+#### Wave AA0 — Platform & scaffold foundation
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-0.1 | **Phase AA register** in this plan + §6.2z + doc model row | **Done** | Low | This section |
+| AA-0.2 | **Scaffold ↔ H-APP checklist** table (new-agent / new-application / new-stack outputs) | **Done** | High | This section §AA scaffold matrix (below) |
+| AA-S0.1 | Audit script: tier-2 must not import `applications` (extend `check_agent_registry_bypass` or sibling) | **Done** | High | `scripts/` + CI §6.1 |
+| AA-S0.2 | **`new-agent`**: remove `getattr` from generated `can_handle` — typed `TaskContext` | **Done** | High | `intergrax/scaffold/new_agent.py` |
+| AA-S0.3 | **`new-agent`**: optional `--reference` template (`HarnessReferenceAgent`) vs pure `Agent` | **Done** | Medium | `intergrax/scaffold/new_agent.py` |
+| AA-S0.4 | **`new-agent`**: scaffold `contract.py` includes `skill_ids` placeholder + link SKILLS.md | **Done** | Medium | `intergrax/scaffold/new_agent.py` |
+| AA-S0.5 | **`new-application`**: manifest always embeds `environment=ApplicationEnvironmentProfile…` | **Done** | High | `intergrax/scaffold/new_application.py` |
+| AA-S0.6 | Document **`--full`** vs default scaffold (integration/tool wiring) | **Done** | Medium | `applications/USAGE.md` |
+| AA-LG.1 | **LangGraph optional** — not in core deps; `langgraph-legacy` extra; `check_langgraph_not_required.py` | **Done** | High | `pyproject.toml`, CI |
+| AA-APP.0.1 | **Deploy triad standard** — Docker + `BUILD_AND_DEPLOY.md` + pyproject extras section (canonical template) | **Done** | High | `applications/USAGE.md` §Deploy triad |
+| AA-APP.0.2 | **Gate**: each existing `applications/*_application/` has `docker/`, `BUILD_AND_DEPLOY.md`, ARCHITECTURE deploy section | **Done** | High | `tests/unit/applications/test_application_deploy_triad.py` |
+| AA-APP.0.3 | **Scaffold verify**: `new-application` output includes deploy triad (regression) | **Done** | High | `tests/unit/scaffold/test_scaffold_deploy_triad.py` |
+
+**AA scaffold matrix (generator vs H-APP target):**
+
+| Output | `new-agent` | `new-application` (default) | `new-application --full` |
+|--------|-------------|----------------------------|---------------------------|
+| UAEP `Agent` + `steps/pipeline.py` | Yes | — | — |
+| `contract.py` / `capabilities.py` | Yes | — | — |
+| `manifest.py` + `AgentBinding` | — | Yes | Yes |
+| `host/environment_profile.py` | — | Yes | Yes |
+| `host/factory.py` → `build_harness_host_runtime` | — | Yes | Yes |
+| `host/integration_wiring.py` | — | No | Yes |
+| `host/tool_wiring.py` | — | No | Yes |
+| `host/policy/rules/` | — | Yes (`.gitkeep`) | Yes |
+| `docker/*` + `BUILD_AND_DEPLOY.md` | — | Yes | Yes |
+| MCP + smoke tests | — | Yes | Yes |
+
+#### Wave AA1 — Documentation meta (canon alignment)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-D0.1 | **Root `README.md`** — `HarnessApplication`, `intergrax` CLI, `poc_template` as Tier-3 reference, LangGraph optional, agent vs app matrix | **Done** | High | `README.md` |
+| AA-D0.2 | **`docs/README.md`** — Phase AA row, last updated | **Done** | Low | `docs/README.md` |
+| AA-D0.3 | **`AGENT_CREATION_GUIDE.md`** — DX paths (`intergrax run`, `doctor`, minimal stack); no stale Nexus-only flow | **Done** | High | `docs/AGENT_CREATION_GUIDE.md` |
+| AA-D0.4 | **`applications/TIER3_READINESS.md`** — `environment_profile`, `build_harness_host_runtime`; deploy triad; no mandatory `tool_wiring` for all apps | **Done** | High | `applications/TIER3_READINESS.md` |
+| AA-D0.5 | **`applications/USAGE.md`** — deploy triad + pyproject extras per host | **Done** | High | `applications/USAGE.md` |
+| AA-D0.6 | **`EXTENSION_AUTHOR_GUIDE.md`** — LangGraph analogy only (not required) — verify post AA-LG.1 | **Done** | Low | Already partially done |
+| AA-D0.7 | **Conformance index** in plan — agent/app status columns (this register) | **Done** | Low | Appendix row or §AA paydown |
+
+#### Wave AA2 — `agents/legal` HARD RESET (decision: scaffold baseline only)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-LEG.0.1 | **Record hard-reset decision** in plan + remove “incremental migration” as default for legal | **Done** | Critical | This section |
+| AA-LEG.0.2 | **Archive tag** `legal-legacy-pre-aa` on git (pointer for forensic diff) | **Done** | High | Tag on parent of `bbce1bd` (pre hard-reset) |
+| AA-LEG.0.3 | **Extract behavioral spec** from legacy tests → `agents/legal/SPEC_FROM_LEGACY.md` (requirements only) | **Done** | High | Before delete |
+| AA-LEG.1.1 | **Delete** legacy `agents/legal/` tree (pipeline, governance, custom loop, tracing dupes) | **Done** | **Critical** | PR after AA-LEG.0.3 |
+| AA-LEG.1.2 | **`python -m intergrax.scaffold new-agent legal --capability legal.review`** (force clean tree) | **Done** | **Critical** | `agents/legal/` matches scaffold layout |
+| AA-LEG.1.3 | **`agents/legal/ARCHITECTURE.md`** — target UAEP graph, skills, tools, config, observability hooks (design-only until steps exist) | **Done** | High | English canonical doc |
+| AA-LEG.2.1 | **Register** `legal` skill bundle on contract (`skill_ids`) per SKILLS.md | **Done** | High | `contract.py` |
+| AA-LEG.2.2 | **UAEP steps** — port minimal slice from spec (one step per PR) | **Deferred** | High | `steps/` |
+| AA-LEG.2.3 | **Remove** custom `legal_execution_loop`, `legal_tool_runtime_bridge` patterns — use Nexus `RuntimeToolGateway` only | **Deferred** | High | No parallel runtime |
+| AA-LEG.2.4 | **Agent tests** — smoke + one spec-backed test per ported step | **Deferred** | High | `agents/legal/tests/` |
+| AA-LEG.2.5 | **Retire** `ROADMAP.md` / `IMPLEMENTATION_PLAN.md` / `HOST_README.md` under agent — merge into `ARCHITECTURE.md` | **Done** | Medium | Single agent doc |
+| AA-LEG.3.1 | **Gate**: `legal` agent imports no `applications.*`; no `getattr` on contract | **Done** | High | CI scripts |
+
+**Explicitly NOT in legal reset:** Live LLM E2E product proof (Band 3 — K.6 / B.15 / S-Ops.4).
+
+#### Wave AA3 — `applications/legal_application` (reset with agent)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-LEGAPP.1 | **`ARCHITECTURE.md`** — manifest, environment profile, factory, auth, observability DB paths, MCP | **Done** | High | `applications/legal_application/` |
+| AA-LEGAPP.2 | **Manifest** — `environment=ApplicationEnvironmentProfile.product_defaults(…)` inline | **Done** | High | `manifest.py` |
+| AA-LEGAPP.3 | **Factory/serving** — align to `poc_template` + product settings; remove redundant `runtime_bridge` if superseded by `UnifiedTaskRunner` | **Done** | High | `host/factory.py`, `serving/` |
+| AA-LEGAPP.4 | **Deploy triad** — verify/update `docker/*`, `BUILD_AND_DEPLOY.md` | **Done** | High | See AA-APP.0.1 |
+| AA-LEGAPP.5 | **`pyproject.toml` deps section** in ARCHITECTURE — `harness-author`, LLM extras, optional `langgraph-legacy` N/A | **Done** | High | ARCHITECTURE §Dependencies |
+| AA-LEGAPP.6 | **Host smoke** — `legal_tests/` green on scaffolded agent only | **Deferred** | High | After AA-LEG.2.2 |
+| AA-LEGAPP.7 | **`.env.example`** parity with scaffold product profile | **Done** | Medium | `.env.example` |
+| AA-LEGAPP.8 | **Remove** duplicate legal test trees if consolidated | **Deferred** | Low | `legal_tests/` vs agent tests |
+
+#### Wave AA4 — Agent `echo`
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-ECHO.1 | **`agents/echo/ARCHITECTURE.md`** — reference role, capabilities, skills, lab registration | **Done** | High | English |
+| AA-ECHO.2 | **Remove Tier-3 imports** — inject `LabHarnessContext` from `lab_application` factory only | **Done** | **Critical** | `agents/echo/echo_agent.py` |
+| AA-ECHO.3 | Align with **`HarnessReferenceAgent`** pattern documented in canon | **Done** | Medium | Code + doc |
+| AA-ECHO.4 | **Tests** — import agent module without `applications` on PYTHONPATH | **Done** | High | `tests/unit/agents/` |
+| AA-ECHO.5 | **README** — pointer to ARCHITECTURE only | **Done** | Low | `agents/echo/README.md` |
+
+#### Wave AA5 — Agent `signoff_probe`
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-SIG.1 | **`ARCHITECTURE.md`** — Appendix A sign-off flow, capability `signoff.probe` | **Done** | Medium | `agents/signoff_probe/` |
+| AA-SIG.2 | Verify **scaffold parity** when AA-S0.2 lands (regenerate diff empty except domain) | **Done** | Low | `tests/unit/scaffold/test_signoff_scaffold_parity.py` |
+| AA-SIG.3 | **README** → ARCHITECTURE link | **Done** | Low | |
+
+#### Wave AA6 — Agent `problem_radar`
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-PR.1 | **`ARCHITECTURE.md`** — K.1 placeholder, I/O schema, policy | **Done** | Medium | Frozen until Band 3 |
+| AA-PR.2 | **Remove Tier-3 imports** (same pattern as echo) | **Done** | High | `problem_radar_agent.py` |
+| AA-PR.3 | **Notebook + tests** documented in ARCHITECTURE | **Done** | Low | |
+| AA-PR.4 | **Status** in plan §6.3 — no feature work until K.1 reprioritized | **Done** | Low | |
+| AA-PR.5 | **README** → ARCHITECTURE | **Done** | Low | |
+
+#### Wave AA7 — Agent `organization_worker`
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-ORG.1 | **`ARCHITECTURE.md`** — HITL, long-running, `org.vendor_report` | **Done** | Medium | |
+| AA-ORG.2 | **Remove `testing_support` import** — fake LLM via test fixture injection | **Done** | High | `organization_worker_agent.py` |
+| AA-ORG.3 | **Scaffold-align** — add `contract.py`, `capabilities.py`, `steps/` if missing | **Deferred** | Medium | |
+| AA-ORG.4 | **Lab manifest flag** + integration test | **Deferred** | Medium | `lab_application/manifest.py` |
+| AA-ORG.5 | **README** → ARCHITECTURE | **Done** | Low | |
+
+#### Wave AA8 — Agent `research` (+ `summary_agent`)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-RES.1 | **`agents/research/ARCHITECTURE.md`** — graph intent `research.pipeline`, two agents | **Done** | High | |
+| AA-RES.2 | **Remove Tier-3 imports** from agents if any | **Done** | High | |
+| AA-RES.3 | **`HarnessReferenceAgent`** alignment for Research/Summary | **Done** | Medium | |
+| AA-RES.4 | **Skill ids** on contracts | **Deferred** | Medium | |
+| AA-RES.5 | **Tests** — UAEP + graph delegation | **Deferred** | High | |
+| AA-RES.6 | **README** merge into ARCHITECTURE | **Done** | Low | |
+
+#### Wave AA9 — Agent `lab` (mocks)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-LABAG.1 | **`agents/lab/README.md`** — mock agents purpose, not product Tier-2 | **Done** | Low | `agents/lab/README.md` |
+| AA-LABAG.2 | **(Optional)** move mocks to `testing_support/` if they are test-only | **Won't fix** | Low | Until leadership requests — mocks stay under `agents/lab/` |
+
+#### Wave AA10 — Application `lab_application`
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-LABAPP.1 | **`ARCHITECTURE.md`** — debug API, interaction, scheduler, manifest flags | **Done** | High | |
+| AA-LABAPP.2 | **Migrate factory** to `build_harness_host_runtime` (retain rich wiring via env profile) | **Done** | **Critical** | `host/factory.py` |
+| AA-LABAPP.3 | **`environment` in manifest** or documented single profile builder | **Done** | High | `manifest.py` / `_shared` |
+| AA-LABAPP.4 | **Deploy triad** — verify `docker/*`, `BUILD_AND_DEPLOY.md` | **Done** | High | |
+| AA-LABAPP.5 | **`pyproject.toml` deps** section in ARCHITECTURE | **Done** | High | |
+| AA-LABAPP.6 | **Smoke tests** after factory migration | **Done** | High | `lab_application_tests/host/test_lab_host_smoke.py` + `tests/acceptance/agent_os/test_lab_application.py` |
+| AA-LABAPP.7 | **README** → ARCHITECTURE | **Done** | Low | |
+
+#### Wave AA11 — Application `poc_template_application`
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-POC.1 | **`ARCHITECTURE.md`** — canonical Tier-3 lab shell (reference for new apps) | **Done** | High | |
+| AA-POC.2 | **Manifest `environment=`** explicit (not only factory fallback) | **Done** | High | `manifest.py` |
+| AA-POC.3 | **Deploy triad** verification | **Done** | Medium | |
+| AA-POC.4 | **`pyproject.toml` deps** section | **Done** | Medium | |
+| AA-POC.5 | **Link from root README** as “start here for new application” | **Done** | Medium | AA-D0.1 |
+
+#### Wave AA12 — Application `research_application`
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| AA-RESAPP.1 | **`ARCHITECTURE.md`** — multi-agent HTTP, env vars, graph | **Done** | High | |
+| AA-RESAPP.2 | **Manifest `environment=`** + `host/environment_profile.py` parity with scaffold | **Done** | High | |
+| AA-RESAPP.3 | **Remove dead flags** `RESEARCH_USE_LEGACY_*` if obsolete | **Done** | Medium | `host/settings.py` |
+| AA-RESAPP.4 | **Deploy triad** verification | **Done** | High | |
+| AA-RESAPP.5 | **`pyproject.toml` deps** section | **Done** | High | |
+| AA-RESAPP.6 | **Smoke tests** + `test_research_manifest_wiring` green | **Deferred** | High | |
+
+### AA — Conformance matrix (living status)
+
+| Module | Scaffold-aligned | ARCHITECTURE.md | Deploy triad | pyproject doc | Tier hygiene |
+|--------|------------------|-----------------|--------------|---------------|--------------|
+| `agents/echo` | Yes | **Done** | N/A | N/A | **OK** |
+| `agents/lab` | N/A (mocks) | README only | N/A | N/A | OK |
+| `agents/legal` | Yes (scaffold) | **Done** | N/A | N/A | **OK** |
+| `agents/organization_worker` | Partial | **Done** | N/A | N/A | **OK** |
+| `agents/problem_radar` | Yes | **Done** | N/A | N/A | **OK** |
+| `agents/research` | Yes | **Done** | N/A | N/A | **OK** |
+| `agents/signoff_probe` | Yes | **Done** | N/A | N/A | OK |
+| `applications/lab_application` | Yes | **Done** | **OK** | **Done** | H-APP factory |
+| `applications/legal_application` | Yes | **Done** | **OK** | **Done** | H-APP |
+| `applications/poc_template_application` | Yes | **Done** | **OK** | **Done** | OK |
+| `applications/research_application` | Yes | **Done** | **OK** | **Done** | H-APP |
+
+### AA — Residual backlog (infrastructure)
+
+**Platform AA rows closed (2026-06-02).** Open infrastructure work: [§6.1z](#61z-harness-implementation-queue-consolidated) **V-REM** (2026-06-05) + ongoing **§6.1** maintenance.
+
+| ID | Deliverable | Priority | Notes |
+|----|-------------|----------|-------|
+| AA-LABAG.1 | `agents/lab/README.md` — mock agents, not product Tier-2 | Low | **Done** — `agents/lab/README.md` |
+| AA-LABAG.2 | (Optional) move lab mocks to `testing_support/` | Low | **Won't fix** until leadership requests |
+| AA-SIG.2 | Scaffold parity diff test for `signoff_probe` | Low | **Done** — `tests/unit/scaffold/test_signoff_scaffold_parity.py` |
+| AA-LABAPP.6 | Lab host smoke after H-APP factory | High | **Done** — unit + acceptance coverage |
+| AA-LEG.0.2 | Git tag `legal-legacy-pre-aa` | High | **Done** — annotated tag on pre-reset commit |
+
+### AA — Explicitly deferred (business / domain — Band 3)
+
+| Topic | Task IDs | Reason |
+|-------|----------|--------|
+| Legal UAEP domain steps | AA-LEG.2.2–2.4, AA-LEGAPP.6, AA-LEGAPP.8 | Business logic on scaffold — [§6.3a](#63a-business-backlog-register-consolidated) |
+| Research domain | AA-RES.4, AA-RES.5, AA-RESAPP.6 | Skills + graph tests — product prototype |
+| Organization worker full scaffold | AA-ORG.3, AA-ORG.4 | Demo agent + lab roster |
+| Lab host extra smoke | AA-LABAPP.6 | **Done** (2026-06-02 sync) — not blocking |
+| K.1 / K.2 | Phase K | Band 3 — problem_radar / vendor discovery |
+| Legal live LLM E2E | K.6 / B.15 / S-Ops.4 | Band 3 — CI budget |
+| New product Tier-3 beyond four hosts | §6.3 | Product decision |
+
+### AA — Paydown log
+
+| Date | AA ID | Summary |
+|------|-------|---------|
+| 2026-06-03 | AA-0.1, AA-LEG.0.1 | Phase AA registered; **legal hard reset** policy recorded |
+| 2026-06-03 | AA-LG.1 | LangGraph removed from core deps; CI `check_langgraph_not_required.py` |
+| 2026-06-03 | AA-S0.1–S0.2, AA-S0.5, AA-APP.0.1–0.3, AA-ECHO.2, AA-PR.*, AA-LABAPP.2, AA-POC.2, AA-RESAPP.2, AA-LEG.1–1.3 | Tier hygiene, lab harness runtime, legal hard reset, deploy triad gate; gate **521** |
+| 2026-06-02 | AA-S0.3, AA-D0.*, AA-* ARCHITECTURE, AA-LABAPP.3, AA-RESAPP.3 | `--reference` scaffold, docs matrix, lab manifest environment, tier import tests; gate **526** |
+| 2026-06-02 | Plan sync | §4.0a scope split, DX/AA residual backlogs, §6.3a business register, master tables synced |
+| 2026-06-02 | AA sync | AA-LABAPP.6 **Done**; AA-LABAG.2 **Won't fix**; §6.1z implementation queue |
+| 2026-06-02 | AA-LEG.0.2, OPS-L3.1 | Tag `legal-legacy-pre-aa`; operational L3 evidence verified |
+
+**Suggested session order (platform — complete):**  
+See [§6.1z](#61z-harness-implementation-queue-consolidated). **Do not schedule** AA-LEG.2.* / AA-RES.5 / AA-ORG.3–4 in harness cadence — use [§6.3a](#63a-business-backlog-register-consolidated) after product decision.
+
+---
+
+## Phase MEM — Memory Platform Completion
+
+**Status:** **Done** (2026-06-02) — **48/48** deliverables; gate **571 passed**.  
+**Prerequisites:** Phases **I** (TaskMemory), **R-Context**, **H-APP** (profile models), **DX-5.7** (ops:memory hints) **Done**; **H-APP.4.3** closed via **MEM-1.***.  
+**Goal:** Close every gap from the **memory platform audit** — short-term session, user/org LTM, task KV, context compression, H-APP→runtime wiring, persistence, recovery, observability, developer hooks, and market-parity documentation — **without** Band 3 product agents (K.1/K.2) or Mem0-like SaaS product layer (MEM-8 deferred P3).  
+**Priority ladder:** **Band 2h** (§4.0) — **default implementation queue** after §6.1 maintenance.  
+**Execution order:** [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active).  
+**Canon refs:** §27 Memory model · §28.1 Context assembly · §42.35 MemoryView · Appendix G in [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md).
+
+**Delivery rule:** One `MEM-*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green.
+
+**Audit verdict (baseline — preserve as acceptance context):**
+
+| Area | Maturity (1–5) | Audit comment | Close via |
+|------|----------------|---------------|-----------|
+| Task memory (KV, delegation, handoff) | **4/5** | Best-in-repo; SQLite, policy, events | MEM-DOC.*, MEM-TASK.* (docs + lab policy) |
+| Context / LLM window | **3,5/5** | Budget + assembly + history summarization; weak tests; in-memory session default | MEM-1.*, MEM-5.*, MEM-CTX.* |
+| Short-term session (STM) | **3/5** | Model OK; production path often in-memory | MEM-1.3, MEM-4.1, MEM-DOC.1 |
+| User LTM | **2,5/5** | Logic exists; no durable store in repo | MEM-2.*, MEM-4.2 |
+| Organization memory | **2,5/5** | SQLite org profile; not full org memory product | MEM-1.4, MEM-DOC.3 |
+| Consolidation / fact extraction | **2/5** | LLM consolidation; notebooks; few gate tests | MEM-4.2, MEM-8.* (P3) |
+| Graph memory (agent sense) | **1/5** | Graph RAG ≠ agent memory | MEM-GRAPH.*, MEM-9.* |
+| Developer hooks | **2/5** | MemoryView + events; no memory lifecycle hooks / EP | MEM-3.*, MEM-7.* |
+| H-APP → runtime config | **4/5** | Bridge **Done** via MEM-1.* | MEM-DOC.* maintenance |
+| Declarative env config | **4/5** | MemoryProfile wired via H-APP bridge | MEM-1.* |
+| Memory observability | **4/5** | MEMORY_* / CONTEXT_* events + memory SLO metrics baseline | MEM-OBS.* |
+
+**Overall platform memory score: ~3,5/5** — Tier-1 architecture closed for harness; product Mem0/Zep layer remains **§6.3** optional.
+
+**Out of scope (explicit):** K.1/K.2 business memory; hosted Mem0/Zep replacement SaaS; Neo4j entity graph as default user memory (MEM-9 = design RFC only); Redis/Postgres session backends as shipped defaults (MEM-PERS.3 spike P3).
+
+```text
+Wave MEM0 — Register, audit baseline, conceptual + parity docs (9 tasks)
+Wave MEM1 — P0 bridge + SQLite user LTM (9 tasks) — closes H-APP.4.3 gap
+Wave MEM2 — P1 plugins, gates, context docs, graph clarification (18 tasks)
+Wave MEM3 — P2 retention, hooks, SLO metrics, optional backends (9 tasks)
+Wave MEM4 — P3 product memory layer + entity graph RFC (4 tasks)
+Total: 48
+```
+
+### MEM — Conceptual model (canon §27 vs runtime)
+
+Canon §27 defines **5 memory types**:
+
+1. Task Memory  
+2. Agent Local Memory  
+3. User / Organization Memory  
+4. Long-Term Knowledge Memory  
+5. Execution Trace Memory  
+
+Runtime maps these to **four operational stores** (+ trace + RAG — not memory layers):
+
+```text
+Short-term:     SessionManager + SessionStorage; optional ConversationalMemory (FIFO)
+Task-scoped:    TaskMemory SQLite KV → PolicyScopedMemoryView → SharedTaskContext handoff
+User / Org LTM: UserProfileManager + entries; OrganizationProfile SQLite
+Knowledge:      RAG vectorstore; Graph RAG (document graph — NOT agent entity memory)
+Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutable memory)
+```
+
+**Gap (document, do not implement as separate modules in MEM0):** no first-class **episodic / semantic / procedural** taxonomy in code — only `MemoryKind` entry tags (`USER_FACT`, `PREFERENCE`, `SESSION_SUMMARY`, `ORG_FACT`, `POLICY`). IDEAL harness doc describes episodic/semantic as **vision only**.
+
+### MEM — Persistence backend matrix (as-built)
+
+| Layer | In-memory | SQLite | Postgres | Redis | Mongo |
+|-------|-----------|--------|----------|-------|-------|
+| Task KV | test | prod path (`INTERGRAX_TASK_MEMORY_DB`) | — | — | — |
+| Session | lab SQLite via bridge | bundle path | — | — | — |
+| User profile LTM | test | bundle (`SQLiteUserProfileStore`) | — | — | optional `DocumentStoreUserProfileStore` (MEM-PERS.2) |
+| Org profile | test | bundle | — | — | — |
+| Checkpoints (≠ memory) | — | yes | — | — | — |
+| Trace / events | test | yes | — | — | — |
+
+**SQLite integration bundle** (`create_sqlite_integration`) = lab hub (trace, events, task_memory, session, org profile, checkpoints) — coherent for dev; **not** multi-tenant production scale.
+
+**Recovery semantics (target documentation — MEM-DOC.4):**
+
+| Layer | Recovery key | Works when | Broken today |
+|-------|--------------|------------|--------------|
+| Task memory | `tenant_id` + `task_id` + namespace | SQLite enabled | — |
+| Session | `session_id` | SQLite SessionStorage when relational_store=sqlite | — |
+| User LTM | user id | SQLite bundle or Mongo document_store | — |
+| Long-running | checkpoint store | SQLite | separate from conversational memory |
+| Org profile | org id | SQLite bundle | — |
+
+### MEM — Market parity traceability (MEM-PAR.1)
+
+| Capability | LangGraph | Mem0 / Zep | Intergrax today | Target ID |
+|------------|-----------|------------|-----------------|-----------|
+| Thread / session persistence | Checkpointer | Session + graph | Session + checkpoint **separate** | MEM-DOC.1, MEM-1.3 |
+| Scoped KV per run | Store API | — | TaskMemory + MemoryView ✅ | MEM-DOC.2 |
+| Auto fact extraction | — | core | Consolidation service, **manual trigger** | MEM-4.2, MEM-8.* |
+| Entity graph memory | — | Zep ✅ | ❌ (RAG graph only) | MEM-GRAPH.1, MEM-9.* |
+| Vector semantic memory | Optional | ✅ | User LTM via RAG index | MEM-2.* |
+| Subagent namespace isolation | Subgraph state | — | delegation namespace ✅ | documented |
+| Memory hooks / plugins | Checkpointer swap | API | Event bus only | MEM-3.*, MEM-7.* |
+| Declarative env config | Partial | SaaS | MemoryProfile **Done** | MEM-1.* |
+| Observability | LangSmith | Dashboard | Trace events ✅; no memory SLO | MEM-OBS.* |
+
+### MEM — User audit checklist → deliverables (MEM-CHk.1)
+
+| Audit question | Answer (as-built) | Deliverable IDs |
+|----------------|-------------------|-----------------|
+| How is memory **managed**? | Nexus Tier-1; agents via UAEP/MemoryView; profiles via runtime steps | MEM-DOC.2, MEM-1.* |
+| **Limited context** handling? | Budget trim + history summarization + LTM limits + summary tiers — no single end-to-end policy | MEM-1.2, MEM-CTX.1, MEM-5.* |
+| **Strategy** (summarize, trim)? | `HistoryLayer` + `ContextBudgetPolicy`; trim often char-cut | MEM-5.* |
+| **Developer handlers**? | MemoryView, policy, events — no formal memory hooks / plugin catalog | MEM-3.*, MEM-7.* |
+| **Where persisted**? | Task/org/session: SQLite (lab); user LTM: in-memory; Redis: not memory layer | MEM-2.*, MEM-PERS.1 |
+| **Configuration**? | Env + `MemoryProfile` partial; H-APP bridge incomplete | MEM-1.* |
+| **Recovery**? | Task/session by ID if SQLite; user LTM weak | MEM-1.3, MEM-2.*, MEM-DOC.4 |
+| **Tests**? | Task/context OK; consolidation/history gaps | MEM-4.*, MEM-5.1, MEM-TEST.* |
+| **Observation**? | MEMORY_* / CONTEXT_* events; no product memory metrics | MEM-OBS.* |
+| **Graph memory**? | **No** as agent memory — Graph RAG only | MEM-GRAPH.1 |
+
+### MEM — Architecture inventory (existing code — do not rewrite)
+
+| Module | Tier | Role |
+|--------|------|------|
+| `intergrax/memory/` | 0 | ConversationalMemory, UserProfileManager |
+| `intergrax/runtime/task_memory/` | 1 | Coordinator, MemoryView, SQLite store, delegation |
+| `intergrax/runtime/nexus/session/` | 1 | SessionManager, InMemory/SQLite storage |
+| `intergrax/runtime/nexus/context/` | 1 | ContextManager, context_budget, engine_history_layer |
+| `intergrax/runtime/user_profile/session_memory_consolidation_service.py` | 1 | LLM session → LTM extraction |
+| `intergrax/applications/_shared/runtime_config_bridge.py` | 3 | **Gap:** line ~112 always `InMemorySessionStorage()` |
+| `intergrax/applications/_shared/task_memory_wiring.py` | 3 | Enables task DB from profile flags; does not enable LTM/org Nexus steps |
+| `intergrax/applications/contracts/environment_profile.py` | 3 | `MemoryProfile`, `ContextProfile` |
+| `intergrax/rag/graph/` | 0 | Graph RAG retrieval — **not** agent memory |
+| `integrations/examples/custom_memory_kv/` | 0 | KV plugin example — not wired to TaskMemory |
+
+**Existing gate tests:** `tests/unit/runtime/task_memory/`, `tests/acceptance/.../test_acceptance_08_memory_handoff`, context budget, profile steps, sqlite session integration.
+
+**Known gaps in tests:** `engine_history_layer` summarization; E2E LTM consolidation; `MemoryProfile` → runtime wiring; external memory backends; graph-as-memory.
+
+### MEM — Traceability (audit section → task IDs)
+
+| Audit § | Topic | Task IDs |
+|---------|--------|----------|
+| §1 | Conceptual model (5 types vs 4 stores) | MEM-0.3, MEM-0.4 |
+| §2 | Short-term session; InMemory default in bridge; Redis not memory layer | MEM-1.3, MEM-4.1, MEM-DOC.1, MEM-ST.1, MEM-PERS.3 |
+| §3 | User LTM; InMemoryUserProfileStore only | MEM-2.*, MEM-4.2 |
+| §4 | Org memory; enable_org_memory not mapped | MEM-1.4, MEM-DOC.3 |
+| §5 | Task memory strengths; lab default off | MEM-TASK.*, MEM-DOC.2 |
+| §6 | Context strategy; budget_policy not mapped | MEM-1.2, MEM-5.*, MEM-CTX.* |
+| §7 | Developer hooks; no memory EP | MEM-3.*, MEM-7.*, MEM-DOC.5, MEM-DOC.6 |
+| §8 | Persistence matrix; H-APP.4.3 divergence | MEM-PERS.1, MEM-1.*, MEM-REC → MEM-DOC.4 |
+| §9 | Observability + test gaps | MEM-OBS.*, MEM-4.*, MEM-5.1 |
+| §10 | Graph memory ≠ Graph RAG | MEM-GRAPH.* |
+| §11 | Market comparison | MEM-PAR.1 (table above) |
+| §12 | Recommended MEM-1..9 backlog | MEM-1.* … MEM-9.* |
+| §13 | User checklist | MEM-CHk.1 (table above) |
+
+### MEM — Master deliverables register (all 48 tasks)
+
+#### Wave MEM0 — Register & audit baseline
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-0.1 | **Phase MEM register** in this plan + §6.2aa + §6.1aa + doc model row | **Done** | Low | This section |
+| MEM-0.2 | **Audit maturity baseline table** preserved (§Audit verdict above) | **Done** | Low | Do not delete on paydown |
+| MEM-0.3 | **Canon §27 → 4 stores** mapping + flow diagram in `AGENT_CREATION_GUIDE` Appendix G | **Done** | Medium | Guide + cross-link §27 |
+| MEM-0.4 | Document **`MemoryKind` tags** vs episodic/semantic/procedural (IDEAL vision vs runtime) | **Done** | Low | Guide or canon footnote |
+| MEM-PAR.1 | **Market parity traceability table** (LangGraph / Mem0 / Zep) | **Done** | Low | This section §MEM — Market parity |
+| MEM-CHk.1 | **User audit checklist** → deliverable mapping (10 questions) | **Done** | Low | This section §MEM — User audit checklist |
+| MEM-PERS.1 | **Persistence backend matrix** synced to Appendix G | **Done** | Low | Guide Appendix G + this section |
+| MEM-ST.1 | **Document:** Redis `KeyValueCache` = integration cache only — **not** session/LTM memory layer | **Done** | Low | `INTEGRATIONS.md` or guide |
+| MEM-OBS.2 | Baseline: `MEMORY_READ`/`MEMORY_WRITE`, `CONTEXT_*`, `ops:memory` filter | **Done** | — | DX-5.7 · `phase_coverage.py` |
+
+#### Wave MEM1 — P0: H-APP bridge + durable user LTM (closes H-APP.4.3)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-1.1 | **`materialize_runtime_config` reads `MemoryProfile`** — map `enable_user_longterm_memory`, `enable_task_memory`, retention, scope flags to `RuntimeConfig` | **Done** | **P0 Critical** | `runtime_config_bridge.py` |
+| MEM-1.2 | Map **`ContextProfile.budget_policy`** → `RuntimeConfig` context budget fields | **Done** | **P0 Critical** | `runtime_config_bridge.py` |
+| MEM-1.3 | **`SessionManager` from integration bundle** — resolve `SQLiteSessionStorage` when sqlite profile active; remove hardcoded `InMemorySessionStorage()` in `build_runtime_context_from_environment` | **Done** | **P0 Critical** | `runtime_config_bridge.py` |
+| MEM-1.4 | Map **`MemoryProfile.enable_org_memory`** → `RuntimeConfig.enable_org_profile_memory` | **Done** | **P0** | `runtime_config_bridge.py` |
+| MEM-1.5 | **Gate test:** `ApplicationEnvironmentProfile` memory + context → `RuntimeConfig` round-trip | **Done** | **P0** | `tests/unit/applications/test_memory_profile_runtime_bridge.py` |
+| MEM-1.6 | **Reconcile H-APP.4.3** — mark **Done** only when MEM-1.1–MEM-1.4 **Done** | **Done** | **P0** | H-APP register row |
+| MEM-2.1 | **`SQLiteUserProfileStore`** — mirror `SQLiteOrganizationProfileStore` pattern | **Done** | **P0 Critical** | `intergrax/memory/` or `runtime/user_profile/` |
+| MEM-2.2 | **Wire `SQLiteUserProfileStore`** in sqlite integration bundle + lab/legal/research profiles | **Done** | **P0** | integration bundle wiring |
+| MEM-2.3 | **Unit tests:** `UserProfileManager` CRUD + search with SQLite backend (fake RetrievalService) | **Done** | **P0** | `tests/unit/memory/` |
+
+#### Wave MEM2 — P1: gates, plugins prep, context docs, graph clarification
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-3.1 | **`UserProfileStore` / `SessionStorage` plugin Protocol** (typed, no Tier-2 imports) | **Done** | P1 | `intergrax/memory/contracts/` |
+| MEM-3.2 | **Entry point group `intergrax.memory_stores`** + `bootstrap_memory_stores()` | **Done** | P1 | Mirror P-Ext pattern |
+| MEM-3.3 | **Reference external memory store** + gate (fixture package) | **Done** | P1 | `tests/fixtures/` + unit test |
+| MEM-4.1 | **Gate:** session SQLite persist + resume round-trip via H-APP host | **Done** | P1 | `tests/integration/` |
+| MEM-4.2 | **Gate:** LTM consolidation E2E with deterministic fake LLM | **Done** | P1 | `tests/acceptance/` (not notebook-only) |
+| MEM-4.3 | **Gate:** full memory stack on lab profile (task + session + LTM + org) | **Done** | P1 | acceptance or integration |
+| MEM-5.1 | **Unit tests:** `engine_history_layer` — `SUMMARIZE_OLDEST` + truncate fallback | **Done** | P1 | `tests/unit/runtime/nexus/context/` |
+| MEM-5.2 | **Document context compression strategy matrix** (FULL / SUMMARY / SUMMARIZE_OLDEST / hard trim) | **Done** | P1 | Guide + canon §28.1 |
+| MEM-CTX.1 | **`ContextDecisionProfile`** (or extend `ContextProfile`) — unified memory vs context vs RAG assembly policy for Tier-3 authors | **Done** | P1 | `environment_profile.py` |
+| MEM-DOC.1 | **Author cookbook:** session vs checkpoint vs task KV mental model (LangGraph thread analogy) | **Done** | P1 | `AGENT_CREATION_GUIDE.md` |
+| MEM-DOC.2 | Document **`wire_task_memory_from_profile` vs Nexus LTM/org steps** gap | **Done** | P1 | Guide + this plan |
+| MEM-DOC.3 | **Org memory scope** — profile + instructions vs shared episodic / team knowledge | **Done** | P1 | Guide |
+| MEM-DOC.4 | **Recovery semantics** per memory layer (table in guide) | **Done** | P1 | Guide or `HARNESS_ENVIRONMENT.md` |
+| MEM-DOC.6 | Clarify **`custom_memory_kv` example** — integration KV vs Nexus TaskMemory | **Done** | P1 | `integrations/examples/` README |
+| MEM-GRAPH.1 | **Document:** Graph RAG (`intergrax/rag/graph/`) ≠ agent entity graph memory | **Done** | P1 | Canon + RAG docs |
+| MEM-TASK.1 | **Lab profile:** explicit task memory enable policy (replace silent default-off + log warning only) | **Done** | P1 | `lab_application` environment profile |
+| MEM-TASK.2 | **Author cookbook:** MemoryView namespaces + delegation paths | **Done** | P1 | Guide Appendix G |
+
+#### Wave MEM3 — P2: policy enforcement, hooks, observability, optional backends
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-6.1 | **Enforce `MemoryProfile.retention_days`** on session + task stores (TTL / purge job or read filter) | **Done** | P2 | session + task_memory |
+| MEM-6.2 | **Enforce `scope_boundary`** on `PolicyScopedMemoryView` writes | **Done** | P2 | `memory_view.py` + policy |
+| MEM-7.1 | **HookPoint `BEFORE_MEMORY_WRITE`** (+ optional `AFTER_MEMORY_WRITE`) | **Done** | P2 | `runtime/nexus/hooks/` |
+| MEM-7.2 | **Gate:** hook can deny or mutate memory write | **Done** | P2 | unit test |
+| MEM-OBS.1 | **Memory SLO metrics** — LTM hit rate, retention violations, memory write volume | **Done** | P2 | observability / Prometheus hooks |
+| MEM-DOC.5 | **Cookbook:** swap `UserProfileStore` to external backend via EP | **Done** | P2 | `EXTENSION_AUTHOR_GUIDE.md` |
+| MEM-CTX.2 | **Token-aware context trim** evaluation (vs char-cut only) — spike + recommendation | **Done** | P2 | `context_budget.py` RFC or impl |
+| MEM-PERS.2 | **Optional:** Mongo `document_store` path for user memory artifacts | **Done** | P2 | Tier-0 integration wiring |
+| MEM-ST.4 | **Optional:** `ConversationalMemoryStore` backend beyond in-memory | **Done** | P2 | `intergrax/memory/` |
+
+#### Wave MEM4 — P3: product memory layer (Band 3 option) + entity graph RFC
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-8.1 | **Design RFC:** unified memory product layer (Mem0-like auto-ingest, dedup, temporal validity) | **Done** | P3 | §6.3 decision gate |
+| MEM-8.2 | **Background consolidation job** — auto fact extraction (optional product) | **Done** | P3 | Deferred with MEM-8.1 |
+| MEM-9.1 | **Design RFC:** entity graph memory for user entities (separate from Graph RAG) | **Done** | P3 | Canon §53 follow-up |
+| MEM-PERS.3 | **Spike:** Postgres memory backend for session/LTM (multi-tenant) | **Done** | P3 | RFC only; no default ship |
+
+### MEM — Paydown log
+
+| Date | ID | Notes |
+|------|-----|-------|
+| 2026-06-02 | MEM-1.*–MEM-9.* | Phase MEM **48/48 Done**; H-APP.4.3 **Done**; gate **571** |
+| 2026-06-02 | §6.1 reference hosts | `with_harness_memory()` on legal/research; gate `test_reference_hosts_memory_bridge`; W-OPS memory_platform_gate |
+| 2026-06-02 | MEM-0.1–MEM-0.2, MEM-PAR.1, MEM-CHk.1, MEM-PERS.1 | Memory audit → Phase MEM register in plan |
+| 2026-06-02 | MEM-OBS.2 | Baseline already **Done** (DX-5.7) |
+
+**Suggested PR order (P0 first):** MEM-1.1 → MEM-1.2 → MEM-1.3 → MEM-1.4 → MEM-1.5 → MEM-2.1 → MEM-2.2 → MEM-2.3 → MEM-1.6 → MEM-4.1 → MEM-5.1 → MEM-4.2 → MEM-3.1 → MEM-3.2 → MEM-0.3 → remaining MEM2 → MEM3 → MEM4.
+
+**Success gate for Phase MEM closeout:** All **P0 + P1** rows **Done** or **Won't fix** with rationale; gate green; H-APP.4.3 **Done**; user LTM survives process restart on sqlite lab profile; `MemoryProfile` fully drives `RuntimeConfig` on all four reference hosts.
+
+**Explicitly out of NOW:** K.1/K.2 memory features, Mem0 SaaS parity (MEM-8.2), entity graph implementation (MEM-9.1 beyond RFC), Redis session as default.
 
 ---
 
@@ -2759,25 +3590,65 @@ Paydown Wave P3 (optional polish):
 
 **Read this before §6.** The plan has three bands. Implement **top to bottom**. **Never** pull items from band 3 into “next step” summaries while band 1–2 are the active policy.
 
-| Band | What | Status (2026-06-02) | Examples |
+| Band | What | Status (2026-06-05) | Examples |
 |------|------|---------------------|----------|
-| **1 — Harness platform** | Tier-0/1/3 lab wiring, security, policy, typing, legacy removal, gate audits | **Maintenance** (§4.1 **Done**; keep green) | `pytest -m gate`, `check_harness_*`, `check_tools_agent_*`, regression fixes |
-| **2 — Harness architecture hardening** | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics hardening — **no** business domain | **Done (Phase V + V-V6)** | V-CG … V-KG, V-V6 closeout |
+| **1 — Harness platform** | Tier-0/1/3 lab wiring, security, policy, typing, legacy removal, gate audits | **Maintenance** (§4.1 **Done**; keep green) | `pytest -m gate`, `check_harness_*`, `check_legacy_modules_removed.py`, regression fixes |
+| **2 — Harness architecture hardening** | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics hardening — **no** business domain | **Done** (2026-06-05) | V-CG … V-KG, V-V6 closeout · V-REM |
+| **2i — Phase V runtime remediation (V-REM)** | Close 9 Partial Phase V + EvalRunner gate gaps — runtime enforcement, not new OS features | **Done** (2026-06-05) | [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout) · Appendix J |
 | **2b — Modality plane (optional parallel)** | Vision CV, speech, classical ML — harness Tier-0 only | **Done** | W-ML complete; optional Celery bus wiring for Tier-3 scale-out |
 | **2c — Plugin catalogs (P-Ext)** | Entry points + `ToolPlugin` + `SkillPlugin` + `bootstrap_catalogs()` | **Done** (2026-06-02) | Appendix I · [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) |
 | **2d — Operational L3 (W-OPS)** | Reliability, identity, SLO/ops evidence, online eval — **no** business agents | **Done** (2026-06-06) | [Phase W-OPS](#phase-w-ops--operational-harness-maturity-ideal-l3-ops) · `phase_w_ops_evidence.py` |
-| **2e — Application environment (H-APP)** | `ApplicationEnvironmentProfile`, unified Tier-3 wiring, host migration — **no** business agents | **Pending** | [Phase H-APP](#phase-h-app--tier-3-application-environment-full-configurability) · [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) · **§6.2x** |
+| **2e — Application environment (H-APP)** | `ApplicationEnvironmentProfile`, unified Tier-3 wiring, host migration — **no** business agents | **Done** (2026-06-03) | [Phase H-APP](#phase-h-app--tier-3-application-environment-full-configurability) · [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) · **§6.2x** |
+| **2f — Developer authoring UX (DX)** | LangGraph-like facades, minimal scaffold, CLI run/doctor, TTFRun gates, UI spec export — **no** business agents | **Done** (2026-06-03) | [Phase DX](#phase-dx--developer-authoring-experience-fast-environment--agent-builds) · **§6.2y** |
+| **2g — Agents & applications conformance (AA)** | Scaffold alignment, per-agent/app `ARCHITECTURE.md`, deploy triad, legal **scaffold** reset (domain steps → Band 3) | **Mostly Done** (2026-06-02) | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) · **§6.2z** · [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
+| **2h — Memory platform (MEM)** | H-APP→runtime bridge, durable user LTM, session SQLite, gates, hooks, memory docs — **no** business agents | **Done** (2026-06-02) | [Phase MEM](#phase-mem--memory-platform-completion) · **§6.2aa** |
+| **2j — Orchestration closeout (ORCH)** | Wire `planner_kind`/`classifier_kind`, `ApplicationGraphSpec`→plan, graph concurrency cap — **no** business agents | **Done** (2026-06-05) | [Phase ORCH](#phase-orch--orchestration-control-plane-closeout) · **§6.1b** · **§6.2bb** |
+| **2k — Tools/skills closeout (TS)** | Catalog→`RuntimeConfig` bridge, harness LLM wiring, `SkillResolverProtocol`, Appendix J — **no** business agents | **Done** (2026-06-02) | [Phase TS](#phase-ts--tools--skills-control-plane-closeout) · **§6.1c** · **§6.2bc** |
+| **2l — Integration closeout (INT)** | `integration_runtime_bridge`, bootstrap health probes, Appendix K — **no** business agents | **Done** (2026-06-02) | [Phase INT](#phase-int--integration-control-plane-closeout) · **§6.1d** · **§6.2bd** |
+| **2m — RAG closeout (RAG)** | `rag_runtime_bridge`, RAG stack on environment wire — **no** business agents | **Done** (2026-06-02) | [Phase RAG](#phase-rag--rag-retrieval-control-plane-closeout) · **§6.1e** · **§6.2be** |
+| **2n — Context engineering closeout (CTX)** | `context_runtime_bridge`, `context_wiring`, Nexus `ContextManager` wire — **no** business agents | **Done** (2026-06-02) | [Phase CTX](#phase-ctx--context-engineering-control-plane-closeout) · **§6.1f** · **§6.2bf** |
+| **2o — Legacy tool plan closeout (LEG)** | `tool_ids` canonical path; gateway/engine planner migration — **no** business agents | **Done** (2026-06-02) | [Phase LEG](#phase-leg--legacy-tool-plan-boolean-closeout) · **§6.1h** |
+| **2p — Prompt registry closeout (PE)** | `PromptProfile`, `prompt_runtime_bridge`, `prompt_wiring`, Appendix M — **no** business agents | **Done** (2026-06-02) | [Phase PE](#phase-pe--prompt-registry-control-plane-closeout) · **§6.1i** |
+| **2q — Agent assembly closeout (AS)** | Agent contract conformance, capability/skill resolution, lifecycle state — **no** business agents | **Done** (2026-06-02) | [Phase AS](#phase-as--agent-assembly-control-plane-closeout) · **§6.1k** · **Appendix N** |
+| **2r — Registry architecture closeout (REG)** | Registry snapshot, assembly resolver, host resolution CI — **no** business agents | **Done** (2026-06-02) | [Phase REG](#phase-reg--registry-architecture-control-plane-closeout) · **§6.1l** · **Appendix O** |
+| **2s — Capability graph closeout (CG)** | Environment graph slice, wire-time validation, CI audit — **no** business agents | **Done** (2026-06-02) | [Phase CG](#phase-cg--capability-graph-control-plane-closeout) · **§6.1m** · **Appendix P** |
+| **2t — Observability closeout (OBS)** | Profile bridge, assembly resolver, host wiring CI — **no** business agents | **Done** (2026-06-02) | [Phase OBS](#phase-obs--observability-control-plane-closeout) · **§6.1n** · **Appendix Q** |
+| **2u — Reliability closeout (REL)** | Idempotency bridge, circuit breaker wire, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase REL](#phase-rel--reliability-control-plane-closeout) · **§6.1o** · **Appendix R** |
+| **2v — Security closeout (SEC)** | V-SEC bridge, middleware assembly resolver, host CI — **no** business agents | **Done** (2026-06-02) | [Phase SEC](#phase-sec--security-control-plane-closeout) · **§6.1q** · **Appendix S** |
+| **2w — Cost governance closeout (COST)** | Budget bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · **§6.1r** · **Appendix T** |
+| **2x — Evaluation closeout (EVAL)** | Registry bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · **§6.1s** · **Appendix U** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-03):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green. Band 2 / 2d (V / W-ML / P-Ext / **W-OPS**) = **Done** (code). **Default implementation queue = §6.2x Phase H-APP** (43 tasks) after §6.1 maintenance on each PR; operational L3 sign-off (H-APP.6.*) via release cycles. Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-02):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2m** (ORCH, TS, INT, RAG) = **Done**. Bands 2 / 2b–**2m** platform rows = **Done**. Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
-BAND 1:  Harness maintenance — gate + audit scripts (§6.1)
-BAND 2:  Harness architecture hardening — Phase V + W-ML + P-Ext (Done)
-BAND 2d: Operational L3 — Phase W-OPS (§6.2w) — DONE (ops sign-off pending release cycles)
-BAND 2e: Application environment — Phase H-APP (§6.2x) — PENDING (43 tasks)
+BAND 1:  Harness maintenance — gate + audit scripts (§6.1) — every PR (default next)
+BAND 2j: Orchestration closeout — Phase ORCH (§6.1b) — DONE (2026-06-05)
+BAND 2:  Harness architecture hardening — Phase V + V-REM — DONE (2026-06-05)
+BAND 2i: Phase V runtime remediation — V-REM — DONE (2026-06-05)
+BAND 2d: Operational L3 — Phase W-OPS (§6.2w) — DONE
+BAND 2e: Application environment — Phase H-APP (§6.2x) — DONE (43 tasks)
+BAND 2f: Developer authoring UX — Phase DX (§6.2y) — DONE (47 tasks)
+BAND 2g: Agents & applications conformance — Phase AA (§6.2z) — MOSTLY DONE (platform); domain → Band 3
+BAND 2h: Memory platform — Phase MEM (§6.2aa) — DONE (48/48)
+BAND 2j: Orchestration closeout — Phase ORCH (§6.1b) — DONE (ORCH-1 → ORCH-4)
+BAND 2k: Tools/skills closeout — Phase TS (§6.1c) — DONE (TS-1 → TS-3)
+BAND 2l: Integration closeout — Phase INT (§6.1d) — DONE (INT-1 → INT-2)
+BAND 2m: RAG closeout — Phase RAG (§6.1e) — DONE (RAG-1)
+BAND 2n: Context engineering closeout — Phase CTX (§6.1f) — DONE (CTX-1 → CTX-2)
+BAND 2o: Legacy tool plan closeout — Phase LEG (§6.1h) — DONE (LEG-1 → LEG-3)
+BAND 2p: Prompt registry closeout — Phase PE (§6.1i) — DONE (PE-1 → PE-3)
+BAND 2q: Agent assembly closeout — Phase AS (§6.1k) — DONE (AS-1 → AS-3)
+BAND 2r: Registry architecture closeout — Phase REG (§6.1l) — DONE (REG-1 → REG-3)
+BAND 2s: Capability graph closeout — Phase CG (§6.1m) — DONE (CG-1 → CG-3)
+BAND 2t: Observability closeout — Phase OBS (§6.1n) — DONE (OBS-1 → OBS-3)
+BAND 2u: Reliability closeout — Phase REL (§6.1o) — DONE (REL-1 → REL-3)
+BAND 2v: Security closeout — Phase SEC (§6.1q) — DONE (SEC-1 → SEC-3)
+BAND 2w: Cost governance closeout — Phase COST (§6.1r) — DONE (COST-1 → COST-3)
+BAND 2x: Evaluation closeout — Phase EVAL (§6.1s) — DONE (EVAL-1 → EVAL-3)
+DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
 DONE:    Harness completion backlog (§4.1) — 2026-06-02
@@ -2803,6 +3674,38 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 ```
 
 **Rationale:** Phases S/T/U + §4.1 delivered a production-configurable **harness**. Band 1–2 preserve and extend that platform. **Band 3 (product) is intentionally last** so business agents and new applications do not drive Tier-1 evolution (canon §52, [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md)).
+
+### 4.0a Implementation scope split (infrastructure vs business)
+
+**Canonical rule:** Default implementation queue = **infrastructure only** (Bands 1–2g + §6.1). **Business** work runs only after explicit product prioritization — **[§6.3](#63-end-of-plan--deferred-product-work-only)**.
+
+| Layer | Bands / phases | What it includes | Default queue |
+|-------|----------------|------------------|---------------|
+| **Infrastructure (Intergrax Harness)** | 1, 2, 2b–2j (platform rows) | `intergrax/runtime/`, Tier-0 catalogs, H-APP, DX, MEM, ORCH, scaffold, CI audits, reference hosts | **Active** — §6.1 maintenance only |
+| **Conformance shells (platform)** | 2g AA | `legal` / `legal_application` **scaffold** + deploy triad + tier hygiene (no domain UAEP steps) | **Done** (shell) |
+| **Business agents & product apps** | 3, §6.3, AA-LEG.2.*, K.* | K.1/K.2, Legal UAEP steps, research/org domain tests, new `applications/<product>/`, live LLM E2E | **Deferred** — not default next |
+
+**Module classification (repo inventory):**
+
+| Module | Role | Queue |
+|--------|------|-------|
+| `agents/echo`, `agents/signoff_probe` | Harness reference Tier-2 | Infrastructure — **Done** |
+| `agents/lab` | Lab mocks (not product agents) | Infrastructure — AA-LABAG.* optional |
+| `applications/poc_template_application`, `applications/lab_application` | Reference Tier-3 hosts | Infrastructure — **Done** |
+| `agents/legal`, `applications/legal_application` | Product shell on scaffold | Platform **Done**; domain logic **Deferred** (AA-LEG.2.2+) |
+| `agents/research`, `applications/research_application` | Research prototype host | Platform **Done**; domain tests **Deferred** (AA-RES.4–5, AA-RESAPP.6) |
+| `agents/organization_worker` | HITL / long-running demo | Docs **Done**; full scaffold + lab flag **Deferred** (AA-ORG.3–4) |
+| `agents/problem_radar` | K.1 placeholder | **Frozen** — Band 3 (K.1) |
+| New `applications/<product>/` beyond four hosts | Customer/product deploy | **Deferred** — §6.3 |
+
+**Where to look for open work:**
+
+| Topic | Section |
+|-------|---------|
+| **Canonical implementation queue (infrastructure)** | [§6.1](#61-harness-platform-maintenance-default--band-1) (**active** — maintenance) · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) (all closed) · [§6.1z](#61z-harness-implementation-queue-consolidated) (closed) |
+| Ongoing gate + audit scripts | [§6.1](#61-harness-platform-maintenance-default--band-1) |
+| Memory platform (Done — §6.1 maintenance) | [Phase MEM](#phase-mem--memory-platform-completion) · [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active) |
+| All business / domain work | [§6.3](#63-end-of-plan--deferred-product-work-only) · [Business backlog register](#63a-business-backlog-register-consolidated) |
 
 ### 4.1 Harness completion backlog (execution order)
 
@@ -2850,13 +3753,719 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ---
 
+## Phase GOV-AUDIT — Governance control plane (audit closeout)
 
+**Status:** **Done** (2026-06-05) — runtime governance via V-REM, H-APP, DX-5.8; documentation via GOV-DOC.*  
+**Prerequisites:** Phase V-REM **Done**, H-APP.2.4–2.8 **Done**, DX-5.8 **Done**  
+**Goal:** Close governance/policy/observability audit (AUDIT_MAP §5, §21) with a single authoring map and traceability — **no** new OS features.  
+**Author map:** [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane)
+
+**Delivery rule:** GOV-DOC.* = docs-only PRs; no code unless regression found → route to **REG-*** under §6.1.
+
+| ID | Deliverable | Status | Priority | Module / doc | Acceptance |
+|----|-------------|--------|----------|--------------|------------|
+| GOV-DOC.1 | **Appendix H** — control plane map (profiles, bundles, hooks, EP groups, mandatory vs optional observability) | **Done** | High | `AGENT_CREATION_GUIDE.md` | TOC + §H.1–H.8 present |
+| GOV-DOC.2 | **Cross-ref sync** — plan Documentation model, README, `HARNESS_ENVIRONMENT.md`, canon §42.11.5, AUDIT_MAP §5/§21, audit prompt ref #5 | **Done** | Medium | `docs/*` | Links resolve; no orphan audit layer |
+| GOV-DOC.3 | **`EXTENSION_AUTHOR_GUIDE.md` §10** — `intergrax.policy_rules` author surface | **Done** | Medium | `EXTENSION_AUTHOR_GUIDE.md` | DX-5.8 traceability |
+| GOV-PROD.1 | Unified product observability dashboard (beyond lab debug APIs) | **Deferred** | — | — | **§6.3** product decision; optional `observability_backend` remains harness path |
+
+**Explicitly out of scope:** K.1/K.2 policy; product-specific legal/org policy fragments beyond lab reference YAML.
+
+---
+
+## Phase ORCH — Orchestration control plane closeout
+
+**Status:** **Done** (2026-06-05) — **6/6** deliverables Done (ORCH-DOC.* + ORCH-1–4); gate **581 passed**  
+**Prerequisites:** R-Delegate **Done**, Q+-N.* runners **Done**, H-APP.3.1–3.2 **Done**, V-MA.* **Done**  
+**Goal:** Close orchestration audit residuals (AUDIT_MAP §7–§10) — wire declared Tier-3 profile fields to runtime; bridge declarative graph spec to execution plan; cap graph batch concurrency.  
+**Priority ladder:** **Band 2j** (§4.0) — **default implementation queue** after §6.1 gate on each PR.  
+**Execution order:** [§6.2bb](#62bb-phase-orch-execution-order-band-2j--active) · queue: [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-active)  
+**Author map:** [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane)
+
+**Delivery rule:** One **ORCH-*** ID per PR → update master table + §6.1b + paydown log below → `pytest -m gate` + §6.1 scripts green.
+
+**Audit verdict (baseline — preserve as acceptance context):**
+
+| Area | Maturity (L0–L4) | Residual before ORCH | Close via |
+|------|------------------|----------------------|-----------|
+| Nexus stack (§8) | **L3–L4** | — | ORCH-DOC.* (documented) |
+| Planning strategies (§7) | **L3–L4** | — | ORCH-1 **Done** |
+| Declarative graph (§9) | **L3–L4** | — | ORCH-2 **Done** |
+| Graph concurrency (§9) | **L3** | — | ORCH-3 **Done** |
+| Subagent delegation (§10) | **L3–L4** | — | R-Delegate (Done) |
+
+### ORCH — Master register
+
+| ID | Wave | Deliverable | Status | Priority | Module / test | Acceptance |
+|----|------|-------------|--------|----------|---------------|------------|
+| ORCH-DOC.1 | ORCH0 | **Appendix I** — orchestration control plane map (§I.1–I.10) | **Done** | High | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| ORCH-DOC.2 | ORCH0 | **Cross-ref sync** — plan, README, strategy, AUDIT_MAP §7–§10, audit prompt ref #6, canon §42.43 | **Done** | Medium | `docs/*` | Links resolve |
+| ORCH-1 | ORCH1 | **Wire `planner_kind` / `classifier_kind`** — registry maps kinds → `TaskPlanner` / `ClassifyingTaskClassifier`; `build_nexus_loop_from_environment` passes resolved instances to `NexusLoop` | **Done** | **Critical** | `orchestration_wiring.py`, `nexus_factory.py` | `test_orchestration_wiring.py` |
+| ORCH-2 | ORCH2 | **`ApplicationGraphSpec` → `NexusPlan` seed** — `graph_spec_to_plan.py` + `GraphSpecSeedingPlanner` when task has no plan id | **Done** | **High** | `graph_spec_to_plan.py`, `PlanStep.delegation` | `test_graph_spec_to_plan.py`, `test_lab_graph_spec.py` |
+| ORCH-3 | ORCH3 | **`max_parallel_nodes` on `OrchestrationProfile`** — cap concurrent nodes per graph batch in `GraphExecutor` | **Done** | Medium | `environment_profile.py`, `graph_executor.py` | `test_graph_executor_parallel_cap.py` |
+| ORCH-4 | ORCH4 | **Docs closeout** — Appendix I + plan sync | **Done** | Low | `docs/*` | No “planned wiring” residuals |
+
+**Supported `planner_kind` values (ORCH-1 contract):**
+
+| Kind | Implementation | Notes |
+|------|----------------|-------|
+| `null` / `default` | `TaskPlanner()` | Current harness default |
+| `engine` | `EnginePlanner` adapter implementing plan contract | Requires `RuntimeConfig` on build context — lab/legal hosts only in v1 |
+| Unknown kind | — | **Fail fast** at Nexus bootstrap with typed error (no silent fallback) |
+
+**Supported `classifier_kind` values (ORCH-1 contract):**
+
+| Kind | Implementation |
+|------|----------------|
+| `null` / `default` | `ClassifyingTaskClassifier(registry)` |
+
+**Explicitly out of scope:** Nested full harness per child (use R-Delegate); new graph node types (Tier-1 canon change); product-specific orchestration in `agents/`.
+
+### ORCH — Paydown log
+
+| Date | ORCH ID | Summary |
+|------|---------|---------|
+| 2026-06-05 | ORCH-DOC.1, ORCH-DOC.2 | Governance + orchestration audit docs; Appendix H/I; AUDIT_MAP cross-refs |
+| 2026-06-05 | ORCH-1, ORCH-2, ORCH-3 | Orchestration wiring, graph spec plan seed, parallel cap; gate **581** |
+| 2026-06-05 | ORCH-4 | Plan + author guide closeout |
+
+**Phase ORCH complete when:** ORCH-1–4 **Done**; §6.1b queue closed; Appendix I has no “planned wiring” gaps; gate **581** green. **Status: complete (2026-06-05).**
+
+---
+
+## Phase TS — Tools & skills control plane closeout
+
+**Status:** **Done** (2026-06-02) — **5/5** deliverables Done (TS-DOC.* + TS-1–3); gate **589 passed**
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §11–§12; author map: `AGENT_CREATION_GUIDE.md` **Appendix J**.
+
+**Priority ladder:** **Band 2k** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+**Execution order:** [§6.2bc](#62bc-phase-ts-execution-order-band-2k--closed) · queue: [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed)
+
+**Delivery rule:** One **TS-*** ID per PR → update master table + §6.1c + paydown log below → `pytest -m gate` + §6.1 scripts green.
+
+### TS — Master register
+
+| ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
+|----|------|-------------|--------|----------|---------|------------|
+| TS-DOC.1 | TS0 | **Appendix J** — tools & skills control plane map (§J.1–J.7) | **Done** | High | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| TS-DOC.2 | TS0 | **Cross-ref sync** — plan, README, AUDIT_MAP §11–§12, audit prompt ref #7 | **Done** | Medium | `docs/*` | Links resolve |
+| TS-1 | TS1 | **`catalog_runtime_bridge.py`** — `tool_profile` / `skill_profile` on `RuntimeConfig` via `materialize_runtime_config` | **Done** | **Critical** | `catalog_runtime_bridge.py`, `runtime_config_bridge.py`, `config.py` | `test_catalog_runtime_bridge.py` |
+| TS-2 | TS2 | **Harness host LLM wiring** — `resolve_llm_adapter(env)` → `build_nexus_loop_from_environment` | **Done** | High | `harness_host_runtime.py` | `test_harness_host_runtime_llm.py` |
+| TS-3 | TS3 | **`SkillResolverProtocol`** — typed contract for skill composition resolution | **Done** | Medium | `skills/resolver.py`, `contract_resolution.py` | existing skill resolver tests green |
+
+**Residual (not TS scope — track separately):** legacy `use_rag`/`use_websearch` booleans in `engine_planner` / `tool_gateway` (deprecation warnings; `check_legacy_tool_plan_booleans.py`).
+
+### TS — Paydown log
+
+| Date | TS ID | Summary |
+|------|-------|---------|
+| 2026-06-02 | TS-DOC.1, TS-DOC.2 | Appendix J + cross-refs; AUDIT_MAP §11–§12 authoring map |
+| 2026-06-02 | TS-1, TS-2, TS-3 | Catalog runtime bridge, harness LLM wiring, SkillResolverProtocol; gate **589** |
+
+**Phase TS complete when:** TS-1–3 + TS-DOC.* **Done**; §6.1c queue closed; Appendix J has no “planned wiring” gaps; gate **589** green. **Status: complete (2026-06-02).**
+
+---
+
+## Phase INT — Integration control plane closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (INT-DOC.* + INT-1–2); gate **612 passed**
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §13; author map: `AGENT_CREATION_GUIDE.md` **Appendix K**.
+
+**Priority ladder:** **Band 2l** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+**Execution order:** [§6.2bd](#62bd-phase-int-execution-order-band-2l--closed) · queue: [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed)
+
+### INT — Master register
+
+| ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
+|----|------|-------------|--------|----------|---------|------------|
+| INT-DOC.1 | INT0 | **Appendix K** — integration control plane (§K.1–K.7) | **Done** | High | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| INT-DOC.2 | INT0 | **Cross-ref sync** — plan, README, AUDIT_MAP §13, audit prompt ref #8 | **Done** | Medium | `docs/*` | Links resolve |
+| INT-1 | INT1 | **`integration_runtime_bridge.py`** — explicit `integration_profile` on `RuntimeConfig` | **Done** | **Critical** | `integration_runtime_bridge.py`, `runtime_config_bridge.py` | `test_integration_runtime_bridge.py` |
+| INT-2 | INT2 | **`integration_health_wiring.py`** — bootstrap health probes on `wire_application_environment` | **Done** | High | `integration_health_wiring.py`, `environment_wiring.py` | `test_integration_health_wiring.py` |
+
+### INT — Paydown log
+
+| Date | INT ID | Summary |
+|------|--------|---------|
+| 2026-06-02 | INT-DOC.1, INT-DOC.2 | Appendix K + cross-refs; AUDIT_MAP §13 |
+| 2026-06-02 | INT-1, INT-2 | Integration runtime bridge + health wiring |
+
+**Phase INT complete when:** INT-1–2 + INT-DOC.* **Done**; §6.1d queue closed. **Status: complete (2026-06-02).**
+
+---
+
+## Phase RAG — RAG retrieval control plane closeout
+
+**Status:** **Done** (2026-06-02) — **3/3** deliverables Done (RAG-DOC.* + RAG-1); gate **612 passed**
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §14; author map: **Appendix K** §K.5.
+
+**Priority ladder:** **Band 2m** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+**Execution order:** [§6.2be](#62be-phase-rag-execution-order-band-2m--closed) · queue: [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed)
+
+### RAG — Master register
+
+| ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
+|----|------|-------------|--------|----------|---------|------------|
+| RAG-DOC.1 | RAG0 | **Appendix K** §K.5 + AUDIT_MAP §14 cross-ref | **Done** | High | `docs/*` | RAG bridge documented |
+| RAG-1 | RAG1 | **`rag_runtime_bridge.py`** + RAG stack on `wire_application_environment` | **Done** | **Critical** | `rag_runtime_bridge.py`, `environment_wiring.py`, `runtime_config_bridge.py` | `test_rag_runtime_bridge.py` |
+
+### RAG — Paydown log
+
+| Date | RAG ID | Summary |
+|------|--------|---------|
+| 2026-06-02 | RAG-DOC.1 | Appendix K §K.5 + plan sync |
+| 2026-06-02 | RAG-1 | RAG runtime bridge + environment wire; gate **600** |
+
+**Phase RAG complete when:** RAG-1 + RAG-DOC.* **Done**; §6.1e queue closed. **Status: complete (2026-06-02).**
+
+---
+
+## Phase CTX — Context engineering control plane closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (CTX-DOC.* + CTX-1–2); gate **612 passed**
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §16; author map: `AGENT_CREATION_GUIDE.md` **Appendix L**.
+
+**Priority ladder:** **Band 2n** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+**Execution order:** [§6.2bf](#62bf-phase-ctx-execution-order-band-2n--closed) · queue: [§6.1f](#61f-harness-implementation-queue--context-engineering-closeout-closed)
+
+### CTX — Master register
+
+| ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
+|----|------|-------------|--------|----------|---------|------------|
+| CTX-DOC.1 | CTX0 | **Appendix L** — context engineering control plane (§L.1–L.6) | **Done** | High | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| CTX-DOC.2 | CTX0 | **Cross-ref sync** — plan, README, AUDIT_MAP §16, audit prompt ref #9 | **Done** | Medium | `docs/*` | Links resolve |
+| CTX-1 | CTX1 | **`context_runtime_bridge.py`** — dedicated context profile → `RuntimeConfig` | **Done** | **Critical** | `context_runtime_bridge.py`, `runtime_config_bridge.py` | `test_context_runtime_bridge.py` |
+| CTX-2 | CTX2 | **`context_wiring.py`** — `ContextManager` + task options from environment; `nexus_factory` wire | **Done** | High | `context_wiring.py`, `nexus_factory.py`, `harness_host_runtime.py` | `test_context_wiring.py` |
+
+### CTX — Paydown log
+
+| Date | CTX ID | Summary |
+|------|--------|---------|
+| 2026-06-02 | CTX-DOC.1, CTX-DOC.2 | Appendix L + cross-refs; AUDIT_MAP §16 |
+| 2026-06-02 | CTX-1, CTX-2 | Context runtime bridge + Nexus ContextManager wiring; gate **608** |
+
+**Phase CTX complete when:** CTX-1–2 + CTX-DOC.* **Done**; §6.1f queue closed. **Status: complete (2026-06-02).**
+
+---
+
+## Phase LEG — Legacy tool plan boolean closeout
+
+**Status:** **Done** (2026-06-02) — **3/3** deliverables Done (LEG-1–2); gate **612 passed**
+
+**Audit basis:** Phase O.5a residual; `check_legacy_tool_plan_booleans.py`; Appendix J §J.6.
+
+**Priority ladder:** **Band 2o** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+### LEG — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| LEG-1 | LEG1 | **`tool_invocation_plan_from_capability_payload`** — gateway maps booleans → `tool_ids` without `from_legacy` | **Done** | `tool_runtime.py`, `tool_gateway.py` | `test_capability_payload_tool_plan.py` |
+| LEG-2 | LEG2 | **Engine planner `tool_ids`** — parser populates `EnginePlan.tool_ids`; schema optional `tool_ids` | **Done** | `engine_planner_parse.py`, `engine_planner_messages.py` | `test_engine_plan_json_parser.py` |
+| LEG-3 | LEG3 | **`plan_from_like` canonical path** — `from_tool_ids` only; `tool_gateway` removed from audit grandfather | **Done** | `tool_runtime.py`, `check_legacy_tool_plan_booleans.py` | audit script green |
+
+**Residual:** `ToolInvocationPlan.from_legacy()` retained in `tool_runtime.py` for explicit deprecation tests only; `EnginePlan.use_rag`/`use_websearch` remain on LLM schema for backward-compatible planner output.
+
+---
+
+## Phase PE — Prompt registry control plane closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (PE-DOC.* + PE-1–3); gate **623 passed**
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §17; V-REM-PE.1/PE.2 governance schema (**Done**); author map: `AGENT_CREATION_GUIDE.md` **Appendix M**.
+
+**Priority ladder:** **Band 2p** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+### PE — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| PE-1 | PE1 | **`PromptProfile`** + `prompt_runtime_bridge` — `catalog_path` → `RuntimeConfig.prompt_catalog_path` | **Done** | `environment_profile.py`, `prompt_runtime_bridge.py`, `config.py` | `test_prompt_runtime_bridge.py` |
+| PE-2 | PE2 | **`prompt_wiring`** — `resolve_prompt_registry()`, `PromptRegistryProtocol` | **Done** | `prompt_wiring.py`, `prompt_registry_protocol.py` | `test_prompt_wiring.py` |
+| PE-3 | PE3 | **Environment wire** — `materialize_runtime_config`, `build_runtime_context_from_environment`, `ApplicationBuildContext.prompt_registry` | **Done** | `runtime_config_bridge.py`, `environment_wiring.py`, `runtime_context.py` | wiring tests + gate |
+| PE-4 | PE4 | **Nexus injection** — `prompt_registry_resolver`; `tools_step`, `tool_planning_prompts`, `engine_plan_models`, `engine_planner_messages` use `RuntimeContext.prompt_registry` | **Done** | `prompt_registry_resolver.py`, Nexus steps/planner | `test_tools_step_prompt_registry.py` |
+| PE-DOC.1 | PE0 | **Appendix M** — prompt registry control plane (§M.1–M.6) | **Done** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+
+**Residual:** none on Tier-3 host build path. Legacy YAML prompt assets (`chat_router*`, `tools_agent_*`) remain as catalog files only.
+
+---
+
+## Phase CLEAN — Legacy module closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (CLEAN-1–4)
+
+**Audit basis:** Phase U-Leg residual; `scripts/check_legacy_modules_removed.py`; prior `check_tools_agent_*` audits merged.
+
+**Priority ladder:** closeout between Band 2p and 2q; default queue = **Band 2q** [Phase AS](#phase-as--agent-assembly-control-plane-closeout).
+
+### CLEAN — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| CLEAN-1 | CLEAN1 | **Remove `legacy/chat_router.py`** — YAML assets tested without runtime module | **Done** | `tests/unit/chat_agent/` | prompt YAML tests green |
+| CLEAN-2 | CLEAN2 | **Remove `tools/tools_agent.py`** — `CatalogToolPlanner` + `ToolPlanningService` canonical | **Done** | `catalog_tool_planner.py`, `tool_planning_service.py` | `test_catalog_tool_planner.py` |
+| CLEAN-3 | CLEAN3 | **Unified CI audit** — `check_legacy_modules_removed.py` replaces `check_tools_agent_*` | **Done** | `scripts/`, `.github/workflows/unit-tests.yml` | audit script green in CI |
+| CLEAN-4 | CLEAN4 | **Docs sync** — plan, HARNESS_ENVIRONMENT, AGENT_CREATION_GUIDE, README, TOOLS | **Done** | `docs/*` | no stale `ToolsAgent` production paths |
+
+**Retained (not CLEAN scope):** `ToolInvocationPlan.from_legacy()` + deprecation tests; `EnginePlan.use_rag`/`use_websearch` on LLM schema; `intergrax/legacy/rag_answers/` archive with import guard; diagnostic type names (`CoreLLMUsedToolsAgentAnswerDiagV1`).
+
+---
+
+## Phase AS — Agent assembly control plane closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (AS-DOC.1 + AS-1–3)
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §18; ideal model §17 in [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md); author map: `AGENT_CREATION_GUIDE.md` **Appendix N**.
+
+**Priority ladder:** **Band 2q** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+### AS — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| AS-DOC.1 | AS0 | **Appendix N** — agent assembly control plane (contract, capabilities, skills, lifecycle) | **Done** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| AS-1 | AS1 | **`agent_assembly_resolver`** — contract metadata validation at register time | **Done** | `runtime/registry/agent_assembly_resolver.py`, `agent_registry.py` | `test_agent_assembly_resolver.py` |
+| AS-2 | AS2 | **Lifecycle metadata enforcement** — `production_eligible` owner/runbook requirements | **Done** | `agent_assembly_resolver.py`, `agent_routing_policy.py` | resolver + routing tests |
+| AS-3 | AS3 | **`skill_ids` → `allowed_tools` resolution audit** — CI script + docs cross-ref | **Done** | `scripts/check_agent_skill_resolution.py`, CI workflow | audit script in CI |
+
+**Explicitly excluded:** new business agents (K.1/K.2), Legal domain steps, product-only contract variants — [§6.3a](#63a-business-backlog-register-consolidated).
+
+---
+
+## Phase REG — Registry architecture control plane closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (REG-DOC.1 + REG-1–3)
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §19; capability graph V-CG **Done**; author map: `AGENT_CREATION_GUIDE.md` **Appendix O**.
+
+**Priority ladder:** **Band 2r** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+### REG — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| REG-DOC.1 | REG0 | **Appendix O** — registry architecture control plane | **Done** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| REG-1 | REG1 | **`HarnessRegistrySnapshot`** + `registry_wiring` + `RegistrySnapshotProtocol` | **Done** | `registry_snapshot.py`, `registry_wiring.py` | `test_registry_wiring.py` |
+| REG-2 | REG2 | **`registry_assembly_resolver`** — profile ↔ registry conformance at wire time | **Done** | `registry_assembly_resolver.py`, `environment_wiring.py` | `test_registry_wiring.py` |
+| REG-3 | REG3 | **Host registry resolution CI** — `check_harness_registry_resolution.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+
+**Explicitly excluded:** new business agents (K.1/K.2), marketplace UI, Band 3 product hosts — [§6.3a](#63a-business-backlog-register-consolidated).
+
+---
+
+## Phase CG — Capability graph control plane closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (CG-DOC.1 + CG-1–3)
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §20; Phase V-CG **Done**; author map: `AGENT_CREATION_GUIDE.md` **Appendix P**.
+
+**Priority ladder:** **Band 2s** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+### CG — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| CG-DOC.1 | CG0 | **Appendix P** — capability graph control plane | **Done** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| CG-1 | CG1 | **`capability_graph_wiring`** — environment subgraph from catalog + registry snapshot | **Done** | `capability_graph_wiring.py`, `capability_graph_protocol.py` | `test_capability_graph_wiring.py` |
+| CG-2 | CG2 | **`capability_graph_assembly_resolver`** — wire-time catalog node validation | **Done** | `capability_graph_assembly_resolver.py`, `environment_wiring.py` | `test_capability_graph_wiring.py` |
+| CG-3 | CG3 | **Host capability graph CI** — `check_harness_capability_graph_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+
+**Explicitly excluded:** new business agents (K.1/K.2), product-only graph nodes — [§6.3a](#63a-business-backlog-register-consolidated).
+
+---
+
+## Phase OBS — Observability control plane closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (OBS-DOC.1 + OBS-1–3)
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §21; complements GOV-AUDIT Appendix H; author map: `AGENT_CREATION_GUIDE.md` **Appendix Q**.
+
+**Priority ladder:** **Band 2t** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+### OBS — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| OBS-DOC.1 | OBS0 | **Appendix Q** — observability control plane closeout | **Done** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| OBS-1 | OBS1 | **`observability_runtime_bridge`** + **`observability_wiring`** | **Done** | `observability_runtime_bridge.py`, `observability_wiring.py`, `runtime_config_bridge.py` | `test_harness_observability_wiring.py` |
+| OBS-2 | OBS2 | **`observability_assembly_resolver`** — profile ↔ stores conformance | **Done** | `observability_assembly_resolver.py`, `harness_host_runtime.py` | assembly validation tests |
+| OBS-3 | OBS3 | **Host observability CI** — `check_harness_observability_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+
+**Explicitly excluded:** new business agents (K.1/K.2), product-only observability dashboards — [§6.3a](#63a-business-backlog-register-consolidated).
+
+---
+
+## Phase REL — Reliability control plane closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (REL-DOC.1 + REL-1–3)
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §22; H-APP `ReliabilityProfile` **Done**; author map: `AGENT_CREATION_GUIDE.md` **Appendix R**.
+
+**Priority ladder:** **Band 2u** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+### REL — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| REL-DOC.1 | REL0 | **Appendix R** — reliability control plane closeout | **Done** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| REL-1 | REL1 | **`reliability_runtime_bridge`** + **`reliability_wiring`** | **Done** | `reliability_runtime_bridge.py`, `reliability_wiring.py`, `runtime_config_bridge.py` | `test_harness_reliability_wiring.py` |
+| REL-2 | REL2 | **`reliability_assembly_resolver`** — profile ↔ stores conformance | **Done** | `reliability_assembly_resolver.py`, `harness_host_runtime.py` | assembly validation tests |
+| REL-3 | REL3 | **Host reliability CI** — `check_harness_reliability_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+
+**Explicitly excluded:** new business agents (K.1/K.2), product-only retry/fallback policies — [§6.3a](#63a-business-backlog-register-consolidated).
+
+---
+
+## Phase SEC — Security control plane closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (SEC-DOC.1 + SEC-1–3)
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §23; V-SEC / V-REM-SEC **Done**; author map: `AGENT_CREATION_GUIDE.md` **Appendix S**.
+
+**Priority ladder:** **Band 2v** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+### SEC — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| SEC-DOC.1 | SEC0 | **Appendix S** — security control plane closeout | **Done** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| SEC-1 | SEC1 | **`security_runtime_bridge`** + **`security_wiring`** | **Done** | `security_runtime_bridge.py`, `security_wiring.py`, `runtime_config_bridge.py` | `test_harness_security_wiring.py` |
+| SEC-2 | SEC2 | **`security_assembly_resolver`** — profile ↔ middleware conformance | **Done** | `security_assembly_resolver.py`, `harness_host_runtime.py`, `nexus_factory.py` | assembly validation tests |
+| SEC-3 | SEC3 | **Host security CI** — `check_harness_security_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+
+**Explicitly excluded:** new business agents (K.1/K.2), product-only security dashboards — [§6.3a](#63a-business-backlog-register-consolidated).
+
+---
+
+## Phase COST — Cost governance control plane closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (COST-DOC.1 + COST-1–3)
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §24; V-COST **Done**; author map: `AGENT_CREATION_GUIDE.md` **Appendix T**.
+
+**Priority ladder:** **Band 2w** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+### COST — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| COST-DOC.1 | COST0 | **Appendix T** — cost governance control plane closeout | **Done** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| COST-1 | COST1 | **`CostProfile`** + **`cost_runtime_bridge`** + **`cost_wiring`** | **Done** | `environment_profile.py`, `cost_runtime_bridge.py`, `cost_wiring.py`, `policy_wiring.py` | `test_harness_cost_wiring.py` |
+| COST-2 | COST2 | **`cost_assembly_resolver`** — profile ↔ budget conformance | **Done** | `cost_assembly_resolver.py`, `harness_host_runtime.py`, `runtime_config_bridge.py` | assembly validation tests |
+| COST-3 | COST3 | **Host cost CI** — `check_harness_cost_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+
+**Explicitly excluded:** new business agents (K.1/K.2), product FinOps dashboards — [§6.3a](#63a-business-backlog-register-consolidated).
+
+---
+
+## Phase EVAL — Evaluation control plane closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (EVAL-DOC.1 + EVAL-1–3)
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25; V-EVAL **Done**; author map: `AGENT_CREATION_GUIDE.md` **Appendix U**.
+
+**Priority ladder:** **Band 2x** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+### EVAL — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| EVAL-DOC.1 | EVAL0 | **Appendix U** — evaluation control plane closeout | **Done** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| EVAL-1 | EVAL1 | **`EvaluationProfile`** + **`evaluation_runtime_bridge`** + **`evaluation_wiring`** | **Done** | `environment_profile.py`, `evaluation_runtime_bridge.py`, `evaluation_wiring.py`, `policy_wiring.py` | `test_harness_evaluation_wiring.py` |
+| EVAL-2 | EVAL2 | **`evaluation_assembly_resolver`** — profile ↔ registry conformance | **Done** | `evaluation_assembly_resolver.py`, `harness_host_runtime.py`, `runtime_config_bridge.py`, `runtime.py` | assembly validation tests |
+| EVAL-3 | EVAL3 | **Host evaluation CI** — `check_harness_evaluation_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+
+**Explicitly excluded:** new business agents (K.1/K.2), product quality dashboards — [§6.3a](#63a-business-backlog-register-consolidated).
+
+---
 
 ## 6. What to implement next
 
-**Default answer:** **§6.2x Phase H-APP** (Band 2e — 43 tasks from application-layer audit). On every PR keep **§6.1** green. **W-OPS code complete** — operational L3 process closure via **H-APP.6.1–H-APP.6.3** (release cycles + CI enforce). **Not** K.1, K.2, or new product applications — **[§6.3](#63-end-of-plan--deferred-product-work-only)**.
+**Default answer (infrastructure only):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** — keep gate green. Phase EVAL **Done**. Phase COST **Done**. Phase SEC **Done**. Phase REL **Done**. Phase OBS **Done**. Phase REG **Done**. Phase AS **Done**. Phase CLEAN **Done**. Phase PE **Done**. Phase LEG **Done**. Phase CTX **Done**. Phase INT + RAG **Done**. Phase TS **Done**. Phase ORCH **Done**. GOV-AUDIT **Done**. Phase V-REM **Done**. Phase MEM **Done** (48/48). Product work gated by [§6.3](#63-product--business-scope-gate).
 
-**Audit basis:** [`adut_dojrzalosci_harness.md`](adut_dojrzalosci_harness.md) — harness-only; business agents excluded from maturity score.
+**Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](#63a-business-backlog-register-consolidated)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
+
+**Audit basis:** Governance audit (2026-06-05) → GOV-AUDIT **Done**; orchestration audit (2026-06-05) → Phase ORCH + §6.1b; tools/skills audit (2026-06-02) → Phase TS + §6.1c; integration/RAG audit (2026-06-02) → Phase INT + RAG + §6.1d/§6.1e; context engineering audit (2026-06-02) → Phase CTX + §6.1f; prior V-REM/MEM/DX/AA closeouts in [§6.1z](#61z-harness-implementation-queue-consolidated) / [§6.1aa](#61aa-harness-implementation-queue-memory-platform).
+
+### 6.1i Harness implementation queue — prompt registry closeout (closed)
+
+**Purpose:** Single ordered list for **Phase PE** (Band 2p). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **PE-DOC.1** | Docs | **Done** | Appendix M + cross-refs | Author map complete |
+| 2 | **PE-1** | Code | **Done** | `prompt_runtime_bridge` + `PromptProfile` | `test_prompt_runtime_bridge.py` |
+| 3 | **PE-2** | Code | **Done** | `prompt_wiring` + `PromptRegistryProtocol` | `test_prompt_wiring.py` |
+| 4 | **PE-3** | Code | **Done** | environment + runtime context wire | gate green |
+| 5 | **PE-4** | Code | **Done** | Nexus prompt registry injection | `test_tools_step_prompt_registry.py` |
+
+### 6.1j Harness implementation queue — legacy module closeout (closed)
+
+**Purpose:** Single ordered list for **Phase CLEAN** (post-2p closeout). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **CLEAN-1** | Code | **Done** | Remove `chat_router.py`; YAML-only tests | `test_chat_agent_prompts_yaml.py` |
+| 2 | **CLEAN-2** | Code | **Done** | Remove `tools_agent.py`; planner tests | `test_catalog_tool_planner.py` |
+| 3 | **CLEAN-3** | CI | **Done** | `check_legacy_modules_removed.py` in CI | workflow green |
+| 4 | **CLEAN-4** | Docs | **Done** | Plan + harness docs sync | no stale production refs |
+
+**Suggested PR order (complete):** CLEAN-1 → CLEAN-2 → CLEAN-3 → CLEAN-4.
+
+### 6.1k Harness implementation queue — agent assembly closeout (closed)
+
+**Purpose:** Single ordered list for **Phase AS** (Band 2q). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **AS-DOC.1** | Docs | **Done** | Appendix N + cross-refs | Author map complete |
+| 2 | **AS-1** | Code | **Done** | `agent_assembly_resolver` | `test_agent_assembly_resolver.py` |
+| 3 | **AS-2** | Code | **Done** | Lifecycle metadata enforcement | resolver + routing tests |
+| 4 | **AS-3** | CI | **Done** | `check_agent_skill_resolution.py` | CI green |
+
+**Suggested PR order (complete):** AS-DOC.1 → AS-1 → AS-2 → AS-3.
+
+**Explicitly excluded:** K.1, K.2, new product agents, domain-only contract packs — [§6.3a](#63a-business-backlog-register-consolidated).
+
+### 6.1l Harness implementation queue — registry architecture closeout (closed)
+
+**Purpose:** Single ordered list for **Phase REG** (Band 2r). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **REG-DOC.1** | Docs | **Done** | Appendix O + cross-refs | Author map complete |
+| 2 | **REG-1** | Code | **Done** | `HarnessRegistrySnapshot` + `registry_wiring` | `test_registry_wiring.py` |
+| 3 | **REG-2** | Code | **Done** | `registry_assembly_resolver` wire | `test_registry_wiring.py` |
+| 4 | **REG-3** | CI | **Done** | `check_harness_registry_resolution.py` | CI green |
+
+**Suggested PR order (complete):** REG-DOC.1 → REG-1 → REG-2 → REG-3.
+
+### 6.1m Harness implementation queue — capability graph closeout (closed)
+
+**Purpose:** Single ordered list for **Phase CG** (Band 2s). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **CG-DOC.1** | Docs | **Done** | Appendix P + cross-refs | Author map complete |
+| 2 | **CG-1** | Code | **Done** | `capability_graph_wiring` | `test_capability_graph_wiring.py` |
+| 3 | **CG-2** | Code | **Done** | `capability_graph_assembly_resolver` | wire-time validation tests |
+| 4 | **CG-3** | CI | **Done** | `check_harness_capability_graph_wiring.py` | CI green |
+
+**Suggested PR order (complete):** CG-DOC.1 → CG-1 → CG-2 → CG-3.
+
+### 6.1n Harness implementation queue — observability closeout (closed)
+
+**Purpose:** Single ordered list for **Phase OBS** (Band 2t). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **OBS-DOC.1** | Docs | **Done** | Appendix Q + cross-refs | Author map complete |
+| 2 | **OBS-1** | Code | **Done** | `observability_runtime_bridge` + `observability_wiring` | `test_harness_observability_wiring.py` |
+| 3 | **OBS-2** | Code | **Done** | `observability_assembly_resolver` | wire-time validation tests |
+| 4 | **OBS-3** | CI | **Done** | `check_harness_observability_wiring.py` | CI green |
+
+**Suggested PR order (complete):** OBS-DOC.1 → OBS-1 → OBS-2 → OBS-3.
+
+### 6.1o Harness implementation queue — reliability closeout (closed)
+
+**Purpose:** Single ordered list for **Phase REL** (Band 2u). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **REL-DOC.1** | Docs | **Done** | Appendix R + cross-refs | Author map complete |
+| 2 | **REL-1** | Code | **Done** | `reliability_runtime_bridge` + `reliability_wiring` | `test_harness_reliability_wiring.py` |
+| 3 | **REL-2** | Code | **Done** | `reliability_assembly_resolver` | wire-time validation tests |
+| 4 | **REL-3** | CI | **Done** | `check_harness_reliability_wiring.py` | CI green |
+
+**Suggested PR order (complete):** REL-DOC.1 → REL-1 → REL-2 → REL-3.
+
+### 6.1q Harness implementation queue — security closeout (closed)
+
+**Purpose:** Single ordered list for **Phase SEC** (Band 2v). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **SEC-DOC.1** | Docs | **Done** | Appendix S + cross-refs | Author map complete |
+| 2 | **SEC-1** | Code | **Done** | `security_runtime_bridge` + `security_wiring` | `test_harness_security_wiring.py` |
+| 3 | **SEC-2** | Code | **Done** | `security_assembly_resolver` | wire-time validation tests |
+| 4 | **SEC-3** | CI | **Done** | `check_harness_security_wiring.py` | CI green |
+
+**Suggested PR order (complete):** SEC-DOC.1 → SEC-1 → SEC-2 → SEC-3.
+
+### 6.1r Harness implementation queue — cost governance closeout (closed)
+
+**Purpose:** Single ordered list for **Phase COST** (Band 2w). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **COST-DOC.1** | Docs | **Done** | Appendix T + cross-refs | Author map complete |
+| 2 | **COST-1** | Code | **Done** | `CostProfile` + `cost_runtime_bridge` + `cost_wiring` | `test_harness_cost_wiring.py` |
+| 3 | **COST-2** | Code | **Done** | `cost_assembly_resolver` | wire-time validation tests |
+| 4 | **COST-3** | CI | **Done** | `check_harness_cost_wiring.py` | CI green |
+
+**Suggested PR order (complete):** COST-DOC.1 → COST-1 → COST-2 → COST-3.
+
+### 6.1s Harness implementation queue — evaluation closeout (closed)
+
+**Purpose:** Single ordered list for **Phase EVAL** (Band 2x). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **EVAL-DOC.1** | Docs | **Done** | Appendix U + cross-refs | Author map complete |
+| 2 | **EVAL-1** | Code | **Done** | `EvaluationProfile` + `evaluation_runtime_bridge` + `evaluation_wiring` | `test_harness_evaluation_wiring.py` |
+| 3 | **EVAL-2** | Code | **Done** | `evaluation_assembly_resolver` | wire-time validation tests |
+| 4 | **EVAL-3** | CI | **Done** | `check_harness_evaluation_wiring.py` | CI green |
+
+**Suggested PR order (complete):** EVAL-DOC.1 → EVAL-1 → EVAL-2 → EVAL-3.
+
+### 6.1f Harness implementation queue — context engineering closeout (closed)
+
+**Purpose:** Single ordered list for **Phase CTX** (Band 2n). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **CTX-DOC.1–2** | Docs | **Done** | Appendix L + cross-refs | Author map complete |
+| 2 | **CTX-1** | Code | **Done** | `context_runtime_bridge` | `test_context_runtime_bridge.py` |
+| 3 | **CTX-2** | Code | **Done** | `context_wiring` + `nexus_factory` | `test_context_wiring.py` |
+
+### 6.1e Harness implementation queue — RAG closeout (closed)
+
+**Purpose:** Single ordered list for **Phase RAG** (Band 2m). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **RAG-DOC.1** | Docs | **Done** | Appendix K §K.5 + AUDIT_MAP §14 | Author map complete |
+| 2 | **RAG-1** | Code | **Done** | `rag_runtime_bridge` + environment wire | `test_rag_runtime_bridge.py` |
+
+### 6.1d Harness implementation queue — integration closeout (closed)
+
+**Purpose:** Single ordered list for **Phase INT** (Band 2l). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **INT-DOC.1–2** | Docs | **Done** | Appendix K + cross-refs | Author map complete |
+| 2 | **INT-1** | Code | **Done** | `integration_runtime_bridge` | `test_integration_runtime_bridge.py` |
+| 3 | **INT-2** | Code | **Done** | `integration_health_wiring` | `test_integration_health_wiring.py` |
+
+### 6.1c Harness implementation queue — tools/skills closeout (closed)
+
+**Purpose:** Single ordered list for **Phase TS** (Band 2k). **Closed 2026-06-02** — all TS rows **Done**. Ongoing: **§6.1** maintenance only.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
+| 1 | **TS-DOC.1–2** | Docs | **Done** | Appendix J + cross-refs | Author map complete |
+| 2 | **TS-1** | Code | **Done** | `catalog_runtime_bridge` + `RuntimeConfig.skill_profile` | `test_catalog_runtime_bridge.py` |
+| 3 | **TS-2** | Code | **Done** | Harness host `resolve_llm_adapter` wiring | `test_harness_host_runtime_llm.py` |
+| 4 | **TS-3** | Code | **Done** | `SkillResolverProtocol` | skill resolver tests green |
+
+**Suggested PR order (complete):** TS-1 → TS-2 → TS-3 → TS-DOC.*.
+
+**Explicitly excluded:** K.1, K.2, new product tools/skills, business agent packs — [§6.3a](#63a-business-backlog-register-consolidated).
+
+### 6.1aa Harness implementation queue — memory platform (closed)
+
+**Purpose:** Phase MEM execution queue — **closed 2026-06-02** (48/48 Done). Ongoing: **§6.1** maintenance only.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
+| 1 | **MEM-1.1–MEM-1.4** | Code | **Done** | H-APP `MemoryProfile` + `ContextProfile.budget` + SQLite session → `RuntimeConfig` | MEM-1.5 gate test green |
+| 2 | **MEM-2.1–MEM-2.3** | Code | **Done** | `SQLiteUserProfileStore` + bundle wiring + unit tests | LTM survives restart on sqlite profile |
+| 3 | **MEM-1.6** | Docs/status | **Done** | H-APP.4.3 → **Done** | Bridge complete |
+| 4 | **MEM-4.1–MEM-4.3** | Test | **Done** | Session + LTM + full-stack memory gates | acceptance/integration green |
+| 5 | **MEM-5.1–MEM-5.2** | Test/Docs | **Done** | `engine_history_layer` tests + compression docs | unit + guide |
+| 6 | **MEM-3.1–MEM-3.3** | Code | **Done** | Memory store plugin EP + reference fixture | bootstrap + gate |
+| 7 | **MEM-0.3–MEM-DOC.*** | Docs | **Done** | Author cookbooks + Appendix G sync | guide updated |
+| 8 | **MEM-6.*–MEM-7.*** | Code | **Done** | Retention enforcement + memory hooks | P2 after P0/P1 |
+| 9 | **MEM-8.*–MEM-9.*** | RFC | **Done (RFC)** | Product memory layer + entity graph design | §6.3 gate for implementation |
+
+**Suggested PR order:** See [Phase MEM — Suggested PR order](#mem--paydown-log).
+
+**Explicitly excluded:** K.1, K.2, Mem0 SaaS product, entity graph ship (RFC only), business agent memory.
+
+### 6.1b Harness implementation queue — orchestration closeout (closed)
+
+**Purpose:** Single ordered list for **Phase ORCH** (Band 2j). **Closed 2026-06-05** — all ORCH rows **Done**. Ongoing: **§6.1** maintenance only.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
+| 1 | **ORCH-DOC.1–2** | Docs | **Done** | Appendix I + cross-refs | Author map complete |
+| 2 | **ORCH-1** | Code | **Done** | `planner_kind` / `classifier_kind` wiring | `test_orchestration_wiring.py` |
+| 3 | **ORCH-2** | Code | **Done** | `ApplicationGraphSpec` → `NexusPlan` | `test_graph_spec_to_plan.py` |
+| 4 | **ORCH-3** | Code | **Done** | `max_parallel_nodes` cap | `test_graph_executor_parallel_cap.py` |
+| 5 | **ORCH-4** | Docs | **Done** | Closeout sync | Plan + Appendix I updated |
+
+**Suggested PR order (complete):** ORCH-1 → ORCH-2 → ORCH-3 → ORCH-4.
+
+**Explicitly excluded:** K.1, K.2, new graph node types, nested harness per child — [§6.3a](#63a-business-backlog-register-consolidated).
+
+### 6.1g Harness implementation queue — governance audit (closed)
+
+**Purpose:** Phase GOV-AUDIT documentation closeout — **closed 2026-06-05**.
+
+| Order | ID | Status | Deliverable |
+|-------|-----|--------|-------------|
+| 1 | GOV-DOC.1 | **Done** | Appendix H control plane |
+| 2 | GOV-DOC.2 | **Done** | Cross-ref sync |
+| 3 | GOV-DOC.3 | **Done** | EXTENSION_AUTHOR §10 |
+| — | GOV-PROD.1 | **Deferred** | Product dashboard → §6.3 |
+
+### 6.1z Harness implementation queue (consolidated — closed 2026-06-05)
+
+**Purpose:** Single ordered list of **infrastructure** work. Excludes Band 3 / [§6.3a](#63a-business-backlog-register-consolidated). **Closed 2026-06-05** — Phase V-REM complete. Prior DX/AA/MEM/W-OPS/H-APP rows remain **Done**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green; scripts in [§6.1](#61-harness-platform-maintenance-default--band-1) |
+| 1 | **V-REM-CG.1** | Code | **Done** | Fix per-application capability graph system edges | V-CG.2–4 closed |
+| 2 | **V-REM-CG.2** | Test/CI | **Done** | Re-validate lineage/impact/compatibility on corrected graph | `phase_v_capability_graph_guard.py` green |
+| 3 | **V-REM-ALG.1** | Code | **Done** | Runtime filter retired/deprecated agents | Unit tests green |
+| 4 | **V-REM-ALG.2** | Code | **Done** | Production-eligible + owner gate at selection | Strict harness test green |
+| 5 | **V-REM-PE.1** | Code | **Done** | PromptMeta owner/risk schema | Registry validation tests |
+| 6 | **V-REM-PE.2** | Assets | **Done** | YAML prompt assets catalog seed | E2E governance validation |
+| 7 | **V-REM-SEC.1** | Code | **Done** | Tool injection defense on execution path | Middleware unit tests |
+| 8 | **V-REM-SEC.2** | Code | **Done** | Retrieval poisoning middleware per tenant/app | RagStep filter unit tests |
+| 9 | **V-REM-SEC.3** | Code | **Done** | Tenant isolation + audit trail in main path | Intake middleware unit tests |
+| 10 | **V-REM-A.1** | Test | **Done** | NexusEvalRunner integration + gate | A.4 → **Done** |
+| — | **REG-*** | Regression | As needed | Fix gate/CI failures only | No feature scope |
+
+**Closed (no implementation — do not reopen without regression):**
+
+| ID | Resolution |
+|----|------------|
+| DX-0.3–DX-8.2 (except DX-5.7) | **Done** — 2026-06-02 DX residual closeout |
+| AA-LABAG.1, AA-SIG.2, AA-LABAPP.6 | **Done** |
+| AA-LABAG.2 | **Won't fix** — mocks remain in `agents/lab/` until leadership requests move |
+| W-OPS.1–15, H-APP.0–6.3, P-Ext, Q–V contracts, MEM 48/48 | **Done** |
+| V-REM.0.1, V-REM.0.2 | **Done** — 2026-06-05 plan sync |
+| V-REM-CG.1–A.1 | **Done** — 2026-06-05 runtime remediation |
+
+**Explicitly excluded from this queue (business — implement only after §6.3 decision):** K.1, K.2, K.6, B.15, S-Ops.4, A.5, AA-LEG.2.2+, AA-LEGAPP.6–8, AA-RES.4–5, AA-RESAPP.6, AA-ORG.3–4, new Tier-3 product apps, domain skills — full list: [§6.3a](#63a-business-backlog-register-consolidated).
+
+**Suggested PR order:** V-REM-CG.1 → V-REM-CG.2 → V-REM-ALG.1 → V-REM-ALG.2 → V-REM-SEC.1 → V-REM-SEC.2 → V-REM-SEC.3 → V-REM-PE.1 → V-REM-PE.2 → V-REM-A.1. Regressions → **REG-*** under §6.1.
 
 ### 6.1 Harness platform maintenance (default — Band 1)
 
@@ -2866,17 +4475,199 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 Verify (every harness PR):
   uv run pytest -m gate -q
   python scripts/check_harness_no_getattr.py
-  python scripts/check_tools_agent_imports.py
-  python scripts/check_tools_agent_run.py
+  python scripts/check_legacy_modules_removed.py
+  python scripts/check_agent_skill_resolution.py
+  python scripts/check_harness_registry_resolution.py
+  python scripts/check_harness_capability_graph_wiring.py
   python scripts/check_legacy_tool_plan_booleans.py
   python scripts/check_plugin_catalog.py
   uv run python scripts/phase_w_ops_evidence.py
   # Per release (ops):
   uv run python scripts/export_harness_shadow_eval_trend.py --release-id <release-id>
   uv run python scripts/record_harness_release_cycle.py --cycle-id <release-id> --verify-gate
+  python scripts/check_scaffold_harness_alignment.py
+  python scripts/check_agents_no_tier3_imports.py
+  uv run intergrax doctor --ci
+  uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
+  uv run python scripts/phase_v_capability_graph_guard.py --enforce
 ```
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
+
+### 6.2bo Phase EVAL execution order (Band 2x — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · queue: [§6.1s](#61s-harness-implementation-queue--evaluation-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | EVAL-DOC.1 | Appendix U + plan sync | High |
+| 2 | EVAL-1 | `EvaluationProfile` + `evaluation_runtime_bridge` + `evaluation_wiring` | Critical |
+| 3 | EVAL-2 | `evaluation_assembly_resolver` | High |
+| 4 | EVAL-3 | `check_harness_evaluation_wiring.py` | Medium |
+
+### 6.2bn Phase COST execution order (Band 2w — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · queue: [§6.1r](#61r-harness-implementation-queue--cost-governance-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | COST-DOC.1 | Appendix T + plan sync | High |
+| 2 | COST-1 | `CostProfile` + `cost_runtime_bridge` + `cost_wiring` | Critical |
+| 3 | COST-2 | `cost_assembly_resolver` | High |
+| 4 | COST-3 | `check_harness_cost_wiring.py` | Medium |
+
+### 6.2bm Phase SEC execution order (Band 2v — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase SEC](#phase-sec--security-control-plane-closeout) · queue: [§6.1q](#61q-harness-implementation-queue--security-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | SEC-DOC.1 | Appendix S + plan sync | High |
+| 2 | SEC-1 | `security_runtime_bridge` + `security_wiring` | Critical |
+| 3 | SEC-2 | `security_assembly_resolver` | High |
+| 4 | SEC-3 | `check_harness_security_wiring.py` | Medium |
+
+### 6.2bl Phase REL execution order (Band 2u — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase REL](#phase-rel--reliability-control-plane-closeout) · queue: [§6.1o](#61o-harness-implementation-queue--reliability-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | REL-DOC.1 | Appendix R + plan sync | High |
+| 2 | REL-1 | `reliability_runtime_bridge` + `reliability_wiring` | Critical |
+| 3 | REL-2 | `reliability_assembly_resolver` | High |
+| 4 | REL-3 | `check_harness_reliability_wiring.py` | Medium |
+
+### 6.2bk Phase OBS execution order (Band 2t — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase OBS](#phase-obs--observability-control-plane-closeout) · queue: [§6.1n](#61n-harness-implementation-queue--observability-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | OBS-DOC.1 | Appendix Q + plan sync | High |
+| 2 | OBS-1 | `observability_runtime_bridge` + `observability_wiring` | Critical |
+| 3 | OBS-2 | `observability_assembly_resolver` | High |
+| 4 | OBS-3 | `check_harness_observability_wiring.py` | Medium |
+
+### 6.2bj Phase CG execution order (Band 2s — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase CG](#phase-cg--capability-graph-control-plane-closeout) · queue: [§6.1m](#61m-harness-implementation-queue--capability-graph-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | CG-DOC.1 | Appendix P + plan sync | High |
+| 2 | CG-1 | `capability_graph_wiring` | Critical |
+| 3 | CG-2 | `capability_graph_assembly_resolver` | High |
+| 4 | CG-3 | `check_harness_capability_graph_wiring.py` | Medium |
+
+### 6.2bi Phase REG execution order (Band 2r — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase REG](#phase-reg--registry-architecture-control-plane-closeout) · queue: [§6.1l](#61l-harness-implementation-queue--registry-architecture-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | REG-DOC.1 | Appendix O + plan sync | High |
+| 2 | REG-1 | `HarnessRegistrySnapshot` + `registry_wiring` | Critical |
+| 3 | REG-2 | `registry_assembly_resolver` | High |
+| 4 | REG-3 | `check_harness_registry_resolution.py` | Medium |
+
+### 6.2bg Phase AS execution order (Band 2q — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase AS](#phase-as--agent-assembly-control-plane-closeout) · queue: [§6.1k](#61k-harness-implementation-queue--agent-assembly-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | AS-DOC.1 | Appendix N + plan sync | High |
+| 2 | AS-1 | `agent_assembly_resolver` | Critical |
+| 3 | AS-2 | Lifecycle state on `AgentContract` | High |
+| 4 | AS-3 | `skill_ids` resolution audit script | Medium |
+
+### 6.2bh Phase CLEAN execution order (closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase CLEAN](#phase-clean--legacy-module-closeout) · queue: [§6.1j](#61j-harness-implementation-queue--legacy-module-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | CLEAN-1 | Remove `chat_router.py` | Critical |
+| 2 | CLEAN-2 | Remove `tools_agent.py` | Critical |
+| 3 | CLEAN-3 | `check_legacy_modules_removed.py` in CI | High |
+| 4 | CLEAN-4 | Docs sync | Low |
+
+### 6.2bf Phase CTX execution order (Band 2n — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase CTX](#phase-ctx--context-engineering-control-plane-closeout) · queue: [§6.1f](#61f-harness-implementation-queue--context-engineering-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | CTX-1 | `context_runtime_bridge` | Critical |
+| 2 | CTX-2 | `context_wiring` + Nexus factory wire | High |
+| 3 | CTX-DOC.1–2 | Appendix L + plan sync | Low |
+
+### 6.2be Phase RAG execution order (Band 2m — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase RAG](#phase-rag--rag-retrieval-control-plane-closeout) · queue: [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | RAG-1 | `rag_runtime_bridge` + environment wire | Critical |
+| 2 | RAG-DOC.1 | Appendix K §K.5 + plan sync | Low |
+
+### 6.2bd Phase INT execution order (Band 2l — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase INT](#phase-int--integration-control-plane-closeout) · queue: [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | INT-1 | `integration_runtime_bridge` | Critical |
+| 2 | INT-2 | `integration_health_wiring` | High |
+| 3 | INT-DOC.1–2 | Appendix K + plan sync | Low |
+
+### 6.2bc Phase TS execution order (Band 2k — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase TS](#phase-ts--tools--skills-control-plane-closeout) · queue: [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed)
+
+Work **one TS ID per PR**; after each step update the TS master table + §6.1c + paydown log; keep §6.1 scripts green.
+
+| Step | ID | Deliverable | Priority | Depends on |
+|------|-----|-------------|----------|------------|
+| 1 | TS-1 | `catalog_runtime_bridge` + `materialize_runtime_config` | Critical | TS-DOC.* (parallel OK) |
+| 2 | TS-2 | Harness host LLM adapter wiring | High | — |
+| 3 | TS-3 | `SkillResolverProtocol` | Medium | — |
+| 4 | TS-DOC.1–2 | Appendix J + plan sync | Low | TS-1–3 |
+
+### 6.2bb Phase ORCH execution order (Band 2j — closed 2026-06-05)
+
+**Status:** **Done** · register: [Phase ORCH](#phase-orch--orchestration-control-plane-closeout) · queue: [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed)
+
+Work **one ORCH ID per PR**; after each step update the ORCH master table + §6.1b + paydown log; keep §6.1 scripts green.
+
+| Order | ID | Deliverable | Priority | Depends on |
+|-------|-----|-------------|----------|------------|
+| 1 | ORCH-1 | Planner/classifier kind registry + `nexus_factory` wiring | **Critical** | ORCH-DOC.* |
+| 2 | ORCH-2 | `graph_spec_to_plan` + planning runner integration | High | ORCH-1 (shared factory path) |
+| 3 | ORCH-3 | `max_parallel_nodes` on `OrchestrationProfile` + `GraphExecutor` | Medium | — (parallel OK after ORCH-1) |
+| 4 | ORCH-4 | Docs closeout — Appendix I + plan §0.5 | Low | ORCH-1–3 |
+
+### 6.2v Phase V-REM execution order (Band 2i — closed 2026-06-05)
+
+**Status:** **Done** · register: [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout) · queue: [§6.1z](#61z-harness-implementation-queue-consolidated) (closed)
+
+Work **one V-REM ID per PR**; after each step update the V-REM master table + Appendix J + paydown log; keep §6.1 scripts green.
+
+| Order | ID | Deliverable | Priority | Closes |
+|-------|-----|-------------|----------|--------|
+| 1 | V-REM-CG.1 | Fix per-application capability graph system edge mapping | **Critical** | V-CG.2–4 |
+| 2 | V-REM-CG.2 | Re-validate lineage/impact/compatibility on corrected graph | High | V-CG.2–4 |
+| 3 | V-REM-ALG.1 | Runtime filter for retired/deprecated agents | High | V-ALG.3 |
+| 4 | V-REM-ALG.2 | Production-eligible + owner gate at agent selection | High | V-ALG.4 |
+| 5 | V-REM-SEC.1 | Tool injection defense on main execution path | High | V-SEC.2 |
+| 6 | V-REM-SEC.2 | Retrieval poisoning middleware per tenant/app | High | V-SEC.3 |
+| 7 | V-REM-SEC.3 | Tenant isolation + audit trail in UnifiedTaskRunner/NexusLoop | High | V-SEC.4 |
+| 8 | V-REM-PE.1 | PromptMeta owner/risk schema + validation | High | V-PE.1 |
+| 9 | V-REM-PE.2 | YAML prompt assets catalog seed | Medium | V-PE.1 |
+| 10 | V-REM-A.1 | NexusEvalRunner integration tests + gate | Medium | A.4, A.4.1 |
+
+**Phase V-REM closeout:** **Done** (2026-06-05). Verified via `phase_v_closeout_gate.py --enforce --enforce-l4`.
 
 ### 6.2w Phase W-OPS execution order (Band 2d — complete 2026-06-06)
 
@@ -2927,6 +4718,85 @@ Work **one H-APP ID per PR**; after each step update the H-APP master table + pa
 
 **Explicitly out of NOW:** K.1, K.2, Legal product E2E, new **product** Tier-3 apps, Problem Radar wave 2+, marketplace UI, catalog hot-reload.
 
+### 6.2y Phase DX execution order (Band 2f — mostly done)
+
+**Status:** **Done** (2026-06-02) · **47/47 Done** · canonical register: [Phase DX — Master deliverables register](#dx--master-deliverables-register-all-47-tasks).
+
+Work **one DX ID per PR**; after each step update the DX master table + paydown log; keep §6.1 scripts green. **Start with DX1 (scaffold/H-APP alignment)** before DX2 facades — otherwise new authors copy broken `factory.py` patterns.
+
+| Wave | IDs | Count | Focus |
+|------|-----|-------|--------|
+| DX0 | DX-0.1–DX-0.4 | 4 | LangGraph mapping, responsibility matrix, progressive disclosure |
+| DX1 | DX-1.1–DX-1.6 | 6 | **P0** — scaffold + poc/legal/research factories on H-APP path only |
+| DX2 | DX-2.1–DX-2.6 | 6 | `HarnessApplication`, `AgentGraph`, `IntergraxAgent` + `@step` |
+| DX3 | DX-3.1–DX-3.6 | 6 | `--minimal` stack, `intergrax run`, `doctor`, TTFRun acceptance |
+| DX4 | DX-4.1–DX-4.4 | 4 | Integration presets + picker + gate tests |
+| DX5 | DX-5.1–DX-5.8 | 8 | Host hooks, YAML loader, logging, event catalog, policy rule plugins |
+| DX6 | DX-6.1–DX-6.5 | 5 | Tier-2 hygiene, external `intergrax init` template |
+| DX7 | DX-7.1–DX-7.5 | 5 | JSON Schema + spec versioning + UI feed (Phase 2 prep) |
+| DX8 | DX-8.1–DX-8.3 | 3 | `doctor --ci`, DX metrics artifact, scaffold alignment script |
+| **Total** | | **47** | |
+
+**Suggested PR order:** DX-1.1 → DX-1.2 → DX-1.3 → DX-1.6 → DX-8.3 → DX-2.1 → DX-2.2 → DX-2.3 → DX-2.5 → DX-3.1 → DX-3.2 → DX-3.5 → DX-3.6 → DX-4.1 → DX-4.4 → DX-1.4–DX-1.5 → DX-2.4 → DX-2.6 → DX-3.3–DX-3.4 → DX-5.1–DX-5.2 → DX-6.1–DX-6.2 → DX-4.2–DX-4.3 → DX-5.3–DX-5.8 → DX-6.3–DX-6.5 → DX-7.1–DX-7.5 → DX-8.1–DX-8.2 → DX-0.1–DX-0.4.
+
+**Success gate for Phase DX full closeout:** All rows **Done** or **Won't fix**; DX-3.5 + DX-8.1 green in CI; DX-3.6 quickstart validated; DX-7.1 schemas under `build/harness_specs/`. **Core path (DX1–DX2, DX3.2–3.3, DX8.3) already meets harness authoring needs.**
+
+**Explicitly out of NOW:** K.1, K.2, visual environment builder UI, new product Tier-3 apps, Problem Radar wave 2+.
+
+### 6.2z Phase AA execution order (Band 2g — mostly done)
+
+**Status:** **Mostly Done** (2026-06-02) · platform **Done** · domain **Deferred** · canonical register: [Phase AA — Master deliverables register](#aa--master-deliverables-register-all-tasks).
+
+Work **one AA ID per PR/session**; after each step update the AA master table + paydown log + conformance matrix; keep §6.1 scripts green. **Legal:** follow **hard reset** policy (AA-LEG.0.1) — no incremental preservation of legacy pipeline code.
+
+| Wave | IDs | Count | Focus |
+|------|-----|-------|--------|
+| AA0 | AA-0.1, AA-0.2, AA-S0.1–AA-S0.6, AA-LG.1, AA-APP.0.1–AA-APP.0.3 | 12 | Scaffold checklist, tier guards, deploy triad standard |
+| AA1 | AA-D0.1–AA-D0.7 | 7 | README, guides, TIER3_READINESS, USAGE |
+| AA2 | AA-LEG.0.2–AA-LEG.3.1 | 12 | **Legal agent hard reset** |
+| AA3 | AA-LEGAPP.1–AA-LEGAPP.8 | 8 | `legal_application` + deploy triad |
+| AA4 | AA-ECHO.1–AA-ECHO.5 | 5 | Reference echo agent |
+| AA5 | AA-SIG.1–AA-SIG.3 | 3 | Signoff probe |
+| AA6 | AA-PR.1–AA-PR.5 | 5 | Problem radar (docs/hygiene; frozen feature) |
+| AA7 | AA-ORG.1–AA-ORG.5 | 5 | Organization worker |
+| AA8 | AA-RES.1–AA-RES.6 | 6 | Research agents |
+| AA9 | AA-LABAG.1–AA-LABAG.2 | 2 | Lab mocks |
+| AA10 | AA-LABAPP.1–AA-LABAPP.7 | 7 | Lab application host |
+| AA11 | AA-POC.1–AA-POC.5 | 5 | POC template (canonical shell) |
+| AA12 | AA-RESAPP.1–AA-RESAPP.6 | 6 | Research application host |
+| **Total** | | **83** | |
+
+**Suggested PR order:** AA-S0.2 → AA-S0.5 → AA-APP.0.1 → AA-APP.0.3 → AA-POC.1 → AA-POC.2 → AA-LABAPP.2 → AA-ECHO.2 → AA-LEG.0.3 → AA-LEG.1.1 → AA-LEG.1.2 → AA-LEG.1.3 → AA-LEG.2.1 → AA-LEG.2.2 → … → AA-LEGAPP.1–AA-LEGAPP.6 → AA-D0.1 → AA-D0.3–AA-D0.5 → AA-RESAPP.* → AA-LABAPP.1 → AA-APP.0.2 → remaining ARCHITECTURE.md rows.
+
+**Per-application deploy triad gate (AA-APP.0.2):** for each of `lab_application`, `legal_application`, `poc_template_application`, `research_application` assert:
+
+1. `docker/Dockerfile` + `docker-compose.yml` + `build-docker.sh` / `.bat`
+2. `BUILD_AND_DEPLOY.md` present and matches scaffold generator output (or documented drift)
+3. `ARCHITECTURE.md` § **Dependencies** lists required `pyproject.toml` extras (e.g. `harness-author`, provider-specific `llm-*`, `dev-ci` for tests)
+
+**Success gate for Phase AA platform closeout:** **Met** (2026-06-02) — conformance matrix **OK**; legal tree = scaffold; `lab_application` on `build_harness_host_runtime`; AA-APP.0.2 green; gate **533**. **Full AA register closeout** additionally requires Band 3 domain rows **Done** or explicitly **Deferred** (current policy: **Deferred**).
+
+**Explicitly out of NOW:** K.1/K.2 implementation, Legal **live LLM** E2E (Band 3), new product hosts beyond the four listed, Legal UAEP step port (AA-LEG.2.2+) unless product reprioritizes §6.3.
+
+### 6.2aa Phase MEM execution order (Band 2h — active)
+
+**Status:** **Done** (2026-06-02) · **48/48 Done** · canonical register: [Phase MEM — Master deliverables register](#mem--master-deliverables-register-all-48-tasks).
+
+Work **one MEM ID per PR**; after each step update the MEM master table + paydown log; keep §6.1 scripts green. **Start with MEM-1.*** before MEM-3/MEM-7 — bridge must exist before plugins/hooks.
+
+| Wave | IDs | Count | Focus |
+|------|-----|-------|--------|
+| MEM0 | MEM-0.1–MEM-0.4, MEM-PAR.1, MEM-CHk.1, MEM-PERS.1, MEM-ST.1, MEM-OBS.2 | 9 | Register, audit baseline, parity tables (MEM-OBS.2 Done) |
+| MEM1 | MEM-1.1–MEM-1.6, MEM-2.1–MEM-2.3 | 9 | **P0** — H-APP bridge + SQLite user LTM |
+| MEM2 | MEM-3.*, MEM-4.*, MEM-5.*, MEM-CTX.1, MEM-DOC.1–6, MEM-GRAPH.1, MEM-TASK.* | 18 | **P1** — gates, plugins, context docs |
+| MEM3 | MEM-6.*, MEM-7.*, MEM-OBS.1, MEM-DOC.5, MEM-CTX.2, MEM-PERS.2, MEM-ST.4 | 9 | **P2** — retention, hooks, metrics |
+| MEM4 | MEM-8.*, MEM-9.1, MEM-PERS.3 | 4 | **P3** — product RFCs |
+| **Total** | | **48** | |
+
+**Success gate:** P0 + P1 **Done**; H-APP.4.3 **Done**; user LTM durable on sqlite lab profile; `MemoryProfile` drives all reference hosts.
+
+**Explicitly out of NOW:** K.1/K.2, Mem0 auto-ingest ship (MEM-8.2), entity graph implementation (MEM-9.1 beyond RFC).
+
 ### 6.1p Phase P-Ext paydown (Band 2c — optional parallel with §6.1)
 
 **Status:** **Done** (2026-06-02) · closure complete; extend catalogs via Appendix I + author guide.
@@ -2948,13 +4818,14 @@ Work **one H-APP ID per PR**; after each step update the H-APP master table + pa
 
 Full task register: [Appendix I](#appendix-i--plugin-catalog-traceability-phase-p-ext).
 
-### 6.2 Harness architecture hardening (Band 2 — Phase V) — archived
+### 6.2 Harness architecture hardening (Band 2 — Phase V) — Done
 
-**Status:** **Done** (2026-06-02). Residual on-demand items moved to **§6.2w** (W-OPS.8, W-OPS.10, W-OPS.12) or §6.1 maintenance.
+**Status:** **Done** (2026-06-05) — Phase V contracts + V-REM runtime enforcement complete. Closeout: `phase_v_closeout_gate.py --enforce --enforce-l4`.
 
 | Item | Status | Notes |
 |------|--------|-------|
-| V-CG … V-V6 | **Done** | CI L3/L4 contracts — not operational L3 alone (audit W-OPS.5) |
+| V-CG … V-V6 | **Done** | Governance + CI + runtime enforcement |
+| V-REM | **Done** | 10/10 closed — §6.1z queue closed |
 | W-ML | **Done** | [MODALITY.md](MODALITY.md) |
 | P-Ext | **Done** | Appendix I |
 | M.6 / R-Skill expansion | **On demand** | W-OPS.10, W-OPS.8 |
@@ -2970,6 +4841,7 @@ Full task register: [Appendix I](#appendix-i--plugin-catalog-traceability-phase-
 | K.1 | Problem Radar prototype | **Deferred** | Explicit product decision + [Appendix A](#appendix-a--agent-operating-system-certification-checklist) |
 | K.2 | Vendor Discovery prototype | **Deferred** | Same as K.1 |
 | K.6 / B.15 / S-Ops.4 | Legal live LLM E2E | **Deferred** | Product/CI budget decision |
+| `agents/legal` UAEP domain steps | Scaffold shell **Done** (Band 2g); step port **Deferred** | **Business** | [§6.3a](#63a-business-backlog-register-consolidated) AA-LEG.2.2+ |
 | Tier-3 product apps | New `applications/<product>/` beyond lab + reference hosts | **Deferred** | Product decision; scaffold exists (Phase N **Done**) |
 | Domain skills | Product agent skill packs (non-`harness.*`) | **Deferred** | With K.1 or K.2 |
 | `agents/problem_radar/` | Wave 1 scaffold frozen | **Deferred** | Do not extend until K.1 reprioritized |
@@ -2983,6 +4855,33 @@ python -m intergrax.scaffold new-stack <slug> --profile lab --capability <slug>.
 ```
 
 See [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md). Existing hosts (`lab_application`, `legal_application`, `research_application`, `poc_template_application`) are sufficient for **all harness** work.
+
+### 6.3a Business backlog register (consolidated)
+
+**Single register for Band 3 and AA domain-deferred rows.** Do not duplicate in harness session summaries.
+
+| ID | Deliverable | Module | Priority | Depends on |
+|----|-------------|--------|----------|------------|
+| **K.1** | Problem Radar prototype (wave 2+) | `agents/problem_radar/` | Product | Explicit reprioritization |
+| **K.2** | Vendor Discovery prototype | (greenfield) | Product | K.1 decision or parallel product call |
+| **AA-LEG.2.2** | Legal UAEP steps (one step per PR from `SPEC_FROM_LEGACY.md`) | `agents/legal/steps/` | High | Product/legal owner |
+| **AA-LEG.2.3** | Remove any parallel legal runtime (Nexus gateway only) | `agents/legal/` | High | AA-LEG.2.2 |
+| **AA-LEG.2.4** | Legal agent tests per ported step | `agents/legal/tests/` | High | AA-LEG.2.2 |
+| **AA-LEGAPP.6** | `legal_application` host smoke on real steps | `legal_tests/` | High | AA-LEG.2.2 |
+| **AA-LEGAPP.8** | Consolidate duplicate legal test trees | `legal_tests/` vs agent tests | Low | AA-LEG.2.4 |
+| **AA-RES.4** | Research skill ids on contracts | `agents/research/` | Medium | Product |
+| **AA-RES.5** | Research UAEP + graph delegation tests | `agents/research/tests/` | High | Product |
+| **AA-RESAPP.6** | Research application smoke + manifest wiring | `research_application_tests/` | High | AA-RES.5 |
+| **AA-ORG.3** | Organization worker scaffold-align (`contract`, `steps/`) | `agents/organization_worker/` | Medium | Harness demo |
+| **AA-ORG.4** | Lab manifest flag + integration test | `lab_application/manifest.py` | Medium | AA-ORG.3 |
+| ~~AA-LABAPP.6~~ | ~~Extra lab host smoke~~ | — | — | **Done** (2026-06-02) — not in business queue |
+| **K.6 / B.15 / S-Ops.4** | Legal full E2E with live LLM | CI / acceptance | Low | CI budget approval |
+| **Tier-3 product** | New `applications/<product>/` beyond four reference hosts | `applications/` | Product | Phase N scaffold + §6.3 decision |
+| **Domain skills** | Non-`harness.*` skill packs for product agents | `intergrax/skills/providers/` | Product | With K.1 or K.2 |
+| **A.5** | Full Legal regression (all steps, live model) | Phase A row | Low | K.6 / B.15 |
+| **Phase E** | Legal agent refactoring (parallel track) | `agents/legal/` | On demand | Product architecture |
+
+**Not business (infrastructure — closed; see [§6.1z](#61z-harness-implementation-queue-consolidated)):** DX-5.7, AA-LEG.0.2, OPS-L3.1 **Done**; ongoing **§6.1** maintenance only.
 
 ### 6.1u Archived — Phase U cadence (complete 2026-06-01)
 
@@ -3850,7 +5749,8 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 ### H.1 Coverage status legend
 
 - **Done** — capability implemented and verified by existing phases/tests.
-- **Planned (Phase V)** — explicitly scheduled in Phase V (`V-*` IDs).
+- **Partial closeout** — contracts/governance Done; runtime enforcement gaps scheduled in Phase V-REM.
+- **Planned (Phase V-REM)** — explicitly scheduled in Phase V-REM (`V-REM-*` IDs).
 - **Deferred (product scope)** — intentionally outside harness-only scope (Band 3 / §6.3).
 - **Uncovered** — gap; MUST be added to plan before related implementation proceeds.
 
@@ -3865,7 +5765,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Capability graph dependencies + impact analysis | canon §53.2 | ideal §19 + capability graph expectations | V-CG.* | **Done** |
 | Agent lifecycle governance (cert/promo/deprec/retire/owner) | canon §15, §53.3 | ideal §17 | V-ALG.* | **Done** |
 | Prompt engineering architecture | canon §53.5 | ideal §20 | V-PE.* | **Done** |
-| Evaluation and benchmarking operations | canon §53.6 | ideal §18 | V-EVAL.* | **Done** |
+| Evaluation and benchmarking operations | canon §53.6 | ideal §18 | V-EVAL.* + A.4 | **Done** |
 | Architecture metrics and debt governance | canon §53.7 | ideal §21 + architecture metrics expectations | V-AM.* | **Done** |
 | Security/data governance (agent-native threats) | canon §42.37, §53.8 | ideal §23 | Phase U (baseline) + V-SEC.* | **Done** |
 | Cost/resource governance | canon §53.9 | ideal §24 | V-COST.* | **Done** |
@@ -3879,10 +5779,11 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 
 Harness architecture can be considered complete against both architecture documents only when:
 
-1. All harness-scope rows in H.2 are `Done` (no `Planned`, no `Uncovered`).
+1. All harness-scope rows in H.2 are `Done` (no `Partial closeout`, no `Planned`, no `Uncovered`).
 2. `Deferred (product scope)` rows remain intentionally isolated to Band 3 (§6.3).
-3. Phase V KPI thresholds and L3/L4 evidence gates are satisfied.
-4. Canon + plan + docs index are synchronized in the same change window.
+3. Phase V-REM complete and parent V-* Partial rows closed.
+4. Phase V KPI thresholds and L3/L4 evidence gates are satisfied.
+5. Canon + plan + docs index are synchronized in the same change window.
 
 ### H.4 Change control rule
 
@@ -3890,7 +5791,7 @@ Any future addition to either architecture document that introduces a new harnes
 domain MUST be reflected in:
 
 - this matrix (Appendix H),
-- a concrete Phase V (or successor phase) deliverable ID,
+- a concrete Phase V-REM (or successor phase) deliverable ID,
 - priority ladder (§4) and “what next” (§6) if it changes execution order.
 
 ---
@@ -4004,8 +5905,41 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | 2026-06-02 | §6.1 | Gate green **486**: IntegrationBinding test fixes, circular import, catalog re-bootstrap after test clears, scaffold templates |
 | 2026-06-02 | TYP-06, U-Typ.4 | `IntegrationProfile` explicit binding accessors; removed `tools_agent.AgentDecision` alias |
 | 2026-06-02 | W-OPS.0 | Harness maturity audit → Phase W-OPS + §6.2w in implementation plan |
+| 2026-06-05 | V-REM.0.* | Plan audit → Phase V-REM + Appendix J + §6.1z queue (10 open) |
 | — | — | *(append row per merged PR)* |
 
 ---
 
-*Plan synced (2026-06-03). **Harness baseline complete** (Q–V + P-Ext + W-ML + W-OPS + §4.1). Gate: **470 passed** (full regression). **Default next:** **§6.1** maintenance; operational L3 = `phase_w_ops_evidence.py --enforce` after two release cycles. P-Ext **Done** (61/61). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
+## Appendix J — Phase V remediation traceability (audit gap → V-REM ID)
+
+**Purpose:** 100% mapping from **Partial** audit findings (2026-06-05) to concrete remediation IDs. **Canonical phase narrative:** [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout).
+
+**Status:** **12 tasks** · **12 Done** (2026-06-05).
+
+### J.1 Audit gap → remediation matrix
+
+| Audit source | Layer / area | Gap | Severity | Parent plan ID | V-REM ID | Status |
+|--------------|--------------|-----|----------|----------------|----------|--------|
+| Plan/code audit 2026-06-05 | Capability graph (AUDIT_MAP §19) | System edges agents→application incorrect per host | **Critical** | V-CG.2, V-CG.3, V-CG.4 | V-REM-CG.1, V-REM-CG.2 | **Done** |
+| Plan/code audit 2026-06-05 | Agent lifecycle (AUDIT_MAP §31) | Governance contracts exist; no runtime routing cutoff for retired/deprecated | High | V-ALG.3 | V-REM-ALG.1 | **Done** |
+| Plan/code audit 2026-06-05 | Agent lifecycle (AUDIT_MAP §31) | Ownership contracts exist; no production-eligible filter at selection | High | V-ALG.4 | V-REM-ALG.2 | **Done** |
+| Plan/code audit 2026-06-05 | Prompt registry (AUDIT_MAP §17) | PromptMeta missing owner/risk; no YAML assets for E2E validation | High | V-PE.1 | V-REM-PE.1, V-REM-PE.2 | **Done** |
+| Plan/code audit 2026-06-05 | Security (AUDIT_MAP §23) | Tool injection defense not wired on execution path | High | V-SEC.2 | V-REM-SEC.1 | **Done** |
+| Plan/code audit 2026-06-05 | Security (AUDIT_MAP §23) | Retrieval poisoning defense not enforced per tenant/app | High | V-SEC.3 | V-REM-SEC.2 | **Done** |
+| Plan/code audit 2026-06-05 | Security (AUDIT_MAP §23) | Tenant isolation + audit trail hooks missing in main path | High | V-SEC.4 | V-REM-SEC.3 | **Done** |
+| Plan/code audit 2026-06-05 | Evaluation (AUDIT_MAP §25) | NexusEvalRunner exists; missing integration tests + gate | Medium | A.4, A.4.1 | V-REM-A.1 | **Done** |
+| Plan sync 2026-06-05 | Plan governance | Appendix J + §6.1z queue + status sync | — | — | V-REM.0.1, V-REM.0.2 | **Done** |
+
+**Coverage target:** 100% **Done** when every **Planned** row is **Done** and parent Partial IDs (V-CG.2–4, V-ALG.3–4, V-PE.1, V-SEC.2–4, A.4) are **Done**.
+
+### J.2 Paydown log
+
+| Date | V-REM ID | Summary |
+|------|----------|---------|
+| 2026-06-05 | V-REM.0.1, V-REM.0.2 | Appendix J + Phase V-REM section + §6.1z/§6.2v + Appendix H sync |
+| 2026-06-05 | V-REM-CG.1–A.1 | Runtime remediation: capability graph, lifecycle routing, V-SEC wiring, prompt governance, EvalRunner gate |
+| 2026-06-05 | V-POST.1, V-POST.2 | Phase V closeout gate green; AgentEngine routability guard; NexusLoop tenant-security integration tests |
+
+---
+
+*Plan synced (2026-06-02). **Harness platform** bands 1–2p **Done**; GOV-AUDIT + ORCH + TS + INT + RAG + CTX + LEG + PE **closed**. Gate: **623 passed**. **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance. Product work gated by [§6.3](#63-end-of-plan--deferred-product-work-only). Operational L3 **signed off**. P-Ext **Done** (61/61).*

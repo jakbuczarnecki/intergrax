@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.uaep_pipeline import pipeline_agent_steps, pipeline_step_complete
-from intergrax.applications._shared.lab_harness_context import LabHarnessContext
-from intergrax.applications._shared.lab_runtime_config import build_lab_agent_runtime_context
-from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
+from intergrax.agents.reference_harness import (
+    LabHarnessContext,
+    build_lab_agent_runtime_context,
+    default_reference_harness,
+)
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
 from intergrax.contracts.agent_decision import AgentDecision
@@ -16,8 +18,7 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import TaskContext
-from intergrax.tools.registry.profile import ToolProfile
-from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.agents.tool_enablement import ToolEnablementProfile, ToolWiringContextLike
 from research.steps.pipeline import build_pipeline, run_domain_step
 
 
@@ -28,13 +29,11 @@ class ResearchAgent(HarnessReferenceAgent):
         self,
         harness: LabHarnessContext | None = None,
         *,
-        tool_profile: ToolProfile | None = None,
-        tool_wiring_context: ToolWiringContext | None = None,
+        tool_profile: ToolEnablementProfile | None = None,
+        tool_wiring_context: ToolWiringContextLike | None = None,
         enable_websearch: bool = False,
     ) -> None:
-        self._harness = harness or LabHarnessContext(
-            policy_bundle=build_runtime_policy_bundle(),
-        )
+        self._harness = harness or default_reference_harness()
         self._tool_profile = tool_profile
         self._tool_wiring_context = tool_wiring_context
         self._enable_websearch = enable_websearch

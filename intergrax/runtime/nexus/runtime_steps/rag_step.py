@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 
 from intergrax.runtime.nexus.budget.budget_ticks import record_rag_invocation_and_enforce
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -101,6 +102,26 @@ class RagStep(RuntimeStep):
             state.context_builder_result = built
 
         retrieved_chunks = built.retrieved_chunks or []
+        security_profile = ctx.config.security_profile
+        if security_profile is not None and security_profile.retrieval_poisoning_defense_enabled:
+            from intergrax.runtime.architecture.retrieval_security_wiring import (
+                filter_retrieved_chunks_for_poisoning,
+            )
+
+            filtered_chunks, review_warnings = filter_retrieved_chunks_for_poisoning(
+                retrieved_chunks
+            )
+            if len(filtered_chunks) != len(retrieved_chunks):
+                retrieved_chunks = filtered_chunks
+                built = replace(
+                    built,
+                    retrieved_chunks=retrieved_chunks,
+                    rag_used=bool(retrieved_chunks),
+                    rag_reason=built.rag_reason or "retrieval_poisoning_quarantine",
+                )
+                state.context_builder_result = built
+            if review_warnings:
+                rag_reason = "; ".join(review_warnings)
         state.used_rag = built.rag_used
         rag_reason = built.rag_reason
 

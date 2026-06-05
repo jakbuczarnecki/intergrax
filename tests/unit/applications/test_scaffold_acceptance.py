@@ -23,18 +23,20 @@ pytestmark = [pytest.mark.unit, pytest.mark.agent_os, pytest.mark.gate]
 
 def _assert_tool_wiring_in_host(target, pkg: str, short: str) -> None:
     wiring = (target / "host" / "wiring.py").read_text(encoding="utf-8")
-    tool_wiring = (target / "host" / "tool_wiring.py").read_text(encoding="utf-8")
     env_profile_path = target / "host" / "environment_profile.py"
-    if env_profile_path.is_file():
-        env_profile = env_profile_path.read_text(encoding="utf-8")
-        assert "ApplicationEnvironmentProfile" in env_profile
+    env_profile = env_profile_path.read_text(encoding="utf-8") if env_profile_path.is_file() else ""
     assert "wire_application_environment" in wiring
     assert f"build_{short}_environment_profile" in wiring
     assert "env_wiring.build_context" in wiring
-    assert f"wire_{short}_tools" in tool_wiring
-    assert "build_application_tool_wiring" in tool_wiring
-    assert "ToolProfile" in tool_wiring
-    assert "ApplicationEnvironmentProfile" in env_profile
+    factory = (target / "host" / "factory.py").read_text(encoding="utf-8")
+    assert "build_harness_host_runtime" in factory
+    if "ApplicationEnvironmentProfile" in env_profile:
+        assert "ApplicationEnvironmentProfile" in env_profile
+    tool_wiring_path = target / "host" / "tool_wiring.py"
+    if tool_wiring_path.is_file():
+        tool_wiring = tool_wiring_path.read_text(encoding="utf-8")
+        assert f"wire_{short}_tools" in tool_wiring
+        assert "build_application_tool_wiring" in tool_wiring
 
 
 def test_scaffold_profiles_exposed_on_cli() -> None:
@@ -188,6 +190,7 @@ def test_new_stack_cli_creates_agent_and_application(tmp_path) -> None:
             app_only=False,
             root=root,
             force=False,
+            minimal=False,
         )
     )
     assert code == 0

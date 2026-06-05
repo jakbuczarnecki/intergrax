@@ -8,6 +8,7 @@ import json
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.prompts.registry.prompt_registry_resolver import resolve_yaml_prompt_registry
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
@@ -27,8 +28,15 @@ class ToolsStep(RuntimeStep):
     def execution_kind(self) -> ExecutionKind | None:
         return ExecutionKind.TOOL
     
-    def TOOLS_RUNTIME_CONTEXT_PROMPT(self) -> str:
-        registry = YamlPromptRegistry.create_default(load=True)
+    @staticmethod
+    def _resolve_prompt_registry(state: RuntimeState) -> YamlPromptRegistry:
+        return resolve_yaml_prompt_registry(
+            registry=state.context.prompt_registry,
+            catalog_path=state.context.config.prompt_catalog_path,
+        )
+
+    def tools_runtime_context_prompt(self, state: RuntimeState) -> str:
+        registry = self._resolve_prompt_registry(state)
         localized = registry.resolve_localized("tools_runtime_context")
         return localized.system
 
@@ -36,7 +44,7 @@ class ToolsStep(RuntimeStep):
         """
         Run tools planner + runtime tool execution if configured.
 
-        ToolsAgent is used only for planning.
+        Tool planner (``ToolPlannerProtocol``) plans calls only.
         All execution is performed by RuntimeToolInvoker (Layer-2 runtime).
         """
 
@@ -129,7 +137,7 @@ class ToolsStep(RuntimeStep):
                 if tools_context_for_llm:
                     insert_at = len(state.messages_for_llm) - 1
 
-                    runtime_prompt = self.TOOLS_RUNTIME_CONTEXT_PROMPT().format(
+                    runtime_prompt = self.tools_runtime_context_prompt(state).format(
                         context=tools_context_for_llm
                     )
 

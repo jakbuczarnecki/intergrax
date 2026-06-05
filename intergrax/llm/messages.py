@@ -85,9 +85,9 @@ def append_chat_messages(
         new: List[ChatMessage]
 ) -> List[ChatMessage]:
     """
-    Custom reducer for LangGraph state.
+    Append-only reducer for message lists (optional LangGraph adapter compatibility).
 
-    LangGraph calls this function when merging state updates:
+    When used as a LangGraph state reducer, merging works as:
       - `existing`: the current list of messages in the state (may be None)
       - `new`: the list of messages provided by a node update
 

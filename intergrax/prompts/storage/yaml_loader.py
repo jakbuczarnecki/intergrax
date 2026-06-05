@@ -15,6 +15,7 @@ from intergrax.prompts.schema.prompt_schema import (
     LocalizedPromptDocument,
     PromptMeta,
 )
+from intergrax.prompts.schema.prompt_governance import PromptRiskTier
 from intergrax.prompts.storage.models import (
     LoadedPrompt,
     PromptParseError,
@@ -147,6 +148,10 @@ class YamlPromptLoader:
                 output_schema_id=str(meta["output_schema_id"]),
                 tags=frozenset(str(t) for t in meta.get("tags", [])),
                 description=self._opt_str(meta.get("description")),
+                owner_team=str(meta.get("owner_team", "")),
+                owner_contact=str(meta.get("owner_contact", "")),
+                risk_tier=self._parse_risk_tier(meta.get("risk_tier")),
+                change_ticket_ref=str(meta.get("change_ticket_ref", "")),
             ),
         )
 
@@ -178,6 +183,11 @@ class YamlPromptLoader:
         for tag in sorted(doc.meta.tags):
             h.update(tag.encode("utf-8"))
 
+        h.update(doc.meta.owner_team.encode("utf-8"))
+        h.update(doc.meta.owner_contact.encode("utf-8"))
+        h.update(doc.meta.risk_tier.value.encode("utf-8"))
+        h.update(doc.meta.change_ticket_ref.encode("utf-8"))
+
         return h.hexdigest()
 
 
@@ -187,3 +197,8 @@ class YamlPromptLoader:
         if v is None:
             return None
         return str(v)
+
+    def _parse_risk_tier(self, value: Any) -> PromptRiskTier:
+        if value is None or value == "":
+            return PromptRiskTier.LOW
+        return PromptRiskTier(str(value))

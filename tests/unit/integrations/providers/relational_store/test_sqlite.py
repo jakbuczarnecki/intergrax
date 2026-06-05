@@ -31,6 +31,7 @@ from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
 from intergrax.runtime.human.store import SQLiteHumanDecisionStore
+from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
 from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
 from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
 from intergrax.runtime.organization.stores.sqlite_organization_profile_store import (
@@ -84,6 +85,7 @@ def test_create_sqlite_integration_bundle_uses_shared_data_dir(tmp_path: Path) -
     assert isinstance(bundle.idempotency_store, SQLiteIdempotencyStore)
     assert isinstance(bundle.session_storage, SQLiteSessionStorage)
     assert isinstance(bundle.organization_profile_store, SQLiteOrganizationProfileStore)
+    assert isinstance(bundle.user_profile_store, SQLiteUserProfileStore)
 
     assert bundle.relational_store.db_path.exists()
     assert bundle.paths.trace.exists()

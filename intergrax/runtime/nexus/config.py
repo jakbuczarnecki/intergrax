@@ -5,12 +5,19 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, Optional, Sequence, TYPE_CHECKING
 
+from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
+from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.nexus.config_types import ToolChoiceMode, ToolsContextScope
 
 if TYPE_CHECKING:
     from intergrax.integrations.registry.profile import IntegrationProfile
     from intergrax.runtime.events.event_bus import RuntimeEventBus
     from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+    from intergrax.applications.contracts.environment_profile import (
+        ApplicationSecurityProfile,
+        EvaluationProfile,
+    )
+    from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
 
 from intergrax.rag.profiles.runtime_rag_sync import sync_rag_profile_from_runtime_config
 from intergrax.runtime.nexus.config_sections import (
@@ -42,6 +49,7 @@ from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.runtime.modality.modality_profile import ModalityProfile
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.provider import ToolProvider
+from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.websearch.service.websearch_config import WebSearchConfig
@@ -156,18 +164,18 @@ class RuntimeConfig:
     #   - "required": runtime must use at least one tool.
     tools_mode: ToolChoiceMode = "auto"
 
-    # Determines how much contextual information the tools agent receives:
+    # Determines how much contextual information the tool planner receives:
     #
     #   - "current_message_only":
-    #       ToolsAgent sees only the newest user query.
+    #       Planner sees only the newest user query.
     #       Useful for strict function-calling, cost optimization
     #       and predictable single-turn behavior.
     #
     #   - "conversation":
-    #       ToolsAgent sees full conversation history up to this point.
+    #       Planner sees full conversation history up to this point.
     #
     #   - "full":
-    #       ToolsAgent receives the same context as the LLM:
+    #       Planner receives the same context as the LLM:
     #       system → profile → history → RAG → websearch.
     #
     tools_context_scope: ToolsContextScope = ToolsContextScope.CURRENT_MESSAGE_ONLY
@@ -179,6 +187,8 @@ class RuntimeConfig:
     tool_providers: Sequence[ToolProvider] = ()
 
     tool_profile: Optional[ToolProfile] = None
+
+    skill_profile: Optional[SkillProfile] = None
 
     tool_wiring_context: Optional[ToolWiringContext] = None
 
@@ -192,6 +202,14 @@ class RuntimeConfig:
     enable_user_profile_memory: bool = True
     enable_org_profile_memory: bool = True
     enable_user_longterm_memory: bool = True
+    enable_task_memory: bool = False
+    memory_retention_days: Optional[int] = None
+    memory_scope_boundary: str = "tenant"
+
+    # Context assembly (Phase MEM-1.2, MEM-CTX.1)
+    context_budget_policy: Optional["ContextBudgetPolicy"] = None
+    task_context_assembly_options: Optional[TaskContextAssemblyOptions] = None
+    context_decision_profile: Optional[Dict[str, Any]] = None
 
     # ------------------------------------------------------------------
     # MISC METADATA
@@ -277,7 +295,11 @@ class RuntimeConfig:
     # ENVIRONMENT
     # ------------------------------------------------------------------
     production_mode: bool = True
+    security_profile: Optional["ApplicationSecurityProfile"] = None
+    evaluation_profile: Optional["EvaluationProfile"] = None
+    evaluation_registry: Optional["OnlineEvaluationRegistry"] = None
 
+    prompt_catalog_path: Optional[str] = None
 
     # ------------------------------------------------------------------
     # COMPOSED SECTIONS (Phase Q-N.8)

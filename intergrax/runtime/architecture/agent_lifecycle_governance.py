@@ -5,17 +5,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from enum import Enum
 
 from pydantic import BaseModel, Field
 
-
-class AgentLifecycleState(str, Enum):
-    DEVELOPMENT = "development"
-    STAGING = "staging"
-    PRODUCTION = "production"
-    DEPRECATED = "deprecated"
-    RETIRED = "retired"
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 
 
 class AgentLifecycleTransitionRequest(BaseModel):

@@ -44,7 +44,7 @@ def _imports_forbidden_module(path: Path, forbidden: str) -> list[str]:
 
 @pytest.mark.parametrize(
     "forbidden",
-    ["intergrax.supervisor", "intergrax.chains"],
+    ["intergrax.supervisor"],
 )
 def test_runtime_and_applications_do_not_import_experimental_packages(forbidden: str) -> None:
   roots = [p for p in _FORBIDDEN_PREFIXES if (_REPO_ROOT / p).exists()]

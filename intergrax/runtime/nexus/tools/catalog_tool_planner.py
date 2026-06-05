@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework — proprietary and confidential.
 
-"""Catalog-backed tool planner (Phase Q+-L.2, T-Ops.5) — no ``ToolsAgent`` wrapper."""
+"""Catalog-backed tool planner (Phase Q+-L.2, T-Ops.5)."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.runtime.nexus.tools.tool_planner_trackable import ToolPlannerTrackable
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
@@ -22,8 +23,7 @@ class CatalogToolPlanner(ToolPlannerTrackable):
     """
     Tier-1 catalog planner implementing :class:`ToolPlannerProtocol`.
 
-    Uses :class:`~intergrax.runtime.nexus.tools.tool_planning_service.ToolPlanningService`
-    instead of legacy :class:`~intergrax.tools.tools_agent.ToolsAgent`.
+    Uses :class:`~intergrax.runtime.nexus.tools.tool_planning_service.ToolPlanningService`.
     """
 
     _service: ToolPlanningService
@@ -38,8 +38,16 @@ class CatalogToolPlanner(ToolPlannerTrackable):
         *,
         llm: LLMAdapter,
         registry: ToolRegistry,
+        prompt_registry: YamlPromptRegistry | None = None,
+        prompt_catalog_path: str | None = None,
     ) -> CatalogToolPlanner:
-        return cls(_service=ToolPlanningService(llm=llm, tools=registry))
+        from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
+
+        config = ToolPlanningConfig.default(
+            registry=prompt_registry,
+            catalog_path=prompt_catalog_path,
+        )
+        return cls(_service=ToolPlanningService(llm=llm, tools=registry, config=config))
 
     @classmethod
     def from_profile(
@@ -48,9 +56,16 @@ class CatalogToolPlanner(ToolPlannerTrackable):
         llm: LLMAdapter,
         profile: ToolProfile,
         wiring: Optional[ToolWiringContext] = None,
+        prompt_registry: YamlPromptRegistry | None = None,
+        prompt_catalog_path: str | None = None,
     ) -> CatalogToolPlanner:
         registry = build_registry_from_profile(profile, wiring_context=wiring)
-        return cls.from_registry(llm=llm, registry=registry)
+        return cls.from_registry(
+            llm=llm,
+            registry=registry,
+            prompt_registry=prompt_registry,
+            prompt_catalog_path=prompt_catalog_path,
+        )
 
     def plan_tools(
         self,

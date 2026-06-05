@@ -6,10 +6,13 @@ from __future__ import annotations
 from typing import Optional, Sequence
 
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
-from intergrax.applications._shared.lab_harness_context import LabHarnessContext
-from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
-from intergrax.applications._shared.lab_runtime_config import build_lab_agent_runtime_context
+from intergrax.agents.reference_harness import (
+    LabHarnessContext,
+    build_lab_agent_runtime_context,
+    default_reference_harness,
+)
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.skills.providers.harness.manifests import HARNESS_TOOL_SMOKE
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
@@ -77,9 +80,7 @@ class EchoAgent(HarnessReferenceAgent):
     """Minimal agent: echoes user input through Nexus pipeline."""
 
     def __init__(self, harness: LabHarnessContext | None = None) -> None:
-        self._harness = harness or LabHarnessContext(
-            policy_bundle=build_runtime_policy_bundle(),
-        )
+        self._harness = harness or default_reference_harness()
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -91,6 +92,11 @@ class EchoAgent(HarnessReferenceAgent):
             skills=[HARNESS_TOOL_SMOKE],
             extra_tools=[],
             risk_level=AgentRiskLevel.LOW,
+            lifecycle_state=AgentLifecycleState.PRODUCTION,
+            production_eligible=True,
+            owner_team="platform",
+            owner_contact="harness@intergrax",
+            runbook_ref="docs/INTERGRAX_IMPLEMENTATION_PLAN.md",
             max_steps=5,
         )
 

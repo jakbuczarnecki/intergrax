@@ -5,12 +5,13 @@
 
 from intergrax.skills.core.contracts import SkillManifest, SkillRiskTier
 from intergrax.skills.registry.runtime import SkillRegistry
-from intergrax.skills.resolver import ResolvedSkillPack, SkillResolver
+from intergrax.skills.resolver import ResolvedSkillPack, SkillResolver, SkillResolverProtocol
 
 __all__ = [
     "ResolvedSkillPack",
     "SkillManifest",
     "SkillRegistry",
     "SkillResolver",
+    "SkillResolverProtocol",
     "SkillRiskTier",
 ]

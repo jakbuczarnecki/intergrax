@@ -35,14 +35,16 @@ class ContextTrimResult:
 
 def trim_message_to_budget(message: str, policy: ContextBudgetPolicy) -> ContextTrimResult:
     original = len(message)
-    if original <= policy.max_chars:
+    token_limit_chars = policy.max_tokens_estimate * 4
+    effective_limit = min(policy.max_chars, token_limit_chars)
+    if original <= effective_limit:
         return ContextTrimResult(
             message=message,
             trimmed=False,
             original_chars=original,
             final_chars=original,
         )
-    trimmed_text = message[: policy.max_chars]
+    trimmed_text = message[:effective_limit]
     return ContextTrimResult(
         message=trimmed_text,
         trimmed=True,

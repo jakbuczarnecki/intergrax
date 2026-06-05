@@ -44,6 +44,11 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         ML_PREDICT_TOOL_ID,
     )
     from intergrax.tools.providers.notify.bundle import NOTIFY_BUNDLE_ID, NOTIFY_TOOL_IDS, register_notify_tools
+    from intergrax.tools.providers.openai_vector_store.bundle import (
+        OPENAI_VECTOR_STORE_BUNDLE_ID,
+        OPENAI_VECTOR_STORE_TOOL_IDS,
+        register_openai_vector_store_tools,
+    )
     from intergrax.tools.providers.observability.bundle import (
         OBSERVABILITY_BUNDLE_ID,
         OBSERVABILITY_TOOL_IDS,
@@ -163,6 +168,14 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             register_fn=register_ml_tools,
             description="Classical ML predict/explain tools.",
             class_name="MlToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=OPENAI_VECTOR_STORE_BUNDLE_ID,
+            tool_ids=OPENAI_VECTOR_STORE_TOOL_IDS,
+            register_fn=register_openai_vector_store_tools,
+            status=ToolBundleStatus.BETA,
+            description="OpenAI managed vector store + file_search tools (vendor-specific).",
+            class_name="OpenaiVectorStoreToolPlugin",
         ),
     )
     _SHIPPED_TOOL_PLUGINS = plugins

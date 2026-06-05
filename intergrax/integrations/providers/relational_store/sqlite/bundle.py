@@ -27,6 +27,7 @@ from intergrax.integrations.providers.relational_store.sqlite.opens import (
     open_task_checkpoint_store_at,
     open_task_memory_store_at,
     open_trace_store_at,
+    open_user_profile_store_at,
 )
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
     SqliteStorePaths,
@@ -54,6 +55,7 @@ class SQLiteIntegrationBundle:
     idempotency_store: object
     session_storage: object
     organization_profile_store: object
+    user_profile_store: object
 
 
 def resolve_sqlite_config(**overrides: object) -> SQLiteIntegrationConfig:
@@ -98,6 +100,7 @@ def create_sqlite_integration(
         idempotency_store=open_idempotency_store_at(paths.idempotency),
         session_storage=open_session_storage_at(paths.session),
         organization_profile_store=open_organization_profile_store_at(paths.organization),
+        user_profile_store=open_user_profile_store_at(paths.user_profile),
     )
 
 
@@ -232,3 +235,16 @@ def create_sqlite_organization_profile_store(
         overrides["organization_db"] = Path(db_path)
     _, paths = _build_paths(data_dir=data_dir, **overrides)
     return open_organization_profile_store_at(paths.organization)
+
+
+def create_sqlite_user_profile_store(
+    *,
+    data_dir: Path | str | None = None,
+    db_path: Path | str | None = None,
+    **config_overrides: object,
+) -> object:
+    overrides: dict[str, object] = dict(config_overrides)
+    if db_path is not None:
+        overrides["user_profile_db"] = Path(db_path)
+    _, paths = _build_paths(data_dir=data_dir, **overrides)
+    return open_user_profile_store_at(paths.user_profile)

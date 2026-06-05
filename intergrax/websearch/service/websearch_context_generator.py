@@ -33,7 +33,9 @@ def create_websearch_context_generator(
     prompt_registry: Optional[YamlPromptRegistry] = None,
 ) -> WebSearchContextGenerator:
     
-    registry = prompt_registry or YamlPromptRegistry.create_default(load=True)
+    from intergrax.prompts.registry.prompt_registry_resolver import resolve_yaml_prompt_registry
+
+    registry = resolve_yaml_prompt_registry(registry=prompt_registry)
 
     if cfg.strategy == WebSearchStrategyType.SERP_ONLY:
         return SerpOnlyContextGenerator(cfg, registry)

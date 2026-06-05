@@ -20,6 +20,7 @@ ENV_EXPERIMENTS_DB = "INTERGRAX_EXPERIMENTS_DB"
 ENV_IDEMPOTENCY_DB = "INTERGRAX_IDEMPOTENCY_DB"
 ENV_SESSION_DB = "INTERGRAX_SESSION_DB"
 ENV_ORGANIZATION_DB = "INTERGRAX_ORGANIZATION_DB"
+ENV_USER_PROFILE_DB = "INTERGRAX_USER_PROFILE_DB"
 ENV_RELATIONAL_DB = "INTERGRAX_RELATIONAL_DB"
 
 RELATIONAL_DB_NAME = "intergrax.db"
@@ -32,6 +33,7 @@ EXPERIMENTS_DB_NAME = "intergrax_experiments.db"
 IDEMPOTENCY_DB_NAME = "intergrax_idempotency.db"
 SESSION_DB_NAME = "intergrax_session.db"
 ORGANIZATION_DB_NAME = "intergrax_organization.db"
+USER_PROFILE_DB_NAME = "intergrax_user_profile.db"
 
 DEFAULT_TRACE_DB = DEFAULT_DATA_DIR / TRACE_DB_NAME
 DEFAULT_RUNTIME_EVENTS_DB = DEFAULT_DATA_DIR / RUNTIME_EVENTS_DB_NAME
@@ -54,6 +56,7 @@ class SqliteStorePaths:
     idempotency: Path
     session: Path
     organization: Path
+    user_profile: Path
 
 
 def _resolve_path(
@@ -137,6 +140,12 @@ def resolve_sqlite_store_paths(config: SQLiteIntegrationConfig) -> SqliteStorePa
             data_dir=data_dir,
             default_name=ORGANIZATION_DB_NAME,
         ),
+        user_profile=_resolve_path(
+            explicit=config.user_profile_db,
+            env_var=ENV_USER_PROFILE_DB,
+            data_dir=data_dir,
+            default_name=USER_PROFILE_DB_NAME,
+        ),
     )
 
 
@@ -193,6 +202,12 @@ def resolve_session_db_path(explicit: Path | str | None = None) -> Path:
     return _paths().session
 
 
+def resolve_user_profile_db_path(explicit: Path | str | None = None) -> Path:
+    if explicit:
+        return Path(explicit)
+    return _paths().user_profile
+
+
 def resolve_organization_db_path(explicit: Path | str | None = None) -> Path:
     if explicit:
         return Path(explicit)
@@ -217,5 +232,6 @@ def ensure_parent_dirs(paths: SqliteStorePaths) -> None:
         paths.idempotency,
         paths.session,
         paths.organization,
+        paths.user_profile,
     ):
         path.parent.mkdir(parents=True, exist_ok=True)

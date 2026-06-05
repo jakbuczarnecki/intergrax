@@ -31,8 +31,12 @@ def tool_hook_context(
         step_id=step_id,
         phase=ExecutionPhase.STEP_EXECUTION,
         runtime_state={
+            "tool_id": request.tool_name,
             "tool_name": request.tool_name,
             "request_id": request.request_id,
+            "arguments": request.input if isinstance(request.input, dict) else {},
+            "capability_ids": [],
+            "allowed_tool_ids": [],
         },
     )
 

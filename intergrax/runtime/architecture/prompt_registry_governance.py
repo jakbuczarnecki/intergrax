@@ -4,15 +4,9 @@
 
 from __future__ import annotations
 
-from enum import Enum
-
 from pydantic import BaseModel, Field
 
-
-class PromptRiskTier(str, Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
+from intergrax.prompts.schema.prompt_governance import PromptRiskTier
 
 
 class PromptRegistryEntry(BaseModel):

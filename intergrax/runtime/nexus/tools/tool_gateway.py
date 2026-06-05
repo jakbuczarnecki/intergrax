@@ -12,7 +12,11 @@ from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResp
 from intergrax.runtime.hooks.tool_hooks import run_tool_call_hooks, tool_hook_context
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
-from intergrax.runtime.nexus.tools.tool_runtime import ToolInvocationPlan, ToolRuntime
+from intergrax.runtime.nexus.tools.tool_runtime import (
+    ToolInvocationPlan,
+    ToolRuntime,
+    tool_invocation_plan_from_capability_payload,
+)
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
 
 if TYPE_CHECKING:
@@ -126,17 +130,7 @@ class RuntimeToolGateway:
         payload = request.input
 
         if name in {NEXUS_CAPABILITY_PLAN, "capability_plan"}:
-            tool_ids = payload.get("tool_ids")
-            if isinstance(tool_ids, (list, tuple)) and tool_ids:
-                return ToolInvocationPlan.from_tool_ids(
-                    [str(item) for item in tool_ids],
-                    use_tools=bool(payload.get("use_tools", False)),
-                )
-            return ToolInvocationPlan.from_legacy(
-                use_rag=bool(payload.get("use_rag", False)),
-                use_websearch=bool(payload.get("use_websearch", False)),
-                use_tools=bool(payload.get("use_tools", False)),
-            )
+            return tool_invocation_plan_from_capability_payload(payload)
         if name in {NEXUS_RAG, "rag", RAG_RETRIEVE_TOOL_ID}:
             return ToolInvocationPlan.from_tool_ids([RAG_RETRIEVE_TOOL_ID])
         if name in {NEXUS_WEBSEARCH, "websearch", WEBSEARCH_QUERY_TOOL_ID}:

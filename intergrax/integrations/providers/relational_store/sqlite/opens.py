@@ -15,6 +15,7 @@ from pathlib import Path
 from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
 from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
 from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
+from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
 from intergrax.runtime.organization.stores.sqlite_organization_profile_store import (
     SQLiteOrganizationProfileStore,
 )
@@ -67,6 +68,10 @@ def open_session_storage_at(path: Path) -> SQLiteSessionStorage:
 
 def open_organization_profile_store_at(path: Path) -> SQLiteOrganizationProfileStore:
     return SQLiteOrganizationProfileStore(db_path=str(_ensure_parent(path)))
+
+
+def open_user_profile_store_at(path: Path) -> SQLiteUserProfileStore:
+    return SQLiteUserProfileStore(db_path=str(_ensure_parent(path)))
 
 
 def open_delivery_ledger_at(path: Path):

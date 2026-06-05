@@ -8,9 +8,6 @@ from typing import TypedDict, Dict, Any, List, Callable, Optional
 from dataclasses import asdict
 import re  # NEW
 
-# LangGraph
-from langgraph.graph import StateGraph, END
-
 from .supervisor import Plan, PlanStep
 from .supervisor_components import BaseSupervisorComponent
 
@@ -194,6 +191,19 @@ def topo_order(steps: List[PlanStep]) -> List[PlanStep]:
 
     return list(steps)
 
+def _import_langgraph() -> tuple[Any, Any]:
+    """Load LangGraph only when the deprecated supervisor bridge is used."""
+    try:
+        from langgraph.graph import END, StateGraph
+    except ImportError as exc:
+        raise ImportError(
+            "LangGraph is optional and not part of the Intergrax runtime. "
+            "Install with: pip install 'Intergrax-ai[langgraph-legacy]' "
+            "or use Nexus / HarnessApplication instead of build_langgraph_from_plan."
+        ) from exc
+    return StateGraph, END
+
+
 def build_langgraph_from_plan(
     plan: Plan,
     components_by_name: Dict[str, BaseSupervisorComponent],
@@ -201,11 +211,12 @@ def build_langgraph_from_plan(
     entry_inject: Optional[Dict[str, Any]] = None
 ):
     """
-    Transforms a Plan into a runnable LangGraph pipeline.
+    Transforms a Plan into a runnable LangGraph pipeline (optional dependency).
     - Creates one node per PlanStep (function built by make_node_fn)
     - Connects nodes in a stable topological order (parallel branches are linearized)
     - Returns: (graph, compiled)
     """
+    StateGraph, END = _import_langgraph()
     g = StateGraph(PipelineState)
 
     def _entry(state: PipelineState) -> PipelineState:

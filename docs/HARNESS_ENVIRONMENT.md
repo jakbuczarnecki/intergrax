@@ -1,6 +1,6 @@
 # Intergrax Harness Environment
 
-**Last updated:** 2026-06-02 · Phase V **Done** (typed contracts + governance artifacts; L3/L4 CI closeout pending)
+**Last updated:** 2026-06-02 · Phase V + ORCH + TS + INT + RAG + CTX + PE **Done**; gate **623**
 
 Operator and author guide for the **lab harness stack** — Tier-0 integrations, Tier-1 Nexus, Tier-3 `lab_application` wiring, platform skills, and observability. Business agents (Problem Radar, Vendor Discovery) are **Phase K** and out of scope here.
 
@@ -78,6 +78,16 @@ uv run uvicorn lab_application.host.main:app --host 127.0.0.1 --port 8090
 
 Runtime events: `GET /debug/tasks/{id}/events` when SQLite runtime events DB is wired.
 
+**Tier-3 observability wiring (Phase OBS):** `wire_application_observability()` maps `ObservabilityProfile` to `NexusObservabilityStores`; `build_harness_host_runtime()` validates assembly via `observability_assembly_resolver`. Author map: [`AGENT_CREATION_GUIDE.md` Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout). CI: `scripts/check_harness_observability_wiring.py`.
+
+**Tier-3 reliability wiring (Phase REL):** `wire_application_reliability()` maps `ReliabilityProfile` to `IdempotencyStore` and `IntegrationCircuitBreakerConfig`; `materialize_runtime_config()` applies idempotency to `RuntimeConfig`. Author map: [`AGENT_CREATION_GUIDE.md` Appendix R](AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout). CI: `scripts/check_harness_reliability_wiring.py`.
+
+**Tier-3 security wiring (Phase SEC):** `wire_application_security()` maps `ApplicationSecurityProfile` to V-SEC middleware; `build_harness_host_runtime()` validates assembly via `security_assembly_resolver`. Author map: [`AGENT_CREATION_GUIDE.md` Appendix S](AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout). CI: `scripts/check_harness_security_wiring.py`.
+
+**Tier-3 cost wiring (Phase COST):** `wire_application_cost()` maps `CostProfile` to `BudgetPolicy` / `RunBudget`; `wire_policy_bundle()` merges cost governance into `RuntimePolicyBundle`. Author map: [`AGENT_CREATION_GUIDE.md` Appendix T](AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout). CI: `scripts/check_harness_cost_wiring.py`.
+
+**Tier-3 evaluation wiring (Phase EVAL):** `wire_application_evaluation()` maps `EvaluationProfile` to `OnlineEvaluationRegistry` / governance bridge; `wire_policy_bundle()` merges `evaluation_governance` into `RuntimePolicyBundle`. Author map: [`AGENT_CREATION_GUIDE.md` Appendix U](AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout). CI: `scripts/check_harness_evaluation_wiring.py`.
+
 **Context engineering events** (Tier-1): `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` — see architecture §28.1.
 
 ---
@@ -131,6 +141,8 @@ Operational L3 evidence is separate from `phase_v_closeout_gate` (contract CI). 
 
 **Incident budget (rolling 30d):** ≤ 2 Sev-2 harness regressions; ≤ 1 unresolved gate red > 24h.
 
+**Runtime event ops filters (Phase DX-5.7):** Every `RuntimeEventType` maps to an `ExecutionPhase` and a stable ops filter token (`ops:alert`, `ops:hitl`, `trace:step`, …). Source of truth: `intergrax.runtime.events.phase_coverage` (`EVENT_PHASE_COVERAGE`, `EVENT_OPS_FILTER_HINTS`). Canon table: [architecture §42.1.5](intergrax_runtime_architecture.md#4215-runtime-event-catalog-ops-filters). Gate: `test_all_runtime_event_types_have_ops_filter_hint`.
+
 **Runbook stubs (owner: harness-platform):**
 
 | Scenario | Action |
@@ -159,6 +171,27 @@ Lab reference agents implement `HarnessReferenceAgent` + `UAEPAgent`; manifest b
 ## Policy bundle
 
 `build_runtime_policy_bundle()` on lab registry build — typed `BudgetPolicy` / `PlanLoopPolicy` slots on `RuntimePolicyBundle`. Applied via `build_lab_agent_runtime_context()` (Phase U-Pol.1). Read order: architecture §42.11.5.
+
+---
+
+## Harness control plane (authoring)
+
+Governance, policy, and observability are **composable control-plane layers** — configured via `ApplicationEnvironmentProfile`, `RuntimePolicyBundle`, hooks, and plugin entry points; enforced by Nexus on every run.
+
+| Need | Where |
+|------|--------|
+| Full control-plane map (profiles, bundles, hooks, EP groups) | [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
+| Operator policy read order | Architecture [§42.11.5](intergrax_runtime_architecture.md#42115-how-to-read-policy-for-a-run-operator) |
+| Policy rule handler plugins (`intergrax.policy_rules`) | [`EXTENSION_AUTHOR_GUIDE.md` §10](EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) |
+| Audit layers (policy §5, observability §21) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) |
+| Observability wire-time closeout (§21) | [`AGENT_CREATION_GUIDE.md` Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [Phase OBS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs--observability-control-plane-closeout) |
+| Reliability wire-time closeout (§22) | [`AGENT_CREATION_GUIDE.md` Appendix R](AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) · [Phase REL](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-rel--reliability-control-plane-closeout) |
+| Security wire-time closeout (§23) | [`AGENT_CREATION_GUIDE.md` Appendix S](AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [Phase SEC](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-sec--security-control-plane-closeout) |
+| Cost wire-time closeout (§24) | [`AGENT_CREATION_GUIDE.md` Appendix T](AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) · [Phase COST](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-cost--cost-governance-control-plane-closeout) |
+
+**Modularity:** swap observability backend via `IntegrationProfile.observability_backend`; add policy via YAML + EP handlers; enable V-SEC defenses via `ApplicationSecurityProfile` — without changing Tier-2 agent code.
+
+**Orchestration:** graph execution, delegation, handoff, hooks — [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane). Wired via `orchestration_wiring.py` + `graph_spec_to_plan.py` (Phase ORCH **Done**). Multi-agent quick start: [Appendix C](AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs).
 
 ---
 
@@ -195,7 +228,7 @@ Current baseline delivered (Phase V V1):
 - `V-SEC.1` prompt injection defense profile and adversarial deny-path tests
 - `V-SEC.2` tool injection defense policy (allowed tool IDs, blocked argument tokens, capability match controls)
 - `V-SEC.3` retrieval poisoning defense with trust-score quarantine flow
-- `V-SEC.4` tenant isolation verification and security audit trail checks
+- `V-SEC.4` tenant isolation verification and security audit trail checks (runtime: `TenantSecurityMiddleware` on `BEFORE_TASK_INTAKE`; optional `TaskContext.metadata["resource_tenant_id"]` for resource-bound checks via `task_security_context.py`)
 - `V-COST.1` multi-scope budget envelope governance (`tenant`, `application`, `agent`, `model`, `tool`)
 - `V-COST.2` quota enforcement with deterministic `allow/degrade/deny` behavior
 - `V-COST.3` spend/token forecast and anomaly detection reports
@@ -239,8 +272,10 @@ Execution references in the implementation plan:
 ```bash
 uv run pytest -m gate -q
 python scripts/check_harness_no_getattr.py
-python scripts/check_tools_agent_imports.py
-python scripts/check_tools_agent_run.py
+python scripts/check_legacy_modules_removed.py
+python scripts/check_agent_skill_resolution.py
+python scripts/check_harness_registry_resolution.py
+python scripts/check_harness_capability_graph_wiring.py
 python scripts/check_legacy_tool_plan_booleans.py
 uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -q
 uv run pytest tests/unit/skills/test_harness_skill_bundle.py -q

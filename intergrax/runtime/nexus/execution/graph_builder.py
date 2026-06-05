@@ -16,6 +16,7 @@ def plan_to_execution_graph(plan: NexusPlan) -> ExecutionGraph:
             capability=step.capability,
             description=step.description,
             depends_on=list(step.depends_on),
+            delegation=step.delegation,
         )
         for step in plan.steps
     ]

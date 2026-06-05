@@ -18,6 +18,7 @@ from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.runtime import ToolRegistry
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
@@ -44,6 +45,7 @@ class ApplicationBuildContext:
     strict_harness: bool = False
     trace_db_path: Path | None = None
     environment: ApplicationEnvironmentProfile | None = None
+    prompt_registry: YamlPromptRegistry | None = None
 
     @classmethod
     def for_manifest(
@@ -62,6 +64,7 @@ class ApplicationBuildContext:
         strict_harness: bool = False,
         trace_db_path: Path | None = None,
         environment: ApplicationEnvironmentProfile | None = None,
+        prompt_registry: YamlPromptRegistry | None = None,
     ) -> ApplicationBuildContext:
         resolved_profile = integration_profile
         if resolved_profile is None and isinstance(manifest, ApplicationManifest):
@@ -80,4 +83,5 @@ class ApplicationBuildContext:
             strict_harness=strict_harness,
             trace_db_path=trace_db_path,
             environment=environment,
+            prompt_registry=prompt_registry,
         )

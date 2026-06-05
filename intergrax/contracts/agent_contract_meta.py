@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.skills.core.contracts import SkillManifest
 from intergrax.tools.core.contracts import ToolContract
 
@@ -58,5 +59,10 @@ class AgentContract(BaseModel):
     max_duration_seconds: Optional[float] = None
     max_cost: Optional[float] = None
     risk_level: AgentRiskLevel = AgentRiskLevel.MEDIUM
+    lifecycle_state: AgentLifecycleState = AgentLifecycleState.PRODUCTION
+    production_eligible: bool = False
+    owner_team: Optional[str] = None
+    owner_contact: Optional[str] = None
+    runbook_ref: Optional[str] = None
     validation_rules: List[str] = Field(default_factory=list)
     failure_modes: List[str] = Field(default_factory=list)

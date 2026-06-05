@@ -258,8 +258,13 @@ class RuntimeContext:
         config.validate()
 
         if prompt_registry is None:
-            # Default production registry
-            prompt_registry = YamlPromptRegistry.create_default(load=True)
+            from intergrax.prompts.registry.prompt_registry_resolver import (
+                resolve_yaml_prompt_registry,
+            )
+
+            prompt_registry = resolve_yaml_prompt_registry(
+                catalog_path=config.prompt_catalog_path,
+            )
 
         # Resolve ContextBuilder (RAG)
         resolved_context_builder = context_builder

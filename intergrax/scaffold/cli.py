@@ -20,14 +20,12 @@ from intergrax.scaffold.new_tool_bundle import register_parser as register_new_t
 from intergrax.scaffold.new_tool_bundle import run_new_tool_bundle
 from intergrax.scaffold.new_stack import register_parser as register_new_stack_parser
 from intergrax.scaffold.new_stack import run_new_stack
+from intergrax.scaffold.expand_application import register_parser as register_expand_parser
+from intergrax.scaffold.expand_application import run_expand
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="intergrax.scaffold",
-        description="Scaffold Intergrax agents (Tier-2) and applications (Tier-3).",
-    )
-    sub = parser.add_subparsers(dest="command", required=True)
+def register_scaffold_commands(sub: argparse._SubParsersAction) -> None:
+    """Register scaffold subcommands on a parent parser."""
 
     new_agent = sub.add_parser("new-agent", help="Create agents/<name>/ from UAEP template")
     new_agent.add_argument("name", help="Agent slug (e.g. document_automation)")
@@ -45,12 +43,27 @@ def build_parser() -> argparse.ArgumentParser:
         help="Repository root (default: cwd)",
     )
     new_agent.add_argument("--force", action="store_true", help="Overwrite if exists")
+    new_agent.add_argument(
+        "--reference",
+        action="store_true",
+        help="Use HarnessReferenceAgent template (lab/product hosts inject LabHarnessContext)",
+    )
 
     register_application_parser(sub)
     register_new_stack_parser(sub)
+    register_expand_parser(sub)
     register_new_skill_parser(sub)
     register_new_integration_parser(sub)
     register_new_tool_bundle_parser(sub)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="intergrax.scaffold",
+        description="Scaffold Intergrax agents (Tier-2) and applications (Tier-3).",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+    register_scaffold_commands(sub)
     return parser
 
 
@@ -65,6 +78,7 @@ def main(argv: list[str] | None = None) -> int:
                 capabilities=args.capabilities,
                 root=args.root.resolve(),
                 force=args.force,
+                reference=args.reference,
             )
         except (ValueError, FileExistsError) as exc:
             print(f"error: {exc}", file=sys.stderr)
@@ -82,6 +96,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "new-stack":
         return run_new_stack(args)
+
+    if args.command == "expand":
+        return run_expand(args)
 
     if args.command in ("new-skill", "new-skill-bundle"):
         return run_new_skill(args)

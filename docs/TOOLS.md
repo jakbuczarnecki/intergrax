@@ -69,7 +69,7 @@ ToolProfile(enabled=[...], enabled_bundles=[...])
 bootstrap_catalogs()  ──►  register_default_tools()  ──►  build_registry_from_profile(profile, ctx)
         │
         ▼
-ToolRegistry  ──►  RuntimeToolInvoker  ──►  Agent / ToolsAgent / MCP
+ToolRegistry  ──►  RuntimeToolInvoker  ──►  Agent / CatalogToolPlanner / MCP
 ```
 
 **Example — enable tools from catalog profile:**
@@ -112,7 +112,7 @@ These components exist in the repository **before** the full provider catalog sh
 | `register_default_tools()` / `build_registry_from_profile()` | `intergrax/tools/registry/bootstrap.py`, `factory.py` | **Done** |
 | `RuntimeToolInvoker` | `intergrax/runtime/nexus/tools/invoker.py` | **Done** — validation, trace, error mapping |
 | `RuntimeToolGateway` | `intergrax/runtime/nexus/tools/tool_gateway.py` | **Done** — UAEP / §42.12 entry; `nexus.capability_plan` prefers `tool_ids` (e.g. `rag.retrieve`) over legacy `use_rag` booleans |
-| `ToolsAgent` (LLM planner) | `intergrax/tools/tools_agent.py` | **Done** — OpenAI schema from registry |
+| `CatalogToolPlanner` (LLM planner) | `intergrax/runtime/nexus/tools/catalog_tool_planner.py` | **Done** — OpenAI schema from registry via `ToolPlanningService` |
 | `ToolAccessPolicy` | `intergrax/runtime/nexus/tools/tool_access_policy.py` | **Done** |
 | `resolve_allowed_tools_from_config` | `intergrax/runtime/policy/tool_policy_resolution.py` | **Done** — merges `RuntimePolicyBundle.tool_access` (`StaticToolScopePolicy`) into `ToolRuntime` / gateway |
 | Legacy `ToolBase` | `intergrax/tools/tools_base.py` | **Deprecated** — use `ToolContract` (Phase O.7 Done) |
@@ -211,7 +211,7 @@ Harness lab uses **one primary** `observability_backend` (Sentry) plus **additio
 |---------------------|--------|
 | `ToolInvocationPlan.use_rag` | `tool_ids=["rag.retrieve"]` |
 | `ToolInvocationPlan.use_websearch` | `tool_ids=["websearch.query"]` |
-| `ToolInvocationPlan.use_tools` | `use_tools=True` (ToolsAgent planner over registry) |
+| `ToolInvocationPlan.use_tools` | `use_tools=True` (`CatalogToolPlanner` over registry) |
 | `LegalToolPlan.use_rag` / `use_websearch` | `tool_ids` + legacy booleans (auto-synced) |
 
 **Rule:** No new platform capability flags — ship as catalog tools. Legacy booleans emit deprecation trace when used without explicit `tool_ids`. See §7.1.7 and Phase O.5 (**Done**).
@@ -229,7 +229,7 @@ ToolRegistry (from wire_*_tools)
     → FastMCP server (alongside list_agents, run_agent)
 ```
 
-OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` — used by `ToolsAgent`.
+OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` — used by `CatalogToolPlanner` / `ToolPlanningService`.
 
 ---
 

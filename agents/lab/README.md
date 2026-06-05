@@ -1,0 +1,9 @@
+# Lab mock agents (Tier-2)
+
+**Not product agents.** These modules exist only to support `lab_application` roster experiments and gate tests.
+
+| Module | Role |
+|--------|------|
+| `mock_agents.py` | Lightweight stand-ins registered when lab settings enable mock roster entries |
+
+For real harness reference agents use `agents/echo` or `agents/signoff_probe`. See [ARCHITECTURE.md](../echo/ARCHITECTURE.md) and `docs/AGENT_CREATION_GUIDE.md`.

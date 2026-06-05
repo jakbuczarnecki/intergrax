@@ -91,6 +91,7 @@ class EnginePlan:
           "use_user_longterm_memory": bool(self.use_user_longterm_memory),
           "use_rag": bool(self.use_rag),
           "use_tools": bool(self.use_tools),
+          "tool_ids": self.resolved_tool_ids(),
       }
 
       raw = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
@@ -128,6 +129,7 @@ class EnginePlan:
           "use_user_longterm_memory": bool(self.use_user_longterm_memory),
           "use_rag": bool(self.use_rag),
           "use_tools": bool(self.use_tools),
+          "tool_ids": self.resolved_tool_ids(),
       }
     
     @classmethod
@@ -313,19 +315,41 @@ class PlannerPromptConfig:
           raise TypeError("forced_plan must be an EnginePlan")
 
 
-def BASE_PLANNER_SYSTEM_PROMPT()->str:
-    registry = YamlPromptRegistry.create_default(load=True)
-    return registry.resolve_localized(prompt_id="planner_base").system
+def _resolve_planner_prompt_registry(
+    *,
+    registry: YamlPromptRegistry | None = None,
+    catalog_path: str | None = None,
+) -> YamlPromptRegistry:
+    from intergrax.prompts.registry.prompt_registry_resolver import resolve_yaml_prompt_registry
+
+    return resolve_yaml_prompt_registry(registry=registry, catalog_path=catalog_path)
 
 
-def DEFAULT_PLANNER_SYSTEM_PROMPT()->str:
-    registry = YamlPromptRegistry.create_default(load=True)
-    return registry.resolve_localized(prompt_id="planner_default").system
+def BASE_PLANNER_SYSTEM_PROMPT(
+    *,
+    registry: YamlPromptRegistry | None = None,
+    catalog_path: str | None = None,
+) -> str:
+    reg = _resolve_planner_prompt_registry(registry=registry, catalog_path=catalog_path)
+    return reg.resolve_localized(prompt_id="planner_base").system
 
 
-def DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT()->str:
-    registry = YamlPromptRegistry.create_default(load=True)
-    localized = registry.resolve_localized(prompt_id="planner_replan_default")
+def DEFAULT_PLANNER_SYSTEM_PROMPT(
+    *,
+    registry: YamlPromptRegistry | None = None,
+    catalog_path: str | None = None,
+) -> str:
+    reg = _resolve_planner_prompt_registry(registry=registry, catalog_path=catalog_path)
+    return reg.resolve_localized(prompt_id="planner_default").system
+
+
+def DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT(
+    *,
+    registry: YamlPromptRegistry | None = None,
+    catalog_path: str | None = None,
+) -> str:
+    reg = _resolve_planner_prompt_registry(registry=registry, catalog_path=catalog_path)
+    localized = reg.resolve_localized(prompt_id="planner_replan_default")
 
     user_template = localized.user_template or ""
     system = localized.system or ""
@@ -337,11 +361,19 @@ def DEFAULT_PLANNER_REPLAN_SYSTEM_PROMPT()->str:
     return system
 
 
-def DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT()->str:
-    registry = YamlPromptRegistry.create_default(load=True)
-    return registry.resolve_localized(prompt_id="planner_next_step_rule").system
+def DEFAULT_PLANNER_NEXT_STEP_RULES_PROMPT(
+    *,
+    registry: YamlPromptRegistry | None = None,
+    catalog_path: str | None = None,
+) -> str:
+    reg = _resolve_planner_prompt_registry(registry=registry, catalog_path=catalog_path)
+    return reg.resolve_localized(prompt_id="planner_next_step_rule").system
 
 
-def DEFAULT_PLANNER_FALLBACK_CLARIFY_QUESTION()->str:
-    registry = YamlPromptRegistry.create_default(load=True)
-    return registry.resolve_localized(prompt_id="planner_fallback_clarify").system
+def DEFAULT_PLANNER_FALLBACK_CLARIFY_QUESTION(
+    *,
+    registry: YamlPromptRegistry | None = None,
+    catalog_path: str | None = None,
+) -> str:
+    reg = _resolve_planner_prompt_registry(registry=registry, catalog_path=catalog_path)
+    return reg.resolve_localized(prompt_id="planner_fallback_clarify").system

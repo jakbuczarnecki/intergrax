@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-02 (Phase V hardening; Phase W-ML modality docs; K.1/K.2 deferred)
+**Last updated:** 2026-06-02 (control-plane closeouts through EVAL Done; §6.1 maintenance)
 
 The `docs/` folder holds the canonical platform documentation.
 
@@ -12,7 +12,7 @@ The `docs/` folder holds the canonical platform documentation.
 |----------|---------|
 | [**INTERGRAX_DEVELOPMENT_STRATEGY.md**](INTERGRAX_DEVELOPMENT_STRATEGY.md) | **Strategic goal** — decision hierarchy, lab vs production harness, work cycle |
 | [**intergrax_runtime_architecture.md**](intergrax_runtime_architecture.md) | **Architecture canon** — tiers, Nexus, UAEP §42, retry (§31), observability & trace storage (§33), RAG stack (§7.1.2) |
-| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; Appendix A–I + Phase V + **Phase P-Ext** (plugin catalogs) |
+| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **§4.0a** scope split; **Phase MEM** (Band 2h, 48 tasks); **Phase AA** (Band 2g); **§6.3a** business backlog; Appendix A–I + Phase V + **Phase P-Ext** |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — all implemented providers, contracts, wiring, usage links |
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — atomic LLM/MCP tools, engine status, four-layer stack |
@@ -23,6 +23,7 @@ The `docs/` folder holds the canonical platform documentation.
 | [**../README.md**](../README.md) | **GitHub landing** — tiers, Integration/Tool/Skill/Agent stack, links to canon and plan |
 | [**LLM_ADAPTERS.md**](LLM_ADAPTERS.md) | **LLM adapter catalog** — providers, streaming, tools, env vars, Prometheus/governance |
 | [**IDEAL_HARNESS_AI_ARCHITECTURE.md**](IDEAL_HARNESS_AI_ARCHITECTURE.md) | **Target Harness AI architecture** — ideal Agent OS reference model for Integrax alignment |
+| [**ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md**](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | **Adaptive Harness Intelligence (AHI)** — L4 closed-loop architecture RFC, business case, Phase W-ADAPT roadmap |
 | [**../infra/README.md**](../infra/README.md) | **Local Docker infra** — compose profiles, `manage.sh` |
 | [**../infra/PORTS.md**](../infra/PORTS.md) | Host port matrix for integration backends |
 | **This file** | Navigation and update rules |
@@ -39,6 +40,7 @@ Modality / ML / vision    →  MODALITY.md
 Harness environment       →  HARNESS_ENVIRONMENT.md
 LLM adapters + metrics    →  LLM_ADAPTERS.md
 Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
+Adaptive Harness (L4)     →  ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md · canon §54
 ```
 
 ---
@@ -49,7 +51,26 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 |------------|------|
 | Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | Understand the platform | Strategy doc, then implementation plan §0, then architecture canon §1–§5 |
-| See what to implement next | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **§6.1 + §6.2** (harness only, including Phase V) — **not** §6.3 unless product reprioritizes |
+| Infrastructure vs business scope | [INTERGRAX_IMPLEMENTATION_PLAN.md §4.0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business) |
+| See what to implement next (harness) | [§6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) maintenance only |
+| **Agent assembly (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix N](AGENT_CREATION_GUIDE.md#appendix-n--agent-assembly-control-plane) · [Phase AS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-as--agent-assembly-control-plane-closeout) |
+| **Registry architecture (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix O](AGENT_CREATION_GUIDE.md#appendix-o--registry-architecture-control-plane) · [Phase REG](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-reg--registry-architecture-control-plane-closeout) |
+| **Capability graph (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix P](AGENT_CREATION_GUIDE.md#appendix-p--capability-graph-control-plane) · [Phase CG](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-cg--capability-graph-control-plane-closeout) |
+| **Observability wiring (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [Phase OBS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs--observability-control-plane-closeout) |
+| **Reliability wiring (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix R](AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) · [Phase REL](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-rel--reliability-control-plane-closeout) |
+| **Security wiring (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix S](AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [Phase SEC](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-sec--security-control-plane-closeout) |
+| **Cost governance (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix T](AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) · [Phase COST](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-cost--cost-governance-control-plane-closeout) |
+| **Evaluation wiring (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix U](AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) · [Phase EVAL](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-eval--evaluation-control-plane-closeout) |
+| **Policy, governance & observability (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · canon [§42.11](intergrax_runtime_architecture.md#4211-policy-engine) · [`HARNESS_ENVIRONMENT.md`](HARNESS_ENVIRONMENT.md) |
+| **Orchestration, graphs & delegation (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) · canon [§42.43](intergrax_runtime_architecture.md#4243-multi-agent-collaboration-flow-reference) · [Appendix C](AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs) |
+| **Tools & skills (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix J](AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) · [Phase TS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-ts--tools--skills-control-plane-closeout) |
+| **Integration & RAG (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix K](AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) · [Phase INT](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-int--integration-control-plane-closeout) · [Phase RAG](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-rag--rag-retrieval-control-plane-closeout) |
+| **Context engineering (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix L](AGENT_CREATION_GUIDE.md#appendix-l--context-engineering-control-plane) · [Phase CTX](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-ctx--context-engineering-control-plane-closeout) |
+| **Prompt registry (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix M](AGENT_CREATION_GUIDE.md#appendix-m--prompt-registry-control-plane) · [Phase PE](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-pe--prompt-registry-control-plane-closeout) |
+| Audit policy / observability layers | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §5, §21 · [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) |
+| Audit orchestration / graph / subagent layers | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §7–§10 · [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) |
+| Memory platform (STM/LTM/context/hooks) | [Phase MEM](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem--memory-platform-completion) · **Done** 48/48 |
+| Business / product backlog only | [§6.3a](INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated) — after explicit product decision |
 | Understand Phase V sequence/dependencies | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V — Execution matrix** |
 | See Phase V KPI thresholds | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V — KPI thresholds and acceptance metrics** |
 | See L3/L4 architecture maturity gates | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V — L3/L4 gate evidence** |
@@ -72,12 +93,13 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | RAG engine (RetrievalService, RagProfile, metrics) | Architecture §7.1.2 · Phase M-RAG in implementation plan |
 | Configure LLM providers (OpenAI, Claude, Bedrock, …) | [LLM_ADAPTERS.md](LLM_ADAPTERS.md), then architecture canon §5.2.2 |
 | Evaluate Integrax against ideal Harness AI architecture | [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) |
+| Design or implement L4 adaptive harness (closed loops) | [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · [canon §54](intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) |
 | LLM/RAG Prometheus, trace DB defaults | [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · architecture §33 |
 | Nexus retry layers | Architecture §31.1 |
 | Nexus orchestration modules | `intergrax/runtime/nexus/orchestration/` (`intake_runner`, `planning_runner`, `graph_runner`, `hitl_runner`, …) |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
 | Scaffold a new skill | `python -m intergrax.scaffold new-skill <skill_id>` |
-| Deep-dive UAEP / hooks / governance | Architecture canon §42 |
+| Deep-dive UAEP / hooks / governance | [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · canon §42 |
 
 ---
 
@@ -92,13 +114,27 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | Phase M / M-LLM / M-RAG / N / O | **Done** (beta where noted) |
 | **Phase S — Harness environment GA** | **Done** (2026-06-01) — [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) · [Appendix F](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-f--harness-environment-traceability-phase-s) |
 | **Phase T / U — Harness cleanliness + production hardening** | **Done** (2026-06-01) — [Appendix G](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-g--harness-production-audit-traceability-phase-u) |
-| **Phase V — Harness architecture hardening** | **Active** — Phase V in [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · canon §53 (`V-CG.1`, `V-AM.1`, `V-ALG.1` done) |
-| **Phase W-ML — Model & modality plane** | **Docs Done** · implementation Planned — [MODALITY.md](MODALITY.md) · canon §7.1.9 |
+| **Phase V — Harness architecture hardening** | **Done** — [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase V |
+| **Phase W-ML — Model & modality plane** | **Done** — [MODALITY.md](MODALITY.md) · canon §7.1.9 |
 | **Phase V execution controls** | **Defined** — execution matrix, KPI thresholds, cadence, ownership, L3/L4 gates in Phase V section |
 | **Harness completion (§4.1)** | **Done** (2026-06-02) |
+| **Phase AA — Agents & applications conformance** | **Platform Done** (2026-06-02) |
+| **Phase MEM — Memory platform** | **Done** (48/48) |
+| **GOV-AUDIT — Governance control plane** | **Done** (docs) — Appendix H |
+| **Phase ORCH — Orchestration closeout** | **Done** (2026-06-05) — ORCH-1→4 |
+| **Phase TS — Tools/skills closeout** | **Done** (2026-06-02) — TS-1→3 |
+| **Phase INT — Integration closeout** | **Done** (2026-06-02) — INT-1→2 |
+| **Phase RAG — RAG retrieval closeout** | **Done** (2026-06-02) — RAG-1 |
+| **Phase CTX — Context engineering closeout** | **Done** (2026-06-02) — CTX-1→2 |
+| **Phase LEG — Legacy tool plan closeout** | **Done** (2026-06-02) — LEG-1→3 |
+| **Phase PE — Prompt registry closeout** | **Done** (2026-06-02) — PE-1→3 |
+| **Phase CLEAN — Legacy module closeout** | **Done** (2026-06-02) — CLEAN-1→4 |
+| **Phase AS — Agent assembly closeout** | **Done** (2026-06-02) — AS-1→3 |
+| **Phase REG — Registry architecture closeout** | **Done** (2026-06-02) — REG-1→3 |
+| **Phase CG — Capability graph closeout** | **Done** (2026-06-02) — CG-1→3 |
 | **Phase K — Business agents** | **End of plan** — §6.3; **not** default next |
 
-Gate: `uv run pytest -m gate -q` — **481 passed** (2026-06-02)
+Gate: `uv run pytest -m gate -q` — **649 passed** (2026-06-02)
 
 Harness CI also runs: `python scripts/check_harness_no_getattr.py` (zero grandfathered paths)
 
@@ -109,9 +145,10 @@ Harness CI also runs: `python scripts/check_harness_no_getattr.py` (zero grandfa
 1. **Strategy** (goal, hierarchy, work cycle) → `INTERGRAX_DEVELOPMENT_STRATEGY.md`.
 2. **Architecture** (including observability, retry semantics, trace storage, RAG metrics) → `intergrax_runtime_architecture.md`, then sync §0 in the plan.
 3. **Status / phases / gaps** → `INTERGRAX_IMPLEMENTATION_PLAN.md` (§0, phase sections, appendices).
-4. **Agent author workflow** → `AGENT_CREATION_GUIDE.md`.
+4. **Agent author workflow** → `AGENT_CREATION_GUIDE.md` ([Appendix H — governance](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · [Appendix I — orchestration](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) · [Appendix J — tools/skills](AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) · [Appendix K — integration/RAG](AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) · [Appendix L — context engineering](AGENT_CREATION_GUIDE.md#appendix-l--context-engineering-control-plane) · [Appendix M — prompt registry](AGENT_CREATION_GUIDE.md#appendix-m--prompt-registry-control-plane)).
 5. **Integration or tool catalog changes** → `INTEGRATIONS.md` or `TOOLS.md` respectively.
 6. **Skill packs / importers** → `SKILLS.md` + plan Appendix E (and Phase S when prod proof).
 7. **Modality / vision / speech / ML** → `MODALITY.md` + canon §7.1.9 + plan Phase W-ML.
 8. **Harness AI terms** → `intergrax_runtime_architecture.md` §5.3 only (single source of truth).
-9. After each merged harness PR: run gate + getattr audit; update §0 gate count in the plan footer.
+9. **Adaptive Harness Intelligence (L4 runtime)** → `ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md` + canon §54; sync Phase W-ADAPT in implementation plan when opened.
+10. After each merged harness PR: run gate + getattr audit; update §0 gate count in the plan footer.

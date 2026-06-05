@@ -30,7 +30,7 @@ def evaluate_tool_invocation_security(
     policy: ToolInvocationPolicy,
 ) -> ToolInvocationDecision:
     reasons: list[str] = []
-    if request.tool_id not in policy.allowed_tool_ids:
+    if policy.allowed_tool_ids and request.tool_id not in policy.allowed_tool_ids:
         reasons.append(f"Tool not allowed by policy: {request.tool_id}")
 
     for key, value in request.arguments.items():

@@ -228,7 +228,7 @@ class StepPlanStepFactory:
         max_tool_calls: int = 1,
     ) -> ExecutionStep:
         """
-        Execute tool calling step via tools_agent.
+        Execute tool calling step via tool planner.
         Output: ExpectedOutputType.TOOLS_RESULTS
         """
         deps = depends_on or []
@@ -248,7 +248,7 @@ class StepPlanStepFactory:
             ),
             inputs={},
             params={
-                # Keep schema stable: executor/tools_agent will interpret this payload.
+                # Keep schema stable: executor/tool planner will interpret this payload.
                 "input": tool_input or {},
             },
             expected_output_type=ExpectedOutputType.TOOLS_RESULTS,

@@ -62,7 +62,8 @@ def wire_task_memory_from_profile(
     """Unify task memory wiring under environment memory profile (H-APP.4.4)."""
     memory = env.memory_profile
     enabled = (
-        memory.enable_user_memory
+        memory.enable_task_memory
+        or memory.enable_user_memory
         or memory.enable_org_memory
         or memory.enable_long_term_memory
     )

@@ -355,17 +355,42 @@ def wiring_py(names: ScaffoldApplicationNames) -> str:
 
 
 def environment_profile_py(names: ScaffoldApplicationNames) -> str:
-    from intergrax.scaffold.new_application import _environment_profile_py
+    pkg = names.pkg
+    short = names.short
+    pascal = names.pascal
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
 
-    body = _environment_profile_py(names)
-    return (
-        body.replace(f"{names.pascal}ApplicationSettings", f"{names.pascal}BackendSettings")
-        .replace("lab_defaults", "product_defaults")
-        .replace(f'profile_id="{names.short}.scaffold"', f'profile_id="{names.short}.product"')
-        .replace(
-            'ApplicationEnvironmentProfile.product_defaults(profile_id=',
-            'ApplicationEnvironmentProfile.product_defaults(skill_bundles=["harness"], profile_id=',
-        )
+        """Tier-3 environment profile for {pkg} (Phase H-APP.5.5, DX-5.5)."""
+
+        from __future__ import annotations
+
+        from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+        from intergrax.integrations.core.binding import IntegrationBinding
+        from intergrax.integrations.registry.catalog_manifests import OTEL
+        from {pkg}.host.settings import {pascal}BackendSettings
+
+
+        def build_{short}_environment_profile(
+            settings: {pascal}BackendSettings,
+        ) -> ApplicationEnvironmentProfile:
+            _ = settings
+            profile = ApplicationEnvironmentProfile.product_defaults(
+                skill_bundles=["harness"],
+                profile_id="{short}.product",
+            )
+            profile.observability_profile.otel_enabled = True
+            profile.observability_profile.debug_surface_override = True
+            otel_backend = IntegrationBinding.from_manifest(OTEL)
+            profile.integration_profile = profile.integration_profile.model_copy(
+                update={{
+                    "observability_backend": otel_backend,
+                    "options": {{**profile.integration_profile.options, OTEL.slug: {{}}}},
+                }},
+            )
+            return profile
+        '''
     )
 
 
@@ -465,13 +490,12 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.fastapi_core.app_factory import create_app
         from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
         from intergrax.fastapi_core.config import ApiConfig
-        from intergrax.runtime.nexus.nexus_loop import NexusLoop
-        from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+        from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
         from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
         from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
-        from {pkg}.host.integration_wiring import wire_{short}_integrations
         from {pkg}.host.settings import {pascal}BackendSettings
-        from {pkg}.host.wiring import build_{short}_registry
+        from {pkg}.host.environment_profile import build_{short}_environment_profile
+        from {pkg}.manifest import build_{short}_manifest
         from {pkg}.mcp.server import build_{short}_mcp_server
         from {pkg}.serving.fastapi_router import mount_{short}_routes
 
@@ -485,19 +509,20 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
             settings = settings or {pascal}BackendSettings.from_env()
             api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
 
-            registry = build_{short}_registry(settings)
-            observability = wire_{short}_integrations(
+            manifest = build_{short}_manifest()
+            env = manifest.environment or build_{short}_environment_profile(settings)
+            runtime = build_harness_host_runtime(
+                manifest,
+                env,
+                settings=settings,
                 trace_db_path=trace_db_path,
                 runtime_events_db_path=runtime_events_db_path,
             )
-            nexus_loop = NexusLoop(
-                registry,
-                trace_store=observability.trace_store,
-                runtime_event_store=observability.runtime_event_store,
-            )
+            nexus_loop = runtime.nexus_loop
+            registry = runtime.registry
             platform = bootstrap_nexus_platform(
                 nexus_loop,
-                trace_store=observability.trace_store,  # type: ignore[arg-type]
+                trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
             )
 
             api_cfg = ApiConfig(
@@ -540,6 +565,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 mcp = build_{short}_mcp_server(
                     nexus_loop=nexus_loop,
                     route_prefix=settings.route_prefix,
+                    tool_registry=runtime.env_wiring.tool_wiring.registry,
                 )
                 app = couple_fastapi_with_mcp(app, mcp, mount_path=settings.mcp_mount_path)
 

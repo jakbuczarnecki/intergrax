@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.tools.tool_planning_prompts import (
     planner_prompt,
     system_context_template,
@@ -25,9 +26,15 @@ class ToolPlanningConfig:
     planner_instructions: str = ""
 
     @classmethod
-    def default(cls) -> ToolPlanningConfig:
+    def default(
+        cls,
+        *,
+        registry: YamlPromptRegistry | None = None,
+        catalog_path: str | None = None,
+    ) -> ToolPlanningConfig:
+        prompt_kwargs = {"registry": registry, "catalog_path": catalog_path}
         return cls(
-            system_instructions=system_prompt(),
-            system_context_template=system_context_template(),
-            planner_instructions=planner_prompt(),
+            system_instructions=system_prompt(**prompt_kwargs),
+            system_context_template=system_context_template(**prompt_kwargs),
+            planner_instructions=planner_prompt(**prompt_kwargs),
         )

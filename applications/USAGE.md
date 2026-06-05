@@ -46,6 +46,30 @@ applications/my_lab/
 
 **Python path:** `applications/` is on `pythonpath` (`pyproject.toml`). Import as `my_lab.host.main`, not `applications.my_lab`.
 
+### Deploy triad (required per application — Phase AA)
+
+Every Tier-3 host under `applications/<app>/` must ship:
+
+| Piece | Path | Notes |
+|-------|------|--------|
+| **Docker** | `docker/Dockerfile`, `docker-compose.yml`, `build-docker.sh` / `.bat` | Image build from repo root context |
+| **Deploy doc** | `BUILD_AND_DEPLOY.md` | From scaffold `render_build_deploy_doc` or kept in sync manually |
+| **Dependencies** | `ARCHITECTURE.md` § Dependencies | Which `pyproject.toml` extras apply (`harness-author`, `llm-*`, `dev-ci`, …) |
+
+Gate: `tests/unit/applications/test_application_deploy_triad.py`.
+
+**Scaffold default vs `--full`:** `python -m intergrax.scaffold new-application …` emits H-APP `factory.py` + `environment_profile.py` without `integration_wiring.py` / `tool_wiring.py`. Use `--full` only when custom catalog wiring is required.
+
+### Progressive disclosure (Phase DX-0.4)
+
+| Stage | How | Notes |
+|-------|-----|-------|
+| **Minimal** | `python -m intergrax.scaffold new-stack <name> --profile lab --minimal` | Harness-only factory; skip Docker/MCP until promoted |
+| **Standard** | `new-stack` or `new-application` without `--minimal` | Full lab/product scaffold (Docker, MCP, deploy doc) |
+| **Promote** | `python -m intergrax.scaffold expand <app_slug>` | Upgrade minimal lab tree to standard layout |
+
+Author path: [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md) Step 4E § E.0.
+
 ---
 
 ## How to define an application

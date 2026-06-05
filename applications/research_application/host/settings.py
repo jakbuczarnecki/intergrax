@@ -44,11 +44,7 @@ class ResearchBackendSettings:
 
     @classmethod
     def from_env(cls) -> ResearchBackendSettings:
-        use_legacy = _env_bool("RESEARCH_USE_LEGACY_AGENT_ENGINE", False)
-        if os.environ.get("RESEARCH_USE_NEXUS_LOOP") is not None:
-            use_nexus_loop = _env_bool("RESEARCH_USE_NEXUS_LOOP")
-        else:
-            use_nexus_loop = not use_legacy
+        use_nexus_loop = _env_bool("RESEARCH_USE_NEXUS_LOOP", default=True)
         include_mcp = _env_bool("RESEARCH_INCLUDE_MCP", default=True)
         mcp_mount = os.environ.get("RESEARCH_MCP_MOUNT_PATH", "/mcp").strip() or "/mcp"
         enable_websearch = _env_bool("RESEARCH_ENABLE_WEBSEARCH", default=True)

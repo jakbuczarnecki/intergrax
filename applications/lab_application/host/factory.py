@@ -23,16 +23,15 @@ from intergrax.applications._shared.fastapi_mcp import (
     couple_fastapi_with_mcp,
     make_scheduler_lifespan,
 )
-from lab_application.host.integration_wiring import wire_lab_integrations
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.tool_wiring import wire_lab_tools
-from lab_application.host.wiring import build_lab_registry
+from lab_application.host.wiring import bootstrap_lab_integration_wiring, build_lab_registry
 from lab_application.mcp.server import build_lab_mcp_server
 from intergrax.applications._shared.task_defaults import make_lab_harness_task_enricher
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
-from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
-from intergrax.applications._shared.task_memory_wiring import wire_task_memory_from_profile
+from lab_application.manifest import build_lab_manifest
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.harness_auth import (
     apply_harness_auth_middleware,
@@ -71,7 +70,7 @@ def create_lab_application(
             "INTERGRAX_HARNESS_API_KEY is required when INTERGRAX_ENV is stage/prod "
             "or LAB_STRICT_HARNESS=true (Phase W-OPS.7)."
         )
-    integrations = wire_lab_integrations(
+    integrations = bootstrap_lab_integration_wiring(
         settings=settings,
         db_path=db_path,
         experiments_db_path=experiments_db_path,
@@ -80,23 +79,27 @@ def create_lab_application(
         harness=settings.harness,
         otel_enabled=settings.otel_enabled,
     )
-    lab_env = build_lab_environment_profile(settings)
+    manifest = build_lab_manifest(settings)
+    lab_env = manifest.environment or build_lab_environment_profile(settings)
+    if manifest.environment is None:
+        manifest = manifest.model_copy(update={"environment": lab_env})
     resolved_registry = registry or build_lab_registry(
         settings=settings,
         integration_profile=integrations.profile,
         trace_db_path=integrations.trace_db_path,
     )
-    task_memory = wire_task_memory_from_profile(lab_env, warn_if_disabled=settings.harness)
-    nexus_loop = build_nexus_loop_from_environment(
-        resolved_registry,
-        env=lab_env,
-        trace_store=integrations.trace_store,
+    runtime = build_harness_host_runtime(
+        manifest,
+        lab_env,
+        settings=settings,
+        trace_db_path=integrations.trace_db_path,
+        runtime_events_db_path=integrations.runtime_events_db_path,
+        checkpoints_db_path=integrations.checkpoints_db_path,
+        registry=resolved_registry,
         checkpoint_store=integrations.checkpoint_store,
         notification_adapter=integrations.notification_adapter,
-        runtime_events_db_path=integrations.runtime_events_db_path,
-        task_memory_store=task_memory.store,
-        task_memory_db_path=task_memory.db_path,
     )
+    nexus_loop = runtime.nexus_loop
     plugin_bootstrap = bootstrap_nexus_platform(
         nexus_loop,
         trace_store=integrations.trace_store,  # type: ignore[arg-type]
