@@ -15,7 +15,7 @@ def _research_environment() -> ApplicationEnvironmentProfile:
     return ApplicationEnvironmentProfile.product_defaults(
         profile_id="research.product",
         skill_bundles=["research"],
-    ).model_copy(update={"integration_profile": IntegrationProfile.research_product()})
+    ).model_copy(update={"integration_profile": IntegrationProfile.research_product()}).with_harness_memory()
 
 
 RESEARCH_APPLICATION_MANIFEST = ApplicationManifest.product(

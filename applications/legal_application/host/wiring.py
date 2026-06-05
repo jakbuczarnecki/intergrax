@@ -58,7 +58,7 @@ def build_legal_environment_profile(settings: LegalBackendSettings) -> Applicati
             "integration_profile": LEGAL_APPLICATION_MANIFEST.integration_profile,
             "modality_profile": modality_profile,
         },
-    )
+    ).with_harness_memory()
 
 
 def build_legal_registry(settings: LegalBackendSettings) -> AgentRegistry:

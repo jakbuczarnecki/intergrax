@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-02 (§6.1 maintenance; MEM-PERS.2 Mongo LTM path; gate **561**; operational L3 signed off)
+**Last updated:** 2026-06-02 (reference hosts memory; gate **567**; §6.1 maintenance)
 
 The `docs/` folder holds the canonical platform documentation.
 
@@ -95,15 +95,15 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | Phase M / M-LLM / M-RAG / N / O | **Done** (beta where noted) |
 | **Phase S — Harness environment GA** | **Done** (2026-06-01) — [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) · [Appendix F](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-f--harness-environment-traceability-phase-s) |
 | **Phase T / U — Harness cleanliness + production hardening** | **Done** (2026-06-01) — [Appendix G](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-g--harness-production-audit-traceability-phase-u) |
-| **Phase V — Harness architecture hardening** | **Active** — Phase V in [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · canon §53 (`V-CG.1`, `V-AM.1`, `V-ALG.1` done) |
-| **Phase W-ML — Model & modality plane** | **Docs Done** · implementation Planned — [MODALITY.md](MODALITY.md) · canon §7.1.9 |
+| **Phase V — Harness architecture hardening** | **Done** — [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase V |
+| **Phase W-ML — Model & modality plane** | **Done** — [MODALITY.md](MODALITY.md) · canon §7.1.9 |
 | **Phase V execution controls** | **Defined** — execution matrix, KPI thresholds, cadence, ownership, L3/L4 gates in Phase V section |
 | **Harness completion (§4.1)** | **Done** (2026-06-02) |
 | **Phase AA — Agents & applications conformance** | **Platform Done** (2026-06-02) |
-| **Phase MEM — Memory platform** | **Done** (48/48, gate 561) |
+| **Phase MEM — Memory platform** | **Done** (48/48, gate 567) |
 | **Phase K — Business agents** | **End of plan** — §6.3; **not** default next |
 
-Gate: `uv run pytest -m gate -q` — **481 passed** (2026-06-02)
+Gate: `uv run pytest -m gate -q` — **567 passed** (2026-06-02)
 
 Harness CI also runs: `python scripts/check_harness_no_getattr.py` (zero grandfathered paths)
 

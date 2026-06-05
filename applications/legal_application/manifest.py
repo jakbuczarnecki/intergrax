@@ -16,7 +16,7 @@ def _legal_environment() -> ApplicationEnvironmentProfile:
     return ApplicationEnvironmentProfile.product_defaults(
         profile_id="legal.product",
         skill_bundles=["legal"],
-    ).model_copy(update={"integration_profile": IntegrationProfile.legal_product()})
+    ).model_copy(update={"integration_profile": IntegrationProfile.legal_product()}).with_harness_memory()
 
 
 LEGAL_APPLICATION_MANIFEST = ApplicationManifest.product(

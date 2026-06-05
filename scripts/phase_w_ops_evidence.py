@@ -144,6 +144,15 @@ def collect_operational_checks() -> OperationalMaturityEvidence:
             detail="SLO catalog in HARNESS_ENVIRONMENT.md (W-OPS.4)",
         ),
         OperationalHarnessCheck(
+            check_id="memory_platform_gate",
+            passed=_run_pytest(
+                "tests/unit/applications/test_memory_wiring.py",
+                "tests/unit/applications/test_memory_profile_runtime_bridge.py",
+                "tests/unit/applications/test_reference_hosts_memory_bridge.py",
+            ),
+            detail="H-APP memory bridge + reference host wiring (MEM closeout)",
+        ),
+        OperationalHarnessCheck(
             check_id="release_cycles",
             passed=release_cycles >= 2,
             detail=f"W_OPS_RELEASE_CYCLES={release_cycles} (need >= 2 for operational L3)",

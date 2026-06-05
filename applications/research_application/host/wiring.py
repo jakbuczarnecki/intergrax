@@ -26,7 +26,7 @@ def build_research_environment_profile(
         profile_id="research.product",
         skill_bundles=["research"],
         tool_ids=enabled_tools,
-    ).model_copy(update={"integration_profile": manifest.integration_profile})
+    ).model_copy(update={"integration_profile": manifest.integration_profile}).with_harness_memory()
 
 
 def build_research_registry(

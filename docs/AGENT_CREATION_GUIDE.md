@@ -1071,7 +1071,7 @@ Use **session** for turn-by-turn chat; **task KV** for per-run agent scratch sta
 |-------|-----------|----------------------|-------|
 | Task KV | tests | `INTERGRAX_TASK_MEMORY_DB` | `wire_task_memory_from_profile` |
 | Session | fallback | sqlite bundle | `memory_wiring.resolve_memory_platform_wiring` |
-| User LTM | tests | `intergrax_user_profile.db` in bundle | `SQLiteUserProfileStore` |
+| User LTM | tests | `intergrax_user_profile.db` in bundle | `SQLiteUserProfileStore`; optional Mongo `DocumentStoreUserProfileStore` |
 | Org profile | tests | sqlite bundle | `SQLiteOrganizationProfileStore` |
 | Redis | — | — | **Integration cache only** — not session/LTM |
 
@@ -1118,7 +1118,7 @@ Organization memory in Intergrax is **profile + instructions** (`OrganizationPro
 | Task KV | `TaskMemory` (`INTERGRAX_TASK_MEMORY_DB`) | Per-task scratch state, UAEP steps |
 | Shared graph context | `shared_task_context` metadata | Multi-agent handoff on one Nexus task |
 
-Enable SQLite task memory in Tier-3 via `wire_task_memory_from_profile` and `memory_wiring` (Phase MEM). Lab `ApplicationEnvironmentProfile` enables task + user + org memory by default.
+Enable SQLite task memory in Tier-3 via `wire_task_memory_from_profile` and `memory_wiring` (Phase MEM). Lab, `poc_template`, `legal_application`, and `research_application` reference hosts call `ApplicationEnvironmentProfile.with_harness_memory()` (or `lab_defaults`) so `MemoryProfile` drives `RuntimeConfig`.
 
 ### Three “context builders”
 

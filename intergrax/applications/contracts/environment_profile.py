@@ -181,6 +181,20 @@ class ApplicationEnvironmentProfile(BaseModel):
     domain_policy_fragments: dict[str, Any] = Field(default_factory=dict)
 
     @classmethod
+    def harness_memory_profile(cls) -> MemoryProfile:
+        """STM/LTM/task memory flags for harness reference hosts (Phase MEM)."""
+        return MemoryProfile(
+            enable_user_memory=True,
+            enable_org_memory=True,
+            enable_long_term_memory=True,
+            enable_task_memory=True,
+        )
+
+    def with_harness_memory(self) -> ApplicationEnvironmentProfile:
+        """Return a copy with harness memory flags enabled (sqlite-backed hosts)."""
+        return self.model_copy(update={"memory_profile": self.harness_memory_profile()})
+
+    @classmethod
     def lab_defaults(
         cls,
         *,
@@ -221,12 +235,7 @@ class ApplicationEnvironmentProfile(BaseModel):
             modality_profile=lab_default_modality_profile(),
             llm_profile=LLMProfile.lab(),
             context_profile=ContextProfile(enable_rag=True, enable_websearch=True),
-            memory_profile=MemoryProfile(
-                enable_user_memory=True,
-                enable_org_memory=True,
-                enable_long_term_memory=True,
-                enable_task_memory=True,
-            ),
+            memory_profile=cls.harness_memory_profile(),
             reliability_profile=ReliabilityProfile(
                 long_running_scheduler_enabled=True,
                 idempotency_enabled=True,

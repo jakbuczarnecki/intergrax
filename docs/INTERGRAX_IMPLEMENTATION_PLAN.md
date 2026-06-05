@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Harness platform bands 1–2h Done** (Q→V, P-Ext, W-ML, **W-OPS**, **H-APP**, **DX**, **AA**, **MEM** 48/48); **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **561 passed**; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
+Status: Working draft (2026-06-02) — **Harness platform bands 1–2h Done** (Q→V, P-Ext, W-ML, **W-OPS**, **H-APP**, **DX**, **AA**, **MEM** 48/48); **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **567 passed**; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -153,8 +153,8 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Harness architecture hardening (Phase V)** | **Done** | No (harness-only) | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics/MA/KG hardening |
 | **Operational harness L3 (Phase W-OPS)** | **Done** (code) | No (harness-only) | Ops sign-off: `release_cycles.json` or `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce` |
 | **Application environment profile (Phase H-APP)** | **Done** (2026-06-03) | No (harness-only) | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7 — 43 tasks; memory bridge gap → [Phase MEM](#phase-mem--memory-platform-completion) |
-| **Memory platform (Phase MEM)** | **Done** (~3,5/5 post-closeout) | No (harness-only) | Memory platform **48/48** — gate **561** |
-| Regression gate | **561 passed** | No | Must stay green after each harness PR |
+| **Memory platform (Phase MEM)** | **Done** (~3,5/5 post-closeout) | No (harness-only) | Memory platform **48/48** — gate **567** |
+| Regression gate | **567 passed** | No | Must stay green after each harness PR |
 
 ---
 
@@ -192,7 +192,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Harness quality (Phase Q) | **Done** | Appendix C — gate **417** at Phase Q close |
 | Harness hardening (Phase Q+) | **Done** | Appendix D — typing, monolith splits, zero grandfathered `getattr` |
 | Harness AI alignment (Phase R MVP) | **Done** | Appendix E — Skill Library, context, delegation, policy bundle |
-| Regression gate | **561 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
+| Regression gate | **567 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
 | Harness environment GA (Phase S) | **Done** (2026-06-01) | S-H.* + S-Ops + S-Doc |
 | Harness cleanliness (Phase T) | **Done** (2026-06-01) | T-Ops + T-H |
 | Harness production hardening (Phase U) | **Done** | Appendix G audit → U.* (U-Leg residual) |
@@ -2959,7 +2959,7 @@ See [§6.1z](#61z-harness-implementation-queue-consolidated). **Do not schedule*
 
 ## Phase MEM — Memory Platform Completion
 
-**Status:** **Done** (2026-06-02) — **48/48** deliverables; gate **561 passed**.  
+**Status:** **Done** (2026-06-02) — **48/48** deliverables; gate **567 passed**.  
 **Prerequisites:** Phases **I** (TaskMemory), **R-Context**, **H-APP** (profile models), **DX-5.7** (ops:memory hints) **Done**; **H-APP.4.3** closed via **MEM-1.***.  
 **Goal:** Close every gap from the **memory platform audit** — short-term session, user/org LTM, task KV, context compression, H-APP→runtime wiring, persistence, recovery, observability, developer hooks, and market-parity documentation — **without** Band 3 product agents (K.1/K.2) or Mem0-like SaaS product layer (MEM-8 deferred P3).  
 **Priority ladder:** **Band 2h** (§4.0) — **default implementation queue** after §6.1 maintenance.  
@@ -3187,8 +3187,8 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 
 | Date | ID | Notes |
 |------|-----|-------|
-| 2026-06-02 | MEM-1.*–MEM-9.* | Phase MEM **48/48 Done**; H-APP.4.3 **Done**; gate **561** |
-| 2026-06-02 | §6.1 post-MEM | MEM-PERS.2 Mongo `DocumentStoreUserProfileStore`; hatchling CLI install; CI `check_plugin_catalog`; release cycle `mem-platform-2026-06-02` |
+| 2026-06-02 | MEM-1.*–MEM-9.* | Phase MEM **48/48 Done**; H-APP.4.3 **Done**; gate **567** |
+| 2026-06-02 | §6.1 reference hosts | `with_harness_memory()` on legal/research; gate `test_reference_hosts_memory_bridge`; W-OPS memory_platform_gate |
 | 2026-06-02 | MEM-0.1–MEM-0.2, MEM-PAR.1, MEM-CHk.1, MEM-PERS.1 | Memory audit → Phase MEM register in plan |
 | 2026-06-02 | MEM-OBS.2 | Baseline already **Done** (DX-5.7) |
 
@@ -3557,7 +3557,7 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 |-------|---------|
 | **Canonical implementation queue (infrastructure)** | [§6.1aa](#61aa-harness-implementation-queue-memory-platform) · [§6.1z](#61z-harness-implementation-queue-consolidated) (closed) |
 | Ongoing gate + audit scripts | [§6.1](#61-harness-platform-maintenance-default--band-1) |
-| Memory platform (default next) | [Phase MEM](#phase-mem--memory-platform-completion) · [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active) |
+| Memory platform (Done — §6.1 maintenance) | [Phase MEM](#phase-mem--memory-platform-completion) · [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active) |
 | All business / domain work | [§6.3](#63-end-of-plan--deferred-product-work-only) · [Business backlog register](#63a-business-backlog-register-consolidated) |
 
 ### 4.1 Harness completion backlog (execution order)
@@ -4923,4 +4923,4 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-02). **Harness baseline complete** (Q–V + P-Ext + W-ML + W-OPS + H-APP + DX + AA + MEM). Gate: **561 passed**. **Default next:** **§6.1** maintenance only; operational L3 **signed off** (`release_cycles.json` ≥2). P-Ext **Done** (61/61). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
+*Plan synced (2026-06-02). **Harness baseline complete** (Q–V + P-Ext + W-ML + W-OPS + H-APP + DX + AA + MEM). Gate: **567 passed**. **Default next:** **§6.1** maintenance only; operational L3 **signed off** (`release_cycles.json` ≥2). P-Ext **Done** (61/61). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
