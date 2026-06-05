@@ -1174,7 +1174,7 @@ Verify that every important runtime decision and action is traceable, measurable
 Observability Score: L0-L4
 ```
 
-**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix H §H.5](AGENT_CREATION_GUIDE.md#h5-observability--what-is-mandatory-vs-optional) (mandatory vs optional signals); [`HARNESS_ENVIRONMENT.md`](HARNESS_ENVIRONMENT.md#otlp--observability-s-ops2) (OTLP / lab debug APIs); canon [§42.1](intergrax_runtime_architecture.md#421-runtimeevent-contract) (event catalog).
+**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix H §H.5](AGENT_CREATION_GUIDE.md#h5-observability--what-is-mandatory-vs-optional) (mandatory vs optional signals); [`AGENT_CREATION_GUIDE.md` Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) (wire-time profile bridge + assembly validation); [`HARNESS_ENVIRONMENT.md`](HARNESS_ENVIRONMENT.md#otlp--observability-s-ops2) (OTLP / lab debug APIs); canon [§42.1](intergrax_runtime_architecture.md#421-runtimeevent-contract) (event catalog). **Closeout:** [Phase OBS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs--observability-control-plane-closeout) **Done** (OBS-DOC.*).
 
 ---
 

@@ -367,6 +367,8 @@ def environment_profile_py(names: ScaffoldApplicationNames) -> str:
         from __future__ import annotations
 
         from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+        from intergrax.integrations.core.binding import IntegrationBinding
+        from intergrax.integrations.registry.catalog_manifests import OTEL
         from {pkg}.host.settings import {pascal}BackendSettings
 
 
@@ -380,6 +382,13 @@ def environment_profile_py(names: ScaffoldApplicationNames) -> str:
             )
             profile.observability_profile.otel_enabled = True
             profile.observability_profile.debug_surface_override = True
+            otel_backend = IntegrationBinding.from_manifest(OTEL)
+            profile.integration_profile = profile.integration_profile.model_copy(
+                update={{
+                    "observability_backend": otel_backend,
+                    "options": {{**profile.integration_profile.options, OTEL.slug: {{}}}},
+                }},
+            )
             return profile
         '''
     )

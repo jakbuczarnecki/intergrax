@@ -74,6 +74,7 @@ jobs:
           && uv run python scripts/check_agent_skill_resolution.py
           && uv run python scripts/check_harness_registry_resolution.py
           && uv run python scripts/check_harness_capability_graph_wiring.py
+          && uv run python scripts/check_harness_observability_wiring.py
           && uv run python scripts/check_legacy_tool_plan_booleans.py
           && uv run python scripts/check_plugin_catalog.py
           && uv run python scripts/check_scaffold_harness_alignment.py
@@ -132,6 +133,7 @@ jobs:
           && uv run python scripts/check_agent_skill_resolution.py
           && uv run python scripts/check_harness_registry_resolution.py
           && uv run python scripts/check_harness_capability_graph_wiring.py
+          && uv run python scripts/check_harness_observability_wiring.py
           && uv run python scripts/check_legacy_tool_plan_booleans.py
           && uv run python scripts/check_plugin_catalog.py
           && uv run python scripts/check_agent_registry_bypass.py

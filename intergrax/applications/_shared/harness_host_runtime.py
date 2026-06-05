@@ -20,7 +20,11 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores, wire_nexus_observability
+from intergrax.applications._shared.observability_assembly_resolver import (
+    assert_observability_assembly_valid,
+)
+from intergrax.applications._shared.observability_wiring import wire_application_observability
+from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 
@@ -70,12 +74,25 @@ def build_harness_host_runtime(
         env_wiring.build_context,
         builders=builders,
     )
-    observability = wire_nexus_observability(
+    observability_wiring = wire_application_observability(
+        environment,
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
         integration_profile=environment.integration_profile,
-        use_in_memory_trace=use_in_memory_trace,
     )
+    if use_in_memory_trace:
+        from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
+
+        observability = wire_nexus_observability(
+            trace_db_path=trace_db_path,
+            runtime_events_db_path=runtime_events_db_path,
+            integration_profile=environment.integration_profile,
+            use_in_memory_trace=True,
+            enable_runtime_events=False,
+        )
+    else:
+        assert_observability_assembly_valid(observability_wiring, environment)
+        observability = observability_wiring.stores
     task_memory = wire_task_memory_from_profile(environment)
     nexus_loop = build_nexus_loop_from_environment(
         resolved_registry,

@@ -42,8 +42,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 26. [Appendix N — Agent assembly control plane](#appendix-n--agent-assembly-control-plane)
 27. [Appendix O — Registry architecture control plane](#appendix-o--registry-architecture-control-plane)
 28. [Appendix P — Capability graph control plane](#appendix-p--capability-graph-control-plane)
-29. [Anti-patterns](#anti-patterns)
-30. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+29. [Appendix Q — Observability control plane closeout](#appendix-q--observability-control-plane-closeout)
+30. [Anti-patterns](#anti-patterns)
+31. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -2054,6 +2055,71 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 
 ---
 
+## Appendix Q — Observability control plane closeout
+
+**Audience:** Tier-3 application authors, platform engineers, release/ops.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §21; Phase OBS **Done**; complements [Appendix H §H.5](#h5-observability--what-is-mandatory-vs-optional) (mandatory vs optional signals).
+
+Tier-3 hosts must materialize Nexus trace stores, runtime event journals, and integration observability backends from typed `ObservabilityProfile` — not ad-hoc `wire_nexus_observability()` calls in host factories.
+
+### Q.1 Design principles (Harness audit)
+
+| Principle | Meaning in Intergrax |
+|-----------|----------------------|
+| Profile-driven | `ObservabilityProfile` on `ApplicationEnvironmentProfile` |
+| Wire-time validation | `observability_assembly_resolver` at `build_harness_host_runtime` |
+| Typed bridge | `ObservabilityWiringOptions` maps profile → `wire_nexus_observability` flags |
+| Integration coupling | `otel_enabled` requires `IntegrationProfile.observability_backend` |
+| Single host path | `wire_application_observability` + `assert_observability_assembly_valid` |
+
+### Q.2 Observability wiring map
+
+```text
+ApplicationEnvironmentProfile (Tier-3)
+  └── observability_profile
+        ├── trace_sqlite_enabled  → SQLite trace + runtime event journal
+        ├── otel_enabled          → IntegrationProfile.observability_backend (otel, prometheus, …)
+        ├── metrics_plugins_enabled → platform_wiring LLM/RAG plugins (lab default)
+        └── debug_surface_override  → Tier-3 debug API posture
+
+wire_application_observability() (Tier-3)
+  └── observability_runtime_bridge.py
+        ├── resolve_observability_wiring_options()
+        └── apply_observability_profiles_from_environment() → RuntimeConfig
+
+build_harness_host_runtime() (Tier-3)
+  └── observability_wiring.py + observability_assembly_resolver.py
+        └── NexusObservabilityStores → NexusLoop(trace_store, runtime_events_db_path)
+
+Release / CI
+  └── check_harness_observability_wiring.py
+  └── test_harness_observability_wiring.py
+```
+
+### Q.3 Core contracts
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `ObservabilityProfile` | `contracts/environment_profile.py` | Author-facing observability flags |
+| `ObservabilityWiringOptions` | `observability_runtime_bridge.py` | Profile → wiring flags |
+| `ApplicationObservabilityWiring` | `observability_wiring.py` | Resolved stores + options |
+| `ObservabilityAssemblyValidationResult` | `observability_assembly_resolver.py` | Wire-time conformance |
+| `NexusObservabilityStores` | `runtime/nexus/observability_wiring.py` | Trace + event journal handles |
+
+### Q.4 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Profile → wiring bridge | `pytest tests/unit/applications/test_harness_observability_wiring.py -m gate` |
+| Host observability materialization | `python scripts/check_harness_observability_wiring.py` |
+| Lab OTLP / debug APIs | [`HARNESS_ENVIRONMENT.md`](HARNESS_ENVIRONMENT.md#otlp--observability-s-ops2) |
+| Mandatory vs optional signals | [Appendix H §H.5](#h5-observability--what-is-mandatory-vs-optional) |
+| Full gate | `uv run pytest -m gate -q` |
+
+Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §21: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -2086,6 +2152,7 @@ Run before opening a harness PR (see `scripts/`):
 | `check_agent_skill_resolution.py` | Tier-2 agents do not pre-populate `allowed_tools`; skills resolve at register |
 | `check_harness_registry_resolution.py` | Tier-3 hosts wire catalogs via `wire_application_environment` / `build_harness_host_runtime` |
 | `check_harness_capability_graph_wiring.py` | Hosts materialize environment capability graph at wire time |
+| `check_harness_observability_wiring.py` | Hosts wire observability stores from `ObservabilityProfile` |
 | `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |
 | `check_integration_vendor_imports.py` | Tier-0 does not import application/agent trees incorrectly |
 | `check_production_chat_agent_imports.py` | No `ChatAgent` on production paths |
@@ -2113,4 +2180,5 @@ When asked to create a new Intergrax agent:
 14. For agent contract assembly, skills, and lifecycle, read [Appendix N](#appendix-n--agent-assembly-control-plane) — declare `skills` on `AgentContract`, not raw `allowed_tools`.
 15. For registry wiring and catalog resolution, read [Appendix O](#appendix-o--registry-architecture-control-plane) — enable profiles on environment, not direct `ToolRegistry()` in hosts.
 16. For capability graph lineage and blast-radius, read [Appendix P](#appendix-p--capability-graph-control-plane) — environment graph is built at wire time from catalog baseline.
-17. Do **not** create duplicate workflow documentation — update this file if the process changes.
+17. For observability wiring and assembly validation, read [Appendix Q](#appendix-q--observability-control-plane-closeout) — configure `ObservabilityProfile`, not direct `wire_nexus_observability()` in hosts.
+18. Do **not** create duplicate workflow documentation — update this file if the process changes.

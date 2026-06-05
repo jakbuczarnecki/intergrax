@@ -17,6 +17,9 @@ from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.applications._shared.rag_runtime_bridge import apply_rag_for_environment
 from intergrax.applications._shared.context_runtime_bridge import apply_context_profiles_from_environment
 from intergrax.applications._shared.memory_runtime_bridge import apply_memory_profile_to_runtime_config
+from intergrax.applications._shared.observability_runtime_bridge import (
+    apply_observability_profiles_from_environment,
+)
 from intergrax.applications._shared.prompt_runtime_bridge import apply_prompt_profiles_from_environment
 from intergrax.applications._shared.prompt_wiring import resolve_prompt_registry
 from intergrax.applications._shared.memory_wiring import (
@@ -108,6 +111,7 @@ def materialize_runtime_config(
         config.pipeline = pipeline
     apply_memory_profile_to_runtime_config(config, env.memory_profile)
     apply_prompt_profiles_from_environment(config, env)
+    apply_observability_profiles_from_environment(config, env)
     apply_context_profiles_from_environment(config, env)
     apply_integration_profiles_from_environment(config, env)
     apply_catalog_profiles_from_environment(config, env)
