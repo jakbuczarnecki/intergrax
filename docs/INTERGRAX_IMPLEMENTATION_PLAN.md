@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Harness platform bands 1–2n Done**; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; **Orchestration (ORCH)**, **Tools/skills (TS)**, **Integration (INT)**, **RAG closeout (RAG) Done**; **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **608 passed**; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
+Status: Working draft (2026-06-02) — **Harness platform bands 1–2o Done**; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; **Orchestration (ORCH)**, **Tools/skills (TS)**, **Integration (INT)**, **RAG closeout (RAG) Done**; **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **612 passed**; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -3587,6 +3587,7 @@ Paydown Wave P3 (optional polish):
 | **2l — Integration closeout (INT)** | `integration_runtime_bridge`, bootstrap health probes, Appendix K — **no** business agents | **Done** (2026-06-02) | [Phase INT](#phase-int--integration-control-plane-closeout) · **§6.1d** · **§6.2bd** |
 | **2m — RAG closeout (RAG)** | `rag_runtime_bridge`, RAG stack on environment wire — **no** business agents | **Done** (2026-06-02) | [Phase RAG](#phase-rag--rag-retrieval-control-plane-closeout) · **§6.1e** · **§6.2be** |
 | **2n — Context engineering closeout (CTX)** | `context_runtime_bridge`, `context_wiring`, Nexus `ContextManager` wire — **no** business agents | **Done** (2026-06-02) | [Phase CTX](#phase-ctx--context-engineering-control-plane-closeout) · **§6.1f** · **§6.2bf** |
+| **2o — Legacy tool plan closeout (LEG)** | `tool_ids` canonical path; gateway/engine planner migration — **no** business agents | **Done** (2026-06-02) | [Phase LEG](#phase-leg--legacy-tool-plan-boolean-closeout) · **§6.1h** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -3608,6 +3609,7 @@ BAND 2k: Tools/skills closeout — Phase TS (§6.1c) — DONE (TS-1 → TS-3)
 BAND 2l: Integration closeout — Phase INT (§6.1d) — DONE (INT-1 → INT-2)
 BAND 2m: RAG closeout — Phase RAG (§6.1e) — DONE (RAG-1)
 BAND 2n: Context engineering closeout — Phase CTX (§6.1f) — DONE (CTX-1 → CTX-2)
+BAND 2o: Legacy tool plan closeout — Phase LEG (§6.1h) — DONE (LEG-1 → LEG-3)
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
 DONE:    Harness completion backlog (§4.1) — 2026-06-02
@@ -3829,7 +3831,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ## Phase INT — Integration control plane closeout
 
-**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (INT-DOC.* + INT-1–2); gate **608 passed**
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (INT-DOC.* + INT-1–2); gate **612 passed**
 
 **Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §13; author map: `AGENT_CREATION_GUIDE.md` **Appendix K**.
 
@@ -3859,7 +3861,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ## Phase RAG — RAG retrieval control plane closeout
 
-**Status:** **Done** (2026-06-02) — **3/3** deliverables Done (RAG-DOC.* + RAG-1); gate **608 passed**
+**Status:** **Done** (2026-06-02) — **3/3** deliverables Done (RAG-DOC.* + RAG-1); gate **612 passed**
 
 **Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §14; author map: **Appendix K** §K.5.
 
@@ -3887,7 +3889,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ## Phase CTX — Context engineering control plane closeout
 
-**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (CTX-DOC.* + CTX-1–2); gate **608 passed**
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (CTX-DOC.* + CTX-1–2); gate **612 passed**
 
 **Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §16; author map: `AGENT_CREATION_GUIDE.md` **Appendix L**.
 
@@ -3915,9 +3917,29 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ---
 
+## Phase LEG — Legacy tool plan boolean closeout
+
+**Status:** **Done** (2026-06-02) — **3/3** deliverables Done (LEG-1–2); gate **612 passed**
+
+**Audit basis:** Phase O.5a residual; `check_legacy_tool_plan_booleans.py`; Appendix J §J.6.
+
+**Priority ladder:** **Band 2o** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+### LEG — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| LEG-1 | LEG1 | **`tool_invocation_plan_from_capability_payload`** — gateway maps booleans → `tool_ids` without `from_legacy` | **Done** | `tool_runtime.py`, `tool_gateway.py` | `test_capability_payload_tool_plan.py` |
+| LEG-2 | LEG2 | **Engine planner `tool_ids`** — parser populates `EnginePlan.tool_ids`; schema optional `tool_ids` | **Done** | `engine_planner_parse.py`, `engine_planner_messages.py` | `test_engine_plan_json_parser.py` |
+| LEG-3 | LEG3 | **`plan_from_like` canonical path** — `from_tool_ids` only; `tool_gateway` removed from audit grandfather | **Done** | `tool_runtime.py`, `check_legacy_tool_plan_booleans.py` | audit script green |
+
+**Residual:** `ToolInvocationPlan.from_legacy()` retained in `tool_runtime.py` for explicit deprecation tests only; `EnginePlan.use_rag`/`use_websearch` remain on LLM schema for backward-compatible planner output.
+
+---
+
 ## 6. What to implement next
 
-**Default answer (infrastructure only):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** — keep gate green. Phase CTX **Done**. Phase INT + RAG **Done**. Phase TS **Done**. Phase ORCH **Done**. GOV-AUDIT **Done**. Phase V-REM **Done**. Phase MEM **Done** (48/48). Product work gated by [§6.3](#63-product--business-scope-gate).
+**Default answer (infrastructure only):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** — keep gate green. Phase LEG **Done**. Phase CTX **Done**. Phase INT + RAG **Done**. Phase TS **Done**. Phase ORCH **Done**. GOV-AUDIT **Done**. Phase V-REM **Done**. Phase MEM **Done** (48/48). Product work gated by [§6.3](#63-product--business-scope-gate).
 
 **Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](#63a-business-backlog-register-consolidated)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
 
@@ -5428,4 +5450,4 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-02). **Harness platform** bands 1–2n **Done**; GOV-AUDIT + Phase ORCH + TS + INT + RAG + CTX **closed**. Gate: **608 passed**. **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance. Product work gated by [§6.3](#63-end-of-plan--deferred-product-work-only). Operational L3 **signed off**. P-Ext **Done** (61/61).*
+*Plan synced (2026-06-02). **Harness platform** bands 1–2o **Done**; GOV-AUDIT + ORCH + TS + INT + RAG + CTX + LEG **closed**. Gate: **612 passed**. **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance. Product work gated by [§6.3](#63-end-of-plan--deferred-product-work-only). Operational L3 **signed off**. P-Ext **Done** (61/61).*

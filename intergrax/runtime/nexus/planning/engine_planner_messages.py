@@ -88,6 +88,11 @@ class EnginePlannerMessageBuilder:
                 "use_user_longterm_memory": {"type": "boolean"},
                 "use_rag": {"type": "boolean"},
                 "use_tools": {"type": "boolean"},
+                "tool_ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Canonical catalog tool ids (e.g. rag.retrieve, websearch.query).",
+                },
             },
         }
 

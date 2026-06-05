@@ -91,6 +91,7 @@ class EnginePlan:
           "use_user_longterm_memory": bool(self.use_user_longterm_memory),
           "use_rag": bool(self.use_rag),
           "use_tools": bool(self.use_tools),
+          "tool_ids": self.resolved_tool_ids(),
       }
 
       raw = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
@@ -128,6 +129,7 @@ class EnginePlan:
           "use_user_longterm_memory": bool(self.use_user_longterm_memory),
           "use_rag": bool(self.use_rag),
           "use_tools": bool(self.use_tools),
+          "tool_ids": self.resolved_tool_ids(),
       }
     
     @classmethod

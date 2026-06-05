@@ -1648,7 +1648,7 @@ Wired `ApplicationBuildContext.integration_profile` **overrides** raw environmen
 | Call `vectorstore.query` directly | Use `rag.retrieve` tool or Nexus `ContextBuilder` |
 | Store integration config in agent dir | `IntegrationProfile` on environment/manifest |
 | Treat LLM provider as Integration slug | Use `LLMProfile` / `resolve_llm_adapter` (LLM Adapter layer) |
-| Use legacy `use_rag` plan booleans | Explicit `tool_ids` (`rag.retrieve`) |
+| Use legacy `use_rag` plan booleans | Explicit `tool_ids` (`rag.retrieve`) — gateway uses `tool_invocation_plan_from_capability_payload` (Phase LEG **Done**) |
 
 ### K.7 Verification (audit evidence)
 

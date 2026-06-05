@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-02 (GOV-AUDIT + ORCH + TS + INT + RAG + CTX Done; gate **608**)
+**Last updated:** 2026-06-02 (GOV-AUDIT + ORCH + TS + INT + RAG + CTX Done; gate **612**)
 
 The `docs/` folder holds the canonical platform documentation.
 
@@ -114,6 +114,7 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | **Phase INT — Integration closeout** | **Done** (2026-06-02) — INT-1→2 |
 | **Phase RAG — RAG retrieval closeout** | **Done** (2026-06-02) — RAG-1 |
 | **Phase CTX — Context engineering closeout** | **Done** (2026-06-02) — CTX-1→2 |
+| **Phase LEG — Legacy tool plan closeout** | **Done** (2026-06-02) — LEG-1→3 |
 | **Phase K — Business agents** | **End of plan** — §6.3; **not** default next |
 
 Gate: `uv run pytest -m gate -q` — **600 passed** (2026-06-02)

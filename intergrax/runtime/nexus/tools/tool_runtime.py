@@ -4,8 +4,9 @@
 from __future__ import annotations
 
 import warnings
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, Protocol, Sequence, runtime_checkable
+from typing import TYPE_CHECKING, Any, Optional, Protocol, Sequence, runtime_checkable
 
 from intergrax.runtime.nexus.planning.engine_plan_models import EnginePlan
 
@@ -86,6 +87,32 @@ class ToolInvocationPlan:
         return (self.use_rag or self.use_websearch) and not self.tool_ids
 
 
+def capability_payload_to_tool_ids(payload: Mapping[str, Any]) -> tuple[str, ...]:
+    """
+    Resolve catalog tool ids from a capability-plan payload (Phase LEG-1).
+
+    Prefers explicit ``tool_ids``; otherwise maps deprecated boolean flags.
+    """
+    raw_ids = payload.get("tool_ids")
+    if isinstance(raw_ids, (list, tuple)) and raw_ids:
+        return tuple(dict.fromkeys(str(item).strip() for item in raw_ids if str(item).strip()))
+
+    ids: list[str] = []
+    if bool(payload.get("use_rag", False)):
+        ids.append(RAG_RETRIEVE_TOOL_ID)
+    if bool(payload.get("use_websearch", False)):
+        ids.append(WEBSEARCH_QUERY_TOOL_ID)
+    return tuple(dict.fromkeys(ids))
+
+
+def tool_invocation_plan_from_capability_payload(payload: Mapping[str, Any]) -> ToolInvocationPlan:
+    """Build a normalized plan from gateway/capability payload without ``from_legacy``."""
+    return ToolInvocationPlan.from_tool_ids(
+        capability_payload_to_tool_ids(payload),
+        use_tools=bool(payload.get("use_tools", False)),
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class ToolRuntimeResult:
     used_rag: bool
@@ -117,14 +144,16 @@ class ToolRuntime:
     @staticmethod
     def plan_from_like(source: ToolPlanLike) -> ToolInvocationPlan:
         if isinstance(source, EnginePlan):
-            tool_ids = list(source.resolved_tool_ids())
+            tool_ids = source.resolved_tool_ids()
         else:
             tool_ids = list(source.tool_ids)
-        return ToolInvocationPlan.from_legacy(
-            use_rag=bool(source.use_rag),
-            use_websearch=bool(source.use_websearch),
+            if source.use_rag and RAG_RETRIEVE_TOOL_ID not in tool_ids:
+                tool_ids.append(RAG_RETRIEVE_TOOL_ID)
+            if source.use_websearch and WEBSEARCH_QUERY_TOOL_ID not in tool_ids:
+                tool_ids.append(WEBSEARCH_QUERY_TOOL_ID)
+        return ToolInvocationPlan.from_tool_ids(
+            tool_ids,
             use_tools=bool(source.use_tools),
-            tool_ids=tool_ids,
         )
 
     @staticmethod
