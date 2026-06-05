@@ -34,6 +34,7 @@ Intergrax is a **production-grade Harness AI platform** — not a single chatbot
 - [Reference agents and applications](#reference-agents-and-applications)
 - [Repository layout](#repository-layout)
 - [Architecture maturity and audits](#architecture-maturity-and-audits)
+- [Adaptive Harness Intelligence (L4)](#adaptive-harness-intelligence-l4)
 - [Documentation index](#documentation-index)
 - [Status](#status)
 - [Audience](#audience)
@@ -106,6 +107,8 @@ Harness (Nexus + app wiring)
 **Single vocabulary source for Harness terms:** [architecture §5.3](docs/intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model)
 
 **Target reference model:** [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) — policy-first, composable-by-default, trace-everything, human-governed autonomy, progressive extensibility.
+
+**L4 differentiation (planned):** [Adaptive Harness Intelligence Architecture](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — governed closed-loop harness improvement (observe → propose → gate → apply → verify); canon [§54](docs/intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum).
 
 ---
 
@@ -710,6 +713,7 @@ Intergrax maintains a **layered audit model** — the platform is audited one ar
 | Document | Role |
 |----------|------|
 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) | Target Harness AI reference (9 logical layers, L0–L4 maturity) |
+| [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | **L4 Adaptive Harness Intelligence (AHI)** — closed-loop architecture RFC, Phase W-ADAPT roadmap |
 | [INTEGRAX_HARNESS_AUDIT_MAP.md](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) | 32 auditable layers with DoD, evidence, risk scoring |
 | [HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md](docs/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) | Cursor/agent prompt template for focused audits |
 
@@ -720,6 +724,27 @@ Intergrax maintains a **layered audit model** — the platform is audited one ar
 1. **Core Harness Integrity** — tiers, UAEP, runtime, registry
 2. **Capability Platform** — tools, skills, integrations, RAG, memory
 3. **Production Readiness** — security, cost, SLOs, operational excellence
+
+---
+
+## Adaptive Harness Intelligence (L4)
+
+Intergrax is designed to evolve beyond static harness configuration toward an **Adaptive Harness Intelligence (AHI)** model — a Tier-1 **Adaptive Control Plane** that improves quality, cost, and operational efficiency over time through **evidence-driven, policy-governed closed loops**.
+
+This is **not classical reinforcement learning** (neural policy training, unconstrained reward maximization). It is **bounded harness adaptation**: contextual bandits, statistical gates, evaluation registry feedback, and human-governed policy learning — aligned with IDEAL §25 and the L4 maturity model.
+
+| Concept | Description |
+|---------|-------------|
+| **What it does** | Observes run outcomes → proposes versioned profile changes → validates through governance → applies via shadow/canary → verifies improvement → rolls back on failure |
+| **What it discovers** | Operational patterns in traces (tool/agent/HITL sequences), routing inefficiencies, cost anomalies, eval regressions |
+| **What stays human-governed** | Policy-learning mutations, promotion to production traffic, skill/workflow creation from mined patterns |
+| **Current status** | Phase V delivered **L4 governance contracts** (`adaptive_governance.py`, maturity gates). **Runtime adaptation** is specified but not yet implemented — tracked as **Phase W-ADAPT**. |
+
+**Primary document:** [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — full business case, component specification, data contracts, flow diagrams, phased roadmap (W-ADAPT-0 through W-ADAPT-7), KPIs, and L4 runtime acceptance gates.
+
+**Canon summary:** [intergrax_runtime_architecture.md §54](docs/intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum)
+
+**Competitive angle:** Most harnesses stop at trace + manual tuning. Intergrax targets **auditable, rollback-ready, capability-graph-aware** continuous improvement of the runtime itself — while agents remain replaceable execution units.
 
 ---
 
@@ -735,6 +760,7 @@ All platform documentation lives in [`docs/`](docs/). **One source of truth per 
 | [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Strategic goal, decision hierarchy, lab vs production, work cycle |
 | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Full architecture canon — tiers, Nexus, UAEP §42, Harness §5.3 |
 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) | Ideal Harness AI target — evaluate implementation alignment |
+| [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | **Adaptive Harness Intelligence (L4)** — business case, ACP architecture, W-ADAPT implementation waves |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, hardening streams, KPIs, business checklist (Appendix A) |
 ### Authoring and workflow
 
@@ -786,6 +812,7 @@ Lab environment         →  HARNESS_ENVIRONMENT.md
 New application         →  applications/USAGE.md + poc_template_application/
 Plugin extension        →  EXTENSION_AUTHOR_GUIDE.md
 Ideal harness target    →  IDEAL_HARNESS_AI_ARCHITECTURE.md
+L4 adaptive harness     →  ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md · canon §54
 Phase status / gates    →  INTERGRAX_IMPLEMENTATION_PLAN.md
 Harness audit           →  INTEGRAX_HARNESS_AUDIT_MAP.md
 Governance / HITL       →  AGENT_CREATION_GUIDE.md Appendix H

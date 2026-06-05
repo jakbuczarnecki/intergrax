@@ -2,7 +2,7 @@
 
 Status: Canonical architecture and implementation guide  
 
-**Documentation model:** [`README.md`](README.md) · **Strategy:** [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) · Implementation map: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) · Integration catalog: [`INTEGRATIONS.md`](INTEGRATIONS.md) · Tool catalog: [`TOOLS.md`](TOOLS.md) · Skill catalog: [`SKILLS.md`](SKILLS.md)
+**Documentation model:** [`README.md`](README.md) · **Strategy:** [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) · Implementation map: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · **Adaptive Harness Intelligence (L4 runtime):** [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) · Integration catalog: [`INTEGRATIONS.md`](INTEGRATIONS.md) · Tool catalog: [`TOOLS.md`](TOOLS.md) · Skill catalog: [`SKILLS.md`](SKILLS.md)
 
 Audience: Humans, LLMs, Cursor AI agents, implementation agents, future maintainers  
 Purpose: Define the Intergrax runtime architecture, implementation rules, agent model, orchestration model, adapter model, experimentation model and forbidden patterns.
@@ -2819,6 +2819,8 @@ Evaluation criteria may include:
 
 Agents should not be considered successful only because they produced text.
 
+**Closed-loop adaptation (L4):** offline/online/shadow/human evaluation feeds the **Adaptive Control Plane** — observe → propose → gate → apply → verify — with bounded envelopes and human-governed policy learning. Evaluation is an input to harness improvement, not only a post-hoc score. Full specification: [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · canon summary §54.
+
 ---
 
 # 35. Experimentation Workflow
@@ -5359,4 +5361,150 @@ tools). New integration categories (`speech_provider`, `vision_serving`,
 
 Agents and product teams MUST use **ToolRuntime** for all Plane B/C effects; Tier-2
 code MUST NOT import CV/ML vendor SDKs when a catalog path exists.
+
+---
+
+# 54. Adaptive Harness Intelligence (AHI) — L4 Runtime Addendum
+
+**Status:** Architecture RFC accepted — **implementation not started** (Phase W-ADAPT)  
+**Full specification:** [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md)  
+**Target alignment:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) §25 · L4 maturity in [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)
+
+## 54.1 Purpose
+
+Define how Intergrax evolves from **L4 governance contracts** (Phase V `adaptive_governance.py`, maturity gate evidence) to **L4 adaptive runtime behavior**: a harness that measurably improves quality, cost, and operational efficiency over time through **governed closed loops** — without classical reinforcement-learning training pipelines and without domain logic in Tier-1.
+
+**Strategic positioning:** Intergrax differentiates as a Harness AI platform where **the runtime learns from governed execution**, not where individual agents autonomously rewrite themselves.
+
+## 54.2 Terminology lock
+
+| Term | Meaning in Intergrax |
+|------|----------------------|
+| **Adaptive Harness Intelligence (AHI)** | Platform capability — evidence-driven harness improvement |
+| **Adaptive Control Plane (ACP)** | Tier-1 subsystem in `intergrax/runtime/adaptive/` (planned) |
+| **Classical RL** | **Not** the v1 implementation model — rejected for auditability and policy-first constraints |
+| **Policy learning** | Bounded refinement of `RuntimePolicyBundle` fragments with mandatory human gate |
+
+## 54.3 Current state vs target
+
+| Capability | Today (Phase V) | Target (Phase W-ADAPT) |
+|------------|-----------------|------------------------|
+| Adaptive loop envelopes | ✅ `adaptive_governance.py` | Reuse |
+| L4 CI gate (governance) | ✅ `phase_v_closeout_gate.py --enforce-l4` | Extend with runtime-L4 evidence |
+| Signal collection | ⚠️ Partial (metrics, eval, guard — not unified) | `HarnessOutcomeSignal` + `SignalCollector` |
+| Proposal generation | ⚠️ Sample proposals in tests/reports only | `AdaptationEngine` |
+| Profile versioning | ❌ | `ProfileVersionStore` |
+| Shadow/canary/apply | ⚠️ Shadow eval hook only | `AdaptationExecutor` |
+| Verification + rollback | ❌ | `VerificationLoop` |
+| Process pattern mining | ❌ | `ProcessPatternMiner` |
+
+**Interpretation:** Phase V achieved **L4 governance readiness**. AHI closes **L4 runtime readiness**.
+
+## 54.4 Architectural placement
+
+```text
+Tier-3  ApplicationEnvironmentProfile.adaptive_profile  (weights, mode, allowlists)
+           │
+           ▼
+Tier-1  Adaptive Control Plane
+           ├── SignalCollector        ← trace, metrics, eval, cost, HITL, ExecutionGuard
+           ├── AdaptationEngine       ← bandit + rules (ROUTING / STRATEGY / POLICY / EVAL)
+           ├── ProposalBuilder        → AdaptiveLoopProposal (existing contract)
+           ├── Governance Gate        → adaptive_governance + capability graph
+           ├── AdaptationExecutor     → shadow → canary → apply
+           ├── VerificationLoop       → eval registry trends + auto-rollback
+           └── ProcessPatternMiner    → ProcessPatternProposal (Tier-2 handoff)
+
+Tier-2  Agents consume active profile versions — MUST NOT host adaptation logic
+Tier-0  Catalogs unchanged — only references via versioned profiles
+```
+
+**Hot-path rule:** Nexus `NexusLoop` / `RuntimeEngine` MUST NOT run `AdaptationEngine.propose()` synchronously. Adaptation is **async** via scheduler.
+
+## 54.5 Dual-loop integration (§9)
+
+| Loop | AHI behavior |
+|------|--------------|
+| **Global Nexus Loop** | Post-task: emit `HarnessOutcomeSignal`. Periodic: batch proposals. |
+| **Local Agent Loop** | Read-only bandit weights / profile version for RAG tier or tool ordering — bounded by `allowed_tools` and policy. |
+
+## 54.6 Four adaptation loops
+
+Maps to existing `AdaptiveLoopKind` in `adaptive_governance.py`:
+
+| Kind | Tunable targets | Default authority |
+|------|-----------------|-------------------|
+| `ROUTING_TUNING` | LLM routing, RAG tier (`QueryRouter`, profiles) | `RECOMMEND` |
+| `EXECUTION_STRATEGY_TUNING` | Retry, parallel nodes, planner strategy | `RECOMMEND` |
+| `POLICY_LEARNING` | Tool deny/allow fragments | `AUTO_WITH_HUMAN_GATE` (mandatory approver) |
+| `EVALUATION_FEEDBACK` | Re-eval triggers; block promotion | `OBSERVE_ONLY` |
+
+Envelope rules (existing): policy-learning max delta 25%; audit trail required; cooldown between proposals.
+
+## 54.7 Lifecycle modes
+
+```text
+Observe (L4-O) → Recommend (L4-R) → Shadow (L4-S) → Canary (L4-C) → Apply (L4-A) → Verify (L4-V)
+                                                      └──── rollback ◄────┘
+```
+
+Aligns with laboratory workflow (§35): hypothesis → run → validate → KEEP/DISCARD maps to propose → shadow → apply/rollback.
+
+## 54.8 Utility function (summary)
+
+Composite **utility U** per run — configured in Tier-3 `AdaptiveProfile.weights`:
+
+```text
+U = w_q * quality - w_c * cost_penalty - w_l * latency_penalty
+  - w_h * hitl_penalty - w_r * regression_penalty + w_b * business_outcome
+```
+
+Default: quality-dominated (`w_q = 0.5`); business outcome opt-in (`w_b = 0`). Full contract: AHIA §10.
+
+## 54.9 Process pattern intelligence (Tier-1 mining)
+
+`ProcessPatternMiner` analyzes trace sequences (tool/agent/HITL paths) and emits **human-reviewed** proposals — skill scaffold drafts, routing hints, runbook entries. It does **not** auto-create Tier-2 agents or Tier-0 catalog entries.
+
+Domain strategic intelligence (e.g. Problem Radar) remains **Tier-2 agent** scope (§36).
+
+## 54.10 Security and governance (normative)
+
+1. **No adaptation bypasses `PolicyEngine`.**
+2. **No Tier-0 duplication** — reuse trace, eval registry, policy stack (§5.2, §8.8).
+3. **Every apply** creates `ProfileVersionRecord` with rollback pointer.
+4. **Capability graph compatibility** mandatory before skill/policy mutations.
+5. **Runtime events** for all adaptive actions: `ADAPTIVE_SIGNAL_RECORDED`, `ADAPTIVE_PROPOSAL_*`, `ADAPTIVE_PROFILE_APPLIED`, `ADAPTIVE_PROFILE_ROLLBACK`.
+6. **Default Tier-3 config:** `AdaptiveProfile.enabled = False`, `mode = observe`.
+
+## 54.11 L4 runtime acceptance (extends Phase V §L4 gate)
+
+Runtime L4 is satisfied only when **all** hold:
+
+1. Phase V L3 + governance L4 gates green.
+2. Phase W-ADAPT waves 1–5 complete; `pytest -m gate` green.
+3. **Measurable improvement:** mean utility of candidate profiles ≥ baseline + threshold on ≥ 3 golden scenarios over 30-day window.
+4. **Zero unapproved policy-learning applies** in production.
+5. Rollback drill documented and executed.
+
+Governance-only L4 (envelope unit tests) **does not** satisfy runtime L4.
+
+## 54.12 Implementation tracking
+
+| Artifact | Location / action |
+|----------|-------------------|
+| Full AHIA document | `docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md` |
+| Planned phase | **Phase W-ADAPT** in `INTERGRAX_IMPLEMENTATION_PLAN.md` (to be synced from AHIA Appendix B) |
+| New package (planned) | `intergrax/runtime/adaptive/` |
+| Reuse | `adaptive_governance.py`, `runtime_governance_bridge.py`, `execution_guard.py`, `evaluation_registry_trends.py` |
+| Closeout script (planned) | `scripts/phase_w_adapt_closeout_gate.py` |
+
+## 54.13 Forbidden patterns
+
+- Per-agent self-modifying prompts without Prompt Registry governance.
+- Deep RL / neural policy training in Nexus hot path.
+- Second trace, eval, or policy systems for adaptation.
+- Embedding business-domain rules inside `AdaptationEngine`.
+- Declaring L4 complete based on governance proposals alone.
+
+See AHIA §22 for full anti-pattern list.
 

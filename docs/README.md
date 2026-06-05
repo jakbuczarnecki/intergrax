@@ -23,6 +23,7 @@ The `docs/` folder holds the canonical platform documentation.
 | [**../README.md**](../README.md) | **GitHub landing** — tiers, Integration/Tool/Skill/Agent stack, links to canon and plan |
 | [**LLM_ADAPTERS.md**](LLM_ADAPTERS.md) | **LLM adapter catalog** — providers, streaming, tools, env vars, Prometheus/governance |
 | [**IDEAL_HARNESS_AI_ARCHITECTURE.md**](IDEAL_HARNESS_AI_ARCHITECTURE.md) | **Target Harness AI architecture** — ideal Agent OS reference model for Integrax alignment |
+| [**ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md**](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | **Adaptive Harness Intelligence (AHI)** — L4 closed-loop architecture RFC, business case, Phase W-ADAPT roadmap |
 | [**../infra/README.md**](../infra/README.md) | **Local Docker infra** — compose profiles, `manage.sh` |
 | [**../infra/PORTS.md**](../infra/PORTS.md) | Host port matrix for integration backends |
 | **This file** | Navigation and update rules |
@@ -39,6 +40,7 @@ Modality / ML / vision    →  MODALITY.md
 Harness environment       →  HARNESS_ENVIRONMENT.md
 LLM adapters + metrics    →  LLM_ADAPTERS.md
 Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
+Adaptive Harness (L4)     →  ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md · canon §54
 ```
 
 ---
@@ -90,6 +92,7 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | RAG engine (RetrievalService, RagProfile, metrics) | Architecture §7.1.2 · Phase M-RAG in implementation plan |
 | Configure LLM providers (OpenAI, Claude, Bedrock, …) | [LLM_ADAPTERS.md](LLM_ADAPTERS.md), then architecture canon §5.2.2 |
 | Evaluate Integrax against ideal Harness AI architecture | [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) |
+| Design or implement L4 adaptive harness (closed loops) | [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · [canon §54](intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) |
 | LLM/RAG Prometheus, trace DB defaults | [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · architecture §33 |
 | Nexus retry layers | Architecture §31.1 |
 | Nexus orchestration modules | `intergrax/runtime/nexus/orchestration/` (`intake_runner`, `planning_runner`, `graph_runner`, `hitl_runner`, …) |
@@ -146,4 +149,5 @@ Harness CI also runs: `python scripts/check_harness_no_getattr.py` (zero grandfa
 6. **Skill packs / importers** → `SKILLS.md` + plan Appendix E (and Phase S when prod proof).
 7. **Modality / vision / speech / ML** → `MODALITY.md` + canon §7.1.9 + plan Phase W-ML.
 8. **Harness AI terms** → `intergrax_runtime_architecture.md` §5.3 only (single source of truth).
-9. After each merged harness PR: run gate + getattr audit; update §0 gate count in the plan footer.
+9. **Adaptive Harness Intelligence (L4 runtime)** → `ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md` + canon §54; sync Phase W-ADAPT in implementation plan when opened.
+10. After each merged harness PR: run gate + getattr audit; update §0 gate count in the plan footer.
